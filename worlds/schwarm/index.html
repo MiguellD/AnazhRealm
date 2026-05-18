@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- V8.70 — die Schwarm-Welt: eine echte, eigenstaendige fremde
+             Engine (2D-Canvas-Boids, kein Three.js, kein AnazhRealm-Code).
+             Sie laeuft im Portal-iframe NULL-ORIGIN (sandbox="allow-scripts"
+             ohne allow-same-origin) — voller Lauf hier drinnen, null
+             Reichweite zu AnazhRealms localStorage/DOM/Cookies. Ihre eigene
+             CSP riegelt zusaetzlich jedes Netz ab (default-src 'none'): die
+             Welt ist vollstaendig in sich geschlossen. -->
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none';"
+        />
+        <title>Schwarm-Welt — AnazhRealm-Portal</title>
+        <link
+            rel="icon"
+            type="image/png"
+            href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        />
+        <style>
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                background: #05060c;
+                overflow: hidden;
+                font-family: "Courier New", monospace;
+            }
+            canvas {
+                display: block;
+            }
+            #hud {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 16px;
+                text-align: center;
+                font-size: 13px;
+                line-height: 1.7;
+                color: #aab4d4;
+                text-shadow: 0 0 8px #000;
+                pointer-events: none;
+            }
+            #hud b {
+                color: #7fd8c8;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="hud">
+            <div id="hud-line">Schwarm-Welt — eine fremde Engine, sandgesichert hinter dem Tor.</div>
+            <div>Reisender: <b id="avatar-name">…</b> · Esc — zurück zur Heimat-Welt</div>
+        </div>
+        <script>
+            // V8.70 — eine fremde Engine. Sie kennt AnazhRealm NICHT; sie
+            // spricht nur das postMessage-Protokoll des Portals. Reines
+            // 2D-Canvas, eigene Boid-Physik, eigener Loop.
+            (() => {
+                "use strict";
+                const hud = document.getElementById("hud-line");
+                function show(t) {
+                    if (hud) hud.textContent = t;
+                }
+                // Der EINZIGE Draht nach aussen: ein Ereignis an die Heimat
+                // (wird dort geloggt, nie ausgefuehrt — die Asymmetrie ist
+                // die Sicherheits-Wand).
+                function sendEvent(text) {
+                    try {
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage({ type: "event", text: String(text) }, "*");
+                        }
+                    } catch (e) {
+                        /* nie werfen */
+                    }
+                }
+
+                // --- Der Sandbox-Selbsttest. Eine null-origin-Welt kann den
+                //     Eltern-Kontext NICHT beruehren; jeder Zugriff wirft. So
+                //     beweist die Welt selbst, dass die Wand haelt. ---
+                function probeReach() {
+                    let reached = false;
+                    try {
+                        if (window.parent !== window && window.parent.localStorage) reached = true;
+                    } catch (e) {
+                        /* SecurityError = isoliert */
+                    }
+                    try {
+                        if (window.parent !== window && window.parent.document) reached = true;
+                    } catch (e) {
+                        /* SecurityError = isoliert */
+                    }
+                    try {
+                        if (window.top !== window && window.top.location.href) reached = true;
+                    } catch (e) {
+                        /* SecurityError = isoliert */
+                    }
+                    return reached;
+                }
+                function reportIsolation() {
+                    let hasParent = false;
+                    try {
+                        hasParent = !!(window.parent && window.parent !== window);
+                    } catch (e) {
+                        hasParent = true;
+                    }
+                    const reached = probeReach();
+                    if (hasParent && !reached) {
+                        sendEvent(
+                            "Die Schwarm-Welt prüfte ihre Grenzen — die Sandbox-Wand hält: " +
+                                "AnazhRealm ist von hier aus unerreichbar. Die fremde Engine läuft frei und doch eingeschlossen."
+                        );
+                    } else if (hasParent && reached) {
+                        sendEvent("WARNUNG: die Schwarm-Welt konnte die Heimat-Welt berühren — die Sandbox-Wand ist durchlässig.");
+                    } else {
+                        sendEvent("Die Schwarm-Welt läuft ohne Eltern-Kontext.");
+                    }
+                    return reached;
+                }
+
+                // --- Canvas ---
+                const canvas = document.createElement("canvas");
+                document.body.insertBefore(canvas, document.body.firstChild);
+                const ctx = canvas.getContext("2d");
+                let W = 0;
+                let H = 0;
+                function resize() {
+                    W = canvas.width = window.innerWidth || 1;
+                    H = canvas.height = window.innerHeight || 1;
+                }
+                window.addEventListener("resize", resize);
+                resize();
+
+                // --- die Welt: ein Schwarm ---
+                const MAX = 460;
+                let theme = { bg: "#05060c", boid: "#7fd8c8" };
+                let mode = "ruhig"; // ruhig | sturm | sanft
+                let modeUntil = 0;
+                let ripple = 0;
+                const flock = [];
+                function spawn(n) {
+                    for (let i = 0; i < n && flock.length < MAX; i++) {
+                        const a = Math.random() * Math.PI * 2;
+                        flock.push({
+                            x: Math.random() * W,
+                            y: Math.random() * H,
+                            vx: Math.cos(a) * 1.4,
+                            vy: Math.sin(a) * 1.4,
+                        });
+                    }
+                }
+                spawn(180);
+
+                // Boid-Schritt: Trennung, Ausrichtung, Zusammenhalt, plus ein
+                // wirbelndes Stroemungsfeld. Reine eigene Physik.
+                function step(now) {
+                    const t = now * 0.00018;
+                    const storm = mode === "sturm" && now < modeUntil;
+                    const calm = mode === "sanft" && now < modeUntil;
+                    const maxSpeed = storm ? 6.2 : calm ? 1.5 : 3.0;
+                    const cx = W / 2;
+                    const cy = H / 2;
+                    for (let i = 0; i < flock.length; i++) {
+                        const b = flock[i];
+                        let sx = 0;
+                        let sy = 0;
+                        let ax = 0;
+                        let ay = 0;
+                        let gx = 0;
+                        let gy = 0;
+                        let n = 0;
+                        for (let j = 0; j < flock.length; j++) {
+                            if (j === i) continue;
+                            const o = flock[j];
+                            const dx = b.x - o.x;
+                            const dy = b.y - o.y;
+                            const d2 = dx * dx + dy * dy;
+                            if (d2 > 9000) continue;
+                            n++;
+                            ax += o.vx;
+                            ay += o.vy;
+                            gx += o.x;
+                            gy += o.y;
+                            if (d2 < 520 && d2 > 0.01) {
+                                sx += dx / d2;
+                                sy += dy / d2;
+                            }
+                        }
+                        if (n > 0) {
+                            b.vx += (ax / n - b.vx) * 0.04 + (gx / n - b.x) * 0.0009;
+                            b.vy += (ay / n - b.vy) * 0.04 + (gy / n - b.y) * 0.0009;
+                        }
+                        b.vx += sx * 26;
+                        b.vy += sy * 26;
+                        // Stroemungsfeld — der organische Wirbel.
+                        const ang = Math.sin(b.x * 0.0042 + t) * Math.cos(b.y * 0.0042 - t) * Math.PI;
+                        b.vx += Math.cos(ang) * (storm ? 0.5 : 0.16);
+                        b.vy += Math.sin(ang) * (storm ? 0.5 : 0.16);
+                        if (calm) {
+                            b.vx += (cx - b.x) * 0.0024;
+                            b.vy += (cy - b.y) * 0.0024;
+                        }
+                        const sp = Math.hypot(b.vx, b.vy) || 1;
+                        if (sp > maxSpeed) {
+                            b.vx = (b.vx / sp) * maxSpeed;
+                            b.vy = (b.vy / sp) * maxSpeed;
+                        }
+                        b.x += b.vx;
+                        b.y += b.vy;
+                        if (b.x < -20) b.x = W + 20;
+                        else if (b.x > W + 20) b.x = -20;
+                        if (b.y < -20) b.y = H + 20;
+                        else if (b.y > H + 20) b.y = -20;
+                    }
+                }
+
+                function render() {
+                    // Schweif: ein halbtransparenter Schleier statt Vollloeschung.
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.fillStyle = theme.bg;
+                    ctx.globalAlpha = ripple > 0 ? 0.1 : 0.22;
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.globalAlpha = 1;
+                    // Boids leuchten additiv — dichte Schwaerme gluehen heller.
+                    ctx.globalCompositeOperation = "lighter";
+                    ctx.fillStyle = theme.boid;
+                    for (let i = 0; i < flock.length; i++) {
+                        const b = flock[i];
+                        const a = Math.atan2(b.vy, b.vx);
+                        const s = 4.4;
+                        ctx.beginPath();
+                        ctx.moveTo(b.x + Math.cos(a) * s, b.y + Math.sin(a) * s);
+                        ctx.lineTo(b.x + Math.cos(a + 2.5) * s * 0.7, b.y + Math.sin(a + 2.5) * s * 0.7);
+                        ctx.lineTo(b.x + Math.cos(a - 2.5) * s * 0.7, b.y + Math.sin(a - 2.5) * s * 0.7);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.globalCompositeOperation = "source-over";
+                }
+
+                let lastT = performance.now();
+                let firstFrameDone = false;
+                function frame(now) {
+                    if (now - lastT > 8) {
+                        step(now);
+                        render();
+                        if (ripple > 0) ripple -= 0.03;
+                        lastT = now;
+                    }
+                    if (!firstFrameDone) {
+                        firstFrameDone = true;
+                        sendEvent("Die Schwarm-Welt erwachte — " + flock.length + " Wesen schwärmen, gerendert von ihrer eigenen Engine.");
+                    }
+                    requestAnimationFrame(frame);
+                }
+                requestAnimationFrame(frame);
+
+                // --- die DSL-Bruecke: welt-eigene Worte wirken auf den Schwarm.
+                //     Reine Daten kommen herein; die Welt entscheidet selbst,
+                //     was sie damit tut. ---
+                function applyOne(op, arg) {
+                    if (op === "sturm") {
+                        mode = "sturm";
+                        modeUntil = performance.now() + 9000;
+                        for (const b of flock) {
+                            b.vx += (Math.random() - 0.5) * 9;
+                            b.vy += (Math.random() - 0.5) * 9;
+                        }
+                        ripple = 1;
+                        sendEvent("Ein Sturm fuhr durch die Schwarm-Welt — die Wesen stoben auseinander.");
+                    } else if (op === "ruhe") {
+                        mode = "sanft";
+                        modeUntil = performance.now() + 12000;
+                        sendEvent("Ruhe senkte sich über die Schwarm-Welt — die Wesen sammelten sich.");
+                    } else if (op === "schwaermen") {
+                        const before = flock.length;
+                        spawn(60);
+                        sendEvent("Die Schwarm-Welt wuchs — " + (flock.length - before) + " neue Wesen.");
+                    } else if (op === "skybox_color") {
+                        const m = /^#?([0-9a-fA-F]{6})$/.exec(String(arg == null ? "" : arg).trim());
+                        if (m) {
+                            theme = { bg: "#" + m[1], boid: theme.boid };
+                            sendEvent("Der Himmel der Schwarm-Welt nahm eine neue Farbe an.");
+                        }
+                    } else {
+                        ripple = 1;
+                        sendEvent("Die Schwarm-Welt spürte ein unbekanntes Wort: " + op + ".");
+                    }
+                }
+                function applyDsl(program) {
+                    if (!Array.isArray(program) || typeof program[0] !== "string") return;
+                    if (program[0] === "chain") {
+                        for (let i = 1; i < program.length; i++) applyDsl(program[i]);
+                        return;
+                    }
+                    try {
+                        applyOne(program[0], program[1]);
+                    } catch (e) {
+                        show("Schwarm-Welt: Befehl fehlgeschlagen — " + (e && e.message));
+                    }
+                }
+
+                // --- postMessage-Handshake mit der Heimat-Welt ---
+                window.addEventListener("message", (event) => {
+                    if (event.source !== window.parent) return;
+                    const msg = event.data;
+                    if (!msg || typeof msg !== "object") return;
+                    if (msg.type === "enter") {
+                        const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
+                        const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
+                        const el = document.getElementById("avatar-name");
+                        if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
+                        show("Schwarm-Welt — " + flock.length + " Wesen, eine fremde Engine hinter dem Tor.");
+                        // Der Sandbox-Selbsttest: die Welt meldet der Heimat,
+                        // dass die Wand zwischen ihnen hält.
+                        reportIsolation();
+                    } else if (msg.type === "dsl") {
+                        applyDsl(msg.program);
+                    }
+                });
+                window.addEventListener("keydown", (event) => {
+                    if (event.key === "Escape") {
+                        try {
+                            if (window.parent && window.parent !== window) {
+                                window.parent.postMessage({ type: "exit", world: "schwarm" }, "*");
+                            }
+                        } catch (e) {
+                            /* nie werfen */
+                        }
+                    }
+                });
+                // ready: die Welt meldet ihre Bereitschaft. Kein eigenes
+                // Manifest — ihr DSL-Vokabular kommt aus der Welt-Registry
+                // der Heimat (Stufe „übersetzt").
+                try {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: "ready", world: "schwarm" }, "*");
+                    }
+                } catch (e) {
+                    /* nie werfen */
+                }
+            })();
+        </script>
+    </body>
+</html>

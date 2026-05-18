@@ -2,7 +2,7 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V8.67 (17.05.2026) — **W11 V4 (Voice-Sync) komplett**: der Präsenz-Bogen schliesst sich — sehen / spüren / kennen / **hören**. Wenn dein Begleiter spricht, reist der Text via `companion-say` an alle Mitspieler; sie hören ihn via SpeechSynthesis (gegated auf den eigenen Stimme-Toggle). Der Begleiter bekommt eine wählbare Stimme, die mitreist. Davor W7 (Compute-Sharing) komplett — der WebRTC-Mesh (echte DataChannels, mesh-nativer Welt-Snapshot, LLM-Pool, Public-Lobby + Multi-User-Bau-/Kreatur-Sync); W14 (Bibliothek) komplett (browsbare, signierbare, empfangende Welt-Registry — die Bibliothek von Alexandria steht); W13 Vibe-Pass komplett (souveräne ed25519-Identität); W12 Welt-Portal komplett. Die geplante Roadmap-Substanz ist erfüllt; einziger offener Horizont: der KI-Übersetzer (ein LLM dockt ein fremdes Repo automatisch ans Portal an).
+**Stand**: V8.70 (18.05.2026) — **das Untrusted-Welt-Tor**: eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal (`worlds/schwarm/` — eine eigenständige 2D-Boids-Engine — beweist es: voller Lauf drinnen, null Reichweite zu AnazhRealms localStorage/DOM/Cookies). Davor V8.68/V8.69 der **KI-Übersetzer** komplett (ein LLM übersetzt eine fremde Welt erst in ein Portal-Manifest, dann in eine deklarative Szene, die ein generischer Renderer betretbar macht). W7 Compute-Sharing (WebRTC-Mesh), W14 Bibliothek, W13 Vibe-Pass, W12 Welt-Portal — alle komplett. Offen: der echte Fremd-Engine-Bogen — der Auto-Vendor-Pfad (ein fremdes Repo dockt ohne Handarbeit an), die Mesh-Welt-Verteilung + die Multiplayer-Sub-Welten (detailliert in `docs/roadmap.md` §3).
 
 ## Was es ist
 
@@ -10,7 +10,7 @@ AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
-- **Multi-User-Symbiose**: WebSocket-Broker, Position-Sync + DSL-AST-Broadcast. Peer-to-Peer, kein authoritativer Server.
+- **Multi-User-Symbiose**: WebRTC-Mesh mit echten peer-to-peer DataChannels (Position, DSL, Soul, Aura, Begleiter-Stimme), mesh-nativer Welt-Snapshot, geteilter LLM-Pool, Public-Lobby. Kein authoritativer Server.
 
 ## Schnellstart
 
@@ -29,7 +29,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # 2545 Headless-Invarianten (~60s)
+npm run playtest        # 2597 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

@@ -15833,6 +15833,509 @@ function startSaveServer() {
                 check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
             }
 
+            // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
+            const translatorResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r._buildTranslatorPrompt === "function" &&
+                        typeof r._parseManifestResponse === "function" &&
+                        typeof r.translateWorldManifest === "function" &&
+                        typeof r.acceptTranslatedManifest === "function" &&
+                        typeof r.translatorInitDOM === "function";
+                    r.state.customWorlds = {};
+                    // _buildTranslatorPrompt nennt das Manifest-Schema.
+                    const prompt = r._buildTranslatorPrompt();
+                    out.promptNamesSchema =
+                        typeof prompt === "string" &&
+                        prompt.includes('"id"') &&
+                        prompt.includes('"label"') &&
+                        prompt.includes('"dsl"');
+                    // _parseManifestResponse — REIN DATEN, kein LLM nötig.
+                    const p1 = r._parseManifestResponse('{"id":"voxelwelt","label":"Voxel","dsl":["place_block"]}');
+                    out.parseClean = !!p1 && p1.id === "voxelwelt";
+                    const p2 = r._parseManifestResponse('```json\n{"id":"x","label":"X"}\n```');
+                    out.parseFenced = !!p2 && p2.id === "x";
+                    const p3 = r._parseManifestResponse('<think>ich überlege ...</think>{"id":"y","label":"Y"}');
+                    out.parseThink = !!p3 && p3.id === "y";
+                    out.parseGarbage = r._parseManifestResponse("ich bin kein json") === null;
+                    out.parseArray = r._parseManifestResponse("[1,2,3]") === null;
+                    // translateWorldManifest — llmCall stubben (kein API-Key im Headless).
+                    const origLlm = r.llmCall;
+                    try {
+                        r.llmCall = async () => ({
+                            say: "",
+                            program: null,
+                            raw: JSON.stringify({
+                                id: "voxel-traum",
+                                label: "Voxel-Traum",
+                                desc: "Eine Voxel-Sandbox mit Wetter.",
+                                dsl: ["place_block", "set_weather"],
+                            }),
+                        });
+                        // Zu kurze Beschreibung → vor dem LLM abgelehnt.
+                        const tooShort = await r.translateWorldManifest("kurz");
+                        out.rejectsTooShort = tooShort.ok === false && tooShort.reason === "description_too_short";
+                        // Gültige Übersetzung → sanitiertes Vorschau-Manifest.
+                        const tr = await r.translateWorldManifest("Eine Voxel-Sandbox mit Wetter und Block-Bauen.");
+                        out.translateOk =
+                            tr.ok === true &&
+                            !!tr.manifest &&
+                            tr.manifest.id === "voxel-traum" &&
+                            /^worlds\//.test(tr.manifest.world || "");
+                        // Übersetzer-UI-Pfad: _runTranslator füllt #translator-review.
+                        const inp = document.getElementById("translator-input");
+                        if (inp) inp.value = "Eine Voxel-Sandbox mit Wetter und Block-Bauen.";
+                        await r._runTranslator();
+                        const review = document.getElementById("translator-review");
+                        out.runTranslatorRendersReview =
+                            !!review && review.hidden === false && !!review.querySelector(".translator-review-title");
+                        // Übersetztes Manifest, das eine Built-in-id wählt → abgelehnt.
+                        r.llmCall = async () => ({ raw: JSON.stringify({ id: "fluid", label: "X" }) });
+                        const builtinId = await r.translateWorldManifest("Eine Welt namens fluid.");
+                        out.rejectsBuiltinId = builtinId.ok === false && builtinId.reason === "id_is_builtin";
+                        // LLM-Antwort ohne Manifest → no_manifest_in_response.
+                        r.llmCall = async () => ({ raw: "Tut mir leid, ich weiss es nicht." });
+                        const noManifest = await r.translateWorldManifest("Eine vage Welt ohne Form.");
+                        out.rejectsNoManifest =
+                            noManifest.ok === false && noManifest.reason === "no_manifest_in_response";
+                    } finally {
+                        r.llmCall = origLlm;
+                    }
+                    // acceptTranslatedManifest — committet in customWorlds.
+                    const acc = r.acceptTranslatedManifest({
+                        id: "voxel-traum",
+                        label: "Voxel-Traum",
+                        desc: "Eine Voxel-Sandbox.",
+                        dsl: ["place_block"],
+                    });
+                    const stored = r.state.customWorlds && r.state.customWorlds["voxel-traum"];
+                    out.acceptCommits =
+                        acc.ok === true &&
+                        acc.id === "voxel-traum" &&
+                        !!stored &&
+                        stored.translated === true &&
+                        stored.reachable === false;
+                    // _sanitizeImportedManifest bewahrt das translated-Feld.
+                    const reSan = r._sanitizeImportedManifest(stored);
+                    out.sanitizePreservesTranslated = !!reSan && reSan.translated === true;
+                    // localStorage-Rundlauf — die übersetzte Welt überlebt.
+                    const reloaded = r._loadCustomWorlds();
+                    out.roundtripKeepsTranslated =
+                        !!reloaded["voxel-traum"] && reloaded["voxel-traum"].translated === true;
+                    // _worldEntry + _libraryWorlds umfassen die übersetzte Welt.
+                    out.worldEntryMerged =
+                        !!r._worldEntry("voxel-traum") && r._libraryWorlds().some((w) => w.id === "voxel-traum");
+                    // obtainPortalForWorld verweigert die übersetzte Welt (kein totes Portal).
+                    const ob = r.obtainPortalForWorld("voxel-traum");
+                    out.obtainRefusesTranslated = ob.ok === false && ob.reason === "world_unreachable";
+                    // renderLibraryUI rendert eine „KI-übersetzt"-Karte.
+                    r.renderLibraryUI();
+                    out.uiTranslatedCard =
+                        !!document.querySelector("#library-list .library-card-translated") &&
+                        !!document.querySelector("#library-list .library-translated-mark");
+                    // UI: Übersetzer-Sektion im DOM.
+                    out.uiTranslatorSection =
+                        !!document.getElementById("translator-input") &&
+                        !!document.getElementById("translator-run") &&
+                        !!document.getElementById("translator-review");
+                    // Aufräumen.
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    const cleanReview = document.getElementById("translator-review");
+                    if (cleanReview) {
+                        cleanReview.hidden = true;
+                        cleanReview.innerHTML = "";
+                    }
+                    const cleanInput = document.getElementById("translator-input");
+                    if (cleanInput) cleanInput.value = "";
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (translatorResults && !translatorResults.error) {
+                check(
+                    "KI-Übersetzer: _buildTranslatorPrompt/_parseManifestResponse/translateWorldManifest/acceptTranslatedManifest/translatorInitDOM existieren",
+                    translatorResults.methods
+                );
+                check("KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)", translatorResults.promptNamesSchema);
+                check("KI-Übersetzer: _parseManifestResponse liest sauberes JSON", translatorResults.parseClean);
+                check("KI-Übersetzer: _parseManifestResponse liest JSON aus einem Markdown-Fence", translatorResults.parseFenced);
+                check("KI-Übersetzer: _parseManifestResponse strippt <think>-Reasoning + liest das JSON danach", translatorResults.parseThink);
+                check("KI-Übersetzer: _parseManifestResponse liefert null bei Müll (kein JSON)", translatorResults.parseGarbage);
+                check("KI-Übersetzer: _parseManifestResponse liefert null bei einem JSON-Array (kein Objekt)", translatorResults.parseArray);
+                check("KI-Übersetzer: translateWorldManifest lehnt eine zu kurze Beschreibung ab", translatorResults.rejectsTooShort);
+                check("KI-Übersetzer: translateWorldManifest liefert ein sanitiertes Vorschau-Manifest", translatorResults.translateOk);
+                check("KI-Übersetzer: _runTranslator rendert den KI-Vorschlag im Review-Bereich", translatorResults.runTranslatorRendersReview);
+                check("KI-Übersetzer: translateWorldManifest lehnt eine Built-in-id ab", translatorResults.rejectsBuiltinId);
+                check("KI-Übersetzer: translateWorldManifest meldet no_manifest_in_response bei einer LLM-Antwort ohne Manifest", translatorResults.rejectsNoManifest);
+                check("KI-Übersetzer: acceptTranslatedManifest committet in customWorlds (translated:true, reachable:false)", translatorResults.acceptCommits);
+                check("KI-Übersetzer: _sanitizeImportedManifest bewahrt das translated-Feld", translatorResults.sanitizePreservesTranslated);
+                check("KI-Übersetzer: eine übersetzte Welt überlebt den localStorage-Rundlauf", translatorResults.roundtripKeepsTranslated);
+                check("KI-Übersetzer: _worldEntry + _libraryWorlds umfassen die übersetzte Welt", translatorResults.worldEntryMerged);
+                check("KI-Übersetzer: obtainPortalForWorld verweigert eine übersetzte Welt (kein totes Portal)", translatorResults.obtainRefusesTranslated);
+                check("KI-Übersetzer: renderLibraryUI rendert eine 'KI-übersetzt'-Karte", translatorResults.uiTranslatedCard);
+                check("KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM", translatorResults.uiTranslatorSection);
+            } else {
+                check(
+                    "KI-Übersetzer: Phase-1-Tests laufen",
+                    false,
+                    translatorResults ? translatorResults.error : "no result"
+                );
+            }
+
+            // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
+            const transl2Results = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    out.methods =
+                        typeof r._sanitizeWorldScene === "function" &&
+                        typeof r._buildSceneTranslatorPrompt === "function" &&
+                        typeof r.translateWorldScene === "function" &&
+                        typeof r.buildTranslatedWorld === "function" &&
+                        typeof r._runWorldBuild === "function";
+                    out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
+                    r.state.customWorlds = {};
+                    // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
+                    const prompt = r._buildSceneTranslatorPrompt();
+                    out.promptNamesSchema =
+                        typeof prompt === "string" &&
+                        prompt.includes('"sky"') &&
+                        prompt.includes('"ground"') &&
+                        prompt.includes('"objects"') &&
+                        prompt.includes('"dslEffects"');
+                    // _sanitizeWorldScene — IMMER eine gültige Szene, REIN DATEN.
+                    const empty = r._sanitizeWorldScene({});
+                    out.sanitizeDefault =
+                        !!empty &&
+                        /^#[0-9a-f]{6}$/.test(empty.sky.top) &&
+                        ["flat", "hills", "water", "void"].indexOf(empty.ground.style) >= 0 &&
+                        Array.isArray(empty.objects);
+                    out.sanitizeGarbage = !!r._sanitizeWorldScene("kaputt") && !!r._sanitizeWorldScene(null);
+                    // Clamps: schlechte Farbe → Default-Hex, Objekte gedeckelt, Licht geklemmt.
+                    const big = [];
+                    for (let i = 0; i < 100; i++) big.push({ shape: "box", color: "#112233" });
+                    const clamped = r._sanitizeWorldScene({
+                        sky: { top: "keinhex", bottom: "#ff0000" },
+                        light: { intensity: 99 },
+                        objects: big,
+                    });
+                    out.sanitizeClamps =
+                        clamped.sky.top === "#2a3a6a" &&
+                        clamped.sky.bottom === "#ff0000" &&
+                        clamped.light.intensity === 2 &&
+                        clamped.objects.length === 14;
+                    // dslEffects: op-förmige Schlüssel bleiben, Müll-Schlüssel fallen.
+                    const eff = r._sanitizeWorldScene({
+                        dslEffects: { good_op: { burst: 5 }, "BAD OP": { burst: 5 } },
+                    });
+                    out.sanitizeDslEffects = !!eff.dslEffects.good_op && eff.dslEffects["BAD OP"] === undefined;
+                    // translateWorldScene — llmCall stubben.
+                    const origLlm = r.llmCall;
+                    try {
+                        r.llmCall = async () => ({
+                            raw: JSON.stringify({
+                                sky: { top: "#102040", bottom: "#88aacc" },
+                                fog: "#aabbcc",
+                                ground: { color: "#3a7a3a", style: "hills" },
+                                light: { color: "#ffffff", intensity: 1.2 },
+                                objects: [
+                                    { shape: "box", color: "#8a6a3a", count: 30, area: 50, size: 3, spin: true },
+                                ],
+                                ambient: { kind: "motes", color: "#ffffff" },
+                                dslEffects: { set_weather: { sky: "#222244", fogShift: 0.4, burst: 10 } },
+                            }),
+                        });
+                        const ts = await r.translateWorldScene({
+                            id: "x",
+                            label: "Voxel-Bau",
+                            desc: "Eine Voxel-Welt.",
+                            dsl: ["set_weather"],
+                        });
+                        out.translateSceneOk =
+                            ts.ok === true && !!ts.scene && ts.scene.ground.style === "hills";
+                        // buildTranslatedWorld — eine übersetzte Welt aufbauen.
+                        r.acceptTranslatedManifest({
+                            id: "voxel-bau",
+                            label: "Voxel-Bau",
+                            desc: "Eine Voxel-Welt mit Wetter.",
+                            dsl: ["set_weather", "place_block"],
+                        });
+                        out.beforeBuildNotReachable = r.state.customWorlds["voxel-bau"].reachable === false;
+                        const bw = await r.buildTranslatedWorld("voxel-bau");
+                        const built = r.state.customWorlds["voxel-bau"];
+                        out.buildAttachesScene =
+                            bw.ok === true &&
+                            !!built.scene &&
+                            built.reachable === true &&
+                            built.world === "worlds/translated/index.html";
+                        out.buildUnknownRejected = (await r.buildTranslatedWorld("nirgendwo")).reason === "world_unknown";
+                        // Eine nicht-übersetzte Welt lässt sich nicht aufbauen.
+                        r.state.customWorlds["plain-w"] = {
+                            id: "plain-w",
+                            label: "Plain",
+                            world: "worlds/skeleton/index.html",
+                            dsl: [],
+                            reachable: true,
+                        };
+                        out.buildNonTranslatedRejected =
+                            (await r.buildTranslatedWorld("plain-w")).reason === "not_translated";
+                        delete r.state.customWorlds["plain-w"];
+                        // translateWorldScene → no_scene_in_response bei Müll.
+                        r.llmCall = async () => ({ raw: "ich weiss es nicht" });
+                        out.translateSceneNoScene =
+                            (await r.translateWorldScene({ id: "x", label: "X", desc: "egal egal" })).reason ===
+                            "no_scene_in_response";
+                    } finally {
+                        r.llmCall = origLlm;
+                    }
+                    // _sanitizeImportedManifest bewahrt die Szene.
+                    const reSan = r._sanitizeImportedManifest(r.state.customWorlds["voxel-bau"]);
+                    out.sanitizeKeepsScene = !!reSan && !!reSan.scene && reSan.scene.ground.style === "hills";
+                    // localStorage-Rundlauf — die aufgebaute Welt überlebt.
+                    const reloaded = r._loadCustomWorlds();
+                    out.roundtripKeepsScene =
+                        !!reloaded["voxel-bau"] &&
+                        !!reloaded["voxel-bau"].scene &&
+                        reloaded["voxel-bau"].reachable === true;
+                    // obtainPortalForWorld holt jetzt die AUFGEBAUTE übersetzte Welt.
+                    const ob = r.obtainPortalForWorld("voxel-bau");
+                    const portalBp = r.state.blueprints["portal_voxel-bau"];
+                    out.obtainBuilt =
+                        ob.ok === true &&
+                        !!portalBp &&
+                        !!portalBp.portalMeta &&
+                        portalBp.portalMeta.world === "worlds/translated/index.html" &&
+                        portalBp.portalMeta.translatedWorldId === "voxel-bau";
+                    // _sanitizePortalMeta bewahrt translatedWorldId.
+                    const sm = r._sanitizePortalMeta(
+                        { world: "worlds/translated/index.html", label: "X", translatedWorldId: "voxel-bau" },
+                        "X"
+                    );
+                    out.portalMetaKeepsId = sm.translatedWorldId === "voxel-bau";
+                    // buildStateSnapshot/loadState — translatedWorldId überlebt.
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_voxel-bau");
+                    out.snapKeepsId = !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.translatedWorldId === "voxel-bau";
+                    delete r.state.blueprints["portal_voxel-bau"];
+                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+                    const reBp = r.state.blueprints["portal_voxel-bau"];
+                    out.loadKeepsId = !!reBp && !!reBp.portalMeta && reBp.portalMeta.translatedWorldId === "voxel-bau";
+                    // _portalSendEnter trägt die Szene mit (Fake-Overlay).
+                    const savedPo = r._portalOverlay;
+                    let captured = null;
+                    r._portalOverlay = {
+                        translatedWorldId: "voxel-bau",
+                        iframe: { contentWindow: { postMessage: (m) => (captured = m) } },
+                    };
+                    r._portalSendEnter();
+                    r._portalOverlay = savedPo;
+                    out.enterCarriesScene =
+                        !!captured && captured.type === "enter" && !!captured.scene && !!captured.scene.ground;
+                    // renderLibraryUI: aufgebaute Welt → aktiver „Portal holen" + „neu aufbauen".
+                    r.renderLibraryUI();
+                    const builtCard = Array.from(document.querySelectorAll("#library-list .library-card")).find((c) =>
+                        /Voxel-Bau/.test(c.textContent)
+                    );
+                    out.uiBuiltCard =
+                        !!builtCard &&
+                        !!builtCard.querySelector(".library-rebuild") &&
+                        !builtCard.querySelector(".library-get[disabled]") &&
+                        !builtCard.querySelector(".library-build");
+                    // Eine NOCH NICHT aufgebaute übersetzte Welt → „Welt aufbauen".
+                    r.acceptTranslatedManifest({ id: "voxel-roh", label: "Voxel-Roh", desc: "Roh.", dsl: [] });
+                    r.renderLibraryUI();
+                    const rohCard = Array.from(document.querySelectorAll("#library-list .library-card")).find((c) =>
+                        /Voxel-Roh/.test(c.textContent)
+                    );
+                    out.uiBuildButton = !!rohCard && !!rohCard.querySelector(".library-build");
+                    // Aufräumen.
+                    r.state.customWorlds = {};
+                    r._saveCustomWorlds();
+                    delete r.state.blueprints["portal_voxel-bau"];
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_voxel") === 0) {
+                            r.state.player.inventory[i] = null;
+                        }
+                    }
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (transl2Results && !transl2Results.error) {
+                check(
+                    "KI-Übersetzer P2: _sanitizeWorldScene/_buildSceneTranslatorPrompt/translateWorldScene/buildTranslatedWorld/_runWorldBuild existieren",
+                    transl2Results.methods
+                );
+                check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
+                check("KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema", transl2Results.promptNamesSchema);
+                check("KI-Übersetzer P2: _sanitizeWorldScene liefert aus {} eine gültige Szene", transl2Results.sanitizeDefault);
+                check("KI-Übersetzer P2: _sanitizeWorldScene ist crash-frei bei Müll/null", transl2Results.sanitizeGarbage);
+                check("KI-Übersetzer P2: _sanitizeWorldScene clampt Farbe + Objekt-Zahl + Licht", transl2Results.sanitizeClamps);
+                check("KI-Übersetzer P2: _sanitizeWorldScene filtert dslEffects-Schlüssel", transl2Results.sanitizeDslEffects);
+                check("KI-Übersetzer P2: translateWorldScene liefert eine sanitierte Szene", transl2Results.translateSceneOk);
+                check("KI-Übersetzer P2: translateWorldScene meldet no_scene_in_response bei Müll", transl2Results.translateSceneNoScene);
+                check("KI-Übersetzer P2: eine übersetzte Welt ist vor dem Aufbau nicht erreichbar", transl2Results.beforeBuildNotReachable);
+                check("KI-Übersetzer P2: buildTranslatedWorld heftet die Szene an + macht die Welt betretbar", transl2Results.buildAttachesScene);
+                check("KI-Übersetzer P2: buildTranslatedWorld lehnt eine unbekannte Welt ab", transl2Results.buildUnknownRejected);
+                check("KI-Übersetzer P2: buildTranslatedWorld lehnt eine nicht-übersetzte Welt ab", transl2Results.buildNonTranslatedRejected);
+                check("KI-Übersetzer P2: _sanitizeImportedManifest bewahrt die Szene", transl2Results.sanitizeKeepsScene);
+                check("KI-Übersetzer P2: eine aufgebaute Welt überlebt den localStorage-Rundlauf", transl2Results.roundtripKeepsScene);
+                check("KI-Übersetzer P2: obtainPortalForWorld holt eine aufgebaute übersetzte Welt (Portal mit translatedWorldId)", transl2Results.obtainBuilt);
+                check("KI-Übersetzer P2: _sanitizePortalMeta bewahrt translatedWorldId", transl2Results.portalMetaKeepsId);
+                check("KI-Übersetzer P2: translatedWorldId überlebt den buildStateSnapshot/loadState-Rundlauf", transl2Results.snapKeepsId && transl2Results.loadKeepsId);
+                check("KI-Übersetzer P2: _portalSendEnter trägt die deklarative Szene in die Sub-Welt", transl2Results.enterCarriesScene);
+                check("KI-Übersetzer P2: renderLibraryUI rendert 'Welt aufbauen' bzw. nach dem Aufbau 'Portal holen' + 'neu aufbauen'", transl2Results.uiBuildButton && transl2Results.uiBuiltCard);
+            } else {
+                check(
+                    "KI-Übersetzer P2: Phase-2-Tests laufen",
+                    false,
+                    transl2Results ? transl2Results.error : "no result"
+                );
+            }
+
+            // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
+            const sandboxResults = await page
+                .evaluate(async () => {
+                    const r = window.anazhRealm;
+                    const out = {};
+                    const REG = r.constructor.WORLD_REGISTRY;
+                    // schwarm in der Registry, als sandboxed markiert.
+                    out.registryEntry =
+                        !!REG.schwarm &&
+                        REG.schwarm.trust === "sandboxed" &&
+                        typeof REG.schwarm.desc === "string" &&
+                        Array.isArray(REG.schwarm.dsl) &&
+                        REG.schwarm.dsl.length > 0;
+                    // Built-in-Welten bleiben trusted (kein sandboxed).
+                    out.builtinsTrusted =
+                        REG.skeleton.trust !== "sandboxed" &&
+                        REG.fluid.trust !== "sandboxed" &&
+                        REG.terrain.trust !== "sandboxed";
+                    // _sanitizePortalMeta: default trusted, bewahrt sandboxed, Müll → trusted.
+                    out.sanitizeTrust =
+                        r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "X").trust === "trusted" &&
+                        r._sanitizePortalMeta({ world: "worlds/schwarm/index.html", trust: "sandboxed" }, "X").trust ===
+                            "sandboxed" &&
+                        r._sanitizePortalMeta({ world: "worlds/skeleton/index.html", trust: "BÖSE" }, "X").trust ===
+                            "trusted";
+                    // aimBlueprintAtWorld trägt die Vertrauensstufe in den Bauplan.
+                    r.cloneBlueprint("welt_portal", "_t_sb");
+                    r.aimBlueprintAtWorld("_t_sb", "schwarm");
+                    r.cloneBlueprint("welt_portal", "_t_tr");
+                    r.aimBlueprintAtWorld("_t_tr", "terrain");
+                    out.aimCarriesTrust =
+                        r.state.blueprints["_t_sb"].portalMeta.trust === "sandboxed" &&
+                        r.state.blueprints["_t_tr"].portalMeta.trust === "trusted";
+                    delete r.state.blueprints["_t_sb"];
+                    delete r.state.blueprints["_t_tr"];
+                    // obtainPortalForWorld holt die Schwarm-Welt.
+                    const ob = r.obtainPortalForWorld("schwarm");
+                    const pbp = r.state.blueprints["portal_schwarm"];
+                    out.obtainSchwarm =
+                        ob.ok === true &&
+                        !!pbp &&
+                        pbp.portalMeta.world === "worlds/schwarm/index.html" &&
+                        pbp.portalMeta.trust === "sandboxed";
+                    // _buildPortalOverlay: sandboxed → allow-scripts ALLEIN.
+                    r._buildPortalOverlay({
+                        world: "worlds/schwarm/index.html",
+                        label: "S",
+                        dsl: ["sturm"],
+                        trust: "sandboxed",
+                    });
+                    out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
+                    out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
+                    r._disposePortalOverlay();
+                    // trusted → mit allow-same-origin.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+                    out.overlayTrustedAttr = /allow-same-origin/.test(
+                        r._portalOverlay.iframe.getAttribute("sandbox")
+                    );
+                    r._disposePortalOverlay();
+                    // _portalSendEnter / _portalForwardDsl: targetOrigin "*" für null-origin.
+                    const savedPo = r._portalOverlay;
+                    let capEnter = null;
+                    let capDsl = null;
+                    r._portalOverlay = {
+                        trust: "sandboxed",
+                        iframe: { contentWindow: { postMessage: (m, o) => (capEnter = { m: m, o: o }) } },
+                    };
+                    r._portalSendEnter();
+                    r._portalOverlay.iframe.contentWindow.postMessage = (m, o) => (capDsl = { m: m, o: o });
+                    r._portalForwardDsl(["sturm"]);
+                    out.starForSandbox =
+                        !!capEnter && capEnter.o === "*" && capEnter.m.type === "enter" && !!capDsl && capDsl.o === "*";
+                    let capTrusted = null;
+                    r._portalOverlay = {
+                        trust: "trusted",
+                        iframe: { contentWindow: { postMessage: (m, o) => (capTrusted = { m: m, o: o }) } },
+                    };
+                    r._portalSendEnter();
+                    out.originForTrusted = !!capTrusted && capTrusted.o === window.location.origin;
+                    r._portalOverlay = savedPo;
+                    // buildStateSnapshot/loadState — trust überlebt den Rundlauf.
+                    const snap = r.buildStateSnapshot();
+                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_schwarm");
+                    delete r.state.blueprints["portal_schwarm"];
+                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+                    const reBp = r.state.blueprints["portal_schwarm"];
+                    out.trustRoundtrip =
+                        !!snapBp &&
+                        snapBp.portalMeta &&
+                        snapBp.portalMeta.trust === "sandboxed" &&
+                        !!reBp &&
+                        reBp.portalMeta &&
+                        reBp.portalMeta.trust === "sandboxed";
+                    // renderLibraryUI rendert eine Schwarm-Welt-Karte.
+                    r.renderLibraryUI();
+                    out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
+                        /Schwarm-Welt/.test(c.textContent)
+                    );
+                    // worlds/schwarm/index.html ist erreichbar (echte Datei).
+                    out.worldReachable = await fetch("worlds/schwarm/index.html")
+                        .then((res) => res.ok)
+                        .catch(() => false);
+                    // Aufräumen.
+                    delete r.state.blueprints["portal_schwarm"];
+                    for (let i = 0; i < r.state.player.inventory.length; i++) {
+                        const s = r.state.player.inventory[i];
+                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) {
+                            r.state.player.inventory[i] = null;
+                        }
+                    }
+                    r.renderLibraryUI();
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+
+            if (sandboxResults && !sandboxResults.error) {
+                check("Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl", sandboxResults.registryEntry);
+                check("Untrusted-Tor: Built-in-Welten (skeleton/fluid/terrain) bleiben trusted", sandboxResults.builtinsTrusted);
+                check("Untrusted-Tor: _sanitizePortalMeta — default trusted, bewahrt sandboxed, Müll-trust → trusted", sandboxResults.sanitizeTrust);
+                check("Untrusted-Tor: aimBlueprintAtWorld trägt die Vertrauensstufe (schwarm→sandboxed, terrain→trusted)", sandboxResults.aimCarriesTrust);
+                check("Untrusted-Tor: obtainPortalForWorld holt die Schwarm-Welt (Portal trägt trust:sandboxed)", sandboxResults.obtainSchwarm);
+                check("Untrusted-Tor: _buildPortalOverlay — sandboxed → iframe-sandbox ist 'allow-scripts' ALLEIN", sandboxResults.overlaySandboxAttr);
+                check("Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin", sandboxResults.overlayTrustedAttr);
+                check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);
+                check("Untrusted-Tor: _portalSendEnter + _portalForwardDsl posten mit '*' an eine null-origin-Welt", sandboxResults.starForSandbox);
+                check("Untrusted-Tor: _portalSendEnter postet mit dem Seiten-Origin an eine trusted Welt", sandboxResults.originForTrusted);
+                check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
+                check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
+                check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
+            } else {
+                check(
+                    "Untrusted-Tor: V8.70-Tests laufen",
+                    false,
+                    sandboxResults ? sandboxResults.error : "no result"
+                );
+            }
+
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
             const v840Results = await page
                 .evaluate(() => {

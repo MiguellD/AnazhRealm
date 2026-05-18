@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — Vollumfänglich
 
-Stand: 17.05.2026 (V8.67, W11 V4 Voice-Sync — der Präsenz-Bogen (sehen/spüren/kennen/**hören**) schliesst sich: ein Begleiter-Output reist via `companion-say` an alle Mitspieler, sie spielen ihn via SpeechSynthesis ab; der Begleiter bekommt eine wählbare, mitreisende Stimme. Der letzte offene Roadmap-Punkt vor dem KI-Übersetzer. Davor V8.62-V8.66 W7 Compute-Sharing KOMPLETT (Phase 1-4) — der WebRTC-Mesh + alle benannten Multi-User-Lücken. P1 (V8.62): echte WebRTC-DataChannels (signaling-server wird Rendezvous, pos/dsl/soul/aura/vibe peer-to-peer, Mesh-Komplett-Wand). P2 (V8.63): der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken (`world-pull`/`world-chunk`), Guest-Resync per Knopf. V8.64: Multi-User-Bau-Sync (`confirmBuild`/`harvestArchitecture` broadcasten via geteilter `archId` + `remove_architecture`-Op). P3 (V8.65): LLM-Pool — ein Peer teilt seine „Stimme" (Opt-in + Rate-Limit + dslRun-Sandbox), ein schlüsselloser Mitspieler routet Chat über ihn. P4 (V8.66): Public-Lobby (`lobby-publish`/`lobby-list`, Räume browsbar). Kreatur-Sicht-Sync (V8.66): jeder Peer streamt SEINE Kreaturen, Mitspieler rendern sie als Sicht-Schicht. Davor: W14 (Bibliothek) Phase 1-3 komplett (V8.58-V8.61), W13 Vibe-Pass komplett (V8.54-V8.56), W12 Welt-Portal komplett (V8.51-V8.53). 2545/2545 Invarianten grün, Audit-Strict 0 Failures, W7- + W11-V4-Wellen Zwei-Browser-verifiziert. Offener Horizont: der KI-Übersetzer (W14). Detail in `CLAUDE.md`.)
+Stand: 18.05.2026 (V8.70, Untrusted-Welt-Tor — eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal: `portalMeta.trust:"sandboxed"` → das iframe bekommt `allow-scripts` ALLEIN (opake null-Herkunft), fremder Code läuft voll, kann AnazhRealms localStorage/DOM/Cookies aber nicht berühren. Die neue `worlds/schwarm/`-Welt (eine eigenständige 2D-Boids-Engine) beweist es. Davor V8.68/V8.69 der KI-Übersetzer (Phase 1 Manifest, Phase 2 deklarative Szene + generischer Renderer — eine übersetzte Welt wird betretbar). Davor V8.67 W11 V4 Voice-Sync — der Präsenz-Bogen (sehen/spüren/kennen/**hören**) schliesst sich: ein Begleiter-Output reist via `companion-say` an alle Mitspieler, sie spielen ihn via SpeechSynthesis ab; der Begleiter bekommt eine wählbare, mitreisende Stimme. Der letzte offene Roadmap-Punkt vor dem KI-Übersetzer. Davor V8.62-V8.66 W7 Compute-Sharing KOMPLETT (Phase 1-4) — der WebRTC-Mesh + alle benannten Multi-User-Lücken. P1 (V8.62): echte WebRTC-DataChannels (signaling-server wird Rendezvous, pos/dsl/soul/aura/vibe peer-to-peer, Mesh-Komplett-Wand). P2 (V8.63): der Welt-Snapshot reist mesh-nativ in 16-KiB-Stücken (`world-pull`/`world-chunk`), Guest-Resync per Knopf. V8.64: Multi-User-Bau-Sync (`confirmBuild`/`harvestArchitecture` broadcasten via geteilter `archId` + `remove_architecture`-Op). P3 (V8.65): LLM-Pool — ein Peer teilt seine „Stimme" (Opt-in + Rate-Limit + dslRun-Sandbox), ein schlüsselloser Mitspieler routet Chat über ihn. P4 (V8.66): Public-Lobby (`lobby-publish`/`lobby-list`, Räume browsbar). Kreatur-Sicht-Sync (V8.66): jeder Peer streamt SEINE Kreaturen, Mitspieler rendern sie als Sicht-Schicht. Davor: W14 (Bibliothek) Phase 1-3 komplett (V8.58-V8.61), W13 Vibe-Pass komplett (V8.54-V8.56), W12 Welt-Portal komplett (V8.51-V8.53). 2597/2597 Invarianten grün, Audit-Strict 0 Failures. Offen: der echte Fremd-Engine-Bogen — der Auto-Vendor-Pfad (ein fremdes Repo dockt ohne Handarbeit an) + die Mesh-Welt-Verteilung (Welten reisen peer-to-peer). Detail in `CLAUDE.md`.)
 
 Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-Endziel** (Welten-Ultiversum). Sie ergänzt `state-of-realm.md` (Was/Warum) um eine puren Plan-Sicht (Wann/Wie). Aufwandsschätzungen sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase; gerechnet wird linear, ohne Puffer.
 
@@ -8,17 +8,17 @@ Diese Doc beschreibt das **gesamte Projekt vom heutigen Stand bis zum Vision-End
 
 ---
 
-## 1. Wo wir stehen (Mai 2026, V8.67)
+## 1. Wo wir stehen (Mai 2026, V8.70)
 
-✅ **Ring 0-11.5 + Welle 1-14 + W7 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief und mesh-nativ (der Mitspieler ist sein echter Soul — man sieht/spürt/kennt/**hört** ihn, der Präsenz-Bogen ist mit W11 V4 geschlossen; ein WebRTC-Mesh trägt pos/dsl/soul/aura/vibe/companion-say peer-to-peer), das Welt-Portal trägt fremde Engines (W12), der Avatar ist eine souveräne ed25519-Identität (W13), die Bibliothek von Alexandria steht (W14), und das Compute-Sharing ist gebaut (W7 — WebRTC-Mesh, Welt-Snapshot mesh-nativ, LLM-Pool, Public-Lobby). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **2545/2545 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
+✅ **Ring 0-11.5 + Welle 1-14 + W7 sind live.** Der Kern atmet (Hylomorphismus-Crafting, Tag-Nacht, lebendige Welt), der Multi-User ist tief und mesh-nativ (der Mitspieler ist sein echter Soul — man sieht/spürt/kennt/**hört** ihn, der Präsenz-Bogen ist mit W11 V4 geschlossen; ein WebRTC-Mesh trägt pos/dsl/soul/aura/vibe/companion-say peer-to-peer), das Welt-Portal trägt fremde Engines (W12), der Avatar ist eine souveräne ed25519-Identität (W13), die Bibliothek von Alexandria steht (W14), und das Compute-Sharing ist gebaut (W7 — WebRTC-Mesh, Welt-Snapshot mesh-nativ, LLM-Pool, Public-Lobby). Chunk-Physik nutzt `btBvhTriangleMeshShape` (visuelles Mesh = Collider). 120 fps im Browser, **2597/2597 Playtest-Invarianten grün**, Audit-Strict 0 Failures.
 
 **Die drei jüngsten großen Bögen**:
 
-- **W12 Welt-Portal (V8.51-V8.53)** — ein Bauplan mit emergenter Rolle „portal" führt durch ein sandboxed iframe in eine fremde Engine. Zwei reale Sub-Welten docken an (three-fluid-fx, three.terrain.js), eine generische DSL-Brücke trägt sie alle, der Rückkanal meldet Ereignisse zurück ins Heimat-Journal (geloggt, nie ausgeführt — die Asymmetrie ist die Sicherheits-Wand). Detail: `docs/world-portal.md`.
-- **W13 Vibe-Pass (V8.54-V8.56)** — der Avatar erhält ein ed25519-Schlüsselpaar (WebCrypto nativ, kein Vendoring), signiert seine Baupläne über ihre Substanz, und im Multi-User beweist jeder Mitspieler seine Identität über einen peerId-gebundenen Beweis. Self-Sovereign Identity ohne Coin, ohne zentrale Authority.
-- **Atmosphäre-Tiefe + Co-Schöpfer (V8.08-V8.50)** — Welt-Lebendigkeit (Tag-Nacht, Wetter-Übergänge, Fauna-Lifecycle), die Atmosphäre-Welle 6.G4 (Sonne/Hemisphere/Fog, Sterne als Points, Cel-Shading, Wasser mit Wellen+Physik), Kreaturen als vollwertige Co-Schöpfer-Wesen (Welle 6.H V2, 14/14), Substanz-Rolle (V8.35), ein gegen Browser-Tests gehärtetes LLM-Provider-System.
+- **Untrusted-Welt-Tor (V8.70)** — eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal: `portalMeta.trust:"sandboxed"` → das iframe bekommt `allow-scripts` allein (opake null-Herkunft), voller Lauf drinnen, null Reichweite zu AnazhRealm. `worlds/schwarm/` (eine eigenständige 2D-Boids-Engine) beweist es. Detail: `docs/world-portal.md`.
+- **KI-Übersetzer (V8.68-V8.69)** — ein LLM dockt eine fremde Welt automatisch an: erst ein Portal-Manifest, dann eine deklarative Szene, die der generische `worlds/translated/`-Renderer betretbar macht. Der LLM-Output bleibt durchgehend DATEN (sanitiert), nie ausgeführter Code.
+- **W7 Compute-Sharing (V8.62-V8.66)** — der WebRTC-Mesh: echte peer-to-peer DataChannels (Position/DSL/Soul/Aura/Stimme), mesh-nativer Welt-Snapshot, geteilter LLM-Pool, Public-Lobby. Davor W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek.
 
-Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind in V2+. Das Hylomorphismus-Crafting ist vertikal integriert, der Co-Schöpfer-Kreis geschlossen, das Welten-Ultiversum (Ringe 8-11.5) vollständig. **Was jetzt vor uns liegt**: die grossen Vision-Ringe sind gebaut — W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing alle komplett. Offener Horizont: der **KI-Übersetzer** (W14 — ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter; bewusst zuletzt wegen LLM-generiertem Code in der Sandbox). **W11 V4** (Voice-Sync) ist mit V8.67 erledigt. Danach ist die Roadmap-Substanz erfüllt; weiteres Wachstum folgt der Vision aus den vier Testamenten.
+Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind in V2+. Das Hylomorphismus-Crafting ist vertikal integriert, der Co-Schöpfer-Kreis geschlossen, das Welten-Ultiversum (Ringe 8-11.5) vollständig. **Was jetzt vor uns liegt**: die grossen Vision-Ringe sind gebaut — W12 Welt-Portal, W13 Vibe-Pass, W14 Bibliothek, W7 Compute-Sharing alle komplett. Der **KI-Übersetzer** ist vollständig (V8.68 Manifest + V8.69 deklarative Szene). Offen ist der **echte Fremd-Engine-Bogen** — das automatische Tor zu fremden Vibecode-Engines: **V8.70** baute seinen Schlüsselstein (das Untrusted-Welt-Tor — eine echte fremde Engine läuft null-origin sandgesichert); es folgen der Auto-Vendor-Pfad (W15 — ein fremdes Repo dockt ohne Handarbeit an), die Mesh-Welt-Verteilung (W16 — Welten reisen peer-to-peer) und die Multiplayer-Sub-Welten (W17 — eine Gruppe taucht gemeinsam in eine Server-Welt, über den Transport-Shim + das Mesh-als-Server). **Detailliert geplant in §3 — „Der Fremd-Engine-Bogen (W15–W17)".**
 
 ---
 
@@ -63,11 +63,11 @@ Alle 5 Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) sind i
 | W7 | **Compute-Sharing (WebRTC-Mesh)** — P1 echte WebRTC-DataChannels, P2 Welt-Snapshot mesh-nativ (chunked), P3 LLM-Pool über Peers (eine geteilte Stimme), P4 Public-Lobby (Räume browsbar). Plus Multi-User-Bau-Sync + Kreatur-Sicht-Sync. „Distributed Chunk-Pre-Gen" entfiel bewusst (deterministisches Terrain rechnet jeder Client selbst — die echte Last war der Snapshot). | ✅ live (V8.62-V8.66) | erledigt | — |
 | W12 | **Welt-Portal (Bibliothek von Alexandria, V8.23 umbenannt von WebGPU)** — Bauplan-Rolle „portal" + portalMeta (engine + manifest). Sub-Engine-Adapter in iframe/Worker mit Sandbox. DSL als Universal-Bridge zwischen Engines (jede Engine implementiert DSL-Subset). Welt-Manifest-Schema (engine + dsl_subset + signature). PoC mit `three-fluid-fx` (13 KB, klare DSL-Subset, visueller WOW). Detail in `docs/world-portal.md`. | ✅ **Phase 1+2+3 komplett (V8.51-V8.53)** — Phase 1: Portal-Skelett (emergente Rolle „portal", sandboxed iframe, Betreten/Pause/Rückkehr). Phase 2: zwei fremde Engines (three-fluid-fx + three.terrain.js), das generische DSL-Protokoll (Manifest pro Welt), die `WORLD_REGISTRY` + spieler-erreichbares Portal-Zielen, avatar-abgeleitete Tor-Größe. Phase 3: der Rückkanal (Sub-Welt → Heimat-Journal, geloggt nie ausgeführt — die Asymmetrie ist die Sicherheits-Wand) + die native Manifest-Stufe (jede Welt bringt ihr `manifest.json` mit; Drei-Stufen-Klarheit ausgestellt/übersetzt/nativ). Schöpfer-Browser-Test bestätigt P1+P2. Der KI-Übersetzer (fremdes Repo automatisch andocken) bleibt W14. | ✅ komplett | W11 ext. + audit:strict |
 | W13 | **Vibe-Pass (Self-Sovereign Identity)** — Crypto-Keypair (ed25519, lokal generiert). Schöpfer signiert eigene Baupläne/Welten. Avatar-Identifier = Public-Key. Kein Coin/NFT-Hype, nur Authentizität. Vorbedingung für Welt-Portale die Authentizität brauchen. | ✅ **komplett (V8.54-V8.56)** — Phase 1: Schlüssel-Grundlage (ed25519-Keypair, WebCrypto nativ; Sign/Verify-Primitive; globale localStorage-Persistenz `anazh.vibePass`, nie im Welt-Save). Phase 2: Bauplan-Signaturen — `signBlueprint`/`verifyBlueprintSignature` signieren die Substanz (nicht den Namen), vier Status-Stufen, Werkstatt-Anzeige, Signatur reist durch Save/Welt-Tor/Fusion. Phase 3: Vibe-Pass-Identität im Multi-User — der `vibe`-WS-Typ trägt vibePassId + einen peerId-gebundenen Beweis, der Mitspieler ist beweisbar sein Schlüssel, verifiziertes Name-Schild. | ✅ komplett | W12 ✅ |
-| W14 | **Bibliothek (Welt-Registry)** — die letzte große Vision-Schicht. Browsbarer Bibliothek-Tab + „Portal holen" (P1 ✅ V8.58); der Spieler signiert eine Welt mit dem Vibe-Pass, „signiert von <Autor>" + W13 V2 (P2 ✅ V8.60); fremde Welt-Manifeste exportieren/importieren, die Bibliothek wird ein wachsender Index (P3 ✅ V8.61). Der KI-Übersetzer (ein fremdes Repo automatisch andocken) bleibt der Horizont innerhalb von W14. | ✅ **komplett (V8.58/V8.60/V8.61)** | — | W13 ✅ |
+| W14 | **Bibliothek (Welt-Registry)** — die letzte große Vision-Schicht. Browsbarer Bibliothek-Tab + „Portal holen" (P1 ✅ V8.58); der Spieler signiert eine Welt mit dem Vibe-Pass, „signiert von <Autor>" + W13 V2 (P2 ✅ V8.60); fremde Welt-Manifeste exportieren/importieren, die Bibliothek wird ein wachsender Index (P3 ✅ V8.61). Der KI-Übersetzer ist mit V8.68/V8.69 vollständig; V8.70 (Untrusted-Welt-Tor) lässt eine echte, ungeprüfte fremde Engine null-origin sandgesichert laufen. | ✅ **komplett (V8.58/V8.60/V8.61)** | — | W13 ✅ |
 | W13 V2 | **Vibe-Pass trägt das Schaffen (§4)** — der Pass speichert nicht nur den Schlüssel, sondern die Avatar-Anpassungen: Custom-Seele, eigene Materialien, eigene Werkzeuge reisen mit, wenn der Spieler durch ein Portal in eine fremde Welt geht (`world-portal.md` §4). | ✅ live (V8.60, W14 P2 Teil B) | — | W13 ✅ |
 | W11 V4 | **Voice-Sync (Begleiter-Stimme im Multi-User)** — Mitspieler hören deinen Companion-Output (`companion-say`-Broadcast → SpeechSynthesis). Schließt den Präsenz-Bogen sehen/spüren/kennen/**hören**. | ✅ **live (V8.67)** | erledigt | W11 V3 ✅ |
 
-**Summe verbleibend**: die grossen Roadmap-Ringe sind gebaut. **Stand nach V8.67**: Atmosphäre ✅ → Multi-User-Tiefe ✅ → Hylomorphismus-Vollausbau ✅ (V8.35) → Welt-Portal-Protokoll ✅ (W12) → souveräne Identität ✅ (W13) → Bibliothek ✅ (W14 Phase 1-3) → Compute-Sharing ✅ (W7 Phase 1-4, WebRTC-Mesh + Multi-User-Bau-/Kreatur-Sync) → Voice-Sync ✅ (W11 V4 — der Präsenz-Bogen sehen/spüren/kennen/hören ist geschlossen). **Was offen bleibt**: der **KI-Übersetzer** (W14-Horizont — ein LLM vendort ein fremdes Repo, schreibt Manifest + Adapter; bewusst zuletzt, weil LLM-generierter Code in der Sandbox eine eigene Sicherheits-Welle ist). Danach ist die geplante Roadmap-Substanz erfüllt — weiteres Wachstum sind Wachstumsringe entlang der Vision der vier Testamente, kein vorgezeichneter Plan mehr.
+**Summe verbleibend**: die grossen Roadmap-Ringe sind gebaut. **Stand nach V8.67**: Atmosphäre ✅ → Multi-User-Tiefe ✅ → Hylomorphismus-Vollausbau ✅ (V8.35) → Welt-Portal-Protokoll ✅ (W12) → souveräne Identität ✅ (W13) → Bibliothek ✅ (W14 Phase 1-3) → Compute-Sharing ✅ (W7 Phase 1-4, WebRTC-Mesh + Multi-User-Bau-/Kreatur-Sync) → Voice-Sync ✅ (W11 V4 — der Präsenz-Bogen sehen/spüren/kennen/hören ist geschlossen) → KI-Übersetzer ✅ (Phase 1 V8.68 Manifest-Übersetzung, Phase 2 V8.69 deklarative Szene + generischer Renderer) → Untrusted-Welt-Tor ✅ (V8.70 — eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert; `worlds/schwarm/` ist der Beweis). **Offen — der echte Fremd-Engine-Bogen**: der Auto-Vendor-Pfad (ein fremdes Repo dockt ohne Handarbeit an) + die Mesh-Welt-Verteilung (Welten reisen peer-to-peer, die Spieler tragen die Bibliothek). V8.70 baute den Schlüsselstein; die zwei folgen.
 
 **Hinweis**: WebGPU+TSL ist nicht mehr eine eigene Welle — es ist eine **optionale Renderpipeline für eine andere Welt-Engine** im Welt-Portal-Konzept. Wenn jemand eine WebGPU-Welt veröffentlicht, läuft sie als Sub-Engine im iframe. Kein Pflicht-Migrationspfad für den AnazhRealm-Kern.
 
@@ -630,13 +630,88 @@ Geliefert in einer Session (in Kombination mit Ring 10.5 für die Vorbedingung):
 
 1. Welten teilen + in die eigene Bibliothek importieren (der dezentrale Teil — `world-portal.md` §2 Schicht 3).
 2. Realistischer Anfang: die bestehende Welt-Tor-JSON (Ring 9) IST der Teilen-Mechanismus; die Bibliothek wird ein Index importierbarer Welten. Kein IPFS, keine zentrale Authority (Heilige Lektion — kein neuer Dienst, wo ein bestehender reicht).
-3. Der KI-Übersetzer (ein LLM liest ein fremdes Repo, vendort es, schreibt Manifest + Adapter — `world-portal.md` §3.3-Horizont) ist die Krönung, aber bewusst zuletzt: P1+P2 hängen nicht davon ab.
+3. Der KI-Übersetzer ist die Krönung — **vollständig (Phase 1 V8.68 + Phase 2 V8.69)**: Phase 1 die Manifest-Übersetzung (eine fremde Welt-Beschreibung → ein sanitiertes Portal-Manifest, LLM-Output als Daten); Phase 2 die deklarative Szene + der generische Renderer `worlds/translated/` — die übersetzte Welt wird betretbar. Der LLM-Output bleibt durchgehend DATEN, kein ausgeführter Code: statt einen fremden Adapter zu vendorn, wird die Welt in AnazhRealms eigene deklarative Sprache wiedergeboren.
 
 **Folgerung / Disziplin**: W14 ist groß, aber kein neuer Stamm — eine browsbare Registry + Portal-Baupläne sind ein Wachstumsring auf W12+W13. Phase 1 + 2 sind klar umrissen und browser-testbar; Phase 3 (Dezentralisierung) ist ein Horizont, der konkret ausgearbeitet wird, *wenn* P1+P2 stehen — nicht vorher (keine Spec für ein Szenario, das es noch nicht gibt).
 
 **Akzeptanz**: der Schöpfer öffnet den Bibliothek-Tab, sieht die verfügbaren Welten, holt sich mit einem Klick ein Portal, platziert es, geht hindurch — und beim Betreten einer veröffentlichten Welt steht „signiert von &lt;Autor&gt;".
 
 **Vision-Wort**: „**Andere bauen Welten FÜR Spieler. Wir bauen das Tor, das sie alle verbindet.**" Der Knotenpunkt, durch den man geht.
+
+---
+
+### Der Fremd-Engine-Bogen (W15–W17): das echte automatische Welt-Tor
+
+**Stand**: das Untrusted-Welt-Tor (V8.70) ist der Schlüsselstein — eine echte, ungeprüfte fremde Engine läuft null-origin sandgesichert hinter dem Portal (`worlds/schwarm/` beweist es). Was bleibt: das Tor **automatisch** machen (jedes fremde Repo dockt ohne Handarbeit an) und **mehrspielerfähig** (eine Gruppe taucht gemeinsam in eine fremde Welt — auch in eine, die einen Server braucht). Niemand soll die Bibliothek verlassen müssen, um gemeinsam ein Buch zu lesen.
+
+**Das Vollbild — fünf Schichten.** Jede baut auf der vorigen; eine fremde Welt nutzt so viele, wie sie braucht.
+
+| Schicht | Was | Stand |
+|---|---|---|
+| 0 — Sandbox | das null-origin-iframe: fremder Code läuft voll, kann AnazhRealm nicht berühren | ✅ V8.70 |
+| 1 — DSL-Brücke | der universelle Befehls-Kanal (postMessage, JSON, asymmetrisch) | ✅ W12 |
+| 2 — Transport-Shim | die Netz-APIs der fremden Welt (`WebSocket`/`fetch`/`RTCPeerConnection`) werden durch AnazhRealm umgeleitet | offen — W17 |
+| 3 — Mesh-als-Server | AnazhRealms W7-Mesh trägt den Verkehr; ein Peer hostet die Server-Logik | offen — W17 |
+| 4 — Gruppen-Portal | eine Gruppe tritt gemeinsam durch ein Tor, teilt den Mesh-Raum der Sub-Welt | offen — W17 |
+
+**Die ehrliche Server-Taxonomie.** Nicht jede fremde Welt ist gleich. Der Auto-Vendor (W15) fragt vor jeder Welt: *was tut ihr Server — falls sie einen hat?*
+
+1. **Rein-clientseitige Welt** (three-fluid-fx, THREE.Terrain, die Schwarm-Welt) — kein Server. Läuft schon vollständig (V8.70). ✅
+2. **Relay-Server-Welt** — der „Server" ist nur ein Nachrichten-Verteiler (A sendet, der Server broadcastet an B/C/D). **Voll lösbar:** der Transport-Shim leitet die `WebSocket` der Welt auf AnazhRealms W7-Mesh um — das Mesh IST der Relay. Die Welt läuft komplett peer-to-peer, ohne je einen echten Server.
+3. **JS-Compute-Server-Welt** — der Server rechnet autoritativ (Node/JS). **Lösbar:** JS läuft im Browser — ein Peer der Gruppe wird der Compute-Host (sein Tab IST der Server), das Mesh trägt den Verkehr, Host-Migration fängt das Verlassen ab. Der Multiplayer-Shooter (WS-Server, meist Relay + etwas Logik) fällt hierher.
+4. **Native-Compute-Server-Welt** (voxelize — Rust-Server) — **zwei Wege:** (a) Rust kompiliert zu **WASM** — lässt sich der Server `wasm32`-bauen, läuft er in einem Peer-Browser wie ein JS-Server; (b) lässt er sich nicht client-seitig bauen (echte TCP-Sockets, Datenbank, OS-Zugriff), ist die Welt eine **Brücken-Welt**: ihr Server läuft extern (der Vibecoder hostet ihn, oder ein Community-Seed-Knoten), AnazhRealm verbindet sich dorthin. **Auch dann verlässt niemand die Bibliothek** — man tritt durch das AnazhRealm-Portal, mit seiner Gruppe, über das Mesh; nur die schwere Server-Maschine steht draußen. Das Buch wird durch ein Fenster gelesen — aber gemeinsam, von hier aus.
+
+Der Auto-Vendor klassifiziert jede Welt in diese vier Stufen und schreibt die Stufe ins Manifest (`portalMeta.server`). Das Portal weiß dann, was zu tun ist.
+
+#### W15 — Auto-Vendor-Pfad (~3–5 Sessions)
+
+**Ziel:** ein fremdes Repo dockt ohne Handarbeit an. Heute sind `worlds/fluid/`, `worlds/terrain/`, `worlds/schwarm/` hand-vendort; W15 automatisiert das.
+
+1. Der save-server (läuft lokal, hat schon den V7.96-LLM-Proxy) bekommt einen `/api/vendor-world`-Endpunkt: er nimmt eine Repo-URL (oder ein hochgeladenes Bundle), holt die Dateien, schreibt sie nach `worlds/<id>/`.
+2. **Sicherheits-Disziplin** (wie der LLM-Proxy): URL-Whitelist (`github.com`/`raw.githubusercontent.com`/npm), Größen-Deckel, Pfad-Sanitizing (kein `..`-Ausbruch aus `worlds/`), kein Ausführen beim Vendoren — nur Schreiben.
+3. Ein LLM-Schritt liest das Repo + schreibt das Manifest (`{id, label, desc, dsl, engine-entry, server-Stufe}`). Der LLM schreibt **nicht** die Engine (das ist der fremde Code, unangetastet) — nur das Bindeglied: bei einer ES-Modul-Welt den bare-Import-Patch (wie three-fluid-fx in W12 hand-gemacht), bei einer Server-Welt den vorangestellten Transport-Shim.
+4. Die vendorte Welt ist `trust:"sandboxed"` (V8.70) — sie läuft null-origin. Sie landet in `worlds/<id>/` + bekommt einen Registry-Eintrag.
+5. **Der git-Kern ist die unzerstörbare Bibliothek:** eine vendorte + committete Welt ist für jeden Spieler dauerhaft da — versioniert, brennt nie. Der save-server-Pfad funktioniert in der Dev-Umgebung; ein Mensch reviewt + committet; danach hat es jeder.
+
+**Ehrlicher Umfang:** W15 vendort rein-clientseitige + Relay-Welten zuerst (sie laufen sofort). Compute-Server-Welten werden vendort + klassifiziert, aber erst mit W17 spielbar.
+
+**Akzeptanz:** der Schöpfer gibt eine GitHub-URL eines kleinen Three.js-Projekts ein, klickt „andocken", und nach dem Vendoren steht die Welt in der Bibliothek + ist betretbar.
+
+#### W16 — Mesh-Welt-Verteilung (~3–4 Sessions)
+
+**Ziel:** Welten reisen peer-to-peer. Eine Welt, die ein Spieler hat, kann ein anderer betreten, ohne dass sie im Repo liegt — die Spieler tragen die Bibliothek.
+
+1. Eine vendorte Welt wird **content-adressiert** (Hash über ihr Bundle). W7 P2 streamt schon den Welt-Snapshot in 16-KiB-Stücken über die DataChannels — derselbe Mechanismus trägt ein Welt-Bundle (`world-bundle-pull`/`world-bundle-chunk`, Spiegel von `world-pull`).
+2. Will ich das Portal einer Welt betreten, die ein Mitspieler hat und ich nicht, holt mein Client das Bundle peer-to-peer von ihm.
+3. **Die ehrliche Schicht-Trennung:** das git-Repo ist die *persistente* Bibliothek (was committet ist, ist immer da); das Mesh ist die *lebende* Verteilung (Welten reisen zwischen Online-Spielern). Ein Browser-Tab ist ein schwacher Knoten — fällt er weg, ist die Welt nicht verloren, nur über das Repo oder einen anderen Peer zu holen. Keine reine Browser-Wolke trägt die Bibliothek allein; das Repo ist der Boden.
+4. Eine peer-empfangene Welt läuft `trust:"sandboxed"` — eine fremde Welt von einem fremden Peer ist per Konstruktion ungeprüft; der Sandbox (V8.70) ist die Wand.
+
+**Akzeptanz:** zwei Spieler im selben Mesh-Raum; einer hat eine Welt vendort, der andere nicht; der zweite betritt ihr Portal, das Bundle reist peer-to-peer, beide sind in der Welt.
+
+#### W17 — Multiplayer-Sub-Welten: der Transport-Shim + das Mesh-als-Server (~6–8 Sessions, mehrere Phasen)
+
+**Die Antwort auf „wie tauchen wir gemeinsam in eine Server-Welt?".** Niemand verlässt die Bibliothek.
+
+**Phase A — der Transport-Shim.** Eine fremde Browser-Welt kann nur über `WebSocket`, `fetch`, `RTCPeerConnection`, `XMLHttpRequest` netzwerken — und alle vier sind globale Objekte. Der Auto-Vendor (W15) stellt der Welt-`index.html` ein kleines, von AnazhRealm geschriebenes **Shim-`<script>`** voran, das diese Globalen überschreibt, BEVOR der fremde Code läuft. Das Shim-`WebSocket` öffnet keinen echten Socket — es `postMessage`t an AnazhRealm. Die fremde Welt glaubt, sie habe einen Server; in Wahrheit fließt ihr Verkehr durch AnazhRealm. **Ein null-origin-iframe braucht dafür GAR KEINE Netz-Berechtigung** — `postMessage` quert die Sandbox-Grenze ohne CSP. Eine sandgesicherte Multiplayer-Welt ist so voll vernetzt, ohne je selbst ins Netz zu dürfen.
+
+**Phase B — das Mesh-als-Server.** AnazhRealm empfängt den Shim-Verkehr und routet ihn über das W7-Mesh:
+- **Relay-Welt:** das Mesh broadcastet — es IST der Server. Kein Host, kein externer Knoten.
+- **JS-Compute-Welt:** ein Peer der Gruppe wird der **Compute-Host** — die Server-Logik der Welt (JS) läuft in seinem Tab; das Mesh trägt den Verkehr. Verlässt der Host, wandert die Rolle (Host-Migration — W7s `worldRole`-Mechanik kennt Host/Guest schon).
+- **Native-Compute-Welt:** der Server als WASM in einem Peer-Tab, oder die Brücken-Welt (externer Server).
+
+**Phase C — das Gruppen-Portal.** Ein Mesh-Raum gruppiert schon Spieler (W7 P4 Lobby). Öffnet einer ein Portal, bekommen die anderen einen Prompt „X öffnete ein Tor nach <Welt> — mitkommen?". Sagen sie ja, betritt jeder sein eigenes Portal-iframe; die iframes sind über das Mesh verbunden (jeder AnazhRealm relayt für sein eigenes iframe). Die Gruppe ist gemeinsam in der fremden Welt, ihr Multiplayer läuft auf dem geteilten Mesh. „Meta" (man sieht sich als AnazhRealm-Avatare im Vorraum) UND „direkt" (man ist zusammen IN der fremden Engine) — je nachdem, was die Welt zulässt.
+
+**Phasen-Reihenfolge:** A (Shim) → B-Relay (das Einfachste, voll p2p) → C (Gruppen-Portal) → B-JS-Compute (Host-Migration) → B-WASM (per-Projekt). Jede Phase eine eigene, browser-verifizierte Welle.
+
+**Akzeptanz:** eine Gruppe in einem AnazhRealm-Raum tritt gemeinsam durch ein Portal in eine vendorte Relay-Multiplayer-Welt; sie sehen einander dort, ihr Verkehr fließt peer-to-peer über das Mesh, kein echter Server existiert.
+
+**Ehrliche Grenzen des Bogens:**
+- Ein Browser-Tab als Compute-Host ist schwach (Hintergrund-Drosselung, begrenzte CPU, schließt jederzeit) — Host-Migration mildert, beseitigt es nicht. Gut für Koop, rau für kompetitive Twitch-Spiele.
+- Latenz: ein peer-gehosteter Server hat die Latenz des Hosts.
+- Rust→WASM ist nicht automatisch — manche native Server portieren sauber, manche nie. Der Auto-Vendor klassifiziert ehrlich; eine nicht-portierbare Welt wird eine Brücken-Welt, kein Versprechen-Bruch.
+- Eine Brücken-Welt braucht einen externen Server — Repo + Mesh tragen sie nicht allein. Aber der Eintritt bleibt das AnazhRealm-Portal, mit der Gruppe.
+
+**Vision-Wort:** „**Man muss die Bibliothek nicht verlassen, um gemeinsam ein Buch zu lesen.** Manche Bücher liest man von den Regalen der Bibliothek selbst, manche durch ein Fenster zu einem fernen Turm — aber immer von hier aus, immer zusammen."
 
 ---
 
@@ -696,7 +771,7 @@ Gruppierung der Ringe in größere Phasen mit deutlichen User-Eindrücken.
 
 - Welle 12 (Welt-Portal) ✅ — das Tor in fremde Engines
 - Welle 13 (Vibe-Pass) ✅ — die souveräne Identität
-- Welle 14 (Bibliothek) ✅ — die Welt-Registry (Phase 1+2+3 komplett, V8.58/V8.60/V8.61; KI-Übersetzer als Horizont)
+- Welle 14 (Bibliothek) ✅ — die Welt-Registry (Phase 1+2+3 komplett, V8.58/V8.60/V8.61; KI-Übersetzer ✅ vollständig — V8.68 Manifest, V8.69 deklarative Szene; Untrusted-Welt-Tor ✅ V8.70 — eine echte fremde Engine läuft null-origin sandgesichert. Offen: Auto-Vendor-Pfad + Mesh-Welt-Verteilung)
 - Welle 7 (Compute-Sharing) ✅ — WebRTC-Mesh (Phase 1-4 komplett, V8.62-V8.66; Kanäle → Welt-Snapshot → LLM-Pool → Public-Lobby + Multi-User-Bau-/Kreatur-Sync)
 
 **Wann „fertig"**: der Schöpfer browst im Bibliothek-Tab fremde Welten, holt sich ein Portal, geht hindurch — und seine Identität reist mit.
@@ -711,7 +786,7 @@ Themen, die kein eigener Ring sind, sondern durch alle Ringe ziehen.
 
 ### 5.1 Test-Coverage (CI-Gate)
 
-- Stand V8.67: **2545 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit:strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs` + `smoke-webrtc.cjs`
+- Stand V8.70: **2597 Invarianten** in `scripts/playtest.cjs` (Headless-Chromium, ~25 s Log-Sammlung) + `audit-strict.cjs` (5 generische Audit-Schichten) + `smoke-multiuser.cjs` + `smoke-webrtc.cjs` + `smoke-translated.cjs` + `smoke-sandbox.cjs`
 - Pro Welle +6-35 neue Invarianten (Effekt sichtbar, kein Crash, Save-Schema OK, Emergenz statt Mechanik)
 - Disziplin: nach jeder substanziellen Änderung das Playtest-Gate, nicht nur Code-Analyse
 
