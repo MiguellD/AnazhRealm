@@ -11261,10 +11261,25 @@ function startSaveServer() {
                             }
                         }
                         out.densityCanCave = foundCave;
+
+                        // V9.12 — der Voxel-Chunk (base-35 .. base+37) fasst
+                        // das ganze Oberflächen-Band: der Boden ist überall
+                        // fest, die Decke überall Luft → keine Klipp-Löcher,
+                        // durch die der Spieler fällt.
+                        const cBase = r.state.terrainBaseHeight || 0;
+                        let floorAllSolid = true;
+                        let ceilAllAir = true;
+                        for (let sx = -220; sx <= 220; sx += 20) {
+                            for (let sz = -220; sz <= 220; sz += 20) {
+                                if (r._terrainDensityAt(sx, cBase - 35, sz) <= 0) floorAllSolid = false;
+                                if (r._terrainDensityAt(sx, cBase + 37, sz) >= 0) ceilAllAir = false;
+                            }
+                        }
+                        out.chunkContainsSurface = floorAllSolid && ceilAllAir;
                     }
 
                     if (out.hasChunkGeometry) {
-                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 1.8);
+                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 20, 20, 1.8);
                         out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
                         if (out.geomBuilt) {
                             const pos = geom.getAttribute("position");
@@ -11351,6 +11366,10 @@ function startSaveServer() {
                 check(
                     "Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)",
                     voxelP1Results.densityCanCave
+                );
+                check(
+                    "Voxel P2b-Politur: der Voxel-Chunk fasst das ganze Oberflächen-Band (Boden fest + Decke Luft — keine Klipp-Löcher)",
+                    voxelP1Results.chunkContainsSurface
                 );
                 check(
                     `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,

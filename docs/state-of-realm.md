@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.11)
+# Zustand des Realm — Stand: 19.05.2026 (V9.12)
+
+**V9.12 — Voxel-Terrain: der Chunk fasst das ganze Oberflächen-Band**: ein Schöpfer-Browser-Befund nach V9.11 — „Nähte gefixxt, aber an einigen Stellen schliesst die Oberfläche unsauber, springt an einen falschen Punkt". Wurzel: der Voxel-Chunk war ein 45-m-Würfel (`base-22 .. base+23`), aber das Oberflächen-Band reicht ~`base±30` — wo ein Gipfel/Tal aus dem Kasten austrat, klaffte ein Loch. Der Fix: `_voxelChunkGeometry` ist jetzt nicht-würfelförmig (`dimX/dimY/dimZ`), der Chunk eine 72-m-hohe Säule (`dimY=40`, `oy=base-35`) — das Band liegt ganz im Chunk, keine Klipp-Löcher. +2 Invarianten. Voller Eintrag in `CLAUDE.md` V9.12.
 
 **V9.11 — Voxel-Terrain Naht-Wurzelheilung (der Index-Aliasing-Bug)**: ein Schöpfer-Browser-Befund nach V9.10 — „immer noch unsaubere Nähte, falsche effektive Chunk-Grösse?". Die Intuition traf den Kern: ein Rand-Index-Fehler. In `_voxelChunkGeometry` Pass 2 aliaste `ci(dim,j,k) = dim + j*dim + k*dim²` an der `i/j/k=dim`-Randebene in einen fremden Zell-Slot — ein Streck-Dreieck quer durch den Chunk an jeder Chunk-Naht. Der Fix: ein `cv(i,j,k)`-Helfer liefert -1 für jeden out-of-range Index, kein Quad referenziert je einen aliasten Slot. Der V9.10-Skirt war korrekt — der Bug lag darunter im Mesher. +1 Invariante (maxEdge — kein Streck-Dreieck). Voller Eintrag in `CLAUDE.md` V9.11.
 

@@ -14205,13 +14205,19 @@ class AnazhRealm {
     // Quad aus den 4 umliegenden Zell-Vertices. Explizite (i,j,k)-Indizes +
     // ein cellVert-Lookup — keine magische 256-Tabelle, gut prüfbar.
     // Liefert eine THREE.BufferGeometry oder null (leeres Volumen).
-    _voxelChunkGeometry(ox, oy, oz, dim, step) {
-        const N = dim + 1;
-        const density = new Float32Array(N * N * N);
-        const gi = (i, j, k) => i + j * N + k * N * N;
-        for (let k = 0; k < N; k++) {
-            for (let j = 0; j < N; j++) {
-                for (let i = 0; i < N; i++) {
+    // dimX/dimY/dimZ sind die Zell-Zahlen je Achse — der Voxel-Chunk ist
+    // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
+    // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
+    // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const density = new Float32Array(Nx * Ny * Nz);
+        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
+        for (let k = 0; k < Nz; k++) {
+            for (let j = 0; j < Ny; j++) {
+                for (let i = 0; i < Nx; i++) {
                     density[gi(i, j, k)] = this._terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
                 }
             }
@@ -14231,14 +14237,14 @@ class AnazhRealm {
             [5, 7],
             [6, 7],
         ];
-        const cellVert = new Int32Array(dim * dim * dim).fill(-1);
-        const ci = (i, j, k) => i + j * dim + k * dim * dim;
+        const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
+        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
         const positions = [];
         const solid = (v) => v > 0;
         // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
-        for (let k = 0; k < dim; k++) {
-            for (let j = 0; j < dim; j++) {
-                for (let i = 0; i < dim; i++) {
+        for (let k = 0; k < dimZ; k++) {
+            for (let j = 0; j < dimY; j++) {
+                for (let i = 0; i < dimX; i++) {
                     const corner = new Array(8);
                     let mask = 0;
                     for (let c = 0; c < 8; c++) {
@@ -14290,23 +14296,23 @@ class AnazhRealm {
         // tragen → ein Streck-Dreieck quer durch den Chunk an JEDER i/j/k=dim-
         // Randebene (= an jeder Chunk-Naht). Das war die „unsaubere Naht".
         const cv = (i, j, k) => {
-            if (i < 0 || j < 0 || k < 0 || i >= dim || j >= dim || k >= dim) return -1;
+            if (i < 0 || j < 0 || k < 0 || i >= dimX || j >= dimY || k >= dimZ) return -1;
             return cellVert[ci(i, j, k)];
         };
-        for (let k = 0; k <= dim; k++) {
-            for (let j = 0; j <= dim; j++) {
-                for (let i = 0; i <= dim; i++) {
+        for (let k = 0; k <= dimZ; k++) {
+            for (let j = 0; j <= dimY; j++) {
+                for (let i = 0; i <= dimX; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
-                    if (i < dim && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
+                    if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
                         quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k));
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
-                    if (j < dim && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
+                    if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
                         quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k));
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
-                    if (k < dim && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
+                    if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
                         quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k));
                     }
                 }
@@ -14387,7 +14393,7 @@ class AnazhRealm {
         const ox = px + 22;
         const oy = base - 20;
         const oz = pz - dim * stepSize * 0.5;
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, stepSize);
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, dim, dim, stepSize);
         if (!geom) {
             this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
             return null;
@@ -14424,7 +14430,10 @@ class AnazhRealm {
     _voxelChunkConfig() {
         const dim = 24;
         const step = 1.8;
-        return { dim, step, span: dim * step, ringRadius: 2 };
+        // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
+        // ein Würfel: 40 × 1.8 = 72 m vertikal fasst das ganze ±30-m-
+        // Oberflächen-Band (sonst klafft oben/unten ein Loch).
+        return { dim, step, span: dim * step, ringRadius: 2, dimY: 40 };
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -14437,16 +14446,20 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
-        const { dim, step, span } = this._voxelChunkConfig();
+        const { dim, step, span, dimY } = this._voxelChunkConfig();
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        const oy = base - 22;
-        // dim + 1 — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle in den
-        // Nachbarn hinein, sodass die Naht-Quads entstehen + die Flächen
-        // nahtlos zusammenstossen. Das Dichte-Feld ist deterministisch —
-        // die Überlapp-Zelle ist in beiden Nachbar-Chunks identisch.
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, step);
+        // Das Oberflächen-Band reicht ~base±30 — der Chunk muss es ganz
+        // fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
+        // durch). base-35 + 72 m = base+37 → volle Deckung mit Marge.
+        const oy = base - 35;
+        // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
+        // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
+        // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
+        // nistisch — die Überlapp-Zelle ist in beiden Chunks identisch.
+        // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
         if (!geom) {
             this.state.voxelChunks.set(key, { empty: true });
             return null;
