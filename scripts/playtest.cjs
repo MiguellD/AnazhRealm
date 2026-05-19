@@ -11584,6 +11584,21 @@ function startSaveServer() {
                             r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777")
                         );
 
+                        // V9.25 Phase 5b — die Höhen-Konsumenten sind voxel-aware.
+                        // (Das Voxel-Terrain ist hier aktiv → worldMeta.voxelTerrain
+                        // gesetzt.) getTerrainHeightAt + findSurfaceAbove liefern
+                        // die Voxel-Oberfläche, nicht das schlafende Heightfield.
+                        const vsRef = r._voxelSurfaceY(10, 10);
+                        const ghVoxel = r.getTerrainHeightAt(10, 10);
+                        out.getTerrainHeightVoxelAware =
+                            typeof vsRef === "number" &&
+                            Number.isFinite(vsRef) &&
+                            typeof ghVoxel === "number" &&
+                            Math.abs(ghVoxel - vsRef) < 0.01;
+                        const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
+                        out.findSurfaceVoxelAware =
+                            typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+
                         // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
                         let anyColorAttr = false;
                         let colorMin = 1;
@@ -11718,6 +11733,14 @@ function startSaveServer() {
                 check(
                     "Voxel V9.24: _populateVoxelChunkVegetation markiert den Chunk in voxelPopulatedChunks",
                     voxelP2bResults.voxelVegMarksChunk
+                );
+                check(
+                    "Voxel V9.25 Phase 5b: getTerrainHeightAt liefert in einer Voxel-Welt die Voxel-Oberfläche",
+                    voxelP2bResults.getTerrainHeightVoxelAware
+                );
+                check(
+                    "Voxel V9.25 Phase 5b: findSurfaceAbove liefert in einer Voxel-Welt die Voxel-Oberfläche",
+                    voxelP2bResults.findSurfaceVoxelAware
                 );
             }
 

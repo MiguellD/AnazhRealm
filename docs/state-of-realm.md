@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.24)
+# Zustand des Realm — Stand: 19.05.2026 (V9.25)
+
+**V9.25 — Voxel-Terrain-Bogen Phase 5b (die Voxel-Welt wird höhen-ehrlich)**: vor dem grossen Heightfield-Schnitt ein Verwebungs-Audit; Schöpfer-Wahl „alte Welten zu Voxel migrieren“. Phase 5b heilt die heightfield-gekoppelten Höhen-Konsumenten: `getTerrainHeightAt` ist voxel-aware (liefert `_voxelSurfaceY`), Wasser/Killplane/`findSurfaceAbove`/Kreatur-Spawn/Genesis-Plattform erben die wahre Höhe. Phase 5c: der Migrations-Flip + Heightfield-Code raus. Voller Eintrag in `CLAUDE.md` V9.25.
 
 **V9.24 — Voxel-Welt: die Verbindungen geheilt (Sicht-Ring + Vegetation)**: zwei Schöpfer-Browser-Befunde nach V9.23 — der Sicht-Ring-Regler tat in einer voxel-basierten Welt nichts (`_voxelChunkConfig().ringRadius` war hart 2 → folgt jetzt `chunkRingRadius`), und Strukturen erschienen nur im Start-Bereich (`populateChunkVegetation` war nur an den Heightfield-Chunk-Pfad gehängt → neuer `_populateVoxelChunkVegetation` am Voxel-Chunk-Lifecycle, geteilte Affinitäts-Logik über `_vegetationSampleSpawn`, Strukturen auf dem Voxel-Boden). Voller Eintrag in `CLAUDE.md` V9.24.
 

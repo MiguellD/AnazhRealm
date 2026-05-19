@@ -9805,6 +9805,12 @@ class AnazhRealm {
             // Schluchten, Mulden) füllen sich, Hügel + Berge bleiben
             // trocken. Sichtbares Wasser ohne die Welt zu fluten.
             try {
+                // V9.25 Phase 5b — die Höhenquelle folgt der Welt: in einer
+                // Voxel-Welt das Voxel-Oberflächen-Sample, sonst das Heightfield.
+                // So sitzt der Meeresspiegel auf der WAHREN Topographie — eine
+                // heightfield-abgeleitete Wasserebene lag in den Voxel-Tälern
+                // falsch.
+                const isVoxelWorld = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
                 const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
                 const hN = new SimplexNoise(seed);
                 const cN = new SimplexNoise(seed + "-cave");
@@ -9816,8 +9822,10 @@ class AnazhRealm {
                     for (let j = 0; j < 13; j++) {
                         const sx = -170 + (340 / 12) * i;
                         const sz = -170 + (340 / 12) * j;
-                        const h = this._terrainHeightAtWorld(sx, sz, hN, st, bh, cN, vN);
-                        if (Number.isFinite(h)) heights.push(h);
+                        const h = isVoxelWorld
+                            ? this._voxelSurfaceY(sx, sz)
+                            : this._terrainHeightAtWorld(sx, sz, hN, st, bh, cN, vN);
+                        if (typeof h === "number" && Number.isFinite(h)) heights.push(h);
                     }
                 }
                 if (heights.length > 0) {
@@ -11888,13 +11896,10 @@ class AnazhRealm {
             const radius = Math.random() * spawnRadius;
             const x = Math.cos(angle) * radius;
             const z = Math.sin(angle) * radius;
-            const zIndex = Math.floor(((z + 150) / 300) * 255);
-            const xIndex = Math.floor(((x + 150) / 300) * 255);
-            const terrainHeight = this.state.groundHeightField
-                ? this.state.groundHeightField[
-                      Math.min(Math.max(zIndex, 0), 255) * 256 + Math.min(Math.max(xIndex, 0), 255)
-                  ]
-                : 0;
+            // V9.25 Phase 5b — getTerrainHeightAt ist voxel-aware: in einer
+            // Voxel-Welt liefert es die Voxel-Oberfläche, die Kreatur spawnt
+            // auf dem echten Boden statt auf der schlafenden Heightfield-Höhe.
+            const terrainHeight = this.getTerrainHeightAt(x, z);
             const emotion =
                 this.state.weather === "rainy"
                     ? Math.random() < 0.7
@@ -14056,21 +14061,11 @@ class AnazhRealm {
         if (!this.state.architectures) return;
         const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
         if (exists) return;
-        // Terrain-Höhe am Zentrum sampeln.
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const hN = new SimplexNoise(seed);
-        const cN = new SimplexNoise(seed + "-cave");
-        const vN = new SimplexNoise(seed + "-volcano");
-        let h0 = this._terrainHeightAtWorld(
-            0,
-            0,
-            hN,
-            this.state.terrainSteepness,
-            this.state.terrainBaseHeight,
-            cN,
-            vN
-        );
-        if (!Number.isFinite(h0)) h0 = 0;
+        // Terrain-Höhe am Zentrum sampeln. V9.25 Phase 5b — getTerrainHeightAt
+        // ist voxel-aware: die Genesis-Plattform sitzt in einer Voxel-Welt auf
+        // der Voxel-Oberfläche, nicht auf der schlafenden Heightfield-Höhe.
+        let h0 = this.getTerrainHeightAt(0, 0);
+        if (typeof h0 !== "number" || !Number.isFinite(h0)) h0 = 0;
         // Plattform 5 m über dem Terrain-Zentrum (genug Überblick, nicht
         // so hoch dass der Abstieg unangenehm wird).
         const platCenterY = h0 + 5;
@@ -33954,7 +33949,16 @@ class AnazhRealm {
                         // Punkt ist nah genug, dass Resets sofort spürbar
                         // sind, aber tief genug, dass eine legitime Schlucht
                         // (heights -100..+100) den Spieler nicht reset.
-                        const killPlaneY = (this.state.minHeight || -50) - 30;
+                        // V9.25 Phase 5b — der Killplane folgt der Welt. In
+                        // einer Voxel-Welt liegt der Chunk-Boden bei base-50;
+                        // der Killplane gehört DARUNTER (base-80), sonst würde
+                        // ein Spieler in einem tiefen Voxel-Tal resettet. Das
+                        // heightfield-abgeleitete `minHeight` kennt das Voxel-
+                        // Band nicht.
+                        const killPlaneY =
+                            this.state.worldMeta && this.state.worldMeta.voxelTerrain
+                                ? (this.state.terrainBaseHeight || 0) - 80
+                                : (this.state.minHeight || -50) - 30;
                         if (scaledY < killPlaneY) {
                             const currentX = pos.x() * this.state.scaleFactor;
                             const currentZ = pos.z() * this.state.scaleFactor;
@@ -34491,6 +34495,17 @@ class AnazhRealm {
     }
 
     getTerrainHeightAt(x, z) {
+        // V9.25 Phase 5b — in einer Voxel-Welt ist die Boden-Höhe die Voxel-
+        // Oberfläche (`_voxelSurfaceY` — die oberste Fest/Luft-Grenze), NICHT
+        // das schlafende Heightfield. Jeder Konsument (Kreatur-Spawn, Wasser,
+        // Steilheit) erhält damit die wahre Höhe. `worldMeta.voxelTerrain` ist
+        // die persistente Wahrheit — gesetzt, sobald der Snapshot lädt, also
+        // auch vor `_restoreVoxelTerrain` korrekt (z. B. beim Wasser-Bau).
+        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain) {
+            const vy = this._voxelSurfaceY(x, z);
+            if (typeof vy === "number" && Number.isFinite(vy)) return vy;
+            return this.state.terrainBaseHeight || 0;
+        }
         const zIndex = Math.floor(((z + 150) / 300) * 255);
         const xIndex = Math.floor(((x + 150) / 300) * 255);
         let height =
@@ -34541,6 +34556,13 @@ class AnazhRealm {
 
     // Neue Funktion zum Finden der Oberfläche über der aktuellen Position
     findSurfaceAbove(x, currentY, z) {
+        // V9.25 Phase 5b — in einer Voxel-Welt ist die Oberfläche die Voxel-
+        // Oberfläche; der nach einem Killplane-Reset hochgesetzte Spieler
+        // landet damit auf dem echten Voxel-Boden statt auf dem Heightfield.
+        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain) {
+            const vy = this._voxelSurfaceY(x, z);
+            return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
+        }
         if (!this.state.groundHeightField) {
             this.log("Kein groundHeightField verfügbar – Fallback auf Standardhöhe 0", "ERROR");
             return 0;
