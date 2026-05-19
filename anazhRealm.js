@@ -14325,6 +14325,50 @@ class AnazhRealm {
         return geom;
     }
 
+    // V9.10 — Welt-Feld-Farbe pro Voxel-Vertex. Mirrort die Farb-Logik des
+    // Heightfield-Terrain-Shaders (stone/earth/lava/violet/snow/sediment),
+    // aber als per-Vertex `color`-Attribut (MeshToonMaterial vertexColors)
+    // statt im Custom-Shader. Dieselbe fraktale Sprache (worldFieldAt) —
+    // das Voxel-Terrain trägt damit dieselben Biom-Regionen wie der Boden.
+    _attachVoxelFieldColors(geom) {
+        const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
+        if (!pos || typeof this.worldFieldAt !== "function") return;
+        const n = pos.count;
+        const colors = new Float32Array(n * 3);
+        const ss = (e0, e1, x) => {
+            let t = (x - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const stone = [0.42, 0.44, 0.49];
+        const earth = [0.27, 0.49, 0.19];
+        const lava = [0.46, 0.2, 0.11];
+        const violet = [0.55, 0.36, 0.86];
+        const snow = [0.92, 0.93, 1.0];
+        const sed = [0.78, 0.72, 0.52];
+        for (let i = 0; i < n; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const z = pos.getZ(i);
+            const f = this.worldFieldAt(x, z);
+            const c = [stone[0], stone[1], stone[2]];
+            const mix = (target, t) => {
+                c[0] += (target[0] - c[0]) * t;
+                c[1] += (target[1] - c[1]) * t;
+                c[2] += (target[2] - c[2]) * t;
+            };
+            mix(earth, ss(0.25, 0.85, f.lebendig));
+            mix(lava, ss(0.38, 0.92, f.glut));
+            mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+            mix(snow, ss(12, 42, y));
+            mix(sed, ss(-2, -14, y));
+            colors[i * 3] = c[0];
+            colors[i * 3 + 1] = c[1];
+            colors[i * 3 + 2] = c[2];
+        }
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    }
+
     // Phase-2a-Beweis: ein Voxel-Chunk wird gemesht, neben dem Spieler in
     // die Szene gestellt UND bekommt eine btBvhTriangleMeshShape-Kollision
     // (über _buildStaticTriMeshCollision — dieselbe Sprache wie die Inseln)
@@ -14354,8 +14398,9 @@ class AnazhRealm {
             this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
             return null;
         }
+        this._attachVoxelFieldColors(geom);
         const mat = new THREE.MeshToonMaterial({
-            color: 0x6e5038,
+            vertexColors: true,
             side: THREE.DoubleSide,
         });
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
@@ -14403,12 +14448,17 @@ class AnazhRealm {
         const ox = cx * span;
         const oz = cz * span;
         const oy = base - 22;
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, step);
+        // dim + 1 — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle in den
+        // Nachbarn hinein, sodass die Naht-Quads entstehen + die Flächen
+        // nahtlos zusammenstossen. Das Dichte-Feld ist deterministisch —
+        // die Überlapp-Zelle ist in beiden Nachbar-Chunks identisch.
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, step);
         if (!geom) {
             this.state.voxelChunks.set(key, { empty: true });
             return null;
         }
-        const mat = new THREE.MeshToonMaterial({ color: 0x6e5038, side: THREE.DoubleSide });
+        this._attachVoxelFieldColors(geom);
+        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;

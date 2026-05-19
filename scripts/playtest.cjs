@@ -11380,6 +11380,7 @@ function startSaveServer() {
                     out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
                     out.hasSetActive = typeof r.setVoxelTerrainActive === "function";
                     out.hasConfig = typeof r._voxelChunkConfig === "function";
+                    out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
                     out.defaultOff = r.state.voxelTerrainActive === false;
 
                     // einen Heightfield-Chunk als Referenz merken.
@@ -11409,6 +11410,32 @@ function startSaveServer() {
                             }
                         }
                         out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
+
+                        // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
+                        let anyColorAttr = false;
+                        let colorMin = 1;
+                        let colorMax = 0;
+                        let skirtProven = false;
+                        const cfg0 = r._voxelChunkConfig();
+                        for (const e of r.state.voxelChunks.values()) {
+                            if (!e || !e.mesh || !e.mesh.geometry) continue;
+                            const col = e.mesh.geometry.getAttribute("color");
+                            if (col) {
+                                anyColorAttr = true;
+                                for (let i = 0; i < col.count; i++) {
+                                    const rr = col.getX(i);
+                                    if (rr < colorMin) colorMin = rr;
+                                    if (rr > colorMax) colorMax = rr;
+                                }
+                            }
+                            const g = e.mesh.geometry;
+                            g.computeBoundingBox();
+                            const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
+                            if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
+                        }
+                        out.voxelHasFieldColors = anyColorAttr;
+                        out.voxelColorVaries = colorMax - colorMin > 0.05;
+                        out.voxelSkirt = skirtProven;
                         // das Heightfield schläft (unsichtbar + kollisionslos).
                         out.heightfieldDormant = refChunk ? refChunk.visible === false : true;
                         out.heightfieldCollisionDormant = refChunk
@@ -11474,6 +11501,22 @@ function startSaveServer() {
                 check(
                     "Voxel P2b: das Heightfield erwacht wieder (sichtbar + kollidierbar) — reversibel",
                     voxelP2bResults.heightfieldRestored && voxelP2bResults.heightfieldCollisionRestored
+                );
+                check(
+                    "Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert",
+                    voxelP2bResults.hasAttachColors
+                );
+                check(
+                    "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
+                    voxelP2bResults.voxelHasFieldColors
+                );
+                check(
+                    "Voxel P2b-Politur: die Voxel-Farben variieren über die Welt (keine Mono-Biom-Fläche)",
+                    voxelP2bResults.voxelColorVaries
+                );
+                check(
+                    "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
+                    voxelP2bResults.voxelSkirt
                 );
             }
 

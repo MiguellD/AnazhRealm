@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.09)
+# Zustand des Realm — Stand: 19.05.2026 (V9.10)
+
+**V9.10 — Voxel-Terrain Phase 2b-Politur (Naht-Skirt + Welt-Feld-Farbe)**: ein Schöpfer-Browser-Befund nach V9.09 — „die Übergänge sind nicht sauber, alles scheint das gleiche Biom". Zwei Heilungen: (1) der 1-Zellen-Naht-Skirt — `_ensureVoxelChunkAt` mesht `dim+1` Zellen, eine Überlappung in den Nachbar-Chunk; die Surface-Nets-Naht-Quads entstehen, die Flächen stossen nahtlos zusammen. (2) `_attachVoxelFieldColors` — per-Vertex-Farbe aus `worldFieldAt` (Biom-Farben wie der Heightfield-Terrain-Shader, als `color`-Attribut, kein Shader). Das Voxel-Terrain trägt dieselben Biom-Regionen wie der Boden. +4 Invarianten. Voller Eintrag in `CLAUDE.md` V9.10.
 
 **V9.09 — Voxel-Terrain-Bogen Phase 2b (der Voxel-Chunk-Ring)**: das Voxel-Terrain wird begehbar. Voxel-Chunks streamen um den Spieler (`_ensureVoxelChunkAt`/`_tickVoxelChunkStreaming`/`_pruneDistantVoxelChunks` spiegeln das erprobte Heightfield-Streaming). `state.voxelTerrainActive` (Default aus, parallel hinter dem Flag) schaltet um: aktiv → der Voxel-Ring streamt + das Heightfield ruht (`_setHeightfieldDormant` — Mesh/Gras unsichtbar, Kollision aus dem physicsWorld genommen, NICHT zerstört, reversibel); aus → die Voxel-Chunks fallen, das Heightfield erwacht. Chat `voxel terrain on`/`off`. Honest Cut: die per-Welt-Persistenz des Flags ist Phase 2c. +9 Invarianten. Voller Eintrag in `CLAUDE.md` V9.09.
 
