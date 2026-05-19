@@ -27,6 +27,7 @@ class AnazhRealm {
             // zum Heightfield, hinter dem Flag. Default aus.
             voxelTerrainActive: false,
             voxelChunks: null,
+            voxelChunkGrass: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -14594,6 +14595,8 @@ class AnazhRealm {
         this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
         const entry = { mesh };
         this.state.voxelChunks.set(key, entry);
+        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
+        this._buildVoxelChunkGrass(cx, cz);
         return entry;
     }
 
@@ -14608,7 +14611,108 @@ class AnazhRealm {
             if (entry.mesh.geometry) entry.mesh.geometry.dispose();
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
+        this._disposeVoxelChunkGrass(key);
         this.state.voxelChunks.delete(key);
+    }
+
+    // V9.22 — die Oberflächen-Höhe des Voxel-Terrains an (x,z): die oberste
+    // Stelle, an der fester Grund (Dichte > 0) unter Luft liegt. Scannt von
+    // oben durch das Oberflächen-Band; liefert die erste Luft→Fest-Grenze
+    // (so sitzt das Gras auf der Kuppe, auch auf einem Überhang). null, wenn
+    // die Säule im Band kein festes Terrain trägt.
+    _voxelSurfaceY(x, z) {
+        const base = this.state.terrainBaseHeight || 0;
+        let prevAir = true;
+        for (let y = base + 66; y >= base - 44; y -= 1.2) {
+            const solid = this._terrainDensityAt(x, y, z) > 0;
+            if (solid && prevAir) return y;
+            prevAir = !solid;
+        }
+        return null;
+    }
+
+    // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
+    // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
+    // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
+    // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
+    // voxel-basierte Welt grünt damit wie eine Heightfield-Welt.
+    _buildVoxelChunkGrass(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.voxelChunkGrass) this.state.voxelChunkGrass = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunkGrass.has(key)) return;
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const SAMPLES = 16;
+        const step = span / SAMPLES;
+        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ 0x9e3779b9) >>> 0 || 1;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const blades = [];
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const baseX = ox + (xi + 0.5) * step;
+                const baseZ = oz + (zi + 0.5) * step;
+                const field = this.worldFieldAt(baseX, baseZ);
+                const lebendig = field ? field.lebendig : 0;
+                if (lebendig < 0.22) continue;
+                const surfY = this._voxelSurfaceY(baseX, baseZ);
+                if (surfY === null) continue;
+                const count = Math.floor(lebendig * 14 + rnd() * 2);
+                for (let k = 0; k < count; k++) {
+                    const gx = baseX + (rnd() - 0.5) * step;
+                    const gz = baseZ + (rnd() - 0.5) * step;
+                    blades.push({
+                        x: gx,
+                        y: surfY,
+                        z: gz,
+                        rot: rnd() * Math.PI * 2,
+                        scale: 0.7 + rnd() * 0.7,
+                    });
+                }
+            }
+        }
+        if (blades.length === 0) {
+            this.state.voxelChunkGrass.set(key, null);
+            return;
+        }
+        const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
+        geo.translate(0, 0.425, 0);
+        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let i = 0; i < blades.length; i++) {
+            const b = blades[i];
+            pos.set(b.x, b.y, b.z);
+            q.setFromAxisAngle(up, b.rot);
+            scl.set(b.scale, b.scale, b.scale);
+            m.compose(pos, q, scl);
+            inst.setMatrixAt(i, m);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+        inst.castShadow = false;
+        inst.receiveShadow = false;
+        this.state.scene.add(inst);
+        this.state.voxelChunkGrass.set(key, inst);
+    }
+
+    _disposeVoxelChunkGrass(key) {
+        if (!this.state.voxelChunkGrass) return;
+        const grass = this.state.voxelChunkGrass.get(key);
+        if (grass) {
+            if (this.state.scene) this.state.scene.remove(grass);
+            if (grass.geometry) grass.geometry.dispose();
+        }
+        this.state.voxelChunkGrass.delete(key);
     }
 
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-

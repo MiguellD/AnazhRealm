@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.21)
+# Zustand des Realm — Stand: 19.05.2026 (V9.22)
+
+**V9.22 — Voxel-Terrain grünt**: eine voxel-basierte Welt war kahl (das Heightfield-Gras schläft bei aktivem Voxel-Terrain). `_buildVoxelChunkGrass` gibt dem Voxel-Boden eigenes Instanced-Gras — Spiegel des Heightfield-`_buildChunkGrass`, jeder Halm auf der Voxel-Oberfläche (`_voxelSurfaceY`), am Chunk-Lifecycle aufgehängt. +5 Invarianten. Voller Eintrag in `CLAUDE.md` V9.22.
 
 **V9.21 — Voxel-Welt-Geburt**: eine Welt kann voxel-basiert geboren werden — der Neue-Welt-Dialog hat eine „Voxel-Terrain"-Checkbox, `createNewWorld({voxelTerrain:true})` setzt `worldMeta.voxelTerrain` im Snapshot (das V9.13-Persistenz-Muster). Schliesst die in V9.13 benannte UX-Naht. +3 Invarianten. Voller Eintrag in `CLAUDE.md` V9.21.
 

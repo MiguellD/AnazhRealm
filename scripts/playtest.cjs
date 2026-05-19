@@ -11541,6 +11541,28 @@ function startSaveServer() {
                         }
                         out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
 
+                        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
+                        out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
+                        out.hasVoxelSurfaceY = typeof r._voxelSurfaceY === "function";
+                        let grassEntries = 0;
+                        let grassBlades = 0;
+                        if (r.state.voxelChunkGrass) {
+                            for (const g of r.state.voxelChunkGrass.values()) {
+                                grassEntries++;
+                                if (g && g.isInstancedMesh) grassBlades += g.count;
+                            }
+                        }
+                        out.voxelGrassBuilt = grassEntries > 0;
+                        out.voxelGrassHasBlades = grassBlades > 0;
+                        // _voxelSurfaceY: liefert eine endliche Höhe, dort ist
+                        // fester Grund + knapp darüber (Scan-Schritt) Luft.
+                        const sy = r._voxelSurfaceY(12, -8);
+                        out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
+                        out.voxelSurfaceIsBoundary =
+                            out.voxelSurfaceFinite &&
+                            r._terrainDensityAt(12, sy, -8) > 0 &&
+                            r._terrainDensityAt(12, sy + 1.2, -8) <= 0;
+
                         // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
                         let anyColorAttr = false;
                         let colorMin = 1;
@@ -11585,6 +11607,7 @@ function startSaveServer() {
                         r.setVoxelTerrainActive(false);
                         out.deactivated = r.state.voxelTerrainActive === false;
                         out.voxelChunksCleared = !r.state.voxelChunks || r.state.voxelChunks.size === 0;
+                        out.voxelGrassCleared = !r.state.voxelChunkGrass || r.state.voxelChunkGrass.size === 0;
                         out.heightfieldRestored = refChunk ? refChunk.visible === true : true;
                         out.heightfieldCollisionRestored = refChunk
                             ? !(refChunk.userData && refChunk.userData._collisionDormant)
@@ -11641,6 +11664,23 @@ function startSaveServer() {
                 check(
                     "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
                     voxelP2bResults.voxelSkirt
+                );
+                check(
+                    "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
+                    voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
+                );
+                check(
+                    "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
+                    voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
+                );
+                check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
+                check(
+                    "Voxel V9.22: der Voxel-Chunk-Ring trägt Instanced-Gras-Halme",
+                    voxelP2bResults.voxelGrassHasBlades
+                );
+                check(
+                    "Voxel V9.22: setVoxelTerrainActive(false) räumt auch das Voxel-Gras",
+                    voxelP2bResults.voxelGrassCleared
                 );
             }
 
