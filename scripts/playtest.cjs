@@ -4320,8 +4320,7 @@ function startSaveServer() {
                     // räumt ihn.
                     out.rtcAvailable = typeof RTCPeerConnection !== "undefined";
                     const rtc = r._p2pCreatePeerConnection("rtcTestPeer");
-                    out.createPcEntry =
-                        !!rtc && !!rtc.pc && rtc.open === false && Array.isArray(rtc.pendingIce);
+                    out.createPcEntry = !!rtc && !!rtc.pc && rtc.open === false && Array.isArray(rtc.pendingIce);
                     out.createPcRegistered = p2p.rtcPeers.has("rtcTestPeer");
                     r._p2pCloseRtcPeer("rtcTestPeer");
                     out.closePcRemoves = !p2p.rtcPeers.has("rtcTestPeer");
@@ -4355,12 +4354,8 @@ function startSaveServer() {
 
                     // Kanal trägt NUR Spiel-Nachrichten — welcome wird verworfen.
                     const peersBeforeWelcome = p2p.peers.size;
-                    r._p2pHandleChannelMessage(
-                        "realPeer",
-                        JSON.stringify({ type: "welcome", peers: ["evilPeer"] })
-                    );
-                    out.channelDropsNonGame =
-                        p2p.peers.size === peersBeforeWelcome && !p2p.peers.has("evilPeer");
+                    r._p2pHandleChannelMessage("realPeer", JSON.stringify({ type: "welcome", peers: ["evilPeer"] }));
+                    out.channelDropsNonGame = p2p.peers.size === peersBeforeWelcome && !p2p.peers.has("evilPeer");
 
                     // p2pSend-Transport: bei komplettem Mesh geht der Broadcast
                     // über den DataChannel, nicht über den WS.
@@ -4651,14 +4646,20 @@ function startSaveServer() {
                     (w7p2Results && w7p2Results.error) || "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
+                check(
+                    "W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE",
+                    w7p2Results.w7p2StateFields
+                );
                 check("W7 P2: alle Welt-Transfer-Methoden auf der Klasse", w7p2Results.w7p2MethodsPresent);
                 check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
                 check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
                 check("W7 P2: soul-Empfang speichert worldRole am Peer", w7p2Results.soulStoresWorldRole);
                 check("W7 P2: ein Stück allein lässt den Transfer unvollständig", w7p2Results.chunkIncompleteAfterOne);
                 check("W7 P2: ein doppeltes Stück wird nicht doppelt gezählt", w7p2Results.chunkDuplicateIgnored);
-                check("W7 P2: vollständige Stücke werden zusammengesetzt + angewendet", w7p2Results.chunkReassemblyApplies);
+                check(
+                    "W7 P2: vollständige Stücke werden zusammengesetzt + angewendet",
+                    w7p2Results.chunkReassemblyApplies
+                );
                 check("W7 P2: der Transfer-Puffer wird nach Abschluss geräumt", w7p2Results.chunkXferClearedOnComplete);
                 check("W7 P2: die empfangene Snapshot-Länge wird festgehalten", w7p2Results.lastSnapshotLenTracked);
                 check("W7 P2: ein Stück vom falschen Peer wird verworfen", w7p2Results.chunkRejectsWrongPeer);
@@ -4706,10 +4707,15 @@ function startSaveServer() {
 
                     // requestWorldBundleFromPeer — Validierungs-Pfade.
                     out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
-                    r.state.customWorlds["have-w16"] = { id: "have-w16", label: "Da", world: "worlds/have-w16/index.html" };
+                    r.state.customWorlds["have-w16"] = {
+                        id: "have-w16",
+                        label: "Da",
+                        world: "worlds/have-w16/index.html",
+                    };
                     out.rejectsAlreadyHave = r.requestWorldBundleFromPeer("have-w16", "x").reason === "already_have";
                     delete r.state.customWorlds["have-w16"];
-                    out.rejectsNoPeer = r.requestWorldBundleFromPeer("fresh-w16", "ghost-peer").reason === "no_such_peer";
+                    out.rejectsNoPeer =
+                        r.requestWorldBundleFromPeer("fresh-w16", "ghost-peer").reason === "no_such_peer";
                     r._p2pEnsurePeerEntry("chanless-w16");
                     out.rejectsNoChannel =
                         r.requestWorldBundleFromPeer("fresh-w16", "chanless-w16").reason === "no_channel";
@@ -4758,7 +4764,10 @@ function startSaveServer() {
                     };
                     sent.length = 0;
                     p2p._bundleServedAt.clear();
-                    await r._p2pHandleWorldBundlePull("w16peer", { type: "world-bundle-pull", worldId: "mesh-send-w16" });
+                    await r._p2pHandleWorldBundlePull("w16peer", {
+                        type: "world-bundle-pull",
+                        worldId: "mesh-send-w16",
+                    });
                     out.senderChunks = sent.some((s) => {
                         try {
                             return JSON.parse(s).type === "world-bundle-chunk";
@@ -4771,7 +4780,10 @@ function startSaveServer() {
                     // _p2pHandleWorldBundlePull — eine unbekannte Welt → fail.
                     sent.length = 0;
                     p2p._bundleServedAt.clear();
-                    await r._p2pHandleWorldBundlePull("w16peer", { type: "world-bundle-pull", worldId: "never-vendored-w16" });
+                    await r._p2pHandleWorldBundlePull("w16peer", {
+                        type: "world-bundle-pull",
+                        worldId: "never-vendored-w16",
+                    });
                     out.senderFailsUnknown = sent.some((s) => {
                         try {
                             const m = JSON.parse(s);
@@ -4803,12 +4815,36 @@ function startSaveServer() {
                     p2p.pendingBundlePull = { peerId: "w16peer", worldId: "mesh-rx-w16" };
                     p2p.bundleXfers.clear();
                     const bxid = "bx-test-1";
-                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 0, total: 3, data: pa });
+                    r._p2pHandleWorldBundleChunk("w16peer", {
+                        type: "world-bundle-chunk",
+                        xferId: bxid,
+                        seq: 0,
+                        total: 3,
+                        data: pa,
+                    });
                     out.chunkIncompleteAfterOne = p2p.bundleXfers.has(bxid) && vendored === null;
-                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 2, total: 3, data: pc });
-                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 0, total: 3, data: pa });
+                    r._p2pHandleWorldBundleChunk("w16peer", {
+                        type: "world-bundle-chunk",
+                        xferId: bxid,
+                        seq: 2,
+                        total: 3,
+                        data: pc,
+                    });
+                    r._p2pHandleWorldBundleChunk("w16peer", {
+                        type: "world-bundle-chunk",
+                        xferId: bxid,
+                        seq: 0,
+                        total: 3,
+                        data: pa,
+                    });
                     out.chunkDuplicateIgnored = p2p.bundleXfers.get(bxid).received === 2;
-                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: bxid, seq: 1, total: 3, data: pb });
+                    r._p2pHandleWorldBundleChunk("w16peer", {
+                        type: "world-bundle-chunk",
+                        xferId: bxid,
+                        seq: 1,
+                        total: 3,
+                        data: pb,
+                    });
                     out.chunkReassemblyVendors =
                         vendored !== null &&
                         vendored.worldId === "mesh-rx-w16" &&
@@ -4819,13 +4855,25 @@ function startSaveServer() {
                     // Annahme-Wand: ein Stück vom FALSCHEN Peer wird verworfen.
                     p2p.pendingBundlePull = { peerId: "w16peer", worldId: "mesh-rx-w16" };
                     p2p.bundleXfers.clear();
-                    r._p2pHandleWorldBundleChunk("evil-peer", { type: "world-bundle-chunk", xferId: "bx-evil", seq: 0, total: 1, data: "{}" });
+                    r._p2pHandleWorldBundleChunk("evil-peer", {
+                        type: "world-bundle-chunk",
+                        xferId: "bx-evil",
+                        seq: 0,
+                        total: 1,
+                        data: "{}",
+                    });
                     out.chunkRejectsWrongPeer = !p2p.bundleXfers.has("bx-evil");
 
                     // Annahme-Wand: ein Stück ohne laufenden Pull wird verworfen.
                     p2p.pendingBundlePull = null;
                     p2p.bundleXfers.clear();
-                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: "bx-nopend", seq: 0, total: 1, data: "{}" });
+                    r._p2pHandleWorldBundleChunk("w16peer", {
+                        type: "world-bundle-chunk",
+                        xferId: "bx-nopend",
+                        seq: 0,
+                        total: 1,
+                        data: "{}",
+                    });
                     out.chunkRejectsWhenNotPending = !p2p.bundleXfers.has("bx-nopend");
 
                     // Eine falsche worldId im Bündel wird verworfen (ein Peer
@@ -4834,7 +4882,13 @@ function startSaveServer() {
                     p2p.pendingBundlePull = { peerId: "w16peer", worldId: "asked-w16" };
                     p2p.bundleXfers.clear();
                     const wrongPayload = JSON.stringify({ worldId: "smuggled-w16", files: [] });
-                    r._p2pHandleWorldBundleChunk("w16peer", { type: "world-bundle-chunk", xferId: "bx-wrong", seq: 0, total: 1, data: wrongPayload });
+                    r._p2pHandleWorldBundleChunk("w16peer", {
+                        type: "world-bundle-chunk",
+                        xferId: "bx-wrong",
+                        seq: 0,
+                        total: 1,
+                        data: wrongPayload,
+                    });
                     out.chunkRejectsWrongWorldId = vendored === null;
                     r.vendorWorldBundle = origVendor;
 
@@ -4875,8 +4929,9 @@ function startSaveServer() {
                     };
                     const cat = r._p2pBuildCatalog();
                     out.catalogBuildsVendoredOnly =
-                        cat.some((c) => c.id === "cat-vendored-w16" && c.label === "Katalog-Welt" && c.hash === "abc123") &&
-                        !cat.some((c) => c.id === "cat-imported-w16");
+                        cat.some(
+                            (c) => c.id === "cat-vendored-w16" && c.label === "Katalog-Welt" && c.hash === "abc123"
+                        ) && !cat.some((c) => c.id === "cat-imported-w16");
 
                     // _p2pSanitizeCatalog — gültige Einträge bleiben, Müll fällt raus.
                     const sanCat = r._p2pSanitizeCatalog([
@@ -5024,42 +5079,105 @@ function startSaveServer() {
                     (w16Results && w16Results.error) || "page.evaluate fehlgeschlagen"
                 );
             } else {
-                check("W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS", w16Results.stateFields);
+                check(
+                    "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
+                    w16Results.stateFields
+                );
                 check("W16: alle Mesh-Welt-Methoden auf der Klasse", w16Results.methodsPresent);
                 check("W16: requestWorldBundleFromPeer lehnt eine ungültige Welt-id ab", w16Results.rejectsBadId);
-                check("W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab", w16Results.rejectsAlreadyHave);
+                check(
+                    "W16: requestWorldBundleFromPeer lehnt eine schon vorhandene Welt ab",
+                    w16Results.rejectsAlreadyHave
+                );
                 check("W16: requestWorldBundleFromPeer lehnt einen unbekannten Peer ab", w16Results.rejectsNoPeer);
-                check("W16: requestWorldBundleFromPeer lehnt einen Peer ohne Mesh-Kanal ab", w16Results.rejectsNoChannel);
-                check("W16: requestWorldBundleFromPeer schickt einen world-bundle-pull + setzt pendingBundlePull", w16Results.requestSendsPull);
-                check("W16: _p2pHandleWorldBundlePull schickt ein vendortes Bündel in Stücken", w16Results.senderChunks);
-                check("W16: _p2pHandleWorldBundlePull schickt world-bundle-fail für eine unbekannte Welt", w16Results.senderFailsUnknown);
-                check("W16: ein Bündel-Stück allein lässt den Transfer unvollständig", w16Results.chunkIncompleteAfterOne);
+                check(
+                    "W16: requestWorldBundleFromPeer lehnt einen Peer ohne Mesh-Kanal ab",
+                    w16Results.rejectsNoChannel
+                );
+                check(
+                    "W16: requestWorldBundleFromPeer schickt einen world-bundle-pull + setzt pendingBundlePull",
+                    w16Results.requestSendsPull
+                );
+                check(
+                    "W16: _p2pHandleWorldBundlePull schickt ein vendortes Bündel in Stücken",
+                    w16Results.senderChunks
+                );
+                check(
+                    "W16: _p2pHandleWorldBundlePull schickt world-bundle-fail für eine unbekannte Welt",
+                    w16Results.senderFailsUnknown
+                );
+                check(
+                    "W16: ein Bündel-Stück allein lässt den Transfer unvollständig",
+                    w16Results.chunkIncompleteAfterOne
+                );
                 check("W16: ein doppeltes Bündel-Stück wird nicht doppelt gezählt", w16Results.chunkDuplicateIgnored);
-                check("W16: vollständige Stücke werden zusammengesetzt + an vendorWorldBundle gereicht", w16Results.chunkReassemblyVendors);
-                check("W16: der Bündel-Puffer + pendingBundlePull werden nach Abschluss geräumt", w16Results.chunkClearedOnComplete);
+                check(
+                    "W16: vollständige Stücke werden zusammengesetzt + an vendorWorldBundle gereicht",
+                    w16Results.chunkReassemblyVendors
+                );
+                check(
+                    "W16: der Bündel-Puffer + pendingBundlePull werden nach Abschluss geräumt",
+                    w16Results.chunkClearedOnComplete
+                );
                 check("W16: ein Stück vom falschen Peer wird verworfen", w16Results.chunkRejectsWrongPeer);
                 check("W16: ein Stück ohne laufenden Pull wird verworfen", w16Results.chunkRejectsWhenNotPending);
-                check("W16: eine falsche worldId im Bündel wird verworfen (kein vendorWorldBundle)", w16Results.chunkRejectsWrongWorldId);
+                check(
+                    "W16: eine falsche worldId im Bündel wird verworfen (kein vendorWorldBundle)",
+                    w16Results.chunkRejectsWrongWorldId
+                );
                 check("W16: _p2pHandleWorldBundleFail beendet den laufenden Pull", w16Results.failEndsPull);
                 check(
                     "W16: world-bundle-pull ist kanal-exklusiv (nicht über den WS-Pfad)",
                     w16Results.bundlePullNotOnWsPath && w16Results.bundlePullOnChannelPath
                 );
                 // ── W16 Phase 2 — der Welt-Katalog ──
-                check("W16 P2: _p2pBuildCatalog liefert nur vendored-Welten (id/label/hash)", w16Results.catalogBuildsVendoredOnly);
-                check("W16 P2: _p2pSanitizeCatalog behält gültige Einträge + verwirft Müll", w16Results.catalogSanitizes);
+                check(
+                    "W16 P2: _p2pBuildCatalog liefert nur vendored-Welten (id/label/hash)",
+                    w16Results.catalogBuildsVendoredOnly
+                );
+                check(
+                    "W16 P2: _p2pSanitizeCatalog behält gültige Einträge + verwirft Müll",
+                    w16Results.catalogSanitizes
+                );
                 check("W16 P2: _haveWorldByHashOrId erkennt eine Welt per id", w16Results.haveById);
-                check("W16 P2: _haveWorldByHashOrId erkennt eine Welt per Content-Hash (andere id)", w16Results.haveByHash);
-                check("W16 P2: _haveWorldByHashOrId liefert false für eine unbekannte Welt", w16Results.haveFalseUnknown);
+                check(
+                    "W16 P2: _haveWorldByHashOrId erkennt eine Welt per Content-Hash (andere id)",
+                    w16Results.haveByHash
+                );
+                check(
+                    "W16 P2: _haveWorldByHashOrId liefert false für eine unbekannte Welt",
+                    w16Results.haveFalseUnknown
+                );
                 check("W16 P2: _p2pBroadcastSoul trägt den Welt-Katalog mit", w16Results.soulCarriesCatalog);
-                check("W16 P2: _vendorRegisterWorld annonciert den Katalog neu (soul-Re-Broadcast)", w16Results.registerRebroadcastsSoul);
-                check("W16 P2: der soul-Handler speichert den Katalog eines Peers", w16Results.soulHandlerStoresCatalog);
-                check("W16 P2: _sanitizeImportedManifest bewahrt bundleHash für eine vendorte Welt", w16Results.sanitizeKeepsHash);
+                check(
+                    "W16 P2: _vendorRegisterWorld annonciert den Katalog neu (soul-Re-Broadcast)",
+                    w16Results.registerRebroadcastsSoul
+                );
+                check(
+                    "W16 P2: der soul-Handler speichert den Katalog eines Peers",
+                    w16Results.soulHandlerStoresCatalog
+                );
+                check(
+                    "W16 P2: _sanitizeImportedManifest bewahrt bundleHash für eine vendorte Welt",
+                    w16Results.sanitizeKeepsHash
+                );
                 check("W16 P2: bundleHash überlebt den localStorage-Rundlauf", w16Results.hashSurvivesRoundtrip);
-                check("W16 P2: _renderMeshWorldCatalog rendert einen Holen-Knopf für eine fremde Welt", w16Results.catalogRendersGetButton);
-                check("W16 P2: _renderMeshWorldCatalog zeigt „✓ vorhanden\" für eine schon vorhandene Welt (Dedup)", w16Results.catalogRendersHaveBadge);
-                check("W16 P2: _runMeshWorldGet routet zu requestWorldBundleFromPeer", w16Results.runMeshWorldGetRoutes);
-                check("W16 P2: ein Klick auf den Holen-Knopf routet durch den delegierten Listener (Spieler-Pfad)", w16Results.catalogButtonClickRoutes);
+                check(
+                    "W16 P2: _renderMeshWorldCatalog rendert einen Holen-Knopf für eine fremde Welt",
+                    w16Results.catalogRendersGetButton
+                );
+                check(
+                    'W16 P2: _renderMeshWorldCatalog zeigt „✓ vorhanden" für eine schon vorhandene Welt (Dedup)',
+                    w16Results.catalogRendersHaveBadge
+                );
+                check(
+                    "W16 P2: _runMeshWorldGet routet zu requestWorldBundleFromPeer",
+                    w16Results.runMeshWorldGetRoutes
+                );
+                check(
+                    "W16 P2: ein Klick auf den Holen-Knopf routet durch den delegierten Listener (Spieler-Pfad)",
+                    w16Results.catalogButtonClickRoutes
+                );
                 check("W16 P2: die Welt-Katalog-Sektion im DOM", w16Results.uiInDom);
             }
 
@@ -5252,9 +5370,7 @@ function startSaveServer() {
                         "fern-peer",
                         JSON.stringify({ type: "subworld-net", worldId: SUBW, data: "via-kanal" })
                     );
-                    out.channelDeliverable = posted.some(
-                        (p) => p.m.kind === "ws-recv" && p.m.data === "via-kanal"
-                    );
+                    out.channelDeliverable = posted.some((p) => p.m.kind === "ws-recv" && p.m.data === "via-kanal");
 
                     r._portalOverlay = null;
                     r.p2pSend = origSend;
@@ -5546,8 +5662,7 @@ function startSaveServer() {
                     r._portalOverlay = makeJs("guest", "hostX");
                     posted.length = 0;
                     const cliOk = r._portalCliReceive("hostX", { worldId: SUBW, data: "12" });
-                    out.cliReceiveDeliversToClient =
-                        cliOk === true && posted.length === 1 && posted[0].m.data === "12";
+                    out.cliReceiveDeliversToClient = cliOk === true && posted.length === 1 && posted[0].m.data === "12";
                     posted.length = 0;
                     const cliBad = r._portalCliReceive("strangerX", { worldId: SUBW, data: "z" });
                     out.cliReceiveRejectsWrongHost = cliBad === false && posted.length === 0;
@@ -5901,10 +6016,8 @@ function startSaveServer() {
                     out.bannerInDom = !!document.getElementById("portal-invite-banner");
 
                     // _resolvePortalWorldId — Pfad-Match gegen die Bibliothek.
-                    out.resolveByPath =
-                        r._resolvePortalWorldId({ world: "worlds/skeleton/index.html" }) === "skeleton";
-                    out.resolveUnknown =
-                        r._resolvePortalWorldId({ world: "worlds/_nonexist/index.html" }) === null;
+                    out.resolveByPath = r._resolvePortalWorldId({ world: "worlds/skeleton/index.html" }) === "skeleton";
+                    out.resolveUnknown = r._resolvePortalWorldId({ world: "worlds/_nonexist/index.html" }) === null;
 
                     // aimBlueprintAtWorld trägt multiplayer aus dem Eintrag.
                     let aimCarriesMp = false;
@@ -6027,8 +6140,7 @@ function startSaveServer() {
                         "fern-peer",
                         JSON.stringify({ type: "portal-invite", worldId: "skeleton", label: "Skelett-Welt" })
                     );
-                    out.channelDeliverable =
-                        !!p2p.pendingInvite && p2p.pendingInvite.peerId === "fern-peer";
+                    out.channelDeliverable = !!p2p.pendingInvite && p2p.pendingInvite.peerId === "fern-peer";
                     p2p.pendingInvite = null;
                     r._renderPortalInviteBanner();
 
@@ -6052,7 +6164,10 @@ function startSaveServer() {
                     "W17 C: _p2pBroadcastPortalInvite broadcastet ein portal-invite (worldId + label)",
                     w17cResults.broadcastsForMpPortal
                 );
-                check("W17 C: ein Nicht-Multiplayer-Portal broadcastet keine Einladung", w17cResults.noBroadcastForSinglePortal);
+                check(
+                    "W17 C: ein Nicht-Multiplayer-Portal broadcastet keine Einladung",
+                    w17cResults.noBroadcastForSinglePortal
+                );
                 check(
                     "W17 C: eine nicht-library-bekannte Welt broadcastet keine Einladung",
                     w17cResults.noBroadcastForUnknownWorld
@@ -6063,8 +6178,14 @@ function startSaveServer() {
                     "W17 C: _p2pHandlePortalInvite ignoriert eine Einladung, wenn ich schon im Portal bin",
                     w17cResults.handleIgnoredWhenInPortal
                 );
-                check("W17 C: _renderPortalInviteBanner zeigt Text + Mitkommen-/Schließen-Knopf", w17cResults.bannerShows);
-                check("W17 C: dismissPortalInvite räumt die Einladung + verbirgt den Banner", w17cResults.dismissClears);
+                check(
+                    "W17 C: _renderPortalInviteBanner zeigt Text + Mitkommen-/Schließen-Knopf",
+                    w17cResults.bannerShows
+                );
+                check(
+                    "W17 C: dismissPortalInvite räumt die Einladung + verbirgt den Banner",
+                    w17cResults.dismissClears
+                );
                 check("W17 C: joinPortalInvite ohne Einladung → no_invite", w17cResults.joinNoInvite);
                 check("W17 C: joinPortalInvite mit unbekannter Welt → world_unknown", w17cResults.joinUnknownWorld);
                 check(
@@ -6137,9 +6258,7 @@ function startSaveServer() {
                         { id: "_single", label: "Y", hash: "" },
                     ]);
                     out.catalogSanitizeKeepsMp =
-                        san.length === 2 &&
-                        san[0].multiplayer === true &&
-                        san[1].multiplayer === false;
+                        san.length === 2 && san[0].multiplayer === true && san[1].multiplayer === false;
 
                     // renderLibraryUI rendert die Multiplayer-Marke — nur für
                     // die Multiplayer-Welt, nicht für eine Single-Welt.
@@ -6155,10 +6274,8 @@ function startSaveServer() {
                     const cards = Array.from(document.querySelectorAll("#library-list .library-card"));
                     const mpCard = cards.find((c) => /MP Vendored/.test(c.textContent || ""));
                     const singleCard = cards.find((c) => /Single Vendored/.test(c.textContent || ""));
-                    out.libraryRendersMark =
-                        !!mpCard && !!mpCard.querySelector(".library-mp-mark");
-                    out.libraryNoMarkForSingle =
-                        !!singleCard && !singleCard.querySelector(".library-mp-mark");
+                    out.libraryRendersMark = !!mpCard && !!mpCard.querySelector(".library-mp-mark");
+                    out.libraryNoMarkForSingle = !!singleCard && !singleCard.querySelector(".library-mp-mark");
 
                     out.vendorCheckboxInDom = !!document.getElementById("vendor-multiplayer");
 
@@ -6182,13 +6299,19 @@ function startSaveServer() {
                 check("W17 MP: _sanitizeImportedManifest trägt multiplayer", w17mpResults.sanitizeCarriesMp);
                 check("W17 MP: _sanitizeImportedManifest — Default ohne Marke", w17mpResults.sanitizeDefaultsNoMp);
                 check("W17 MP: multiplayer überlebt den localStorage-Rundlauf", w17mpResults.sanitizeSurvivesRoundtrip);
-                check("W17 MP: _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag", w17mpResults.vendorRegisterCarriesMp);
+                check(
+                    "W17 MP: _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag",
+                    w17mpResults.vendorRegisterCarriesMp
+                );
                 check(
                     "W17 MP: obtainPortalForWorld produziert für eine multiplayer-Welt ein Multiplayer-Portal",
                     w17mpResults.obtainProducesMpPortal
                 );
                 check("W17 MP: _p2pBuildCatalog trägt multiplayer", w17mpResults.catalogCarriesMp);
-                check("W17 MP: _p2pSanitizeCatalog bewahrt multiplayer + Default false", w17mpResults.catalogSanitizeKeepsMp);
+                check(
+                    "W17 MP: _p2pSanitizeCatalog bewahrt multiplayer + Default false",
+                    w17mpResults.catalogSanitizeKeepsMp
+                );
                 check("W17 MP: renderLibraryUI rendert die Multiplayer-Marke", w17mpResults.libraryRendersMark);
                 check("W17 MP: eine Single-Welt bekommt KEINE Multiplayer-Marke", w17mpResults.libraryNoMarkForSingle);
                 check("W17 MP: #vendor-multiplayer-Checkbox im DOM", w17mpResults.vendorCheckboxInDom);
@@ -6294,7 +6417,10 @@ function startSaveServer() {
                     "W17 P-Vendor: _sanitizeImportedManifest — Default serverMode relay",
                     w17svResults.sanitizeDefaultsRelay
                 );
-                check("W17 P-Vendor: serverMode überlebt den localStorage-Rundlauf", w17svResults.sanitizeSurvivesRoundtrip);
+                check(
+                    "W17 P-Vendor: serverMode überlebt den localStorage-Rundlauf",
+                    w17svResults.sanitizeSurvivesRoundtrip
+                );
                 check(
                     "W17 P-Vendor: _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag",
                     w17svResults.vendorRegisterCarriesServerMode
@@ -6372,8 +6498,7 @@ function startSaveServer() {
                     out.rootIsA = Math.abs(freqs[0] - 110) < 0.01;
                     // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
                     const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
-                    out.majorLeanRaisesThird =
-                        freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
+                    out.majorLeanRaisesThird = freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
                     // _lofiChordDurationMs — sorrow verlangsamt das Tempo.
                     const emo = r.state.player.emotions;
                     const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
@@ -6475,6 +6600,68 @@ function startSaveServer() {
                             void e;
                         }
                         out.bassPlayRuns = bassOk;
+                        // W4 V4 — die Musik hört die Welt: das Welt-Feld
+                        // liefert vier geclampte Achsen.
+                        const wf = r._lofiWorldField();
+                        out.worldFieldShape =
+                            !!wf &&
+                            ["lebendig", "dichte", "glut", "magieleitung"].every(
+                                (k) => typeof wf[k] === "number" && wf[k] >= 0 && wf[k] <= 1
+                            );
+                        // W4 V4 Sub-Schritt 1 — die Timbre-Modulation läuft wurf-frei.
+                        let timbreOk = true;
+                        try {
+                            r._lofiApplyWorldTimbre(4);
+                        } catch (e) {
+                            timbreOk = false;
+                            void e;
+                        }
+                        out.worldTimbreRuns = timbreOk;
+                        // W4 V4 Sub-Schritt 3 — Resonanz-Nähe liefert einen Boolean.
+                        let nearResOk = true;
+                        let nearResBool = false;
+                        try {
+                            nearResBool = r._lofiNearResonantArchitecture();
+                        } catch (e) {
+                            nearResOk = false;
+                            void e;
+                        }
+                        out.nearResonantBoolean = nearResOk && typeof nearResBool === "boolean";
+                        // W4 V4 Sub-Schritt 2 — das Welt-Feld biast die Harmonie,
+                        // ABER die Emotion bleibt der dominante Kanal. Wir stubben
+                        // _lofiWorldField, um die zwei Bias-Kanäle (Emotion 0.8,
+                        // Welt-Feld 0.4) sauber gegeneinander zu messen — selber
+                        // RNG-Strom (fixe rngState) → deterministischer Vergleich.
+                        {
+                            const brightDeg = AnazhRealm.LOFI_BRIGHT_DEGREES;
+                            const origField = r._lofiWorldField;
+                            const countBright = () => {
+                                sym.lofi.rngState = 4242;
+                                let c = 0;
+                                for (let i = 0; i < 500; i++) if (brightDeg.indexOf(r._lofiNextDegree(0)) >= 0) c++;
+                                return c;
+                            };
+                            const neutralF = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
+                            const brightF = { lebendig: 1, dichte: 0.5, glut: 0, magieleitung: 1 };
+                            // (a) volle Emotion-Helligkeit, neutrales Welt-Feld
+                            emo.joy = 1;
+                            emo.hope = 1;
+                            emo.sorrow = 0;
+                            r._lofiWorldField = () => neutralF;
+                            const brightEmotionFull = countBright();
+                            // (b) neutrale Emotion, volle Welt-Feld-Helligkeit
+                            emo.joy = 0;
+                            emo.hope = 0;
+                            emo.sorrow = 0;
+                            r._lofiWorldField = () => brightF;
+                            const brightWorldFull = countBright();
+                            // (c) neutrale Emotion, neutrales Welt-Feld
+                            r._lofiWorldField = () => neutralF;
+                            const brightFieldNeutral = countBright();
+                            r._lofiWorldField = origField;
+                            out.emotionDominatesWorldBias = brightEmotionFull > brightWorldFull;
+                            out.worldFieldBiasesHarmony = brightWorldFull > brightFieldNeutral;
+                        }
                         // W4 V3 — _lofiNextDegree liefert eine in der Markov-
                         // Kette erreichbare Stufe (0..6).
                         const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
@@ -6542,36 +6729,84 @@ function startSaveServer() {
                 })
                 .catch((err) => ({ error: err && err.message }));
             if (!w4v2Results || w4v2Results.error) {
-                check("W4 V2/V3 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
+                check(
+                    "W4 V2/V3 erreichbar",
+                    false,
+                    (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen"
+                );
             } else {
                 check("W4 V3: LOFI_SCALE (7 Töne) + LOFI_HARMONY (7 Stufen) frozen", w4v2Results.scaleHarmonyDefined);
                 check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
-                check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
+                check(
+                    "W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)",
+                    w4v2Results.chordFromDegree
+                );
                 check("W4 V3: _lofiScaleSemitone wickelt Oktaven (idx 7 → +12 Halbtöne)", w4v2Results.scaleSemitone);
-                check("W4 V3 Phase 3: LOFI_GROOVE_PATTERN (kick/snare/hihat) + GROOVE_SWING definiert", w4v2Results.grooveDefined);
-                check("W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)", w4v2Results.grooveStepTime);
+                check(
+                    "W4 V3 Phase 3: LOFI_GROOVE_PATTERN (kick/snare/hihat) + GROOVE_SWING definiert",
+                    w4v2Results.grooveDefined
+                );
+                check(
+                    "W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)",
+                    w4v2Results.grooveStepTime
+                );
                 check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
                 check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
                 check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
                 check("W4 V2: _lofiChordDurationMs — ruhig ≈ 4000 ms (60 BPM × 4)", w4v2Results.calmDuration4s);
                 check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
                 if (w4v2Results.symphonyReady) {
-                    check("W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)", w4v2Results.lofiLayerBuilt);
+                    check(
+                        "W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)",
+                        w4v2Results.lofiLayerBuilt
+                    );
                     check(
                         "W4 V3 Phase 2: _lofiMelodyNotes — Phrase startet + endet auf Akkord-Ton, steigt zeitlich",
                         w4v2Results.melodyShape
                     );
-                    check("W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)", w4v2Results.melodyDensityEmotion);
+                    check(
+                        "W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)",
+                        w4v2Results.melodyDensityEmotion
+                    );
                     check(
                         "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
                         w4v2Results.melodyRhythmDynamics
                     );
                     check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
                     check("W4 V3 Phase 3: _lofiPlayGroove spielt den Groove wurf-frei", w4v2Results.groovePlayRuns);
-                    check("W4 V3 Phase 4: _lofiPlayBass spielt den Bass wurf-frei (folgt der Akkord-Wurzel)", w4v2Results.bassPlayRuns);
+                    check(
+                        "W4 V3 Phase 4: _lofiPlayBass spielt den Bass wurf-frei (folgt der Akkord-Wurzel)",
+                        w4v2Results.bassPlayRuns
+                    );
+                    check(
+                        "W4 V4: _lofiWorldField liefert vier geclampte Welt-Achsen (0..1)",
+                        w4v2Results.worldFieldShape
+                    );
+                    check(
+                        "W4 V4 Sub-1: _lofiApplyWorldTimbre moduliert die Klangfarbe wurf-frei",
+                        w4v2Results.worldTimbreRuns
+                    );
+                    check(
+                        "W4 V4 Sub-3: _lofiNearResonantArchitecture liefert einen Boolean wurf-frei",
+                        w4v2Results.nearResonantBoolean
+                    );
+                    check(
+                        "W4 V4 Sub-2: das Welt-Feld biast die Harmonie (helles Feld → mehr helle Stufen)",
+                        w4v2Results.worldFieldBiasesHarmony
+                    );
+                    check(
+                        "W4 V4 Sub-2: die Emotion bleibt der dominante Bias (Emotion 0.8 > Welt-Feld 0.4)",
+                        w4v2Results.emotionDominatesWorldBias
+                    );
                     check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
-                    check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);
-                    check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
+                    check(
+                        "W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)",
+                        w4v2Results.harmonyDeterministic
+                    );
+                    check(
+                        "W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)",
+                        w4v2Results.emotionBiasesHarmony
+                    );
                     check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
                     check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
                     check("W4 V2: symphonyTick ruft _lofiTick wurf-frei", w4v2Results.symphonyTickRuns);
@@ -6630,7 +6865,9 @@ function startSaveServer() {
 
                     // spawn_blueprint + remove_architecture MÜSSEN broadcasten
                     // (nicht in NON_BROADCASTABLE_OPS).
-                    const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : r.constructor.NON_BROADCASTABLE_OPS;
+                    const nb = window.AnazhRealm
+                        ? window.AnazhRealm.NON_BROADCASTABLE_OPS
+                        : r.constructor.NON_BROADCASTABLE_OPS;
                     out.opsAreBroadcastable = !nb.has("spawn_blueprint") && !nb.has("remove_architecture");
 
                     // confirmBuild broadcastet spawn_blueprint mit string-archId.
@@ -6655,9 +6892,7 @@ function startSaveServer() {
                         typeof builtInProg[4] === "string" &&
                         builtInProg[4].length > 2;
                     // Die lokal gebaute Struktur trägt dieselbe string-id.
-                    out.confirmBuildLocalSharedId = r.state.architectures.some(
-                        (a) => a && a.id === builtInProg[4]
-                    );
+                    out.confirmBuildLocalSharedId = r.state.architectures.some((a) => a && a.id === builtInProg[4]);
 
                     // Eigener (nicht-built-in) Bauplan → chain(define_blueprint, spawn).
                     const cloneName = "bausync_custom";
@@ -6690,8 +6925,7 @@ function startSaveServer() {
                     // Persistenz: buildStateSnapshot trägt die arch-id.
                     const snap = r.buildStateSnapshot();
                     out.snapshotKeepsArchId =
-                        Array.isArray(snap.architectures) &&
-                        snap.architectures.some((a) => a && a.id === "a-unit-1");
+                        Array.isArray(snap.architectures) && snap.architectures.some((a) => a && a.id === "a-unit-1");
 
                     return out;
                 })
@@ -6704,17 +6938,41 @@ function startSaveServer() {
                 );
             } else {
                 check("Bau-Sync: _newArchId liefert eindeutige string-ids", buildSyncResults.newArchIdUnique);
-                check("Bau-Sync: spawnArchitecture nimmt eine geteilte string-id", buildSyncResults.spawnAcceptsStringId);
-                check("Bau-Sync: spawnArchitecture ohne id bleibt numerisch (Worldgen)", buildSyncResults.spawnDefaultNumericId);
+                check(
+                    "Bau-Sync: spawnArchitecture nimmt eine geteilte string-id",
+                    buildSyncResults.spawnAcceptsStringId
+                );
+                check(
+                    "Bau-Sync: spawnArchitecture ohne id bleibt numerisch (Worldgen)",
+                    buildSyncResults.spawnDefaultNumericId
+                );
                 check("Bau-Sync: spawn_blueprint spawnt unter der archId", buildSyncResults.spawnBlueprintArchId);
-                check("Bau-Sync: spawn_blueprint ist idempotent (kein Doppel-Spawn)", buildSyncResults.spawnBlueprintIdempotent);
+                check(
+                    "Bau-Sync: spawn_blueprint ist idempotent (kein Doppel-Spawn)",
+                    buildSyncResults.spawnBlueprintIdempotent
+                );
                 check("Bau-Sync: remove_architecture entfernt per string-id", buildSyncResults.removeArchitectureWorks);
-                check("Bau-Sync: remove_architecture ist defensiv (unbekannt/nicht-string)", buildSyncResults.removeArchitectureSafe);
+                check(
+                    "Bau-Sync: remove_architecture ist defensiv (unbekannt/nicht-string)",
+                    buildSyncResults.removeArchitectureSafe
+                );
                 check("Bau-Sync: describeProgram kennt remove_architecture", buildSyncResults.describeRemove);
-                check("Bau-Sync: spawn_blueprint + remove_architecture broadcasten", buildSyncResults.opsAreBroadcastable);
-                check("Bau-Sync: confirmBuild broadcastet spawn_blueprint mit archId", buildSyncResults.confirmBuildBroadcasts);
-                check("Bau-Sync: die lokal gebaute Struktur trägt die geteilte id", buildSyncResults.confirmBuildLocalSharedId);
-                check("Bau-Sync: eigener Bauplan reist als chain(define_blueprint, spawn)", buildSyncResults.confirmBuildCustomChains);
+                check(
+                    "Bau-Sync: spawn_blueprint + remove_architecture broadcasten",
+                    buildSyncResults.opsAreBroadcastable
+                );
+                check(
+                    "Bau-Sync: confirmBuild broadcastet spawn_blueprint mit archId",
+                    buildSyncResults.confirmBuildBroadcasts
+                );
+                check(
+                    "Bau-Sync: die lokal gebaute Struktur trägt die geteilte id",
+                    buildSyncResults.confirmBuildLocalSharedId
+                );
+                check(
+                    "Bau-Sync: eigener Bauplan reist als chain(define_blueprint, spawn)",
+                    buildSyncResults.confirmBuildCustomChains
+                );
                 check("Bau-Sync: buildStateSnapshot persistiert die arch-id", buildSyncResults.snapshotKeepsArchId);
             }
 
@@ -6800,7 +7058,8 @@ function startSaveServer() {
                     p2p._voiceServedAt.clear();
                     await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-1", prompt: "hallo" });
                     const resp1 = chSent.find((c) => c.obj && c.obj.reqId === "rq-1");
-                    out.requestServed = !!resp1 && resp1.obj.type === "llm-response" && resp1.obj.say === "geteilte Antwort";
+                    out.requestServed =
+                        !!resp1 && resp1.obj.type === "llm-response" && resp1.obj.say === "geteilte Antwort";
 
                     // Rate-Limit: zweite Anfrage sofort danach → rate_limited.
                     await r._p2pHandleLlmRequest("askPeer", { reqId: "rq-2", prompt: "nochmal" });
@@ -6860,7 +7119,10 @@ function startSaveServer() {
                     r._p2pHandleLlmRequest = () => {
                         handlerHit = true;
                     };
-                    r._p2pHandleChannelMessage("chPeer", JSON.stringify({ type: "llm-request", reqId: "c1", prompt: "x" }));
+                    r._p2pHandleChannelMessage(
+                        "chPeer",
+                        JSON.stringify({ type: "llm-request", reqId: "c1", prompt: "x" })
+                    );
                     out.channelRoutesLlmRequest = handlerHit === true;
                     r._p2pHandleLlmRequest = origReq;
 
@@ -6886,7 +7148,10 @@ function startSaveServer() {
             } else {
                 check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
                 check("W7 P3: alle 7 LLM-Pool-Methoden auf der Klasse", w7p3Results.methodsPresent);
-                check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
+                check(
+                    "W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)",
+                    w7p3Results.setVoiceSharedGated
+                );
                 check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
                 check("W7 P3: soul-Empfang speichert voiceShared am Peer", w7p3Results.soulStoresVoiceShared);
                 check("W7 P3: _p2pFindVoicePeer findet den teilenden Peer", w7p3Results.findVoicePeer);
@@ -6899,7 +7164,10 @@ function startSaveServer() {
                 check("W7 P3: eine Antwort vom falschen Peer wird verworfen", w7p3Results.wrongPeerRejected);
                 check("W7 P3: das Antwort-Programm läuft durch die dslRun-Sandbox", w7p3Results.programRanInSandbox);
                 check("W7 P3: _p2pRequestSharedVoice ohne Voice-Peer → no_voice", w7p3Results.requestNoVoice);
-                check("W7 P3: llm-request ist kanal-exklusiv (erreicht den Handler)", w7p3Results.channelRoutesLlmRequest);
+                check(
+                    "W7 P3: llm-request ist kanal-exklusiv (erreicht den Handler)",
+                    w7p3Results.channelRoutesLlmRequest
+                );
                 check("W7 P3: 'Stimme teilen'-Knopf im DOM", w7p3Results.voiceButtonExists);
             }
 
@@ -6960,8 +7228,7 @@ function startSaveServer() {
                     );
                     out.lobbyRoomsStored = p2p.lobby.rooms.length === 1 && p2p.lobby.rooms[0].room === "raum-xyz";
                     const listEl = document.getElementById("p2p-lobby-list");
-                    out.lobbyRendered =
-                        !!listEl && !!listEl.querySelector("button[data-lobby-room='raum-xyz']");
+                    out.lobbyRendered = !!listEl && !!listEl.querySelector("button[data-lobby-room='raum-xyz']");
 
                     // joinLobbyRoom setzt roomOverride.
                     const joinRes = r.joinLobbyRoom("raum-xyz");
@@ -7061,7 +7328,10 @@ function startSaveServer() {
                 check("Kreatur-Sync: creature-pos legt eine Sicht-Kreatur an", w7p4Results.remoteCreatureCreated);
                 check("Kreatur-Sync: Sicht-Kreatur liegt NICHT in state.creatures", w7p4Results.remoteNotInLocalSim);
                 check("Kreatur-Sync: Reconcile entfernt verschwundene Kreaturen", w7p4Results.reconcileRemoves);
-                check("Kreatur-Sync: _p2pRemovePeer entsorgt die Sicht-Kreaturen", w7p4Results.removePeerCleansCreatures);
+                check(
+                    "Kreatur-Sync: _p2pRemovePeer entsorgt die Sicht-Kreaturen",
+                    w7p4Results.removePeerCleansCreatures
+                );
                 check("Kreatur-Sync: creature-pos ist kanal-zustellbar", w7p4Results.creaturePosChannelAllowed);
             }
 
@@ -7172,9 +7442,7 @@ function startSaveServer() {
                     } catch {
                         /* ignore */
                     }
-                    out.heardLogsLine = logs.some(
-                        (l) => l.includes("Begleiter") && l.includes("Träume sind sauber.")
-                    );
+                    out.heardLogsLine = logs.some((l) => l.includes("Begleiter") && l.includes("Träume sind sauber."));
                     r.log = origLog;
                     grok.speechEnabled = false;
 
@@ -7235,7 +7503,10 @@ function startSaveServer() {
                     "W11 V4: _populateCompanionVoiceSelect behält die Default-Option",
                     w11v4Results.defaultOptionKept
                 );
-                check("W11 V4: Voice-Wahl persistiert in companionVoice + localStorage", w11v4Results.voiceChangePersists);
+                check(
+                    "W11 V4: Voice-Wahl persistiert in companionVoice + localStorage",
+                    w11v4Results.voiceChangePersists
+                );
             }
 
             // ### Ring 11 V2 — DSL-AST-Broadcast (Welt-Sync) ###
@@ -10721,7 +10992,10 @@ function startSaveServer() {
                     "Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina",
                     wave6c2Results.schoepferSkipsStamina
                 );
-                check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (Modus-Gate)", wave6c2Results.pfadChargesStamina);
+                check(
+                    "Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (Modus-Gate)",
+                    wave6c2Results.pfadChargesStamina
+                );
                 check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
                 check(
                     "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
@@ -14189,8 +14463,7 @@ function startSaveServer() {
                     // Steigung dort muss klar positiv sein (smoothstep: ≈0).
                     const dtN = 0.003;
                     const slopeAtStop =
-                        (r._interpolateDayNight(0.32 + dtN).intensity -
-                            r._interpolateDayNight(0.32 - dtN).intensity) /
+                        (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32 - dtN).intensity) /
                         (2 * dtN);
                     out.dayNightNoPulse = slopeAtStop > 0.3;
                     // C1-Stetigkeit: Steigung kurz VOR und kurz NACH dem Stop
@@ -14789,14 +15062,21 @@ function startSaveServer() {
 
             if (v830Results && !v830Results.error) {
                 check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
-                check("V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)", v830Results.waterDiagonalWaves);
+                check(
+                    "V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)",
+                    v830Results.waterDiagonalWaves
+                );
                 check("V8.30: Wasser-Shader hat Sonnen-Glitzern (Spekular)", v830Results.waterSunGlitter);
                 check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
                 check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
                 check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
                 check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
             } else {
-                check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
+                check(
+                    "V8.30: Schnittstellen-Politur Tests laufen",
+                    false,
+                    v830Results ? v830Results.error : "no result"
+                );
             }
 
             // ### V8.31 — Fog an die Custom-Shader + heterogenere Wasser-Wellen ###
@@ -14823,23 +15103,20 @@ function startSaveServer() {
                         const wm = r.state.waterPlane.material;
                         out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
                         out.waterDomainWarp =
-                            /waveDisplace/.test(wm.vertexShader || "") &&
-                            /warp/.test(wm.vertexShader || "");
+                            /waveDisplace/.test(wm.vertexShader || "") && /warp/.test(wm.vertexShader || "");
                         out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
                     }
                     // Fog-Slider propagiert in die Custom-Shader-Uniforms.
                     r.setFogDistance(0.4);
                     r._applyDayNightToScene();
                     const tnNear =
-                        r.state.terrainMaterial &&
-                        r.state.terrainMaterial.uniforms.fogFar
+                        r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
                             ? r.state.terrainMaterial.uniforms.fogFar.value
                             : -1;
                     r.setFogDistance(1.8);
                     r._applyDayNightToScene();
                     const tnFar =
-                        r.state.terrainMaterial &&
-                        r.state.terrainMaterial.uniforms.fogFar
+                        r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
                             ? r.state.terrainMaterial.uniforms.fogFar.value
                             : -1;
                     out.fogSliderReachesTerrain = tnFar > tnNear;
@@ -14855,7 +15132,10 @@ function startSaveServer() {
                 check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
                 check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
                 check("V8.31: Wasser-Wellen nutzen Domain-Warp (heterogener)", v831Results.waterDomainWarp);
-                check("V8.31: Fog-Slider erreicht den Terrain-Shader (kein Gras-only-Effekt mehr)", v831Results.fogSliderReachesTerrain);
+                check(
+                    "V8.31: Fog-Slider erreicht den Terrain-Shader (kein Gras-only-Effekt mehr)",
+                    v831Results.fogSliderReachesTerrain
+                );
             } else {
                 check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
             }
@@ -14911,9 +15191,18 @@ function startSaveServer() {
 
             if (v832Results && !v832Results.error) {
                 check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
-                check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
-                check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
-                check("V8.32: Wasser-Shader hat Fresnel-Opazität (Sterne nicht durchs Wasser)", v832Results.waterFresnel);
+                check(
+                    "V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)",
+                    v832Results.eyesFlagComputed
+                );
+                check(
+                    "V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)",
+                    v832Results.tintUsesEyesFlag
+                );
+                check(
+                    "V8.32: Wasser-Shader hat Fresnel-Opazität (Sterne nicht durchs Wasser)",
+                    v832Results.waterFresnel
+                );
                 check("V8.32: Fog-Slider geht bis 300 %", v832Results.fogSliderTo300);
                 check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
             } else {
@@ -15012,7 +15301,10 @@ function startSaveServer() {
                 check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
                 check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
                 check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
-                check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
+                check(
+                    "V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)",
+                    v833Results.riseAboveNeutral
+                );
                 check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
                 check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
                 check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
@@ -15156,12 +15448,12 @@ function startSaveServer() {
                 check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
                 check("V8.34: aura-Nachricht setzt Hue + Intensität", v834Results.auraReceived);
                 check("V8.34: _p2pUpdatePeer erzeugt den Peer-Aura-Sprite", v834Results.auraSpriteCreated);
-                check(
-                    "V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}",
-                    v834Results.broadcastSoulPayload
-                );
+                check("V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
                 check("V8.34: tickPlayerAura cached Hue+Intensität für den Sync", v834Results.auraOutCached);
-                check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
+                check(
+                    "V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)",
+                    v834Results.playerSoulStillLocal
+                );
                 check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Aura + Schild", v834Results.peersRemoved);
             } else {
                 check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
@@ -15190,7 +15482,12 @@ function startSaveServer() {
                     // Arme als Off-Achsen-Spiegel-Paar.
                     const bodyBp = {
                         name: "_t835_body",
-                        parts: [part("fleisch", 0, 1, 0), part("knochen", 0, 3, 0), part("fleisch", -1, 2, 0), part("fleisch", 1, 2, 0)],
+                        parts: [
+                            part("fleisch", 0, 1, 0),
+                            part("knochen", 0, 3, 0),
+                            part("fleisch", -1, 2, 0),
+                            part("fleisch", 1, 2, 0),
+                        ],
                     };
                     out.bodyIsShaped = r._isBodyShaped(bodyBp) === true;
                     out.bodyRoleSoul = r.computeBlueprintRole(bodyBp) === "soul";
@@ -15212,7 +15509,17 @@ function startSaveServer() {
                     out.asymNotBody = r._isBodyShaped(asymBp) === false;
 
                     // --- lebendig+weich → Nahrung ---
-                    const foodBp = { name: "_t835_food", parts: [{ shape: "sphere", material: "fleisch", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } }] };
+                    const foodBp = {
+                        name: "_t835_food",
+                        parts: [
+                            {
+                                shape: "sphere",
+                                material: "fleisch",
+                                size: { x: 1, y: 1, z: 1 },
+                                position: { x: 0, y: 0, z: 0 },
+                            },
+                        ],
+                    };
                     out.foodIsFoodLike = r._isFoodLike(foodBp) === true;
                     out.foodRoleConsumable = r.computeBlueprintRole(foodBp) === "consumable";
 
@@ -15280,7 +15587,10 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (v835Results && !v835Results.error) {
-                check("V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)", v835Results.methodsExist);
+                check(
+                    "V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)",
+                    v835Results.methodsExist
+                );
                 check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
                 check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
                 check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
@@ -15290,11 +15600,26 @@ function startSaveServer() {
                 check("V8.35: lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
                 check("V8.35: Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
                 check("V8.35: Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
-                check("V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung", v835Results.priorityBodyBeatsFood);
-                check("V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)", v835Results.refreshEmergesSoul);
-                check("V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)", v835Results.refreshEmergesFood);
-                check("V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin", v835Results.roleManualStillWins);
-                check("V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)", v835Results.metaLessConsumableWorks);
+                check(
+                    "V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung",
+                    v835Results.priorityBodyBeatsFood
+                );
+                check(
+                    "V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)",
+                    v835Results.refreshEmergesSoul
+                );
+                check(
+                    "V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)",
+                    v835Results.refreshEmergesFood
+                );
+                check(
+                    "V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin",
+                    v835Results.roleManualStillWins
+                );
+                check(
+                    "V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)",
+                    v835Results.metaLessConsumableWorks
+                );
             } else {
                 check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
             }
@@ -15371,7 +15696,10 @@ function startSaveServer() {
 
             if (v836Results && !v836Results.error) {
                 check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
-                check("V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)", v836Results.jumpNoActivate1);
+                check(
+                    "V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)",
+                    v836Results.jumpNoActivate1
+                );
                 check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
                 check("V8.36: Grabe-Radius auf 3.0 (Mulde statt Nadel)", v836Results.digRadius3);
                 check("V8.36: modify_terrain clampt die Höhe [-100,100] (kein Durchfall)", v836Results.digHeightClamp);
@@ -15416,10 +15744,8 @@ function startSaveServer() {
                     {
                         r._workshopEnsurePreview();
                         const pre = r.state.workshop && r.state.workshop.preview;
-                        out.gridInScene =
-                            !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
-                        out.axesInScene =
-                            !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
+                        out.gridInScene = !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
+                        out.axesInScene = !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
                         // raycast der Helfer ist als eigene no-op-Property
                         // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
                         out.helperRaycastNoop =
@@ -15486,7 +15812,10 @@ function startSaveServer() {
                 check("V8.37: Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
                 check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
                 check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
-                check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
+                check(
+                    "V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)",
+                    v837Results.helperRaycastNoop
+                );
                 check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥12)", v837Results.collapsibleHeaders);
                 check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
                 check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
@@ -15522,8 +15851,7 @@ function startSaveServer() {
                         ];
                         out.costTooltipMethod = typeof r._blueprintCostTooltip === "function";
                         const tip = r._blueprintCostTooltip("_t838c");
-                        out.costTooltipText =
-                            /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
+                        out.costTooltipText = /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
                         const origHotbar0 = r.state.hotbar[0];
                         r.state.hotbar[0] = "_t838c";
                         r._renderHotbarDOM();
@@ -15548,8 +15876,22 @@ function startSaveServer() {
                         r.createBlueprint("_t838d", "T838D");
                         const bp = r.state.blueprints["_t838d"];
                         bp.parts = [
-                            { shape: "box", material: "stein", position: { x: -1, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, color: 0x888888 },
-                            { shape: "box", material: "stein", position: { x: 1, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, color: 0x888888 },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: -1, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 1, y: 0, z: 0 },
+                                rotation: { x: 0, y: 0, z: 0 },
+                                size: { x: 1, y: 1, z: 1 },
+                                color: 0x888888,
+                            },
                         ];
                         r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
                         const group = r._buildFromBlueprint(bp);
@@ -15566,8 +15908,7 @@ function startSaveServer() {
                         out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
                         r._renderWorkshopDOM();
                         const connSection = document.querySelector(".workshop-connections");
-                        out.connHintShown =
-                            !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
+                        out.connHintShown = !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
                         delete r.state.blueprints["_t838d"];
                         // Auswahl wiederherstellen — kein hängender Verweis auf
                         // den gelöschten Test-Bauplan für nachfolgende Tests.
@@ -15581,9 +15922,7 @@ function startSaveServer() {
                         out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
                             /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
                         );
-                        out.cameraAspectSync = /camera\.aspect = w \/ h/.test(
-                            r._workshopSyncCanvasSize.toString()
-                        );
+                        out.cameraAspectSync = /camera\.aspect = w \/ h/.test(r._workshopSyncCanvasSize.toString());
                     }
 
                     return out;
@@ -15597,10 +15936,19 @@ function startSaveServer() {
                 check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
                 check("V8.38: Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
                 check("V8.38: Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
-                check("V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
-                check("V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)", v838Results.connNotCountedAsPart);
+                check(
+                    "V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)",
+                    v838Results.connDepthTestOff
+                );
+                check(
+                    "V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
+                    v838Results.connNotCountedAsPart
+                );
                 check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
-                check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
+                check(
+                    "V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)",
+                    v838Results.previewAspect
+                );
                 check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
             } else {
                 check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
@@ -15670,9 +16018,7 @@ function startSaveServer() {
                     }
 
                     // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
-                    out.creatureStatsQuality = /computeBlueprintQuality/.test(
-                        r.computeCreatureStats.toString()
-                    );
+                    out.creatureStatsQuality = /computeBlueprintQuality/.test(r.computeCreatureStats.toString());
                     out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
 
                     // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
@@ -15719,8 +16065,14 @@ function startSaveServer() {
                 check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
                 check("V8.39: computeBlueprintQuality-Methode existiert", v839Results.qualityMethod);
                 check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
-                check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
-                check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
+                check(
+                    "V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität",
+                    v839Results.qualityWorked
+                );
+                check(
+                    "V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)",
+                    v839Results.staminaScales
+                );
                 check("V8.39: computeCreatureStats skaliert Equip mit Qualität", v839Results.creatureStatsQuality);
                 check("V8.39: activateConsumable skaliert Trank-Stärke mit Qualität", v839Results.consumableQuality);
                 check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
@@ -16821,8 +17173,7 @@ function startSaveServer() {
                     r._portalOverlay = null;
                     // _buildPortalOverlay setzt die Drei-Stufen-Marke + hintEl.
                     r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: ["skybox_color"] });
-                    out.stageUebersetzt =
-                        r._portalOverlay.manifestStage === "übersetzt" && !!r._portalOverlay.hintEl;
+                    out.stageUebersetzt = r._portalOverlay.manifestStage === "übersetzt" && !!r._portalOverlay.hintEl;
                     r._disposePortalOverlay();
                     r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
                     out.stageAusgestellt = r._portalOverlay.manifestStage === "ausgestellt";
@@ -16964,8 +17315,7 @@ function startSaveServer() {
                     out.verifyTampered =
                         (await r._vibeVerify("anazh-vibe-pass-TAMPERED", sig, vp.publicKeyHex)) === false;
                     // Falscher öffentlicher Schlüssel → false.
-                    out.verifyWrongKey =
-                        (await r._vibeVerify("anazh-vibe-pass-test", sig, "0".repeat(64))) === false;
+                    out.verifyWrongKey = (await r._vibeVerify("anazh-vibe-pass-test", sig, "0".repeat(64))) === false;
                     // Defensiv: Müll-Eingabe wirft nicht, liefert false.
                     out.verifyDefensive =
                         (await r._vibeVerify("x", null, null)) === false &&
@@ -16981,8 +17331,7 @@ function startSaveServer() {
                         snapJson.indexOf(vp._privateKeyJwk.d) === -1 && snapJson.indexOf('"vibePass"') === -1;
                     // Export → Import-Rundlauf bewahrt die Identität.
                     const exported = r.exportVibePass();
-                    out.exportShape =
-                        !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
+                    out.exportShape = !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
                     const imp = await r.importVibePass(exported, { skipConfirm: true });
                     out.importRoundTrip = !!imp && imp.ok === true && r.vibePassId() === idBefore;
                     const impBad = await r.importVibePass({ nonsense: true }, { skipConfirm: true });
@@ -17080,10 +17429,7 @@ function startSaveServer() {
                         !!snapBp && snapBp.signature === bp.signature && snapBp.authorPubKey === bp.authorPubKey;
                     // Cross-Autor: ein mit FREMDEM Schlüssel signierter Bauplan
                     // verifiziert ebenso (das Fundament für W13 Phase 3).
-                    const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, [
-                        "sign",
-                        "verify",
-                    ]);
+                    const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
                     const foreignJwk = await crypto.subtle.exportKey("jwk", foreignPair.privateKey);
                     const foreignCanon = r._canonicalBlueprint(bp);
                     const foreignSig = await crypto.subtle.sign(
@@ -17140,7 +17486,10 @@ function startSaveServer() {
                 check("W13 P2: fremd-signierter Bauplan verifiziert (Cross-Autor)", w13p2Results.crossAuthorValid);
                 check("W13 P2: der Cross-Autor-Schlüssel ist nicht der eigene", w13p2Results.crossAuthorForeign);
                 check("W13 P2: Klon eines signierten Bauplans ist unsigniert", w13p2Results.cloneUnsigned);
-                check("W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')", w13p2Results.verifyDefensive);
+                check(
+                    "W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')",
+                    w13p2Results.verifyDefensive
+                );
                 check("W13 P2: Signatur-Sektion im Werkstatt-Panel", w13p2Results.uiSigRow);
                 check("W13 P2: Signier-Knopf im Werkstatt-Panel", w13p2Results.uiSigBtn);
             } else {
@@ -17216,7 +17565,12 @@ function startSaveServer() {
                     // (c) Beweis über eine FREMDE peerId — die Bindung greift.
                     const proofWrong = await sign("_w13p3WRONG");
                     r.p2pHandleMessage(
-                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerC", vibePassId: foreignId, proof: proofWrong })
+                        JSON.stringify({
+                            type: "vibe",
+                            peerId: "_w13p3peerC",
+                            vibePassId: foreignId,
+                            proof: proofWrong,
+                        })
                     );
                     // (d) ohne Beweis — vibePassId notiert, aber nicht verifiziert.
                     r.p2pHandleMessage(
@@ -17235,7 +17589,8 @@ function startSaveServer() {
                     out.recvValidVerifies = !!peerA && peerA.vibeVerified === true;
                     out.recvTamperedRejected = !!peerB && peerB.vibeVerified === false;
                     out.recvWrongBindingRejected = !!peerC && peerC.vibeVerified === false;
-                    out.recvNoProofUnverified = !!peerD && peerD.vibePassId === foreignId && peerD.vibeVerified === false;
+                    out.recvNoProofUnverified =
+                        !!peerD && peerD.vibePassId === foreignId && peerD.vibeVerified === false;
                     out.recvIgnoresSelf = !p2p.peers.has("_w13p3self");
                     // Verifizierter Peer bekommt ein Name-Schild mit Fingerprint (zweizeilig).
                     out.verifiedPeerLabel =
@@ -17256,22 +17611,44 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (w13p3Results && !w13p3Results.error) {
-                check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
+                check(
+                    "W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren",
+                    w13p3Results.methods
+                );
                 check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
                 check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
-                check("W13 P3: der gesendete Beweis verifiziert gegen den eigenen Schlüssel", w13p3Results.broadcastProofVerifies);
-                check("W13 P3: _p2pBroadcastVibe sendet nichts bei deaktiviertem P2P", w13p3Results.broadcastSkipsDisabled);
+                check(
+                    "W13 P3: der gesendete Beweis verifiziert gegen den eigenen Schlüssel",
+                    w13p3Results.broadcastProofVerifies
+                );
+                check(
+                    "W13 P3: _p2pBroadcastVibe sendet nichts bei deaktiviertem P2P",
+                    w13p3Results.broadcastSkipsDisabled
+                );
                 check("W13 P3: vibe-Empfang notiert die vibePassId des Peers", w13p3Results.recvRecordsId);
                 check("W13 P3: gültiger Beweis → der Peer ist verifiziert", w13p3Results.recvValidVerifies);
                 check("W13 P3: manipulierter Beweis → nicht verifiziert", w13p3Results.recvTamperedRejected);
-                check("W13 P3: Beweis über fremde peerId → nicht verifiziert (Bindung greift)", w13p3Results.recvWrongBindingRejected);
-                check("W13 P3: vibe ohne Beweis → vibePassId notiert, aber nicht verifiziert", w13p3Results.recvNoProofUnverified);
+                check(
+                    "W13 P3: Beweis über fremde peerId → nicht verifiziert (Bindung greift)",
+                    w13p3Results.recvWrongBindingRejected
+                );
+                check(
+                    "W13 P3: vibe ohne Beweis → vibePassId notiert, aber nicht verifiziert",
+                    w13p3Results.recvNoProofUnverified
+                );
                 check("W13 P3: vibe mit eigener peerId wird ignoriert", w13p3Results.recvIgnoresSelf);
-                check("W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint", w13p3Results.verifiedPeerLabel);
+                check(
+                    "W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint",
+                    w13p3Results.verifiedPeerLabel
+                );
                 check("W13 P3: Name-Schild ohne Fingerprint bleibt einzeilig", w13p3Results.labelOneLine);
                 check("W13 P3: Name-Schild mit Fingerprint wird zweizeilig", w13p3Results.labelTwoLine);
             } else {
-                check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
+                check(
+                    "W13 P3: Vibe-Pass-Multi-User-Tests laufen",
+                    false,
+                    w13p3Results ? w13p3Results.error : "no result"
+                );
             }
 
             // W13 P3 — der signaling-server hat einen vibe-Handler (Quell-Check).
@@ -17384,7 +17761,10 @@ function startSaveServer() {
                 check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
                 check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
                 check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
-                check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);
+                check(
+                    "W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)",
+                    w14Results.bpIsPortal
+                );
                 check("W14 P1: der geholte Bauplan ist auf die Strom-Welt gerichtet", w14Results.bpAimedAtFluid);
                 check("W14 P1: der geholte Portal-Bauplan ist betretbar (Affordance isPortal)", w14Results.bpEnterable);
                 check("W14 P1: das Portal liegt im Inventar", w14Results.inInventory);
@@ -17488,7 +17868,8 @@ function startSaveServer() {
                     out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
                     await new Promise((res) => setTimeout(res, 180));
                     const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
-                    out.overlayShowsSigned = !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
+                    out.overlayShowsSigned =
+                        !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
                     r._disposePortalOverlay();
                     // Aufräumen.
                     delete r.state.signedWorlds.fluid;
@@ -17499,22 +17880,43 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (w14p2Results && !w14p2Results.error) {
-                check("W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren", w14p2Results.methods);
+                check(
+                    "W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren",
+                    w14p2Results.methods
+                );
                 check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
-                check("W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)", w14p2Results.canonIgnoresPath);
+                check(
+                    "W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)",
+                    w14p2Results.canonIgnoresPath
+                );
                 check("W14 P2: unsignierte Welt → Status 'unsigned'", w14p2Results.unsignedState);
                 check("W14 P2: signWorld signiert eine registrierte Welt", w14p2Results.signOk);
                 check("W14 P2: Signatur in state.signedWorlds gespeichert", w14p2Results.signStored);
                 check("W14 P2: signierte Welt → Status 'valid'", w14p2Results.signValid);
                 check("W14 P2: signWorld verwirft eine unbekannte Welt", w14p2Results.signUnknownRejected);
-                check("W14 P2: Signatur überlebt den localStorage-Rundlauf (_loadSignedWorlds)", w14p2Results.persistRoundtrip);
+                check(
+                    "W14 P2: Signatur überlebt den localStorage-Rundlauf (_loadSignedWorlds)",
+                    w14p2Results.persistRoundtrip
+                );
                 check("W14 P2: geändertes Manifest → Status 'modified'", w14p2Results.modifiedState);
                 check("W14 P2: gefälschte Signatur → Status 'forged'", w14p2Results.forgedState);
                 check("W14 P2: fremd-signiertes Manifest verifiziert (Cross-Autor)", w14p2Results.crossAuthorValid);
-                check("W14 P2: _loadSignedWorlds ist defensiv gegen korruptes localStorage", w14p2Results.loadDefensive);
-                check("W14 P2: Bibliothek-Karte trägt eine Signatur-Zeile + Knopf", w14p2Results.uiSigRow && w14p2Results.uiSigBtn);
-                check("W14 P2: Portal-Overlay legt eine .portal-sig-Zeile an", w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom);
-                check("W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'", w14p2Results.overlayShowsSigned);
+                check(
+                    "W14 P2: _loadSignedWorlds ist defensiv gegen korruptes localStorage",
+                    w14p2Results.loadDefensive
+                );
+                check(
+                    "W14 P2: Bibliothek-Karte trägt eine Signatur-Zeile + Knopf",
+                    w14p2Results.uiSigRow && w14p2Results.uiSigBtn
+                );
+                check(
+                    "W14 P2: Portal-Overlay legt eine .portal-sig-Zeile an",
+                    w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom
+                );
+                check(
+                    "W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'",
+                    w14p2Results.overlayShowsSigned
+                );
             } else {
                 check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
             }
@@ -17555,8 +17957,7 @@ function startSaveServer() {
                         !ownP.materials.some((m) => m.name === "stein");
                     out.payloadMaterialCap = ownP.materials.length <= 16;
                     out.payloadOwnTools =
-                        ownP.tools.some((t) => t.name === "_w14tool") &&
-                        !ownP.tools.some((t) => t.name === "hammer");
+                        ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "hammer");
                     for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
                     delete r.state.tools._w14tool;
                     out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
@@ -17570,7 +17971,10 @@ function startSaveServer() {
                 check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
                 check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
                 check("W13 V2: der enter-Payload trägt die aktive Seele (name + label)", w13v2Results.payloadSoul);
-                check("W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnMaterials);
+                check(
+                    "W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)",
+                    w13v2Results.payloadOwnMaterials
+                );
                 check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
                 check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
                 check("W13 V2: _portalSendEnter sendet den _portalEnterPayload", w13v2Results.sendUsesPayload);
@@ -17591,10 +17995,7 @@ function startSaveServer() {
                     "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
                     /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
                 );
-                const skHtml = fs.readFileSync(
-                    path.join(__dirname, "..", "worlds", "skeleton", "index.html"),
-                    "utf8"
-                );
+                const skHtml = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "index.html"), "utf8");
                 check(
                     "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
                     /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
@@ -17637,8 +18038,11 @@ function startSaveServer() {
                             dsl: [],
                         }) === null;
                     out.sanitizeRejectsBadId =
-                        r._sanitizeImportedManifest({ id: "BÖSE id!", label: "X", world: "worlds/skeleton/index.html" }) ===
-                        null;
+                        r._sanitizeImportedManifest({
+                            id: "BÖSE id!",
+                            label: "X",
+                            world: "worlds/skeleton/index.html",
+                        }) === null;
                     // exportWorldManifest: unsigniert → not_signed.
                     out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
                     // fluid signieren, dann exportieren.
@@ -17767,26 +18171,65 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (w14p3Results && !w14p3Results.error) {
-                check("W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren", w14p3Results.methods);
+                check(
+                    "W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren",
+                    w14p3Results.methods
+                );
                 check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
-                check("W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)", w14p3Results.sanitizeRejectsBuiltin);
-                check("W14 P3: _sanitizeImportedManifest lehnt eine ungültige id ab", w14p3Results.sanitizeRejectsBadId);
+                check(
+                    "W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)",
+                    w14p3Results.sanitizeRejectsBuiltin
+                );
+                check(
+                    "W14 P3: _sanitizeImportedManifest lehnt eine ungültige id ab",
+                    w14p3Results.sanitizeRejectsBadId
+                );
                 check("W14 P3: exportWorldManifest verlangt eine signierte Welt", w14p3Results.exportUnsignedRejected);
                 check("W14 P3: exportWorldManifest liefert das signierte §3.3-Manifest", w14p3Results.exportOk);
-                check("W14 P3: importWorldManifest verwirft eine Built-in-id-Kollision", w14p3Results.importBuiltinRejected);
+                check(
+                    "W14 P3: importWorldManifest verwirft eine Built-in-id-Kollision",
+                    w14p3Results.importBuiltinRejected
+                );
                 check("W14 P3: importWorldManifest verwirft ein Müll-Manifest", w14p3Results.importGarbageRejected);
-                check("W14 P3: ein fremd-signiertes Manifest importiert + verifiziert (Cross-Autor)", w14p3Results.importCrossAuthorValid);
+                check(
+                    "W14 P3: ein fremd-signiertes Manifest importiert + verifiziert (Cross-Autor)",
+                    w14p3Results.importCrossAuthorValid
+                );
                 check("W14 P3: die importierte Welt landet in state.customWorlds", w14p3Results.customWorldStored);
-                check("W14 P3: verifyWorldSignature liest die manifest-getragene Signatur (valid)", w14p3Results.verifyCustomValid);
-                check("W14 P3: _worldEntry + _libraryWorlds umfassen die importierte Welt", w14p3Results.worldEntryCustom && w14p3Results.libraryWorldsMerged);
+                check(
+                    "W14 P3: verifyWorldSignature liest die manifest-getragene Signatur (valid)",
+                    w14p3Results.verifyCustomValid
+                );
+                check(
+                    "W14 P3: _worldEntry + _libraryWorlds umfassen die importierte Welt",
+                    w14p3Results.worldEntryCustom && w14p3Results.libraryWorldsMerged
+                );
                 check("W14 P3: ein manipuliertes Manifest → Signatur 'forged'", w14p3Results.importForged);
-                check("W14 P3: eine Welt ohne erreichbare Dateien wird reachable:false markiert", w14p3Results.importUnreachable);
-                check("W14 P3: obtainPortalForWorld holt eine erreichbare importierte Welt", w14p3Results.obtainCustomReachable);
-                check("W14 P3: obtainPortalForWorld verweigert eine unerreichbare Welt (kein totes Portal)", w14p3Results.obtainCustomUnreachable);
-                check("W14 P3: importierte Welten überleben den localStorage-Rundlauf", w14p3Results.customWorldsRoundtrip);
-                check("W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt", w14p3Results.uiImportedCard);
+                check(
+                    "W14 P3: eine Welt ohne erreichbare Dateien wird reachable:false markiert",
+                    w14p3Results.importUnreachable
+                );
+                check(
+                    "W14 P3: obtainPortalForWorld holt eine erreichbare importierte Welt",
+                    w14p3Results.obtainCustomReachable
+                );
+                check(
+                    "W14 P3: obtainPortalForWorld verweigert eine unerreichbare Welt (kein totes Portal)",
+                    w14p3Results.obtainCustomUnreachable
+                );
+                check(
+                    "W14 P3: importierte Welten überleben den localStorage-Rundlauf",
+                    w14p3Results.customWorldsRoundtrip
+                );
+                check(
+                    "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
+                    w14p3Results.uiImportedCard
+                );
                 check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
-                check("W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)", w14p3Results.raycastNullSafe);
+                check(
+                    "W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)",
+                    w14p3Results.raycastNullSafe
+                );
             } else {
                 check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
             }
@@ -17918,24 +18361,75 @@ function startSaveServer() {
                     "KI-Übersetzer: _buildTranslatorPrompt/_parseManifestResponse/translateWorldManifest/acceptTranslatedManifest/translatorInitDOM existieren",
                     translatorResults.methods
                 );
-                check("KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)", translatorResults.promptNamesSchema);
+                check(
+                    "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
+                    translatorResults.promptNamesSchema
+                );
                 check("KI-Übersetzer: _parseManifestResponse liest sauberes JSON", translatorResults.parseClean);
-                check("KI-Übersetzer: _parseManifestResponse liest JSON aus einem Markdown-Fence", translatorResults.parseFenced);
-                check("KI-Übersetzer: _parseManifestResponse strippt <think>-Reasoning + liest das JSON danach", translatorResults.parseThink);
-                check("KI-Übersetzer: _parseManifestResponse liefert null bei Müll (kein JSON)", translatorResults.parseGarbage);
-                check("KI-Übersetzer: _parseManifestResponse liefert null bei einem JSON-Array (kein Objekt)", translatorResults.parseArray);
-                check("KI-Übersetzer: translateWorldManifest lehnt eine zu kurze Beschreibung ab", translatorResults.rejectsTooShort);
-                check("KI-Übersetzer: translateWorldManifest liefert ein sanitiertes Vorschau-Manifest", translatorResults.translateOk);
-                check("KI-Übersetzer: _runTranslator rendert den KI-Vorschlag im Review-Bereich", translatorResults.runTranslatorRendersReview);
-                check("KI-Übersetzer: translateWorldManifest lehnt eine Built-in-id ab", translatorResults.rejectsBuiltinId);
-                check("KI-Übersetzer: translateWorldManifest meldet no_manifest_in_response bei einer LLM-Antwort ohne Manifest", translatorResults.rejectsNoManifest);
-                check("KI-Übersetzer: acceptTranslatedManifest committet in customWorlds (translated:true, reachable:false)", translatorResults.acceptCommits);
-                check("KI-Übersetzer: _sanitizeImportedManifest bewahrt das translated-Feld", translatorResults.sanitizePreservesTranslated);
-                check("KI-Übersetzer: eine übersetzte Welt überlebt den localStorage-Rundlauf", translatorResults.roundtripKeepsTranslated);
-                check("KI-Übersetzer: _worldEntry + _libraryWorlds umfassen die übersetzte Welt", translatorResults.worldEntryMerged);
-                check("KI-Übersetzer: obtainPortalForWorld verweigert eine übersetzte Welt (kein totes Portal)", translatorResults.obtainRefusesTranslated);
-                check("KI-Übersetzer: renderLibraryUI rendert eine 'KI-übersetzt'-Karte", translatorResults.uiTranslatedCard);
-                check("KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM", translatorResults.uiTranslatorSection);
+                check(
+                    "KI-Übersetzer: _parseManifestResponse liest JSON aus einem Markdown-Fence",
+                    translatorResults.parseFenced
+                );
+                check(
+                    "KI-Übersetzer: _parseManifestResponse strippt <think>-Reasoning + liest das JSON danach",
+                    translatorResults.parseThink
+                );
+                check(
+                    "KI-Übersetzer: _parseManifestResponse liefert null bei Müll (kein JSON)",
+                    translatorResults.parseGarbage
+                );
+                check(
+                    "KI-Übersetzer: _parseManifestResponse liefert null bei einem JSON-Array (kein Objekt)",
+                    translatorResults.parseArray
+                );
+                check(
+                    "KI-Übersetzer: translateWorldManifest lehnt eine zu kurze Beschreibung ab",
+                    translatorResults.rejectsTooShort
+                );
+                check(
+                    "KI-Übersetzer: translateWorldManifest liefert ein sanitiertes Vorschau-Manifest",
+                    translatorResults.translateOk
+                );
+                check(
+                    "KI-Übersetzer: _runTranslator rendert den KI-Vorschlag im Review-Bereich",
+                    translatorResults.runTranslatorRendersReview
+                );
+                check(
+                    "KI-Übersetzer: translateWorldManifest lehnt eine Built-in-id ab",
+                    translatorResults.rejectsBuiltinId
+                );
+                check(
+                    "KI-Übersetzer: translateWorldManifest meldet no_manifest_in_response bei einer LLM-Antwort ohne Manifest",
+                    translatorResults.rejectsNoManifest
+                );
+                check(
+                    "KI-Übersetzer: acceptTranslatedManifest committet in customWorlds (translated:true, reachable:false)",
+                    translatorResults.acceptCommits
+                );
+                check(
+                    "KI-Übersetzer: _sanitizeImportedManifest bewahrt das translated-Feld",
+                    translatorResults.sanitizePreservesTranslated
+                );
+                check(
+                    "KI-Übersetzer: eine übersetzte Welt überlebt den localStorage-Rundlauf",
+                    translatorResults.roundtripKeepsTranslated
+                );
+                check(
+                    "KI-Übersetzer: _worldEntry + _libraryWorlds umfassen die übersetzte Welt",
+                    translatorResults.worldEntryMerged
+                );
+                check(
+                    "KI-Übersetzer: obtainPortalForWorld verweigert eine übersetzte Welt (kein totes Portal)",
+                    translatorResults.obtainRefusesTranslated
+                );
+                check(
+                    "KI-Übersetzer: renderLibraryUI rendert eine 'KI-übersetzt'-Karte",
+                    translatorResults.uiTranslatedCard
+                );
+                check(
+                    "KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM",
+                    translatorResults.uiTranslatorSection
+                );
             } else {
                 check(
                     "KI-Übersetzer: Phase-1-Tests laufen",
@@ -18000,9 +18494,7 @@ function startSaveServer() {
                                 fog: "#aabbcc",
                                 ground: { color: "#3a7a3a", style: "hills" },
                                 light: { color: "#ffffff", intensity: 1.2 },
-                                objects: [
-                                    { shape: "box", color: "#8a6a3a", count: 30, area: 50, size: 3, spin: true },
-                                ],
+                                objects: [{ shape: "box", color: "#8a6a3a", count: 30, area: 50, size: 3, spin: true }],
                                 ambient: { kind: "motes", color: "#ffffff" },
                                 dslEffects: { set_weather: { sky: "#222244", fogShift: 0.4, burst: 10 } },
                             }),
@@ -18013,8 +18505,7 @@ function startSaveServer() {
                             desc: "Eine Voxel-Welt.",
                             dsl: ["set_weather"],
                         });
-                        out.translateSceneOk =
-                            ts.ok === true && !!ts.scene && ts.scene.ground.style === "hills";
+                        out.translateSceneOk = ts.ok === true && !!ts.scene && ts.scene.ground.style === "hills";
                         // buildTranslatedWorld — eine übersetzte Welt aufbauen.
                         r.acceptTranslatedManifest({
                             id: "voxel-bau",
@@ -18030,7 +18521,8 @@ function startSaveServer() {
                             !!built.scene &&
                             built.reachable === true &&
                             built.world === "worlds/translated/index.html";
-                        out.buildUnknownRejected = (await r.buildTranslatedWorld("nirgendwo")).reason === "world_unknown";
+                        out.buildUnknownRejected =
+                            (await r.buildTranslatedWorld("nirgendwo")).reason === "world_unknown";
                         // Eine nicht-übersetzte Welt lässt sich nicht aufbauen.
                         r.state.customWorlds["plain-w"] = {
                             id: "plain-w",
@@ -18077,7 +18569,8 @@ function startSaveServer() {
                     // buildStateSnapshot/loadState — translatedWorldId überlebt.
                     const snap = r.buildStateSnapshot();
                     const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_voxel-bau");
-                    out.snapKeepsId = !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.translatedWorldId === "voxel-bau";
+                    out.snapKeepsId =
+                        !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.translatedWorldId === "voxel-bau";
                     delete r.state.blueprints["portal_voxel-bau"];
                     r.loadState({ blueprints: snapBp ? [snapBp] : [] });
                     const reBp = r.state.blueprints["portal_voxel-bau"];
@@ -18131,24 +18624,78 @@ function startSaveServer() {
                     transl2Results.methods
                 );
                 check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
-                check("KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema", transl2Results.promptNamesSchema);
-                check("KI-Übersetzer P2: _sanitizeWorldScene liefert aus {} eine gültige Szene", transl2Results.sanitizeDefault);
-                check("KI-Übersetzer P2: _sanitizeWorldScene ist crash-frei bei Müll/null", transl2Results.sanitizeGarbage);
-                check("KI-Übersetzer P2: _sanitizeWorldScene clampt Farbe + Objekt-Zahl + Licht", transl2Results.sanitizeClamps);
-                check("KI-Übersetzer P2: _sanitizeWorldScene filtert dslEffects-Schlüssel", transl2Results.sanitizeDslEffects);
-                check("KI-Übersetzer P2: translateWorldScene liefert eine sanitierte Szene", transl2Results.translateSceneOk);
-                check("KI-Übersetzer P2: translateWorldScene meldet no_scene_in_response bei Müll", transl2Results.translateSceneNoScene);
-                check("KI-Übersetzer P2: eine übersetzte Welt ist vor dem Aufbau nicht erreichbar", transl2Results.beforeBuildNotReachable);
-                check("KI-Übersetzer P2: buildTranslatedWorld heftet die Szene an + macht die Welt betretbar", transl2Results.buildAttachesScene);
-                check("KI-Übersetzer P2: buildTranslatedWorld lehnt eine unbekannte Welt ab", transl2Results.buildUnknownRejected);
-                check("KI-Übersetzer P2: buildTranslatedWorld lehnt eine nicht-übersetzte Welt ab", transl2Results.buildNonTranslatedRejected);
-                check("KI-Übersetzer P2: _sanitizeImportedManifest bewahrt die Szene", transl2Results.sanitizeKeepsScene);
-                check("KI-Übersetzer P2: eine aufgebaute Welt überlebt den localStorage-Rundlauf", transl2Results.roundtripKeepsScene);
-                check("KI-Übersetzer P2: obtainPortalForWorld holt eine aufgebaute übersetzte Welt (Portal mit translatedWorldId)", transl2Results.obtainBuilt);
-                check("KI-Übersetzer P2: _sanitizePortalMeta bewahrt translatedWorldId", transl2Results.portalMetaKeepsId);
-                check("KI-Übersetzer P2: translatedWorldId überlebt den buildStateSnapshot/loadState-Rundlauf", transl2Results.snapKeepsId && transl2Results.loadKeepsId);
-                check("KI-Übersetzer P2: _portalSendEnter trägt die deklarative Szene in die Sub-Welt", transl2Results.enterCarriesScene);
-                check("KI-Übersetzer P2: renderLibraryUI rendert 'Welt aufbauen' bzw. nach dem Aufbau 'Portal holen' + 'neu aufbauen'", transl2Results.uiBuildButton && transl2Results.uiBuiltCard);
+                check(
+                    "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",
+                    transl2Results.promptNamesSchema
+                );
+                check(
+                    "KI-Übersetzer P2: _sanitizeWorldScene liefert aus {} eine gültige Szene",
+                    transl2Results.sanitizeDefault
+                );
+                check(
+                    "KI-Übersetzer P2: _sanitizeWorldScene ist crash-frei bei Müll/null",
+                    transl2Results.sanitizeGarbage
+                );
+                check(
+                    "KI-Übersetzer P2: _sanitizeWorldScene clampt Farbe + Objekt-Zahl + Licht",
+                    transl2Results.sanitizeClamps
+                );
+                check(
+                    "KI-Übersetzer P2: _sanitizeWorldScene filtert dslEffects-Schlüssel",
+                    transl2Results.sanitizeDslEffects
+                );
+                check(
+                    "KI-Übersetzer P2: translateWorldScene liefert eine sanitierte Szene",
+                    transl2Results.translateSceneOk
+                );
+                check(
+                    "KI-Übersetzer P2: translateWorldScene meldet no_scene_in_response bei Müll",
+                    transl2Results.translateSceneNoScene
+                );
+                check(
+                    "KI-Übersetzer P2: eine übersetzte Welt ist vor dem Aufbau nicht erreichbar",
+                    transl2Results.beforeBuildNotReachable
+                );
+                check(
+                    "KI-Übersetzer P2: buildTranslatedWorld heftet die Szene an + macht die Welt betretbar",
+                    transl2Results.buildAttachesScene
+                );
+                check(
+                    "KI-Übersetzer P2: buildTranslatedWorld lehnt eine unbekannte Welt ab",
+                    transl2Results.buildUnknownRejected
+                );
+                check(
+                    "KI-Übersetzer P2: buildTranslatedWorld lehnt eine nicht-übersetzte Welt ab",
+                    transl2Results.buildNonTranslatedRejected
+                );
+                check(
+                    "KI-Übersetzer P2: _sanitizeImportedManifest bewahrt die Szene",
+                    transl2Results.sanitizeKeepsScene
+                );
+                check(
+                    "KI-Übersetzer P2: eine aufgebaute Welt überlebt den localStorage-Rundlauf",
+                    transl2Results.roundtripKeepsScene
+                );
+                check(
+                    "KI-Übersetzer P2: obtainPortalForWorld holt eine aufgebaute übersetzte Welt (Portal mit translatedWorldId)",
+                    transl2Results.obtainBuilt
+                );
+                check(
+                    "KI-Übersetzer P2: _sanitizePortalMeta bewahrt translatedWorldId",
+                    transl2Results.portalMetaKeepsId
+                );
+                check(
+                    "KI-Übersetzer P2: translatedWorldId überlebt den buildStateSnapshot/loadState-Rundlauf",
+                    transl2Results.snapKeepsId && transl2Results.loadKeepsId
+                );
+                check(
+                    "KI-Übersetzer P2: _portalSendEnter trägt die deklarative Szene in die Sub-Welt",
+                    transl2Results.enterCarriesScene
+                );
+                check(
+                    "KI-Übersetzer P2: renderLibraryUI rendert 'Welt aufbauen' bzw. nach dem Aufbau 'Portal holen' + 'neu aufbauen'",
+                    transl2Results.uiBuildButton && transl2Results.uiBuiltCard
+                );
             } else {
                 check(
                     "KI-Übersetzer P2: Phase-2-Tests laufen",
@@ -18212,9 +18759,7 @@ function startSaveServer() {
                     r._disposePortalOverlay();
                     // trusted → mit allow-same-origin.
                     r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
-                    out.overlayTrustedAttr = /allow-same-origin/.test(
-                        r._portalOverlay.iframe.getAttribute("sandbox")
-                    );
+                    out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
                     r._disposePortalOverlay();
                     // _portalSendEnter / _portalForwardDsl: targetOrigin "*" für null-origin.
                     const savedPo = r._portalOverlay;
@@ -18263,7 +18808,11 @@ function startSaveServer() {
                     delete r.state.blueprints["portal_schwarm"];
                     for (let i = 0; i < r.state.player.inventory.length; i++) {
                         const s = r.state.player.inventory[i];
-                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) {
+                        if (
+                            s &&
+                            typeof s.blueprintName === "string" &&
+                            s.blueprintName.indexOf("portal_schwarm") === 0
+                        ) {
                             r.state.player.inventory[i] = null;
                         }
                     }
@@ -18273,25 +18822,51 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (sandboxResults && !sandboxResults.error) {
-                check("Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl", sandboxResults.registryEntry);
-                check("Untrusted-Tor: Built-in-Welten (skeleton/fluid/terrain) bleiben trusted", sandboxResults.builtinsTrusted);
-                check("Untrusted-Tor: _sanitizePortalMeta — default trusted, bewahrt sandboxed, Müll-trust → trusted", sandboxResults.sanitizeTrust);
-                check("Untrusted-Tor: aimBlueprintAtWorld trägt die Vertrauensstufe (schwarm→sandboxed, terrain→trusted)", sandboxResults.aimCarriesTrust);
-                check("Untrusted-Tor: obtainPortalForWorld holt die Schwarm-Welt (Portal trägt trust:sandboxed)", sandboxResults.obtainSchwarm);
-                check("Untrusted-Tor: _buildPortalOverlay — sandboxed → iframe-sandbox ist 'allow-scripts' ALLEIN", sandboxResults.overlaySandboxAttr);
-                check("Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin", sandboxResults.overlayTrustedAttr);
+                check(
+                    "Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl",
+                    sandboxResults.registryEntry
+                );
+                check(
+                    "Untrusted-Tor: Built-in-Welten (skeleton/fluid/terrain) bleiben trusted",
+                    sandboxResults.builtinsTrusted
+                );
+                check(
+                    "Untrusted-Tor: _sanitizePortalMeta — default trusted, bewahrt sandboxed, Müll-trust → trusted",
+                    sandboxResults.sanitizeTrust
+                );
+                check(
+                    "Untrusted-Tor: aimBlueprintAtWorld trägt die Vertrauensstufe (schwarm→sandboxed, terrain→trusted)",
+                    sandboxResults.aimCarriesTrust
+                );
+                check(
+                    "Untrusted-Tor: obtainPortalForWorld holt die Schwarm-Welt (Portal trägt trust:sandboxed)",
+                    sandboxResults.obtainSchwarm
+                );
+                check(
+                    "Untrusted-Tor: _buildPortalOverlay — sandboxed → iframe-sandbox ist 'allow-scripts' ALLEIN",
+                    sandboxResults.overlaySandboxAttr
+                );
+                check(
+                    "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin",
+                    sandboxResults.overlayTrustedAttr
+                );
                 check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);
-                check("Untrusted-Tor: _portalSendEnter + _portalForwardDsl posten mit '*' an eine null-origin-Welt", sandboxResults.starForSandbox);
-                check("Untrusted-Tor: _portalSendEnter postet mit dem Seiten-Origin an eine trusted Welt", sandboxResults.originForTrusted);
-                check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
+                check(
+                    "Untrusted-Tor: _portalSendEnter + _portalForwardDsl posten mit '*' an eine null-origin-Welt",
+                    sandboxResults.starForSandbox
+                );
+                check(
+                    "Untrusted-Tor: _portalSendEnter postet mit dem Seiten-Origin an eine trusted Welt",
+                    sandboxResults.originForTrusted
+                );
+                check(
+                    "Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf",
+                    sandboxResults.trustRoundtrip
+                );
                 check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
                 check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
             } else {
-                check(
-                    "Untrusted-Tor: V8.70-Tests laufen",
-                    false,
-                    sandboxResults ? sandboxResults.error : "no result"
-                );
+                check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
             }
 
             // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
@@ -18317,14 +18892,14 @@ function startSaveServer() {
                     out.rejectsTranslatedId =
                         r._vendorSanitizeBundle("translated", okBundle).reason === "reserved_world_id";
                     out.rejectsTraversal =
-                        r._vendorSanitizeBundle("w", [{ path: "../evil.js", content: "x" }].concat(okBundle))
-                            .reason === "bad_file_path";
+                        r._vendorSanitizeBundle("w", [{ path: "../evil.js", content: "x" }].concat(okBundle)).reason ===
+                        "bad_file_path";
                     out.rejectsBackslash =
-                        r._vendorSanitizeBundle("w", [{ path: "lib\\x.js", content: "x" }].concat(okBundle))
-                            .reason === "bad_file_path";
+                        r._vendorSanitizeBundle("w", [{ path: "lib\\x.js", content: "x" }].concat(okBundle)).reason ===
+                        "bad_file_path";
                     out.rejectsBadExt =
-                        r._vendorSanitizeBundle("w", [{ path: "evil.sh", content: "x" }].concat(okBundle))
-                            .reason === "bad_file_ext";
+                        r._vendorSanitizeBundle("w", [{ path: "evil.sh", content: "x" }].concat(okBundle)).reason ===
+                        "bad_file_ext";
                     out.rejectsNoIndex =
                         r._vendorSanitizeBundle("w", [{ path: "main.js", content: "x" }]).reason === "no_index_html";
                     out.rejectsNoFiles = r._vendorSanitizeBundle("w", []).reason === "no_files";
@@ -18352,8 +18927,7 @@ function startSaveServer() {
                             stored.world === "worlds/vendor-test/index.html";
                         // Sanitize-Fehler durchgereicht (Bad id → nicht registriert).
                         const vBad = await r.vendorWorldBundle({ worldId: "Bad ID!", files: okBundle });
-                        out.vendorPropagatesSanitizeFail =
-                            vBad.ok === false && vBad.reason === "invalid_world_id";
+                        out.vendorPropagatesSanitizeFail = vBad.ok === false && vBad.reason === "invalid_world_id";
                         // Post-Fehler durchgereicht (save-server weg → nicht registriert).
                         r._vendorPostBundle = async () => ({ ok: false, reason: "save_server_unreachable" });
                         const vUnreach = await r.vendorWorldBundle({
@@ -18370,8 +18944,7 @@ function startSaveServer() {
                     }
                     // _sanitizeImportedManifest bewahrt trust + vendored.
                     const reSan = r._sanitizeImportedManifest(r.state.customWorlds["vendor-test"]);
-                    out.sanitizeKeepsTrustVendored =
-                        !!reSan && reSan.trust === "sandboxed" && reSan.vendored === true;
+                    out.sanitizeKeepsTrustVendored = !!reSan && reSan.trust === "sandboxed" && reSan.vendored === true;
                     // vendored erzwingt trust:"sandboxed", auch bei trust:"trusted".
                     const forced = r._sanitizeImportedManifest({
                         id: "forced-test",
@@ -18425,30 +18998,85 @@ function startSaveServer() {
                     "W15 Auto-Vendor: vendorWorldBundle/_vendorSanitizeBundle/_vendorPostBundle/_runVendorDock/vendorInitDOM existieren",
                     vendorResults.methods
                 );
-                check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine Built-in-id (fluid) ab", vendorResults.rejectsReservedId);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt die translated-id ab", vendorResults.rejectsTranslatedId);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Pfad-Ausbruch (../) ab", vendorResults.rejectsTraversal);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Backslash-Pfad ab", vendorResults.rejectsBackslash);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine verbotene Datei-Endung (.sh) ab", vendorResults.rejectsBadExt);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein Bündel ohne index.html ab", vendorResults.rejectsNoIndex);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein leeres Bündel ab", vendorResults.rejectsNoFiles);
-                check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine zu große Datei ab", vendorResults.rejectsFileTooLarge);
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel",
+                    vendorResults.sanitizeOk
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab",
+                    vendorResults.rejectsBadId
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine Built-in-id (fluid) ab",
+                    vendorResults.rejectsReservedId
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt die translated-id ab",
+                    vendorResults.rejectsTranslatedId
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Pfad-Ausbruch (../) ab",
+                    vendorResults.rejectsTraversal
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Backslash-Pfad ab",
+                    vendorResults.rejectsBackslash
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine verbotene Datei-Endung (.sh) ab",
+                    vendorResults.rejectsBadExt
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein Bündel ohne index.html ab",
+                    vendorResults.rejectsNoIndex
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein leeres Bündel ab",
+                    vendorResults.rejectsNoFiles
+                );
+                check(
+                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine zu große Datei ab",
+                    vendorResults.rejectsFileTooLarge
+                );
                 check(
                     "W15 Auto-Vendor: vendorWorldBundle registriert einen customWorlds-Eintrag (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
                     vendorResults.vendorRegisters
                 );
-                check("W15 Auto-Vendor: vendorWorldBundle reicht einen Sanitize-Fehler durch (id → nicht registriert)", vendorResults.vendorPropagatesSanitizeFail);
-                check("W15 Auto-Vendor: vendorWorldBundle reicht einen Post-Fehler durch (save_server_unreachable → nicht registriert)", vendorResults.vendorPropagatesPostFail);
-                check("W15 Auto-Vendor: _sanitizeImportedManifest bewahrt trust + vendored", vendorResults.sanitizeKeepsTrustVendored);
-                check("W15 Auto-Vendor: vendored erzwingt trust:sandboxed (auch bei trust:trusted)", vendorResults.vendoredForcesSandbox);
-                check("W15 Auto-Vendor: trust + vendored überleben den localStorage-Rundlauf", vendorResults.roundtripKeepsTrust);
-                check("W15 Auto-Vendor: obtainPortalForWorld holt ein Portal — es trägt trust:sandboxed", vendorResults.portalCarriesSandbox);
+                check(
+                    "W15 Auto-Vendor: vendorWorldBundle reicht einen Sanitize-Fehler durch (id → nicht registriert)",
+                    vendorResults.vendorPropagatesSanitizeFail
+                );
+                check(
+                    "W15 Auto-Vendor: vendorWorldBundle reicht einen Post-Fehler durch (save_server_unreachable → nicht registriert)",
+                    vendorResults.vendorPropagatesPostFail
+                );
+                check(
+                    "W15 Auto-Vendor: _sanitizeImportedManifest bewahrt trust + vendored",
+                    vendorResults.sanitizeKeepsTrustVendored
+                );
+                check(
+                    "W15 Auto-Vendor: vendored erzwingt trust:sandboxed (auch bei trust:trusted)",
+                    vendorResults.vendoredForcesSandbox
+                );
+                check(
+                    "W15 Auto-Vendor: trust + vendored überleben den localStorage-Rundlauf",
+                    vendorResults.roundtripKeepsTrust
+                );
+                check(
+                    "W15 Auto-Vendor: obtainPortalForWorld holt ein Portal — es trägt trust:sandboxed",
+                    vendorResults.portalCarriesSandbox
+                );
                 check("W15 Auto-Vendor: renderLibraryUI rendert eine 'angedockt'-Karte", vendorResults.uiVendoredCard);
-                check("W15 Auto-Vendor: die 'Welt andocken'-Sektion (id + Ordner-Picker + Knopf) im DOM", vendorResults.uiVendorSection);
+                check(
+                    "W15 Auto-Vendor: die 'Welt andocken'-Sektion (id + Ordner-Picker + Knopf) im DOM",
+                    vendorResults.uiVendorSection
+                );
             } else {
-                check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
+                check(
+                    "W15 Auto-Vendor: Phase-1-Tests laufen",
+                    false,
+                    vendorResults ? vendorResults.error : "no result"
+                );
             }
 
             // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
@@ -18555,8 +19183,7 @@ function startSaveServer() {
                         reloaded["gh-test"].vendored === true;
                     // UI: die GitHub-Holen-Sektion im DOM.
                     out.uiRepoSection =
-                        !!document.getElementById("vendor-repo") &&
-                        !!document.getElementById("vendor-repo-dock");
+                        !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
                     // Aufräumen.
                     r.state.customWorlds = {};
                     r._saveCustomWorlds();
@@ -18571,22 +19198,53 @@ function startSaveServer() {
                     "W15 GitHub-Fetch: vendorWorldFromRepo/_vendorPostRepo/_vendorPostJson/_vendorRegisterWorld/_runVendorRepoDock existieren",
                     vendor2Results.methods
                 );
-                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
-                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
-                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Nicht-github.com-URL ab", vendor2Results.rejectsNonGithub);
+                check(
+                    "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab",
+                    vendor2Results.rejectsBadId
+                );
+                check(
+                    "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab",
+                    vendor2Results.rejectsReservedId
+                );
+                check(
+                    "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Nicht-github.com-URL ab",
+                    vendor2Results.rejectsNonGithub
+                );
                 check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine leere URL ab", vendor2Results.rejectsEmptyUrl);
                 check(
                     "W15 GitHub-Fetch: vendorWorldFromRepo registriert die Welt (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
                     vendor2Results.registersOnSuccess
                 );
-                check("W15 GitHub-Fetch: eine /tree/<branch>-URL besteht die Client-URL-Prüfung", vendor2Results.acceptsTreeUrl);
-                check("W15 GitHub-Fetch: vendorWorldFromRepo reicht einen Fetch-Fehler durch (404 → nicht registriert)", vendor2Results.propagatesPostFail);
-                check("W15 GitHub-Fetch: _vendorRegisterWorld registriert sandgesichert + vendored", vendor2Results.registerWorldDirect);
-                check("W15 GitHub-Fetch: der Bündel-Pfad (Phase 1) läuft nach dem Refactor weiter", vendor2Results.bundlePathStillWorks);
-                check("W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf", vendor2Results.roundtripKeepsTrust);
-                check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
+                check(
+                    "W15 GitHub-Fetch: eine /tree/<branch>-URL besteht die Client-URL-Prüfung",
+                    vendor2Results.acceptsTreeUrl
+                );
+                check(
+                    "W15 GitHub-Fetch: vendorWorldFromRepo reicht einen Fetch-Fehler durch (404 → nicht registriert)",
+                    vendor2Results.propagatesPostFail
+                );
+                check(
+                    "W15 GitHub-Fetch: _vendorRegisterWorld registriert sandgesichert + vendored",
+                    vendor2Results.registerWorldDirect
+                );
+                check(
+                    "W15 GitHub-Fetch: der Bündel-Pfad (Phase 1) läuft nach dem Refactor weiter",
+                    vendor2Results.bundlePathStillWorks
+                );
+                check(
+                    "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
+                    vendor2Results.roundtripKeepsTrust
+                );
+                check(
+                    "W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM",
+                    vendor2Results.uiRepoSection
+                );
             } else {
-                check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
+                check(
+                    "W15 GitHub-Fetch: Phase-2-Tests laufen",
+                    false,
+                    vendor2Results ? vendor2Results.error : "no result"
+                );
             }
 
             // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
@@ -18632,9 +19290,7 @@ function startSaveServer() {
                     // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
                     const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
                     out.fogTripleRange =
-                        r.setFogDistance(9.0) === 9.0 &&
-                        r.setFogDistance(0.5) === 0.9 &&
-                        r.setFogDistance(3.0) === 3.0;
+                        r.setFogDistance(9.0) === 9.0 && r.setFogDistance(0.5) === 0.9 && r.setFogDistance(3.0) === 3.0;
                     out.fogDefault3 = r.setFogDistance() === 3.0;
                     r.setFogDistance(origFog);
                     out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(r.slidersInitDOM.toString());
@@ -18643,8 +19299,7 @@ function startSaveServer() {
                     const appScript = [...document.querySelectorAll("script")].find((s) =>
                         (s.getAttribute("src") || "").includes("anazhRealm.js")
                     );
-                    out.cacheBust =
-                        !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
+                    out.cacheBust = !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
 
                     return out;
                 })
@@ -18664,10 +19319,7 @@ function startSaveServer() {
                     "V8.44: Terrain-vNormal in Welt-Raum (Diffuse kamera-unabhängig)",
                     v840Results.terrainNormalWorldSpace
                 );
-                check(
-                    "V8.45: Terrain-Fog = radiale Distanz (dreh-invariant)",
-                    v840Results.terrainFogRadial
-                );
+                check("V8.45: Terrain-Fog = radiale Distanz (dreh-invariant)", v840Results.terrainFogRadial);
                 check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
                 check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
                 check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
@@ -18701,8 +19353,7 @@ function startSaveServer() {
                     out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
                     // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
                     const sh = r.state.directionalLight && r.state.directionalLight.shadow;
-                    out.shadowAntiAcne =
-                        !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
+                    out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
@@ -18714,16 +19365,9 @@ function startSaveServer() {
                 check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
                 check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
                 check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
-                check(
-                    "V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)",
-                    v846Results.shadowAntiAcne
-                );
+                check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
             } else {
-                check(
-                    "V8.46: Wetter-Übergangs-Tests laufen",
-                    false,
-                    v846Results ? v846Results.error : "no result"
-                );
+                check("V8.46: Wetter-Übergangs-Tests laufen", false, v846Results ? v846Results.error : "no result");
             }
 
             // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
@@ -18735,8 +19379,7 @@ function startSaveServer() {
                     out.terrainIsShader = !!tm && tm.type === "ShaderMaterial";
                     if (out.terrainIsShader) {
                         out.vertexHasShadowChunks =
-                            /shadowmap_pars_vertex/.test(tm.vertexShader) &&
-                            /shadowmap_vertex/.test(tm.vertexShader);
+                            /shadowmap_pars_vertex/.test(tm.vertexShader) && /shadowmap_vertex/.test(tm.vertexShader);
                         out.fragmentHasShadowChunks =
                             /shadowmap_pars_fragment/.test(tm.fragmentShader) &&
                             /getShadow\(/.test(tm.fragmentShader) &&
@@ -18758,8 +19401,7 @@ function startSaveServer() {
                         pm.position.z = -77.25;
                         r._applyDayNightToScene();
                         const tgt = r.state.directionalLight.target.position;
-                        out.shadowFollowsPlayer =
-                            Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
+                        out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
                         pm.position.x = ox;
                         pm.position.z = oz;
                         r._applyDayNightToScene();
@@ -18779,10 +19421,7 @@ function startSaveServer() {
                     "V8.48: Terrain-Fragment-Shader sampelt die Shadow-Map (getShadow)",
                     v848Results.fragmentHasShadowChunks
                 );
-                check(
-                    "V8.48: Terrain-Fragment-Shader nutzt highp (Shadow-Koord-Präzision)",
-                    v848Results.fragmentHighp
-                );
+                check("V8.48: Terrain-Fragment-Shader nutzt highp (Shadow-Koord-Präzision)", v848Results.fragmentHighp);
                 check(
                     "V8.48: Terrain-Material hat lights:true (Renderer befüllt Shadow-Uniforms)",
                     v848Results.terrainLightsTrue
@@ -18792,14 +19431,8 @@ function startSaveServer() {
                     v848Results.terrainHasShadowUniform
                 );
                 check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
-                check(
-                    "V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)",
-                    v848Results.shadowFollowsPlayer
-                );
-                check(
-                    "V8.48: Terrain-lightDirection aus reiner Sonnen-Richtung (sunDir)",
-                    v848Results.usesSunDir
-                );
+                check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)", v848Results.shadowFollowsPlayer);
+                check("V8.48: Terrain-lightDirection aus reiner Sonnen-Richtung (sunDir)", v848Results.usesSunDir);
             } else {
                 check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
             }
@@ -18858,11 +19491,7 @@ function startSaveServer() {
                 );
                 check("V8.49: Hindernis-Raycast ist off-screen-/distanz-gegated", v849Results.raycastGated);
                 check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
-                check(
-                    "V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash",
-                    v849Results.noCrash,
-                    v849Results.err
-                );
+                check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
                 check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
                 check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
             } else {
@@ -19089,7 +19718,10 @@ function startSaveServer() {
                 check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
                 check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
                 check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
-                check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
+                check(
+                    "Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)",
+                    wave6x4bResults.ringRadiusDefault
+                );
                 check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
                 check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
                 check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
@@ -24906,7 +25538,10 @@ function startSaveServer() {
             } else {
                 check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
                 check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
-                check("V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)", ring4Results.droneIsSoft);
+                check(
+                    "V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)",
+                    ring4Results.droneIsSoft
+                );
                 check(
                     "V8.89: Regen-Noise hängt am Umgebungs-Regler + ist ~80% leiser (0.014)",
                     ring4Results.weatherOnPingSlider

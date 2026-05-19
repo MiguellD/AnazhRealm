@@ -798,7 +798,9 @@ Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, 
 
 ---
 
-#### W4 V4 — die Musik hört die Welt (geplant, Schöpfer-Wunsch 19.05.2026) — 🔵 OFFEN
+#### W4 V4 — die Musik hört die Welt (V8.95, 19.05.2026) — ✅ ERLEDIGT
+
+Alle drei Sub-Schritte in einem Commit, playtest-grün (+6 Invarianten): (1) `_lofiWorldField` → `_lofiApplyWorldTimbre` färbt die Klangfarbe (`lebendig` → Pad-Filter 750-1050 Hz, `dichte` → `bassGain` 0.40-0.56, `magieleitung` → verstimmter Oktav-Schimmer, `glut` → schärferes Hihat); (2) `_lofiNextDegree` bekommt den schwachen Welt-Feld-Bias (Gewicht 0.4 gegen Emotion 0.8 — seed-fix gemessen, dass die Emotion dominant bleibt); (3) `_lofiNearResonantArchitecture` gated die Pad-Stimmen-Dopplung — ein resonantes Bauwerk „singt mit". Synergie-Welle, kein neuer Stamm. Detail: `CLAUDE.md` V8.95.
 
 Der Schöpfer-Befund nach V8.94: die generative Symphonie (W4 V3) ist hörbar — sie wächst aus Seed + Emotion + Tageszeit + Wetter. **Was noch fehlt**: die Musik hört das **Welt-Affinitäts-Feld** (die vier SimplexNoise-Tag-Schichten aus W6.G P2 — `worldFieldAt(x,z)` → `{lebendig, dichte, glut, magieleitung}`, die schon regeln, *was wo wächst*) und die **Architektur-Resonanz** (`computeSpatialTags.resoniert`) nicht. Eine `magieleitung`-Region klingt heute wie eine `glut`-Region. W4 V4 schliesst diese Synergie — kein neuer Stamm, keine neue Engine: die vorhandenen Welt-Daten fliessen in die schon stehende vierschichtige Symphonie ein. Eine **Synergie-Welle** — der Wert emergiert aus dem Verdrahten erprobter Systeme.
 

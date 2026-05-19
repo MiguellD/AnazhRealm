@@ -7671,7 +7671,10 @@ class AnazhRealm {
         src.buffer = s.lofi.noiseBuffer;
         const hp = ctx.createBiquadFilter();
         hp.type = "highpass";
-        hp.frequency.value = 7000;
+        // W4 V4 Sub-Schritt 1 — eine glut-Region schärft das Hihat: der
+        // Hochpass steigt 7000..9500 Hz (dünner, „tssss" — eine Spur
+        // Spannung in der Klangfarbe, ohne eine einzige Note zu ändern).
+        hp.frequency.value = 7000 + this._lofiWorldField().glut * 2500;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
         env.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
@@ -7713,11 +7716,19 @@ class AnazhRealm {
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const bright = Math.max(0, Math.min(1, (emotions.joy || 0) * 0.5 + (emotions.hope || 0) * 0.5));
         const dark = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        // W4 V4 Sub-Schritt 2 — ein zweiter, SCHWÄCHERER Bias: das Welt-
+        // Affinitäts-Feld am Spieler. magieleitung/lebendig ziehen zu
+        // hellen Stufen, glut zu dunklen. Gewicht 0.4 — halb so stark wie
+        // der Emotion-Bias (0.8), damit die Emotion die dominante Stimme
+        // bleibt; das Welt-Feld FÄRBT die Wanderung, es überschreit sie nicht.
+        const field = this._lofiWorldField();
+        const worldBright = Math.max(0, Math.min(1, field.magieleitung * 0.5 + field.lebendig * 0.5));
+        const worldDark = field.glut;
         let total = 0;
         const weighted = transitions.map(([d, w]) => {
             let weight = w;
-            if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(d) >= 0) weight *= 1 + bright * 0.8;
-            if (AnazhRealm.LOFI_DARK_DEGREES.indexOf(d) >= 0) weight *= 1 + dark * 0.8;
+            if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(d) >= 0) weight *= 1 + bright * 0.8 + worldBright * 0.4;
+            if (AnazhRealm.LOFI_DARK_DEGREES.indexOf(d) >= 0) weight *= 1 + dark * 0.8 + worldDark * 0.4;
             total += weight;
             return [d, weight];
         });
@@ -7807,8 +7818,14 @@ class AnazhRealm {
         // W4 V3 Phase 4 — die Stimmen-Zahl wächst mit der Welt-Stimmung: bei
         // hellem Gemüt (joy + awe > 0.8) bekommt jeder Akkord-Ton eine leise
         // Oktav-Dopplung — der Pad klingt voller, „orchestraler".
+        // W4 V4 Sub-Schritt 3 — auch nahe einer resonanten Struktur: ein
+        // Bauwerk mit hohem computeSpatialTags.resoniert „singt mit".
         const bright = (emotions.joy || 0) + (emotions.awe || 0);
-        const voiceMults = bright > 0.8 ? [1, 2] : [1];
+        const nearResonant = this._lofiNearResonantArchitecture();
+        const voiceMults = bright > 0.8 || nearResonant ? [1, 2] : [1];
+        // W4 V4 Sub-Schritt 1 — eine magieleitung-Region trägt einen leisen,
+        // leicht verstimmten Oktav-Schimmer (das Welt-Feld färbt das Timbre).
+        const shimmer = this._lofiWorldField().magieleitung > 0.6;
         const attack = 0.8;
         const release = 1.4;
         const sustainAt = now + Math.max(attack, durSec - release);
@@ -7822,6 +7839,20 @@ class AnazhRealm {
                 env.gain.setValueAtTime(0, now);
                 env.gain.linearRampToValueAtTime(peak, now + attack);
                 env.gain.setValueAtTime(peak, sustainAt);
+                env.gain.linearRampToValueAtTime(0, now + durSec);
+                osc.connect(env);
+                env.connect(s.lofi.filter);
+                osc.start(now);
+                osc.stop(now + durSec + 0.1);
+            }
+            if (shimmer) {
+                const osc = ctx.createOscillator();
+                osc.type = "triangle";
+                osc.frequency.value = freq * 2 * 1.006; // Oktave, leicht verstimmt
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, now);
+                env.gain.linearRampToValueAtTime(0.045, now + attack);
+                env.gain.setValueAtTime(0.045, sustainAt);
                 env.gain.linearRampToValueAtTime(0, now + durSec);
                 osc.connect(env);
                 env.connect(s.lofi.filter);
@@ -7848,6 +7879,88 @@ class AnazhRealm {
         this._lofiPlayBass(degree, durSec);
         s.lofi.lastChordAt = now;
         s.lofi.degree = this._lofiNextDegree(degree);
+        // W4 V4 — die Musik hört die Welt: das Welt-Affinitäts-Feld am
+        // Spieler färbt die Klangfarbe der nächsten Akkord-Dauer.
+        this._lofiApplyWorldTimbre(durSec);
+    }
+
+    // W4 V4 — das Welt-Affinitäts-Feld (worldFieldAt, W6.G P2) am Spieler.
+    // Die Symphonie HÖRT, wo der Spieler steht: lebendig/dichte/glut/
+    // magieleitung färben die Klangfarbe (Timbre), nicht die Noten.
+    // Defensiv — ohne playerMesh / worldFieldAt ein neutrales Feld (0.5).
+    _lofiWorldField() {
+        const neutral = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
+        const pm = this.state.playerMesh;
+        if (!pm || !pm.position || typeof this.worldFieldAt !== "function") return neutral;
+        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!f) return neutral;
+        const c = (v) => Math.max(0, Math.min(1, v || 0));
+        return {
+            lebendig: c(f.lebendig),
+            dichte: c(f.dichte),
+            glut: c(f.glut),
+            magieleitung: c(f.magieleitung),
+        };
+    }
+
+    // W4 V4 Sub-Schritt 1 — das Welt-Feld moduliert die Klangfarbe (nicht
+    // die Tonhöhe). lebendig öffnet den Pad-Tiefpass (eine üppige Region
+    // klingt wärmer), dichte hebt den Bass-Anteil (eine dichte Region
+    // klingt schwerer). Sanfte Rampe über die Akkord-Dauer.
+    _lofiApplyWorldTimbre(durSec) {
+        const s = this.state.symphony;
+        if (!s || !s.enabled || !s.ctx || !s.lofi) return;
+        const field = this._lofiWorldField();
+        const now = s.ctx.currentTime;
+        const ramp = Math.max(0.5, Math.min(8, durSec || 4));
+        // lebendig 0..1 → Pad-Tiefpass 750..1050 Hz (karg .. üppig-warm).
+        if (s.lofi.filter && s.lofi.filter.frequency) {
+            const cutoff = 750 + field.lebendig * 300;
+            try {
+                s.lofi.filter.frequency.cancelScheduledValues(now);
+                s.lofi.filter.frequency.setValueAtTime(s.lofi.filter.frequency.value, now);
+                s.lofi.filter.frequency.linearRampToValueAtTime(cutoff, now + ramp);
+            } catch (e) {
+                void e;
+            }
+        }
+        // dichte 0..1 → Bass-Gain 0.40..0.56 (leicht .. schwer).
+        if (s.lofi.bassGain && s.lofi.bassGain.gain) {
+            const bg = 0.4 + field.dichte * 0.16;
+            try {
+                s.lofi.bassGain.gain.cancelScheduledValues(now);
+                s.lofi.bassGain.gain.setValueAtTime(s.lofi.bassGain.gain.value, now);
+                s.lofi.bassGain.gain.linearRampToValueAtTime(bg, now + ramp);
+            } catch (e) {
+                void e;
+            }
+        }
+    }
+
+    // W4 V4 Sub-Schritt 3 — steht der Spieler nahe einer Struktur mit
+    // hoher räumlicher Resonanz (computeSpatialTags.resoniert ≥ der
+    // resonance_strong-Schwelle)? Ein resonantes Bauwerk „singt mit" —
+    // der Pad verdichtet sich. Spiegelt den V8.84-Singing-Sinus, jetzt
+    // in die Symphonie statt einer Einzel-Sinus-Schicht.
+    _lofiNearResonantArchitecture() {
+        const pm = this.state.playerMesh;
+        const archs = this.state.architectures;
+        if (!pm || !pm.position || !Array.isArray(archs) || !archs.length) return false;
+        if (typeof this.computeSpatialTags !== "function") return false;
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
+        const strong = (T && T.resonance_strong) || 1.5;
+        const RADIUS2 = 24 * 24;
+        for (const e of archs) {
+            if (!e || !e.position) continue;
+            const dx = e.position.x - pm.position.x;
+            const dz = e.position.z - pm.position.z;
+            if (dx * dx + dz * dz > RADIUS2) continue;
+            const bp = this.state.blueprints && this.state.blueprints[e.type];
+            if (!bp) continue;
+            const tags = this.computeSpatialTags(bp);
+            if (tags && (tags.resoniert || 0) >= strong) return true;
+        }
+        return false;
     }
 
     // ### Status-Panel (UI V1) ###
