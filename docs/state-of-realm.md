@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.08)
+# Zustand des Realm — Stand: 19.05.2026 (V9.09)
+
+**V9.09 — Voxel-Terrain-Bogen Phase 2b (der Voxel-Chunk-Ring)**: das Voxel-Terrain wird begehbar. Voxel-Chunks streamen um den Spieler (`_ensureVoxelChunkAt`/`_tickVoxelChunkStreaming`/`_pruneDistantVoxelChunks` spiegeln das erprobte Heightfield-Streaming). `state.voxelTerrainActive` (Default aus, parallel hinter dem Flag) schaltet um: aktiv → der Voxel-Ring streamt + das Heightfield ruht (`_setHeightfieldDormant` — Mesh/Gras unsichtbar, Kollision aus dem physicsWorld genommen, NICHT zerstört, reversibel); aus → die Voxel-Chunks fallen, das Heightfield erwacht. Chat `voxel terrain on`/`off`. Honest Cut: die per-Welt-Persistenz des Flags ist Phase 2c. +9 Invarianten. Voller Eintrag in `CLAUDE.md` V9.09.
 
 **V9.08 — Voxel-Terrain-Bogen Phase 2a (Voxel-Chunk-Kollision)**: der gemeshte Voxel-Test-Chunk bekommt ein `btBvhTriangleMeshShape` und wird begehbar — der Spieler kann auf dem Voxel-Terrain stehen. `_buildIslandCollision` wird zum generischen `_buildStaticTriMeshCollision(mesh, {kind, friction})` extrahiert (eine Sprache für Inseln UND Voxel-Chunks, kein Parallelcode); `_spawnVoxelTestChunk` baut die Kollision beim Spawn + räumt sie beim Ersetzen über `_disposeStaticCollision`. Ein ehrlicher Sub-Schnitt von Roadmap-Phase 2 — die Kollision ist die Grundlage; das Chunk-Streaming im Ring + das voxel-basierte Welt-Flag sind Phase 2b. +5 Invarianten. Voller Eintrag in `CLAUDE.md` V9.08.
 

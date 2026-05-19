@@ -11367,6 +11367,116 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
+            // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
+            // Parallel, hinter dem Flag — jeder Schritt reversibel.
+            const voxelP2bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
+                    out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
+                    out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
+                    out.hasSetActive = typeof r.setVoxelTerrainActive === "function";
+                    out.hasConfig = typeof r._voxelChunkConfig === "function";
+                    out.defaultOff = r.state.voxelTerrainActive === false;
+
+                    // einen Heightfield-Chunk als Referenz merken.
+                    let refChunk = null;
+                    if (r.state.chunkMap) {
+                        for (const e of r.state.chunkMap.values()) {
+                            if (e && e.mesh) {
+                                refChunk = e.mesh;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (out.hasSetActive && out.hasTick) {
+                        r.setVoxelTerrainActive(true);
+                        out.activated = r.state.voxelTerrainActive === true;
+                        out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
+                        // jeder gemeshte Voxel-Chunk trägt eine Kollision.
+                        let meshCount = 0;
+                        let collCount = 0;
+                        for (const e of r.state.voxelChunks.values()) {
+                            if (e && e.mesh) {
+                                meshCount++;
+                                if (e.mesh.userData && e.mesh.userData.collision && e.mesh.userData.collision.body) {
+                                    collCount++;
+                                }
+                            }
+                        }
+                        out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
+                        // das Heightfield schläft (unsichtbar + kollisionslos).
+                        out.heightfieldDormant = refChunk ? refChunk.visible === false : true;
+                        out.heightfieldCollisionDormant = refChunk
+                            ? !!(refChunk.userData && refChunk.userData._collisionDormant)
+                            : true;
+
+                        // Streaming: alles abräumen, ein Tick baut wieder auf.
+                        for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+                        const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                        r._tickVoxelChunkStreaming(pos);
+                        out.tickBuilds = r.state.voxelChunks.size >= 1;
+                        // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
+                        r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
+                        out.pruneRemovesFar = r.state.voxelChunks.size === 0;
+
+                        // wieder aus — das Heightfield erwacht, die Voxel-Chunks fallen.
+                        r.setVoxelTerrainActive(false);
+                        out.deactivated = r.state.voxelTerrainActive === false;
+                        out.voxelChunksCleared = !r.state.voxelChunks || r.state.voxelChunks.size === 0;
+                        out.heightfieldRestored = refChunk ? refChunk.visible === true : true;
+                        out.heightfieldCollisionRestored = refChunk
+                            ? !(refChunk.userData && refChunk.userData._collisionDormant)
+                            : true;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP2bResults && !voxelP2bResults.error) {
+                check(
+                    "Voxel P2b: alle vier Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/setVoxelTerrainActive)",
+                    voxelP2bResults.hasEnsure &&
+                        voxelP2bResults.hasTick &&
+                        voxelP2bResults.hasPrune &&
+                        voxelP2bResults.hasSetActive &&
+                        voxelP2bResults.hasConfig
+                );
+                check("Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)", voxelP2bResults.defaultOff);
+                check(
+                    "Voxel P2b: setVoxelTerrainActive(true) füllt den Voxel-Chunk-Ring um den Spieler",
+                    voxelP2bResults.activated && voxelP2bResults.ringFilled
+                );
+                check(
+                    "Voxel P2b: jeder gemeshte Voxel-Chunk trägt eine btBvhTriangleMeshShape-Kollision",
+                    voxelP2bResults.voxelChunksHaveCollision
+                );
+                check(
+                    "Voxel P2b: das Heightfield ruht bei aktivem Voxel-Terrain (unsichtbar + kollisionslos)",
+                    voxelP2bResults.heightfieldDormant && voxelP2bResults.heightfieldCollisionDormant
+                );
+                check(
+                    "Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)",
+                    voxelP2bResults.tickBuilds
+                );
+                check(
+                    "Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks",
+                    voxelP2bResults.pruneRemovesFar
+                );
+                check(
+                    "Voxel P2b: setVoxelTerrainActive(false) räumt alle Voxel-Chunks",
+                    voxelP2bResults.deactivated && voxelP2bResults.voxelChunksCleared
+                );
+                check(
+                    "Voxel P2b: das Heightfield erwacht wieder (sichtbar + kollidierbar) — reversibel",
+                    voxelP2bResults.heightfieldRestored && voxelP2bResults.heightfieldCollisionRestored
+                );
+            }
+
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
             // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
             // damagePlayer + Stamina-Kosten sind modus-gated.

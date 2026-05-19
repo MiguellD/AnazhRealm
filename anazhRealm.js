@@ -23,6 +23,10 @@ class AnazhRealm {
             groundMesh: null,
             groundChunks: [],
             groundHeightField: null,
+            // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. Parallel
+            // zum Heightfield, hinter dem Flag. Default aus.
+            voxelTerrainActive: false,
+            voxelChunks: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -12751,6 +12755,16 @@ class AnazhRealm {
             this._spawnVoxelTestChunk();
             return;
         }
+        // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. `voxel
+        // terrain on` lässt Voxel-Chunks um den Spieler streamen + legt das
+        // Heightfield schlafen; `voxel terrain off` kehrt zurück.
+        {
+            const vc = command.toLowerCase().trim();
+            if (vc === "voxel terrain on" || vc === "voxel terrain off") {
+                this.setVoxelTerrainActive(vc === "voxel terrain on");
+                return;
+            }
+        }
 
         // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
         // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
@@ -14360,6 +14374,170 @@ class AnazhRealm {
         return mesh;
     }
 
+    // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
+    // Voxel-Chunks streamen um den Spieler, wie das Heightfield-Chunk-
+    // System. Parallel gebaut, hinter dem Flag `voxelTerrainActive`. Ist
+    // das Flag aus, fasst NICHTS hier das Heightfield an.
+
+    // Die Konfiguration des Voxel-Chunk-Rings — eine Quelle der Wahrheit.
+    // span = dim × step ist die Welt-Kantenlänge eines (würfelförmigen)
+    // Voxel-Chunks; die vertikale Spanne deckt das Oberflächen-Band.
+    _voxelChunkConfig() {
+        const dim = 24;
+        const step = 1.8;
+        return { dim, step, span: dim * step, ringRadius: 2 };
+    }
+
+    // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
+    // Surface-Nets-Mesh aus dem 3D-Dichte-Feld + btBvhTriangleMeshShape-
+    // Kollision. No-op, wenn er schon existiert. Ein leeres Dichte-Feld
+    // (ganz fest / ganz Luft) wird als {empty:true} markiert — kein
+    // erneutes Meshen je Frame.
+    _ensureVoxelChunkAt(cx, cz) {
+        if (!this.state.scene) return null;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
+        const { dim, step, span } = this._voxelChunkConfig();
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - 22;
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, step);
+        if (!geom) {
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
+        const mat = new THREE.MeshToonMaterial({ color: 0x6e5038, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
+        this.state.scene.add(mesh);
+        this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        const entry = { mesh };
+        this.state.voxelChunks.set(key, entry);
+        return entry;
+    }
+
+    // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
+    // Idempotent.
+    _disposeVoxelChunk(key) {
+        if (!this.state.voxelChunks) return;
+        const entry = this.state.voxelChunks.get(key);
+        if (entry && entry.mesh) {
+            this._disposeStaticCollision(entry.mesh);
+            if (this.state.scene) this.state.scene.remove(entry.mesh);
+            if (entry.mesh.geometry) entry.mesh.geometry.dispose();
+            if (entry.mesh.material) entry.mesh.material.dispose();
+        }
+        this.state.voxelChunks.delete(key);
+    }
+
+    // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
+    // Distanz über dem Ring-Radius + 1 — eine Pufferzone gegen Flackern).
+    _pruneDistantVoxelChunks(playerPos) {
+        if (!playerPos || !this.state.voxelChunks) return;
+        const { span, ringRadius } = this._voxelChunkConfig();
+        const pcx = Math.floor(playerPos.x / span);
+        const pcz = Math.floor(playerPos.z / span);
+        const drop = [];
+        for (const key of this.state.voxelChunks.keys()) {
+            const parts = key.split(",");
+            const cx = Number(parts[0]);
+            const cz = Number(parts[1]);
+            if (Math.abs(cx - pcx) > ringRadius + 1 || Math.abs(cz - pcz) > ringRadius + 1) drop.push(key);
+        }
+        for (const key of drop) this._disposeVoxelChunk(key);
+    }
+
+    // Streamt den Voxel-Chunk-Ring um den Spieler — ein Chunk je Frame
+    // (Meshen + BVH-Kollision sind nicht gratis), dann Prune. No-op, wenn
+    // das Voxel-Terrain nicht aktiv ist.
+    _tickVoxelChunkStreaming(playerPos) {
+        if (!this.state.voxelTerrainActive || !playerPos) return;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const { span, ringRadius } = this._voxelChunkConfig();
+        const pcx = Math.floor(playerPos.x / span);
+        const pcz = Math.floor(playerPos.z / span);
+        let built = 0;
+        const MAX_PER_FRAME = 1;
+        outer: for (let r = 0; r <= ringRadius; r++) {
+            for (let dz = -r; dz <= r; dz++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+                    const key = `${pcx + dx},${pcz + dz}`;
+                    if (this.state.voxelChunks.has(key)) continue;
+                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
+                    if (++built >= MAX_PER_FRAME) break outer;
+                }
+            }
+        }
+        this._pruneDistantVoxelChunks(playerPos);
+    }
+
+    // Versetzt das Heightfield-Terrain in den Ruhezustand (Mesh + Gras
+    // unsichtbar, Kollision aus dem physicsWorld genommen) bzw. weckt es
+    // wieder. Das Heightfield wird NICHT zerstört — chunkMap bleibt voll,
+    // jeder Schritt ist reversibel (die parallel-hinter-Flag-Disziplin).
+    _setHeightfieldDormant(dormant) {
+        if (this.state.chunkMap) {
+            for (const entry of this.state.chunkMap.values()) {
+                const mesh = entry && entry.mesh;
+                if (!mesh) continue;
+                mesh.visible = !dormant;
+                const body = mesh.userData && mesh.userData.physicsBody;
+                if (body && this.state.physicsWorld) {
+                    if (dormant && !mesh.userData._collisionDormant) {
+                        this.state.physicsWorld.removeRigidBody(body);
+                        mesh.userData._collisionDormant = true;
+                    } else if (!dormant && mesh.userData._collisionDormant) {
+                        this.state.physicsWorld.addRigidBody(body);
+                        mesh.userData._collisionDormant = false;
+                    }
+                }
+            }
+        }
+        if (this.state.chunkGrass) {
+            for (const grass of this.state.chunkGrass.values()) {
+                if (grass) grass.visible = !dormant;
+            }
+        }
+    }
+
+    // Schaltet das Voxel-Terrain ein/aus. An: das Heightfield schläft, der
+    // Voxel-Ring um den Spieler wird sofort gefüllt (damit er nicht ins
+    // Leere fällt). Aus: alle Voxel-Chunks werden abgeräumt, das
+    // Heightfield erwacht.
+    setVoxelTerrainActive(on) {
+        const next = !!on;
+        if (this.state.voxelTerrainActive === next) return;
+        this.state.voxelTerrainActive = next;
+        this._setHeightfieldDormant(next);
+        if (next) {
+            const pm = this.state.playerMesh;
+            const pos = pm ? pm.position : { x: 0, z: 0 };
+            const { span, ringRadius } = this._voxelChunkConfig();
+            const pcx = Math.floor(pos.x / span);
+            const pcz = Math.floor(pos.z / span);
+            for (let dz = -ringRadius; dz <= ringRadius; dz++) {
+                for (let dx = -ringRadius; dx <= ringRadius; dx++) {
+                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
+                }
+            }
+        } else if (this.state.voxelChunks) {
+            for (const key of [...this.state.voxelChunks.keys()]) this._disposeVoxelChunk(key);
+        }
+        this.log(
+            next
+                ? "Voxel-Terrain aktiv — der Boden ist jetzt 3D-formbare Materie."
+                : "Voxel-Terrain aus — zurück zum Heightfield.",
+            "INFO"
+        );
+        return next;
+    }
+
     // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für
     // chunkWorldSize und vertexStep, damit initial worldgen und Extensions
     // niemals driften können.
@@ -14818,6 +14996,18 @@ class AnazhRealm {
         this.populateChunkVegetation(newChunkX, newChunkZ);
         // V8.29 — Instanced-Gras pro Chunk. Idempotent über state.chunkGrass.
         this._buildChunkGrass(newChunkX, newChunkZ);
+
+        // Voxel-Terrain-Bogen Phase 2b — ist das Voxel-Terrain aktiv und
+        // entsteht (über einen anderen Pfad) trotzdem ein Heightfield-Chunk,
+        // kommt er sofort schlafend zur Welt (unsichtbar, kollisionslos).
+        if (this.state.voxelTerrainActive && mesh) {
+            mesh.visible = false;
+            const hfBody = mesh.userData.physicsBody;
+            if (hfBody && this.state.physicsWorld && !mesh.userData._collisionDormant) {
+                this.state.physicsWorld.removeRigidBody(hfBody);
+                mesh.userData._collisionDormant = true;
+            }
+        }
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -33143,7 +33333,13 @@ class AnazhRealm {
             );
             this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
             const frustum = this._frustumCache;
-            this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
+            // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
+            // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
+            if (this.state.voxelTerrainActive) {
+                this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
+            } else {
+                this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
+            }
             if (this.state.floatingIslands)
                 this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
             if (this.state.creatures)
@@ -33477,16 +33673,23 @@ class AnazhRealm {
                 1,
                 Math.min(8, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 4)
             );
-            outer: for (let r = 0; r <= RING_RADIUS; r++) {
-                for (let dz = -r; dz <= r; dz++) {
-                    for (let dx = -r; dx <= r; dx++) {
-                        // Ring r: nur Zellen am äußeren Rand des Quadrats r.
-                        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                        const cx = playerChunkX + dx;
-                        const cz = playerChunkZ + dz;
-                        if (this.state.chunkMap.has(`${cx},${cz}`)) continue;
-                        this.ensureChunkAt(cx, cz);
-                        if (++chunksThisFrame >= MAX_PER_FRAME) break outer;
+            // Voxel-Terrain-Bogen Phase 2b — ist das Voxel-Terrain aktiv,
+            // ruht das Heightfield-Streaming und der Voxel-Chunk-Ring
+            // streamt stattdessen. Parallel, hinter dem Flag.
+            if (this.state.voxelTerrainActive) {
+                this._tickVoxelChunkStreaming(playerPos);
+            } else {
+                outer: for (let r = 0; r <= RING_RADIUS; r++) {
+                    for (let dz = -r; dz <= r; dz++) {
+                        for (let dx = -r; dx <= r; dx++) {
+                            // Ring r: nur Zellen am äußeren Rand des Quadrats r.
+                            if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+                            const cx = playerChunkX + dx;
+                            const cz = playerChunkZ + dz;
+                            if (this.state.chunkMap.has(`${cx},${cz}`)) continue;
+                            this.ensureChunkAt(cx, cz);
+                            if (++chunksThisFrame >= MAX_PER_FRAME) break outer;
+                        }
                     }
                 }
             }
