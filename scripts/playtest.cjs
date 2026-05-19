@@ -11705,6 +11705,77 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
+            // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
+            const voxelP3bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasFill = typeof r.fillVoxelSphere === "function";
+                    if (out.hasFill && r.state.worldMeta) {
+                        const base = r.state.terrainBaseHeight || 0;
+                        // Der Füll-Schnitt addiert am Kugel-Zentrum exakt strength.
+                        r.state.worldMeta.voxelEdits = [];
+                        const dBefore = r._terrainDensityAt(0, base + 40, 0);
+                        r.fillVoxelSphere(0, base + 40, 0, 12);
+                        const dAfter = r._terrainDensityAt(0, base + 40, 0);
+                        out.fillAdds = Math.abs(dAfter - dBefore - 48) < 0.01;
+                        out.editIsFillMode =
+                            r.state.worldMeta.voxelEdits.length === 1 &&
+                            r.state.worldMeta.voxelEdits[0].mode === "fill";
+                        // Ein Luft-Punkt wird durch das Füllen zu festem Grund.
+                        let airToSolid = false;
+                        for (let sy = base + 35; sy >= base - 25 && !airToSolid; sy -= 3) {
+                            const dB = r._terrainDensityAt(70, sy, 70);
+                            if (dB < -1 && dB > -40) {
+                                r.state.worldMeta.voxelEdits = [];
+                                r.fillVoxelSphere(70, sy, 70, 12);
+                                if (r._terrainDensityAt(70, sy, 70) > 0) airToSolid = true;
+                            }
+                        }
+                        out.airToSolid = airToSolid;
+                        // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
+                        r.state.worldMeta.voxelEdits = [];
+                        const dPre = r._terrainDensityAt(120, base - 33, 120);
+                        r.state.worldMeta.voxelEdits = [
+                            { x: 120, y: base - 33, z: 120, r: 12, strength: 48 },
+                        ];
+                        out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
+                        // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
+                        r.setVoxelTerrainActive(true);
+                        r.state.worldMeta.voxelEdits = [];
+                        r.processChatCommand("voxel fill");
+                        out.chatFillAddsEdit =
+                            r.state.worldMeta.voxelEdits.length === 1 &&
+                            r.state.worldMeta.voxelEdits[0].mode === "fill";
+                        r.setVoxelTerrainActive(false);
+                        // sauber zurücklassen.
+                        r.state.worldMeta.voxelEdits = [];
+                        if (typeof r.saveState === "function") r.saveState();
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP3bResults && !voxelP3bResults.error) {
+                check("Voxel P3b: fillVoxelSphere-Methode existiert", voxelP3bResults.hasFill);
+                check(
+                    "Voxel P3b: der Füll-Schnitt addiert am Kugel-Zentrum die Dichte (Luft → fest)",
+                    voxelP3bResults.fillAdds
+                );
+                check("Voxel P3b: der Füll-Edit trägt mode:fill", voxelP3bResults.editIsFillMode);
+                check(
+                    "Voxel P3b: ein Luft-Punkt wird durch das Füllen zu festem Grund (aufgeschüttet)",
+                    voxelP3bResults.airToSolid
+                );
+                check(
+                    "Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)",
+                    voxelP3bResults.modelessIsCarve
+                );
+                check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
+            }
+
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
             // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
             // damagePlayer + Stamina-Kosten sind modus-gated.

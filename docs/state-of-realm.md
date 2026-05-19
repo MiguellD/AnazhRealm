@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.14)
+# Zustand des Realm — Stand: 19.05.2026 (V9.15)
+
+**V9.15 — Voxel-Terrain-Bogen Phase 3b (Aufschütten)**: das Gegenstück zum Graben. `fillVoxelSphere(x,y,z,r)` schüttet eine Kugel „Fest" auf — der Edit (`mode:"fill"`) addiert in `_terrainDensityAt` Dichte → Luft wird Boden. `carveVoxelSphere` + `fillVoxelSphere` teilen `_addVoxelEdit`. Der RMB schüttet bei aktivem Voxel-Terrain ohne Bau-Modus auf, Chat `voxel fill`. Mode-lose Alt-Edits gelten als carve. Der Voxel-Boden ist voll formbar — graben UND aufschütten. +6 Invarianten. Voller Eintrag in `CLAUDE.md` V9.15.
 
 **V9.14 — Voxel-Terrain-Bogen Phase 3 (3D-Graben)**: der Voxel-Boden wird wirklich formbar. `carveVoxelSphere(x,y,z,r)` schnitzt eine Kugel „Luft" ins 3D-Dichte-Feld — der Edit landet in `worldMeta.voxelEdits` (persistiert, FIFO-256), `_terrainDensityAt` zieht dort die Dichte ab → ein echtes Loch/Tunnel/Höhle; die betroffenen Voxel-Chunks werden neu gemesht. Der LMB-Grabe-Hieb schnitzt bei aktivem Voxel-Terrain; Chat `voxel carve`. +7 Invarianten. Honest Cut: das Füllen (Boden aufschütten) ist Phase 3b. Voller Eintrag in `CLAUDE.md` V9.14.
 

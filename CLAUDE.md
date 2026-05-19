@@ -2,7 +2,21 @@
 
 Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch geladen. **Bei größeren Entscheidungen zuerst `docs/state-of-realm.md` lesen** – dort steht der ausführliche Stand, die Vision aus den vier Testamenten, der Plan und die Learnings.
 
-**Aktuelle Version: V9.14 (Stand 19.05.2026, Voxel-Terrain-Bogen Phase 3 — 3D-Graben. Der Boden wird WIRKLICH formbar: `carveVoxelSphere(x,y,z,r)` schnitzt eine Kugel „Luft" ins 3D-Dichte-Feld — der Edit landet in `worldMeta.voxelEdits` (persistiert mit der Welt, FIFO-gedeckelt 256), `_terrainDensityAt` zieht dort die Dichte ab → ein echtes Loch / Tunnel / Höhle, die betroffenen Voxel-Chunks werden neu gemesht. Der LMB-Grabe-Hieb schnitzt bei aktivem Voxel-Terrain das Dichte-Feld (sonst das Heightfield); Chat `voxel carve`. +7 Invarianten. Der Moment, auf den der Bogen zuläuft. Honest Cut: das Voxel-Material-Füllen (Boden AUFschütten) ist Phase 3b. Siehe V9.14-Eintrag.)**
+**Aktuelle Version: V9.15 (Stand 19.05.2026, Voxel-Terrain-Bogen Phase 3b — Aufschütten. Das Gegenstück zum Graben: `fillVoxelSphere(x,y,z,r)` schüttet eine Kugel „Fest" auf — der Edit (`mode:"fill"`) addiert in `_terrainDensityAt` Dichte → Luft wird Boden, ein aufgeschütteter Hügel. `carveVoxelSphere` + `fillVoxelSphere` teilen `_addVoxelEdit(x,y,z,r,mode)`. Der RMB schüttet bei aktivem Voxel-Terrain ohne Bau-Modus auf (Gegenstück zum LMB-Graben), Chat `voxel fill`. Mode-lose Alt-Edits gelten als carve (Backward-Compat). +6 Invarianten. Damit ist der Voxel-Boden voll formbar — graben UND aufschütten. Siehe V9.15-Eintrag.)**
+
+**V9.15 — Voxel-Terrain-Bogen Phase 3b (Aufschütten, +6 Invarianten)**: das Gegenstück zum Graben — der Voxel-Boden lässt sich jetzt auch AUFschütten. Ein Commit, playtest-grün, Strict-Audit 0 Failures.
+
+1. **`fillVoxelSphere` — die Kugel „Fest".** Spiegelbild von `carveVoxelSphere`: beide gehen über den gemeinsamen `_addVoxelEdit(x,y,z,r,mode)` (kein Parallelcode), der Edit trägt `mode:"carve"|"fill"`. `_terrainDensityAt` liest den Modus: `fill` ADDIERT die Dichte (`d += falloff×strength`), `carve` zieht ab. Luft wird fester Grund — ein aufgeschütteter Hügel, eine geschlossene Höhlen-Decke, eine Brücke aus Boden. Backward-Compat: ein mode-loser Alt-Edit (V9.14-Saves) gilt als `carve` (`ed.mode === "fill"` ist dann false).
+
+2. **Der RMB schüttet auf.** `tryMousePlace` (RMB) verzweigt VOR dem Bau-Modus-Check: ist das Voxel-Terrain aktiv UND kein Bau-Modus aktiv, schüttet der RMB-Hieb am Raycast-Punkt Boden auf — das saubere Gegenstück zum LMB-Graben (V9.14). Mit aktivem Bau-Modus bleibt RMB das Architektur-Platzieren. Chat `voxel fill` schüttet eine Kuppe unter dem Spieler auf; `voxel carve`/`voxel fill` teilen einen Chat-Zweig.
+
+3. **Ehrlicher Stand.** Mit Graben (V9.14) + Aufschütten (V9.15) ist der Voxel-Boden voll formbar — der Kern des Bogens steht. Phase 4 (Höhlen/Überhänge schon in der Voxel-GENERIERUNG, nicht erst per Hand geschnitzt) + Phase 5 (Materialien/Shader + die Ablösung des Heightfields) bleiben benannt.
+
+**Tests**: 6 neue Playtest-Invarianten (`fillVoxelSphere` existiert; der Füll-Schnitt addiert am Kugel-Zentrum exakt `strength`; der Edit trägt `mode:"fill"`; ein Luft-Punkt wird zu festem Grund; ein mode-loser Alt-Edit gilt als carve — Backward-Compat; der Chat-Befehl `voxel fill` schüttet auf). ~2899 grün. Lint + Format + Strict-Audit (0 Failures) sauber.
+
+**Lehre der V9.15**: *(1) Das Gegenstück einer Operation teilt ihren Pfad — `carve` und `fill` unterscheiden sich nur im Vorzeichen (`d -=` vs `d +=`); ein gemeinsamer `_addVoxelEdit` mit einem `mode`-Feld ist die ehrliche Form, kein zweiter fast-identischer Block. (2) Eine neue Eigenschaft auf einem persistierten Datum braucht einen Backward-Compat-Pfad — Alt-Edits ohne `mode` müssen weiterhin korrekt wirken; `ed.mode === "fill" ? add : subtract` macht „kein mode" automatisch zu `carve`, ohne Save-Migration. (3) Ein symmetrisches Gegenstück gehört an die symmetrische Geste — graben ist LMB, aufschütten ist RMB; der RMB war ungenutzt, solange kein Bau-Modus aktiv ist.*
+
+**V9.14 — Voxel-Terrain-Bogen Phase 3 (3D-Graben, +7 Invarianten)**: der Voxel-Boden wird wirklich formbar — echtes Schnitzen statt Säulen heben/senken. Ein Commit, playtest-grün, Strict-Audit 0 Failures.
 
 **V9.14 — Voxel-Terrain-Bogen Phase 3 (3D-Graben, +7 Invarianten)**: der Voxel-Boden wird wirklich formbar — echtes Schnitzen statt Säulen heben/senken. Ein Commit, playtest-grün, Strict-Audit 0 Failures.
 

@@ -12764,16 +12764,22 @@ class AnazhRealm {
                 this.setVoxelTerrainActive(vc === "voxel terrain on");
                 return;
             }
-            // Phase 3 — `voxel carve` schnitzt eine Mulde unter dem Spieler.
-            if (vc === "voxel carve") {
+            // Phase 3 — `voxel carve` schnitzt eine Mulde, `voxel fill`
+            // schüttet einen Hügel unter dem Spieler auf.
+            if (vc === "voxel carve" || vc === "voxel fill") {
                 if (!this.state.voxelTerrainActive) {
-                    this.log("Voxel-Graben braucht aktives Voxel-Terrain — erst `voxel terrain on`.", "INFO");
+                    this.log("Voxel-Formen braucht aktives Voxel-Terrain — erst `voxel terrain on`.", "INFO");
                     return;
                 }
                 const pm = this.state.playerMesh;
                 if (pm) {
-                    this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
-                    this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+                    if (vc === "voxel fill") {
+                        this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                        this.log("Voxel-Terrain aufgeschüttet — ein Hügel unter dir.", "INFO");
+                    } else {
+                        this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                        this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+                    }
                 }
                 return;
             }
@@ -14224,7 +14230,11 @@ class AnazhRealm {
                 const r = ed.r;
                 if (dist2 < r * r) {
                     const fall = 1 - Math.sqrt(dist2) / r;
-                    d -= fall * (ed.strength || 48);
+                    const amt = fall * (ed.strength || 48);
+                    // Phase 3b — `fill` addiert Dichte (Boden aufschütten),
+                    // `carve` (Default, auch mode-lose Alt-Edits) zieht ab.
+                    if (ed.mode === "fill") d += amt;
+                    else d -= amt;
                 }
             }
         }
@@ -14641,25 +14651,34 @@ class AnazhRealm {
         }
     }
 
-    // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
-    // `carveVoxelSphere` schnitzt eine Kugel „Luft" ins Dichte-Feld: der
-    // Edit landet in worldMeta.voxelEdits (persistiert mit der Welt),
-    // `_terrainDensityAt` zieht dort die Dichte ab → ein echtes Loch /
-    // Tunnel / Höhle. Die betroffenen Voxel-Chunks werden neu gemesht.
-    // Das ist der formbare Boden — der Kern des ganzen Bogens.
-    carveVoxelSphere(x, y, z, r) {
+    // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben + Phase 3b — Aufschütten ###
+    // `carveVoxelSphere` schnitzt eine Kugel „Luft" ins Dichte-Feld,
+    // `fillVoxelSphere` schüttet eine Kugel „Fest" auf — beide über den
+    // gemeinsamen `_addVoxelEdit`. Der Edit landet in worldMeta.voxelEdits
+    // (persistiert mit der Welt), `_terrainDensityAt` zieht ab / addiert →
+    // ein echtes Loch / Tunnel / Höhle bzw. ein aufgeschütteter Hügel.
+    // Die betroffenen Voxel-Chunks werden neu gemesht. Der formbare Boden.
+    _addVoxelEdit(x, y, z, r, mode) {
         if (!this.state.worldMeta) return false;
         if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return false;
         if (!Array.isArray(this.state.worldMeta.voxelEdits)) this.state.worldMeta.voxelEdits = [];
         const edits = this.state.worldMeta.voxelEdits;
         const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
-        edits.push({ x, y, z, r: radius, strength: 48 });
+        edits.push({ x, y, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
         while (edits.length > CAP) edits.shift();
         this._remeshVoxelChunksAround(x, z, radius);
         if (typeof this.saveState === "function") this.saveState();
         return true;
+    }
+
+    carveVoxelSphere(x, y, z, r) {
+        return this._addVoxelEdit(x, y, z, r, "carve");
+    }
+
+    fillVoxelSphere(x, y, z, r) {
+        return this._addVoxelEdit(x, y, z, r, "fill");
     }
 
     // Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-Kugel
@@ -26403,6 +26422,23 @@ class AnazhRealm {
     }
 
     tryMousePlace() {
+        // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
+        // schüttet der RMB Boden auf (das Gegenstück zum LMB-Graben).
+        if (this.state.voxelTerrainActive && (!this.state.buildMode || !this.state.buildMode.active)) {
+            const fillGate = this._mouseActionStaminaGate();
+            if (!fillGate.ok) {
+                this.log(`Aufschütten: zu wenig Stamina (${fillGate.have}/${fillGate.cost}).`, "INFO");
+                return false;
+            }
+            const fillHit = this._raycastWorldHit(30);
+            if (!fillHit.hit) {
+                this.log("Aufschütten: kein Ziel in Reichweite.", "INFO");
+                return false;
+            }
+            this._consumeMouseStamina();
+            this.fillVoxelSphere(fillHit.x, fillHit.y, fillHit.z, 3.5);
+            return true;
+        }
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
