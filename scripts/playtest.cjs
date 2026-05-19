@@ -11279,17 +11279,38 @@ function startSaveServer() {
                         }
                     }
 
+                    // Phase 2a — der Kollisions-Builder.
+                    out.hasStaticTriCollision = typeof r._buildStaticTriMeshCollision === "function";
+                    out.hasIslandCollision = typeof r._buildIslandCollision === "function";
+
                     if (out.hasSpawnTest && r.state.scene) {
                         const before = r.state.scene.children.length;
                         const m1 = r._spawnVoxelTestChunk();
                         const afterOne = r.state.scene.children.length;
+                        // m1 bekommt eine btBvhTriangleMeshShape-Kollision.
+                        out.spawnHasCollision = !!(
+                            m1 &&
+                            m1.userData &&
+                            m1.userData.collision &&
+                            m1.userData.collision.body &&
+                            m1.userData.collision.kind === "voxel"
+                        );
                         const m2 = r._spawnVoxelTestChunk();
                         const afterTwo = r.state.scene.children.length;
                         out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
                         // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
                         out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
+                        // Der alte Test-Chunk gab seine Kollision frei.
+                        out.spawnDisposesOldCollision = !!(m1 && m1.userData && m1.userData.collision === null);
+                        out.spawnNewHasCollision = !!(
+                            m2 &&
+                            m2.userData &&
+                            m2.userData.collision &&
+                            m2.userData.collision.body
+                        );
                         // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
                         if (r._voxelTestMesh) {
+                            r._disposeStaticCollision(r._voxelTestMesh);
                             r.state.scene.remove(r._voxelTestMesh);
                             r._voxelTestMesh = null;
                         }
@@ -11323,6 +11344,26 @@ function startSaveServer() {
                 check(
                     "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
                     voxelP1Results.spawnReplaces
+                );
+                check(
+                    "Voxel P2a: _buildStaticTriMeshCollision-Methode existiert",
+                    voxelP1Results.hasStaticTriCollision
+                );
+                check(
+                    "Voxel P2a: _buildIslandCollision existiert weiter (Regression nach Extraktion)",
+                    voxelP1Results.hasIslandCollision
+                );
+                check(
+                    "Voxel P2a: der Voxel-Test-Chunk bekommt eine btBvhTriangleMeshShape-Kollision (kind voxel)",
+                    voxelP1Results.spawnHasCollision
+                );
+                check(
+                    "Voxel P2a: ein zweiter Spawn gibt die Kollision des alten Chunks frei",
+                    voxelP1Results.spawnDisposesOldCollision
+                );
+                check(
+                    "Voxel P2a: der neue Test-Chunk trägt wieder eine Kollision",
+                    voxelP1Results.spawnNewHasCollision
                 );
             }
 

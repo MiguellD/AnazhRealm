@@ -14311,12 +14311,16 @@ class AnazhRealm {
         return geom;
     }
 
-    // Phase-1-Beweis: ein Voxel-Chunk wird gemesht + neben dem Spieler in
-    // die Szene gestellt. Ein zweiter Aufruf ersetzt den alten. KEIN
-    // Eingriff ins Heightfield — ein reines Parallel-Artefakt.
+    // Phase-2a-Beweis: ein Voxel-Chunk wird gemesht, neben dem Spieler in
+    // die Szene gestellt UND bekommt eine btBvhTriangleMeshShape-Kollision
+    // (über _buildStaticTriMeshCollision — dieselbe Sprache wie die Inseln)
+    // — der Spieler kann auf dem Voxel-Terrain stehen. Ein zweiter Aufruf
+    // ersetzt den alten + räumt seine Kollision. KEIN Eingriff ins
+    // Heightfield — ein reines Parallel-Artefakt.
     _spawnVoxelTestChunk() {
         if (!this.state.scene) return null;
         if (this._voxelTestMesh) {
+            this._disposeStaticCollision(this._voxelTestMesh);
             this.state.scene.remove(this._voxelTestMesh);
             if (this._voxelTestMesh.geometry) this._voxelTestMesh.geometry.dispose();
             if (this._voxelTestMesh.material) this._voxelTestMesh.material.dispose();
@@ -14346,8 +14350,13 @@ class AnazhRealm {
         mesh.receiveShadow = true;
         this.state.scene.add(mesh);
         this._voxelTestMesh = mesh;
+        const body = this._buildStaticTriMeshCollision(mesh, { kind: "voxel", friction: 0.85 });
         const vCount = geom.getAttribute("position").count;
-        this.log(`Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets, Phase 1).`, "INFO");
+        this.log(
+            `Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets)` +
+                (body ? " — begehbar (btBvhTriangleMeshShape)." : " — ohne Kollision (kein Index)."),
+            "INFO"
+        );
         return mesh;
     }
 
@@ -24578,11 +24587,22 @@ class AnazhRealm {
     // state.rigidBodies gepusht — der Sync-Loop würde sonst mesh.position
     // aus dem Body-Origin überschreiben. Body lebt in obj.userData.collision.
     _buildIslandCollision(islandMesh) {
-        if (!islandMesh || !islandMesh.geometry || !this.state.physicsWorld) return null;
-        const geo = islandMesh.geometry;
+        return this._buildStaticTriMeshCollision(islandMesh, { kind: "island", friction: 0.8 });
+    }
+
+    // Generischer statischer Tri-Mesh-Kollisions-Builder. Nimmt ein Mesh mit
+    // indizierter Geometrie, baut ein btBvhTriangleMeshShape aus genau seinen
+    // Triangles (Visual = Kollision per Konstruktion) als statischen Body
+    // (mass=0). Eine Sprache für Inseln UND Voxel-Chunks — die Kollision
+    // lebt in mesh.userData.collision, _disposeStaticCollision räumt sie.
+    _buildStaticTriMeshCollision(mesh, opts = {}) {
+        if (!mesh || !mesh.geometry || !this.state.physicsWorld) return null;
+        const geo = mesh.geometry;
         const posAttr = geo.attributes && geo.attributes.position;
         const idx = geo.index;
         if (!posAttr || !idx) return null;
+        const kind = opts.kind || "static";
+        const friction = Number.isFinite(opts.friction) ? opts.friction : 0.8;
         const sf = this.state.scaleFactor || 1;
         const verts = posAttr.array;
         const indices = idx.array;
@@ -24613,23 +24633,23 @@ class AnazhRealm {
             const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
             const transform = new Ammo.btTransform();
             transform.setIdentity();
-            const p = islandMesh.position;
+            const p = mesh.position;
             const origin = new Ammo.btVector3(p.x / sf, p.y / sf, p.z / sf);
             transform.setOrigin(origin);
             const motionState = new Ammo.btDefaultMotionState(transform);
             const inertia = new Ammo.btVector3(0, 0, 0);
             const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
             const body = new Ammo.btRigidBody(rbInfo);
-            body.setFriction(0.8);
+            body.setFriction(friction);
             this.state.physicsWorld.addRigidBody(body);
             Ammo.destroy(rbInfo);
             Ammo.destroy(inertia);
             Ammo.destroy(origin);
             Ammo.destroy(transform);
-            islandMesh.userData.collision = { body, shape, tmesh, kind: "island" };
+            mesh.userData.collision = { body, shape, tmesh, kind };
             return body;
         } catch (err) {
-            this.log(`_buildIslandCollision: ${err.message}`, "ERROR");
+            this.log(`_buildStaticTriMeshCollision: ${err.message}`, "ERROR");
             return null;
         }
     }
