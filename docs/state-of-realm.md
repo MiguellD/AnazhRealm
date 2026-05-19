@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.01)
+# Zustand des Realm — Stand: 19.05.2026 (V9.02)
+
+**V9.02 — W15-Politur (Slash-Branch-Namen im GitHub-Fetch)**: der letzte benannte kleine offene Punkt aus `docs/roadmap.md` §3. Ein vendortes Repo aus `github.com/owner/repo/tree/feature/x` wurde bisher als Branch `feature` + Pfad `x` fehlinterpretiert — die Trees-API antwortete mit 404. Jetzt bleiben die Segmente nach `tree/` ein Array; `resolveGithubBranch` probiert die längste auflösbare Branch zuerst gegen die GitHub-Branches-API, die zugleich die Commit-SHA liefert — Trees- + Raw-Aufrufe gehen gegen die SHA (slash-sicher). Eine reine save-server-Welle, smoke-verifiziert (Fake-GitHub mit Slash-Repo). Voller Eintrag in `CLAUDE.md` V9.02.
 
 **V9.01 — W10 ext. Welle 4/4 (die `lifting`-Affordance; W10 ext. vollständig)**: der Affordance-Bogen schliesst mit seiner siebten Affordance — `lifting`, ein magie-geladenes, leichtes Compound, das ein Auftriebs-Feld erzeugt. Vision-rein, kein Form-Whitelist: `_isLifting` liest die Tag-Sprache (`magieleitung` ≥ 1.5 + `dichte` ≤ 1.0 — das Komplement zu `balancing`). Welt-Reaktion — die erste physik-gekoppelte: ein Auftriebs-Feld dämpft den Fall + hebt den Spieler sanft (`_liftVerticalVelocity`, eine reine Funktion wie der Wasser-Auftrieb). W10 ext. ist mit radiating/broadcasting/balancing/lifting + der Stärke-Politur vollständig — sieben Affordances, ein Muster. +8 Invarianten. Voller Eintrag in `CLAUDE.md` V9.01.
 
