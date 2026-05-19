@@ -24057,6 +24057,77 @@ function startSaveServer() {
                         for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
                         out.radFarNoChange = Math.abs(emoR.awe - aweFar) < 0.0001;
                         r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+
+                        // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
+                        out.hasBroadcasting = typeof r._isBroadcasting === "function";
+                        out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
+                        out.broadcastingThresholds =
+                            !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
+                            AR.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
+                            AR.AFFORDANCE_THRESHOLDS.broadcasting.leitfaehigMin === 0.4;
+                        // Der Quarz-Mast (aufrecht, axial, leitfähig) → broadcasting.
+                        out.mastIsBroadcasting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).broadcasting === true;
+                        // Der radiale Cluster ist KEIN Mast → NICHT broadcasting.
+                        out.radiatorNotBroadcasting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).broadcasting !== true;
+                        // Eine waagrechte Eisen-Linie (leitfähig, aber Achse x,
+                        // nicht y) → NICHT broadcasting (ein Mast steht aufrecht).
+                        if (r.state.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
+                        r.cloneBlueprint("village", "test_10ext_bcline");
+                        r.state.blueprints.test_10ext_bcline.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: -1.5, y: 0, z: 0 },
+                                size: { x: 0.4, y: 0.4, z: 0.4 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.4, y: 0.4, z: 0.4 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "eisen",
+                                position: { x: 1.5, y: 0, z: 0 },
+                                size: { x: 0.4, y: 0.4, z: 0.4 },
+                            },
+                        ];
+                        out.horizLineNotBroadcasting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
+                        // Welt-Reaktion-Relais: ein broadcasting-Mast nahe einem
+                        // Strahler verstärkt dessen Reichweite. Spieler 22 m vom
+                        // Strahler — ausserhalb der Basis-Reichweite (14 m),
+                        // innerhalb der verstärkten (28 m).
+                        const radE = r.spawnArchitecture(
+                            "test_10ext_radiator",
+                            { x: 60, y: 0, z: 60 },
+                            { silent: true }
+                        );
+                        if (pmR) {
+                            pmR.x = 60;
+                            pmR.y = 0;
+                            pmR.z = 82;
+                        }
+                        emoR.awe = 0.1;
+                        emoR.peace = 0.1;
+                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                        out.relayOhneMastKeinEffekt = Math.abs(emoR.awe - 0.1) < 0.0001;
+                        // Jetzt einen broadcasting-Mast nahe den Strahler stellen.
+                        const mastE = r.spawnArchitecture("test_10ext_mast", { x: 65, y: 0, z: 60 }, { silent: true });
+                        out.relayMastAffordance = !!(
+                            mastE &&
+                            mastE.affordances &&
+                            mastE.affordances.broadcasting === true
+                        );
+                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                        out.relayMitMastReicheWeiter = emoR.awe > 0.1;
+                        r.state.architectures = r.state.architectures.filter(
+                            (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
+                        );
+                        void radE;
                         emoR.awe = aweBefore0;
                         emoR.peace = peaceBefore0;
                         // Spieler-Position wiederherstellen — nachfolgende Tests
@@ -24090,6 +24161,7 @@ function startSaveServer() {
                             "test_10b_sled",
                             "test_10ext_radiator",
                             "test_10ext_mast",
+                            "test_10ext_bcline",
                         ]) {
                             if (r.state.blueprints[n]) r.deleteBlueprint(n);
                         }
@@ -24187,6 +24259,37 @@ function startSaveServer() {
                 check(
                     "W10 ext.: weit weg vom Strahler keine Emotion-Änderung (Reichweite-Gate)",
                     wave10bResults.radFarNoChange
+                );
+                // ── W10 ext. Welle 2/4 — broadcasting ──
+                check(
+                    "W10 ext.: _isBroadcasting existiert, Label 'sendend' + Schwellen definiert",
+                    wave10bResults.hasBroadcasting &&
+                        wave10bResults.broadcastingLabel &&
+                        wave10bResults.broadcastingThresholds
+                );
+                check(
+                    "W10 ext.: ein aufrechter leitfähiger Quarz-Mast → broadcasting=true",
+                    wave10bResults.mastIsBroadcasting
+                );
+                check(
+                    "W10 ext.: ein radialer Cluster ist kein Mast → NICHT broadcasting (komplementär zu radiating)",
+                    wave10bResults.radiatorNotBroadcasting
+                );
+                check(
+                    "W10 ext.: eine waagrechte leitfähige Linie (Achse x, nicht y) → NICHT broadcasting",
+                    wave10bResults.horizLineNotBroadcasting
+                );
+                check(
+                    "W10 ext.: spawnArchitecture speichert die broadcasting-Affordance am entry",
+                    wave10bResults.relayMastAffordance
+                );
+                check(
+                    "W10 ext.: ohne Mast erreicht der Strahler den fernen Spieler NICHT (Basis-Reichweite)",
+                    wave10bResults.relayOhneMastKeinEffekt
+                );
+                check(
+                    "W10 ext.: ein broadcasting-Mast verstärkt als Relais die Strahler-Reichweite (Affordances komponieren)",
+                    wave10bResults.relayMitMastReicheWeiter
                 );
             } else if (wave10bResults && wave10bResults.error) {
                 check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);

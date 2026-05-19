@@ -21124,6 +21124,7 @@ class AnazhRealm {
         if (this._isMagnifying(bp)) out.magnifying = true;
         if (this._isFocusing(bp)) out.focusing = true;
         if (this._isRadiating(bp)) out.radiating = true;
+        if (this._isBroadcasting(bp)) out.broadcasting = true;
         return out;
     }
 
@@ -21274,6 +21275,29 @@ class AnazhRealm {
         if ((tags.resoniert || 0) < T.resoniertMin) return false;
         const align = this._axialAlignment(bp);
         return align.alignmentRatio < T.radialMax;
+    }
+
+    // W10 ext. — broadcasting: ein leitfähiger Mast, der als Relais wirkt.
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound senden lässt:
+    //   1. axiale Ausrichtung entlang der VERTIKALEN Achse: ein Mast steht
+    //      aufrecht (_axialAlignment.axis === "y" + alignmentRatio ≥ alignMin)
+    //   2. Leitfähigkeit: stromleitung ODER magieleitung über Schwelle —
+    //      es trägt ein Signal
+    //   3. mindestens minParts Parts
+    // Komplementär zu radiating: ein radial gespreiztes Compound STRAHLT,
+    // ein aufrecht-axiales SENDET. Die Welt-Reaktion ist kein eigener Tick —
+    // ein broadcasting-Mast VERSTÄRKT als Relais die Reichweite eines nahen
+    // radiating-Strahlers (Affordances komponieren; siehe _tickRadiating-
+    // Affordances). Eine Eisen-Cylinder-Säule sendet wie ein Quarz-Helix-
+    // Turm — die aufrechte, leitfähige Geste zählt, nicht der Shape.
+    _isBroadcasting(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const align = this._axialAlignment(bp);
+        if (align.axis !== "y" || align.alignmentRatio < T.alignMin) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
+        return leit >= T.leitfaehigMin;
     }
 
     // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
@@ -21622,10 +21646,28 @@ class AnazhRealm {
         if (!pm) return;
         const emo = this.state.player && this.state.player.emotions;
         if (!emo) return;
-        const range2 = AnazhRealm.RADIATING_RANGE_M * AnazhRealm.RADIATING_RANGE_M;
+        const baseRange2 = AnazhRealm.RADIATING_RANGE_M * AnazhRealm.RADIATING_RANGE_M;
         const step = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
+        // W10 ext. — broadcasting-Relais: ein leitfähiger Mast in Reichweite
+        // eines Strahlers verstärkt dessen Reichweite (Affordances komponieren).
+        const broadcasting = (this.state.architectures || []).filter(
+            (e) => e.affordances && e.affordances.broadcasting && e.position
+        );
+        const relayRange2 = AnazhRealm.BROADCAST_RELAY_RANGE_M * AnazhRealm.BROADCAST_RELAY_RANGE_M;
+        const mult = AnazhRealm.BROADCAST_RANGE_MULT;
         for (const ra of radiating) {
             if (!ra.position) continue;
+            // Ein broadcasting-Mast nahe diesem Strahler verstärkt die
+            // Reichweite (range² × mult² verdoppelt die lineare Reichweite).
+            let range2 = baseRange2;
+            for (const bc of broadcasting) {
+                const bdx = bc.position.x - ra.position.x;
+                const bdz = bc.position.z - ra.position.z;
+                if (bdx * bdx + bdz * bdz <= relayRange2) {
+                    range2 = baseRange2 * mult * mult;
+                    break;
+                }
+            }
             const dx = ra.position.x - pm.x;
             const dz = ra.position.z - pm.z;
             if (dx * dx + dz * dz > range2) continue;
@@ -33982,6 +34024,15 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         resoniertMin: 1.5, // das Compound schwingt STARK — es strahlt
         radialMax: 0.6, // axiale alignmentRatio UNTER 0.6 → radial, kein Mast
     }),
+    // W10 ext. — broadcasting: ein leitfähiger, aufrechter Mast (Relais).
+    // Axiale Ausrichtung entlang der y-Achse + Leitfähigkeit. Komplementär
+    // zu radiating (radialMax 0.6 ↔ alignMin 0.6 — derselbe Schwellwert
+    // trennt radial von axial sauber).
+    broadcasting: Object.freeze({
+        minParts: 3, // ein Mast braucht mehrere Parts
+        alignMin: 0.6, // ≥60 % der Parts auf der (vertikalen) Achse
+        leitfaehigMin: 0.4, // stromleitung ODER magieleitung — es trägt ein Signal
+    }),
 });
 
 // Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
@@ -34018,10 +34069,15 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     magnifying: "vergrößernd",
     focusing: "bündelnd",
     radiating: "strahlend",
+    broadcasting: "sendend",
 });
 // W10 ext. — radiating-Welt-Reaktion: Reichweite + sanfte Emotion-Rampe.
 AnazhRealm.RADIATING_RANGE_M = 14;
 AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC = 0.04;
+// W10 ext. — broadcasting-Relais: ein Mast in BROADCAST_RELAY_RANGE_M eines
+// Strahlers vervielfacht dessen Reichweite um BROADCAST_RANGE_MULT.
+AnazhRealm.BROADCAST_RELAY_RANGE_M = 18;
+AnazhRealm.BROADCAST_RANGE_MULT = 2;
 
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
