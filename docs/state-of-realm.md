@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.15)
+# Zustand des Realm — Stand: 19.05.2026 (V9.16)
+
+**V9.16 — Voxel-Terrain-Politur (Dichte-Gradienten-Normalen)**: ein Schöpfer-Browser-Befund — die Voxel-Oberfläche zeigt ein hartes Rauten-/Trapez-Facetten-Muster (nicht die Cel-Stufen). Wurzel: `computeVertexNormals` mittelt die Flächen-Normalen der triangulierten Quads + nimmt jede Quad-Diagonal-Faltung auf. Der Fix: die Normalen kommen aus dem Dichte-Feld-Gradienten (`−∇d` per 6-Sample-Differenz je Vertex) — die wahre, glatte Iso-Oberflächen-Normale, unabhängig von der Mesh-Facettierung. +1 Invariante. Voller Eintrag in `CLAUDE.md` V9.16.
 
 **V9.15 — Voxel-Terrain-Bogen Phase 3b (Aufschütten)**: das Gegenstück zum Graben. `fillVoxelSphere(x,y,z,r)` schüttet eine Kugel „Fest" auf — der Edit (`mode:"fill"`) addiert in `_terrainDensityAt` Dichte → Luft wird Boden. `carveVoxelSphere` + `fillVoxelSphere` teilen `_addVoxelEdit`. Der RMB schüttet bei aktivem Voxel-Terrain ohne Bau-Modus auf, Chat `voxel fill`. Mode-lose Alt-Edits gelten als carve. Der Voxel-Boden ist voll formbar — graben UND aufschütten. +6 Invarianten. Voller Eintrag in `CLAUDE.md` V9.15.
 

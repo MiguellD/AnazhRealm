@@ -11291,6 +11291,25 @@ function startSaveServer() {
                             out.geomFinite = allFinite;
                             out.geomHasNormals = !!geom.getAttribute("normal");
                             out.geomHasIndex = !!geom.getIndex();
+                            // V9.16 — die Normalen kommen aus dem Dichte-
+                            // Gradienten: jede ist ein endlicher Einheits-
+                            // vektor (kein Facetten-Rauten-Muster).
+                            const nrm = geom.getAttribute("normal");
+                            let normalsUnit = !!nrm && nrm.count === pos.count;
+                            if (nrm) {
+                                for (let v = 0; v < nrm.count; v++) {
+                                    const nl = Math.sqrt(
+                                        nrm.getX(v) * nrm.getX(v) +
+                                            nrm.getY(v) * nrm.getY(v) +
+                                            nrm.getZ(v) * nrm.getZ(v)
+                                    );
+                                    if (!Number.isFinite(nl) || Math.abs(nl - 1) > 0.02) {
+                                        normalsUnit = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            out.normalsUnit = normalsUnit;
                             // V9.11 — kein Streck-Dreieck (Index-Aliasing-Bug):
                             // jede Triangle-Kante ist lokal klein (≤ ein paar
                             // Zellen). Ein Stray-Dreieck quer durch den Chunk
@@ -11379,6 +11398,10 @@ function startSaveServer() {
                 check(
                     "Voxel P1: das Mesh trägt Normalen + einen Index",
                     voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
+                );
+                check(
+                    "Voxel P3b-Politur: die Voxel-Normalen sind Einheitsvektoren aus dem Dichte-Gradienten (glatt, kein Facetten-Muster)",
+                    voxelP1Results.normalsUnit
                 );
                 check(
                     `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,

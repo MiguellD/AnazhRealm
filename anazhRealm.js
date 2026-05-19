@@ -14363,7 +14363,35 @@ class AnazhRealm {
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
-        geom.computeVertexNormals();
+        // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der
+        // Mesh-Triangulierung. `computeVertexNormals` mittelt die Flächen-
+        // Normalen der triangulierten Quads → es nimmt jede Quad-Diagonal-
+        // Faltung auf → ein hartes Rauten-/Trapez-Facetten-Muster auf der
+        // Oberfläche. Der Gradient `∇d` IST die wahre Iso-Oberflächen-
+        // Normale — glatt, unabhängig von der Facettierung. Die Oberfläche
+        // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
+        const normals = new Float32Array(positions.length);
+        const eps = step * 0.5;
+        for (let v = 0; v < positions.length; v += 3) {
+            const px = positions[v];
+            const py = positions[v + 1];
+            const pz = positions[v + 2];
+            const gx = this._terrainDensityAt(px + eps, py, pz) - this._terrainDensityAt(px - eps, py, pz);
+            const gy = this._terrainDensityAt(px, py + eps, pz) - this._terrainDensityAt(px, py - eps, pz);
+            const gz = this._terrainDensityAt(px, py, pz + eps) - this._terrainDensityAt(px, py, pz - eps);
+            const len = Math.hypot(gx, gy, gz);
+            if (len < 1e-6) {
+                // Gradient ~0 (sehr seltener Sattelpunkt) → Default „oben".
+                normals[v] = 0;
+                normals[v + 1] = 1;
+                normals[v + 2] = 0;
+            } else {
+                normals[v] = -gx / len;
+                normals[v + 1] = -gy / len;
+                normals[v + 2] = -gz / len;
+            }
+        }
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
         return geom;
     }
 
