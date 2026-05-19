@@ -798,6 +798,22 @@ Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, 
 
 ---
 
+#### W4 V4 — die Musik hört die Welt (geplant, Schöpfer-Wunsch 19.05.2026) — 🔵 OFFEN
+
+Der Schöpfer-Befund nach V8.94: die generative Symphonie (W4 V3) ist hörbar — sie wächst aus Seed + Emotion + Tageszeit + Wetter. **Was noch fehlt**: die Musik hört das **Welt-Affinitäts-Feld** (die vier SimplexNoise-Tag-Schichten aus W6.G P2 — `worldFieldAt(x,z)` → `{lebendig, dichte, glut, magieleitung}`, die schon regeln, *was wo wächst*) und die **Architektur-Resonanz** (`computeSpatialTags.resoniert`) nicht. Eine `magieleitung`-Region klingt heute wie eine `glut`-Region. W4 V4 schliesst diese Synergie — kein neuer Stamm, keine neue Engine: die vorhandenen Welt-Daten fliessen in die schon stehende vierschichtige Symphonie ein. Eine **Synergie-Welle** — der Wert emergiert aus dem Verdrahten erprobter Systeme.
+
+**Vision-Pfeiler**: §1.3 fraktal (eine Sprache — die 10 Material-Tags / das Welt-Feld — regelt Form, Verteilung UND jetzt Klang) + §1.4 multisensorisch (man HÖRT, wo man steht).
+
+| Sub-Schritt | Was | Disziplin |
+|---|---|---|
+| 1 — Welt-Feld → Timbre | `worldFieldAt` am Spieler moduliert die Klangfarbe, nicht die Noten: `lebendig` → wärmeres Pad (sanftere Filter-Öffnung), `dichte` → tieferer/schwererer Bass-Anteil, `magieleitung` → ein Schimmer (eine leise verstimmte Oktav-Stimme, das `_lofiPlayChord`-Dopplungs-Muster), `glut` → eine Spur Spannung (eine kleine Sekunde / ein schärferer Hihat). | Timbre, NICHT Tonhöhe — die Markov-Harmonie bleibt die Noten-Autorität; das Welt-Feld färbt nur. |
+| 2 — Welt-Feld → sanfter Harmonie-Bias | `magieleitung`/`lebendig` heben die hellen Markov-Stufen, `glut` die dunklen — ein **schwacher** zweiter Bias neben dem Emotion-Bias (V8.85). Die zwei Kanäle dürfen sich nicht überschreien: das Welt-Feld biast mit halbem Gewicht, Emotion bleibt der stärkere. | Anti-Doppel-Modulation — erst messen (über N Picks), dass Emotion dominant bleibt, bevor das Gewicht festgezurrt wird. |
+| 3 — Architektur-Resonanz → Reichtum | steht der Spieler nahe einer Struktur mit hohem `computeSpatialTags.resoniert` (≥ `WORLD_EFFECT_THRESHOLDS.resonance_strong`), verdichtet sich die Symphonie — mehr Stimmen-Dopplung im Pad (das V8.93-`voiceMults`-Muster, jetzt resonanz-gegated statt nur emotion-gegated). Ein resonantes Bauwerk „singt mit". | spiegelt den schon bestehenden V8.84-`_applyCompoundWorldEffects`-Singing-Sinus — dieselbe Quelle, jetzt in die Symphonie statt einer Einzel-Sinus-Schicht. |
+
+**Tradeoff** (wie W4 V3): generative Modulation kann ziellos klingen — jeder Sub-Schritt braucht ein Schöpfer-Browser-Ohr (headless prüft, DASS das Welt-Feld die Klangfarbe ändert; ob es SCHÖN klingt, prüft das Ohr). **Honest geschnitten**: W4 V4 ist die Synergie-Naht; ein dynamischer Genre-Wechsel (Jazz/HipHop/Lofi als Welt-Feld-abgeleitetes Preset) bleibt eine benannte spätere Folge-Naht, kein stilles Versprechen.
+
+---
+
 ## 4. Meilensteine
 
 Gruppierung der Ringe in größere Phasen mit deutlichen User-Eindrücken.

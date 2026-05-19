@@ -14,7 +14,7 @@ Persistente Notizen. Diese Datei wird bei jeder neuen Session automatisch gelade
 
 **Lehre der V8.94**: *(1) Eine Lehre gilt nur, wenn man sie beim nächsten gleichartigen Fall AKTIV abruft — V8.92 lehrte „ein Klang unter ~70 Hz ist auf kleinen Lautsprechern stumm"; V8.93 baute den Bass bei 55 Hz und schrieb sogar „V8.92-Lehre" in den Kommentar, ohne sie zu rechnen. Die dokumentierte Lektion schützt nicht automatisch — man muss die Frequenz nachrechnen. (2) Ein tonaler Bass braucht, wie ein perkussiver Schlag, eine Komponente im sicher-hörbaren Bereich — die Oktav-Stimme ist für den Bass, was der Noise-Klick für die Kick ist. (3) „Höre ich nicht" ist nach V8.89/V8.92 zum dritten Mal kein Bug, sondern eine Frage des Frequenzbereichs — der Reflex sollte sein: zuerst die Frequenz prüfen, dann den Code.*
 
-**Nächste Welle: offen.** W4 V3 (die generative Symphonie) ist vollständig + hörbar. Siehe `docs/roadmap.md` §3 „Offene Punkte nach V8.80".
+**Nächste Welle: W4 V4 — die Musik hört die Welt (geplant).** W4 V3 (die generative Symphonie) ist vollständig + hörbar; W4 V4 schliesst die Synergie — die Musik hört das Welt-Affinitäts-Feld (`worldFieldAt`) + die Architektur-Resonanz (`computeSpatialTags.resoniert`). Eine Synergie-Welle, kein neuer Stamm. Detailplan in `docs/roadmap.md` §3 „W4 V4 — die Musik hört die Welt".
 
 **V8.93 — W4 V3 Phase 4 (das Orchester: Bass + Stimmen-Reichtum) — W4 V3 vollständig (+1 Invariante)**: die letzte Phase der generativen Symphonie. Ein Commit, playtest-grün.
 
