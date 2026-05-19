@@ -14223,28 +14223,27 @@ class AnazhRealm {
         const base = this.state.terrainBaseHeight || 0;
         const surf = base + n.noise2D(x * 0.012, z * 0.012) * 14 + n.noise2D(x * 0.045, z * 0.045) * 4;
         let d = surf - y;
-        // V9.18 Phase 4 — Höhlen + Überhänge entstehen MIT der Welt.
-        // (a) Ein grobes 3D-Band bricht den reinen Heightfield-Look (Wölbung).
+        // Oberflächen-Roughness — zwei 3D-Bänder: das feine schnitzt Crags +
+        // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
+        // Band entfernt → die Berge wurden flache Hügel ohne Überhänge; V9.19
+        // stellt beide V9.17-Bänder wieder her (der Schöpfer-Befund).
+        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
         d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
-        // (b) Überhänge: knapp an der Oberfläche wölbt ein laterales Band die
-        //     Dichte → echte Überhänge + Felsbögen, kein reines Heightfield.
-        const nearSurf = Math.max(0, 1 - Math.abs(y - surf) / 14);
-        if (nearSurf > 0) {
-            d += n.noise3D(x * 0.02, y * 0.012 + 80, z * 0.02) * nearSurf * 9;
-        }
-        // (c) Wurm-Höhlen: zwei ridged-Noise-Felder, ihr Schnitt ist ein
-        //     dünner Tunnel (Perlin-Worm-Näherung). Eine Tiefen-Hüllkurve hält
-        //     die Höhlen zwischen surf-6 (unter der Oberfläche verborgen, durch
-        //     Graben zu finden) und base-28 (der Chunk-Boden base-35 bleibt
-        //     fest — die V9.12-Garantie hält).
+        // Wurm-Höhlen — EIN ridged-Noise-Feld (`1 − |noise|`): sein Grat folgt
+        // der Noise-Nullfläche, einer ZUSAMMENHÄNGENDEN gewundenen Höhlen-
+        // Ebene. Carve dort, wo der Grat eine Schwelle übersteigt → begehbare,
+        // verbundene Kavernen. (V9.18 nutzte das Produkt zweier Felder → der
+        // Schnitt zerfiel in viele kleine, unzugängliche Spalten.) Eine Tiefen-
+        // Hüllkurve hält die Höhlen zwischen surf-6 (unter der Oberfläche
+        // verborgen, durch Graben zu finden) und base-28 — bei base-35 ist
+        // caveEnv beweisbar 0, der Chunk-Boden bleibt fest (V9.12-Garantie).
         const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
         const caveCeil = Math.max(0, Math.min(1, (surf - 6 - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
-            const ca = n.noise3D(x * 0.032, y * 0.034, z * 0.032);
-            const cb = n.noise3D(x * 0.032 + 130, y * 0.045 + 130, z * 0.032 + 130);
-            const worm = (1 - Math.min(1, Math.abs(ca) * 3.4)) * (1 - Math.min(1, Math.abs(cb) * 3.4));
-            d -= worm * caveEnv * 30;
+            const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
+            const cave = Math.max(0, (ridge - 0.7) / 0.3);
+            d -= cave * caveEnv * 36;
         }
         // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
         // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die

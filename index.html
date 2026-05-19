@@ -31,7 +31,7 @@
             http-equiv="Content-Security-Policy"
             content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
-        <title>Anazh Realm v9.17 – Das Ultiversum</title>
+        <title>Anazh Realm v9.19 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
              zusätzliche Datei. img-src 'self' data: in CSP erlaubt data-URI. -->
         <link
@@ -4543,7 +4543,7 @@
         <header id="topbar" class="hud-frame">
             <div class="topbar-inner">
                 <div class="title">
-                    Anazh Realm <span class="version">v9.17</span> <span class="sub">— Das Ultiversum</span>
+                    Anazh Realm <span class="version">v9.19</span> <span class="sub">— Das Ultiversum</span>
                 </div>
                 <nav class="tabs" role="tablist" aria-label="Hauptansichten">
                     <button class="tab active" type="button" data-tab="welt" role="tab" aria-selected="true">
@@ -5015,10 +5015,10 @@
             <section class="section">
                 <h3>KI-Übersetzer <span class="section-hint">(fremde Welt → Manifest)</span></h3>
                 <p class="drawer-hint">
-                    Beschreibe eine fremde Vibecode-Welt — ein Three.js-Projekt, eine Engine, ein Repo. Die KI
-                    übersetzt sie in ein Portal-Manifest und trägt sie als Eintrag in deine Bibliothek. Ein
-                    übersetzter Eintrag ist browsbar, noch nicht betretbar — seine Engine-Dateien werden in einer
-                    späteren Phase vendort. Braucht eine aktive KI (Einstellungen-Drawer).
+                    Beschreibe eine fremde Vibecode-Welt — ein Three.js-Projekt, eine Engine, ein Repo. Die KI übersetzt
+                    sie in ein Portal-Manifest und trägt sie als Eintrag in deine Bibliothek. Ein übersetzter Eintrag
+                    ist browsbar, noch nicht betretbar — seine Engine-Dateien werden in einer späteren Phase vendort.
+                    Braucht eine aktive KI (Einstellungen-Drawer).
                 </p>
                 <textarea
                     id="translator-input"
@@ -5052,7 +5052,13 @@
                         maxlength="40"
                         placeholder="welt-id (a-z 0-9 - _)"
                     />
-                    <input type="text" id="vendor-label" class="translator-edit" maxlength="60" placeholder="Name der Welt" />
+                    <input
+                        type="text"
+                        id="vendor-label"
+                        class="translator-edit"
+                        maxlength="60"
+                        placeholder="Name der Welt"
+                    />
                     <input
                         type="text"
                         id="vendor-desc"
@@ -5106,8 +5112,8 @@
                 <p class="drawer-hint">
                     Welten, die deine Mitspieler im selben Mesh-Raum vendort haben — „Holen" lädt ihr Bündel
                     peer-to-peer in deine Bibliothek, du brauchst kein GitHub-Repo. Eine geholte Welt läuft
-                    sandgesichert wie jede vendorte Welt. „✓ vorhanden" heißt: du hast diese Welt schon (erkannt
-                    am Content-Hash). Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
+                    sandgesichert wie jede vendorte Welt. „✓ vorhanden" heißt: du hast diese Welt schon (erkannt am
+                    Content-Hash). Braucht eine stehende Mesh-Verbindung (Multi-User-Drawer).
                 </p>
                 <div id="mesh-world-catalog" class="mesh-catalog" aria-live="polite"></div>
                 <div id="mesh-world-status" class="vendor-status" aria-live="polite"></div>
@@ -5697,6 +5703,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=9.17" defer></script>
+        <script src="anazhRealm.js?v=9.19" defer></script>
     </body>
 </html>
