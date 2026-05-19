@@ -800,7 +800,33 @@ Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, 
 
 ---
 
-#### W4 V4 — die Musik hört die Welt (V8.95, 19.05.2026) — ✅ ERLEDIGT
+#### Der Voxel-Terrain-Bogen — das formbare Terrain (geplant, 19.05.2026)
+
+**Schöpfer-Einsicht nach V9.06:** „Voxel-Terrain scheint der wahre Weg — alles andere fake, nicht die volle Vision." Richtig. Das Heightfield ist eine HALB-formbare Welt: man kann Säulen heben/senken, nicht schnitzen. Der Felsbogen (V9.03, ein Trilithon AUF dem Terrain) und die Portal-Höhle (ein separater Raum) sind ehrliche Ingenieursarbeit MIT einem Heightfield — aber Workarounds. Die Vision (§1.3 fraktal, der Spieler als Co-Schöpfer, Materie ist formbar) verlangt, dass der **Boden selbst** wahre, formbare Materie ist: echte Tunnel, echte Höhlen, echte Überhänge — in den Hügel geschnitzt, nicht daneben gestellt.
+
+**Zur Heiligen Lektion:** sie warnt vor *Komplexität OHNE Fundament* (der 19-Modul-Kollaps). Ein Voxel-Terrain ist NICHT 20 Module — es ist EIN Subsystem (das Heightfield) durch seine wahrere Form ersetzt, auf einem heute soliden Fundament (~2850 Invarianten, ein erprobtes Chunk-System). Es ist ein grosser Wachstumsring, kein Re-Komplexifizieren — solange er **phasiert + parallel + jede Phase playtest-grün** gebaut wird.
+
+**Was das Projekt schon trägt** (es ist überraschend gut positioniert):
+- Chunk-Streaming + Distance-Culling — bleibt unverändert.
+- `btBvhTriangleMeshShape`-Kollision aus Chunk-Vertices — bleibt (ein Voxel-Mesh liefert dieselbe Kollision).
+- `caveNoise.noise3D()` — die 3D-Noise-Infrastruktur ist schon da.
+- `aField`-per-Vertex (Terrain-Shader) — trägt über.
+- `chunkDeltas` (persistierte Welt-Modifikationen) — werden 3D-Edits statt 2D.
+- V9.03 Felsformationen + V9.04 Terrain-als-Materie — bleiben (Felsen + Grabe-Yield AUF/IN dem Voxel-Terrain).
+
+**Disziplin:** das Voxel-Terrain wird PARALLEL gebaut + bewiesen, bevor es das Heightfield ablöst — nie das Funktionierende brechen. Hinter einem Flag, bis solide.
+
+**Phasen:**
+1. **Das Dichte-Feld + Marching Cubes (ein Chunk).** `_terrainDensityAt(x,y,z)` — 3D-Noise, >0 fest / <0 Luft. Ein Chunk via Marching Cubes zu einer `BufferGeometry`. Visueller Beweis: ein Voxel-Chunk rendert wie Terrain. Parallel-System, kein Eingriff ins Heightfield.
+2. **Kollision + Chunk-Streaming.** Der gemeshte Chunk bekommt `btBvhTriangleMeshShape`; Voxel-Chunks streamen im Ring. Der Spieler geht auf Voxel-Terrain. Eine neue Welt kann voxel-basiert sein (Flag).
+3. **3D-`modify_terrain` — echtes Graben.** `modify_terrain` schnitzt das Dichte-Feld in 3D — eine Kugel „Luft" subtrahiert → ein echtes Loch, ein Tunnel, eine Höhle. Der Moment, den der Schöpfer will.
+4. **Höhlen + Überhänge in der Generierung.** Das 3D-Noise gebiert natürliche Höhlen, Überhänge, Felsbögen — die Welt kommt mit ihnen zur Welt.
+5. **Materialien + Shader + Politur + Ablösung.** `aField` per Vertex, Terrain-Material-Harvest (V9.04), Cel-Shading auf dem Voxel-Mesh. Das Heightfield wird abgelöst, alte Welten migrieren.
+
+**Ehrliches Risiko:** gross. Marching Cubes ist rechenintensiver als ein Heightfield-Grid; die Save-Migration alter Heightfield-Welten; die schiere Menge (Mehr-Sessions-Bogen). Darum die Disziplin: parallel, phasiert, jede Phase grün — und ein Browser-Beweis pro Phase (headless prüft die Mechanik, das Schöpfer-Auge die Erfahrung).
+
+---
+
 
 Alle drei Sub-Schritte in einem Commit, playtest-grün (+6 Invarianten): (1) `_lofiWorldField` → `_lofiApplyWorldTimbre` färbt die Klangfarbe (`lebendig` → Pad-Filter 750-1050 Hz, `dichte` → `bassGain` 0.40-0.56, `magieleitung` → verstimmter Oktav-Schimmer, `glut` → schärferes Hihat); (2) `_lofiNextDegree` bekommt den schwachen Welt-Feld-Bias (Gewicht 0.4 gegen Emotion 0.8 — seed-fix gemessen, dass die Emotion dominant bleibt); (3) `_lofiNearResonantArchitecture` gated die Pad-Stimmen-Dopplung — ein resonantes Bauwerk „singt mit". Synergie-Welle, kein neuer Stamm. Detail: `CLAUDE.md` V8.95.
 
