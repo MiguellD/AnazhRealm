@@ -11262,42 +11262,50 @@ function startSaveServer() {
                         }
                         out.densityCanCave = foundCave;
 
-                        // V9.12 — der Voxel-Chunk (base-35 .. base+37) fasst
-                        // das ganze Oberflächen-Band: der Boden ist überall
-                        // fest, die Decke überall Luft → keine Klipp-Löcher,
-                        // durch die der Spieler fällt.
+                        // V9.12 — der Voxel-Chunk (V9.20: base-50 .. base+72)
+                        // fasst das ganze Oberflächen-Band: der Boden ist
+                        // überall fest, die Decke überall Luft → keine Klipp-
+                        // Löcher, durch die der Spieler fällt.
                         const cBase = r.state.terrainBaseHeight || 0;
                         let floorAllSolid = true;
                         let ceilAllAir = true;
                         for (let sx = -220; sx <= 220; sx += 20) {
                             for (let sz = -220; sz <= 220; sz += 20) {
-                                if (r._terrainDensityAt(sx, cBase - 35, sz) <= 0) floorAllSolid = false;
-                                if (r._terrainDensityAt(sx, cBase + 37, sz) >= 0) ceilAllAir = false;
+                                if (r._terrainDensityAt(sx, cBase - 50, sz) <= 0) floorAllSolid = false;
+                                if (r._terrainDensityAt(sx, cBase + 72, sz) >= 0) ceilAllAir = false;
                             }
                         }
                         out.chunkContainsSurface = floorAllSolid && ceilAllAir;
 
                         // V9.18 Phase 4 — Höhlen entstehen mit der Welt.
-                        // Über ein 3D-Raster im Höhlen-Band: ein Teil ist Luft
-                        // (echte Höhlen) — aber nicht zu viel (die Welt ist
-                        // nicht hohl). Und der Boden unter dem Höhlen-Band
-                        // (base-32) bleibt überall fest — die Tiefen-
-                        // Hüllkurve hält die V9.12-Garantie.
-                        let caveAir = 0;
-                        let caveTotal = 0;
+                        // Über ein 3D-Raster: eine Höhlen-Zelle ist Luft, von
+                        // festem Grund 6 m darüber UND darunter umschlossen
+                        // (echte Höhle, kein offener Himmel). Es gibt viele
+                        // davon (Höhlen existieren) — aber sie sind eine
+                        // Minderheit des festen Volumens (die Welt ist nicht
+                        // hohl). Und der Boden unter dem Höhlen-Band (base-44,
+                        // unter der caveFloor-Hüllkurve) bleibt überall fest.
+                        let caveCells = 0;
+                        let solidCells = 0;
                         let p4FloorSolid = true;
                         for (let sx = -200; sx <= 200; sx += 25) {
                             for (let sz = -200; sz <= 200; sz += 25) {
-                                if (r._terrainDensityAt(sx, cBase - 32, sz) <= 0) p4FloorSolid = false;
-                                for (let sy = cBase - 24; sy <= cBase; sy += 4) {
-                                    caveTotal++;
-                                    if (r._terrainDensityAt(sx, sy, sz) < 0) caveAir++;
+                                if (r._terrainDensityAt(sx, cBase - 44, sz) <= 0) p4FloorSolid = false;
+                                for (let sy = cBase - 26; sy <= cBase + 44; sy += 5) {
+                                    const dHere = r._terrainDensityAt(sx, sy, sz);
+                                    if (dHere > 0) solidCells++;
+                                    if (
+                                        dHere < 0 &&
+                                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                                        r._terrainDensityAt(sx, sy + 6, sz) > 0
+                                    ) {
+                                        caveCells++;
+                                    }
                                 }
                             }
                         }
-                        const caveFrac = caveTotal > 0 ? caveAir / caveTotal : 0;
-                        out.cavesExist = caveFrac > 0.02;
-                        out.worldNotHollow = caveFrac < 0.5;
+                        out.cavesExist = caveCells >= 8;
+                        out.worldNotHollow = caveCells * 3 < solidCells;
                         out.caveFloorSolid = p4FloorSolid;
                     }
 
@@ -11419,7 +11427,7 @@ function startSaveServer() {
                     voxelP1Results.worldNotHollow
                 );
                 check(
-                    "Voxel P4: die Tiefen-Hüllkurve hält den Chunk-Boden (base-32) unter den Höhlen fest",
+                    "Voxel P4: die Tiefen-Hüllkurve hält den Boden (base-44) unter den Höhlen fest",
                     voxelP1Results.caveFloorSolid
                 );
                 check(

@@ -14221,7 +14221,19 @@ class AnazhRealm {
         }
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        const surf = base + n.noise2D(x * 0.012, z * 0.012) * 14 + n.noise2D(x * 0.045, z * 0.045) * 4;
+        // V9.20 — Grösse + Hierarchie. Drei 2D-Oktaven statt einer mittleren:
+        // (1) eine KONTINENTALE Oktave (~1500 m Wellenlänge ≈ 35 Chunks,
+        //     Amplitude 26) — die grosse Gebirgs-Masse, die sich über viele
+        //     Chunks aufbaut; wo sie tief ist, liegt Tiefland. (2) Eine
+        //     RIDGED-Oktave (`(1−|noise|)²`) — scharfe Gebirgs-Grate +
+        //     Felswände (ridged-Noise faltet die Oberfläche zu Kämmen, kein
+        //     rundes Hügel-Blob). (3) Eine feine Detail-Oktave. Die Hierarchie
+        //     (gross → Grat → Detail) gibt der Welt Massstab.
+        const cont = n.noise2D(x * 0.0042, z * 0.0042) * 26;
+        const rN = n.noise2D(x * 0.013, z * 0.013);
+        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * 22;
+        const detail = n.noise2D(x * 0.045, z * 0.045) * 4;
+        const surf = base + cont + ranges + detail;
         let d = surf - y;
         // Oberflächen-Roughness — zwei 3D-Bänder: das feine schnitzt Crags +
         // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
@@ -14531,9 +14543,10 @@ class AnazhRealm {
         const dim = 24;
         const step = 1.8;
         // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
-        // ein Würfel: 40 × 1.8 = 72 m vertikal fasst das ganze ±30-m-
-        // Oberflächen-Band (sonst klafft oben/unten ein Loch).
-        return { dim, step, span: dim * step, ringRadius: 2, dimY: 40 };
+        // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
+        // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64);
+        // 68 × 1.8 = 122 m vertikal fasst es ganz (sonst klafft ein Loch).
+        return { dim, step, span: dim * step, ringRadius: 2, dimY: 68 };
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -14550,10 +14563,10 @@ class AnazhRealm {
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        // Das Oberflächen-Band reicht ~base±30 — der Chunk muss es ganz
-        // fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // durch). base-35 + 72 m = base+37 → volle Deckung mit Marge.
-        const oy = base - 35;
+        // Das Oberflächen-Band reicht ~base-42..base+64 — der Chunk muss es
+        // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
+        // durch). base-50 + 122 m = base+72 → volle Deckung mit Marge.
+        const oy = base - 50;
         // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
         // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-

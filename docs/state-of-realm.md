@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.19)
+# Zustand des Realm — Stand: 19.05.2026 (V9.20)
+
+**V9.20 — Voxel-Terrain Grösse + Hierarchie**: ein Schöpfer-Browser-Befund nach V9.19 — die Welt sei besser, aber zu kleinteilig, kein Berg über viele Chunks, keine Felswände. Wurzel: `surf` trug nur eine mittlere 2D-Oktave. V9.20 gibt der Oberfläche drei Oktaven (kontinental `0.0042×26` ≈ 1500 m, ridged `(1−|noise|)²×22` für Grate/Wände, fein `×4`) → eine fraktale Hierarchie. Das Oberflächen-Band wuchs, der Voxel-Chunk wurde höher (dimY 40→68, 122-m-Säule) — die V9.12-Garantie hält. Invarianten-Zahl unverändert. Voller Eintrag in `CLAUDE.md` V9.20.
 
 **V9.19 — Voxel-Terrain-Bogen Phase 4 Politur**: zwei Schöpfer-Browser-Befunde nach V9.18 geheilt. (1) Die Berge wurden flache Hügel — V9.18 entfernte beim Phase-4-Umbau das feine Roughness-Band; V9.19 stellt beide V9.17-Oberflächen-Bänder wieder her. (2) Die Höhlen waren viele kleine unzugängliche Spalten — das Produkt zweier ridged-Felder zerfiel; V9.19 nutzt EIN ridged-Noise-Feld, dessen Grat eine zusammenhängende begehbare Kavern-Ebene bildet. Die Tiefen-Hüllkurve bleibt. Invarianten-Zahl unverändert. Voller Eintrag in `CLAUDE.md` V9.19.
 
