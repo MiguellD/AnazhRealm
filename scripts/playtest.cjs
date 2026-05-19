@@ -11766,6 +11766,9 @@ function startSaveServer() {
                         ];
                         out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
                         // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
+                        // frieden — damit das V9.17-Füll-Gate frei ist.
+                        const p3bMode = r.getGameMode ? r.getGameMode() : "frieden";
+                        r.setGameMode("frieden");
                         r.setVoxelTerrainActive(true);
                         r.state.worldMeta.voxelEdits = [];
                         r.processChatCommand("voxel fill");
@@ -11773,6 +11776,7 @@ function startSaveServer() {
                             r.state.worldMeta.voxelEdits.length === 1 &&
                             r.state.worldMeta.voxelEdits[0].mode === "fill";
                         r.setVoxelTerrainActive(false);
+                        r.setGameMode(p3bMode);
                         // sauber zurücklassen.
                         r.state.worldMeta.voxelEdits = [];
                         if (typeof r.saveState === "function") r.saveState();
@@ -11797,6 +11801,101 @@ function startSaveServer() {
                     voxelP3bResults.modelessIsCarve
                 );
                 check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
+            }
+
+            // ### Voxel-Terrain-Bogen Phase 3c — Material-Erhaltungs-Kreis ###
+            // Im pfad-Modus kostet das Aufschütten Material; in frieden +
+            // schöpfer ist es frei (das Spielmodi-Muster).
+            const voxelP3cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.player) return null;
+                    const out = {};
+                    out.hasConsume = typeof r._consumeAnyMaterial === "function";
+                    out.hasGate = typeof r._voxelFillGate === "function";
+                    if (out.hasConsume && out.hasGate) {
+                        const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
+                        const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
+                        const wm = r.state.worldMeta;
+                        const matTotal = () => {
+                            let t = 0;
+                            for (const s of r.state.player.inventory) {
+                                if (s && s.kind === "material") t += s.count || 0;
+                            }
+                            return t;
+                        };
+                        // _consumeAnyMaterial: genug → true + reduziert.
+                        r.state.player.inventory = new Array(27).fill(null);
+                        r.addMaterialToInventory("stein", 10);
+                        out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
+                        // zu wenig → false + unverändert.
+                        r.state.player.inventory = new Array(27).fill(null);
+                        r.addMaterialToInventory("stein", 2);
+                        out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
+                        // Gate in frieden → frei, kein Verbrauch.
+                        r.setGameMode("frieden");
+                        r.state.player.inventory = new Array(27).fill(null);
+                        const gF = r._voxelFillGate();
+                        out.gateFriedenFree = gF.ok === true && gF.free === true;
+                        // Gate in pfad mit Material → ok + verbraucht.
+                        r.setGameMode("pfad");
+                        r.state.player.inventory = new Array(27).fill(null);
+                        r.addMaterialToInventory("stein", 10);
+                        const gP = r._voxelFillGate();
+                        out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
+                        // Gate in pfad ohne Material → abgelehnt.
+                        r.state.player.inventory = new Array(27).fill(null);
+                        out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
+                        // Chat `voxel fill` in pfad ohne Material → kein Edit.
+                        r.setVoxelTerrainActive(true);
+                        wm.voxelEdits = [];
+                        r.processChatCommand("voxel fill");
+                        out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
+                        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
+                        r.addMaterialToInventory("stein", 10);
+                        wm.voxelEdits = [];
+                        r.processChatCommand("voxel fill");
+                        out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
+                        r.setVoxelTerrainActive(false);
+                        // sauber zurücklassen.
+                        wm.voxelEdits = [];
+                        r.state.player.inventory = invBackup;
+                        r.setGameMode(modeBackup);
+                        if (typeof r.saveState === "function") r.saveState();
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP3cResults && !voxelP3cResults.error) {
+                check(
+                    "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
+                    voxelP3cResults.hasConsume && voxelP3cResults.hasGate
+                );
+                check(
+                    "Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab",
+                    voxelP3cResults.consumeEnough
+                );
+                check(
+                    "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
+                    voxelP3cResults.consumeTooLittle
+                );
+                check(
+                    "Voxel P3c: das Füll-Gate ist in frieden frei (kein Material-Verbrauch)",
+                    voxelP3cResults.gateFriedenFree
+                );
+                check(
+                    "Voxel P3c: das Füll-Gate verbraucht im pfad-Modus Material (Erhaltungs-Kreis)",
+                    voxelP3cResults.gatePfadConsumes
+                );
+                check(
+                    "Voxel P3c: das Füll-Gate lehnt im pfad-Modus ohne Material ab",
+                    voxelP3cResults.gatePfadDeniesEmpty
+                );
+                check(
+                    "Voxel P3c: `voxel fill` in pfad ohne Material schüttet nicht / mit Material schon",
+                    voxelP3cResults.chatFillDeniedNoMat && voxelP3cResults.chatFillWorksWithMat
+                );
             }
 
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
@@ -15780,7 +15879,10 @@ function startSaveServer() {
                     const cel6 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
                     out.celSliderWorks = cel2 === 2 && cel6 === 6;
                     r.setCelLevels(4);
-                    // setFogDistance ändert fog.near/far
+                    // setFogDistance ändert fog.near/far. playerEyesUnderwater
+                    // erzwingt sonst fog.near=4 (Tauch-Tint) — der überschreibt
+                    // den fogDistance-Effekt; hier deterministisch ausnullen.
+                    r.state.playerEyesUnderwater = false;
                     r.setFogDistance(0.5);
                     r._applyDayNightToScene();
                     const fogNear05 = r.state.fog ? r.state.fog.near : -1;
@@ -16089,6 +16191,9 @@ function startSaveServer() {
                         out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
                     }
                     // Fog-Slider propagiert in die Custom-Shader-Uniforms.
+                    // playerEyesUnderwater deterministisch ausnullen (sonst
+                    // erzwingt der Tauch-Tint fog.near=4 unabhängig vom Slider).
+                    r.state.playerEyesUnderwater = false;
                     r.setFogDistance(0.4);
                     r._applyDayNightToScene();
                     const tnNear =

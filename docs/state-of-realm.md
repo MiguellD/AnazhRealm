@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.16)
+# Zustand des Realm — Stand: 19.05.2026 (V9.17)
+
+**V9.17 — Voxel-Terrain-Bogen Phase 3c (Material-Erhaltungs-Kreis)**: das Voxel-Aufschütten wird modus-abhängig ans Inventar gekoppelt (Schöpfer-Wahl per AskUserQuestion). Im pfad-Modus ein Kreislauf — graben gibt Material, aufschütten kostet 4 Einheiten (`_voxelFillGate` + `_consumeAnyMaterial`, Spiegel von `_buildMaterialGate`); in frieden + schöpfer frei. RMB-Fill + Chat `voxel fill` gegated. Plus: ein timing-flaky Fog-Playtest geheilt (verdeckter `playerEyesUnderwater`-Eingang ausgenullt — V8.57-Disziplin). +7 Invarianten. Voller Eintrag in `CLAUDE.md` V9.17.
 
 **V9.16 — Voxel-Terrain-Politur (Dichte-Gradienten-Normalen)**: ein Schöpfer-Browser-Befund — die Voxel-Oberfläche zeigt ein hartes Rauten-/Trapez-Facetten-Muster (nicht die Cel-Stufen). Wurzel: `computeVertexNormals` mittelt die Flächen-Normalen der triangulierten Quads + nimmt jede Quad-Diagonal-Faltung auf. Der Fix: die Normalen kommen aus dem Dichte-Feld-Gradienten (`−∇d` per 6-Sample-Differenz je Vertex) — die wahre, glatte Iso-Oberflächen-Normale, unabhängig von der Mesh-Facettierung. +1 Invariante. Voller Eintrag in `CLAUDE.md` V9.16.
 

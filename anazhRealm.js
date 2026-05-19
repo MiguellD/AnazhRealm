@@ -12774,8 +12774,19 @@ class AnazhRealm {
                 const pm = this.state.playerMesh;
                 if (pm) {
                     if (vc === "voxel fill") {
+                        // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
+                        const matGate = this._voxelFillGate();
+                        if (!matGate.ok) {
+                            this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                            return;
+                        }
                         this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
-                        this.log("Voxel-Terrain aufgeschüttet — ein Hügel unter dir.", "INFO");
+                        this.log(
+                            matGate.free
+                                ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
+                                : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
+                            "INFO"
+                        );
                     } else {
                         this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
                         this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
@@ -14707,6 +14718,44 @@ class AnazhRealm {
 
     fillVoxelSphere(x, y, z, r) {
         return this._addVoxelEdit(x, y, z, r, "fill");
+    }
+
+    // Phase 3c — zieht `n` Material-Einheiten aus dem Inventar (über alle
+    // Material-Slots, FIFO). Liefert false + lässt das Inventar unberührt,
+    // wenn nicht genug da ist. „Irgendein Material" — das Voxel-Aufschütten
+    // braucht Substanz, aber keine bestimmte (die Voxel-Farbe kommt aus
+    // dem Welt-Feld, nicht aus dem verbrauchten Material).
+    _consumeAnyMaterial(n) {
+        const inv = this.state.player && this.state.player.inventory;
+        if (!Array.isArray(inv)) return false;
+        let total = 0;
+        for (const slot of inv) {
+            if (slot && slot.kind === "material") total += slot.count || 0;
+        }
+        if (total < n) return false;
+        let remaining = n;
+        for (let i = 0; i < inv.length && remaining > 0; i++) {
+            const slot = inv[i];
+            if (slot && slot.kind === "material" && slot.count > 0) {
+                const take = Math.min(slot.count, remaining);
+                slot.count -= take;
+                remaining -= take;
+                if (slot.count <= 0) inv[i] = null;
+            }
+        }
+        return true;
+    }
+
+    // Phase 3c — das Modus-Gate fürs Voxel-Aufschütten (Spiegel von
+    // `_buildMaterialGate`): im pfad-Modus ein Material-Erhaltungs-Kreis
+    // (graben gibt Material, aufschütten kostet `VOXEL_FILL_COST`); in
+    // frieden + schöpfer freies Formen ohne Kosten.
+    _voxelFillGate() {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, free: true };
+        const COST = 4;
+        if (this._consumeAnyMaterial(COST)) return { ok: true, free: false, cost: COST };
+        return { ok: false, reason: "kein Material" };
     }
 
     // Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-Kugel
@@ -26463,8 +26512,16 @@ class AnazhRealm {
                 this.log("Aufschütten: kein Ziel in Reichweite.", "INFO");
                 return false;
             }
+            // Phase 3c — im pfad-Modus kostet das Aufschütten Material
+            // (der Erhaltungs-Kreis); in frieden + schöpfer ist es frei.
+            const matGate = this._voxelFillGate();
+            if (!matGate.ok) {
+                this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                return false;
+            }
             this._consumeMouseStamina();
             this.fillVoxelSphere(fillHit.x, fillHit.y, fillHit.z, 3.5);
+            if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
             return true;
         }
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
