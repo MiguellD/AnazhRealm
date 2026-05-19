@@ -11290,17 +11290,18 @@ function startSaveServer() {
                         }
                         out.densityCanCave = foundCave;
 
-                        // V9.12 — der Voxel-Chunk (V9.20: base-50 .. base+72)
-                        // fasst das ganze Oberflächen-Band: der Boden ist
-                        // überall fest, die Decke überall Luft → keine Klipp-
-                        // Löcher, durch die der Spieler fällt.
+                        // V9.12 — der Voxel-Chunk fasst das ganze Oberflächen-
+                        // Band: der Boden ist überall fest, die Decke überall
+                        // Luft → keine Klipp-Löcher. V9.26: Chunk-Bounds erhöht
+                        // auf base-58 .. base+86 (Marge ~22 gegen ridged-Spike-
+                        // Löcher am erweiterten Sicht-Ring).
                         const cBase = r.state.terrainBaseHeight || 0;
                         let floorAllSolid = true;
                         let ceilAllAir = true;
                         for (let sx = -220; sx <= 220; sx += 20) {
                             for (let sz = -220; sz <= 220; sz += 20) {
-                                if (r._terrainDensityAt(sx, cBase - 50, sz) <= 0) floorAllSolid = false;
-                                if (r._terrainDensityAt(sx, cBase + 72, sz) >= 0) ceilAllAir = false;
+                                if (r._terrainDensityAt(sx, cBase - 58, sz) <= 0) floorAllSolid = false;
+                                if (r._terrainDensityAt(sx, cBase + 86, sz) >= 0) ceilAllAir = false;
                             }
                         }
                         out.chunkContainsSurface = floorAllSolid && ceilAllAir;
@@ -11599,6 +11600,31 @@ function startSaveServer() {
                         out.findSurfaceVoxelAware =
                             typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
 
+                        // V9.26 Phase 5c-Migration — eine GELADENE alte Welt
+                        // (`!fresh`) ohne voxelTerrain-Flag wird voxel-basiert;
+                        // eine explizite `voxelTerrain:false`-Welt bleibt
+                        // heightfield; eine FRISCHE Welt (`fresh`) wird NICHT
+                        // migriert (Eingangs-Welt bleibt heightfield, Lehrling-
+                        // freundlich + deterministisch für die Test-Suite).
+                        const origMeta = r.state.worldMeta;
+                        // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
+                        const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
+                        r.state.worldMeta = oldMeta;
+                        r.ensureWorldMeta();
+                        out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
+                        // Explizit Heightfield-Opt-out → bleibt heightfield.
+                        const optOutMeta = {
+                            worldId: "test-opt-out",
+                            slug: "test-opt-out",
+                            bornAt: 100,
+                            seed: "test",
+                            voxelTerrain: false,
+                        };
+                        r.state.worldMeta = optOutMeta;
+                        r.ensureWorldMeta();
+                        out.migrationRespectsOptOut = optOutMeta.voxelTerrain === false;
+                        r.state.worldMeta = origMeta;
+
                         // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
                         let anyColorAttr = false;
                         let colorMin = 1;
@@ -11741,6 +11767,14 @@ function startSaveServer() {
                 check(
                     "Voxel V9.25 Phase 5b: findSurfaceAbove liefert in einer Voxel-Welt die Voxel-Oberfläche",
                     voxelP2bResults.findSurfaceVoxelAware
+                );
+                check(
+                    "Voxel V9.26 Phase 5c: eine geladene alte Welt ohne voxelTerrain-Flag wird voxel-basiert",
+                    voxelP2bResults.migrationFlipsOldWorld
+                );
+                check(
+                    "Voxel V9.26 Phase 5c: ein explizites voxelTerrain:false (Heightfield-Opt-out) bleibt heightfield",
+                    voxelP2bResults.migrationRespectsOptOut
                 );
             }
 

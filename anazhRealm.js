@@ -8722,6 +8722,23 @@ class AnazhRealm {
         if (typeof m.seed !== "string" || m.seed.length === 0) {
             m.seed = "anazh-realm-seed";
         }
+        // V9.26 Phase 5c-Migrations-Flip — Schöpfer-Wahl V9.25 „alte Welten zu
+        // Voxel migrieren": eine GELADENE Welt (`!fresh`, worldId schon im
+        // Save) ohne `voxelTerrain`-Flag wird beim Laden voxel-basiert. So
+        // erbt jede alte Welt automatisch das fehlerfreie Voxel-Terrain (5b);
+        // der Schöpfer muss keine neue Welt erstellen. Die FRISCHE Eingangs-
+        // Welt (brandneuer Spieler ohne localStorage — auch der Playtest)
+        // bleibt heightfield: Lehrling-freundlich, deterministisch für die
+        // Test-Suite. `chunkDeltas` (Heightfield-Grab-Edits) gehen verloren —
+        // bewusst akzeptiert, der Schöpfer kennt den Preis.
+        if (!fresh && m.voxelTerrain !== true && m.voxelTerrain !== false) {
+            m.voxelTerrain = true;
+            if (typeof this.journalAppend === "function") {
+                this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
+                    worldId: m.worldId,
+                });
+            }
+        }
         if (fresh) {
             this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
@@ -14574,14 +14591,17 @@ class AnazhRealm {
         const step = 1.8;
         // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
         // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
-        // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64);
-        // 68 × 1.8 = 122 m vertikal fasst es ganz (sonst klafft ein Loch).
+        // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
+        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — die V9.20-Marge 8
+        // reichte nicht für ridged-Spikes weiter draussen (Sicht-Ring 4-8
+        // erreicht Chunks, in denen die Oberfläche über base+72 ragte → keine
+        // Iso-Fläche → kein Mesh → sichtbares Loch). Marge jetzt ~22.
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
         // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
         // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
         // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 68 };
+        return { dim, step, span: dim * step, ringRadius, dimY: 80 };
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -14600,8 +14620,10 @@ class AnazhRealm {
         const oz = cz * span;
         // Das Oberflächen-Band reicht ~base-42..base+64 — der Chunk muss es
         // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // durch). base-50 + 122 m = base+72 → volle Deckung mit Marge.
-        const oy = base - 50;
+        // V9.26: base-58 + 144 m = base+86 → Marge ~22 oben/unten gegen das
+        // theoretische Surface-Band base-42..base+64 (Schutz gegen ridged-
+        // Spike-Löcher am Sicht-Ring-Rand).
+        const oy = base - 58;
         // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
         // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
@@ -33950,14 +33972,14 @@ class AnazhRealm {
                         // sind, aber tief genug, dass eine legitime Schlucht
                         // (heights -100..+100) den Spieler nicht reset.
                         // V9.25 Phase 5b — der Killplane folgt der Welt. In
-                        // einer Voxel-Welt liegt der Chunk-Boden bei base-50;
-                        // der Killplane gehört DARUNTER (base-80), sonst würde
-                        // ein Spieler in einem tiefen Voxel-Tal resettet. Das
-                        // heightfield-abgeleitete `minHeight` kennt das Voxel-
-                        // Band nicht.
+                        // einer Voxel-Welt liegt der Chunk-Boden bei base-58
+                        // (V9.26); der Killplane gehört DARUNTER (base-88),
+                        // sonst würde ein Spieler in einem tiefen Voxel-Tal
+                        // resettet. Das heightfield-abgeleitete `minHeight`
+                        // kennt das Voxel-Band nicht.
                         const killPlaneY =
                             this.state.worldMeta && this.state.worldMeta.voxelTerrain
-                                ? (this.state.terrainBaseHeight || 0) - 80
+                                ? (this.state.terrainBaseHeight || 0) - 88
                                 : (this.state.minHeight || -50) - 30;
                         if (scaledY < killPlaneY) {
                             const currentX = pos.x() * this.state.scaleFactor;

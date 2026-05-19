@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.25)
+# Zustand des Realm — Stand: 19.05.2026 (V9.26)
+
+**V9.26 — Voxel-Terrain-Bogen Phase 5c-Start (Chunk-Loch-Heilung + Migrations-Flip)**: zwei Schöpfer-Browser-Befunde nach V9.25 geheilt. (1) Chunk-Löcher im erweiterten Sicht-Ring — `dimY` 68→80, `oy=base-58`, Marge ~22 gegen ridged-Spikes. (2) Migrations-Flip in `ensureWorldMeta`: eine geladene alte Welt ohne `voxelTerrain`-Flag wird voxel-basiert; eine frische Eingangs-Welt bleibt heightfield (Playtest-Schutz). Heightfield-Code-Entfernung + Test-Suite-Umschreibung bleiben eine spätere Welle. Voller Eintrag in `CLAUDE.md` V9.26.
 
 **V9.25 — Voxel-Terrain-Bogen Phase 5b (die Voxel-Welt wird höhen-ehrlich)**: vor dem grossen Heightfield-Schnitt ein Verwebungs-Audit; Schöpfer-Wahl „alte Welten zu Voxel migrieren“. Phase 5b heilt die heightfield-gekoppelten Höhen-Konsumenten: `getTerrainHeightAt` ist voxel-aware (liefert `_voxelSurfaceY`), Wasser/Killplane/`findSurfaceAbove`/Kreatur-Spawn/Genesis-Plattform erben die wahre Höhe. Phase 5c: der Migrations-Flip + Heightfield-Code raus. Voller Eintrag in `CLAUDE.md` V9.25.
 
