@@ -23,6 +23,10 @@ class AnazhRealm {
             groundMesh: null,
             groundChunks: [],
             groundHeightField: null,
+            // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. Parallel
+            // zum Heightfield, hinter dem Flag. Default aus.
+            voxelTerrainActive: false,
+            voxelChunks: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -12751,6 +12755,46 @@ class AnazhRealm {
             this._spawnVoxelTestChunk();
             return;
         }
+        // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. `voxel
+        // terrain on` lässt Voxel-Chunks um den Spieler streamen + legt das
+        // Heightfield schlafen; `voxel terrain off` kehrt zurück.
+        {
+            const vc = command.toLowerCase().trim();
+            if (vc === "voxel terrain on" || vc === "voxel terrain off") {
+                this.setVoxelTerrainActive(vc === "voxel terrain on");
+                return;
+            }
+            // Phase 3 — `voxel carve` schnitzt eine Mulde, `voxel fill`
+            // schüttet einen Hügel unter dem Spieler auf.
+            if (vc === "voxel carve" || vc === "voxel fill") {
+                if (!this.state.voxelTerrainActive) {
+                    this.log("Voxel-Formen braucht aktives Voxel-Terrain — erst `voxel terrain on`.", "INFO");
+                    return;
+                }
+                const pm = this.state.playerMesh;
+                if (pm) {
+                    if (vc === "voxel fill") {
+                        // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
+                        const matGate = this._voxelFillGate();
+                        if (!matGate.ok) {
+                            this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                            return;
+                        }
+                        this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                        this.log(
+                            matGate.free
+                                ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
+                                : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
+                            "INFO"
+                        );
+                    } else {
+                        this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                        this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+                    }
+                }
+                return;
+            }
+        }
 
         // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
         // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
@@ -14182,6 +14226,29 @@ class AnazhRealm {
         // 3D-Verzerrung: feines Band schnitzt Tunnel, grobes Band grosse Kammern.
         d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
         d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
+        // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die
+        // Edits leben in worldMeta.voxelEdits (persistiert mit der Welt).
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (edits && edits.length) {
+            for (let e = 0; e < edits.length; e++) {
+                const ed = edits[e];
+                if (!ed) continue;
+                const dx = x - ed.x;
+                const dy = y - ed.y;
+                const dz = z - ed.z;
+                const dist2 = dx * dx + dy * dy + dz * dz;
+                const r = ed.r;
+                if (dist2 < r * r) {
+                    const fall = 1 - Math.sqrt(dist2) / r;
+                    const amt = fall * (ed.strength || 48);
+                    // Phase 3b — `fill` addiert Dichte (Boden aufschütten),
+                    // `carve` (Default, auch mode-lose Alt-Edits) zieht ab.
+                    if (ed.mode === "fill") d += amt;
+                    else d -= amt;
+                }
+            }
+        }
         return d;
     }
 
@@ -14191,13 +14258,19 @@ class AnazhRealm {
     // Quad aus den 4 umliegenden Zell-Vertices. Explizite (i,j,k)-Indizes +
     // ein cellVert-Lookup — keine magische 256-Tabelle, gut prüfbar.
     // Liefert eine THREE.BufferGeometry oder null (leeres Volumen).
-    _voxelChunkGeometry(ox, oy, oz, dim, step) {
-        const N = dim + 1;
-        const density = new Float32Array(N * N * N);
-        const gi = (i, j, k) => i + j * N + k * N * N;
-        for (let k = 0; k < N; k++) {
-            for (let j = 0; j < N; j++) {
-                for (let i = 0; i < N; i++) {
+    // dimX/dimY/dimZ sind die Zell-Zahlen je Achse — der Voxel-Chunk ist
+    // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
+    // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
+    // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const density = new Float32Array(Nx * Ny * Nz);
+        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
+        for (let k = 0; k < Nz; k++) {
+            for (let j = 0; j < Ny; j++) {
+                for (let i = 0; i < Nx; i++) {
                     density[gi(i, j, k)] = this._terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
                 }
             }
@@ -14217,14 +14290,14 @@ class AnazhRealm {
             [5, 7],
             [6, 7],
         ];
-        const cellVert = new Int32Array(dim * dim * dim).fill(-1);
-        const ci = (i, j, k) => i + j * dim + k * dim * dim;
+        const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
+        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
         const positions = [];
         const solid = (v) => v > 0;
         // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
-        for (let k = 0; k < dim; k++) {
-            for (let j = 0; j < dim; j++) {
-                for (let i = 0; i < dim; i++) {
+        for (let k = 0; k < dimZ; k++) {
+            for (let j = 0; j < dimY; j++) {
+                for (let i = 0; i < dimX; i++) {
                     const corner = new Array(8);
                     let mask = 0;
                     for (let c = 0; c < 8; c++) {
@@ -14270,36 +14343,30 @@ class AnazhRealm {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
             indices.push(a, b, c, a, c, d);
         };
-        for (let k = 0; k <= dim; k++) {
-            for (let j = 0; j <= dim; j++) {
-                for (let i = 0; i <= dim; i++) {
+        // cv() liefert den Zell-Vertex ODER -1 für jeden out-of-range Index.
+        // OHNE diese Wand aliaste `ci(dim, j, k)` (= dim + j*dim + …) in einen
+        // FREMDEN Zell-Slot — `cellVert` dort konnte einen gültigen Vertex
+        // tragen → ein Streck-Dreieck quer durch den Chunk an JEDER i/j/k=dim-
+        // Randebene (= an jeder Chunk-Naht). Das war die „unsaubere Naht".
+        const cv = (i, j, k) => {
+            if (i < 0 || j < 0 || k < 0 || i >= dimX || j >= dimY || k >= dimZ) return -1;
+            return cellVert[ci(i, j, k)];
+        };
+        for (let k = 0; k <= dimZ; k++) {
+            for (let j = 0; j <= dimY; j++) {
+                for (let i = 0; i <= dimX; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
-                    if (i < dim && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                        quad(
-                            cellVert[ci(i, j - 1, k - 1)],
-                            cellVert[ci(i, j, k - 1)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i, j - 1, k)]
-                        );
+                    if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
+                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k));
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
-                    if (j < dim && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                        quad(
-                            cellVert[ci(i - 1, j, k - 1)],
-                            cellVert[ci(i, j, k - 1)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i - 1, j, k)]
-                        );
+                    if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
+                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k));
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
-                    if (k < dim && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                        quad(
-                            cellVert[ci(i - 1, j - 1, k)],
-                            cellVert[ci(i, j - 1, k)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i - 1, j, k)]
-                        );
+                    if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
+                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k));
                     }
                 }
             }
@@ -14307,16 +14374,92 @@ class AnazhRealm {
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
-        geom.computeVertexNormals();
+        // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der
+        // Mesh-Triangulierung. `computeVertexNormals` mittelt die Flächen-
+        // Normalen der triangulierten Quads → es nimmt jede Quad-Diagonal-
+        // Faltung auf → ein hartes Rauten-/Trapez-Facetten-Muster auf der
+        // Oberfläche. Der Gradient `∇d` IST die wahre Iso-Oberflächen-
+        // Normale — glatt, unabhängig von der Facettierung. Die Oberfläche
+        // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
+        const normals = new Float32Array(positions.length);
+        const eps = step * 0.5;
+        for (let v = 0; v < positions.length; v += 3) {
+            const px = positions[v];
+            const py = positions[v + 1];
+            const pz = positions[v + 2];
+            const gx = this._terrainDensityAt(px + eps, py, pz) - this._terrainDensityAt(px - eps, py, pz);
+            const gy = this._terrainDensityAt(px, py + eps, pz) - this._terrainDensityAt(px, py - eps, pz);
+            const gz = this._terrainDensityAt(px, py, pz + eps) - this._terrainDensityAt(px, py, pz - eps);
+            const len = Math.hypot(gx, gy, gz);
+            if (len < 1e-6) {
+                // Gradient ~0 (sehr seltener Sattelpunkt) → Default „oben".
+                normals[v] = 0;
+                normals[v + 1] = 1;
+                normals[v + 2] = 0;
+            } else {
+                normals[v] = -gx / len;
+                normals[v + 1] = -gy / len;
+                normals[v + 2] = -gz / len;
+            }
+        }
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
         return geom;
     }
 
-    // Phase-1-Beweis: ein Voxel-Chunk wird gemesht + neben dem Spieler in
-    // die Szene gestellt. Ein zweiter Aufruf ersetzt den alten. KEIN
-    // Eingriff ins Heightfield — ein reines Parallel-Artefakt.
+    // V9.10 — Welt-Feld-Farbe pro Voxel-Vertex. Mirrort die Farb-Logik des
+    // Heightfield-Terrain-Shaders (stone/earth/lava/violet/snow/sediment),
+    // aber als per-Vertex `color`-Attribut (MeshToonMaterial vertexColors)
+    // statt im Custom-Shader. Dieselbe fraktale Sprache (worldFieldAt) —
+    // das Voxel-Terrain trägt damit dieselben Biom-Regionen wie der Boden.
+    _attachVoxelFieldColors(geom) {
+        const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
+        if (!pos || typeof this.worldFieldAt !== "function") return;
+        const n = pos.count;
+        const colors = new Float32Array(n * 3);
+        const ss = (e0, e1, x) => {
+            let t = (x - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const stone = [0.42, 0.44, 0.49];
+        const earth = [0.27, 0.49, 0.19];
+        const lava = [0.46, 0.2, 0.11];
+        const violet = [0.55, 0.36, 0.86];
+        const snow = [0.92, 0.93, 1.0];
+        const sed = [0.78, 0.72, 0.52];
+        for (let i = 0; i < n; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const z = pos.getZ(i);
+            const f = this.worldFieldAt(x, z);
+            const c = [stone[0], stone[1], stone[2]];
+            const mix = (target, t) => {
+                c[0] += (target[0] - c[0]) * t;
+                c[1] += (target[1] - c[1]) * t;
+                c[2] += (target[2] - c[2]) * t;
+            };
+            mix(earth, ss(0.25, 0.85, f.lebendig));
+            mix(lava, ss(0.38, 0.92, f.glut));
+            mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+            mix(snow, ss(12, 42, y));
+            mix(sed, ss(-2, -14, y));
+            colors[i * 3] = c[0];
+            colors[i * 3 + 1] = c[1];
+            colors[i * 3 + 2] = c[2];
+        }
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    }
+
+    // Phase-2a-Beweis: ein Voxel-Chunk wird gemesht, neben dem Spieler in
+    // die Szene gestellt UND bekommt eine btBvhTriangleMeshShape-Kollision
+    // (über _buildStaticTriMeshCollision — dieselbe Sprache wie die Inseln)
+    // — der Spieler kann auf dem Voxel-Terrain stehen. Ein zweiter Aufruf
+    // ersetzt den alten + räumt seine Kollision. KEIN Eingriff ins
+    // Heightfield — ein reines Parallel-Artefakt.
     _spawnVoxelTestChunk() {
         if (!this.state.scene) return null;
         if (this._voxelTestMesh) {
+            this._disposeStaticCollision(this._voxelTestMesh);
             this.state.scene.remove(this._voxelTestMesh);
             if (this._voxelTestMesh.geometry) this._voxelTestMesh.geometry.dispose();
             if (this._voxelTestMesh.material) this._voxelTestMesh.material.dispose();
@@ -14331,13 +14474,14 @@ class AnazhRealm {
         const ox = px + 22;
         const oy = base - 20;
         const oz = pz - dim * stepSize * 0.5;
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, stepSize);
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, dim, dim, stepSize);
         if (!geom) {
             this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
             return null;
         }
+        this._attachVoxelFieldColors(geom);
         const mat = new THREE.MeshToonMaterial({
-            color: 0x6e5038,
+            vertexColors: true,
             side: THREE.DoubleSide,
         });
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
@@ -14346,9 +14490,293 @@ class AnazhRealm {
         mesh.receiveShadow = true;
         this.state.scene.add(mesh);
         this._voxelTestMesh = mesh;
+        const body = this._buildStaticTriMeshCollision(mesh, { kind: "voxel", friction: 0.85 });
         const vCount = geom.getAttribute("position").count;
-        this.log(`Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets, Phase 1).`, "INFO");
+        this.log(
+            `Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets)` +
+                (body ? " — begehbar (btBvhTriangleMeshShape)." : " — ohne Kollision (kein Index)."),
+            "INFO"
+        );
         return mesh;
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
+    // Voxel-Chunks streamen um den Spieler, wie das Heightfield-Chunk-
+    // System. Parallel gebaut, hinter dem Flag `voxelTerrainActive`. Ist
+    // das Flag aus, fasst NICHTS hier das Heightfield an.
+
+    // Die Konfiguration des Voxel-Chunk-Rings — eine Quelle der Wahrheit.
+    // span = dim × step ist die Welt-Kantenlänge eines (würfelförmigen)
+    // Voxel-Chunks; die vertikale Spanne deckt das Oberflächen-Band.
+    _voxelChunkConfig() {
+        const dim = 24;
+        const step = 1.8;
+        // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
+        // ein Würfel: 40 × 1.8 = 72 m vertikal fasst das ganze ±30-m-
+        // Oberflächen-Band (sonst klafft oben/unten ein Loch).
+        return { dim, step, span: dim * step, ringRadius: 2, dimY: 40 };
+    }
+
+    // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
+    // Surface-Nets-Mesh aus dem 3D-Dichte-Feld + btBvhTriangleMeshShape-
+    // Kollision. No-op, wenn er schon existiert. Ein leeres Dichte-Feld
+    // (ganz fest / ganz Luft) wird als {empty:true} markiert — kein
+    // erneutes Meshen je Frame.
+    _ensureVoxelChunkAt(cx, cz) {
+        if (!this.state.scene) return null;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
+        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        // Das Oberflächen-Band reicht ~base±30 — der Chunk muss es ganz
+        // fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
+        // durch). base-35 + 72 m = base+37 → volle Deckung mit Marge.
+        const oy = base - 35;
+        // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
+        // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
+        // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
+        // nistisch — die Überlapp-Zelle ist in beiden Chunks identisch.
+        // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        if (!geom) {
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
+        this._attachVoxelFieldColors(geom);
+        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
+        this.state.scene.add(mesh);
+        this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        const entry = { mesh };
+        this.state.voxelChunks.set(key, entry);
+        return entry;
+    }
+
+    // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
+    // Idempotent.
+    _disposeVoxelChunk(key) {
+        if (!this.state.voxelChunks) return;
+        const entry = this.state.voxelChunks.get(key);
+        if (entry && entry.mesh) {
+            this._disposeStaticCollision(entry.mesh);
+            if (this.state.scene) this.state.scene.remove(entry.mesh);
+            if (entry.mesh.geometry) entry.mesh.geometry.dispose();
+            if (entry.mesh.material) entry.mesh.material.dispose();
+        }
+        this.state.voxelChunks.delete(key);
+    }
+
+    // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
+    // Distanz über dem Ring-Radius + 1 — eine Pufferzone gegen Flackern).
+    _pruneDistantVoxelChunks(playerPos) {
+        if (!playerPos || !this.state.voxelChunks) return;
+        const { span, ringRadius } = this._voxelChunkConfig();
+        const pcx = Math.floor(playerPos.x / span);
+        const pcz = Math.floor(playerPos.z / span);
+        const drop = [];
+        for (const key of this.state.voxelChunks.keys()) {
+            const parts = key.split(",");
+            const cx = Number(parts[0]);
+            const cz = Number(parts[1]);
+            if (Math.abs(cx - pcx) > ringRadius + 1 || Math.abs(cz - pcz) > ringRadius + 1) drop.push(key);
+        }
+        for (const key of drop) this._disposeVoxelChunk(key);
+    }
+
+    // Streamt den Voxel-Chunk-Ring um den Spieler — ein Chunk je Frame
+    // (Meshen + BVH-Kollision sind nicht gratis), dann Prune. No-op, wenn
+    // das Voxel-Terrain nicht aktiv ist.
+    _tickVoxelChunkStreaming(playerPos) {
+        if (!this.state.voxelTerrainActive || !playerPos) return;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const { span, ringRadius } = this._voxelChunkConfig();
+        const pcx = Math.floor(playerPos.x / span);
+        const pcz = Math.floor(playerPos.z / span);
+        let built = 0;
+        const MAX_PER_FRAME = 1;
+        outer: for (let r = 0; r <= ringRadius; r++) {
+            for (let dz = -r; dz <= r; dz++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+                    const key = `${pcx + dx},${pcz + dz}`;
+                    if (this.state.voxelChunks.has(key)) continue;
+                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
+                    if (++built >= MAX_PER_FRAME) break outer;
+                }
+            }
+        }
+        this._pruneDistantVoxelChunks(playerPos);
+    }
+
+    // Versetzt das Heightfield-Terrain in den Ruhezustand (Mesh + Gras
+    // unsichtbar, Kollision aus dem physicsWorld genommen) bzw. weckt es
+    // wieder. Das Heightfield wird NICHT zerstört — chunkMap bleibt voll,
+    // jeder Schritt ist reversibel (die parallel-hinter-Flag-Disziplin).
+    _setHeightfieldDormant(dormant) {
+        if (this.state.chunkMap) {
+            for (const entry of this.state.chunkMap.values()) {
+                const mesh = entry && entry.mesh;
+                if (!mesh) continue;
+                mesh.visible = !dormant;
+                const body = mesh.userData && mesh.userData.physicsBody;
+                if (body && this.state.physicsWorld) {
+                    if (dormant && !mesh.userData._collisionDormant) {
+                        this.state.physicsWorld.removeRigidBody(body);
+                        mesh.userData._collisionDormant = true;
+                    } else if (!dormant && mesh.userData._collisionDormant) {
+                        this.state.physicsWorld.addRigidBody(body);
+                        mesh.userData._collisionDormant = false;
+                    }
+                }
+            }
+        }
+        if (this.state.chunkGrass) {
+            for (const grass of this.state.chunkGrass.values()) {
+                if (grass) grass.visible = !dormant;
+            }
+        }
+    }
+
+    // Schaltet das Voxel-Terrain ein/aus. An: das Heightfield schläft, der
+    // Voxel-Ring um den Spieler wird sofort gefüllt (damit er nicht ins
+    // Leere fällt). Aus: alle Voxel-Chunks werden abgeräumt, das
+    // Heightfield erwacht. Phase 2c: der Zustand wird pro-Welt persistiert
+    // (`worldMeta.voxelTerrain`) — `opts.persist:false` beim Reload-Restore,
+    // sonst würde der Restore-Aufruf einen Save mitten im Init triggern.
+    setVoxelTerrainActive(on, opts = {}) {
+        const next = !!on;
+        if (this.state.worldMeta) this.state.worldMeta.voxelTerrain = next;
+        if (this.state.voxelTerrainActive === next) return next;
+        this.state.voxelTerrainActive = next;
+        this._setHeightfieldDormant(next);
+        if (next) {
+            const pm = this.state.playerMesh;
+            const pos = pm ? pm.position : { x: 0, z: 0 };
+            const { span, ringRadius } = this._voxelChunkConfig();
+            const pcx = Math.floor(pos.x / span);
+            const pcz = Math.floor(pos.z / span);
+            for (let dz = -ringRadius; dz <= ringRadius; dz++) {
+                for (let dx = -ringRadius; dx <= ringRadius; dx++) {
+                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
+                }
+            }
+        } else if (this.state.voxelChunks) {
+            for (const key of [...this.state.voxelChunks.keys()]) this._disposeVoxelChunk(key);
+        }
+        this.log(
+            next
+                ? "Voxel-Terrain aktiv — der Boden ist jetzt 3D-formbare Materie."
+                : "Voxel-Terrain aus — zurück zum Heightfield.",
+            "INFO"
+        );
+        if (opts.persist !== false && typeof this.saveState === "function") this.saveState();
+        return next;
+    }
+
+    // Phase 2c — beim Welt-Laden: war das Voxel-Terrain in dieser Welt
+    // aktiv (`worldMeta.voxelTerrain`), wird es wiederhergestellt. Wird
+    // nach dem vollen Welt-Aufbau gerufen (Szene + Physik + Spieler da),
+    // VOR dem Game-Loop-Start. persist:false — kein Save während des Inits.
+    _restoreVoxelTerrain() {
+        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain === true) {
+            this.setVoxelTerrainActive(true, { persist: false });
+        }
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben + Phase 3b — Aufschütten ###
+    // `carveVoxelSphere` schnitzt eine Kugel „Luft" ins Dichte-Feld,
+    // `fillVoxelSphere` schüttet eine Kugel „Fest" auf — beide über den
+    // gemeinsamen `_addVoxelEdit`. Der Edit landet in worldMeta.voxelEdits
+    // (persistiert mit der Welt), `_terrainDensityAt` zieht ab / addiert →
+    // ein echtes Loch / Tunnel / Höhle bzw. ein aufgeschütteter Hügel.
+    // Die betroffenen Voxel-Chunks werden neu gemesht. Der formbare Boden.
+    _addVoxelEdit(x, y, z, r, mode) {
+        if (!this.state.worldMeta) return false;
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return false;
+        if (!Array.isArray(this.state.worldMeta.voxelEdits)) this.state.worldMeta.voxelEdits = [];
+        const edits = this.state.worldMeta.voxelEdits;
+        const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
+        edits.push({ x, y, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
+        // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
+        const CAP = 256;
+        while (edits.length > CAP) edits.shift();
+        this._remeshVoxelChunksAround(x, z, radius);
+        if (typeof this.saveState === "function") this.saveState();
+        return true;
+    }
+
+    carveVoxelSphere(x, y, z, r) {
+        return this._addVoxelEdit(x, y, z, r, "carve");
+    }
+
+    fillVoxelSphere(x, y, z, r) {
+        return this._addVoxelEdit(x, y, z, r, "fill");
+    }
+
+    // Phase 3c — zieht `n` Material-Einheiten aus dem Inventar (über alle
+    // Material-Slots, FIFO). Liefert false + lässt das Inventar unberührt,
+    // wenn nicht genug da ist. „Irgendein Material" — das Voxel-Aufschütten
+    // braucht Substanz, aber keine bestimmte (die Voxel-Farbe kommt aus
+    // dem Welt-Feld, nicht aus dem verbrauchten Material).
+    _consumeAnyMaterial(n) {
+        const inv = this.state.player && this.state.player.inventory;
+        if (!Array.isArray(inv)) return false;
+        let total = 0;
+        for (const slot of inv) {
+            if (slot && slot.kind === "material") total += slot.count || 0;
+        }
+        if (total < n) return false;
+        let remaining = n;
+        for (let i = 0; i < inv.length && remaining > 0; i++) {
+            const slot = inv[i];
+            if (slot && slot.kind === "material" && slot.count > 0) {
+                const take = Math.min(slot.count, remaining);
+                slot.count -= take;
+                remaining -= take;
+                if (slot.count <= 0) inv[i] = null;
+            }
+        }
+        return true;
+    }
+
+    // Phase 3c — das Modus-Gate fürs Voxel-Aufschütten (Spiegel von
+    // `_buildMaterialGate`): im pfad-Modus ein Material-Erhaltungs-Kreis
+    // (graben gibt Material, aufschütten kostet `VOXEL_FILL_COST`); in
+    // frieden + schöpfer freies Formen ohne Kosten.
+    _voxelFillGate() {
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        if (mode !== "pfad") return { ok: true, free: true };
+        const COST = 4;
+        if (this._consumeAnyMaterial(COST)) return { ok: true, free: false, cost: COST };
+        return { ok: false, reason: "kein Material" };
+    }
+
+    // Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-Kugel
+    // berührt (±1 Chunk Marge für den V9.10-Skirt-Überlapp). No-op, wenn
+    // das Voxel-Terrain nicht aktiv ist (keine Chunks in der Szene).
+    _remeshVoxelChunksAround(x, z, r) {
+        if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
+        const { span } = this._voxelChunkConfig();
+        const minCX = Math.floor((x - r) / span) - 1;
+        const maxCX = Math.floor((x + r) / span) + 1;
+        const minCZ = Math.floor((z - r) / span) - 1;
+        const maxCZ = Math.floor((z + r) / span) + 1;
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                const key = `${cx},${cz}`;
+                if (this.state.voxelChunks.has(key)) {
+                    this._disposeVoxelChunk(key);
+                    this._ensureVoxelChunkAt(cx, cz);
+                }
+            }
+        }
     }
 
     // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für
@@ -14809,6 +15237,18 @@ class AnazhRealm {
         this.populateChunkVegetation(newChunkX, newChunkZ);
         // V8.29 — Instanced-Gras pro Chunk. Idempotent über state.chunkGrass.
         this._buildChunkGrass(newChunkX, newChunkZ);
+
+        // Voxel-Terrain-Bogen Phase 2b — ist das Voxel-Terrain aktiv und
+        // entsteht (über einen anderen Pfad) trotzdem ein Heightfield-Chunk,
+        // kommt er sofort schlafend zur Welt (unsichtbar, kollisionslos).
+        if (this.state.voxelTerrainActive && mesh) {
+            mesh.visible = false;
+            const hfBody = mesh.userData.physicsBody;
+            if (hfBody && this.state.physicsWorld && !mesh.userData._collisionDormant) {
+                this.state.physicsWorld.removeRigidBody(hfBody);
+                mesh.userData._collisionDormant = true;
+            }
+        }
 
         this.log(`Chunk hinzugefügt: (${newChunkX}, ${newChunkZ})`);
     }
@@ -24578,11 +25018,22 @@ class AnazhRealm {
     // state.rigidBodies gepusht — der Sync-Loop würde sonst mesh.position
     // aus dem Body-Origin überschreiben. Body lebt in obj.userData.collision.
     _buildIslandCollision(islandMesh) {
-        if (!islandMesh || !islandMesh.geometry || !this.state.physicsWorld) return null;
-        const geo = islandMesh.geometry;
+        return this._buildStaticTriMeshCollision(islandMesh, { kind: "island", friction: 0.8 });
+    }
+
+    // Generischer statischer Tri-Mesh-Kollisions-Builder. Nimmt ein Mesh mit
+    // indizierter Geometrie, baut ein btBvhTriangleMeshShape aus genau seinen
+    // Triangles (Visual = Kollision per Konstruktion) als statischen Body
+    // (mass=0). Eine Sprache für Inseln UND Voxel-Chunks — die Kollision
+    // lebt in mesh.userData.collision, _disposeStaticCollision räumt sie.
+    _buildStaticTriMeshCollision(mesh, opts = {}) {
+        if (!mesh || !mesh.geometry || !this.state.physicsWorld) return null;
+        const geo = mesh.geometry;
         const posAttr = geo.attributes && geo.attributes.position;
         const idx = geo.index;
         if (!posAttr || !idx) return null;
+        const kind = opts.kind || "static";
+        const friction = Number.isFinite(opts.friction) ? opts.friction : 0.8;
         const sf = this.state.scaleFactor || 1;
         const verts = posAttr.array;
         const indices = idx.array;
@@ -24613,23 +25064,23 @@ class AnazhRealm {
             const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
             const transform = new Ammo.btTransform();
             transform.setIdentity();
-            const p = islandMesh.position;
+            const p = mesh.position;
             const origin = new Ammo.btVector3(p.x / sf, p.y / sf, p.z / sf);
             transform.setOrigin(origin);
             const motionState = new Ammo.btDefaultMotionState(transform);
             const inertia = new Ammo.btVector3(0, 0, 0);
             const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
             const body = new Ammo.btRigidBody(rbInfo);
-            body.setFriction(0.8);
+            body.setFriction(friction);
             this.state.physicsWorld.addRigidBody(body);
             Ammo.destroy(rbInfo);
             Ammo.destroy(inertia);
             Ammo.destroy(origin);
             Ammo.destroy(transform);
-            islandMesh.userData.collision = { body, shape, tmesh, kind: "island" };
+            mesh.userData.collision = { body, shape, tmesh, kind };
             return body;
         } catch (err) {
-            this.log(`_buildIslandCollision: ${err.message}`, "ERROR");
+            this.log(`_buildStaticTriMeshCollision: ${err.message}`, "ERROR");
             return null;
         }
     }
@@ -25961,7 +26412,11 @@ class AnazhRealm {
         // mehrere Vertices → eine glatte, begehbare Mulde.
         const r = 3.0;
         const dh = -1.0;
-        if (typeof this.dslRun === "function") {
+        // Phase 3 — ist das Voxel-Terrain aktiv, schnitzt der Grabe-Hieb das
+        // 3D-Dichte-Feld (ein echtes Loch), sonst senkt er das Heightfield.
+        if (this.state.voxelTerrainActive) {
+            this.carveVoxelSphere(target.x, target.y, target.z, 3.5);
+        } else if (typeof this.dslRun === "function") {
             this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
         }
         // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
@@ -26044,6 +26499,31 @@ class AnazhRealm {
     }
 
     tryMousePlace() {
+        // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
+        // schüttet der RMB Boden auf (das Gegenstück zum LMB-Graben).
+        if (this.state.voxelTerrainActive && (!this.state.buildMode || !this.state.buildMode.active)) {
+            const fillGate = this._mouseActionStaminaGate();
+            if (!fillGate.ok) {
+                this.log(`Aufschütten: zu wenig Stamina (${fillGate.have}/${fillGate.cost}).`, "INFO");
+                return false;
+            }
+            const fillHit = this._raycastWorldHit(30);
+            if (!fillHit.hit) {
+                this.log("Aufschütten: kein Ziel in Reichweite.", "INFO");
+                return false;
+            }
+            // Phase 3c — im pfad-Modus kostet das Aufschütten Material
+            // (der Erhaltungs-Kreis); in frieden + schöpfer ist es frei.
+            const matGate = this._voxelFillGate();
+            if (!matGate.ok) {
+                this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                return false;
+            }
+            this._consumeMouseStamina();
+            this.fillVoxelSphere(fillHit.x, fillHit.y, fillHit.z, 3.5);
+            if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
+            return true;
+        }
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
@@ -32882,6 +33362,10 @@ class AnazhRealm {
             this.log("State-Import (Lade Datei) initialisiert", "INFO");
         }
 
+        // Phase 2c — war das Voxel-Terrain in dieser Welt aktiv, jetzt
+        // wiederherstellen (Welt voll gebaut, Spieler + Physik bereit).
+        this._restoreVoxelTerrain();
+
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
     }
@@ -33123,7 +33607,13 @@ class AnazhRealm {
             );
             this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
             const frustum = this._frustumCache;
-            this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
+            // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
+            // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
+            if (this.state.voxelTerrainActive) {
+                this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
+            } else {
+                this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
+            }
             if (this.state.floatingIslands)
                 this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
             if (this.state.creatures)
@@ -33457,16 +33947,23 @@ class AnazhRealm {
                 1,
                 Math.min(8, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 4)
             );
-            outer: for (let r = 0; r <= RING_RADIUS; r++) {
-                for (let dz = -r; dz <= r; dz++) {
-                    for (let dx = -r; dx <= r; dx++) {
-                        // Ring r: nur Zellen am äußeren Rand des Quadrats r.
-                        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                        const cx = playerChunkX + dx;
-                        const cz = playerChunkZ + dz;
-                        if (this.state.chunkMap.has(`${cx},${cz}`)) continue;
-                        this.ensureChunkAt(cx, cz);
-                        if (++chunksThisFrame >= MAX_PER_FRAME) break outer;
+            // Voxel-Terrain-Bogen Phase 2b — ist das Voxel-Terrain aktiv,
+            // ruht das Heightfield-Streaming und der Voxel-Chunk-Ring
+            // streamt stattdessen. Parallel, hinter dem Flag.
+            if (this.state.voxelTerrainActive) {
+                this._tickVoxelChunkStreaming(playerPos);
+            } else {
+                outer: for (let r = 0; r <= RING_RADIUS; r++) {
+                    for (let dz = -r; dz <= r; dz++) {
+                        for (let dx = -r; dx <= r; dx++) {
+                            // Ring r: nur Zellen am äußeren Rand des Quadrats r.
+                            if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+                            const cx = playerChunkX + dx;
+                            const cz = playerChunkZ + dz;
+                            if (this.state.chunkMap.has(`${cx},${cz}`)) continue;
+                            this.ensureChunkAt(cx, cz);
+                            if (++chunksThisFrame >= MAX_PER_FRAME) break outer;
+                        }
                     }
                 }
             }

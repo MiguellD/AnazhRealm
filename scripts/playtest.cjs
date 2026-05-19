@@ -11261,10 +11261,25 @@ function startSaveServer() {
                             }
                         }
                         out.densityCanCave = foundCave;
+
+                        // V9.12 — der Voxel-Chunk (base-35 .. base+37) fasst
+                        // das ganze Oberflächen-Band: der Boden ist überall
+                        // fest, die Decke überall Luft → keine Klipp-Löcher,
+                        // durch die der Spieler fällt.
+                        const cBase = r.state.terrainBaseHeight || 0;
+                        let floorAllSolid = true;
+                        let ceilAllAir = true;
+                        for (let sx = -220; sx <= 220; sx += 20) {
+                            for (let sz = -220; sz <= 220; sz += 20) {
+                                if (r._terrainDensityAt(sx, cBase - 35, sz) <= 0) floorAllSolid = false;
+                                if (r._terrainDensityAt(sx, cBase + 37, sz) >= 0) ceilAllAir = false;
+                            }
+                        }
+                        out.chunkContainsSurface = floorAllSolid && ceilAllAir;
                     }
 
                     if (out.hasChunkGeometry) {
-                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 1.8);
+                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 20, 20, 1.8);
                         out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
                         if (out.geomBuilt) {
                             const pos = geom.getAttribute("position");
@@ -11276,20 +11291,81 @@ function startSaveServer() {
                             out.geomFinite = allFinite;
                             out.geomHasNormals = !!geom.getAttribute("normal");
                             out.geomHasIndex = !!geom.getIndex();
+                            // V9.16 — die Normalen kommen aus dem Dichte-
+                            // Gradienten: jede ist ein endlicher Einheits-
+                            // vektor (kein Facetten-Rauten-Muster).
+                            const nrm = geom.getAttribute("normal");
+                            let normalsUnit = !!nrm && nrm.count === pos.count;
+                            if (nrm) {
+                                for (let v = 0; v < nrm.count; v++) {
+                                    const nl = Math.sqrt(
+                                        nrm.getX(v) * nrm.getX(v) +
+                                            nrm.getY(v) * nrm.getY(v) +
+                                            nrm.getZ(v) * nrm.getZ(v)
+                                    );
+                                    if (!Number.isFinite(nl) || Math.abs(nl - 1) > 0.02) {
+                                        normalsUnit = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            out.normalsUnit = normalsUnit;
+                            // V9.11 — kein Streck-Dreieck (Index-Aliasing-Bug):
+                            // jede Triangle-Kante ist lokal klein (≤ ein paar
+                            // Zellen). Ein Stray-Dreieck quer durch den Chunk
+                            // hätte eine Kante von zig Zellen — das war die
+                            // unsaubere Naht. step=1.8 → Grenze 5×step=9.
+                            if (out.geomHasIndex) {
+                                const ia = geom.getIndex().array;
+                                const pa = pos.array;
+                                let maxEdge = 0;
+                                const elen = (p, q) =>
+                                    Math.hypot(pa[p] - pa[q], pa[p + 1] - pa[q + 1], pa[p + 2] - pa[q + 2]);
+                                for (let t = 0; t + 2 < ia.length; t += 3) {
+                                    const a = ia[t] * 3;
+                                    const b = ia[t + 1] * 3;
+                                    const c = ia[t + 2] * 3;
+                                    const m = Math.max(elen(a, b), elen(b, c), elen(c, a));
+                                    if (m > maxEdge) maxEdge = m;
+                                }
+                                out.geomMaxEdge = maxEdge;
+                                out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+                            }
                         }
                     }
+
+                    // Phase 2a — der Kollisions-Builder.
+                    out.hasStaticTriCollision = typeof r._buildStaticTriMeshCollision === "function";
+                    out.hasIslandCollision = typeof r._buildIslandCollision === "function";
 
                     if (out.hasSpawnTest && r.state.scene) {
                         const before = r.state.scene.children.length;
                         const m1 = r._spawnVoxelTestChunk();
                         const afterOne = r.state.scene.children.length;
+                        // m1 bekommt eine btBvhTriangleMeshShape-Kollision.
+                        out.spawnHasCollision = !!(
+                            m1 &&
+                            m1.userData &&
+                            m1.userData.collision &&
+                            m1.userData.collision.body &&
+                            m1.userData.collision.kind === "voxel"
+                        );
                         const m2 = r._spawnVoxelTestChunk();
                         const afterTwo = r.state.scene.children.length;
                         out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
                         // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
                         out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
+                        // Der alte Test-Chunk gab seine Kollision frei.
+                        out.spawnDisposesOldCollision = !!(m1 && m1.userData && m1.userData.collision === null);
+                        out.spawnNewHasCollision = !!(
+                            m2 &&
+                            m2.userData &&
+                            m2.userData.collision &&
+                            m2.userData.collision.body
+                        );
                         // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
                         if (r._voxelTestMesh) {
+                            r._disposeStaticCollision(r._voxelTestMesh);
                             r.state.scene.remove(r._voxelTestMesh);
                             r._voxelTestMesh = null;
                         }
@@ -11311,6 +11387,10 @@ function startSaveServer() {
                     voxelP1Results.densityCanCave
                 );
                 check(
+                    "Voxel P2b-Politur: der Voxel-Chunk fasst das ganze Oberflächen-Band (Boden fest + Decke Luft — keine Klipp-Löcher)",
+                    voxelP1Results.chunkContainsSurface
+                );
+                check(
                     `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
                     voxelP1Results.geomBuilt && (voxelP1Results.geomVertexCount || 0) > 0
                 );
@@ -11319,10 +11399,502 @@ function startSaveServer() {
                     "Voxel P1: das Mesh trägt Normalen + einen Index",
                     voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
                 );
+                check(
+                    "Voxel P3b-Politur: die Voxel-Normalen sind Einheitsvektoren aus dem Dichte-Gradienten (glatt, kein Facetten-Muster)",
+                    voxelP1Results.normalsUnit
+                );
+                check(
+                    `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,
+                    voxelP1Results.geomNoStrayTris
+                );
                 check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
                 check(
                     "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
                     voxelP1Results.spawnReplaces
+                );
+                check(
+                    "Voxel P2a: _buildStaticTriMeshCollision-Methode existiert",
+                    voxelP1Results.hasStaticTriCollision
+                );
+                check(
+                    "Voxel P2a: _buildIslandCollision existiert weiter (Regression nach Extraktion)",
+                    voxelP1Results.hasIslandCollision
+                );
+                check(
+                    "Voxel P2a: der Voxel-Test-Chunk bekommt eine btBvhTriangleMeshShape-Kollision (kind voxel)",
+                    voxelP1Results.spawnHasCollision
+                );
+                check(
+                    "Voxel P2a: ein zweiter Spawn gibt die Kollision des alten Chunks frei",
+                    voxelP1Results.spawnDisposesOldCollision
+                );
+                check(
+                    "Voxel P2a: der neue Test-Chunk trägt wieder eine Kollision",
+                    voxelP1Results.spawnNewHasCollision
+                );
+            }
+
+            // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
+            // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
+            // Parallel, hinter dem Flag — jeder Schritt reversibel.
+            const voxelP2bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
+                    out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
+                    out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
+                    out.hasSetActive = typeof r.setVoxelTerrainActive === "function";
+                    out.hasConfig = typeof r._voxelChunkConfig === "function";
+                    out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
+                    out.defaultOff = r.state.voxelTerrainActive === false;
+
+                    // einen Heightfield-Chunk als Referenz merken.
+                    let refChunk = null;
+                    if (r.state.chunkMap) {
+                        for (const e of r.state.chunkMap.values()) {
+                            if (e && e.mesh) {
+                                refChunk = e.mesh;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (out.hasSetActive && out.hasTick) {
+                        r.setVoxelTerrainActive(true);
+                        out.activated = r.state.voxelTerrainActive === true;
+                        out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
+                        // jeder gemeshte Voxel-Chunk trägt eine Kollision.
+                        let meshCount = 0;
+                        let collCount = 0;
+                        for (const e of r.state.voxelChunks.values()) {
+                            if (e && e.mesh) {
+                                meshCount++;
+                                if (e.mesh.userData && e.mesh.userData.collision && e.mesh.userData.collision.body) {
+                                    collCount++;
+                                }
+                            }
+                        }
+                        out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
+
+                        // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
+                        let anyColorAttr = false;
+                        let colorMin = 1;
+                        let colorMax = 0;
+                        let skirtProven = false;
+                        const cfg0 = r._voxelChunkConfig();
+                        for (const e of r.state.voxelChunks.values()) {
+                            if (!e || !e.mesh || !e.mesh.geometry) continue;
+                            const col = e.mesh.geometry.getAttribute("color");
+                            if (col) {
+                                anyColorAttr = true;
+                                for (let i = 0; i < col.count; i++) {
+                                    const rr = col.getX(i);
+                                    if (rr < colorMin) colorMin = rr;
+                                    if (rr > colorMax) colorMax = rr;
+                                }
+                            }
+                            const g = e.mesh.geometry;
+                            g.computeBoundingBox();
+                            const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
+                            if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
+                        }
+                        out.voxelHasFieldColors = anyColorAttr;
+                        out.voxelColorVaries = colorMax - colorMin > 0.05;
+                        out.voxelSkirt = skirtProven;
+                        // das Heightfield schläft (unsichtbar + kollisionslos).
+                        out.heightfieldDormant = refChunk ? refChunk.visible === false : true;
+                        out.heightfieldCollisionDormant = refChunk
+                            ? !!(refChunk.userData && refChunk.userData._collisionDormant)
+                            : true;
+
+                        // Streaming: alles abräumen, ein Tick baut wieder auf.
+                        for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+                        const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                        r._tickVoxelChunkStreaming(pos);
+                        out.tickBuilds = r.state.voxelChunks.size >= 1;
+                        // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
+                        r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
+                        out.pruneRemovesFar = r.state.voxelChunks.size === 0;
+
+                        // wieder aus — das Heightfield erwacht, die Voxel-Chunks fallen.
+                        r.setVoxelTerrainActive(false);
+                        out.deactivated = r.state.voxelTerrainActive === false;
+                        out.voxelChunksCleared = !r.state.voxelChunks || r.state.voxelChunks.size === 0;
+                        out.heightfieldRestored = refChunk ? refChunk.visible === true : true;
+                        out.heightfieldCollisionRestored = refChunk
+                            ? !(refChunk.userData && refChunk.userData._collisionDormant)
+                            : true;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP2bResults && !voxelP2bResults.error) {
+                check(
+                    "Voxel P2b: alle vier Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/setVoxelTerrainActive)",
+                    voxelP2bResults.hasEnsure &&
+                        voxelP2bResults.hasTick &&
+                        voxelP2bResults.hasPrune &&
+                        voxelP2bResults.hasSetActive &&
+                        voxelP2bResults.hasConfig
+                );
+                check("Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)", voxelP2bResults.defaultOff);
+                check(
+                    "Voxel P2b: setVoxelTerrainActive(true) füllt den Voxel-Chunk-Ring um den Spieler",
+                    voxelP2bResults.activated && voxelP2bResults.ringFilled
+                );
+                check(
+                    "Voxel P2b: jeder gemeshte Voxel-Chunk trägt eine btBvhTriangleMeshShape-Kollision",
+                    voxelP2bResults.voxelChunksHaveCollision
+                );
+                check(
+                    "Voxel P2b: das Heightfield ruht bei aktivem Voxel-Terrain (unsichtbar + kollisionslos)",
+                    voxelP2bResults.heightfieldDormant && voxelP2bResults.heightfieldCollisionDormant
+                );
+                check(
+                    "Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)",
+                    voxelP2bResults.tickBuilds
+                );
+                check(
+                    "Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks",
+                    voxelP2bResults.pruneRemovesFar
+                );
+                check(
+                    "Voxel P2b: setVoxelTerrainActive(false) räumt alle Voxel-Chunks",
+                    voxelP2bResults.deactivated && voxelP2bResults.voxelChunksCleared
+                );
+                check(
+                    "Voxel P2b: das Heightfield erwacht wieder (sichtbar + kollidierbar) — reversibel",
+                    voxelP2bResults.heightfieldRestored && voxelP2bResults.heightfieldCollisionRestored
+                );
+                check(
+                    "Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert",
+                    voxelP2bResults.hasAttachColors
+                );
+                check(
+                    "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
+                    voxelP2bResults.voxelHasFieldColors
+                );
+                check(
+                    "Voxel P2b-Politur: die Voxel-Farben variieren über die Welt (keine Mono-Biom-Fläche)",
+                    voxelP2bResults.voxelColorVaries
+                );
+                check(
+                    "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
+                    voxelP2bResults.voxelSkirt
+                );
+            }
+
+            // ### Voxel-Terrain Phase 2c — per-Welt-Persistenz ###
+            // Der voxelTerrainActive-Zustand überlebt Reload + Welt-Wechsel
+            // über worldMeta.voxelTerrain.
+            const voxelP2cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasRestore = typeof r._restoreVoxelTerrain === "function";
+                    if (out.hasRestore && typeof r.setVoxelTerrainActive === "function") {
+                        // Persistenz: toggle on → worldMeta.voxelTerrain true.
+                        r.setVoxelTerrainActive(true);
+                        out.persistsOn = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
+                        // Der Welt-Snapshot trägt das Flag (worldMeta spread).
+                        const snap = r.buildStateSnapshot();
+                        out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
+                        r.setVoxelTerrainActive(false);
+                        out.persistsOff = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === false);
+                        // _restoreVoxelTerrain: worldMeta.voxelTerrain=true → aktiviert.
+                        r.state.worldMeta.voxelTerrain = true;
+                        r._restoreVoxelTerrain();
+                        out.restoreActivates = r.state.voxelTerrainActive === true;
+                        // worldMeta.voxelTerrain=false → restore tut nichts.
+                        r.setVoxelTerrainActive(false);
+                        r.state.worldMeta.voxelTerrain = false;
+                        r._restoreVoxelTerrain();
+                        out.restoreSkipsWhenOff = r.state.voxelTerrainActive === false;
+                        // sauber zurücklassen.
+                        r.setVoxelTerrainActive(false);
+                        r.state.worldMeta.voxelTerrain = false;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP2cResults && !voxelP2cResults.error) {
+                check("Voxel P2c: _restoreVoxelTerrain-Methode existiert", voxelP2cResults.hasRestore);
+                check(
+                    "Voxel P2c: setVoxelTerrainActive(true) persistiert worldMeta.voxelTerrain",
+                    voxelP2cResults.persistsOn
+                );
+                check(
+                    "Voxel P2c: der Welt-Snapshot trägt das voxelTerrain-Flag (überlebt Reload)",
+                    voxelP2cResults.snapshotHasFlag
+                );
+                check(
+                    "Voxel P2c: setVoxelTerrainActive(false) persistiert worldMeta.voxelTerrain = false",
+                    voxelP2cResults.persistsOff
+                );
+                check(
+                    "Voxel P2c: _restoreVoxelTerrain aktiviert das Voxel-Terrain bei worldMeta.voxelTerrain=true",
+                    voxelP2cResults.restoreActivates
+                );
+                check(
+                    "Voxel P2c: _restoreVoxelTerrain tut nichts bei worldMeta.voxelTerrain=false",
+                    voxelP2cResults.restoreSkipsWhenOff
+                );
+            }
+
+            // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
+            // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
+            const voxelP3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasCarve = typeof r.carveVoxelSphere === "function";
+                    out.hasRemesh = typeof r._remeshVoxelChunksAround === "function";
+                    if (out.hasCarve && r.state.worldMeta) {
+                        const base = r.state.terrainBaseHeight || 0;
+                        // Der Schnitt zieht am Kugel-Zentrum exakt strength (48) ab.
+                        r.state.worldMeta.voxelEdits = [];
+                        const dBefore = r._terrainDensityAt(0, base - 33, 0);
+                        r.carveVoxelSphere(0, base - 33, 0, 12);
+                        const dAfter = r._terrainDensityAt(0, base - 33, 0);
+                        out.carveSubtracts = Math.abs(dBefore - dAfter - 48) < 0.01;
+                        out.editStored = r.state.worldMeta.voxelEdits.length === 1;
+                        // Ein fester Punkt wird zu Luft (echtes Loch).
+                        let solidToAir = false;
+                        for (let sy = base + 20; sy >= base - 30 && !solidToAir; sy -= 3) {
+                            const dB = r._terrainDensityAt(50, sy, 50);
+                            if (dB > 1 && dB < 40) {
+                                r.state.worldMeta.voxelEdits = [];
+                                r.carveVoxelSphere(50, sy, 50, 12);
+                                if (r._terrainDensityAt(50, sy, 50) < 0) solidToAir = true;
+                            }
+                        }
+                        out.solidToAir = solidToAir;
+                        // Persistenz: der Edit reist im Welt-Snapshot.
+                        r.state.worldMeta.voxelEdits = [];
+                        r.carveVoxelSphere(10, base, 10, 5);
+                        const snap = r.buildStateSnapshot();
+                        out.snapshotHasEdit = !!(
+                            snap &&
+                            snap.worldMeta &&
+                            Array.isArray(snap.worldMeta.voxelEdits) &&
+                            snap.worldMeta.voxelEdits.length >= 1
+                        );
+                        // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt.
+                        r.state.worldMeta.voxelEdits = [];
+                        for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
+                        out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
+                        // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
+                        r.setVoxelTerrainActive(true);
+                        r.state.worldMeta.voxelEdits = [];
+                        r.processChatCommand("voxel carve");
+                        out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
+                        r.setVoxelTerrainActive(false);
+                        // sauber zurücklassen.
+                        r.state.worldMeta.voxelEdits = [];
+                        if (typeof r.saveState === "function") r.saveState();
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP3Results && !voxelP3Results.error) {
+                check(
+                    "Voxel P3: carveVoxelSphere + _remeshVoxelChunksAround existieren",
+                    voxelP3Results.hasCarve && voxelP3Results.hasRemesh
+                );
+                check(
+                    "Voxel P3: der Schnitt zieht am Kugel-Zentrum die Dichte ab (festes → Luft)",
+                    voxelP3Results.carveSubtracts
+                );
+                check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
+                check(
+                    "Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)",
+                    voxelP3Results.solidToAir
+                );
+                check(
+                    "Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)",
+                    voxelP3Results.snapshotHasEdit
+                );
+                check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
+                check(
+                    "Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde",
+                    voxelP3Results.chatCarveAddsEdit
+                );
+            }
+
+            // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
+            // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
+            const voxelP3bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasFill = typeof r.fillVoxelSphere === "function";
+                    if (out.hasFill && r.state.worldMeta) {
+                        const base = r.state.terrainBaseHeight || 0;
+                        // Der Füll-Schnitt addiert am Kugel-Zentrum exakt strength.
+                        r.state.worldMeta.voxelEdits = [];
+                        const dBefore = r._terrainDensityAt(0, base + 40, 0);
+                        r.fillVoxelSphere(0, base + 40, 0, 12);
+                        const dAfter = r._terrainDensityAt(0, base + 40, 0);
+                        out.fillAdds = Math.abs(dAfter - dBefore - 48) < 0.01;
+                        out.editIsFillMode =
+                            r.state.worldMeta.voxelEdits.length === 1 &&
+                            r.state.worldMeta.voxelEdits[0].mode === "fill";
+                        // Ein Luft-Punkt wird durch das Füllen zu festem Grund.
+                        let airToSolid = false;
+                        for (let sy = base + 35; sy >= base - 25 && !airToSolid; sy -= 3) {
+                            const dB = r._terrainDensityAt(70, sy, 70);
+                            if (dB < -1 && dB > -40) {
+                                r.state.worldMeta.voxelEdits = [];
+                                r.fillVoxelSphere(70, sy, 70, 12);
+                                if (r._terrainDensityAt(70, sy, 70) > 0) airToSolid = true;
+                            }
+                        }
+                        out.airToSolid = airToSolid;
+                        // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
+                        r.state.worldMeta.voxelEdits = [];
+                        const dPre = r._terrainDensityAt(120, base - 33, 120);
+                        r.state.worldMeta.voxelEdits = [
+                            { x: 120, y: base - 33, z: 120, r: 12, strength: 48 },
+                        ];
+                        out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
+                        // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
+                        // frieden — damit das V9.17-Füll-Gate frei ist.
+                        const p3bMode = r.getGameMode ? r.getGameMode() : "frieden";
+                        r.setGameMode("frieden");
+                        r.setVoxelTerrainActive(true);
+                        r.state.worldMeta.voxelEdits = [];
+                        r.processChatCommand("voxel fill");
+                        out.chatFillAddsEdit =
+                            r.state.worldMeta.voxelEdits.length === 1 &&
+                            r.state.worldMeta.voxelEdits[0].mode === "fill";
+                        r.setVoxelTerrainActive(false);
+                        r.setGameMode(p3bMode);
+                        // sauber zurücklassen.
+                        r.state.worldMeta.voxelEdits = [];
+                        if (typeof r.saveState === "function") r.saveState();
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP3bResults && !voxelP3bResults.error) {
+                check("Voxel P3b: fillVoxelSphere-Methode existiert", voxelP3bResults.hasFill);
+                check(
+                    "Voxel P3b: der Füll-Schnitt addiert am Kugel-Zentrum die Dichte (Luft → fest)",
+                    voxelP3bResults.fillAdds
+                );
+                check("Voxel P3b: der Füll-Edit trägt mode:fill", voxelP3bResults.editIsFillMode);
+                check(
+                    "Voxel P3b: ein Luft-Punkt wird durch das Füllen zu festem Grund (aufgeschüttet)",
+                    voxelP3bResults.airToSolid
+                );
+                check(
+                    "Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)",
+                    voxelP3bResults.modelessIsCarve
+                );
+                check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
+            }
+
+            // ### Voxel-Terrain-Bogen Phase 3c — Material-Erhaltungs-Kreis ###
+            // Im pfad-Modus kostet das Aufschütten Material; in frieden +
+            // schöpfer ist es frei (das Spielmodi-Muster).
+            const voxelP3cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state || !r.state.player) return null;
+                    const out = {};
+                    out.hasConsume = typeof r._consumeAnyMaterial === "function";
+                    out.hasGate = typeof r._voxelFillGate === "function";
+                    if (out.hasConsume && out.hasGate) {
+                        const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
+                        const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
+                        const wm = r.state.worldMeta;
+                        const matTotal = () => {
+                            let t = 0;
+                            for (const s of r.state.player.inventory) {
+                                if (s && s.kind === "material") t += s.count || 0;
+                            }
+                            return t;
+                        };
+                        // _consumeAnyMaterial: genug → true + reduziert.
+                        r.state.player.inventory = new Array(27).fill(null);
+                        r.addMaterialToInventory("stein", 10);
+                        out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
+                        // zu wenig → false + unverändert.
+                        r.state.player.inventory = new Array(27).fill(null);
+                        r.addMaterialToInventory("stein", 2);
+                        out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
+                        // Gate in frieden → frei, kein Verbrauch.
+                        r.setGameMode("frieden");
+                        r.state.player.inventory = new Array(27).fill(null);
+                        const gF = r._voxelFillGate();
+                        out.gateFriedenFree = gF.ok === true && gF.free === true;
+                        // Gate in pfad mit Material → ok + verbraucht.
+                        r.setGameMode("pfad");
+                        r.state.player.inventory = new Array(27).fill(null);
+                        r.addMaterialToInventory("stein", 10);
+                        const gP = r._voxelFillGate();
+                        out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
+                        // Gate in pfad ohne Material → abgelehnt.
+                        r.state.player.inventory = new Array(27).fill(null);
+                        out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
+                        // Chat `voxel fill` in pfad ohne Material → kein Edit.
+                        r.setVoxelTerrainActive(true);
+                        wm.voxelEdits = [];
+                        r.processChatCommand("voxel fill");
+                        out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
+                        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
+                        r.addMaterialToInventory("stein", 10);
+                        wm.voxelEdits = [];
+                        r.processChatCommand("voxel fill");
+                        out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
+                        r.setVoxelTerrainActive(false);
+                        // sauber zurücklassen.
+                        wm.voxelEdits = [];
+                        r.state.player.inventory = invBackup;
+                        r.setGameMode(modeBackup);
+                        if (typeof r.saveState === "function") r.saveState();
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP3cResults && !voxelP3cResults.error) {
+                check(
+                    "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
+                    voxelP3cResults.hasConsume && voxelP3cResults.hasGate
+                );
+                check(
+                    "Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab",
+                    voxelP3cResults.consumeEnough
+                );
+                check(
+                    "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
+                    voxelP3cResults.consumeTooLittle
+                );
+                check(
+                    "Voxel P3c: das Füll-Gate ist in frieden frei (kein Material-Verbrauch)",
+                    voxelP3cResults.gateFriedenFree
+                );
+                check(
+                    "Voxel P3c: das Füll-Gate verbraucht im pfad-Modus Material (Erhaltungs-Kreis)",
+                    voxelP3cResults.gatePfadConsumes
+                );
+                check(
+                    "Voxel P3c: das Füll-Gate lehnt im pfad-Modus ohne Material ab",
+                    voxelP3cResults.gatePfadDeniesEmpty
+                );
+                check(
+                    "Voxel P3c: `voxel fill` in pfad ohne Material schüttet nicht / mit Material schon",
+                    voxelP3cResults.chatFillDeniedNoMat && voxelP3cResults.chatFillWorksWithMat
                 );
             }
 
@@ -15307,7 +15879,10 @@ function startSaveServer() {
                     const cel6 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
                     out.celSliderWorks = cel2 === 2 && cel6 === 6;
                     r.setCelLevels(4);
-                    // setFogDistance ändert fog.near/far
+                    // setFogDistance ändert fog.near/far. playerEyesUnderwater
+                    // erzwingt sonst fog.near=4 (Tauch-Tint) — der überschreibt
+                    // den fogDistance-Effekt; hier deterministisch ausnullen.
+                    r.state.playerEyesUnderwater = false;
                     r.setFogDistance(0.5);
                     r._applyDayNightToScene();
                     const fogNear05 = r.state.fog ? r.state.fog.near : -1;
@@ -15616,6 +16191,9 @@ function startSaveServer() {
                         out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
                     }
                     // Fog-Slider propagiert in die Custom-Shader-Uniforms.
+                    // playerEyesUnderwater deterministisch ausnullen (sonst
+                    // erzwingt der Tauch-Tint fog.near=4 unabhängig vom Slider).
+                    r.state.playerEyesUnderwater = false;
                     r.setFogDistance(0.4);
                     r._applyDayNightToScene();
                     const tnNear =
