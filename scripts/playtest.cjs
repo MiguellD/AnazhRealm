@@ -2949,18 +2949,20 @@ function startSaveServer() {
                     out.freshNoInheritedTools =
                         Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
 
-                    // V9.21 — eine Welt kann voxel-basiert geboren werden:
-                    // createNewWorld({voxelTerrain:true}) setzt worldMeta.voxelTerrain
-                    // im Snapshot; ohne die Option bleibt es ungesetzt/falsy.
-                    const voxelId = r.createNewWorld({
-                        slug: "test-voxel-welt",
-                        inheritPlayer: false,
-                        reload: false,
-                        voxelTerrain: true,
-                    });
+                    // V9.23 Phase 5a — Voxel ist der Default für neue Welten:
+                    // ein no-arg createNewWorld setzt worldMeta.voxelTerrain;
+                    // nur ein bewusstes voxelTerrain:false (die Heightfield-
+                    // Opt-out-Checkbox) lässt das Flag weg.
+                    const voxelId = r.createNewWorld({ slug: "test-voxel-welt", reload: false });
                     const voxelSave = JSON.parse(localStorage.getItem(r.worldStorageKey(voxelId)) || "{}");
                     out.voxelWorldFlagSet = !!(voxelSave.worldMeta && voxelSave.worldMeta.voxelTerrain === true);
-                    out.plainWorldNoVoxelFlag = !(freshSave.worldMeta && freshSave.worldMeta.voxelTerrain === true);
+                    const classicId = r.createNewWorld({
+                        slug: "test-heightfield-welt",
+                        reload: false,
+                        voxelTerrain: false,
+                    });
+                    const classicSave = JSON.parse(localStorage.getItem(r.worldStorageKey(classicId)) || "{}");
+                    out.heightfieldOptOut = !(classicSave.worldMeta && classicSave.worldMeta.voxelTerrain === true);
 
                     // switchToWorld auf eine existierende Welt (ohne Reload):
                     // active-Pointer wandert, state bleibt (Reload würde state laden).
@@ -3018,12 +3020,12 @@ function startSaveServer() {
                 check("Ring 8: Frische Welt hat default Spieler-Seele", ring8Results.freshNoInheritedSoul);
                 check("Ring 8: Frische Welt hat leeres playerTools", ring8Results.freshNoInheritedTools);
                 check(
-                    "Voxel V9.21: createNewWorld({voxelTerrain:true}) setzt worldMeta.voxelTerrain",
+                    "Voxel V9.23 Phase 5a: eine neue Welt ist per Default voxel-basiert",
                     ring8Results.voxelWorldFlagSet
                 );
                 check(
-                    "Voxel V9.21: eine normale neue Welt trägt KEIN voxelTerrain-Flag",
-                    ring8Results.plainWorldNoVoxelFlag
+                    "Voxel V9.23 Phase 5a: voxelTerrain:false (Heightfield-Opt-out) lässt das Flag weg",
+                    ring8Results.heightfieldOptOut
                 );
                 check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
                 check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
@@ -8060,7 +8062,7 @@ function startSaveServer() {
                     out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
                     out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
                     out.inviteInputExists = !!document.getElementById("new-world-invite");
-                    out.voxelCheckboxExists = !!document.getElementById("new-world-voxel");
+                    out.voxelCheckboxExists = !!document.getElementById("new-world-heightfield");
                     out.hostBannerExists = !!document.getElementById("world-host-banner");
                     out.guestBannerExists = !!document.getElementById("world-guest-banner");
 
@@ -8114,7 +8116,10 @@ function startSaveServer() {
                     ring115Results.hostAnswersRequestWithSnapshot
                 );
                 check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
-                check("Voxel V9.21: #new-world-voxel-Checkbox im Neue-Welt-Dialog", ring115Results.voxelCheckboxExists);
+                check(
+                    "Voxel V9.23 Phase 5a: #new-world-heightfield-Opt-out-Checkbox im Neue-Welt-Dialog",
+                    ring115Results.voxelCheckboxExists
+                );
                 check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
                 check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
                 check("Ring 11.5: Einladungs-Code-Input im DOM", ring115Results.inviteInputExists);

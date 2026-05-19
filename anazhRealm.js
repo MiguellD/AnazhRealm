@@ -9058,7 +9058,7 @@ class AnazhRealm {
     // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
     // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
     // nach erfolgreichem Aufruf an.
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo", voxelTerrain = false } = {}) {
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo", voxelTerrain = true } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -9074,9 +9074,12 @@ class AnazhRealm {
         if (role === "host" || role === "guest") {
             snap.worldMeta.role = role;
         }
-        // V9.21: eine Welt kann voxel-basiert geboren werden — das Flag in
-        // worldMeta reist im Snapshot, `_restoreVoxelTerrain` aktiviert das
-        // Voxel-Terrain beim ersten Aufbau (das V9.13-Persistenz-Muster).
+        // V9.23 Phase 5a — Voxel ist der Default für neue Welten (`voxelTerrain`
+        // ist Default true; nur ein bewusstes `false`, etwa die „klassisches
+        // Heightfield"-Opt-out-Checkbox, baut noch ein Heightfield). Das Flag
+        // reist im Snapshot, `_restoreVoxelTerrain` aktiviert das Voxel-Terrain
+        // beim ersten Aufbau (das V9.13-Persistenz-Muster). Alte Welten ohne
+        // das Flag bleiben unberührt — sie behalten ihr Heightfield.
         if (voxelTerrain) {
             snap.worldMeta.voxelTerrain = true;
         }
@@ -16954,7 +16957,7 @@ class AnazhRealm {
         const joinRow = document.getElementById("new-world-join-row");
         const inviteInput = document.getElementById("new-world-invite");
         const inheritInput = document.getElementById("new-world-inherit");
-        const voxelInput = document.getElementById("new-world-voxel");
+        const heightfieldInput = document.getElementById("new-world-heightfield");
         const statusEl = document.getElementById("new-world-status");
         const cancelBtn = document.getElementById("new-world-cancel");
         const confirmBtn = document.getElementById("new-world-confirm");
@@ -16963,7 +16966,7 @@ class AnazhRealm {
         slugInput.value = "";
         inviteInput.value = "";
         inheritInput.checked = false;
-        if (voxelInput) voxelInput.checked = false;
+        if (heightfieldInput) heightfieldInput.checked = false;
         statusEl.textContent = "";
         confirmBtn.disabled = false;
         // Mode default auf solo
@@ -16998,7 +17001,9 @@ class AnazhRealm {
             const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
             const slug = slugInput.value.trim();
             const inherit = !!inheritInput.checked;
-            const voxel = !!(voxelInput && voxelInput.checked);
+            // V9.23 Phase 5a — Voxel ist der Default; die Checkbox ist ein
+            // Opt-out auf das klassische Heightfield.
+            const voxel = !(heightfieldInput && heightfieldInput.checked);
             confirmBtn.disabled = true;
             statusEl.textContent = "";
 

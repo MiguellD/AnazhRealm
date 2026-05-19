@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.22)
+# Zustand des Realm — Stand: 19.05.2026 (V9.23)
+
+**V9.23 — Voxel-Terrain-Bogen Phase 5a (Voxel als Default für neue Welten)**: der erste Schritt der Heightfield-Ablösung (Schöpfer-Wahl: schrittweise). `createNewWorld` baut neue Welten jetzt per Default voxel-basiert (`voxelTerrain`-Parameter Default `true`); die Dialog-Checkbox ist zum Heightfield-Opt-out gekippt. Alte Welten + die Eingangs-Welt behalten ihr Heightfield. Voller Eintrag in `CLAUDE.md` V9.23.
 
 **V9.22 — Voxel-Terrain grünt**: eine voxel-basierte Welt war kahl (das Heightfield-Gras schläft bei aktivem Voxel-Terrain). `_buildVoxelChunkGrass` gibt dem Voxel-Boden eigenes Instanced-Gras — Spiegel des Heightfield-`_buildChunkGrass`, jeder Halm auf der Voxel-Oberfläche (`_voxelSurfaceY`), am Chunk-Lifecycle aufgehängt. +5 Invarianten. Voller Eintrag in `CLAUDE.md` V9.22.
 
