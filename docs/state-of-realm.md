@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.00)
+# Zustand des Realm — Stand: 19.05.2026 (V9.01)
+
+**V9.01 — W10 ext. Welle 4/4 (die `lifting`-Affordance; W10 ext. vollständig)**: der Affordance-Bogen schliesst mit seiner siebten Affordance — `lifting`, ein magie-geladenes, leichtes Compound, das ein Auftriebs-Feld erzeugt. Vision-rein, kein Form-Whitelist: `_isLifting` liest die Tag-Sprache (`magieleitung` ≥ 1.5 + `dichte` ≤ 1.0 — das Komplement zu `balancing`). Welt-Reaktion — die erste physik-gekoppelte: ein Auftriebs-Feld dämpft den Fall + hebt den Spieler sanft (`_liftVerticalVelocity`, eine reine Funktion wie der Wasser-Auftrieb). W10 ext. ist mit radiating/broadcasting/balancing/lifting + der Stärke-Politur vollständig — sieben Affordances, ein Muster. +8 Invarianten. Voller Eintrag in `CLAUDE.md` V9.01.
 
 **V9.00 — W10 ext. Welle 3/4 (die `balancing`-Affordance)**: der Affordance-Bogen bekommt eine sechste emergente Affordance — `balancing`, ein breites, bodenlastiges, schweres Compound, das den Ort gründet. Vision-rein, kein Form-Whitelist: `_isBalancing` liest die räumliche Konfiguration (breiter als hoch + tiefer Schwerpunkt) + die Tag-Sprache (`dichte` ≥ 1.5 — genuin schwer). Welt-Reaktion: nahe einer gründenden Form sinkt `chaos` — das Komplement zum `radiating`-Tick (radiating hebt awe+peace). Synergie ohne Extra-Code: weniger chaos verlangsamt zugleich die Kreaturen. `lifting` bleibt als Welle 4/4 benannt. +8 Invarianten. Voller Eintrag in `CLAUDE.md` V9.00.
 

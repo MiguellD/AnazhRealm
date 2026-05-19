@@ -21126,6 +21126,7 @@ class AnazhRealm {
         if (this._isRadiating(bp)) out.radiating = true;
         if (this._isBroadcasting(bp)) out.broadcasting = true;
         if (this._isBalancing(bp)) out.balancing = true;
+        if (this._isLifting(bp)) out.lifting = true;
         return out;
     }
 
@@ -21163,6 +21164,10 @@ class AnazhRealm {
         if (aff.balancing) {
             const T = AnazhRealm.AFFORDANCE_THRESHOLDS.balancing;
             out.balancing = clamp01(overScale(tags.dichte || 0, T.dichteMin) * precF);
+        }
+        if (aff.lifting) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.lifting;
+            out.lifting = clamp01(overScale(tags.magieleitung || 0, T.magieMin) * precF);
         }
         return out;
     }
@@ -21363,6 +21368,25 @@ class AnazhRealm {
         if (below / bp.parts.length < T.bottomHeavyMin) return false;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.dichte || 0) >= T.dichteMin;
+    }
+
+    // W10 ext. — lifting: ein magie-geladenes, leichtes Compound, das einen
+    // Auftriebs-Bereich erzeugt. Vision-rein: KEINE Form-Whitelist. Was das
+    // Compound hebend macht:
+    //   1. magieleitung-Tag ≥ magieMin (1.5 — stark magie-geladen, es trägt
+    //      die Hebe-Energie)
+    //   2. dichte-Tag ≤ dichteMax (1.0 — genuin leicht; Magie hebt nur, was
+    //      nicht schwer ist — das KOMPLEMENT zu balancing, das ≥1.5 verlangt)
+    //   3. mindestens minParts Parts
+    // Ein Quarz-Cone-Cluster hebt wie ein Quarz-Helix-Turm — die Substanz-
+    // Geste „leicht + magie-geladen" zählt, nicht der Shape. Eine schwere
+    // Stein-Form (auch magie-getränkt) hebt nicht — Magie trägt kein Gewicht.
+    _isLifting(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.lifting;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.magieleitung || 0) < T.magieMin) return false;
+        return (tags.dichte || 0) <= T.dichteMax;
     }
 
     // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
@@ -21793,6 +21817,36 @@ class AnazhRealm {
         }
     }
 
+    // ----- Welt-Reaktion: lifting (ein Auftriebs-Feld trägt den Spieler) -----
+
+    // Pro Frame: steht der Spieler in Reichweite eines lifting-Compounds,
+    // setzt es ein Auftriebs-Feld auf state.player.liftingField. Die Physik-
+    // Schleife liest das Flag und wendet _liftVerticalVelocity an (analog
+    // zum playerUnderwater-Flag → _swimVerticalVelocity). Der stärkste
+    // lifting-Compound in Reichweite bestimmt die Feld-Stärke.
+    _tickLiftingAffordances() {
+        const pl = this.state.player;
+        if (!pl) return;
+        const lifting = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.lifting);
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm || lifting.length === 0) {
+            pl.liftingField = { active: false, strength: 0 };
+            return;
+        }
+        const range2 = AnazhRealm.LIFTING_RANGE_M * AnazhRealm.LIFTING_RANGE_M;
+        let best = 0;
+        for (const li of lifting) {
+            if (!li.position) continue;
+            const dx = li.position.x - pm.x;
+            const dz = li.position.z - pm.z;
+            if (dx * dx + dz * dz > range2) continue;
+            const s = li.affordanceStrength && li.affordanceStrength.lifting;
+            const strength = typeof s === "number" ? s : 1;
+            if (strength > best) best = strength;
+        }
+        pl.liftingField = { active: best > 0, strength: best };
+    }
+
     // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
@@ -21801,6 +21855,7 @@ class AnazhRealm {
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
+        this._tickLiftingAffordances();
         this._tickPortalAffordance();
     }
 
@@ -32524,6 +32579,21 @@ class AnazhRealm {
         return Math.min(2.5, Math.max(-2.5, currentVy * 0.45) + d * 0.18);
     }
 
+    // W10 ext. — vertikale Geschwindigkeit in einem lifting-Auftriebs-Feld.
+    // Eine reine Funktion (testbar, wie _swimVerticalVelocity). strength
+    // 0..1 = die Stärke des nächsten lifting-Compounds. Ein Fall wird
+    // gedämpft (currentVy < 0 → bis 85 % weniger bei voller Stärke), und
+    // ein sanfter Aufwärts-Drift hebt den Spieler — in einem starken Feld
+    // schwebt man auf, in einem schwachen fällt man nur langsamer. Der
+    // Aufstieg ist gedeckelt (2.5 m/s), kein Raketenstart; eine eigene
+    // Aufwärts-Bewegung (Sprung, currentVy > 0) wird nicht gebremst.
+    _liftVerticalVelocity(currentVy, strength) {
+        const s = Math.max(0, Math.min(1, strength || 0));
+        const damped = currentVy < 0 ? currentVy * (1 - 0.85 * s) : currentVy;
+        const drift = AnazhRealm.LIFTING_DRIFT_PER_SEC * s;
+        return Math.min(2.5, damped + drift);
+    }
+
     startEternalLoop() {
         // ### Spiel-Loop V7.66 ###
         // Learnings:
@@ -32760,6 +32830,26 @@ class AnazhRealm {
                                     );
                                 }
                             }
+                        }
+
+                        // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
+                        // in Reichweite eines lifting-Compounds (Flag aus
+                        // _tickLiftingAffordances), trägt ihn das Feld: der Fall
+                        // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
+                        // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
+                        // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
+                        if (
+                            mesh === this.state.playerMesh &&
+                            !this.state.playerUnderwater &&
+                            this.state.player &&
+                            this.state.player.liftingField &&
+                            this.state.player.liftingField.active
+                        ) {
+                            const liftVy = this._liftVerticalVelocity(
+                                velocity.y(),
+                                this.state.player.liftingField.strength
+                            );
+                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
                         }
 
                         // Kill-Plane näher an den Welt-Boden gerückt: vorher
@@ -34156,6 +34246,14 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         bottomHeavyMin: 0.6, // ≥60 % der Parts in der unteren bbox-Hälfte
         dichteMin: 1.5, // genuin schwer (= resonance_strong-Niveau, kein Gate-Tief)
     }),
+    // W10 ext. — lifting: ein magie-geladenes, leichtes Compound (Auftriebs-
+    // Feld). Stark magie-geladen + genuin leicht — das Komplement zu
+    // balancing (dichteMax 1.0 ↔ balancing.dichteMin 1.5).
+    lifting: Object.freeze({
+        minParts: 3,
+        magieMin: 1.5, // stark magie-geladen — es trägt die Hebe-Energie
+        dichteMax: 1.0, // genuin leicht — Magie hebt kein Gewicht
+    }),
 });
 
 // Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
@@ -34194,6 +34292,7 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     radiating: "strahlend",
     broadcasting: "sendend",
     balancing: "gründend",
+    lifting: "hebend",
 });
 // W10 ext. — radiating-Welt-Reaktion: Reichweite + sanfte Emotion-Rampe.
 AnazhRealm.RADIATING_RANGE_M = 14;
@@ -34206,6 +34305,10 @@ AnazhRealm.BROADCAST_RANGE_MULT = 2;
 // abgebaut (Komplement zu radiating, das awe+peace hebt).
 AnazhRealm.BALANCING_RANGE_M = 14;
 AnazhRealm.BALANCING_CHAOS_DRAIN_PER_SEC = 0.05;
+// W10 ext. — lifting-Welt-Reaktion: in Reichweite eines lifting-Compounds
+// trägt ein Auftriebs-Feld den Spieler (Fall gedämpft + Aufwärts-Drift).
+AnazhRealm.LIFTING_RANGE_M = 10;
+AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben

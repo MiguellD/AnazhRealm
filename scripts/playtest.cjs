@@ -24348,6 +24348,107 @@ function startSaveServer() {
                         r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_platform");
                         emoR.chaos = chaosBefore0;
 
+                        // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
+                        out.hasLifting = typeof r._isLifting === "function";
+                        out.hasTickLifting = typeof r._tickLiftingAffordances === "function";
+                        out.hasLiftVy = typeof r._liftVerticalVelocity === "function";
+                        out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
+                        out.liftingThresholds =
+                            !!AR.AFFORDANCE_THRESHOLDS.lifting &&
+                            AR.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&
+                            AR.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
+                        // Ein Quarz-Cone-Cluster (magie 1.7, dichte 0.65) hebt.
+                        if (r.state.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
+                        r.cloneBlueprint("village", "test_10ext_lifter");
+                        r.state.blueprints.test_10ext_lifter.parts = [
+                            {
+                                shape: "cone",
+                                material: "quarz",
+                                position: { x: 1, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 0.8, z: 0.6 },
+                            },
+                            {
+                                shape: "cone",
+                                material: "quarz",
+                                position: { x: -1, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 0.8, z: 0.6 },
+                            },
+                            {
+                                shape: "cone",
+                                material: "quarz",
+                                position: { x: 0, y: 0.5, z: 1 },
+                                size: { x: 0.6, y: 0.8, z: 0.6 },
+                            },
+                        ];
+                        out.lifterIsLifting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_lifter).lifting === true;
+                        // Eine schwere Stein-Plattform → NICHT lifting (magie zu tief).
+                        out.platformNotLifting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).lifting !== true;
+                        // Der Quarz-Octahedron-Cluster ist magie-geladen, aber zu
+                        // DICHT (dichte 1.3 > 1.0) → NICHT lifting (der dichte-
+                        // Deckel beweist: Magie hebt kein Gewicht).
+                        out.denseClusterNotLifting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).lifting !== true;
+                        // _liftVerticalVelocity: dämpft den Fall + hebt sanft.
+                        out.liftCushionsFall = r._liftVerticalVelocity(-10, 1) > -10;
+                        out.liftDriftsUp = r._liftVerticalVelocity(0, 1) > 0;
+                        out.liftNoFieldNoEffect = r._liftVerticalVelocity(-10, 0) === -10;
+                        // Stärke skaliert: ein Quarz-Helix-Heber (magie 2.55) hebt
+                        // stärker als der Quarz-Cone-Heber (magie 1.7).
+                        if (r.state.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
+                        r.cloneBlueprint("village", "test_10ext_lifterstrong");
+                        r.state.blueprints.test_10ext_lifterstrong.parts = [
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 1, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 1, z: 2 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: -1, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 1, z: 2 },
+                            },
+                            {
+                                shape: "helix",
+                                material: "quarz",
+                                position: { x: 0, y: 0.5, z: 1 },
+                                size: { x: 0.6, y: 1, z: 2 },
+                            },
+                        ];
+                        const liftWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifter).lifting;
+                        const liftStrong = r.computeAffordanceStrength(
+                            r.state.blueprints.test_10ext_lifterstrong
+                        ).lifting;
+                        out.liftStrengthScales =
+                            typeof liftWeak === "number" && liftStrong > liftWeak && liftStrong <= 1;
+                        // Welt-Reaktion: _tickLiftingAffordances setzt das Feld-Flag.
+                        const liftE = r.spawnArchitecture(
+                            "test_10ext_lifter",
+                            { x: 80, y: 0, z: 80 },
+                            { silent: true }
+                        );
+                        out.liftEntryAffordance = !!(
+                            liftE &&
+                            liftE.affordances &&
+                            liftE.affordances.lifting === true &&
+                            liftE.affordanceStrength &&
+                            typeof liftE.affordanceStrength.lifting === "number"
+                        );
+                        if (pmR) {
+                            pmR.x = 80;
+                            pmR.y = 0;
+                            pmR.z = 82;
+                        }
+                        r._tickLiftingAffordances();
+                        out.liftFieldActiveNear = !!(r.state.player.liftingField && r.state.player.liftingField.active);
+                        if (pmR) pmR.z = 400;
+                        r._tickLiftingAffordances();
+                        out.liftFieldInactiveFar = !(r.state.player.liftingField && r.state.player.liftingField.active);
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_lifter");
+
                         emoR.awe = aweBefore0;
                         emoR.peace = peaceBefore0;
                         // Spieler-Position wiederherstellen — nachfolgende Tests
@@ -24386,6 +24487,8 @@ function startSaveServer() {
                             "test_10ext_mastweak",
                             "test_10ext_platform",
                             "test_10ext_platweak",
+                            "test_10ext_lifter",
+                            "test_10ext_lifterstrong",
                         ]) {
                             if (r.state.blueprints[n]) r.deleteBlueprint(n);
                         }
@@ -24575,6 +24678,43 @@ function startSaveServer() {
                 check(
                     "W10 ext.: weit weg von der gründenden Form kein chaos-Abbau (Reichweite-Gate)",
                     wave10bResults.balFarNoChange
+                );
+                // ── W10 ext. Welle 4/4 — lifting ──
+                check(
+                    "W10 ext.: _isLifting + _tickLiftingAffordances + _liftVerticalVelocity existieren, Label 'hebend' + Schwellen",
+                    wave10bResults.hasLifting &&
+                        wave10bResults.hasTickLifting &&
+                        wave10bResults.hasLiftVy &&
+                        wave10bResults.liftingLabel &&
+                        wave10bResults.liftingThresholds
+                );
+                check(
+                    "W10 ext.: ein magie-geladener leichter Quarz-Cone-Cluster → lifting=true",
+                    wave10bResults.lifterIsLifting
+                );
+                check(
+                    "W10 ext.: eine schwere Stein-Plattform → NICHT lifting (magie zu tief)",
+                    wave10bResults.platformNotLifting
+                );
+                check(
+                    "W10 ext.: ein magie-geladener aber zu DICHTER Quarz-Cluster → NICHT lifting (dichte-Deckel)",
+                    wave10bResults.denseClusterNotLifting
+                );
+                check(
+                    "W10 ext.: _liftVerticalVelocity dämpft den Fall + hebt sanft, ohne Feld kein Effekt",
+                    wave10bResults.liftCushionsFall && wave10bResults.liftDriftsUp && wave10bResults.liftNoFieldNoEffect
+                );
+                check(
+                    "W10 ext.: ein Quarz-Helix-Heber hebt stärker als ein Cone-Heber (Stärke skaliert)",
+                    wave10bResults.liftStrengthScales
+                );
+                check(
+                    "W10 ext.: spawnArchitecture speichert lifting-Affordance + Stärke am entry",
+                    wave10bResults.liftEntryAffordance
+                );
+                check(
+                    "W10 ext.: _tickLiftingAffordances setzt das Auftriebs-Feld nahe einem Heber, löscht es fern (Reichweite-Gate)",
+                    wave10bResults.liftFieldActiveNear && wave10bResults.liftFieldInactiveFar
                 );
             } else if (wave10bResults && wave10bResults.error) {
                 check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
