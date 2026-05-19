@@ -10984,6 +10984,29 @@ function startSaveServer() {
                     out.felsbogenCompoundChildren =
                         eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
                     out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
+                    // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
+                    // (0x7a7a7a), NICHT weiss. Vorher fiel _buildFromBlueprint
+                    // ohne part.color auf 0xffffff zurück — alle material-
+                    // basierten Baupläne waren weiss.
+                    if (eb && eb.mesh) {
+                        let firstMeshHex = null;
+                        eb.mesh.traverse((n) => {
+                            if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                                firstMeshHex = n.material.color.getHex();
+                            }
+                        });
+                        out.felsbogenMeshHex = firstMeshHex;
+                        // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
+                        // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
+                        // ein dunkleres Grau, aber klar KEIN Weiss.
+                        if (firstMeshHex !== null) {
+                            const rr = (firstMeshHex >> 16) & 0xff;
+                            const gg = (firstMeshHex >> 8) & 0xff;
+                            const bb = firstMeshHex & 0xff;
+                            out.felsbogenNotWhite = firstMeshHex !== 0xffffff;
+                            out.felsbogenStoneGrey = rr === gg && gg === bb && rr <= 0xa0;
+                        }
+                    }
                     const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
                     out.felsturmSpawned = !!(et && et.type === "felsturm");
                     out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
@@ -11033,6 +11056,10 @@ function startSaveServer() {
                 check(
                     "W6.G P3: spawnArchitecture('felsbogen') erzeugt Mesh + Eintrag",
                     wave6gP3Results.felsbogenSpawned && wave6gP3Results.felsbogenHasMesh
+                );
+                check(
+                    `W6.G P3: der Felsbogen rendert stein-grau, nicht weiss (V9.06-Fix, hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)})`,
+                    wave6gP3Results.felsbogenNotWhite && wave6gP3Results.felsbogenStoneGrey
                 );
                 check(
                     `W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene (n=${wave6gP3Results.felsbogenCompoundChildren})`,

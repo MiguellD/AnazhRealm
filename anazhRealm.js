@@ -22309,7 +22309,19 @@ class AnazhRealm {
             // einzuführen (kostspielig), skalieren wir die Farbe sichtbar:
             // 0.4 Präzision → 76%, 0.97 → 98.8%. Eine lumpige Hand-Kugel
             // wirkt damit grau-matt, eine polierte hat ihre volle Farbe.
-            const baseColor = typeof part.color === "number" ? part.color : 0xffffff;
+            // V9.06 — die Farbe kommt aus dem Material, wenn kein explizites
+            // part.color gesetzt ist. Hylomorphismus: das Material IST die
+            // Substanz, seine Farbe gehört dazu. Ein explizites part.color
+            // (Werkstatt-Wahl) hat Vorrang; erst ohne beides → Weiss.
+            // Vorher: fehlte part.color, rendete der Part WEISS — die nach
+            // V7.74 material-basierten Baupläne (Bäume/Felsen/Felsbogen)
+            // waren darum alle weiss statt stein-grau/holz-braun/laub-grün.
+            let baseColor = typeof part.color === "number" ? part.color : null;
+            if (baseColor === null && typeof part.material === "string") {
+                const matDef = this.state.materials && this.state.materials[part.material];
+                if (matDef && typeof matDef.color === "number") baseColor = matDef.color;
+            }
+            if (baseColor === null) baseColor = 0xffffff;
             const precision = this.computePartPrecision(part);
             const brightness = 0.6 + 0.4 * Math.max(0, Math.min(1, precision));
             const r8 = (baseColor >> 16) & 0xff;
