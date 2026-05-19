@@ -23958,6 +23958,115 @@ function startSaveServer() {
                         out.scopeIsMagnifying =
                             r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
 
+                        // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
+                        out.hasRadiating = typeof r._isRadiating === "function";
+                        out.hasTickRadiating = typeof r._tickRadiatingAffordances === "function";
+                        out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
+                        out.radiatingThresholds =
+                            !!AR.AFFORDANCE_THRESHOLDS.radiating &&
+                            AR.AFFORDANCE_THRESHOLDS.radiating.minParts === 3 &&
+                            AR.AFFORDANCE_THRESHOLDS.radiating.resoniertMin === 1.5;
+                        // Ein radialer Quarz-Cluster (≥3 Parts, um einen Kern
+                        // gespreizt, NICHT auf einer Achse) strahlt.
+                        if (r.state.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
+                        r.cloneBlueprint("village", "test_10ext_radiator");
+                        r.state.blueprints.test_10ext_radiator.parts = [
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 1.2, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: -1.2, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 0.5, z: 1.2 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 0.5, z: -1.2 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                        ];
+                        out.radiatorIsRadiating =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).radiating === true;
+                        // Ein Quarz-Mast (≥3 Parts, alle auf der y-Achse) strahlt
+                        // NICHT radial — die räumliche Gate greift trotz hohem
+                        // resoniert (Vision-Beweis: kein Form-Whitelist, die
+                        // Konfiguration entscheidet).
+                        if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
+                        r.cloneBlueprint("village", "test_10ext_mast");
+                        r.state.blueprints.test_10ext_mast.parts = [
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "octahedron",
+                                material: "quarz",
+                                position: { x: 0, y: 2, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                        ];
+                        out.mastNotRadiating =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).radiating !== true;
+                        // Welt-Reaktion: nahe einem Strahler steigen awe + peace.
+                        const emoR = r.state.player.emotions;
+                        const aweBefore0 = emoR.awe;
+                        const peaceBefore0 = emoR.peace;
+                        const radEntry = r.spawnArchitecture(
+                            "test_10ext_radiator",
+                            { x: 60, y: 0, z: 60 },
+                            { silent: true }
+                        );
+                        out.radEntryAffordance = !!(
+                            radEntry &&
+                            radEntry.affordances &&
+                            radEntry.affordances.radiating === true
+                        );
+                        const pmR = r.state.playerMesh && r.state.playerMesh.position;
+                        const pmBefore = pmR ? { x: pmR.x, y: pmR.y, z: pmR.z } : null;
+                        if (pmR) {
+                            pmR.x = 60;
+                            pmR.y = 0;
+                            pmR.z = 62;
+                        }
+                        emoR.awe = 0.1;
+                        emoR.peace = 0.1;
+                        for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
+                        out.radNearRaisesEmotion = emoR.awe > 0.1 && emoR.peace > 0.1;
+                        // Weit weg → keine Änderung.
+                        if (pmR) pmR.z = 400;
+                        const aweFar = emoR.awe;
+                        for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
+                        out.radFarNoChange = Math.abs(emoR.awe - aweFar) < 0.0001;
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+                        emoR.awe = aweBefore0;
+                        emoR.peace = peaceBefore0;
+                        // Spieler-Position wiederherstellen — nachfolgende Tests
+                        // erwarten ihn dort, wo der Autonom-Lauf ihn liess.
+                        if (pmR && pmBefore) {
+                            pmR.x = pmBefore.x;
+                            pmR.y = pmBefore.y;
+                            pmR.z = pmBefore.z;
+                        }
+
                         // spawnArchitecture speichert affordances
                         const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
                         out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
@@ -23974,7 +24083,14 @@ function startSaveServer() {
                         out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
 
                         // Cleanup
-                        for (const n of ["test_10b_car", "test_10b_carless", "test_10b_scope", "test_10b_sled"]) {
+                        for (const n of [
+                            "test_10b_car",
+                            "test_10b_carless",
+                            "test_10b_scope",
+                            "test_10b_sled",
+                            "test_10ext_radiator",
+                            "test_10ext_mast",
+                        ]) {
                             if (r.state.blueprints[n]) r.deleteBlueprint(n);
                         }
                         r.selectBlueprintForEdit("village");
@@ -24043,6 +24159,34 @@ function startSaveServer() {
                 check(
                     "Welle 10b.1 UI: Werkstatt-Status zeigt erkannte Affordance ('fahrbar') beim Bauplan",
                     wave10bResults.statusShowsAffordance
+                );
+                // ── W10 ext. — radiating ──
+                check(
+                    "W10 ext.: _isRadiating + _tickRadiatingAffordances existieren, Label + Schwellen definiert",
+                    wave10bResults.hasRadiating &&
+                        wave10bResults.hasTickRadiating &&
+                        wave10bResults.radiatingLabel &&
+                        wave10bResults.radiatingThresholds
+                );
+                check(
+                    "W10 ext.: ein radialer Quarz-Cluster (≥3 Parts, gespreizt) → radiating=true",
+                    wave10bResults.radiatorIsRadiating
+                );
+                check(
+                    "W10 ext.: ein Quarz-Mast (alle Parts auf einer Achse) → NICHT radiating (räumliche Gate, kein Form-Whitelist)",
+                    wave10bResults.mastNotRadiating
+                );
+                check(
+                    "W10 ext.: spawnArchitecture speichert die radiating-Affordance am entry",
+                    wave10bResults.radEntryAffordance
+                );
+                check(
+                    "W10 ext.: nahe einem Strahler steigen awe + peace (Welt-Reaktion)",
+                    wave10bResults.radNearRaisesEmotion
+                );
+                check(
+                    "W10 ext.: weit weg vom Strahler keine Emotion-Änderung (Reichweite-Gate)",
+                    wave10bResults.radFarNoChange
                 );
             } else if (wave10bResults && wave10bResults.error) {
                 check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);

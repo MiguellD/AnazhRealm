@@ -21123,6 +21123,7 @@ class AnazhRealm {
         if (this._isMoveable(bp)) out.moveable = true;
         if (this._isMagnifying(bp)) out.magnifying = true;
         if (this._isFocusing(bp)) out.focusing = true;
+        if (this._isRadiating(bp)) out.radiating = true;
         return out;
     }
 
@@ -21251,6 +21252,28 @@ class AnazhRealm {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
+    }
+
+    // W10 ext. — radiating: ein resonanz-strahlendes Compound.
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound strahlen lässt:
+    //   1. resoniert-Tag über Schwelle (es schwingt stark — es HAT etwas
+    //      auszustrahlen)
+    //   2. radiale Spreizung: die Parts liegen NICHT auf einer Achse
+    //      (alignmentRatio unter radialMax) — ein Mast/eine Linie strahlt
+    //      gerichtet, ein um einen Mittelpunkt gespreiztes Compound radial
+    //   3. mindestens minParts Parts (ein Einzelteil hat keine Spreizung)
+    // Ein Ring aus Quarz-Cones strahlt genauso wie ein Sphären-Cluster —
+    // die räumliche Geste „um einen Kern gespreizt" zählt, nicht der Shape.
+    // Synergie: ein radiating-Compound trägt hohen resoniert → es bereichert
+    // zugleich die W4-V4-Symphonie (_lofiNearResonantArchitecture), ohne
+    // eine Zeile Extra-Code — die Musik HÖRT, was die Welt ausstrahlt.
+    _isRadiating(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.radiating;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.resoniert || 0) < T.resoniertMin) return false;
+        const align = this._axialAlignment(bp);
+        return align.alignmentRatio < T.radialMax;
     }
 
     // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
@@ -21583,12 +21606,47 @@ class AnazhRealm {
         }
     }
 
+    // ----- Welt-Reaktion: radiating (Resonanz wärmt das Gemüt) -----
+
+    // Pro Frame: steht der Spieler in Reichweite eines radiating-Compounds,
+    // badet ihn dessen Schwingung — awe + peace steigen sanft (Vision §3:
+    // die Welt berührt den Menschen). Der erste Kontakt mit einem bestimmten
+    // Strahler schreibt eine Erinnerung (journalAppendOnce — wiederholtes
+    // Nähern flutet das Journal nicht). Die Emotion-Rampe ist bewusst leise
+    // (~0.04/s — über ~10 s nahem Verweilen spürbar), keine schroffe Geste.
+    // Spiegelt den focusing-Tick (Architekturen filtern, Range-Check, akkum.).
+    _tickRadiatingAffordances(dt) {
+        const radiating = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.radiating);
+        if (radiating.length === 0) return;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        const emo = this.state.player && this.state.player.emotions;
+        if (!emo) return;
+        const range2 = AnazhRealm.RADIATING_RANGE_M * AnazhRealm.RADIATING_RANGE_M;
+        const step = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
+        for (const ra of radiating) {
+            if (!ra.position) continue;
+            const dx = ra.position.x - pm.x;
+            const dz = ra.position.z - pm.z;
+            if (dx * dx + dz * dz > range2) continue;
+            emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
+            emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
+            this.journalAppendOnce(
+                `radiating:${ra.id}`,
+                "growth",
+                `Eine strahlende Form schwingt nahe — ihre Resonanz wärmt das Gemüt.`,
+                { architecture: ra.type, affordance: "radiating" }
+            );
+        }
+    }
+
     // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._tickMountedMovement();
         this._tickFocusingAffordances(dt);
+        this._tickRadiatingAffordances(dt);
         this._tickPortalAffordance();
     }
 
@@ -33914,6 +33972,16 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         transparentMin: 0.5,
         wärmeMin: 0.3,
     }),
+    // W10 ext. — radiating: ein resonanz-strahlendes Compound. resoniert-Tag
+    // über Schwelle + radiale Spreizung (Parts NICHT auf einer Achse).
+    // resoniertMin = WORLD_EFFECT_THRESHOLDS.resonance_strong (1.5) — dieselbe
+    // Schwelle, ab der W4 V4 die Symphonie verdichtet; ein Stein-Dorf (resoniert
+    // ~0.6) strahlt NICHT, erst eine genuin resonante Quarz-Form (~1.8).
+    radiating: Object.freeze({
+        minParts: 3, // ein Einzelteil hat keine Spreizung
+        resoniertMin: 1.5, // das Compound schwingt STARK — es strahlt
+        radialMax: 0.6, // axiale alignmentRatio UNTER 0.6 → radial, kein Mast
+    }),
 });
 
 // Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
@@ -33949,7 +34017,11 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     moveable: "fahrbar",
     magnifying: "vergrößernd",
     focusing: "bündelnd",
+    radiating: "strahlend",
 });
+// W10 ext. — radiating-Welt-Reaktion: Reichweite + sanfte Emotion-Rampe.
+AnazhRealm.RADIATING_RANGE_M = 14;
+AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC = 0.04;
 
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
