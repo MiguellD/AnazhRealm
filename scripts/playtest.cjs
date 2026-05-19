@@ -11276,6 +11276,29 @@ function startSaveServer() {
                             }
                         }
                         out.chunkContainsSurface = floorAllSolid && ceilAllAir;
+
+                        // V9.18 Phase 4 — Höhlen entstehen mit der Welt.
+                        // Über ein 3D-Raster im Höhlen-Band: ein Teil ist Luft
+                        // (echte Höhlen) — aber nicht zu viel (die Welt ist
+                        // nicht hohl). Und der Boden unter dem Höhlen-Band
+                        // (base-32) bleibt überall fest — die Tiefen-
+                        // Hüllkurve hält die V9.12-Garantie.
+                        let caveAir = 0;
+                        let caveTotal = 0;
+                        let p4FloorSolid = true;
+                        for (let sx = -200; sx <= 200; sx += 25) {
+                            for (let sz = -200; sz <= 200; sz += 25) {
+                                if (r._terrainDensityAt(sx, cBase - 32, sz) <= 0) p4FloorSolid = false;
+                                for (let sy = cBase - 24; sy <= cBase; sy += 4) {
+                                    caveTotal++;
+                                    if (r._terrainDensityAt(sx, sy, sz) < 0) caveAir++;
+                                }
+                            }
+                        }
+                        const caveFrac = caveTotal > 0 ? caveAir / caveTotal : 0;
+                        out.cavesExist = caveFrac > 0.02;
+                        out.worldNotHollow = caveFrac < 0.5;
+                        out.caveFloorSolid = p4FloorSolid;
                     }
 
                     if (out.hasChunkGeometry) {
@@ -11389,6 +11412,15 @@ function startSaveServer() {
                 check(
                     "Voxel P2b-Politur: der Voxel-Chunk fasst das ganze Oberflächen-Band (Boden fest + Decke Luft — keine Klipp-Löcher)",
                     voxelP1Results.chunkContainsSurface
+                );
+                check("Voxel P4: die Wurm-Höhlen schnitzen echte Luft im Höhlen-Band", voxelP1Results.cavesExist);
+                check(
+                    "Voxel P4: die Welt ist nicht hohl (das Höhlen-Band bleibt überwiegend fest)",
+                    voxelP1Results.worldNotHollow
+                );
+                check(
+                    "Voxel P4: die Tiefen-Hüllkurve hält den Chunk-Boden (base-32) unter den Höhlen fest",
+                    voxelP1Results.caveFloorSolid
                 );
                 check(
                     `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
@@ -11540,7 +11572,10 @@ function startSaveServer() {
                         voxelP2bResults.hasSetActive &&
                         voxelP2bResults.hasConfig
                 );
-                check("Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)", voxelP2bResults.defaultOff);
+                check(
+                    "Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)",
+                    voxelP2bResults.defaultOff
+                );
                 check(
                     "Voxel P2b: setVoxelTerrainActive(true) füllt den Voxel-Chunk-Ring um den Spieler",
                     voxelP2bResults.activated && voxelP2bResults.ringFilled
@@ -11553,14 +11588,8 @@ function startSaveServer() {
                     "Voxel P2b: das Heightfield ruht bei aktivem Voxel-Terrain (unsichtbar + kollisionslos)",
                     voxelP2bResults.heightfieldDormant && voxelP2bResults.heightfieldCollisionDormant
                 );
-                check(
-                    "Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)",
-                    voxelP2bResults.tickBuilds
-                );
-                check(
-                    "Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks",
-                    voxelP2bResults.pruneRemovesFar
-                );
+                check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
+                check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
                 check(
                     "Voxel P2b: setVoxelTerrainActive(false) räumt alle Voxel-Chunks",
                     voxelP2bResults.deactivated && voxelP2bResults.voxelChunksCleared
@@ -11569,10 +11598,7 @@ function startSaveServer() {
                     "Voxel P2b: das Heightfield erwacht wieder (sichtbar + kollidierbar) — reversibel",
                     voxelP2bResults.heightfieldRestored && voxelP2bResults.heightfieldCollisionRestored
                 );
-                check(
-                    "Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert",
-                    voxelP2bResults.hasAttachColors
-                );
+                check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
                 check(
                     "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
                     voxelP2bResults.voxelHasFieldColors
@@ -11722,10 +11748,7 @@ function startSaveServer() {
                     voxelP3Results.snapshotHasEdit
                 );
                 check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
-                check(
-                    "Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde",
-                    voxelP3Results.chatCarveAddsEdit
-                );
+                check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
             }
 
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
@@ -11761,9 +11784,7 @@ function startSaveServer() {
                         // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
                         r.state.worldMeta.voxelEdits = [];
                         const dPre = r._terrainDensityAt(120, base - 33, 120);
-                        r.state.worldMeta.voxelEdits = [
-                            { x: 120, y: base - 33, z: 120, r: 12, strength: 48 },
-                        ];
+                        r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12, strength: 48 }];
                         out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
                         // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
                         // frieden — damit das V9.17-Füll-Gate frei ist.
@@ -11872,10 +11893,7 @@ function startSaveServer() {
                     "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
                     voxelP3cResults.hasConsume && voxelP3cResults.hasGate
                 );
-                check(
-                    "Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab",
-                    voxelP3cResults.consumeEnough
-                );
+                check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
                 check(
                     "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
                     voxelP3cResults.consumeTooLittle

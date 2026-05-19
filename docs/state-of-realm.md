@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.17)
+# Zustand des Realm — Stand: 19.05.2026 (V9.18)
+
+**V9.18 — Voxel-Terrain-Bogen Phase 4 (Höhlen + Überhänge in der Generierung)**: das 3D-Dichte-Feld gebiert natürliche Höhlen, Tunnel + Überhänge. `_terrainDensityAt` bekommt drei bewusste 3D-Schichten statt zwei uniformer Rausch-Bänder — ein grobes Roughness-Band, ein Überhang-Band (`nearSurf`-gewichtet → echte Überhänge + Felsbögen) und Wurm-Höhlen (zwei ridged-Noise-Felder, ihr Schnitt ein dünner Tunnel — Perlin-Worm-Näherung). Eine Tiefen-Hüllkurve hält die Höhlen zwischen `surf-6` und `base-28` — der Chunk-Boden `base-35` bleibt fest, die V9.12-Garantie hält. +3 Invarianten. Voller Eintrag in `CLAUDE.md` V9.18.
 
 **V9.17 — Voxel-Terrain-Bogen Phase 3c (Material-Erhaltungs-Kreis)**: das Voxel-Aufschütten wird modus-abhängig ans Inventar gekoppelt (Schöpfer-Wahl per AskUserQuestion). Im pfad-Modus ein Kreislauf — graben gibt Material, aufschütten kostet 4 Einheiten (`_voxelFillGate` + `_consumeAnyMaterial`, Spiegel von `_buildMaterialGate`); in frieden + schöpfer frei. RMB-Fill + Chat `voxel fill` gegated. Plus: ein timing-flaky Fog-Playtest geheilt (verdeckter `playerEyesUnderwater`-Eingang ausgenullt — V8.57-Disziplin). +7 Invarianten. Voller Eintrag in `CLAUDE.md` V9.17.
 

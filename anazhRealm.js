@@ -14223,9 +14223,29 @@ class AnazhRealm {
         const base = this.state.terrainBaseHeight || 0;
         const surf = base + n.noise2D(x * 0.012, z * 0.012) * 14 + n.noise2D(x * 0.045, z * 0.045) * 4;
         let d = surf - y;
-        // 3D-Verzerrung: feines Band schnitzt Tunnel, grobes Band grosse Kammern.
-        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
+        // V9.18 Phase 4 — Höhlen + Überhänge entstehen MIT der Welt.
+        // (a) Ein grobes 3D-Band bricht den reinen Heightfield-Look (Wölbung).
         d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        // (b) Überhänge: knapp an der Oberfläche wölbt ein laterales Band die
+        //     Dichte → echte Überhänge + Felsbögen, kein reines Heightfield.
+        const nearSurf = Math.max(0, 1 - Math.abs(y - surf) / 14);
+        if (nearSurf > 0) {
+            d += n.noise3D(x * 0.02, y * 0.012 + 80, z * 0.02) * nearSurf * 9;
+        }
+        // (c) Wurm-Höhlen: zwei ridged-Noise-Felder, ihr Schnitt ist ein
+        //     dünner Tunnel (Perlin-Worm-Näherung). Eine Tiefen-Hüllkurve hält
+        //     die Höhlen zwischen surf-6 (unter der Oberfläche verborgen, durch
+        //     Graben zu finden) und base-28 (der Chunk-Boden base-35 bleibt
+        //     fest — die V9.12-Garantie hält).
+        const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
+        const caveCeil = Math.max(0, Math.min(1, (surf - 6 - y) / 8));
+        const caveEnv = caveFloor * caveCeil;
+        if (caveEnv > 0) {
+            const ca = n.noise3D(x * 0.032, y * 0.034, z * 0.032);
+            const cb = n.noise3D(x * 0.032 + 130, y * 0.045 + 130, z * 0.032 + 130);
+            const worm = (1 - Math.min(1, Math.abs(ca) * 3.4)) * (1 - Math.min(1, Math.abs(cb) * 3.4));
+            d -= worm * caveEnv * 30;
+        }
         // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
         // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die
         // Edits leben in worldMeta.voxelEdits (persistiert mit der Welt).
