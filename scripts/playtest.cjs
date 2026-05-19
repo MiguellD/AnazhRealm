@@ -11606,7 +11606,15 @@ function startSaveServer() {
                         // heightfield; eine FRISCHE Welt (`fresh`) wird NICHT
                         // migriert (Eingangs-Welt bleibt heightfield, Lehrling-
                         // freundlich + deterministisch für die Test-Suite).
+                        // Das Welt-Journal wird vor dem Test gesichert + danach
+                        // restored — sonst flutet der Migrations-Genesis-Eintrag
+                        // den nachfolgenden „Journal nicht überflutet"-Test.
                         const origMeta = r.state.worldMeta;
+                        const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
+                        const origJournalSeen =
+                            r.state.worldJournal && r.state.worldJournal.seen
+                                ? Object.assign({}, r.state.worldJournal.seen)
+                                : null;
                         // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
                         const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
                         r.state.worldMeta = oldMeta;
@@ -11624,6 +11632,10 @@ function startSaveServer() {
                         r.ensureWorldMeta();
                         out.migrationRespectsOptOut = optOutMeta.voxelTerrain === false;
                         r.state.worldMeta = origMeta;
+                        if (r.state.worldJournal && origJournalEntries) {
+                            r.state.worldJournal.entries = origJournalEntries;
+                            if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
+                        }
 
                         // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
                         let anyColorAttr = false;
