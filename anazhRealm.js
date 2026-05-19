@@ -7439,7 +7439,7 @@ class AnazhRealm {
         // W4 V3 Phase 4 — der Bass-Layer (folgt den Akkord-Wurzeln, eine
         // Oktave unter dem Pad; verzahnt sich mit der Kick).
         const bassGain = ctx.createGain();
-        bassGain.gain.value = 0.32;
+        bassGain.gain.value = 0.46;
         bassGain.connect(masterGain);
         const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
         const nd = noiseBuffer.getChannelData(0);
@@ -7761,22 +7761,34 @@ class AnazhRealm {
         const now = ctx.currentTime;
         const stepDur = durSec / 8;
         const rootOffset = this._lofiChordFromDegree(degree)[0];
-        const freq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (rootOffset - 12) / 12);
+        // Die Sub-Frequenz liegt eine Oktave unter dem Pad (55-104 Hz) — der
+        // tiefe Körper. ABER ein reiner Sub-Ton ist auf kleinen Lautsprechern
+        // fast stumm (V8.92-Lehre: ~70 Hz ist die Wiedergabe-Untergrenze).
+        // Darum trägt jeder Bass-Schlag ZWEI Stimmen: die Sub (der Körper) +
+        // eine Oktav-Stimme darüber (110-208 Hz — sie trägt den Bass auch auf
+        // Anlagen, die den Tiefbass schlucken; wie der Noise-Klick die Kick).
+        const subFreq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (rootOffset - 12) / 12);
+        const voices = [
+            { freq: subFreq, attackPeak: 0.5, sustainPeak: 0.32 },
+            { freq: subFreq * 2, attackPeak: 0.46, sustainPeak: 0.3 },
+        ];
         for (const step of AnazhRealm.LOFI_GROOVE_PATTERN.kick) {
             const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
             const dur = stepDur * 1.4;
-            const osc = ctx.createOscillator();
-            osc.type = "triangle";
-            osc.frequency.value = freq;
-            const env = ctx.createGain();
-            env.gain.setValueAtTime(0, t);
-            env.gain.linearRampToValueAtTime(0.5, t + 0.03);
-            env.gain.linearRampToValueAtTime(0.32, t + dur * 0.6);
-            env.gain.linearRampToValueAtTime(0, t + dur);
-            osc.connect(env);
-            env.connect(s.lofi.bassGain);
-            osc.start(t);
-            osc.stop(t + dur + 0.05);
+            for (const voice of voices) {
+                const osc = ctx.createOscillator();
+                osc.type = "triangle";
+                osc.frequency.value = voice.freq;
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, t);
+                env.gain.linearRampToValueAtTime(voice.attackPeak, t + 0.03);
+                env.gain.linearRampToValueAtTime(voice.sustainPeak, t + dur * 0.6);
+                env.gain.linearRampToValueAtTime(0, t + dur);
+                osc.connect(env);
+                env.connect(s.lofi.bassGain);
+                osc.start(t);
+                osc.stop(t + dur + 0.05);
+            }
         }
     }
 
