@@ -256,7 +256,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (~2737 Invarianten)
+### Tests (~2910 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`
