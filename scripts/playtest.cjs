@@ -10912,6 +10912,142 @@ function startSaveServer() {
                 check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
             }
 
+            // ### W6.G P3 Phase 1 — Felsformationen ###
+            // felsbogen (ein Trilithon — ein begehbarer Überhang) + felsturm
+            // (eine vertikale Fels-Nadel) als emergente Welt-Bürger. KEIN
+            // Voxel-Terrain — das Compound-Architektur-System trägt den
+            // Überhang: die Per-Sub-Mesh-Box-Kollision lässt zwischen den
+            // zwei Pfeilern eine echte begehbare Lücke.
+            const wave6gP3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const bps = r.state.blueprints || {};
+                    const fb = bps.felsbogen;
+                    const ft = bps.felsturm;
+                    out.hasFelsbogen = !!(fb && fb.builtIn && fb.parts && fb.parts.length >= 3);
+                    out.hasFelsturm = !!(ft && ft.builtIn && ft.parts && ft.parts.length >= 3);
+
+                    // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
+                    // eine begehbare Lücke; ein Sturz spannt darüber.
+                    if (fb && fb.parts) {
+                        const boxes = fb.parts
+                            .filter((p) => p.shape === "box")
+                            .slice()
+                            .sort((a, b) => a.position.y - b.position.y);
+                        if (boxes.length >= 3) {
+                            const a = boxes[0];
+                            const b = boxes[1];
+                            const lintel = boxes[2];
+                            const innerGap = Math.abs(b.position.x - a.position.x) - (a.size.x / 2 + b.size.x / 2);
+                            out.felsbogenGap = innerGap;
+                            out.felsbogenWalkable = innerGap > 2; // Spieler-Hitbox ist ~1 m
+                            out.felsbogenLintelAbove =
+                                lintel.position.y > a.position.y && lintel.position.y > b.position.y;
+                        }
+                    }
+
+                    // Felsturm — vertikal: bbox-Höhe deutlich grösser als Breite.
+                    if (ft && ft.parts) {
+                        let minY = Infinity;
+                        let maxY = -Infinity;
+                        let minX = Infinity;
+                        let maxX = -Infinity;
+                        for (const p of ft.parts) {
+                            minY = Math.min(minY, p.position.y - p.size.y / 2);
+                            maxY = Math.max(maxY, p.position.y + p.size.y / 2);
+                            minX = Math.min(minX, p.position.x - p.size.x / 2);
+                            maxX = Math.max(maxX, p.position.x + p.size.x / 2);
+                        }
+                        out.felsturmSpanY = maxY - minY;
+                        out.felsturmSpanX = maxX - minX;
+                        out.felsturmVertical = maxY - minY > (maxX - minX) * 2;
+                    }
+
+                    // Felsbogen ist ein Stein-Compound — dicht.
+                    if (fb) {
+                        const tags = r.computeCompoundTags(fb);
+                        out.felsbogenDichte = tags ? tags.dichte || 0 : 0;
+                        out.felsbogenIsDense = out.felsbogenDichte > 0.5;
+                    }
+
+                    // spawnArchitecture("felsbogen") → Mesh + Compound-Kollision
+                    // mit mehreren Kind-Boxen. Das IST der begehbare Durchgang
+                    // auf Kollisions-Ebene — eine einzelne AABB hätte keinen.
+                    const pm = r.state.playerMesh;
+                    const px = pm ? pm.position.x : 0;
+                    const pz = pm ? pm.position.z : 0;
+                    const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
+                    out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
+                    out.felsbogenHasMesh = !!(eb && eb.mesh);
+                    out.felsbogenCompoundChildren =
+                        eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
+                    out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
+                    const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
+                    out.felsturmSpawned = !!(et && et.type === "felsturm");
+                    out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
+
+                    // Placement — die Felsformationen sind echte Welt-
+                    // Affinitäts-Kandidaten. Über ein Raster frischer Chunks
+                    // MUSS mindestens ein Felsbogen ODER Felsturm spawnen
+                    // (Seltenheit 0.07 → Landmark-Dichte, aber über 144 Chunks
+                    // statistisch sicher). Danach die Cold-Architekturen wieder
+                    // abschneiden — der Test bläht die Welt nicht dauerhaft auf.
+                    if (typeof r.populateChunkVegetation === "function") {
+                        const before = r.state.architectures.length;
+                        for (let cx = 20; cx <= 31; cx++) {
+                            for (let cz = 20; cz <= 31; cz++) r.populateChunkVegetation(cx, cz);
+                        }
+                        let fbCount = 0;
+                        let ftCount = 0;
+                        for (let i = before; i < r.state.architectures.length; i++) {
+                            const t = r.state.architectures[i].type;
+                            if (t === "felsbogen") fbCount++;
+                            else if (t === "felsturm") ftCount++;
+                        }
+                        out.placedFelsbogen = fbCount;
+                        out.placedFelsturm = ftCount;
+                        // Beide MÜSSEN erscheinen — der Hash-Münzwurf verteilt
+                        // Bogen + Turm ~50/50; ein toter Bauplan würde 0 zeigen.
+                        out.placementWorks = fbCount > 0 && ftCount > 0;
+                        r.state.architectures.length = before;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gP3Results && !wave6gP3Results.error) {
+                check("W6.G P3: Bauplan 'felsbogen' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsbogen);
+                check("W6.G P3: Bauplan 'felsturm' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsturm);
+                check(
+                    `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
+                    wave6gP3Results.felsbogenWalkable
+                );
+                check("W6.G P3: Felsbogen-Sturz spannt über den Pfeilern", wave6gP3Results.felsbogenLintelAbove);
+                check(
+                    `W6.G P3: Felsturm ist vertikal (Höhe ${(wave6gP3Results.felsturmSpanY || 0).toFixed(1)} >> Breite ${(wave6gP3Results.felsturmSpanX || 0).toFixed(1)})`,
+                    wave6gP3Results.felsturmVertical
+                );
+                check("W6.G P3: Felsbogen ist ein dichtes Stein-Compound", wave6gP3Results.felsbogenIsDense);
+                check(
+                    "W6.G P3: spawnArchitecture('felsbogen') erzeugt Mesh + Eintrag",
+                    wave6gP3Results.felsbogenSpawned && wave6gP3Results.felsbogenHasMesh
+                );
+                check(
+                    `W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene (n=${wave6gP3Results.felsbogenCompoundChildren})`,
+                    wave6gP3Results.felsbogenWalkThroughCollision
+                );
+                check(
+                    "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + Kollision",
+                    wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
+                );
+                check(
+                    `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
+                    wave6gP3Results.placementWorks
+                );
+            }
+
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
             // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
             // damagePlayer + Stamina-Kosten sind modus-gated.

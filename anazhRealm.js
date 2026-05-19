@@ -22685,6 +22685,85 @@ class AnazhRealm {
             },
         ];
 
+        // ### W6.G P3 Phase 1 — Felsformationen ###
+        // Die Roadmap (§3 W6.G P3-Rest) nennt Höhlen/Überhänge/Klippen. Die
+        // alte Falle: ein Heightfield ist pro (x,z) eindeutig — ein echter
+        // Überhang bräuchte eine andere Terrain-Repräsentation (Voxel —
+        // Re-Komplexifizierung, gegen die Heilige Lektion). Die weitsichtige
+        // Einsicht: man muss das Terrain NICHT umschreiben. Ein Felsbogen IST
+        // ein Überhang — und das Compound-Architektur-System trägt das schon.
+        // felsbogen: ein Trilithon (zwei Pfeiler + ein Sturz). Die Per-Sub-
+        // Mesh-Box-Kollision (_buildArchitectureCollision) lässt zwischen den
+        // Pfeilern eine echte begehbare Lücke — der Spieler geht hindurch UND
+        // unter dem Sturz hindurch. Ein Überhang, ohne ein einziges Voxel.
+        // Alle Pfeiler/Sturz achsen-parallel — die Box-Kollision ist damit
+        // exakt, die Lücke unmissverständlich.
+        const felsbogenParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -2.6, y: 2.5, z: 0 },
+                size: { x: 1.8, y: 5, z: 2.0 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 2.6, y: 2.5, z: 0 },
+                size: { x: 1.8, y: 5, z: 2.0 },
+            },
+            // Der Sturz — spannt über beide Pfeiler, Unterkante bei y=4.9
+            // (gut 4.9 m Durchgangshöhe, der Spieler-Hitbox-Würfel ist 1 m).
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 5.7, z: 0 },
+                size: { x: 8.4, y: 1.6, z: 2.2 },
+            },
+            // Ein verwitterter Fels-Aufsatz — bricht die Tür-Rahmen-Silhouette
+            // auf, rein dekorativ (sitzt oben, berührt die Durchgang-Lücke nicht).
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: 1.4, y: 6.9, z: 0.2 },
+                size: { x: 1.7, y: 1.5, z: 1.7 },
+                rotation: { x: 0.2, y: 0.5, z: 0.15 },
+            },
+        ];
+        // felsturm: ein verwitterter Fels-Turm — ein vertikaler Akzent, der
+        // einer Region die Klippen-/Nadel-Dramatik gibt, die ein glattes
+        // Heightfield nie hat. Ein Stapel sich verjüngender Stein-Zylinder
+        // mit leichtem Versatz (verwittert, nicht perfekt lotrecht).
+        const felsturmParts = [
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 3, z: 0 },
+                size: { x: 4.4, y: 6, z: 4.4 },
+                segments: 10,
+            },
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.3, y: 8.4, z: 0.2 },
+                size: { x: 3.0, y: 5, z: 3.0 },
+                segments: 9,
+            },
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: -0.2, y: 12.3, z: 0.4 },
+                size: { x: 1.9, y: 3, z: 1.9 },
+                segments: 8,
+            },
+            {
+                shape: "cone",
+                material: "stein",
+                position: { x: 0.1, y: 15.3, z: 0.3 },
+                size: { x: 1.7, y: 3, z: 1.7 },
+                segments: 8,
+            },
+        ];
+
         // ### Welle 9c — Welt-Werkstatt-Architekturen ###
         // Fünf Welt-Werkstätten, eine pro Nicht-Default-Domain. Sie sind
         // Bauplane mit role="workshop-station" + workshopDomain=<domain>.
@@ -22918,6 +22997,9 @@ class AnazhRealm {
                 parts: kristallGeodeParts,
             },
             glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
+            // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
+            felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, parts: felsbogenParts },
+            felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, parts: felsturmParts },
             // Welle 9c — Welt-Werkstätten
             esse: {
                 name: "esse",
@@ -24770,8 +24852,18 @@ class AnazhRealm {
 
         // Bauplan-Kandidaten für Welt-Affinitäts-Spawn. Nur Naturraum-Bauwerke
         // — Dorf/Tempel/Wasserfall bleiben Spieler-Geste. Bäume + Felsen +
-        // Geoden + Glutbrunnen sind Welt-Bürger.
+        // Geoden + Glutbrunnen sind die Streu-Bürger der Welt.
         const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+
+        // W6.G P3 — Felsformationen sind Wahrzeichen, KEINE Streu-Bürger. Sie
+        // bekommen einen EIGENEN, seltenen Pass — sie konkurrieren NICHT im
+        // Affinitäts-Pick mit den Streu-Strukturen: ein Felsbogen ist ein
+        // Superset eines Felsblocks (dieselben Stein-Boxen + ein Aufsatz),
+        // er hätte den Felsblock in der gemeinsamen Wahl verdrängt. Der
+        // Landmark-Pass hat einen uniformen Hash-Wurf (LANDMARK_RATE) — der
+        // Affinitäts-Probe-Wert unten stammt aus SimplexNoise und ist nahe
+        // 0.5 konzentriert, als Schwelle für ein seltenes Ereignis untauglich.
+        const LANDMARK_RATE = 0.014;
 
         // BASE_RATE × affinity² ist die Spawn-Wahrscheinlichkeit pro Sample.
         // 0.4 × (0.3)² = 0.036 → ~2.3 Spawns pro Chunk im Mittel; bei
@@ -24798,7 +24890,33 @@ class AnazhRealm {
                 if (!Number.isFinite(height)) continue;
                 if (height < minVegHeight || height > maxVegHeight) continue;
 
-                // Beste-Affinität-Bauplan an dieser Position.
+                // baseY-Kompensation: spawnArchitecture zieht 0.5 ab
+                // (kalibriert für at_player), wir kompensieren für Terrain.
+                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+
+                // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf.
+                // Eine Felsformation spawnt nur, wenn die Region sie trägt
+                // (felsbogen/felsturm sind dichte-getrieben → die max-Affinität
+                // passiert den Floor nur in Felsen-Regionen). WELCHE Formation
+                // — Bogen oder Turm — ist Abwechslung, kein Affinitäts-
+                // Wettstreit (Box-Substanz ist dichter als Zylinder, der Turm
+                // verlöre jede Affinitäts-Wahl): ein Hash-Münzwurf.
+                if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
+                    const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
+                    const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
+                    if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
+                        const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
+                        this.spawnArchitecture(
+                            lmName,
+                            { x: sampleX, y: height + 0.5, z: sampleZ },
+                            { seed: seedForSpawn, silent: true }
+                        );
+                        spawned++;
+                        continue; // an dieser Stelle keine zweite Struktur
+                    }
+                }
+
+                // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
                 let bestName = null;
                 let bestAffinity = 0;
                 for (const name of candidates) {
@@ -24815,11 +24933,8 @@ class AnazhRealm {
                 const chance = BASE_RATE * bestAffinity * bestAffinity;
                 if (probe >= chance) continue;
 
-                // Spawn. baseY-Kompensation: spawnArchitecture zieht 0.5 ab
-                // (kalibriert für at_player), wir kompensieren für Terrain.
-                // Zusätzlich: Glutbrunnen+Geoden haben part.y=0 als Bottom,
-                // die Kompensation bringt sie exakt auf den Boden.
-                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                // Glutbrunnen+Geoden haben part.y=0 als Bottom — die
+                // Kompensation bringt sie exakt auf den Boden.
                 this.spawnArchitecture(
                     bestName,
                     { x: sampleX, y: height + 0.5, z: sampleZ },
