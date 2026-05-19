@@ -11568,6 +11568,22 @@ function startSaveServer() {
                             r._terrainDensityAt(12, sy, -8) > 0 &&
                             r._terrainDensityAt(12, sy + 1.2, -8) <= 0;
 
+                        // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
+                        out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
+                        out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
+                        // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
+                        const ringBefore = r.state.chunkRingRadius;
+                        r.state.chunkRingRadius = 6;
+                        out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
+                        r.state.chunkRingRadius = ringBefore;
+                        // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
+                        // Aufruf für denselben Chunk spawnt nichts mehr.
+                        r._populateVoxelChunkVegetation(777, 777);
+                        out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
+                        out.voxelVegMarksChunk = !!(
+                            r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777")
+                        );
+
                         // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
                         let anyColorAttr = false;
                         let colorMin = 1;
@@ -11686,6 +11702,22 @@ function startSaveServer() {
                 check(
                     "Voxel V9.22: setVoxelTerrainActive(false) räumt auch das Voxel-Gras",
                     voxelP2bResults.voxelGrassCleared
+                );
+                check(
+                    "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
+                    voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
+                );
+                check(
+                    "Voxel V9.24: der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler (chunkRingRadius)",
+                    voxelP2bResults.voxelRingFollowsSlider
+                );
+                check(
+                    "Voxel V9.24: _populateVoxelChunkVegetation ist idempotent (zweiter Aufruf → 0)",
+                    voxelP2bResults.voxelVegIdempotent
+                );
+                check(
+                    "Voxel V9.24: _populateVoxelChunkVegetation markiert den Chunk in voxelPopulatedChunks",
+                    voxelP2bResults.voxelVegMarksChunk
                 );
             }
 

@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.23)
+# Zustand des Realm — Stand: 19.05.2026 (V9.24)
+
+**V9.24 — Voxel-Welt: die Verbindungen geheilt (Sicht-Ring + Vegetation)**: zwei Schöpfer-Browser-Befunde nach V9.23 — der Sicht-Ring-Regler tat in einer voxel-basierten Welt nichts (`_voxelChunkConfig().ringRadius` war hart 2 → folgt jetzt `chunkRingRadius`), und Strukturen erschienen nur im Start-Bereich (`populateChunkVegetation` war nur an den Heightfield-Chunk-Pfad gehängt → neuer `_populateVoxelChunkVegetation` am Voxel-Chunk-Lifecycle, geteilte Affinitäts-Logik über `_vegetationSampleSpawn`, Strukturen auf dem Voxel-Boden). Voller Eintrag in `CLAUDE.md` V9.24.
 
 **V9.23 — Voxel-Terrain-Bogen Phase 5a (Voxel als Default für neue Welten)**: der erste Schritt der Heightfield-Ablösung (Schöpfer-Wahl: schrittweise). `createNewWorld` baut neue Welten jetzt per Default voxel-basiert (`voxelTerrain`-Parameter Default `true`); die Dialog-Checkbox ist zum Heightfield-Opt-out gekippt. Alte Welten + die Eingangs-Welt behalten ihr Heightfield. Voller Eintrag in `CLAUDE.md` V9.23.
 

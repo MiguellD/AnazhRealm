@@ -28,6 +28,7 @@ class AnazhRealm {
             voxelTerrainActive: false,
             voxelChunks: null,
             voxelChunkGrass: null,
+            voxelPopulatedChunks: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -13980,23 +13981,47 @@ class AnazhRealm {
             // die Affinity-Spawns laufen NICHT doppelt. Bei einer frischen
             // Welt ist state.architectures leer → alle Chunks kriegen
             // ihre erste Saat.
-            this.state.populatedChunks = new Set();
-            for (const a of this.state.architectures || []) {
-                if (!a || !a.position) continue;
-                const cx = Math.floor((a.position.x + ws / 2) / cws);
-                const cz = Math.floor((a.position.z + ws / 2) / cws);
-                this.state.populatedChunks.add(`${cx},${cz}`);
-            }
-            let populatedCount = 0;
-            for (let cz = 0; cz < chunksPerSide; cz++) {
-                for (let cx = 0; cx < chunksPerSide; cx++) {
-                    populatedCount += this.populateChunkVegetation(cx, cz);
+            // V9.24 — eine voxel-basierte Welt bevölkert sich NICHT über den
+            // Heightfield-Pass: das Heightfield ruht (`_setHeightfieldDormant`),
+            // `ensureChunkAt` läuft für neue Bereiche nie, und der Heightfield-
+            // Pass würde die Strukturen auf der schlafenden Höhe absetzen. Der
+            // Voxel-Populator (`_populateVoxelChunkVegetation`) übernimmt — er
+            // läuft am Voxel-Chunk-Lifecycle und setzt jede Struktur auf den
+            // Voxel-Boden. Hier wird nur der Idempotenz-Cache aus dem Altbestand
+            // abgeleitet (Reload → kein Doppel-Spawn).
+            const isVoxelWorld = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
+            if (isVoxelWorld) {
+                const vspan = this._voxelChunkConfig().span;
+                this.state.voxelPopulatedChunks = new Set();
+                for (const a of this.state.architectures || []) {
+                    if (!a || !a.position) continue;
+                    const cx = Math.floor(a.position.x / vspan);
+                    const cz = Math.floor(a.position.z / vspan);
+                    this.state.voxelPopulatedChunks.add(`${cx},${cz}`);
                 }
+                this.log(
+                    `Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (${this.state.voxelPopulatedChunks.size} Chunks aus Altbestand abgeleitet)`,
+                    "INFO"
+                );
+            } else {
+                this.state.populatedChunks = new Set();
+                for (const a of this.state.architectures || []) {
+                    if (!a || !a.position) continue;
+                    const cx = Math.floor((a.position.x + ws / 2) / cws);
+                    const cz = Math.floor((a.position.z + ws / 2) / cws);
+                    this.state.populatedChunks.add(`${cx},${cz}`);
+                }
+                let populatedCount = 0;
+                for (let cz = 0; cz < chunksPerSide; cz++) {
+                    for (let cx = 0; cx < chunksPerSide; cx++) {
+                        populatedCount += this.populateChunkVegetation(cx, cz);
+                    }
+                }
+                this.log(
+                    `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
+                    "INFO"
+                );
             }
-            this.log(
-                `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
-                "INFO"
-            );
         } catch (e) {
             this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
         }
@@ -14556,7 +14581,12 @@ class AnazhRealm {
         // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
         // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64);
         // 68 × 1.8 = 122 m vertikal fasst es ganz (sonst klafft ein Loch).
-        return { dim, step, span: dim * step, ringRadius: 2, dimY: 68 };
+        // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
+        // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
+        // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
+        // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
+        const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
+        return { dim, step, span: dim * step, ringRadius, dimY: 68 };
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -14595,11 +14625,27 @@ class AnazhRealm {
         mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         this.state.scene.add(mesh);
-        this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        // V9.24 — ein Mesh OHNE Kollision wäre ein Fall-durch-Loch. Liefert
+        // der Kollisions-Builder null (eine degenerierte Surface-Nets-Geometrie
+        // ohne ein einziges gültiges Dreieck — möglich an einem fast ganz
+        // festen/leeren Rand-Chunk), wird der Chunk wie ein leerer behandelt:
+        // Mesh abräumen, als {empty:true} markieren, kein erneutes Meshen.
+        if (!collisionBody) {
+            this.state.scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
         const entry = { mesh };
         this.state.voxelChunks.set(key, entry);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
+        // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
+        // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
+        // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
+        this._populateVoxelChunkVegetation(cx, cz);
         return entry;
     }
 
@@ -25701,28 +25747,9 @@ class AnazhRealm {
         const steepness = this.state.terrainSteepness;
         const baseHeight = this.state.terrainBaseHeight;
 
-        // Bauplan-Kandidaten für Welt-Affinitäts-Spawn. Nur Naturraum-Bauwerke
-        // — Dorf/Tempel/Wasserfall bleiben Spieler-Geste. Bäume + Felsen +
-        // Geoden + Glutbrunnen sind die Streu-Bürger der Welt.
-        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
-
-        // W6.G P3 — Felsformationen sind Wahrzeichen, KEINE Streu-Bürger. Sie
-        // bekommen einen EIGENEN, seltenen Pass — sie konkurrieren NICHT im
-        // Affinitäts-Pick mit den Streu-Strukturen: ein Felsbogen ist ein
-        // Superset eines Felsblocks (dieselben Stein-Boxen + ein Aufsatz),
-        // er hätte den Felsblock in der gemeinsamen Wahl verdrängt. Der
-        // Landmark-Pass hat einen uniformen Hash-Wurf (LANDMARK_RATE) — der
-        // Affinitäts-Probe-Wert unten stammt aus SimplexNoise und ist nahe
-        // 0.5 konzentriert, als Schwelle für ein seltenes Ereignis untauglich.
-        const LANDMARK_RATE = 0.014;
-
-        // BASE_RATE × affinity² ist die Spawn-Wahrscheinlichkeit pro Sample.
-        // 0.4 × (0.3)² = 0.036 → ~2.3 Spawns pro Chunk im Mittel; bei
-        // affinity 0.6 → ~9; bei 0.9 → ~21. Natürliche Variation.
-        const BASE_RATE = 0.4;
-        const AFFINITY_FLOOR = 0.18;
-
-        const rng = this.state.worldField && this.state.worldField.rngNoise;
+        // Die Streu-/Landmark-Logik (Kandidaten, Affinitäts-Schwellen, der
+        // seltene Felsformations-Pass) lebt in `_vegetationSampleSpawn` —
+        // geteilt mit dem Voxel-Populator.
         let spawned = 0;
 
         for (let zi = 0; zi < SAMPLES; zi++) {
@@ -25741,57 +25768,101 @@ class AnazhRealm {
                 if (!Number.isFinite(height)) continue;
                 if (height < minVegHeight || height > maxVegHeight) continue;
 
-                // baseY-Kompensation: spawnArchitecture zieht 0.5 ab
-                // (kalibriert für at_player), wir kompensieren für Terrain.
                 const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                spawned += this._vegetationSampleSpawn(sampleX, sampleZ, height, seedForSpawn);
+            }
+        }
+        return spawned;
+    }
 
-                // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf.
-                // Eine Felsformation spawnt nur, wenn die Region sie trägt
-                // (felsbogen/felsturm sind dichte-getrieben → die max-Affinität
-                // passiert den Floor nur in Felsen-Regionen). WELCHE Formation
-                // — Bogen oder Turm — ist Abwechslung, kein Affinitäts-
-                // Wettstreit (Box-Substanz ist dichter als Zylinder, der Turm
-                // verlöre jede Affinitäts-Wahl): ein Hash-Münzwurf.
-                if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
-                    const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
-                    const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
-                    if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
-                        const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
-                        this.spawnArchitecture(
-                            lmName,
-                            { x: sampleX, y: height + 0.5, z: sampleZ },
-                            { seed: seedForSpawn, silent: true }
-                        );
-                        spawned++;
-                        continue; // an dieser Stelle keine zweite Struktur
-                    }
-                }
+    // V9.24 — der per-Sample-Spawn-Kern, extrahiert aus populateChunkVegetation,
+    // damit der Heightfield-Populator UND der Voxel-Populator
+    // (_populateVoxelChunkVegetation) dieselbe Affinitäts-Logik teilen — kein
+    // Parallelcode. `surfaceY` ist die Boden-Höhe an (sampleX, sampleZ): das
+    // Heightfield liefert sie aus `_terrainHeightAtWorld`, der Voxel-Boden aus
+    // `_voxelSurfaceY`. Liefert 1, wenn an dieser Stelle eine Struktur spawnte,
+    // sonst 0. baseY-Kompensation: `spawnArchitecture` zieht 0.5 ab (kalibriert
+    // für at_player), `+0.5` setzt die Struktur exakt auf den Boden.
+    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
+        // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf. Eine
+        // Felsformation spawnt nur, wenn die Region sie trägt (felsbogen/
+        // felsturm sind dichte-getrieben → die max-Affinität passiert den Floor
+        // nur in Felsen-Regionen). WELCHE Formation — Bogen oder Turm — ist
+        // Abwechslung, kein Affinitäts-Wettstreit: ein Hash-Münzwurf.
+        const LANDMARK_RATE = 0.014;
+        const BASE_RATE = 0.4;
+        const AFFINITY_FLOOR = 0.18;
+        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+        const rng = this.state.worldField && this.state.worldField.rngNoise;
 
-                // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
-                let bestName = null;
-                let bestAffinity = 0;
-                for (const name of candidates) {
-                    const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
-                    if (aff > bestAffinity) {
-                        bestAffinity = aff;
-                        bestName = name;
-                    }
-                }
-                if (!bestName || bestAffinity < AFFINITY_FLOOR) continue;
-
-                // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
-                const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
-                const chance = BASE_RATE * bestAffinity * bestAffinity;
-                if (probe >= chance) continue;
-
-                // Glutbrunnen+Geoden haben part.y=0 als Bottom — die
-                // Kompensation bringt sie exakt auf den Boden.
+        if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
+            const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
+            const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
+            if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
+                const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
                 this.spawnArchitecture(
-                    bestName,
-                    { x: sampleX, y: height + 0.5, z: sampleZ },
+                    lmName,
+                    { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
                     { seed: seedForSpawn, silent: true }
                 );
-                spawned++;
+                return 1; // an dieser Stelle keine zweite Struktur
+            }
+        }
+
+        // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
+        let bestName = null;
+        let bestAffinity = 0;
+        for (const name of candidates) {
+            const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
+            if (aff > bestAffinity) {
+                bestAffinity = aff;
+                bestName = name;
+            }
+        }
+        if (!bestName || bestAffinity < AFFINITY_FLOOR) return 0;
+
+        // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
+        const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
+        const chance = BASE_RATE * bestAffinity * bestAffinity;
+        if (probe >= chance) return 0;
+
+        this.spawnArchitecture(
+            bestName,
+            { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
+            { seed: seedForSpawn, silent: true }
+        );
+        return 1;
+    }
+
+    // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
+    // bekommt seine Streu-Strukturen (Wälder/Felsen/Geoden/Glutbrunnen +
+    // Felsformationen). Spiegelt populateChunkVegetation — 8×8-Sample-Raster,
+    // dieselbe Affinitäts-Logik (`_vegetationSampleSpawn`) — aber über die
+    // Voxel-Chunk-Bounds (`span`, origin-basiert) und mit `_voxelSurfaceY`
+    // statt `_terrainHeightAtWorld` als Höhenquelle (die Struktur sitzt auf
+    // dem Voxel-Boden, nicht auf dem schlafenden Heightfield). Idempotent
+    // über `state.voxelPopulatedChunks`. Am Voxel-Chunk-Lifecycle aufgehängt.
+    _populateVoxelChunkVegetation(cx, cz) {
+        if (!this.state.scene || !this.state.blueprints) return 0;
+        if (!this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks = new Set();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelPopulatedChunks.has(key)) return 0;
+        this.state.voxelPopulatedChunks.add(key);
+
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const SAMPLES = 8;
+        const step = span / SAMPLES;
+        let spawned = 0;
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const sampleX = ox + (xi + 0.5) * step;
+                const sampleZ = oz + (zi + 0.5) * step;
+                const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
+                if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
             }
         }
         return spawned;
