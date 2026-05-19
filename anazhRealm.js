@@ -23220,6 +23220,17 @@ class AnazhRealm {
                 resoniert: 0.45,
                 lebendig: 1.0,
             }),
+            // W6.G P4 — der Boden wird Materie. `erde` ist das Material der
+            // lebendig-getriebenen Welt-Regionen (der V8.27-Terrain-Shader
+            // blendet schon `earthCol` über `lebendig` ein). Weich, lebendig,
+            // mässig dicht — der Grund eines üppigen Ortes.
+            make("erde", "Erde", 0x6e5038, {
+                härte: 0.2,
+                dichte: 0.55,
+                zähigkeit: 0.4,
+                wärmeleitung: 0.1,
+                lebendig: 0.55,
+            }),
         ];
         const out = {};
         for (const m of list) out[m.name] = m;
@@ -24810,6 +24821,32 @@ class AnazhRealm {
         return Math.max(0, Math.min(1, score / 4));
     }
 
+    // W6.G P4 — der Boden ist Materie. Das Welt-Affinitäts-Feld (`worldFieldAt`)
+    // färbt das Terrain schon (V8.27-Shader: dichte→Stein, lebendig→Erde,
+    // glut→Lava, magieleitung→Kristall-Schimmer). `_terrainMaterialAt` liest
+    // DASSELBE Feld und nennt das Material, das der Boden an (x,z) IST: die
+    // dominante der vier Welt-Achsen bestimmt es. KEINE Biom-Tabelle — das
+    // Feld ist kontinuierlich, die Karte ist die minimale Achse→Material-
+    // Entsprechung, die der Shader schon visuell zeigt. Die Farbe, die der
+    // Spieler SIEHT, ist das Material, das er beim Graben BEKOMMT. Vision
+    // §1.3 fraktal: eine Sprache regelt Form, Verteilung, Klang — und nun
+    // den Boden selbst.
+    _terrainMaterialAt(x, z) {
+        const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
+        if (!f) return "stein";
+        const axes = [
+            [f.lebendig || 0, "erde"],
+            [f.dichte || 0, "stein"],
+            [f.glut || 0, "glut"],
+            [f.magieleitung || 0, "quarz"],
+        ];
+        let best = axes[0];
+        for (let i = 1; i < axes.length; i++) {
+            if (axes[i][0] > best[0]) best = axes[i];
+        }
+        return best[1];
+    }
+
     // Pro Chunk: sample-Raster, beste-Affinität-Bauplan wählen, Bernoulli-
     // Probe mit chance = base × affinity² → starke Bias zu hochwertigen
     // Regionen, Floor unterdrückt Mittelmaß. Probe ist deterministisch über
@@ -25712,6 +25749,21 @@ class AnazhRealm {
         const dh = -1.0;
         if (typeof this.dslRun === "function") {
             this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
+        }
+        // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
+        // genau wie harvestArchitecture eine Struktur auflöst. Das Material
+        // emergiert aus dem Welt-Affinitäts-Feld am Grabe-Ort — die Farbe, die
+        // der Spieler SIEHT, ist das Material, das er BEKOMMT. Der Yield ist
+        // lokal (NICHT im modify_terrain-DSL-Op) — nur die eigene Grabe-Geste
+        // füllt das eigene Inventar, ein mesh-broadcastetes modify_terrain nicht.
+        const digMat = this._terrainMaterialAt(target.x, target.z);
+        const digUnits = Math.max(1, Math.min(10, Math.round(r * Math.abs(dh) * 1.4)));
+        if (this.addMaterialToInventory(digMat, digUnits)) {
+            this.log(`Gegraben: ${digUnits}× ${digMat}`, "INFO");
+            const matDef = this.state.materials && this.state.materials[digMat];
+            if (matDef && typeof this.playInventoryHoverPing === "function") {
+                this.playInventoryHoverPing(matDef.tags);
+            }
         }
         return true;
     }

@@ -1280,8 +1280,8 @@ function startSaveServer() {
                 check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
                 check(
-                    "Welle 4 P1: Built-in-Anzahl exakt 12 (6 Bau + 5 Körper + 1 Vegetation/laub, V7.74)",
-                    wave4p1Results.builtInCount === 12
+                    "Welle 4 P1: Built-in-Anzahl exakt 13 (6 Bau + 5 Körper + laub + erde/W6.G-P4)",
+                    wave4p1Results.builtInCount === 13
                 );
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
                 check(
@@ -11045,6 +11045,107 @@ function startSaveServer() {
                 check(
                     `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
                     wave6gP3Results.placementWorks
+                );
+            }
+
+            // ### W6.G P4 — das Terrain wird Materie ###
+            // Der Boden gibt: ein Grabe-Hieb löst Terrain in Material auf,
+            // dessen Identität aus worldFieldAt emergiert (die Farbe, die der
+            // Spieler sieht, ist das Material, das er bekommt). Kein Voxel-
+            // Rewrite, keine Biom-Tabelle — der kontinuierliche Affinitäts-
+            // Feld trägt es. Das Terrain joint die Hylomorphismus-Sprache.
+            const wave6gP4Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const mats = r.state.materials || {};
+                    out.hasErde = !!(mats.erde && mats.erde.builtIn);
+                    out.hasTerrainMaterialAt = typeof r._terrainMaterialAt === "function";
+
+                    // Resonanz — die dominante Welt-Achse bestimmt das Material.
+                    // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
+                    const origWFA = r.worldFieldAt;
+                    const known = ["erde", "stein", "glut", "quarz"];
+                    if (out.hasTerrainMaterialAt) {
+                        const probe = (lebendig, dichte, glut, magieleitung) => {
+                            r.worldFieldAt = () => ({ lebendig, dichte, glut, magieleitung });
+                            return r._terrainMaterialAt(0, 0);
+                        };
+                        out.lebendigYieldsErde = probe(0.9, 0.2, 0.1, 0.1) === "erde";
+                        out.dichteYieldsStein = probe(0.2, 0.9, 0.1, 0.1) === "stein";
+                        out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
+                        out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
+                        r.worldFieldAt = origWFA;
+                        out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
+                        // Das Terrain ist nicht uniform — über ein Raster
+                        // emergieren ≥2 verschiedene Boden-Materialien.
+                        const seen = {};
+                        for (let x = -200; x <= 200; x += 40) {
+                            for (let z = -200; z <= 200; z += 40) {
+                                seen[r._terrainMaterialAt(x, z)] = true;
+                            }
+                        }
+                        out.terrainMaterialVariety = Object.keys(seen).length;
+                    }
+
+                    // Integration — ein Grabe-Hieb (tryMouseBreak, Terrain-Zweig)
+                    // füllt das Inventar mit dem Boden-Material. _raycastWorldHit
+                    // + _pickArchitectureAtCrosshair mocken (kein Physik-Setup).
+                    if (out.hasTerrainMaterialAt && typeof r.tryMouseBreak === "function") {
+                        const origRay = r._raycastWorldHit;
+                        const origPick = r._pickArchitectureAtCrosshair;
+                        const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+                        if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
+                        const digX = 60;
+                        const digZ = -40;
+                        r._raycastWorldHit = () => ({ hit: true, x: digX, y: 5, z: digZ });
+                        r._pickArchitectureAtCrosshair = () => null;
+                        const expectMat = r._terrainMaterialAt(digX, digZ);
+                        const inv = r.state.player.inventory;
+                        // Inventar tief snapshotten — der Grabe-Test darf den
+                        // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
+                        // prüfen „Inventar initial leer"). V8.97-Disziplin.
+                        const invSnapshot = inv.map((s) => (s ? { ...s } : null));
+                        const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
+                        const ok = r.tryMouseBreak();
+                        const dugSlot = inv.find((s) => s && s.kind === "material" && s.material === expectMat);
+                        out.digReturned = ok === true;
+                        out.digYieldedMaterial =
+                            !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
+                        out.digYieldMatchesField = !!dugSlot;
+                        out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
+                        for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+                        r._raycastWorldHit = origRay;
+                        r._pickArchitectureAtCrosshair = origPick;
+                        if (typeof r.setGameMode === "function") r.setGameMode(origMode);
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gP4Results && !wave6gP4Results.error) {
+                check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
+                check("W6.G P4: _terrainMaterialAt-Methode existiert", wave6gP4Results.hasTerrainMaterialAt);
+                check(
+                    "W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material",
+                    wave6gP4Results.returnsKnownMaterial
+                );
+                check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
+                check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);
+                check("W6.G P4: glut-dominante Region → glut (Resonanz)", wave6gP4Results.glutYieldsGlut);
+                check("W6.G P4: magie-dominante Region → quarz (Resonanz)", wave6gP4Results.magieYieldsQuarz);
+                check(
+                    `W6.G P4: das Terrain ist nicht uniform (${wave6gP4Results.terrainMaterialVariety} Boden-Materialien über das Raster)`,
+                    (wave6gP4Results.terrainMaterialVariety || 0) >= 2
+                );
+                check(
+                    "W6.G P4: ein Grabe-Hieb (tryMouseBreak) füllt das Inventar mit Boden-Material",
+                    wave6gP4Results.digReturned && wave6gP4Results.digYieldedMaterial
+                );
+                check(
+                    "W6.G P4: das gegrabene Material entspricht worldFieldAt am Grabe-Ort + der Yield ist in [1,10]",
+                    wave6gP4Results.digYieldMatchesField && wave6gP4Results.digYieldCountSane
                 );
             }
 
