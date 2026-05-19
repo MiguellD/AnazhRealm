@@ -253,7 +253,7 @@ Plus: inline-styles aus `index.html` entfernt (`#fps`, `#state-file-input`), Inl
 | **6.D — Stats fraktal** ⭐ | Soul × Soul-Material → Tags → Stats; Boosts (Konsum + Emotion + Welt-Effekt); Min-Regel-Hybrid (decay 0.7); Tod = Phönix-Wandlung + Welt-Trauer | 3-4 Sessions | W5 + 6.F2 |
 | **6.E — Lesbarkeit** | Fähigkeit-Beschreibung ✅ (6.E1), Intro-Overlay ✅ (6.E2), subtile Tooltips (6.E3 — wartet) | 2 Sessions, **2/3 erledigt** | – |
 | **6.F — Original-Crafting (alt 6.1-6.7)** | Visuelle Verbindungs-Linien, Brech-Mechanik, Energiequellen, Kreaturen-Körper als Baukasten, Physik-Constraints (Ammo Hinge/Fixed), Rüstung → in 6.D integriert | 8-10 Sessions | W5 |
-| **6.G — Welt-Sinne** (NEU, 13.05.2026) | **Phase 1 ✅ V7.73** + **Phase 1.5 ✅ V7.74** + **Phase 2 ✅ V7.75** (Welt-Affinitäts-Feld — 4 SimplexNoise-Schichten als Tag-Sprache, populateChunkVegetation füllt Chunks via Affinity-Resonanz, drei neue Baupläne stein_block/kristall_geode/glutbrunnen, organische Region-Emergenz ohne Biome-Tabelle, Schöpfer-Vision „wie kommt Welt-Leben rein" beantwortet). Phase 3 grösstenteils ✅ von W6.G4 (V8.27-V8.33: Schatten, Shader, Sterne-Stabilisierung + Variation, Wasser als Material+Layer). OFFEN aus der Phase-3-Liste nur noch: Terrain-Höhlen/Überhänge/Klippen — siehe §3 „Offene Punkte nach V8.80" (W6.G P3-Rest) | 7-9 Sessions, **Phase 1+1.5+2 + W6.G4 erledigt**, Höhlen-Rest = 4-5 Sessions | – (Phase 1+2) / 6.D (Phase 3) |
+| **6.G — Welt-Sinne** (NEU, 13.05.2026) | **Phase 1 ✅ V7.73** + **Phase 1.5 ✅ V7.74** + **Phase 2 ✅ V7.75** (Welt-Affinitäts-Feld — 4 SimplexNoise-Schichten als Tag-Sprache, populateChunkVegetation füllt Chunks via Affinity-Resonanz, drei neue Baupläne stein_block/kristall_geode/glutbrunnen, organische Region-Emergenz ohne Biome-Tabelle, Schöpfer-Vision „wie kommt Welt-Leben rein" beantwortet). Phase 3 grösstenteils ✅ von W6.G4 (V8.27-V8.33: Schatten, Shader, Sterne-Stabilisierung + Variation, Wasser als Material+Layer). Phase 3 W6.G-P3-Rest **Phase 1 ✅ V9.03** (Felsformationen — `felsbogen` + `felsturm`). Echte Höhlen/Tunnel/Überhänge → der **Voxel-Terrain-Bogen** (ab V9.07, §3) — das Heightfield wird ein 3D-Dichte-Feld | 7-9 Sessions, **Phase 1+1.5+2 + W6.G4 + P3-Felsformationen erledigt**, der Rest läuft im Voxel-Bogen | – (Phase 1+2) / 6.D (Phase 3) |
 | **6.H — Kreaturen-Aufträge** (NEU, 13.05.2026) | Autonome Co-Schöpfer. **Phase 1 ✅ V7.79** (wander/follow_player/wait + Aura + Audio + Journal). **Phase 2A ✅ V7.80** (Hylomorphismus — Kreaturen sind Compounds aus bodyParts×Material wie Spieler+Architektur). **Phase 2B.1 ✅ V7.81** (gather + memory). **Phase 2B.5 ✅ V7.82** (harvestArchitecture als Wurzel-Funktion + Material-Inventar + carrying-Bring-Phase). **Phase 2C ✅ V7.83** (computeBuildCost als wertneutrale Spiegelung, modus-symmetrisch). **Phase 2B.2 ✅ V7.84** (Kreatur baut für Spieler — Geste-Umkehrung zu gather: take→walk→spawn). **Phase 2D ✅ V7.85** (Spezialisierung aus Memory: gather:material und build:blueprint je 3 Erfolge ein Level, max 5; Speed-Bonus +15 %/Level; Audio + Journal bei Level-Up; UI-Pills Sammler/Bauer in Liste; KEINE Persistenz — Vision §1.1 konsequent). **Phase 2E 🔴 offen** (Konversationen — „Nira, was hast du gesehen?" via LLM-Provider mit pro-Kreatur memory + Specs als System-Prompt-Erweiterung; Specs sind jetzt Identitäts-Anker). 4-5 Sessions Original-Schätzung; aktuell 7 Sessions investiert (V7.79-V7.85) — bewusst tiefer als Plan, weil Hylomorphismus-Wurzel sich beim Bauen offenbarte | original 4-5 Sessions, jetzt 7/8 erledigt | 6.F4 (Multi-Mesh-Kreaturen, in 6.H P2A integriert) + 6.A4 (Raycast, in 6.A6 erledigt) |
 
 **Vision-Hebel der Welle**: Block 6.D macht den Spieler zum **Compound im selben Hylomorphismus-System** wie Materialien und Bauwerke. `STAT_FROM_TAGS`-Matrix analog `FORM_TAG_ACTIVATION`. Wenn das Stat-System ohne Bezug zu `MATERIAL_TAG_KEYS` funktioniert, wurde die Vision verfehlt — explizite Warnung im Design-Doc §9.
@@ -772,8 +772,10 @@ Ein Selbst-Audit nach V8.80 sammelte alle ehrlich-benannten offenen Punkte und p
 | 3 | **W4 V2** | Lofi-Musik-Schicht (Pad-Layer 60 BPM, emotion-moduliert) — siehe §2-Tabelle. | 1-2 Sessions | ✅ **live (V8.84)** |
 | 4 | **W16-Politur** | (a) Hash-Verifikation des empfangenen Welt-Bündels (der Katalog trägt den Content-Hash, der Empfänger prüft ihn nach dem Pull — bei Abweichung wird die Welt verworfen); (b) ein weicher Pull-Timeout (`_p2pCheckBundlePullTimeout` aus `p2pTick` gibt einen hängenden Pull nach 30 s frei). | ~1 Session | ✅ **live (V8.96)** |
 | 5 | **W10 ext.** | ✅ **VOLLSTÄNDIG** — vier weitere Affordances, räumliche Analyse + Welt-Reaktion, KEIN Form-Whitelist. `radiating` (V8.97) + `broadcasting` (V8.98) + Stärke-Politur (V8.99, die Wirkung skaliert mit der Substanz) + `balancing` (V9.00) + `lifting` (V9.01 — ein magie-geladenes leichtes Compound erzeugt ein Auftriebs-Feld, die erste physik-gekoppelte Reaktion). Sieben Affordances, ein Muster. | erledigt | ✅ 4/4 + Stärke-Politur |
-| 6 | **W15-Politur** | Branch-Namen mit Slash (`feature/x`) im GitHub-Fetch auflösen (braucht eine SHA-Auflösung vor der Trees-API). | ~0.5 Session | 🔴 offen |
-| 7 | **W6.G P3-Rest** | Terrain-Höhlen/Überhänge/Klippen — der einzige nicht von W6.G4 abgedeckte Rest der alten 6.G-Phase-3-Liste. Ein Heightfield ist pro (x,z) eindeutig → Überhänge brauchen eine andere Terrain-Repräsentation (Voxel-Schichten oder angeheftete Überhang-Meshes). Eigene grosse Welle, kein Quick-Win. | 4-5 Sessions | 🔴 offen |
+| 6 | **W15-Politur** | Branch-Namen mit Slash (`feature/x`) im GitHub-Fetch auflösen (braucht eine SHA-Auflösung vor der Trees-API). | ~0.5 Session | ✅ **live (V9.02)** |
+| 7 | **W6.G P3-Rest** | Terrain-Höhlen/Überhänge/Klippen. **Phase 1 ✅ (V9.03 — Felsformationen)**: `felsbogen` + `felsturm` als emergente Compound-Architekturen. **Echte Höhlen/Tunnel/Überhänge** sind seit V9.07 in den **Voxel-Terrain-Bogen** überführt (siehe unten — der Schöpfer-Reframe: das Heightfield wird ein 3D-Dichte-Feld; die alte „Portal-Höhle Phase 2" ist damit überholt). | Phase 1 erledigt; der Rest → Voxel-Bogen | ✅ Phase 1 (V9.03); Rest → Voxel |
+| 8 | **W6.G P4 — das Terrain wird Materie** | Schöpfer-Befund: alles Materielle spricht die Hylomorphismus-Sprache, nur das Terrain nicht — der Boden abbauen gab nichts. Ein Grabe-Hieb yieldet jetzt Material aus `_terrainMaterialAt` (die dominante `worldFieldAt`-Achse → erde/stein/glut/quarz) — die Farbe = das Material. Kein Voxel-Rewrite, keine Biom-Tabelle. | erledigt | ✅ **live (V9.04)** |
+| 9 | **Visuelle Synergie Struktur/Terrain** | Volumenkörper (Bauwerke, Felsen) wirken aufgesetzt-starr auf dem Terrain-Sheet — kein Einbetten, keine Verzahnung (Schöpfer-Befund V9.03). Ein Sockel/Saum am Strukturfuss, leichte Terrain-Verformung um die Standfläche, weniger Box-Starrheit. Ästhetik-Welle. | 1-2 Sessions | 🔴 offen |
 
 #### W4 V3 — die generative Symphonie (Schöpfer-Wunsch 18.05.2026) — ✅ VOLLSTÄNDIG (V8.85-V8.93)
 
@@ -798,7 +800,33 @@ Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, 
 
 ---
 
-#### W4 V4 — die Musik hört die Welt (V8.95, 19.05.2026) — ✅ ERLEDIGT
+#### Der Voxel-Terrain-Bogen — das formbare Terrain (geplant, 19.05.2026)
+
+**Schöpfer-Einsicht nach V9.06:** „Voxel-Terrain scheint der wahre Weg — alles andere fake, nicht die volle Vision." Richtig. Das Heightfield ist eine HALB-formbare Welt: man kann Säulen heben/senken, nicht schnitzen. Der Felsbogen (V9.03, ein Trilithon AUF dem Terrain) und die Portal-Höhle (ein separater Raum) sind ehrliche Ingenieursarbeit MIT einem Heightfield — aber Workarounds. Die Vision (§1.3 fraktal, der Spieler als Co-Schöpfer, Materie ist formbar) verlangt, dass der **Boden selbst** wahre, formbare Materie ist: echte Tunnel, echte Höhlen, echte Überhänge — in den Hügel geschnitzt, nicht daneben gestellt.
+
+**Zur Heiligen Lektion:** sie warnt vor *Komplexität OHNE Fundament* (der 19-Modul-Kollaps). Ein Voxel-Terrain ist NICHT 20 Module — es ist EIN Subsystem (das Heightfield) durch seine wahrere Form ersetzt, auf einem heute soliden Fundament (~2850 Invarianten, ein erprobtes Chunk-System). Es ist ein grosser Wachstumsring, kein Re-Komplexifizieren — solange er **phasiert + parallel + jede Phase playtest-grün** gebaut wird.
+
+**Was das Projekt schon trägt** (es ist überraschend gut positioniert):
+- Chunk-Streaming + Distance-Culling — bleibt unverändert.
+- `btBvhTriangleMeshShape`-Kollision aus Chunk-Vertices — bleibt (ein Voxel-Mesh liefert dieselbe Kollision).
+- `caveNoise.noise3D()` — die 3D-Noise-Infrastruktur ist schon da.
+- `aField`-per-Vertex (Terrain-Shader) — trägt über.
+- `chunkDeltas` (persistierte Welt-Modifikationen) — werden 3D-Edits statt 2D.
+- V9.03 Felsformationen + V9.04 Terrain-als-Materie — bleiben (Felsen + Grabe-Yield AUF/IN dem Voxel-Terrain).
+
+**Disziplin:** das Voxel-Terrain wird PARALLEL gebaut + bewiesen, bevor es das Heightfield ablöst — nie das Funktionierende brechen. Hinter einem Flag, bis solide.
+
+**Phasen:**
+1. **✅ ERLEDIGT (V9.07) — das Dichte-Feld + Surface Nets (ein Chunk).** `_terrainDensityAt(x,y,z)` — 3D-Noise, >0 fest / <0 Luft, mit echten Höhlen + Überhängen. `_voxelChunkGeometry` — Surface Nets (statt einer fehler-anfälligen 256-Marching-Cubes-Tabelle die explizite Zwei-Pass-Form). `_spawnVoxelTestChunk` + Chat `voxel test` — der Beweis-Chunk. Parallel-System, kein Eingriff ins Heightfield. +10 Invarianten.
+2. **← NÄCHSTE WELLE — Kollision + Chunk-Streaming.** Der gemeshte Chunk bekommt `btBvhTriangleMeshShape`; Voxel-Chunks streamen im Ring. Der Spieler geht auf Voxel-Terrain. Eine neue Welt kann voxel-basiert sein (Flag).
+3. **3D-`modify_terrain` — echtes Graben.** `modify_terrain` schnitzt das Dichte-Feld in 3D — eine Kugel „Luft" subtrahiert → ein echtes Loch, ein Tunnel, eine Höhle. Der Moment, den der Schöpfer will.
+4. **Höhlen + Überhänge in der Generierung.** Das 3D-Noise gebiert natürliche Höhlen, Überhänge, Felsbögen — die Welt kommt mit ihnen zur Welt.
+5. **Materialien + Shader + Politur + Ablösung.** `aField` per Vertex, Terrain-Material-Harvest (V9.04), Cel-Shading auf dem Voxel-Mesh. Das Heightfield wird abgelöst, alte Welten migrieren.
+
+**Ehrliches Risiko:** gross. Marching Cubes ist rechenintensiver als ein Heightfield-Grid; die Save-Migration alter Heightfield-Welten; die schiere Menge (Mehr-Sessions-Bogen). Darum die Disziplin: parallel, phasiert, jede Phase grün — und ein Browser-Beweis pro Phase (headless prüft die Mechanik, das Schöpfer-Auge die Erfahrung).
+
+---
+
 
 Alle drei Sub-Schritte in einem Commit, playtest-grün (+6 Invarianten): (1) `_lofiWorldField` → `_lofiApplyWorldTimbre` färbt die Klangfarbe (`lebendig` → Pad-Filter 750-1050 Hz, `dichte` → `bassGain` 0.40-0.56, `magieleitung` → verstimmter Oktav-Schimmer, `glut` → schärferes Hihat); (2) `_lofiNextDegree` bekommt den schwachen Welt-Feld-Bias (Gewicht 0.4 gegen Emotion 0.8 — seed-fix gemessen, dass die Emotion dominant bleibt); (3) `_lofiNearResonantArchitecture` gated die Pad-Stimmen-Dopplung — ein resonantes Bauwerk „singt mit". Synergie-Welle, kein neuer Stamm. Detail: `CLAUDE.md` V8.95.
 

@@ -12745,6 +12745,13 @@ class AnazhRealm {
             this.proactiveSuggestions();
         }
 
+        // Voxel-Terrain-Bogen Phase 1 — `voxel test` mesht einen Voxel-
+        // Chunk neben dem Spieler (Beweis, kein Eingriff ins Heightfield).
+        if (command.toLowerCase().trim() === "voxel test") {
+            this._spawnVoxelTestChunk();
+            return;
+        }
+
         // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
         // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
         // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
@@ -14150,6 +14157,198 @@ class AnazhRealm {
             }
         }
         return Math.max(-100, Math.min(100, h));
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 1 — das Dichte-Feld + Surface Nets ###
+    // Der Schöpfer-Befund: ein Heightfield ist halb-formbar (Säulen heben/
+    // senken, nicht schnitzen). Echte Tunnel/Höhlen/Überhänge brauchen ein
+    // 3D-Dichte-Feld. Phase 1 baut es PARALLEL — kein Eingriff ins Height-
+    // field, ein visueller Beweis-Chunk. Phasen 2-5: Kollision, 3D-Graben,
+    // Generierung, Ablösung. Siehe docs/roadmap.md „Der Voxel-Terrain-Bogen".
+
+    // Das 3D-Dichte-Feld: > 0 fest, < 0 Luft, 0 die Oberfläche. Eine
+    // rollende 2D-Noise-Oberfläche (`surf − y` reproduziert das Height-
+    // field) PLUS zwei 3D-Noise-Bänder, die Höhlen schnitzen + Überhänge
+    // wölben — das, was ein Heightfield pro (x,z) nie kann.
+    _terrainDensityAt(x, y, z) {
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const n = this._voxelNoise;
+        const base = this.state.terrainBaseHeight || 0;
+        const surf = base + n.noise2D(x * 0.012, z * 0.012) * 14 + n.noise2D(x * 0.045, z * 0.045) * 4;
+        let d = surf - y;
+        // 3D-Verzerrung: feines Band schnitzt Tunnel, grobes Band grosse Kammern.
+        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
+        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        return d;
+    }
+
+    // Surface Nets — ein 3D-Dichte-Feld zu einem glatten Mesh. Zwei Pässe:
+    // (1) je Zelle, die die Oberfläche schneidet, EIN Vertex (gemittelt aus
+    // den Kanten-Kreuzungen); (2) je Gitter-Kante mit Vorzeichenwechsel ein
+    // Quad aus den 4 umliegenden Zell-Vertices. Explizite (i,j,k)-Indizes +
+    // ein cellVert-Lookup — keine magische 256-Tabelle, gut prüfbar.
+    // Liefert eine THREE.BufferGeometry oder null (leeres Volumen).
+    _voxelChunkGeometry(ox, oy, oz, dim, step) {
+        const N = dim + 1;
+        const density = new Float32Array(N * N * N);
+        const gi = (i, j, k) => i + j * N + k * N * N;
+        for (let k = 0; k < N; k++) {
+            for (let j = 0; j < N; j++) {
+                for (let i = 0; i < N; i++) {
+                    density[gi(i, j, k)] = this._terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
+                }
+            }
+        }
+        // Die 12 Würfel-Kanten als Eck-Paare (Eck c: bit0=x, bit1=y, bit2=z).
+        const EDGES = [
+            [0, 1],
+            [0, 2],
+            [0, 4],
+            [1, 3],
+            [1, 5],
+            [2, 3],
+            [2, 6],
+            [3, 7],
+            [4, 5],
+            [4, 6],
+            [5, 7],
+            [6, 7],
+        ];
+        const cellVert = new Int32Array(dim * dim * dim).fill(-1);
+        const ci = (i, j, k) => i + j * dim + k * dim * dim;
+        const positions = [];
+        const solid = (v) => v > 0;
+        // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
+        for (let k = 0; k < dim; k++) {
+            for (let j = 0; j < dim; j++) {
+                for (let i = 0; i < dim; i++) {
+                    const corner = new Array(8);
+                    let mask = 0;
+                    for (let c = 0; c < 8; c++) {
+                        const cx = i + (c & 1);
+                        const cy = j + ((c >> 1) & 1);
+                        const cz = k + ((c >> 2) & 1);
+                        corner[c] = density[gi(cx, cy, cz)];
+                        if (solid(corner[c])) mask |= 1 << c;
+                    }
+                    if (mask === 0 || mask === 0xff) continue;
+                    let vx = 0;
+                    let vy = 0;
+                    let vz = 0;
+                    let count = 0;
+                    for (const [a, b] of EDGES) {
+                        if (solid(corner[a]) === solid(corner[b])) continue;
+                        const da = corner[a];
+                        const db = corner[b];
+                        const denom = da - db;
+                        const t = Math.abs(denom) > 1e-9 ? da / denom : 0.5;
+                        const ax = a & 1;
+                        const ay = (a >> 1) & 1;
+                        const az = (a >> 2) & 1;
+                        const bx = b & 1;
+                        const by = (b >> 1) & 1;
+                        const bz = (b >> 2) & 1;
+                        vx += ax + (bx - ax) * t;
+                        vy += ay + (by - ay) * t;
+                        vz += az + (bz - az) * t;
+                        count++;
+                    }
+                    if (count === 0) continue;
+                    const s = 1 / count;
+                    cellVert[ci(i, j, k)] = positions.length / 3;
+                    positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
+                }
+            }
+        }
+        if (positions.length === 0) return null;
+        // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad.
+        const indices = [];
+        const quad = (a, b, c, d) => {
+            if (a < 0 || b < 0 || c < 0 || d < 0) return;
+            indices.push(a, b, c, a, c, d);
+        };
+        for (let k = 0; k <= dim; k++) {
+            for (let j = 0; j <= dim; j++) {
+                for (let i = 0; i <= dim; i++) {
+                    const s0 = solid(density[gi(i, j, k)]);
+                    // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
+                    if (i < dim && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
+                        quad(
+                            cellVert[ci(i, j - 1, k - 1)],
+                            cellVert[ci(i, j, k - 1)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i, j - 1, k)]
+                        );
+                    }
+                    // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
+                    if (j < dim && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
+                        quad(
+                            cellVert[ci(i - 1, j, k - 1)],
+                            cellVert[ci(i, j, k - 1)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i - 1, j, k)]
+                        );
+                    }
+                    // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
+                    if (k < dim && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
+                        quad(
+                            cellVert[ci(i - 1, j - 1, k)],
+                            cellVert[ci(i, j - 1, k)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i - 1, j, k)]
+                        );
+                    }
+                }
+            }
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        if (indices.length > 0) geom.setIndex(indices);
+        geom.computeVertexNormals();
+        return geom;
+    }
+
+    // Phase-1-Beweis: ein Voxel-Chunk wird gemesht + neben dem Spieler in
+    // die Szene gestellt. Ein zweiter Aufruf ersetzt den alten. KEIN
+    // Eingriff ins Heightfield — ein reines Parallel-Artefakt.
+    _spawnVoxelTestChunk() {
+        if (!this.state.scene) return null;
+        if (this._voxelTestMesh) {
+            this.state.scene.remove(this._voxelTestMesh);
+            if (this._voxelTestMesh.geometry) this._voxelTestMesh.geometry.dispose();
+            if (this._voxelTestMesh.material) this._voxelTestMesh.material.dispose();
+            this._voxelTestMesh = null;
+        }
+        const pm = this.state.playerMesh;
+        const px = pm ? pm.position.x : 0;
+        const pz = pm ? pm.position.z : 0;
+        const base = this.state.terrainBaseHeight || 0;
+        const dim = 24;
+        const stepSize = 1.6;
+        const ox = px + 22;
+        const oy = base - 20;
+        const oz = pz - dim * stepSize * 0.5;
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, stepSize);
+        if (!geom) {
+            this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
+            return null;
+        }
+        const mat = new THREE.MeshToonMaterial({
+            color: 0x6e5038,
+            side: THREE.DoubleSide,
+        });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.state.scene.add(mesh);
+        this._voxelTestMesh = mesh;
+        const vCount = geom.getAttribute("position").count;
+        this.log(`Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets, Phase 1).`, "INFO");
+        return mesh;
     }
 
     // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für
@@ -22309,7 +22508,19 @@ class AnazhRealm {
             // einzuführen (kostspielig), skalieren wir die Farbe sichtbar:
             // 0.4 Präzision → 76%, 0.97 → 98.8%. Eine lumpige Hand-Kugel
             // wirkt damit grau-matt, eine polierte hat ihre volle Farbe.
-            const baseColor = typeof part.color === "number" ? part.color : 0xffffff;
+            // V9.06 — die Farbe kommt aus dem Material, wenn kein explizites
+            // part.color gesetzt ist. Hylomorphismus: das Material IST die
+            // Substanz, seine Farbe gehört dazu. Ein explizites part.color
+            // (Werkstatt-Wahl) hat Vorrang; erst ohne beides → Weiss.
+            // Vorher: fehlte part.color, rendete der Part WEISS — die nach
+            // V7.74 material-basierten Baupläne (Bäume/Felsen/Felsbogen)
+            // waren darum alle weiss statt stein-grau/holz-braun/laub-grün.
+            let baseColor = typeof part.color === "number" ? part.color : null;
+            if (baseColor === null && typeof part.material === "string") {
+                const matDef = this.state.materials && this.state.materials[part.material];
+                if (matDef && typeof matDef.color === "number") baseColor = matDef.color;
+            }
+            if (baseColor === null) baseColor = 0xffffff;
             const precision = this.computePartPrecision(part);
             const brightness = 0.6 + 0.4 * Math.max(0, Math.min(1, precision));
             const r8 = (baseColor >> 16) & 0xff;
@@ -22685,6 +22896,85 @@ class AnazhRealm {
             },
         ];
 
+        // ### W6.G P3 Phase 1 — Felsformationen ###
+        // Die Roadmap (§3 W6.G P3-Rest) nennt Höhlen/Überhänge/Klippen. Die
+        // alte Falle: ein Heightfield ist pro (x,z) eindeutig — ein echter
+        // Überhang bräuchte eine andere Terrain-Repräsentation (Voxel —
+        // Re-Komplexifizierung, gegen die Heilige Lektion). Die weitsichtige
+        // Einsicht: man muss das Terrain NICHT umschreiben. Ein Felsbogen IST
+        // ein Überhang — und das Compound-Architektur-System trägt das schon.
+        // felsbogen: ein Trilithon (zwei Pfeiler + ein Sturz). Die Per-Sub-
+        // Mesh-Box-Kollision (_buildArchitectureCollision) lässt zwischen den
+        // Pfeilern eine echte begehbare Lücke — der Spieler geht hindurch UND
+        // unter dem Sturz hindurch. Ein Überhang, ohne ein einziges Voxel.
+        // Alle Pfeiler/Sturz achsen-parallel — die Box-Kollision ist damit
+        // exakt, die Lücke unmissverständlich.
+        const felsbogenParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -2.6, y: 2.5, z: 0 },
+                size: { x: 1.8, y: 5, z: 2.0 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 2.6, y: 2.5, z: 0 },
+                size: { x: 1.8, y: 5, z: 2.0 },
+            },
+            // Der Sturz — spannt über beide Pfeiler, Unterkante bei y=4.9
+            // (gut 4.9 m Durchgangshöhe, der Spieler-Hitbox-Würfel ist 1 m).
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 5.7, z: 0 },
+                size: { x: 8.4, y: 1.6, z: 2.2 },
+            },
+            // Ein verwitterter Fels-Aufsatz — bricht die Tür-Rahmen-Silhouette
+            // auf, rein dekorativ (sitzt oben, berührt die Durchgang-Lücke nicht).
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: 1.4, y: 6.9, z: 0.2 },
+                size: { x: 1.7, y: 1.5, z: 1.7 },
+                rotation: { x: 0.2, y: 0.5, z: 0.15 },
+            },
+        ];
+        // felsturm: ein verwitterter Fels-Turm — ein vertikaler Akzent, der
+        // einer Region die Klippen-/Nadel-Dramatik gibt, die ein glattes
+        // Heightfield nie hat. Ein Stapel sich verjüngender Stein-Zylinder
+        // mit leichtem Versatz (verwittert, nicht perfekt lotrecht).
+        const felsturmParts = [
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 3, z: 0 },
+                size: { x: 4.4, y: 6, z: 4.4 },
+                segments: 10,
+            },
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.3, y: 8.4, z: 0.2 },
+                size: { x: 3.0, y: 5, z: 3.0 },
+                segments: 9,
+            },
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: -0.2, y: 12.3, z: 0.4 },
+                size: { x: 1.9, y: 3, z: 1.9 },
+                segments: 8,
+            },
+            {
+                shape: "cone",
+                material: "stein",
+                position: { x: 0.1, y: 15.3, z: 0.3 },
+                size: { x: 1.7, y: 3, z: 1.7 },
+                segments: 8,
+            },
+        ];
+
         // ### Welle 9c — Welt-Werkstatt-Architekturen ###
         // Fünf Welt-Werkstätten, eine pro Nicht-Default-Domain. Sie sind
         // Bauplane mit role="workshop-station" + workshopDomain=<domain>.
@@ -22918,6 +23208,9 @@ class AnazhRealm {
                 parts: kristallGeodeParts,
             },
             glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
+            // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
+            felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, parts: felsbogenParts },
+            felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, parts: felsturmParts },
             // Welle 9c — Welt-Werkstätten
             esse: {
                 name: "esse",
@@ -23137,6 +23430,17 @@ class AnazhRealm {
                 brennbar: 0.85,
                 resoniert: 0.45,
                 lebendig: 1.0,
+            }),
+            // W6.G P4 — der Boden wird Materie. `erde` ist das Material der
+            // lebendig-getriebenen Welt-Regionen (der V8.27-Terrain-Shader
+            // blendet schon `earthCol` über `lebendig` ein). Weich, lebendig,
+            // mässig dicht — der Grund eines üppigen Ortes.
+            make("erde", "Erde", 0x6e5038, {
+                härte: 0.2,
+                dichte: 0.55,
+                zähigkeit: 0.4,
+                wärmeleitung: 0.1,
+                lebendig: 0.55,
             }),
         ];
         const out = {};
@@ -24728,6 +25032,32 @@ class AnazhRealm {
         return Math.max(0, Math.min(1, score / 4));
     }
 
+    // W6.G P4 — der Boden ist Materie. Das Welt-Affinitäts-Feld (`worldFieldAt`)
+    // färbt das Terrain schon (V8.27-Shader: dichte→Stein, lebendig→Erde,
+    // glut→Lava, magieleitung→Kristall-Schimmer). `_terrainMaterialAt` liest
+    // DASSELBE Feld und nennt das Material, das der Boden an (x,z) IST: die
+    // dominante der vier Welt-Achsen bestimmt es. KEINE Biom-Tabelle — das
+    // Feld ist kontinuierlich, die Karte ist die minimale Achse→Material-
+    // Entsprechung, die der Shader schon visuell zeigt. Die Farbe, die der
+    // Spieler SIEHT, ist das Material, das er beim Graben BEKOMMT. Vision
+    // §1.3 fraktal: eine Sprache regelt Form, Verteilung, Klang — und nun
+    // den Boden selbst.
+    _terrainMaterialAt(x, z) {
+        const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(x, z) : null;
+        if (!f) return "stein";
+        const axes = [
+            [f.lebendig || 0, "erde"],
+            [f.dichte || 0, "stein"],
+            [f.glut || 0, "glut"],
+            [f.magieleitung || 0, "quarz"],
+        ];
+        let best = axes[0];
+        for (let i = 1; i < axes.length; i++) {
+            if (axes[i][0] > best[0]) best = axes[i];
+        }
+        return best[1];
+    }
+
     // Pro Chunk: sample-Raster, beste-Affinität-Bauplan wählen, Bernoulli-
     // Probe mit chance = base × affinity² → starke Bias zu hochwertigen
     // Regionen, Floor unterdrückt Mittelmaß. Probe ist deterministisch über
@@ -24770,8 +25100,18 @@ class AnazhRealm {
 
         // Bauplan-Kandidaten für Welt-Affinitäts-Spawn. Nur Naturraum-Bauwerke
         // — Dorf/Tempel/Wasserfall bleiben Spieler-Geste. Bäume + Felsen +
-        // Geoden + Glutbrunnen sind Welt-Bürger.
+        // Geoden + Glutbrunnen sind die Streu-Bürger der Welt.
         const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+
+        // W6.G P3 — Felsformationen sind Wahrzeichen, KEINE Streu-Bürger. Sie
+        // bekommen einen EIGENEN, seltenen Pass — sie konkurrieren NICHT im
+        // Affinitäts-Pick mit den Streu-Strukturen: ein Felsbogen ist ein
+        // Superset eines Felsblocks (dieselben Stein-Boxen + ein Aufsatz),
+        // er hätte den Felsblock in der gemeinsamen Wahl verdrängt. Der
+        // Landmark-Pass hat einen uniformen Hash-Wurf (LANDMARK_RATE) — der
+        // Affinitäts-Probe-Wert unten stammt aus SimplexNoise und ist nahe
+        // 0.5 konzentriert, als Schwelle für ein seltenes Ereignis untauglich.
+        const LANDMARK_RATE = 0.014;
 
         // BASE_RATE × affinity² ist die Spawn-Wahrscheinlichkeit pro Sample.
         // 0.4 × (0.3)² = 0.036 → ~2.3 Spawns pro Chunk im Mittel; bei
@@ -24798,7 +25138,33 @@ class AnazhRealm {
                 if (!Number.isFinite(height)) continue;
                 if (height < minVegHeight || height > maxVegHeight) continue;
 
-                // Beste-Affinität-Bauplan an dieser Position.
+                // baseY-Kompensation: spawnArchitecture zieht 0.5 ab
+                // (kalibriert für at_player), wir kompensieren für Terrain.
+                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+
+                // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf.
+                // Eine Felsformation spawnt nur, wenn die Region sie trägt
+                // (felsbogen/felsturm sind dichte-getrieben → die max-Affinität
+                // passiert den Floor nur in Felsen-Regionen). WELCHE Formation
+                // — Bogen oder Turm — ist Abwechslung, kein Affinitäts-
+                // Wettstreit (Box-Substanz ist dichter als Zylinder, der Turm
+                // verlöre jede Affinitäts-Wahl): ein Hash-Münzwurf.
+                if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
+                    const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
+                    const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
+                    if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
+                        const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
+                        this.spawnArchitecture(
+                            lmName,
+                            { x: sampleX, y: height + 0.5, z: sampleZ },
+                            { seed: seedForSpawn, silent: true }
+                        );
+                        spawned++;
+                        continue; // an dieser Stelle keine zweite Struktur
+                    }
+                }
+
+                // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
                 let bestName = null;
                 let bestAffinity = 0;
                 for (const name of candidates) {
@@ -24815,11 +25181,8 @@ class AnazhRealm {
                 const chance = BASE_RATE * bestAffinity * bestAffinity;
                 if (probe >= chance) continue;
 
-                // Spawn. baseY-Kompensation: spawnArchitecture zieht 0.5 ab
-                // (kalibriert für at_player), wir kompensieren für Terrain.
-                // Zusätzlich: Glutbrunnen+Geoden haben part.y=0 als Bottom,
-                // die Kompensation bringt sie exakt auf den Boden.
-                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                // Glutbrunnen+Geoden haben part.y=0 als Bottom — die
+                // Kompensation bringt sie exakt auf den Boden.
                 this.spawnArchitecture(
                     bestName,
                     { x: sampleX, y: height + 0.5, z: sampleZ },
@@ -25587,7 +25950,10 @@ class AnazhRealm {
             return true;
         }
         const target = this._raycastWorldHit(30);
-        if (!target.hit) return false;
+        if (!target.hit) {
+            this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
+            return false;
+        }
         this._consumeMouseStamina();
         // V8.36 — Radius 3.0 statt 1.5: bei 1.5 ≈ vertexStep (1.17) traf ein
         // Grabe-Op faktisch nur EINEN Vertex → mit jedem Klick eine spitzere
@@ -25597,6 +25963,23 @@ class AnazhRealm {
         const dh = -1.0;
         if (typeof this.dslRun === "function") {
             this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
+        }
+        // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
+        // genau wie harvestArchitecture eine Struktur auflöst. Das Material
+        // emergiert aus dem Welt-Affinitäts-Feld am Grabe-Ort — die Farbe, die
+        // der Spieler SIEHT, ist das Material, das er BEKOMMT. Der Yield ist
+        // lokal (NICHT im modify_terrain-DSL-Op) — nur die eigene Grabe-Geste
+        // füllt das eigene Inventar, ein mesh-broadcastetes modify_terrain nicht.
+        const digMat = this._terrainMaterialAt(target.x, target.z);
+        const digUnits = Math.max(1, Math.min(10, Math.round(r * Math.abs(dh) * 1.4)));
+        if (this.addMaterialToInventory(digMat, digUnits)) {
+            this.log(`Gegraben: ${digUnits}× ${digMat}`, "INFO");
+            const matDef = this.state.materials && this.state.materials[digMat];
+            if (matDef && typeof this.playInventoryHoverPing === "function") {
+                this.playInventoryHoverPing(matDef.tags);
+            }
+        } else {
+            this.log(`Gegraben (${digMat}), aber das Inventar ist voll.`, "INFO");
         }
         return true;
     }

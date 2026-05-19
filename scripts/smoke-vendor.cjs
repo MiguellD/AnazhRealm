@@ -24,8 +24,10 @@ const puppeteer = require("puppeteer");
 const ROOT = path.join(__dirname, "..");
 const TEST_ID = "smoke-vendor-test";
 const GH_ID = "smoke-vendor-gh";
+const GH_SLASH_ID = "smoke-vendor-gh-slash";
 const TEST_DIR = path.join(ROOT, "worlds", TEST_ID);
 const GH_DIR = path.join(ROOT, "worlds", GH_ID);
+const GH_SLASH_DIR = path.join(ROOT, "worlds", GH_SLASH_ID);
 const HOST_URL = "http://127.0.0.1:4312/index.html";
 
 // Die Test-Welt: eine self-contained HTML-Datei (klassisches Inline-Skript —
@@ -55,10 +57,23 @@ const TEST_WORLD_HTML = [
 
 const GH_ENGINE_JS = "// eine kleine fremde Engine, aus dem Repo geholt\nconsole.log('repo-engine');";
 
-// Ein lokales Fake-GitHub: spiegelt die Trees-API + die Raw-Endpunkte in
-// genau der von GitHub dokumentierten Form. So testet Teil C den echten
-// save-server-Fetch-Code, ohne je das echte GitHub zu berühren.
+// Ein lokales Fake-GitHub: spiegelt die Branches-API + die Trees-API + die
+// Raw-Endpunkte in genau der von GitHub dokumentierten Form. So testet
+// Teil C den echten save-server-Fetch-Code, ohne je das echte GitHub zu
+// berühren. Zwei Repos: "fake/demo" (Default-Branch "main") und
+// "fake/slashdemo" (eine Branch mit Slash, "feature/x" — W15-Politur).
 function startFakeGithub() {
+    const treeOf = (sha) => ({
+        sha,
+        truncated: false,
+        tree: [
+            { path: "lib", type: "tree" },
+            { path: "index.html", type: "blob", size: Buffer.byteLength(TEST_WORLD_HTML) },
+            { path: "lib/engine.js", type: "blob", size: Buffer.byteLength(GH_ENGINE_JS) },
+            // Binär — muss von der Endung-Whitelist gefiltert werden.
+            { path: "logo.png", type: "blob", size: 2048 },
+        ],
+    });
     return new Promise((resolve) => {
         const srv = http.createServer((req, res) => {
             const u = (req.url || "").split("?")[0];
@@ -72,21 +87,24 @@ function startFakeGithub() {
             };
             if (u === "/repos/fake/demo") {
                 json({ default_branch: "main" });
-            } else if (u === "/repos/fake/demo/git/trees/main") {
-                json({
-                    sha: "deadbeef",
-                    truncated: false,
-                    tree: [
-                        { path: "lib", type: "tree" },
-                        { path: "index.html", type: "blob", size: Buffer.byteLength(TEST_WORLD_HTML) },
-                        { path: "lib/engine.js", type: "blob", size: Buffer.byteLength(GH_ENGINE_JS) },
-                        // Binär — muss von der Endung-Whitelist gefiltert werden.
-                        { path: "logo.png", type: "blob", size: 2048 },
-                    ],
-                });
-            } else if (u === "/raw/fake/demo/main/index.html") {
+            } else if (u === "/repos/fake/demo/branches/main") {
+                json({ name: "main", commit: { sha: "deadbeef" } });
+            } else if (u === "/repos/fake/demo/git/trees/deadbeef") {
+                json(treeOf("deadbeef"));
+            } else if (u === "/raw/fake/demo/deadbeef/index.html") {
                 text(TEST_WORLD_HTML);
-            } else if (u === "/raw/fake/demo/main/lib/engine.js") {
+            } else if (u === "/raw/fake/demo/deadbeef/lib/engine.js") {
+                text(GH_ENGINE_JS);
+                // fake/slashdemo — die Branch "feature/x" trägt einen Slash.
+                // Der save-server probiert die längste auflösbare Branch
+                // zuerst: "feature/x" → 200, "feature" wird nie gefragt.
+            } else if (u === "/repos/fake/slashdemo/branches/feature/x") {
+                json({ name: "feature/x", commit: { sha: "cafe1234" } });
+            } else if (u === "/repos/fake/slashdemo/git/trees/cafe1234") {
+                json(treeOf("cafe1234"));
+            } else if (u === "/raw/fake/slashdemo/cafe1234/index.html") {
+                text(TEST_WORLD_HTML);
+            } else if (u === "/raw/fake/slashdemo/cafe1234/lib/engine.js") {
                 text(GH_ENGINE_JS);
             } else {
                 res.writeHead(404, { "Content-Type": "text/plain" });
@@ -164,6 +182,7 @@ function sleep(ms) {
     // Falls ein früherer Lauf abbrach: die Test-Verzeichnisse vorab räumen.
     fs.rmSync(TEST_DIR, { recursive: true, force: true });
     fs.rmSync(GH_DIR, { recursive: true, force: true });
+    fs.rmSync(GH_SLASH_DIR, { recursive: true, force: true });
 
     console.log("Starte Fake-GitHub + save-server ...");
     const fake = await startFakeGithub();
@@ -320,6 +339,27 @@ function sleep(ms) {
             nonGh.status >= 400 && nonGh.status < 500,
             `status=${nonGh.status}`
         );
+        // W15-Politur — eine /tree/feature/x-URL: die Branch trägt einen
+        // Slash. Vor V9.02 wurde sie als Branch "feature" + Pfad "x"
+        // fehlinterpretiert (Trees-API 404). Jetzt löst der save-server die
+        // echte Branch "feature/x" auf + holt gegen ihre Commit-SHA.
+        const ghSlash = await postVendor({
+            worldId: GH_SLASH_ID,
+            repoUrl: "https://github.com/fake/slashdemo/tree/feature/x",
+        });
+        check(
+            "GitHub-Fetch: ein Slash-Branch (feature/x) wird korrekt aufgelöst (HTTP 200, branch feature/x)",
+            ghSlash.status === 200 &&
+                ghSlash.body &&
+                ghSlash.body.ok === true &&
+                ghSlash.body.branch === "feature/x",
+            `status=${ghSlash.status} branch=${ghSlash.body && ghSlash.body.branch}`
+        );
+        check(
+            "GitHub-Fetch: die Slash-Branch-Welt landet in worlds/<id>/ (index.html geschrieben)",
+            fs.existsSync(path.join(GH_SLASH_DIR, "index.html")) &&
+                fs.readFileSync(path.join(GH_SLASH_DIR, "index.html"), "utf8") === TEST_WORLD_HTML
+        );
         console.log("Screenshot: artifacts/smoke-vendor.png");
     } finally {
         await browser.close();
@@ -327,6 +367,7 @@ function sleep(ms) {
         fake.srv.close();
         fs.rmSync(TEST_DIR, { recursive: true, force: true });
         fs.rmSync(GH_DIR, { recursive: true, force: true });
+        fs.rmSync(GH_SLASH_DIR, { recursive: true, force: true });
         fs.rmSync(path.join(ROOT, "worlds", "vendor-escape-proof.js"), { force: true });
     }
 

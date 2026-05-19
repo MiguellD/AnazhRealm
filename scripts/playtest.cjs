@@ -1280,8 +1280,8 @@ function startSaveServer() {
                 check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
                 check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
                 check(
-                    "Welle 4 P1: Built-in-Anzahl exakt 12 (6 Bau + 5 Körper + 1 Vegetation/laub, V7.74)",
-                    wave4p1Results.builtInCount === 12
+                    "Welle 4 P1: Built-in-Anzahl exakt 13 (6 Bau + 5 Körper + laub + erde/W6.G-P4)",
+                    wave4p1Results.builtInCount === 13
                 );
                 check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
                 check(
@@ -10910,6 +10910,420 @@ function startSaveServer() {
                     wave6gP2Results.cullingRateIs2Hz
                 );
                 check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
+            }
+
+            // ### W6.G P3 Phase 1 — Felsformationen ###
+            // felsbogen (ein Trilithon — ein begehbarer Überhang) + felsturm
+            // (eine vertikale Fels-Nadel) als emergente Welt-Bürger. KEIN
+            // Voxel-Terrain — das Compound-Architektur-System trägt den
+            // Überhang: die Per-Sub-Mesh-Box-Kollision lässt zwischen den
+            // zwei Pfeilern eine echte begehbare Lücke.
+            const wave6gP3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const bps = r.state.blueprints || {};
+                    const fb = bps.felsbogen;
+                    const ft = bps.felsturm;
+                    out.hasFelsbogen = !!(fb && fb.builtIn && fb.parts && fb.parts.length >= 3);
+                    out.hasFelsturm = !!(ft && ft.builtIn && ft.parts && ft.parts.length >= 3);
+
+                    // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
+                    // eine begehbare Lücke; ein Sturz spannt darüber.
+                    if (fb && fb.parts) {
+                        const boxes = fb.parts
+                            .filter((p) => p.shape === "box")
+                            .slice()
+                            .sort((a, b) => a.position.y - b.position.y);
+                        if (boxes.length >= 3) {
+                            const a = boxes[0];
+                            const b = boxes[1];
+                            const lintel = boxes[2];
+                            const innerGap = Math.abs(b.position.x - a.position.x) - (a.size.x / 2 + b.size.x / 2);
+                            out.felsbogenGap = innerGap;
+                            out.felsbogenWalkable = innerGap > 2; // Spieler-Hitbox ist ~1 m
+                            out.felsbogenLintelAbove =
+                                lintel.position.y > a.position.y && lintel.position.y > b.position.y;
+                        }
+                    }
+
+                    // Felsturm — vertikal: bbox-Höhe deutlich grösser als Breite.
+                    if (ft && ft.parts) {
+                        let minY = Infinity;
+                        let maxY = -Infinity;
+                        let minX = Infinity;
+                        let maxX = -Infinity;
+                        for (const p of ft.parts) {
+                            minY = Math.min(minY, p.position.y - p.size.y / 2);
+                            maxY = Math.max(maxY, p.position.y + p.size.y / 2);
+                            minX = Math.min(minX, p.position.x - p.size.x / 2);
+                            maxX = Math.max(maxX, p.position.x + p.size.x / 2);
+                        }
+                        out.felsturmSpanY = maxY - minY;
+                        out.felsturmSpanX = maxX - minX;
+                        out.felsturmVertical = maxY - minY > (maxX - minX) * 2;
+                    }
+
+                    // Felsbogen ist ein Stein-Compound — dicht.
+                    if (fb) {
+                        const tags = r.computeCompoundTags(fb);
+                        out.felsbogenDichte = tags ? tags.dichte || 0 : 0;
+                        out.felsbogenIsDense = out.felsbogenDichte > 0.5;
+                    }
+
+                    // spawnArchitecture("felsbogen") → Mesh + Compound-Kollision
+                    // mit mehreren Kind-Boxen. Das IST der begehbare Durchgang
+                    // auf Kollisions-Ebene — eine einzelne AABB hätte keinen.
+                    const pm = r.state.playerMesh;
+                    const px = pm ? pm.position.x : 0;
+                    const pz = pm ? pm.position.z : 0;
+                    const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
+                    out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
+                    out.felsbogenHasMesh = !!(eb && eb.mesh);
+                    out.felsbogenCompoundChildren =
+                        eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
+                    out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
+                    // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
+                    // (0x7a7a7a), NICHT weiss. Vorher fiel _buildFromBlueprint
+                    // ohne part.color auf 0xffffff zurück — alle material-
+                    // basierten Baupläne waren weiss.
+                    if (eb && eb.mesh) {
+                        let firstMeshHex = null;
+                        eb.mesh.traverse((n) => {
+                            if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                                firstMeshHex = n.material.color.getHex();
+                            }
+                        });
+                        out.felsbogenMeshHex = firstMeshHex;
+                        // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
+                        // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
+                        // ein dunkleres Grau, aber klar KEIN Weiss.
+                        if (firstMeshHex !== null) {
+                            const rr = (firstMeshHex >> 16) & 0xff;
+                            const gg = (firstMeshHex >> 8) & 0xff;
+                            const bb = firstMeshHex & 0xff;
+                            out.felsbogenNotWhite = firstMeshHex !== 0xffffff;
+                            out.felsbogenStoneGrey = rr === gg && gg === bb && rr <= 0xa0;
+                        }
+                    }
+                    const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
+                    out.felsturmSpawned = !!(et && et.type === "felsturm");
+                    out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
+
+                    // Placement — die Felsformationen sind echte Welt-
+                    // Affinitäts-Kandidaten. Über ein Raster frischer Chunks
+                    // MUSS mindestens ein Felsbogen ODER Felsturm spawnen
+                    // (Seltenheit 0.07 → Landmark-Dichte, aber über 144 Chunks
+                    // statistisch sicher). Danach die Cold-Architekturen wieder
+                    // abschneiden — der Test bläht die Welt nicht dauerhaft auf.
+                    if (typeof r.populateChunkVegetation === "function") {
+                        const before = r.state.architectures.length;
+                        for (let cx = 20; cx <= 31; cx++) {
+                            for (let cz = 20; cz <= 31; cz++) r.populateChunkVegetation(cx, cz);
+                        }
+                        let fbCount = 0;
+                        let ftCount = 0;
+                        for (let i = before; i < r.state.architectures.length; i++) {
+                            const t = r.state.architectures[i].type;
+                            if (t === "felsbogen") fbCount++;
+                            else if (t === "felsturm") ftCount++;
+                        }
+                        out.placedFelsbogen = fbCount;
+                        out.placedFelsturm = ftCount;
+                        // Beide MÜSSEN erscheinen — der Hash-Münzwurf verteilt
+                        // Bogen + Turm ~50/50; ein toter Bauplan würde 0 zeigen.
+                        out.placementWorks = fbCount > 0 && ftCount > 0;
+                        r.state.architectures.length = before;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gP3Results && !wave6gP3Results.error) {
+                check("W6.G P3: Bauplan 'felsbogen' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsbogen);
+                check("W6.G P3: Bauplan 'felsturm' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsturm);
+                check(
+                    `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
+                    wave6gP3Results.felsbogenWalkable
+                );
+                check("W6.G P3: Felsbogen-Sturz spannt über den Pfeilern", wave6gP3Results.felsbogenLintelAbove);
+                check(
+                    `W6.G P3: Felsturm ist vertikal (Höhe ${(wave6gP3Results.felsturmSpanY || 0).toFixed(1)} >> Breite ${(wave6gP3Results.felsturmSpanX || 0).toFixed(1)})`,
+                    wave6gP3Results.felsturmVertical
+                );
+                check("W6.G P3: Felsbogen ist ein dichtes Stein-Compound", wave6gP3Results.felsbogenIsDense);
+                check(
+                    "W6.G P3: spawnArchitecture('felsbogen') erzeugt Mesh + Eintrag",
+                    wave6gP3Results.felsbogenSpawned && wave6gP3Results.felsbogenHasMesh
+                );
+                check(
+                    `W6.G P3: der Felsbogen rendert stein-grau, nicht weiss (V9.06-Fix, hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)})`,
+                    wave6gP3Results.felsbogenNotWhite && wave6gP3Results.felsbogenStoneGrey
+                );
+                check(
+                    `W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene (n=${wave6gP3Results.felsbogenCompoundChildren})`,
+                    wave6gP3Results.felsbogenWalkThroughCollision
+                );
+                check(
+                    "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + Kollision",
+                    wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
+                );
+                check(
+                    `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
+                    wave6gP3Results.placementWorks
+                );
+            }
+
+            // ### W6.G P4 — das Terrain wird Materie ###
+            // Der Boden gibt: ein Grabe-Hieb löst Terrain in Material auf,
+            // dessen Identität aus worldFieldAt emergiert (die Farbe, die der
+            // Spieler sieht, ist das Material, das er bekommt). Kein Voxel-
+            // Rewrite, keine Biom-Tabelle — der kontinuierliche Affinitäts-
+            // Feld trägt es. Das Terrain joint die Hylomorphismus-Sprache.
+            const wave6gP4Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const mats = r.state.materials || {};
+                    out.hasErde = !!(mats.erde && mats.erde.builtIn);
+                    out.hasTerrainMaterialAt = typeof r._terrainMaterialAt === "function";
+
+                    // Resonanz — die dominante Welt-Achse bestimmt das Material.
+                    // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
+                    const origWFA = r.worldFieldAt;
+                    const known = ["erde", "stein", "glut", "quarz"];
+                    if (out.hasTerrainMaterialAt) {
+                        const probe = (lebendig, dichte, glut, magieleitung) => {
+                            r.worldFieldAt = () => ({ lebendig, dichte, glut, magieleitung });
+                            return r._terrainMaterialAt(0, 0);
+                        };
+                        out.lebendigYieldsErde = probe(0.9, 0.2, 0.1, 0.1) === "erde";
+                        out.dichteYieldsStein = probe(0.2, 0.9, 0.1, 0.1) === "stein";
+                        out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
+                        out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
+                        r.worldFieldAt = origWFA;
+                        out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
+                        // Das Terrain ist nicht uniform — über ein Raster
+                        // emergieren ≥2 verschiedene Boden-Materialien.
+                        const seen = {};
+                        for (let x = -200; x <= 200; x += 40) {
+                            for (let z = -200; z <= 200; z += 40) {
+                                seen[r._terrainMaterialAt(x, z)] = true;
+                            }
+                        }
+                        out.terrainMaterialVariety = Object.keys(seen).length;
+                    }
+
+                    // Integration — ein Grabe-Hieb (tryMouseBreak, Terrain-Zweig)
+                    // füllt das Inventar mit dem Boden-Material. _raycastWorldHit
+                    // + _pickArchitectureAtCrosshair mocken (kein Physik-Setup).
+                    if (out.hasTerrainMaterialAt && typeof r.tryMouseBreak === "function") {
+                        const origRay = r._raycastWorldHit;
+                        const origPick = r._pickArchitectureAtCrosshair;
+                        const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+                        if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
+                        const digX = 60;
+                        const digZ = -40;
+                        r._raycastWorldHit = () => ({ hit: true, x: digX, y: 5, z: digZ });
+                        r._pickArchitectureAtCrosshair = () => null;
+                        const expectMat = r._terrainMaterialAt(digX, digZ);
+                        const inv = r.state.player.inventory;
+                        // Inventar tief snapshotten — der Grabe-Test darf den
+                        // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
+                        // prüfen „Inventar initial leer"). V8.97-Disziplin.
+                        const invSnapshot = inv.map((s) => (s ? { ...s } : null));
+                        const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
+                        const ok = r.tryMouseBreak();
+                        const dugSlot = inv.find((s) => s && s.kind === "material" && s.material === expectMat);
+                        out.digReturned = ok === true;
+                        out.digYieldedMaterial =
+                            !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
+                        out.digYieldMatchesField = !!dugSlot;
+                        out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
+                        for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+                        r._raycastWorldHit = origRay;
+                        r._pickArchitectureAtCrosshair = origPick;
+
+                        // Un-mocked Realpfad — der ECHTE _raycastWorldHit gegen
+                        // das echte Terrain. Nur _pickArchitectureAtCrosshair
+                        // wird genullt (damit garantiert der Terrain-Zweig
+                        // läuft, nicht ein Architektur-Treffer). Die Kamera
+                        // blickt gerade nach unten → der Ammo-Raycast trifft
+                        // den Chunk unter dem Spieler. Beweist: echter Raycast
+                        // + modify_terrain + Yield, ohne Mock.
+                        if (r.state.camera && r.state.playerMesh) {
+                            const cam = r.state.camera;
+                            const pm = r.state.playerMesh;
+                            const savedPos = cam.position.clone();
+                            const savedQuat = cam.quaternion.clone();
+                            cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
+                            cam.lookAt(pm.position.x, pm.position.y - 20, pm.position.z);
+                            cam.updateMatrixWorld(true);
+                            r._pickArchitectureAtCrosshair = () => null;
+                            const realHit = r._raycastWorldHit(40);
+                            out.realRaycastHit = !!(realHit && realHit.hit);
+                            const matSumBefore = inv
+                                .filter((s) => s && s.kind === "material")
+                                .reduce((a, s) => a + (s.count || 0), 0);
+                            r.tryMouseBreak();
+                            const matSumAfter = inv
+                                .filter((s) => s && s.kind === "material")
+                                .reduce((a, s) => a + (s.count || 0), 0);
+                            out.realDigYielded = matSumAfter > matSumBefore;
+                            for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+                            r._pickArchitectureAtCrosshair = origPick;
+                            cam.position.copy(savedPos);
+                            cam.quaternion.copy(savedQuat);
+                            cam.updateMatrixWorld(true);
+                        }
+                        if (typeof r.setGameMode === "function") r.setGameMode(origMode);
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (wave6gP4Results && !wave6gP4Results.error) {
+                check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
+                check("W6.G P4: _terrainMaterialAt-Methode existiert", wave6gP4Results.hasTerrainMaterialAt);
+                check(
+                    "W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material",
+                    wave6gP4Results.returnsKnownMaterial
+                );
+                check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
+                check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);
+                check("W6.G P4: glut-dominante Region → glut (Resonanz)", wave6gP4Results.glutYieldsGlut);
+                check("W6.G P4: magie-dominante Region → quarz (Resonanz)", wave6gP4Results.magieYieldsQuarz);
+                check(
+                    `W6.G P4: das Terrain ist nicht uniform (${wave6gP4Results.terrainMaterialVariety} Boden-Materialien über das Raster)`,
+                    (wave6gP4Results.terrainMaterialVariety || 0) >= 2
+                );
+                check(
+                    "W6.G P4: ein Grabe-Hieb (tryMouseBreak) füllt das Inventar mit Boden-Material",
+                    wave6gP4Results.digReturned && wave6gP4Results.digYieldedMaterial
+                );
+                check(
+                    "W6.G P4: das gegrabene Material entspricht worldFieldAt am Grabe-Ort + der Yield ist in [1,10]",
+                    wave6gP4Results.digYieldMatchesField && wave6gP4Results.digYieldCountSane
+                );
+                check(
+                    "W6.G P4: der ECHTE Raycast (Kamera nach unten) trifft das Terrain",
+                    wave6gP4Results.realRaycastHit
+                );
+                check(
+                    "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + modify_terrain) yieldet Material",
+                    wave6gP4Results.realDigYielded
+                );
+            }
+
+            // ### Voxel-Terrain-Bogen Phase 1 — Dichte-Feld + Surface Nets ###
+            // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
+            // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
+            // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
+            const voxelP1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasDensityAt = typeof r._terrainDensityAt === "function";
+                    out.hasChunkGeometry = typeof r._voxelChunkGeometry === "function";
+                    out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
+
+                    if (out.hasDensityAt) {
+                        // Das Feld ist genuin 3D — bei festem (x,z) nimmt die
+                        // Dichte mit der Höhe ab (mehr Luft oben). Über mehrere
+                        // Stichproben gemittelt, damit das 3D-Noise-Band die
+                        // Monotonie nicht lokal kippt.
+                        let lowerSum = 0;
+                        let upperSum = 0;
+                        for (let s = 0; s < 8; s++) {
+                            const sx = s * 37 - 100;
+                            const sz = s * 53 + 40;
+                            lowerSum += r._terrainDensityAt(sx, -40, sz);
+                            upperSum += r._terrainDensityAt(sx, 60, sz);
+                        }
+                        out.densityIs3D = lowerSum > upperSum;
+                        // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0),
+                        // der vertikal zwischen festem Grund liegt.
+                        let foundCave = false;
+                        for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
+                            for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
+                                for (let sy = -40; sy <= 20 && !foundCave; sy += 4) {
+                                    if (
+                                        r._terrainDensityAt(sx, sy, sz) < 0 &&
+                                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                                        r._terrainDensityAt(sx, sy + 6, sz) > 0
+                                    ) {
+                                        foundCave = true;
+                                    }
+                                }
+                            }
+                        }
+                        out.densityCanCave = foundCave;
+                    }
+
+                    if (out.hasChunkGeometry) {
+                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 1.8);
+                        out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
+                        if (out.geomBuilt) {
+                            const pos = geom.getAttribute("position");
+                            out.geomVertexCount = pos.count;
+                            let allFinite = true;
+                            for (let v = 0; v < pos.count * 3; v++) {
+                                if (!Number.isFinite(pos.array[v])) allFinite = false;
+                            }
+                            out.geomFinite = allFinite;
+                            out.geomHasNormals = !!geom.getAttribute("normal");
+                            out.geomHasIndex = !!geom.getIndex();
+                        }
+                    }
+
+                    if (out.hasSpawnTest && r.state.scene) {
+                        const before = r.state.scene.children.length;
+                        const m1 = r._spawnVoxelTestChunk();
+                        const afterOne = r.state.scene.children.length;
+                        const m2 = r._spawnVoxelTestChunk();
+                        const afterTwo = r.state.scene.children.length;
+                        out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
+                        // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
+                        out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
+                        // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
+                        if (r._voxelTestMesh) {
+                            r.state.scene.remove(r._voxelTestMesh);
+                            r._voxelTestMesh = null;
+                        }
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP1Results && !voxelP1Results.error) {
+                check("Voxel P1: _terrainDensityAt-Methode existiert", voxelP1Results.hasDensityAt);
+                check("Voxel P1: _voxelChunkGeometry-Methode existiert", voxelP1Results.hasChunkGeometry);
+                check("Voxel P1: _spawnVoxelTestChunk-Methode existiert", voxelP1Results.hasSpawnTest);
+                check(
+                    "Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)",
+                    voxelP1Results.densityIs3D
+                );
+                check(
+                    "Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)",
+                    voxelP1Results.densityCanCave
+                );
+                check(
+                    `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
+                    voxelP1Results.geomBuilt && (voxelP1Results.geomVertexCount || 0) > 0
+                );
+                check("Voxel P1: alle Mesh-Positionen sind endlich (kein NaN)", voxelP1Results.geomFinite);
+                check(
+                    "Voxel P1: das Mesh trägt Normalen + einen Index",
+                    voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
+                );
+                check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
+                check(
+                    "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
+                    voxelP1Results.spawnReplaces
+                );
             }
 
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###

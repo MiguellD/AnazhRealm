@@ -579,10 +579,10 @@ function vendorHttpGet(urlStr, opts) {
     });
 }
 
-// Eine github.com-Repo-URL → {owner, repo, branch?, subpath?}, oder null.
+// Eine github.com-Repo-URL → {owner, repo, treeSegments}, oder null.
 // Akzeptiert .../<owner>/<repo>, .../tree/<branch>, .../tree/<branch>/<sub>.
-// owner/repo/branch streng Regex-geprüft — nur diese Stücke reisen in die
-// vom Server gebauten API-/Raw-URLs (kein SSRF).
+// owner/repo + jedes Pfad-Segment streng Regex-geprüft — nur diese Stücke
+// reisen in die vom Server gebauten API-/Raw-URLs (kein SSRF).
 function parseGithubRepoUrl(url) {
     let u;
     try {
@@ -596,15 +596,66 @@ function parseGithubRepoUrl(url) {
     const owner = parts[0];
     const repo = parts[1].replace(/\.git$/i, "");
     if (!/^[\w.-]{1,64}$/.test(owner) || !/^[\w.-]{1,64}$/.test(repo)) return null;
-    let branch = null;
-    let subpath = "";
+    // W15-Politur — die nach `tree/` folgenden Segmente bleiben ein Array:
+    // `tree/feature/x/src` ist mehrdeutig (Branch `feature/x` + Pfad `src`
+    // ODER Branch `feature` + Pfad `x/src`). resolveGithubBranch entscheidet
+    // anhand der echten Branch-Liste, statt blind bei parts[3] zu trennen.
+    let treeSegments = [];
     if (parts[2] === "tree" && parts[3]) {
-        branch = parts[3];
-        subpath = parts.slice(4).join("/");
+        treeSegments = parts.slice(3);
     }
-    if (branch && !/^[\w./-]{1,80}$/.test(branch)) return null;
-    if (subpath && (subpath.includes("..") || !/^[\w./-]{1,160}$/.test(subpath))) return null;
-    return { owner, repo, branch, subpath };
+    if (treeSegments.length > 40) return null;
+    for (const seg of treeSegments) {
+        if (seg === "." || seg === ".." || !/^[\w.-]{1,80}$/.test(seg)) return null;
+    }
+    return { owner, repo, treeSegments };
+}
+
+// W15-Politur — die echte Branch + ihre Commit-SHA auflösen.
+// Ohne tree-Segmente: der Default-Branch. Mit tree-Segmenten: die LÄNGSTE
+// auflösbare Branch gewinnt (GitHub wählt für Tree-URLs den spezifischsten
+// Ref) — `tree/feature/x/src` probiert `feature/x/src`, dann `feature/x`,
+// dann `feature`. Die Branches-API liefert die Commit-SHA mit; Trees-/Raw-
+// Aufrufe gegen die SHA sind slash-sicher (eine SHA ist ein Pfad-Segment).
+async function resolveGithubBranch(gh) {
+    const reqJson = (urlPath) =>
+        vendorHttpGet(`${VENDOR_GH_API_BASE}${urlPath}`, { expectJson: true, maxBytes: 1 << 20 });
+    const branchSha = async (branch) => {
+        const info = await reqJson(`/repos/${gh.owner}/${gh.repo}/branches/${branch}`);
+        const sha = info && info.commit && info.commit.sha;
+        return typeof sha === "string" && /^[0-9a-fA-F]{7,64}$/.test(sha) ? sha : null;
+    };
+    if (!gh.treeSegments.length) {
+        let branch = "main";
+        try {
+            const meta = await reqJson(`/repos/${gh.owner}/${gh.repo}`);
+            if (meta && typeof meta.default_branch === "string" && /^[\w./-]{1,80}$/.test(meta.default_branch)) {
+                branch = meta.default_branch;
+            }
+        } catch {
+            /* Default-Branch nicht lesbar — auf "main" zurückfallen */
+        }
+        let sha = null;
+        try {
+            sha = await branchSha(branch);
+        } catch (e) {
+            return { ok: false, status: 502, error: `Branch resolution failed: ${e.message}` };
+        }
+        if (!sha) return { ok: false, status: 502, error: `Could not resolve branch "${branch}"` };
+        return { ok: true, branch, sha, subpath: "" };
+    }
+    const segs = gh.treeSegments;
+    for (let n = segs.length; n >= 1; n--) {
+        const branch = segs.slice(0, n).join("/");
+        let sha = null;
+        try {
+            sha = await branchSha(branch);
+        } catch {
+            continue; // 404 o.ä. — der nächst-kürzere Kandidat
+        }
+        if (sha) return { ok: true, branch, sha, subpath: segs.slice(n).join("/") };
+    }
+    return { ok: false, status: 404, error: `No branch matched "${segs.join("/")}"` };
 }
 
 // W15 Phase 2 — ein GitHub-Repo holen: Default-Branch auflösen, den Baum
@@ -615,25 +666,17 @@ async function vendorFromGithub(worldId, repoUrl) {
     const gh = parseGithubRepoUrl(repoUrl);
     if (!gh) return { ok: false, status: 400, error: "Not a valid github.com repo URL" };
     try {
-        let branch = gh.branch;
-        if (!branch) {
-            const meta = await vendorHttpGet(`${VENDOR_GH_API_BASE}/repos/${gh.owner}/${gh.repo}`, {
-                expectJson: true,
-                maxBytes: 1 << 20,
-            });
-            branch =
-                meta && typeof meta.default_branch === "string" && /^[\w./-]{1,80}$/.test(meta.default_branch)
-                    ? meta.default_branch
-                    : "main";
-        }
+        const resolved = await resolveGithubBranch(gh);
+        if (!resolved.ok) return resolved;
+        const { branch, sha, subpath } = resolved;
         const tree = await vendorHttpGet(
-            `${VENDOR_GH_API_BASE}/repos/${gh.owner}/${gh.repo}/git/trees/${branch}?recursive=1`,
+            `${VENDOR_GH_API_BASE}/repos/${gh.owner}/${gh.repo}/git/trees/${sha}?recursive=1`,
             { expectJson: true, maxBytes: 4 << 20 }
         );
         if (!tree || !Array.isArray(tree.tree)) {
             return { ok: false, status: 502, error: "GitHub tree response unreadable" };
         }
-        const prefix = gh.subpath ? gh.subpath.replace(/\/+$/, "") + "/" : "";
+        const prefix = subpath ? subpath.replace(/\/+$/, "") + "/" : "";
         const picked = [];
         for (const entry of tree.tree) {
             if (!entry || entry.type !== "blob" || typeof entry.path !== "string") continue;
@@ -657,7 +700,7 @@ async function vendorFromGithub(worldId, repoUrl) {
         const files = [];
         let total = 0;
         for (const p of picked) {
-            const rawUrl = `${VENDOR_GH_RAW_BASE}/${gh.owner}/${gh.repo}/${branch}/${p.ghPath
+            const rawUrl = `${VENDOR_GH_RAW_BASE}/${gh.owner}/${gh.repo}/${sha}/${p.ghPath
                 .split("/")
                 .map(encodeURIComponent)
                 .join("/")}`;
