@@ -501,6 +501,9 @@ class AnazhRealm {
                 weather: null, // { noise, filter, gain }
                 lastWeather: null,
                 creaturePingCount: 0,
+                // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
+                // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
+                lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -780,6 +783,12 @@ class AnazhRealm {
 
     grokRender(text) {
         const grok = this.state.grok;
+        // V8.83 — ein leerer/fehlender Satz blankt den Dialog NICHT. grokRender
+        // ist der EINE Sprech-Engpass; eine leere LLM-Antwort oder ein Pool-
+        // Fehler darf die Stimme nicht löschen (der Fade entfernt nur die
+        // `visible`-Klasse, nie den Text — ein einmal geblankter Dialog bliebe
+        // leer). V7.98-Disziplin, hier am Engpass.
+        if (typeof text !== "string" || text === "") return;
         const box = grok.dialogueBox || document.getElementById("dialogue-box");
         if (box) {
             box.textContent = text;
@@ -4860,6 +4869,7 @@ class AnazhRealm {
                 desc: entry.desc || "",
                 dsl: Array.isArray(entry.dsl) ? entry.dsl : [],
                 multiplayer: entry.multiplayer === true,
+                serverMode: entry.serverMode === "js-compute" ? "js-compute" : "relay",
                 files: bundle.files,
             });
         } catch {
@@ -4947,6 +4957,7 @@ class AnazhRealm {
                 desc: parsed.desc,
                 dsl: parsed.dsl,
                 multiplayer: parsed.multiplayer === true,
+                serverMode: parsed.serverMode === "js-compute" ? "js-compute" : "relay",
                 files: parsed.files,
             })
         )
@@ -4996,7 +5007,12 @@ class AnazhRealm {
                     ":" +
                     (p.avatarName || "") +
                     ":" +
-                    (p.catalog || []).map((w) => w.id + w.hash + (w.multiplayer ? "M" : "")).join(",")
+                    (p.catalog || [])
+                        .map(
+                            (w) =>
+                                w.id + w.hash + (w.multiplayer ? "M" : "") + (w.serverMode === "js-compute" ? "J" : "")
+                        )
+                        .join(",")
             )
             .join("|");
         const mineSig = Object.keys(cw)
@@ -5031,12 +5047,16 @@ class AnazhRealm {
                 name.textContent = w.label || w.id;
                 name.title = "id: " + w.id + (w.hash ? " · Hash " + w.hash.slice(0, 12) + "…" : "");
                 row.appendChild(name);
-                // W17 — eine Multiplayer-Welt im Katalog kenntlich machen.
+                // W17 — eine Multiplayer-Welt im Katalog kenntlich machen;
+                // W17 P-Vendor — eine js-compute-Welt zusätzlich markieren.
                 if (w.multiplayer === true) {
                     const mp = document.createElement("span");
                     mp.className = "library-mp-mark";
-                    mp.textContent = "Multiplayer";
-                    mp.title = "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
+                    const jsCompute = w.serverMode === "js-compute";
+                    mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
+                    mp.title = jsCompute
+                        ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS."
+                        : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten.";
                     row.appendChild(mp);
                 }
                 if (this._haveWorldByHashOrId(w.id, w.hash)) {
@@ -6011,6 +6031,8 @@ class AnazhRealm {
                 // W17 — die Multiplayer-Marke reist im Katalog mit: ein Peer
                 // sieht, welche browsbaren Welten Gruppen-Portal-fähig sind.
                 multiplayer: w.multiplayer === true,
+                // W17 P-Vendor — der Server-Modus reist im Katalog mit.
+                serverMode: w.serverMode === "js-compute" ? "js-compute" : "relay",
             });
             if (out.length >= 32) break;
         }
@@ -6036,6 +6058,7 @@ class AnazhRealm {
                 label: typeof c.label === "string" ? c.label.slice(0, 48) : id,
                 hash,
                 multiplayer: c.multiplayer === true,
+                serverMode: c.serverMode === "js-compute" ? "js-compute" : "relay",
             });
             if (out.length >= 32) break;
         }
@@ -7086,20 +7109,26 @@ class AnazhRealm {
         // Ambient: zwei sehr leise Sägezahn-Oszillatoren, leicht verstimmt
         // → langsame Schwebung. LFO auf den Tiefpass-Filter macht das Ganze
         // atmen statt zu stehen.
+        // V8.86 — der Drone ist eine LEISE Grundierung unter der Lofi-
+        // Harmonie (W4 V3), nicht der Träger der Musik: Dreieck statt
+        // Sägezahn (weich statt buzzig-intensiv), Gain 0.07 statt 0.15.
         const filter = ctx.createBiquadFilter();
         filter.type = "lowpass";
         filter.frequency.value = 600;
         filter.Q.value = 0.7;
 
         const ambientGain = ctx.createGain();
-        ambientGain.gain.value = 0.15;
+        ambientGain.gain.value = 0.01; // V8.88 — 80% leiser (Schöpfer-Wunsch; war 0.05)
 
         const osc1 = ctx.createOscillator();
-        osc1.type = "sawtooth";
+        osc1.type = "triangle";
         osc1.frequency.value = 110;
         const osc2 = ctx.createOscillator();
-        osc2.type = "sawtooth";
-        osc2.frequency.value = 111.5;
+        osc2.type = "triangle";
+        // V8.87 — nur 0.3 Hz verstimmt: eine sanfte, langsame Schwebung
+        // (~3 s Periode) statt des extremen 1.5-Hz-Puls (war 111.5 Hz —
+        // „einmal komplett weg, dann zu laut", die Schöpfer-Beobachtung).
+        osc2.frequency.value = 110.3;
 
         osc1.connect(filter);
         osc2.connect(filter);
@@ -7109,7 +7138,7 @@ class AnazhRealm {
         const lfo = ctx.createOscillator();
         lfo.frequency.value = 0.08;
         const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 250;
+        lfoGain.gain.value = 140; // V8.86 — sanfterer Filter-Atem (war 250)
         lfo.connect(lfoGain);
         lfoGain.connect(filter.frequency);
 
@@ -7141,11 +7170,14 @@ class AnazhRealm {
 
         s.weather = { noise, filter: weatherFilter, gain: weatherGain };
 
+        // W4 V2 — die Lofi-Pad-Schicht: eine ruhige Minor-7th-Akkordfolge.
+        s.lofi = this._buildLofiLayer(ctx, masterGain);
+
         s.ctx = ctx;
         s.masterGain = masterGain;
         s.enabled = true;
         s.lastWeather = this.state.weather;
-        this.log("anazhSymphony V1 aktiviert: ambient + wetter live", "INFO");
+        this.log("anazhSymphony aktiviert: ambient + wetter + lofi live", "INFO");
         return true;
     }
 
@@ -7167,6 +7199,9 @@ class AnazhRealm {
         s.enabled = false;
         s.ambient = null;
         s.weather = null;
+        // W4 V2 — die Lofi-Akkord-Oszillatoren sind transient (auto-stop);
+        // Gain + Filter werden mit dem geschlossenen ctx vom GC geräumt.
+        s.lofi = null;
         s.masterGain = null;
     }
 
@@ -7307,6 +7342,17 @@ class AnazhRealm {
         osc.stop(t + 0.2);
     }
 
+    // W4 V3 — die Ziel-Lautstärke der Wetter-Noise (Regen — gefiltertes
+    // White-Noise, die EINZIGE Rausch-Quelle der Symphonie). Sie hängt am
+    // selben Regler wie die Kreatur-Pings (creaturePingVolume — „Umgebungs-
+    // geräusche"). V8.89 — Basiswert 0.014 (~80 % leiser als V8.88s 0.072,
+    // Schöpfer-Wunsch: das Rauschen war zu präsent).
+    _symphonyWeatherTarget() {
+        const s = this.state.symphony;
+        const pingVol = typeof s.creaturePingVolume === "number" ? s.creaturePingVolume : 1.0;
+        return (this.state.weather === "rainy" ? 0.014 : 0) * pingVol;
+    }
+
     // [ATMOSPHERE] Symphonie-Tick. V8.25-Erweiterung: ambient-Gain atmet
     // mit der Tageszeit — bei Nacht tiefer + ruhiger (×0.5), bei Mittag
     // hell + voll (×1.0), Übergänge sanft. Vision §4: Welt-Klang folgt
@@ -7314,15 +7360,17 @@ class AnazhRealm {
     symphonyTick() {
         const s = this.state.symphony;
         if (!s.enabled || !s.ctx) return;
+        // W4 V2 — der Lofi-Pad-Scheduler (eigene Akkord-Dauer-Drosselung).
+        this._lofiTick();
         // (1) Wetter-Cross-Fade (wie V8.24)
         if (s.lastWeather !== this.state.weather) {
-            const target = this.state.weather === "rainy" ? 0.18 : 0.0;
+            const target = this._symphonyWeatherTarget();
             const now = s.ctx.currentTime;
             s.weather.gain.gain.cancelScheduledValues(now);
             s.weather.gain.gain.setValueAtTime(s.weather.gain.gain.value, now);
             s.weather.gain.gain.linearRampToValueAtTime(target, now + 1.5);
             s.lastWeather = this.state.weather;
-            this.log(`Symphonie: wetter-Layer → ${target.toFixed(2)} (${this.state.weather})`, "DEBUG");
+            this.log(`Symphonie: wetter-Layer → ${target.toFixed(3)} (${this.state.weather})`, "DEBUG");
         }
         // (2) V8.25 — Tag-Nacht-Modulation des Ambient. Throttle auf 1 Hz.
         const ctx = s.ctx;
@@ -7334,8 +7382,9 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const angle = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(0, Math.sin(angle)); // 0=Nacht, 1=Mittag
-        // Gain: Nacht 0.075 (halb so laut), Mittag 0.15 (Original)
-        const targetGain = 0.075 + 0.075 * sunHeight;
+        // V8.88 — Gain: Nacht 0.005, Mittag 0.01 (Drone −80%, Schöpfer-
+        // Wunsch — eine kaum hörbare Grundierung unter Harmonie + Melodie).
+        const targetGain = 0.005 + 0.005 * sunHeight;
         const nowCtx = ctx.currentTime;
         const ag = s.ambient.ambientGain;
         try {
@@ -7356,6 +7405,449 @@ class AnazhRealm {
                 void e;
             }
         }
+    }
+
+    // ### W4 V2 — die Lofi-Pad-Schicht ###
+    // Eine ruhige Minor-7th-Akkordfolge (~60 BPM) als vierte Symphonie-
+    // Schicht. Der Pad sitzt leise unter dem Ambient-Drone. Emotion-
+    // Modulation: hope hebt die Terz (Moll → Dur, heller), sorrow
+    // verlangsamt das Tempo. Web-Audio nativ, kein Asset.
+
+    // Die Lofi-Schicht im Audio-Graph aufbauen: ein warmer Tiefpass + ein
+    // leiser Gain an den Master-Bus. Die Akkord-Oszillatoren selbst sind
+    // transient (je Akkord neu, mit Hüllkurve, auto-stop).
+    _buildLofiLayer(ctx, masterGain) {
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 900; // warm, gedämpft — der Lofi-Charakter
+        filter.Q.value = 0.6;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.12; // leise — der Pad sitzt unter dem Ambient
+        filter.connect(gain);
+        gain.connect(masterGain);
+        // W4 V3 Phase 2 — die Lead-Stimme (Melodie) hat ihren eigenen Gain,
+        // etwas präsenter als der Pad, damit die Melodie über ihm singt.
+        const melodyGain = ctx.createGain();
+        melodyGain.gain.value = 0.24; // V8.91 — Lead-Stimme −20% (Schöpfer-Wunsch)
+        melodyGain.connect(masterGain);
+        // W4 V3 Phase 3 — die Groove-Schicht (synthetische Trommeln) + ein
+        // kurzer White-Noise-Puffer für Snare/Hihat (je Schlag eine frische,
+        // billige BufferSource aus diesem geteilten Puffer).
+        const grooveGain = ctx.createGain();
+        grooveGain.gain.value = 0.5; // V8.92 — lauter (der Groove war zu leise; war 0.35)
+        grooveGain.connect(masterGain);
+        // W4 V3 Phase 4 — der Bass-Layer (folgt den Akkord-Wurzeln, eine
+        // Oktave unter dem Pad; verzahnt sich mit der Kick).
+        const bassGain = ctx.createGain();
+        bassGain.gain.value = 0.46;
+        bassGain.connect(masterGain);
+        const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
+        const nd = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+        // W4 V3 — der Harmonie-RNG, deterministisch aus worldMeta.seed: jede
+        // Welt bekommt ihr eigenes Lied (Mulberry32, wie das Sternenfeld; ein
+        // ":lofi"-Suffix entkoppelt die Akkordfolge vom Stern-Muster).
+        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":lofi";
+        let seedNum = 0;
+        for (let i = 0; i < seedStr.length; i++) seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
+        return {
+            filter,
+            gain,
+            melodyGain,
+            grooveGain,
+            bassGain,
+            noiseBuffer,
+            degree: 0,
+            lastChordAt: -Infinity,
+            rngState: seedNum,
+        };
+    }
+
+    // W4 V3 — ein Mulberry32-Schritt auf dem Lofi-Harmonie-RNG. Deterministisch
+    // (seed-getrieben), aber über die Akkordfolge hinweg fortschreitend — die
+    // Progression ist je Welt reproduzierbar, wiederholt sich aber nie exakt.
+    _lofiRandom() {
+        const lofi = this.state.symphony && this.state.symphony.lofi;
+        if (!lofi) return Math.random();
+        lofi.rngState = (lofi.rngState + 0x6d2b79f5) >>> 0;
+        let t = lofi.rngState;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+
+    // W4 V3 — ein Tonleiter-Index (kann > 6, wickelt in höhere Oktaven) zu
+    // einem Halbton-Abstand zur Wurzel. Negative Indizes werden gewickelt.
+    _lofiScaleSemitone(idx) {
+        const scale = AnazhRealm.LOFI_SCALE;
+        const n = scale.length;
+        const wrapped = ((idx % n) + n) % n;
+        return scale[wrapped] + 12 * Math.floor(idx / n);
+    }
+
+    // W4 V3 — den diatonischen Septakkord einer Tonleiter-Stufe als Halbton-
+    // Abstände: gestapelte Terzen (Stufe d, d+2, d+4, d+6), mit Oktav-Umbruch.
+    _lofiChordFromDegree(degree) {
+        const offsets = [];
+        for (let k = 0; k < 4; k++) offsets.push(this._lofiScaleSemitone(degree + k * 2));
+        return offsets;
+    }
+
+    // W4 V3 Phase 2 — die Melodie. Eine improvisierte Phrase über dem Akkord
+    // der aktuellen Stufe, auf einem 8-Schritt-Rhythmus-Raster (Achtel-Gefühl).
+    // V8.90 — eine ECHTE Rhythmik: nicht jeder Schritt trägt eine Note (eine
+    // Onset-Wahrscheinlichkeit lässt PAUSEN), die Noten haben verschiedene
+    // LÄNGEN (1-4 Schritte — Halbe, Viertel, Achtel) und DYNAMIK (ein starker
+    // Takt-Schritt klingt lauter), plus eine kleine Zeit-Humanisierung — die
+    // Phrase ist nicht mehr stur. Tonhöhe: startet auf einem Akkord-Ton,
+    // wandert meist schrittweise (Sprünge lösen sich), der letzte Ton löst
+    // auf. Liefert [{freq, start, dur, idx, vel}] — seed-deterministisch.
+    _lofiMelodyNotes(degree, durSec) {
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const joy = Math.max(0, Math.min(1, emotions.joy || 0));
+        const peace = Math.max(0, Math.min(1, emotions.peace || 0));
+        const STEPS = 8;
+        const stepDur = durSec / STEPS;
+        // Onset-Neigung: joy belebt (mehr Noten), peace beruhigt (mehr Pausen).
+        const onsetBias = Math.max(0.2, Math.min(0.95, 0.6 + joy * 0.3 - peace * 0.35));
+        const chordIdx = [degree, degree + 2, degree + 4, degree + 6];
+        let idx = chordIdx[Math.floor(this._lofiRandom() * chordIdx.length)];
+        let lastDelta = 0;
+        const notes = [];
+        let step = 0;
+        while (step < STEPS) {
+            // Metrisches Gewicht: Takt-Eins stark, Schlag mittel, Off-Beat schwach.
+            const strong = step % 4 === 0 ? 1.0 : step % 2 === 0 ? 0.65 : 0.4;
+            // Schritt 0 startet die Phrase immer; sonst entscheidet die
+            // Onset-Wahrscheinlichkeit — ein Nein ist eine PAUSE.
+            const onsetProb = step === 0 ? 1 : onsetBias * strong;
+            if (this._lofiRandom() >= onsetProb) {
+                step += 1;
+                continue;
+            }
+            // Noten-LÄNGE in Schritten: kurz/mittel/lang; peace dehnt.
+            const lr = this._lofiRandom();
+            let len = lr < 0.5 ? 1 : lr < 0.82 ? 2 : 3;
+            if (peace > 0.5 && this._lofiRandom() < peace) len += 1;
+            len = Math.min(len, STEPS - step);
+            // DYNAMIK: ein starker Schritt klingt lauter.
+            const vel = 0.14 + 0.16 * strong;
+            // Kleine Zeit-Humanisierung (±6 % eines Schritts) — nicht stur.
+            const jitter = (this._lofiRandom() - 0.5) * 0.12 * stepDur;
+            notes.push({
+                freq: AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (this._lofiScaleSemitone(idx) + 24) / 12),
+                start: Math.max(0, step * stepDur + jitter),
+                dur: len * stepDur * 0.92,
+                idx,
+                vel,
+            });
+            // Tonhöhen-Walk: meist Schritt, selten Sprung; Sprünge lösen sich.
+            const r = this._lofiRandom();
+            const stepSize = r < 0.62 ? 1 : r < 0.86 ? 2 : 3;
+            let dir = this._lofiRandom() < 0.5 ? -1 : 1;
+            if (Math.abs(lastDelta) >= 2) dir = lastDelta > 0 ? -1 : 1;
+            const delta = stepSize * dir;
+            idx += delta;
+            if (idx < degree - 2) idx = degree - 2 + stepSize;
+            if (idx > degree + 12) idx = degree + 12 - stepSize;
+            lastDelta = delta;
+            step += len;
+        }
+        // Der letzte Ton löst auf dem nächstgelegenen Akkord-Ton auf.
+        const last = notes[notes.length - 1];
+        const resolveIdx = chordIdx.reduce(
+            (best, c) => (Math.abs(c - last.idx) < Math.abs(best - last.idx) ? c : best),
+            chordIdx[0]
+        );
+        last.idx = resolveIdx;
+        last.freq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (this._lofiScaleSemitone(resolveIdx) + 24) / 12);
+        return notes;
+    }
+
+    // W4 V3 Phase 2 — die Melodie-Phrase spielen: je Note ein Sinus-Oszillator
+    // (klare, weiche Lead-Stimme über dem Dreieck-Pad) mit Pluck-Hüllkurve.
+    _lofiPlayMelody(degree, durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.melodyGain) return;
+        const ctx = s.ctx;
+        const now = ctx.currentTime;
+        for (const note of this._lofiMelodyNotes(degree, durSec)) {
+            const osc = ctx.createOscillator();
+            osc.type = "sine";
+            osc.frequency.value = note.freq;
+            const env = ctx.createGain();
+            const t0 = now + note.start;
+            // V8.88 — eine SINGENDE Hüllkurve (Anschlag → Halt → Ausklang).
+            // V8.90 — der Spitzen-Pegel folgt der Noten-Dynamik (note.vel):
+            // ein starker Takt-Schritt klingt lauter, ein schwacher leiser.
+            env.gain.setValueAtTime(0, t0);
+            env.gain.linearRampToValueAtTime(note.vel, t0 + 0.05);
+            env.gain.linearRampToValueAtTime(note.vel * 0.6, t0 + note.dur * 0.7);
+            env.gain.linearRampToValueAtTime(0, t0 + note.dur);
+            osc.connect(env);
+            env.connect(s.lofi.melodyGain);
+            osc.start(t0);
+            osc.stop(t0 + note.dur + 0.05);
+        }
+    }
+
+    // W4 V3 Phase 3 — die Zeit eines Raster-Schritts mit Swing. Gerade
+    // Schritte liegen auf dem Schlag; ungerade (Off-Beats) werden verzögert
+    // (swing 0.5 = gerade, ~0.6 = Lofi/Jazz-Atem).
+    _grooveStepTime(step, stepDur, swing) {
+        if (step % 2 === 0) return step * stepDur;
+        return (step - 1) * stepDur + swing * 2 * stepDur;
+    }
+
+    // W4 V3 Phase 3 — eine synthetische Kick: ein Sinus mit Tonhöhen-Abfall
+    // (200 → 70 Hz — hoch genug, dass auch kleine Lautsprecher ihn tragen)
+    // + ein kurzer Noise-Klick, damit der Schlag-Transient auf JEDER Anlage
+    // hörbar ist (V8.92 — der reine 140→48-Hz-Tiefbass-Sinus war auf Laptops
+    // praktisch stumm; der Groove „nicht zu hören" war kein Bug, nur zu tief).
+    _lofiKick(t) {
+        const s = this.state.symphony;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const ctx = s.ctx;
+        // Körper: Sinus mit schnellem Tonhöhen-Abfall.
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(200, t);
+        osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.85, t + 0.006);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+        osc.connect(env);
+        env.connect(s.lofi.grooveGain);
+        osc.start(t);
+        osc.stop(t + 0.28);
+        // Klick: ein sehr kurzer hoch-gefilterter Noise-Tick — der Transient,
+        // der den Schlag auch ohne Tiefbass-Wiedergabe trägt.
+        const click = ctx.createBufferSource();
+        click.buffer = s.lofi.noiseBuffer;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 1600;
+        const cenv = ctx.createGain();
+        cenv.gain.setValueAtTime(0.0001, t);
+        cenv.gain.exponentialRampToValueAtTime(0.5, t + 0.002);
+        cenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+        click.connect(hp);
+        hp.connect(cenv);
+        cenv.connect(s.lofi.grooveGain);
+        click.start(t);
+        click.stop(t + 0.05);
+    }
+
+    // W4 V3 Phase 3 — eine synthetische Snare: ein White-Noise-Burst durch
+    // einen Hochpass, kurze scharfe Hüllkurve.
+    _lofiSnare(t) {
+        const s = this.state.symphony;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const ctx = s.ctx;
+        const src = ctx.createBufferSource();
+        src.buffer = s.lofi.noiseBuffer;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 1200;
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.5, t + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        src.connect(hp);
+        hp.connect(env);
+        env.connect(s.lofi.grooveGain);
+        src.start(t);
+        src.stop(t + 0.22);
+    }
+
+    // W4 V3 Phase 3 — ein synthetisches Hihat: ein sehr kurzer, hoch-
+    // gefilterter White-Noise-Tick.
+    _lofiHihat(t) {
+        const s = this.state.symphony;
+        if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const ctx = s.ctx;
+        const src = ctx.createBufferSource();
+        src.buffer = s.lofi.noiseBuffer;
+        const hp = ctx.createBiquadFilter();
+        hp.type = "highpass";
+        hp.frequency.value = 7000;
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(0.0001, t);
+        env.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+        src.connect(hp);
+        hp.connect(env);
+        env.connect(s.lofi.grooveGain);
+        src.start(t);
+        src.stop(t + 0.08);
+    }
+
+    // W4 V3 Phase 3 — den Groove einer Akkord-Dauer spielen: das Trommel-
+    // Muster über das 8-Schritt-Raster, mit Swing. peace dünnt die Off-Beat-
+    // Hihats aus (ruhiger), joy lässt sie voll (lebhafter).
+    _lofiPlayGroove(durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
+        const STEPS = 8;
+        const stepDur = durSec / STEPS;
+        const now = s.ctx.currentTime;
+        const pat = AnazhRealm.LOFI_GROOVE_PATTERN;
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const peace = Math.max(0, Math.min(1, emotions.peace || 0));
+        for (let step = 0; step < STEPS; step++) {
+            const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
+            if (pat.kick.indexOf(step) >= 0) this._lofiKick(t);
+            if (pat.snare.indexOf(step) >= 0) this._lofiSnare(t);
+            // peace > 0.6 lässt die Off-Beat-Hihats aus — ein ruhigerer Groove.
+            if (pat.hihat.indexOf(step) >= 0 && !(peace > 0.6 && step % 2 === 1)) this._lofiHihat(t);
+        }
+    }
+
+    // W4 V3 — die nächste Akkord-Stufe per funktionaler Markov-Kette wählen.
+    // Emotion biast die Wahl: joy/hope ziehen zu hellen Stufen (III/VI),
+    // sorrow zu dunklen (i/ii°/iv) — die Harmonie spürt den Menschen.
+    _lofiNextDegree(degree) {
+        const table = AnazhRealm.LOFI_HARMONY;
+        const transitions = table[((degree % table.length) + table.length) % table.length] || table[0];
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const bright = Math.max(0, Math.min(1, (emotions.joy || 0) * 0.5 + (emotions.hope || 0) * 0.5));
+        const dark = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        let total = 0;
+        const weighted = transitions.map(([d, w]) => {
+            let weight = w;
+            if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(d) >= 0) weight *= 1 + bright * 0.8;
+            if (AnazhRealm.LOFI_DARK_DEGREES.indexOf(d) >= 0) weight *= 1 + dark * 0.8;
+            total += weight;
+            return [d, weight];
+        });
+        let r = this._lofiRandom() * total;
+        for (const [d, w] of weighted) {
+            r -= w;
+            if (r <= 0) return d;
+        }
+        return weighted[weighted.length - 1][0];
+    }
+
+    // Die Halbton-Abstände eines Akkords zu Frequenzen. majorLean (aus der
+    // hope-Emotion) hebt die Terz (den 2. Ton) um einen Halbton: Moll → Dur,
+    // der Akkord klingt heller.
+    _lofiChordFreqs(offsets, majorLean) {
+        const base = AnazhRealm.LOFI_BASE_FREQ;
+        return offsets.map((semi, i) => {
+            const lifted = majorLean && i === 1 ? semi + 1 : semi;
+            return base * Math.pow(2, lifted / 12);
+        });
+    }
+
+    // Die Akkord-Dauer in ms. 60 BPM × 4 Schläge = 4 s; sorrow (Trauer)
+    // verlangsamt das Tempo um bis zu 50 % (bis ~6 s je Akkord).
+    _lofiChordDurationMs() {
+        const beatMs = 60000 / AnazhRealm.LOFI_BPM;
+        const base = beatMs * AnazhRealm.LOFI_CHORD_BEATS;
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        return base * (1 + sorrow * 0.5);
+    }
+
+    // W4 V3 Phase 4 — der Bass. Folgt der Akkord-Wurzel: ein Dreieck-Ton eine
+    // Oktave unter dem Pad-Grundton, gespielt auf den Kick-Schritten — Bass +
+    // Kick verzahnen sich (das Fundament eines Grooves). Dreieck statt Sinus,
+    // damit die Obertöne ihn auch auf kleinen Lautsprechern tragen (V8.92).
+    _lofiPlayBass(degree, durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.bassGain) return;
+        const ctx = s.ctx;
+        const now = ctx.currentTime;
+        const stepDur = durSec / 8;
+        const rootOffset = this._lofiChordFromDegree(degree)[0];
+        // Die Sub-Frequenz liegt eine Oktave unter dem Pad (55-104 Hz) — der
+        // tiefe Körper. ABER ein reiner Sub-Ton ist auf kleinen Lautsprechern
+        // fast stumm (V8.92-Lehre: ~70 Hz ist die Wiedergabe-Untergrenze).
+        // Darum trägt jeder Bass-Schlag ZWEI Stimmen: die Sub (der Körper) +
+        // eine Oktav-Stimme darüber (110-208 Hz — sie trägt den Bass auch auf
+        // Anlagen, die den Tiefbass schlucken; wie der Noise-Klick die Kick).
+        const subFreq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (rootOffset - 12) / 12);
+        const voices = [
+            { freq: subFreq, attackPeak: 0.5, sustainPeak: 0.32 },
+            { freq: subFreq * 2, attackPeak: 0.46, sustainPeak: 0.3 },
+        ];
+        for (const step of AnazhRealm.LOFI_GROOVE_PATTERN.kick) {
+            const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
+            const dur = stepDur * 1.4;
+            for (const voice of voices) {
+                const osc = ctx.createOscillator();
+                osc.type = "triangle";
+                osc.frequency.value = voice.freq;
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, t);
+                env.gain.linearRampToValueAtTime(voice.attackPeak, t + 0.03);
+                env.gain.linearRampToValueAtTime(voice.sustainPeak, t + dur * 0.6);
+                env.gain.linearRampToValueAtTime(0, t + dur);
+                osc.connect(env);
+                env.connect(s.lofi.bassGain);
+                osc.start(t);
+                osc.stop(t + dur + 0.05);
+            }
+        }
+    }
+
+    // Einen Akkord spielen: je Ton ein Dreieck-Oszillator (weich, pad-artig)
+    // durch eine eigene Hüllkurve (langsamer Anschlag + Ausklang) in die
+    // Lofi-Schicht. Die Oszillatoren stoppen selbst nach dem Akkord.
+    _lofiPlayChord(offsets) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi) return;
+        const ctx = s.ctx;
+        const now = ctx.currentTime;
+        const durSec = this._lofiChordDurationMs() / 1000;
+        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const majorLean = (emotions.hope || 0) > 0.6;
+        const freqs = this._lofiChordFreqs(offsets, majorLean);
+        // W4 V3 Phase 4 — die Stimmen-Zahl wächst mit der Welt-Stimmung: bei
+        // hellem Gemüt (joy + awe > 0.8) bekommt jeder Akkord-Ton eine leise
+        // Oktav-Dopplung — der Pad klingt voller, „orchestraler".
+        const bright = (emotions.joy || 0) + (emotions.awe || 0);
+        const voiceMults = bright > 0.8 ? [1, 2] : [1];
+        const attack = 0.8;
+        const release = 1.4;
+        const sustainAt = now + Math.max(attack, durSec - release);
+        for (const freq of freqs) {
+            for (const mult of voiceMults) {
+                const peak = mult === 1 ? 0.25 : 0.1; // die Oktav-Dopplung leiser
+                const osc = ctx.createOscillator();
+                osc.type = "triangle";
+                osc.frequency.value = freq * mult;
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, now);
+                env.gain.linearRampToValueAtTime(peak, now + attack);
+                env.gain.setValueAtTime(peak, sustainAt);
+                env.gain.linearRampToValueAtTime(0, now + durSec);
+                osc.connect(env);
+                env.connect(s.lofi.filter);
+                osc.start(now);
+                osc.stop(now + durSec + 0.1);
+            }
+        }
+    }
+
+    // Der Lofi-Scheduler. Läuft aus symphonyTick; spielt den nächsten Akkord,
+    // wenn die Akkord-Dauer seit dem letzten verstrichen ist. W4 V3 — die
+    // Harmonie wächst: der Akkord der aktuellen Stufe wird gespielt, dann die
+    // nächste Stufe per funktionaler Markov-Kette gewählt (kein Loop mehr).
+    _lofiTick() {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi) return;
+        const now = s.ctx.currentTime;
+        const durSec = this._lofiChordDurationMs() / 1000;
+        if (now - s.lofi.lastChordAt < durSec) return;
+        const degree = s.lofi.degree;
+        this._lofiPlayChord(this._lofiChordFromDegree(degree));
+        this._lofiPlayMelody(degree, durSec);
+        this._lofiPlayGroove(durSec);
+        this._lofiPlayBass(degree, durSec);
+        s.lofi.lastChordAt = now;
+        s.lofi.degree = this._lofiNextDegree(degree);
     }
 
     // ### Status-Panel (UI V1) ###
@@ -14867,7 +15359,15 @@ class AnazhRealm {
         // geholtes Portal lädt mit dem Transport-Shim + broadcastet beim
         // Betreten eine Gruppen-Portal-Einladung (W17 Phase C). Muss den
         // localStorage-Rundlauf überleben (V8.59-Lehre).
-        if (m.multiplayer === true) out.multiplayer = true;
+        // W17 P-Vendor — der Server-Modus deklariert sich selbst: relay
+        // (Default — das Mesh broadcastet) oder js-compute (ein Peer wird
+        // Compute-Host für die autoritative Server-JS). Muss den localStorage-
+        // Rundlauf überleben (V8.59-Lehre) + über aimBlueprintAtWorld ins
+        // portalMeta fliessen, damit ein geholtes Portal js-compute wird.
+        out.serverMode = m.serverMode === "js-compute" ? "js-compute" : "relay";
+        // Eine js-compute-Welt ist per Natur mehrspielerfähig — die Marke
+        // koppelt mit (wie _sanitizePortalMeta es im portalMeta erzwingt).
+        if (m.multiplayer === true || out.serverMode === "js-compute") out.multiplayer = true;
         return out;
     }
 
@@ -14893,6 +15393,8 @@ class AnazhRealm {
             // W17 — die Multiplayer-Marke reist mit dem geteilten Manifest
             // (Metadaten, nicht signierte Substanz — wie world-Pfad/desc).
             multiplayer: entry.multiplayer === true,
+            // W17 P-Vendor — der Server-Modus reist mit dem geteilten Manifest.
+            serverMode: entry.serverMode === "js-compute" ? "js-compute" : "relay",
             authorPubKey: sig.authorPubKey,
             signature: sig.signature,
             signedHash: sig.signedHash || "",
@@ -15359,6 +15861,9 @@ class AnazhRealm {
             // ihr geholtes Portal lädt mit dem Transport-Shim + broadcastet
             // beim Betreten eine Gruppen-Portal-Einladung (W17 Phase C).
             multiplayer: m.multiplayer === true,
+            // W17 P-Vendor — der Server-Modus: js-compute → das geholte Portal
+            // wird ein Compute-Host-Portal (V8.79), nicht blosser Relay.
+            serverMode: m.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!entry) return { ok: false, reason: "invalid_manifest" };
         if (!this.state.customWorlds) this.state.customWorlds = {};
@@ -15397,6 +15902,7 @@ class AnazhRealm {
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
             multiplayer: o.multiplayer === true,
+            serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
@@ -15427,6 +15933,7 @@ class AnazhRealm {
             dsl: o.dsl,
             bundleHash: posted.bundleHash,
             multiplayer: o.multiplayer === true,
+            serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
@@ -18339,11 +18846,15 @@ class AnazhRealm {
             }
             // W17 — eine Multiplayer-Welt: eine Gruppe kann gemeinsam durch
             // ihr Tor eintreten (Gruppen-Portal). Browsbar sichtbar gemacht.
+            // W17 P-Vendor — eine js-compute-Welt zusätzlich kenntlich machen.
             if (w.multiplayer === true) {
                 const mp = document.createElement("span");
                 mp.className = "library-mp-mark";
-                mp.textContent = "Multiplayer";
-                mp.title = "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
+                const jsCompute = w.serverMode === "js-compute";
+                mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
+                mp.title = jsCompute
+                    ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
+                    : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
                 head.appendChild(mp);
             }
             card.appendChild(head);
@@ -18881,12 +19392,15 @@ class AnazhRealm {
         let res;
         try {
             const mpEl = document.getElementById("vendor-multiplayer");
+            const jsEl = document.getElementById("vendor-js-compute");
             res = await this.vendorWorldBundle({
                 worldId: idEl.value,
                 label: labelEl ? labelEl.value : "",
                 desc: descEl ? descEl.value : "",
                 dsl,
-                multiplayer: !!(mpEl && mpEl.checked),
+                // Eine JS-Compute-Welt ist per Natur mehrspielerfähig.
+                multiplayer: !!((mpEl && mpEl.checked) || (jsEl && jsEl.checked)),
+                serverMode: jsEl && jsEl.checked ? "js-compute" : "relay",
                 files,
             });
         } catch (e) {
@@ -18931,13 +19445,16 @@ class AnazhRealm {
         let res;
         try {
             const mpEl = document.getElementById("vendor-multiplayer");
+            const jsEl = document.getElementById("vendor-js-compute");
             res = await this.vendorWorldFromRepo({
                 worldId: idEl.value,
                 repoUrl,
                 label: labelEl ? labelEl.value : "",
                 desc: descEl ? descEl.value : "",
                 dsl,
-                multiplayer: !!(mpEl && mpEl.checked),
+                // Eine JS-Compute-Welt ist per Natur mehrspielerfähig.
+                multiplayer: !!((mpEl && mpEl.checked) || (jsEl && jsEl.checked)),
+                serverMode: jsEl && jsEl.checked ? "js-compute" : "relay",
             });
         } catch (e) {
             res = { ok: false, reason: (e && e.message) || "Fehler" };
@@ -19152,6 +19669,10 @@ class AnazhRealm {
             netChannels: new Set(),
             netWindowStart: 0,
             netWindowCount: 0,
+            // W12 P3-Härtung — das Rate-Limit-Fenster des Portal-Rückkanals
+            // (_portalReceiveEvent): eine flutende fremde Welt deckeln.
+            eventWindowStart: 0,
+            eventWindowCount: 0,
             // W17 Phase B-JS-Compute — der Server-Modus + die Compute-Rolle.
             // "relay" → das Mesh broadcastet (B-Relay). "js-compute" → ein
             // Peer ist Compute-Host (computeRole "host", serverIframe gesetzt),
@@ -19488,6 +20009,22 @@ class AnazhRealm {
         const text = String((msg && msg.text) || "").trim();
         if (!text) return false;
         const po = this._portalOverlay;
+        // W12 P3-Härtung — Rate-Limit: ein Fenster-Zähler deckelt die
+        // Ereignisse je Sekunde (Spiegel von _portalNetReceive B3). Eine
+        // ungeprüfte vendorte Welt (V8.70+) könnte sonst pro Frame ein
+        // Ereignis posten und das 200-Eintrag-Journal verdrängen. Lazy-Init
+        // der Zähler — robust auch für ein minimales Overlay-Objekt.
+        if (typeof po.eventWindowStart !== "number") {
+            po.eventWindowStart = 0;
+            po.eventWindowCount = 0;
+        }
+        const now = performance.now();
+        if (now - po.eventWindowStart >= AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS) {
+            po.eventWindowStart = now;
+            po.eventWindowCount = 0;
+        }
+        if (po.eventWindowCount >= AnazhRealm.PORTAL_EVENT_RATE_MAX) return false;
+        po.eventWindowCount++;
         this.journalAppend("portal", text.slice(0, 160), { world: po.label || po.world || "Portal-Welt" });
         return true;
     }
@@ -29919,6 +30456,15 @@ class AnazhRealm {
             ps.addEventListener("input", () => {
                 const v = parseFloat(ps.value) / 100;
                 this.state.symphony.creaturePingVolume = v;
+                // W4 V3 — der Regler steuert auch die Wetter-Noise (Regen):
+                // die laufende Noise-Schicht live nachziehen.
+                const sym = this.state.symphony;
+                if (sym.enabled && sym.ctx && sym.weather) {
+                    const t = sym.ctx.currentTime;
+                    sym.weather.gain.gain.cancelScheduledValues(t);
+                    sym.weather.gain.gain.setValueAtTime(sym.weather.gain.gain.value, t);
+                    sym.weather.gain.gain.linearRampToValueAtTime(this._symphonyWeatherTarget(), t + 0.3);
+                }
                 if (psv) psv.textContent = `${ps.value}%`;
                 if (typeof localStorage !== "undefined") {
                     try {
@@ -33230,6 +33776,86 @@ AnazhRealm.PORTAL_REACH_M = 4.5;
 AnazhRealm.SUBWORLD_NET_MAX_BYTES = 16384; // 16 KiB je ws-send (Relay-.io-Nachrichten sind winzig)
 AnazhRealm.SUBWORLD_NET_RATE_WINDOW_MS = 1000;
 AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Reserve
+// W12 P3-Härtung — der Portal-Rückkanal (_portalReceiveEvent: Sub-Welt →
+// Heimat-Journal) deckelt die Ereignisse je Sekunde. Eine ungeprüfte vendorte
+// Welt (V8.70+) könnte sonst pro Frame ein Ereignis posten und das 200-
+// Eintrag-Journal in Sekunden verdrängen. 8/s ist grosszügig für legitime
+// Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
+AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
+AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
+// W4 V2/V3 — die Lofi-Pad-Schicht. Eine Harmonie in A-Moll (die Wurzel 110 Hz
+// = A2 deckt sich mit dem Ambient-Drone). W4 V3: die Akkordfolge wächst aus
+// einer Tonleiter + einer funktionalen Markov-Kette — kein fester Akkord-Satz
+// mehr. ~60 BPM, ein Akkord je 4 Schläge. Web-Audio nativ, kein Asset.
+AnazhRealm.LOFI_BASE_FREQ = 110; // A2
+// W4 V3 — die Tonleiter (A natürlich Moll: A B C D E F G) als Halbton-
+// Abstände zur Wurzel. Diatonische Septakkorde emergieren als gestapelte
+// Terzen über dieser Leiter (Stufe d → d, d+2, d+4, d+6).
+AnazhRealm.LOFI_SCALE = Object.freeze([0, 2, 3, 5, 7, 8, 10]);
+// W4 V3 — die funktionale Harmonie-Markov-Kette. Je Stufe (0=i … 6=VII) eine
+// Liste [nächste Stufe, Gewicht]: Tonika → Subdominante → Dominante → Tonika.
+// Eine seed-getriebene Wahl daraus — die Progression wiederholt sich nie
+// exakt, klingt aber zielgerichtet (kein Loop mehr).
+AnazhRealm.LOFI_HARMONY = Object.freeze([
+    Object.freeze([
+        [3, 3],
+        [5, 3],
+        [1, 2],
+        [4, 1],
+        [2, 1],
+    ]), // 0 i   → iv/VI/ii°
+    Object.freeze([
+        [4, 4],
+        [6, 3],
+        [0, 1],
+    ]), // 1 ii° → v/VII
+    Object.freeze([
+        [5, 3],
+        [3, 3],
+        [1, 2],
+        [0, 1],
+    ]), // 2 III → VI/iv
+    Object.freeze([
+        [4, 3],
+        [6, 3],
+        [0, 2],
+        [1, 1],
+    ]), // 3 iv  → v/VII/i
+    Object.freeze([
+        [0, 5],
+        [5, 2],
+        [2, 1],
+    ]), // 4 v   → i (Auflösung)
+    Object.freeze([
+        [3, 3],
+        [1, 3],
+        [4, 2],
+        [2, 1],
+    ]), // 5 VI  → iv/ii°
+    Object.freeze([
+        [0, 4],
+        [2, 3],
+        [5, 1],
+    ]), // 6 VII → i/III
+]);
+// W4 V3 — helle (Dur-Qualität) + dunkle Stufen für die Emotion-Bias der
+// Harmonie-Wahl: joy/hope ziehen zu hell, sorrow zu dunkel.
+AnazhRealm.LOFI_BRIGHT_DEGREES = Object.freeze([2, 5]); // III, VI
+AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
+AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo
+AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
+// W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
+// Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +
+// dem „Und" vor Takt-Drei + Takt-Drei, Snare auf dem Backbeat, Hihat auf
+// allen Achteln. Synthetisch (Web Audio), kein Asset.
+AnazhRealm.LOFI_GROOVE_PATTERN = Object.freeze({
+    kick: Object.freeze([0, 3, 4]),
+    snare: Object.freeze([2, 6]),
+    hihat: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7]),
+});
+// Swing: die Off-Beat-Schritte (ungerade) werden verzögert — 0.5 = gerade,
+// ~0.6 = der typische Lofi/Jazz-Atem (Genre-Preset-Parameter, W4 V3).
+AnazhRealm.GROOVE_SWING = 0.58;
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

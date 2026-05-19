@@ -117,7 +117,22 @@ function startSaveServer() {
             .evaluate(() => {
                 const r = window.anazhRealm;
                 if (!r || !r.state) return null;
-                const box = document.getElementById("dialogue-box");
+                // V8.83 — deterministische Mechanik-Probe statt der flaky
+                // Messung des Box-Inhalts am Lauf-Ende (V8.57-Disziplin):
+                // grokRender schreibt einen Prüfsatz, die Box muss ihn tragen;
+                // ein leerer Satz blankt sie NICHT (der V8.83-Guard).
+                let grokRenderProbe = null;
+                let grokRenderEmptyGuard = false;
+                try {
+                    r.grokRender("Prüfsatz für den Dialog.");
+                    const pb = document.getElementById("dialogue-box");
+                    grokRenderProbe = pb ? pb.textContent : null;
+                    r.grokRender("");
+                    r.grokRender(null);
+                    grokRenderEmptyGuard = !!pb && pb.textContent === "Prüfsatz für den Dialog.";
+                } catch (e) {
+                    grokRenderProbe = "ERR:" + (e && e.message);
+                }
                 return {
                     terrainEverGenerated: r.state.terrainEverGenerated,
                     groundChunks: r.state.groundChunks?.length || 0,
@@ -130,7 +145,8 @@ function startSaveServer() {
                     hasPlayerBody: !!r.state.playerBody,
                     grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
                     grokLastSpoke: r.state.grok?.lastSpoke || 0,
-                    grokDialogueText: box ? box.textContent : null,
+                    grokRenderProbe,
+                    grokRenderEmptyGuard,
                 };
             })
             .catch(() => null);
@@ -189,9 +205,13 @@ function startSaveServer() {
                 `lastSpoke=${finalState.grokLastSpoke}`
             );
             check(
-                "Dialogue-Box trägt einen Satz",
-                typeof finalState.grokDialogueText === "string" && finalState.grokDialogueText.length > 0,
-                `text="${(finalState.grokDialogueText || "").slice(0, 60)}"`
+                "grokRender schreibt einen Satz in die Dialogue-Box",
+                finalState.grokRenderProbe === "Prüfsatz für den Dialog.",
+                `probe="${(finalState.grokRenderProbe || "").slice(0, 60)}"`
+            );
+            check(
+                "grokRender ignoriert leeren Text — die Stimme wird nicht geblankt",
+                finalState.grokRenderEmptyGuard === true
             );
             const grokLogs = logs.filter((l) => /\[INFO\] Grok: /.test(l.text));
             check(
@@ -6172,6 +6192,393 @@ function startSaveServer() {
                 check("W17 MP: renderLibraryUI rendert die Multiplayer-Marke", w17mpResults.libraryRendersMark);
                 check("W17 MP: eine Single-Welt bekommt KEINE Multiplayer-Marke", w17mpResults.libraryNoMarkForSingle);
                 check("W17 MP: #vendor-multiplayer-Checkbox im DOM", w17mpResults.vendorCheckboxInDom);
+            }
+
+            // ### W17 P-Vendor — die serverMode-Vendor-Ketten-Naht ###
+            // serverMode fliesst durch die Vendor-/Mesh-Kette (Spiegel der
+            // multiplayer-Naht oben): _sanitizeImportedManifest,
+            // _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize, der Welt-
+            // Katalog. Ohne sie verlöre eine VENDORTE js-compute-Welt still
+            // ihren serverMode → sie degradierte zu relay.
+            const w17svResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+
+                    // _sanitizeImportedManifest trägt serverMode js-compute +
+                    // Default relay; eine js-compute-Welt wird mit-multiplayer.
+                    const sanJs = r._sanitizeImportedManifest({
+                        id: "_sv_test",
+                        label: "JS-Welt",
+                        world: "worlds/_sv_test/index.html",
+                        dsl: [],
+                        serverMode: "js-compute",
+                    });
+                    out.sanitizeCarriesJsCompute =
+                        !!sanJs && sanJs.serverMode === "js-compute" && sanJs.multiplayer === true;
+                    const sanRelay = r._sanitizeImportedManifest({
+                        id: "_sv_test2",
+                        label: "Relay-Welt",
+                        world: "worlds/_sv_test2/index.html",
+                        dsl: [],
+                    });
+                    out.sanitizeDefaultsRelay = !!sanRelay && sanRelay.serverMode === "relay";
+                    const rt = r._sanitizeImportedManifest(JSON.parse(JSON.stringify(sanJs)));
+                    out.sanitizeSurvivesRoundtrip = !!rt && rt.serverMode === "js-compute";
+
+                    // _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag.
+                    r.state.customWorlds = r.state.customWorlds || {};
+                    const reg = r._vendorRegisterWorld("_sv_vend", {
+                        label: "JS Vendored",
+                        dsl: [],
+                        serverMode: "js-compute",
+                    });
+                    out.vendorRegisterCarriesServerMode =
+                        reg.ok &&
+                        !!r.state.customWorlds["_sv_vend"] &&
+                        r.state.customWorlds["_sv_vend"].serverMode === "js-compute";
+
+                    // obtainPortalForWorld → ein js-compute-Portal: eine
+                    // vendorte js-compute-Welt verliert ihren serverMode NICHT
+                    // mehr, das geholte Portal wird Compute-Host-fähig.
+                    const invSlots = r.state.player.inventory.slice();
+                    const obt = r.obtainPortalForWorld("_sv_vend");
+                    const portalBp = obt.ok && r.state.blueprints[obt.blueprint];
+                    out.obtainProducesJsComputePortal =
+                        !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.serverMode === "js-compute";
+
+                    // _p2pBuildCatalog trägt serverMode.
+                    const cat = r._p2pBuildCatalog();
+                    const catEntry = cat.find((c) => c.id === "_sv_vend");
+                    out.catalogCarriesServerMode = !!catEntry && catEntry.serverMode === "js-compute";
+
+                    // _p2pSanitizeCatalog bewahrt serverMode + Default relay.
+                    const san = r._p2pSanitizeCatalog([
+                        { id: "_svcat", label: "X", hash: "", serverMode: "js-compute" },
+                        { id: "_svrelay", label: "Y", hash: "" },
+                    ]);
+                    out.catalogSanitizeKeepsServerMode =
+                        san.length === 2 && san[0].serverMode === "js-compute" && san[1].serverMode === "relay";
+
+                    // renderLibraryUI markiert eine js-compute-Welt sichtbar.
+                    r.renderLibraryUI();
+                    const cards = Array.from(document.querySelectorAll("#library-list .library-card"));
+                    const jsCard = cards.find((c) => /JS Vendored/.test(c.textContent || ""));
+                    const jsMark = jsCard && jsCard.querySelector(".library-mp-mark");
+                    out.libraryRendersJsComputeMark = !!jsMark && /JS-Compute/.test(jsMark.textContent || "");
+
+                    out.vendorJsComputeCheckboxInDom = !!document.getElementById("vendor-js-compute");
+
+                    // Aufräumen.
+                    delete r.state.customWorlds["_sv_vend"];
+                    delete r.state.blueprints["portal__sv_vend"];
+                    r.state.player.inventory = invSlots;
+                    r.renderLibraryUI();
+
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w17svResults || w17svResults.error) {
+                check(
+                    "W17 P-Vendor erreichbar",
+                    false,
+                    (w17svResults && w17svResults.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                check(
+                    "W17 P-Vendor: _sanitizeImportedManifest trägt serverMode js-compute + erzwingt multiplayer",
+                    w17svResults.sanitizeCarriesJsCompute
+                );
+                check(
+                    "W17 P-Vendor: _sanitizeImportedManifest — Default serverMode relay",
+                    w17svResults.sanitizeDefaultsRelay
+                );
+                check("W17 P-Vendor: serverMode überlebt den localStorage-Rundlauf", w17svResults.sanitizeSurvivesRoundtrip);
+                check(
+                    "W17 P-Vendor: _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag",
+                    w17svResults.vendorRegisterCarriesServerMode
+                );
+                check(
+                    "W17 P-Vendor: obtainPortalForWorld produziert für eine js-compute-Welt ein js-compute-Portal",
+                    w17svResults.obtainProducesJsComputePortal
+                );
+                check("W17 P-Vendor: _p2pBuildCatalog trägt serverMode", w17svResults.catalogCarriesServerMode);
+                check(
+                    "W17 P-Vendor: _p2pSanitizeCatalog bewahrt serverMode js-compute + Default relay",
+                    w17svResults.catalogSanitizeKeepsServerMode
+                );
+                check(
+                    "W17 P-Vendor: renderLibraryUI rendert die JS-Compute-Marke",
+                    w17svResults.libraryRendersJsComputeMark
+                );
+                check("W17 P-Vendor: #vendor-js-compute-Checkbox im DOM", w17svResults.vendorJsComputeCheckboxInDom);
+            }
+
+            // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
+            // V2: ein Pad-Layer (~60 BPM). V3: die Akkordfolge wächst aus
+            // einer Tonleiter + einer funktionalen Markov-Kette (seed- +
+            // emotion-getrieben) — kein fester Akkord-Satz mehr.
+            const w4v2Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    // W4 V3 — Tonleiter + Harmonie-Markov-Kette definiert.
+                    const scale = AnazhRealm.LOFI_SCALE;
+                    const harmony = AnazhRealm.LOFI_HARMONY;
+                    out.scaleHarmonyDefined =
+                        Array.isArray(scale) &&
+                        scale.length === 7 &&
+                        Object.isFrozen(scale) &&
+                        Array.isArray(harmony) &&
+                        harmony.length === 7 &&
+                        Object.isFrozen(harmony) &&
+                        harmony.every((t) => Array.isArray(t) && t.length >= 1);
+                    out.bpmDefined = AnazhRealm.LOFI_BPM === 60 && AnazhRealm.LOFI_BASE_FREQ === 110;
+                    // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen.
+                    const deg0 = r._lofiChordFromDegree(0);
+                    const deg3 = r._lofiChordFromDegree(3);
+                    out.chordFromDegree =
+                        JSON.stringify(deg0) === JSON.stringify([0, 3, 7, 10]) &&
+                        JSON.stringify(deg3) === JSON.stringify([5, 8, 12, 15]);
+                    // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven.
+                    out.scaleSemitone =
+                        r._lofiScaleSemitone(0) === 0 &&
+                        r._lofiScaleSemitone(7) === 12 &&
+                        r._lofiScaleSemitone(2) === 3;
+                    // W4 V3 Phase 3 — der Groove: Trommel-Muster + Swing.
+                    const gp = AnazhRealm.LOFI_GROOVE_PATTERN;
+                    out.grooveDefined =
+                        typeof AnazhRealm.GROOVE_SWING === "number" &&
+                        !!gp &&
+                        Object.isFrozen(gp) &&
+                        Array.isArray(gp.kick) &&
+                        Array.isArray(gp.snare) &&
+                        Array.isArray(gp.hihat) &&
+                        gp.kick.length >= 1 &&
+                        gp.snare.length >= 1 &&
+                        gp.hihat.length >= 1;
+                    // Swing: ein gerader Schritt liegt auf dem Schlag, ein
+                    // Off-Beat (ungerade) wird verzögert; swing 0.5 = gerade.
+                    out.grooveStepTime =
+                        r._grooveStepTime(0, 1, 0.58) === 0 &&
+                        r._grooveStepTime(2, 1, 0.58) === 2 &&
+                        r._grooveStepTime(1, 1, 0.58) > r._grooveStepTime(1, 1, 0.5) &&
+                        r._grooveStepTime(1, 1, 0.5) === 1;
+                    // _lofiChordFreqs — positive Frequenzen, Wurzel A ≈ 110.
+                    const freqs = r._lofiChordFreqs([0, 3, 7, 10], false);
+                    out.freqsPositive = freqs.length === 4 && freqs.every((f) => f > 0);
+                    out.rootIsA = Math.abs(freqs[0] - 110) < 0.01;
+                    // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
+                    const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
+                    out.majorLeanRaisesThird =
+                        freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
+                    // _lofiChordDurationMs — sorrow verlangsamt das Tempo.
+                    const emo = r.state.player.emotions;
+                    const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
+                    emo.sorrow = 0;
+                    const durCalm = r._lofiChordDurationMs();
+                    emo.sorrow = 1;
+                    const durSad = r._lofiChordDurationMs();
+                    out.calmDuration4s = Math.abs(durCalm - 4000) < 1;
+                    out.sorrowSlowsTempo = durSad > durCalm && durSad <= 6001;
+                    // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
+                    if (r.state.symphony && r.state.symphony.enabled && typeof r.disposeSymphony === "function") {
+                        r.disposeSymphony();
+                    }
+                    emo.joy = 0;
+                    emo.hope = 0;
+                    emo.sorrow = 0;
+                    if (typeof r.initSymphony === "function") r.initSymphony();
+                    const sym = r.state.symphony;
+                    out.symphonyReady = !!(sym && sym.enabled && sym.ctx);
+                    if (out.symphonyReady) {
+                        out.lofiLayerBuilt =
+                            !!sym.lofi &&
+                            !!sym.lofi.gain &&
+                            !!sym.lofi.filter &&
+                            !!sym.lofi.melodyGain &&
+                            // V8.91 — die Lead-Stimme sitzt über dem Pad.
+                            sym.lofi.melodyGain.gain.value >= 0.2 &&
+                            // V8.91 Phase 3 — die Groove-Schicht + Noise-Puffer.
+                            !!sym.lofi.grooveGain &&
+                            !!sym.lofi.noiseBuffer &&
+                            // V8.93 Phase 4 — die Bass-Schicht.
+                            !!sym.lofi.bassGain &&
+                            sym.lofi.degree === 0 &&
+                            typeof sym.lofi.rngState === "number";
+                        // W4 V3 Phase 2 — die Melodie: Form (startet + endet
+                        // auf einem Akkord-Ton, aufsteigende Startzeiten, über
+                        // dem Pad), emotion-gesteuerte Dichte, wurf-frei.
+                        const mel = r._lofiMelodyNotes(0, 4);
+                        const chordTones = [0, 2, 4, 6];
+                        let melAsc = true;
+                        for (let i = 1; i < mel.length; i++) if (mel[i].start <= mel[i - 1].start) melAsc = false;
+                        out.melodyShape =
+                            Array.isArray(mel) &&
+                            mel.length >= 1 &&
+                            mel.every((nt) => nt.freq > 200) &&
+                            melAsc &&
+                            chordTones.indexOf(mel[0].idx) >= 0 &&
+                            chordTones.indexOf(mel[mel.length - 1].idx) >= 0;
+                        // Dichte folgt der Emotion — über 8 Phrasen summiert
+                        // (joy belebt, peace lässt Pausen): robust statistisch.
+                        emo.joy = 1;
+                        emo.peace = 0;
+                        let melJoyTotal = 0;
+                        for (let i = 0; i < 8; i++) melJoyTotal += r._lofiMelodyNotes(0, 4).length;
+                        emo.joy = 0;
+                        emo.peace = 1;
+                        let melPeaceTotal = 0;
+                        for (let i = 0; i < 8; i++) melPeaceTotal += r._lofiMelodyNotes(0, 4).length;
+                        emo.joy = 0;
+                        emo.peace = 0;
+                        out.melodyDensityEmotion = melJoyTotal > melPeaceTotal;
+                        // V8.90 — Rhythmus + Dynamik: über 12 Phrasen gibt es
+                        // verschiedene Noten-LÄNGEN (Halbtakt/Viertel) UND
+                        // verschiedene Lautstärken (starker vs schwacher Takt).
+                        const durSet = new Set();
+                        const velSet = new Set();
+                        for (let i = 0; i < 12; i++) {
+                            for (const nt of r._lofiMelodyNotes(0, 4)) {
+                                durSet.add(Math.round(nt.dur * 100));
+                                velSet.add(Math.round(nt.vel * 100));
+                            }
+                        }
+                        out.melodyRhythmDynamics = durSet.size >= 2 && velSet.size >= 2;
+                        let melOk = true;
+                        try {
+                            r._lofiPlayMelody(0, 4);
+                        } catch (e) {
+                            melOk = false;
+                            void e;
+                        }
+                        out.melodyPlayRuns = melOk;
+                        // W4 V3 Phase 3 — der Groove spielt wurf-frei.
+                        let grooveOk = true;
+                        try {
+                            r._lofiPlayGroove(4);
+                        } catch (e) {
+                            grooveOk = false;
+                            void e;
+                        }
+                        out.groovePlayRuns = grooveOk;
+                        // W4 V3 Phase 4 — der Bass spielt wurf-frei (folgt der
+                        // Akkord-Wurzel auf den Kick-Schritten).
+                        let bassOk = true;
+                        try {
+                            r._lofiPlayBass(0, 4);
+                            r._lofiPlayBass(3, 4);
+                        } catch (e) {
+                            bassOk = false;
+                            void e;
+                        }
+                        out.bassPlayRuns = bassOk;
+                        // W4 V3 — _lofiNextDegree liefert eine in der Markov-
+                        // Kette erreichbare Stufe (0..6).
+                        const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
+                        const nd = r._lofiNextDegree(0);
+                        out.nextDegreeValid = allowed.indexOf(nd) >= 0;
+                        // W4 V3 — Determinismus: selber rngState → selbe Folge.
+                        sym.lofi.rngState = 12345;
+                        const seqA = [];
+                        for (let i = 0; i < 6; i++) seqA.push(r._lofiNextDegree(seqA.length ? seqA[i - 1] : 0));
+                        sym.lofi.rngState = 12345;
+                        const seqB = [];
+                        for (let i = 0; i < 6; i++) seqB.push(r._lofiNextDegree(seqB.length ? seqB[i - 1] : 0));
+                        out.harmonyDeterministic = JSON.stringify(seqA) === JSON.stringify(seqB);
+                        // W4 V3 — Emotion biast die Harmonie: bei joy/hope
+                        // erscheinen helle Stufen (III/VI) häufiger als bei
+                        // sorrow (selber RNG-Strom → fairer Vergleich).
+                        const bright = AnazhRealm.LOFI_BRIGHT_DEGREES;
+                        const countBright = () => {
+                            sym.lofi.rngState = 777;
+                            let c = 0;
+                            for (let i = 0; i < 300; i++) if (bright.indexOf(r._lofiNextDegree(0)) >= 0) c++;
+                            return c;
+                        };
+                        emo.joy = 1;
+                        emo.hope = 1;
+                        emo.sorrow = 0;
+                        const brightJoy = countBright();
+                        emo.joy = 0;
+                        emo.hope = 0;
+                        emo.sorrow = 1;
+                        const brightSorrow = countBright();
+                        out.emotionBiasesHarmony = brightJoy > brightSorrow;
+                        // _lofiTick spielt den ersten Akkord (lastChordAt=
+                        // -Infinity → sofort fällig) + wählt die nächste Stufe.
+                        sym.lofi.degree = 0;
+                        sym.lofi.lastChordAt = -Infinity;
+                        r._lofiTick();
+                        out.tickPlaysChord =
+                            sym.lofi.lastChordAt > -Infinity &&
+                            Number.isInteger(sym.lofi.degree) &&
+                            sym.lofi.degree >= 0 &&
+                            sym.lofi.degree <= 6;
+                        // Ein zweiter Tick sofort danach spielt NICHT (Dauer nicht um).
+                        const degAfter = sym.lofi.degree;
+                        r._lofiTick();
+                        out.tickThrottled = sym.lofi.degree === degAfter;
+                        // symphonyTick ruft _lofiTick — kein Wurf.
+                        let symTickOk = true;
+                        try {
+                            r.symphonyTick();
+                        } catch (e) {
+                            symTickOk = false;
+                            void e;
+                        }
+                        out.symphonyTickRuns = symTickOk;
+                        // disposeSymphony räumt die Lofi-Schicht.
+                        r.disposeSymphony();
+                        out.disposeClearsLofi = sym.lofi === null;
+                    }
+                    emo.joy = eBefore.joy;
+                    emo.hope = eBefore.hope;
+                    emo.sorrow = eBefore.sorrow;
+                    emo.peace = eBefore.peace;
+                    return out;
+                })
+                .catch((err) => ({ error: err && err.message }));
+            if (!w4v2Results || w4v2Results.error) {
+                check("W4 V2/V3 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
+            } else {
+                check("W4 V3: LOFI_SCALE (7 Töne) + LOFI_HARMONY (7 Stufen) frozen", w4v2Results.scaleHarmonyDefined);
+                check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
+                check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
+                check("W4 V3: _lofiScaleSemitone wickelt Oktaven (idx 7 → +12 Halbtöne)", w4v2Results.scaleSemitone);
+                check("W4 V3 Phase 3: LOFI_GROOVE_PATTERN (kick/snare/hihat) + GROOVE_SWING definiert", w4v2Results.grooveDefined);
+                check("W4 V3 Phase 3: _grooveStepTime — Off-Beat-Schritt wird geswingt (verzögert)", w4v2Results.grooveStepTime);
+                check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
+                check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
+                check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
+                check("W4 V2: _lofiChordDurationMs — ruhig ≈ 4000 ms (60 BPM × 4)", w4v2Results.calmDuration4s);
+                check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
+                if (w4v2Results.symphonyReady) {
+                    check("W4 V2/V3: initSymphony baut die Lofi-Schicht (gain + filter + melodyGain + RNG)", w4v2Results.lofiLayerBuilt);
+                    check(
+                        "W4 V3 Phase 2: _lofiMelodyNotes — Phrase startet + endet auf Akkord-Ton, steigt zeitlich",
+                        w4v2Results.melodyShape
+                    );
+                    check("W4 V3 Phase 2: Melodie-Dichte folgt der Emotion (joy lebhafter als peace)", w4v2Results.melodyDensityEmotion);
+                    check(
+                        "W4 V3 Phase 2: Melodie hat Rhythmus + Dynamik (verschiedene Noten-Längen + Lautstärken)",
+                        w4v2Results.melodyRhythmDynamics
+                    );
+                    check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
+                    check("W4 V3 Phase 3: _lofiPlayGroove spielt den Groove wurf-frei", w4v2Results.groovePlayRuns);
+                    check("W4 V3 Phase 4: _lofiPlayBass spielt den Bass wurf-frei (folgt der Akkord-Wurzel)", w4v2Results.bassPlayRuns);
+                    check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
+                    check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);
+                    check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
+                    check("W4 V3: _lofiTick spielt einen Akkord + wählt die nächste Stufe", w4v2Results.tickPlaysChord);
+                    check("W4 V2: _lofiTick ist akkord-dauer-gedrosselt", w4v2Results.tickThrottled);
+                    check("W4 V2: symphonyTick ruft _lofiTick wurf-frei", w4v2Results.symphonyTickRuns);
+                    check("W4 V2: disposeSymphony räumt die Lofi-Schicht", w4v2Results.disposeClearsLofi);
+                } else {
+                    check("W4 V2: Symphony im Headless initialisierbar", false, "initSymphony nicht bereit");
+                }
             }
 
             // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
@@ -16280,6 +16687,25 @@ function startSaveServer() {
                     });
                     out.onMessageDispatches = lastEntry().text === "Dispatch-Probe.";
                     r._disposePortalOverlay();
+                    // W12 P3-Härtung — der Rückkanal-Rate-Limit deckelt eine
+                    // flutende fremde Welt: nach PORTAL_EVENT_RATE_MAX je
+                    // Fenster wird verworfen, das Journal nicht überrannt.
+                    r._portalOverlay = { label: "Flut-Welt", world: "worlds/skeleton/index.html", dsl: null };
+                    const floodBefore = journal().length;
+                    let floodAccepted = 0;
+                    for (let i = 0; i < 20; i++) {
+                        if (r._portalReceiveEvent({ type: "event", text: "Flut " + i }) === true) floodAccepted++;
+                    }
+                    out.rateLimitCapsBurst = floodAccepted === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+                    out.rateLimitNoJournalOverflow =
+                        journal().length - floodBefore === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+                    r._portalOverlay = null;
+                    // Das Overlay aus _buildPortalOverlay trägt das Rate-Limit-Fenster.
+                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Fenster-Welt", dsl: null });
+                    out.overlayHasEventWindow =
+                        typeof r._portalOverlay.eventWindowStart === "number" &&
+                        typeof r._portalOverlay.eventWindowCount === "number";
+                    r._disposePortalOverlay();
                     // enterPortal schreibt den Erst-Besuch (journalAppendOnce).
                     // Der seen-Schlüssel wird vorab geleert — ein früherer
                     // Portal-Test könnte die Skelett-Welt schon betreten haben.
@@ -16319,6 +16745,15 @@ function startSaveServer() {
                 check("W12 P3a: onMessage-Dispatch leitet {type:event} weiter", w12p3aResults.onMessageDispatches);
                 check("W12 P3a: enterPortal schreibt den Erst-Besuch ins Journal", w12p3aResults.entryJournaled);
                 check("W12 P3a: wiederholtes Betreten flutet das Journal nicht", w12p3aResults.entryOncePerWorld);
+                check("W12 P3-Härtung: Rückkanal-Rate-Limit deckelt einen Burst", w12p3aResults.rateLimitCapsBurst);
+                check(
+                    "W12 P3-Härtung: das Journal wird nicht über den Deckel hinaus geflutet",
+                    w12p3aResults.rateLimitNoJournalOverflow
+                );
+                check(
+                    "W12 P3-Härtung: das Portal-Overlay trägt das Rate-Limit-Fenster",
+                    w12p3aResults.overlayHasEventWindow
+                );
             } else {
                 check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
             }
@@ -24394,7 +24829,32 @@ function startSaveServer() {
                     out.initOk = initOk === true && s.enabled === true && !!s.ctx;
                     out.hasAmbient =
                         !!s.ambient && !!s.ambient.osc1 && !!s.ambient.osc2 && !!s.ambient.lfo && !!s.ambient.filter;
+                    // V8.86 — der Drone ist eine leise Grundierung: weiches
+                    // Dreieck (kein buzzig-intensiver Sägezahn), Gain ≤ 0.1.
+                    out.droneIsSoft =
+                        !!s.ambient &&
+                        s.ambient.osc1.type === "triangle" &&
+                        s.ambient.osc2.type === "triangle" &&
+                        // V8.88 — Drone −80%: kaum hörbare Grundierung (≤ 0.02).
+                        s.ambient.ambientGain.gain.value <= 0.02 &&
+                        // V8.87 — sanfte Schwebung: < 1 Hz Verstimmung (kein
+                        // extremer 1.5-Hz-Amplituden-Puls mehr).
+                        Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
                     out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
+                    // V8.88 — die Wetter-Noise (Regen) hängt am Umgebungs-
+                    // Regler (creaturePingVolume) + ist ~80 % leiser (0.014).
+                    const wReal = r.state.weather;
+                    r.state.weather = "rainy";
+                    s.creaturePingVolume = 1;
+                    const wFull = r._symphonyWeatherTarget();
+                    s.creaturePingVolume = 0.5;
+                    const wHalf = r._symphonyWeatherTarget();
+                    r.state.weather = "sunny";
+                    const wDry = r._symphonyWeatherTarget();
+                    s.creaturePingVolume = 1;
+                    r.state.weather = wReal;
+                    out.weatherOnPingSlider =
+                        Math.abs(wFull - 0.014) < 0.001 && Math.abs(wHalf - 0.007) < 0.001 && wDry === 0;
 
                     // (b) Wetter-Layer-Gain folgt state.weather
                     r.state.weather = "sunny";
@@ -24446,6 +24906,11 @@ function startSaveServer() {
             } else {
                 check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
                 check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
+                check("V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)", ring4Results.droneIsSoft);
+                check(
+                    "V8.89: Regen-Noise hängt am Umgebungs-Regler + ist ~80% leiser (0.014)",
+                    ring4Results.weatherOnPingSlider
+                );
                 check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
                 check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
                 check(
