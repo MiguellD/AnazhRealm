@@ -21125,6 +21125,7 @@ class AnazhRealm {
         if (this._isFocusing(bp)) out.focusing = true;
         if (this._isRadiating(bp)) out.radiating = true;
         if (this._isBroadcasting(bp)) out.broadcasting = true;
+        if (this._isBalancing(bp)) out.balancing = true;
         return out;
     }
 
@@ -21158,6 +21159,10 @@ class AnazhRealm {
             const T = AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting;
             const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
             out.broadcasting = clamp01(overScale(leit, T.leitfaehigMin) * precF);
+        }
+        if (aff.balancing) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.balancing;
+            out.balancing = clamp01(overScale(tags.dichte || 0, T.dichteMin) * precF);
         }
         return out;
     }
@@ -21332,6 +21337,32 @@ class AnazhRealm {
         const tags = this.computeCompoundTags(bp) || {};
         const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
         return leit >= T.leitfaehigMin;
+    }
+
+    // W10 ext. — balancing: ein breites, bodenlastiges, schweres Compound,
+    // das den Ort gründet. Vision-rein: KEINE Form-Whitelist. Was das
+    // Compound gründend macht:
+    //   1. breite Basis: die horizontale Spannweite ≥ die vertikale (es
+    //      sitzt, es türmt nicht — ein Fundament, kein Mast)
+    //   2. bodenlastig: ≥ bottomHeavyMin der Parts in der unteren bbox-Hälfte
+    //      (der Schwerpunkt liegt tief — es kippt nicht)
+    //   3. schwer: dichte-Tag ≥ dichteMin (1.5 — genuin stein-schwer, nicht
+    //      bloss vorhanden; ein leichter Quarz-Cluster gründet nicht)
+    //   4. mindestens minParts Parts
+    // Eine flache Stein-Box-Plattform gründet wie eine Eisen-Scheibe — die
+    // räumliche Geste „breit + tief + schwer" zählt, nicht der Shape.
+    _isBalancing(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.balancing;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return false;
+        const spanY = bbox.max.y - bbox.min.y;
+        const spanXZ = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
+        if (spanXZ < spanY * T.wideMin) return false; // breiter als hoch
+        const below = this._partsBelowMidline(bp, 0.5).length;
+        if (below / bp.parts.length < T.bottomHeavyMin) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.dichte || 0) >= T.dichteMin;
     }
 
     // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
@@ -21727,6 +21758,41 @@ class AnazhRealm {
         }
     }
 
+    // ----- Welt-Reaktion: balancing (eine gründende Form legt den Aufruhr) -----
+
+    // Pro Frame: steht der Spieler in Reichweite eines balancing-Compounds,
+    // gründet ihn dessen Ruhe — chaos wird sanft abgebaut (Vision §3, das
+    // Komplement zum radiating-Tick: radiating HEBT awe+peace, balancing
+    // SENKT chaos). Der erste Kontakt schreibt eine Erinnerung. Die Drain-
+    // Rate skaliert mit der Compound-Stärke (W10-ext.-Politur). Synergie:
+    // weniger chaos verlangsamt zugleich die Kreaturen (chaos → Tempo) —
+    // ein gegründeter Ort ist ruhiger, ohne eine Zeile Extra-Code.
+    _tickBalancingAffordances(dt) {
+        const balancing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.balancing);
+        if (balancing.length === 0) return;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        const emo = this.state.player && this.state.player.emotions;
+        if (!emo) return;
+        const range2 = AnazhRealm.BALANCING_RANGE_M * AnazhRealm.BALANCING_RANGE_M;
+        const baseStep = AnazhRealm.BALANCING_CHAOS_DRAIN_PER_SEC * dt;
+        for (const ba of balancing) {
+            if (!ba.position) continue;
+            const dx = ba.position.x - pm.x;
+            const dz = ba.position.z - pm.z;
+            if (dx * dx + dz * dz > range2) continue;
+            const s = ba.affordanceStrength && ba.affordanceStrength.balancing;
+            const strength = typeof s === "number" ? s : 1;
+            emo.chaos = Math.max(0, Math.min(1, (emo.chaos || 0) - baseStep * strength));
+            this.journalAppendOnce(
+                `balancing:${ba.id}`,
+                "growth",
+                `Eine gründende Form ruht nahe — der Aufruhr im Gemüt legt sich.`,
+                { architecture: ba.type, affordance: "balancing" }
+            );
+        }
+    }
+
     // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
@@ -21734,6 +21800,7 @@ class AnazhRealm {
         this._tickMountedMovement();
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
+        this._tickBalancingAffordances(dt);
         this._tickPortalAffordance();
     }
 
@@ -34081,6 +34148,14 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         alignMin: 0.6, // ≥60 % der Parts auf der (vertikalen) Achse
         leitfaehigMin: 0.4, // stromleitung ODER magieleitung — es trägt ein Signal
     }),
+    // W10 ext. — balancing: ein breites, bodenlastiges, schweres Compound
+    // (Fundament). Breite Basis + tiefer Schwerpunkt + genuin schwer.
+    balancing: Object.freeze({
+        minParts: 3,
+        wideMin: 1.0, // horizontale Spannweite ≥ vertikale (breiter als hoch)
+        bottomHeavyMin: 0.6, // ≥60 % der Parts in der unteren bbox-Hälfte
+        dichteMin: 1.5, // genuin schwer (= resonance_strong-Niveau, kein Gate-Tief)
+    }),
 });
 
 // Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
@@ -34118,6 +34193,7 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     focusing: "bündelnd",
     radiating: "strahlend",
     broadcasting: "sendend",
+    balancing: "gründend",
 });
 // W10 ext. — radiating-Welt-Reaktion: Reichweite + sanfte Emotion-Rampe.
 AnazhRealm.RADIATING_RANGE_M = 14;
@@ -34126,6 +34202,10 @@ AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC = 0.04;
 // Strahlers vervielfacht dessen Reichweite um BROADCAST_RANGE_MULT.
 AnazhRealm.BROADCAST_RELAY_RANGE_M = 18;
 AnazhRealm.BROADCAST_RANGE_MULT = 2;
+// W10 ext. — balancing-Welt-Reaktion: nahe einer gründenden Form wird chaos
+// abgebaut (Komplement zu radiating, das awe+peace hebt).
+AnazhRealm.BALANCING_RANGE_M = 14;
+AnazhRealm.BALANCING_CHAOS_DRAIN_PER_SEC = 0.05;
 
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben

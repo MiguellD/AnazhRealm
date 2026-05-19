@@ -24030,6 +24030,7 @@ function startSaveServer() {
                         const emoR = r.state.player.emotions;
                         const aweBefore0 = emoR.awe;
                         const peaceBefore0 = emoR.peace;
+                        const chaosBefore0 = emoR.chaos;
                         const radEntry = r.spawnArchitecture(
                             "test_10ext_radiator",
                             { x: 60, y: 0, z: 60 },
@@ -24238,6 +24239,115 @@ function startSaveServer() {
                             (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
                         );
 
+                        // ── W10 ext. Welle 3/4 — balancing (gründende Form) ──
+                        out.hasBalancing = typeof r._isBalancing === "function";
+                        out.hasTickBalancing = typeof r._tickBalancingAffordances === "function";
+                        out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
+                        out.balancingThresholds =
+                            !!AR.AFFORDANCE_THRESHOLDS.balancing &&
+                            AR.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
+                            AR.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
+                        // Eine breite, flache, schwere Stein-Box-Plattform gründet.
+                        if (r.state.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
+                        r.cloneBlueprint("village", "test_10ext_platform");
+                        r.state.blueprints.test_10ext_platform.parts = [
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 1.5, y: 0.2, z: 0 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: -1.5, y: 0.2, z: 0 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0.2, z: 1.5 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                            {
+                                shape: "box",
+                                material: "stein",
+                                position: { x: 0, y: 0.2, z: -1.5 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                        ];
+                        out.platformIsBalancing =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).balancing === true;
+                        // Ein aufrechter Mast ist hoch, nicht breit → NICHT balancing.
+                        out.mastNotBalancing =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).balancing !== true;
+                        // Der Quarz-Cluster ist breit + flach + bodenlastig, aber
+                        // zu LEICHT (dichte 1.3 < 1.5) → NICHT balancing (der
+                        // dichte-Gate beweist: nur genuin Schweres gründet).
+                        out.lightClusterNotBalancing =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).balancing !== true;
+                        // Stärke skaliert: eine Stein-Box-Plattform (dichte 2.55)
+                        // gründet stärker als eine Stein-Cylinder-Plattform (1.7).
+                        if (r.state.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
+                        r.cloneBlueprint("village", "test_10ext_platweak");
+                        r.state.blueprints.test_10ext_platweak.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: 1.5, y: 0.2, z: 0 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: -1.5, y: 0.2, z: 0 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: 0, y: 0.2, z: 1.5 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "stein",
+                                position: { x: 0, y: 0.2, z: -1.5 },
+                                size: { x: 1, y: 0.4, z: 1 },
+                            },
+                        ];
+                        const balStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platform).balancing;
+                        const balWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platweak).balancing;
+                        out.balancingStrengthScales =
+                            typeof balWeak === "number" && balStrong > balWeak && balStrong <= 1;
+                        // Welt-Reaktion: nahe einer gründenden Form sinkt chaos.
+                        const balE = r.spawnArchitecture(
+                            "test_10ext_platform",
+                            { x: 70, y: 0, z: 70 },
+                            { silent: true }
+                        );
+                        out.balEntryAffordance = !!(balE && balE.affordances && balE.affordances.balancing === true);
+                        out.balEntryStrength = !!(
+                            balE &&
+                            balE.affordanceStrength &&
+                            typeof balE.affordanceStrength.balancing === "number"
+                        );
+                        if (pmR) {
+                            pmR.x = 70;
+                            pmR.y = 0;
+                            pmR.z = 72;
+                        }
+                        emoR.chaos = 0.6;
+                        for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
+                        out.balNearDrainsChaos = emoR.chaos < 0.6;
+                        // Weit weg → kein chaos-Abbau.
+                        if (pmR) pmR.z = 400;
+                        const chaosFar = emoR.chaos;
+                        for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
+                        out.balFarNoChange = Math.abs(emoR.chaos - chaosFar) < 0.0001;
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_platform");
+                        emoR.chaos = chaosBefore0;
+
                         emoR.awe = aweBefore0;
                         emoR.peace = peaceBefore0;
                         // Spieler-Position wiederherstellen — nachfolgende Tests
@@ -24274,6 +24384,8 @@ function startSaveServer() {
                             "test_10ext_bcline",
                             "test_10ext_radstrong",
                             "test_10ext_mastweak",
+                            "test_10ext_platform",
+                            "test_10ext_platweak",
                         ]) {
                             if (r.state.blueprints[n]) r.deleteBlueprint(n);
                         }
@@ -24427,6 +24539,42 @@ function startSaveServer() {
                 check(
                     "W10 ext. Politur: ein starker Mast relais-verstärkt WEITER — er erreicht ihn (eine bessere Antenne)",
                     wave10bResults.strongMastReachesFarther
+                );
+                // ── W10 ext. Welle 3/4 — balancing ──
+                check(
+                    "W10 ext.: _isBalancing + _tickBalancingAffordances existieren, Label 'gründend' + Schwellen",
+                    wave10bResults.hasBalancing &&
+                        wave10bResults.hasTickBalancing &&
+                        wave10bResults.balancingLabel &&
+                        wave10bResults.balancingThresholds
+                );
+                check(
+                    "W10 ext.: eine breite flache schwere Stein-Plattform → balancing=true",
+                    wave10bResults.platformIsBalancing
+                );
+                check(
+                    "W10 ext.: ein aufrechter Mast (hoch, nicht breit) → NICHT balancing",
+                    wave10bResults.mastNotBalancing
+                );
+                check(
+                    "W10 ext.: ein breiter flacher aber LEICHTER Quarz-Cluster → NICHT balancing (dichte-Gate)",
+                    wave10bResults.lightClusterNotBalancing
+                );
+                check(
+                    "W10 ext.: eine dichtere Plattform gründet stärker (Stärke skaliert)",
+                    wave10bResults.balancingStrengthScales
+                );
+                check(
+                    "W10 ext.: spawnArchitecture speichert balancing-Affordance + Stärke am entry",
+                    wave10bResults.balEntryAffordance && wave10bResults.balEntryStrength
+                );
+                check(
+                    "W10 ext.: nahe einer gründenden Form sinkt chaos (Welt-Reaktion)",
+                    wave10bResults.balNearDrainsChaos
+                );
+                check(
+                    "W10 ext.: weit weg von der gründenden Form kein chaos-Abbau (Reichweite-Gate)",
+                    wave10bResults.balFarNoChange
                 );
             } else if (wave10bResults && wave10bResults.error) {
                 check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);

@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V8.99)
+# Zustand des Realm — Stand: 19.05.2026 (V9.00)
+
+**V9.00 — W10 ext. Welle 3/4 (die `balancing`-Affordance)**: der Affordance-Bogen bekommt eine sechste emergente Affordance — `balancing`, ein breites, bodenlastiges, schweres Compound, das den Ort gründet. Vision-rein, kein Form-Whitelist: `_isBalancing` liest die räumliche Konfiguration (breiter als hoch + tiefer Schwerpunkt) + die Tag-Sprache (`dichte` ≥ 1.5 — genuin schwer). Welt-Reaktion: nahe einer gründenden Form sinkt `chaos` — das Komplement zum `radiating`-Tick (radiating hebt awe+peace). Synergie ohne Extra-Code: weniger chaos verlangsamt zugleich die Kreaturen. `lifting` bleibt als Welle 4/4 benannt. +8 Invarianten. Voller Eintrag in `CLAUDE.md` V9.00.
 
 **V8.99 — W10 ext. Politur (die Affordance-Stärke skaliert mit der Substanz)**: eine Schöpfer-Frage trug die Welle — „kann ich eine bessere Antenne bauen, oder gibt es nur ja/nein?". Der Affordance-Schwellwert bleibt die GATE (ist es überhaupt ein Strahler/Mast?), aber darüber skaliert die Wirkung kontinuierlich: `computeAffordanceStrength` liefert eine Stärke aus dem Tag-Überschuss über dem Schwellwert × der Bauplan-Qualität (Vision §6.3 — Präzision moduliert alle Effekte). Ein starker Strahler badet kräftiger, ein starker `broadcasting`-Mast verstärkt die Relais-Reichweite mehr. Man baut eine bessere Antenne durch Material, Form UND Handwerk. +6 Invarianten. Voller Eintrag in `CLAUDE.md` V8.99.
 
