@@ -11276,6 +11276,27 @@ function startSaveServer() {
                             out.geomFinite = allFinite;
                             out.geomHasNormals = !!geom.getAttribute("normal");
                             out.geomHasIndex = !!geom.getIndex();
+                            // V9.11 — kein Streck-Dreieck (Index-Aliasing-Bug):
+                            // jede Triangle-Kante ist lokal klein (≤ ein paar
+                            // Zellen). Ein Stray-Dreieck quer durch den Chunk
+                            // hätte eine Kante von zig Zellen — das war die
+                            // unsaubere Naht. step=1.8 → Grenze 5×step=9.
+                            if (out.geomHasIndex) {
+                                const ia = geom.getIndex().array;
+                                const pa = pos.array;
+                                let maxEdge = 0;
+                                const elen = (p, q) =>
+                                    Math.hypot(pa[p] - pa[q], pa[p + 1] - pa[q + 1], pa[p + 2] - pa[q + 2]);
+                                for (let t = 0; t + 2 < ia.length; t += 3) {
+                                    const a = ia[t] * 3;
+                                    const b = ia[t + 1] * 3;
+                                    const c = ia[t + 2] * 3;
+                                    const m = Math.max(elen(a, b), elen(b, c), elen(c, a));
+                                    if (m > maxEdge) maxEdge = m;
+                                }
+                                out.geomMaxEdge = maxEdge;
+                                out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+                            }
                         }
                     }
 
@@ -11339,6 +11360,10 @@ function startSaveServer() {
                 check(
                     "Voxel P1: das Mesh trägt Normalen + einen Index",
                     voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
+                );
+                check(
+                    `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,
+                    voxelP1Results.geomNoStrayTris
                 );
                 check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
                 check(

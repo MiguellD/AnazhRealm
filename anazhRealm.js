@@ -14284,36 +14284,30 @@ class AnazhRealm {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
             indices.push(a, b, c, a, c, d);
         };
+        // cv() liefert den Zell-Vertex ODER -1 für jeden out-of-range Index.
+        // OHNE diese Wand aliaste `ci(dim, j, k)` (= dim + j*dim + …) in einen
+        // FREMDEN Zell-Slot — `cellVert` dort konnte einen gültigen Vertex
+        // tragen → ein Streck-Dreieck quer durch den Chunk an JEDER i/j/k=dim-
+        // Randebene (= an jeder Chunk-Naht). Das war die „unsaubere Naht".
+        const cv = (i, j, k) => {
+            if (i < 0 || j < 0 || k < 0 || i >= dim || j >= dim || k >= dim) return -1;
+            return cellVert[ci(i, j, k)];
+        };
         for (let k = 0; k <= dim; k++) {
             for (let j = 0; j <= dim; j++) {
                 for (let i = 0; i <= dim; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dim && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                        quad(
-                            cellVert[ci(i, j - 1, k - 1)],
-                            cellVert[ci(i, j, k - 1)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i, j - 1, k)]
-                        );
+                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k));
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
                     if (j < dim && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                        quad(
-                            cellVert[ci(i - 1, j, k - 1)],
-                            cellVert[ci(i, j, k - 1)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i - 1, j, k)]
-                        );
+                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k));
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
                     if (k < dim && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                        quad(
-                            cellVert[ci(i - 1, j - 1, k)],
-                            cellVert[ci(i, j - 1, k)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i - 1, j, k)]
-                        );
+                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k));
                     }
                 }
             }

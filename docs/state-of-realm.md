@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.10)
+# Zustand des Realm — Stand: 19.05.2026 (V9.11)
+
+**V9.11 — Voxel-Terrain Naht-Wurzelheilung (der Index-Aliasing-Bug)**: ein Schöpfer-Browser-Befund nach V9.10 — „immer noch unsaubere Nähte, falsche effektive Chunk-Grösse?". Die Intuition traf den Kern: ein Rand-Index-Fehler. In `_voxelChunkGeometry` Pass 2 aliaste `ci(dim,j,k) = dim + j*dim + k*dim²` an der `i/j/k=dim`-Randebene in einen fremden Zell-Slot — ein Streck-Dreieck quer durch den Chunk an jeder Chunk-Naht. Der Fix: ein `cv(i,j,k)`-Helfer liefert -1 für jeden out-of-range Index, kein Quad referenziert je einen aliasten Slot. Der V9.10-Skirt war korrekt — der Bug lag darunter im Mesher. +1 Invariante (maxEdge — kein Streck-Dreieck). Voller Eintrag in `CLAUDE.md` V9.11.
 
 **V9.10 — Voxel-Terrain Phase 2b-Politur (Naht-Skirt + Welt-Feld-Farbe)**: ein Schöpfer-Browser-Befund nach V9.09 — „die Übergänge sind nicht sauber, alles scheint das gleiche Biom". Zwei Heilungen: (1) der 1-Zellen-Naht-Skirt — `_ensureVoxelChunkAt` mesht `dim+1` Zellen, eine Überlappung in den Nachbar-Chunk; die Surface-Nets-Naht-Quads entstehen, die Flächen stossen nahtlos zusammen. (2) `_attachVoxelFieldColors` — per-Vertex-Farbe aus `worldFieldAt` (Biom-Farben wie der Heightfield-Terrain-Shader, als `color`-Attribut, kein Shader). Das Voxel-Terrain trägt dieselben Biom-Regionen wie der Boden. +4 Invarianten. Voller Eintrag in `CLAUDE.md` V9.10.
 
