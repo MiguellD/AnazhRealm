@@ -4802,7 +4802,7 @@ class AnazhRealm {
     // world-bundle-pull an genau EINEN Peer (peer-gebunden wie der W7-P2-
     // Resync); dessen world-bundle-chunk-Antwort reassembliert
     // _p2pHandleWorldBundleChunk. Liefert {ok} oder {ok:false, reason}.
-    requestWorldBundleFromPeer(worldId, peerId) {
+    requestWorldBundleFromPeer(worldId, peerId, expectedHash) {
         const id = String(worldId || "")
             .trim()
             .toLowerCase();
@@ -4815,7 +4815,16 @@ class AnazhRealm {
         if (!peerId || !p2p.peers.has(peerId)) return { ok: false, reason: "no_such_peer" };
         const rtc = p2p.rtcPeers.get(peerId);
         if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
-        p2p.pendingBundlePull = { peerId, worldId: id };
+        // W16-Politur — expectedHash (der Content-Hash aus der Katalog-Zeile)
+        // reist mit: nach dem Pull prüft _p2pHandleWorldBundleChunk, dass das
+        // empfangene Bündel ihn trägt. startedAt trägt den weichen Timeout
+        // (_p2pCheckBundlePullTimeout) — ein Pull hängt sonst für immer, wenn
+        // der Sender mitten im Chunk-Strom verschwindet.
+        const hash =
+            typeof expectedHash === "string" && /^[0-9a-f]{1,64}$/i.test(expectedHash)
+                ? expectedHash.toLowerCase()
+                : "";
+        p2p.pendingBundlePull = { peerId, worldId: id, expectedHash: hash, startedAt: Date.now() };
         const sent = this._p2pSendChannelTo(peerId, { type: "world-bundle-pull", worldId: id });
         if (!sent) {
             p2p.pendingBundlePull = null;
@@ -4962,6 +4971,29 @@ class AnazhRealm {
             })
         )
             .then((res) => {
+                // W16-Politur — Hash-Verifikation: der Katalog versprach einen
+                // Content-Hash; der save-server (die Hash-Autorität) liefert
+                // beim Schreiben den echten Hash der empfangenen Welt zurück.
+                // Stimmen sie nicht überein, ist das empfangene Bündel NICHT
+                // die Katalog-Welt (korrupt oder manipuliert) — die frisch
+                // angedockte Welt wieder entfernen, statt etwas Falsches unter
+                // dem erwarteten Namen zu behalten.
+                if (
+                    res &&
+                    res.ok &&
+                    pend.expectedHash &&
+                    typeof res.bundleHash === "string" &&
+                    res.bundleHash &&
+                    res.bundleHash.toLowerCase() !== pend.expectedHash
+                ) {
+                    this.log(`Mesh-Welt „${res.id}": Content-Hash weicht vom Katalog ab — verworfen.`, "ERROR");
+                    if (this.state.customWorlds) delete this.state.customWorlds[res.id];
+                    this._saveCustomWorlds();
+                    if (typeof document !== "undefined" && this.renderLibraryUI) this.renderLibraryUI();
+                    this._renderMeshWorldCatalog();
+                    this._renderMeshWorldResult({ ok: false, reason: "hash_mismatch" });
+                    return;
+                }
                 if (res && res.ok) {
                     this.log(`Mesh-Welt „${res.id}" angedockt — durch ein Tor betretbar.`, "INFO");
                     if (typeof document !== "undefined" && this.renderLibraryUI) this.renderLibraryUI();
@@ -4985,6 +5017,28 @@ class AnazhRealm {
         const reason = (msg && msg.reason) || "unavailable";
         this.log(`Mesh-Welt „${pend.worldId}": Mitspieler kann sie nicht liefern (${reason}).`, "WARN");
         this._renderMeshWorldResult({ ok: false, reason });
+    }
+
+    // W16-Politur — ein weicher Pull-Timeout. pendingBundlePull wird nur bei
+    // Vollständigkeit (_p2pHandleWorldBundleChunk) oder bei einem world-bundle-
+    // fail geräumt; verschwindet der Sender mitten im Chunk-Strom, kämen nie
+    // alle Stücke an → der Pull hinge für immer (die Katalog-Zeile bliebe in
+    // „Frage … an"). Läuft aus p2pTick; der Test ruft es mit einem
+    // synthetischen nowMs direkt (deterministisch, kein 30-s-Warten).
+    _p2pCheckBundlePullTimeout(nowMs) {
+        const p2p = this.state.p2p;
+        const pend = p2p.pendingBundlePull;
+        if (!pend) return;
+        const now = typeof nowMs === "number" ? nowMs : Date.now();
+        if (now - (pend.startedAt || 0) < AnazhRealm.P2P_BUNDLE_PULL_TIMEOUT_MS) return;
+        // Zeitüberschreitung — den hängenden Pull + die Teil-Puffer dieses
+        // Peers räumen, den Spieler informieren.
+        p2p.pendingBundlePull = null;
+        for (const [xid, xfer] of p2p.bundleXfers) {
+            if (xfer && xfer.from === pend.peerId) p2p.bundleXfers.delete(xid);
+        }
+        this.log(`Welt-Bündel-Pull „${pend.worldId}" — Zeitüberschreitung, der Mitspieler antwortete nicht.`, "WARN");
+        this._renderMeshWorldResult({ ok: false, reason: "timeout" });
     }
 
     // W16 Phase 2 — der browsbare Welt-Katalog (Bibliothek-Drawer). Jeder
@@ -5070,6 +5124,9 @@ class AnazhRealm {
                     btn.textContent = "Holen";
                     btn.dataset.meshWorld = w.id;
                     btn.dataset.meshPeer = pid;
+                    // W16-Politur — der Katalog-Hash reist zum Pull mit, damit
+                    // der Empfänger das empfangene Bündel gegen ihn prüfen kann.
+                    btn.dataset.meshHash = typeof w.hash === "string" ? w.hash : "";
                     row.appendChild(btn);
                 }
                 group.appendChild(row);
@@ -5101,6 +5158,8 @@ class AnazhRealm {
             send_failed: "Die Anfrage konnte nicht gesendet werden.",
             not_found: "Dieser Mitspieler hat diese Welt nicht.",
             unavailable: "Der Mitspieler konnte die Welt nicht liefern.",
+            timeout: "Zeitüberschreitung — der Mitspieler antwortete nicht. Versuch es erneut.",
+            hash_mismatch: "Das empfangene Bündel stimmt nicht mit dem Katalog überein — verworfen.",
         };
         return map[reason] || `Konnte die Welt nicht über das Mesh holen (${reason || "Fehler"}).`;
     }
@@ -5108,8 +5167,8 @@ class AnazhRealm {
     // W16 Phase 2 — der Holen-Knopf einer Katalog-Zeile. worldId + peerId
     // kommen aus den data-Attributen des Knopfes; das Ergebnis kommt asynchron
     // über _renderMeshWorldResult. Liefert das Sofort-Ergebnis (für Tests).
-    _runMeshWorldGet(worldId, peerId) {
-        const res = this.requestWorldBundleFromPeer(worldId, peerId);
+    _runMeshWorldGet(worldId, peerId, expectedHash) {
+        const res = this.requestWorldBundleFromPeer(worldId, peerId, expectedHash);
         if (typeof document !== "undefined") {
             const status = document.getElementById("mesh-world-status");
             if (status) {
@@ -5136,7 +5195,7 @@ class AnazhRealm {
             host.addEventListener("click", (ev) => {
                 const btn = ev.target && ev.target.closest("button[data-mesh-world]");
                 if (!btn) return;
-                this._runMeshWorldGet(btn.dataset.meshWorld, btn.dataset.meshPeer);
+                this._runMeshWorldGet(btn.dataset.meshWorld, btn.dataset.meshPeer, btn.dataset.meshHash);
             });
         }
     }
@@ -6275,6 +6334,8 @@ class AnazhRealm {
         for (const pid of stale) this._p2pRemovePeer(pid);
         // Kreatur-Sicht-Sync — die Kreatur-Meshes der Mitspieler nachziehen.
         this._p2pTickRemoteCreatures(t, dt);
+        // W16-Politur — einen hängenden Welt-Bündel-Pull weich abbrechen.
+        this._p2pCheckBundlePullTimeout();
     }
 
     initP2PUI() {
@@ -7671,7 +7732,10 @@ class AnazhRealm {
         src.buffer = s.lofi.noiseBuffer;
         const hp = ctx.createBiquadFilter();
         hp.type = "highpass";
-        hp.frequency.value = 7000;
+        // W4 V4 Sub-Schritt 1 — eine glut-Region schärft das Hihat: der
+        // Hochpass steigt 7000..9500 Hz (dünner, „tssss" — eine Spur
+        // Spannung in der Klangfarbe, ohne eine einzige Note zu ändern).
+        hp.frequency.value = 7000 + this._lofiWorldField().glut * 2500;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
         env.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
@@ -7713,11 +7777,19 @@ class AnazhRealm {
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const bright = Math.max(0, Math.min(1, (emotions.joy || 0) * 0.5 + (emotions.hope || 0) * 0.5));
         const dark = Math.max(0, Math.min(1, emotions.sorrow || 0));
+        // W4 V4 Sub-Schritt 2 — ein zweiter, SCHWÄCHERER Bias: das Welt-
+        // Affinitäts-Feld am Spieler. magieleitung/lebendig ziehen zu
+        // hellen Stufen, glut zu dunklen. Gewicht 0.4 — halb so stark wie
+        // der Emotion-Bias (0.8), damit die Emotion die dominante Stimme
+        // bleibt; das Welt-Feld FÄRBT die Wanderung, es überschreit sie nicht.
+        const field = this._lofiWorldField();
+        const worldBright = Math.max(0, Math.min(1, field.magieleitung * 0.5 + field.lebendig * 0.5));
+        const worldDark = field.glut;
         let total = 0;
         const weighted = transitions.map(([d, w]) => {
             let weight = w;
-            if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(d) >= 0) weight *= 1 + bright * 0.8;
-            if (AnazhRealm.LOFI_DARK_DEGREES.indexOf(d) >= 0) weight *= 1 + dark * 0.8;
+            if (AnazhRealm.LOFI_BRIGHT_DEGREES.indexOf(d) >= 0) weight *= 1 + bright * 0.8 + worldBright * 0.4;
+            if (AnazhRealm.LOFI_DARK_DEGREES.indexOf(d) >= 0) weight *= 1 + dark * 0.8 + worldDark * 0.4;
             total += weight;
             return [d, weight];
         });
@@ -7807,8 +7879,14 @@ class AnazhRealm {
         // W4 V3 Phase 4 — die Stimmen-Zahl wächst mit der Welt-Stimmung: bei
         // hellem Gemüt (joy + awe > 0.8) bekommt jeder Akkord-Ton eine leise
         // Oktav-Dopplung — der Pad klingt voller, „orchestraler".
+        // W4 V4 Sub-Schritt 3 — auch nahe einer resonanten Struktur: ein
+        // Bauwerk mit hohem computeSpatialTags.resoniert „singt mit".
         const bright = (emotions.joy || 0) + (emotions.awe || 0);
-        const voiceMults = bright > 0.8 ? [1, 2] : [1];
+        const nearResonant = this._lofiNearResonantArchitecture();
+        const voiceMults = bright > 0.8 || nearResonant ? [1, 2] : [1];
+        // W4 V4 Sub-Schritt 1 — eine magieleitung-Region trägt einen leisen,
+        // leicht verstimmten Oktav-Schimmer (das Welt-Feld färbt das Timbre).
+        const shimmer = this._lofiWorldField().magieleitung > 0.6;
         const attack = 0.8;
         const release = 1.4;
         const sustainAt = now + Math.max(attack, durSec - release);
@@ -7822,6 +7900,20 @@ class AnazhRealm {
                 env.gain.setValueAtTime(0, now);
                 env.gain.linearRampToValueAtTime(peak, now + attack);
                 env.gain.setValueAtTime(peak, sustainAt);
+                env.gain.linearRampToValueAtTime(0, now + durSec);
+                osc.connect(env);
+                env.connect(s.lofi.filter);
+                osc.start(now);
+                osc.stop(now + durSec + 0.1);
+            }
+            if (shimmer) {
+                const osc = ctx.createOscillator();
+                osc.type = "triangle";
+                osc.frequency.value = freq * 2 * 1.006; // Oktave, leicht verstimmt
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, now);
+                env.gain.linearRampToValueAtTime(0.045, now + attack);
+                env.gain.setValueAtTime(0.045, sustainAt);
                 env.gain.linearRampToValueAtTime(0, now + durSec);
                 osc.connect(env);
                 env.connect(s.lofi.filter);
@@ -7848,6 +7940,88 @@ class AnazhRealm {
         this._lofiPlayBass(degree, durSec);
         s.lofi.lastChordAt = now;
         s.lofi.degree = this._lofiNextDegree(degree);
+        // W4 V4 — die Musik hört die Welt: das Welt-Affinitäts-Feld am
+        // Spieler färbt die Klangfarbe der nächsten Akkord-Dauer.
+        this._lofiApplyWorldTimbre(durSec);
+    }
+
+    // W4 V4 — das Welt-Affinitäts-Feld (worldFieldAt, W6.G P2) am Spieler.
+    // Die Symphonie HÖRT, wo der Spieler steht: lebendig/dichte/glut/
+    // magieleitung färben die Klangfarbe (Timbre), nicht die Noten.
+    // Defensiv — ohne playerMesh / worldFieldAt ein neutrales Feld (0.5).
+    _lofiWorldField() {
+        const neutral = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
+        const pm = this.state.playerMesh;
+        if (!pm || !pm.position || typeof this.worldFieldAt !== "function") return neutral;
+        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!f) return neutral;
+        const c = (v) => Math.max(0, Math.min(1, v || 0));
+        return {
+            lebendig: c(f.lebendig),
+            dichte: c(f.dichte),
+            glut: c(f.glut),
+            magieleitung: c(f.magieleitung),
+        };
+    }
+
+    // W4 V4 Sub-Schritt 1 — das Welt-Feld moduliert die Klangfarbe (nicht
+    // die Tonhöhe). lebendig öffnet den Pad-Tiefpass (eine üppige Region
+    // klingt wärmer), dichte hebt den Bass-Anteil (eine dichte Region
+    // klingt schwerer). Sanfte Rampe über die Akkord-Dauer.
+    _lofiApplyWorldTimbre(durSec) {
+        const s = this.state.symphony;
+        if (!s || !s.enabled || !s.ctx || !s.lofi) return;
+        const field = this._lofiWorldField();
+        const now = s.ctx.currentTime;
+        const ramp = Math.max(0.5, Math.min(8, durSec || 4));
+        // lebendig 0..1 → Pad-Tiefpass 750..1050 Hz (karg .. üppig-warm).
+        if (s.lofi.filter && s.lofi.filter.frequency) {
+            const cutoff = 750 + field.lebendig * 300;
+            try {
+                s.lofi.filter.frequency.cancelScheduledValues(now);
+                s.lofi.filter.frequency.setValueAtTime(s.lofi.filter.frequency.value, now);
+                s.lofi.filter.frequency.linearRampToValueAtTime(cutoff, now + ramp);
+            } catch (e) {
+                void e;
+            }
+        }
+        // dichte 0..1 → Bass-Gain 0.40..0.56 (leicht .. schwer).
+        if (s.lofi.bassGain && s.lofi.bassGain.gain) {
+            const bg = 0.4 + field.dichte * 0.16;
+            try {
+                s.lofi.bassGain.gain.cancelScheduledValues(now);
+                s.lofi.bassGain.gain.setValueAtTime(s.lofi.bassGain.gain.value, now);
+                s.lofi.bassGain.gain.linearRampToValueAtTime(bg, now + ramp);
+            } catch (e) {
+                void e;
+            }
+        }
+    }
+
+    // W4 V4 Sub-Schritt 3 — steht der Spieler nahe einer Struktur mit
+    // hoher räumlicher Resonanz (computeSpatialTags.resoniert ≥ der
+    // resonance_strong-Schwelle)? Ein resonantes Bauwerk „singt mit" —
+    // der Pad verdichtet sich. Spiegelt den V8.84-Singing-Sinus, jetzt
+    // in die Symphonie statt einer Einzel-Sinus-Schicht.
+    _lofiNearResonantArchitecture() {
+        const pm = this.state.playerMesh;
+        const archs = this.state.architectures;
+        if (!pm || !pm.position || !Array.isArray(archs) || !archs.length) return false;
+        if (typeof this.computeSpatialTags !== "function") return false;
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
+        const strong = (T && T.resonance_strong) || 1.5;
+        const RADIUS2 = 24 * 24;
+        for (const e of archs) {
+            if (!e || !e.position) continue;
+            const dx = e.position.x - pm.position.x;
+            const dz = e.position.z - pm.position.z;
+            if (dx * dx + dz * dz > RADIUS2) continue;
+            const bp = this.state.blueprints && this.state.blueprints[e.type];
+            if (!bp) continue;
+            const tags = this.computeSpatialTags(bp);
+            if (tags && (tags.resoniert || 0) >= strong) return true;
+        }
+        return false;
     }
 
     // ### Status-Panel (UI V1) ###
@@ -15905,7 +16079,15 @@ class AnazhRealm {
             serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
-        return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
+        // W16-Politur — den save-server-Content-Hash mit durchreichen, damit
+        // der Mesh-Empfänger das Bündel gegen den Katalog-Hash prüfen kann.
+        return {
+            ok: true,
+            id: reg.id,
+            label: reg.label,
+            fileCount: posted.fileCount || san.files.length,
+            bundleHash: typeof posted.bundleHash === "string" ? posted.bundleHash : "",
+        };
     }
 
     // W15 Phase 2 — der GitHub-Fetch. Statt eines lokalen Bündels eine
@@ -20941,6 +21123,52 @@ class AnazhRealm {
         if (this._isMoveable(bp)) out.moveable = true;
         if (this._isMagnifying(bp)) out.magnifying = true;
         if (this._isFocusing(bp)) out.focusing = true;
+        if (this._isRadiating(bp)) out.radiating = true;
+        if (this._isBroadcasting(bp)) out.broadcasting = true;
+        if (this._isBalancing(bp)) out.balancing = true;
+        if (this._isLifting(bp)) out.lifting = true;
+        return out;
+    }
+
+    // W10 ext. Politur — die STÄRKE einer Affordance (0.2..1.0), nicht nur
+    // ob/ob-nicht. Der Schwellwert in computeBlueprintAffordances ist die
+    // GATE (ist es überhaupt ein Strahler/Mast?); die Stärke skaliert
+    // DARÜBER kontinuierlich mit der Substanz: wie weit der entscheidende
+    // Tag den Schwellwert übersteigt (0.4..1.0) × die Qualität (0.5..1.0 —
+    // Vision §6.3: Präzision moduliert ALLE Effekte, min-Faktor 0.5). Ein
+    // grob gefügter Eisen-Stummel ist eine schwache Antenne, ein fein
+    // polierter Quarz-Helix-Turm eine starke — man KANN eine bessere bauen.
+    // Die Welt-Reaktionen (_tickRadiatingAffordances, das broadcasting-
+    // Relais) lesen diese Stärke; spawnArchitecture friert sie als
+    // entry.affordanceStrength ein (wie entry.affordances).
+    computeAffordanceStrength(bp) {
+        const aff = this.computeBlueprintAffordances(bp);
+        const out = {};
+        const keys = Object.keys(aff);
+        if (keys.length === 0) return out;
+        const tags = this.computeCompoundTags(bp) || {};
+        const quality = Math.max(0, Math.min(1, this.computeBlueprintQuality(bp)));
+        const precF = 0.5 + 0.5 * quality; // §6.3 — min-Faktor 0.5
+        const clamp01 = (v) => Math.max(0, Math.min(1, v));
+        // Wie weit ein Tag seinen Schwellwert übersteigt → 0.4..1.0.
+        const overScale = (val, min) => 0.4 + 0.6 * clamp01((val - min) / (3 - min));
+        if (aff.radiating) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.radiating;
+            out.radiating = clamp01(overScale(tags.resoniert || 0, T.resoniertMin) * precF);
+        }
+        if (aff.broadcasting) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting;
+            const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
+            out.broadcasting = clamp01(overScale(leit, T.leitfaehigMin) * precF);
+        }
+        if (aff.balancing) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.balancing;
+            out.balancing = clamp01(overScale(tags.dichte || 0, T.dichteMin) * precF);
+        }
+        if (aff.lifting) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.lifting;
+            out.lifting = clamp01(overScale(tags.magieleitung || 0, T.magieMin) * precF);
+        }
         return out;
     }
 
@@ -21069,6 +21297,96 @@ class AnazhRealm {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
         const tags = this.computeCompoundTags(bp) || {};
         return (tags.transparent || 0) >= T.transparentMin && (tags.wärmeleitung || 0) >= T.wärmeMin;
+    }
+
+    // W10 ext. — radiating: ein resonanz-strahlendes Compound.
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound strahlen lässt:
+    //   1. resoniert-Tag über Schwelle (es schwingt stark — es HAT etwas
+    //      auszustrahlen)
+    //   2. radiale Spreizung: die Parts liegen NICHT auf einer Achse
+    //      (alignmentRatio unter radialMax) — ein Mast/eine Linie strahlt
+    //      gerichtet, ein um einen Mittelpunkt gespreiztes Compound radial
+    //   3. mindestens minParts Parts (ein Einzelteil hat keine Spreizung)
+    // Ein Ring aus Quarz-Cones strahlt genauso wie ein Sphären-Cluster —
+    // die räumliche Geste „um einen Kern gespreizt" zählt, nicht der Shape.
+    // Synergie: ein radiating-Compound trägt hohen resoniert → es bereichert
+    // zugleich die W4-V4-Symphonie (_lofiNearResonantArchitecture), ohne
+    // eine Zeile Extra-Code — die Musik HÖRT, was die Welt ausstrahlt.
+    _isRadiating(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.radiating;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.resoniert || 0) < T.resoniertMin) return false;
+        const align = this._axialAlignment(bp);
+        return align.alignmentRatio < T.radialMax;
+    }
+
+    // W10 ext. — broadcasting: ein leitfähiger Mast, der als Relais wirkt.
+    // Vision-rein: KEINE Form-Whitelist. Was das Compound senden lässt:
+    //   1. axiale Ausrichtung entlang der VERTIKALEN Achse: ein Mast steht
+    //      aufrecht (_axialAlignment.axis === "y" + alignmentRatio ≥ alignMin)
+    //   2. Leitfähigkeit: stromleitung ODER magieleitung über Schwelle —
+    //      es trägt ein Signal
+    //   3. mindestens minParts Parts
+    // Komplementär zu radiating: ein radial gespreiztes Compound STRAHLT,
+    // ein aufrecht-axiales SENDET. Die Welt-Reaktion ist kein eigener Tick —
+    // ein broadcasting-Mast VERSTÄRKT als Relais die Reichweite eines nahen
+    // radiating-Strahlers (Affordances komponieren; siehe _tickRadiating-
+    // Affordances). Eine Eisen-Cylinder-Säule sendet wie ein Quarz-Helix-
+    // Turm — die aufrechte, leitfähige Geste zählt, nicht der Shape.
+    _isBroadcasting(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const align = this._axialAlignment(bp);
+        if (align.axis !== "y" || align.alignmentRatio < T.alignMin) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
+        return leit >= T.leitfaehigMin;
+    }
+
+    // W10 ext. — balancing: ein breites, bodenlastiges, schweres Compound,
+    // das den Ort gründet. Vision-rein: KEINE Form-Whitelist. Was das
+    // Compound gründend macht:
+    //   1. breite Basis: die horizontale Spannweite ≥ die vertikale (es
+    //      sitzt, es türmt nicht — ein Fundament, kein Mast)
+    //   2. bodenlastig: ≥ bottomHeavyMin der Parts in der unteren bbox-Hälfte
+    //      (der Schwerpunkt liegt tief — es kippt nicht)
+    //   3. schwer: dichte-Tag ≥ dichteMin (1.5 — genuin stein-schwer, nicht
+    //      bloss vorhanden; ein leichter Quarz-Cluster gründet nicht)
+    //   4. mindestens minParts Parts
+    // Eine flache Stein-Box-Plattform gründet wie eine Eisen-Scheibe — die
+    // räumliche Geste „breit + tief + schwer" zählt, nicht der Shape.
+    _isBalancing(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.balancing;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return false;
+        const spanY = bbox.max.y - bbox.min.y;
+        const spanXZ = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z);
+        if (spanXZ < spanY * T.wideMin) return false; // breiter als hoch
+        const below = this._partsBelowMidline(bp, 0.5).length;
+        if (below / bp.parts.length < T.bottomHeavyMin) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        return (tags.dichte || 0) >= T.dichteMin;
+    }
+
+    // W10 ext. — lifting: ein magie-geladenes, leichtes Compound, das einen
+    // Auftriebs-Bereich erzeugt. Vision-rein: KEINE Form-Whitelist. Was das
+    // Compound hebend macht:
+    //   1. magieleitung-Tag ≥ magieMin (1.5 — stark magie-geladen, es trägt
+    //      die Hebe-Energie)
+    //   2. dichte-Tag ≤ dichteMax (1.0 — genuin leicht; Magie hebt nur, was
+    //      nicht schwer ist — das KOMPLEMENT zu balancing, das ≥1.5 verlangt)
+    //   3. mindestens minParts Parts
+    // Ein Quarz-Cone-Cluster hebt wie ein Quarz-Helix-Turm — die Substanz-
+    // Geste „leicht + magie-geladen" zählt, nicht der Shape. Eine schwere
+    // Stein-Form (auch magie-getränkt) hebt nicht — Magie trägt kein Gewicht.
+    _isLifting(bp) {
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.lifting;
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < T.minParts) return false;
+        const tags = this.computeCompoundTags(bp) || {};
+        if ((tags.magieleitung || 0) < T.magieMin) return false;
+        return (tags.dichte || 0) <= T.dichteMax;
     }
 
     // ----- Welle 11 ext. — intrinsische Substanz-Signale für die Rolle -----
@@ -21401,12 +21719,143 @@ class AnazhRealm {
         }
     }
 
+    // ----- Welt-Reaktion: radiating (Resonanz wärmt das Gemüt) -----
+
+    // Pro Frame: steht der Spieler in Reichweite eines radiating-Compounds,
+    // badet ihn dessen Schwingung — awe + peace steigen sanft (Vision §3:
+    // die Welt berührt den Menschen). Der erste Kontakt mit einem bestimmten
+    // Strahler schreibt eine Erinnerung (journalAppendOnce — wiederholtes
+    // Nähern flutet das Journal nicht). Die Emotion-Rampe ist bewusst leise
+    // (~0.04/s — über ~10 s nahem Verweilen spürbar), keine schroffe Geste.
+    // Spiegelt den focusing-Tick (Architekturen filtern, Range-Check, akkum.).
+    _tickRadiatingAffordances(dt) {
+        const radiating = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.radiating);
+        if (radiating.length === 0) return;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        const emo = this.state.player && this.state.player.emotions;
+        if (!emo) return;
+        const baseRange2 = AnazhRealm.RADIATING_RANGE_M * AnazhRealm.RADIATING_RANGE_M;
+        const baseStep = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
+        // W10 ext. — broadcasting-Relais: ein leitfähiger Mast in Reichweite
+        // eines Strahlers verstärkt dessen Reichweite (Affordances komponieren).
+        const broadcasting = (this.state.architectures || []).filter(
+            (e) => e.affordances && e.affordances.broadcasting && e.position
+        );
+        const relayRange2 = AnazhRealm.BROADCAST_RELAY_RANGE_M * AnazhRealm.BROADCAST_RELAY_RANGE_M;
+        const maxMult = AnazhRealm.BROADCAST_RANGE_MULT;
+        const strengthOf = (e, key) => {
+            const s = e.affordanceStrength && e.affordanceStrength[key];
+            return typeof s === "number" ? s : 1; // Altbestand ohne Snapshot → volle Wirkung
+        };
+        for (const ra of radiating) {
+            if (!ra.position) continue;
+            // W10 ext. Politur — der stärkste broadcasting-Mast in Relais-
+            // Reichweite verstärkt die Strahler-Reichweite; ein starker Mast
+            // verstärkt mehr (mult = 1 + Mast-Stärke × (maxMult−1)). range² ×
+            // mult² — die lineare Reichweite wächst um mult.
+            let bestMastStrength = 0;
+            for (const bc of broadcasting) {
+                const bdx = bc.position.x - ra.position.x;
+                const bdz = bc.position.z - ra.position.z;
+                if (bdx * bdx + bdz * bdz <= relayRange2) {
+                    const ms = strengthOf(bc, "broadcasting");
+                    if (ms > bestMastStrength) bestMastStrength = ms;
+                }
+            }
+            const mult = 1 + bestMastStrength * (maxMult - 1);
+            const range2 = baseRange2 * mult * mult;
+            const dx = ra.position.x - pm.x;
+            const dz = ra.position.z - pm.z;
+            if (dx * dx + dz * dz > range2) continue;
+            // W10 ext. Politur — die Emotion-Intensität skaliert mit der
+            // Strahler-Stärke: ein starker Strahler badet kräftiger.
+            const step = baseStep * strengthOf(ra, "radiating");
+            emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
+            emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
+            this.journalAppendOnce(
+                `radiating:${ra.id}`,
+                "growth",
+                `Eine strahlende Form schwingt nahe — ihre Resonanz wärmt das Gemüt.`,
+                { architecture: ra.type, affordance: "radiating" }
+            );
+        }
+    }
+
+    // ----- Welt-Reaktion: balancing (eine gründende Form legt den Aufruhr) -----
+
+    // Pro Frame: steht der Spieler in Reichweite eines balancing-Compounds,
+    // gründet ihn dessen Ruhe — chaos wird sanft abgebaut (Vision §3, das
+    // Komplement zum radiating-Tick: radiating HEBT awe+peace, balancing
+    // SENKT chaos). Der erste Kontakt schreibt eine Erinnerung. Die Drain-
+    // Rate skaliert mit der Compound-Stärke (W10-ext.-Politur). Synergie:
+    // weniger chaos verlangsamt zugleich die Kreaturen (chaos → Tempo) —
+    // ein gegründeter Ort ist ruhiger, ohne eine Zeile Extra-Code.
+    _tickBalancingAffordances(dt) {
+        const balancing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.balancing);
+        if (balancing.length === 0) return;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        const emo = this.state.player && this.state.player.emotions;
+        if (!emo) return;
+        const range2 = AnazhRealm.BALANCING_RANGE_M * AnazhRealm.BALANCING_RANGE_M;
+        const baseStep = AnazhRealm.BALANCING_CHAOS_DRAIN_PER_SEC * dt;
+        for (const ba of balancing) {
+            if (!ba.position) continue;
+            const dx = ba.position.x - pm.x;
+            const dz = ba.position.z - pm.z;
+            if (dx * dx + dz * dz > range2) continue;
+            const s = ba.affordanceStrength && ba.affordanceStrength.balancing;
+            const strength = typeof s === "number" ? s : 1;
+            emo.chaos = Math.max(0, Math.min(1, (emo.chaos || 0) - baseStep * strength));
+            this.journalAppendOnce(
+                `balancing:${ba.id}`,
+                "growth",
+                `Eine gründende Form ruht nahe — der Aufruhr im Gemüt legt sich.`,
+                { architecture: ba.type, affordance: "balancing" }
+            );
+        }
+    }
+
+    // ----- Welt-Reaktion: lifting (ein Auftriebs-Feld trägt den Spieler) -----
+
+    // Pro Frame: steht der Spieler in Reichweite eines lifting-Compounds,
+    // setzt es ein Auftriebs-Feld auf state.player.liftingField. Die Physik-
+    // Schleife liest das Flag und wendet _liftVerticalVelocity an (analog
+    // zum playerUnderwater-Flag → _swimVerticalVelocity). Der stärkste
+    // lifting-Compound in Reichweite bestimmt die Feld-Stärke.
+    _tickLiftingAffordances() {
+        const pl = this.state.player;
+        if (!pl) return;
+        const lifting = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.lifting);
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm || lifting.length === 0) {
+            pl.liftingField = { active: false, strength: 0 };
+            return;
+        }
+        const range2 = AnazhRealm.LIFTING_RANGE_M * AnazhRealm.LIFTING_RANGE_M;
+        let best = 0;
+        for (const li of lifting) {
+            if (!li.position) continue;
+            const dx = li.position.x - pm.x;
+            const dz = li.position.z - pm.z;
+            if (dx * dx + dz * dz > range2) continue;
+            const s = li.affordanceStrength && li.affordanceStrength.lifting;
+            const strength = typeof s === "number" ? s : 1;
+            if (strength > best) best = strength;
+        }
+        pl.liftingField = { active: best > 0, strength: best };
+    }
+
     // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._tickMountedMovement();
         this._tickFocusingAffordances(dt);
+        this._tickRadiatingAffordances(dt);
+        this._tickBalancingAffordances(dt);
+        this._tickLiftingAffordances();
         this._tickPortalAffordance();
     }
 
@@ -24075,6 +24524,9 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[type];
         if (bp) {
             entry.affordances = this.computeBlueprintAffordances(bp);
+            // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
+            // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
+            entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
@@ -32127,6 +32579,21 @@ class AnazhRealm {
         return Math.min(2.5, Math.max(-2.5, currentVy * 0.45) + d * 0.18);
     }
 
+    // W10 ext. — vertikale Geschwindigkeit in einem lifting-Auftriebs-Feld.
+    // Eine reine Funktion (testbar, wie _swimVerticalVelocity). strength
+    // 0..1 = die Stärke des nächsten lifting-Compounds. Ein Fall wird
+    // gedämpft (currentVy < 0 → bis 85 % weniger bei voller Stärke), und
+    // ein sanfter Aufwärts-Drift hebt den Spieler — in einem starken Feld
+    // schwebt man auf, in einem schwachen fällt man nur langsamer. Der
+    // Aufstieg ist gedeckelt (2.5 m/s), kein Raketenstart; eine eigene
+    // Aufwärts-Bewegung (Sprung, currentVy > 0) wird nicht gebremst.
+    _liftVerticalVelocity(currentVy, strength) {
+        const s = Math.max(0, Math.min(1, strength || 0));
+        const damped = currentVy < 0 ? currentVy * (1 - 0.85 * s) : currentVy;
+        const drift = AnazhRealm.LIFTING_DRIFT_PER_SEC * s;
+        return Math.min(2.5, damped + drift);
+    }
+
     startEternalLoop() {
         // ### Spiel-Loop V7.66 ###
         // Learnings:
@@ -32363,6 +32830,26 @@ class AnazhRealm {
                                     );
                                 }
                             }
+                        }
+
+                        // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
+                        // in Reichweite eines lifting-Compounds (Flag aus
+                        // _tickLiftingAffordances), trägt ihn das Feld: der Fall
+                        // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
+                        // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
+                        // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
+                        if (
+                            mesh === this.state.playerMesh &&
+                            !this.state.playerUnderwater &&
+                            this.state.player &&
+                            this.state.player.liftingField &&
+                            this.state.player.liftingField.active
+                        ) {
+                            const liftVy = this._liftVerticalVelocity(
+                                velocity.y(),
+                                this.state.player.liftingField.strength
+                            );
+                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
                         }
 
                         // Kill-Plane näher an den Welt-Boden gerückt: vorher
@@ -33186,6 +33673,11 @@ AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 // bundle-pull-Antworten an denselben Peer — ein Bündel-Read + Versand ist
 // teuer, ohne Limit ein DoS-Vektor.
 AnazhRealm.P2P_BUNDLE_PULL_COOLDOWN_MS = 5000;
+// W16-Politur — der weiche Pull-Timeout: hängt ein Welt-Bündel-Pull länger
+// als das, gibt _p2pCheckBundlePullTimeout ihn frei (der Sender verschwand
+// vermutlich mitten im Chunk-Strom). 30 s — grosszügig für ein Text-Welt-
+// Bündel über einen DataChannel.
+AnazhRealm.P2P_BUNDLE_PULL_TIMEOUT_MS = 30000;
 
 // W7 Phase 3 — LLM-Pool. Ein Peer mit aktivem LLM teilt seine „Stimme",
 // ein schlüsselloser Peer routet Chat-Anfragen über ihn. Sicherheits-
@@ -33727,6 +34219,41 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
         transparentMin: 0.5,
         wärmeMin: 0.3,
     }),
+    // W10 ext. — radiating: ein resonanz-strahlendes Compound. resoniert-Tag
+    // über Schwelle + radiale Spreizung (Parts NICHT auf einer Achse).
+    // resoniertMin = WORLD_EFFECT_THRESHOLDS.resonance_strong (1.5) — dieselbe
+    // Schwelle, ab der W4 V4 die Symphonie verdichtet; ein Stein-Dorf (resoniert
+    // ~0.6) strahlt NICHT, erst eine genuin resonante Quarz-Form (~1.8).
+    radiating: Object.freeze({
+        minParts: 3, // ein Einzelteil hat keine Spreizung
+        resoniertMin: 1.5, // das Compound schwingt STARK — es strahlt
+        radialMax: 0.6, // axiale alignmentRatio UNTER 0.6 → radial, kein Mast
+    }),
+    // W10 ext. — broadcasting: ein leitfähiger, aufrechter Mast (Relais).
+    // Axiale Ausrichtung entlang der y-Achse + Leitfähigkeit. Komplementär
+    // zu radiating (radialMax 0.6 ↔ alignMin 0.6 — derselbe Schwellwert
+    // trennt radial von axial sauber).
+    broadcasting: Object.freeze({
+        minParts: 3, // ein Mast braucht mehrere Parts
+        alignMin: 0.6, // ≥60 % der Parts auf der (vertikalen) Achse
+        leitfaehigMin: 0.4, // stromleitung ODER magieleitung — es trägt ein Signal
+    }),
+    // W10 ext. — balancing: ein breites, bodenlastiges, schweres Compound
+    // (Fundament). Breite Basis + tiefer Schwerpunkt + genuin schwer.
+    balancing: Object.freeze({
+        minParts: 3,
+        wideMin: 1.0, // horizontale Spannweite ≥ vertikale (breiter als hoch)
+        bottomHeavyMin: 0.6, // ≥60 % der Parts in der unteren bbox-Hälfte
+        dichteMin: 1.5, // genuin schwer (= resonance_strong-Niveau, kein Gate-Tief)
+    }),
+    // W10 ext. — lifting: ein magie-geladenes, leichtes Compound (Auftriebs-
+    // Feld). Stark magie-geladen + genuin leicht — das Komplement zu
+    // balancing (dichteMax 1.0 ↔ balancing.dichteMin 1.5).
+    lifting: Object.freeze({
+        minParts: 3,
+        magieMin: 1.5, // stark magie-geladen — es trägt die Hebe-Energie
+        dichteMax: 1.0, // genuin leicht — Magie hebt kein Gewicht
+    }),
 });
 
 // Welle 11 ext. — Substanz-Rolle. Schwellen für die intrinsischen Rollen-
@@ -33762,7 +34289,26 @@ AnazhRealm.AFFORDANCE_LABELS = Object.freeze({
     moveable: "fahrbar",
     magnifying: "vergrößernd",
     focusing: "bündelnd",
+    radiating: "strahlend",
+    broadcasting: "sendend",
+    balancing: "gründend",
+    lifting: "hebend",
 });
+// W10 ext. — radiating-Welt-Reaktion: Reichweite + sanfte Emotion-Rampe.
+AnazhRealm.RADIATING_RANGE_M = 14;
+AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC = 0.04;
+// W10 ext. — broadcasting-Relais: ein Mast in BROADCAST_RELAY_RANGE_M eines
+// Strahlers vervielfacht dessen Reichweite um BROADCAST_RANGE_MULT.
+AnazhRealm.BROADCAST_RELAY_RANGE_M = 18;
+AnazhRealm.BROADCAST_RANGE_MULT = 2;
+// W10 ext. — balancing-Welt-Reaktion: nahe einer gründenden Form wird chaos
+// abgebaut (Komplement zu radiating, das awe+peace hebt).
+AnazhRealm.BALANCING_RANGE_M = 14;
+AnazhRealm.BALANCING_CHAOS_DRAIN_PER_SEC = 0.05;
+// W10 ext. — lifting-Welt-Reaktion: in Reichweite eines lifting-Compounds
+// trägt ein Auftriebs-Feld den Spieler (Fall gedämpft + Aufwärts-Drift).
+AnazhRealm.LIFTING_RANGE_M = 10;
+AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
