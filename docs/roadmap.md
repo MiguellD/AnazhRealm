@@ -774,16 +774,16 @@ Ein Selbst-Audit nach V8.80 sammelte alle ehrlich-benannten offenen Punkte und p
 | 6 | **W15-Politur** | Branch-Namen mit Slash (`feature/x`) im GitHub-Fetch auflösen (braucht eine SHA-Auflösung vor der Trees-API). | ~0.5 Session | 🔴 offen |
 | 7 | **W6.G P3-Rest** | Terrain-Höhlen/Überhänge/Klippen — der einzige nicht von W6.G4 abgedeckte Rest der alten 6.G-Phase-3-Liste. Ein Heightfield ist pro (x,z) eindeutig → Überhänge brauchen eine andere Terrain-Repräsentation (Voxel-Schichten oder angeheftete Überhang-Meshes). Eigene grosse Welle, kein Quick-Win. | 4-5 Sessions | 🔴 offen |
 
-#### W4 V3 — die generative Symphonie (Schöpfer-Wunsch 18.05.2026)
+#### W4 V3 — die generative Symphonie (Schöpfer-Wunsch 18.05.2026) — ✅ VOLLSTÄNDIG (V8.85-V8.93)
 
-Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, keine Melodien" — „Symphony, doch ein Brummen". Die Antwort: Musik wächst aus wenigen Regeln + einem Seed, wie die Welt selbst. Ein Song = `worldMeta.seed` + Regel-Schichten; jede Welt bekommt ihr eigenes Lied, es atmet mit Emotion/Welt-Feld/Tageszeit. Genre (Jazz/HipHop/Lofi) = ein **Parameter-Preset** EINER Engine, kein eigenes System. Vier Phasen:
+Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, keine Melodien" — „Symphony, doch ein Brummen". Die Antwort: Musik wächst aus wenigen Regeln + einem Seed, wie die Welt selbst. Ein Song = `worldMeta.seed` + Regel-Schichten; jede Welt bekommt ihr eigenes Lied, es atmet mit Emotion/Welt-Feld/Tageszeit. Genre (Jazz/HipHop/Lofi) = ein **Parameter-Preset** EINER Engine, kein eigenes System. Alle vier Phasen sind gebaut (V8.85 Harmonie, V8.87/90 Melodie, V8.91/92 Groove, V8.93 Orchester); ein Genre-Wähler-UI bleibt eine benannte kleine Folge-Naht. Vier Phasen:
 
 | Phase | Was | Stand |
 |---|---|---|
 | 1 — Harmonie | die feste Akkord-Schleife → eine seed- + emotion-getriebene funktionale Markov-Progression (Tonleiter + Stufen-Übergangs-Gewichte; joy/hope → helle Stufen, sorrow → dunkle) | ✅ **live (V8.85)** |
 | 2 — Melodie | eine Lead-Stimme improvisiert über den aktuellen Akkord (Akkord-/Durchgangston-Regel, Kontur, Dichte aus Emotion) — das fehlende „keine Melodien" | ✅ **live (V8.87)** |
 | 3 — Groove | eine Rhythmus-Schicht (Kick/Snare/Hihat synthetisch) + Swing; Genre = Parameter-Preset (Swing, Tempo, Akzente, Timbre) | ✅ **live (V8.91)** — Kick/Snare/Hihat + Swing; Genre-Wähler-UI eine kleine Folge-Naht |
-| 4 — Orchester | mehr Synth-Stimmen (Bass folgt den Akkord-Wurzeln, Pad, Lead), Stimmen-Zahl wächst mit der Welt-Stimmung | 🔴 offen, ~1-2 Sessions |
+| 4 — Orchester | mehr Synth-Stimmen (Bass folgt den Akkord-Wurzeln, Pad, Lead), Stimmen-Zahl wächst mit der Welt-Stimmung | ✅ **live (V8.93)** — Bass auf den Kick-Schritten + emotion-gesteuerte Oktav-Dopplung des Pads |
 
 **Tradeoff:** generative Musik kann ziellos klingen — jede Phase braucht ein Schöpfer-Browser-Ohr (wie die Shader: headless prüft Funktion, der Browser prüft Erfahrung).
 

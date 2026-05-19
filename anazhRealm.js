@@ -503,7 +503,7 @@ class AnazhRealm {
                 creaturePingCount: 0,
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
-                lofi: null, // { gain, filter, melodyGain, grooveGain, noiseBuffer, degree, lastChordAt, rngState }
+                lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7436,6 +7436,11 @@ class AnazhRealm {
         const grooveGain = ctx.createGain();
         grooveGain.gain.value = 0.5; // V8.92 — lauter (der Groove war zu leise; war 0.35)
         grooveGain.connect(masterGain);
+        // W4 V3 Phase 4 — der Bass-Layer (folgt den Akkord-Wurzeln, eine
+        // Oktave unter dem Pad; verzahnt sich mit der Kick).
+        const bassGain = ctx.createGain();
+        bassGain.gain.value = 0.32;
+        bassGain.connect(masterGain);
         const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
         const nd = noiseBuffer.getChannelData(0);
         for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -7450,6 +7455,7 @@ class AnazhRealm {
             gain,
             melodyGain,
             grooveGain,
+            bassGain,
             noiseBuffer,
             degree: 0,
             lastChordAt: -Infinity,
@@ -7744,6 +7750,36 @@ class AnazhRealm {
         return base * (1 + sorrow * 0.5);
     }
 
+    // W4 V3 Phase 4 — der Bass. Folgt der Akkord-Wurzel: ein Dreieck-Ton eine
+    // Oktave unter dem Pad-Grundton, gespielt auf den Kick-Schritten — Bass +
+    // Kick verzahnen sich (das Fundament eines Grooves). Dreieck statt Sinus,
+    // damit die Obertöne ihn auch auf kleinen Lautsprechern tragen (V8.92).
+    _lofiPlayBass(degree, durSec) {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.bassGain) return;
+        const ctx = s.ctx;
+        const now = ctx.currentTime;
+        const stepDur = durSec / 8;
+        const rootOffset = this._lofiChordFromDegree(degree)[0];
+        const freq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (rootOffset - 12) / 12);
+        for (const step of AnazhRealm.LOFI_GROOVE_PATTERN.kick) {
+            const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
+            const dur = stepDur * 1.4;
+            const osc = ctx.createOscillator();
+            osc.type = "triangle";
+            osc.frequency.value = freq;
+            const env = ctx.createGain();
+            env.gain.setValueAtTime(0, t);
+            env.gain.linearRampToValueAtTime(0.5, t + 0.03);
+            env.gain.linearRampToValueAtTime(0.32, t + dur * 0.6);
+            env.gain.linearRampToValueAtTime(0, t + dur);
+            osc.connect(env);
+            env.connect(s.lofi.bassGain);
+            osc.start(t);
+            osc.stop(t + dur + 0.05);
+        }
+    }
+
     // Einen Akkord spielen: je Ton ein Dreieck-Oszillator (weich, pad-artig)
     // durch eine eigene Hüllkurve (langsamer Anschlag + Ausklang) in die
     // Lofi-Schicht. Die Oszillatoren stoppen selbst nach dem Akkord.
@@ -7756,22 +7792,30 @@ class AnazhRealm {
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const majorLean = (emotions.hope || 0) > 0.6;
         const freqs = this._lofiChordFreqs(offsets, majorLean);
+        // W4 V3 Phase 4 — die Stimmen-Zahl wächst mit der Welt-Stimmung: bei
+        // hellem Gemüt (joy + awe > 0.8) bekommt jeder Akkord-Ton eine leise
+        // Oktav-Dopplung — der Pad klingt voller, „orchestraler".
+        const bright = (emotions.joy || 0) + (emotions.awe || 0);
+        const voiceMults = bright > 0.8 ? [1, 2] : [1];
         const attack = 0.8;
         const release = 1.4;
         const sustainAt = now + Math.max(attack, durSec - release);
         for (const freq of freqs) {
-            const osc = ctx.createOscillator();
-            osc.type = "triangle";
-            osc.frequency.value = freq;
-            const env = ctx.createGain();
-            env.gain.setValueAtTime(0, now);
-            env.gain.linearRampToValueAtTime(0.25, now + attack);
-            env.gain.setValueAtTime(0.25, sustainAt);
-            env.gain.linearRampToValueAtTime(0, now + durSec);
-            osc.connect(env);
-            env.connect(s.lofi.filter);
-            osc.start(now);
-            osc.stop(now + durSec + 0.1);
+            for (const mult of voiceMults) {
+                const peak = mult === 1 ? 0.25 : 0.1; // die Oktav-Dopplung leiser
+                const osc = ctx.createOscillator();
+                osc.type = "triangle";
+                osc.frequency.value = freq * mult;
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, now);
+                env.gain.linearRampToValueAtTime(peak, now + attack);
+                env.gain.setValueAtTime(peak, sustainAt);
+                env.gain.linearRampToValueAtTime(0, now + durSec);
+                osc.connect(env);
+                env.connect(s.lofi.filter);
+                osc.start(now);
+                osc.stop(now + durSec + 0.1);
+            }
         }
     }
 
@@ -7789,6 +7833,7 @@ class AnazhRealm {
         this._lofiPlayChord(this._lofiChordFromDegree(degree));
         this._lofiPlayMelody(degree, durSec);
         this._lofiPlayGroove(durSec);
+        this._lofiPlayBass(degree, durSec);
         s.lofi.lastChordAt = now;
         s.lofi.degree = this._lofiNextDegree(degree);
     }

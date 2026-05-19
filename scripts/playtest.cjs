@@ -6404,6 +6404,8 @@ function startSaveServer() {
                             // V8.91 Phase 3 — die Groove-Schicht + Noise-Puffer.
                             !!sym.lofi.grooveGain &&
                             !!sym.lofi.noiseBuffer &&
+                            // V8.93 Phase 4 — die Bass-Schicht.
+                            !!sym.lofi.bassGain &&
                             sym.lofi.degree === 0 &&
                             typeof sym.lofi.rngState === "number";
                         // W4 V3 Phase 2 — die Melodie: Form (startet + endet
@@ -6462,6 +6464,17 @@ function startSaveServer() {
                             void e;
                         }
                         out.groovePlayRuns = grooveOk;
+                        // W4 V3 Phase 4 — der Bass spielt wurf-frei (folgt der
+                        // Akkord-Wurzel auf den Kick-Schritten).
+                        let bassOk = true;
+                        try {
+                            r._lofiPlayBass(0, 4);
+                            r._lofiPlayBass(3, 4);
+                        } catch (e) {
+                            bassOk = false;
+                            void e;
+                        }
+                        out.bassPlayRuns = bassOk;
                         // W4 V3 — _lofiNextDegree liefert eine in der Markov-
                         // Kette erreichbare Stufe (0..6).
                         const allowed = AnazhRealm.LOFI_HARMONY[0].map((t) => t[0]);
@@ -6555,6 +6568,7 @@ function startSaveServer() {
                     );
                     check("W4 V3 Phase 2: _lofiPlayMelody spielt die Phrase wurf-frei", w4v2Results.melodyPlayRuns);
                     check("W4 V3 Phase 3: _lofiPlayGroove spielt den Groove wurf-frei", w4v2Results.groovePlayRuns);
+                    check("W4 V3 Phase 4: _lofiPlayBass spielt den Bass wurf-frei (folgt der Akkord-Wurzel)", w4v2Results.bassPlayRuns);
                     check("W4 V3: _lofiNextDegree liefert eine markov-erreichbare Stufe", w4v2Results.nextDegreeValid);
                     check("W4 V3: die Harmonie ist seed-deterministisch (selber RNG → selbe Folge)", w4v2Results.harmonyDeterministic);
                     check("W4 V3: Emotion biast die Harmonie (joy/hope → mehr helle Stufen)", w4v2Results.emotionBiasesHarmony);
