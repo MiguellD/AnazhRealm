@@ -24128,6 +24128,116 @@ function startSaveServer() {
                             (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
                         );
                         void radE;
+
+                        // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
+                        out.hasAffordanceStrength = typeof r.computeAffordanceStrength === "function";
+                        out.strengthEmptyForNone =
+                            Object.keys(r.computeAffordanceStrength(r.state.blueprints.village)).length === 0;
+                        // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
+                        // als der Quarz-Octahedron-Strahler (resoniert 1.8) —
+                        // dieselbe Substanz, andere Form, messbar bessere Antenne.
+                        if (r.state.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
+                        r.cloneBlueprint("village", "test_10ext_radstrong");
+                        r.state.blueprints.test_10ext_radstrong.parts = [
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 1.2, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: -1.2, y: 0.5, z: 0 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 0.5, z: 1.2 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                            {
+                                shape: "sphere",
+                                material: "quarz",
+                                position: { x: 0, y: 0.5, z: -1.2 },
+                                size: { x: 0.6, y: 0.6, z: 0.6 },
+                            },
+                        ];
+                        const radWeakStr = r.computeAffordanceStrength(
+                            r.state.blueprints.test_10ext_radiator
+                        ).radiating;
+                        const radStrongStr = r.computeAffordanceStrength(
+                            r.state.blueprints.test_10ext_radstrong
+                        ).radiating;
+                        out.radStrengthScales =
+                            typeof radWeakStr === "number" && radStrongStr > radWeakStr && radStrongStr <= 1;
+                        // Ein Quarz-Mast ist eine STÄRKERE Antenne als ein Holz-Mast.
+                        if (r.state.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
+                        r.cloneBlueprint("village", "test_10ext_mastweak");
+                        r.state.blueprints.test_10ext_mastweak.parts = [
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 0, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                            {
+                                shape: "cylinder",
+                                material: "holz",
+                                position: { x: 0, y: 2, z: 0 },
+                                size: { x: 0.5, y: 1, z: 0.5 },
+                            },
+                        ];
+                        const mastWeakStr = r.computeAffordanceStrength(
+                            r.state.blueprints.test_10ext_mastweak
+                        ).broadcasting;
+                        const mastStrongStr = r.computeAffordanceStrength(
+                            r.state.blueprints.test_10ext_mast
+                        ).broadcasting;
+                        out.mastWeakIsBroadcasting =
+                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mastweak).broadcasting === true;
+                        out.broadcastStrengthScales = typeof mastWeakStr === "number" && mastStrongStr > mastWeakStr;
+                        // spawnArchitecture friert die Stärke ein.
+                        const radSnap = r.spawnArchitecture(
+                            "test_10ext_radiator",
+                            { x: 70, y: 0, z: 70 },
+                            { silent: true }
+                        );
+                        out.spawnFreezesStrength = !!(
+                            radSnap &&
+                            radSnap.affordanceStrength &&
+                            typeof radSnap.affordanceStrength.radiating === "number"
+                        );
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+                        // Welt-Reaktion: ein STARKER Mast relais-verstärkt weiter
+                        // als ein SCHWACHER. Spieler 23 m vom Strahler — der
+                        // schwache Holz-Mast erreicht ihn nicht, der starke schon.
+                        r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
+                        r.spawnArchitecture("test_10ext_mastweak", { x: 66, y: 0, z: 60 }, { silent: true });
+                        if (pmR) {
+                            pmR.x = 60;
+                            pmR.y = 0;
+                            pmR.z = 83;
+                        }
+                        emoR.awe = 0.1;
+                        emoR.peace = 0.1;
+                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                        out.weakMastTooWeak = Math.abs(emoR.awe - 0.1) < 0.0001;
+                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_mastweak");
+                        r.spawnArchitecture("test_10ext_mast", { x: 66, y: 0, z: 60 }, { silent: true });
+                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                        out.strongMastReachesFarther = emoR.awe > 0.1;
+                        r.state.architectures = r.state.architectures.filter(
+                            (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
+                        );
+
                         emoR.awe = aweBefore0;
                         emoR.peace = peaceBefore0;
                         // Spieler-Position wiederherstellen — nachfolgende Tests
@@ -24162,6 +24272,8 @@ function startSaveServer() {
                             "test_10ext_radiator",
                             "test_10ext_mast",
                             "test_10ext_bcline",
+                            "test_10ext_radstrong",
+                            "test_10ext_mastweak",
                         ]) {
                             if (r.state.blueprints[n]) r.deleteBlueprint(n);
                         }
@@ -24290,6 +24402,31 @@ function startSaveServer() {
                 check(
                     "W10 ext.: ein broadcasting-Mast verstärkt als Relais die Strahler-Reichweite (Affordances komponieren)",
                     wave10bResults.relayMitMastReicheWeiter
+                );
+                // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
+                check(
+                    "W10 ext. Politur: computeAffordanceStrength existiert, leer für ein Compound ohne Affordance",
+                    wave10bResults.hasAffordanceStrength && wave10bResults.strengthEmptyForNone
+                );
+                check(
+                    "W10 ext. Politur: ein resonanter Quarz-Sphären-Strahler ist STÄRKER als der Octahedron-Strahler",
+                    wave10bResults.radStrengthScales
+                );
+                check(
+                    "W10 ext. Politur: ein Holz-Mast ist broadcasting, aber SCHWÄCHER als ein Quarz-Mast",
+                    wave10bResults.mastWeakIsBroadcasting && wave10bResults.broadcastStrengthScales
+                );
+                check(
+                    "W10 ext. Politur: spawnArchitecture friert affordanceStrength am entry ein",
+                    wave10bResults.spawnFreezesStrength
+                );
+                check(
+                    "W10 ext. Politur: ein schwacher Mast relais-verstärkt NICHT bis zum 23-m-Spieler",
+                    wave10bResults.weakMastTooWeak
+                );
+                check(
+                    "W10 ext. Politur: ein starker Mast relais-verstärkt WEITER — er erreicht ihn (eine bessere Antenne)",
+                    wave10bResults.strongMastReachesFarther
                 );
             } else if (wave10bResults && wave10bResults.error) {
                 check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);

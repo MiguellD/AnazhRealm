@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V8.98)
+# Zustand des Realm — Stand: 19.05.2026 (V8.99)
+
+**V8.99 — W10 ext. Politur (die Affordance-Stärke skaliert mit der Substanz)**: eine Schöpfer-Frage trug die Welle — „kann ich eine bessere Antenne bauen, oder gibt es nur ja/nein?". Der Affordance-Schwellwert bleibt die GATE (ist es überhaupt ein Strahler/Mast?), aber darüber skaliert die Wirkung kontinuierlich: `computeAffordanceStrength` liefert eine Stärke aus dem Tag-Überschuss über dem Schwellwert × der Bauplan-Qualität (Vision §6.3 — Präzision moduliert alle Effekte). Ein starker Strahler badet kräftiger, ein starker `broadcasting`-Mast verstärkt die Relais-Reichweite mehr. Man baut eine bessere Antenne durch Material, Form UND Handwerk. +6 Invarianten. Voller Eintrag in `CLAUDE.md` V8.99.
 
 **V8.98 — W10 ext. Welle 2/4 (die `broadcasting`-Affordance)**: der Affordance-Bogen bekommt eine fünfte emergente Affordance — `broadcasting`, ein leitfähiger aufrechter Mast (Relais). Vision-rein, kein Form-Whitelist: `_isBroadcasting` sendet, wenn das Compound axial entlang der vertikalen Achse ausgerichtet ist (ein Mast steht aufrecht) + leitfähig ist. Komplement zu `radiating` — derselbe 0.6-Schwellwert trennt radial (strahlt) von axial (sendet). Die Welt-Reaktion ist kein eigener Tick: ein `broadcasting`-Mast nahe einem `radiating`-Strahler vervielfacht dessen Reichweite (×2) — Affordances komponieren. balancing/lifting bleiben als Welle 3-4 benannt. +7 Invarianten. Voller Eintrag in `CLAUDE.md` V8.98.
 

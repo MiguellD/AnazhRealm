@@ -21128,6 +21128,40 @@ class AnazhRealm {
         return out;
     }
 
+    // W10 ext. Politur — die STÄRKE einer Affordance (0.2..1.0), nicht nur
+    // ob/ob-nicht. Der Schwellwert in computeBlueprintAffordances ist die
+    // GATE (ist es überhaupt ein Strahler/Mast?); die Stärke skaliert
+    // DARÜBER kontinuierlich mit der Substanz: wie weit der entscheidende
+    // Tag den Schwellwert übersteigt (0.4..1.0) × die Qualität (0.5..1.0 —
+    // Vision §6.3: Präzision moduliert ALLE Effekte, min-Faktor 0.5). Ein
+    // grob gefügter Eisen-Stummel ist eine schwache Antenne, ein fein
+    // polierter Quarz-Helix-Turm eine starke — man KANN eine bessere bauen.
+    // Die Welt-Reaktionen (_tickRadiatingAffordances, das broadcasting-
+    // Relais) lesen diese Stärke; spawnArchitecture friert sie als
+    // entry.affordanceStrength ein (wie entry.affordances).
+    computeAffordanceStrength(bp) {
+        const aff = this.computeBlueprintAffordances(bp);
+        const out = {};
+        const keys = Object.keys(aff);
+        if (keys.length === 0) return out;
+        const tags = this.computeCompoundTags(bp) || {};
+        const quality = Math.max(0, Math.min(1, this.computeBlueprintQuality(bp)));
+        const precF = 0.5 + 0.5 * quality; // §6.3 — min-Faktor 0.5
+        const clamp01 = (v) => Math.max(0, Math.min(1, v));
+        // Wie weit ein Tag seinen Schwellwert übersteigt → 0.4..1.0.
+        const overScale = (val, min) => 0.4 + 0.6 * clamp01((val - min) / (3 - min));
+        if (aff.radiating) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.radiating;
+            out.radiating = clamp01(overScale(tags.resoniert || 0, T.resoniertMin) * precF);
+        }
+        if (aff.broadcasting) {
+            const T = AnazhRealm.AFFORDANCE_THRESHOLDS.broadcasting;
+            const leit = Math.max(tags.stromleitung || 0, tags.magieleitung || 0);
+            out.broadcasting = clamp01(overScale(leit, T.leitfaehigMin) * precF);
+        }
+        return out;
+    }
+
     // ----- Räumliche Helper (Form-agnostisch) -----
 
     // Compound-BBox aus Parts-Positionen. Liefert {min:{x,y,z}, max:{x,y,z}}.
@@ -21647,30 +21681,41 @@ class AnazhRealm {
         const emo = this.state.player && this.state.player.emotions;
         if (!emo) return;
         const baseRange2 = AnazhRealm.RADIATING_RANGE_M * AnazhRealm.RADIATING_RANGE_M;
-        const step = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
+        const baseStep = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
         // W10 ext. — broadcasting-Relais: ein leitfähiger Mast in Reichweite
         // eines Strahlers verstärkt dessen Reichweite (Affordances komponieren).
         const broadcasting = (this.state.architectures || []).filter(
             (e) => e.affordances && e.affordances.broadcasting && e.position
         );
         const relayRange2 = AnazhRealm.BROADCAST_RELAY_RANGE_M * AnazhRealm.BROADCAST_RELAY_RANGE_M;
-        const mult = AnazhRealm.BROADCAST_RANGE_MULT;
+        const maxMult = AnazhRealm.BROADCAST_RANGE_MULT;
+        const strengthOf = (e, key) => {
+            const s = e.affordanceStrength && e.affordanceStrength[key];
+            return typeof s === "number" ? s : 1; // Altbestand ohne Snapshot → volle Wirkung
+        };
         for (const ra of radiating) {
             if (!ra.position) continue;
-            // Ein broadcasting-Mast nahe diesem Strahler verstärkt die
-            // Reichweite (range² × mult² verdoppelt die lineare Reichweite).
-            let range2 = baseRange2;
+            // W10 ext. Politur — der stärkste broadcasting-Mast in Relais-
+            // Reichweite verstärkt die Strahler-Reichweite; ein starker Mast
+            // verstärkt mehr (mult = 1 + Mast-Stärke × (maxMult−1)). range² ×
+            // mult² — die lineare Reichweite wächst um mult.
+            let bestMastStrength = 0;
             for (const bc of broadcasting) {
                 const bdx = bc.position.x - ra.position.x;
                 const bdz = bc.position.z - ra.position.z;
                 if (bdx * bdx + bdz * bdz <= relayRange2) {
-                    range2 = baseRange2 * mult * mult;
-                    break;
+                    const ms = strengthOf(bc, "broadcasting");
+                    if (ms > bestMastStrength) bestMastStrength = ms;
                 }
             }
+            const mult = 1 + bestMastStrength * (maxMult - 1);
+            const range2 = baseRange2 * mult * mult;
             const dx = ra.position.x - pm.x;
             const dz = ra.position.z - pm.z;
             if (dx * dx + dz * dz > range2) continue;
+            // W10 ext. Politur — die Emotion-Intensität skaliert mit der
+            // Strahler-Stärke: ein starker Strahler badet kräftiger.
+            const step = baseStep * strengthOf(ra, "radiating");
             emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
             emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
             this.journalAppendOnce(
@@ -24357,6 +24402,9 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[type];
         if (bp) {
             entry.affordances = this.computeBlueprintAffordances(bp);
+            // W10 ext. Politur — die Affordance-Stärke wird wie das Profil
+            // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
+            entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
