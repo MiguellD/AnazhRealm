@@ -4911,6 +4911,70 @@ function startSaveServer() {
                     out.bundlePullOnChannelPath = pullSpy === 1;
                     r._p2pHandleWorldBundlePull = origPull;
 
+                    // ### W16-Politur — Hash-Verifikation + Pull-Timeout ###
+                    // requestWorldBundleFromPeer trägt den Katalog-Hash +
+                    // startedAt im pendingBundlePull (für die Hash-Prüfung
+                    // nach dem Pull + den weichen Timeout).
+                    sent.length = 0;
+                    const beforeReq = Date.now();
+                    const polRes = r.requestWorldBundleFromPeer("polish-w16", "w16peer", "ABCDEF123");
+                    out.pullCarriesHash =
+                        polRes.ok === true &&
+                        !!p2p.pendingBundlePull &&
+                        p2p.pendingBundlePull.expectedHash === "abcdef123" &&
+                        typeof p2p.pendingBundlePull.startedAt === "number" &&
+                        p2p.pendingBundlePull.startedAt >= beforeReq;
+                    // Ein ungültiger Hash wird zu "" normalisiert (kein Schmuggel).
+                    p2p.pendingBundlePull = null;
+                    r.requestWorldBundleFromPeer("polish2-w16", "w16peer", "kein hash!");
+                    out.pullRejectsBadHash = !!p2p.pendingBundlePull && p2p.pendingBundlePull.expectedHash === "";
+                    p2p.pendingBundlePull = null;
+                    // _p2pCheckBundlePullTimeout — ein frischer Pull bleibt.
+                    p2p.pendingBundlePull = {
+                        peerId: "w16peer",
+                        worldId: "tmo-w16",
+                        expectedHash: "",
+                        startedAt: Date.now(),
+                    };
+                    r._p2pCheckBundlePullTimeout(Date.now());
+                    out.timeoutKeepsFresh = p2p.pendingBundlePull !== null;
+                    // Ein alter Pull wird geräumt — samt der Teil-Puffer dieses
+                    // Peers (die eines anderen Peers bleiben unberührt).
+                    p2p.bundleXfers.set("bx-tmo", {
+                        from: "w16peer",
+                        total: 3,
+                        parts: [null, null, null],
+                        received: 1,
+                    });
+                    p2p.bundleXfers.set("bx-other", { from: "other-peer", total: 1, parts: [null], received: 0 });
+                    p2p.pendingBundlePull = {
+                        peerId: "w16peer",
+                        worldId: "tmo-w16",
+                        expectedHash: "",
+                        startedAt: Date.now() - 99999,
+                    };
+                    r._p2pCheckBundlePullTimeout(Date.now());
+                    out.timeoutClearsStale = p2p.pendingBundlePull === null;
+                    out.timeoutClearsPeerXfers = !p2p.bundleXfers.has("bx-tmo") && p2p.bundleXfers.has("bx-other");
+                    p2p.bundleXfers.clear();
+                    // _meshWorldReasonText kennt timeout + hash_mismatch.
+                    out.reasonTextHasPolish =
+                        /Zeit/.test(r._meshWorldReasonText("timeout")) &&
+                        /Katalog/.test(r._meshWorldReasonText("hash_mismatch"));
+                    out.bundleTimeoutConst =
+                        typeof AnazhRealm.P2P_BUNDLE_PULL_TIMEOUT_MS === "number" &&
+                        AnazhRealm.P2P_BUNDLE_PULL_TIMEOUT_MS > 0;
+                    // vendorWorldBundle reicht den save-server-Content-Hash durch.
+                    const origPostBundle = r._vendorPostBundle;
+                    r._vendorPostBundle = async () => ({ ok: true, fileCount: 1, bundleHash: "deadbeef" });
+                    const vwbRes = await r.vendorWorldBundle({
+                        worldId: "hashpass-w16",
+                        label: "Hash-Pass",
+                        files: [{ path: "index.html", content: "<html></html>" }],
+                    });
+                    r._vendorPostBundle = origPostBundle;
+                    out.vendorReturnsHash = !!vwbRes && vwbRes.ok === true && vwbRes.bundleHash === "deadbeef";
+
                     // ### W16 Phase 2 — der Welt-Katalog ###
                     // _p2pBuildCatalog — nur vendored-Welten (eine importierte
                     // Manifest-Welt hat kein teilbares Bündel).
@@ -5065,6 +5129,7 @@ function startSaveServer() {
                     delete r.state.customWorlds["cat-vendored-w16"];
                     delete r.state.customWorlds["cat-imported-w16"];
                     delete r.state.customWorlds["hash-rt-w16"];
+                    delete r.state.customWorlds["hashpass-w16"];
                     // localStorage von den Test-Welten säubern (der Rundlauf-
                     // Test hat sie via _saveCustomWorlds geschrieben).
                     r._saveCustomWorlds();
@@ -5129,6 +5194,36 @@ function startSaveServer() {
                 check(
                     "W16: world-bundle-pull ist kanal-exklusiv (nicht über den WS-Pfad)",
                     w16Results.bundlePullNotOnWsPath && w16Results.bundlePullOnChannelPath
+                );
+                // ── W16-Politur — Hash-Verifikation + Pull-Timeout ──
+                check(
+                    "W16-Politur: requestWorldBundleFromPeer trägt Katalog-Hash + startedAt im pendingBundlePull",
+                    w16Results.pullCarriesHash
+                );
+                check(
+                    "W16-Politur: ein ungültiger Katalog-Hash wird zu '' normalisiert",
+                    w16Results.pullRejectsBadHash
+                );
+                check(
+                    "W16-Politur: _p2pCheckBundlePullTimeout lässt einen frischen Pull stehen",
+                    w16Results.timeoutKeepsFresh
+                );
+                check(
+                    "W16-Politur: _p2pCheckBundlePullTimeout räumt einen hängenden Pull",
+                    w16Results.timeoutClearsStale
+                );
+                check(
+                    "W16-Politur: der Timeout räumt die Teil-Puffer des Peers (fremde bleiben)",
+                    w16Results.timeoutClearsPeerXfers
+                );
+                check(
+                    "W16-Politur: _meshWorldReasonText kennt timeout + hash_mismatch",
+                    w16Results.reasonTextHasPolish
+                );
+                check("W16-Politur: P2P_BUNDLE_PULL_TIMEOUT_MS definiert", w16Results.bundleTimeoutConst);
+                check(
+                    "W16-Politur: vendorWorldBundle reicht den save-server-Content-Hash durch",
+                    w16Results.vendorReturnsHash
                 );
                 // ── W16 Phase 2 — der Welt-Katalog ──
                 check(
@@ -20233,24 +20328,41 @@ function startSaveServer() {
                     // 9. Level-Up triggert über _creatureRemember
                     const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
                     cFollow.userData.memory = [];
-                    const journalLenBefore = (r.state.worldJournal.entries || []).length;
+                    // V8.96 — Wurzelheilung des flaky 6.H-P2D-Level-Up-Tests:
+                    // journalGrew prüfte „entries.length > lenBefore". Aber
+                    // worldJournal.entries ist FIFO-gedeckelt (200) — stand der
+                    // Journal-Stand nach dem 20-25-s-Autonom-Lauf schon am Cap,
+                    // verdrängte das Anhängen einen alten Eintrag → die Länge
+                    // blieb 200 → der Test kippte. Auch journalAppends id
+                    // (`entries.length + 1`) ist nach dem Cap nicht eindeutig.
+                    // Fix: die EINTRAGS-IDENTITÄT messen — ein growth-Eintrag,
+                    // der als Objekt nicht im Vorher-Set steht, beweist das
+                    // Anhängen cap- + id-unabhängig (V8.57/V8.83-Disziplin:
+                    // den Mess-Punkt an die Mechanik legen, nicht an einen
+                    // volatilen Proxy).
+                    const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
                     // 3 gathered → L1, sollte LevelUp triggern
                     r._creatureRemember(cFollow, "gathered", { material: "quarz" });
                     r._creatureRemember(cFollow, "gathered", { material: "quarz" });
                     r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
                     const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
                     out.rememberTriggersLevel = lvlAfter === 1;
-                    // Journal sollte einen growth-Eintrag mit "Sammler" / „quarz" / „Stufe 1" haben
+                    // Ein NEUER growth-Eintrag (Objekt nicht im Vorher-Set) mit
+                    // Sammler / „quarz" / „Stufe 1" beweist sowohl, DASS der
+                    // Level-Up einen Journal-Eintrag schrieb, als auch dass
+                    // GENAU DIESER Test ihn auslöste (kein Autonom-Lauf-Echo).
                     const journalAfter = r.state.worldJournal.entries || [];
-                    const hasLvlUpJournal = journalAfter.some(
+                    const newLvlUpEntry = journalAfter.some(
                         (e) =>
+                            e &&
+                            !journalEntriesBefore.has(e) &&
                             e.type === "growth" &&
                             /Sammler/.test(e.text) &&
                             /quarz/.test(e.text) &&
                             /Stufe 1/.test(e.text)
                     );
-                    out.journalHasLvlUp = hasLvlUpJournal;
-                    out.journalGrew = journalAfter.length > journalLenBefore;
+                    out.journalHasLvlUp = newLvlUpEntry;
+                    out.journalGrew = newLvlUpEntry;
 
                     // 10. Bei Failure-Push KEIN LevelUp
                     const cFailure = r.spawnCreatureAt(player.x + 110, player.y, player.z + 110, "happy", "wesen");

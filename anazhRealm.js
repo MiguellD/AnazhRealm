@@ -4802,7 +4802,7 @@ class AnazhRealm {
     // world-bundle-pull an genau EINEN Peer (peer-gebunden wie der W7-P2-
     // Resync); dessen world-bundle-chunk-Antwort reassembliert
     // _p2pHandleWorldBundleChunk. Liefert {ok} oder {ok:false, reason}.
-    requestWorldBundleFromPeer(worldId, peerId) {
+    requestWorldBundleFromPeer(worldId, peerId, expectedHash) {
         const id = String(worldId || "")
             .trim()
             .toLowerCase();
@@ -4815,7 +4815,16 @@ class AnazhRealm {
         if (!peerId || !p2p.peers.has(peerId)) return { ok: false, reason: "no_such_peer" };
         const rtc = p2p.rtcPeers.get(peerId);
         if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
-        p2p.pendingBundlePull = { peerId, worldId: id };
+        // W16-Politur — expectedHash (der Content-Hash aus der Katalog-Zeile)
+        // reist mit: nach dem Pull prüft _p2pHandleWorldBundleChunk, dass das
+        // empfangene Bündel ihn trägt. startedAt trägt den weichen Timeout
+        // (_p2pCheckBundlePullTimeout) — ein Pull hängt sonst für immer, wenn
+        // der Sender mitten im Chunk-Strom verschwindet.
+        const hash =
+            typeof expectedHash === "string" && /^[0-9a-f]{1,64}$/i.test(expectedHash)
+                ? expectedHash.toLowerCase()
+                : "";
+        p2p.pendingBundlePull = { peerId, worldId: id, expectedHash: hash, startedAt: Date.now() };
         const sent = this._p2pSendChannelTo(peerId, { type: "world-bundle-pull", worldId: id });
         if (!sent) {
             p2p.pendingBundlePull = null;
@@ -4962,6 +4971,29 @@ class AnazhRealm {
             })
         )
             .then((res) => {
+                // W16-Politur — Hash-Verifikation: der Katalog versprach einen
+                // Content-Hash; der save-server (die Hash-Autorität) liefert
+                // beim Schreiben den echten Hash der empfangenen Welt zurück.
+                // Stimmen sie nicht überein, ist das empfangene Bündel NICHT
+                // die Katalog-Welt (korrupt oder manipuliert) — die frisch
+                // angedockte Welt wieder entfernen, statt etwas Falsches unter
+                // dem erwarteten Namen zu behalten.
+                if (
+                    res &&
+                    res.ok &&
+                    pend.expectedHash &&
+                    typeof res.bundleHash === "string" &&
+                    res.bundleHash &&
+                    res.bundleHash.toLowerCase() !== pend.expectedHash
+                ) {
+                    this.log(`Mesh-Welt „${res.id}": Content-Hash weicht vom Katalog ab — verworfen.`, "ERROR");
+                    if (this.state.customWorlds) delete this.state.customWorlds[res.id];
+                    this._saveCustomWorlds();
+                    if (typeof document !== "undefined" && this.renderLibraryUI) this.renderLibraryUI();
+                    this._renderMeshWorldCatalog();
+                    this._renderMeshWorldResult({ ok: false, reason: "hash_mismatch" });
+                    return;
+                }
                 if (res && res.ok) {
                     this.log(`Mesh-Welt „${res.id}" angedockt — durch ein Tor betretbar.`, "INFO");
                     if (typeof document !== "undefined" && this.renderLibraryUI) this.renderLibraryUI();
@@ -4985,6 +5017,28 @@ class AnazhRealm {
         const reason = (msg && msg.reason) || "unavailable";
         this.log(`Mesh-Welt „${pend.worldId}": Mitspieler kann sie nicht liefern (${reason}).`, "WARN");
         this._renderMeshWorldResult({ ok: false, reason });
+    }
+
+    // W16-Politur — ein weicher Pull-Timeout. pendingBundlePull wird nur bei
+    // Vollständigkeit (_p2pHandleWorldBundleChunk) oder bei einem world-bundle-
+    // fail geräumt; verschwindet der Sender mitten im Chunk-Strom, kämen nie
+    // alle Stücke an → der Pull hinge für immer (die Katalog-Zeile bliebe in
+    // „Frage … an"). Läuft aus p2pTick; der Test ruft es mit einem
+    // synthetischen nowMs direkt (deterministisch, kein 30-s-Warten).
+    _p2pCheckBundlePullTimeout(nowMs) {
+        const p2p = this.state.p2p;
+        const pend = p2p.pendingBundlePull;
+        if (!pend) return;
+        const now = typeof nowMs === "number" ? nowMs : Date.now();
+        if (now - (pend.startedAt || 0) < AnazhRealm.P2P_BUNDLE_PULL_TIMEOUT_MS) return;
+        // Zeitüberschreitung — den hängenden Pull + die Teil-Puffer dieses
+        // Peers räumen, den Spieler informieren.
+        p2p.pendingBundlePull = null;
+        for (const [xid, xfer] of p2p.bundleXfers) {
+            if (xfer && xfer.from === pend.peerId) p2p.bundleXfers.delete(xid);
+        }
+        this.log(`Welt-Bündel-Pull „${pend.worldId}" — Zeitüberschreitung, der Mitspieler antwortete nicht.`, "WARN");
+        this._renderMeshWorldResult({ ok: false, reason: "timeout" });
     }
 
     // W16 Phase 2 — der browsbare Welt-Katalog (Bibliothek-Drawer). Jeder
@@ -5070,6 +5124,9 @@ class AnazhRealm {
                     btn.textContent = "Holen";
                     btn.dataset.meshWorld = w.id;
                     btn.dataset.meshPeer = pid;
+                    // W16-Politur — der Katalog-Hash reist zum Pull mit, damit
+                    // der Empfänger das empfangene Bündel gegen ihn prüfen kann.
+                    btn.dataset.meshHash = typeof w.hash === "string" ? w.hash : "";
                     row.appendChild(btn);
                 }
                 group.appendChild(row);
@@ -5101,6 +5158,8 @@ class AnazhRealm {
             send_failed: "Die Anfrage konnte nicht gesendet werden.",
             not_found: "Dieser Mitspieler hat diese Welt nicht.",
             unavailable: "Der Mitspieler konnte die Welt nicht liefern.",
+            timeout: "Zeitüberschreitung — der Mitspieler antwortete nicht. Versuch es erneut.",
+            hash_mismatch: "Das empfangene Bündel stimmt nicht mit dem Katalog überein — verworfen.",
         };
         return map[reason] || `Konnte die Welt nicht über das Mesh holen (${reason || "Fehler"}).`;
     }
@@ -5108,8 +5167,8 @@ class AnazhRealm {
     // W16 Phase 2 — der Holen-Knopf einer Katalog-Zeile. worldId + peerId
     // kommen aus den data-Attributen des Knopfes; das Ergebnis kommt asynchron
     // über _renderMeshWorldResult. Liefert das Sofort-Ergebnis (für Tests).
-    _runMeshWorldGet(worldId, peerId) {
-        const res = this.requestWorldBundleFromPeer(worldId, peerId);
+    _runMeshWorldGet(worldId, peerId, expectedHash) {
+        const res = this.requestWorldBundleFromPeer(worldId, peerId, expectedHash);
         if (typeof document !== "undefined") {
             const status = document.getElementById("mesh-world-status");
             if (status) {
@@ -5136,7 +5195,7 @@ class AnazhRealm {
             host.addEventListener("click", (ev) => {
                 const btn = ev.target && ev.target.closest("button[data-mesh-world]");
                 if (!btn) return;
-                this._runMeshWorldGet(btn.dataset.meshWorld, btn.dataset.meshPeer);
+                this._runMeshWorldGet(btn.dataset.meshWorld, btn.dataset.meshPeer, btn.dataset.meshHash);
             });
         }
     }
@@ -6275,6 +6334,8 @@ class AnazhRealm {
         for (const pid of stale) this._p2pRemovePeer(pid);
         // Kreatur-Sicht-Sync — die Kreatur-Meshes der Mitspieler nachziehen.
         this._p2pTickRemoteCreatures(t, dt);
+        // W16-Politur — einen hängenden Welt-Bündel-Pull weich abbrechen.
+        this._p2pCheckBundlePullTimeout();
     }
 
     initP2PUI() {
@@ -16018,7 +16079,15 @@ class AnazhRealm {
             serverMode: o.serverMode === "js-compute" ? "js-compute" : "relay",
         });
         if (!reg.ok) return reg;
-        return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount || san.files.length };
+        // W16-Politur — den save-server-Content-Hash mit durchreichen, damit
+        // der Mesh-Empfänger das Bündel gegen den Katalog-Hash prüfen kann.
+        return {
+            ok: true,
+            id: reg.id,
+            label: reg.label,
+            fileCount: posted.fileCount || san.files.length,
+            bundleHash: typeof posted.bundleHash === "string" ? posted.bundleHash : "",
+        };
     }
 
     // W15 Phase 2 — der GitHub-Fetch. Statt eines lokalen Bündels eine
@@ -33299,6 +33368,11 @@ AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 // bundle-pull-Antworten an denselben Peer — ein Bündel-Read + Versand ist
 // teuer, ohne Limit ein DoS-Vektor.
 AnazhRealm.P2P_BUNDLE_PULL_COOLDOWN_MS = 5000;
+// W16-Politur — der weiche Pull-Timeout: hängt ein Welt-Bündel-Pull länger
+// als das, gibt _p2pCheckBundlePullTimeout ihn frei (der Sender verschwand
+// vermutlich mitten im Chunk-Strom). 30 s — grosszügig für ein Text-Welt-
+// Bündel über einen DataChannel.
+AnazhRealm.P2P_BUNDLE_PULL_TIMEOUT_MS = 30000;
 
 // W7 Phase 3 — LLM-Pool. Ein Peer mit aktivem LLM teilt seine „Stimme",
 // ein schlüsselloser Peer routet Chat-Anfragen über ihn. Sicherheits-
