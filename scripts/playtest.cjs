@@ -11118,6 +11118,39 @@ function startSaveServer() {
                         for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
                         r._raycastWorldHit = origRay;
                         r._pickArchitectureAtCrosshair = origPick;
+
+                        // Un-mocked Realpfad — der ECHTE _raycastWorldHit gegen
+                        // das echte Terrain. Nur _pickArchitectureAtCrosshair
+                        // wird genullt (damit garantiert der Terrain-Zweig
+                        // läuft, nicht ein Architektur-Treffer). Die Kamera
+                        // blickt gerade nach unten → der Ammo-Raycast trifft
+                        // den Chunk unter dem Spieler. Beweist: echter Raycast
+                        // + modify_terrain + Yield, ohne Mock.
+                        if (r.state.camera && r.state.playerMesh) {
+                            const cam = r.state.camera;
+                            const pm = r.state.playerMesh;
+                            const savedPos = cam.position.clone();
+                            const savedQuat = cam.quaternion.clone();
+                            cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
+                            cam.lookAt(pm.position.x, pm.position.y - 20, pm.position.z);
+                            cam.updateMatrixWorld(true);
+                            r._pickArchitectureAtCrosshair = () => null;
+                            const realHit = r._raycastWorldHit(40);
+                            out.realRaycastHit = !!(realHit && realHit.hit);
+                            const matSumBefore = inv
+                                .filter((s) => s && s.kind === "material")
+                                .reduce((a, s) => a + (s.count || 0), 0);
+                            r.tryMouseBreak();
+                            const matSumAfter = inv
+                                .filter((s) => s && s.kind === "material")
+                                .reduce((a, s) => a + (s.count || 0), 0);
+                            out.realDigYielded = matSumAfter > matSumBefore;
+                            for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+                            r._pickArchitectureAtCrosshair = origPick;
+                            cam.position.copy(savedPos);
+                            cam.quaternion.copy(savedQuat);
+                            cam.updateMatrixWorld(true);
+                        }
                         if (typeof r.setGameMode === "function") r.setGameMode(origMode);
                     }
                     return out;
@@ -11146,6 +11179,14 @@ function startSaveServer() {
                 check(
                     "W6.G P4: das gegrabene Material entspricht worldFieldAt am Grabe-Ort + der Yield ist in [1,10]",
                     wave6gP4Results.digYieldMatchesField && wave6gP4Results.digYieldCountSane
+                );
+                check(
+                    "W6.G P4: der ECHTE Raycast (Kamera nach unten) trifft das Terrain",
+                    wave6gP4Results.realRaycastHit
+                );
+                check(
+                    "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + modify_terrain) yieldet Material",
+                    wave6gP4Results.realDigYielded
                 );
             }
 

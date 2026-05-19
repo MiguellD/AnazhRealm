@@ -25739,7 +25739,10 @@ class AnazhRealm {
             return true;
         }
         const target = this._raycastWorldHit(30);
-        if (!target.hit) return false;
+        if (!target.hit) {
+            this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
+            return false;
+        }
         this._consumeMouseStamina();
         // V8.36 — Radius 3.0 statt 1.5: bei 1.5 ≈ vertexStep (1.17) traf ein
         // Grabe-Op faktisch nur EINEN Vertex → mit jedem Klick eine spitzere
@@ -25764,6 +25767,8 @@ class AnazhRealm {
             if (matDef && typeof this.playInventoryHoverPing === "function") {
                 this.playInventoryHoverPing(matDef.tags);
             }
+        } else {
+            this.log(`Gegraben (${digMat}), aber das Inventar ist voll.`, "INFO");
         }
         return true;
     }
