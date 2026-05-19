@@ -14566,10 +14566,13 @@ class AnazhRealm {
     // Schaltet das Voxel-Terrain ein/aus. An: das Heightfield schläft, der
     // Voxel-Ring um den Spieler wird sofort gefüllt (damit er nicht ins
     // Leere fällt). Aus: alle Voxel-Chunks werden abgeräumt, das
-    // Heightfield erwacht.
-    setVoxelTerrainActive(on) {
+    // Heightfield erwacht. Phase 2c: der Zustand wird pro-Welt persistiert
+    // (`worldMeta.voxelTerrain`) — `opts.persist:false` beim Reload-Restore,
+    // sonst würde der Restore-Aufruf einen Save mitten im Init triggern.
+    setVoxelTerrainActive(on, opts = {}) {
         const next = !!on;
-        if (this.state.voxelTerrainActive === next) return;
+        if (this.state.worldMeta) this.state.worldMeta.voxelTerrain = next;
+        if (this.state.voxelTerrainActive === next) return next;
         this.state.voxelTerrainActive = next;
         this._setHeightfieldDormant(next);
         if (next) {
@@ -14592,7 +14595,18 @@ class AnazhRealm {
                 : "Voxel-Terrain aus — zurück zum Heightfield.",
             "INFO"
         );
+        if (opts.persist !== false && typeof this.saveState === "function") this.saveState();
         return next;
+    }
+
+    // Phase 2c — beim Welt-Laden: war das Voxel-Terrain in dieser Welt
+    // aktiv (`worldMeta.voxelTerrain`), wird es wiederhergestellt. Wird
+    // nach dem vollen Welt-Aufbau gerufen (Szene + Physik + Spieler da),
+    // VOR dem Game-Loop-Start. persist:false — kein Save während des Inits.
+    _restoreVoxelTerrain() {
+        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain === true) {
+            this.setVoxelTerrainActive(true, { persist: false });
+        }
     }
 
     // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für
@@ -33148,6 +33162,10 @@ class AnazhRealm {
             });
             this.log("State-Import (Lade Datei) initialisiert", "INFO");
         }
+
+        // Phase 2c — war das Voxel-Terrain in dieser Welt aktiv, jetzt
+        // wiederherstellen (Welt voll gebaut, Spieler + Physik bereit).
+        this._restoreVoxelTerrain();
 
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");

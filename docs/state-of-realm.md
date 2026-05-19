@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.12)
+# Zustand des Realm — Stand: 19.05.2026 (V9.13)
+
+**V9.13 — Voxel-Terrain-Bogen Phase 2c (per-Welt-Persistenz)**: der `voxelTerrainActive`-Zustand überlebt Reload + Welt-Wechsel. `setVoxelTerrainActive` schreibt `worldMeta.voxelTerrain` (per-Welt, im Snapshot — das `gameMode`-Muster) + ruft `saveState`; `_restoreVoxelTerrain` aktiviert das Voxel-Terrain beim Welt-Aufbau (vor dem Game-Loop), wenn das Flag gesetzt ist. Eine Welt bleibt voxel-basiert. +6 Invarianten. Honest Cut: ein Voxel-Häkchen im Neue-Welt-Dialog bleibt eine kleine benannte UX-Naht. Voller Eintrag in `CLAUDE.md` V9.13.
 
 **V9.12 — Voxel-Terrain: der Chunk fasst das ganze Oberflächen-Band**: ein Schöpfer-Browser-Befund nach V9.11 — „Nähte gefixxt, aber an einigen Stellen schliesst die Oberfläche unsauber, springt an einen falschen Punkt". Wurzel: der Voxel-Chunk war ein 45-m-Würfel (`base-22 .. base+23`), aber das Oberflächen-Band reicht ~`base±30` — wo ein Gipfel/Tal aus dem Kasten austrat, klaffte ein Loch. Der Fix: `_voxelChunkGeometry` ist jetzt nicht-würfelförmig (`dimX/dimY/dimZ`), der Chunk eine 72-m-hohe Säule (`dimY=40`, `oy=base-35`) — das Band liegt ganz im Chunk, keine Klipp-Löcher. +2 Invarianten. Voller Eintrag in `CLAUDE.md` V9.12.
 

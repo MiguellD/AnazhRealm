@@ -11564,6 +11564,65 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel-Terrain Phase 2c — per-Welt-Persistenz ###
+            // Der voxelTerrainActive-Zustand überlebt Reload + Welt-Wechsel
+            // über worldMeta.voxelTerrain.
+            const voxelP2cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasRestore = typeof r._restoreVoxelTerrain === "function";
+                    if (out.hasRestore && typeof r.setVoxelTerrainActive === "function") {
+                        // Persistenz: toggle on → worldMeta.voxelTerrain true.
+                        r.setVoxelTerrainActive(true);
+                        out.persistsOn = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
+                        // Der Welt-Snapshot trägt das Flag (worldMeta spread).
+                        const snap = r.buildStateSnapshot();
+                        out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
+                        r.setVoxelTerrainActive(false);
+                        out.persistsOff = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === false);
+                        // _restoreVoxelTerrain: worldMeta.voxelTerrain=true → aktiviert.
+                        r.state.worldMeta.voxelTerrain = true;
+                        r._restoreVoxelTerrain();
+                        out.restoreActivates = r.state.voxelTerrainActive === true;
+                        // worldMeta.voxelTerrain=false → restore tut nichts.
+                        r.setVoxelTerrainActive(false);
+                        r.state.worldMeta.voxelTerrain = false;
+                        r._restoreVoxelTerrain();
+                        out.restoreSkipsWhenOff = r.state.voxelTerrainActive === false;
+                        // sauber zurücklassen.
+                        r.setVoxelTerrainActive(false);
+                        r.state.worldMeta.voxelTerrain = false;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP2cResults && !voxelP2cResults.error) {
+                check("Voxel P2c: _restoreVoxelTerrain-Methode existiert", voxelP2cResults.hasRestore);
+                check(
+                    "Voxel P2c: setVoxelTerrainActive(true) persistiert worldMeta.voxelTerrain",
+                    voxelP2cResults.persistsOn
+                );
+                check(
+                    "Voxel P2c: der Welt-Snapshot trägt das voxelTerrain-Flag (überlebt Reload)",
+                    voxelP2cResults.snapshotHasFlag
+                );
+                check(
+                    "Voxel P2c: setVoxelTerrainActive(false) persistiert worldMeta.voxelTerrain = false",
+                    voxelP2cResults.persistsOff
+                );
+                check(
+                    "Voxel P2c: _restoreVoxelTerrain aktiviert das Voxel-Terrain bei worldMeta.voxelTerrain=true",
+                    voxelP2cResults.restoreActivates
+                );
+                check(
+                    "Voxel P2c: _restoreVoxelTerrain tut nichts bei worldMeta.voxelTerrain=false",
+                    voxelP2cResults.restoreSkipsWhenOff
+                );
+            }
+
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
             // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
             // damagePlayer + Stamina-Kosten sind modus-gated.
