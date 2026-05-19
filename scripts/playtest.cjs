@@ -11623,6 +11623,88 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
+            // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
+            const voxelP3Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasCarve = typeof r.carveVoxelSphere === "function";
+                    out.hasRemesh = typeof r._remeshVoxelChunksAround === "function";
+                    if (out.hasCarve && r.state.worldMeta) {
+                        const base = r.state.terrainBaseHeight || 0;
+                        // Der Schnitt zieht am Kugel-Zentrum exakt strength (48) ab.
+                        r.state.worldMeta.voxelEdits = [];
+                        const dBefore = r._terrainDensityAt(0, base - 33, 0);
+                        r.carveVoxelSphere(0, base - 33, 0, 12);
+                        const dAfter = r._terrainDensityAt(0, base - 33, 0);
+                        out.carveSubtracts = Math.abs(dBefore - dAfter - 48) < 0.01;
+                        out.editStored = r.state.worldMeta.voxelEdits.length === 1;
+                        // Ein fester Punkt wird zu Luft (echtes Loch).
+                        let solidToAir = false;
+                        for (let sy = base + 20; sy >= base - 30 && !solidToAir; sy -= 3) {
+                            const dB = r._terrainDensityAt(50, sy, 50);
+                            if (dB > 1 && dB < 40) {
+                                r.state.worldMeta.voxelEdits = [];
+                                r.carveVoxelSphere(50, sy, 50, 12);
+                                if (r._terrainDensityAt(50, sy, 50) < 0) solidToAir = true;
+                            }
+                        }
+                        out.solidToAir = solidToAir;
+                        // Persistenz: der Edit reist im Welt-Snapshot.
+                        r.state.worldMeta.voxelEdits = [];
+                        r.carveVoxelSphere(10, base, 10, 5);
+                        const snap = r.buildStateSnapshot();
+                        out.snapshotHasEdit = !!(
+                            snap &&
+                            snap.worldMeta &&
+                            Array.isArray(snap.worldMeta.voxelEdits) &&
+                            snap.worldMeta.voxelEdits.length >= 1
+                        );
+                        // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt.
+                        r.state.worldMeta.voxelEdits = [];
+                        for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
+                        out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
+                        // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
+                        r.setVoxelTerrainActive(true);
+                        r.state.worldMeta.voxelEdits = [];
+                        r.processChatCommand("voxel carve");
+                        out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
+                        r.setVoxelTerrainActive(false);
+                        // sauber zurücklassen.
+                        r.state.worldMeta.voxelEdits = [];
+                        if (typeof r.saveState === "function") r.saveState();
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP3Results && !voxelP3Results.error) {
+                check(
+                    "Voxel P3: carveVoxelSphere + _remeshVoxelChunksAround existieren",
+                    voxelP3Results.hasCarve && voxelP3Results.hasRemesh
+                );
+                check(
+                    "Voxel P3: der Schnitt zieht am Kugel-Zentrum die Dichte ab (festes → Luft)",
+                    voxelP3Results.carveSubtracts
+                );
+                check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
+                check(
+                    "Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)",
+                    voxelP3Results.solidToAir
+                );
+                check(
+                    "Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)",
+                    voxelP3Results.snapshotHasEdit
+                );
+                check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
+                check(
+                    "Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde",
+                    voxelP3Results.chatCarveAddsEdit
+                );
+            }
+
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
             // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
             // damagePlayer + Stamina-Kosten sind modus-gated.

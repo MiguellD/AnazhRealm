@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.13)
+# Zustand des Realm — Stand: 19.05.2026 (V9.14)
+
+**V9.14 — Voxel-Terrain-Bogen Phase 3 (3D-Graben)**: der Voxel-Boden wird wirklich formbar. `carveVoxelSphere(x,y,z,r)` schnitzt eine Kugel „Luft" ins 3D-Dichte-Feld — der Edit landet in `worldMeta.voxelEdits` (persistiert, FIFO-256), `_terrainDensityAt` zieht dort die Dichte ab → ein echtes Loch/Tunnel/Höhle; die betroffenen Voxel-Chunks werden neu gemesht. Der LMB-Grabe-Hieb schnitzt bei aktivem Voxel-Terrain; Chat `voxel carve`. +7 Invarianten. Honest Cut: das Füllen (Boden aufschütten) ist Phase 3b. Voller Eintrag in `CLAUDE.md` V9.14.
 
 **V9.13 — Voxel-Terrain-Bogen Phase 2c (per-Welt-Persistenz)**: der `voxelTerrainActive`-Zustand überlebt Reload + Welt-Wechsel. `setVoxelTerrainActive` schreibt `worldMeta.voxelTerrain` (per-Welt, im Snapshot — das `gameMode`-Muster) + ruft `saveState`; `_restoreVoxelTerrain` aktiviert das Voxel-Terrain beim Welt-Aufbau (vor dem Game-Loop), wenn das Flag gesetzt ist. Eine Welt bleibt voxel-basiert. +6 Invarianten. Honest Cut: ein Voxel-Häkchen im Neue-Welt-Dialog bleibt eine kleine benannte UX-Naht. Voller Eintrag in `CLAUDE.md` V9.13.
 

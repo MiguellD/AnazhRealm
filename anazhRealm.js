@@ -12764,6 +12764,19 @@ class AnazhRealm {
                 this.setVoxelTerrainActive(vc === "voxel terrain on");
                 return;
             }
+            // Phase 3 — `voxel carve` schnitzt eine Mulde unter dem Spieler.
+            if (vc === "voxel carve") {
+                if (!this.state.voxelTerrainActive) {
+                    this.log("Voxel-Graben braucht aktives Voxel-Terrain — erst `voxel terrain on`.", "INFO");
+                    return;
+                }
+                const pm = this.state.playerMesh;
+                if (pm) {
+                    this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+                }
+                return;
+            }
         }
 
         // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
@@ -14196,6 +14209,25 @@ class AnazhRealm {
         // 3D-Verzerrung: feines Band schnitzt Tunnel, grobes Band grosse Kammern.
         d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
         d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
+        // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die
+        // Edits leben in worldMeta.voxelEdits (persistiert mit der Welt).
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (edits && edits.length) {
+            for (let e = 0; e < edits.length; e++) {
+                const ed = edits[e];
+                if (!ed) continue;
+                const dx = x - ed.x;
+                const dy = y - ed.y;
+                const dz = z - ed.z;
+                const dist2 = dx * dx + dy * dy + dz * dz;
+                const r = ed.r;
+                if (dist2 < r * r) {
+                    const fall = 1 - Math.sqrt(dist2) / r;
+                    d -= fall * (ed.strength || 48);
+                }
+            }
+        }
         return d;
     }
 
@@ -14606,6 +14638,48 @@ class AnazhRealm {
     _restoreVoxelTerrain() {
         if (this.state.worldMeta && this.state.worldMeta.voxelTerrain === true) {
             this.setVoxelTerrainActive(true, { persist: false });
+        }
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
+    // `carveVoxelSphere` schnitzt eine Kugel „Luft" ins Dichte-Feld: der
+    // Edit landet in worldMeta.voxelEdits (persistiert mit der Welt),
+    // `_terrainDensityAt` zieht dort die Dichte ab → ein echtes Loch /
+    // Tunnel / Höhle. Die betroffenen Voxel-Chunks werden neu gemesht.
+    // Das ist der formbare Boden — der Kern des ganzen Bogens.
+    carveVoxelSphere(x, y, z, r) {
+        if (!this.state.worldMeta) return false;
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return false;
+        if (!Array.isArray(this.state.worldMeta.voxelEdits)) this.state.worldMeta.voxelEdits = [];
+        const edits = this.state.worldMeta.voxelEdits;
+        const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
+        edits.push({ x, y, z, r: radius, strength: 48 });
+        // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
+        const CAP = 256;
+        while (edits.length > CAP) edits.shift();
+        this._remeshVoxelChunksAround(x, z, radius);
+        if (typeof this.saveState === "function") this.saveState();
+        return true;
+    }
+
+    // Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-Kugel
+    // berührt (±1 Chunk Marge für den V9.10-Skirt-Überlapp). No-op, wenn
+    // das Voxel-Terrain nicht aktiv ist (keine Chunks in der Szene).
+    _remeshVoxelChunksAround(x, z, r) {
+        if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
+        const { span } = this._voxelChunkConfig();
+        const minCX = Math.floor((x - r) / span) - 1;
+        const maxCX = Math.floor((x + r) / span) + 1;
+        const minCZ = Math.floor((z - r) / span) - 1;
+        const maxCZ = Math.floor((z + r) / span) + 1;
+        for (let cx = minCX; cx <= maxCX; cx++) {
+            for (let cz = minCZ; cz <= maxCZ; cz++) {
+                const key = `${cx},${cz}`;
+                if (this.state.voxelChunks.has(key)) {
+                    this._disposeVoxelChunk(key);
+                    this._ensureVoxelChunkAt(cx, cz);
+                }
+            }
         }
     }
 
@@ -26242,7 +26316,11 @@ class AnazhRealm {
         // mehrere Vertices → eine glatte, begehbare Mulde.
         const r = 3.0;
         const dh = -1.0;
-        if (typeof this.dslRun === "function") {
+        // Phase 3 — ist das Voxel-Terrain aktiv, schnitzt der Grabe-Hieb das
+        // 3D-Dichte-Feld (ein echtes Loch), sonst senkt er das Heightfield.
+        if (this.state.voxelTerrainActive) {
+            this.carveVoxelSphere(target.x, target.y, target.z, 3.5);
+        } else if (typeof this.dslRun === "function") {
             this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
         }
         // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
