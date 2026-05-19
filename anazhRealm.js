@@ -9057,7 +9057,7 @@ class AnazhRealm {
     // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
     // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
     // nach erfolgreichem Aufruf an.
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo", voxelTerrain = false } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -9072,6 +9072,12 @@ class AnazhRealm {
         // "host"/"guest" startet Init nach Reload automatisch Multi-User-Sync.
         if (role === "host" || role === "guest") {
             snap.worldMeta.role = role;
+        }
+        // V9.21: eine Welt kann voxel-basiert geboren werden — das Flag in
+        // worldMeta reist im Snapshot, `_restoreVoxelTerrain` aktiviert das
+        // Voxel-Terrain beim ersten Aufbau (das V9.13-Persistenz-Muster).
+        if (voxelTerrain) {
+            snap.worldMeta.voxelTerrain = true;
         }
         try {
             localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
@@ -16844,6 +16850,7 @@ class AnazhRealm {
         const joinRow = document.getElementById("new-world-join-row");
         const inviteInput = document.getElementById("new-world-invite");
         const inheritInput = document.getElementById("new-world-inherit");
+        const voxelInput = document.getElementById("new-world-voxel");
         const statusEl = document.getElementById("new-world-status");
         const cancelBtn = document.getElementById("new-world-cancel");
         const confirmBtn = document.getElementById("new-world-confirm");
@@ -16852,6 +16859,7 @@ class AnazhRealm {
         slugInput.value = "";
         inviteInput.value = "";
         inheritInput.checked = false;
+        if (voxelInput) voxelInput.checked = false;
         statusEl.textContent = "";
         confirmBtn.disabled = false;
         // Mode default auf solo
@@ -16886,6 +16894,7 @@ class AnazhRealm {
             const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
             const slug = slugInput.value.trim();
             const inherit = !!inheritInput.checked;
+            const voxel = !!(voxelInput && voxelInput.checked);
             confirmBtn.disabled = true;
             statusEl.textContent = "";
 
@@ -16895,6 +16904,7 @@ class AnazhRealm {
                     inheritPlayer: inherit,
                     reload: true,
                     role: "solo",
+                    voxelTerrain: voxel,
                 });
                 if (!id) statusEl.textContent = "Welt konnte nicht erschaffen werden — siehe Konsole.";
                 cleanup();
@@ -16910,6 +16920,7 @@ class AnazhRealm {
                     inheritPlayer: inherit,
                     reload: true,
                     role: "host",
+                    voxelTerrain: voxel,
                 });
                 if (!id) {
                     statusEl.textContent = "Welt konnte nicht erschaffen werden.";

@@ -2949,6 +2949,19 @@ function startSaveServer() {
                     out.freshNoInheritedTools =
                         Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
 
+                    // V9.21 — eine Welt kann voxel-basiert geboren werden:
+                    // createNewWorld({voxelTerrain:true}) setzt worldMeta.voxelTerrain
+                    // im Snapshot; ohne die Option bleibt es ungesetzt/falsy.
+                    const voxelId = r.createNewWorld({
+                        slug: "test-voxel-welt",
+                        inheritPlayer: false,
+                        reload: false,
+                        voxelTerrain: true,
+                    });
+                    const voxelSave = JSON.parse(localStorage.getItem(r.worldStorageKey(voxelId)) || "{}");
+                    out.voxelWorldFlagSet = !!(voxelSave.worldMeta && voxelSave.worldMeta.voxelTerrain === true);
+                    out.plainWorldNoVoxelFlag = !(freshSave.worldMeta && freshSave.worldMeta.voxelTerrain === true);
+
                     // switchToWorld auf eine existierende Welt (ohne Reload):
                     // active-Pointer wandert, state bleibt (Reload würde state laden).
                     const switchOk = r.switchToWorld(newId, { reload: false });
@@ -3004,6 +3017,14 @@ function startSaveServer() {
                 check("Ring 8: Person-Übernahme transportiert eigene Tools", ring8Results.inheritCarriesOwnTools);
                 check("Ring 8: Frische Welt hat default Spieler-Seele", ring8Results.freshNoInheritedSoul);
                 check("Ring 8: Frische Welt hat leeres playerTools", ring8Results.freshNoInheritedTools);
+                check(
+                    "Voxel V9.21: createNewWorld({voxelTerrain:true}) setzt worldMeta.voxelTerrain",
+                    ring8Results.voxelWorldFlagSet
+                );
+                check(
+                    "Voxel V9.21: eine normale neue Welt trägt KEIN voxelTerrain-Flag",
+                    ring8Results.plainWorldNoVoxelFlag
+                );
                 check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
                 check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
                 check("Ring 8: switchToWorld auf unbekannte ID scheitert sauber", ring8Results.switchToUnknownFails);
@@ -8039,6 +8060,7 @@ function startSaveServer() {
                     out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
                     out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
                     out.inviteInputExists = !!document.getElementById("new-world-invite");
+                    out.voxelCheckboxExists = !!document.getElementById("new-world-voxel");
                     out.hostBannerExists = !!document.getElementById("world-host-banner");
                     out.guestBannerExists = !!document.getElementById("world-guest-banner");
 
@@ -8092,6 +8114,7 @@ function startSaveServer() {
                     ring115Results.hostAnswersRequestWithSnapshot
                 );
                 check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
+                check("Voxel V9.21: #new-world-voxel-Checkbox im Neue-Welt-Dialog", ring115Results.voxelCheckboxExists);
                 check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
                 check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
                 check("Ring 11.5: Einladungs-Code-Input im DOM", ring115Results.inviteInputExists);
