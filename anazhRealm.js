@@ -12745,6 +12745,13 @@ class AnazhRealm {
             this.proactiveSuggestions();
         }
 
+        // Voxel-Terrain-Bogen Phase 1 — `voxel test` mesht einen Voxel-
+        // Chunk neben dem Spieler (Beweis, kein Eingriff ins Heightfield).
+        if (command.toLowerCase().trim() === "voxel test") {
+            this._spawnVoxelTestChunk();
+            return;
+        }
+
         // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
         // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
         // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
@@ -14150,6 +14157,198 @@ class AnazhRealm {
             }
         }
         return Math.max(-100, Math.min(100, h));
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 1 — das Dichte-Feld + Surface Nets ###
+    // Der Schöpfer-Befund: ein Heightfield ist halb-formbar (Säulen heben/
+    // senken, nicht schnitzen). Echte Tunnel/Höhlen/Überhänge brauchen ein
+    // 3D-Dichte-Feld. Phase 1 baut es PARALLEL — kein Eingriff ins Height-
+    // field, ein visueller Beweis-Chunk. Phasen 2-5: Kollision, 3D-Graben,
+    // Generierung, Ablösung. Siehe docs/roadmap.md „Der Voxel-Terrain-Bogen".
+
+    // Das 3D-Dichte-Feld: > 0 fest, < 0 Luft, 0 die Oberfläche. Eine
+    // rollende 2D-Noise-Oberfläche (`surf − y` reproduziert das Height-
+    // field) PLUS zwei 3D-Noise-Bänder, die Höhlen schnitzen + Überhänge
+    // wölben — das, was ein Heightfield pro (x,z) nie kann.
+    _terrainDensityAt(x, y, z) {
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const n = this._voxelNoise;
+        const base = this.state.terrainBaseHeight || 0;
+        const surf = base + n.noise2D(x * 0.012, z * 0.012) * 14 + n.noise2D(x * 0.045, z * 0.045) * 4;
+        let d = surf - y;
+        // 3D-Verzerrung: feines Band schnitzt Tunnel, grobes Band grosse Kammern.
+        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
+        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        return d;
+    }
+
+    // Surface Nets — ein 3D-Dichte-Feld zu einem glatten Mesh. Zwei Pässe:
+    // (1) je Zelle, die die Oberfläche schneidet, EIN Vertex (gemittelt aus
+    // den Kanten-Kreuzungen); (2) je Gitter-Kante mit Vorzeichenwechsel ein
+    // Quad aus den 4 umliegenden Zell-Vertices. Explizite (i,j,k)-Indizes +
+    // ein cellVert-Lookup — keine magische 256-Tabelle, gut prüfbar.
+    // Liefert eine THREE.BufferGeometry oder null (leeres Volumen).
+    _voxelChunkGeometry(ox, oy, oz, dim, step) {
+        const N = dim + 1;
+        const density = new Float32Array(N * N * N);
+        const gi = (i, j, k) => i + j * N + k * N * N;
+        for (let k = 0; k < N; k++) {
+            for (let j = 0; j < N; j++) {
+                for (let i = 0; i < N; i++) {
+                    density[gi(i, j, k)] = this._terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
+                }
+            }
+        }
+        // Die 12 Würfel-Kanten als Eck-Paare (Eck c: bit0=x, bit1=y, bit2=z).
+        const EDGES = [
+            [0, 1],
+            [0, 2],
+            [0, 4],
+            [1, 3],
+            [1, 5],
+            [2, 3],
+            [2, 6],
+            [3, 7],
+            [4, 5],
+            [4, 6],
+            [5, 7],
+            [6, 7],
+        ];
+        const cellVert = new Int32Array(dim * dim * dim).fill(-1);
+        const ci = (i, j, k) => i + j * dim + k * dim * dim;
+        const positions = [];
+        const solid = (v) => v > 0;
+        // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
+        for (let k = 0; k < dim; k++) {
+            for (let j = 0; j < dim; j++) {
+                for (let i = 0; i < dim; i++) {
+                    const corner = new Array(8);
+                    let mask = 0;
+                    for (let c = 0; c < 8; c++) {
+                        const cx = i + (c & 1);
+                        const cy = j + ((c >> 1) & 1);
+                        const cz = k + ((c >> 2) & 1);
+                        corner[c] = density[gi(cx, cy, cz)];
+                        if (solid(corner[c])) mask |= 1 << c;
+                    }
+                    if (mask === 0 || mask === 0xff) continue;
+                    let vx = 0;
+                    let vy = 0;
+                    let vz = 0;
+                    let count = 0;
+                    for (const [a, b] of EDGES) {
+                        if (solid(corner[a]) === solid(corner[b])) continue;
+                        const da = corner[a];
+                        const db = corner[b];
+                        const denom = da - db;
+                        const t = Math.abs(denom) > 1e-9 ? da / denom : 0.5;
+                        const ax = a & 1;
+                        const ay = (a >> 1) & 1;
+                        const az = (a >> 2) & 1;
+                        const bx = b & 1;
+                        const by = (b >> 1) & 1;
+                        const bz = (b >> 2) & 1;
+                        vx += ax + (bx - ax) * t;
+                        vy += ay + (by - ay) * t;
+                        vz += az + (bz - az) * t;
+                        count++;
+                    }
+                    if (count === 0) continue;
+                    const s = 1 / count;
+                    cellVert[ci(i, j, k)] = positions.length / 3;
+                    positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
+                }
+            }
+        }
+        if (positions.length === 0) return null;
+        // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad.
+        const indices = [];
+        const quad = (a, b, c, d) => {
+            if (a < 0 || b < 0 || c < 0 || d < 0) return;
+            indices.push(a, b, c, a, c, d);
+        };
+        for (let k = 0; k <= dim; k++) {
+            for (let j = 0; j <= dim; j++) {
+                for (let i = 0; i <= dim; i++) {
+                    const s0 = solid(density[gi(i, j, k)]);
+                    // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
+                    if (i < dim && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
+                        quad(
+                            cellVert[ci(i, j - 1, k - 1)],
+                            cellVert[ci(i, j, k - 1)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i, j - 1, k)]
+                        );
+                    }
+                    // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
+                    if (j < dim && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
+                        quad(
+                            cellVert[ci(i - 1, j, k - 1)],
+                            cellVert[ci(i, j, k - 1)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i - 1, j, k)]
+                        );
+                    }
+                    // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
+                    if (k < dim && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
+                        quad(
+                            cellVert[ci(i - 1, j - 1, k)],
+                            cellVert[ci(i, j - 1, k)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i - 1, j, k)]
+                        );
+                    }
+                }
+            }
+        }
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        if (indices.length > 0) geom.setIndex(indices);
+        geom.computeVertexNormals();
+        return geom;
+    }
+
+    // Phase-1-Beweis: ein Voxel-Chunk wird gemesht + neben dem Spieler in
+    // die Szene gestellt. Ein zweiter Aufruf ersetzt den alten. KEIN
+    // Eingriff ins Heightfield — ein reines Parallel-Artefakt.
+    _spawnVoxelTestChunk() {
+        if (!this.state.scene) return null;
+        if (this._voxelTestMesh) {
+            this.state.scene.remove(this._voxelTestMesh);
+            if (this._voxelTestMesh.geometry) this._voxelTestMesh.geometry.dispose();
+            if (this._voxelTestMesh.material) this._voxelTestMesh.material.dispose();
+            this._voxelTestMesh = null;
+        }
+        const pm = this.state.playerMesh;
+        const px = pm ? pm.position.x : 0;
+        const pz = pm ? pm.position.z : 0;
+        const base = this.state.terrainBaseHeight || 0;
+        const dim = 24;
+        const stepSize = 1.6;
+        const ox = px + 22;
+        const oy = base - 20;
+        const oz = pz - dim * stepSize * 0.5;
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, stepSize);
+        if (!geom) {
+            this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
+            return null;
+        }
+        const mat = new THREE.MeshToonMaterial({
+            color: 0x6e5038,
+            side: THREE.DoubleSide,
+        });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.state.scene.add(mesh);
+        this._voxelTestMesh = mesh;
+        const vCount = geom.getAttribute("position").count;
+        this.log(`Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets, Phase 1).`, "INFO");
+        return mesh;
     }
 
     // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für

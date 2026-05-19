@@ -11217,6 +11217,115 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel-Terrain-Bogen Phase 1 — Dichte-Feld + Surface Nets ###
+            // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
+            // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
+            // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
+            const voxelP1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasDensityAt = typeof r._terrainDensityAt === "function";
+                    out.hasChunkGeometry = typeof r._voxelChunkGeometry === "function";
+                    out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
+
+                    if (out.hasDensityAt) {
+                        // Das Feld ist genuin 3D — bei festem (x,z) nimmt die
+                        // Dichte mit der Höhe ab (mehr Luft oben). Über mehrere
+                        // Stichproben gemittelt, damit das 3D-Noise-Band die
+                        // Monotonie nicht lokal kippt.
+                        let lowerSum = 0;
+                        let upperSum = 0;
+                        for (let s = 0; s < 8; s++) {
+                            const sx = s * 37 - 100;
+                            const sz = s * 53 + 40;
+                            lowerSum += r._terrainDensityAt(sx, -40, sz);
+                            upperSum += r._terrainDensityAt(sx, 60, sz);
+                        }
+                        out.densityIs3D = lowerSum > upperSum;
+                        // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0),
+                        // der vertikal zwischen festem Grund liegt.
+                        let foundCave = false;
+                        for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
+                            for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
+                                for (let sy = -40; sy <= 20 && !foundCave; sy += 4) {
+                                    if (
+                                        r._terrainDensityAt(sx, sy, sz) < 0 &&
+                                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                                        r._terrainDensityAt(sx, sy + 6, sz) > 0
+                                    ) {
+                                        foundCave = true;
+                                    }
+                                }
+                            }
+                        }
+                        out.densityCanCave = foundCave;
+                    }
+
+                    if (out.hasChunkGeometry) {
+                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 1.8);
+                        out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
+                        if (out.geomBuilt) {
+                            const pos = geom.getAttribute("position");
+                            out.geomVertexCount = pos.count;
+                            let allFinite = true;
+                            for (let v = 0; v < pos.count * 3; v++) {
+                                if (!Number.isFinite(pos.array[v])) allFinite = false;
+                            }
+                            out.geomFinite = allFinite;
+                            out.geomHasNormals = !!geom.getAttribute("normal");
+                            out.geomHasIndex = !!geom.getIndex();
+                        }
+                    }
+
+                    if (out.hasSpawnTest && r.state.scene) {
+                        const before = r.state.scene.children.length;
+                        const m1 = r._spawnVoxelTestChunk();
+                        const afterOne = r.state.scene.children.length;
+                        const m2 = r._spawnVoxelTestChunk();
+                        const afterTwo = r.state.scene.children.length;
+                        out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
+                        // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
+                        out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
+                        // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
+                        if (r._voxelTestMesh) {
+                            r.state.scene.remove(r._voxelTestMesh);
+                            r._voxelTestMesh = null;
+                        }
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP1Results && !voxelP1Results.error) {
+                check("Voxel P1: _terrainDensityAt-Methode existiert", voxelP1Results.hasDensityAt);
+                check("Voxel P1: _voxelChunkGeometry-Methode existiert", voxelP1Results.hasChunkGeometry);
+                check("Voxel P1: _spawnVoxelTestChunk-Methode existiert", voxelP1Results.hasSpawnTest);
+                check(
+                    "Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)",
+                    voxelP1Results.densityIs3D
+                );
+                check(
+                    "Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)",
+                    voxelP1Results.densityCanCave
+                );
+                check(
+                    `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
+                    voxelP1Results.geomBuilt && (voxelP1Results.geomVertexCount || 0) > 0
+                );
+                check("Voxel P1: alle Mesh-Positionen sind endlich (kein NaN)", voxelP1Results.geomFinite);
+                check(
+                    "Voxel P1: das Mesh trägt Normalen + einen Index",
+                    voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
+                );
+                check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
+                check(
+                    "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
+                    voxelP1Results.spawnReplaces
+                );
+            }
+
             // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
             // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
             // damagePlayer + Stamina-Kosten sind modus-gated.
