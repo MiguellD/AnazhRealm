@@ -12057,6 +12057,56 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.30 — Phase 5c.2.a: tote Heightfield-Methoden gelöscht ###
+            // Der V9.28-Eintrag benannte `generateChunk` + `addTerrainPhysics`
+            // ausdrücklich als „nachweislich tote Methoden ohne Aufrufer".
+            // V9.30 entfernt sie als kleinsten ehrlichen Schritt der Phase
+            // 5c.2 (Heightfield-Code-Entfernung — V9.27-Disziplin „den kleinsten
+            // ehrlichen Schritt zuerst"). Die Invariante schützt die Entfernung:
+            // wer beide Methoden je wieder anlegt, müsste eine echte Notwendigkeit
+            // benennen, statt das Versprechen aus dem Kommentar bei Zeile 13549
+            // zu brechen.
+            const voxelV930Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    return {
+                        noGenerateChunk: typeof r.generateChunk !== "function",
+                        noAddTerrainPhysics: typeof r.addTerrainPhysics !== "function",
+                        // Regression-Schutz — die lebenden Heightfield-Methoden
+                        // bleiben (V9.30 löschte nur tote, ensureChunkAt + Co.
+                        // werden weiter gebraucht solange die Eingangs-Welt
+                        // heightfield ist).
+                        ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
+                        terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
+                        setHeightfieldDormantAlive: typeof r._setHeightfieldDormant === "function",
+                    };
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV930Results && !voxelV930Results.error) {
+                check(
+                    "Voxel V9.30: generateChunk ist gelöscht (tote Methode, V9.28-Befund)",
+                    voxelV930Results.noGenerateChunk
+                );
+                check(
+                    "Voxel V9.30: addTerrainPhysics ist gelöscht (tote Methode, V9.28-Befund)",
+                    voxelV930Results.noAddTerrainPhysics
+                );
+                check(
+                    "Voxel V9.30: ensureChunkAt lebt weiter (Regression — die lebende Chunk-Pipeline)",
+                    voxelV930Results.ensureChunkAtAlive
+                );
+                check(
+                    "Voxel V9.30: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
+                    voxelV930Results.terrainHeightAtWorldAlive
+                );
+                check(
+                    "Voxel V9.30: _setHeightfieldDormant lebt weiter (Regression — Voxel-Mode-Switch)",
+                    voxelV930Results.setHeightfieldDormantAlive
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page

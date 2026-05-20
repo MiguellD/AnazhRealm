@@ -9451,110 +9451,6 @@ class AnazhRealm {
         }
     }
 
-    addTerrainPhysics(heightData, width, depth, minHeight, maxHeight, chunkX = 0, chunkZ = 0) {
-        try {
-            if (!this.state.physicsWorld) {
-                throw new Error("Physik-Welt nicht initialisiert – initPhysics() muss zuerst aufgerufen werden");
-            }
-            if (!heightData || heightData.length !== width * depth) {
-                throw new Error(
-                    `Ungültige Höhendaten: Erwartet ${width * depth}, erhalten ${heightData ? heightData.length : "undefined"}`
-                );
-            }
-
-            const chunkSize = this.state.chunkSize;
-            const startX = chunkX * chunkSize;
-            const startZ = chunkZ * chunkSize;
-            const endX = Math.min(startX + chunkSize, width);
-            const endZ = Math.min(startZ + chunkSize, depth);
-
-            // Terrain-Shape erstellen
-            const heightfieldData = new Float32Array(chunkSize * chunkSize);
-            let localMinHeight = Infinity;
-            let localMaxHeight = -Infinity;
-
-            for (let z = startZ; z < endZ; z++) {
-                for (let x = startX; x < endX; x++) {
-                    const idx = z * width + x;
-                    const localIdx = (z - startZ) * chunkSize + (x - startX);
-                    let height = heightData[idx];
-                    if (isNaN(height) || !isFinite(height)) {
-                        this.log(
-                            `Ungültiger Höhenwert in Chunk (${chunkX}, ${chunkZ}) bei (${x}, ${z}): ${height}. Setze auf 0.`,
-                            "ERROR"
-                        );
-                        height = 0;
-                    }
-                    heightfieldData[localIdx] = height;
-                    localMinHeight = Math.min(localMinHeight, height);
-                    localMaxHeight = Math.max(localMaxHeight, height);
-                }
-            }
-
-            // Physik-Shape für das Terrain erstellen
-            const heightScale = 1.0;
-            const minHeightScaled = localMinHeight * heightScale;
-            const maxHeightScaled = localMaxHeight * heightScale;
-            const heightfieldShape = new Ammo.btHeightfieldTerrainShape(
-                chunkSize, // width
-                chunkSize, // depth
-                heightfieldData, // height data
-                heightScale, // height scale
-                minHeightScaled, // min height
-                maxHeightScaled, // max height
-                1, // up axis (Y)
-                "PHY_FLOAT", // data type
-                false // flip quad edges
-            );
-
-            // Skalierung anpassen
-            const scaleX = 300 / (width - 1);
-            const scaleZ = 300 / (depth - 1);
-            heightfieldShape.setLocalScaling(
-                new Ammo.btVector3(scaleX / this.state.scaleFactor, 1, scaleZ / this.state.scaleFactor)
-            );
-
-            // Physik-Körper für das Terrain erstellen
-            const transform = new Ammo.btTransform();
-            transform.setIdentity();
-            const offsetX = (startX / (width - 1)) * 300 - 150;
-            const offsetZ = (startZ / (depth - 1)) * 300 - 150;
-            transform.setOrigin(
-                new Ammo.btVector3(
-                    offsetX / this.state.scaleFactor,
-                    (localMinHeight + localMaxHeight) / 2 / this.state.scaleFactor,
-                    offsetZ / this.state.scaleFactor
-                )
-            );
-
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            const localInertia = new Ammo.btVector3(0, 0, 0);
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, heightfieldShape, localInertia);
-            const body = new Ammo.btRigidBody(rbInfo);
-            this.state.physicsWorld.addRigidBody(body);
-
-            // Chunk aus der chunkMap holen und Physik-Körper zuweisen
-            const chunkKey = `${chunkX},${chunkZ}`;
-            const chunkData = this.state.chunkMap.get(chunkKey);
-            if (chunkData && chunkData.mesh) {
-                chunkData.mesh.userData.physicsBody = body;
-                this.state.rigidBodies.push(chunkData.mesh);
-                this.log(
-                    `Terrain-Physik für Chunk (${chunkX}, ${chunkZ}) hinzugefügt: Höhe zwischen ${localMinHeight.toFixed(2)} und ${localMaxHeight.toFixed(2)}`
-                );
-            } else {
-                this.log(
-                    `Warnung: Chunk (${chunkX}, ${chunkZ}) nicht in chunkMap gefunden – Physik-Körper nicht zugewiesen`,
-                    "WARNING"
-                );
-                Ammo.destroy(body);
-            }
-        } catch (error) {
-            this.logError(error);
-            throw error;
-        }
-    }
-
     // ### Skybox ###
     createGalaxySkybox() {
         // V8.26 Bug 1 — Sternenrauschen-Fix: Shader nutzt LOKALE `position`
@@ -13650,8 +13546,9 @@ class AnazhRealm {
         // spätere Erweiterungen. Damit haben initial UND extension Chunks
         // exakt dasselbe Welt-Grid (chunkWorldSize=37.5, vertexStep=1.171875)
         // und die Naht zwischen ihnen ist nicht mehr 0.15 Welt-Einheiten
-        // versetzt. Das alte generateChunk + globale btHeightfieldTerrainShape
-        // sind dadurch obsolet und werden in einem späteren Cleanup entfernt.
+        // versetzt. V9.30: die alten generateChunk + addTerrainPhysics +
+        // globale btHeightfieldTerrainShape sind als nachweislich tote
+        // Methoden entfernt (Phase 5c.2.a der Heightfield-Code-Entfernung).
         this.state.chunkMap = new Map();
         this.state.chunkSize = CHUNK_SIZE;
         this.state.chunkWidth = WIDTH;
@@ -14172,103 +14069,6 @@ class AnazhRealm {
             }
         }
         this.log(`Genesis-Plattform erstellt bei y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`);
-    }
-    // ### Chunk-Generierung ### V7.66
-    generateChunk(chunkX, chunkZ, heightData, width, depth, material) {
-        // ### Konstanten ###
-        const CHUNK_SIZE = this.state.chunkSize;
-        const WORLD_SIZE = 300;
-
-        // ### Chunk-Grenzen mit Überlappung ###
-        const startX = chunkX * CHUNK_SIZE;
-        const startZ = chunkZ * CHUNK_SIZE;
-        const endX = Math.min(startX + CHUNK_SIZE + 1, width); // Überlappung um 1 Vertex
-        const endZ = Math.min(startZ + CHUNK_SIZE + 1, depth); // Überlappung um 1 Vertex
-        const chunkWidth = endX - startX;
-        const chunkDepth = endZ - startZ;
-
-        if (chunkWidth <= 0 || chunkDepth <= 0) {
-            this.log(`Ungültige Chunk-Größe bei (${chunkX}, ${chunkZ}): ${chunkWidth}x${chunkDepth}`, "ERROR");
-            return;
-        }
-
-        // ### Geometrie erstellen ###
-        const geometry = new THREE.BufferGeometry();
-        const vertices = new Float32Array(chunkWidth * chunkDepth * 3);
-        const indices = [];
-        const uvs = new Float32Array(chunkWidth * chunkDepth * 2);
-
-        // ### Vertices und UVs generieren ###
-        for (let z = startZ; z < endZ; z++) {
-            for (let x = startX; x < endX; x++) {
-                const idx = (z - startZ) * chunkWidth + (x - startX);
-                const worldX = (x / (width - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                const worldZ = (z / (depth - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                const height = heightData[z * width + x];
-                vertices[idx * 3] = worldX;
-                vertices[idx * 3 + 1] = Number.isFinite(height) ? height : 0;
-                vertices[idx * 3 + 2] = worldZ;
-                uvs[idx * 2] = (x - startX) / (chunkWidth - 1);
-                uvs[idx * 2 + 1] = (z - startZ) / (chunkDepth - 1);
-            }
-        }
-
-        // ### Indices für Dreiecke ###
-        for (let z = 0; z < chunkDepth - 1; z++) {
-            for (let x = 0; x < chunkWidth - 1; x++) {
-                const a = z * chunkWidth + x;
-                const b = z * chunkWidth + (x + 1);
-                const c = (z + 1) * chunkWidth + x;
-                const d = (z + 1) * chunkWidth + (x + 1);
-                indices.push(a, b, d, a, d, c);
-            }
-        }
-
-        // ### Geometrie setzen und validieren ###
-        geometry.setIndex(indices);
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-        // V8.28 6.G4.b B — Welt-Affinität pro Vertex (Terrain-Shader-Farbe)
-        this._attachFieldAttribute(geometry);
-        geometry.computeVertexNormals();
-
-        const positions = geometry.attributes.position.array;
-        for (let i = 0; i < positions.length; i++) {
-            if (!Number.isFinite(positions[i])) {
-                this.log(`Ungültiger Vertex in Chunk (${chunkX}, ${chunkZ}) bei Index ${i}: ${positions[i]}`, "ERROR");
-                positions[i] = 0;
-            }
-        }
-        geometry.attributes.position.needsUpdate = true;
-
-        try {
-            geometry.computeBoundingSphere();
-            geometry.computeBoundingBox();
-        } catch (e) {
-            this.log(`Bounding-Fehler in Chunk (${chunkX}, ${chunkZ}): ${e.message}`, "ERROR");
-            return;
-        }
-
-        // ### Chunk-Mesh ###
-        const chunk = new THREE.Mesh(geometry, material);
-        chunk.position.set(0, 0, 0); // Weltkoordinaten in Vertices, keine Verschiebung nötig
-        chunk.castShadow = true;
-        chunk.receiveShadow = true;
-        chunk.visible = true;
-
-        this.state.scene.add(chunk);
-        this.state.groundChunks.push(chunk);
-        this.state.chunkMap.set(`${chunkX},${chunkZ}`, { mesh: chunk, heightData: heightData.slice() });
-        this.log(`Chunk (${chunkX}, ${chunkZ}) generiert: ${chunkWidth}x${chunkDepth}`, "DEBUG");
-
-        // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
-        // - Überlappung der Vertices (+1) an den Rändern sorgt für nahtlose Übergänge.
-        // - Weltkoordinaten und konsistente Noise-Generierung bleiben erhalten.
-        // - Vertices an Chunkgrenzen sind durch Weltkoordinaten exakt synchronisiert.
-        // - Keine Lücken mehr, da die Noise-Generierung konsistent ist und die Indizes korrekt verbinden.
-        // - Höhenabgleich entfernt, da Weltkoordinaten in Noise Übergänge sichern.
-        // - Gebirge erstrecken sich natürlich über Chunks durch konsistente Noise.
-        // - Keine Öffnungen, da Vertices exakt an Chunk-Grenzen liegen.
     }
 
     // ### Terrain-Erweiterung ### V7.42
@@ -15387,8 +15187,7 @@ class AnazhRealm {
             }
         }
 
-        // Mesh inline bauen (parallel zur Logik in `generateChunk`, aber mit
-        // chunk-lokalen Indices und korrektem Welt-Offset).
+        // Mesh inline bauen (chunk-lokale Indices, korrektes Welt-Offset).
         const geometry = new THREE.BufferGeometry();
         const vertices = new Float32Array(VTX * VTX * 3);
         const uvs = new Float32Array(VTX * VTX * 2);
