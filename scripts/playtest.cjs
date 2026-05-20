@@ -137,6 +137,12 @@ function startSaveServer() {
                     terrainEverGenerated: r.state.terrainEverGenerated,
                     groundChunks: r.state.groundChunks?.length || 0,
                     chunkMapSize: r.state.chunkMap?.size || 0,
+                    // V9.33 Phase 5c.2.b — die Eingangs-Welt ist jetzt voxel-
+                    // default; chunkMap/groundChunks sind dann legitim leer,
+                    // voxelChunks/voxelTerrainActive sind die neue Wahrheit.
+                    voxelChunksSize: r.state.voxelChunks?.size || 0,
+                    voxelTerrainActive: r.state.voxelTerrainActive === true,
+                    voxelTerrainFlag: !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain),
                     playerY: r.state.playerMesh?.position?.y,
                     playerX: r.state.playerMesh?.position?.x,
                     playerZ: r.state.playerMesh?.position?.z,
@@ -161,15 +167,25 @@ function startSaveServer() {
                 finalState.terrainEverGenerated === true,
                 `terrainEverGenerated=${finalState.terrainEverGenerated}`
             );
+            // V9.33 Phase 5c.2.b — die Eingangs-Welt ist seit dem Flip voxel-
+            // default. Die zwei alten Heightfield-Invarianten sind in einer
+            // voxel-aktiven Welt legitim leer; jetzt prüfen wir, dass IRGEND-
+            // EIN Terrain-Ring um den Spieler gefüllt ist (heightfield ODER
+            // voxel), und dass die voxel-default-Welt das Flag trägt.
             check(
-                "Mindestens 25 Chunks im groundChunks-Array (V8.17: dynamisch ring-abhängig)",
-                finalState.groundChunks >= 25,
-                `groundChunks=${finalState.groundChunks}`
+                "Voxel V9.33 Phase 5c.2.b: die Eingangs-Welt ist per Default voxel-basiert (worldMeta.voxelTerrain=true)",
+                finalState.voxelTerrainFlag === true,
+                `voxelTerrainFlag=${finalState.voxelTerrainFlag}`
             );
             check(
-                "chunkMap konsistent mit groundChunks",
-                finalState.chunkMapSize >= 60 && Math.abs(finalState.chunkMapSize - finalState.groundChunks) < 10,
-                `chunkMap=${finalState.chunkMapSize}, groundChunks=${finalState.groundChunks}`
+                "Voxel V9.33 Phase 5c.2.b: das Voxel-Terrain ist nach Init aktiv (parallel, hinter dem Flag)",
+                finalState.voxelTerrainActive === true,
+                `voxelTerrainActive=${finalState.voxelTerrainActive}`
+            );
+            check(
+                "Welt-Terrain ist gefüllt (Voxel-Chunks ODER Heightfield-Chunks)",
+                finalState.voxelChunksSize >= 20 || finalState.groundChunks >= 25,
+                `voxelChunks=${finalState.voxelChunksSize}, groundChunks=${finalState.groundChunks}`
             );
             check(
                 "Spieler nicht durch den Boden gefallen",
@@ -8302,8 +8318,12 @@ function startSaveServer() {
                     const _savedY = r.state.playerMesh.position.y;
                     const _savedZ = r.state.playerMesh.position.z;
 
-                    // (a) Himmel
+                    // (a) Himmel — Cache invalidieren (V8.X.5 D1 hält das Ergebnis
+                    // 33 ms; nach dem 20-s-Lauf hat er einen stale Wert von der
+                    // alten Spieler-Position). Vor jedem isPlayerGrounded-Call
+                    // den `_groundedCachedAt` nullen.
                     r.state.playerMesh.position.set(0, 5000, 0);
+                    r.state._groundedCachedAt = 0;
                     r.isPlayerGrounded();
                     out.skyOnSteepSlope = r.state.onSteepSlope;
                     out.skyGroundNormalY = r.state.groundNormalY;
@@ -8320,6 +8340,7 @@ function startSaveServer() {
                         const box = new THREE.Box3().setFromObject(_entryA3.mesh);
                         // Setze Spieler knapp über die Top-Fläche
                         r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
+                        r.state._groundedCachedAt = 0;
                         r.isPlayerGrounded();
                         flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
                         out.archTopGroundNormalY = r.state.groundNormalY;
@@ -8443,12 +8464,19 @@ function startSaveServer() {
                     // Kamera direkt darüber positionieren — die Top-Sub-Box hat
                     // eine flache Oberseite (Normal-Y ~ 1), zuverlässiger als
                     // das prozedurale Heightfield (das an manchen Stellen steil ist).
+                    // V9.33 Phase 5c.2.b — die Voxel-Eingangs-Welt hat Voxel-
+                    // Chunks bei (60,60) (Sicht-Ring 4 reicht ~172 m); der
+                    // Tempel-Spawn auf y=0 würde im Voxel-Terrain stecken,
+                    // der Raycast den Voxel-Boden statt den Tempel treffen.
+                    // Spawn-Y=200 hebt den Tempel klar über die Voxel-Spitzen
+                    // (Surface ~ base+64 max), die Stabilitäts-Probe ist ehrlich.
                     const _spawnArchX = 60;
                     const _spawnArchZ = 60;
+                    const _spawnArchY = 200;
                     const _beforeArchA45 = r.state.architectures.length;
                     const _archEntry = r.spawnArchitecture(
                         "temple",
-                        { x: _spawnArchX, y: 0, z: _spawnArchZ },
+                        { x: _spawnArchX, y: _spawnArchY, z: _spawnArchZ },
                         { seed: 4711 }
                     );
                     out.testArchSpawned = !!_archEntry;
@@ -11249,6 +11277,22 @@ function startSaveServer() {
             // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
             // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
             // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
+            // V9.33 — vor dem _spawnVoxelTestChunk-Test schalten wir das
+            // Voxel-Terrain GANZ aus (state-konsistent — disposed alle ~81
+            // Chunks via setVoxelTerrainActive(false), gibt ~5-6 MB Ammo-Heap
+            // zurück). Die folgenden Tests (P2b, V9.27, …) schalten es selbst
+            // wieder ein und bauen den Ring neu — saubere Test-Isolation.
+            await page.evaluate(() => {
+                const r = window.anazhRealm;
+                if (
+                    r &&
+                    r.state &&
+                    r.state.voxelTerrainActive &&
+                    typeof r.setVoxelTerrainActive === "function"
+                ) {
+                    r.setVoxelTerrainActive(false, { persist: false });
+                }
+            });
             const voxelP1Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
@@ -11517,13 +11561,19 @@ function startSaveServer() {
                     out.hasSetActive = typeof r.setVoxelTerrainActive === "function";
                     out.hasConfig = typeof r._voxelChunkConfig === "function";
                     out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
-                    out.defaultOff = r.state.voxelTerrainActive === false;
+                    // V9.33 Phase 5c.2.b — die alte V9.09-„default off"-Probe
+                    // ist überholt; der „voxel ist Default-AN"-Beweis lebt
+                    // jetzt in den Top-Level-Invarianten (finalState.voxel*).
 
-                    // einen Heightfield-Chunk als Referenz merken.
+                    // Eine echte Heightfield-Chunk-Referenz für die Dormancy-
+                    // Probe finden (mit physicsBody). V9.33-Pollution-Schutz:
+                    // Extension-Tests können Ghost-Chunks (kein Body, OOM-
+                    // Opfer) in chunkMap hinterlassen — diese sind keine
+                    // gültigen Referenzen für die Dormancy-Mechanik.
                     let refChunk = null;
                     if (r.state.chunkMap) {
                         for (const e of r.state.chunkMap.values()) {
-                            if (e && e.mesh) {
+                            if (e && e.mesh && e.mesh.userData && e.mesh.userData.physicsBody) {
                                 refChunk = e.mesh;
                                 break;
                             }
@@ -11700,10 +11750,10 @@ function startSaveServer() {
                         voxelP2bResults.hasSetActive &&
                         voxelP2bResults.hasConfig
                 );
-                check(
-                    "Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)",
-                    voxelP2bResults.defaultOff
-                );
+                // V9.33 Phase 5c.2.b — der „voxel ist Default-AN"-Beweis lebt
+                // in den Top-Level-Invarianten (finalState.voxelTerrainActive);
+                // diese Stelle ist nach dem pre-P1-Test-Reset auf voxel=false
+                // und damit nicht mehr aussagekräftig.
                 check(
                     "Voxel P2b: setVoxelTerrainActive(true) füllt den Voxel-Chunk-Ring um den Spieler",
                     voxelP2bResults.activated && voxelP2bResults.ringFilled
@@ -11946,10 +11996,7 @@ function startSaveServer() {
                     "Voxel V9.28: state.minHeight ist 0 in einer Voxel-Welt (kein Infinity-Leak)",
                     voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
                 );
-                check(
-                    "Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt",
-                    voxelP5c1Results.voxelMaxHeightZero
-                );
+                check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
                 check(
                     "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
                     voxelP5c1Results.creatureOnVoxelSurface
@@ -12223,10 +12270,7 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (voxelV932Results && !voxelV932Results.error) {
-                check(
-                    "Voxel V9.32: _buildVoxelChunkWaterfalls existiert (Phase 5d-Mini)",
-                    voxelV932Results.hasBuild
-                );
+                check("Voxel V9.32: _buildVoxelChunkWaterfalls existiert (Phase 5d-Mini)", voxelV932Results.hasBuild);
                 check(
                     "Voxel V9.32: _disposeVoxelChunkWaterfalls existiert (Lifecycle-Räumung)",
                     voxelV932Results.hasDispose
@@ -15582,9 +15626,12 @@ function startSaveServer() {
                     r.tickWeatherTransition(0);
                     out.transitionProgressAdvanced =
                         r.state.weatherTransition && r.state.weatherTransition.progress > 0;
-                    // Bei progress=1 → transition geclearet
+                    // Bei progress=1 → transition geclearet. Offset > Cap (120s)
+                    // damit die Probe deterministisch ist (Emotion-Modulation
+                    // kann die Default-Dauer auf bis zu ~86s strecken — V9.33
+                    // mit voxel-default-Welt hat oft höhere peace-Werte).
                     if (r.state.weatherTransition) {
-                        r.state.weatherTransition.startedAt = performance.now() - 60000; // 60s = > 45s duration
+                        r.state.weatherTransition.startedAt = performance.now() - 200000; // 200s > 120s-Cap
                     }
                     r.tickWeatherTransition(0);
                     out.transitionClearedOnComplete = r.state.weatherTransition === null;
@@ -25689,16 +25736,32 @@ function startSaveServer() {
                         // Strahler verstärkt dessen Reichweite. Spieler 22 m vom
                         // Strahler — ausserhalb der Basis-Reichweite (14 m),
                         // innerhalb der verstärkten (28 m).
-                        const radE = r.spawnArchitecture(
-                            "test_10ext_radiator",
-                            { x: 60, y: 0, z: 60 },
-                            { silent: true }
-                        );
+                        // V9.33 Phase 5c.2.b — Welt-Reaktions-Affordances filtern
+                        // nach Distanz UND prüfen alle nahen Architekturen mit
+                        // der Affordance. In der Voxel-Eingangs-Welt platziert
+                        // `_populateVoxelChunkVegetation` natürliche Strahler
+                        // (kristall_geode) in magie-Regionen. Wir entfernen
+                        // ALLE radiating-Architekturen ringsum (vor dem Test-
+                        // Setup), damit die Probe ehrlich ist.
                         if (pmR) {
                             pmR.x = 60;
                             pmR.y = 0;
                             pmR.z = 82;
                         }
+                        // Cleanup natürlicher Strahler im Test-Bereich.
+                        r.state.architectures = r.state.architectures.filter((e) => {
+                            if (!e || !e.position || !e.affordances) return true;
+                            if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
+                            const dx = e.position.x - 60;
+                            const dz = e.position.z - 82;
+                            // Sicherheits-Distanz > BROADCAST_RELAY_RANGE_M + RADIATING_RANGE_M.
+                            return dx * dx + dz * dz > 100 * 100;
+                        });
+                        const radE = r.spawnArchitecture(
+                            "test_10ext_radiator",
+                            { x: 60, y: 0, z: 60 },
+                            { silent: true }
+                        );
                         emoR.awe = 0.1;
                         emoR.peace = 0.1;
                         for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
@@ -25807,13 +25870,22 @@ function startSaveServer() {
                         // Welt-Reaktion: ein STARKER Mast relais-verstärkt weiter
                         // als ein SCHWACHER. Spieler 23 m vom Strahler — der
                         // schwache Holz-Mast erreicht ihn nicht, der starke schon.
-                        r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
-                        r.spawnArchitecture("test_10ext_mastweak", { x: 66, y: 0, z: 60 }, { silent: true });
+                        // V9.33-Disziplin: natürliche Strahler/Sender im 100-m-
+                        // Radius entfernen, sonst kontaminieren sie die Probe.
                         if (pmR) {
                             pmR.x = 60;
                             pmR.y = 0;
                             pmR.z = 83;
                         }
+                        r.state.architectures = r.state.architectures.filter((e) => {
+                            if (!e || !e.position || !e.affordances) return true;
+                            if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
+                            const dx = e.position.x - 60;
+                            const dz = e.position.z - 83;
+                            return dx * dx + dz * dz > 100 * 100;
+                        });
+                        r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
+                        r.spawnArchitecture("test_10ext_mastweak", { x: 66, y: 0, z: 60 }, { silent: true });
                         emoR.awe = 0.1;
                         emoR.peace = 0.1;
                         for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
