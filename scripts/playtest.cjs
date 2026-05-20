@@ -10441,11 +10441,20 @@ function startSaveServer() {
                         newIsland.userData.collision.tmesh
                     );
                     out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
-                    // Inseln haben jetzt Vollkörper (Top + Bottom + Side).
-                    // 2D-Grid mit N=12 → 12*12*2 = 288 Vertices Mindestmenge.
+                    // V9.42-a — Inseln aus Surface-Nets-Pipeline. Vollkörper
+                    // emergiert per Konstruktion (Iso-Fläche schließt sich
+                    // oben + unten). Test misst nicht die Vertex-Zahl
+                    // (Surface-Nets-Auflösung variiert), sondern die Y-Spanne
+                    // der Geometrie: ein Vollkörper hat eine Höhe > 0.5 m.
                     if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
-                        const vCount = newIsland.geometry.attributes.position.count;
-                        out.islandHasUnderside = vCount >= 144 * 2;
+                        const pa = newIsland.geometry.attributes.position.array;
+                        let minY = Infinity;
+                        let maxY = -Infinity;
+                        for (let i = 1; i < pa.length; i += 3) {
+                            if (pa[i] < minY) minY = pa[i];
+                            if (pa[i] > maxY) maxY = pa[i];
+                        }
+                        out.islandHasUnderside = isFinite(minY) && isFinite(maxY) && maxY - minY > 0.5;
                     }
 
                     // Diskrimination: derselbe Seed → dieselben Vertices.
@@ -10498,6 +10507,42 @@ function startSaveServer() {
                 check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
                 check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
                 check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
+                // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
+                // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
+                // Anwendungen. Beweis: `_voxelChunkGeometry` akzeptiert
+                // einen `densityFn`-Callback (Default-Pfad bleibt für Welt-
+                // Chunks erhalten, Insel-Pfad übergibt `_islandDensityAt`).
+                const r42a = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
+                    if (out.hasIslandDensity) {
+                        // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
+                        // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
+                        const dummyNoise = { noise2D: () => 0 };
+                        out.solidInCenter = r._islandDensityAt(0, 0, 0, 6, 5, dummyNoise) > 0;
+                        out.airFarAway = r._islandDensityAt(20, 0, 0, 6, 5, dummyNoise) < 0;
+                        out.airAbove = r._islandDensityAt(0, 50, 0, 6, 5, dummyNoise) < 0;
+                    }
+                    // Mesher mit densityFn-Callback: untere Hälfte fest,
+                    // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
+                    out.mesherAcceptsDensity =
+                        typeof r._voxelChunkGeometry === "function" &&
+                        (() => {
+                            try {
+                                const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
+                                const pos = g && g.getAttribute("position");
+                                return !!(pos && pos.count > 0);
+                            } catch {
+                                return false;
+                            }
+                        })();
+                    return out;
+                });
+                check("V9.42-a: _islandDensityAt existiert", r42a.hasIslandDensity);
+                check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
+                check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
+                check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
+                check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
                 check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
                     "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
@@ -10565,7 +10610,7 @@ function startSaveServer() {
                 );
                 if (wave6gResults.islandHasUnderside !== undefined) {
                     check(
-                        "Welle 6.G P1.5: Insel hat Top + Bottom (Vollkörper, V7.74 Visual-Fix)",
+                        "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
                         wave6gResults.islandHasUnderside
                     );
                 }

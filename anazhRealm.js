@@ -13886,7 +13886,8 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step) {
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn) {
+        const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
@@ -13895,7 +13896,7 @@ class AnazhRealm {
         for (let k = 0; k < Nz; k++) {
             for (let j = 0; j < Ny; j++) {
                 for (let i = 0; i < Nx; i++) {
-                    density[gi(i, j, k)] = this._terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
+                    density[gi(i, j, k)] = sample(ox + i * step, oy + j * step, oz + k * step);
                 }
             }
         }
@@ -14084,9 +14085,9 @@ class AnazhRealm {
             const px = positions[v];
             const py = positions[v + 1];
             const pz = positions[v + 2];
-            const gx = this._terrainDensityAt(px + eps, py, pz) - this._terrainDensityAt(px - eps, py, pz);
-            const gy = this._terrainDensityAt(px, py + eps, pz) - this._terrainDensityAt(px, py - eps, pz);
-            const gz = this._terrainDensityAt(px, py, pz + eps) - this._terrainDensityAt(px, py, pz - eps);
+            const gx = sample(px + eps, py, pz) - sample(px - eps, py, pz);
+            const gy = sample(px, py + eps, pz) - sample(px, py - eps, pz);
+            const gz = sample(px, py, pz + eps) - sample(px, py, pz - eps);
             const len = Math.hypot(gx, gy, gz);
             if (len < 1e-6) {
                 // Gradient ~0 (sehr seltener Sattelpunkt) → Default „oben".
@@ -24810,88 +24811,57 @@ class AnazhRealm {
     // hohl sichtbar, harte Triangle-Kanten). MeshLambertMaterial nimmt
     // Szenenlicht an (kein „Papier-Sticker"-Look mehr). Seed-deterministisch
     // für Multi-User-Sync (Ring 11 V2.1-Stil).
+    // V9.42-a — Insel-Dichte-Feld (per-Insel, lokal um die Insel-Mitte).
+    // Vision §1.3 fraktal: dieselbe Surface-Nets-Pipeline wie Voxel-Welt-
+    // Chunks, nur mit anderem Dichte-Generator. `lx/ly/lz` sind LOKALE
+    // Koordinaten (Insel-Mitte bei (0,0,0)). Oberseite: radiale Noise-Höhe
+    // mit Rim-Falloff (analog V7.74-spawnIslandAt-Logik). Unterseite: flach,
+    // verjüngt zum Rand. Aussen-radial: hart Luft (Insel ist gekapselt,
+    // kein Boden-Anker). Iso-Schicht ist `min(topY-ly, ly-botY)` im Innern.
+    _islandDensityAt(lx, ly, lz, radius, height, noise) {
+        const dx = lx;
+        const dz = lz;
+        const distXZ = Math.sqrt(dx * dx + dz * dz);
+        if (distXZ >= radius) return -1;
+        const factor = 1 - distXZ / radius;
+        if (factor <= 0) return -1;
+        // Oberseite — radiale Noise-Hügel mit Rim-Falloff.
+        const h1 = noise.noise2D(lx * 0.25, lz * 0.25) * 1.5 * factor;
+        const h2 = noise.noise2D(lx * 0.6, lz * 0.6) * 0.7 * factor;
+        const topY = Math.max(0, h1 + h2 + factor * 0.4);
+        // Unterseite — sanft verjüngt, flach im Innern.
+        const botY = -Math.max(2, height * 0.4) * factor;
+        if (ly > topY || ly < botY) return -1;
+        return Math.min(topY - ly, ly - botY);
+    }
+
     spawnIslandAt(x, y, z, height = 6, opts = {}) {
         if (!this.state.scene) return null;
         const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(24, opts.size)) : 12;
         const seedStr = opts.seed != null ? String(opts.seed) : `island-${Date.now()}-${Math.random()}`;
         const noise = new SimplexNoise(seedStr);
-        const geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        const indices = [];
-        const N = Math.max(8, Math.min(20, Math.round(size)));
-        // Top-Vertices (Index 0..N*N-1) — radiale Noise-Höhe, an der Rim h=0.
-        for (let zi = 0; zi < N; zi++) {
-            for (let xi = 0; xi < N; xi++) {
-                const xp = xi - (N - 1) / 2;
-                const zp = zi - (N - 1) / 2;
-                const distance = Math.sqrt(xp * xp + zp * zp);
-                const maxDist = (N - 1) / 2;
-                let h = 0;
-                if (distance < maxDist * 0.95) {
-                    const factor = 1 - distance / maxDist;
-                    const h1 = noise.noise2D(xi * 0.25, zi * 0.25) * 1.5 * factor;
-                    const h2 = noise.noise2D(xi * 0.6, zi * 0.6) * 0.7 * factor;
-                    h = Math.max(0, h1 + h2 + factor * 0.4);
-                }
-                vertices.push(xp, h, zp);
-            }
-        }
-        // Bottom-Vertices (Index N*N..2*N*N-1) — flache Unterseite, gibt
-        // der Insel sichtbaren Körper. bottomY skaliert mit Wunsch-Höhe.
-        const bottomY = -Math.max(2, height * 0.4);
-        for (let zi = 0; zi < N; zi++) {
-            for (let xi = 0; xi < N; xi++) {
-                const xp = xi - (N - 1) / 2;
-                const zp = zi - (N - 1) / 2;
-                vertices.push(xp, bottomY, zp);
-            }
-        }
-        // Top-Triangles (Winding gegen Uhrzeigersinn → Normal nach oben).
-        for (let zi = 0; zi < N - 1; zi++) {
-            for (let xi = 0; xi < N - 1; xi++) {
-                const a = zi * N + xi;
-                const b = zi * N + (xi + 1);
-                const cc = (zi + 1) * N + xi;
-                const d = (zi + 1) * N + (xi + 1);
-                indices.push(a, b, d, a, d, cc);
-            }
-        }
-        // Bottom-Triangles (umgekehrte Winding → Normal nach unten).
-        const bOff = N * N;
-        for (let zi = 0; zi < N - 1; zi++) {
-            for (let xi = 0; xi < N - 1; xi++) {
-                const a = bOff + zi * N + xi;
-                const b = bOff + zi * N + (xi + 1);
-                const cc = bOff + (zi + 1) * N + xi;
-                const d = bOff + (zi + 1) * N + (xi + 1);
-                indices.push(a, d, b, a, cc, d);
-            }
-        }
-        // Side-Strip um die vier Ränder verbindet Top-Rim mit Bottom-Rim.
-        const addQuad = (t1, t2, b1, b2) => {
-            indices.push(t1, b1, t2, t2, b1, b2);
-        };
-        // North-Rand (zi = 0): top zeigt zur Außenseite (-Z)
-        for (let xi = 0; xi < N - 1; xi++) {
-            addQuad(xi + 1, xi, bOff + xi + 1, bOff + xi);
-        }
-        // South-Rand (zi = N-1): top zeigt zur Außenseite (+Z)
-        for (let xi = 0; xi < N - 1; xi++) {
-            const z = N - 1;
-            addQuad(z * N + xi, z * N + xi + 1, bOff + z * N + xi, bOff + z * N + xi + 1);
-        }
-        // West-Rand (xi = 0): top zeigt nach -X
-        for (let zi = 0; zi < N - 1; zi++) {
-            addQuad(zi * N, (zi + 1) * N, bOff + zi * N, bOff + (zi + 1) * N);
-        }
-        // East-Rand (xi = N-1): top zeigt nach +X
-        for (let zi = 0; zi < N - 1; zi++) {
-            const last = N - 1;
-            addQuad((zi + 1) * N + last, zi * N + last, bOff + (zi + 1) * N + last, bOff + zi * N + last);
-        }
-        geometry.setIndex(indices);
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.computeVertexNormals();
+        // V9.42-a — Geometrie aus der Surface-Nets-Pipeline. Voxel-Welt-Chunks
+        // + Inseln teilen sich `_voxelChunkGeometry` (eine Mesh-Sprache, zwei
+        // Anwendungen). Lokales Volumen mit ~1.5-Marge gegen das Iso-Band.
+        const radius = size / 2;
+        const step = 0.9;
+        const margin = 1.5;
+        const halfXZ = radius + margin;
+        const dimXZ = Math.max(8, Math.ceil((2 * halfXZ) / step));
+        const topMax = 0.4 + 1.5 + 0.7 + margin;
+        const botMin = -(Math.max(2, height * 0.4) + margin);
+        const dimYNeeded = Math.max(6, Math.ceil((topMax - botMin) / step));
+        const islandDensity = (px, py, pz) => this._islandDensityAt(px, py, pz, radius, height, noise);
+        const geometry = this._voxelChunkGeometry(
+            -halfXZ,
+            botMin,
+            -halfXZ,
+            dimXZ,
+            dimYNeeded,
+            dimXZ,
+            step,
+            islandDensity
+        );
         const material = new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
