@@ -14118,6 +14118,71 @@ class AnazhRealm {
         return { dim, step, span: dim * step, ringRadius, dimY: 80 };
     }
 
+    // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
+    // isolierten Container (Mesh + Geometry + Material + Kollision), OHNE
+    // ihn in die Szene zu hängen oder in der voxelChunks-Map abzulegen.
+    // Liefert `{mesh, kind:"filled"}` (Mesh hat schon eine Kollision im
+    // physicsWorld, ist noch nicht in der Scene), `{mesh:null, kind:"empty"}`
+    // (degenerierte Iso-Fläche — kein Mesh möglich), oder `null` (OOM /
+    // Kollision-Build fail). Der Caller entscheidet, was mit dem Resultat
+    // passiert — atomarer Swap im `_rebuildVoxelChunk` (Re-Mesh nach Edit).
+    _buildVoxelChunkData(cx, cz) {
+        if (!this.state.scene) return null;
+        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - 58;
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        if (!geom) return { mesh: null, kind: "empty" };
+        this._attachVoxelFieldColors(geom);
+        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
+        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        if (!collisionBody) {
+            geom.dispose();
+            mat.dispose();
+            return null;
+        }
+        return { mesh, kind: "filled" };
+    }
+
+    // V9.40-b atomarer Swap: baut einen frischen Chunk, ersetzt den alten
+    // ERST wenn der frische bestätigt ist. Bei null bleibt der alte stehen
+    // (kein Loch — die V9.24-Wurzel-Korrektur). Genutzt von `_tickDirtyVoxel-
+    // Chunks` (Re-Mesh nach Edit). Liefert true bei Erfolg, false bei Build-
+    // Fail. `_ensureVoxelChunkAt` läuft bewusst NICHT durch diesen Pfad —
+    // der Initial-Spawn behält die erprobte V9.07-Sequenz (scene.add vor
+    // Kollision), nur der Re-Mesh nach einem Edit nutzt das Pre-Build-
+    // Pattern (damit ein OOM-Re-Mesh den alten Chunk nicht zerstört).
+    _rebuildVoxelChunk(cx, cz) {
+        if (!this.state.scene) return false;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const key = `${cx},${cz}`;
+        const oldEntry = this.state.voxelChunks.get(key);
+        const fresh = this._buildVoxelChunkData(cx, cz);
+        if (fresh === null) {
+            // Build fail — alter Chunk bleibt stehen (kein Loch).
+            return false;
+        }
+        if (oldEntry) this._disposeVoxelChunk(key);
+        if (fresh.kind === "empty") {
+            this.state.voxelChunks.set(key, { empty: true });
+            return true;
+        }
+        this.state.scene.add(fresh.mesh);
+        const entry = { mesh: fresh.mesh };
+        this.state.voxelChunks.set(key, entry);
+        this._buildVoxelChunkGrass(cx, cz);
+        this._populateVoxelChunkVegetation(cx, cz);
+        this._buildVoxelChunkWaterfalls(cx, cz);
+        return true;
+    }
+
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
     // Surface-Nets-Mesh aus dem 3D-Dichte-Feld + btBvhTriangleMeshShape-
     // Kollision. No-op, wenn er schon existiert. Ein leeres Dichte-Feld
@@ -14534,9 +14599,16 @@ class AnazhRealm {
         return { ok: false, reason: "kein Material" };
     }
 
-    // Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-Kugel
-    // berührt (±1 Chunk Marge für den V9.10-Skirt-Überlapp). No-op, wenn
-    // das Voxel-Terrain nicht aktiv ist (keine Chunks in der Szene).
+    // V9.40-b — Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-
+    // Kugel berührt (±1 Chunk Marge für den V9.10-Skirt-Überlapp). Synchron
+    // wie das Original, aber MIT dem Pre-Build-Pattern (`_rebuildVoxelChunk`):
+    // der frische Chunk wird in einem isolierten Container gebaut + erst
+    // bei Erfolg eingehängt; bei OOM bleibt der ALTE Chunk stehen (kein
+    // Loch — V9.24-Symptom-Geste umgekehrt, der Schöpfer-V9.39-Befund
+    // „löscht ganzen Chunk" ist damit an der Wurzel geheilt). Eine Async-
+    // Schicht (Dirty-Queue + Game-Loop-Hook) für das „Ruckeln bei häufigen
+    // Edits" bleibt eine spätere Welle V9.40-c — sie braucht eine eigene
+    // Test-Infrastruktur, die die initial-Spawn-Tests vom Async-Pfad trennt.
     _remeshVoxelChunksAround(x, z, r) {
         if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
         const { span } = this._voxelChunkConfig();
@@ -14548,8 +14620,7 @@ class AnazhRealm {
             for (let cz = minCZ; cz <= maxCZ; cz++) {
                 const key = `${cx},${cz}`;
                 if (this.state.voxelChunks.has(key)) {
-                    this._disposeVoxelChunk(key);
-                    this._ensureVoxelChunkAt(cx, cz);
+                    this._rebuildVoxelChunk(cx, cz);
                 }
             }
         }
