@@ -13962,10 +13962,23 @@ class AnazhRealm {
         }
         if (positions.length === 0) return null;
         // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad.
+        // V9.41: alternierende Diagonale je nach Zell-Parität `(i+j+k) & 1`.
+        // Vor V9.41 trianguliert quad() IMMER mit a→c (`indices.push(a,b,c, a,c,d)`)
+        // — alle Diagonal-Falten zeigen in dieselbe Richtung → sichtbares Streifen-
+        // Muster auf flachen Hügeln (Schöpfer-Browser-Befund 20.05.2026, Punkt 3).
+        // Schach-Brett: gerade Zellen behalten a→c, ungerade nutzen b→d. Beide
+        // Triangulierungen sind CCW-konsistent (das Quad ist ccw a→b→c→d auf-
+        // gebaut, beide Diagonal-Wahlen erhalten das Winding). Geometrie-Kosten:
+        // null (gleich viele Dreiecke, gleicher Vertex-Buffer); Lichtwirkung:
+        // die Falten brechen sich auf statt sich zu Streifen zu addieren.
         const indices = [];
-        const quad = (a, b, c, d) => {
+        const quad = (a, b, c, d, parity) => {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
-            indices.push(a, b, c, a, c, d);
+            if (parity & 1) {
+                indices.push(a, b, d, b, c, d);
+            } else {
+                indices.push(a, b, c, a, c, d);
+            }
         };
         // cv() liefert den Zell-Vertex ODER -1 für jeden out-of-range Index.
         // OHNE diese Wand aliaste `ci(dim, j, k)` (= dim + j*dim + …) in einen
@@ -13980,17 +13993,22 @@ class AnazhRealm {
             for (let j = 0; j <= dimY; j++) {
                 for (let i = 0; i <= dimX; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
+                    // V9.41: parity = (i+j+k) & 1 entscheidet die Quad-Diagonale.
+                    // Eine GITTER-KANTE wird von zwei Zellen geteilt (links/rechts
+                    // der Kante); die Parität EINER konsistent gewählten Ecke
+                    // (hier (i,j,k)) gibt jeder Kante eine eindeutige Diagonale.
+                    const parity = (i + j + k) & 1;
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k));
+                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k), parity);
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
                     if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k));
+                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k), parity);
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
                     if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k));
+                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k), parity);
                     }
                 }
             }

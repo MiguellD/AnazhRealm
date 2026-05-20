@@ -11307,6 +11307,26 @@ function startSaveServer() {
                                 }
                                 out.geomMaxEdge = maxEdge;
                                 out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+
+                                // V9.41 — alternierende Diagonalen (Schach-Brett).
+                                // Quad emittiert pro Paar 6 Indizes: 2 Dreiecke.
+                                // a-c-Diagonale: indices = [a,b,c, a,c,d] →
+                                // erster Vertex des ersten Dreiecks (a) == erster
+                                // Vertex des zweiten Dreiecks (a).
+                                // b-d-Diagonale: indices = [a,b,d, b,c,d] →
+                                // ZWEITER Vertex des ersten Dreiecks (b) == ERSTER
+                                // Vertex des zweiten Dreiecks (b).
+                                // Pre-V9.41: nur a-c-Pattern. Post-V9.41 mit
+                                // Schach-Brett: beide Patterns kommen vor.
+                                let acDiag = 0;
+                                let bdDiag = 0;
+                                for (let t = 0; t + 5 < ia.length; t += 6) {
+                                    if (ia[t] === ia[t + 3]) acDiag++;
+                                    else if (ia[t + 1] === ia[t + 3]) bdDiag++;
+                                }
+                                out.diagonalAcCount = acDiag;
+                                out.diagonalBdCount = bdDiag;
+                                out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
                             }
                         }
                     }
@@ -11392,6 +11412,18 @@ function startSaveServer() {
                 check(
                     `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,
                     voxelP1Results.geomNoStrayTris
+                );
+                check(
+                    `V9.41: Quad-Diagonalen alternieren (Schach-Brett) — beide Patterns vorhanden (a-c ${voxelP1Results.diagonalAcCount}, b-d ${voxelP1Results.diagonalBdCount})`,
+                    voxelP1Results.diagonalAlternates
+                );
+                check(
+                    "V9.41: keine Diagonal-Pattern-Dominanz — beide Muster ≥ 10% des jeweils anderen",
+                    voxelP1Results.diagonalAcCount > 0 &&
+                        voxelP1Results.diagonalBdCount > 0 &&
+                        Math.min(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) /
+                            Math.max(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) >=
+                            0.1
                 );
                 check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
                 check(
