@@ -9367,8 +9367,36 @@ class AnazhRealm {
             if (typeof Ammo === "undefined") {
                 throw new Error("Ammo.js fehlt – index.html prüfen, ob Ammo.js-Skript geladen wurde");
             }
-            await Ammo();
-            this.log("Ammo.js geladen – Physik initialisiert");
+            // V9.40-f: Ammo wird mit `window.Module` als moduleArg gerufen —
+            // `ammo-bootstrap.js` setzte den `instantiateWasm`-Hook dort ab.
+            // Ammo's IIFE-Header (`function(moduleArg = {})`) liest NUR sein
+            // Argument, NICHT `window.Module` automatisch — wer das nicht
+            // übergibt, verliert den Pre-Grow-Hook und Ammo OOMt bei großen
+            // Voxel-Welten. `typeof window`-Check für Node-Headless-Pfade.
+            const ammoModule = typeof window !== "undefined" ? window.Module || {} : {};
+            await Ammo(ammoModule);
+            // V9.40-f: der vendored ammo.wasm.wasm wurde via
+            // `scripts/patch-ammo-memory.cjs` von max=64 MB auf max=256 MB
+            // (growable) gepatcht — eine Voxel-Welt mit Ring 4-8 (81-289
+            // Chunks × btBvhTriangleMeshShape + BVH-Baum) braucht mehr Heap.
+            // `ArrayBuffer.maxByteLength` ist ein Snapshot-Wert; der wahre
+            // Grow-Test ist `wasmMemory.grow(0)` (return = aktuelle Pages)
+            // + die Tatsache, dass Ammo bei OOM jetzt selbst grow() rufen
+            // kann. Diagnose-Log zeigt die aktuelle Heap-Größe — bei einem
+            // späteren OOM-Befund kann der Schöpfer hier den Wachstums-Lauf
+            // sehen (50 → 90 → 160 → …; bleibt er bei 64 MB stehen + OOM
+            // tritt auf, fehlt der Patch).
+            try {
+                const mem = Ammo.HEAPU8 && Ammo.HEAPU8.buffer;
+                if (mem) {
+                    const curMb = (mem.byteLength / 1024 / 1024).toFixed(0);
+                    this.log(`Ammo.js geladen – Physik initialisiert (Heap: ${curMb} MB initial, growable bis 256 MB)`);
+                } else {
+                    this.log("Ammo.js geladen – Physik initialisiert");
+                }
+            } catch {
+                this.log("Ammo.js geladen – Physik initialisiert");
+            }
 
             // Physik-Welt initialisieren
             const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();

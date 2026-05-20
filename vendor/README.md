@@ -16,7 +16,8 @@ Drei reasons we host these instead of using a CDN:
 |---|---|---|
 | `three.min.js` | `three@0.134.0` (`build/three.min.js`) | UMD build, exposes `THREE` |
 | `ammo.js` | `ammojs3@0.0.11` (`dist/ammo.wasm.js`) | WASM loader; needs `ammo.wasm.wasm` next to it |
-| `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary |
+| `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary, V9.40-f-gepatcht (max 64→256 MB) |
+| `ammo-bootstrap.js` | own | V9.40-f pre-grow-Hook — MUSS vor `ammo.js` geladen werden |
 | `simplex-noise.js` | `simplex-noise@2.4.0` | Not minified upstream (only ~17 KB) |
 
 TensorFlow.js wurde im Mai 2026 entfernt — `playerMovementModel` trainierte
@@ -79,3 +80,32 @@ cp node_modules/simplex-noise/simplex-noise.js        <repo>/vendor/
 ```
 
 Bump the versions above when you update.
+
+## V9.40-f — Ammo-Heap-Patch (256 MB statt 64 MB)
+
+Der vendored `ammo.wasm.wasm` von `ammojs3@0.0.11` ist mit Emscripten ohne
+`-s ALLOW_MEMORY_GROWTH=1` gebaut — der C-Allocator ruft `memory.grow()` NIE,
+ein OOM aborted das WASM-Modul direkt. Default-Heap ist fix 64 MB. Eine
+Voxel-Welt mit Sicht-Ring 4-8 (81-289 `btBvhTriangleMeshShape`-Chunks)
+braucht mehr.
+
+Zwei Stellen heilen das:
+
+1. **`scripts/patch-ammo-memory.cjs`** patcht den WASM-Memory-Header
+   (Section 5) von `max=1024 pages` (64 MB) auf `max=4096 pages` (256 MB).
+   Memory wird damit growable. Läuft automatisch bei `npm install` via
+   `postinstall`-Hook + manuell via `npm run patch:ammo`. Idempotent.
+
+2. **`vendor/ammo-bootstrap.js`** setzt `window.Module.instantiateWasm`
+   mit einem Hook, der die Memory direkt nach `WebAssembly.instantiate`
+   auf 256 MB pre-grow't. Ohne diesen Hook würde der C-Allocator auch
+   bei growable Memory NIE `grow()` rufen — Emscripten muss zur Build-
+   Zeit den Flag haben oder die Memory muss von Anfang an groß sein.
+   MUSS in `index.html` VOR `<script src="vendor/ammo.js">` geladen
+   werden. `anazhRealm.js` ruft `Ammo(window.Module)`, sonst greift der
+   Hook nicht (Ammo's IIFE `function(moduleArg = {})` liest NUR sein
+   Argument, nicht `window.Module` automatisch).
+
+Bei einem Vendor-Update (`ammojs3` neue Version): nach `cp ammo.wasm.wasm`
+einmal `npm run patch:ammo` rufen. Der Patcher prüft den aktuellen Stand
+und ist idempotent.

@@ -19,7 +19,9 @@
         "smoke:translated": "node scripts/smoke-translated.cjs",
         "smoke:sandbox": "node scripts/smoke-sandbox.cjs",
         "smoke:vendor": "node scripts/smoke-vendor.cjs",
-        "smoke:shim": "node scripts/smoke-shim.cjs"
+        "smoke:shim": "node scripts/smoke-shim.cjs",
+        "patch:ammo": "node scripts/patch-ammo-memory.cjs",
+        "postinstall": "node scripts/patch-ammo-memory.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",
