@@ -34,6 +34,8 @@ class AnazhRealm {
             voxelChunkWaterfalls: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
+            // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
+            voxelRebuildAttempts: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -14153,25 +14155,55 @@ class AnazhRealm {
         return { mesh, kind: "filled" };
     }
 
-    // V9.40-b atomarer Swap: baut einen frischen Chunk, ersetzt den alten
-    // ERST wenn der frische bestätigt ist. Bei null bleibt der alte stehen
-    // (kein Loch — die V9.24-Wurzel-Korrektur). Genutzt von `_tickDirtyVoxel-
-    // Chunks` (Re-Mesh nach Edit). Liefert true bei Erfolg, false bei Build-
-    // Fail. `_ensureVoxelChunkAt` läuft bewusst NICHT durch diesen Pfad —
-    // der Initial-Spawn behält die erprobte V9.07-Sequenz (scene.add vor
-    // Kollision), nur der Re-Mesh nach einem Edit nutzt das Pre-Build-
-    // Pattern (damit ein OOM-Re-Mesh den alten Chunk nicht zerstört).
+    // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
+    // raus aus physicsWorld + Geometrie/Material disposed + Heap-Speicher
+    // freigegeben), DANN baut den frischen. Damit teilen sich alter + neuer
+    // Chunk NIE den Ammo-WASM-Heap → keine OOM-Kaskaden bei mehreren Edits.
+    // Vor V9.40-d (V9.40-b Pre-Build-Pattern): alter + neuer parallel im
+    // Heap → bei 9 Skirt-Nachbarn pro Edit + 81 initialen Chunks tippte das
+    // den fixen Ammo-Heap um, Edits kaskadierten zu OOM-Sturm. Der Schöpfer-
+    // Browser-Test nach V9.40-c zeigte das Phänomen direkt („Chunks lassen
+    // sich nicht abbauen, immer wiederholte OOM-Logs"). Der V9.40-b-Vorteil
+    // (V9.24-Symptom-Geste umgekehrt) entfällt damit theoretisch — bei OOM
+    // ist der alte schon disposed, ein `{empty:true}` ist die Folge (V9.24-
+    // Verhalten zurück). In der Praxis aber: ohne Heap-Druck triggert
+    // `_buildVoxelChunkData` praktisch nie null mehr; die V9.40-b-Wahl
+    // schützte vor einem Szenario, das durch sie selbst entstand. Plus
+    // V9.40-d-Retry: bei null wird der Chunk mit `_voxelRebuildAttempts`
+    // verfolgt (max 3 Versuche), bevor er als `{empty:true}` markiert wird.
+    // Das gibt dem Heap Zeit, sich durch andere Rebuilds zu entspannen.
     _rebuildVoxelChunk(cx, cz) {
         if (!this.state.scene) return false;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         const oldEntry = this.state.voxelChunks.get(key);
+        // V9.40-d — Dispose-Before-Build: alter raus aus Heap + physicsWorld
+        // BEVOR der neue allokiert. Verhindert das doppelte Leben.
+        if (oldEntry) this._disposeVoxelChunk(key);
         const fresh = this._buildVoxelChunkData(cx, cz);
         if (fresh === null) {
-            // Build fail — alter Chunk bleibt stehen (kein Loch).
+            // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-
+            // Counter pflegen — bei 3 fehlgeschlagenen Versuchen geben wir
+            // ehrlich auf + setzen `{empty:true}` (V9.24-Symptom-Geste als
+            // ehrliche letzte Antwort, nicht als Erst-Reaktion). Beim
+            // nächsten Edit auf denselben Chunk-Bereich wird der Counter
+            // zurückgesetzt — der Spieler bekommt jedes Mal 3 Versuche.
+            if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
+            const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
+            this.state.voxelRebuildAttempts.set(key, attempts);
+            if (attempts >= 3) {
+                this.state.voxelChunks.set(key, { empty: true });
+                this.state.voxelRebuildAttempts.delete(key);
+                this.log(`Voxel-Chunk ${key}: 3× OOM, als empty markiert`, "INFO");
+                return false;
+            }
+            // Re-markiere dirty für nächsten Tick (Heap-Erholungs-Chance).
+            if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
+            this.state.dirtyVoxelChunks.add(key);
             return false;
         }
-        if (oldEntry) this._disposeVoxelChunk(key);
+        // Erfolg — Retry-Counter zurücksetzen.
+        if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
         if (fresh.kind === "empty") {
             this.state.voxelChunks.set(key, { empty: true });
             return true;

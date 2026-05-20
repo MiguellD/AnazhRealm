@@ -9,7 +9,15 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 20.05.2026, V9.40-c)
+## Schnell-Lage (Stand 20.05.2026, V9.40-d)
+
+**V9.40-d — Voxel-Surface-Politur Welle A.4 (Dispose-Before-Build heilt Ammo-Heap-OOMs)**: Schöpfer-Browser-Test nach V9.40-c zeigte kaskadierende `Aborted(OOM)`-Logs + „Chunks lassen sich nicht abbauen". Wurzel: V9.40-b's Pre-Build-Pattern liess alten + neuen Chunk parallel im Ammo-WASM-Heap leben → bei 9 Skirt-Nachbarn × 81 initial Chunks tippte der fixe Heap um → OOM-Kaskaden. Heilung: (1) **`_rebuildVoxelChunk` disposed jetzt ZUERST den alten** (`_disposeVoxelChunk` räumt Kollision + Geometrie + Heap-Speicher), DANN buildVoxelChunkData. Alter + neuer teilen sich NIE den Heap. (2) **`voxelRebuildAttempts`-Retry-Counter**: bei Build-Fail wird der Chunk wieder dirty markiert + der Counter inkrementiert; nach 3 Fails ehrlich `{empty:true}` (V9.24-Symptom-Geste als LETZTE Antwort, nicht als Erst-Reaktion). Erfolg setzt den Counter zurück. **Ehrliche Lehre**: V9.40-b's „alter bleibt bei OOM"-Versprechen war gut gemeint, aber maskierte die wahre Wurzel (Heap-Druck). Wer eine Symptom-Geste umkehrt, ohne die Ursache zu finden, baut den nächsten Symptom-Bug. Schöpfer-Browser-Audit war die Wahrheit. 6 neue Invarianten, 8/8 Läufe grün, Audit 0 Failures.
+
+### Davor: V9.40-c (20.05.2026, Async-Rebuild via Dirty-Queue + Test-Naht)
+
+`state.dirtyVoxelChunks` Set; `_remeshVoxelChunksAround` markiert dirty; `_tickDirtyVoxelChunks` im Game-Loop rebuildet ≤1/Frame; `_drainDirtyVoxelChunks()` ist die Test-Naht.
+
+### Davor: V9.40-c als Naht (V9.40-c-Schnell-Lage-Text — kompakt für Übersicht)
 
 **V9.40-c — Voxel-Surface-Politur Welle A.3 (Async-Rebuild via Dirty-Queue + Test-Naht)**: drei neue Methoden + Test-Naht, ein Commit. `state.dirtyVoxelChunks` als Set; `_remeshVoxelChunksAround` markiert dirty statt sync rebuild; `_tickDirtyVoxelChunks(playerPos)` im Game-Loop rebuildet pro Frame max 1 Chunk (nächster am Spieler zuerst); `_drainDirtyVoxelChunks()` ist die **Test-Naht** für sofortigen sync-Drain. `_disposeVoxelChunk` räumt den dirty-Marker mit. Heilt das Schöpfer-V9.39-„Ruckeln bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor V9.40-c alle in einem Frame; jetzt verteilt. **Bisect-Lehre aus V9.40-b umgesetzt**: das blosse Aufrufen eines Game-Loop-Hooks verschob das Timing der initial-Voxel-Spawn-Tests im Headless. Lösung war nicht Code-seitig (Throttle/conditional registration), sondern Test-seitig: voxelP2b ruft `_drainDirtyVoxelChunks()` + 50× `_tickVoxelChunkStreaming(pm)` synchron, BEVOR die Asserts laufen. V8.57-Disziplin (Mess-Punkt an die Mechanik), ein drittes Mal. 6 neue Playtest-Invarianten, 6/6 Läufe grün, Audit-Strict 0 Failures, Lint + Format sauber. **V9.40 ist damit abgeschlossen** (a + b + c).
 

@@ -12402,6 +12402,75 @@ function startSaveServer() {
                 check("V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)", voxelV940cResults.disposeClearsDirty);
             }
 
+            // V9.40-d — Dispose-Before-Build (Heap-Druck-Heilung) + Retry-
+            // Counter. Schöpfer-V9.40-c-Browser-Befund: kaskadierende OOMs
+            // weil V9.40-b's Pre-Build-Pattern alter+neuer parallel im
+            // Ammo-Heap leben liess.
+            const voxelV940dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Ring auffüllen.
+                    const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                    if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                    for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+                    if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+                        out.skip = true;
+                        return out;
+                    }
+                    // Dispose-Before-Build: stuben den Code-Pfad indem wir
+                    // einen Chunk-Key wählen, der existiert + rebuild rufen
+                    // + prüfen dass die alte Mesh-Identität weg ist.
+                    const someKey = [...r.state.voxelChunks.keys()].find((k) => {
+                        const e = r.state.voxelChunks.get(k);
+                        return e && e.mesh;
+                    });
+                    if (!someKey) {
+                        out.skip = true;
+                        return out;
+                    }
+                    const [cxStr, czStr] = someKey.split(",");
+                    const cx = parseInt(cxStr, 10);
+                    const cz = parseInt(czStr, 10);
+                    const oldMesh = r.state.voxelChunks.get(someKey).mesh;
+                    const ok = r._rebuildVoxelChunk(cx, cz);
+                    const newEntry = r.state.voxelChunks.get(someKey);
+                    out.rebuildOk = ok === true;
+                    // Bei Erfolg: neuer Mesh ist nicht der alte (Identität gewechselt).
+                    out.meshIdentityChanged = !!(newEntry && newEntry.mesh && newEntry.mesh !== oldMesh);
+                    // Retry-Counter: stub _buildVoxelChunkData um null zu returnen.
+                    const origBuild = r._buildVoxelChunkData;
+                    r._buildVoxelChunkData = () => null;
+                    // 1. Versuch: fail → dirty bleibt, attempts=1
+                    r._rebuildVoxelChunk(cx, cz);
+                    const attempts1 = r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey);
+                    out.retryCounter1 = attempts1 === 1;
+                    out.dirtyAfterFail = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.has(someKey));
+                    // 2. Versuch: fail → attempts=2
+                    r._rebuildVoxelChunk(cx, cz);
+                    out.retryCounter2 = (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
+                    // 3. Versuch: fail → empty markiert, counter weg
+                    r._rebuildVoxelChunk(cx, cz);
+                    const finalEntry = r.state.voxelChunks.get(someKey);
+                    out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
+                    out.counterClearedAfterGiveUp = !(r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey));
+                    // Restore.
+                    r._buildVoxelChunkData = origBuild;
+                    if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV940dResults && !voxelV940dResults.error && !voxelV940dResults.skip) {
+                check("V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt", voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged);
+                check("V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)", voxelV940dResults.retryCounter1);
+                check("V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)", voxelV940dResults.dirtyAfterFail);
+                check("V9.40-d: Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
+                check("V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940dResults.giveUpAsEmpty);
+                check("V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)", voxelV940dResults.counterClearedAfterGiveUp);
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
             // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
             const voxelP3bResults = await page
