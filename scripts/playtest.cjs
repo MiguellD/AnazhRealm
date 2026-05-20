@@ -11849,6 +11849,214 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.27 Phase 5c.1 + V9.28 — fusioniert für Heap-Schonung ###
+            // V9.27: eine Voxel-Welt überspringt die initialen 64 Heightfield-
+            // Chunks. V9.28: zusätzlich ist die heightData/caveData/volcanoData-
+            // Allokation übersprungen (V9.25 Phase 5b ehrlich abgeschlossen —
+            // updateCreatures ist der letzte missed Höhen-Konsument, jetzt
+            // voxel-aware via getTerrainHeightAt). BEIDE teilen sich die zwei
+            // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression),
+            // damit das pre-existing btBvhTriangleMeshShape-Auxiliar-Leck
+            // (Ammo-Heap) nicht den Welle-10b-Test OOM'ed.
+            const voxelP5c1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const origVoxel = r.state.worldMeta && r.state.worldMeta.voxelTerrain;
+
+                    // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
+                    r.state.worldMeta.voxelTerrain = true;
+                    r.state.lastWorldgen = 0;
+                    r.generateNewWorld({ force: true });
+                    // V9.27 Phase 5c.1: chunkMap leer.
+                    out.voxelChunkMapEmpty = r.state.chunkMap && r.state.chunkMap.size === 0;
+                    out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
+                    // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
+                    out.voxelGroundFieldNull = r.state.groundHeightField === null;
+                    out.voxelMinHeightZero = r.state.minHeight === 0;
+                    out.voxelMaxHeightZero = r.state.maxHeight === 0;
+                    out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
+
+                    // V9.28: updateCreatures ist voxel-aware. Spawne eine
+                    // Kreatur an bekannter Position, lasse einen Frame laufen,
+                    // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
+                    if (
+                        typeof r.spawnCreatureAt === "function" &&
+                        typeof r._voxelSurfaceY === "function" &&
+                        typeof r.updateCreatures === "function"
+                    ) {
+                        const testX = 5;
+                        const testZ = 5;
+                        const voxelY = r._voxelSurfaceY(testX, testZ);
+                        const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
+                        if (creature && Number.isFinite(voxelY)) {
+                            r.updateCreatures(0.016);
+                            const expected = voxelY + 0.5;
+                            const actual = creature.position.y;
+                            out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
+                            out.creatureNotAtFallback = Math.abs(actual - 0.5) > 1.0;
+                        }
+                    }
+
+                    // (2) Heightfield-Welt: alle Pfade leben weiter (Regression).
+                    r.state.worldMeta.voxelTerrain = false;
+                    r.state.lastWorldgen = 0;
+                    r.generateNewWorld({ force: true });
+                    // V9.27: 64 Chunks gebaut.
+                    out.heightfieldChunkMapFilled = r.state.chunkMap && r.state.chunkMap.size === 64;
+                    // V9.28: heightData zurück.
+                    out.heightfieldGroundFieldFilled =
+                        r.state.groundHeightField instanceof Float32Array &&
+                        r.state.groundHeightField.length === 256 * 256;
+                    out.heightfieldMinSet = r.state.minHeight !== 0 || r.state.maxHeight !== 0;
+
+                    // Restore: heightfield bleibt (origVoxel war für die
+                    // Eingangs-Welt false/undefined, V9.26-Disziplin) — kein
+                    // weiterer generateNewWorld-Aufruf nötig.
+                    if (origVoxel === true) {
+                        r.state.worldMeta.voxelTerrain = true;
+                        r.state.lastWorldgen = 0;
+                        r.generateNewWorld({ force: true });
+                    } else {
+                        r.state.worldMeta.voxelTerrain = origVoxel;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP5c1Results && !voxelP5c1Results.error) {
+                check(
+                    "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
+                    voxelP5c1Results.voxelChunkMapEmpty
+                );
+                check(
+                    "Voxel V9.27 Phase 5c.1: das Heightfield-Material bleibt erhalten (für späteres voxel-off-Toggle)",
+                    voxelP5c1Results.voxelMaterialKept
+                );
+                check(
+                    "Voxel V9.27 Phase 5c.1: eine Heightfield-Welt baut alle 64 Chunks weiter (Regression-Schutz)",
+                    voxelP5c1Results.heightfieldChunkMapFilled
+                );
+                check(
+                    "Voxel V9.28: eine Voxel-Welt hat KEIN groundHeightField (heightData übersprungen)",
+                    voxelP5c1Results.voxelGroundFieldNull
+                );
+                check(
+                    "Voxel V9.28: state.minHeight ist 0 in einer Voxel-Welt (kein Infinity-Leak)",
+                    voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
+                );
+                check(
+                    "Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt",
+                    voxelP5c1Results.voxelMaxHeightZero
+                );
+                check(
+                    "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
+                    voxelP5c1Results.creatureOnVoxelSurface
+                );
+                check(
+                    "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
+                    voxelP5c1Results.creatureNotAtFallback
+                );
+                check(
+                    "Voxel V9.28: eine Heightfield-Welt füllt groundHeightField weiter (Regression-Schutz)",
+                    voxelP5c1Results.heightfieldGroundFieldFilled
+                );
+                check(
+                    "Voxel V9.28: eine Heightfield-Welt setzt minHeight/maxHeight (Regression-Schutz)",
+                    voxelP5c1Results.heightfieldMinSet
+                );
+            }
+
+            // ### Voxel V9.29 — Heightfield-Chunk-Physik-Leak geheilt ###
+            // Pre-existing Bug (seit `ensureChunkAt` existiert): die drei
+            // Cleanup-Stellen destroyed nur den `btRigidBody`. Die Auxiliars
+            // `btBvhTriangleMeshShape`, `btDefaultMotionState`, `btTriangleMesh`
+            // (+ transform, inline-btVector3 im Build) leakten pro Chunk-
+            // Lifecycle-Cycle im WASM-Heap. V9.28 fing es via OOM beim Welle-
+            // 10b-Test. V9.29 heilt's via `_disposeChunkPhysics`-Helper +
+            // shape/motionState/transform-saubere-Destroy in den Build-Pfaden.
+            const voxelV929Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasDisposeHelper = typeof r._disposeChunkPhysics === "function";
+
+                    // Ein Chunk aus dem laufenden Spiel als Test-Subjekt.
+                    // (Eingangs-Welt ist heightfield, chunkMap ist gefüllt.)
+                    let testChunk = null;
+                    if (r.state.chunkMap && r.state.chunkMap.size > 0) {
+                        for (const entry of r.state.chunkMap.values()) {
+                            if (entry && entry.mesh && entry.mesh.userData && entry.mesh.userData.physicsBody) {
+                                testChunk = entry.mesh;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (testChunk) {
+                        // Build-Pfad-Beweis: alle vier Ammo-Refs sind in userData.
+                        out.buildHasBody = !!testChunk.userData.physicsBody;
+                        out.buildHasShape = !!testChunk.userData.physicsShape;
+                        out.buildHasMotionState = !!testChunk.userData.physicsMotionState;
+                        out.buildHasMesh = !!testChunk.userData.physicsMesh;
+
+                        // Cleanup-Pfad-Beweis: der Helper nullt alle vier Refs.
+                        if (typeof r._disposeChunkPhysics === "function") {
+                            r._disposeChunkPhysics(testChunk);
+                            out.disposeNulledBody = testChunk.userData.physicsBody === null;
+                            out.disposeNulledShape = testChunk.userData.physicsShape === null;
+                            out.disposeNulledMotionState = testChunk.userData.physicsMotionState === null;
+                            out.disposeNulledMesh = testChunk.userData.physicsMesh === null;
+                            // Idempotenz: ein zweiter Call darf nicht werfen.
+                            try {
+                                r._disposeChunkPhysics(testChunk);
+                                out.disposeIdempotent = true;
+                            } catch {
+                                out.disposeIdempotent = false;
+                            }
+                            // Defensive: dispose auf null/undefined wirft nicht.
+                            try {
+                                r._disposeChunkPhysics(null);
+                                r._disposeChunkPhysics(undefined);
+                                r._disposeChunkPhysics({});
+                                out.disposeDefensive = true;
+                            } catch {
+                                out.disposeDefensive = false;
+                            }
+                        }
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV929Results && !voxelV929Results.error) {
+                check("Voxel V9.29: _disposeChunkPhysics-Helper existiert", voxelV929Results.hasDisposeHelper);
+                check(
+                    "Voxel V9.29: ensureChunkAt-Build-Pfad legt alle vier Ammo-Refs in userData ab (body+shape+motionState+mesh)",
+                    voxelV929Results.buildHasBody &&
+                        voxelV929Results.buildHasShape &&
+                        voxelV929Results.buildHasMotionState &&
+                        voxelV929Results.buildHasMesh
+                );
+                check(
+                    "Voxel V9.29: _disposeChunkPhysics nullt alle vier userData-Refs (kein WASM-Heap-Leak mehr)",
+                    voxelV929Results.disposeNulledBody &&
+                        voxelV929Results.disposeNulledShape &&
+                        voxelV929Results.disposeNulledMotionState &&
+                        voxelV929Results.disposeNulledMesh
+                );
+                check(
+                    "Voxel V9.29: _disposeChunkPhysics ist idempotent (zweiter Aufruf wirft nicht — doppel-destroy-defensiv)",
+                    voxelV929Results.disposeIdempotent
+                );
+                check(
+                    "Voxel V9.29: _disposeChunkPhysics ist defensiv gegen null/undefined/leeres Objekt",
+                    voxelV929Results.disposeDefensive
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
