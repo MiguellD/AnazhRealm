@@ -11968,6 +11968,95 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.29 — Heightfield-Chunk-Physik-Leak geheilt ###
+            // Pre-existing Bug (seit `ensureChunkAt` existiert): die drei
+            // Cleanup-Stellen destroyed nur den `btRigidBody`. Die Auxiliars
+            // `btBvhTriangleMeshShape`, `btDefaultMotionState`, `btTriangleMesh`
+            // (+ transform, inline-btVector3 im Build) leakten pro Chunk-
+            // Lifecycle-Cycle im WASM-Heap. V9.28 fing es via OOM beim Welle-
+            // 10b-Test. V9.29 heilt's via `_disposeChunkPhysics`-Helper +
+            // shape/motionState/transform-saubere-Destroy in den Build-Pfaden.
+            const voxelV929Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasDisposeHelper = typeof r._disposeChunkPhysics === "function";
+
+                    // Ein Chunk aus dem laufenden Spiel als Test-Subjekt.
+                    // (Eingangs-Welt ist heightfield, chunkMap ist gefüllt.)
+                    let testChunk = null;
+                    if (r.state.chunkMap && r.state.chunkMap.size > 0) {
+                        for (const entry of r.state.chunkMap.values()) {
+                            if (entry && entry.mesh && entry.mesh.userData && entry.mesh.userData.physicsBody) {
+                                testChunk = entry.mesh;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (testChunk) {
+                        // Build-Pfad-Beweis: alle vier Ammo-Refs sind in userData.
+                        out.buildHasBody = !!testChunk.userData.physicsBody;
+                        out.buildHasShape = !!testChunk.userData.physicsShape;
+                        out.buildHasMotionState = !!testChunk.userData.physicsMotionState;
+                        out.buildHasMesh = !!testChunk.userData.physicsMesh;
+
+                        // Cleanup-Pfad-Beweis: der Helper nullt alle vier Refs.
+                        if (typeof r._disposeChunkPhysics === "function") {
+                            r._disposeChunkPhysics(testChunk);
+                            out.disposeNulledBody = testChunk.userData.physicsBody === null;
+                            out.disposeNulledShape = testChunk.userData.physicsShape === null;
+                            out.disposeNulledMotionState = testChunk.userData.physicsMotionState === null;
+                            out.disposeNulledMesh = testChunk.userData.physicsMesh === null;
+                            // Idempotenz: ein zweiter Call darf nicht werfen.
+                            try {
+                                r._disposeChunkPhysics(testChunk);
+                                out.disposeIdempotent = true;
+                            } catch {
+                                out.disposeIdempotent = false;
+                            }
+                            // Defensive: dispose auf null/undefined wirft nicht.
+                            try {
+                                r._disposeChunkPhysics(null);
+                                r._disposeChunkPhysics(undefined);
+                                r._disposeChunkPhysics({});
+                                out.disposeDefensive = true;
+                            } catch {
+                                out.disposeDefensive = false;
+                            }
+                        }
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV929Results && !voxelV929Results.error) {
+                check("Voxel V9.29: _disposeChunkPhysics-Helper existiert", voxelV929Results.hasDisposeHelper);
+                check(
+                    "Voxel V9.29: ensureChunkAt-Build-Pfad legt alle vier Ammo-Refs in userData ab (body+shape+motionState+mesh)",
+                    voxelV929Results.buildHasBody &&
+                        voxelV929Results.buildHasShape &&
+                        voxelV929Results.buildHasMotionState &&
+                        voxelV929Results.buildHasMesh
+                );
+                check(
+                    "Voxel V9.29: _disposeChunkPhysics nullt alle vier userData-Refs (kein WASM-Heap-Leak mehr)",
+                    voxelV929Results.disposeNulledBody &&
+                        voxelV929Results.disposeNulledShape &&
+                        voxelV929Results.disposeNulledMotionState &&
+                        voxelV929Results.disposeNulledMesh
+                );
+                check(
+                    "Voxel V9.29: _disposeChunkPhysics ist idempotent (zweiter Aufruf wirft nicht — doppel-destroy-defensiv)",
+                    voxelV929Results.disposeIdempotent
+                );
+                check(
+                    "Voxel V9.29: _disposeChunkPhysics ist defensiv gegen null/undefined/leeres Objekt",
+                    voxelV929Results.disposeDefensive
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page

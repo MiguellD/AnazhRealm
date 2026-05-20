@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 20.05.2026 (V9.28)
+# Zustand des Realm — Stand: 20.05.2026 (V9.29)
+
+**V9.29 — Ammo-Heap-Leck-Fix der Heightfield-Chunks + Gotcha-Sektion-Hygiene**: der in V9.28 entdeckte pre-existing Bug ehrlich geheilt. `Ammo.destroy(body)` cascadiert NICHT zu seinen Auxiliars (Shape/MotionState/TMesh) — sie leakten pro Chunk-Lifecycle. V9.29 zentralisiert in `_disposeChunkPhysics(mesh)` (drei Konsumenten: Welt-Regen, Streaming-Prune, Terrain-Mod-Rebuild). Build-Pfade speichern alle Refs in userData; inline-Auxiliars werden direkt destroyed. Plus: V9.27/V9.28/V9.29-Lehren in die kanonische „Wichtige Gotchas"-Sektion zementiert — Doku-Hygiene als echte Ordnung. +5 Invarianten, 2940 grün. Voller Eintrag in `CLAUDE.md` V9.29.
 
 **V9.28 — V9.25 Phase 5b ehrlich abgeschlossen + heightData-Skip für Voxel-Welten**: zwei surgische Schnitte. (1) `updateCreatures` war der letzte missed Höhen-Konsument aus V9.25 — es las `state.groundHeightField` direkt am voxel-aware `getTerrainHeightAt` vorbei; jetzt route auch dieser Pfad voxel-aware. (2) Nach (1) liest in einer Voxel-Welt niemand mehr `groundHeightField`/`minHeight`/`maxHeight` → die 256×256×3-Float-Allokation (~768 KB) + die 65k-Noise-Schleife wird in einer Voxel-Welt komplett übersprungen. Plus der Waterfall-Loop mit-gegated. Pre-existing Ammo-Heap-Leck (btBvhTriangleMeshShape-Auxiliars) entdeckt + dokumentiert. +7 Invarianten, 2935 grün. Voller Eintrag in `CLAUDE.md` V9.28.
 

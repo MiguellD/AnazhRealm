@@ -13242,12 +13242,11 @@ class AnazhRealm {
         if (this.state.groundChunks) {
             this.state.groundChunks.forEach((chunk) => {
                 this.state.scene.remove(chunk);
-                const body = chunk.userData.physicsBody;
-                if (body) {
-                    this.state.physicsWorld.removeRigidBody(body);
-                    Ammo.destroy(body);
-                    this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== chunk);
-                }
+                // V9.29 — vollständiger Heightfield-Chunk-Physik-Cleanup
+                // (Body + Shape + MotionState + TMesh). Vor V9.29 destroyed
+                // nur body → shape/motionState/tmesh leakten pro Welt-Regen.
+                this._disposeChunkPhysics(chunk);
+                this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== chunk);
             });
             this.state.groundChunks = [];
             this.log("Alte Chunks entfernt");
@@ -15221,21 +15220,11 @@ class AnazhRealm {
         const { CHUNK_SIZE } = this._chunkGeometry();
         const VTX = CHUNK_SIZE + 1;
         try {
-            const oldBody = mesh.userData.physicsBody;
-            const oldTMesh = mesh.userData.physicsMesh;
-            this.state.physicsWorld.removeRigidBody(oldBody);
-            try {
-                Ammo.destroy(oldBody);
-            } catch {
-                /* defensive */
-            }
-            if (oldTMesh) {
-                try {
-                    Ammo.destroy(oldTMesh);
-                } catch {
-                    /* defensive */
-                }
-            }
+            // V9.29 — vollständiger Alt-Body-Cleanup via Helper: vor V9.29
+            // destroyed nur body + tmesh; shape + motionState leakten.
+            // _rebuildChunkPhysics läuft bei jedem `modify_terrain`-Op
+            // (Ring 10.5), bei häufigem Graben summierte sich der Leck.
+            this._disposeChunkPhysics(mesh);
             const tmesh = new Ammo.btTriangleMesh(true, true);
             const v0 = new Ammo.btVector3(0, 0, 0);
             const v1 = new Ammo.btVector3(0, 0, 0);
@@ -15259,11 +15248,18 @@ class AnazhRealm {
             Ammo.destroy(v0);
             Ammo.destroy(v1);
             Ammo.destroy(v2);
+            // V9.29 — Build-Pfad räumt + speichert alle Ammo-Refs sauber:
+            // shape + motionState landen in userData (für `_disposeChunkPhysics`),
+            // transform + inline-btVector3 werden direkt destroyed (setOrigin
+            // + btDefaultMotionState-Konstruktor kopieren die Werte intern).
             const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
             const transform = new Ammo.btTransform();
             transform.setIdentity();
-            transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+            const origin = new Ammo.btVector3(0, 0, 0);
+            transform.setOrigin(origin);
+            Ammo.destroy(origin);
             const motionState = new Ammo.btDefaultMotionState(transform);
+            Ammo.destroy(transform);
             const inertia = new Ammo.btVector3(0, 0, 0);
             const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
             const body = new Ammo.btRigidBody(rbInfo);
@@ -15272,6 +15268,8 @@ class AnazhRealm {
             Ammo.destroy(inertia);
             mesh.userData.physicsBody = body;
             mesh.userData.physicsMesh = tmesh;
+            mesh.userData.physicsShape = shape;
+            mesh.userData.physicsMotionState = motionState;
         } catch (err) {
             this.log(
                 `Chunk-Physik-Rebuild fehlgeschlagen (${chunkData.chunkX}, ${chunkData.chunkZ}): ${err.message}`,
@@ -15480,12 +15478,20 @@ class AnazhRealm {
                 Ammo.destroy(v0);
                 Ammo.destroy(v1);
                 Ammo.destroy(v2);
+                // V9.29 — Build-Pfad räumt + speichert alle Ammo-Refs sauber:
+                // shape + motionState landen in userData (für `_disposeChunkPhysics`,
+                // sonst leakten sie pro Chunk-Lifecycle); transform + inline-
+                // btVector3 werden direkt destroyed (`setOrigin` +
+                // `btDefaultMotionState`-Konstruktor kopieren intern).
                 const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
                 const transform = new Ammo.btTransform();
                 transform.setIdentity();
                 // Vertices sind schon in absoluten Welt-Koords → origin (0,0,0).
-                transform.setOrigin(new Ammo.btVector3(0, 0, 0));
+                const origin = new Ammo.btVector3(0, 0, 0);
+                transform.setOrigin(origin);
+                Ammo.destroy(origin);
                 const motionState = new Ammo.btDefaultMotionState(transform);
+                Ammo.destroy(transform);
                 const inertia = new Ammo.btVector3(0, 0, 0);
                 const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
                 const body = new Ammo.btRigidBody(rbInfo);
@@ -15494,6 +15500,8 @@ class AnazhRealm {
                 Ammo.destroy(inertia);
                 mesh.userData.physicsBody = body;
                 mesh.userData.physicsMesh = tmesh; // für späteres dispose
+                mesh.userData.physicsShape = shape;
+                mesh.userData.physicsMotionState = motionState;
                 // NICHT in state.rigidBodies pushen: der physics-sync-Loop
                 // würde mesh.position aus dem motionState-Origin überschreiben.
             }
@@ -17612,11 +17620,10 @@ class AnazhRealm {
             const chunk = target.entry.mesh;
             if (chunk) {
                 this.state.scene.remove(chunk);
-                const body = chunk.userData?.physicsBody;
-                if (body && this.state.physicsWorld) {
-                    this.state.physicsWorld.removeRigidBody(body);
-                    Ammo.destroy(body);
-                }
+                // V9.29 — vollständiger Cleanup via Helper (Body + Shape +
+                // MotionState + TMesh). pruneDistantChunks läuft bei jedem
+                // Spieler-Wandern; vor V9.29 leakte hier am verläufigsten.
+                this._disposeChunkPhysics(chunk);
                 this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== chunk);
                 if (chunk.geometry) chunk.geometry.dispose();
             }
@@ -25401,6 +25408,62 @@ class AnazhRealm {
             /* ignore */
         }
         obj.userData.collision = null;
+    }
+
+    // V9.29 — Heightfield-Chunk-Physik vollständig aus dem WASM-Heap räumen.
+    // Pre-V9.29-Bug (seit `ensureChunkAt` existiert): die Cleanup-Stellen
+    // (generateTerrainWithParameters/groundChunks-cleanup, pruneDistantChunks,
+    // _rebuildChunkPhysics) destroyed NUR den Body. Aber `Ammo.destroy(body)`
+    // cascadiert NICHT zu seinen `btBvhTriangleMeshShape` + `btDefaultMotionState`
+    // + `btTriangleMesh` — die leakten pro Chunk-Lifecycle-Cycle. Bei vielen
+    // Welt-Regen-Zyklen wuchs der WASM-Heap unbegrenzt → OOM (V9.28-Test fing
+    // es). Der Helper spiegelt `_disposeStaticCollision` (Inseln/Bäume/Voxel-
+    // Chunks) und das V8.26-§6.4-`wallBoxes-Cleanup`-Muster (shape +
+    // motionState separat destroyen). Drei Konsumenten teilen ihn — eine
+    // Sprache, ein Cleanup-Pfad.
+    _disposeChunkPhysics(mesh) {
+        if (!mesh || !mesh.userData || typeof Ammo === "undefined") return;
+        const ud = mesh.userData;
+        const body = ud.physicsBody;
+        if (body && this.state.physicsWorld) {
+            try {
+                this.state.physicsWorld.removeRigidBody(body);
+            } catch {
+                /* ignore — bereits entfernt oder Welt weg */
+            }
+        }
+        if (body) {
+            try {
+                Ammo.destroy(body);
+            } catch {
+                /* defensive: doppel-destroy schützen */
+            }
+            ud.physicsBody = null;
+        }
+        if (ud.physicsShape) {
+            try {
+                Ammo.destroy(ud.physicsShape);
+            } catch {
+                /* ignore */
+            }
+            ud.physicsShape = null;
+        }
+        if (ud.physicsMotionState) {
+            try {
+                Ammo.destroy(ud.physicsMotionState);
+            } catch {
+                /* ignore */
+            }
+            ud.physicsMotionState = null;
+        }
+        if (ud.physicsMesh) {
+            try {
+                Ammo.destroy(ud.physicsMesh);
+            } catch {
+                /* ignore */
+            }
+            ud.physicsMesh = null;
+        }
     }
 
     // Insel-Geometrie für DSL-Op spawn_island. V7.74: Vollkörper mit
