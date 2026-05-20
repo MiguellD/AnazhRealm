@@ -14014,6 +14014,61 @@ class AnazhRealm {
             }
         }
         const geom = new THREE.BufferGeometry();
+        // V9.41.b — Laplacian-Smooth-Pass. Surface-Nets liefert EINEN Vertex
+        // je Zelle (Auflösungs-Grenze); auf einer schrägen flachen Fläche
+        // entstehen sichtbare Treppen, weil benachbarte Zellen denselben
+        // Y-Slot teilen. V9.41-Schach-Brett-Diagonalen haben das STREIFEN-
+        // Muster gebrochen, aber die Treppen-GEOMETRIE blieb (Schöpfer-
+        // Browser-Test: „keine Änderung"). Laplacian-Smooth glättet die
+        // Vertex-Positionen iterativ über ihre topologischen Nachbarn —
+        // die Treppen werden zu sanften Schrägen. Eine Iteration mit
+        // Lambda 0.5 reicht visuell ohne sichtbare Volumen-Schrumpfung;
+        // die Normalen werden danach aus dem Dichte-Gradient an der
+        // NEUEN Vertex-Position gesampelt (V9.16-Pfad bleibt erhalten —
+        // die echte Iso-Fläche ist unverschoben, nur das Mesh-Approx).
+        if (indices.length >= 3) {
+            const vertCount = positions.length / 3;
+            const neighborSets = new Array(vertCount);
+            for (let v = 0; v < vertCount; v++) neighborSets[v] = new Set();
+            for (let t = 0; t + 2 < indices.length; t += 3) {
+                const ia = indices[t];
+                const ib = indices[t + 1];
+                const ic = indices[t + 2];
+                neighborSets[ia].add(ib);
+                neighborSets[ia].add(ic);
+                neighborSets[ib].add(ia);
+                neighborSets[ib].add(ic);
+                neighborSets[ic].add(ia);
+                neighborSets[ic].add(ib);
+            }
+            const lambda = 0.5;
+            const smoothed = new Array(positions.length);
+            for (let v = 0; v < vertCount; v++) {
+                const nbrs = neighborSets[v];
+                const cnt = nbrs.size;
+                if (cnt === 0) {
+                    smoothed[v * 3] = positions[v * 3];
+                    smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                    smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                    continue;
+                }
+                let sx = 0;
+                let sy = 0;
+                let sz = 0;
+                for (const n of nbrs) {
+                    sx += positions[n * 3];
+                    sy += positions[n * 3 + 1];
+                    sz += positions[n * 3 + 2];
+                }
+                const ax = sx / cnt;
+                const ay = sy / cnt;
+                const az = sz / cnt;
+                smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+                smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+                smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
+            }
+            for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
+        }
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
         // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der

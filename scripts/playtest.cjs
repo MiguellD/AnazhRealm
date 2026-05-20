@@ -11308,6 +11308,43 @@ function startSaveServer() {
                                 out.geomMaxEdge = maxEdge;
                                 out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
 
+                                // V9.41.b — Laplacian-Smooth: prüfe, dass die
+                                // Position eines Vertex deutlich näher am
+                                // Durchschnitt seiner Nachbarn liegt als der
+                                // Original-Vertex (Surface-Nets-Treppe). Wir
+                                // messen pro Vertex die Y-Distanz zum Nachbar-
+                                // Mittel und mitteln über alle Vertices. Pre-
+                                // V9.41.b liegt der Wert in der Größenordnung
+                                // step/2 = 0.9 (Surface-Nets-Zellen-Auflösung).
+                                // Nach 1 Iteration mit Lambda 0.5 sollte der
+                                // Wert ungefähr halbiert sein — der Vertex ist
+                                // jetzt 50% des Weges zum Nachbar-Mittel.
+                                const neighborSets = new Array(pos.count);
+                                for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
+                                for (let t = 0; t + 2 < ia.length; t += 3) {
+                                    const i0 = ia[t], i1 = ia[t + 1], i2 = ia[t + 2];
+                                    neighborSets[i0].add(i1); neighborSets[i0].add(i2);
+                                    neighborSets[i1].add(i0); neighborSets[i1].add(i2);
+                                    neighborSets[i2].add(i0); neighborSets[i2].add(i1);
+                                }
+                                let totalDev = 0;
+                                let sampledVerts = 0;
+                                for (let v = 0; v < pos.count; v++) {
+                                    const nbrs = neighborSets[v];
+                                    if (nbrs.size < 2) continue;
+                                    let sy = 0;
+                                    for (const n of nbrs) sy += pa[n * 3 + 1];
+                                    const avgY = sy / nbrs.size;
+                                    totalDev += Math.abs(pa[v * 3 + 1] - avgY);
+                                    sampledVerts++;
+                                }
+                                out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
+                                // step = 1.8 für Test-Chunk; pre-Smooth wäre
+                                // diese Mean-Dev typisch > 0.3 (steile Treppen).
+                                // Post-Smooth mit Lambda 0.5 sollte sie unter
+                                // 0.25 fallen — das ist die Härtung.
+                                out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
+
                                 // V9.41 — alternierende Diagonalen (Schach-Brett).
                                 // Quad emittiert pro Paar 6 Indizes: 2 Dreiecke.
                                 // a-c-Diagonale: indices = [a,b,c, a,c,d] →
@@ -11416,6 +11453,10 @@ function startSaveServer() {
                 check(
                     `V9.41: Quad-Diagonalen alternieren (Schach-Brett) — beide Patterns vorhanden (a-c ${voxelP1Results.diagonalAcCount}, b-d ${voxelP1Results.diagonalBdCount})`,
                     voxelP1Results.diagonalAlternates
+                );
+                check(
+                    `V9.41.b: Laplacian-Smooth glättet Voxel-Treppen — mittlere Y-Abweichung vom Nachbar-Mittel ${(voxelP1Results.smoothMeanYDev || 0).toFixed(2)} < 0.25 (step 1.8)`,
+                    voxelP1Results.smoothMeanYDevLow
                 );
                 check(
                     "V9.41: keine Diagonal-Pattern-Dominanz — beide Muster ≥ 10% des jeweils anderen",
