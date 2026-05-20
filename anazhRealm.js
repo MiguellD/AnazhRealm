@@ -29,6 +29,8 @@ class AnazhRealm {
             voxelChunks: null,
             voxelChunkGrass: null,
             voxelPopulatedChunks: null,
+            // V9.32 Phase 5d-Mini — Voxel-Wasserfälle pro Chunk.
+            voxelChunkWaterfalls: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -14541,6 +14543,11 @@ class AnazhRealm {
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
         this._populateVoxelChunkVegetation(cx, cz);
+        // V9.32 Phase 5d-Mini — Wasserfälle an steilen Voxel-Klippen.
+        // Idempotent über state.voxelChunkWaterfalls. Die Partikel landen
+        // in state.waterfalls und werden vom existierenden Animations-Loop
+        // (Zeile ~34208) animiert.
+        this._buildVoxelChunkWaterfalls(cx, cz);
         return entry;
     }
 
@@ -14556,6 +14563,7 @@ class AnazhRealm {
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
         this._disposeVoxelChunkGrass(key);
+        this._disposeVoxelChunkWaterfalls(key);
         this.state.voxelChunks.delete(key);
     }
 
@@ -14657,6 +14665,126 @@ class AnazhRealm {
             if (grass.geometry) grass.geometry.dispose();
         }
         this.state.voxelChunkGrass.delete(key);
+    }
+
+    // V9.32 Phase 5d-Mini — Wasserfälle aus der Voxel-Surface-Steilheit.
+    // Spiegelt die heightfield-Wasserfall-Heuristik aus `generateTerrain-
+    // WithParameters` (Zeile 13866+), aber für die 3D-Voxel-Welt: pro Chunk
+    // ein 6×6-Raster, an jedem Sample wird die Steilheit über die `_voxel-
+    // SurfaceY`-Differenz zu vier Nachbar-Punkten gemessen; ein steiles
+    // Voxel-Profil (≥4 m Höhen-Drop über 4 m Distanz) bekommt mit ~12 %
+    // Hash-Wahrscheinlichkeit einen Partikel-Wasserfall an seiner Oberkante.
+    // Die Partikel-Schicht ist Zeile für Zeile die Heightfield-Variante
+    // (`THREE.Points` + `velocity`-Attribut + `userData.{baseHeight, minY}`)
+    // — sie landet in `state.waterfalls`, der bestehende Animations-Loop
+    // (Zeile ~34208) animiert sie geschenkt. Pro-Chunk-Lifecycle via
+    // `state.voxelChunkWaterfalls`-Map (analog `voxelChunkGrass`), in
+    // `_disposeVoxelChunkWaterfalls` sauber abgeräumt. Eine voxel-basierte
+    // Welt hat damit ihre eigene Wasserfall-Dramatik aus dem 3D-Dichte-
+    // Feld, statt der 2D-Heightfield-Heuristik die in V9.28 deaktiviert
+    // wurde. Vision §1.3 fraktal: dieselbe Spawn-Sprache wie Gras (V9.22)
+    // + Vegetation (V9.24) — am Voxel-Chunk-Lifecycle aufgehängt.
+    _buildVoxelChunkWaterfalls(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.voxelChunkWaterfalls) this.state.voxelChunkWaterfalls = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunkWaterfalls.has(key)) return; // idempotent
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const SAMPLES = 6;
+        const step = span / SAMPLES;
+        // Deterministic-RNG (chunk-key + seed-gebunden) — zwei Spieler im
+        // Mesh sehen identische Wasserfälle an identischen Stellen.
+        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ 0xc2b2ae35) >>> 0 || 1;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const delta = 4.0; // Nachbar-Distanz für Steilheits-Messung
+        const minDrop = 4.0; // ≥4 m Höhen-Differenz über 4 m Distanz = steil
+        const spawnProbability = 0.12;
+        const created = [];
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const sx = ox + (xi + 0.5) * step;
+                const sz = oz + (zi + 0.5) * step;
+                const y0 = this._voxelSurfaceY(sx, sz);
+                if (!Number.isFinite(y0)) continue;
+                // Steilheit aus Voxel-Surface-Gradient: max Höhen-Drop zu
+                // den vier achsen-parallelen Nachbarn. Eine Klippe trifft
+                // dieselbe Stelle aus mehreren Richtungen — wir nehmen das
+                // Maximum.
+                const yE = this._voxelSurfaceY(sx + delta, sz);
+                const yW = this._voxelSurfaceY(sx - delta, sz);
+                const yN = this._voxelSurfaceY(sx, sz + delta);
+                const yS = this._voxelSurfaceY(sx, sz - delta);
+                let maxDrop = 0;
+                for (const yn of [yE, yW, yN, yS]) {
+                    if (Number.isFinite(yn) && y0 - yn > maxDrop) maxDrop = y0 - yn;
+                }
+                if (maxDrop < minDrop) continue;
+                if (rnd() > spawnProbability) continue;
+
+                // Partikel-Wasserfall — gleiche Struktur wie der Heightfield-
+                // Pfad in `generateTerrainWithParameters`. Der Fall-Stop
+                // (`minY`) ist auf den Tal-Boden gesetzt (y0 - maxDrop - 2),
+                // damit die Partikel nicht ewig ins Nichts fallen.
+                const particleCount = 50;
+                const particles = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const velocities = new Float32Array(particleCount * 3);
+                for (let p = 0; p < particleCount; p++) {
+                    positions[p * 3] = sx + (rnd() - 0.5) * 1;
+                    positions[p * 3 + 1] = y0 + (rnd() - 0.5) * 5;
+                    positions[p * 3 + 2] = sz + (rnd() - 0.5) * 1;
+                    velocities[p * 3] = 0;
+                    velocities[p * 3 + 1] = -(rnd() * 5 + 2);
+                    velocities[p * 3 + 2] = 0;
+                }
+                particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+                particles.setAttribute("velocity", new THREE.BufferAttribute(velocities, 3));
+                try {
+                    particles.computeBoundingSphere();
+                    particles.computeBoundingBox();
+                } catch {
+                    continue;
+                }
+                const mat = new THREE.PointsMaterial({
+                    color: 0x00aaff,
+                    size: 0.2,
+                    transparent: true,
+                    opacity: 0.8,
+                });
+                const wf = new THREE.Points(particles, mat);
+                wf.userData = { baseHeight: y0, minY: y0 - maxDrop - 2 };
+                this.state.scene.add(wf);
+                if (!Array.isArray(this.state.waterfalls)) this.state.waterfalls = [];
+                this.state.waterfalls.push(wf);
+                created.push(wf);
+            }
+        }
+        this.state.voxelChunkWaterfalls.set(key, created);
+    }
+
+    _disposeVoxelChunkWaterfalls(key) {
+        if (!this.state.voxelChunkWaterfalls) return;
+        const wfs = this.state.voxelChunkWaterfalls.get(key);
+        if (Array.isArray(wfs)) {
+            for (const wf of wfs) {
+                if (this.state.scene) this.state.scene.remove(wf);
+                if (wf.geometry) wf.geometry.dispose();
+                if (wf.material) wf.material.dispose();
+                if (Array.isArray(this.state.waterfalls)) {
+                    const idx = this.state.waterfalls.indexOf(wf);
+                    if (idx >= 0) this.state.waterfalls.splice(idx, 1);
+                }
+            }
+        }
+        this.state.voxelChunkWaterfalls.delete(key);
     }
 
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-

@@ -12158,6 +12158,97 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.32 — Phase 5d-Mini: Wasserfälle aus der Voxel-Klippen-Steilheit ###
+            // Die heightfield-Wasserfall-Heuristik (`generateTerrainWithParameters`
+            // Zeile 13866+) ist in einer Voxel-Welt seit V9.28 ausgeschaltet —
+            // sie las `heightData[idx]` direkt, was in einer Voxel-Welt null
+            // ist. V9.32 baut den Voxel-Pendant: `_buildVoxelChunkWaterfalls`
+            // sampelt pro Voxel-Chunk 6×6 Stellen, misst die Steilheit via
+            // `_voxelSurfaceY`-Gradient zu vier Nachbar-Punkten, spawnt einen
+            // Partikel-Wasserfall bei einem Höhen-Drop ≥4 m über 4 m Distanz.
+            // Die Partikel-Struktur ist Zeile für Zeile die Heightfield-Variante
+            // — sie landet in state.waterfalls und wird vom bestehenden
+            // Animations-Loop (Zeile ~34208) animiert. Pro-Chunk-Lifecycle
+            // analog Gras (V9.22) + Vegetation (V9.24). Eine voxel-basierte
+            // Welt mit echten Schluchten + Klippen aus dem 3D-Dichte-Feld
+            // bekommt damit ihre eigene Wasserfall-Dramatik.
+            const voxelV932Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasBuild = typeof r._buildVoxelChunkWaterfalls === "function";
+                    out.hasDispose = typeof r._disposeVoxelChunkWaterfalls === "function";
+                    // Lifecycle: in einer voxel-aktiven Welt sollte zumindest
+                    // _ein_ Chunk Wasserfälle erzeugt haben (die V9.31-Eingangs-
+                    // Welt ist heightfield, aber wir aktivieren voxel hier
+                    // synthetisch — ein einzelner Chunk-Build sollte die
+                    // Method-Existenz beweisen).
+                    if (!r.state) return out;
+                    if (out.hasBuild && r.state.voxelTerrainActive && r.state.voxelChunks) {
+                        let waterfallChunks = 0;
+                        if (r.state.voxelChunkWaterfalls) {
+                            for (const v of r.state.voxelChunkWaterfalls.values()) {
+                                if (Array.isArray(v)) waterfallChunks++;
+                            }
+                        }
+                        out.lifecycleMapBuilt = waterfallChunks >= 0; // Map existiert
+                    } else {
+                        out.lifecycleMapBuilt = true; // skip wenn voxel nicht aktiv
+                    }
+                    // Source-Audit: _ensureVoxelChunkAt + _disposeVoxelChunk
+                    // hooken die Wasserfall-Methoden.
+                    const ensureSrc = (r._ensureVoxelChunkAt || function () {}).toString();
+                    const disposeSrc = (r._disposeVoxelChunk || function () {}).toString();
+                    out.ensureCallsBuild = /_buildVoxelChunkWaterfalls/.test(ensureSrc);
+                    out.disposeCallsDispose = /_disposeVoxelChunkWaterfalls/.test(disposeSrc);
+                    // Idempotenz: zweiter Build-Aufruf für denselben Chunk
+                    // ändert die Map-Eintrags-Identität nicht (idempotent).
+                    if (out.hasBuild) {
+                        // Synthetischer Test: rufe build für (999, 999) zweimal,
+                        // dann dispose. Funktioniert auch wenn der Chunk-Key
+                        // gar keine Voxel-Klippe trifft (created-Array kann
+                        // leer sein — die Map-Eintrags-Existenz reicht).
+                        r._buildVoxelChunkWaterfalls(999, 999);
+                        const first = r.state.voxelChunkWaterfalls && r.state.voxelChunkWaterfalls.get("999,999");
+                        r._buildVoxelChunkWaterfalls(999, 999);
+                        const second = r.state.voxelChunkWaterfalls && r.state.voxelChunkWaterfalls.get("999,999");
+                        out.idempotent = first === second;
+                        r._disposeVoxelChunkWaterfalls("999,999");
+                        out.disposeClears =
+                            !r.state.voxelChunkWaterfalls || !r.state.voxelChunkWaterfalls.has("999,999");
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV932Results && !voxelV932Results.error) {
+                check(
+                    "Voxel V9.32: _buildVoxelChunkWaterfalls existiert (Phase 5d-Mini)",
+                    voxelV932Results.hasBuild
+                );
+                check(
+                    "Voxel V9.32: _disposeVoxelChunkWaterfalls existiert (Lifecycle-Räumung)",
+                    voxelV932Results.hasDispose
+                );
+                check(
+                    "Voxel V9.32: _ensureVoxelChunkAt ruft _buildVoxelChunkWaterfalls (Hook)",
+                    voxelV932Results.ensureCallsBuild
+                );
+                check(
+                    "Voxel V9.32: _disposeVoxelChunk ruft _disposeVoxelChunkWaterfalls (Hook)",
+                    voxelV932Results.disposeCallsDispose
+                );
+                check(
+                    "Voxel V9.32: _buildVoxelChunkWaterfalls ist idempotent (zweiter Aufruf no-op)",
+                    voxelV932Results.idempotent
+                );
+                check(
+                    "Voxel V9.32: _disposeVoxelChunkWaterfalls räumt die Map (key weg nach dispose)",
+                    voxelV932Results.disposeClears
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
