@@ -27,6 +27,8 @@ class AnazhRealm {
             // zum Heightfield, hinter dem Flag. Default aus.
             voxelTerrainActive: false,
             voxelChunks: null,
+            voxelChunkGrass: null,
+            voxelPopulatedChunks: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -8720,6 +8722,23 @@ class AnazhRealm {
         if (typeof m.seed !== "string" || m.seed.length === 0) {
             m.seed = "anazh-realm-seed";
         }
+        // V9.26 Phase 5c-Migrations-Flip — Schöpfer-Wahl V9.25 „alte Welten zu
+        // Voxel migrieren": eine GELADENE Welt (`!fresh`, worldId schon im
+        // Save) ohne `voxelTerrain`-Flag wird beim Laden voxel-basiert. So
+        // erbt jede alte Welt automatisch das fehlerfreie Voxel-Terrain (5b);
+        // der Schöpfer muss keine neue Welt erstellen. Die FRISCHE Eingangs-
+        // Welt (brandneuer Spieler ohne localStorage — auch der Playtest)
+        // bleibt heightfield: Lehrling-freundlich, deterministisch für die
+        // Test-Suite. `chunkDeltas` (Heightfield-Grab-Edits) gehen verloren —
+        // bewusst akzeptiert, der Schöpfer kennt den Preis.
+        if (!fresh && m.voxelTerrain !== true && m.voxelTerrain !== false) {
+            m.voxelTerrain = true;
+            if (typeof this.journalAppend === "function") {
+                this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
+                    worldId: m.worldId,
+                });
+            }
+        }
         if (fresh) {
             this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
             // Ring 8: frische Welt im Index registrieren. Reload-Migration
@@ -9057,7 +9076,7 @@ class AnazhRealm {
     // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
     // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
     // nach erfolgreichem Aufruf an.
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo", voxelTerrain = true } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -9072,6 +9091,15 @@ class AnazhRealm {
         // "host"/"guest" startet Init nach Reload automatisch Multi-User-Sync.
         if (role === "host" || role === "guest") {
             snap.worldMeta.role = role;
+        }
+        // V9.23 Phase 5a — Voxel ist der Default für neue Welten (`voxelTerrain`
+        // ist Default true; nur ein bewusstes `false`, etwa die „klassisches
+        // Heightfield"-Opt-out-Checkbox, baut noch ein Heightfield). Das Flag
+        // reist im Snapshot, `_restoreVoxelTerrain` aktiviert das Voxel-Terrain
+        // beim ersten Aufbau (das V9.13-Persistenz-Muster). Alte Welten ohne
+        // das Flag bleiben unberührt — sie behalten ihr Heightfield.
+        if (voxelTerrain) {
+            snap.worldMeta.voxelTerrain = true;
         }
         try {
             localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
@@ -9794,6 +9822,12 @@ class AnazhRealm {
             // Schluchten, Mulden) füllen sich, Hügel + Berge bleiben
             // trocken. Sichtbares Wasser ohne die Welt zu fluten.
             try {
+                // V9.25 Phase 5b — die Höhenquelle folgt der Welt: in einer
+                // Voxel-Welt das Voxel-Oberflächen-Sample, sonst das Heightfield.
+                // So sitzt der Meeresspiegel auf der WAHREN Topographie — eine
+                // heightfield-abgeleitete Wasserebene lag in den Voxel-Tälern
+                // falsch.
+                const isVoxelWorld = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
                 const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
                 const hN = new SimplexNoise(seed);
                 const cN = new SimplexNoise(seed + "-cave");
@@ -9805,8 +9839,10 @@ class AnazhRealm {
                     for (let j = 0; j < 13; j++) {
                         const sx = -170 + (340 / 12) * i;
                         const sz = -170 + (340 / 12) * j;
-                        const h = this._terrainHeightAtWorld(sx, sz, hN, st, bh, cN, vN);
-                        if (Number.isFinite(h)) heights.push(h);
+                        const h = isVoxelWorld
+                            ? this._voxelSurfaceY(sx, sz)
+                            : this._terrainHeightAtWorld(sx, sz, hN, st, bh, cN, vN);
+                        if (typeof h === "number" && Number.isFinite(h)) heights.push(h);
                     }
                 }
                 if (heights.length > 0) {
@@ -11877,13 +11913,10 @@ class AnazhRealm {
             const radius = Math.random() * spawnRadius;
             const x = Math.cos(angle) * radius;
             const z = Math.sin(angle) * radius;
-            const zIndex = Math.floor(((z + 150) / 300) * 255);
-            const xIndex = Math.floor(((x + 150) / 300) * 255);
-            const terrainHeight = this.state.groundHeightField
-                ? this.state.groundHeightField[
-                      Math.min(Math.max(zIndex, 0), 255) * 256 + Math.min(Math.max(xIndex, 0), 255)
-                  ]
-                : 0;
+            // V9.25 Phase 5b — getTerrainHeightAt ist voxel-aware: in einer
+            // Voxel-Welt liefert es die Voxel-Oberfläche, die Kreatur spawnt
+            // auf dem echten Boden statt auf der schlafenden Heightfield-Höhe.
+            const terrainHeight = this.getTerrainHeightAt(x, z);
             const emotion =
                 this.state.weather === "rainy"
                     ? Math.random() < 0.7
@@ -13970,23 +14003,47 @@ class AnazhRealm {
             // die Affinity-Spawns laufen NICHT doppelt. Bei einer frischen
             // Welt ist state.architectures leer → alle Chunks kriegen
             // ihre erste Saat.
-            this.state.populatedChunks = new Set();
-            for (const a of this.state.architectures || []) {
-                if (!a || !a.position) continue;
-                const cx = Math.floor((a.position.x + ws / 2) / cws);
-                const cz = Math.floor((a.position.z + ws / 2) / cws);
-                this.state.populatedChunks.add(`${cx},${cz}`);
-            }
-            let populatedCount = 0;
-            for (let cz = 0; cz < chunksPerSide; cz++) {
-                for (let cx = 0; cx < chunksPerSide; cx++) {
-                    populatedCount += this.populateChunkVegetation(cx, cz);
+            // V9.24 — eine voxel-basierte Welt bevölkert sich NICHT über den
+            // Heightfield-Pass: das Heightfield ruht (`_setHeightfieldDormant`),
+            // `ensureChunkAt` läuft für neue Bereiche nie, und der Heightfield-
+            // Pass würde die Strukturen auf der schlafenden Höhe absetzen. Der
+            // Voxel-Populator (`_populateVoxelChunkVegetation`) übernimmt — er
+            // läuft am Voxel-Chunk-Lifecycle und setzt jede Struktur auf den
+            // Voxel-Boden. Hier wird nur der Idempotenz-Cache aus dem Altbestand
+            // abgeleitet (Reload → kein Doppel-Spawn).
+            const isVoxelWorld = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
+            if (isVoxelWorld) {
+                const vspan = this._voxelChunkConfig().span;
+                this.state.voxelPopulatedChunks = new Set();
+                for (const a of this.state.architectures || []) {
+                    if (!a || !a.position) continue;
+                    const cx = Math.floor(a.position.x / vspan);
+                    const cz = Math.floor(a.position.z / vspan);
+                    this.state.voxelPopulatedChunks.add(`${cx},${cz}`);
                 }
+                this.log(
+                    `Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (${this.state.voxelPopulatedChunks.size} Chunks aus Altbestand abgeleitet)`,
+                    "INFO"
+                );
+            } else {
+                this.state.populatedChunks = new Set();
+                for (const a of this.state.architectures || []) {
+                    if (!a || !a.position) continue;
+                    const cx = Math.floor((a.position.x + ws / 2) / cws);
+                    const cz = Math.floor((a.position.z + ws / 2) / cws);
+                    this.state.populatedChunks.add(`${cx},${cz}`);
+                }
+                let populatedCount = 0;
+                for (let cz = 0; cz < chunksPerSide; cz++) {
+                    for (let cx = 0; cx < chunksPerSide; cx++) {
+                        populatedCount += this.populateChunkVegetation(cx, cz);
+                    }
+                }
+                this.log(
+                    `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
+                    "INFO"
+                );
             }
-            this.log(
-                `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
-                "INFO"
-            );
         } catch (e) {
             this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
         }
@@ -14021,21 +14078,11 @@ class AnazhRealm {
         if (!this.state.architectures) return;
         const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
         if (exists) return;
-        // Terrain-Höhe am Zentrum sampeln.
-        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const hN = new SimplexNoise(seed);
-        const cN = new SimplexNoise(seed + "-cave");
-        const vN = new SimplexNoise(seed + "-volcano");
-        let h0 = this._terrainHeightAtWorld(
-            0,
-            0,
-            hN,
-            this.state.terrainSteepness,
-            this.state.terrainBaseHeight,
-            cN,
-            vN
-        );
-        if (!Number.isFinite(h0)) h0 = 0;
+        // Terrain-Höhe am Zentrum sampeln. V9.25 Phase 5b — getTerrainHeightAt
+        // ist voxel-aware: die Genesis-Plattform sitzt in einer Voxel-Welt auf
+        // der Voxel-Oberfläche, nicht auf der schlafenden Heightfield-Höhe.
+        let h0 = this.getTerrainHeightAt(0, 0);
+        if (typeof h0 !== "number" || !Number.isFinite(h0)) h0 = 0;
         // Plattform 5 m über dem Terrain-Zentrum (genug Überblick, nicht
         // so hoch dass der Abstieg unangenehm wird).
         const platCenterY = h0 + 5;
@@ -14221,11 +14268,42 @@ class AnazhRealm {
         }
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        const surf = base + n.noise2D(x * 0.012, z * 0.012) * 14 + n.noise2D(x * 0.045, z * 0.045) * 4;
+        // V9.20 — Grösse + Hierarchie. Drei 2D-Oktaven statt einer mittleren:
+        // (1) eine KONTINENTALE Oktave (~1500 m Wellenlänge ≈ 35 Chunks,
+        //     Amplitude 26) — die grosse Gebirgs-Masse, die sich über viele
+        //     Chunks aufbaut; wo sie tief ist, liegt Tiefland. (2) Eine
+        //     RIDGED-Oktave (`(1−|noise|)²`) — scharfe Gebirgs-Grate +
+        //     Felswände (ridged-Noise faltet die Oberfläche zu Kämmen, kein
+        //     rundes Hügel-Blob). (3) Eine feine Detail-Oktave. Die Hierarchie
+        //     (gross → Grat → Detail) gibt der Welt Massstab.
+        const cont = n.noise2D(x * 0.0042, z * 0.0042) * 26;
+        const rN = n.noise2D(x * 0.013, z * 0.013);
+        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * 22;
+        const detail = n.noise2D(x * 0.045, z * 0.045) * 4;
+        const surf = base + cont + ranges + detail;
         let d = surf - y;
-        // 3D-Verzerrung: feines Band schnitzt Tunnel, grobes Band grosse Kammern.
+        // Oberflächen-Roughness — zwei 3D-Bänder: das feine schnitzt Crags +
+        // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
+        // Band entfernt → die Berge wurden flache Hügel ohne Überhänge; V9.19
+        // stellt beide V9.17-Bänder wieder her (der Schöpfer-Befund).
         d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7;
         d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5;
+        // Wurm-Höhlen — EIN ridged-Noise-Feld (`1 − |noise|`): sein Grat folgt
+        // der Noise-Nullfläche, einer ZUSAMMENHÄNGENDEN gewundenen Höhlen-
+        // Ebene. Carve dort, wo der Grat eine Schwelle übersteigt → begehbare,
+        // verbundene Kavernen. (V9.18 nutzte das Produkt zweier Felder → der
+        // Schnitt zerfiel in viele kleine, unzugängliche Spalten.) Eine Tiefen-
+        // Hüllkurve hält die Höhlen zwischen surf-6 (unter der Oberfläche
+        // verborgen, durch Graben zu finden) und base-28 — bei base-35 ist
+        // caveEnv beweisbar 0, der Chunk-Boden bleibt fest (V9.12-Garantie).
+        const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
+        const caveCeil = Math.max(0, Math.min(1, (surf - 6 - y) / 8));
+        const caveEnv = caveFloor * caveCeil;
+        if (caveEnv > 0) {
+            const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
+            const cave = Math.max(0, (ridge - 0.7) / 0.3);
+            d -= cave * caveEnv * 36;
+        }
         // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
         // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die
         // Edits leben in worldMeta.voxelEdits (persistiert mit der Welt).
@@ -14512,9 +14590,18 @@ class AnazhRealm {
         const dim = 24;
         const step = 1.8;
         // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
-        // ein Würfel: 40 × 1.8 = 72 m vertikal fasst das ganze ±30-m-
-        // Oberflächen-Band (sonst klafft oben/unten ein Loch).
-        return { dim, step, span: dim * step, ringRadius: 2, dimY: 40 };
+        // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
+        // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
+        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — die V9.20-Marge 8
+        // reichte nicht für ridged-Spikes weiter draussen (Sicht-Ring 4-8
+        // erreicht Chunks, in denen die Oberfläche über base+72 ragte → keine
+        // Iso-Fläche → kein Mesh → sichtbares Loch). Marge jetzt ~22.
+        // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
+        // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
+        // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
+        // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
+        const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
+        return { dim, step, span: dim * step, ringRadius, dimY: 80 };
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -14531,10 +14618,12 @@ class AnazhRealm {
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        // Das Oberflächen-Band reicht ~base±30 — der Chunk muss es ganz
-        // fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // durch). base-35 + 72 m = base+37 → volle Deckung mit Marge.
-        const oy = base - 35;
+        // Das Oberflächen-Band reicht ~base-42..base+64 — der Chunk muss es
+        // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
+        // V9.26: base-58 + 144 m = base+86 → Marge ~22 oben/unten gegen das
+        // theoretische Surface-Band base-42..base+64 (Schutz gegen ridged-
+        // Spike-Löcher am Sicht-Ring-Rand).
+        const oy = base - 58;
         // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
         // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
@@ -14553,9 +14642,27 @@ class AnazhRealm {
         mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         this.state.scene.add(mesh);
-        this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        // V9.24 — ein Mesh OHNE Kollision wäre ein Fall-durch-Loch. Liefert
+        // der Kollisions-Builder null (eine degenerierte Surface-Nets-Geometrie
+        // ohne ein einziges gültiges Dreieck — möglich an einem fast ganz
+        // festen/leeren Rand-Chunk), wird der Chunk wie ein leerer behandelt:
+        // Mesh abräumen, als {empty:true} markieren, kein erneutes Meshen.
+        if (!collisionBody) {
+            this.state.scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
         const entry = { mesh };
         this.state.voxelChunks.set(key, entry);
+        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
+        this._buildVoxelChunkGrass(cx, cz);
+        // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
+        // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
+        // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
+        this._populateVoxelChunkVegetation(cx, cz);
         return entry;
     }
 
@@ -14570,7 +14677,108 @@ class AnazhRealm {
             if (entry.mesh.geometry) entry.mesh.geometry.dispose();
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
+        this._disposeVoxelChunkGrass(key);
         this.state.voxelChunks.delete(key);
+    }
+
+    // V9.22 — die Oberflächen-Höhe des Voxel-Terrains an (x,z): die oberste
+    // Stelle, an der fester Grund (Dichte > 0) unter Luft liegt. Scannt von
+    // oben durch das Oberflächen-Band; liefert die erste Luft→Fest-Grenze
+    // (so sitzt das Gras auf der Kuppe, auch auf einem Überhang). null, wenn
+    // die Säule im Band kein festes Terrain trägt.
+    _voxelSurfaceY(x, z) {
+        const base = this.state.terrainBaseHeight || 0;
+        let prevAir = true;
+        for (let y = base + 66; y >= base - 44; y -= 1.2) {
+            const solid = this._terrainDensityAt(x, y, z) > 0;
+            if (solid && prevAir) return y;
+            prevAir = !solid;
+        }
+        return null;
+    }
+
+    // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
+    // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
+    // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
+    // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
+    // voxel-basierte Welt grünt damit wie eine Heightfield-Welt.
+    _buildVoxelChunkGrass(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.voxelChunkGrass) this.state.voxelChunkGrass = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunkGrass.has(key)) return;
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const SAMPLES = 16;
+        const step = span / SAMPLES;
+        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ 0x9e3779b9) >>> 0 || 1;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const blades = [];
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const baseX = ox + (xi + 0.5) * step;
+                const baseZ = oz + (zi + 0.5) * step;
+                const field = this.worldFieldAt(baseX, baseZ);
+                const lebendig = field ? field.lebendig : 0;
+                if (lebendig < 0.22) continue;
+                const surfY = this._voxelSurfaceY(baseX, baseZ);
+                if (surfY === null) continue;
+                const count = Math.floor(lebendig * 14 + rnd() * 2);
+                for (let k = 0; k < count; k++) {
+                    const gx = baseX + (rnd() - 0.5) * step;
+                    const gz = baseZ + (rnd() - 0.5) * step;
+                    blades.push({
+                        x: gx,
+                        y: surfY,
+                        z: gz,
+                        rot: rnd() * Math.PI * 2,
+                        scale: 0.7 + rnd() * 0.7,
+                    });
+                }
+            }
+        }
+        if (blades.length === 0) {
+            this.state.voxelChunkGrass.set(key, null);
+            return;
+        }
+        const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
+        geo.translate(0, 0.425, 0);
+        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let i = 0; i < blades.length; i++) {
+            const b = blades[i];
+            pos.set(b.x, b.y, b.z);
+            q.setFromAxisAngle(up, b.rot);
+            scl.set(b.scale, b.scale, b.scale);
+            m.compose(pos, q, scl);
+            inst.setMatrixAt(i, m);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+        inst.castShadow = false;
+        inst.receiveShadow = false;
+        this.state.scene.add(inst);
+        this.state.voxelChunkGrass.set(key, inst);
+    }
+
+    _disposeVoxelChunkGrass(key) {
+        if (!this.state.voxelChunkGrass) return;
+        const grass = this.state.voxelChunkGrass.get(key);
+        if (grass) {
+            if (this.state.scene) this.state.scene.remove(grass);
+            if (grass.geometry) grass.geometry.dispose();
+        }
+        this.state.voxelChunkGrass.delete(key);
     }
 
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
@@ -16812,6 +17020,7 @@ class AnazhRealm {
         const joinRow = document.getElementById("new-world-join-row");
         const inviteInput = document.getElementById("new-world-invite");
         const inheritInput = document.getElementById("new-world-inherit");
+        const heightfieldInput = document.getElementById("new-world-heightfield");
         const statusEl = document.getElementById("new-world-status");
         const cancelBtn = document.getElementById("new-world-cancel");
         const confirmBtn = document.getElementById("new-world-confirm");
@@ -16820,6 +17029,7 @@ class AnazhRealm {
         slugInput.value = "";
         inviteInput.value = "";
         inheritInput.checked = false;
+        if (heightfieldInput) heightfieldInput.checked = false;
         statusEl.textContent = "";
         confirmBtn.disabled = false;
         // Mode default auf solo
@@ -16854,6 +17064,9 @@ class AnazhRealm {
             const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
             const slug = slugInput.value.trim();
             const inherit = !!inheritInput.checked;
+            // V9.23 Phase 5a — Voxel ist der Default; die Checkbox ist ein
+            // Opt-out auf das klassische Heightfield.
+            const voxel = !(heightfieldInput && heightfieldInput.checked);
             confirmBtn.disabled = true;
             statusEl.textContent = "";
 
@@ -16863,6 +17076,7 @@ class AnazhRealm {
                     inheritPlayer: inherit,
                     reload: true,
                     role: "solo",
+                    voxelTerrain: voxel,
                 });
                 if (!id) statusEl.textContent = "Welt konnte nicht erschaffen werden — siehe Konsole.";
                 cleanup();
@@ -16878,6 +17092,7 @@ class AnazhRealm {
                     inheritPlayer: inherit,
                     reload: true,
                     role: "host",
+                    voxelTerrain: voxel,
                 });
                 if (!id) {
                     statusEl.textContent = "Welt konnte nicht erschaffen werden.";
@@ -25549,28 +25764,9 @@ class AnazhRealm {
         const steepness = this.state.terrainSteepness;
         const baseHeight = this.state.terrainBaseHeight;
 
-        // Bauplan-Kandidaten für Welt-Affinitäts-Spawn. Nur Naturraum-Bauwerke
-        // — Dorf/Tempel/Wasserfall bleiben Spieler-Geste. Bäume + Felsen +
-        // Geoden + Glutbrunnen sind die Streu-Bürger der Welt.
-        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
-
-        // W6.G P3 — Felsformationen sind Wahrzeichen, KEINE Streu-Bürger. Sie
-        // bekommen einen EIGENEN, seltenen Pass — sie konkurrieren NICHT im
-        // Affinitäts-Pick mit den Streu-Strukturen: ein Felsbogen ist ein
-        // Superset eines Felsblocks (dieselben Stein-Boxen + ein Aufsatz),
-        // er hätte den Felsblock in der gemeinsamen Wahl verdrängt. Der
-        // Landmark-Pass hat einen uniformen Hash-Wurf (LANDMARK_RATE) — der
-        // Affinitäts-Probe-Wert unten stammt aus SimplexNoise und ist nahe
-        // 0.5 konzentriert, als Schwelle für ein seltenes Ereignis untauglich.
-        const LANDMARK_RATE = 0.014;
-
-        // BASE_RATE × affinity² ist die Spawn-Wahrscheinlichkeit pro Sample.
-        // 0.4 × (0.3)² = 0.036 → ~2.3 Spawns pro Chunk im Mittel; bei
-        // affinity 0.6 → ~9; bei 0.9 → ~21. Natürliche Variation.
-        const BASE_RATE = 0.4;
-        const AFFINITY_FLOOR = 0.18;
-
-        const rng = this.state.worldField && this.state.worldField.rngNoise;
+        // Die Streu-/Landmark-Logik (Kandidaten, Affinitäts-Schwellen, der
+        // seltene Felsformations-Pass) lebt in `_vegetationSampleSpawn` —
+        // geteilt mit dem Voxel-Populator.
         let spawned = 0;
 
         for (let zi = 0; zi < SAMPLES; zi++) {
@@ -25589,57 +25785,101 @@ class AnazhRealm {
                 if (!Number.isFinite(height)) continue;
                 if (height < minVegHeight || height > maxVegHeight) continue;
 
-                // baseY-Kompensation: spawnArchitecture zieht 0.5 ab
-                // (kalibriert für at_player), wir kompensieren für Terrain.
                 const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                spawned += this._vegetationSampleSpawn(sampleX, sampleZ, height, seedForSpawn);
+            }
+        }
+        return spawned;
+    }
 
-                // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf.
-                // Eine Felsformation spawnt nur, wenn die Region sie trägt
-                // (felsbogen/felsturm sind dichte-getrieben → die max-Affinität
-                // passiert den Floor nur in Felsen-Regionen). WELCHE Formation
-                // — Bogen oder Turm — ist Abwechslung, kein Affinitäts-
-                // Wettstreit (Box-Substanz ist dichter als Zylinder, der Turm
-                // verlöre jede Affinitäts-Wahl): ein Hash-Münzwurf.
-                if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
-                    const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
-                    const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
-                    if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
-                        const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
-                        this.spawnArchitecture(
-                            lmName,
-                            { x: sampleX, y: height + 0.5, z: sampleZ },
-                            { seed: seedForSpawn, silent: true }
-                        );
-                        spawned++;
-                        continue; // an dieser Stelle keine zweite Struktur
-                    }
-                }
+    // V9.24 — der per-Sample-Spawn-Kern, extrahiert aus populateChunkVegetation,
+    // damit der Heightfield-Populator UND der Voxel-Populator
+    // (_populateVoxelChunkVegetation) dieselbe Affinitäts-Logik teilen — kein
+    // Parallelcode. `surfaceY` ist die Boden-Höhe an (sampleX, sampleZ): das
+    // Heightfield liefert sie aus `_terrainHeightAtWorld`, der Voxel-Boden aus
+    // `_voxelSurfaceY`. Liefert 1, wenn an dieser Stelle eine Struktur spawnte,
+    // sonst 0. baseY-Kompensation: `spawnArchitecture` zieht 0.5 ab (kalibriert
+    // für at_player), `+0.5` setzt die Struktur exakt auf den Boden.
+    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
+        // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf. Eine
+        // Felsformation spawnt nur, wenn die Region sie trägt (felsbogen/
+        // felsturm sind dichte-getrieben → die max-Affinität passiert den Floor
+        // nur in Felsen-Regionen). WELCHE Formation — Bogen oder Turm — ist
+        // Abwechslung, kein Affinitäts-Wettstreit: ein Hash-Münzwurf.
+        const LANDMARK_RATE = 0.014;
+        const BASE_RATE = 0.4;
+        const AFFINITY_FLOOR = 0.18;
+        const candidates = ["baum_eiche", "baum_kiefer", "stein_block", "kristall_geode", "glutbrunnen"];
+        const rng = this.state.worldField && this.state.worldField.rngNoise;
 
-                // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
-                let bestName = null;
-                let bestAffinity = 0;
-                for (const name of candidates) {
-                    const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
-                    if (aff > bestAffinity) {
-                        bestAffinity = aff;
-                        bestName = name;
-                    }
-                }
-                if (!bestName || bestAffinity < AFFINITY_FLOOR) continue;
-
-                // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
-                const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
-                const chance = BASE_RATE * bestAffinity * bestAffinity;
-                if (probe >= chance) continue;
-
-                // Glutbrunnen+Geoden haben part.y=0 als Bottom — die
-                // Kompensation bringt sie exakt auf den Boden.
+        if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
+            const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ);
+            const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
+            if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
+                const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
                 this.spawnArchitecture(
-                    bestName,
-                    { x: sampleX, y: height + 0.5, z: sampleZ },
+                    lmName,
+                    { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
                     { seed: seedForSpawn, silent: true }
                 );
-                spawned++;
+                return 1; // an dieser Stelle keine zweite Struktur
+            }
+        }
+
+        // Streu-Pass: beste-Affinität-Bauplan an dieser Position.
+        let bestName = null;
+        let bestAffinity = 0;
+        for (const name of candidates) {
+            const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ);
+            if (aff > bestAffinity) {
+                bestAffinity = aff;
+                bestName = name;
+            }
+        }
+        if (!bestName || bestAffinity < AFFINITY_FLOOR) return 0;
+
+        // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
+        const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
+        const chance = BASE_RATE * bestAffinity * bestAffinity;
+        if (probe >= chance) return 0;
+
+        this.spawnArchitecture(
+            bestName,
+            { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
+            { seed: seedForSpawn, silent: true }
+        );
+        return 1;
+    }
+
+    // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
+    // bekommt seine Streu-Strukturen (Wälder/Felsen/Geoden/Glutbrunnen +
+    // Felsformationen). Spiegelt populateChunkVegetation — 8×8-Sample-Raster,
+    // dieselbe Affinitäts-Logik (`_vegetationSampleSpawn`) — aber über die
+    // Voxel-Chunk-Bounds (`span`, origin-basiert) und mit `_voxelSurfaceY`
+    // statt `_terrainHeightAtWorld` als Höhenquelle (die Struktur sitzt auf
+    // dem Voxel-Boden, nicht auf dem schlafenden Heightfield). Idempotent
+    // über `state.voxelPopulatedChunks`. Am Voxel-Chunk-Lifecycle aufgehängt.
+    _populateVoxelChunkVegetation(cx, cz) {
+        if (!this.state.scene || !this.state.blueprints) return 0;
+        if (!this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks = new Set();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelPopulatedChunks.has(key)) return 0;
+        this.state.voxelPopulatedChunks.add(key);
+
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const SAMPLES = 8;
+        const step = span / SAMPLES;
+        let spawned = 0;
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const sampleX = ox + (xi + 0.5) * step;
+                const sampleZ = oz + (zi + 0.5) * step;
+                const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
+                if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
             }
         }
         return spawned;
@@ -33731,7 +33971,16 @@ class AnazhRealm {
                         // Punkt ist nah genug, dass Resets sofort spürbar
                         // sind, aber tief genug, dass eine legitime Schlucht
                         // (heights -100..+100) den Spieler nicht reset.
-                        const killPlaneY = (this.state.minHeight || -50) - 30;
+                        // V9.25 Phase 5b — der Killplane folgt der Welt. In
+                        // einer Voxel-Welt liegt der Chunk-Boden bei base-58
+                        // (V9.26); der Killplane gehört DARUNTER (base-88),
+                        // sonst würde ein Spieler in einem tiefen Voxel-Tal
+                        // resettet. Das heightfield-abgeleitete `minHeight`
+                        // kennt das Voxel-Band nicht.
+                        const killPlaneY =
+                            this.state.worldMeta && this.state.worldMeta.voxelTerrain
+                                ? (this.state.terrainBaseHeight || 0) - 88
+                                : (this.state.minHeight || -50) - 30;
                         if (scaledY < killPlaneY) {
                             const currentX = pos.x() * this.state.scaleFactor;
                             const currentZ = pos.z() * this.state.scaleFactor;
@@ -34268,6 +34517,17 @@ class AnazhRealm {
     }
 
     getTerrainHeightAt(x, z) {
+        // V9.25 Phase 5b — in einer Voxel-Welt ist die Boden-Höhe die Voxel-
+        // Oberfläche (`_voxelSurfaceY` — die oberste Fest/Luft-Grenze), NICHT
+        // das schlafende Heightfield. Jeder Konsument (Kreatur-Spawn, Wasser,
+        // Steilheit) erhält damit die wahre Höhe. `worldMeta.voxelTerrain` ist
+        // die persistente Wahrheit — gesetzt, sobald der Snapshot lädt, also
+        // auch vor `_restoreVoxelTerrain` korrekt (z. B. beim Wasser-Bau).
+        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain) {
+            const vy = this._voxelSurfaceY(x, z);
+            if (typeof vy === "number" && Number.isFinite(vy)) return vy;
+            return this.state.terrainBaseHeight || 0;
+        }
         const zIndex = Math.floor(((z + 150) / 300) * 255);
         const xIndex = Math.floor(((x + 150) / 300) * 255);
         let height =
@@ -34318,6 +34578,13 @@ class AnazhRealm {
 
     // Neue Funktion zum Finden der Oberfläche über der aktuellen Position
     findSurfaceAbove(x, currentY, z) {
+        // V9.25 Phase 5b — in einer Voxel-Welt ist die Oberfläche die Voxel-
+        // Oberfläche; der nach einem Killplane-Reset hochgesetzte Spieler
+        // landet damit auf dem echten Voxel-Boden statt auf dem Heightfield.
+        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain) {
+            const vy = this._voxelSurfaceY(x, z);
+            return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
+        }
         if (!this.state.groundHeightField) {
             this.log("Kein groundHeightField verfügbar – Fallback auf Standardhöhe 0", "ERROR");
             return 0;

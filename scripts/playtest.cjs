@@ -2949,6 +2949,21 @@ function startSaveServer() {
                     out.freshNoInheritedTools =
                         Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
 
+                    // V9.23 Phase 5a — Voxel ist der Default für neue Welten:
+                    // ein no-arg createNewWorld setzt worldMeta.voxelTerrain;
+                    // nur ein bewusstes voxelTerrain:false (die Heightfield-
+                    // Opt-out-Checkbox) lässt das Flag weg.
+                    const voxelId = r.createNewWorld({ slug: "test-voxel-welt", reload: false });
+                    const voxelSave = JSON.parse(localStorage.getItem(r.worldStorageKey(voxelId)) || "{}");
+                    out.voxelWorldFlagSet = !!(voxelSave.worldMeta && voxelSave.worldMeta.voxelTerrain === true);
+                    const classicId = r.createNewWorld({
+                        slug: "test-heightfield-welt",
+                        reload: false,
+                        voxelTerrain: false,
+                    });
+                    const classicSave = JSON.parse(localStorage.getItem(r.worldStorageKey(classicId)) || "{}");
+                    out.heightfieldOptOut = !(classicSave.worldMeta && classicSave.worldMeta.voxelTerrain === true);
+
                     // switchToWorld auf eine existierende Welt (ohne Reload):
                     // active-Pointer wandert, state bleibt (Reload würde state laden).
                     const switchOk = r.switchToWorld(newId, { reload: false });
@@ -3004,6 +3019,14 @@ function startSaveServer() {
                 check("Ring 8: Person-Übernahme transportiert eigene Tools", ring8Results.inheritCarriesOwnTools);
                 check("Ring 8: Frische Welt hat default Spieler-Seele", ring8Results.freshNoInheritedSoul);
                 check("Ring 8: Frische Welt hat leeres playerTools", ring8Results.freshNoInheritedTools);
+                check(
+                    "Voxel V9.23 Phase 5a: eine neue Welt ist per Default voxel-basiert",
+                    ring8Results.voxelWorldFlagSet
+                );
+                check(
+                    "Voxel V9.23 Phase 5a: voxelTerrain:false (Heightfield-Opt-out) lässt das Flag weg",
+                    ring8Results.heightfieldOptOut
+                );
                 check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
                 check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
                 check("Ring 8: switchToWorld auf unbekannte ID scheitert sauber", ring8Results.switchToUnknownFails);
@@ -8039,6 +8062,7 @@ function startSaveServer() {
                     out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
                     out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
                     out.inviteInputExists = !!document.getElementById("new-world-invite");
+                    out.voxelCheckboxExists = !!document.getElementById("new-world-heightfield");
                     out.hostBannerExists = !!document.getElementById("world-host-banner");
                     out.guestBannerExists = !!document.getElementById("world-guest-banner");
 
@@ -8092,6 +8116,10 @@ function startSaveServer() {
                     ring115Results.hostAnswersRequestWithSnapshot
                 );
                 check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
+                check(
+                    "Voxel V9.23 Phase 5a: #new-world-heightfield-Opt-out-Checkbox im Neue-Welt-Dialog",
+                    ring115Results.voxelCheckboxExists
+                );
                 check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
                 check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
                 check("Ring 11.5: Einladungs-Code-Input im DOM", ring115Results.inviteInputExists);
@@ -11262,20 +11290,52 @@ function startSaveServer() {
                         }
                         out.densityCanCave = foundCave;
 
-                        // V9.12 — der Voxel-Chunk (base-35 .. base+37) fasst
-                        // das ganze Oberflächen-Band: der Boden ist überall
-                        // fest, die Decke überall Luft → keine Klipp-Löcher,
-                        // durch die der Spieler fällt.
+                        // V9.12 — der Voxel-Chunk fasst das ganze Oberflächen-
+                        // Band: der Boden ist überall fest, die Decke überall
+                        // Luft → keine Klipp-Löcher. V9.26: Chunk-Bounds erhöht
+                        // auf base-58 .. base+86 (Marge ~22 gegen ridged-Spike-
+                        // Löcher am erweiterten Sicht-Ring).
                         const cBase = r.state.terrainBaseHeight || 0;
                         let floorAllSolid = true;
                         let ceilAllAir = true;
                         for (let sx = -220; sx <= 220; sx += 20) {
                             for (let sz = -220; sz <= 220; sz += 20) {
-                                if (r._terrainDensityAt(sx, cBase - 35, sz) <= 0) floorAllSolid = false;
-                                if (r._terrainDensityAt(sx, cBase + 37, sz) >= 0) ceilAllAir = false;
+                                if (r._terrainDensityAt(sx, cBase - 58, sz) <= 0) floorAllSolid = false;
+                                if (r._terrainDensityAt(sx, cBase + 86, sz) >= 0) ceilAllAir = false;
                             }
                         }
                         out.chunkContainsSurface = floorAllSolid && ceilAllAir;
+
+                        // V9.18 Phase 4 — Höhlen entstehen mit der Welt.
+                        // Über ein 3D-Raster: eine Höhlen-Zelle ist Luft, von
+                        // festem Grund 6 m darüber UND darunter umschlossen
+                        // (echte Höhle, kein offener Himmel). Es gibt viele
+                        // davon (Höhlen existieren) — aber sie sind eine
+                        // Minderheit des festen Volumens (die Welt ist nicht
+                        // hohl). Und der Boden unter dem Höhlen-Band (base-44,
+                        // unter der caveFloor-Hüllkurve) bleibt überall fest.
+                        let caveCells = 0;
+                        let solidCells = 0;
+                        let p4FloorSolid = true;
+                        for (let sx = -200; sx <= 200; sx += 25) {
+                            for (let sz = -200; sz <= 200; sz += 25) {
+                                if (r._terrainDensityAt(sx, cBase - 44, sz) <= 0) p4FloorSolid = false;
+                                for (let sy = cBase - 26; sy <= cBase + 44; sy += 5) {
+                                    const dHere = r._terrainDensityAt(sx, sy, sz);
+                                    if (dHere > 0) solidCells++;
+                                    if (
+                                        dHere < 0 &&
+                                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                                        r._terrainDensityAt(sx, sy + 6, sz) > 0
+                                    ) {
+                                        caveCells++;
+                                    }
+                                }
+                            }
+                        }
+                        out.cavesExist = caveCells >= 8;
+                        out.worldNotHollow = caveCells * 3 < solidCells;
+                        out.caveFloorSolid = p4FloorSolid;
                     }
 
                     if (out.hasChunkGeometry) {
@@ -11390,6 +11450,15 @@ function startSaveServer() {
                     "Voxel P2b-Politur: der Voxel-Chunk fasst das ganze Oberflächen-Band (Boden fest + Decke Luft — keine Klipp-Löcher)",
                     voxelP1Results.chunkContainsSurface
                 );
+                check("Voxel P4: die Wurm-Höhlen schnitzen echte Luft im Höhlen-Band", voxelP1Results.cavesExist);
+                check(
+                    "Voxel P4: die Welt ist nicht hohl (das Höhlen-Band bleibt überwiegend fest)",
+                    voxelP1Results.worldNotHollow
+                );
+                check(
+                    "Voxel P4: die Tiefen-Hüllkurve hält den Boden (base-44) unter den Höhlen fest",
+                    voxelP1Results.caveFloorSolid
+                );
                 check(
                     `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
                     voxelP1Results.geomBuilt && (voxelP1Results.geomVertexCount || 0) > 0
@@ -11478,6 +11547,96 @@ function startSaveServer() {
                         }
                         out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
 
+                        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
+                        out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
+                        out.hasVoxelSurfaceY = typeof r._voxelSurfaceY === "function";
+                        let grassEntries = 0;
+                        let grassBlades = 0;
+                        if (r.state.voxelChunkGrass) {
+                            for (const g of r.state.voxelChunkGrass.values()) {
+                                grassEntries++;
+                                if (g && g.isInstancedMesh) grassBlades += g.count;
+                            }
+                        }
+                        out.voxelGrassBuilt = grassEntries > 0;
+                        out.voxelGrassHasBlades = grassBlades > 0;
+                        // _voxelSurfaceY: liefert eine endliche Höhe, dort ist
+                        // fester Grund + knapp darüber (Scan-Schritt) Luft.
+                        const sy = r._voxelSurfaceY(12, -8);
+                        out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
+                        out.voxelSurfaceIsBoundary =
+                            out.voxelSurfaceFinite &&
+                            r._terrainDensityAt(12, sy, -8) > 0 &&
+                            r._terrainDensityAt(12, sy + 1.2, -8) <= 0;
+
+                        // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
+                        out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
+                        out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
+                        // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
+                        const ringBefore = r.state.chunkRingRadius;
+                        r.state.chunkRingRadius = 6;
+                        out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
+                        r.state.chunkRingRadius = ringBefore;
+                        // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
+                        // Aufruf für denselben Chunk spawnt nichts mehr.
+                        r._populateVoxelChunkVegetation(777, 777);
+                        out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
+                        out.voxelVegMarksChunk = !!(
+                            r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777")
+                        );
+
+                        // V9.25 Phase 5b — die Höhen-Konsumenten sind voxel-aware.
+                        // (Das Voxel-Terrain ist hier aktiv → worldMeta.voxelTerrain
+                        // gesetzt.) getTerrainHeightAt + findSurfaceAbove liefern
+                        // die Voxel-Oberfläche, nicht das schlafende Heightfield.
+                        const vsRef = r._voxelSurfaceY(10, 10);
+                        const ghVoxel = r.getTerrainHeightAt(10, 10);
+                        out.getTerrainHeightVoxelAware =
+                            typeof vsRef === "number" &&
+                            Number.isFinite(vsRef) &&
+                            typeof ghVoxel === "number" &&
+                            Math.abs(ghVoxel - vsRef) < 0.01;
+                        const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
+                        out.findSurfaceVoxelAware =
+                            typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+
+                        // V9.26 Phase 5c-Migration — eine GELADENE alte Welt
+                        // (`!fresh`) ohne voxelTerrain-Flag wird voxel-basiert;
+                        // eine explizite `voxelTerrain:false`-Welt bleibt
+                        // heightfield; eine FRISCHE Welt (`fresh`) wird NICHT
+                        // migriert (Eingangs-Welt bleibt heightfield, Lehrling-
+                        // freundlich + deterministisch für die Test-Suite).
+                        // Das Welt-Journal wird vor dem Test gesichert + danach
+                        // restored — sonst flutet der Migrations-Genesis-Eintrag
+                        // den nachfolgenden „Journal nicht überflutet"-Test.
+                        const origMeta = r.state.worldMeta;
+                        const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
+                        const origJournalSeen =
+                            r.state.worldJournal && r.state.worldJournal.seen
+                                ? Object.assign({}, r.state.worldJournal.seen)
+                                : null;
+                        // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
+                        const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
+                        r.state.worldMeta = oldMeta;
+                        r.ensureWorldMeta();
+                        out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
+                        // Explizit Heightfield-Opt-out → bleibt heightfield.
+                        const optOutMeta = {
+                            worldId: "test-opt-out",
+                            slug: "test-opt-out",
+                            bornAt: 100,
+                            seed: "test",
+                            voxelTerrain: false,
+                        };
+                        r.state.worldMeta = optOutMeta;
+                        r.ensureWorldMeta();
+                        out.migrationRespectsOptOut = optOutMeta.voxelTerrain === false;
+                        r.state.worldMeta = origMeta;
+                        if (r.state.worldJournal && origJournalEntries) {
+                            r.state.worldJournal.entries = origJournalEntries;
+                            if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
+                        }
+
                         // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
                         let anyColorAttr = false;
                         let colorMin = 1;
@@ -11522,6 +11681,7 @@ function startSaveServer() {
                         r.setVoxelTerrainActive(false);
                         out.deactivated = r.state.voxelTerrainActive === false;
                         out.voxelChunksCleared = !r.state.voxelChunks || r.state.voxelChunks.size === 0;
+                        out.voxelGrassCleared = !r.state.voxelChunkGrass || r.state.voxelChunkGrass.size === 0;
                         out.heightfieldRestored = refChunk ? refChunk.visible === true : true;
                         out.heightfieldCollisionRestored = refChunk
                             ? !(refChunk.userData && refChunk.userData._collisionDormant)
@@ -11540,7 +11700,10 @@ function startSaveServer() {
                         voxelP2bResults.hasSetActive &&
                         voxelP2bResults.hasConfig
                 );
-                check("Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)", voxelP2bResults.defaultOff);
+                check(
+                    "Voxel P2b: das Voxel-Terrain ist per Default aus (parallel, hinter dem Flag)",
+                    voxelP2bResults.defaultOff
+                );
                 check(
                     "Voxel P2b: setVoxelTerrainActive(true) füllt den Voxel-Chunk-Ring um den Spieler",
                     voxelP2bResults.activated && voxelP2bResults.ringFilled
@@ -11553,14 +11716,8 @@ function startSaveServer() {
                     "Voxel P2b: das Heightfield ruht bei aktivem Voxel-Terrain (unsichtbar + kollisionslos)",
                     voxelP2bResults.heightfieldDormant && voxelP2bResults.heightfieldCollisionDormant
                 );
-                check(
-                    "Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)",
-                    voxelP2bResults.tickBuilds
-                );
-                check(
-                    "Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks",
-                    voxelP2bResults.pruneRemovesFar
-                );
+                check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
+                check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
                 check(
                     "Voxel P2b: setVoxelTerrainActive(false) räumt alle Voxel-Chunks",
                     voxelP2bResults.deactivated && voxelP2bResults.voxelChunksCleared
@@ -11569,10 +11726,7 @@ function startSaveServer() {
                     "Voxel P2b: das Heightfield erwacht wieder (sichtbar + kollidierbar) — reversibel",
                     voxelP2bResults.heightfieldRestored && voxelP2bResults.heightfieldCollisionRestored
                 );
-                check(
-                    "Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert",
-                    voxelP2bResults.hasAttachColors
-                );
+                check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
                 check(
                     "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
                     voxelP2bResults.voxelHasFieldColors
@@ -11584,6 +11738,55 @@ function startSaveServer() {
                 check(
                     "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
                     voxelP2bResults.voxelSkirt
+                );
+                check(
+                    "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
+                    voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
+                );
+                check(
+                    "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
+                    voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
+                );
+                check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
+                check(
+                    "Voxel V9.22: der Voxel-Chunk-Ring trägt Instanced-Gras-Halme",
+                    voxelP2bResults.voxelGrassHasBlades
+                );
+                check(
+                    "Voxel V9.22: setVoxelTerrainActive(false) räumt auch das Voxel-Gras",
+                    voxelP2bResults.voxelGrassCleared
+                );
+                check(
+                    "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
+                    voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
+                );
+                check(
+                    "Voxel V9.24: der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler (chunkRingRadius)",
+                    voxelP2bResults.voxelRingFollowsSlider
+                );
+                check(
+                    "Voxel V9.24: _populateVoxelChunkVegetation ist idempotent (zweiter Aufruf → 0)",
+                    voxelP2bResults.voxelVegIdempotent
+                );
+                check(
+                    "Voxel V9.24: _populateVoxelChunkVegetation markiert den Chunk in voxelPopulatedChunks",
+                    voxelP2bResults.voxelVegMarksChunk
+                );
+                check(
+                    "Voxel V9.25 Phase 5b: getTerrainHeightAt liefert in einer Voxel-Welt die Voxel-Oberfläche",
+                    voxelP2bResults.getTerrainHeightVoxelAware
+                );
+                check(
+                    "Voxel V9.25 Phase 5b: findSurfaceAbove liefert in einer Voxel-Welt die Voxel-Oberfläche",
+                    voxelP2bResults.findSurfaceVoxelAware
+                );
+                check(
+                    "Voxel V9.26 Phase 5c: eine geladene alte Welt ohne voxelTerrain-Flag wird voxel-basiert",
+                    voxelP2bResults.migrationFlipsOldWorld
+                );
+                check(
+                    "Voxel V9.26 Phase 5c: ein explizites voxelTerrain:false (Heightfield-Opt-out) bleibt heightfield",
+                    voxelP2bResults.migrationRespectsOptOut
                 );
             }
 
@@ -11722,10 +11925,7 @@ function startSaveServer() {
                     voxelP3Results.snapshotHasEdit
                 );
                 check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
-                check(
-                    "Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde",
-                    voxelP3Results.chatCarveAddsEdit
-                );
+                check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
             }
 
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
@@ -11761,9 +11961,7 @@ function startSaveServer() {
                         // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
                         r.state.worldMeta.voxelEdits = [];
                         const dPre = r._terrainDensityAt(120, base - 33, 120);
-                        r.state.worldMeta.voxelEdits = [
-                            { x: 120, y: base - 33, z: 120, r: 12, strength: 48 },
-                        ];
+                        r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12, strength: 48 }];
                         out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
                         // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
                         // frieden — damit das V9.17-Füll-Gate frei ist.
@@ -11872,10 +12070,7 @@ function startSaveServer() {
                     "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
                     voxelP3cResults.hasConsume && voxelP3cResults.hasGate
                 );
-                check(
-                    "Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab",
-                    voxelP3cResults.consumeEnough
-                );
+                check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
                 check(
                     "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
                     voxelP3cResults.consumeTooLittle
