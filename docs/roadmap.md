@@ -827,6 +827,32 @@ Der Schöpfer-Befund nach V8.84: die Lofi-Schicht ist „noch starr, hardcoded, 
 
 ---
 
+### Voxel-Surface-Politur (V9.40+) — Schöpfer-Audit nach V9.39 (Browser-Test, 20.05.2026)
+
+Phase 5c.2.c.3 hat die heightfield-only Chunk-Pipeline vollständig zurückgebaut (V9.39). Ein Schöpfer-Browser-Test danach brachte fünf substanzielle Befunde — alle ehrlich, alle auf einer Wurzel-Ebene. Sie sind in Wellen V9.40–V9.43 eingeplant; Disziplin: vom *fühlbaren* Bug zur Politur, in disziplinierten Schritten.
+
+| # | Welle | Was | Wurzel | Aufwand | Stand |
+|---|---|---|---|---|---|
+| A | **V9.40** | (a) Maus-Voxel-Edits via P2P-Broadcast (`tryMouseBreak`/`tryMousePlace` routen durch `dslRun(["voxel_carve"/"voxel_fill", ...])` statt der DSL-Op zu umgehen — Spiegel von V8.64-confirmBuild). (b) V9.24-Symptom-Geste an der Wurzel umkehren + Async-Re-Mesh: `_remeshVoxelChunksAround` markiert Chunks dirty + ein `_tickDirtyVoxelChunks`-Pfad rebuildet ≤1 Chunk/Frame; bei null-Kollision (OOM) wird das Mesh NICHT entfernt, sondern der Edit auf das tragbare Maximum gedeckelt. | Pfad-Doppelung Maus-vs-Chat (a); V9.24-Symptom-Heilung wurde Schuld (b). | ~1-2 Sessions | 🔴 offen |
+| B | **V9.41** | Trapeze/Linien-Artefakt auf flachen Hügeln. **Lösung (in dieser Reihenfolge probieren)**: (1) alternierende Quad-Diagonalen je Zelle (Schach-Brett-Muster statt Streifen — billig, oft genug). (2) Laplacian-Smooth-Pass nach Surface-Nets (1-2 Iterationen, Iso-Fläche bleibt). (3) Falls beides nicht reicht: Dual Contouring (grosse Welle, eigene Phase). | Surface-Nets-Quad-Diagonalen — fundamental, V9.16-Dichte-Gradient-Normalen versteckten nur die Beleuchtung, nicht die Geometrie-Falte. | ~1-2 Sessions | 🔴 offen |
+| C | **V9.42** | Inseln als Voxel-Chunks vereinheitlichen — `spawnIslandAt` baut einen abgekapselten Voxel-Chunk mit eigenem Dichte-Offset + ohne Boden-Anker (fliegend). `_buildIslandCollision` ist nur noch `_buildStaticTriMeshCollision` mit `kind:"island"` — die Mesh-Pipeline ist die Voxel-Surface-Nets. Vision §1.3 fraktal: eine Sprache für alle Boden-Formen. | Inseln (V7.74) sind separate radiale-Noise-Geometrie — Vision-Inkonsistenz. | ~2-3 Sessions | 🔴 offen |
+| D | **V9.43** | Wasserfälle als vertikale Wasser-Plane mit Strömungs-Shader vereinheitlichen — eine Variante des bestehenden Gerstner-Plane-Shaders (vertikale Translation statt Wellen). `_buildVoxelChunkWaterfalls` baut diese Plane, `state.waterfalls` wird zur Plane-Sammlung. | Wasserfälle (V9.32) sind `THREE.Points`-Partikel, Wasser ist Shader-Plane — Inkonsistenz. | ~1-2 Sessions | 🔴 offen |
+| E | **V9.44 (optional)** | Bullet `btTriangleMesh`-Soft-Update statt Rebuild bei kleinen Edits — die `InternalEdgeUtility`-API erlaubt es, Vertices in-place zu ändern ohne neue Shape. Spart 90 % der WASM-Heap-Last bei dichten Edit-Sequenzen. Komplexität hoch — eigene Sub-Welle, nur wenn V9.40-Async-Rebuild nicht reicht. | Voxel-Chunk-Kollision wird bei jedem Edit komplett neu gebaut. | ~2 Sessions | 🟡 erst nach V9.40-Auswertung |
+
+**Lehren aus dem Schöpfer-Audit** (sollten in JEDE nächste Welle einfliessen):
+
+1. **Eine Symptom-Heilung wird in einer späteren Welle Schuld.** V9.24 entfernte das Voxel-Mesh bei null-Kollision (damals sinnvoll: kein Mesh ohne Kollision, sonst Fall-durch-Loch). Eine Welle später schlug OOM bei häufigen Edits zu, und der „Schutz" wurde zum „Edit löscht ganzen Chunk"-Bug. → **Disziplin**: wer eine Symptom-Geste baut, notiert ihr Verfallsdatum in `roadmap.md`, nicht nur im Code-Kommentar. Eine Symptom-Geste ist ein TODO, kein Fertig.
+
+2. **Pfad-Doppelung Maus-vs-Chat ist immer ein Sync-Loch.** Beide sind dieselbe Spieler-Geste — sie MÜSSEN durch denselben Broadcast-Anker. Der DSL-Op ist die Wurzel; ein direkter API-Call im Maus-Handler ist eine Lücke. V8.64 hatte das für Architekturen schon ehrlich gelöst — bei Voxel-Edits wurde es nicht nachgezogen. → **Disziplin**: nach JEDEM neuen DSL-Op prüfen, ob es einen Maus-Pfad gibt, der ihn umgehen könnte.
+
+3. **Vereinheitlichung ist Vision-Arbeit, nicht Cosmetik.** Inseln neben Voxel-Boden, Partikel-Wasserfälle neben Plane-Wasser — beide kosmetisch akzeptabel, brechen aber §1.3 fraktal. Der Schöpfer sieht es im Browser, der headless-Test fängt es nie. → **Disziplin**: bei jeder neuen Schicht (V9.32-Partikel-Wasserfälle) den Vision-Pfeiler §1.3 prüfen — ist das eine neue Sprache oder ein vorhandenes Muster?
+
+4. **Ein Browser-Audit fängt, was Headless nie fängt.** Trapez-Geometrie-Falten auf hellen Hügeln sind kein Test-Versagen — die Geometrie IST korrekt, sie sieht nur schlecht aus. → **Disziplin**: nach JEDER grossen Welle einen Schöpfer-Browser-Audit einfordern, BEVOR die nächste startet. Test-Pyramide: Headless prüft Mechanik, Schöpfer-Auge prüft Ästhetik.
+
+5. **Profi-Pattern lebt im Code-Audit eines reifen Voxel-Spiels.** Minecraft/Teardown/No Man's Sky lösen Chunk-Edit-Performance durch Dirty-Queue + Async-Rebuild + Geometry-only-Refresh; die Lösung steht nicht in einem Paper, sondern in ihren Open-Source-Forks (Cuberite, Voxel.js, Polkadot). → **Disziplin**: vor V9.40 einen Exploration-Pass durch erprobte Voxel-Engines, statt das Rad neu zu erfinden.
+
+---
+
 
 Alle drei Sub-Schritte in einem Commit, playtest-grün (+6 Invarianten): (1) `_lofiWorldField` → `_lofiApplyWorldTimbre` färbt die Klangfarbe (`lebendig` → Pad-Filter 750-1050 Hz, `dichte` → `bassGain` 0.40-0.56, `magieleitung` → verstimmter Oktav-Schimmer, `glut` → schärferes Hihat); (2) `_lofiNextDegree` bekommt den schwachen Welt-Feld-Bias (Gewicht 0.4 gegen Emotion 0.8 — seed-fix gemessen, dass die Emotion dominant bleibt); (3) `_lofiNearResonantArchitecture` gated die Pad-Stimmen-Dopplung — ein resonantes Bauwerk „singt mit". Synergie-Welle, kein neuer Stamm. Detail: `CLAUDE.md` V8.95.
 

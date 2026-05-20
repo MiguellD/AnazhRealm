@@ -43,6 +43,31 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **Nächste Welle nach V9.39: offen.** Phase 5c.2.c.3 ist mit V9.39 vollständig abgeschlossen — die heightfield-only Chunk-Pipeline ist zurückgebaut, die Voxel-Welt trägt alles allein. Mögliche Richtungen: **Phase 5d-vollständig** (Voxel-Welt-Wasser/Schluchten-Drama-Schicht — der V9.32-Mini ist da, ein voller Ausbau bleibt), **kleine Folge-Welle: `_attachFieldAttribute`** (V9.39 liess die Methode stehen — `_attachVoxelFieldColors` ist das lebende Voxel-Pendant; eine ehrlich kleine Dead-Code-Welle), **andere Vision-Richtung** aus den vier Testamenten (Welt-Atmen, Welt-Klang-Reichtum, Welt-Tor-Erweiterungen). Lies `CLAUDE.md` V9.39 ZUERST — der Audit-Page-Error-Trace ist die ehrliche Wurzel-Diagnose, V9.31-Lehre wieder bestätigt.
 
+---
+
+## Offene Schöpfer-Befunde nach V9.39 (Browser-Test 20.05.2026) — HIER STARTEN
+
+Der Schöpfer hat die V9.39-Welt im Browser geprüft und **fünf substanzielle Befunde** geliefert. Sie sind in `docs/roadmap.md` §3 als **Voxel-Surface-Politur (V9.40+)** mit Wellen-Plan A–E eingeplant; hier die schnelle Übersicht:
+
+| Befund | Wurzel | Welle |
+|---|---|---|
+| Chunk-Löcher beim Carve/Fill + Ruckeln (manchmal löscht ein Edit den ganzen Chunk) | V9.24-Symptom-Geste ist Schuld geworden: `_buildStaticTriMeshCollision`-OOM → null-Kollision → V9.24 entfernt das Mesh. Plus: synchroner Re-Mesh bei jedem Edit ist teuer. | **V9.40** — Async-Rebuild + V9.24-Wurzel umkehren |
+| Maus-Voxel-Edits sehen die anderen Spieler im P2P NICHT | Pfad-Doppelung: `tryMouseBreak`/`tryMousePlace` rufen `carveVoxelSphere`/`fillVoxelSphere` direkt statt `dslRun(["voxel_carve", ...])` zu nehmen. Die DSL-Op IST broadcastable — der Maus-Pfad umgeht sie. V8.64-Naht für Architekturen wurde nicht nachgezogen. | **V9.40** — Maus-Edits durch DSL-Pfad routen |
+| Trapeze/Linien auf flachen Hügeln (besonders auf hellem Schnee/Sediment) | Surface-Nets-Quad-Diagonalen — fundamentale Mesh-Falte. V9.16-Dichte-Gradient-Normalen versteckten die Beleuchtungs-Facetten, nicht die Geometrie-Faltungen. | **V9.41** — alternierende Diagonalen + Laplacian-Smooth-Pass |
+| Inseln (V7.74) wirken anders als der Voxel-Boden | Inseln sind separate radiale-Noise-Geometrie, nicht im Voxel-System. Vision §1.3 fraktal verletzt. | **V9.42** — Inseln als Voxel-Chunks vereinheitlichen |
+| Wasserfälle (V9.32) sind fliegende Partikel, Wasser ist Shader-Plane | Inkonsistenz zwischen den zwei Wasser-Geometrien. | **V9.43** — Wasserfall als vertikale Wasser-Plane |
+
+**Empfehlung für den nächsten Agenten**: starte mit **V9.40** — die zwei *fühlbaren* Bugs (Chunk-Löcher + Multi-User-Lücke). V9.41/V9.42/V9.43 sind Politur-Wellen, V9.44 (Bullet-Soft-Update) ist eine optionale Tiefen-Welle nur falls V9.40-Async-Rebuild nicht reicht.
+
+**Lehren aus dem Audit** (sollten in JEDE nächste Welle einfliessen — Detail in `docs/roadmap.md` „Voxel-Surface-Politur"):
+1. Eine Symptom-Heilung wird in einer späteren Welle Schuld → ihr Verfallsdatum in der Roadmap notieren, nicht nur im Code-Kommentar.
+2. Pfad-Doppelung Maus-vs-Chat ist immer ein Sync-Loch → der DSL-Op ist der EINE Broadcast-Anker.
+3. Vereinheitlichung ist Vision-Arbeit, nicht Cosmetik → bei jeder neuen Schicht §1.3 fraktal prüfen.
+4. Browser-Audit fängt, was Headless nie fängt → nach jeder grossen Welle einen Schöpfer-Audit einfordern.
+5. Profi-Pattern lebt im Code-Audit reifer Voxel-Spiele → vor V9.40 Exploration-Pass durch Cuberite/Voxel.js/etc.
+
+Disziplin: parallel bauen + beweisen, nie das Funktionierende brechen, ehrliche kleine Schritte vor grossen Würfen. Den Browser-Audit-Output IMMER ernst nehmen — der Stack-Trace ist die ehrliche Wurzel-Diagnose (V9.31/V9.39-Lehre, wieder bestätigt).
+
 **Davor — V9.06 (Strukturen tragen ihre Material-Farbe)**: `_buildFromBlueprint` fiel ohne explizites `part.color` auf Weiss zurück — es las nie `part.material`. Fix: fehlt `part.color`, kommt die Farbe aus dem Material. Alle material-basierten Baupläne (Bäume, Felsen, Felsbogen) tragen jetzt ihre Substanz-Farbe.
 
 **Davor — V9.05 (W6.G P4 Härtung — un-mockte Grabe-Verifikation)**: ein Schöpfer-Browser-Befund nach V9.04 — „Terrain abbauen gibt nichts, Bäume/Gebäude schon" — gegen einen grünen Playtest. Wurzel: die V9.04-Invariante MOCKTE `_raycastWorldHit` — sie bewies die Yield-Logik, nicht die un-gemockte Integration. V9.05 schliesst die Beweis-Lücke: eine neue Invariante richtet die Kamera nach unten, ruft den ECHTEN Raycast gegen echtes Terrain + `tryMouseBreak()` un-gemockt — sie yieldet Material. Der Code ist auf dem Realpfad verifiziert → der Befund war ein stale gecachter Browser-Build (githack cacht die Branch-URL; die Heilung ist die Commit-Hash-URL). Plus: der Grabe-Pfad loggt jetzt verfehlte Raycasts + volles Inventar (kein stilles Scheitern). **Lehre: ein gemockter Test beweist die Logik, nicht die Integration — widerspricht ein Schöpfer-Befund einem grünen Test, ist die Lücke fast immer das, was der Mock verbarg.** **Lies `CLAUDE.md` V9.05 ZUERST.**
