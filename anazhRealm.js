@@ -29,6 +29,8 @@ class AnazhRealm {
             voxelChunks: null,
             voxelChunkGrass: null,
             voxelPopulatedChunks: null,
+            // V9.32 Phase 5d-Mini — Voxel-Wasserfälle pro Chunk.
+            voxelChunkWaterfalls: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -8730,7 +8732,11 @@ class AnazhRealm {
         // Welt (brandneuer Spieler ohne localStorage — auch der Playtest)
         // bleibt heightfield: Lehrling-freundlich, deterministisch für die
         // Test-Suite. `chunkDeltas` (Heightfield-Grab-Edits) gehen verloren —
-        // bewusst akzeptiert, der Schöpfer kennt den Preis.
+        // bewusst akzeptiert, der Schöpfer kennt den Preis. V9.31 ehrlich
+        // zerlegt: der Eingangs-Welt-Flip braucht zuerst Ammo-Heap-Reduktion
+        // (motionState-Leck in `_disposeStaticCollision`, V9.31 geheilt) +
+        // Test-Migration der ~25 heightfield-spezifischen Invarianten —
+        // beides eigene Folgeschritte (5c.2.b + 5c.2.c).
         if (!fresh && m.voxelTerrain !== true && m.voxelTerrain !== false) {
             m.voxelTerrain = true;
             if (typeof this.journalAppend === "function") {
@@ -9445,110 +9451,6 @@ class AnazhRealm {
                 "DEBUG"
             );
             return body;
-        } catch (error) {
-            this.logError(error);
-            throw error;
-        }
-    }
-
-    addTerrainPhysics(heightData, width, depth, minHeight, maxHeight, chunkX = 0, chunkZ = 0) {
-        try {
-            if (!this.state.physicsWorld) {
-                throw new Error("Physik-Welt nicht initialisiert – initPhysics() muss zuerst aufgerufen werden");
-            }
-            if (!heightData || heightData.length !== width * depth) {
-                throw new Error(
-                    `Ungültige Höhendaten: Erwartet ${width * depth}, erhalten ${heightData ? heightData.length : "undefined"}`
-                );
-            }
-
-            const chunkSize = this.state.chunkSize;
-            const startX = chunkX * chunkSize;
-            const startZ = chunkZ * chunkSize;
-            const endX = Math.min(startX + chunkSize, width);
-            const endZ = Math.min(startZ + chunkSize, depth);
-
-            // Terrain-Shape erstellen
-            const heightfieldData = new Float32Array(chunkSize * chunkSize);
-            let localMinHeight = Infinity;
-            let localMaxHeight = -Infinity;
-
-            for (let z = startZ; z < endZ; z++) {
-                for (let x = startX; x < endX; x++) {
-                    const idx = z * width + x;
-                    const localIdx = (z - startZ) * chunkSize + (x - startX);
-                    let height = heightData[idx];
-                    if (isNaN(height) || !isFinite(height)) {
-                        this.log(
-                            `Ungültiger Höhenwert in Chunk (${chunkX}, ${chunkZ}) bei (${x}, ${z}): ${height}. Setze auf 0.`,
-                            "ERROR"
-                        );
-                        height = 0;
-                    }
-                    heightfieldData[localIdx] = height;
-                    localMinHeight = Math.min(localMinHeight, height);
-                    localMaxHeight = Math.max(localMaxHeight, height);
-                }
-            }
-
-            // Physik-Shape für das Terrain erstellen
-            const heightScale = 1.0;
-            const minHeightScaled = localMinHeight * heightScale;
-            const maxHeightScaled = localMaxHeight * heightScale;
-            const heightfieldShape = new Ammo.btHeightfieldTerrainShape(
-                chunkSize, // width
-                chunkSize, // depth
-                heightfieldData, // height data
-                heightScale, // height scale
-                minHeightScaled, // min height
-                maxHeightScaled, // max height
-                1, // up axis (Y)
-                "PHY_FLOAT", // data type
-                false // flip quad edges
-            );
-
-            // Skalierung anpassen
-            const scaleX = 300 / (width - 1);
-            const scaleZ = 300 / (depth - 1);
-            heightfieldShape.setLocalScaling(
-                new Ammo.btVector3(scaleX / this.state.scaleFactor, 1, scaleZ / this.state.scaleFactor)
-            );
-
-            // Physik-Körper für das Terrain erstellen
-            const transform = new Ammo.btTransform();
-            transform.setIdentity();
-            const offsetX = (startX / (width - 1)) * 300 - 150;
-            const offsetZ = (startZ / (depth - 1)) * 300 - 150;
-            transform.setOrigin(
-                new Ammo.btVector3(
-                    offsetX / this.state.scaleFactor,
-                    (localMinHeight + localMaxHeight) / 2 / this.state.scaleFactor,
-                    offsetZ / this.state.scaleFactor
-                )
-            );
-
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            const localInertia = new Ammo.btVector3(0, 0, 0);
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, heightfieldShape, localInertia);
-            const body = new Ammo.btRigidBody(rbInfo);
-            this.state.physicsWorld.addRigidBody(body);
-
-            // Chunk aus der chunkMap holen und Physik-Körper zuweisen
-            const chunkKey = `${chunkX},${chunkZ}`;
-            const chunkData = this.state.chunkMap.get(chunkKey);
-            if (chunkData && chunkData.mesh) {
-                chunkData.mesh.userData.physicsBody = body;
-                this.state.rigidBodies.push(chunkData.mesh);
-                this.log(
-                    `Terrain-Physik für Chunk (${chunkX}, ${chunkZ}) hinzugefügt: Höhe zwischen ${localMinHeight.toFixed(2)} und ${localMaxHeight.toFixed(2)}`
-                );
-            } else {
-                this.log(
-                    `Warnung: Chunk (${chunkX}, ${chunkZ}) nicht in chunkMap gefunden – Physik-Körper nicht zugewiesen`,
-                    "WARNING"
-                );
-                Ammo.destroy(body);
-            }
         } catch (error) {
             this.logError(error);
             throw error;
@@ -12612,7 +12514,12 @@ class AnazhRealm {
         // Frustum-Culling und wechselt jeden Frame – früher führte das zu einer
         // Death-Spiral, sobald der Spieler so guckte, dass alle Chunks off-screen
         // waren: Welt regen → Spieler bei (0,50,0) → fällt → 1s Worldgen → wieder.
-        if (!this.state.groundChunks || this.state.groundChunks.length === 0) {
+        // V9.31: voxel-aware — in einer Voxel-Welt sind groundChunks LEGITIM leer
+        // (V9.27 überspringt den Heightfield-Chunk-Build), der Voxel-Streaming-
+        // Ring trägt den Boden. Der Boden-Fehlt-Pfad gilt nur für Heightfield-
+        // Welten (`voxelTerrainActive === false`).
+        const voxelActive = this.state.voxelTerrainActive === true;
+        if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
             this.recordWeakness("Boden fehlt");
             this.log("Selbstanalyse: Boden fehlt – Erzeuge neuen Boden...");
             this.generateNewWorld();
@@ -13650,8 +13557,9 @@ class AnazhRealm {
         // spätere Erweiterungen. Damit haben initial UND extension Chunks
         // exakt dasselbe Welt-Grid (chunkWorldSize=37.5, vertexStep=1.171875)
         // und die Naht zwischen ihnen ist nicht mehr 0.15 Welt-Einheiten
-        // versetzt. Das alte generateChunk + globale btHeightfieldTerrainShape
-        // sind dadurch obsolet und werden in einem späteren Cleanup entfernt.
+        // versetzt. V9.30: die alten generateChunk + addTerrainPhysics +
+        // globale btHeightfieldTerrainShape sind als nachweislich tote
+        // Methoden entfernt (Phase 5c.2.a der Heightfield-Code-Entfernung).
         this.state.chunkMap = new Map();
         this.state.chunkSize = CHUNK_SIZE;
         this.state.chunkWidth = WIDTH;
@@ -14173,103 +14081,6 @@ class AnazhRealm {
         }
         this.log(`Genesis-Plattform erstellt bei y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`);
     }
-    // ### Chunk-Generierung ### V7.66
-    generateChunk(chunkX, chunkZ, heightData, width, depth, material) {
-        // ### Konstanten ###
-        const CHUNK_SIZE = this.state.chunkSize;
-        const WORLD_SIZE = 300;
-
-        // ### Chunk-Grenzen mit Überlappung ###
-        const startX = chunkX * CHUNK_SIZE;
-        const startZ = chunkZ * CHUNK_SIZE;
-        const endX = Math.min(startX + CHUNK_SIZE + 1, width); // Überlappung um 1 Vertex
-        const endZ = Math.min(startZ + CHUNK_SIZE + 1, depth); // Überlappung um 1 Vertex
-        const chunkWidth = endX - startX;
-        const chunkDepth = endZ - startZ;
-
-        if (chunkWidth <= 0 || chunkDepth <= 0) {
-            this.log(`Ungültige Chunk-Größe bei (${chunkX}, ${chunkZ}): ${chunkWidth}x${chunkDepth}`, "ERROR");
-            return;
-        }
-
-        // ### Geometrie erstellen ###
-        const geometry = new THREE.BufferGeometry();
-        const vertices = new Float32Array(chunkWidth * chunkDepth * 3);
-        const indices = [];
-        const uvs = new Float32Array(chunkWidth * chunkDepth * 2);
-
-        // ### Vertices und UVs generieren ###
-        for (let z = startZ; z < endZ; z++) {
-            for (let x = startX; x < endX; x++) {
-                const idx = (z - startZ) * chunkWidth + (x - startX);
-                const worldX = (x / (width - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                const worldZ = (z / (depth - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                const height = heightData[z * width + x];
-                vertices[idx * 3] = worldX;
-                vertices[idx * 3 + 1] = Number.isFinite(height) ? height : 0;
-                vertices[idx * 3 + 2] = worldZ;
-                uvs[idx * 2] = (x - startX) / (chunkWidth - 1);
-                uvs[idx * 2 + 1] = (z - startZ) / (chunkDepth - 1);
-            }
-        }
-
-        // ### Indices für Dreiecke ###
-        for (let z = 0; z < chunkDepth - 1; z++) {
-            for (let x = 0; x < chunkWidth - 1; x++) {
-                const a = z * chunkWidth + x;
-                const b = z * chunkWidth + (x + 1);
-                const c = (z + 1) * chunkWidth + x;
-                const d = (z + 1) * chunkWidth + (x + 1);
-                indices.push(a, b, d, a, d, c);
-            }
-        }
-
-        // ### Geometrie setzen und validieren ###
-        geometry.setIndex(indices);
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-        // V8.28 6.G4.b B — Welt-Affinität pro Vertex (Terrain-Shader-Farbe)
-        this._attachFieldAttribute(geometry);
-        geometry.computeVertexNormals();
-
-        const positions = geometry.attributes.position.array;
-        for (let i = 0; i < positions.length; i++) {
-            if (!Number.isFinite(positions[i])) {
-                this.log(`Ungültiger Vertex in Chunk (${chunkX}, ${chunkZ}) bei Index ${i}: ${positions[i]}`, "ERROR");
-                positions[i] = 0;
-            }
-        }
-        geometry.attributes.position.needsUpdate = true;
-
-        try {
-            geometry.computeBoundingSphere();
-            geometry.computeBoundingBox();
-        } catch (e) {
-            this.log(`Bounding-Fehler in Chunk (${chunkX}, ${chunkZ}): ${e.message}`, "ERROR");
-            return;
-        }
-
-        // ### Chunk-Mesh ###
-        const chunk = new THREE.Mesh(geometry, material);
-        chunk.position.set(0, 0, 0); // Weltkoordinaten in Vertices, keine Verschiebung nötig
-        chunk.castShadow = true;
-        chunk.receiveShadow = true;
-        chunk.visible = true;
-
-        this.state.scene.add(chunk);
-        this.state.groundChunks.push(chunk);
-        this.state.chunkMap.set(`${chunkX},${chunkZ}`, { mesh: chunk, heightData: heightData.slice() });
-        this.log(`Chunk (${chunkX}, ${chunkZ}) generiert: ${chunkWidth}x${chunkDepth}`, "DEBUG");
-
-        // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
-        // - Überlappung der Vertices (+1) an den Rändern sorgt für nahtlose Übergänge.
-        // - Weltkoordinaten und konsistente Noise-Generierung bleiben erhalten.
-        // - Vertices an Chunkgrenzen sind durch Weltkoordinaten exakt synchronisiert.
-        // - Keine Lücken mehr, da die Noise-Generierung konsistent ist und die Indizes korrekt verbinden.
-        // - Höhenabgleich entfernt, da Weltkoordinaten in Noise Übergänge sichern.
-        // - Gebirge erstrecken sich natürlich über Chunks durch konsistente Noise.
-        // - Keine Öffnungen, da Vertices exakt an Chunk-Grenzen liegen.
-    }
 
     // ### Terrain-Erweiterung ### V7.42
     // Zentrale Höhen-Formel. Wird sowohl vom initialen generateTerrainWithParameters
@@ -14732,6 +14543,11 @@ class AnazhRealm {
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
         this._populateVoxelChunkVegetation(cx, cz);
+        // V9.32 Phase 5d-Mini — Wasserfälle an steilen Voxel-Klippen.
+        // Idempotent über state.voxelChunkWaterfalls. Die Partikel landen
+        // in state.waterfalls und werden vom existierenden Animations-Loop
+        // (Zeile ~34208) animiert.
+        this._buildVoxelChunkWaterfalls(cx, cz);
         return entry;
     }
 
@@ -14747,6 +14563,7 @@ class AnazhRealm {
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
         this._disposeVoxelChunkGrass(key);
+        this._disposeVoxelChunkWaterfalls(key);
         this.state.voxelChunks.delete(key);
     }
 
@@ -14848,6 +14665,126 @@ class AnazhRealm {
             if (grass.geometry) grass.geometry.dispose();
         }
         this.state.voxelChunkGrass.delete(key);
+    }
+
+    // V9.32 Phase 5d-Mini — Wasserfälle aus der Voxel-Surface-Steilheit.
+    // Spiegelt die heightfield-Wasserfall-Heuristik aus `generateTerrain-
+    // WithParameters` (Zeile 13866+), aber für die 3D-Voxel-Welt: pro Chunk
+    // ein 6×6-Raster, an jedem Sample wird die Steilheit über die `_voxel-
+    // SurfaceY`-Differenz zu vier Nachbar-Punkten gemessen; ein steiles
+    // Voxel-Profil (≥4 m Höhen-Drop über 4 m Distanz) bekommt mit ~12 %
+    // Hash-Wahrscheinlichkeit einen Partikel-Wasserfall an seiner Oberkante.
+    // Die Partikel-Schicht ist Zeile für Zeile die Heightfield-Variante
+    // (`THREE.Points` + `velocity`-Attribut + `userData.{baseHeight, minY}`)
+    // — sie landet in `state.waterfalls`, der bestehende Animations-Loop
+    // (Zeile ~34208) animiert sie geschenkt. Pro-Chunk-Lifecycle via
+    // `state.voxelChunkWaterfalls`-Map (analog `voxelChunkGrass`), in
+    // `_disposeVoxelChunkWaterfalls` sauber abgeräumt. Eine voxel-basierte
+    // Welt hat damit ihre eigene Wasserfall-Dramatik aus dem 3D-Dichte-
+    // Feld, statt der 2D-Heightfield-Heuristik die in V9.28 deaktiviert
+    // wurde. Vision §1.3 fraktal: dieselbe Spawn-Sprache wie Gras (V9.22)
+    // + Vegetation (V9.24) — am Voxel-Chunk-Lifecycle aufgehängt.
+    _buildVoxelChunkWaterfalls(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.voxelChunkWaterfalls) this.state.voxelChunkWaterfalls = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunkWaterfalls.has(key)) return; // idempotent
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const SAMPLES = 6;
+        const step = span / SAMPLES;
+        // Deterministic-RNG (chunk-key + seed-gebunden) — zwei Spieler im
+        // Mesh sehen identische Wasserfälle an identischen Stellen.
+        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ 0xc2b2ae35) >>> 0 || 1;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const delta = 4.0; // Nachbar-Distanz für Steilheits-Messung
+        const minDrop = 4.0; // ≥4 m Höhen-Differenz über 4 m Distanz = steil
+        const spawnProbability = 0.12;
+        const created = [];
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const sx = ox + (xi + 0.5) * step;
+                const sz = oz + (zi + 0.5) * step;
+                const y0 = this._voxelSurfaceY(sx, sz);
+                if (!Number.isFinite(y0)) continue;
+                // Steilheit aus Voxel-Surface-Gradient: max Höhen-Drop zu
+                // den vier achsen-parallelen Nachbarn. Eine Klippe trifft
+                // dieselbe Stelle aus mehreren Richtungen — wir nehmen das
+                // Maximum.
+                const yE = this._voxelSurfaceY(sx + delta, sz);
+                const yW = this._voxelSurfaceY(sx - delta, sz);
+                const yN = this._voxelSurfaceY(sx, sz + delta);
+                const yS = this._voxelSurfaceY(sx, sz - delta);
+                let maxDrop = 0;
+                for (const yn of [yE, yW, yN, yS]) {
+                    if (Number.isFinite(yn) && y0 - yn > maxDrop) maxDrop = y0 - yn;
+                }
+                if (maxDrop < minDrop) continue;
+                if (rnd() > spawnProbability) continue;
+
+                // Partikel-Wasserfall — gleiche Struktur wie der Heightfield-
+                // Pfad in `generateTerrainWithParameters`. Der Fall-Stop
+                // (`minY`) ist auf den Tal-Boden gesetzt (y0 - maxDrop - 2),
+                // damit die Partikel nicht ewig ins Nichts fallen.
+                const particleCount = 50;
+                const particles = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const velocities = new Float32Array(particleCount * 3);
+                for (let p = 0; p < particleCount; p++) {
+                    positions[p * 3] = sx + (rnd() - 0.5) * 1;
+                    positions[p * 3 + 1] = y0 + (rnd() - 0.5) * 5;
+                    positions[p * 3 + 2] = sz + (rnd() - 0.5) * 1;
+                    velocities[p * 3] = 0;
+                    velocities[p * 3 + 1] = -(rnd() * 5 + 2);
+                    velocities[p * 3 + 2] = 0;
+                }
+                particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+                particles.setAttribute("velocity", new THREE.BufferAttribute(velocities, 3));
+                try {
+                    particles.computeBoundingSphere();
+                    particles.computeBoundingBox();
+                } catch {
+                    continue;
+                }
+                const mat = new THREE.PointsMaterial({
+                    color: 0x00aaff,
+                    size: 0.2,
+                    transparent: true,
+                    opacity: 0.8,
+                });
+                const wf = new THREE.Points(particles, mat);
+                wf.userData = { baseHeight: y0, minY: y0 - maxDrop - 2 };
+                this.state.scene.add(wf);
+                if (!Array.isArray(this.state.waterfalls)) this.state.waterfalls = [];
+                this.state.waterfalls.push(wf);
+                created.push(wf);
+            }
+        }
+        this.state.voxelChunkWaterfalls.set(key, created);
+    }
+
+    _disposeVoxelChunkWaterfalls(key) {
+        if (!this.state.voxelChunkWaterfalls) return;
+        const wfs = this.state.voxelChunkWaterfalls.get(key);
+        if (Array.isArray(wfs)) {
+            for (const wf of wfs) {
+                if (this.state.scene) this.state.scene.remove(wf);
+                if (wf.geometry) wf.geometry.dispose();
+                if (wf.material) wf.material.dispose();
+                if (Array.isArray(this.state.waterfalls)) {
+                    const idx = this.state.waterfalls.indexOf(wf);
+                    if (idx >= 0) this.state.waterfalls.splice(idx, 1);
+                }
+            }
+        }
+        this.state.voxelChunkWaterfalls.delete(key);
     }
 
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
@@ -15387,8 +15324,7 @@ class AnazhRealm {
             }
         }
 
-        // Mesh inline bauen (parallel zur Logik in `generateChunk`, aber mit
-        // chunk-lokalen Indices und korrektem Welt-Offset).
+        // Mesh inline bauen (chunk-lokale Indices, korrektes Welt-Offset).
         const geometry = new THREE.BufferGeometry();
         const vertices = new Float32Array(VTX * VTX * 3);
         const uvs = new Float32Array(VTX * VTX * 2);
@@ -25369,7 +25305,12 @@ class AnazhRealm {
             Ammo.destroy(inertia);
             Ammo.destroy(origin);
             Ammo.destroy(transform);
-            mesh.userData.collision = { body, shape, tmesh, kind };
+            // V9.31 — motionState mitspeichern, sonst leakt er bei
+            // _disposeStaticCollision (Ammo.destroy(body) cascadiert nicht zu
+            // seinen Auxiliars, V8.26-§6.4-Muster). Pre-V9.31-Bug seit V9.08:
+            // mit 81 Voxel-Chunks initial × mehreren Welt-Regens summierte
+            // sich das zu OOM (`_buildStaticTriMeshCollision: Aborted(OOM)`).
+            mesh.userData.collision = { body, shape, tmesh, motionState, kind };
             return body;
         } catch (err) {
             this.log(`_buildStaticTriMeshCollision: ${err.message}`, "ERROR");
@@ -25404,6 +25345,14 @@ class AnazhRealm {
         }
         try {
             if (c.tmesh) Ammo.destroy(c.tmesh);
+        } catch {
+            /* ignore */
+        }
+        // V9.31 — motionState muss explizit destroyed werden; Ammo.destroy(body)
+        // cascadiert nicht (V8.26-§6.4-Muster). Pre-V9.31-Bug: 81 voxel-chunks
+        // × Test-Welt-Regens haben den Ammo-Heap ausgeschöpft.
+        try {
+            if (c.motionState) Ammo.destroy(c.motionState);
         } catch {
             /* ignore */
         }
@@ -33958,8 +33907,11 @@ class AnazhRealm {
             this.p2pTick(performance.now());
 
             // ### Bodenprüfung ###
+            // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
+            // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
-                if (!this.state.groundChunks || this.state.groundChunks.length === 0) {
+                const voxelActive = this.state.voxelTerrainActive === true;
+                if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
                     this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
                     this.generateNewWorld();
                 }

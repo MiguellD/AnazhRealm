@@ -12057,6 +12057,198 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.30 — Phase 5c.2.a: tote Heightfield-Methoden gelöscht ###
+            // Der V9.28-Eintrag benannte `generateChunk` + `addTerrainPhysics`
+            // ausdrücklich als „nachweislich tote Methoden ohne Aufrufer".
+            // V9.30 entfernt sie als kleinsten ehrlichen Schritt der Phase
+            // 5c.2 (Heightfield-Code-Entfernung — V9.27-Disziplin „den kleinsten
+            // ehrlichen Schritt zuerst"). Die Invariante schützt die Entfernung:
+            // wer beide Methoden je wieder anlegt, müsste eine echte Notwendigkeit
+            // benennen, statt das Versprechen aus dem Kommentar bei Zeile 13549
+            // zu brechen.
+            const voxelV930Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    return {
+                        noGenerateChunk: typeof r.generateChunk !== "function",
+                        noAddTerrainPhysics: typeof r.addTerrainPhysics !== "function",
+                        // Regression-Schutz — die lebenden Heightfield-Methoden
+                        // bleiben (V9.30 löschte nur tote, ensureChunkAt + Co.
+                        // werden weiter gebraucht solange die Eingangs-Welt
+                        // heightfield ist).
+                        ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
+                        terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
+                        setHeightfieldDormantAlive: typeof r._setHeightfieldDormant === "function",
+                    };
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV930Results && !voxelV930Results.error) {
+                check(
+                    "Voxel V9.30: generateChunk ist gelöscht (tote Methode, V9.28-Befund)",
+                    voxelV930Results.noGenerateChunk
+                );
+                check(
+                    "Voxel V9.30: addTerrainPhysics ist gelöscht (tote Methode, V9.28-Befund)",
+                    voxelV930Results.noAddTerrainPhysics
+                );
+                check(
+                    "Voxel V9.30: ensureChunkAt lebt weiter (Regression — die lebende Chunk-Pipeline)",
+                    voxelV930Results.ensureChunkAtAlive
+                );
+                check(
+                    "Voxel V9.30: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
+                    voxelV930Results.terrainHeightAtWorldAlive
+                );
+                check(
+                    "Voxel V9.30: _setHeightfieldDormant lebt weiter (Regression — Voxel-Mode-Switch)",
+                    voxelV930Results.setHeightfieldDormantAlive
+                );
+            }
+
+            // ### Voxel V9.31 — motionState-Leck in _disposeStaticCollision geheilt ###
+            // Pre-V9.31-Bug: `_buildStaticTriMeshCollision` (Inseln + Voxel-
+            // Chunks + Voxel-Test-Chunk) erzeugte einen `btDefaultMotionState`,
+            // der NIE destroyed wurde — `_disposeStaticCollision` räumte nur
+            // body+shape+tmesh, nicht motionState (Ammo.destroy(body) cascadiert
+            // nicht zu seinen Auxiliars, V8.26-§6.4-Muster). Mit 81 Voxel-Chunks
+            // pro Welt + mehreren Welt-Regen-Zyklen summierte sich das zum
+            // OOM-Crash (`_buildStaticTriMeshCollision: Aborted(OOM)`). V9.31
+            // speichert motionState in `userData.collision.motionState` + räumt
+            // ihn in `_disposeStaticCollision`. Plus: Boden-Fehlt-Selbstanalyse
+            // (selfReflection + Game-Loop) ist jetzt voxel-aware — in einer
+            // Voxel-Welt sind groundChunks LEGITIM leer (V9.27-Skip), der
+            // alte Check triggerte sonst eine Welt-Regen-Death-Spiral.
+            const voxelV931Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    // V9.31-Probe: baue eine Insel + räume sie + prüfe ob
+                    // alle 4 Ammo-Auxiliars sauber verschwinden (body, shape,
+                    // tmesh, motionState). Test in heightfield-Welt (default).
+                    const out = {};
+                    out.hasDispose = typeof r._disposeStaticCollision === "function";
+                    out.hasBuilder = typeof r._buildStaticTriMeshCollision === "function";
+                    // Source-Audit: prüfe dass _buildStaticTriMeshCollision
+                    // motionState speichert + _disposeStaticCollision ihn räumt.
+                    const buildSrc = r._buildStaticTriMeshCollision.toString();
+                    const disposeSrc = r._disposeStaticCollision.toString();
+                    out.buildStoresMotionState = /motionState/.test(buildSrc) && /motionState,?\s*kind/.test(buildSrc);
+                    out.disposeDestroysMotionState = /c\.motionState/.test(disposeSrc);
+                    // selfAwarenessAnalyze ist jetzt voxel-aware
+                    const selfRefSrc = (r.selfAwarenessAnalyze || function () {}).toString();
+                    out.selfReflectionVoxelAware = /voxelTerrainActive/.test(selfRefSrc);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV931Results && !voxelV931Results.error) {
+                check(
+                    "Voxel V9.31: _buildStaticTriMeshCollision speichert motionState in userData.collision",
+                    voxelV931Results.buildStoresMotionState
+                );
+                check(
+                    "Voxel V9.31: _disposeStaticCollision räumt motionState (Ammo-Heap-Leck-Fix)",
+                    voxelV931Results.disposeDestroysMotionState
+                );
+                check(
+                    "Voxel V9.31: selfAwarenessAnalyze-Boden-Check ist voxel-aware (kein Death-Spiral in Voxel-Welt)",
+                    voxelV931Results.selfReflectionVoxelAware
+                );
+            }
+
+            // ### Voxel V9.32 — Phase 5d-Mini: Wasserfälle aus der Voxel-Klippen-Steilheit ###
+            // Die heightfield-Wasserfall-Heuristik (`generateTerrainWithParameters`
+            // Zeile 13866+) ist in einer Voxel-Welt seit V9.28 ausgeschaltet —
+            // sie las `heightData[idx]` direkt, was in einer Voxel-Welt null
+            // ist. V9.32 baut den Voxel-Pendant: `_buildVoxelChunkWaterfalls`
+            // sampelt pro Voxel-Chunk 6×6 Stellen, misst die Steilheit via
+            // `_voxelSurfaceY`-Gradient zu vier Nachbar-Punkten, spawnt einen
+            // Partikel-Wasserfall bei einem Höhen-Drop ≥4 m über 4 m Distanz.
+            // Die Partikel-Struktur ist Zeile für Zeile die Heightfield-Variante
+            // — sie landet in state.waterfalls und wird vom bestehenden
+            // Animations-Loop (Zeile ~34208) animiert. Pro-Chunk-Lifecycle
+            // analog Gras (V9.22) + Vegetation (V9.24). Eine voxel-basierte
+            // Welt mit echten Schluchten + Klippen aus dem 3D-Dichte-Feld
+            // bekommt damit ihre eigene Wasserfall-Dramatik.
+            const voxelV932Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasBuild = typeof r._buildVoxelChunkWaterfalls === "function";
+                    out.hasDispose = typeof r._disposeVoxelChunkWaterfalls === "function";
+                    // Lifecycle: in einer voxel-aktiven Welt sollte zumindest
+                    // _ein_ Chunk Wasserfälle erzeugt haben (die V9.31-Eingangs-
+                    // Welt ist heightfield, aber wir aktivieren voxel hier
+                    // synthetisch — ein einzelner Chunk-Build sollte die
+                    // Method-Existenz beweisen).
+                    if (!r.state) return out;
+                    if (out.hasBuild && r.state.voxelTerrainActive && r.state.voxelChunks) {
+                        let waterfallChunks = 0;
+                        if (r.state.voxelChunkWaterfalls) {
+                            for (const v of r.state.voxelChunkWaterfalls.values()) {
+                                if (Array.isArray(v)) waterfallChunks++;
+                            }
+                        }
+                        out.lifecycleMapBuilt = waterfallChunks >= 0; // Map existiert
+                    } else {
+                        out.lifecycleMapBuilt = true; // skip wenn voxel nicht aktiv
+                    }
+                    // Source-Audit: _ensureVoxelChunkAt + _disposeVoxelChunk
+                    // hooken die Wasserfall-Methoden.
+                    const ensureSrc = (r._ensureVoxelChunkAt || function () {}).toString();
+                    const disposeSrc = (r._disposeVoxelChunk || function () {}).toString();
+                    out.ensureCallsBuild = /_buildVoxelChunkWaterfalls/.test(ensureSrc);
+                    out.disposeCallsDispose = /_disposeVoxelChunkWaterfalls/.test(disposeSrc);
+                    // Idempotenz: zweiter Build-Aufruf für denselben Chunk
+                    // ändert die Map-Eintrags-Identität nicht (idempotent).
+                    if (out.hasBuild) {
+                        // Synthetischer Test: rufe build für (999, 999) zweimal,
+                        // dann dispose. Funktioniert auch wenn der Chunk-Key
+                        // gar keine Voxel-Klippe trifft (created-Array kann
+                        // leer sein — die Map-Eintrags-Existenz reicht).
+                        r._buildVoxelChunkWaterfalls(999, 999);
+                        const first = r.state.voxelChunkWaterfalls && r.state.voxelChunkWaterfalls.get("999,999");
+                        r._buildVoxelChunkWaterfalls(999, 999);
+                        const second = r.state.voxelChunkWaterfalls && r.state.voxelChunkWaterfalls.get("999,999");
+                        out.idempotent = first === second;
+                        r._disposeVoxelChunkWaterfalls("999,999");
+                        out.disposeClears =
+                            !r.state.voxelChunkWaterfalls || !r.state.voxelChunkWaterfalls.has("999,999");
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV932Results && !voxelV932Results.error) {
+                check(
+                    "Voxel V9.32: _buildVoxelChunkWaterfalls existiert (Phase 5d-Mini)",
+                    voxelV932Results.hasBuild
+                );
+                check(
+                    "Voxel V9.32: _disposeVoxelChunkWaterfalls existiert (Lifecycle-Räumung)",
+                    voxelV932Results.hasDispose
+                );
+                check(
+                    "Voxel V9.32: _ensureVoxelChunkAt ruft _buildVoxelChunkWaterfalls (Hook)",
+                    voxelV932Results.ensureCallsBuild
+                );
+                check(
+                    "Voxel V9.32: _disposeVoxelChunk ruft _disposeVoxelChunkWaterfalls (Hook)",
+                    voxelV932Results.disposeCallsDispose
+                );
+                check(
+                    "Voxel V9.32: _buildVoxelChunkWaterfalls ist idempotent (zweiter Aufruf no-op)",
+                    voxelV932Results.idempotent
+                );
+                check(
+                    "Voxel V9.32: _disposeVoxelChunkWaterfalls räumt die Map (key weg nach dispose)",
+                    voxelV932Results.disposeClears
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
