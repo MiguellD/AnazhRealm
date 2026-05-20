@@ -41,6 +41,7 @@ class AnazhRealm {
             chunkSize: 16,
             chunkWidth: 300,
             chunkMap: new Map(),
+            chunkGrass: new Map(),
             creatures: [],
             creatureEmotions: [],
             creatureAnimationTime: 0,
@@ -8724,22 +8725,23 @@ class AnazhRealm {
         if (typeof m.seed !== "string" || m.seed.length === 0) {
             m.seed = "anazh-realm-seed";
         }
-        // V9.26 Phase 5c-Migrations-Flip — Schöpfer-Wahl V9.25 „alte Welten zu
-        // Voxel migrieren": eine GELADENE Welt (`!fresh`, worldId schon im
-        // Save) ohne `voxelTerrain`-Flag wird beim Laden voxel-basiert. So
-        // erbt jede alte Welt automatisch das fehlerfreie Voxel-Terrain (5b);
-        // der Schöpfer muss keine neue Welt erstellen. Die FRISCHE Eingangs-
-        // Welt (brandneuer Spieler ohne localStorage — auch der Playtest)
-        // bleibt heightfield: Lehrling-freundlich, deterministisch für die
-        // Test-Suite. `chunkDeltas` (Heightfield-Grab-Edits) gehen verloren —
-        // bewusst akzeptiert, der Schöpfer kennt den Preis. V9.31 ehrlich
-        // zerlegt: der Eingangs-Welt-Flip braucht zuerst Ammo-Heap-Reduktion
-        // (motionState-Leck in `_disposeStaticCollision`, V9.31 geheilt) +
-        // Test-Migration der ~25 heightfield-spezifischen Invarianten —
-        // beides eigene Folgeschritte (5c.2.b + 5c.2.c).
-        if (!fresh && m.voxelTerrain !== true && m.voxelTerrain !== false) {
+        // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
+        // Flip — der Voxel-Boden ist die kanonische Form. Schöpfer-Wahl V9.25
+        // („alte Welten zu Voxel migrieren") wird mit V9.33 vollendet: BEIDE
+        // Pfade — eine GELADENE alte Welt (`!fresh`, worldId schon im Save)
+        // UND die FRISCHE Eingangs-Welt (brandneuer Spieler ohne localStorage,
+        // auch der Playtest) — werden voxel-basiert, sobald `voxelTerrain`
+        // nicht explizit gesetzt ist. Eine explizite `voxelTerrain:false`-Welt
+        // (Heightfield-Opt-out via Dialog-Checkbox, V9.23) bleibt heightfield.
+        // V9.31 reduzierte den Heap-Druck (motionState-Leck in `_dispose-
+        // StaticCollision` geheilt), V9.33 zieht den Flip nach. Der Migrations-
+        // Journal-Eintrag erscheint nur bei `!fresh` (eine geladene alte Welt
+        // verdichtet sich beim Laden); die fresh-Eingangs-Welt schreibt nur
+        // „Ich erwache als <slug>" (kein zweiter Genesis-Eintrag fürs Voxel-
+        // Sein — es ist die Norm, kein Ereignis).
+        if (m.voxelTerrain !== true && m.voxelTerrain !== false) {
             m.voxelTerrain = true;
-            if (typeof this.journalAppend === "function") {
+            if (!fresh && typeof this.journalAppend === "function") {
                 this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
                     worldId: m.worldId,
                 });
@@ -9098,15 +9100,15 @@ class AnazhRealm {
         if (role === "host" || role === "guest") {
             snap.worldMeta.role = role;
         }
-        // V9.23 Phase 5a — Voxel ist der Default für neue Welten (`voxelTerrain`
-        // ist Default true; nur ein bewusstes `false`, etwa die „klassisches
-        // Heightfield"-Opt-out-Checkbox, baut noch ein Heightfield). Das Flag
-        // reist im Snapshot, `_restoreVoxelTerrain` aktiviert das Voxel-Terrain
-        // beim ersten Aufbau (das V9.13-Persistenz-Muster). Alte Welten ohne
-        // das Flag bleiben unberührt — sie behalten ihr Heightfield.
-        if (voxelTerrain) {
-            snap.worldMeta.voxelTerrain = true;
-        }
+        // V9.23 Phase 5a + V9.33 Phase 5c.2.b — Voxel ist der Default für neue
+        // Welten; nur ein bewusstes `voxelTerrain:false` (die „klassisches
+        // Heightfield"-Opt-out-Checkbox) baut noch ein Heightfield. Wichtig:
+        // wir setzen das Flag IMMER explizit (true ODER false). Sonst trägt
+        // `..._buildEmptyWorldSnapshot`'s `...this.state.worldMeta`-Spread
+        // den `voxelTerrain:true`-Wert der laufenden Voxel-Eingangs-Welt
+        // (V9.33-Flip) in eine Opt-out-Welt — der Schöpfer würde Heightfield
+        // wählen und still Voxel bekommen.
+        snap.worldMeta.voxelTerrain = voxelTerrain === true;
         try {
             localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
         } catch (err) {
@@ -13156,6 +13158,16 @@ class AnazhRealm {
                 this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== chunk);
             });
             this.state.groundChunks = [];
+            // V9.33 — chunkMap ebenfalls leeren. Vor V9.33 wurde nur
+            // groundChunks geleert; chunkMap behielt die alten Einträge mit
+            // jetzt-disposed Bodies. Nach dem Eingangs-Welt-Flip wurde das
+            // sichtbar: extension-Test-Chunks (ensureChunkAt-direkt) plus
+            // World-Regen = Ghost-Einträge in chunkMap, die spätere voxel-
+            // Tests verwirrten. Symmetrie zu groundChunks: beide werden
+            // beim Welt-Regen gleichermaßen geleert.
+            if (this.state.chunkMap) {
+                this.state.chunkMap.clear();
+            }
             this.log("Alte Chunks entfernt");
         }
         if (this.state.floatingIslands) {
@@ -15486,6 +15498,16 @@ class AnazhRealm {
                 "DEBUG"
             );
             return false;
+        }
+        // V9.33 — voxelTerrainActive (Laufzeit) mit worldMeta.voxelTerrain
+        // (persistente Intent) synchronisieren VOR der Regen-Generierung.
+        // Beim V9.27-Test-Muster (Flag wechseln + generateNewWorld) wurden
+        // sonst Voxel-Chunks akkumuliert (Flag heightfield, Chunks lebten
+        // weiter) — der Ammo-Heap füllte sich über die Test-Welt-Regens hinweg.
+        // setVoxelTerrainActive räumt die Voxel-Chunks sauber wenn nötig.
+        const targetVoxel = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
+        if (typeof this.setVoxelTerrainActive === "function" && this.state.voxelTerrainActive !== targetVoxel) {
+            this.setVoxelTerrainActive(targetVoxel, { persist: false });
         }
         this.state.lastWorldgen = now;
         this.state.worldgenInFlight = true;
@@ -25265,11 +25287,27 @@ class AnazhRealm {
         const sf = this.state.scaleFactor || 1;
         const verts = posAttr.array;
         const indices = idx.array;
+        // V9.33 — Partial-Build-Leak-Heilung: jede Ammo-Allokation wird in
+        // `partial` getrackt, bei einer OOM auf halbem Weg werden ALLE
+        // schon-allokierten Objekte sauber destroyed. Vor V9.33 leakte
+        // jeder catch-Pfad seine bis-dahin allokierten Objekte (tmesh,
+        // shape, transform, origin, motionState, inertia, rbInfo) —
+        // jeder partial-Fehler füllte den Ammo-Heap weiter → der nächste
+        // Build noch wahrscheinlicher OOM → Snowball-Effekt. V9.33-Fix:
+        // ein lokales Array trackt alles, ein finally-Block räumt bei
+        // Erfolg ODER Fehlschlag mit klarer Semantik (im Erfolgsfall
+        // bleiben body/shape/tmesh/motionState — sie wandern in userData).
+        const partial = [];
+        let body = null;
         try {
             const tmesh = new Ammo.btTriangleMesh(true, true);
+            partial.push(tmesh);
             const v0 = new Ammo.btVector3(0, 0, 0);
+            partial.push(v0);
             const v1 = new Ammo.btVector3(0, 0, 0);
+            partial.push(v1);
             const v2 = new Ammo.btVector3(0, 0, 0);
+            partial.push(v2);
             let added = 0;
             for (let i = 0; i + 2 < indices.length; i += 3) {
                 const ai = indices[i] * 3;
@@ -25282,39 +25320,85 @@ class AnazhRealm {
                 tmesh.addTriangle(v0, v1, v2);
                 added++;
             }
+            // v0/v1/v2 werden HIER aus dem partial-Array genommen (manuell
+            // destroyed). Sonst räumt sie das finally bei Erfolg — was zu
+            // doppel-destroy führen würde.
+            const i0 = partial.indexOf(v0);
+            if (i0 >= 0) partial.splice(i0, 1);
+            const i1 = partial.indexOf(v1);
+            if (i1 >= 0) partial.splice(i1, 1);
+            const i2 = partial.indexOf(v2);
+            if (i2 >= 0) partial.splice(i2, 1);
             Ammo.destroy(v0);
             Ammo.destroy(v1);
             Ammo.destroy(v2);
             if (added === 0) {
+                // tmesh aus partial nehmen + destroy
+                const it = partial.indexOf(tmesh);
+                if (it >= 0) partial.splice(it, 1);
                 Ammo.destroy(tmesh);
                 return null;
             }
             const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
+            partial.push(shape);
             const transform = new Ammo.btTransform();
+            partial.push(transform);
             transform.setIdentity();
             const p = mesh.position;
             const origin = new Ammo.btVector3(p.x / sf, p.y / sf, p.z / sf);
+            partial.push(origin);
             transform.setOrigin(origin);
             const motionState = new Ammo.btDefaultMotionState(transform);
+            partial.push(motionState);
             const inertia = new Ammo.btVector3(0, 0, 0);
+            partial.push(inertia);
             const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
-            const body = new Ammo.btRigidBody(rbInfo);
+            partial.push(rbInfo);
+            body = new Ammo.btRigidBody(rbInfo);
+            partial.push(body);
             body.setFriction(friction);
             this.state.physicsWorld.addRigidBody(body);
-            Ammo.destroy(rbInfo);
-            Ammo.destroy(inertia);
-            Ammo.destroy(origin);
-            Ammo.destroy(transform);
+            // Erfolg — die behaltenen Objekte (body, shape, tmesh, motionState)
+            // landen in userData; die transienten (rbInfo, inertia, origin,
+            // transform) werden hier destroyed. partial.splice räumt sie aus
+            // der Cleanup-Liste damit das finally sie nicht nochmal destroyed.
+            const keep = new Set([body, shape, tmesh, motionState]);
+            for (let i = partial.length - 1; i >= 0; i--) {
+                const obj = partial[i];
+                if (!keep.has(obj)) {
+                    partial.splice(i, 1);
+                    try {
+                        Ammo.destroy(obj);
+                    } catch {
+                        /* defensive */
+                    }
+                }
+            }
+            // partial enthält jetzt NUR die zu behaltenden Objekte — sie
+            // werden im finally NICHT destroyed (siehe `body !== null`-Gate).
             // V9.31 — motionState mitspeichern, sonst leakt er bei
-            // _disposeStaticCollision (Ammo.destroy(body) cascadiert nicht zu
-            // seinen Auxiliars, V8.26-§6.4-Muster). Pre-V9.31-Bug seit V9.08:
-            // mit 81 Voxel-Chunks initial × mehreren Welt-Regens summierte
-            // sich das zu OOM (`_buildStaticTriMeshCollision: Aborted(OOM)`).
+            // _disposeStaticCollision (Ammo.destroy(body) cascadiert nicht
+            // zu seinen Auxiliars, V8.26-§6.4-Muster).
             mesh.userData.collision = { body, shape, tmesh, motionState, kind };
             return body;
         } catch (err) {
             this.log(`_buildStaticTriMeshCollision: ${err.message}`, "ERROR");
             return null;
+        } finally {
+            // V9.33 — Partial-Build-Cleanup: bei Erfolg ist `partial` leer
+            // (alles wandert in userData oder wurde transient destroyed);
+            // bei OOM/Fehler räumt das finally alle bis-dahin allokierten
+            // Ammo-Objekte. Jeder Destroy in try/catch (doppel-destroy darf
+            // nicht werfen, der Loop muss weiterlaufen).
+            if (body === null) {
+                for (const obj of partial) {
+                    try {
+                        Ammo.destroy(obj);
+                    } catch {
+                        /* defensive */
+                    }
+                }
+            }
         }
     }
 
