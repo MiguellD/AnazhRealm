@@ -2965,10 +2965,11 @@ function startSaveServer() {
                     out.freshNoInheritedTools =
                         Array.isArray(freshSave.playerTools) && freshSave.playerTools.length === 0;
 
-                    // V9.23 Phase 5a — Voxel ist der Default für neue Welten:
-                    // ein no-arg createNewWorld setzt worldMeta.voxelTerrain;
-                    // nur ein bewusstes voxelTerrain:false (die Heightfield-
-                    // Opt-out-Checkbox) lässt das Flag weg.
+                    // V9.23 Phase 5a + V9.35 Phase 5c.2.c.2 — Voxel ist permanent
+                    // + irreversibel; ein no-arg createNewWorld setzt worldMeta.
+                    // voxelTerrain=true. Der V9.23-Heightfield-Opt-out ist tot —
+                    // auch ein explizites voxelTerrain:false-Argument wird vom
+                    // V9.35-Pfad ignoriert (Parameter entfernt + Sanitizer-Zwang).
                     const voxelId = r.createNewWorld({ slug: "test-voxel-welt", reload: false });
                     const voxelSave = JSON.parse(localStorage.getItem(r.worldStorageKey(voxelId)) || "{}");
                     out.voxelWorldFlagSet = !!(voxelSave.worldMeta && voxelSave.worldMeta.voxelTerrain === true);
@@ -2978,7 +2979,7 @@ function startSaveServer() {
                         voxelTerrain: false,
                     });
                     const classicSave = JSON.parse(localStorage.getItem(r.worldStorageKey(classicId)) || "{}");
-                    out.heightfieldOptOut = !(classicSave.worldMeta && classicSave.worldMeta.voxelTerrain === true);
+                    out.optOutForcedToVoxel = !!(classicSave.worldMeta && classicSave.worldMeta.voxelTerrain === true);
 
                     // switchToWorld auf eine existierende Welt (ohne Reload):
                     // active-Pointer wandert, state bleibt (Reload würde state laden).
@@ -3040,8 +3041,8 @@ function startSaveServer() {
                     ring8Results.voxelWorldFlagSet
                 );
                 check(
-                    "Voxel V9.23 Phase 5a: voxelTerrain:false (Heightfield-Opt-out) lässt das Flag weg",
-                    ring8Results.heightfieldOptOut
+                    "Voxel V9.35 Phase 5c.2.c.2: voxelTerrain:false-Argument wird ignoriert (Opt-out ist tot, immer Voxel)",
+                    ring8Results.optOutForcedToVoxel
                 );
                 check("Ring 8: switchToWorld liefert true", ring8Results.switchReturnedTrue);
                 check("Ring 8: Aktiv-Pointer nach switchToWorld korrekt", ring8Results.activePointerAfterSwitch);
@@ -3915,224 +3916,146 @@ function startSaveServer() {
                 check("Ring 10.1: 'Rezepte holen'-Button im Welt-Picker", recipeResults.uiHasRecipesBtn);
             }
 
-            // ### Ring 10.5 — Welt-Modifizierbarkeit (pro-Chunk DSL-Delta) ###
-            // Datenmodell: state.worldMeta.chunkDeltas mit Op-Liste pro
-            // Chunk-Key. modify_terrain schreibt Op + applied immediately.
-            // Chunk-Unload + Re-Ensure repliert. Discrimination-Test stellt
-            // sicher, dass die Höhe wirklich messbar unterschiedlich ist.
-            const ring105Results = await page
+            // ### Voxel V9.36 Phase 5c.2.c.3.a — modify_terrain stirbt, voxel_carve/_fill leben ###
+            // Die Ring-10.5-Heightfield-Mod-Schicht ist tot: `modify_terrain`-
+            // DSL-Op + 6 Helpers (`_chunksTouchedByDisc`, `_appendChunkDeltaOp`,
+            // `_sanitizeChunkDeltas`, `_applyModifyOpToChunk`, `_rebuildChunk-
+            // Physics`, `applyChunkDelta`) + `chunkDeltas`-Feld + CHUNK_DELTA_
+            // OPS_CAP gelöscht. Die Welt-Mod wirkt jetzt durch zwei broadcast-
+            // bare DSL-Ops im 3D-Voxel-Feld (V9.14/V9.15). Die Chat-Patterns
+            // `grabe loch`/`hebe hügel` rufen die neuen Ops mit der Spieler-
+            // Position embedded. Im `CREATURE_PROPOSED_OPS`-Whitelist ist
+            // `modify_terrain` durch `voxel_carve`+`voxel_fill` ersetzt.
+            const voxelV936Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
-                    if (!r) return null;
+                    if (!r || !r.state) return null;
                     const out = {};
 
-                    out.hasChunkDeltas =
-                        r.state.worldMeta &&
-                        r.state.worldMeta.chunkDeltas &&
-                        typeof r.state.worldMeta.chunkDeltas === "object";
-                    out.capStaticExists = r.constructor && r.constructor.CHUNK_DELTA_OPS_CAP === 100;
-                    out.helpersExist =
-                        typeof r._chunksTouchedByDisc === "function" &&
-                        typeof r._appendChunkDeltaOp === "function" &&
-                        typeof r._applyModifyOpToChunk === "function" &&
-                        typeof r._rebuildChunkPhysics === "function" &&
-                        typeof r._sanitizeChunkDeltas === "function" &&
-                        typeof r.applyChunkDelta === "function";
-                    out.dslOpRegistered = typeof r.dslEffects.modify_terrain === "function";
+                    // (1) Die alte modify_terrain-Schicht ist GELÖSCHT.
+                    out.noModifyTerrainDslOp = typeof r.dslEffects.modify_terrain !== "function";
+                    out.noChunksTouchedByDisc = typeof r._chunksTouchedByDisc !== "function";
+                    out.noAppendChunkDeltaOp = typeof r._appendChunkDeltaOp !== "function";
+                    out.noSanitizeChunkDeltas = typeof r._sanitizeChunkDeltas !== "function";
+                    out.noApplyModifyOpToChunk = typeof r._applyModifyOpToChunk !== "function";
+                    out.noRebuildChunkPhysics = typeof r._rebuildChunkPhysics !== "function";
+                    out.noApplyChunkDelta = typeof r.applyChunkDelta !== "function";
+                    out.noChunkDeltaOpsCap = typeof r.constructor.CHUNK_DELTA_OPS_CAP === "undefined";
+                    out.noChunkDeltasField = !("chunkDeltas" in (r.state.worldMeta || {}));
 
-                    const chatParseDig = r.parseChatToDsl("grabe loch");
-                    const chatParseHill = r.parseChatToDsl("hebe hügel");
-                    out.chatDig =
-                        chatParseDig &&
-                        Array.isArray(chatParseDig.program) &&
-                        chatParseDig.program[0] === "modify_terrain" &&
-                        chatParseDig.program[4] === -3;
-                    out.chatHill =
-                        chatParseHill &&
-                        Array.isArray(chatParseHill.program) &&
-                        chatParseHill.program[0] === "modify_terrain" &&
-                        chatParseHill.program[4] === 4;
+                    // (2) Die neuen voxel_carve/voxel_fill-DSL-Ops leben.
+                    out.voxelCarveOpRegistered = typeof r.dslEffects.voxel_carve === "function";
+                    out.voxelFillOpRegistered = typeof r.dslEffects.voxel_fill === "function";
 
-                    // Frische Welt für isolierten Test, damit andere Tests
-                    // nicht durch hinterlassene Deltas verschmutzt werden.
-                    const wId = r.createNewWorld({ slug: "ring105-test", inheritPlayer: false, reload: false });
-                    out.createdFreshWorld = !!wId;
-                    const wSave = JSON.parse(localStorage.getItem(r.worldStorageKey(wId)));
-                    out.freshSchema = wSave.worldMeta.schemaVersion === "10.5-chunk-delta-v1";
-                    out.freshDeltasEmpty =
-                        wSave.worldMeta.chunkDeltas && Object.keys(wSave.worldMeta.chunkDeltas).length === 0;
+                    // (3) Chat-Patterns sind auf die neuen Ops umgeroutet.
+                    const chatDig = r.parseChatToDsl("grabe loch");
+                    const chatHill = r.parseChatToDsl("hebe hügel");
+                    out.chatDigRoutesToVoxelCarve =
+                        chatDig && Array.isArray(chatDig.program) && chatDig.program[0] === "voxel_carve";
+                    out.chatHillRoutesToVoxelFill =
+                        chatHill && Array.isArray(chatHill.program) && chatHill.program[0] === "voxel_fill";
+                    out.chatDigEmbedsPlayerPosition =
+                        chatDig &&
+                        Array.isArray(chatDig.program) &&
+                        Number.isFinite(chatDig.program[1]) &&
+                        Number.isFinite(chatDig.program[2]) &&
+                        Number.isFinite(chatDig.program[3]);
 
-                    // Test der Disc-Berechnung. Position (0,0,0) mit r=4 sollte
-                    // den Chunk (4,4) treffen (worldSize/2=150, chunkWorldSize=37.5,
-                    // (-4+150)/37.5 = 3.89, also Chunk 3+4).
-                    const touched = r._chunksTouchedByDisc(0, 0, 4);
-                    out.discReturnsArray = Array.isArray(touched) && touched.length >= 1;
-                    out.discKeysValidFormat = touched.every((k) => /^-?\d+,-?\d+$/.test(k));
+                    // (4) DSL-Op voxel_carve schnitzt echt — der Edit landet in
+                    // worldMeta.voxelEdits. Frieden-Modus damit Edit-Gate
+                    // (V9.17) den Fill-Pfad nicht abweist.
+                    const oldMode = r.getGameMode ? r.getGameMode() : "frieden";
+                    r.setGameMode("frieden");
+                    if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
+                    r.state.worldMeta.voxelEdits = [];
+                    r.dslRun(["voxel_carve", 0, 50, 0, 3], { source: "playtest" });
+                    out.voxelCarveAddsEdit =
+                        r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode !== "fill";
+                    // voxel_fill addiert einen mode:"fill"-Edit
+                    r.state.worldMeta.voxelEdits = [];
+                    r.dslRun(["voxel_fill", 0, 50, 0, 3], { source: "playtest" });
+                    out.voxelFillAddsEdit =
+                        r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
+                    // Invalid pos (NaN) → kein Edit + invalid-Log
+                    const before = r.state.worldMeta.voxelEdits.length;
+                    const invalidResult = r.dslRun(["voxel_carve", NaN, 0, 0, 3], { source: "playtest" });
+                    out.voxelCarveRejectsInvalidPos =
+                        r.state.worldMeta.voxelEdits.length === before &&
+                        invalidResult.log &&
+                        invalidResult.log.some((l) => l.event === "voxel_carve_invalid_pos");
+                    r.setGameMode(oldMode);
+                    r.state.worldMeta.voxelEdits = [];
 
-                    // Append-Op direkt — Cap-Verhalten testen
-                    const testKey = "999,999";
-                    delete r.state.worldMeta.chunkDeltas[testKey];
-                    for (let i = 0; i < 105; i++) {
-                        r._appendChunkDeltaOp(testKey, { type: "modify_terrain", x: 0, z: 0, r: 1, dh: 0, at: i });
-                    }
-                    out.capEnforced = r.state.worldMeta.chunkDeltas[testKey].ops.length === 100;
-                    out.capFifoOldestDropped = r.state.worldMeta.chunkDeltas[testKey].ops[0].at === 5;
-                    delete r.state.worldMeta.chunkDeltas[testKey];
+                    // (5) describeProgram kennt die neuen Ops.
+                    const dCarve = r.describeProgram && r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
+                    const dFill = r.describeProgram && r.describeProgram(["voxel_fill", 1, 2, 3, 4]);
+                    out.describeCarve = typeof dCarve === "string" && /schnitzt|Voxel/i.test(dCarve);
+                    out.describeFill = typeof dFill === "string" && /schüttet|auf/i.test(dFill);
 
-                    // Sanitize-Test: ungültige Einträge werden verworfen
-                    r.state.worldMeta.chunkDeltas = {
-                        "1,1": { ops: [{ type: "modify_terrain", x: 1, z: 2, r: 3, dh: 4, at: 100 }] },
-                        "bad-key": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
-                        "2,2": { ops: [{ type: "fake_op", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
-                        "3,3": { ops: [{ type: "modify_terrain", x: NaN, z: 0, r: 1, dh: 1, at: 1 }] },
-                        "4,4": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 99, dh: 1, at: 1 }] },
-                        "5,5": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 999, at: 1 }] },
-                        "6,6": { ops: [{ type: "modify_terrain", x: 0, z: 0, r: 1, dh: 1, at: 1 }] },
-                    };
-                    r._sanitizeChunkDeltas();
-                    const cleanKeys = Object.keys(r.state.worldMeta.chunkDeltas).sort();
-                    out.sanitizeKeepsValid = cleanKeys.includes("1,1") && cleanKeys.includes("6,6");
-                    out.sanitizeDropsBadKey = !cleanKeys.includes("bad-key");
-                    out.sanitizeDropsFakeOp = !cleanKeys.includes("2,2");
-                    out.sanitizeDropsNanCoord = !cleanKeys.includes("3,3");
-                    out.sanitizeDropsBigRadius = !cleanKeys.includes("4,4");
-                    out.sanitizeDropsBigDh = !cleanKeys.includes("5,5");
+                    // (6) CREATURE_PROPOSED_OPS-Whitelist trägt voxel_carve+
+                    // voxel_fill statt modify_terrain.
+                    const proposed = r.constructor.CREATURE_PROPOSED_OPS;
+                    out.creatureProposedHasVoxelOps =
+                        proposed && proposed.has("voxel_carve") && proposed.has("voxel_fill");
+                    out.creatureProposedNoModifyTerrain = proposed && !proposed.has("modify_terrain");
 
-                    // Reset auf saubere Map für den Discrimination-Test
-                    r.state.worldMeta.chunkDeltas = {};
-
-                    // Discrimination: Höhe an einer Position VOR und NACH
-                    // modify muss messbar unterschiedlich sein. Wir nehmen
-                    // EINEN beliebigen geladenen Chunk und modifizieren an
-                    // dessen Welt-Mittelpunkt mit großem Radius, sodass die
-                    // Chunk-Mitte (midIdx) sicher in der Scheibe liegt.
-                    const VTX = r.state.chunkSize + 1;
-                    const midIdx = Math.floor(VTX / 2) * VTX + Math.floor(VTX / 2);
-                    let firstKey = null;
-                    let chunkData = null;
-                    for (const [k, c] of r.state.chunkMap.entries()) {
-                        firstKey = k;
-                        chunkData = c;
-                        break;
-                    }
-                    out.hasLoadedChunk = !!chunkData;
-                    if (chunkData) {
-                        const geom = r._chunkGeometry();
-                        const chunkCenterX =
-                            chunkData.chunkX * geom.chunkWorldSize - geom.WORLD_SIZE / 2 + geom.chunkWorldSize / 2;
-                        const chunkCenterZ =
-                            chunkData.chunkZ * geom.chunkWorldSize - geom.WORLD_SIZE / 2 + geom.chunkWorldSize / 2;
-                        const heightBefore = chunkData.heightData[midIdx];
-
-                        // modify_terrain am Chunk-Zentrum mit Radius 8 → die
-                        // Chunk-Mitte (midIdx) liegt sicher in der Scheibe.
-                        // dh=-5, schaff den Wert weit über das Höhen-Rauschen.
-                        r.dslRun(["modify_terrain", chunkCenterX, chunkCenterZ, 8, -5], { source: "playtest" });
-
-                        const heightAfter = chunkData.heightData[midIdx];
-                        out.heightChanged = Math.abs(heightAfter - heightBefore) > 0.1;
-                        out.heightWentDown = heightAfter < heightBefore; // dh=-5 → Loch
-                        out.deltasRecorded =
-                            r.state.worldMeta.chunkDeltas[firstKey] &&
-                            r.state.worldMeta.chunkDeltas[firstKey].ops.length >= 1;
-                        out.physicsBodyRebuilt = !!chunkData.mesh.userData.physicsBody;
-                        out.physicsMeshRebuilt = !!chunkData.mesh.userData.physicsMesh;
-
-                        // Replay-Test: chunkMap.delete + re-ensure → Modifikation
-                        // muss wieder erscheinen
-                        const [cxRe, czRe] = firstKey.split(",").map(Number);
-                        const oldMesh = chunkData.mesh;
-                        r.state.scene.remove(oldMesh);
-                        if (oldMesh.userData.physicsBody) {
-                            r.state.physicsWorld.removeRigidBody(oldMesh.userData.physicsBody);
-                        }
-                        r.state.chunkMap.delete(firstKey);
-                        r.ensureChunkAt(cxRe, czRe);
-                        const newChunkData = r.state.chunkMap.get(firstKey);
-                        out.chunkReEnsured = !!newChunkData;
-                        if (newChunkData) {
-                            const heightAfterReplay = newChunkData.heightData[midIdx];
-                            out.replayKeptModification = Math.abs(heightAfterReplay - heightBefore) > 0.1;
-                            out.replayHeightSimilar = Math.abs(heightAfterReplay - heightAfter) < 0.5;
-                        }
-                    }
-
-                    // Defensive: invalid pos wird abgelehnt
-                    const invalidResult = r.dslRun(["modify_terrain", NaN, 0, 4, -2], { source: "playtest" });
-                    out.invalidPosLogged =
-                        invalidResult.log && invalidResult.log.some((l) => l.event === "modify_terrain_invalid_pos");
-
-                    // Save-Round-Trip: Snapshot soll chunkDeltas enthalten
-                    const snap = r.buildStateSnapshot();
-                    out.snapshotHasChunkDeltas =
-                        snap.worldMeta && snap.worldMeta.chunkDeltas && typeof snap.worldMeta.chunkDeltas === "object";
-
-                    // Migrations-Test: alter Save ohne chunkDeltas
-                    const migrationProbe = {
-                        ...snap,
-                        worldMeta: { ...snap.worldMeta, schemaVersion: "8.0-multiworld-v1" },
-                    };
-                    delete migrationProbe.worldMeta.chunkDeltas;
-                    r.loadState(migrationProbe);
-                    out.migrationFillsEmpty =
-                        r.state.worldMeta.chunkDeltas && typeof r.state.worldMeta.chunkDeltas === "object";
-
-                    // Cleanup: alte Welten dieser Test-Welt aus Index + localStorage
-                    r.state.worldMeta.chunkDeltas = {};
-                    const keepId = r.state.worldMeta.worldId;
-                    for (const e of r.worldsIndexLoad()) {
-                        if (e.worldId !== keepId) r.deleteWorld(e.worldId);
-                    }
+                    // (7) tryMouseBreak hat keinen modify_terrain-Fallback mehr.
+                    const breakSrc = (typeof r.tryMouseBreak === "function" && r.tryMouseBreak.toString()) || "";
+                    out.tryMouseBreakNoModifyTerrain = !/modify_terrain/.test(breakSrc);
 
                     return out;
                 })
                 .catch((err) => ({ error: err && err.message }));
-            if (!ring105Results || ring105Results.error) {
+
+            if (voxelV936Results && !voxelV936Results.error) {
+                check("Voxel V9.36: dslEffects.modify_terrain ist gelöscht", voxelV936Results.noModifyTerrainDslOp);
+                check("Voxel V9.36: _chunksTouchedByDisc ist gelöscht", voxelV936Results.noChunksTouchedByDisc);
+                check("Voxel V9.36: _appendChunkDeltaOp ist gelöscht", voxelV936Results.noAppendChunkDeltaOp);
+                check("Voxel V9.36: _sanitizeChunkDeltas ist gelöscht", voxelV936Results.noSanitizeChunkDeltas);
+                check("Voxel V9.36: _applyModifyOpToChunk ist gelöscht", voxelV936Results.noApplyModifyOpToChunk);
+                check("Voxel V9.36: _rebuildChunkPhysics ist gelöscht", voxelV936Results.noRebuildChunkPhysics);
+                check("Voxel V9.36: applyChunkDelta ist gelöscht", voxelV936Results.noApplyChunkDelta);
+                check("Voxel V9.36: CHUNK_DELTA_OPS_CAP-Konstante ist gelöscht", voxelV936Results.noChunkDeltaOpsCap);
                 check(
-                    "Ring 10.5: Snapshot erreichbar",
-                    false,
-                    (ring105Results && ring105Results.error) || "page.evaluate fehlgeschlagen"
+                    "Voxel V9.36: worldMeta.chunkDeltas-Feld ist entfernt (frische Welten)",
+                    voxelV936Results.noChunkDeltasField
                 );
-            } else {
-                check("Ring 10.5: state.worldMeta.chunkDeltas existiert", ring105Results.hasChunkDeltas);
-                check("Ring 10.5: CHUNK_DELTA_OPS_CAP = 100 statisch verfügbar", ring105Results.capStaticExists);
-                check("Ring 10.5: alle Helfer-Methoden vorhanden", ring105Results.helpersExist);
-                check("Ring 10.5: dslEffects.modify_terrain registriert", ring105Results.dslOpRegistered);
-                check("Ring 10.5: Chat 'grabe loch' → modify_terrain mit dh=-3", ring105Results.chatDig);
-                check("Ring 10.5: Chat 'hebe hügel' → modify_terrain mit dh=+4", ring105Results.chatHill);
-                check("Ring 10.5: createNewWorld liefert worldId", ring105Results.createdFreshWorld);
-                check("Ring 10.5: neue Welt schemaVersion=10.5-chunk-delta-v1", ring105Results.freshSchema);
-                check("Ring 10.5: neue Welt chunkDeltas ist leeres Objekt", ring105Results.freshDeltasEmpty);
-                check("Ring 10.5: _chunksTouchedByDisc liefert Array", ring105Results.discReturnsArray);
-                check("Ring 10.5: ChunkKeys haben Format 'cx,cz'", ring105Results.discKeysValidFormat);
-                check("Ring 10.5: FIFO-Cap nach 105 Ops greift (length === 100)", ring105Results.capEnforced);
-                check("Ring 10.5: FIFO verwirft die ältesten Ops zuerst", ring105Results.capFifoOldestDropped);
-                check("Ring 10.5: Sanitize behält gültige Einträge", ring105Results.sanitizeKeepsValid);
-                check("Ring 10.5: Sanitize verwirft kaputten Key-String", ring105Results.sanitizeDropsBadKey);
-                check("Ring 10.5: Sanitize verwirft unbekannten Op-Type", ring105Results.sanitizeDropsFakeOp);
-                check("Ring 10.5: Sanitize verwirft NaN-Koordinaten", ring105Results.sanitizeDropsNanCoord);
-                check("Ring 10.5: Sanitize verwirft Radius > 20", ring105Results.sanitizeDropsBigRadius);
-                check("Ring 10.5: Sanitize verwirft |dh| > 20", ring105Results.sanitizeDropsBigDh);
-                check("Ring 10.5: Mindestens ein Chunk in der Nähe geladen", ring105Results.hasLoadedChunk);
-                check("Ring 10.5: Höhe ändert sich nach modify_terrain", ring105Results.heightChanged);
-                check("Ring 10.5: Höhe sinkt bei negativem dh (Loch)", ring105Results.heightWentDown);
-                check("Ring 10.5: Op wird in chunkDeltas[key].ops gespeichert", ring105Results.deltasRecorded);
-                check("Ring 10.5: Physik-Body nach modify wieder vorhanden", ring105Results.physicsBodyRebuilt);
-                check("Ring 10.5: Physik-Mesh nach modify wieder vorhanden", ring105Results.physicsMeshRebuilt);
-                check("Ring 10.5: Chunk nach Re-Ensure wieder vorhanden", ring105Results.chunkReEnsured);
+                check("Voxel V9.36: dslEffects.voxel_carve ist registriert", voxelV936Results.voxelCarveOpRegistered);
+                check("Voxel V9.36: dslEffects.voxel_fill ist registriert", voxelV936Results.voxelFillOpRegistered);
                 check(
-                    "Ring 10.5: Replay nach Re-Ensure behält Modifikation (Discrimination)",
-                    ring105Results.replayKeptModification
+                    "Voxel V9.36: Chat 'grabe loch' → voxel_carve (Heightfield-Pfad umgeroutet)",
+                    voxelV936Results.chatDigRoutesToVoxelCarve
+                );
+                check("Voxel V9.36: Chat 'hebe hügel' → voxel_fill", voxelV936Results.chatHillRoutesToVoxelFill);
+                check(
+                    "Voxel V9.36: Chat-Patterns embedden die Spieler-Position (x,y,z)",
+                    voxelV936Results.chatDigEmbedsPlayerPosition
                 );
                 check(
-                    "Ring 10.5: Replay-Höhe ähnlich Original-Modify (deterministisch)",
-                    ring105Results.replayHeightSimilar
+                    "Voxel V9.36: voxel_carve-DSL-Op fügt einen Edit ans Voxel-Feld",
+                    voxelV936Results.voxelCarveAddsEdit
                 );
-                check("Ring 10.5: invalid pos (NaN) wird im Log gemeldet", ring105Results.invalidPosLogged);
-                check("Ring 10.5: buildStateSnapshot enthält chunkDeltas", ring105Results.snapshotHasChunkDeltas);
                 check(
-                    "Ring 10.5: Migrations-Path füllt fehlende chunkDeltas mit {}",
-                    ring105Results.migrationFillsEmpty
+                    "Voxel V9.36: voxel_fill-DSL-Op fügt einen mode:'fill'-Edit ans Voxel-Feld",
+                    voxelV936Results.voxelFillAddsEdit
+                );
+                check(
+                    "Voxel V9.36: voxel_carve mit NaN-Position wird abgelehnt + geloggt",
+                    voxelV936Results.voxelCarveRejectsInvalidPos
+                );
+                check("Voxel V9.36: describeProgram kennt voxel_carve", voxelV936Results.describeCarve);
+                check("Voxel V9.36: describeProgram kennt voxel_fill", voxelV936Results.describeFill);
+                check(
+                    "Voxel V9.36: CREATURE_PROPOSED_OPS trägt voxel_carve + voxel_fill (statt modify_terrain)",
+                    voxelV936Results.creatureProposedHasVoxelOps
+                );
+                check(
+                    "Voxel V9.36: CREATURE_PROPOSED_OPS trägt modify_terrain NICHT mehr",
+                    voxelV936Results.creatureProposedNoModifyTerrain
+                );
+                check(
+                    "Voxel V9.36: tryMouseBreak hat keinen modify_terrain-Fallback mehr",
+                    voxelV936Results.tryMouseBreakNoModifyTerrain
                 );
             }
 
@@ -7648,7 +7571,7 @@ function startSaveServer() {
             // connected; remote-dslRun (source="remote:*") läuft durch dslRun
             // OHNE Re-Broadcast (sonst Endlos-Echo). Eingehende dsl-Nachricht
             // läuft durch dslRun mit normalem Sandbox-Pfad. Welt-Effekte
-            // (modify_terrain) sind damit synchron auf beiden Welten.
+            // (V9.36-voxel_carve/voxel_fill) sind damit synchron auf beiden Welten.
             const ring11V2Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
@@ -7727,26 +7650,29 @@ function startSaveServer() {
                     const afterSunny = r.state.weather;
                     out.discriminationHolds = afterRainy === "rainy" && afterSunny === "sunny";
 
-                    // 9) Remote modify_terrain → chunkDeltas wachsen lokal
-                    // (das ist der eigentliche Vision-Punkt von V2)
-                    const deltasBefore = Object.keys(r.state.worldMeta.chunkDeltas).length;
-                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+                    // 9) V9.36: Remote voxel_carve → voxelEdits wachsen lokal
+                    // (der eigentliche Vision-Punkt von V2 — eine Welt-Mod
+                    // eines Mitspielers wirkt auf MEIN Welt-Feld, jetzt im
+                    // Voxel-Feld statt im Heightfield).
+                    if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
+                    const editsBefore = r.state.worldMeta.voxelEdits.length;
+                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
                     r.p2pHandleMessage(
                         JSON.stringify({
                             type: "dsl",
                             peerId: "peerX",
-                            program: ["modify_terrain", playerPos.x, playerPos.z, 5, -3],
+                            program: ["voxel_carve", playerPos.x, playerPos.y - 1.5, playerPos.z, 3],
                         })
                     );
-                    const deltasAfter = Object.keys(r.state.worldMeta.chunkDeltas).length;
-                    out.remoteModifyTerrainGrowsDeltas = deltasAfter > deltasBefore;
+                    const editsAfter = r.state.worldMeta.voxelEdits.length;
+                    out.remoteVoxelCarveGrowsEdits = editsAfter > editsBefore;
 
                     // Cleanup
                     r.p2pSend = origSend;
                     r.state.p2p.enabled = false;
                     r.state.p2p.connected = false;
                     r.state.p2p.peerId = null;
-                    r.state.worldMeta.chunkDeltas = {};
+                    r.state.worldMeta.voxelEdits = [];
 
                     return out;
                 })
@@ -7783,8 +7709,8 @@ function startSaveServer() {
                     ring11V2Results.discriminationHolds
                 );
                 check(
-                    "Ring 11 V2: Remote modify_terrain wächst lokale chunkDeltas (Vision-Punkt)",
-                    ring11V2Results.remoteModifyTerrainGrowsDeltas
+                    "Ring 11 V2 + V9.36: Remote voxel_carve wächst lokale voxelEdits (Vision-Punkt — Welt-Mod synchron)",
+                    ring11V2Results.remoteVoxelCarveGrowsEdits
                 );
             }
 
@@ -7828,7 +7754,7 @@ function startSaveServer() {
                         r.constructor.NON_BROADCASTABLE_OPS
                     );
                     out.containsOpClean = !r._dslContainsAnyOp(
-                        ["chain", ["weather", "rainy"], ["modify_terrain", 0, 0, 4, -2]],
+                        ["chain", ["weather", "rainy"], ["voxel_carve", 0, 50, 0, 3]],
                         r.constructor.NON_BROADCASTABLE_OPS
                     );
 
@@ -8003,7 +7929,6 @@ function startSaveServer() {
                             seed: "abc-seed",
                             bornAt: Date.now() - 100000,
                             schemaVersion: "10.5-chunk-delta-v1",
-                            chunkDeltas: {},
                             parentWorlds: [],
                         },
                         worldJournal: { entries: [], seen: {} },
@@ -8078,7 +8003,9 @@ function startSaveServer() {
                     out.modeRadiosExist = document.querySelectorAll('input[name="new-world-mode"]').length === 2;
                     out.roleRadiosExist = document.querySelectorAll('input[name="new-world-role"]').length === 2;
                     out.inviteInputExists = !!document.getElementById("new-world-invite");
-                    out.voxelCheckboxExists = !!document.getElementById("new-world-heightfield");
+                    // V9.35: die V9.23-Heightfield-Opt-out-Checkbox ist GELÖSCHT
+                    // (Voxel permanent + irreversibel — Toggle-Tod).
+                    out.heightfieldCheckboxGone = !document.getElementById("new-world-heightfield");
                     out.hostBannerExists = !!document.getElementById("world-host-banner");
                     out.guestBannerExists = !!document.getElementById("world-guest-banner");
 
@@ -8133,8 +8060,8 @@ function startSaveServer() {
                 );
                 check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
                 check(
-                    "Voxel V9.23 Phase 5a: #new-world-heightfield-Opt-out-Checkbox im Neue-Welt-Dialog",
-                    ring115Results.voxelCheckboxExists
+                    "Voxel V9.35: #new-world-heightfield-Opt-out-Checkbox ist aus dem Neue-Welt-Dialog entfernt (Voxel ist permanent)",
+                    ring115Results.heightfieldCheckboxGone
                 );
                 check("Ring 11.5: Mode-Radios (solo/multi) im DOM", ring115Results.modeRadiosExist);
                 check("Ring 11.5: Role-Radios (host/join) im DOM", ring115Results.roleRadiosExist);
@@ -11207,8 +11134,9 @@ function startSaveServer() {
                         // wird genullt (damit garantiert der Terrain-Zweig
                         // läuft, nicht ein Architektur-Treffer). Die Kamera
                         // blickt gerade nach unten → der Ammo-Raycast trifft
-                        // den Chunk unter dem Spieler. Beweist: echter Raycast
-                        // + modify_terrain + Yield, ohne Mock.
+                        // den Voxel-Boden unter dem Spieler. Beweist: echter
+                        // Raycast + V9.36-`carveVoxelSphere` + Material-Yield,
+                        // ohne Mock.
                         if (r.state.camera && r.state.playerMesh) {
                             const cam = r.state.camera;
                             const pm = r.state.playerMesh;
@@ -11268,7 +11196,7 @@ function startSaveServer() {
                     wave6gP4Results.realRaycastHit
                 );
                 check(
-                    "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + modify_terrain) yieldet Material",
+                    "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxelSphere) yieldet Material",
                     wave6gP4Results.realDigYielded
                 );
             }
@@ -11277,20 +11205,15 @@ function startSaveServer() {
             // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
             // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
             // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
-            // V9.33 — vor dem _spawnVoxelTestChunk-Test schalten wir das
-            // Voxel-Terrain GANZ aus (state-konsistent — disposed alle ~81
-            // Chunks via setVoxelTerrainActive(false), gibt ~5-6 MB Ammo-Heap
-            // zurück). Die folgenden Tests (P2b, V9.27, …) schalten es selbst
-            // wieder ein und bauen den Ring neu — saubere Test-Isolation.
+            // V9.35 — vor dem _spawnVoxelTestChunk-Test räumen wir alle
+            // Voxel-Chunks direkt ab (~81 Chunks, ~5-6 MB Ammo-Heap zurück);
+            // die alte setVoxelTerrainActive(false)-Geste ist tot (Toggle ist
+            // weg). Die folgenden Tests bauen ihren Voxel-Ring per direktem
+            // _tickVoxelChunkStreaming neu auf — saubere Test-Isolation.
             await page.evaluate(() => {
                 const r = window.anazhRealm;
-                if (
-                    r &&
-                    r.state &&
-                    r.state.voxelTerrainActive &&
-                    typeof r.setVoxelTerrainActive === "function"
-                ) {
-                    r.setVoxelTerrainActive(false, { persist: false });
+                if (r && r.state && r.state.voxelChunks && typeof r._disposeVoxelChunk === "function") {
+                    for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
                 }
             });
             const voxelP1Results = await page
@@ -11558,30 +11481,16 @@ function startSaveServer() {
                     out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
                     out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
                     out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
-                    out.hasSetActive = typeof r.setVoxelTerrainActive === "function";
                     out.hasConfig = typeof r._voxelChunkConfig === "function";
                     out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
-                    // V9.33 Phase 5c.2.b — die alte V9.09-„default off"-Probe
-                    // ist überholt; der „voxel ist Default-AN"-Beweis lebt
-                    // jetzt in den Top-Level-Invarianten (finalState.voxel*).
+                    // V9.35 Phase 5c.2.c.2 — die Toggle-Methoden sind tot;
+                    // Voxel ist permanent + irreversibel. Der Ring ist schon
+                    // beim Init gefüllt (state.voxelTerrainActive defaults
+                    // auf true). Die alten Reversibilitäts-Tests (Heightfield
+                    // ruht / erwacht / setVoxelTerrainActive füllt|räumt)
+                    // sind ersatzlos entfallen.
 
-                    // Eine echte Heightfield-Chunk-Referenz für die Dormancy-
-                    // Probe finden (mit physicsBody). V9.33-Pollution-Schutz:
-                    // Extension-Tests können Ghost-Chunks (kein Body, OOM-
-                    // Opfer) in chunkMap hinterlassen — diese sind keine
-                    // gültigen Referenzen für die Dormancy-Mechanik.
-                    let refChunk = null;
-                    if (r.state.chunkMap) {
-                        for (const e of r.state.chunkMap.values()) {
-                            if (e && e.mesh && e.mesh.userData && e.mesh.userData.physicsBody) {
-                                refChunk = e.mesh;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (out.hasSetActive && out.hasTick) {
-                        r.setVoxelTerrainActive(true);
+                    if (out.hasTick) {
                         out.activated = r.state.voxelTerrainActive === true;
                         out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
                         // jeder gemeshte Voxel-Chunk trägt eine Kollision.
@@ -11650,15 +11559,16 @@ function startSaveServer() {
                         out.findSurfaceVoxelAware =
                             typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
 
-                        // V9.26 Phase 5c-Migration — eine GELADENE alte Welt
-                        // (`!fresh`) ohne voxelTerrain-Flag wird voxel-basiert;
-                        // eine explizite `voxelTerrain:false`-Welt bleibt
-                        // heightfield; eine FRISCHE Welt (`fresh`) wird NICHT
-                        // migriert (Eingangs-Welt bleibt heightfield, Lehrling-
-                        // freundlich + deterministisch für die Test-Suite).
-                        // Das Welt-Journal wird vor dem Test gesichert + danach
-                        // restored — sonst flutet der Migrations-Genesis-Eintrag
-                        // den nachfolgenden „Journal nicht überflutet"-Test.
+                        // V9.26 Phase 5c-Migration + V9.35 Phase 5c.2.c.2
+                        // Zwangs-Migration — eine geladene alte Welt OHNE
+                        // voxelTerrain-Flag UND eine alte explizit Heightfield-
+                        // Opt-out-Welt werden BEIDE voxel-basiert (der Opt-out
+                        // existiert nicht mehr; das Heightfield ist Dead-Code).
+                        // Die fresh-Eingangs-Welt ist seit V9.33 ebenfalls
+                        // voxel-default. Das Welt-Journal wird vor dem Test
+                        // gesichert + danach restored — sonst flutet der
+                        // Migrations-Genesis-Eintrag den nachfolgenden
+                        // „Journal nicht überflutet"-Test.
                         const origMeta = r.state.worldMeta;
                         const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
                         const origJournalSeen =
@@ -11670,7 +11580,8 @@ function startSaveServer() {
                         r.state.worldMeta = oldMeta;
                         r.ensureWorldMeta();
                         out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
-                        // Explizit Heightfield-Opt-out → bleibt heightfield.
+                        // V9.35 — explizit Heightfield-Opt-out wird auch
+                        // zwangs-migriert (der Opt-out existiert nicht mehr).
                         const optOutMeta = {
                             worldId: "test-opt-out",
                             slug: "test-opt-out",
@@ -11680,7 +11591,7 @@ function startSaveServer() {
                         };
                         r.state.worldMeta = optOutMeta;
                         r.ensureWorldMeta();
-                        out.migrationRespectsOptOut = optOutMeta.voxelTerrain === false;
+                        out.migrationForcesOptOut = optOutMeta.voxelTerrain === true;
                         r.state.worldMeta = origMeta;
                         if (r.state.worldJournal && origJournalEntries) {
                             r.state.worldJournal.entries = origJournalEntries;
@@ -11712,11 +11623,6 @@ function startSaveServer() {
                         out.voxelHasFieldColors = anyColorAttr;
                         out.voxelColorVaries = colorMax - colorMin > 0.05;
                         out.voxelSkirt = skirtProven;
-                        // das Heightfield schläft (unsichtbar + kollisionslos).
-                        out.heightfieldDormant = refChunk ? refChunk.visible === false : true;
-                        out.heightfieldCollisionDormant = refChunk
-                            ? !!(refChunk.userData && refChunk.userData._collisionDormant)
-                            : true;
 
                         // Streaming: alles abräumen, ein Tick baut wieder auf.
                         for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
@@ -11727,15 +11633,10 @@ function startSaveServer() {
                         r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
                         out.pruneRemovesFar = r.state.voxelChunks.size === 0;
 
-                        // wieder aus — das Heightfield erwacht, die Voxel-Chunks fallen.
-                        r.setVoxelTerrainActive(false);
-                        out.deactivated = r.state.voxelTerrainActive === false;
-                        out.voxelChunksCleared = !r.state.voxelChunks || r.state.voxelChunks.size === 0;
-                        out.voxelGrassCleared = !r.state.voxelChunkGrass || r.state.voxelChunkGrass.size === 0;
-                        out.heightfieldRestored = refChunk ? refChunk.visible === true : true;
-                        out.heightfieldCollisionRestored = refChunk
-                            ? !(refChunk.userData && refChunk.userData._collisionDormant)
-                            : true;
+                        // V9.35: nach dem Prune baut der Streaming-Ring den
+                        // Spieler-Ring neu auf — wir restaurieren das hier
+                        // direkt, damit nachfolgende Tests Voxel-Chunks haben.
+                        r._tickVoxelChunkStreaming(pos);
                     }
                     return out;
                 })
@@ -11743,39 +11644,22 @@ function startSaveServer() {
 
             if (voxelP2bResults && !voxelP2bResults.error) {
                 check(
-                    "Voxel P2b: alle vier Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/setVoxelTerrainActive)",
+                    "Voxel P2b: alle Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/_voxelChunkConfig)",
                     voxelP2bResults.hasEnsure &&
                         voxelP2bResults.hasTick &&
                         voxelP2bResults.hasPrune &&
-                        voxelP2bResults.hasSetActive &&
                         voxelP2bResults.hasConfig
                 );
-                // V9.33 Phase 5c.2.b — der „voxel ist Default-AN"-Beweis lebt
-                // in den Top-Level-Invarianten (finalState.voxelTerrainActive);
-                // diese Stelle ist nach dem pre-P1-Test-Reset auf voxel=false
-                // und damit nicht mehr aussagekräftig.
                 check(
-                    "Voxel P2b: setVoxelTerrainActive(true) füllt den Voxel-Chunk-Ring um den Spieler",
+                    "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
                     voxelP2bResults.activated && voxelP2bResults.ringFilled
                 );
                 check(
                     "Voxel P2b: jeder gemeshte Voxel-Chunk trägt eine btBvhTriangleMeshShape-Kollision",
                     voxelP2bResults.voxelChunksHaveCollision
                 );
-                check(
-                    "Voxel P2b: das Heightfield ruht bei aktivem Voxel-Terrain (unsichtbar + kollisionslos)",
-                    voxelP2bResults.heightfieldDormant && voxelP2bResults.heightfieldCollisionDormant
-                );
                 check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
                 check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
-                check(
-                    "Voxel P2b: setVoxelTerrainActive(false) räumt alle Voxel-Chunks",
-                    voxelP2bResults.deactivated && voxelP2bResults.voxelChunksCleared
-                );
-                check(
-                    "Voxel P2b: das Heightfield erwacht wieder (sichtbar + kollidierbar) — reversibel",
-                    voxelP2bResults.heightfieldRestored && voxelP2bResults.heightfieldCollisionRestored
-                );
                 check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
                 check(
                     "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
@@ -11801,10 +11685,6 @@ function startSaveServer() {
                 check(
                     "Voxel V9.22: der Voxel-Chunk-Ring trägt Instanced-Gras-Halme",
                     voxelP2bResults.voxelGrassHasBlades
-                );
-                check(
-                    "Voxel V9.22: setVoxelTerrainActive(false) räumt auch das Voxel-Gras",
-                    voxelP2bResults.voxelGrassCleared
                 );
                 check(
                     "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
@@ -11835,67 +11715,71 @@ function startSaveServer() {
                     voxelP2bResults.migrationFlipsOldWorld
                 );
                 check(
-                    "Voxel V9.26 Phase 5c: ein explizites voxelTerrain:false (Heightfield-Opt-out) bleibt heightfield",
-                    voxelP2bResults.migrationRespectsOptOut
+                    "Voxel V9.35 Phase 5c.2.c.2: ein altes voxelTerrain:false (V9.23-Opt-out) wird zwangs-migriert (Toggle ist tot)",
+                    voxelP2bResults.migrationForcesOptOut
                 );
             }
 
-            // ### Voxel-Terrain Phase 2c — per-Welt-Persistenz ###
-            // Der voxelTerrainActive-Zustand überlebt Reload + Welt-Wechsel
-            // über worldMeta.voxelTerrain.
-            const voxelP2cResults = await page
+            // ### Voxel V9.35 Phase 5c.2.c.2 — Toggle-Tod: Voxel permanent + irreversibel ###
+            // Der V9.13-`voxel terrain on/off`-Toggle ist als Reversibilitäts-
+            // Schicht entfernt — Voxel ist beim Init aktiv, `worldMeta.voxel-
+            // Terrain` ist immer true (Zwangs-Migration in `ensureWorldMeta`
+            // zieht jede alte Welt mit). Die drei Toggle-Methoden + der Chat-
+            // Befehl sind weg.
+            const voxelV935ToggleResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state) return null;
                     const out = {};
-                    out.hasRestore = typeof r._restoreVoxelTerrain === "function";
-                    if (out.hasRestore && typeof r.setVoxelTerrainActive === "function") {
-                        // Persistenz: toggle on → worldMeta.voxelTerrain true.
-                        r.setVoxelTerrainActive(true);
-                        out.persistsOn = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
-                        // Der Welt-Snapshot trägt das Flag (worldMeta spread).
-                        const snap = r.buildStateSnapshot();
-                        out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
-                        r.setVoxelTerrainActive(false);
-                        out.persistsOff = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === false);
-                        // _restoreVoxelTerrain: worldMeta.voxelTerrain=true → aktiviert.
-                        r.state.worldMeta.voxelTerrain = true;
-                        r._restoreVoxelTerrain();
-                        out.restoreActivates = r.state.voxelTerrainActive === true;
-                        // worldMeta.voxelTerrain=false → restore tut nichts.
-                        r.setVoxelTerrainActive(false);
-                        r.state.worldMeta.voxelTerrain = false;
-                        r._restoreVoxelTerrain();
-                        out.restoreSkipsWhenOff = r.state.voxelTerrainActive === false;
-                        // sauber zurücklassen.
-                        r.setVoxelTerrainActive(false);
-                        r.state.worldMeta.voxelTerrain = false;
-                    }
+                    // Die drei Toggle-Methoden sind GELÖSCHT.
+                    out.noSetActive = typeof r.setVoxelTerrainActive !== "function";
+                    out.noDormant = typeof r._setHeightfieldDormant !== "function";
+                    out.noRestore = typeof r._restoreVoxelTerrain !== "function";
+                    // Voxel ist beim Init aktiv (kein toggle nötig).
+                    out.voxelPermanent = r.state.voxelTerrainActive === true;
+                    out.metaPermanent = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
+                    // Der Welt-Snapshot trägt das Flag (überlebt Reload).
+                    const snap = r.buildStateSnapshot();
+                    out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
+                    // Chat-Toggle ist tot — `voxel terrain on/off` ist kein
+                    // erkanntes Kommando mehr. Der Source-Scan prüft das
+                    // String-Literal `=== "voxel terrain on"` (die echte
+                    // Code-Logik, nicht ein Kommentar — der V9.35-Eintrag-
+                    // Kommentar erwähnt den toten Befehl als Doku).
+                    const src = (typeof r.processChatCommand === "function" && r.processChatCommand.toString()) || "";
+                    out.noChatToggle = !/===\s*["']voxel terrain on["']/.test(src);
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
 
-            if (voxelP2cResults && !voxelP2cResults.error) {
-                check("Voxel P2c: _restoreVoxelTerrain-Methode existiert", voxelP2cResults.hasRestore);
+            if (voxelV935ToggleResults && !voxelV935ToggleResults.error) {
                 check(
-                    "Voxel P2c: setVoxelTerrainActive(true) persistiert worldMeta.voxelTerrain",
-                    voxelP2cResults.persistsOn
+                    "Voxel V9.35: setVoxelTerrainActive-Methode ist gelöscht (Toggle-Tod)",
+                    voxelV935ToggleResults.noSetActive
                 );
                 check(
-                    "Voxel P2c: der Welt-Snapshot trägt das voxelTerrain-Flag (überlebt Reload)",
-                    voxelP2cResults.snapshotHasFlag
+                    "Voxel V9.35: _setHeightfieldDormant-Methode ist gelöscht (Reversibilitäts-Schicht weg)",
+                    voxelV935ToggleResults.noDormant
                 );
                 check(
-                    "Voxel P2c: setVoxelTerrainActive(false) persistiert worldMeta.voxelTerrain = false",
-                    voxelP2cResults.persistsOff
+                    "Voxel V9.35: _restoreVoxelTerrain-Methode ist gelöscht (kein Init-Restore mehr nötig)",
+                    voxelV935ToggleResults.noRestore
                 );
                 check(
-                    "Voxel P2c: _restoreVoxelTerrain aktiviert das Voxel-Terrain bei worldMeta.voxelTerrain=true",
-                    voxelP2cResults.restoreActivates
+                    "Voxel V9.35: voxelTerrainActive ist permanent true (Default + nie umschaltbar)",
+                    voxelV935ToggleResults.voxelPermanent
                 );
                 check(
-                    "Voxel P2c: _restoreVoxelTerrain tut nichts bei worldMeta.voxelTerrain=false",
-                    voxelP2cResults.restoreSkipsWhenOff
+                    "Voxel V9.35: worldMeta.voxelTerrain ist permanent true (Zwangs-Migration)",
+                    voxelV935ToggleResults.metaPermanent
+                );
+                check(
+                    "Voxel V9.35: der Welt-Snapshot trägt das voxelTerrain-Flag (überlebt Reload)",
+                    voxelV935ToggleResults.snapshotHasFlag
+                );
+                check(
+                    "Voxel V9.35: der `voxel terrain on/off`-Chat-Toggle ist aus processChatCommand entfernt",
+                    voxelV935ToggleResults.noChatToggle
                 );
             }
 
@@ -11949,28 +11833,22 @@ function startSaveServer() {
                         }
                     }
 
-                    // (2) Heightfield-Welt: alle Pfade leben weiter (Regression).
+                    // V9.37 Phase 5c.2.c.3.b.i: der ehemalige V9.27-Heightfield-
+                    // Regression-Pfad (worldMeta.voxelTerrain = false → 64
+                    // Chunks gebaut) ist mit dem Lösch des `else`-Pfads in
+                    // `generateTerrainWithParameters` tot. Der Beweis
+                    // wandert um: selbst wenn ein Test-Setup `voxelTerrain
+                    // = false` mutiert, baut der Welt-Generator keine
+                    // Heightfield-Chunks mehr (chunkMap bleibt leer).
                     r.state.worldMeta.voxelTerrain = false;
                     r.state.lastWorldgen = 0;
                     r.generateNewWorld({ force: true });
-                    // V9.27: 64 Chunks gebaut.
-                    out.heightfieldChunkMapFilled = r.state.chunkMap && r.state.chunkMap.size === 64;
-                    // V9.28: heightData zurück.
-                    out.heightfieldGroundFieldFilled =
-                        r.state.groundHeightField instanceof Float32Array &&
-                        r.state.groundHeightField.length === 256 * 256;
-                    out.heightfieldMinSet = r.state.minHeight !== 0 || r.state.maxHeight !== 0;
-
-                    // Restore: heightfield bleibt (origVoxel war für die
-                    // Eingangs-Welt false/undefined, V9.26-Disziplin) — kein
-                    // weiterer generateNewWorld-Aufruf nötig.
-                    if (origVoxel === true) {
-                        r.state.worldMeta.voxelTerrain = true;
-                        r.state.lastWorldgen = 0;
-                        r.generateNewWorld({ force: true });
-                    } else {
-                        r.state.worldMeta.voxelTerrain = origVoxel;
-                    }
+                    out.heightfieldElseDead = r.state.chunkMap && r.state.chunkMap.size === 0;
+                    // Restore: voxelTerrain auf true zurück + Regen, damit
+                    // die nachfolgenden Tests eine Voxel-Welt haben.
+                    r.state.worldMeta.voxelTerrain = true;
+                    r.state.lastWorldgen = 0;
+                    r.generateNewWorld({ force: true });
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -11985,8 +11863,8 @@ function startSaveServer() {
                     voxelP5c1Results.voxelMaterialKept
                 );
                 check(
-                    "Voxel V9.27 Phase 5c.1: eine Heightfield-Welt baut alle 64 Chunks weiter (Regression-Schutz)",
-                    voxelP5c1Results.heightfieldChunkMapFilled
+                    "Voxel V9.37 Phase 5c.2.c.3.b.i: der Heightfield-`else`-Pfad in generateTerrainWithParameters ist tot — auch `voxelTerrain = false` baut keine Heightfield-Chunks mehr",
+                    voxelP5c1Results.heightfieldElseDead
                 );
                 check(
                     "Voxel V9.28: eine Voxel-Welt hat KEIN groundHeightField (heightData übersprungen)",
@@ -12005,14 +11883,15 @@ function startSaveServer() {
                     "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
                     voxelP5c1Results.creatureNotAtFallback
                 );
-                check(
-                    "Voxel V9.28: eine Heightfield-Welt füllt groundHeightField weiter (Regression-Schutz)",
-                    voxelP5c1Results.heightfieldGroundFieldFilled
-                );
-                check(
-                    "Voxel V9.28: eine Heightfield-Welt setzt minHeight/maxHeight (Regression-Schutz)",
-                    voxelP5c1Results.heightfieldMinSet
-                );
+                // V9.37 Phase 5c.2.c.3.b.i: die zwei V9.28-Heightfield-Regression-
+                // Tests („groundHeightField gefüllt", „minHeight/maxHeight gesetzt")
+                // sind mit dem Lösch des `else`-Pfads in `generateTerrainWith-
+                // Parameters` tot — sie prüften, dass eine `voxelTerrain=false`-
+                // Welt noch das Heightfield aufbaut; mit V9.37 baut sie keine
+                // Heightfield-Chunks mehr, der heightData-Allokations-Pfad in
+                // `isVoxelWorldGen2` lebt zwar noch, aber kein Spieler-Pfad
+                // erreicht ihn (eine spätere Welle 5c.2.c.3.b.ii könnte ihn
+                // auch noch ablösen, sobald die Test-Anker umgewidmet sind).
             }
 
             // ### Voxel V9.29 — Heightfield-Chunk-Physik-Leak geheilt ###
@@ -12030,14 +11909,27 @@ function startSaveServer() {
                     const out = {};
                     out.hasDisposeHelper = typeof r._disposeChunkPhysics === "function";
 
-                    // Ein Chunk aus dem laufenden Spiel als Test-Subjekt.
-                    // (Eingangs-Welt ist heightfield, chunkMap ist gefüllt.)
+                    // V9.35 Phase 5c.2.c.2: die Voxel-Eingangs-Welt baut keine
+                    // Heightfield-Chunks beim Init (V9.27-Skip). Wir bauen
+                    // selbst einen via `ensureChunkAt(cx, cz)` — die Heightfield-
+                    // Chunk-Pipeline ist noch da, sie wird nur nicht mehr
+                    // automatisch beim Welt-Aufbau gerufen. Der Test prüft
+                    // dann den V9.29-Auxiliar-Cleanup an einem echten Chunk.
                     let testChunk = null;
-                    if (r.state.chunkMap && r.state.chunkMap.size > 0) {
+                    if (r.state.chunkMap && typeof r.ensureChunkAt === "function") {
+                        // Suche zuerst einen existierenden mit Body.
                         for (const entry of r.state.chunkMap.values()) {
                             if (entry && entry.mesh && entry.mesh.userData && entry.mesh.userData.physicsBody) {
                                 testChunk = entry.mesh;
                                 break;
+                            }
+                        }
+                        // Sonst einen weit ausserhalb des Streaming-Rings bauen.
+                        if (!testChunk) {
+                            r.ensureChunkAt(40, 40);
+                            const entry = r.state.chunkMap.get("40,40");
+                            if (entry && entry.mesh && entry.mesh.userData && entry.mesh.userData.physicsBody) {
+                                testChunk = entry.mesh;
                             }
                         }
                     }
@@ -12126,7 +12018,6 @@ function startSaveServer() {
                         // heightfield ist).
                         ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
                         terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
-                        setHeightfieldDormantAlive: typeof r._setHeightfieldDormant === "function",
                     };
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12148,9 +12039,77 @@ function startSaveServer() {
                     "Voxel V9.30: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
                     voxelV930Results.terrainHeightAtWorldAlive
                 );
+            }
+
+            // ### Voxel V9.34 — Phase 5c.2.c.1: weitere tote Heightfield-Schichten gelöscht ###
+            // Drei nachweislich tote Schichten, in derselben V9.30-Disziplin (pure
+            // Dead-Code, keine Verhaltens-Änderung): (1) `extendTerrain` — die
+            // Legacy-direction-API für Playtest-Kompat hatte keinen Aufrufer mehr
+            // (alle Playtest-Pfade routen direkt über `ensureChunkAt`); (2) das
+            // `caveData`-Float-Array — wurde in `generateTerrainWithParameters`
+            // alloziert + befüllt, aber NIE gelesen (das Versprechen aus dem
+            // Kommentar „behalten wir nur als Tag-Flags für späteren shader-
+            // Gebrauch" wurde nie erfüllt); (3) das `volcanoData`-Float-Array —
+            // dieselbe Klasse, identisches Schicksal. Wer eine der drei je wieder
+            // anlegt, muss eine echte Notwendigkeit benennen. caveNoise +
+            // volcanoNoise (die SimplexNoise-Instanzen) leben weiter — sie
+            // modulieren die Höhe in `_terrainHeightAtWorld` (echte Konsumenten).
+            const voxelV934Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    // Direkter Source-Scan: liest die anazhRealm.js-Repräsentation
+                    // über toString(), prüft die Schreibstellen sind weg. So
+                    // schlägt eine wiederbelebte tote Schicht beim nächsten
+                    // Playtest sofort an.
+                    const src =
+                        (typeof r.generateTerrainWithParameters === "function" &&
+                            r.generateTerrainWithParameters.toString()) ||
+                        "";
+                    return {
+                        noExtendTerrain: typeof r.extendTerrain !== "function",
+                        // Die Float32Array-Allokationen sind weg
+                        noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(src),
+                        noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(src),
+                        // Die Schreibstellen (`caveData[i] = ...`, `volcanoData[i] = ...`)
+                        // sind weg — der Verifizierungs-Anker
+                        noCaveDataWrite: !/caveData\[i\]\s*=/.test(src),
+                        noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(src),
+                        // Regression-Schutz — die Höhen-Quelle + die echten
+                        // Konsumenten (caveNoise + volcanoNoise als Noise-
+                        // Instanzen) leben weiter
+                        ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
+                        terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
+                        caveNoiseInSrc: /caveNoise/.test(src),
+                        volcanoNoiseInSrc: /volcanoNoise/.test(src),
+                    };
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV934Results && !voxelV934Results.error) {
                 check(
-                    "Voxel V9.30: _setHeightfieldDormant lebt weiter (Regression — Voxel-Mode-Switch)",
-                    voxelV930Results.setHeightfieldDormantAlive
+                    "Voxel V9.34: extendTerrain ist gelöscht (Legacy-direction-API ohne Aufrufer)",
+                    voxelV934Results.noExtendTerrain
+                );
+                check(
+                    "Voxel V9.34: caveData-Float-Array ist gelöscht (nie gelesen)",
+                    voxelV934Results.noCaveDataAlloc && voxelV934Results.noCaveDataWrite
+                );
+                check(
+                    "Voxel V9.34: volcanoData-Float-Array ist gelöscht (nie gelesen)",
+                    voxelV934Results.noVolcanoDataAlloc && voxelV934Results.noVolcanoDataWrite
+                );
+                check(
+                    "Voxel V9.34: ensureChunkAt lebt weiter (Regression — die lebende Chunk-Pipeline)",
+                    voxelV934Results.ensureChunkAtAlive
+                );
+                check(
+                    "Voxel V9.34: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
+                    voxelV934Results.terrainHeightAtWorldAlive
+                );
+                check(
+                    "Voxel V9.34: caveNoise + volcanoNoise (SimplexNoise-Instanzen) leben weiter (echte Höhen-Modulatoren)",
+                    voxelV934Results.caveNoiseInSrc && voxelV934Results.volcanoNoiseInSrc
                 );
             }
 
@@ -12337,11 +12296,10 @@ function startSaveServer() {
                         for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
                         out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
                         // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
-                        r.setVoxelTerrainActive(true);
+                        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
                         r.state.worldMeta.voxelEdits = [];
                         r.processChatCommand("voxel carve");
                         out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
-                        r.setVoxelTerrainActive(false);
                         // sauber zurücklassen.
                         r.state.worldMeta.voxelEdits = [];
                         if (typeof r.saveState === "function") r.saveState();
@@ -12409,15 +12367,14 @@ function startSaveServer() {
                         out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
                         // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
                         // frieden — damit das V9.17-Füll-Gate frei ist.
+                        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
                         const p3bMode = r.getGameMode ? r.getGameMode() : "frieden";
                         r.setGameMode("frieden");
-                        r.setVoxelTerrainActive(true);
                         r.state.worldMeta.voxelEdits = [];
                         r.processChatCommand("voxel fill");
                         out.chatFillAddsEdit =
                             r.state.worldMeta.voxelEdits.length === 1 &&
                             r.state.worldMeta.voxelEdits[0].mode === "fill";
-                        r.setVoxelTerrainActive(false);
                         r.setGameMode(p3bMode);
                         // sauber zurücklassen.
                         r.state.worldMeta.voxelEdits = [];
@@ -12489,7 +12446,7 @@ function startSaveServer() {
                         r.state.player.inventory = new Array(27).fill(null);
                         out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
                         // Chat `voxel fill` in pfad ohne Material → kein Edit.
-                        r.setVoxelTerrainActive(true);
+                        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
                         wm.voxelEdits = [];
                         r.processChatCommand("voxel fill");
                         out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
@@ -12498,7 +12455,6 @@ function startSaveServer() {
                         wm.voxelEdits = [];
                         r.processChatCommand("voxel fill");
                         out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
-                        r.setVoxelTerrainActive(false);
                         // sauber zurücklassen.
                         wm.voxelEdits = [];
                         r.state.player.inventory = invBackup;
@@ -13205,7 +13161,7 @@ function startSaveServer() {
 
             // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
             // LMB abbauen / RMB platzieren über konfigurierbares Keybinding.
-            // Architektur-Hit → removeArchitecture; kein Hit → modify_terrain.
+            // Architektur-Hit → removeArchitecture; kein Hit → V9.36-Voxel-carve.
             // Stamina-Gate via getGameMode wie applyOpToPart (6.C2).
             const wave6a6Results = await page
                 .evaluate(() => {
@@ -13269,10 +13225,16 @@ function startSaveServer() {
                     // removeArchitecture mit nicht-existentem Entry → false
                     out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
 
-                    // tryMousePlace ohne aktiven Bau-Modus → false
+                    // V9.35: tryMousePlace ohne aktiven Bau-Modus läuft in den
+                    // V9.15-Voxel-Fill-Pfad (das Gegenstück zum LMB-Graben);
+                    // seit voxel permanent + irreversibel ist, ist dieser Pfad
+                    // immer erreichbar. Wir prüfen darum nur Crash-Frei +
+                    // boolean-Rückgabe (true bei erfolgreichem Fill, false
+                    // wenn der Raycast nichts trifft).
                     r.setGameMode("frieden");
                     r.state.buildMode.active = false;
-                    out.placeRejectsWithoutBuildMode = r.tryMousePlace() === false;
+                    const placeResult = r.tryMousePlace();
+                    out.placeReturnsBoolean = placeResult === true || placeResult === false;
 
                     // tryMouseBreak ohne hit & ohne Architektur → false (kein crash)
                     // (kein physicsWorld in den meisten Tests, also fallback gilt)
@@ -13307,8 +13269,8 @@ function startSaveServer() {
                     wave6a6Results.removeArchitectureRejectsGhost
                 );
                 check(
-                    "Welle 6.A6: tryMousePlace ohne aktiven Bau-Modus → false",
-                    wave6a6Results.placeRejectsWithoutBuildMode
+                    "Welle 6.A6 + V9.35: tryMousePlace ohne Bau-Modus läuft den Voxel-Fill-Pfad (crash-frei, boolean-Rückgabe)",
+                    wave6a6Results.placeReturnsBoolean
                 );
                 check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
             }
@@ -16390,25 +16352,34 @@ function startSaveServer() {
                     }
                     out.architectureUsesLambert = hasToonMaterial;
 
-                    // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms
+                    // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms.
+                    // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
+                    // Init (V9.27-Skip); für den Shader-Test bauen wir uns einen
+                    // via `ensureChunkAt` (die Heightfield-Chunk-Pipeline lebt
+                    // noch — sie wird nur nicht mehr automatisch gerufen).
+                    let shaderSample = null;
                     if (r.state.groundChunks && r.state.groundChunks.length > 0) {
-                        const sample = r.state.groundChunks[0];
-                        if (sample.material && sample.material.uniforms) {
-                            out.terrainHasLightIntensityUniform = !!sample.material.uniforms.lightIntensity;
-                            out.terrainHasAmbientIntensityUniform = !!sample.material.uniforms.ambientIntensity;
-                            // Werte sollten von _applyDayNightToScene gesetzt sein
-                            r.setTimeOfDay(0.5);
-                            r._applyDayNightToScene();
-                            const liNoon = sample.material.uniforms.lightIntensity
-                                ? sample.material.uniforms.lightIntensity.value
-                                : -1;
-                            r.setTimeOfDay(0);
-                            r._applyDayNightToScene();
-                            const liNight = sample.material.uniforms.lightIntensity
-                                ? sample.material.uniforms.lightIntensity.value
-                                : -1;
-                            out.terrainLightFollowsDayCycle = liNoon > liNight;
-                        }
+                        shaderSample = r.state.groundChunks[0];
+                    } else if (typeof r.ensureChunkAt === "function") {
+                        r.ensureChunkAt(50, 50);
+                        const entry = r.state.chunkMap && r.state.chunkMap.get("50,50");
+                        if (entry && entry.mesh) shaderSample = entry.mesh;
+                    }
+                    if (shaderSample && shaderSample.material && shaderSample.material.uniforms) {
+                        out.terrainHasLightIntensityUniform = !!shaderSample.material.uniforms.lightIntensity;
+                        out.terrainHasAmbientIntensityUniform = !!shaderSample.material.uniforms.ambientIntensity;
+                        // Werte sollten von _applyDayNightToScene gesetzt sein
+                        r.setTimeOfDay(0.5);
+                        r._applyDayNightToScene();
+                        const liNoon = shaderSample.material.uniforms.lightIntensity
+                            ? shaderSample.material.uniforms.lightIntensity.value
+                            : -1;
+                        r.setTimeOfDay(0);
+                        r._applyDayNightToScene();
+                        const liNight = shaderSample.material.uniforms.lightIntensity
+                            ? shaderSample.material.uniforms.lightIntensity.value
+                            : -1;
+                        out.terrainLightFollowsDayCycle = liNoon > liNight;
                     }
                     r.setTimeOfDay(0.5);
 
@@ -16499,11 +16470,21 @@ function startSaveServer() {
                         tm.fragmentShader &&
                         /vField/.test(tm.fragmentShader)
                     );
-                    // Chunk-Geometrie trägt aField-Attribut
+                    // Chunk-Geometrie trägt aField-Attribut.
+                    // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
+                    // Init — wir bauen einen für den Test via ensureChunkAt.
                     let chunkHasField = false;
+                    let aFieldChunk = null;
                     if (r.state.groundChunks && r.state.groundChunks.length > 0) {
-                        const g = r.state.groundChunks[0].geometry;
-                        chunkHasField = !!(g && g.getAttribute && g.getAttribute("aField"));
+                        aFieldChunk = r.state.groundChunks[0];
+                    } else if (typeof r.ensureChunkAt === "function") {
+                        r.ensureChunkAt(60, 60);
+                        const entry = r.state.chunkMap && r.state.chunkMap.get("60,60");
+                        if (entry && entry.mesh) aFieldChunk = entry.mesh;
+                    }
+                    if (aFieldChunk && aFieldChunk.geometry) {
+                        const g = aFieldChunk.geometry;
+                        chunkHasField = !!(g.getAttribute && g.getAttribute("aField"));
                     }
                     out.chunkHasFieldAttribute = chunkHasField;
 
@@ -17385,9 +17366,17 @@ function startSaveServer() {
                         out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
                     }
 
-                    // 3. Loch-Durchfall — Grabe-Radius 3.0 + Höhen-Clamp.
-                    out.digRadius3 = /const r = 3\.0;/.test(srcOf("tryMouseBreak"));
-                    out.digHeightClamp = /Math\.max\(-100, Math\.min\(100,/.test(srcOf("_applyModifyOpToChunk"));
+                    // 3. Loch-Durchfall — V9.36 Phase 5c.2.c.3.a: der V8.36-
+                    // Heightfield-Höhen-Clamp im `_applyModifyOpToChunk` ist
+                    // mit der Lösch der ganzen modify_terrain-Schicht weg;
+                    // die V9.36-`carveVoxelSphere`-Geste hat keinen Höhen-
+                    // Clamp-Bedarf (das 3D-Voxel-Feld kennt keine Höhen-
+                    // Säulen-Akkumulation). Der V8.36-Radius-Marker lebt
+                    // weiter, jetzt als `carveRadius = 3.5` (im Voxel-Feld
+                    // grösser als die alte 3.0-Heightfield-Mulde — eine
+                    // Voxel-Kugel mit 3.5 m Radius spannt ~140 Zellen).
+                    out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
+                    out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
                     // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
                     {
@@ -17430,8 +17419,14 @@ function startSaveServer() {
                     v836Results.jumpNoActivate1
                 );
                 check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
-                check("V8.36: Grabe-Radius auf 3.0 (Mulde statt Nadel)", v836Results.digRadius3);
-                check("V8.36: modify_terrain clampt die Höhe [-100,100] (kein Durchfall)", v836Results.digHeightClamp);
+                check(
+                    "V8.36 + V9.36: Grabe-Radius 3.5 im Voxel-Feld (Mulde statt Nadel, V9.36 ersetzt 3.0-Heightfield-Marker)",
+                    v836Results.digRadiusVoxel
+                );
+                check(
+                    "V9.36: _applyModifyOpToChunk ist gelöscht (Heightfield-Höhen-Clamp obsolet — Voxel-Feld braucht keinen)",
+                    v836Results.digHeightClampObsolete
+                );
                 check("V8.36: Auftrieb-Gate via getTerrainHeightAt (Killplane greift wieder)", v836Results.waterGate);
                 check("V8.36: Logbuch-CSS teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
                 check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
@@ -23556,8 +23551,9 @@ function startSaveServer() {
 
             // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
             //
-            // Schöpfer-Wahl V7.93: atmosphärisch + Terrain (modify_terrain
-            // erlaubt), modus-abhängig (schöpfer auto-execute / pfad+frieden
+            // Schöpfer-Wahl V7.93 + V9.36-Reroute: atmosphärisch + Terrain
+            // (voxel_carve/voxel_fill erlaubt, modify_terrain entfernt),
+            // modus-abhängig (schöpfer auto-execute / pfad+frieden
             // inline-Buttons), LLM-Augmentation bei seltenen Events (L5,
             // neue Spec) mit eigenem 10-Min-Throttle. Tests prüfen:
             // Whitelist-Validation, Modus-Diskrimination, Memory-Einträge,
@@ -23573,7 +23569,8 @@ function startSaveServer() {
                     out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
                     out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
                     out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
-                    out.modifyTerrainAllowed = Class.CREATURE_PROPOSED_OPS.has("modify_terrain");
+                    out.voxelCarveAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_carve");
+                    out.voxelFillAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_fill");
                     out.spawnBlueprintAllowed = Class.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
                     out.chainAllowed = Class.CREATURE_PROPOSED_OPS.has("chain");
                     // Forbidden: player_*, define_*, delete_*, set_mode
@@ -23596,7 +23593,7 @@ function startSaveServer() {
                         ["skybox_color", "#ffd9a3"],
                     ]);
                     out.allowsChain = okChain.ok === true;
-                    const okTerrain = r._isCreatureProposalAllowed(["modify_terrain", 0, 0, 5, -1]);
+                    const okTerrain = r._isCreatureProposalAllowed(["voxel_carve", 0, 50, 0, 3]);
                     out.allowsTerrain = okTerrain.ok === true;
 
                     // 3. Validator: verbotene Programme
@@ -23715,9 +23712,10 @@ function startSaveServer() {
                         wave6hP2eV3Results.rareEventGap
                 );
                 check(
-                    "Welle 6.H P2E V3: Whitelist erlaubt atmosphärische + Terrain-Ops (weather, modify_terrain, spawn_blueprint, chain)",
+                    "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
                     wave6hP2eV3Results.weatherAllowed &&
-                        wave6hP2eV3Results.modifyTerrainAllowed &&
+                        wave6hP2eV3Results.voxelCarveAllowed &&
+                        wave6hP2eV3Results.voxelFillAllowed &&
                         wave6hP2eV3Results.spawnBlueprintAllowed &&
                         wave6hP2eV3Results.chainAllowed
                 );
@@ -23728,7 +23726,7 @@ function startSaveServer() {
                         wave6hP2eV3Results.setModeForbidden
                 );
                 check(
-                    "Welle 6.H P2E V3: Validator akzeptiert erlaubte Programme (weather, chain, modify_terrain)",
+                    "Welle 6.H P2E V3 + V9.36: Validator akzeptiert erlaubte Programme (weather, chain, voxel_carve)",
                     wave6hP2eV3Results.allowsWeather &&
                         wave6hP2eV3Results.allowsChain &&
                         wave6hP2eV3Results.allowsTerrain
