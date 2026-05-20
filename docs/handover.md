@@ -9,7 +9,12 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 20.05.2026, V9.39)
+## Schnell-Lage (Stand 20.05.2026, V9.40-a)
+
+**V9.40-a — Voxel-Surface-Politur Welle A.1 (Maus-Voxel-Edits durch DSL-Pfad routen)**: kleine Welle, ein Commit. In `tryMouseBreak` + `tryMousePlace` werden die direkten `this.carveVoxelSphere(...)` / `this.fillVoxelSphere(...)`-Calls durch `this.dslRun(["voxel_carve"|"voxel_fill", x, y, z, r], {source:"human"})` ersetzt. Lokal identisches Verhalten (DSL-Op ruft am Ende dieselbe Funktion), aber `dslRun` mit `source:"human"` triggert automatisch `p2pBroadcastDsl` (Z. ~1051) → ein Mitspieler im selben Raum sieht dieselbe Mulde / denselben Hügel. Material-Yield + Inventar-Ping + Material-Konsum-Gate bleiben lokal nach dem dslRun-Call (Spieler-private Inventar-Gesten, nicht Welt-Geometrie). **V8.64-Lehre, ein zweites Mal angewandt**: confirmBuild → broadcast war seit V8.64 sauber für Architektur-Sync, bei Voxel-Edits (V9.14/V9.15) wurde es nicht nachgezogen — die V9.39-Schöpfer-Browser-Diagnose deckte die Naht auf. Der DSL-Op IST der EINE Broadcast-Anker; ein direkter API-Call im Maus-Handler war eine Sync-Lücke. Tests: bestehende W6.G-P4-Yield-Tests + V9.36-Voxel-Op-Tests bleiben grün. Playtest + Audit-Strict + Lint + Format grün. **Folge: V9.40-b** (Async-Rebuild + V9.24-Symptom-Umkehr) — `_remeshVoxelChunksAround` markiert Chunks dirty, `_tickDirtyVoxelChunks` rebuildet ≤1 Chunk/Frame; bei OOM bleibt der alte Chunk stehen (kein Loch). Substantielle zweite Hälfte, eigener Commit.
+
+### Davor: V9.39 (Voxel-Phase 5c.2.c.3.b.iii — die letzte grosse Aufräum-Welle)
+
 
 **Du erbst eine sehr lebendige Welt**. **~2931 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~34700 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±3-8 je Lauf — einige Checks sind bedingt; „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.)
 

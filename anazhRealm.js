@@ -25750,7 +25750,16 @@ class AnazhRealm {
         // ~140 Voxel-Zellen, was eine echte begehbare Mulde gibt; eine zu
         // kleine Kugel wäre eine Nadel statt einer Mulde.
         const carveRadius = 3.5;
-        this.carveVoxelSphere(target.x, target.y, target.z, carveRadius);
+        // V9.40-a — der Grabe-Hieb läuft jetzt durch den DSL-Pfad (statt
+        // direkt carveVoxelSphere zu rufen). dslRun mit source:"human"
+        // triggert automatisch p2pBroadcastDsl (Z. ~1051), sodass ein
+        // Mitspieler im selben Raum dieselbe Mulde sieht. Lokal ruft der
+        // voxel_carve-Op am Ende dieselbe carveVoxelSphere — kein
+        // Verhaltens-Unterschied auf der eigenen Welt. V8.64-Lehre
+        // (Architektur-Sync) auf Voxel-Edits angewandt: der DSL-Op IST
+        // der EINE Broadcast-Anker; ein direkter API-Call wäre eine
+        // Sync-Lücke (genau die Schöpfer-V9.39-Diagnose).
+        this.dslRun(["voxel_carve", target.x, target.y, target.z, carveRadius], { source: "human" });
         // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
         // genau wie harvestArchitecture eine Struktur auflöst. Das Material
         // emergiert aus dem Welt-Affinitäts-Feld am Grabe-Ort — die Farbe, die
@@ -25852,7 +25861,12 @@ class AnazhRealm {
                 return false;
             }
             this._consumeMouseStamina();
-            this.fillVoxelSphere(fillHit.x, fillHit.y, fillHit.z, 3.5);
+            // V9.40-a — Aufschütten läuft jetzt durch den DSL-Pfad (analog
+            // tryMouseBreak). dslRun mit source:"human" broadcastet den
+            // voxel_fill an Mitspieler; lokal ruft der Op am Ende dieselbe
+            // fillVoxelSphere. Der Material-Konsum (matGate oben) bleibt
+            // lokal — er ist Spieler-Inventar-Geste, nicht broadcastable.
+            this.dslRun(["voxel_fill", fillHit.x, fillHit.y, fillHit.z, 3.5], { source: "human" });
             if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
             return true;
         }
