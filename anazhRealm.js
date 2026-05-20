@@ -414,7 +414,10 @@ class AnazhRealm {
                 // Spieler seine erste Welt nicht visuell verliert.
                 seed: null,
                 schemaVersion: "8.0-multiworld-v1",
-                chunkDeltas: {},
+                // V9.36 Phase 5c.2.c.3.a: das Ring-10.5-`chunkDeltas`-Feld ist
+                // entfernt — die Welt-Mod-Schicht wirkt im 3D-Voxel-Feld
+                // (V9.14/V9.15) statt im Heightfield. Alte Saves mit dem Feld
+                // werden defensiv ignoriert.
                 // Ring 11.5: Welt-Beziehungs-Rolle.
                 //   "solo"  = lokale, private Welt (Default)
                 //   "host"  = ich erschuf diese Welt für Multi-User, lade andere ein
@@ -1272,41 +1275,36 @@ class AnazhRealm {
             terrain_base_height: ([value]) => {
                 this.state.terrainBaseHeight = c(value, -50, 50);
             },
-            // Ring 10.5: modify_terrain(x, z, radius, deltaHeight). Hebt oder
-            // senkt das Höhenfeld in einer Scheibe um (x,z). Schreibt ein Op
-            // in alle vom Radius berührten Chunk-Delta-Listen + wendet sofort
-            // an, sofern der Chunk geladen ist. Beim Re-Ensure läuft
-            // applyChunkDelta die gespeicherte Op-Liste durch — der Effekt
-            // überlebt damit Chunk-Unload und Reload. Bewusst NICHT im
-            // dslComposeAtomic-Pool: der Nexus soll Welt-Geometrie unter dem
-            // Spieler nicht willkürlich umpflügen (gleiche Disziplin wie
-            // terrain_steepness/-base_height, siehe CLAUDE.md gotcha).
-            modify_terrain: ([x, z, radius, deltaHeight], ctx) => {
+            // V9.36 Phase 5c.2.c.3.a: voxel_carve(x, y, z, r) + voxel_fill(x, y, z, r)
+            // — die DSL-Form der V9.14/V9.15-Voxel-Edit-Mechanik. Eine Welt-
+            // Mod-Op (broadcastable, history-trackable, multi-user-synchron)
+            // statt der V7.68-`modify_terrain`-Heightfield-Schicht. Bewusst
+            // NICHT im dslComposeAtomic-Pool: der Nexus soll Welt-Geometrie
+            // unter dem Spieler nicht willkürlich umpflügen (gleiche Disziplin
+            // wie spawn_* + die alte `modify_terrain`).
+            voxel_carve: ([x, y, z, radius], ctx) => {
                 const cx = Number(x);
+                const cy = Number(y);
                 const cz = Number(z);
-                if (!Number.isFinite(cx) || !Number.isFinite(cz)) {
-                    ctx.log.push({ event: "modify_terrain_invalid_pos" });
+                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
+                    ctx.log.push({ event: "voxel_carve_invalid_pos" });
                     return;
                 }
-                const r = c(radius, 0.5, 15);
-                const dh = c(deltaHeight, -15, 15);
-                const op = { type: "modify_terrain", x: cx, z: cz, r, dh, at: Date.now() };
-                const affected = this._chunksTouchedByDisc(cx, cz, r);
-                let stored = 0;
-                for (const key of affected) {
-                    if (this._appendChunkDeltaOp(key, op)) stored++;
-                    const chunkData = this.state.chunkMap && this.state.chunkMap.get(key);
-                    if (chunkData) this._applyModifyOpToChunk(chunkData, op);
+                const r = c(radius, 0.5, 12);
+                this.carveVoxelSphere(cx, cy, cz, r);
+                ctx.log.push({ event: "voxel_carved", x: cx, y: cy, z: cz, r });
+            },
+            voxel_fill: ([x, y, z, radius], ctx) => {
+                const cx = Number(x);
+                const cy = Number(y);
+                const cz = Number(z);
+                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
+                    ctx.log.push({ event: "voxel_fill_invalid_pos" });
+                    return;
                 }
-                ctx.log.push({
-                    event: "modified_terrain",
-                    x: cx,
-                    z: cz,
-                    r,
-                    dh,
-                    chunks: affected.length,
-                    stored,
-                });
+                const r = c(radius, 0.5, 12);
+                this.fillVoxelSphere(cx, cy, cz, r);
+                ctx.log.push({ event: "voxel_filled", x: cx, y: cy, z: cz, r });
             },
             time_of_day: ([value]) => {
                 this.state.timeOfDay = c(value, 0, 1);
@@ -6803,16 +6801,19 @@ class AnazhRealm {
                 },
             },
             {
-                // Ring 10.5: Welt-Modifizierbarkeit. `grabe loch` / `hebe
-                // hügel` schreibt ein modify_terrain-Op an der aktuellen
-                // Spieler-Position, das per-Chunk persistiert wird und
-                // einen Chunk-Unload + Reload überlebt.
+                // V9.36 Phase 5c.2.c.3.a: Welt-Modifizierbarkeit über die
+                // Voxel-Edit-Schicht (V9.14/V9.15). `grabe loch` schnitzt
+                // eine Kugel „Luft" unter dem Spieler, `hebe hügel` schüttet
+                // eine Kugel „Fest" auf. Beide gehen über die broadcastable
+                // DSL-Ops voxel_carve / voxel_fill — ersetzen den V7.68-
+                // `modify_terrain`-Heightfield-Pfad (V9.35 machte Voxel
+                // permanent, V9.36 löst die Heightfield-Mod-Schicht ab).
                 example: "grabe loch",
                 re: /^grabe\s+(?:ein\s+)?loch\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 0, z: 0 };
                     return {
-                        program: ["modify_terrain", p.x, p.z, 4, -3],
+                        program: ["voxel_carve", p.x, p.y - 1.5, p.z, 5],
                         describe: "Loch gegraben",
                     };
                 },
@@ -6821,9 +6822,9 @@ class AnazhRealm {
                 example: "hebe hügel",
                 re: /^hebe\s+(?:einen\s+)?hügel\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 0, z: 0 };
                     return {
-                        program: ["modify_terrain", p.x, p.z, 5, 4],
+                        program: ["voxel_fill", p.x, p.y - 1.5, p.z, 5],
                         describe: "Hügel gehoben",
                     };
                 },
@@ -8995,12 +8996,11 @@ class AnazhRealm {
                 ...this.state.worldMeta,
                 ...worldMeta,
                 parentWorlds: [],
-                // Ring 10.5: neue Welten starten mit 10.5-Schema und leerer
-                // Delta-Map. Schema-Bump signalisiert „kennt chunkDeltas",
-                // alte Welten (8.0/9.0/10.0) bleiben kompatibel — der Loader
-                // füllt chunkDeltas defensiv mit `{}` falls fehlend.
+                // V9.36 Phase 5c.2.c.3.a: das Ring-10.5-`chunkDeltas`-Feld ist
+                // entfernt — die Welt-Mod-Schicht wirkt im 3D-Voxel-Feld
+                // (V9.14/V9.15) statt im Heightfield. Das Schema bleibt bei
+                // 10.5-chunk-delta-v1 (kein Schema-Bump für eine Feld-Lösch).
                 schemaVersion: "10.5-chunk-delta-v1",
-                chunkDeltas: {},
                 // Welle 6.C2: jede neue Welt startet im frieden-Modus —
                 // Erstbegegnung soll nicht hostil sein. Wer pfad/schöpfer
                 // will, schaltet bewusst über setze modus oder UI.
@@ -11168,8 +11168,8 @@ class AnazhRealm {
     //
     // Schöpfer-Wahl (V7.93): atmosphärisch + Terrain. Kreatur darf Welt
     // mitformen, KEIN Spieler-Eingriff (player_*), KEINE Welt-Wissen-
-    // Mutation (define_*), KEIN Bauplan-Lösch. modify_terrain bewusst
-    // erlaubt — Vision-treuer Co-Schöpfer-Geist (Spieler kann in Loch
+    // Mutation (define_*), KEIN Bauplan-Lösch. voxel_carve/voxel_fill
+    // bewusst erlaubt — Vision-treuer Co-Schöpfer-Geist (Spieler kann in Loch
     // fallen → wache Aufmerksamkeit ist Teil der Beziehung).
     //
     // chain ist erlaubt für Mehrschritt-Programme; Validator walkt
@@ -11191,7 +11191,8 @@ class AnazhRealm {
                 "spawn_ufo",
                 "spawn_fractal",
                 "set_visible",
-                "modify_terrain",
+                "voxel_carve",
+                "voxel_fill",
                 "chain",
                 "say", // narrative-only Op (existing) bleibt erlaubt
             ])
@@ -12407,11 +12408,8 @@ class AnazhRealm {
             gravity: (a) => `setzt die Schwerkraft auf ${a[0]}`,
             terrain_steepness: (a) => `regelt die Hang-Steilheit auf ${a[0]}`,
             terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
-            modify_terrain: (a) => {
-                const dh = Number(a[3]);
-                const verb = dh > 0 ? "hebt" : dh < 0 ? "gräbt" : "ebnet";
-                return `${verb} das Terrain bei (${a[0]}, ${a[1]}) im Radius ${a[2]}`;
-            },
+            voxel_carve: (a) => `schnitzt das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]}`,
+            voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
             time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
             spawn_creature: (a) =>
@@ -14924,232 +14922,16 @@ class AnazhRealm {
         return { CHUNK_SIZE, WIDTH, WORLD_SIZE, chunkWorldSize, vertexStep };
     }
 
-    // Ring 10.5: liefert die Chunk-Keys ("cx,cz"), deren AABB die Scheibe
-    // um (worldX, worldZ) mit Radius r berührt. Wird von modify_terrain
-    // genutzt, um den Op in mehreren Delta-Listen einzutragen, falls die
-    // Scheibe über mehrere Chunks reicht.
-    _chunksTouchedByDisc(worldX, worldZ, r) {
-        const { WORLD_SIZE, chunkWorldSize } = this._chunkGeometry();
-        const halfWorld = WORLD_SIZE / 2;
-        const minCX = Math.floor((worldX - r + halfWorld) / chunkWorldSize);
-        const maxCX = Math.floor((worldX + r + halfWorld) / chunkWorldSize);
-        const minCZ = Math.floor((worldZ - r + halfWorld) / chunkWorldSize);
-        const maxCZ = Math.floor((worldZ + r + halfWorld) / chunkWorldSize);
-        const out = [];
-        for (let cx = minCX; cx <= maxCX; cx++) {
-            for (let cz = minCZ; cz <= maxCZ; cz++) {
-                out.push(`${cx},${cz}`);
-            }
-        }
-        return out;
-    }
-
-    // Ring 10.5: hängt einen Op an die Delta-Liste eines Chunks, mit Cap
-    // gegen unbegrenzten Wuchs. Liefert true, wenn der Op gespeichert wurde,
-    // false, wenn der Cap erreicht ist (ältester Op wird in dem Fall
-    // verworfen statt zu wachsen — der Spieler kann die Welt weiter formen).
-    _appendChunkDeltaOp(chunkKey, op) {
-        if (!this.state.worldMeta) return false;
-        if (!this.state.worldMeta.chunkDeltas) this.state.worldMeta.chunkDeltas = {};
-        const deltas = this.state.worldMeta.chunkDeltas;
-        if (!deltas[chunkKey] || !Array.isArray(deltas[chunkKey].ops)) {
-            deltas[chunkKey] = { ops: [] };
-        }
-        const cap = AnazhRealm.CHUNK_DELTA_OPS_CAP;
-        if (deltas[chunkKey].ops.length >= cap) {
-            deltas[chunkKey].ops.shift();
-        }
-        deltas[chunkKey].ops.push(op);
-        return true;
-    }
-
-    // Ring 10.5: räumt chunkDeltas nach Load auf. Wirft ungültige Einträge,
-    // klammert Felder auf sichere Bereiche, hält den Cap pro Chunk ein.
-    // Alte Saves ohne chunkDeltas bekommen eine leere Map.
-    _sanitizeChunkDeltas() {
-        if (!this.state.worldMeta) return;
-        const raw = this.state.worldMeta.chunkDeltas;
-        if (!raw || typeof raw !== "object") {
-            this.state.worldMeta.chunkDeltas = {};
-            return;
-        }
-        const cap = AnazhRealm.CHUNK_DELTA_OPS_CAP;
-        const clean = {};
-        for (const [key, entry] of Object.entries(raw)) {
-            if (typeof key !== "string" || !/^-?\d+,-?\d+$/.test(key)) continue;
-            if (!entry || !Array.isArray(entry.ops)) continue;
-            const ops = [];
-            for (const op of entry.ops) {
-                if (!op || op.type !== "modify_terrain") continue;
-                const x = Number(op.x);
-                const z = Number(op.z);
-                const r = Number(op.r);
-                const dh = Number(op.dh);
-                if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
-                if (!Number.isFinite(r) || r <= 0 || r > 20) continue;
-                if (!Number.isFinite(dh) || Math.abs(dh) > 20) continue;
-                ops.push({ type: "modify_terrain", x, z, r, dh, at: Number(op.at) || Date.now() });
-            }
-            if (ops.length === 0) continue;
-            clean[key] = { ops: ops.slice(-cap) };
-        }
-        this.state.worldMeta.chunkDeltas = clean;
-    }
-
-    // Ring 10.5: wendet einen einzelnen modify_terrain-Op auf einen
-    // geladenen Chunk an. Update-Pfad: heightData[] mutieren, Mesh-Vertices
-    // im selben Index updaten, Normalen + Bounding-Sphere neu berechnen,
-    // Ammo-Body neu bauen (Visual=Collision-Naht halten). Smoothstep-Falloff
-    // im Radius — Mitte voller dh, Rand 0. No-op wenn der Op den Chunk
-    // räumlich nicht erreicht (z. B. weil eine Scheibe über mehrere Chunks
-    // reichte und nur der Außenrand betroffen war).
-    _applyModifyOpToChunk(chunkData, op) {
-        if (!chunkData || !chunkData.mesh || !chunkData.heightData) return false;
-        if (!op || op.type !== "modify_terrain") return false;
-        const mesh = chunkData.mesh;
-        const heightData = chunkData.heightData;
-        const { CHUNK_SIZE, WORLD_SIZE, chunkWorldSize, vertexStep } = this._chunkGeometry();
-        const VTX = CHUNK_SIZE + 1;
-        const worldStartX = chunkData.chunkX * chunkWorldSize - WORLD_SIZE / 2;
-        const worldStartZ = chunkData.chunkZ * chunkWorldSize - WORLD_SIZE / 2;
-        const cx = Number(op.x);
-        const cz = Number(op.z);
-        const r = Math.max(0.5, Math.min(15, Number(op.r) || 0));
-        const dh = Math.max(-15, Math.min(15, Number(op.dh) || 0));
-        if (!Number.isFinite(cx) || !Number.isFinite(cz)) return false;
-        const r2 = r * r;
-        const posAttr = mesh.geometry.attributes.position;
-        const arr = posAttr.array;
-        let touched = 0;
-        for (let z = 0; z < VTX; z++) {
-            const wz = worldStartZ + z * vertexStep;
-            const dz = wz - cz;
-            const dz2 = dz * dz;
-            if (dz2 > r2) continue;
-            for (let x = 0; x < VTX; x++) {
-                const wx = worldStartX + x * vertexStep;
-                const dx = wx - cx;
-                const d2 = dx * dx + dz2;
-                if (d2 > r2) continue;
-                const t = 1 - Math.sqrt(d2) / r;
-                const falloff = t * t * (3 - 2 * t);
-                const delta = dh * falloff;
-                const idx = z * VTX + x;
-                // V8.36 — Höhe clampen. Ungeklemmt trieb wiederholtes Graben
-                // am selben Punkt die Höhe unbegrenzt nach unten → entartetes
-                // Mesh + Durchfall. [-100, 100] = derselbe Band wie der
-                // Welt-Vertex-Clamp.
-                heightData[idx] = Math.max(-100, Math.min(100, heightData[idx] + delta));
-                arr[idx * 3 + 1] = heightData[idx];
-                touched++;
-            }
-        }
-        if (touched === 0) return false;
-        posAttr.needsUpdate = true;
-        mesh.geometry.computeVertexNormals();
-        mesh.geometry.computeBoundingSphere();
-        let minH = Infinity;
-        let maxH = -Infinity;
-        for (let i = 0; i < heightData.length; i++) {
-            const h = heightData[i];
-            if (h < minH) minH = h;
-            if (h > maxH) maxH = h;
-        }
-        mesh.userData.minHeight = minH;
-        mesh.userData.maxHeight = maxH;
-        this._rebuildChunkPhysics(chunkData, arr);
-        return true;
-    }
-
-    // Ring 10.5: Ammo-Body neu aus den aktuellen Mesh-Vertices bauen. Alt-Body
-    // + tmesh werden vor dem Rebuild aus der Welt entfernt + destroyed,
-    // sonst hagelt es Phantom-Kollisionen + WASM-Heap-Leaks. Selbe
-    // Triangle-Reihenfolge wie ensureChunkAt — Visual=Kollision bleibt
-    // per Konstruktion identisch (CLAUDE.md Gotcha).
-    _rebuildChunkPhysics(chunkData, vertices) {
-        if (!this.state.physicsWorld || !chunkData.mesh.userData.physicsBody) return;
-        if (typeof Ammo === "undefined") return;
-        const mesh = chunkData.mesh;
-        const sf = this.state.scaleFactor;
-        if (!(sf > 0)) return;
-        const { CHUNK_SIZE } = this._chunkGeometry();
-        const VTX = CHUNK_SIZE + 1;
-        try {
-            // V9.29 — vollständiger Alt-Body-Cleanup via Helper: vor V9.29
-            // destroyed nur body + tmesh; shape + motionState leakten.
-            // _rebuildChunkPhysics läuft bei jedem `modify_terrain`-Op
-            // (Ring 10.5), bei häufigem Graben summierte sich der Leck.
-            this._disposeChunkPhysics(mesh);
-            const tmesh = new Ammo.btTriangleMesh(true, true);
-            const v0 = new Ammo.btVector3(0, 0, 0);
-            const v1 = new Ammo.btVector3(0, 0, 0);
-            const v2 = new Ammo.btVector3(0, 0, 0);
-            for (let z = 0; z < VTX - 1; z++) {
-                for (let x = 0; x < VTX - 1; x++) {
-                    const a = z * VTX + x;
-                    const b = z * VTX + x + 1;
-                    const c2 = (z + 1) * VTX + x;
-                    const d = (z + 1) * VTX + x + 1;
-                    v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
-                    v1.setValue(vertices[b * 3] / sf, vertices[b * 3 + 1] / sf, vertices[b * 3 + 2] / sf);
-                    v2.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
-                    tmesh.addTriangle(v0, v1, v2);
-                    v0.setValue(vertices[a * 3] / sf, vertices[a * 3 + 1] / sf, vertices[a * 3 + 2] / sf);
-                    v1.setValue(vertices[d * 3] / sf, vertices[d * 3 + 1] / sf, vertices[d * 3 + 2] / sf);
-                    v2.setValue(vertices[c2 * 3] / sf, vertices[c2 * 3 + 1] / sf, vertices[c2 * 3 + 2] / sf);
-                    tmesh.addTriangle(v0, v1, v2);
-                }
-            }
-            Ammo.destroy(v0);
-            Ammo.destroy(v1);
-            Ammo.destroy(v2);
-            // V9.29 — Build-Pfad räumt + speichert alle Ammo-Refs sauber:
-            // shape + motionState landen in userData (für `_disposeChunkPhysics`),
-            // transform + inline-btVector3 werden direkt destroyed (setOrigin
-            // + btDefaultMotionState-Konstruktor kopieren die Werte intern).
-            const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
-            const transform = new Ammo.btTransform();
-            transform.setIdentity();
-            const origin = new Ammo.btVector3(0, 0, 0);
-            transform.setOrigin(origin);
-            Ammo.destroy(origin);
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            Ammo.destroy(transform);
-            const inertia = new Ammo.btVector3(0, 0, 0);
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
-            const body = new Ammo.btRigidBody(rbInfo);
-            this.state.physicsWorld.addRigidBody(body);
-            Ammo.destroy(rbInfo);
-            Ammo.destroy(inertia);
-            mesh.userData.physicsBody = body;
-            mesh.userData.physicsMesh = tmesh;
-            mesh.userData.physicsShape = shape;
-            mesh.userData.physicsMotionState = motionState;
-        } catch (err) {
-            this.log(
-                `Chunk-Physik-Rebuild fehlgeschlagen (${chunkData.chunkX}, ${chunkData.chunkZ}): ${err.message}`,
-                "ERROR"
-            );
-        }
-    }
-
-    // Ring 10.5: nach ensureChunkAt aufgerufen — replays die für diesen
-    // Chunk gespeicherten Ops. No-op wenn keine Deltas existieren. Idempotent
-    // im Sinne: jede Ensure führt die volle Op-Liste aus (deterministisch,
-    // wir mutieren nicht die ops selbst).
-    applyChunkDelta(chunkKey) {
-        const deltas = this.state.worldMeta && this.state.worldMeta.chunkDeltas;
-        if (!deltas) return 0;
-        const entry = deltas[chunkKey];
-        if (!entry || !Array.isArray(entry.ops) || entry.ops.length === 0) return 0;
-        const chunkData = this.state.chunkMap && this.state.chunkMap.get(chunkKey);
-        if (!chunkData) return 0;
-        let applied = 0;
-        for (const op of entry.ops) {
-            if (this._applyModifyOpToChunk(chunkData, op)) applied++;
-        }
-        return applied;
-    }
+    // V9.36 Phase 5c.2.c.3.a — die Ring-10.5-Heightfield-Mod-Pipeline ist
+    // entfernt: `_chunksTouchedByDisc`, `_appendChunkDeltaOp`,
+    // `_sanitizeChunkDeltas`, `_applyModifyOpToChunk`, `_rebuildChunkPhysics`,
+    // `applyChunkDelta`. Die V7.68-`modify_terrain`-DSL-Op ist durch
+    // `voxel_carve` + `voxel_fill` ersetzt; die Welt-Mod wirkt jetzt im
+    // 3D-Dichte-Feld (V9.14/V9.15), nicht mehr im schlafenden Heightfield.
+    // `state.worldMeta.chunkDeltas` aus alten Saves wird beim Laden still
+    // ignoriert (kein Migrations-Pfad nötig — die Daten waren Heightfield-
+    // Modifikationen, die in der jetzt-permanenten Voxel-Welt keinen Sinn
+    // mehr hätten).
 
     ensureChunkAt(newChunkX, newChunkZ) {
         // Baut einen einzelnen Chunk an den gegebenen Welt-Indizes — kann
@@ -15324,12 +15106,9 @@ class AnazhRealm {
             this.log(`ensureChunkAt Physik-Fehler bei (${newChunkX}, ${newChunkZ}): ${err.message}`, "ERROR");
         }
 
-        // Ring 10.5: nach Mesh + Body erfolgreich gebaut → gespeicherte
-        // Welt-Modifikationen für diesen Chunk replayen. Daten überleben
-        // damit Chunk-Unload + Reload + Welt-Wechsel. No-op wenn keine
-        // Deltas existieren (z. B. frische Welt).
-        const replayKey = `${newChunkX},${newChunkZ}`;
-        this.applyChunkDelta(replayKey);
+        // V9.36 Phase 5c.2.c.3.a: der Ring-10.5-`applyChunkDelta`-Replay
+        // ist entfernt — die Welt-Mod-Schicht wirkt jetzt im 3D-Voxel-
+        // Dichte-Feld (V9.14/V9.15), nicht mehr im Heightfield.
 
         // V7.75 — Welle 6.G Phase 2: Welt-Affinitäts-Feld füllt den
         // neuen Chunk mit Vegetation + Strukturen. Idempotent über
@@ -17537,10 +17316,10 @@ class AnazhRealm {
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
-        // Ring 10.5: chunkDeltas defensiv normalisieren. Alte Saves haben
-        // das Feld nicht → leere Map. Vorhandene Ops werden sanitisiert
-        // (gültiger type, finite Zahlen, Cap pro Chunk eingehalten).
-        this._sanitizeChunkDeltas();
+        // V9.36 Phase 5c.2.c.3.a: der Ring-10.5-`chunkDeltas`-Sanitizer ist
+        // entfernt — die Welt-Mod-Schicht wirkt im 3D-Voxel-Feld (V9.14/V9.15)
+        // statt im Heightfield. Alte Saves mit `worldMeta.chunkDeltas` werden
+        // beim Laden still ignoriert (das Feld ist ein toter Datenpfad).
         // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
         // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
         // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
@@ -26670,27 +26449,23 @@ class AnazhRealm {
             return false;
         }
         this._consumeMouseStamina();
-        // V8.36 — Radius 3.0 statt 1.5: bei 1.5 ≈ vertexStep (1.17) traf ein
-        // Grabe-Op faktisch nur EINEN Vertex → mit jedem Klick eine spitzere
-        // Nadel statt einer Mulde, bis man durch die Welt fiel. 3.0 spannt
-        // mehrere Vertices → eine glatte, begehbare Mulde.
-        const r = 3.0;
-        const dh = -1.0;
-        // Phase 3 — ist das Voxel-Terrain aktiv, schnitzt der Grabe-Hieb das
-        // 3D-Dichte-Feld (ein echtes Loch), sonst senkt er das Heightfield.
-        if (this.state.voxelTerrainActive) {
-            this.carveVoxelSphere(target.x, target.y, target.z, 3.5);
-        } else if (typeof this.dslRun === "function") {
-            this.dslRun(["modify_terrain", target.x, target.z, r, dh], { source: "human" });
-        }
+        // V9.36 Phase 5c.2.c.3.a: Voxel ist permanent (V9.35) — der Grabe-Hieb
+        // schnitzt immer das 3D-Dichte-Feld (ein echtes Loch). Der ehemalige
+        // V7.68-Heightfield-Mod-Fallback ist als toter Pfad entfernt. Der
+        // Yield-Radius (3.5 m im Voxel-Feld) ist bewusst > als die historische
+        // 3.0-m-Heightfield-Mulde — eine Voxel-Kugel mit 3.5 m Radius spannt
+        // ~140 Voxel-Zellen, was eine echte begehbare Mulde gibt; eine zu
+        // kleine Kugel wäre eine Nadel statt einer Mulde.
+        const carveRadius = 3.5;
+        this.carveVoxelSphere(target.x, target.y, target.z, carveRadius);
         // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
         // genau wie harvestArchitecture eine Struktur auflöst. Das Material
         // emergiert aus dem Welt-Affinitäts-Feld am Grabe-Ort — die Farbe, die
         // der Spieler SIEHT, ist das Material, das er BEKOMMT. Der Yield ist
-        // lokal (NICHT im modify_terrain-DSL-Op) — nur die eigene Grabe-Geste
-        // füllt das eigene Inventar, ein mesh-broadcastetes modify_terrain nicht.
+        // lokal (NICHT im DSL-Op) — nur die eigene Grabe-Geste füllt das
+        // eigene Inventar, ein mesh-broadcastetes voxel_carve nicht.
         const digMat = this._terrainMaterialAt(target.x, target.z);
-        const digUnits = Math.max(1, Math.min(10, Math.round(r * Math.abs(dh) * 1.4)));
+        const digUnits = Math.max(1, Math.min(10, Math.round(carveRadius * 1.4)));
         if (this.addMaterialToInventory(digMat, digUnits)) {
             this.log(`Gegraben: ${digUnits}× ${digMat}`, "INFO");
             const matDef = this.state.materials && this.state.materials[digMat];
@@ -35593,10 +35368,6 @@ AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     magic_strong: 1.5,
     precision_high: 0.8,
 });
-// Ring 10.5: harter Cap auf Ops pro Chunk-Delta. Ohne den würde ein
-// Spieler, der 1000-mal denselben Hügel hebt, den Save unbegrenzt
-// aufblähen. Beim Erreichen wird der älteste Op verworfen (FIFO).
-AnazhRealm.CHUNK_DELTA_OPS_CAP = 100;
 // Welle 4 Phase 2 — Form-Tag-Aktivierungs-Matrix (v2 aus docs).
 // Werte 0..3: 0 = Form schließt das Tag aus, 1 = schwach, 2 = stark,
 // 3 = Signatur. Aktivierte Tag-Stärke = MATRIX × Material-Tag (0..1),
