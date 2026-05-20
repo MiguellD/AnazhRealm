@@ -12062,26 +12062,38 @@ function startSaveServer() {
                     // über toString(), prüft die Schreibstellen sind weg. So
                     // schlägt eine wiederbelebte tote Schicht beim nächsten
                     // Playtest sofort an.
-                    const src =
+                    const srcGen =
                         (typeof r.generateTerrainWithParameters === "function" &&
                             r.generateTerrainWithParameters.toString()) ||
                         "";
+                    // V9.38 — caveNoise/volcanoNoise leben nicht mehr in
+                    // generateTerrainWithParameters (dort wurde der heightData-
+                    // else-Pfad gestrichen, der die Instanzen früher anlegte).
+                    // Sie leben in `ensureChunkAt` + `_buildChunkGrass`. Der
+                    // Regression-Schutz scant darum diese zwei Methoden, in
+                    // denen die echten Höhen-Modulatoren heute sitzen.
+                    const srcChunk =
+                        (typeof r.ensureChunkAt === "function" && r.ensureChunkAt.toString()) || "";
+                    const srcGrass =
+                        (typeof r._buildChunkGrass === "function" && r._buildChunkGrass.toString()) ||
+                        "";
+                    const srcNoise = srcChunk + "\n" + srcGrass;
                     return {
                         noExtendTerrain: typeof r.extendTerrain !== "function",
                         // Die Float32Array-Allokationen sind weg
-                        noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(src),
-                        noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(src),
+                        noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
+                        noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(srcGen),
                         // Die Schreibstellen (`caveData[i] = ...`, `volcanoData[i] = ...`)
                         // sind weg — der Verifizierungs-Anker
-                        noCaveDataWrite: !/caveData\[i\]\s*=/.test(src),
-                        noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(src),
+                        noCaveDataWrite: !/caveData\[i\]\s*=/.test(srcGen),
+                        noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(srcGen),
                         // Regression-Schutz — die Höhen-Quelle + die echten
                         // Konsumenten (caveNoise + volcanoNoise als Noise-
                         // Instanzen) leben weiter
                         ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
                         terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
-                        caveNoiseInSrc: /caveNoise/.test(src),
-                        volcanoNoiseInSrc: /volcanoNoise/.test(src),
+                        caveNoiseInSrc: /caveNoise/.test(srcNoise),
+                        volcanoNoiseInSrc: /volcanoNoise/.test(srcNoise),
                     };
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12110,6 +12122,81 @@ function startSaveServer() {
                 check(
                     "Voxel V9.34: caveNoise + volcanoNoise (SimplexNoise-Instanzen) leben weiter (echte Höhen-Modulatoren)",
                     voxelV934Results.caveNoiseInSrc && voxelV934Results.volcanoNoiseInSrc
+                );
+            }
+
+            // ### V9.38 — Phase 5c.2.c.3.b.ii Lösch-Beweise ###
+            // V9.35 machte `worldMeta.voxelTerrain` permanent true → fünf
+            // voxel-Gate-`else`-Hälften wurden unreachable. V9.38 löscht sie
+            // ehrlich (pure Dead-Code-Welle, V9.30/V9.37-Disziplin).
+            const voxelV938Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const srcGen =
+                        (typeof r.generateTerrainWithParameters === "function" &&
+                            r.generateTerrainWithParameters.toString()) ||
+                        "";
+                    const srcGet =
+                        (typeof r.getTerrainHeightAt === "function" && r.getTerrainHeightAt.toString()) ||
+                        "";
+                    const srcFind =
+                        (typeof r.findSurfaceAbove === "function" && r.findSurfaceAbove.toString()) || "";
+                    return {
+                        // (1) `calculateTerrainSteepness` ist gelöscht — kein
+                        // Aufrufer mehr nach Wasserfall-Loop-Lösch.
+                        noCalcSteepness: typeof r.calculateTerrainSteepness !== "function",
+                        // (2) heightData-Allokations-Loop in generateTerrain*
+                        // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
+                        noHeightDataAlloc:
+                            !/new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/.test(srcGen),
+                        // (3) der Wasserfall-Loop (256×256) ist weg:
+                        // kein `for (let z = 0; z < DEPTH; z++)` mehr.
+                        noWaterfallLoop: !/for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/.test(srcGen),
+                        // (4) `getTerrainHeightAt` ist voxel-only — kein
+                        // `groundHeightField`-Read mehr in der Source.
+                        getHeightVoxelOnly: !/groundHeightField/.test(srcGet),
+                        // (5) `findSurfaceAbove` ist voxel-only — kein
+                        // `groundHeightField`-Read mehr, kein floatingIslands-
+                        // Loop.
+                        findSurfaceVoxelOnly:
+                            !/groundHeightField/.test(srcFind) && !/floatingIslands/.test(srcFind),
+                        // Regression-Schutz: die zwei verschlankten Funktionen
+                        // leben weiter + liefern eine endliche Zahl.
+                        getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
+                        findSurfaceWorks: Number.isFinite(r.findSurfaceAbove(0, -100, 0)),
+                    };
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV938Results && !voxelV938Results.error) {
+                check(
+                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: calculateTerrainSteepness ist gelöscht (kein Aufrufer nach Wasserfall-Loop-Lösch)",
+                    voxelV938Results.noCalcSteepness
+                );
+                check(
+                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: heightData-Allokations-else-Pfad in generateTerrainWithParameters ist gelöscht",
+                    voxelV938Results.noHeightDataAlloc
+                );
+                check(
+                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Voxel-Wasserfälle leben weiter über _buildVoxelChunkWaterfalls)",
+                    voxelV938Results.noWaterfallLoop
+                );
+                check(
+                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: getTerrainHeightAt ist voxel-only (Heightfield-else-Pfad + Raycast-Fallback gelöscht)",
+                    voxelV938Results.getHeightVoxelOnly
+                );
+                check(
+                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: findSurfaceAbove ist voxel-only (Heightfield-Pfad + floatingIslands-Loop gelöscht)",
+                    voxelV938Results.findSurfaceVoxelOnly
+                );
+                check(
+                    "Voxel V9.38: getTerrainHeightAt liefert weiter eine endliche Höhe (Regression)",
+                    voxelV938Results.getHeightWorks
+                );
+                check(
+                    "Voxel V9.38: findSurfaceAbove liefert weiter eine endliche Höhe (Regression)",
+                    voxelV938Results.findSurfaceWorks
                 );
             }
 

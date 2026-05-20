@@ -13258,72 +13258,20 @@ class AnazhRealm {
         this.state.terrainEverGenerated = true;
         if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
-        // ### Höhendaten generieren ###
-        // V9.28 — eine voxel-basierte Welt erzeugt KEIN Heightfield-
-        // Höhendaten-Array. Nach V9.25 Phase 5b sind alle Höhen-Konsumenten
-        // (Wasser, Killplane, Reset-Ziel, Kreatur-Spawn, Genesis-Plattform)
-        // voxel-aware über `getTerrainHeightAt` → `_voxelSurfaceY`; V9.28
-        // (oben, in updateCreatures) zog den letzten missed Direktkonsumenten
-        // nach. Damit liest in einer Voxel-Welt NIEMAND mehr `groundHeightField`/
-        // `state.minHeight`/`state.maxHeight` — die 256×256-Float32Array-
-        // Allokation (3×) + die 65k-Iterationen Noise-Schleife sind unnötig.
-        // ~768 KB + spürbare CPU bei jedem Welt-Aufbau gespart. Sicherheit:
-        // der Killplane-Pfad (line ~34000) ist schon voxel-gated → liest
-        // `minHeight` nur in Heightfield-Welten.
-        const isVoxelWorldGen2 = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
-        let heightData = null;
-        let minHeight = 0;
-        let maxHeight = 0;
-
-        if (isVoxelWorldGen2) {
-            this.log(`Phase 5c.1+: heightData für Voxel-Welt übersprungen (~256 KB + noise-Schleife gespart).`, "INFO");
-        } else {
-            heightData = new Float32Array(WIDTH * DEPTH);
-            minHeight = Infinity;
-            maxHeight = -Infinity;
-
-            if (typeof SimplexNoise !== "undefined") {
-                const noise = new SimplexNoise(
-                    (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed"
-                );
-                const caveNoise = new SimplexNoise(
-                    ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-cave"
-                );
-                const volcanoNoise = new SimplexNoise(
-                    ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-volcano"
-                );
-
-                for (let i = 0; i < WIDTH * DEPTH; i++) {
-                    const x = (i % WIDTH) * (WORLD_SIZE / (WIDTH - 1)) - WORLD_SIZE / 2;
-                    const z = Math.floor(i / WIDTH) * (WORLD_SIZE / (DEPTH - 1)) - WORLD_SIZE / 2;
-                    const cacheKey = `${x}:${z}:${steepness}`;
-
-                    let height = this.state.noiseCache.get(cacheKey);
-                    if (height === undefined) {
-                        height = this._terrainHeightAtWorld(
-                            x,
-                            z,
-                            noise,
-                            steepness,
-                            baseHeight,
-                            caveNoise,
-                            volcanoNoise
-                        );
-                        this.cacheNoise(cacheKey, height);
-                    }
-                    heightData[i] = height;
-                    minHeight = Math.min(minHeight, height);
-                    maxHeight = Math.max(maxHeight, height);
-                }
-                this.log(`Höhendaten mit SimplexNoise generiert (Steilheit: ${steepness}, Basishöhe: ${baseHeight})`);
-            } else {
-                for (let i = 0; i < WIDTH * DEPTH; i++) {
-                    heightData[i] = baseHeight;
-                    minHeight = maxHeight = baseHeight;
-                }
-                this.log("Fallback: Flache Höhendaten generiert", "WARN");
-            }
-        }
+        // ### Höhendaten ###
+        // V9.38 Phase 5c.2.c.3.b.ii — der heightData-Allokations-`else`-Pfad
+        // ist als toter Pfad entfernt. Vor V9.38: ein `if (isVoxelWorldGen2)`
+        // skippte die 256×256×3-Float32Array-Allokation + die 65k-Noise-
+        // Schleife; der `else`-Zweig baute heightData für eine Heightfield-
+        // Welt. Mit V9.35 (Voxel permanent + Zwangs-Migration) UND V9.37
+        // (Heightfield-Dispatch-Pfade gelöscht) ist `worldMeta.voxelTerrain`
+        // konstant-true → der `else`-Zweig wurde nie betreten. V9.30/V9.37-
+        // Disziplin: das offensichtlich Tote löschen. heightData bleibt null,
+        // minHeight/maxHeight bleiben 0 — alle Konsumenten sind seit V9.25
+        // Phase 5b voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
+        const heightData = null;
+        const minHeight = 0;
+        const maxHeight = 0;
 
         // ### Shader-Material ###
         // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
@@ -13830,112 +13778,33 @@ class AnazhRealm {
         }
 
         // ### Dynamische Vegetation und Wasserfälle ###
-        // V9.28 — der 256×256-Wasserfall-Loop liest `heightData[idx]` direkt;
-        // in einer Voxel-Welt (heightData = null nach Phase 5c.1+) würde
-        // das werfen. Skip für Voxel-Welten; die Voxel-Welt baut Wasser über
-        // `_buildWaterPlane` (V9.25) + die Voxel-Oberflächen-Geometrie hat
-        // Höhlen/Klippen-Drama aus dem Dichte-Feld direkt — der heightfield-
-        // Heuristik-Wasserfall an steilen Stellen ist eine reine Heightfield-
-        // Ästhetik-Schicht, die in einer Voxel-Welt fehl am Platz wäre.
+        // V9.38 Phase 5c.2.c.3.b.ii — der 256×256-Heightfield-Wasserfall-Loop
+        // ist als toter Pfad entfernt. Er las `heightData[idx]` direkt + war
+        // seit V9.28 voxel-gated (`if (!isVoxelWorldGen2)`); mit V9.35 (Voxel
+        // permanent) wurde der Gate konstant-false, der Loop nie betreten.
+        // Eine Voxel-Welt baut Wasser über `_buildWaterPlane` (V9.25) +
+        // ihre eigenen Voxel-Wasserfälle aus der Klippen-Steilheit
+        // (V9.32 `_buildVoxelChunkWaterfalls` am Voxel-Chunk-Lifecycle).
+        // `state.vegetation`/`state.waterfalls` bleiben als Sammler-Listen
+        // (der V9.32-Voxel-Wasserfall-Tick pusht in `state.waterfalls`).
         this.state.vegetation = [];
         this.state.waterfalls = [];
-        if (!isVoxelWorldGen2)
-            for (let z = 0; z < DEPTH; z++) {
-                for (let x = 0; x < WIDTH; x++) {
-                    const idx = z * WIDTH + x;
-                    const xPos = (x / (WIDTH - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                    const zPos = (z / (DEPTH - 1)) * WORLD_SIZE - WORLD_SIZE / 2;
-                    const height = heightData[idx];
-                    const steepness = this.calculateTerrainSteepness(xPos, zPos);
 
-                    if (!Number.isFinite(height) || !Number.isFinite(steepness)) {
-                        this.log(
-                            `Ungültige Werte für Vegetation/Wasserfall bei (${xPos}, ${zPos}): height=${height}, steepness=${steepness}. Überspringe.`,
-                            "ERROR"
-                        );
-                        continue;
-                    }
-
-                    // V8.29 — der alte Einzel-Mesh-Gras/Blumen-Loop ist gelöscht.
-                    // Vegetation kommt jetzt aus _buildChunkGrass (Instanced-Gras
-                    // pro Chunk, Dichte aus worldFieldAt.lebendig) — dicht statt
-                    // spärlich, EIN Draw-Call statt hunderter Meshes, und für
-                    // ALLE Chunks (nicht nur den initialen 300×300-Bereich).
-
-                    if (steepness > 5.0 && height > 10 && height < 50 && Math.random() < 0.005) {
-                        // Reduziere Wahrscheinlichkeit
-                        const particleCount = 50; // Reduziere Partikelanzahl
-                        const particles = new THREE.BufferGeometry();
-                        const positions = new Float32Array(particleCount * 3);
-                        const velocities = new Float32Array(particleCount * 3);
-                        for (let p = 0; p < particleCount; p++) {
-                            positions[p * 3] = xPos + (Math.random() - 0.5) * 1;
-                            positions[p * 3 + 1] = height + (Math.random() - 0.5) * 5;
-                            positions[p * 3 + 2] = zPos + (Math.random() - 0.5) * 1;
-                            velocities[p * 3] = 0;
-                            velocities[p * 3 + 1] = -(Math.random() * 5 + 2);
-                            velocities[p * 3 + 2] = 0;
-
-                            if (
-                                !Number.isFinite(positions[p * 3]) ||
-                                !Number.isFinite(positions[p * 3 + 1]) ||
-                                !Number.isFinite(positions[p * 3 + 2])
-                            ) {
-                                this.log(
-                                    `Ungültige Partikelposition bei Wasserfall (${xPos}, ${height}, ${zPos}): (${positions[p * 3]}, ${positions[p * 3 + 1]}, ${positions[p * 3 + 2]}). Setze auf 0.`,
-                                    "ERROR"
-                                );
-                                positions[p * 3] = xPos;
-                                positions[p * 3 + 1] = height;
-                                positions[p * 3 + 2] = zPos;
-                            }
-                        }
-                        particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-                        particles.setAttribute("velocity", new THREE.BufferAttribute(velocities, 3));
-
-                        try {
-                            particles.computeBoundingSphere();
-                            particles.computeBoundingBox();
-                        } catch (e) {
-                            this.log(
-                                `Fehler beim Berechnen der Bounding Sphere/Box für Wasserfall bei (${xPos}, ${height}, ${zPos}): ${e.message}. Wasserfall wird übersprungen.`,
-                                "ERROR"
-                            );
-                            continue;
-                        }
-
-                        const particleMaterial = new THREE.PointsMaterial({
-                            color: 0x00aaff,
-                            size: 0.2,
-                            transparent: true,
-                            opacity: 0.8,
-                        });
-                        const waterfall = new THREE.Points(particles, particleMaterial);
-                        waterfall.userData = { baseHeight: height, minY: height - 20 };
-                        this.state.scene.add(waterfall);
-                        this.state.waterfalls.push(waterfall);
-                        this.log(
-                            `Wasserfall erstellt bei (${xPos.toFixed(2)}, ${height.toFixed(2)}, ${zPos.toFixed(2)})`
-                        );
-                    }
-                }
-            }
-
-        // ### Terrain speichern ###
-        // V9.28 — in einer Voxel-Welt sind heightData/minHeight/maxHeight
-        // null bzw. 0; die voxel-gated Konsumenten (Killplane base-88,
-        // getTerrainHeightAt → _voxelSurfaceY) ignorieren sie. Die Cleanup-
-        // Initialisierung auf 0/null ist die ehrliche Form.
+        // ### Terrain-State setzen ###
+        // V9.38 Phase 5c.2.c.3.b.ii — in einer Voxel-Welt sind heightData/
+        // minHeight/maxHeight per Konstruktion null bzw. 0; die voxel-gated
+        // Konsumenten (Killplane base-88, getTerrainHeightAt → _voxelSurfaceY)
+        // ignorieren sie. Der Heightfield-Log-Gate (`if (!isVoxelWorldGen2)`)
+        // ist mit dem heightData-else-Pfad und dem Wasserfall-Loop weggefallen
+        // — die Heightfield-Meldung würde mit den Zahlen 0..0 keinen Sinn
+        // mehr machen. terrainSteepness/terrainBaseHeight bleiben (steepness
+        // moduliert Voxel-Surface über _terrainHeightAtWorld, terrainBaseHeight
+        // ist die Voxel-Anker-Höhe für getTerrainHeightAt-Fallback + Killplane).
         this.state.groundHeightField = heightData;
         this.state.minHeight = minHeight;
         this.state.maxHeight = maxHeight;
         this.state.terrainSteepness = steepness;
         this.state.terrainBaseHeight = baseHeight;
-        if (!isVoxelWorldGen2) {
-            this.log(
-                `Neues Terrain generiert: ${WORLD_SIZE}x${WORLD_SIZE}, Höhe zwischen ${minHeight.toFixed(2)} und ${maxHeight.toFixed(2)}`
-            );
-        }
 
         // V7.75 — Welle 6.G Phase 2: initiales Welt-Vegetation über das
         // Welt-Affinitäts-Feld. Iteriert ALLE Chunks der initialen Welt
@@ -34250,121 +34119,25 @@ class AnazhRealm {
         return isGrounded;
     }
 
+    // V9.38 Phase 5c.2.c.3.b.ii — Voxel ist seit V9.35 permanent (Zwangs-
+    // Migration in `ensureWorldMeta`), die Heightfield-`else`-Pfade sind
+    // unreachable. Die Funktionen sind verschlankt auf den Voxel-Pfad +
+    // einen Default-Fallback (`terrainBaseHeight || 0`) für den Fall, dass
+    // `_voxelSurfaceY` ein nicht-finites Ergebnis liefert (vor Welt-Aufbau
+    // oder bei extremem Dichte-Feld-Edge-Case). Der ehemalige Heightfield-
+    // Pfad inkl. groundHeightField-Index-Lookup + Raycast-Fallback (in
+    // `getTerrainHeightAt`) sowie der Heightfield-Pfad inkl. fliegender
+    // Inseln (in `findSurfaceAbove`) sind als tote Pfade entfernt. Wer den
+    // alten Verhalten braucht, findet ihn im git-log V9.37.
     getTerrainHeightAt(x, z) {
-        // V9.25 Phase 5b — in einer Voxel-Welt ist die Boden-Höhe die Voxel-
-        // Oberfläche (`_voxelSurfaceY` — die oberste Fest/Luft-Grenze), NICHT
-        // das schlafende Heightfield. Jeder Konsument (Kreatur-Spawn, Wasser,
-        // Steilheit) erhält damit die wahre Höhe. `worldMeta.voxelTerrain` ist
-        // die persistente Wahrheit — gesetzt, sobald der Snapshot lädt, also
-        // auch vor `_restoreVoxelTerrain` korrekt (z. B. beim Wasser-Bau).
-        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain) {
-            const vy = this._voxelSurfaceY(x, z);
-            if (typeof vy === "number" && Number.isFinite(vy)) return vy;
-            return this.state.terrainBaseHeight || 0;
-        }
-        const zIndex = Math.floor(((z + 150) / 300) * 255);
-        const xIndex = Math.floor(((x + 150) / 300) * 255);
-        let height =
-            this.state.groundHeightField && zIndex >= 0 && zIndex < 256 && xIndex >= 0 && xIndex < 256
-                ? this.state.groundHeightField[
-                      Math.min(Math.max(zIndex, 0), 255) * 256 + Math.min(Math.max(xIndex, 0), 255)
-                  ]
-                : 0;
-        if (height === 0 && this.state.playerMesh) {
-            // Fallback: Raycast für Terrain-Höhe. V8.26 Polish §6.4 — nutzt
-            // jetzt tmpVec1/tmpVec2-Pool statt new Ammo.btVector3 + manuelle
-            // Destroy. Plus _runRaycast für das Callback-Lifecycle.
-            const rayStart = this.setVec(
-                this.state.tmpVec1,
-                x / this.state.scaleFactor,
-                100 / this.state.scaleFactor,
-                z / this.state.scaleFactor
-            );
-            const rayEnd = this.setVec(
-                this.state.tmpVec2,
-                x / this.state.scaleFactor,
-                -100 / this.state.scaleFactor,
-                z / this.state.scaleFactor
-            );
-            height = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
-                if (!hit) return 0;
-                return cb.get_m_hitPointWorld().y() * this.state.scaleFactor;
-            });
-            this.log(
-                `Terrain-Höhe nicht verfügbar bei (${x.toFixed(2)}, ${z.toFixed(2)}), Raycast-Höhe: ${height.toFixed(2)}`,
-                "DEBUG"
-            );
-        }
-        return height;
+        const vy = this._voxelSurfaceY(x, z);
+        if (typeof vy === "number" && Number.isFinite(vy)) return vy;
+        return this.state.terrainBaseHeight || 0;
     }
 
-    calculateTerrainSteepness(x, z) {
-        const zIndex = Math.floor(((z + 150) / 300) * 255);
-        const xIndex = Math.floor(((x + 150) / 300) * 255);
-        if (zIndex <= 0 || zIndex >= 255 || xIndex <= 0 || xIndex >= 255) return 0;
-        const height = this.getTerrainHeightAt(x, z);
-        const heightRight = this.getTerrainHeightAt(x + 1, z);
-        const heightDown = this.getTerrainHeightAt(x, z + 1);
-        const dx = Math.abs(height - heightRight);
-        const dz = Math.abs(height - heightDown);
-        return Math.max(dx, dz);
-    }
-
-    // Neue Funktion zum Finden der Oberfläche über der aktuellen Position
-    findSurfaceAbove(x, currentY, z) {
-        // V9.25 Phase 5b — in einer Voxel-Welt ist die Oberfläche die Voxel-
-        // Oberfläche; der nach einem Killplane-Reset hochgesetzte Spieler
-        // landet damit auf dem echten Voxel-Boden statt auf dem Heightfield.
-        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain) {
-            const vy = this._voxelSurfaceY(x, z);
-            return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
-        }
-        if (!this.state.groundHeightField) {
-            this.log("Kein groundHeightField verfügbar – Fallback auf Standardhöhe 0", "ERROR");
-            return 0;
-        }
-
-        const WIDTH = 256;
-        const DEPTH = 256;
-        const WORLD_SIZE = 300;
-        const xIndex = Math.floor(((x + WORLD_SIZE / 2) / WORLD_SIZE) * (WIDTH - 1));
-        const zIndex = Math.floor(((z + WORLD_SIZE / 2) / WORLD_SIZE) * (DEPTH - 1));
-
-        // Sicherstellen, dass die Indizes im gültigen Bereich liegen
-        const clampedX = Math.max(0, Math.min(WIDTH - 1, xIndex));
-        const clampedZ = Math.max(0, Math.min(DEPTH - 1, zIndex));
-        const terrainHeight = this.state.groundHeightField[clampedZ * WIDTH + clampedX];
-
-        // Wenn die aktuelle Höhe bereits über dem Terrain liegt, zurück zur Terrainoberfläche
-        if (currentY >= terrainHeight) {
-            return terrainHeight;
-        }
-
-        // Annahme: Wir suchen die nächste Oberfläche über dem Spieler
-        // Da dein Terrain nur eine Höhe pro (x, z) hat, ist die Terrainoberfläche die einzige "Oberfläche"
-        // Für komplexere Welten (z. B. mit Höhlen) müssten wir zusätzliche Logik hinzufügen
-        let surfaceHeight = terrainHeight;
-
-        // Prüfen, ob fliegende Inseln über dem Spieler liegen
-        if (this.state.floatingIslands && this.state.floatingIslands.length > 0) {
-            for (const island of this.state.floatingIslands) {
-                const islandPos = island.position;
-                const islandSize = island.geometry.parameters?.width || 20; // Annahme: Inselgröße
-                const islandBottom = islandPos.y - (island.geometry.parameters?.height || 5) / 2;
-
-                // Prüfen, ob die Insel über dem Spieler liegt und näher als das Terrain ist
-                if (
-                    Math.abs(islandPos.x - x) < islandSize / 2 &&
-                    Math.abs(islandPos.z - z) < islandSize / 2 &&
-                    islandBottom > currentY &&
-                    islandBottom < surfaceHeight
-                ) {
-                    surfaceHeight = islandBottom;
-                }
-            }
-        }
-
-        return surfaceHeight;
+    findSurfaceAbove(x, _currentY, z) {
+        const vy = this._voxelSurfaceY(x, z);
+        return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
     }
 
     updateWallCollisions() {
