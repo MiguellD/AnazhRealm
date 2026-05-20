@@ -12154,6 +12154,78 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.34 — Phase 5c.2.c.1: weitere tote Heightfield-Schichten gelöscht ###
+            // Drei nachweislich tote Schichten, in derselben V9.30-Disziplin (pure
+            // Dead-Code, keine Verhaltens-Änderung): (1) `extendTerrain` — die
+            // Legacy-direction-API für Playtest-Kompat hatte keinen Aufrufer mehr
+            // (alle Playtest-Pfade routen direkt über `ensureChunkAt`); (2) das
+            // `caveData`-Float-Array — wurde in `generateTerrainWithParameters`
+            // alloziert + befüllt, aber NIE gelesen (das Versprechen aus dem
+            // Kommentar „behalten wir nur als Tag-Flags für späteren shader-
+            // Gebrauch" wurde nie erfüllt); (3) das `volcanoData`-Float-Array —
+            // dieselbe Klasse, identisches Schicksal. Wer eine der drei je wieder
+            // anlegt, muss eine echte Notwendigkeit benennen. caveNoise +
+            // volcanoNoise (die SimplexNoise-Instanzen) leben weiter — sie
+            // modulieren die Höhe in `_terrainHeightAtWorld` (echte Konsumenten).
+            const voxelV934Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    // Direkter Source-Scan: liest die anazhRealm.js-Repräsentation
+                    // über toString(), prüft die Schreibstellen sind weg. So
+                    // schlägt eine wiederbelebte tote Schicht beim nächsten
+                    // Playtest sofort an.
+                    const src =
+                        (typeof r.generateTerrainWithParameters === "function" &&
+                            r.generateTerrainWithParameters.toString()) ||
+                        "";
+                    return {
+                        noExtendTerrain: typeof r.extendTerrain !== "function",
+                        // Die Float32Array-Allokationen sind weg
+                        noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(src),
+                        noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(src),
+                        // Die Schreibstellen (`caveData[i] = ...`, `volcanoData[i] = ...`)
+                        // sind weg — der Verifizierungs-Anker
+                        noCaveDataWrite: !/caveData\[i\]\s*=/.test(src),
+                        noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(src),
+                        // Regression-Schutz — die Höhen-Quelle + die echten
+                        // Konsumenten (caveNoise + volcanoNoise als Noise-
+                        // Instanzen) leben weiter
+                        ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
+                        terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
+                        caveNoiseInSrc: /caveNoise/.test(src),
+                        volcanoNoiseInSrc: /volcanoNoise/.test(src),
+                    };
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV934Results && !voxelV934Results.error) {
+                check(
+                    "Voxel V9.34: extendTerrain ist gelöscht (Legacy-direction-API ohne Aufrufer)",
+                    voxelV934Results.noExtendTerrain
+                );
+                check(
+                    "Voxel V9.34: caveData-Float-Array ist gelöscht (nie gelesen)",
+                    voxelV934Results.noCaveDataAlloc && voxelV934Results.noCaveDataWrite
+                );
+                check(
+                    "Voxel V9.34: volcanoData-Float-Array ist gelöscht (nie gelesen)",
+                    voxelV934Results.noVolcanoDataAlloc && voxelV934Results.noVolcanoDataWrite
+                );
+                check(
+                    "Voxel V9.34: ensureChunkAt lebt weiter (Regression — die lebende Chunk-Pipeline)",
+                    voxelV934Results.ensureChunkAtAlive
+                );
+                check(
+                    "Voxel V9.34: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
+                    voxelV934Results.terrainHeightAtWorldAlive
+                );
+                check(
+                    "Voxel V9.34: caveNoise + volcanoNoise (SimplexNoise-Instanzen) leben weiter (echte Höhen-Modulatoren)",
+                    voxelV934Results.caveNoiseInSrc && voxelV934Results.volcanoNoiseInSrc
+                );
+            }
+
             // ### Voxel V9.31 — motionState-Leck in _disposeStaticCollision geheilt ###
             // Pre-V9.31-Bug: `_buildStaticTriMeshCollision` (Inseln + Voxel-
             // Chunks + Voxel-Test-Chunk) erzeugte einen `btDefaultMotionState`,

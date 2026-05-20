@@ -13287,14 +13287,9 @@ class AnazhRealm {
         let maxHeight = 0;
 
         if (isVoxelWorldGen2) {
-            this.log(
-                `Phase 5c.1+: heightData/caveData/volcanoData für Voxel-Welt übersprungen (~768 KB + noise-Schleife gespart).`,
-                "INFO"
-            );
+            this.log(`Phase 5c.1+: heightData für Voxel-Welt übersprungen (~256 KB + noise-Schleife gespart).`, "INFO");
         } else {
             heightData = new Float32Array(WIDTH * DEPTH);
-            const caveData = new Float32Array(WIDTH * DEPTH);
-            const volcanoData = new Float32Array(WIDTH * DEPTH);
             minHeight = Infinity;
             maxHeight = -Infinity;
 
@@ -13327,12 +13322,6 @@ class AnazhRealm {
                         );
                         this.cacheNoise(cacheKey, height);
                     }
-                    // caveData/volcanoData behalten wir nur als Tag-Flags für späteren
-                    // shader-Gebrauch; die Höhen-Wirkung ist bereits im Helper drin.
-                    const caveSample = caveNoise.noise3D(x * 0.05, height * 0.05, z * 0.05);
-                    caveData[i] = caveSample > 0.4 ? 1 : 0;
-                    const volcanoSample = volcanoNoise.noise2D(x * 0.02, z * 0.02);
-                    volcanoData[i] = volcanoSample > 0.8 ? 1 : 0;
                     heightData[i] = height;
                     minHeight = Math.min(minHeight, height);
                     maxHeight = Math.max(maxHeight, height);
@@ -13341,8 +13330,6 @@ class AnazhRealm {
             } else {
                 for (let i = 0; i < WIDTH * DEPTH; i++) {
                     heightData[i] = baseHeight;
-                    caveData[i] = 0;
-                    volcanoData[i] = 0;
                     minHeight = maxHeight = baseHeight;
                 }
                 this.log("Fallback: Flache Höhendaten generiert", "WARN");
@@ -14095,11 +14082,12 @@ class AnazhRealm {
     }
 
     // ### Terrain-Erweiterung ### V7.42
-    // Zentrale Höhen-Formel. Wird sowohl vom initialen generateTerrainWithParameters
-    // als auch vom extendTerrain-Pfad genutzt — damit die Nähte zwischen
+    // Zentrale Höhen-Formel. Wird vom initialen generateTerrainWithParameters
+    // + von `ensureChunkAt` (Streaming-Ring) genutzt — damit die Nähte zwischen
     // ursprünglicher Welt und Erweiterung exakt zusammenpassen. Inklusive
     // Canyon, Field, Cave und Volcano-Modifikatoren (alle Schichten der
-    // initialen Welt-Gen).
+    // initialen Welt-Gen). V9.34: der `extendTerrain`-Legacy-Wrapper ist als
+    // nachweislich tote Methode entfernt (Phase 5c.2.c.1).
     _terrainHeightAtWorld(worldX, worldZ, noise, steepness, baseHeight, caveNoise, volcanoNoise) {
         // High-frequency Detail (h3/h4) deutlich reduziert: die scharfen
         // Spitzen erzeugten quasi-vertikale Wände zwischen benachbarten
@@ -15243,45 +15231,6 @@ class AnazhRealm {
             if (this._applyModifyOpToChunk(chunkData, op)) applied++;
         }
         return applied;
-    }
-
-    extendTerrain(direction) {
-        // Legacy direction-API (für Playtest + alte Caller). Berechnet aus den
-        // Map-Grenzen einen Außen-Chunk und delegiert an ensureChunkAt.
-        if (!this.state.chunkMap || this.state.chunkMap.size === 0) return;
-        let minChunkX = Infinity,
-            maxChunkX = -Infinity,
-            minChunkZ = Infinity,
-            maxChunkZ = -Infinity;
-        for (const key of this.state.chunkMap.keys()) {
-            const [cx, cz] = key.split(",").map(Number);
-            if (cx < minChunkX) minChunkX = cx;
-            if (cx > maxChunkX) maxChunkX = cx;
-            if (cz < minChunkZ) minChunkZ = cz;
-            if (cz > maxChunkZ) maxChunkZ = cz;
-        }
-        let cx, cz;
-        switch (direction) {
-            case "north":
-                cx = Math.floor((minChunkX + maxChunkX) / 2);
-                cz = minChunkZ - 1;
-                break;
-            case "south":
-                cx = Math.floor((minChunkX + maxChunkX) / 2);
-                cz = maxChunkZ + 1;
-                break;
-            case "west":
-                cx = minChunkX - 1;
-                cz = Math.floor((minChunkZ + maxChunkZ) / 2);
-                break;
-            case "east":
-                cx = maxChunkX + 1;
-                cz = Math.floor((minChunkZ + maxChunkZ) / 2);
-                break;
-            default:
-                return;
-        }
-        this.ensureChunkAt(cx, cz);
     }
 
     ensureChunkAt(newChunkX, newChunkZ) {
