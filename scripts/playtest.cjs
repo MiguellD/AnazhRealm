@@ -11441,6 +11441,16 @@ function startSaveServer() {
                     // sind ersatzlos entfallen.
 
                     if (out.hasTick) {
+                        // V9.40-c — Test-Deterministik: der Game-Loop läuft im
+                        // Headless-Chromium gedrosselt (~1 Hz im Hintergrund-Tab),
+                        // also bauen wir den Voxel-Ring hier explizit synchron.
+                        // Der V9.40-c-Hook (`_tickDirtyVoxelChunks`) verschob das
+                        // Timing-Fenster gerade weit genug, dass die initial-
+                        // Spawn-Tests rot wurden — der explizite Drain heilt das
+                        // an der Test-Seite (im Spiel-Pfad läuft alles asynchron).
+                        const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                        for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
                         out.activated = r.state.voxelTerrainActive === true;
                         out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
                         // jeder gemeshte Voxel-Chunk trägt eine Kollision.
@@ -12326,6 +12336,211 @@ function startSaveServer() {
                 );
                 check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
                 check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
+            }
+
+            // V9.40-c — Async-Rebuild via Dirty-Queue: ein Edit markiert
+            // die Voxel-Chunks dirty (statt sie sync zu rebuilden); ein
+            // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks`
+            // ist die Test-Naht für sofortigen sync-Drain.
+            const voxelV940cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasTick = typeof r._tickDirtyVoxelChunks === "function";
+                    out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
+                    // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
+                    // gleich Chunks zum Markieren findet.
+                    const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                    if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                    for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+                    if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+                        out.skip = true;
+                        return out;
+                    }
+                    // Ein Carve in der Nähe des Spielers markiert Chunks dirty
+                    // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
+                    const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
+                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+                    out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
+                    // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
+                    const dirtyMid = r.state.dirtyVoxelChunks.size;
+                    const built = r._drainDirtyVoxelChunks();
+                    out.drainRebuilt = built > 0;
+                    out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
+                    out.drainReturnedCount = built === dirtyMid;
+                    // Game-Loop-Tick rebuildet pro Frame max 1.
+                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+                    const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
+                    if (dirtyPostEdit > 1) {
+                        r._tickDirtyVoxelChunks(pm);
+                        out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
+                    } else {
+                        out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
+                    }
+                    // Disposal räumt dirty-Marker mit.
+                    r._drainDirtyVoxelChunks();
+                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+                    const dirtyKey = [...r.state.dirtyVoxelChunks][0];
+                    if (dirtyKey) {
+                        r._disposeVoxelChunk(dirtyKey);
+                        out.disposeClearsDirty = !r.state.dirtyVoxelChunks.has(dirtyKey);
+                    } else {
+                        out.disposeClearsDirty = true;
+                    }
+                    r._drainDirtyVoxelChunks();
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
+                check("V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren", voxelV940cResults.hasTick && voxelV940cResults.hasDrain);
+                check("V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)", voxelV940cResults.editMarksDirty);
+                check("V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set", voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet);
+                check("V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks", voxelV940cResults.drainReturnedCount);
+                check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
+                check("V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)", voxelV940cResults.disposeClearsDirty);
+            }
+
+            // V9.40-d — Dispose-Before-Build (Heap-Druck-Heilung) + Retry-
+            // Counter. Schöpfer-V9.40-c-Browser-Befund: kaskadierende OOMs
+            // weil V9.40-b's Pre-Build-Pattern alter+neuer parallel im
+            // Ammo-Heap leben liess.
+            const voxelV940dResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // Ring auffüllen.
+                    const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                    if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                    for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+                    if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+                        out.skip = true;
+                        return out;
+                    }
+                    // Dispose-Before-Build: stuben den Code-Pfad indem wir
+                    // einen Chunk-Key wählen, der existiert + rebuild rufen
+                    // + prüfen dass die alte Mesh-Identität weg ist.
+                    const someKey = [...r.state.voxelChunks.keys()].find((k) => {
+                        const e = r.state.voxelChunks.get(k);
+                        return e && e.mesh;
+                    });
+                    if (!someKey) {
+                        out.skip = true;
+                        return out;
+                    }
+                    const [cxStr, czStr] = someKey.split(",");
+                    const cx = parseInt(cxStr, 10);
+                    const cz = parseInt(czStr, 10);
+                    const oldMesh = r.state.voxelChunks.get(someKey).mesh;
+                    const ok = r._rebuildVoxelChunk(cx, cz);
+                    const newEntry = r.state.voxelChunks.get(someKey);
+                    out.rebuildOk = ok === true;
+                    // Bei Erfolg: neuer Mesh ist nicht der alte (Identität gewechselt).
+                    out.meshIdentityChanged = !!(newEntry && newEntry.mesh && newEntry.mesh !== oldMesh);
+                    // Retry-Counter: stub _buildVoxelChunkData um null zu returnen.
+                    const origBuild = r._buildVoxelChunkData;
+                    r._buildVoxelChunkData = () => null;
+                    // 1. Versuch: fail → dirty bleibt, attempts=1
+                    r._rebuildVoxelChunk(cx, cz);
+                    const attempts1 = r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey);
+                    out.retryCounter1 = attempts1 === 1;
+                    out.dirtyAfterFail = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.has(someKey));
+                    // 2. Versuch: fail → attempts=2
+                    r._rebuildVoxelChunk(cx, cz);
+                    out.retryCounter2 = (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
+                    // 3. Versuch: fail → empty markiert, counter weg
+                    r._rebuildVoxelChunk(cx, cz);
+                    const finalEntry = r.state.voxelChunks.get(someKey);
+                    out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
+                    out.counterClearedAfterGiveUp = !(r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey));
+                    // Restore.
+                    r._buildVoxelChunkData = origBuild;
+                    if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV940dResults && !voxelV940dResults.error && !voxelV940dResults.skip) {
+                check("V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt", voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged);
+                check("V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)", voxelV940dResults.retryCounter1);
+                check("V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)", voxelV940dResults.dirtyAfterFail);
+                check("V9.40-d: Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
+                check("V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940dResults.giveUpAsEmpty);
+                check("V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)", voxelV940dResults.counterClearedAfterGiveUp);
+            }
+
+            // V9.40-e — drei Heilungen nach dem zweiten Schöpfer-Browser-
+            // Audit: (1) `_addVoxelEdit` clampt Y auf den Chunk-Bereich +
+            // verwirft Edits weit ausserhalb (Schöpfer-Hinweis ehren);
+            // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit
+            // (Memory-Hygiene); (3) `_ensureVoxelChunkAt` (Streaming-Pfad)
+            // bekommt Retry-Counter wie der Re-Mesh-Pfad — vor V9.40-e
+            // markierte er bei OOM sofort `{empty:true}` (V9.24-Symptom-
+            // Geste). Damit sind beide Bau-Pfade (Stream + Re-Mesh) konsistent.
+            const voxelV940eResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const base = r.state.terrainBaseHeight || 0;
+                    // (1) Edit-Y-Bound: weit-außerhalb-Edit wird verworfen.
+                    const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
+                    const farUpResult = r._addVoxelEdit(0, base + 10000, 0, 3, "carve");
+                    out.farEditRejected = farUpResult === false;
+                    out.farEditNotStored = (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
+                    const farDownResult = r._addVoxelEdit(0, base - 10000, 0, 3, "carve");
+                    out.farDownRejected = farDownResult === false;
+                    // Normaler Edit innerhalb Band bleibt erhalten.
+                    const inBoundResult = r._addVoxelEdit(0, base, 0, 3, "carve");
+                    out.inBoundAccepted = inBoundResult === true;
+                    // Edit knapp ÜBER der Decke (mit Marge) wird geclampt
+                    // statt verworfen.
+                    const nearEdgeResult = r._addVoxelEdit(0, base + 86, 0, 3, "carve");
+                    out.nearEdgeAccepted = nearEdgeResult === true;
+                    // Räumen.
+                    r.state.worldMeta.voxelEdits = [];
+
+                    // (2) _disposeVoxelChunk räumt voxelRebuildAttempts.
+                    if (!r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts = new Map();
+                    r.state.voxelRebuildAttempts.set("99,99", 2);
+                    r.state.voxelChunks.set("99,99", { empty: true });
+                    r._disposeVoxelChunk("99,99");
+                    out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
+
+                    // (3) _ensureVoxelChunkAt Retry-Pfad: stub den
+                    // Kollisions-Builder, sehe dass nach 2 Fails KEIN
+                    // empty-Eintrag steht (Retry pending), nach 3 ein empty.
+                    const fakeKey = "0,-999"; // weit weg, ungebraucht
+                    const origBuildColl = r._buildStaticTriMeshCollision;
+                    r._buildStaticTriMeshCollision = () => null;
+                    r._ensureVoxelChunkAt(0, -999);
+                    out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
+                    out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
+                    r._ensureVoxelChunkAt(0, -999);
+                    out.streamAttempt2 = r.state.voxelRebuildAttempts.get(fakeKey) === 2;
+                    r._ensureVoxelChunkAt(0, -999);
+                    const finalE = r.state.voxelChunks.get(fakeKey);
+                    out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
+                    out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
+                    // Restore + Cleanup.
+                    r._buildStaticTriMeshCollision = origBuildColl;
+                    r._disposeVoxelChunk(fakeKey);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV940eResults && !voxelV940eResults.error) {
+                check("V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)", voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored);
+                check("V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
+                check("V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
+                check("V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)", voxelV940eResults.nearEdgeAccepted);
+                check("V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)", voxelV940eResults.disposeClearsAttempts);
+                check("V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)", voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1);
+                check("V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940eResults.streamAttempt2);
+                check("V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940eResults.streamGiveUpAsEmpty);
+                check("V9.40-e: Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
             }
 
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###

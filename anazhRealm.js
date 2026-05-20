@@ -32,6 +32,10 @@ class AnazhRealm {
             voxelPopulatedChunks: null,
             // V9.32 Phase 5d-Mini — Voxel-Wasserfälle pro Chunk.
             voxelChunkWaterfalls: null,
+            // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
+            dirtyVoxelChunks: null,
+            // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
+            voxelRebuildAttempts: null,
             terrainPhysicsBody: null,
             skybox: null,
             wallBoxes: [],
@@ -14118,11 +14122,111 @@ class AnazhRealm {
         return { dim, step, span: dim * step, ringRadius, dimY: 80 };
     }
 
+    // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
+    // isolierten Container (Mesh + Geometry + Material + Kollision), OHNE
+    // ihn in die Szene zu hängen oder in der voxelChunks-Map abzulegen.
+    // Liefert `{mesh, kind:"filled"}` (Mesh hat schon eine Kollision im
+    // physicsWorld, ist noch nicht in der Scene), `{mesh:null, kind:"empty"}`
+    // (degenerierte Iso-Fläche — kein Mesh möglich), oder `null` (OOM /
+    // Kollision-Build fail). Der Caller entscheidet, was mit dem Resultat
+    // passiert — atomarer Swap im `_rebuildVoxelChunk` (Re-Mesh nach Edit).
+    _buildVoxelChunkData(cx, cz) {
+        if (!this.state.scene) return null;
+        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - 58;
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        if (!geom) return { mesh: null, kind: "empty" };
+        this._attachVoxelFieldColors(geom);
+        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
+        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        if (!collisionBody) {
+            geom.dispose();
+            mat.dispose();
+            return null;
+        }
+        return { mesh, kind: "filled" };
+    }
+
+    // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
+    // raus aus physicsWorld + Geometrie/Material disposed + Heap-Speicher
+    // freigegeben), DANN baut den frischen. Damit teilen sich alter + neuer
+    // Chunk NIE den Ammo-WASM-Heap → keine OOM-Kaskaden bei mehreren Edits.
+    // Vor V9.40-d (V9.40-b Pre-Build-Pattern): alter + neuer parallel im
+    // Heap → bei 9 Skirt-Nachbarn pro Edit + 81 initialen Chunks tippte das
+    // den fixen Ammo-Heap um, Edits kaskadierten zu OOM-Sturm. Der Schöpfer-
+    // Browser-Test nach V9.40-c zeigte das Phänomen direkt („Chunks lassen
+    // sich nicht abbauen, immer wiederholte OOM-Logs"). Der V9.40-b-Vorteil
+    // (V9.24-Symptom-Geste umgekehrt) entfällt damit theoretisch — bei OOM
+    // ist der alte schon disposed, ein `{empty:true}` ist die Folge (V9.24-
+    // Verhalten zurück). In der Praxis aber: ohne Heap-Druck triggert
+    // `_buildVoxelChunkData` praktisch nie null mehr; die V9.40-b-Wahl
+    // schützte vor einem Szenario, das durch sie selbst entstand. Plus
+    // V9.40-d-Retry: bei null wird der Chunk mit `_voxelRebuildAttempts`
+    // verfolgt (max 3 Versuche), bevor er als `{empty:true}` markiert wird.
+    // Das gibt dem Heap Zeit, sich durch andere Rebuilds zu entspannen.
+    _rebuildVoxelChunk(cx, cz) {
+        if (!this.state.scene) return false;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const key = `${cx},${cz}`;
+        const oldEntry = this.state.voxelChunks.get(key);
+        // V9.40-d — Dispose-Before-Build: alter raus aus Heap + physicsWorld
+        // BEVOR der neue allokiert. Verhindert das doppelte Leben.
+        if (oldEntry) this._disposeVoxelChunk(key);
+        const fresh = this._buildVoxelChunkData(cx, cz);
+        if (fresh === null) {
+            // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-
+            // Counter pflegen — bei 3 fehlgeschlagenen Versuchen geben wir
+            // ehrlich auf + setzen `{empty:true}` (V9.24-Symptom-Geste als
+            // ehrliche letzte Antwort, nicht als Erst-Reaktion). Beim
+            // nächsten Edit auf denselben Chunk-Bereich wird der Counter
+            // zurückgesetzt — der Spieler bekommt jedes Mal 3 Versuche.
+            if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
+            const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
+            this.state.voxelRebuildAttempts.set(key, attempts);
+            if (attempts >= 3) {
+                this.state.voxelChunks.set(key, { empty: true });
+                this.state.voxelRebuildAttempts.delete(key);
+                this.log(`Voxel-Chunk ${key}: 3× OOM, als empty markiert`, "INFO");
+                return false;
+            }
+            // Re-markiere dirty für nächsten Tick (Heap-Erholungs-Chance).
+            if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
+            this.state.dirtyVoxelChunks.add(key);
+            return false;
+        }
+        // Erfolg — Retry-Counter zurücksetzen.
+        if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
+        if (fresh.kind === "empty") {
+            this.state.voxelChunks.set(key, { empty: true });
+            return true;
+        }
+        this.state.scene.add(fresh.mesh);
+        const entry = { mesh: fresh.mesh };
+        this.state.voxelChunks.set(key, entry);
+        this._buildVoxelChunkGrass(cx, cz);
+        this._populateVoxelChunkVegetation(cx, cz);
+        this._buildVoxelChunkWaterfalls(cx, cz);
+        return true;
+    }
+
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
     // Surface-Nets-Mesh aus dem 3D-Dichte-Feld + btBvhTriangleMeshShape-
     // Kollision. No-op, wenn er schon existiert. Ein leeres Dichte-Feld
     // (ganz fest / ganz Luft) wird als {empty:true} markiert — kein
-    // erneutes Meshen je Frame.
+    // erneutes Meshen je Frame. V9.40-e: bei Kollisions-OOM ehrlich
+    // mit Retry (max 3) wie der Re-Mesh-Pfad — vor V9.40-e markierte der
+    // Streaming-Pfad sofort `{empty:true}`, der Chunk konnte nie wieder
+    // versucht werden, der Schöpfer sah Lücken im Sicht-Ring. Jetzt darf
+    // der nächste Streaming-Tick es nochmal versuchen (Heap könnte sich
+    // bis dahin durch Pruning ferner Chunks entspannt haben).
     _ensureVoxelChunkAt(cx, cz) {
         if (!this.state.scene) return null;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
@@ -14145,6 +14249,9 @@ class AnazhRealm {
         // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
         const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
         if (!geom) {
+            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
+            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an Rand-
+            // Chunks → sofort `{empty:true}`, kein Retry nötig.
             this.state.voxelChunks.set(key, { empty: true });
             return null;
         }
@@ -14157,20 +14264,39 @@ class AnazhRealm {
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         this.state.scene.add(mesh);
         const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
-        // V9.24 — ein Mesh OHNE Kollision wäre ein Fall-durch-Loch. Liefert
-        // der Kollisions-Builder null (eine degenerierte Surface-Nets-Geometrie
-        // ohne ein einziges gültiges Dreieck — möglich an einem fast ganz
-        // festen/leeren Rand-Chunk), wird der Chunk wie ein leerer behandelt:
-        // Mesh abräumen, als {empty:true} markieren, kein erneutes Meshen.
+        // V9.24 / V9.40-e — der Kollisions-Build kann fehlschlagen (OOM bei
+        // vollem Ammo-Heap oder degenerierte Geometrie ohne ein einziges
+        // gültiges Dreieck). Wir disposen den Mesh aus der Scene + Heap.
+        // V9.40-e Retry: max 3 Versuche; in den ersten 2 setzen wir
+        // ABSICHTLICH KEINEN Map-Eintrag (`voxelChunks.has(key)` bleibt
+        // false), sodass der nächste Streaming-Tick es wieder versucht.
+        // Inzwischen wird `_pruneDistantVoxelChunks` ferne Chunks räumen
+        // und Heap freigeben — der Retry hat eine echte Chance. Erst beim
+        // 3. Fail markieren wir ehrlich `{empty:true}` (V9.24-Symptom als
+        // LETZTE Antwort, nicht als Erst-Reaktion — die Lehre von V9.40-d).
         if (!collisionBody) {
             this.state.scene.remove(mesh);
             if (mesh.geometry) mesh.geometry.dispose();
             if (mesh.material) mesh.material.dispose();
-            this.state.voxelChunks.set(key, { empty: true });
+            // V9.40-e Retry: zähle den Versuch + erlaube max 3 Versuche.
+            if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
+            const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
+            this.state.voxelRebuildAttempts.set(key, attempts);
+            if (attempts >= 3) {
+                this.state.voxelChunks.set(key, { empty: true });
+                this.state.voxelRebuildAttempts.delete(key);
+                this.log(`Voxel-Chunk ${key}: 3× OOM beim Stream-Build, als empty markiert`, "INFO");
+            }
+            // Bei attempts < 3: KEIN Map-Eintrag — der Streaming-Tick wird
+            // den Chunk im nächsten Frame wieder aufrufen (has(key)===false).
+            // Inzwischen räumt _pruneDistantVoxelChunks ferne Chunks + gibt
+            // Heap frei → der Retry hat bessere Chancen.
             return null;
         }
         const entry = { mesh };
         this.state.voxelChunks.set(key, entry);
+        // V9.40-e — Erfolg: Retry-Counter zurücksetzen.
+        if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
         // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
@@ -14199,6 +14325,15 @@ class AnazhRealm {
         this._disposeVoxelChunkGrass(key);
         this._disposeVoxelChunkWaterfalls(key);
         this.state.voxelChunks.delete(key);
+        // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
+        // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
+        // triggert einen unnötigen Rebuild im nächsten Tick.
+        if (this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks.delete(key);
+        // V9.40-e — den Retry-Counter mit-entfernen. Memory-Hygiene: ohne das
+        // akkumulieren bei jedem Prune-und-Streaming-Zyklus stale Counter-
+        // Einträge im JS-Heap (kein Ammo-OOM, aber unsauber). Plus: ein neu
+        // gestreamter Chunk an derselben Position bekommt frische 3 Versuche.
+        if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
     }
 
     // V9.22 — die Oberflächen-Höhe des Voxel-Terrains an (x,z): die oberste
@@ -14479,7 +14614,21 @@ class AnazhRealm {
         if (!Array.isArray(this.state.worldMeta.voxelEdits)) this.state.worldMeta.voxelEdits = [];
         const edits = this.state.worldMeta.voxelEdits;
         const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
-        edits.push({ x, y, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
+        // V9.40-e Schöpfer-Befund: Edits außerhalb des Voxel-Chunk-Höhen-
+        // Bands (base-58..base+86, der vertikalen Spanne der Surface-Nets-
+        // Mesher) sind nutzlos — der Edit ist gespeichert, kann aber nichts
+        // schnitzen/aufschütten, weil keine Dichte-Zellen in seinem Radius
+        // liegen. Plus: `_remeshVoxelChunksAround` markiert trotzdem ±1-
+        // Skirt-Chunks dirty (ignoriert Y), was Re-Meshes ohne Effekt
+        // triggert. Wir clampen darum y auf den (mit Radius-Marge erweiterten)
+        // nutzbaren Bereich. Edits, die WEIT außerhalb sind (>r+8 Marge),
+        // werden silent verworfen — sie hätten keinen Effekt.
+        const base = this.state.terrainBaseHeight || 0;
+        const Y_MIN = base - 58 - radius - 8;
+        const Y_MAX = base + 86 + radius + 8;
+        if (y < Y_MIN || y > Y_MAX) return false;
+        const yClamped = Math.max(base - 58 - radius, Math.min(base + 86 + radius, y));
+        edits.push({ x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
         while (edits.length > CAP) edits.shift();
@@ -14534,11 +14683,20 @@ class AnazhRealm {
         return { ok: false, reason: "kein Material" };
     }
 
-    // Mesht jeden Voxel-Chunk neu, dessen Geometrie die Schnitz-Kugel
-    // berührt (±1 Chunk Marge für den V9.10-Skirt-Überlapp). No-op, wenn
-    // das Voxel-Terrain nicht aktiv ist (keine Chunks in der Szene).
+    // V9.40-c — Markiert jeden Voxel-Chunk, dessen Geometrie die Schnitz-
+    // Kugel berührt (±1 Chunk Marge für den V9.10-Skirt-Überlapp), als
+    // dirty. Der `_tickDirtyVoxelChunks`-Pfad rebuildet sie asynchron im
+    // Game-Loop (≤1 Chunk/Frame, nächster am Spieler zuerst). Heilt das
+    // Schöpfer-V9.39-„Ruckeln bei häufigen Edits": ein Edit berührt durch
+    // den Skirt-Überlapp typisch 9 Nachbar-Chunks; vor V9.40-c war jeder
+    // ein synchroner Rebuild im selben Frame → spürbares Stocken. Jetzt
+    // werden sie über Frames verteilt; der Klick-Chunk wird zuerst (nächste-
+    // am-Spieler-Sortierung), die Skirt-Nachbarn folgen in den nächsten
+    // Frames. Tests, die direkt nach einem Edit den gerenderten Mesh
+    // prüfen, rufen `_drainDirtyVoxelChunks()` zum sofortigen Drain.
     _remeshVoxelChunksAround(x, z, r) {
         if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
+        if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         const { span } = this._voxelChunkConfig();
         const minCX = Math.floor((x - r) / span) - 1;
         const maxCX = Math.floor((x + r) / span) + 1;
@@ -14548,11 +14706,69 @@ class AnazhRealm {
             for (let cz = minCZ; cz <= maxCZ; cz++) {
                 const key = `${cx},${cz}`;
                 if (this.state.voxelChunks.has(key)) {
-                    this._disposeVoxelChunk(key);
-                    this._ensureVoxelChunkAt(cx, cz);
+                    this.state.dirtyVoxelChunks.add(key);
                 }
             }
         }
+    }
+
+    // V9.40-c — Game-Loop-Hook: rebuildet pro Frame max EINEN dirty Voxel-
+    // Chunk, sortiert nach Manhattan-Distanz zum Spieler (nächste-zuerst —
+    // der Spieler sieht den Edit am Klick-Ort sofort, ferne Skirt-Nachbarn
+    // folgen im nächsten Frame). Der Hot-Path-Check ist EINE Property-Lesung
+    // (`size`); bei dirty-empty-Set kostet der ganze Tick eine if-Prüfung.
+    // Bei `_rebuildVoxelChunk`-Fail (OOM) wird der Chunk NICHT erneut dirty
+    // markiert — der Edit ist verloren, aber kein Loch (alter Chunk bleibt
+    // via V9.40-b-Pre-Build-Pattern stehen).
+    _tickDirtyVoxelChunks(playerPos) {
+        if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return;
+        if (!this.state.voxelChunks || !playerPos) return;
+        const { span } = this._voxelChunkConfig();
+        const pcx = Math.floor(playerPos.x / span);
+        const pcz = Math.floor(playerPos.z / span);
+        let bestKey = null;
+        let bestDist = Infinity;
+        for (const key of this.state.dirtyVoxelChunks) {
+            // Streaming-Prune kann dirty Chunks aus voxelChunks entfernt
+            // haben (Spieler ging weg) — Marker stumm verwerfen.
+            if (!this.state.voxelChunks.has(key)) {
+                this.state.dirtyVoxelChunks.delete(key);
+                continue;
+            }
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            const d = Math.abs(cx - pcx) + Math.abs(cz - pcz);
+            if (d < bestDist) {
+                bestDist = d;
+                bestKey = key;
+            }
+        }
+        if (!bestKey) return;
+        this.state.dirtyVoxelChunks.delete(bestKey);
+        const comma = bestKey.indexOf(",");
+        const cx = parseInt(bestKey.slice(0, comma), 10);
+        const cz = parseInt(bestKey.slice(comma + 1), 10);
+        this._rebuildVoxelChunk(cx, cz);
+    }
+
+    // V9.40-c Test-Naht — rebuildet ALLE dirty Voxel-Chunks sofort
+    // (synchron). Für Tests, die direkt nach einem Edit den gerenderten
+    // Mesh prüfen. Im normalen Spiel-Pfad NIE gerufen — der Game-Loop-
+    // Tick verteilt die Rebuilds gleichmässig über Frames.
+    _drainDirtyVoxelChunks() {
+        if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return 0;
+        const keys = [...this.state.dirtyVoxelChunks];
+        let built = 0;
+        for (const key of keys) {
+            this.state.dirtyVoxelChunks.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            if (this._rebuildVoxelChunk(cx, cz)) built++;
+        }
+        return built;
     }
 
     // Welt-Konstanten für Chunk-Geometrie. Eine Quelle der Wahrheit für
@@ -25750,7 +25966,16 @@ class AnazhRealm {
         // ~140 Voxel-Zellen, was eine echte begehbare Mulde gibt; eine zu
         // kleine Kugel wäre eine Nadel statt einer Mulde.
         const carveRadius = 3.5;
-        this.carveVoxelSphere(target.x, target.y, target.z, carveRadius);
+        // V9.40-a — der Grabe-Hieb läuft jetzt durch den DSL-Pfad (statt
+        // direkt carveVoxelSphere zu rufen). dslRun mit source:"human"
+        // triggert automatisch p2pBroadcastDsl (Z. ~1051), sodass ein
+        // Mitspieler im selben Raum dieselbe Mulde sieht. Lokal ruft der
+        // voxel_carve-Op am Ende dieselbe carveVoxelSphere — kein
+        // Verhaltens-Unterschied auf der eigenen Welt. V8.64-Lehre
+        // (Architektur-Sync) auf Voxel-Edits angewandt: der DSL-Op IST
+        // der EINE Broadcast-Anker; ein direkter API-Call wäre eine
+        // Sync-Lücke (genau die Schöpfer-V9.39-Diagnose).
+        this.dslRun(["voxel_carve", target.x, target.y, target.z, carveRadius], { source: "human" });
         // W6.G P4 — der Boden gibt: ein Grabe-Hieb löst Terrain in Materie auf,
         // genau wie harvestArchitecture eine Struktur auflöst. Das Material
         // emergiert aus dem Welt-Affinitäts-Feld am Grabe-Ort — die Farbe, die
@@ -25852,7 +26077,12 @@ class AnazhRealm {
                 return false;
             }
             this._consumeMouseStamina();
-            this.fillVoxelSphere(fillHit.x, fillHit.y, fillHit.z, 3.5);
+            // V9.40-a — Aufschütten läuft jetzt durch den DSL-Pfad (analog
+            // tryMouseBreak). dslRun mit source:"human" broadcastet den
+            // voxel_fill an Mitspieler; lokal ruft der Op am Ende dieselbe
+            // fillVoxelSphere. Der Material-Konsum (matGate oben) bleibt
+            // lokal — er ist Spieler-Inventar-Geste, nicht broadcastable.
+            this.dslRun(["voxel_fill", fillHit.x, fillHit.y, fillHit.z, 3.5], { source: "human" });
             if (!matGate.free) this.log(`Aufgeschüttet (${matGate.cost}× Material verbraucht).`, "INFO");
             return true;
         }
@@ -33286,6 +33516,13 @@ class AnazhRealm {
             // V9.24-Verdrahtung).
             const playerPos = this.state.playerMesh.position;
             this._tickVoxelChunkStreaming(playerPos);
+            // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
+            // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
+            // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
+            // V9.40-c alle in einem Frame; jetzt verteilt. Bei dirty-empty
+            // ist es ein no-op (eine Set.size-Lesung). Tests, die direkt nach
+            // einem Edit den Mesh prüfen, rufen `_drainDirtyVoxelChunks()`.
+            this._tickDirtyVoxelChunks(playerPos);
 
             // ### Skybox und Planeten ###
             this.state.skybox.material.uniforms.time.value = currentTime;

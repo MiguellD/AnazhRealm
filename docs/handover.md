@@ -9,7 +9,32 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 ---
 
-## Schnell-Lage (Stand 20.05.2026, V9.39)
+## Schnell-Lage (Stand 20.05.2026, V9.40-e)
+
+**V9.40-e — Voxel-Surface-Politur Welle A.5 (drei Heilungen nach zweitem Schöpfer-Browser-Audit)**: nach V9.40-d funktionierte Edit-Pfad sauber, aber „neu generierte Chunks scheinen teils noch fehlerhaft" + Log `Voxel-Chunk 0,-6: 3× OOM, als empty markiert`. Schöpfer-Hinweis: „du hast nicht das min und max in der höhe begrenzt" — goldrichtig. Drei Heilungen: (1) **`_addVoxelEdit` clampt Y** auf den Chunk-Bereich + verwirft Edits weit außerhalb (vor V9.40-e wurde jedes Y akzeptiert + erzeugte unnötige Re-Meshes über `_remeshVoxelChunksAround`, das Y ignoriert). (2) **`_disposeVoxelChunk` räumt `voxelRebuildAttempts`** mit (Memory-Hygiene). (3) **`_ensureVoxelChunkAt` (Streaming-Pfad) bekommt Retry-Counter** wie der Re-Mesh-Pfad — vor V9.40-e war das eine Asymmetrie: Edit-Chunks bekamen 3 Versuche, Stream-Chunks 1 → der Schöpfer-Befund „neu generierte Chunks fehlerhaft" zeigte direkt darauf. Jetzt: bei Stream-OOM wird der Map-Eintrag NICHT gesetzt, nächster Tick versucht's wieder; nach 3 Fails empty. 9 neue Invarianten, 5/5 Läufe grün. **V9.40 ist damit voll abgeschlossen.**
+
+### Davor: V9.40-d (Dispose-Before-Build)
+
+V9.40-b's Pre-Build-Pattern Schöpfer-Browser-Test nach V9.40-c zeigte kaskadierende `Aborted(OOM)`-Logs + „Chunks lassen sich nicht abbauen". Wurzel: V9.40-b's Pre-Build-Pattern liess alten + neuen Chunk parallel im Ammo-WASM-Heap leben → bei 9 Skirt-Nachbarn × 81 initial Chunks tippte der fixe Heap um → OOM-Kaskaden. Heilung: (1) **`_rebuildVoxelChunk` disposed jetzt ZUERST den alten** (`_disposeVoxelChunk` räumt Kollision + Geometrie + Heap-Speicher), DANN buildVoxelChunkData. Alter + neuer teilen sich NIE den Heap. (2) **`voxelRebuildAttempts`-Retry-Counter**: bei Build-Fail wird der Chunk wieder dirty markiert + der Counter inkrementiert; nach 3 Fails ehrlich `{empty:true}` (V9.24-Symptom-Geste als LETZTE Antwort, nicht als Erst-Reaktion). Erfolg setzt den Counter zurück. **Ehrliche Lehre**: V9.40-b's „alter bleibt bei OOM"-Versprechen war gut gemeint, aber maskierte die wahre Wurzel (Heap-Druck). Wer eine Symptom-Geste umkehrt, ohne die Ursache zu finden, baut den nächsten Symptom-Bug. Schöpfer-Browser-Audit war die Wahrheit. 6 neue Invarianten, 8/8 Läufe grün, Audit 0 Failures.
+
+### Davor: V9.40-c (20.05.2026, Async-Rebuild via Dirty-Queue + Test-Naht)
+
+`state.dirtyVoxelChunks` Set; `_remeshVoxelChunksAround` markiert dirty; `_tickDirtyVoxelChunks` im Game-Loop rebuildet ≤1/Frame; `_drainDirtyVoxelChunks()` ist die Test-Naht.
+
+### Davor: V9.40-c als Naht (V9.40-c-Schnell-Lage-Text — kompakt für Übersicht)
+
+**V9.40-c — Voxel-Surface-Politur Welle A.3 (Async-Rebuild via Dirty-Queue + Test-Naht)**: drei neue Methoden + Test-Naht, ein Commit. `state.dirtyVoxelChunks` als Set; `_remeshVoxelChunksAround` markiert dirty statt sync rebuild; `_tickDirtyVoxelChunks(playerPos)` im Game-Loop rebuildet pro Frame max 1 Chunk (nächster am Spieler zuerst); `_drainDirtyVoxelChunks()` ist die **Test-Naht** für sofortigen sync-Drain. `_disposeVoxelChunk` räumt den dirty-Marker mit. Heilt das Schöpfer-V9.39-„Ruckeln bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor V9.40-c alle in einem Frame; jetzt verteilt. **Bisect-Lehre aus V9.40-b umgesetzt**: das blosse Aufrufen eines Game-Loop-Hooks verschob das Timing der initial-Voxel-Spawn-Tests im Headless. Lösung war nicht Code-seitig (Throttle/conditional registration), sondern Test-seitig: voxelP2b ruft `_drainDirtyVoxelChunks()` + 50× `_tickVoxelChunkStreaming(pm)` synchron, BEVOR die Asserts laufen. V8.57-Disziplin (Mess-Punkt an die Mechanik), ein drittes Mal. 6 neue Playtest-Invarianten, 6/6 Läufe grün, Audit-Strict 0 Failures, Lint + Format sauber. **V9.40 ist damit abgeschlossen** (a + b + c).
+
+### Davor: V9.40-b (20.05.2026, Pre-Build-Pattern)
+
+Drei neue Methoden — V9.24-Symptom-Geste an der Wurzel umgekehrt. **`_buildVoxelChunkData(cx, cz)`** baut einen frischen Voxel-Chunk in einem isolierten Container (Geometry + Material + Mesh + Kollision), OHNE ihn in Scene/Map zu hängen. Liefert `{mesh, kind}` oder `null` bei OOM. **`_rebuildVoxelChunk(cx, cz)`** ist der atomare Swap: ruft `_buildVoxelChunkData`, bei `null` bleibt der ALTE Chunk stehen (kein Loch — V9.24-Symptom-Geste an der Wurzel umgekehrt); bei Erfolg disposed alten + scene.add neuen + Lifecycle. **`_remeshVoxelChunksAround`** ruft jetzt `_rebuildVoxelChunk` statt `_disposeVoxelChunk + _ensureVoxelChunkAt`. Vorher: Disposal entfernte den alten Mesh; bei Re-Build-Fail (OOM) wurde `{empty:true}` gesetzt → sichtbares Loch (Schöpfer-V9.39-Befund). Jetzt: frischer ZUERST in isoliertem Container; bei Fail bleibt der alte stehen, Map-Entry unangetastet. **`_ensureVoxelChunkAt` (Initial-Spawn) bleibt unverändert** beim erprobten V9.07-Pattern — ein Initial-Spawn-Fail ist kein „Edit löscht Chunk", sondern eine degenerierte Iso-Fläche an einem ganz fest/leer Rand-Chunk. **Ehrliche Grenze: Async-Rebuild (Dirty-Queue + Game-Loop-Hook für Ruckel-Fix)** ist auf V9.40-c verschoben — Bisect ergab: ein Game-Loop-Hook (auch leer) macht 5/5 rot, während sync-Pfad 5/5 grün. Die Voxel-Initial-Spawn-Tests sind timing-flaky im Headless; ein zusätzlicher rAF-Hook verschiebt das Timing in den roten Bereich. V9.40-c braucht eine Test-Infrastruktur, die den Async-Pfad isoliert (z.B. ein `_testForceSyncRemesh`-Flag), bevor die Async-Schicht ehrlich gebaut werden kann. Playtest 5/5 grün, Audit-Strict 0 Failures.
+
+### Davor: V9.40-a (20.05.2026, Maus-Voxel-Edits durch DSL-Pfad routen)
+
+In `tryMouseBreak` + `tryMousePlace` werden die direkten `this.carveVoxelSphere(...)` / `this.fillVoxelSphere(...)`-Calls durch `this.dslRun(["voxel_carve"|"voxel_fill", x, y, z, r], {source:"human"})` ersetzt. Lokal identisches Verhalten, aber `dslRun` mit `source:"human"` triggert automatisch `p2pBroadcastDsl` → ein Mitspieler im selben Raum sieht dieselbe Mulde / denselben Hügel. V8.64-Lehre, ein zweites Mal angewandt.
+
+### Davor: V9.39 (Voxel-Phase 5c.2.c.3.b.iii — die letzte grosse Aufräum-Welle)
+
 
 **Du erbst eine sehr lebendige Welt**. **~2931 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~34700 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±3-8 je Lauf — einige Checks sind bedingt; „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.)
 
