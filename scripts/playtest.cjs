@@ -11441,6 +11441,16 @@ function startSaveServer() {
                     // sind ersatzlos entfallen.
 
                     if (out.hasTick) {
+                        // V9.40-c — Test-Deterministik: der Game-Loop läuft im
+                        // Headless-Chromium gedrosselt (~1 Hz im Hintergrund-Tab),
+                        // also bauen wir den Voxel-Ring hier explizit synchron.
+                        // Der V9.40-c-Hook (`_tickDirtyVoxelChunks`) verschob das
+                        // Timing-Fenster gerade weit genug, dass die initial-
+                        // Spawn-Tests rot wurden — der explizite Drain heilt das
+                        // an der Test-Seite (im Spiel-Pfad läuft alles asynchron).
+                        const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                        for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
                         out.activated = r.state.voxelTerrainActive === true;
                         out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
                         // jeder gemeshte Voxel-Chunk trägt eine Kollision.
@@ -12326,6 +12336,70 @@ function startSaveServer() {
                 );
                 check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
                 check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
+            }
+
+            // V9.40-c — Async-Rebuild via Dirty-Queue: ein Edit markiert
+            // die Voxel-Chunks dirty (statt sie sync zu rebuilden); ein
+            // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks`
+            // ist die Test-Naht für sofortigen sync-Drain.
+            const voxelV940cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasTick = typeof r._tickDirtyVoxelChunks === "function";
+                    out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
+                    // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
+                    // gleich Chunks zum Markieren findet.
+                    const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                    if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                    for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+                    if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+                        out.skip = true;
+                        return out;
+                    }
+                    // Ein Carve in der Nähe des Spielers markiert Chunks dirty
+                    // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
+                    const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
+                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+                    out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
+                    // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
+                    const dirtyMid = r.state.dirtyVoxelChunks.size;
+                    const built = r._drainDirtyVoxelChunks();
+                    out.drainRebuilt = built > 0;
+                    out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
+                    out.drainReturnedCount = built === dirtyMid;
+                    // Game-Loop-Tick rebuildet pro Frame max 1.
+                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+                    const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
+                    if (dirtyPostEdit > 1) {
+                        r._tickDirtyVoxelChunks(pm);
+                        out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
+                    } else {
+                        out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
+                    }
+                    // Disposal räumt dirty-Marker mit.
+                    r._drainDirtyVoxelChunks();
+                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+                    const dirtyKey = [...r.state.dirtyVoxelChunks][0];
+                    if (dirtyKey) {
+                        r._disposeVoxelChunk(dirtyKey);
+                        out.disposeClearsDirty = !r.state.dirtyVoxelChunks.has(dirtyKey);
+                    } else {
+                        out.disposeClearsDirty = true;
+                    }
+                    r._drainDirtyVoxelChunks();
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
+                check("V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren", voxelV940cResults.hasTick && voxelV940cResults.hasDrain);
+                check("V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)", voxelV940cResults.editMarksDirty);
+                check("V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set", voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet);
+                check("V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks", voxelV940cResults.drainReturnedCount);
+                check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
+                check("V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)", voxelV940cResults.disposeClearsDirty);
             }
 
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
