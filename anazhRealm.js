@@ -23,9 +23,10 @@ class AnazhRealm {
             groundMesh: null,
             groundChunks: [],
             groundHeightField: null,
-            // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. Parallel
-            // zum Heightfield, hinter dem Flag. Default aus.
-            voxelTerrainActive: false,
+            // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. V9.35
+            // Phase 5c.2.c.2: der `voxel terrain on/off`-Toggle ist tot,
+            // Voxel ist permanent + irreversibel. Default an.
+            voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
             voxelPopulatedChunks: null,
@@ -8726,20 +8727,19 @@ class AnazhRealm {
             m.seed = "anazh-realm-seed";
         }
         // V9.26 Phase 5c-Migrations-Flip + V9.33 Phase 5c.2.b Eingangs-Welt-
-        // Flip — der Voxel-Boden ist die kanonische Form. Schöpfer-Wahl V9.25
-        // („alte Welten zu Voxel migrieren") wird mit V9.33 vollendet: BEIDE
-        // Pfade — eine GELADENE alte Welt (`!fresh`, worldId schon im Save)
-        // UND die FRISCHE Eingangs-Welt (brandneuer Spieler ohne localStorage,
-        // auch der Playtest) — werden voxel-basiert, sobald `voxelTerrain`
-        // nicht explizit gesetzt ist. Eine explizite `voxelTerrain:false`-Welt
-        // (Heightfield-Opt-out via Dialog-Checkbox, V9.23) bleibt heightfield.
-        // V9.31 reduzierte den Heap-Druck (motionState-Leck in `_dispose-
-        // StaticCollision` geheilt), V9.33 zieht den Flip nach. Der Migrations-
-        // Journal-Eintrag erscheint nur bei `!fresh` (eine geladene alte Welt
-        // verdichtet sich beim Laden); die fresh-Eingangs-Welt schreibt nur
+        // Flip + V9.35 Phase 5c.2.c.2 Toggle-Tod — der Voxel-Boden ist die
+        // kanonische, irreversible Form. V9.35 zieht die ZWANGS-Migration nach:
+        // auch eine alte explizite `voxelTerrain:false`-Welt (V9.23-Opt-out)
+        // wird jetzt voxel-basiert — der `voxel terrain on/off`-Toggle stirbt,
+        // alle Reversibilitäts-Methoden (`setVoxelTerrainActive`, `_setHeight-
+        // fieldDormant`, `_restoreVoxelTerrain`) sind weg, ein Heightfield-
+        // Skelett wäre nur noch Dead-Code mit einer ein-weg-Auslage. Der
+        // Migrations-Journal-Eintrag erscheint nur bei `!fresh` (eine geladene
+        // alte Welt verdichtet sich beim Laden — egal ob sie ungesetzt oder
+        // ausdrücklich heightfield war); die fresh-Eingangs-Welt schreibt nur
         // „Ich erwache als <slug>" (kein zweiter Genesis-Eintrag fürs Voxel-
         // Sein — es ist die Norm, kein Ereignis).
-        if (m.voxelTerrain !== true && m.voxelTerrain !== false) {
+        if (m.voxelTerrain !== true) {
             m.voxelTerrain = true;
             if (!fresh && typeof this.journalAppend === "function") {
                 this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
@@ -9084,7 +9084,7 @@ class AnazhRealm {
     // standardmäßig aus, damit Tests die Daten-Schicht prüfen können ohne
     // Page-Reload. UI-Aufrufer hängen explizit ein `window.location.reload()`
     // nach erfolgreichem Aufruf an.
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo", voxelTerrain = true } = {}) {
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -9100,15 +9100,13 @@ class AnazhRealm {
         if (role === "host" || role === "guest") {
             snap.worldMeta.role = role;
         }
-        // V9.23 Phase 5a + V9.33 Phase 5c.2.b — Voxel ist der Default für neue
-        // Welten; nur ein bewusstes `voxelTerrain:false` (die „klassisches
-        // Heightfield"-Opt-out-Checkbox) baut noch ein Heightfield. Wichtig:
-        // wir setzen das Flag IMMER explizit (true ODER false). Sonst trägt
-        // `..._buildEmptyWorldSnapshot`'s `...this.state.worldMeta`-Spread
-        // den `voxelTerrain:true`-Wert der laufenden Voxel-Eingangs-Welt
-        // (V9.33-Flip) in eine Opt-out-Welt — der Schöpfer würde Heightfield
-        // wählen und still Voxel bekommen.
-        snap.worldMeta.voxelTerrain = voxelTerrain === true;
+        // V9.35 Phase 5c.2.c.2 — Voxel ist permanent + irreversibel. Der
+        // Heightfield-Opt-out (V9.23) und der Laufzeit-Toggle (V9.13) sind
+        // tot; eine neue Welt ist immer voxel-basiert. Wir setzen das Flag
+        // IMMER EXPLIZIT (V8.59-Spread-Lehre — sonst würde der `..._build-
+        // EmptyWorldSnapshot`-Spread sich auf die Eingangs-Welt verlassen,
+        // was bei einer zukünftigen Init-Änderung leise brechen könnte).
+        snap.worldMeta.voxelTerrain = true;
         try {
             localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
         } catch (err) {
@@ -12700,22 +12698,14 @@ class AnazhRealm {
             this._spawnVoxelTestChunk();
             return;
         }
-        // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. `voxel
-        // terrain on` lässt Voxel-Chunks um den Spieler streamen + legt das
-        // Heightfield schlafen; `voxel terrain off` kehrt zurück.
+        // Voxel-Terrain-Bogen Phase 3 — `voxel carve` schnitzt eine Mulde,
+        // `voxel fill` schüttet einen Hügel unter dem Spieler auf. V9.35
+        // Phase 5c.2.c.2: der `voxel terrain on/off`-Toggle ist tot; Voxel
+        // ist permanent (`voxelTerrainActive === true` immer), kein Pre-
+        // Gate mehr nötig.
         {
             const vc = command.toLowerCase().trim();
-            if (vc === "voxel terrain on" || vc === "voxel terrain off") {
-                this.setVoxelTerrainActive(vc === "voxel terrain on");
-                return;
-            }
-            // Phase 3 — `voxel carve` schnitzt eine Mulde, `voxel fill`
-            // schüttet einen Hügel unter dem Spieler auf.
             if (vc === "voxel carve" || vc === "voxel fill") {
-                if (!this.state.voxelTerrainActive) {
-                    this.log("Voxel-Formen braucht aktives Voxel-Terrain — erst `voxel terrain on`.", "INFO");
-                    return;
-                }
                 const pm = this.state.playerMesh;
                 if (pm) {
                     if (vc === "voxel fill") {
@@ -14829,82 +14819,10 @@ class AnazhRealm {
         this._pruneDistantVoxelChunks(playerPos);
     }
 
-    // Versetzt das Heightfield-Terrain in den Ruhezustand (Mesh + Gras
-    // unsichtbar, Kollision aus dem physicsWorld genommen) bzw. weckt es
-    // wieder. Das Heightfield wird NICHT zerstört — chunkMap bleibt voll,
-    // jeder Schritt ist reversibel (die parallel-hinter-Flag-Disziplin).
-    _setHeightfieldDormant(dormant) {
-        if (this.state.chunkMap) {
-            for (const entry of this.state.chunkMap.values()) {
-                const mesh = entry && entry.mesh;
-                if (!mesh) continue;
-                mesh.visible = !dormant;
-                const body = mesh.userData && mesh.userData.physicsBody;
-                if (body && this.state.physicsWorld) {
-                    if (dormant && !mesh.userData._collisionDormant) {
-                        this.state.physicsWorld.removeRigidBody(body);
-                        mesh.userData._collisionDormant = true;
-                    } else if (!dormant && mesh.userData._collisionDormant) {
-                        this.state.physicsWorld.addRigidBody(body);
-                        mesh.userData._collisionDormant = false;
-                    }
-                }
-            }
-        }
-        if (this.state.chunkGrass) {
-            for (const grass of this.state.chunkGrass.values()) {
-                if (grass) grass.visible = !dormant;
-            }
-        }
-    }
-
-    // Schaltet das Voxel-Terrain ein/aus. An: das Heightfield schläft, der
-    // Voxel-Ring um den Spieler wird sofort gefüllt (damit er nicht ins
-    // Leere fällt). Aus: alle Voxel-Chunks werden abgeräumt, das
-    // Heightfield erwacht. Phase 2c: der Zustand wird pro-Welt persistiert
-    // (`worldMeta.voxelTerrain`) — `opts.persist:false` beim Reload-Restore,
-    // sonst würde der Restore-Aufruf einen Save mitten im Init triggern.
-    setVoxelTerrainActive(on, opts = {}) {
-        const next = !!on;
-        if (this.state.worldMeta) this.state.worldMeta.voxelTerrain = next;
-        if (this.state.voxelTerrainActive === next) return next;
-        this.state.voxelTerrainActive = next;
-        this._setHeightfieldDormant(next);
-        if (next) {
-            const pm = this.state.playerMesh;
-            const pos = pm ? pm.position : { x: 0, z: 0 };
-            const { span, ringRadius } = this._voxelChunkConfig();
-            const pcx = Math.floor(pos.x / span);
-            const pcz = Math.floor(pos.z / span);
-            for (let dz = -ringRadius; dz <= ringRadius; dz++) {
-                for (let dx = -ringRadius; dx <= ringRadius; dx++) {
-                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
-                }
-            }
-        } else if (this.state.voxelChunks) {
-            for (const key of [...this.state.voxelChunks.keys()]) this._disposeVoxelChunk(key);
-        }
-        this.log(
-            next
-                ? "Voxel-Terrain aktiv — der Boden ist jetzt 3D-formbare Materie."
-                : "Voxel-Terrain aus — zurück zum Heightfield.",
-            "INFO"
-        );
-        if (opts.persist !== false && typeof this.saveState === "function") this.saveState();
-        return next;
-    }
-
-    // Phase 2c — beim Welt-Laden: war das Voxel-Terrain in dieser Welt
-    // aktiv (`worldMeta.voxelTerrain`), wird es wiederhergestellt. Wird
-    // nach dem vollen Welt-Aufbau gerufen (Szene + Physik + Spieler da),
-    // VOR dem Game-Loop-Start. persist:false — kein Save während des Inits.
-    _restoreVoxelTerrain() {
-        if (this.state.worldMeta && this.state.worldMeta.voxelTerrain === true) {
-            this.setVoxelTerrainActive(true, { persist: false });
-        }
-    }
-
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben + Phase 3b — Aufschütten ###
+    // V9.35 Phase 5c.2.c.2: `_setHeightfieldDormant` + `setVoxelTerrainActive`
+    // + `_restoreVoxelTerrain` sind als Reversibilitäts-Schicht entfernt —
+    // Voxel ist permanent + irreversibel, das Heightfield ist Dead-Code.
     // `carveVoxelSphere` schnitzt eine Kugel „Luft" ins Dichte-Feld,
     // `fillVoxelSphere` schüttet eine Kugel „Fest" auf — beide über den
     // gemeinsamen `_addVoxelEdit`. Der Edit landet in worldMeta.voxelEdits
@@ -15448,16 +15366,12 @@ class AnazhRealm {
             );
             return false;
         }
-        // V9.33 — voxelTerrainActive (Laufzeit) mit worldMeta.voxelTerrain
-        // (persistente Intent) synchronisieren VOR der Regen-Generierung.
-        // Beim V9.27-Test-Muster (Flag wechseln + generateNewWorld) wurden
-        // sonst Voxel-Chunks akkumuliert (Flag heightfield, Chunks lebten
-        // weiter) — der Ammo-Heap füllte sich über die Test-Welt-Regens hinweg.
-        // setVoxelTerrainActive räumt die Voxel-Chunks sauber wenn nötig.
-        const targetVoxel = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
-        if (typeof this.setVoxelTerrainActive === "function" && this.state.voxelTerrainActive !== targetVoxel) {
-            this.setVoxelTerrainActive(targetVoxel, { persist: false });
-        }
+        // V9.35 Phase 5c.2.c.2: der V9.33-`setVoxelTerrainActive`-Sync ist
+        // entfallen — Voxel ist permanent (`worldMeta.voxelTerrain` immer
+        // true durch Zwangs-Migration in `ensureWorldMeta`), kein Flag-Wechsel
+        // bei Welt-Regen mehr möglich. Vorhandene Voxel-Chunks bleiben am
+        // Heap; der Streaming-Ring + `_pruneDistantVoxelChunks` räumt sie
+        // bei Spieler-Bewegung sauber.
         this.state.lastWorldgen = now;
         this.state.worldgenInFlight = true;
         try {
@@ -17005,7 +16919,6 @@ class AnazhRealm {
         const joinRow = document.getElementById("new-world-join-row");
         const inviteInput = document.getElementById("new-world-invite");
         const inheritInput = document.getElementById("new-world-inherit");
-        const heightfieldInput = document.getElementById("new-world-heightfield");
         const statusEl = document.getElementById("new-world-status");
         const cancelBtn = document.getElementById("new-world-cancel");
         const confirmBtn = document.getElementById("new-world-confirm");
@@ -17014,7 +16927,6 @@ class AnazhRealm {
         slugInput.value = "";
         inviteInput.value = "";
         inheritInput.checked = false;
-        if (heightfieldInput) heightfieldInput.checked = false;
         statusEl.textContent = "";
         confirmBtn.disabled = false;
         // Mode default auf solo
@@ -17049,9 +16961,8 @@ class AnazhRealm {
             const mode = dialog.querySelector('input[name="new-world-mode"]:checked').value;
             const slug = slugInput.value.trim();
             const inherit = !!inheritInput.checked;
-            // V9.23 Phase 5a — Voxel ist der Default; die Checkbox ist ein
-            // Opt-out auf das klassische Heightfield.
-            const voxel = !(heightfieldInput && heightfieldInput.checked);
+            // V9.35 Phase 5c.2.c.2 — Voxel ist permanent; die V9.23-Heightfield-
+            // Opt-out-Checkbox ist entfallen, `voxelTerrain` ist immer true.
             confirmBtn.disabled = true;
             statusEl.textContent = "";
 
@@ -17061,7 +16972,6 @@ class AnazhRealm {
                     inheritPlayer: inherit,
                     reload: true,
                     role: "solo",
-                    voxelTerrain: voxel,
                 });
                 if (!id) statusEl.textContent = "Welt konnte nicht erschaffen werden — siehe Konsole.";
                 cleanup();
@@ -17077,7 +16987,6 @@ class AnazhRealm {
                     inheritPlayer: inherit,
                     reload: true,
                     role: "host",
-                    voxelTerrain: voxel,
                 });
                 if (!id) {
                     statusEl.textContent = "Welt konnte nicht erschaffen werden.";
@@ -33717,9 +33626,10 @@ class AnazhRealm {
             this.log("State-Import (Lade Datei) initialisiert", "INFO");
         }
 
-        // Phase 2c — war das Voxel-Terrain in dieser Welt aktiv, jetzt
-        // wiederherstellen (Welt voll gebaut, Spieler + Physik bereit).
-        this._restoreVoxelTerrain();
+        // V9.35 Phase 5c.2.c.2: der Voxel-Restore-Pfad ist tot — Voxel ist
+        // permanent ab Init, `state.voxelTerrainActive = true` (default).
+        // Die initialen Voxel-Chunks werden vom Streaming-Ring im Game-Loop
+        // gestreamt; eine Welt-Initialisierungs-Geste ist nicht mehr nötig.
 
         this.core.startEternalLoop();
         this.log("Hauptschleife gestartet – Ultiversum pulsiert!", "INFO");
