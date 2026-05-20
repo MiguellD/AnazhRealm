@@ -11833,28 +11833,22 @@ function startSaveServer() {
                         }
                     }
 
-                    // (2) Heightfield-Welt: alle Pfade leben weiter (Regression).
+                    // V9.37 Phase 5c.2.c.3.b.i: der ehemalige V9.27-Heightfield-
+                    // Regression-Pfad (worldMeta.voxelTerrain = false → 64
+                    // Chunks gebaut) ist mit dem Lösch des `else`-Pfads in
+                    // `generateTerrainWithParameters` tot. Der Beweis
+                    // wandert um: selbst wenn ein Test-Setup `voxelTerrain
+                    // = false` mutiert, baut der Welt-Generator keine
+                    // Heightfield-Chunks mehr (chunkMap bleibt leer).
                     r.state.worldMeta.voxelTerrain = false;
                     r.state.lastWorldgen = 0;
                     r.generateNewWorld({ force: true });
-                    // V9.27: 64 Chunks gebaut.
-                    out.heightfieldChunkMapFilled = r.state.chunkMap && r.state.chunkMap.size === 64;
-                    // V9.28: heightData zurück.
-                    out.heightfieldGroundFieldFilled =
-                        r.state.groundHeightField instanceof Float32Array &&
-                        r.state.groundHeightField.length === 256 * 256;
-                    out.heightfieldMinSet = r.state.minHeight !== 0 || r.state.maxHeight !== 0;
-
-                    // Restore: heightfield bleibt (origVoxel war für die
-                    // Eingangs-Welt false/undefined, V9.26-Disziplin) — kein
-                    // weiterer generateNewWorld-Aufruf nötig.
-                    if (origVoxel === true) {
-                        r.state.worldMeta.voxelTerrain = true;
-                        r.state.lastWorldgen = 0;
-                        r.generateNewWorld({ force: true });
-                    } else {
-                        r.state.worldMeta.voxelTerrain = origVoxel;
-                    }
+                    out.heightfieldElseDead = r.state.chunkMap && r.state.chunkMap.size === 0;
+                    // Restore: voxelTerrain auf true zurück + Regen, damit
+                    // die nachfolgenden Tests eine Voxel-Welt haben.
+                    r.state.worldMeta.voxelTerrain = true;
+                    r.state.lastWorldgen = 0;
+                    r.generateNewWorld({ force: true });
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -11869,8 +11863,8 @@ function startSaveServer() {
                     voxelP5c1Results.voxelMaterialKept
                 );
                 check(
-                    "Voxel V9.27 Phase 5c.1: eine Heightfield-Welt baut alle 64 Chunks weiter (Regression-Schutz)",
-                    voxelP5c1Results.heightfieldChunkMapFilled
+                    "Voxel V9.37 Phase 5c.2.c.3.b.i: der Heightfield-`else`-Pfad in generateTerrainWithParameters ist tot — auch `voxelTerrain = false` baut keine Heightfield-Chunks mehr",
+                    voxelP5c1Results.heightfieldElseDead
                 );
                 check(
                     "Voxel V9.28: eine Voxel-Welt hat KEIN groundHeightField (heightData übersprungen)",
@@ -11889,14 +11883,15 @@ function startSaveServer() {
                     "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
                     voxelP5c1Results.creatureNotAtFallback
                 );
-                check(
-                    "Voxel V9.28: eine Heightfield-Welt füllt groundHeightField weiter (Regression-Schutz)",
-                    voxelP5c1Results.heightfieldGroundFieldFilled
-                );
-                check(
-                    "Voxel V9.28: eine Heightfield-Welt setzt minHeight/maxHeight (Regression-Schutz)",
-                    voxelP5c1Results.heightfieldMinSet
-                );
+                // V9.37 Phase 5c.2.c.3.b.i: die zwei V9.28-Heightfield-Regression-
+                // Tests („groundHeightField gefüllt", „minHeight/maxHeight gesetzt")
+                // sind mit dem Lösch des `else`-Pfads in `generateTerrainWith-
+                // Parameters` tot — sie prüften, dass eine `voxelTerrain=false`-
+                // Welt noch das Heightfield aufbaut; mit V9.37 baut sie keine
+                // Heightfield-Chunks mehr, der heightData-Allokations-Pfad in
+                // `isVoxelWorldGen2` lebt zwar noch, aber kein Spieler-Pfad
+                // erreicht ihn (eine spätere Welle 5c.2.c.3.b.ii könnte ihn
+                // auch noch ablösen, sobald die Test-Anker umgewidmet sind).
             }
 
             // ### Voxel V9.29 — Heightfield-Chunk-Physik-Leak geheilt ###

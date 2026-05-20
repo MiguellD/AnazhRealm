@@ -13120,8 +13120,9 @@ class AnazhRealm {
         const DEPTH = 256;
         const CHUNK_SIZE = 32;
         const WORLD_SIZE = 300;
-        const CHUNKS_X = Math.ceil(WIDTH / CHUNK_SIZE);
-        const CHUNKS_Z = Math.ceil(DEPTH / CHUNK_SIZE);
+        // V9.37: CHUNKS_X/CHUNKS_Z waren nur für den (jetzt toten) initialen
+        // Heightfield-Chunk-Loop nötig. Die Konstanten leben unten in
+        // chunkSize/chunkWidth/chunkDepth weiter (für `_chunkGeometry`).
 
         // ### Alte Objekte sicher entfernen ###
         if (this.state.groundMesh) {
@@ -13559,29 +13560,15 @@ class AnazhRealm {
             this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
         }
 
-        // V9.27 Phase 5c.1 — eine voxel-basierte Welt überspringt die
-        // initiale Heightfield-Chunk-Generierung ganz. Vorher baute der
-        // Loop 64 Chunks + Kollisionen, die `_restoreVoxelTerrain` Sekunden
-        // später via `_setHeightfieldDormant` schlafenlegte — das war
-        // wasteful (V9.26 ehrlich benannt). `worldMeta.voxelTerrain` ist
-        // die persistente Wahrheit, von `_preloadActiveWorldMeta` schon
-        // hydratisiert + von V9.26 für migrierte Welten gesetzt, BEVOR
-        // `generateNewWorld` läuft. Das Heightfield-Material + leeres
-        // chunkMap bleiben — wer per Chat `voxel terrain off` toggelt,
-        // bekommt Chunks vom Streaming-Ring (line 34204+) nachgeladen.
-        const isVoxelWorldGen = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
-        if (isVoxelWorldGen) {
-            this.log(
-                `Phase 5c.1: voxel-basierte Welt — ${CHUNKS_Z * CHUNKS_X} initiale Heightfield-Chunks übersprungen.`,
-                "INFO"
-            );
-        } else {
-            for (let cz = 0; cz < CHUNKS_Z; cz++) {
-                for (let cx = 0; cx < CHUNKS_X; cx++) {
-                    this.ensureChunkAt(cx, cz);
-                }
-            }
-        }
+        // V9.37 Phase 5c.2.c.3.b.i: die initiale Heightfield-Chunk-
+        // Generierung ist als toter Pfad entfernt — Voxel ist permanent
+        // (V9.35), die V9.27-Skip-Gate hatte den else-Pfad ohnehin nie
+        // mehr betreten. `chunkMap` bleibt leer (oder trägt nur Test-
+        // Chunks, die Playtest-Tests via `ensureChunkAt(40, 40)` direkt
+        // bauen — V9.35/V9.36-Pattern). Das `terrainMaterial`-ShaderMaterial
+        // wird unten noch gebaut + von V8.27 Cel-Stufen-Regler-Tests
+        // gelesen; eine ehrliche Bewertung steht in einer späteren Sub-
+        // Welle (5c.2.c.3.b.ii) an.
 
         // Globales Heightfield ist nicht mehr nötig: jeder Chunk hat jetzt
         // sein eigenes btBvhTriangleMeshShape, das die Triangles des Visual-
@@ -13959,55 +13946,25 @@ class AnazhRealm {
         // Pfad genommen — alte und neue Bereiche der Welt fühlen sich
         // konsistent an.
         try {
-            const { WORLD_SIZE: ws, chunkWorldSize: cws } = this._chunkGeometry();
-            const chunksPerSide = Math.ceil(ws / cws);
-            // populatedChunks-Cache aus bestehenden Architekturen ableiten.
-            // Damit: bei Welt-Reload (loadState hat Architekturen schon
-            // restored) werden diese Chunks als „populated" markiert und
-            // die Affinity-Spawns laufen NICHT doppelt. Bei einer frischen
-            // Welt ist state.architectures leer → alle Chunks kriegen
-            // ihre erste Saat.
-            // V9.24 — eine voxel-basierte Welt bevölkert sich NICHT über den
-            // Heightfield-Pass: das Heightfield ruht (`_setHeightfieldDormant`),
-            // `ensureChunkAt` läuft für neue Bereiche nie, und der Heightfield-
-            // Pass würde die Strukturen auf der schlafenden Höhe absetzen. Der
-            // Voxel-Populator (`_populateVoxelChunkVegetation`) übernimmt — er
-            // läuft am Voxel-Chunk-Lifecycle und setzt jede Struktur auf den
-            // Voxel-Boden. Hier wird nur der Idempotenz-Cache aus dem Altbestand
-            // abgeleitet (Reload → kein Doppel-Spawn).
-            const isVoxelWorld = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
-            if (isVoxelWorld) {
-                const vspan = this._voxelChunkConfig().span;
-                this.state.voxelPopulatedChunks = new Set();
-                for (const a of this.state.architectures || []) {
-                    if (!a || !a.position) continue;
-                    const cx = Math.floor(a.position.x / vspan);
-                    const cz = Math.floor(a.position.z / vspan);
-                    this.state.voxelPopulatedChunks.add(`${cx},${cz}`);
-                }
-                this.log(
-                    `Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (${this.state.voxelPopulatedChunks.size} Chunks aus Altbestand abgeleitet)`,
-                    "INFO"
-                );
-            } else {
-                this.state.populatedChunks = new Set();
-                for (const a of this.state.architectures || []) {
-                    if (!a || !a.position) continue;
-                    const cx = Math.floor((a.position.x + ws / 2) / cws);
-                    const cz = Math.floor((a.position.z + ws / 2) / cws);
-                    this.state.populatedChunks.add(`${cx},${cz}`);
-                }
-                let populatedCount = 0;
-                for (let cz = 0; cz < chunksPerSide; cz++) {
-                    for (let cx = 0; cx < chunksPerSide; cx++) {
-                        populatedCount += this.populateChunkVegetation(cx, cz);
-                    }
-                }
-                this.log(
-                    `Welle 6.G P2: ${populatedCount} Welt-Affinitäts-Spawns über ${chunksPerSide * chunksPerSide} initiale Chunks`,
-                    "INFO"
-                );
+            // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Vegetations-Pass
+            // (Initial-64-Chunk-Loop über `populateChunkVegetation`) ist
+            // als toter Pfad entfernt — Voxel ist permanent (V9.35),
+            // Vegetation streamt am Voxel-Chunk-Lifecycle
+            // (`_populateVoxelChunkVegetation` in `_ensureVoxelChunkAt`,
+            // V9.24-Verdrahtung). Hier nur noch der Idempotenz-Cache aus
+            // dem Altbestand abgeleitet (Reload → kein Doppel-Spawn).
+            const vspan = this._voxelChunkConfig().span;
+            this.state.voxelPopulatedChunks = new Set();
+            for (const a of this.state.architectures || []) {
+                if (!a || !a.position) continue;
+                const cx = Math.floor(a.position.x / vspan);
+                const cz = Math.floor(a.position.z / vspan);
+                this.state.voxelPopulatedChunks.add(`${cx},${cz}`);
             }
+            this.log(
+                `Welle 6.G P2: voxel-basierte Welt — Vegetation streamt mit den Voxel-Chunks (${this.state.voxelPopulatedChunks.size} Chunks aus Altbestand abgeleitet)`,
+                "INFO"
+            );
         } catch (e) {
             this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
         }
@@ -33985,40 +33942,14 @@ class AnazhRealm {
             // Statt Map-Mittelpunkt-Extension (die Chunks weit weg vom Spieler
             // entstehen ließ und Lücken hinterließ) füllen wir jetzt einen
             // 5×5-Ring um den Chunk, in dem der Spieler steht. Pro Frame max
-            // zwei neue Chunks, damit Frame-Time stabil bleibt.
+            // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Streaming-Ring ist
+            // als toter Pfad entfernt — Voxel ist permanent seit V9.35.
+            // Der Voxel-Chunk-Streaming-Ring trägt jeden Spieler-Schritt
+            // (Ring-Radius lebt in `_voxelChunkConfig().ringRadius`, der
+            // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
+            // V9.24-Verdrahtung).
             const playerPos = this.state.playerMesh.position;
-            const { chunkWorldSize: csW } = this._chunkGeometry();
-            const playerChunkX = Math.floor((playerPos.x + 150) / csW);
-            const playerChunkZ = Math.floor((playerPos.z + 150) / csW);
-            let chunksThisFrame = 0;
-            const MAX_PER_FRAME = 2;
-            // Welle 6.X.4 D2 — RING_RADIUS aus state.chunkRingRadius (1..4),
-            // default 2. 1 = 3×3 Chunks, 2 = 5×5, 3 = 7×7, 4 = 9×9. Höhere
-            // Werte = mehr Welt sichtbar, mehr Generations-Last bei Bewegung.
-            const RING_RADIUS = Math.max(
-                1,
-                Math.min(8, typeof this.state.chunkRingRadius === "number" ? this.state.chunkRingRadius : 4)
-            );
-            // Voxel-Terrain-Bogen Phase 2b — ist das Voxel-Terrain aktiv,
-            // ruht das Heightfield-Streaming und der Voxel-Chunk-Ring
-            // streamt stattdessen. Parallel, hinter dem Flag.
-            if (this.state.voxelTerrainActive) {
-                this._tickVoxelChunkStreaming(playerPos);
-            } else {
-                outer: for (let r = 0; r <= RING_RADIUS; r++) {
-                    for (let dz = -r; dz <= r; dz++) {
-                        for (let dx = -r; dx <= r; dx++) {
-                            // Ring r: nur Zellen am äußeren Rand des Quadrats r.
-                            if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                            const cx = playerChunkX + dx;
-                            const cz = playerChunkZ + dz;
-                            if (this.state.chunkMap.has(`${cx},${cz}`)) continue;
-                            this.ensureChunkAt(cx, cz);
-                            if (++chunksThisFrame >= MAX_PER_FRAME) break outer;
-                        }
-                    }
-                }
-            }
+            this._tickVoxelChunkStreaming(playerPos);
 
             // ### Skybox und Planeten ###
             this.state.skybox.material.uniforms.time.value = currentTime;
