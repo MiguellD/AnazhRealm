@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 20.05.2026 (V9.27)
+# Zustand des Realm — Stand: 20.05.2026 (V9.28)
+
+**V9.28 — V9.25 Phase 5b ehrlich abgeschlossen + heightData-Skip für Voxel-Welten**: zwei surgische Schnitte. (1) `updateCreatures` war der letzte missed Höhen-Konsument aus V9.25 — es las `state.groundHeightField` direkt am voxel-aware `getTerrainHeightAt` vorbei; jetzt route auch dieser Pfad voxel-aware. (2) Nach (1) liest in einer Voxel-Welt niemand mehr `groundHeightField`/`minHeight`/`maxHeight` → die 256×256×3-Float-Allokation (~768 KB) + die 65k-Noise-Schleife wird in einer Voxel-Welt komplett übersprungen. Plus der Waterfall-Loop mit-gegated. Pre-existing Ammo-Heap-Leck (btBvhTriangleMeshShape-Auxiliars) entdeckt + dokumentiert. +7 Invarianten, 2935 grün. Voller Eintrag in `CLAUDE.md` V9.28.
 
 **V9.27 — Voxel-Terrain-Bogen Phase 5c.1 (Heightfield-Init für Voxel-Welten übersprungen)**: der erste ehrliche Schritt der grossen 5c-Aufräumarbeit. Eine voxel-basierte Welt baut die initialen 64 Heightfield-Chunks gar nicht mehr (vorher: bauen + via `_setHeightfieldDormant` schlafenlegen — wasteful). Der Gate in `generateTerrainWithParameters` liest `worldMeta.voxelTerrain` — von V9.26-Migration + `_preloadActiveWorldMeta` korrekt gesetzt, BEVOR `generateNewWorld` läuft. Das Heightfield-Material bleibt erhalten (Reversibilität: `voxel terrain off` lädt vom Streaming-Ring nach). Die fresh-Eingangs-Welt (Playtest) bleibt heightfield → bestehende Tests unberührt. +3 Invarianten. Voller Eintrag in `CLAUDE.md` V9.27.
 

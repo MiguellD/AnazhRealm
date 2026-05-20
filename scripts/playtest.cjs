@@ -11849,43 +11849,76 @@ function startSaveServer() {
                 );
             }
 
-            // ### Voxel V9.27 Phase 5c.1 — Heightfield-Init für Voxel-Welten übersprungen ###
-            // Eine voxel-basierte Welt baut die initialen 64 Heightfield-Chunks
-            // GAR NICHT mehr — vorher (V9.26) wurden sie gebaut und dann via
-            // `_setHeightfieldDormant` schlafengelegt (wasteful). Der Skip
-            // wird in `generateTerrainWithParameters` über die persistente
-            // `worldMeta.voxelTerrain`-Marke entschieden. Eine Heightfield-
-            // Welt (worldMeta.voxelTerrain falsy) baut weiter alle Chunks.
+            // ### Voxel V9.27 Phase 5c.1 + V9.28 — fusioniert für Heap-Schonung ###
+            // V9.27: eine Voxel-Welt überspringt die initialen 64 Heightfield-
+            // Chunks. V9.28: zusätzlich ist die heightData/caveData/volcanoData-
+            // Allokation übersprungen (V9.25 Phase 5b ehrlich abgeschlossen —
+            // updateCreatures ist der letzte missed Höhen-Konsument, jetzt
+            // voxel-aware via getTerrainHeightAt). BEIDE teilen sich die zwei
+            // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression),
+            // damit das pre-existing btBvhTriangleMeshShape-Auxiliar-Leck
+            // (Ammo-Heap) nicht den Welle-10b-Test OOM'ed.
             const voxelP5c1Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state) return null;
                     const out = {};
-                    // State sichern (Restoration am Ende). voxelP2c hat
-                    // worldMeta.voxelTerrain = false gesetzt — entrance world
-                    // ist eine fresh heightfield-Welt.
                     const origVoxel = r.state.worldMeta && r.state.worldMeta.voxelTerrain;
-                    // (1) Voxel-Welt → kein initialer Chunk-Build.
+
+                    // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
                     r.state.worldMeta.voxelTerrain = true;
                     r.state.lastWorldgen = 0;
                     r.generateNewWorld({ force: true });
+                    // V9.27 Phase 5c.1: chunkMap leer.
                     out.voxelChunkMapEmpty = r.state.chunkMap && r.state.chunkMap.size === 0;
                     out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
-                    // (2) Heightfield-Welt → der Loop läuft + füllt 64 Chunks.
+                    // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
+                    out.voxelGroundFieldNull = r.state.groundHeightField === null;
+                    out.voxelMinHeightZero = r.state.minHeight === 0;
+                    out.voxelMaxHeightZero = r.state.maxHeight === 0;
+                    out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
+
+                    // V9.28: updateCreatures ist voxel-aware. Spawne eine
+                    // Kreatur an bekannter Position, lasse einen Frame laufen,
+                    // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
+                    if (
+                        typeof r.spawnCreatureAt === "function" &&
+                        typeof r._voxelSurfaceY === "function" &&
+                        typeof r.updateCreatures === "function"
+                    ) {
+                        const testX = 5;
+                        const testZ = 5;
+                        const voxelY = r._voxelSurfaceY(testX, testZ);
+                        const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
+                        if (creature && Number.isFinite(voxelY)) {
+                            r.updateCreatures(0.016);
+                            const expected = voxelY + 0.5;
+                            const actual = creature.position.y;
+                            out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
+                            out.creatureNotAtFallback = Math.abs(actual - 0.5) > 1.0;
+                        }
+                    }
+
+                    // (2) Heightfield-Welt: alle Pfade leben weiter (Regression).
                     r.state.worldMeta.voxelTerrain = false;
                     r.state.lastWorldgen = 0;
                     r.generateNewWorld({ force: true });
+                    // V9.27: 64 Chunks gebaut.
                     out.heightfieldChunkMapFilled = r.state.chunkMap && r.state.chunkMap.size === 64;
-                    // Restore: ursprünglichen voxelTerrain-Zustand wiederherstellen.
-                    // Wenn die Welt vorher heightfield war (origVoxel falsy), bleibt
-                    // chunkMap mit 64 Chunks gefüllt — das ist der Ausgangszustand.
+                    // V9.28: heightData zurück.
+                    out.heightfieldGroundFieldFilled =
+                        r.state.groundHeightField instanceof Float32Array &&
+                        r.state.groundHeightField.length === 256 * 256;
+                    out.heightfieldMinSet = r.state.minHeight !== 0 || r.state.maxHeight !== 0;
+
+                    // Restore: heightfield bleibt (origVoxel war für die
+                    // Eingangs-Welt false/undefined, V9.26-Disziplin) — kein
+                    // weiterer generateNewWorld-Aufruf nötig.
                     if (origVoxel === true) {
                         r.state.worldMeta.voxelTerrain = true;
                         r.state.lastWorldgen = 0;
                         r.generateNewWorld({ force: true });
                     } else {
-                        // origVoxel war false oder undefined → heightfield bleibt,
-                        // worldMeta.voxelTerrain auf den ursprünglichen Wert ziehen.
                         r.state.worldMeta.voxelTerrain = origVoxel;
                     }
                     return out;
@@ -11904,6 +11937,34 @@ function startSaveServer() {
                 check(
                     "Voxel V9.27 Phase 5c.1: eine Heightfield-Welt baut alle 64 Chunks weiter (Regression-Schutz)",
                     voxelP5c1Results.heightfieldChunkMapFilled
+                );
+                check(
+                    "Voxel V9.28: eine Voxel-Welt hat KEIN groundHeightField (heightData übersprungen)",
+                    voxelP5c1Results.voxelGroundFieldNull
+                );
+                check(
+                    "Voxel V9.28: state.minHeight ist 0 in einer Voxel-Welt (kein Infinity-Leak)",
+                    voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
+                );
+                check(
+                    "Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt",
+                    voxelP5c1Results.voxelMaxHeightZero
+                );
+                check(
+                    "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
+                    voxelP5c1Results.creatureOnVoxelSurface
+                );
+                check(
+                    "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
+                    voxelP5c1Results.creatureNotAtFallback
+                );
+                check(
+                    "Voxel V9.28: eine Heightfield-Welt füllt groundHeightField weiter (Regression-Schutz)",
+                    voxelP5c1Results.heightfieldGroundFieldFilled
+                );
+                check(
+                    "Voxel V9.28: eine Heightfield-Welt setzt minHeight/maxHeight (Regression-Schutz)",
+                    voxelP5c1Results.heightfieldMinSet
                 );
             }
 
