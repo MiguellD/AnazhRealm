@@ -14221,7 +14221,12 @@ class AnazhRealm {
     // Surface-Nets-Mesh aus dem 3D-Dichte-Feld + btBvhTriangleMeshShape-
     // Kollision. No-op, wenn er schon existiert. Ein leeres Dichte-Feld
     // (ganz fest / ganz Luft) wird als {empty:true} markiert — kein
-    // erneutes Meshen je Frame.
+    // erneutes Meshen je Frame. V9.40-e: bei Kollisions-OOM ehrlich
+    // mit Retry (max 3) wie der Re-Mesh-Pfad — vor V9.40-e markierte der
+    // Streaming-Pfad sofort `{empty:true}`, der Chunk konnte nie wieder
+    // versucht werden, der Schöpfer sah Lücken im Sicht-Ring. Jetzt darf
+    // der nächste Streaming-Tick es nochmal versuchen (Heap könnte sich
+    // bis dahin durch Pruning ferner Chunks entspannt haben).
     _ensureVoxelChunkAt(cx, cz) {
         if (!this.state.scene) return null;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
@@ -14244,6 +14249,9 @@ class AnazhRealm {
         // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
         const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
         if (!geom) {
+            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
+            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an Rand-
+            // Chunks → sofort `{empty:true}`, kein Retry nötig.
             this.state.voxelChunks.set(key, { empty: true });
             return null;
         }
@@ -14256,20 +14264,39 @@ class AnazhRealm {
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         this.state.scene.add(mesh);
         const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
-        // V9.24 — ein Mesh OHNE Kollision wäre ein Fall-durch-Loch. Liefert
-        // der Kollisions-Builder null (eine degenerierte Surface-Nets-Geometrie
-        // ohne ein einziges gültiges Dreieck — möglich an einem fast ganz
-        // festen/leeren Rand-Chunk), wird der Chunk wie ein leerer behandelt:
-        // Mesh abräumen, als {empty:true} markieren, kein erneutes Meshen.
+        // V9.24 / V9.40-e — der Kollisions-Build kann fehlschlagen (OOM bei
+        // vollem Ammo-Heap oder degenerierte Geometrie ohne ein einziges
+        // gültiges Dreieck). Wir disposen den Mesh aus der Scene + Heap.
+        // V9.40-e Retry: max 3 Versuche; in den ersten 2 setzen wir
+        // ABSICHTLICH KEINEN Map-Eintrag (`voxelChunks.has(key)` bleibt
+        // false), sodass der nächste Streaming-Tick es wieder versucht.
+        // Inzwischen wird `_pruneDistantVoxelChunks` ferne Chunks räumen
+        // und Heap freigeben — der Retry hat eine echte Chance. Erst beim
+        // 3. Fail markieren wir ehrlich `{empty:true}` (V9.24-Symptom als
+        // LETZTE Antwort, nicht als Erst-Reaktion — die Lehre von V9.40-d).
         if (!collisionBody) {
             this.state.scene.remove(mesh);
             if (mesh.geometry) mesh.geometry.dispose();
             if (mesh.material) mesh.material.dispose();
-            this.state.voxelChunks.set(key, { empty: true });
+            // V9.40-e Retry: zähle den Versuch + erlaube max 3 Versuche.
+            if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
+            const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
+            this.state.voxelRebuildAttempts.set(key, attempts);
+            if (attempts >= 3) {
+                this.state.voxelChunks.set(key, { empty: true });
+                this.state.voxelRebuildAttempts.delete(key);
+                this.log(`Voxel-Chunk ${key}: 3× OOM beim Stream-Build, als empty markiert`, "INFO");
+            }
+            // Bei attempts < 3: KEIN Map-Eintrag — der Streaming-Tick wird
+            // den Chunk im nächsten Frame wieder aufrufen (has(key)===false).
+            // Inzwischen räumt _pruneDistantVoxelChunks ferne Chunks + gibt
+            // Heap frei → der Retry hat bessere Chancen.
             return null;
         }
         const entry = { mesh };
         this.state.voxelChunks.set(key, entry);
+        // V9.40-e — Erfolg: Retry-Counter zurücksetzen.
+        if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
         // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
@@ -14302,6 +14329,11 @@ class AnazhRealm {
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
         // triggert einen unnötigen Rebuild im nächsten Tick.
         if (this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks.delete(key);
+        // V9.40-e — den Retry-Counter mit-entfernen. Memory-Hygiene: ohne das
+        // akkumulieren bei jedem Prune-und-Streaming-Zyklus stale Counter-
+        // Einträge im JS-Heap (kein Ammo-OOM, aber unsauber). Plus: ein neu
+        // gestreamter Chunk an derselben Position bekommt frische 3 Versuche.
+        if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
     }
 
     // V9.22 — die Oberflächen-Höhe des Voxel-Terrains an (x,z): die oberste
@@ -14582,7 +14614,21 @@ class AnazhRealm {
         if (!Array.isArray(this.state.worldMeta.voxelEdits)) this.state.worldMeta.voxelEdits = [];
         const edits = this.state.worldMeta.voxelEdits;
         const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
-        edits.push({ x, y, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
+        // V9.40-e Schöpfer-Befund: Edits außerhalb des Voxel-Chunk-Höhen-
+        // Bands (base-58..base+86, der vertikalen Spanne der Surface-Nets-
+        // Mesher) sind nutzlos — der Edit ist gespeichert, kann aber nichts
+        // schnitzen/aufschütten, weil keine Dichte-Zellen in seinem Radius
+        // liegen. Plus: `_remeshVoxelChunksAround` markiert trotzdem ±1-
+        // Skirt-Chunks dirty (ignoriert Y), was Re-Meshes ohne Effekt
+        // triggert. Wir clampen darum y auf den (mit Radius-Marge erweiterten)
+        // nutzbaren Bereich. Edits, die WEIT außerhalb sind (>r+8 Marge),
+        // werden silent verworfen — sie hätten keinen Effekt.
+        const base = this.state.terrainBaseHeight || 0;
+        const Y_MIN = base - 58 - radius - 8;
+        const Y_MAX = base + 86 + radius + 8;
+        if (y < Y_MIN || y > Y_MAX) return false;
+        const yClamped = Math.max(base - 58 - radius, Math.min(base + 86 + radius, y));
+        edits.push({ x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
         while (edits.length > CAP) edits.shift();

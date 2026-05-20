@@ -12471,6 +12471,78 @@ function startSaveServer() {
                 check("V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)", voxelV940dResults.counterClearedAfterGiveUp);
             }
 
+            // V9.40-e — drei Heilungen nach dem zweiten Schöpfer-Browser-
+            // Audit: (1) `_addVoxelEdit` clampt Y auf den Chunk-Bereich +
+            // verwirft Edits weit ausserhalb (Schöpfer-Hinweis ehren);
+            // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit
+            // (Memory-Hygiene); (3) `_ensureVoxelChunkAt` (Streaming-Pfad)
+            // bekommt Retry-Counter wie der Re-Mesh-Pfad — vor V9.40-e
+            // markierte er bei OOM sofort `{empty:true}` (V9.24-Symptom-
+            // Geste). Damit sind beide Bau-Pfade (Stream + Re-Mesh) konsistent.
+            const voxelV940eResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    const base = r.state.terrainBaseHeight || 0;
+                    // (1) Edit-Y-Bound: weit-außerhalb-Edit wird verworfen.
+                    const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
+                    const farUpResult = r._addVoxelEdit(0, base + 10000, 0, 3, "carve");
+                    out.farEditRejected = farUpResult === false;
+                    out.farEditNotStored = (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
+                    const farDownResult = r._addVoxelEdit(0, base - 10000, 0, 3, "carve");
+                    out.farDownRejected = farDownResult === false;
+                    // Normaler Edit innerhalb Band bleibt erhalten.
+                    const inBoundResult = r._addVoxelEdit(0, base, 0, 3, "carve");
+                    out.inBoundAccepted = inBoundResult === true;
+                    // Edit knapp ÜBER der Decke (mit Marge) wird geclampt
+                    // statt verworfen.
+                    const nearEdgeResult = r._addVoxelEdit(0, base + 86, 0, 3, "carve");
+                    out.nearEdgeAccepted = nearEdgeResult === true;
+                    // Räumen.
+                    r.state.worldMeta.voxelEdits = [];
+
+                    // (2) _disposeVoxelChunk räumt voxelRebuildAttempts.
+                    if (!r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts = new Map();
+                    r.state.voxelRebuildAttempts.set("99,99", 2);
+                    r.state.voxelChunks.set("99,99", { empty: true });
+                    r._disposeVoxelChunk("99,99");
+                    out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
+
+                    // (3) _ensureVoxelChunkAt Retry-Pfad: stub den
+                    // Kollisions-Builder, sehe dass nach 2 Fails KEIN
+                    // empty-Eintrag steht (Retry pending), nach 3 ein empty.
+                    const fakeKey = "0,-999"; // weit weg, ungebraucht
+                    const origBuildColl = r._buildStaticTriMeshCollision;
+                    r._buildStaticTriMeshCollision = () => null;
+                    r._ensureVoxelChunkAt(0, -999);
+                    out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
+                    out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
+                    r._ensureVoxelChunkAt(0, -999);
+                    out.streamAttempt2 = r.state.voxelRebuildAttempts.get(fakeKey) === 2;
+                    r._ensureVoxelChunkAt(0, -999);
+                    const finalE = r.state.voxelChunks.get(fakeKey);
+                    out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
+                    out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
+                    // Restore + Cleanup.
+                    r._buildStaticTriMeshCollision = origBuildColl;
+                    r._disposeVoxelChunk(fakeKey);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV940eResults && !voxelV940eResults.error) {
+                check("V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)", voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored);
+                check("V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
+                check("V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
+                check("V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)", voxelV940eResults.nearEdgeAccepted);
+                check("V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)", voxelV940eResults.disposeClearsAttempts);
+                check("V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)", voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1);
+                check("V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940eResults.streamAttempt2);
+                check("V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940eResults.streamGiveUpAsEmpty);
+                check("V9.40-e: Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
             // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
             const voxelP3bResults = await page
