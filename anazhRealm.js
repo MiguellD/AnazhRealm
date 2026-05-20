@@ -1394,7 +1394,7 @@ class AnazhRealm {
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
             },
-            spawn_island: ([positionNode, height, seed], ctx) => {
+            spawn_island: ([positionNode, height, seed, size], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1406,14 +1406,19 @@ class AnazhRealm {
                 // Determinismus. Wenn nicht gesetzt, würfeln. Chat-Pattern
                 // „setze insel hier" embedded das Seed bei Build-Zeit.
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                // V9.42-b — `size` (Durchmesser in m) ist DSL-erreichbar, 6..48.
+                const sz = Number.isFinite(Number(size)) ? c(Number(size), 6, 48) : undefined;
                 // Islands spawnen ein Stück über dem angegebenen Punkt —
                 // sonst würde der at_player-Pfad sie auf Spieler-Höhe legen
                 // und der Spieler stünde im Erd-Inneren der Insel.
-                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, { seed: s });
+                const opts = { seed: s };
+                if (sz !== undefined) opts.size = sz;
+                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, opts);
                 ctx.log.push({
                     event: "spawned_island",
                     pos: island ? { x: island.position.x, y: island.position.y, z: island.position.z } : pos,
                     height: h,
+                    size: sz,
                     seed: s,
                 });
             },
@@ -13441,222 +13446,39 @@ class AnazhRealm {
             this.log("Shader-Programm für fliegende Inseln erfolgreich erstellt.");
         }
 
+        // V9.42-b — Worldgen-Inseln gehen jetzt durch die V9.42-a-Pipeline
+        // (Surface-Nets via `spawnIslandAt`). Eine Mesh-Sprache, ein Pfad.
+        // Spawn-Y aus echter Voxel-Surface (in Voxel-Welten ist `maxHeight=0`,
+        // die alte `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
+        // `spawnIslandAt` übernimmt scene.add + floatingIslands.push + Kollision.
         for (let i = 0; i < numIslands; i++) {
-            const islandSize = Math.random() * 20 + 10;
-            const islandHeight = 5;
-            const geometry = new THREE.BufferGeometry();
-            const vertices = [];
-            const indices = [];
-            const uvs = [];
-
-            const islandNoise = new SimplexNoise(
-                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`
-            );
-            const points = [];
-            for (let z = 0; z < islandSize; z++) {
-                const row = [];
-                for (let x = 0; x < islandSize; x++) {
-                    const xPos = x - islandSize / 2;
-                    const zPos = z - islandSize / 2;
-                    const distance = Math.sqrt(xPos * xPos + zPos * zPos);
-                    const maxDistance = islandSize / 2;
-                    let height = 0;
-                    if (distance < maxDistance) {
-                        const heightFactor = 1 - distance / maxDistance;
-                        const height1 = islandNoise.noise2D(x * 0.1, z * 0.1) * 3 * heightFactor;
-                        const height2 = islandNoise.noise2D(x * 0.3, z * 0.3) * 2 * heightFactor;
-                        const height3 = islandNoise.noise2D(x * 0.5, z * 0.5) * 1 * heightFactor;
-                        height = height1 + height2 + height3;
-                        height = Math.max(0, height);
-                        height -= (1 - heightFactor) * islandHeight;
-                        const irregularity = islandNoise.noise2D(x * 0.8, z * 0.8) * 1.5;
-                        height += irregularity;
-
-                        if (!Number.isFinite(height)) {
-                            this.log(
-                                `Ungültiger Höhenwert für fliegende Insel ${i} bei (${x}, ${z}): ${height}. Setze auf 0.`,
-                                "ERROR"
-                            );
-                            height = 0;
-                        }
-                    }
-                    row.push(height);
-                    vertices.push(xPos, height, zPos);
-                    uvs.push(x / (islandSize - 1), z / (islandSize - 1));
-                }
-                points.push(row);
-            }
-
-            for (let z = 0; z < islandSize - 1; z++) {
-                for (let x = 0; x < islandSize - 1; x++) {
-                    const a = z * islandSize + x;
-                    const b = z * islandSize + (x + 1);
-                    const c = (z + 1) * islandSize + x;
-                    const d = (z + 1) * islandSize + (x + 1);
-                    if (
-                        points[z][x] > -islandHeight &&
-                        points[z][x + 1] > -islandHeight &&
-                        points[z + 1][x] > -islandHeight &&
-                        points[z + 1][x + 1] > -islandHeight
-                    ) {
-                        if (
-                            a >= 0 &&
-                            b >= 0 &&
-                            c >= 0 &&
-                            d >= 0 &&
-                            a < vertices.length / 3 &&
-                            b < vertices.length / 3 &&
-                            c < vertices.length / 3 &&
-                            d < vertices.length / 3
-                        ) {
-                            indices.push(a, b, d);
-                            indices.push(a, d, c);
-                        } else {
-                            this.log(
-                                `Ungültige Indices für fliegende Insel ${i}: (${a}, ${b}, ${d}, ${c}). Überspringe Dreieck.`,
-                                "ERROR"
-                            );
-                        }
-                    }
-                }
-            }
-
-            geometry.setIndex(indices);
-            geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-            geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-            geometry.computeVertexNormals();
-
-            const positions = geometry.attributes.position.array;
-            let hasInvalidValues = false;
-            for (let j = 0; j < positions.length; j++) {
-                if (!Number.isFinite(positions[j])) {
-                    this.log(
-                        `Ungültiger Vertex-Wert in fliegender Insel ${i} bei Index ${j}: ${positions[j]}. Setze auf 0.`,
-                        "ERROR"
-                    );
-                    positions[j] = 0;
-                    hasInvalidValues = true;
-                }
-            }
-            if (hasInvalidValues) {
-                geometry.attributes.position.needsUpdate = true;
-                geometry.computeVertexNormals();
-            }
-
-            try {
-                geometry.computeBoundingSphere();
-                geometry.computeBoundingBox();
-            } catch (e) {
-                this.log(
-                    `Fehler beim Berechnen der Bounding Sphere/Box für fliegende Insel ${i}: ${e.message}. Insel wird übersprungen.`,
-                    "ERROR"
-                );
-                continue;
-            }
-
-            const island = new THREE.Mesh(geometry, islandMaterial);
-            const islandX = (Math.random() - 0.5) * WORLD_SIZE;
-            const islandZ = (Math.random() - 0.5) * WORLD_SIZE;
-            const islandY = maxHeight + 20 + Math.random() * 30;
-            if (!Number.isFinite(islandX) || !Number.isFinite(islandY) || !Number.isFinite(islandZ)) {
-                this.log(
-                    `Ungültige Position für fliegende Insel ${i}: (${islandX}, ${islandY}, ${islandZ}). Insel wird übersprungen.`,
-                    "ERROR"
-                );
-                continue;
-            }
-            island.position.set(islandX, islandY, islandZ);
-            island.visible = true;
-            island.castShadow = true;
-            island.receiveShadow = true;
-
-            const numTrees = Math.floor(Math.random() * 3 + 1); // Reduziere Anzahl der Bäume
-            for (let t = 0; t < numTrees; t++) {
-                const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 8);
-                const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                const leavesGeometry = new THREE.SphereGeometry(1.5, 8, 8);
-                const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                const treeX = (Math.random() - 0.5) * (islandSize - 4);
-                const treeZ = (Math.random() - 0.5) * (islandSize - 4);
-                let treeHeight = islandNoise.noise2D((islandX + treeX) * 0.1, (islandZ + treeZ) * 0.1) * 3;
-                if (!Number.isFinite(treeHeight)) {
-                    this.log(
-                        `Ungültiger Baumhöhenwert für fliegende Insel ${i} bei (${treeX}, ${treeZ}): ${treeHeight}. Setze auf 0.`,
-                        "ERROR"
-                    );
-                    treeHeight = 0;
-                }
-                if (!Number.isFinite(treeX) || !Number.isFinite(treeZ)) {
-                    this.log(
-                        `Ungültige Baumposition für fliegende Insel ${i}: (${treeX}, ${treeZ}). Baum wird übersprungen.`,
-                        "ERROR"
-                    );
-                    continue;
-                }
-                if (treeHeight > 0) {
-                    trunk.position.set(treeX, treeHeight + 1.5, treeZ);
-                    leaves.position.set(treeX, treeHeight + 3, treeZ);
-                    const tree = new THREE.Group();
-                    tree.add(trunk);
-                    tree.add(leaves);
-
-                    try {
-                        trunkGeometry.computeBoundingSphere();
-                        trunkGeometry.computeBoundingBox();
-                        leavesGeometry.computeBoundingSphere();
-                        leavesGeometry.computeBoundingBox();
-                    } catch (e) {
-                        this.log(
-                            `Fehler beim Berechnen der Bounding Sphere/Box für Baum auf fliegender Insel ${i}: ${e.message}. Baum wird übersprungen.`,
-                            "ERROR"
-                        );
-                        continue;
-                    }
-
-                    island.add(tree);
-                }
-            }
-
-            this.state.scene.add(island);
-            this.state.floatingIslands.push(island);
-            // Welle 6.G Phase 1 — Insel sofort kollidierbar machen.
-            // Triangle-Mesh-Shape aus den echten Vertices, statischer Body
-            // an island.position. Spieler kann nicht mehr durchfallen.
-            this._buildIslandCollision(island);
+            const islandSize = 14 + Math.random() * 30; // 14..44 m Durchmesser
+            const islandHeight = 6 + Math.random() * 10; // 6..16 m Wölbung
+            const islandX = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+            const islandZ = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+            const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
+            const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
+            const islandY = baseSurf + 50 + Math.random() * 90; // 50..140 m über dem Boden
+            const islandSeed =
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`;
+            const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
+                size: islandSize,
+                seed: islandSeed,
+                material: islandMaterial,
+            });
+            if (!island) continue;
             this.log(
-                `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(2)}, ${islandY.toFixed(2)}, ${islandZ.toFixed(2)})`
+                `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
             );
-
+            // UFO als Begleiter (kosmetisch, kein Compound-Architektur — eigene Welle).
             const ufoGeometry = new THREE.ConeGeometry(1, 2, 8);
             const ufoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const ufo = new THREE.Mesh(ufoGeometry, ufoMaterial);
             const ufoY = islandY + 5;
-            if (!Number.isFinite(ufoY)) {
-                this.log(`Ungültige UFO-Höhe für fliegende Insel ${i}: ${ufoY}. UFO wird übersprungen.`, "ERROR");
-                continue;
-            }
             ufo.position.set(islandX, ufoY, islandZ);
-            ufo.visible = true;
-
-            try {
-                ufoGeometry.computeBoundingSphere();
-                ufoGeometry.computeBoundingBox();
-            } catch (e) {
-                this.log(
-                    `Fehler beim Berechnen der Bounding Sphere/Box für UFO auf fliegender Insel ${i}: ${e.message}. UFO wird übersprungen.`,
-                    "ERROR"
-                );
-                continue;
-            }
-
             this.state.scene.add(ufo);
             this.state.ufos.push(ufo);
             ufo.userData = { baseY: ufoY, speed: Math.random() * 0.5 + 0.5 };
-            this.log(
-                `UFO für Insel ${i} erstellt: Position (${islandX.toFixed(2)}, ${ufo.position.y.toFixed(2)}, ${islandZ.toFixed(2)})`
-            );
         }
 
         // ### Dynamische Vegetation und Wasserfälle ###
@@ -13918,6 +13740,13 @@ class AnazhRealm {
         const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
         const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
         const positions = [];
+        // V9.42-b — Vertex→Zell-Lookup für die Smooth-Skirt-Disziplin:
+        // Naht-Vertices (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1)
+        // dürfen NICHT vom Laplacian-Smooth verschoben werden, sonst
+        // verlieren benachbarte Chunks die V9.10-Skirt-Übereinstimmung
+        // an der Naht (jeder Chunk zieht den Naht-Vertex zu SEINER inneren
+        // Topologie → Spalt). Vertices in Rand-Zellen bleiben unverschoben.
+        const vertCells = [];
         const solid = (v) => v > 0;
         // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
         for (let k = 0; k < dimZ; k++) {
@@ -13957,6 +13786,7 @@ class AnazhRealm {
                     if (count === 0) continue;
                     const s = 1 / count;
                     cellVert[ci(i, j, k)] = positions.length / 3;
+                    vertCells.push(i, j, k);
                     positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
                 }
             }
@@ -14045,9 +13875,17 @@ class AnazhRealm {
             const lambda = 0.5;
             const smoothed = new Array(positions.length);
             for (let v = 0; v < vertCount; v++) {
+                // V9.42-b — Naht-Schutz: Vertices in Rand-Zellen (X/Z-Skirt)
+                // bleiben unverschoben, damit zwei Nachbar-Chunks dieselbe
+                // Naht-Position teilen. Y hat keine Skirt-Nachbarn, also
+                // nur i + k checken.
+                const ci0 = v * 3;
+                const cellI = vertCells[ci0];
+                const cellK = vertCells[ci0 + 2];
+                const isSkirt = cellI === 0 || cellI === dimX - 1 || cellK === 0 || cellK === dimZ - 1;
                 const nbrs = neighborSets[v];
                 const cnt = nbrs.size;
-                if (cnt === 0) {
+                if (cnt === 0 || isSkirt) {
                     smoothed[v * 3] = positions[v * 3];
                     smoothed[v * 3 + 1] = positions[v * 3 + 1];
                     smoothed[v * 3 + 2] = positions[v * 3 + 2];
@@ -24825,10 +24663,14 @@ class AnazhRealm {
         if (distXZ >= radius) return -1;
         const factor = 1 - distXZ / radius;
         if (factor <= 0) return -1;
-        // Oberseite — radiale Noise-Hügel mit Rim-Falloff.
-        const h1 = noise.noise2D(lx * 0.25, lz * 0.25) * 1.5 * factor;
-        const h2 = noise.noise2D(lx * 0.6, lz * 0.6) * 0.7 * factor;
-        const topY = Math.max(0, h1 + h2 + factor * 0.4);
+        // V9.42-b — Höhen-Amplitude skaliert mit `height`-Parameter
+        // (Schöpfer-Befund: "Höhenwerte zu beschränkt"). Frequenz-Mix
+        // gibt mehr Variation; Basis-Lift ebenso höhen-skaliert.
+        const ampScale = Math.max(1, height * 0.35);
+        const h1 = noise.noise2D(lx * 0.18, lz * 0.18) * 1.5 * factor * ampScale;
+        const h2 = noise.noise2D(lx * 0.45, lz * 0.45) * 0.7 * factor * ampScale;
+        const h3 = noise.noise2D(lx * 0.85, lz * 0.85) * 0.35 * factor;
+        const topY = Math.max(0, h1 + h2 + h3 + factor * 0.4 * ampScale);
         // Unterseite — sanft verjüngt, flach im Innern.
         const botY = -Math.max(2, height * 0.4) * factor;
         if (ly > topY || ly < botY) return -1;
@@ -24837,7 +24679,9 @@ class AnazhRealm {
 
     spawnIslandAt(x, y, z, height = 6, opts = {}) {
         if (!this.state.scene) return null;
-        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(24, opts.size)) : 12;
+        // V9.42-b — Schöpfer-Wahl: Insel-Grösse jetzt bis 48 m Durchmesser
+        // (vorher 24, immer gleich gefühlt) + size-Parameter ist DSL-erreichbar.
+        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(48, opts.size)) : 12;
         const seedStr = opts.seed != null ? String(opts.seed) : `island-${Date.now()}-${Math.random()}`;
         const noise = new SimplexNoise(seedStr);
         // V9.42-a — Geometrie aus der Surface-Nets-Pipeline. Voxel-Welt-Chunks
@@ -24848,7 +24692,9 @@ class AnazhRealm {
         const margin = 1.5;
         const halfXZ = radius + margin;
         const dimXZ = Math.max(8, Math.ceil((2 * halfXZ) / step));
-        const topMax = 0.4 + 1.5 + 0.7 + margin;
+        // V9.42-b — Höhen-Amplitude wächst mit `height` (siehe _islandDensityAt).
+        const ampScale = Math.max(1, height * 0.35);
+        const topMax = (1.5 + 0.7) * ampScale + 0.35 + 0.4 * ampScale + margin;
         const botMin = -(Math.max(2, height * 0.4) + margin);
         const dimYNeeded = Math.max(6, Math.ceil((topMax - botMin) / step));
         const islandDensity = (px, py, pz) => this._islandDensityAt(px, py, pz, radius, height, noise);
@@ -24862,7 +24708,7 @@ class AnazhRealm {
             step,
             islandDensity
         );
-        const material = new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
+        const material = opts.material || new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
         island.castShadow = true;

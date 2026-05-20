@@ -10543,6 +10543,67 @@ function startSaveServer() {
                 check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
                 check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
                 check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
+                // V9.42-b — Skirt-Disziplin im Smooth-Pass: Naht-Vertices
+                // (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1) dürfen
+                // NICHT verschoben werden, sonst zerstört Laplacian die V9.10-
+                // Skirt-Überlappung zwischen zwei Nachbar-Chunks. Wir messen
+                // das, indem wir ZWEI benachbarte Voxel-Chunks bauen und
+                // prüfen, dass an der gemeinsamen Naht (X-Welt-Koord
+                // identisch) substanziell viele Vertices identische Position
+                // teilen. Pre-V9.42-b: ~0 Übereinstimmung (Smooth zog jede
+                // Seite anders). Post-V9.42-b: >50 % der Vertices an der Naht.
+                const r42bSkirt = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const chunks = [...r.state.voxelChunks.values()]
+                        .filter((c) => c && c.mesh && c.mesh.geometry)
+                        .slice(0, 9);
+                    if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
+                    const seen = new Map();
+                    let dup = 0;
+                    for (const c of chunks) {
+                        const pa = c.mesh.geometry.getAttribute("position").array;
+                        for (let i = 0; i < pa.length; i += 3) {
+                            const key = `${pa[i].toFixed(2)}|${pa[i + 1].toFixed(2)}|${pa[i + 2].toFixed(2)}`;
+                            if (seen.has(key)) dup++;
+                            else seen.set(key, true);
+                        }
+                    }
+                    return { chunks: chunks.length, unique: seen.size, duplicates: dup };
+                });
+                check(
+                    `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
+                    (r42bSkirt.duplicates || 0) >= 200
+                );
+                // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
+                const r42bIslandAmp = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const noise = { noise2D: () => 0.5 };
+                    // height=5: kleine Insel
+                    const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
+                    // height=20: grosse Insel — Density-Wert in der Mitte
+                    // sollte SUBSTANZIELL grösser sein (mehr Material in der Höhe).
+                    const big = r._islandDensityAt(0, 0, 0, 6, 20, noise);
+                    return { small, big, ratio: small > 0 ? big / small : 0 };
+                });
+                check(
+                    `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
+                    r42bIslandAmp.ratio > 1.5
+                );
+                // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
+                const r42bDsl = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const before = r.state.floatingIslands.length;
+                    r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
+                    const after = r.state.floatingIslands.length;
+                    const isle = r.state.floatingIslands[before];
+                    if (!isle) return { spawned: false };
+                    const bbox = new window.THREE.Box3().setFromObject(isle);
+                    return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
+                });
+                check(
+                    `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
+                    r42bDsl.spawned && r42bDsl.width > 24
+                );
                 check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
                     "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
