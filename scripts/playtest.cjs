@@ -315,105 +315,13 @@ function startSaveServer() {
                 .catch(() => null);
 
             // ### Terrain-Erweiterung ###
-            // extendTerrain ist eines der ältesten Subsysteme — vor diesem Fix
-            // produzierten east/south "Ungültige Chunk-Größe"-Fehler und north/
-            // west zero-height Schein-Platten an falscher Welt-Position. Wir
-            // erzwingen je eine Extension in alle vier Richtungen und prüfen:
-            // chunk wurde wirklich angefügt, vertices haben endliche Welt-
-            // Koordinaten, Höhen sind im erlaubten Range.
-            const extensionResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const before = r.state.chunkMap.size;
-                    const beforeKeys = new Set(r.state.chunkMap.keys());
-                    // Direkte ensureChunkAt-Aufrufe für definierte Indizes —
-                    // sicherer als die direction-API, die immer den Map-Mittel-
-                    // punkt nimmt. Wir bauen ein 3×3-Außen-Cluster east-süd
-                    // sowie eine Diagonale, um auch Eck-Nähte zu testen.
-                    // V8.40 — der Default-Sicht-Ring ist jetzt 4 (9×9); die
-                    // alten Nah-Koordinaten lägen im geladenen Ring. Bewusst
-                    // weit weg, damit es echte Neu-Chunks sind.
-                    r.ensureChunkAt(20, 20);
-                    r.ensureChunkAt(21, 20);
-                    r.ensureChunkAt(20, 21);
-                    r.ensureChunkAt(-15, -15);
-                    r.ensureChunkAt(-15, -14);
-                    const after = r.state.chunkMap.size;
-                    const newKeys = [...r.state.chunkMap.keys()].filter((k) => !beforeKeys.has(k));
-                    let allHeightsFinite = true;
-                    let foundOutOfRange = false;
-                    for (const k of newKeys) {
-                        const entry = r.state.chunkMap.get(k);
-                        if (!entry || !entry.mesh) continue;
-                        const pos = entry.mesh.geometry.attributes.position.array;
-                        for (let i = 1; i < pos.length; i += 3) {
-                            if (!Number.isFinite(pos[i])) {
-                                allHeightsFinite = false;
-                                break;
-                            }
-                            if (pos[i] < -200 || pos[i] > 200) foundOutOfRange = true;
-                        }
-                        if (!allHeightsFinite) break;
-                    }
-
-                    // Naht-Treue: für zwei aneinanderhängende Chunks (gleiches cz,
-                    // cx und cx+1) müssen die rechten Vertices des linken Chunks
-                    // exakt auf den linken Vertices des rechten Chunks landen —
-                    // sonst sieht der Spieler Klippen oder Lücken zwischen den
-                    // Erweiterungen.
-                    let seamMaxDelta = 0;
-                    for (const k of [...r.state.chunkMap.keys()]) {
-                        const [cx, cz] = k.split(",").map(Number);
-                        const right = r.state.chunkMap.get(`${cx + 1},${cz}`);
-                        const here = r.state.chunkMap.get(k);
-                        if (!right || !right.mesh || !here || !here.mesh) continue;
-                        if (!here.mesh.userData || !right.mesh.userData) continue;
-                        // Nur Naht zwischen 2 extended Chunks: beide haben unsere
-                        // userData mit chunkX-Tag.
-                        if (here.mesh.userData.chunkX === undefined) continue;
-                        if (right.mesh.userData.chunkX === undefined) continue;
-                        const hPos = here.mesh.geometry.attributes.position.array;
-                        const rPos = right.mesh.geometry.attributes.position.array;
-                        const VTX = 33;
-                        for (let z = 0; z < VTX; z++) {
-                            const hIdx = (z * VTX + (VTX - 1)) * 3;
-                            const rIdx = (z * VTX + 0) * 3;
-                            const dx = Math.abs(hPos[hIdx] - rPos[rIdx]);
-                            const dz = Math.abs(hPos[hIdx + 2] - rPos[rIdx + 2]);
-                            seamMaxDelta = Math.max(seamMaxDelta, dx, dz);
-                        }
-                    }
-                    return {
-                        before,
-                        after,
-                        addedKeys: newKeys,
-                        allHeightsFinite,
-                        foundOutOfRange,
-                        seamMaxDelta,
-                    };
-                })
-                .catch(() => null);
-
-            if (!extensionResults) {
-                check("Terrain-Erweiterung erreichbar", false, "page.evaluate fehlgeschlagen");
-            } else {
-                check(
-                    "extendTerrain fügt neue Chunks an (alle vier Richtungen)",
-                    extensionResults.after - extensionResults.before >= 4,
-                    `before=${extensionResults.before}, after=${extensionResults.after}, added=${extensionResults.addedKeys.length}`
-                );
-                check(
-                    "Erweiterte Chunks haben endliche Vertex-Höhen",
-                    extensionResults.allHeightsFinite,
-                    extensionResults.addedKeys.length ? `keys: ${extensionResults.addedKeys.join(", ")}` : ""
-                );
-                check("Erweiterte Vertex-Höhen liegen im Clamp-Bereich [-100, 100]", !extensionResults.foundOutOfRange);
-                check(
-                    "Naht zwischen aneinandergrenzenden Chunks <0.01 Welt-Einheiten",
-                    extensionResults.seamMaxDelta < 0.01,
-                    `seamMaxDelta=${extensionResults.seamMaxDelta.toFixed(4)}`
-                );
-            }
+            // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Extension-Smoke
+            // (`ensureChunkAt(20,20)` direkt, Naht-Treue zwischen 33×33-
+            // Vertex-Chunks) ist als toter Test gestrichen. `ensureChunkAt`,
+            // `_chunkGeometry` und die `state.chunkMap`-basierte Naht-Mechanik
+            // existieren nicht mehr. Voxel-Chunks streamen über
+            // `_tickVoxelChunkStreaming` mit eigener Naht-Logik (V9.10
+            // 1-Zellen-Skirt im Surface-Nets-Pfad).
 
             // V8.50 — den Game-Loop deterministisch synchron treiben statt auf
             // rAF zu warten. Headless-Chromium drosselt requestAnimationFrame
@@ -522,12 +430,21 @@ function startSaveServer() {
                     out.suggestionForTypo = suggestion === "setze wetter rainy";
 
                     // 4. Phase 3b: set_visible-Primitiv + Chat-Routing
-                    const groundChunksBefore = r.state.groundChunks.length;
-                    const someVisible = () => r.state.groundChunks.some((c) => c.visible);
+                    // V9.39 Phase 5c.2.c.3.b.iii — `toggleTerrain` wirkt jetzt
+                    // auf Voxel-Chunks (`state.voxelChunks`), nicht den toten
+                    // `state.groundChunks`. Der DSL-Op-Pfad bleibt identisch.
+                    const voxelChunksBefore = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                    const someVoxelVisible = () => {
+                        if (!r.state.voxelChunks) return false;
+                        for (const e of r.state.voxelChunks.values()) {
+                            if (e && !e.empty && e.mesh && e.mesh.visible) return true;
+                        }
+                        return false;
+                    };
                     r.processChatCommand("Boden deaktivieren");
-                    out.terrainHiddenViaDsl = groundChunksBefore > 0 && !someVisible();
+                    out.terrainHiddenViaDsl = voxelChunksBefore > 0 && !someVoxelVisible();
                     r.processChatCommand("Boden aktivieren");
-                    out.terrainShownViaDsl = someVisible();
+                    out.terrainShownViaDsl = someVoxelVisible();
 
                     // 5. Phase 3b: record_narrative-Primitiv via "Erzähle ..."
                     const kbBefore = r.state.knowledgeBase.filter((k) => k.type === "narrative").length;
@@ -10685,7 +10602,8 @@ function startSaveServer() {
                     const out = {};
                     out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
                     out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
-                    out.hasPopulateChunk = typeof r.populateChunkVegetation === "function";
+                    // V9.39 — der Voxel-Populator ist die lebende Schicht.
+                    out.hasPopulateChunk = typeof r._populateVoxelChunkVegetation === "function";
                     // Drei neue Baupläne als Built-ins.
                     const bps = r.state.blueprints || {};
                     out.hasSteinBlock = !!(
@@ -10810,19 +10728,31 @@ function startSaveServer() {
                     for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
                     out.affinitySpawnTypes = typeCounts;
                     out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
-                    // populatedChunks markiert die initialen Chunks als gefüllt.
-                    out.populatedChunksSize = r.state.populatedChunks ? r.state.populatedChunks.size : 0;
-                    // Idempotenz: zweiter Aufruf für denselben Chunk
-                    // → spawned=0.
-                    if (typeof r.populateChunkVegetation === "function") {
+                    // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Populator
+                    // `populateChunkVegetation` ist als toter Pfad entfernt.
+                    // Die Vision-Anker (Welt-Affinitäts-Feld treibt
+                    // Vegetations-Verteilung, idempotent) lebt im Voxel-
+                    // Pendant `_populateVoxelChunkVegetation` weiter — am
+                    // Voxel-Chunk-Lifecycle aufgehängt (V9.24-Verdrahtung).
+                    // Der Test scant `voxelPopulatedChunks` (der Voxel-
+                    // Idempotenz-Cache, befüllt durch die initialen ~81
+                    // Voxel-Chunks beim Welt-Aufbau).
+                    out.populatedChunksSize = r.state.voxelPopulatedChunks
+                        ? r.state.voxelPopulatedChunks.size
+                        : 0;
+                    if (typeof r._populateVoxelChunkVegetation === "function") {
                         const before = archs.length;
-                        const secondReturn = r.populateChunkVegetation(2, 3);
-                        const after = r.state.architectures.length;
-                        // Erster Aufruf hat Chunk (2,3) schon befüllt (oder
-                        // nicht — egal). Zweiter Aufruf MUSS 0 zurückgeben
-                        // dank populatedChunks-Cache.
-                        // Plus: keine neuen architectures.
-                        out.populateIdempotent = secondReturn === 0 && after === before;
+                        // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
+                        // zurückgeben dank voxelPopulatedChunks-Cache.
+                        const firstChunkKey = r.state.voxelPopulatedChunks
+                            ? [...r.state.voxelPopulatedChunks][0]
+                            : null;
+                        if (firstChunkKey) {
+                            const [cx, cz] = firstChunkKey.split(",").map(Number);
+                            const secondReturn = r._populateVoxelChunkVegetation(cx, cz);
+                            const after = r.state.architectures.length;
+                            out.populateIdempotent = secondReturn === 0 && after === before;
+                        }
                     }
                     // Architecture-Culling-Rate ist jetzt 2 Hz (V7.75 Bugfix).
                     out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
@@ -10837,7 +10767,15 @@ function startSaveServer() {
             if (wave6gP2Results && !wave6gP2Results.error) {
                 check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
                 check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
-                check("Welle 6.G P2: populateChunkVegetation-Methode existiert", wave6gP2Results.hasPopulateChunk);
+                // V9.39 — `populateChunkVegetation` ist gelöscht; der Vision-
+                // Anker (Welt-Affinitäts-Feld treibt Vegetation) lebt in
+                // `_populateVoxelChunkVegetation` weiter (am Voxel-Chunk-
+                // Lifecycle aufgehängt). Der `hasPopulateChunk`-Flag prüft
+                // jetzt das Voxel-Pendant (umgewidmet im evaluate-Block).
+                check(
+                    "Welle 6.G P2 (V9.39): _populateVoxelChunkVegetation-Methode existiert (Voxel-Pendant)",
+                    wave6gP2Results.hasPopulateChunk
+                );
                 check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
                 check(
                     "Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in",
@@ -10994,16 +10932,24 @@ function startSaveServer() {
                     out.felsturmSpawned = !!(et && et.type === "felsturm");
                     out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
 
-                    // Placement — die Felsformationen sind echte Welt-
-                    // Affinitäts-Kandidaten. Über ein Raster frischer Chunks
-                    // MUSS mindestens ein Felsbogen ODER Felsturm spawnen
-                    // (Seltenheit 0.07 → Landmark-Dichte, aber über 144 Chunks
-                    // statistisch sicher). Danach die Cold-Architekturen wieder
-                    // abschneiden — der Test bläht die Welt nicht dauerhaft auf.
-                    if (typeof r.populateChunkVegetation === "function") {
+                    // V9.39 Phase 5c.2.c.3.b.iii — Placement-Probe nutzt jetzt
+                    // den Voxel-Populator (das Heightfield-Pendant ist tot).
+                    // Vision-Anker bleibt: über ein Raster frischer Chunks MUSS
+                    // mindestens ein Felsbogen + ein Felsturm spawnen
+                    // (Landmark-Wurf 0.014 × Affinitäts-Floor, 12×12=144 Chunks
+                    // statistisch sicher). Vorher: `populateChunkVegetation`.
+                    if (typeof r._populateVoxelChunkVegetation === "function") {
                         const before = r.state.architectures.length;
+                        // Frische Voxel-Chunk-Indices, deutlich außerhalb des
+                        // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
+                        const fresh = new Set();
                         for (let cx = 20; cx <= 31; cx++) {
-                            for (let cz = 20; cz <= 31; cz++) r.populateChunkVegetation(cx, cz);
+                            for (let cz = 20; cz <= 31; cz++) {
+                                const key = `${cx},${cz}`;
+                                if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
+                                fresh.add(key);
+                                r._populateVoxelChunkVegetation(cx, cz);
+                            }
                         }
                         let fbCount = 0;
                         let ftCount = 0;
@@ -11014,10 +10960,14 @@ function startSaveServer() {
                         }
                         out.placedFelsbogen = fbCount;
                         out.placedFelsturm = ftCount;
-                        // Beide MÜSSEN erscheinen — der Hash-Münzwurf verteilt
-                        // Bogen + Turm ~50/50; ein toter Bauplan würde 0 zeigen.
                         out.placementWorks = fbCount > 0 && ftCount > 0;
                         r.state.architectures.length = before;
+                        // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
+                        // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
+                        // einen späteren echten Pass).
+                        for (const k of fresh) {
+                            if (r.state.voxelPopulatedChunks) r.state.voxelPopulatedChunks.delete(k);
+                        }
                     }
                     return out;
                 })
@@ -11858,10 +11808,11 @@ function startSaveServer() {
                     "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
                     voxelP5c1Results.voxelChunkMapEmpty
                 );
-                check(
-                    "Voxel V9.27 Phase 5c.1: das Heightfield-Material bleibt erhalten (für späteres voxel-off-Toggle)",
-                    voxelP5c1Results.voxelMaterialKept
-                );
+                // V9.39 Phase 5c.2.c.3.b.iii — der V9.27-Material-Erhaltungs-
+                // Test ist gestrichen. Sein Vision-Ziel („Heightfield-Material
+                // bleibt für voxel-off-Toggle erhalten") wurde mit V9.35 obsolet
+                // (Toggle-Tod) und mit V9.39 vollendet (terrainMaterial-Setzer
+                // gelöscht — kein Heightfield-Mesh nutzt es mehr).
                 check(
                     "Voxel V9.37 Phase 5c.2.c.3.b.i: der Heightfield-`else`-Pfad in generateTerrainWithParameters ist tot — auch `voxelTerrain = false` baut keine Heightfield-Chunks mehr",
                     voxelP5c1Results.heightfieldElseDead
@@ -11894,117 +11845,22 @@ function startSaveServer() {
                 // auch noch ablösen, sobald die Test-Anker umgewidmet sind).
             }
 
-            // ### Voxel V9.29 — Heightfield-Chunk-Physik-Leak geheilt ###
-            // Pre-existing Bug (seit `ensureChunkAt` existiert): die drei
-            // Cleanup-Stellen destroyed nur den `btRigidBody`. Die Auxiliars
-            // `btBvhTriangleMeshShape`, `btDefaultMotionState`, `btTriangleMesh`
-            // (+ transform, inline-btVector3 im Build) leakten pro Chunk-
-            // Lifecycle-Cycle im WASM-Heap. V9.28 fing es via OOM beim Welle-
-            // 10b-Test. V9.29 heilt's via `_disposeChunkPhysics`-Helper +
-            // shape/motionState/transform-saubere-Destroy in den Build-Pfaden.
-            const voxelV929Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasDisposeHelper = typeof r._disposeChunkPhysics === "function";
+            // ### Voxel V9.39 — V9.29-Disposal-Test gestrichen ###
+            // Der V9.29-Test prüfte die `_disposeChunkPhysics`-Auxiliars-
+            // Cleanup-Disziplin (Body + Shape + MotionState + TMesh) an einem
+            // Heightfield-Chunk, der per `ensureChunkAt(40,40)` direkt gebaut
+            // wurde. Beide Methoden sind in V9.39 als toter Pfad entfernt;
+            // die V9.29-Lehre lebt im `_disposeStaticCollision`-Helper weiter
+            // (Inseln + Voxel-Chunks). V9.37-Disziplin: Test einer
+            // unreachable Schicht ist toter Schutz — ehrlich streichen.
 
-                    // V9.35 Phase 5c.2.c.2: die Voxel-Eingangs-Welt baut keine
-                    // Heightfield-Chunks beim Init (V9.27-Skip). Wir bauen
-                    // selbst einen via `ensureChunkAt(cx, cz)` — die Heightfield-
-                    // Chunk-Pipeline ist noch da, sie wird nur nicht mehr
-                    // automatisch beim Welt-Aufbau gerufen. Der Test prüft
-                    // dann den V9.29-Auxiliar-Cleanup an einem echten Chunk.
-                    let testChunk = null;
-                    if (r.state.chunkMap && typeof r.ensureChunkAt === "function") {
-                        // Suche zuerst einen existierenden mit Body.
-                        for (const entry of r.state.chunkMap.values()) {
-                            if (entry && entry.mesh && entry.mesh.userData && entry.mesh.userData.physicsBody) {
-                                testChunk = entry.mesh;
-                                break;
-                            }
-                        }
-                        // Sonst einen weit ausserhalb des Streaming-Rings bauen.
-                        if (!testChunk) {
-                            r.ensureChunkAt(40, 40);
-                            const entry = r.state.chunkMap.get("40,40");
-                            if (entry && entry.mesh && entry.mesh.userData && entry.mesh.userData.physicsBody) {
-                                testChunk = entry.mesh;
-                            }
-                        }
-                    }
-
-                    if (testChunk) {
-                        // Build-Pfad-Beweis: alle vier Ammo-Refs sind in userData.
-                        out.buildHasBody = !!testChunk.userData.physicsBody;
-                        out.buildHasShape = !!testChunk.userData.physicsShape;
-                        out.buildHasMotionState = !!testChunk.userData.physicsMotionState;
-                        out.buildHasMesh = !!testChunk.userData.physicsMesh;
-
-                        // Cleanup-Pfad-Beweis: der Helper nullt alle vier Refs.
-                        if (typeof r._disposeChunkPhysics === "function") {
-                            r._disposeChunkPhysics(testChunk);
-                            out.disposeNulledBody = testChunk.userData.physicsBody === null;
-                            out.disposeNulledShape = testChunk.userData.physicsShape === null;
-                            out.disposeNulledMotionState = testChunk.userData.physicsMotionState === null;
-                            out.disposeNulledMesh = testChunk.userData.physicsMesh === null;
-                            // Idempotenz: ein zweiter Call darf nicht werfen.
-                            try {
-                                r._disposeChunkPhysics(testChunk);
-                                out.disposeIdempotent = true;
-                            } catch {
-                                out.disposeIdempotent = false;
-                            }
-                            // Defensive: dispose auf null/undefined wirft nicht.
-                            try {
-                                r._disposeChunkPhysics(null);
-                                r._disposeChunkPhysics(undefined);
-                                r._disposeChunkPhysics({});
-                                out.disposeDefensive = true;
-                            } catch {
-                                out.disposeDefensive = false;
-                            }
-                        }
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV929Results && !voxelV929Results.error) {
-                check("Voxel V9.29: _disposeChunkPhysics-Helper existiert", voxelV929Results.hasDisposeHelper);
-                check(
-                    "Voxel V9.29: ensureChunkAt-Build-Pfad legt alle vier Ammo-Refs in userData ab (body+shape+motionState+mesh)",
-                    voxelV929Results.buildHasBody &&
-                        voxelV929Results.buildHasShape &&
-                        voxelV929Results.buildHasMotionState &&
-                        voxelV929Results.buildHasMesh
-                );
-                check(
-                    "Voxel V9.29: _disposeChunkPhysics nullt alle vier userData-Refs (kein WASM-Heap-Leak mehr)",
-                    voxelV929Results.disposeNulledBody &&
-                        voxelV929Results.disposeNulledShape &&
-                        voxelV929Results.disposeNulledMotionState &&
-                        voxelV929Results.disposeNulledMesh
-                );
-                check(
-                    "Voxel V9.29: _disposeChunkPhysics ist idempotent (zweiter Aufruf wirft nicht — doppel-destroy-defensiv)",
-                    voxelV929Results.disposeIdempotent
-                );
-                check(
-                    "Voxel V9.29: _disposeChunkPhysics ist defensiv gegen null/undefined/leeres Objekt",
-                    voxelV929Results.disposeDefensive
-                );
-            }
-
-            // ### Voxel V9.30 — Phase 5c.2.a: tote Heightfield-Methoden gelöscht ###
-            // Der V9.28-Eintrag benannte `generateChunk` + `addTerrainPhysics`
-            // ausdrücklich als „nachweislich tote Methoden ohne Aufrufer".
-            // V9.30 entfernt sie als kleinsten ehrlichen Schritt der Phase
-            // 5c.2 (Heightfield-Code-Entfernung — V9.27-Disziplin „den kleinsten
-            // ehrlichen Schritt zuerst"). Die Invariante schützt die Entfernung:
-            // wer beide Methoden je wieder anlegt, müsste eine echte Notwendigkeit
-            // benennen, statt das Versprechen aus dem Kommentar bei Zeile 13549
-            // zu brechen.
+            // ### Voxel V9.30 — Lösch-Beweise ###
+            // Die V9.30-Welle löschte `generateChunk` + `addTerrainPhysics`
+            // (V9.28-Befund: nachweislich tot). Die zwei Lösch-Beweise leben
+            // weiter; die V9.30-Regression-Schutzanker (`ensureChunkAt`/
+            // `_terrainHeightAtWorld` leben weiter) sind in V9.39 verfallen
+            // — die geschützte Schicht ist selbst tot. V9.37-Disziplin:
+            // ehrlich streichen, nicht heilen.
             const voxelV930Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
@@ -12012,12 +11868,6 @@ function startSaveServer() {
                     return {
                         noGenerateChunk: typeof r.generateChunk !== "function",
                         noAddTerrainPhysics: typeof r.addTerrainPhysics !== "function",
-                        // Regression-Schutz — die lebenden Heightfield-Methoden
-                        // bleiben (V9.30 löschte nur tote, ensureChunkAt + Co.
-                        // werden weiter gebraucht solange die Eingangs-Welt
-                        // heightfield ist).
-                        ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
-                        terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
                     };
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12030,14 +11880,6 @@ function startSaveServer() {
                 check(
                     "Voxel V9.30: addTerrainPhysics ist gelöscht (tote Methode, V9.28-Befund)",
                     voxelV930Results.noAddTerrainPhysics
-                );
-                check(
-                    "Voxel V9.30: ensureChunkAt lebt weiter (Regression — die lebende Chunk-Pipeline)",
-                    voxelV930Results.ensureChunkAtAlive
-                );
-                check(
-                    "Voxel V9.30: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
-                    voxelV930Results.terrainHeightAtWorldAlive
                 );
             }
 
@@ -12054,46 +11896,28 @@ function startSaveServer() {
             // anlegt, muss eine echte Notwendigkeit benennen. caveNoise +
             // volcanoNoise (die SimplexNoise-Instanzen) leben weiter — sie
             // modulieren die Höhe in `_terrainHeightAtWorld` (echte Konsumenten).
+            // V9.39 Phase 5c.2.c.3.b.iii — die V9.34-Regression-Schutzanker
+            // („ensureChunkAt + _terrainHeightAtWorld leben weiter",
+            // „caveNoise/volcanoNoise leben weiter") sind in V9.39 verfallen
+            // — alle drei genannten Mechaniken sind gelöscht. Die zwei
+            // V9.34-Lösch-Beweise (extendTerrain + caveData/volcanoData-
+            // Arrays) leben unter den V9.39-Lösch-Beweisen unten (zusammen
+            // mit den drei neuen). V9.37-Disziplin: Test einer unreachable
+            // Schicht ist toter Schutz — ehrlich streichen.
             const voxelV934Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r) return null;
-                    // Direkter Source-Scan: liest die anazhRealm.js-Repräsentation
-                    // über toString(), prüft die Schreibstellen sind weg. So
-                    // schlägt eine wiederbelebte tote Schicht beim nächsten
-                    // Playtest sofort an.
                     const srcGen =
                         (typeof r.generateTerrainWithParameters === "function" &&
                             r.generateTerrainWithParameters.toString()) ||
                         "";
-                    // V9.38 — caveNoise/volcanoNoise leben nicht mehr in
-                    // generateTerrainWithParameters (dort wurde der heightData-
-                    // else-Pfad gestrichen, der die Instanzen früher anlegte).
-                    // Sie leben in `ensureChunkAt` + `_buildChunkGrass`. Der
-                    // Regression-Schutz scant darum diese zwei Methoden, in
-                    // denen die echten Höhen-Modulatoren heute sitzen.
-                    const srcChunk =
-                        (typeof r.ensureChunkAt === "function" && r.ensureChunkAt.toString()) || "";
-                    const srcGrass =
-                        (typeof r._buildChunkGrass === "function" && r._buildChunkGrass.toString()) ||
-                        "";
-                    const srcNoise = srcChunk + "\n" + srcGrass;
                     return {
                         noExtendTerrain: typeof r.extendTerrain !== "function",
-                        // Die Float32Array-Allokationen sind weg
                         noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
                         noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(srcGen),
-                        // Die Schreibstellen (`caveData[i] = ...`, `volcanoData[i] = ...`)
-                        // sind weg — der Verifizierungs-Anker
                         noCaveDataWrite: !/caveData\[i\]\s*=/.test(srcGen),
                         noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(srcGen),
-                        // Regression-Schutz — die Höhen-Quelle + die echten
-                        // Konsumenten (caveNoise + volcanoNoise als Noise-
-                        // Instanzen) leben weiter
-                        ensureChunkAtAlive: typeof r.ensureChunkAt === "function",
-                        terrainHeightAtWorldAlive: typeof r._terrainHeightAtWorld === "function",
-                        caveNoiseInSrc: /caveNoise/.test(srcNoise),
-                        volcanoNoiseInSrc: /volcanoNoise/.test(srcNoise),
                     };
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12110,18 +11934,6 @@ function startSaveServer() {
                 check(
                     "Voxel V9.34: volcanoData-Float-Array ist gelöscht (nie gelesen)",
                     voxelV934Results.noVolcanoDataAlloc && voxelV934Results.noVolcanoDataWrite
-                );
-                check(
-                    "Voxel V9.34: ensureChunkAt lebt weiter (Regression — die lebende Chunk-Pipeline)",
-                    voxelV934Results.ensureChunkAtAlive
-                );
-                check(
-                    "Voxel V9.34: _terrainHeightAtWorld lebt weiter (Regression — Höhen-Quelle)",
-                    voxelV934Results.terrainHeightAtWorldAlive
-                );
-                check(
-                    "Voxel V9.34: caveNoise + volcanoNoise (SimplexNoise-Instanzen) leben weiter (echte Höhen-Modulatoren)",
-                    voxelV934Results.caveNoiseInSrc && voxelV934Results.volcanoNoiseInSrc
                 );
             }
 
@@ -12197,6 +12009,105 @@ function startSaveServer() {
                 check(
                     "Voxel V9.38: findSurfaceAbove liefert weiter eine endliche Höhe (Regression)",
                     voxelV938Results.findSurfaceWorks
+                );
+            }
+
+            // ### V9.39 — Phase 5c.2.c.3.b.iii Lösch-Beweise ###
+            // Die letzte grosse Aufräum-Welle der Heightfield-Pipeline: sechs
+            // tote Methoden + alle ihre Konsumenten + `terrainMaterial`-Setzer
+            // gelöscht. V9.30/V9.37-Disziplin: pure Dead-Code-Welle, keine
+            // Verhaltens-Änderung im Spiel (Voxel ist seit V9.35 die einzige
+            // Welt-Form). Die Vision-Schichten (Affinitäts-Vegetation, Wind-
+            // Gras, Welt-Affinität pro Vertex) leben in den Voxel-Pendants
+            // weiter (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
+            // `_attachVoxelFieldColors`).
+            const voxelV939Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const proto = Object.getPrototypeOf(r);
+                    return {
+                        // (1)-(6) die sechs Methoden sind gelöscht
+                        noEnsureChunkAt: typeof r.ensureChunkAt !== "function",
+                        noPopulateChunkVegetation: typeof r.populateChunkVegetation !== "function",
+                        noBuildChunkGrass: typeof r._buildChunkGrass !== "function",
+                        noDisposeChunkGrass: typeof r._disposeChunkGrass !== "function",
+                        noTerrainHeightAtWorld: typeof r._terrainHeightAtWorld !== "function",
+                        noDisposeChunkPhysics: typeof r._disposeChunkPhysics !== "function",
+                        noPruneDistantChunks: typeof r.pruneDistantChunks !== "function",
+                        noChunkGeometry: typeof r._chunkGeometry !== "function",
+                        // (7) `state.terrainMaterial` wird nicht mehr aktiv gesetzt
+                        terrainMaterialNull: r.state.terrainMaterial === null,
+                        // (8) der Game-Loop ruft kein `pruneDistantChunks` mehr
+                        loopHasNoPrune: !(
+                            proto._gameLoopTick &&
+                            /pruneDistantChunks/.test(
+                                (Object.getOwnPropertyNames(proto)
+                                    .map((n) => proto[n])
+                                    .find((f) => typeof f === "function" && /tickArchitectureCulling/.test(f.toString())) ||
+                                    function () {}).toString()
+                            )
+                        ),
+                        // (9) `_buildWaterPlane` ist voxel-only — kein echter
+                        // `this._terrainHeightAtWorld(...)`-Aufruf mehr (der
+                        // Erklär-Kommentar darf den Namen erwähnen — V9.36-
+                        // Test-Kommentar-Falle: Regex auf den Aufruf-Pattern).
+                        waterPlaneVoxelOnly:
+                            typeof r._buildWaterPlane === "function" &&
+                            !/this\._terrainHeightAtWorld\s*\(/.test(r._buildWaterPlane.toString()),
+                        // (10) Voxel-Pendants leben weiter (Vision-Anker)
+                        voxelGrassAlive:
+                            typeof r._buildVoxelChunkGrass === "function" &&
+                            r.state.voxelChunkGrass instanceof Map,
+                        voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
+                        voxelSurfaceYAlive: typeof r._voxelSurfaceY === "function",
+                        // (11) Die geteilten Helper bleiben:
+                        // `_vegetationSampleSpawn` (per-Sample-Spawn-Kern,
+                        // V9.24-extrahiert) + `_attachVoxelFieldColors` (Voxel-
+                        // Affinitäts-Färbung).
+                        sampleSpawnAlive: typeof r._vegetationSampleSpawn === "function",
+                        attachVoxelFieldColorsAlive: typeof r._attachVoxelFieldColors === "function",
+                    };
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV939Results && !voxelV939Results.error) {
+                check("Voxel V9.39: ensureChunkAt ist gelöscht", voxelV939Results.noEnsureChunkAt);
+                check(
+                    "Voxel V9.39: populateChunkVegetation ist gelöscht",
+                    voxelV939Results.noPopulateChunkVegetation
+                );
+                check(
+                    "Voxel V9.39: _buildChunkGrass + _disposeChunkGrass sind gelöscht",
+                    voxelV939Results.noBuildChunkGrass && voxelV939Results.noDisposeChunkGrass
+                );
+                check("Voxel V9.39: _terrainHeightAtWorld ist gelöscht", voxelV939Results.noTerrainHeightAtWorld);
+                check("Voxel V9.39: _disposeChunkPhysics ist gelöscht", voxelV939Results.noDisposeChunkPhysics);
+                check("Voxel V9.39: pruneDistantChunks ist gelöscht", voxelV939Results.noPruneDistantChunks);
+                check("Voxel V9.39: _chunkGeometry ist gelöscht", voxelV939Results.noChunkGeometry);
+                check(
+                    "Voxel V9.39: state.terrainMaterial wird nicht mehr gesetzt (null nach Welt-Aufbau)",
+                    voxelV939Results.terrainMaterialNull
+                );
+                check(
+                    "Voxel V9.39: _buildWaterPlane ist voxel-only (kein _terrainHeightAtWorld-Aufruf mehr)",
+                    voxelV939Results.waterPlaneVoxelOnly
+                );
+                check(
+                    "Voxel V9.39: Voxel-Gras-Pendant lebt weiter (_buildVoxelChunkGrass + state.voxelChunkGrass)",
+                    voxelV939Results.voxelGrassAlive
+                );
+                check(
+                    "Voxel V9.39: Voxel-Vegetations-Pendant lebt weiter (_populateVoxelChunkVegetation)",
+                    voxelV939Results.voxelVegetationAlive
+                );
+                check(
+                    "Voxel V9.39: _voxelSurfaceY lebt weiter (Höhen-Quelle für getTerrainHeightAt)",
+                    voxelV939Results.voxelSurfaceYAlive
+                );
+                check(
+                    "Voxel V9.39: _vegetationSampleSpawn + _attachVoxelFieldColors leben weiter (geteilte Vision-Helper)",
+                    voxelV939Results.sampleSpawnAlive && voxelV939Results.attachVoxelFieldColorsAlive
                 );
             }
 
@@ -16512,15 +16423,12 @@ function startSaveServer() {
                     "V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)",
                     v827Results.architectureUsesLambert
                 );
-                check("V8.27: Terrain-Shader hat lightIntensity-Uniform", v827Results.terrainHasLightIntensityUniform);
-                check(
-                    "V8.27: Terrain-Shader hat ambientIntensity-Uniform",
-                    v827Results.terrainHasAmbientIntensityUniform
-                );
-                check(
-                    "V8.27: Terrain-lightIntensity folgt Tag-Nacht (Mittag > Nacht)",
-                    v827Results.terrainLightFollowsDayCycle
-                );
+                // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Terrain-Shader-
+                // spezifischen Checks (lightIntensity-Uniform, Tag-Nacht-Sync
+                // im Custom-Shader) sind gestrichen. Der Vision-Anker („Welt
+                // unter wandernder Sonne, von Tag-Nacht durchlebt") lebt in
+                // HemisphereLight + DirectionalLight + Fog + Skybox + dem
+                // MeshToonMaterial-Voxel-Mesh weiter (alles oben geprüft).
                 check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
                 check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
             } else {
@@ -16654,18 +16562,18 @@ function startSaveServer() {
                 check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
                 check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
                 check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
-                check(
-                    "V8.28 B: Terrain-Shader liest aField/vField (Welt-Affinität)",
-                    v828Results.terrainShaderHasField
-                );
-                check("V8.28 B: Chunk-Geometrie trägt aField-Attribut", v828Results.chunkHasFieldAttribute);
+                // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Shader-spezifischen
+                // Checks (`tm.vertexShader contains aField`, `chunkHasField-
+                // Attribute` via ensureChunkAt, `terrainHasCelUniform`,
+                // `celSliderWorks` via tm.uniforms.celLevels) sind tot. Die
+                // Vision-Anker (Welt-Affinität pro Vertex, Cel-Shading-Stufen)
+                // leben im Voxel-Mesh + toonGradientMap weiter (V9.10
+                // `_attachVoxelFieldColors`, V8.42 LinearFilter-Gradient).
                 check(
                     "V8.28 C: _refreshToonGradient + setCelLevels + setFogDistance existieren",
                     v828Results.celMethodsExist
                 );
                 check("V8.28 C: state.toonGradientMap existiert (Cel-gradientMap)", v828Results.toonGradientExists);
-                check("V8.28 C: Terrain-Shader hat celLevels-Uniform", v828Results.terrainHasCelUniform);
-                check("V8.28 C: setCelLevels ändert die Cel-Stufen (2↔6)", v828Results.celSliderWorks);
                 check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
                 check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
                 check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
@@ -16706,22 +16614,26 @@ function startSaveServer() {
                         out.avatarHideInLoop = found;
                     }
 
-                    // --- Instanced-Gras ---
+                    // --- Instanced-Gras (V9.39: Voxel-Gras-Pendant) ---
+                    // V9.39 — der V8.29-Heightfield-Gras-Lifecycle
+                    // (`_buildChunkGrass`/`_disposeChunkGrass`/`state.chunkGrass`)
+                    // ist tot. Die Vision-Schicht („Welt grünt, Instanced-
+                    // Gras pro Chunk") lebt im Voxel-Pendant
+                    // `_buildVoxelChunkGrass` / `state.voxelChunkGrass`
+                    // (V9.22-Verdrahtung). Das `_grassInstanceMat` (Wind-
+                    // Material) wird von beiden geteilt — es lebt weiter.
                     out.grassMethodsExist =
-                        typeof r._buildChunkGrass === "function" &&
-                        typeof r._disposeChunkGrass === "function" &&
+                        typeof r._buildVoxelChunkGrass === "function" &&
+                        typeof r._disposeVoxelChunkGrass === "function" &&
                         typeof r._grassInstanceMat === "function";
-                    // Nach dem Worldgen sollten Chunk-Gras-Einträge existieren.
-                    out.chunkGrassMap = !!r.state.chunkGrass && r.state.chunkGrass instanceof Map;
-                    // Mindestens ein Chunk hat ein InstancedMesh (lebendig-Region)
+                    out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
                     let grassInstances = 0;
-                    if (r.state.chunkGrass) {
-                        for (const v of r.state.chunkGrass.values()) {
+                    if (r.state.voxelChunkGrass) {
+                        for (const v of r.state.voxelChunkGrass.values()) {
                             if (v && v.isInstancedMesh) grassInstances++;
                         }
                     }
                     out.hasGrassInstances = grassInstances > 0;
-                    // Gras-Material ist InstancedMesh-tauglich + geteilt
                     out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
                     // --- Genesis-Plattform ---
@@ -16773,11 +16685,14 @@ function startSaveServer() {
                     v829Results.avatarHideInLoop
                 );
                 check(
-                    "V8.29: _buildChunkGrass + _disposeChunkGrass + _grassInstanceMat existieren",
+                    "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
                     v829Results.grassMethodsExist
                 );
-                check("V8.29: state.chunkGrass ist eine Map", v829Results.chunkGrassMap);
-                check("V8.29: mindestens ein Chunk hat ein Gras-InstancedMesh", v829Results.hasGrassInstances);
+                check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
+                check(
+                    "V8.29 (V9.39): mindestens ein Voxel-Chunk hat ein Gras-InstancedMesh",
+                    v829Results.hasGrassInstances
+                );
                 check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
                 check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
                 check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
@@ -16924,15 +16839,15 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (v831Results && !v831Results.error) {
-                check("V8.31: Terrain-Shader hat Fog-Uniforms (fogColor/Near/Far)", v831Results.terrainFogUniforms);
-                check("V8.31: Terrain-Shader hat vFogDepth + fog-mix", v831Results.terrainFogInShader);
+                // V9.39 Phase 5c.2.c.3.b.iii — die Terrain-Shader-Fog-Checks
+                // (terrainFogUniforms, terrainFogInShader, fogSliderReachesTerrain)
+                // sind tot — `state.terrainMaterial` existiert nicht mehr,
+                // das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-Fog.
+                // Die Wasser-Shader-Checks leben — `_buildWaterPlane` läuft
+                // weiter (voxel-aware seit V9.39).
                 check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
                 check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
                 check("V8.31: Wasser-Wellen nutzen Domain-Warp (heterogener)", v831Results.waterDomainWarp);
-                check(
-                    "V8.31: Fog-Slider erreicht den Terrain-Shader (kein Gras-only-Effekt mehr)",
-                    v831Results.fogSliderReachesTerrain
-                );
             } else {
                 check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
             }
@@ -21122,15 +21037,12 @@ function startSaveServer() {
                 check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
                 check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
                 check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
-                check(
-                    "V8.43: Terrain-Detail-Noise per Vertex berechnet (crawl-frei)",
-                    v840Results.terrainJitterPerVertex
-                );
-                check(
-                    "V8.44: Terrain-vNormal in Welt-Raum (Diffuse kamera-unabhängig)",
-                    v840Results.terrainNormalWorldSpace
-                );
-                check("V8.45: Terrain-Fog = radiale Distanz (dreh-invariant)", v840Results.terrainFogRadial);
+                // V9.39 Phase 5c.2.c.3.b.iii — V8.43/V8.44/V8.45 prüften den
+                // Heightfield-Terrain-Shader (per-Vertex-Noise, Welt-Raum-Normal,
+                // radiale Fog-Distanz). `state.terrainMaterial` existiert nicht
+                // mehr; das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-
+                // eingebauten Lichtquellen + Fog (anders gerechnet). Tests
+                // gestrichen.
                 check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
                 check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
                 check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
@@ -21226,24 +21138,16 @@ function startSaveServer() {
                 .catch((err) => ({ error: err && err.message }));
 
             if (v848Results && !v848Results.error) {
-                check("V8.48: Terrain nutzt ShaderMaterial (kein Lambert-Fallback)", v848Results.terrainIsShader);
-                check("V8.48: Terrain-Vertex-Shader hat Shadow-Chunks", v848Results.vertexHasShadowChunks);
-                check(
-                    "V8.48: Terrain-Fragment-Shader sampelt die Shadow-Map (getShadow)",
-                    v848Results.fragmentHasShadowChunks
-                );
-                check("V8.48: Terrain-Fragment-Shader nutzt highp (Shadow-Koord-Präzision)", v848Results.fragmentHighp);
-                check(
-                    "V8.48: Terrain-Material hat lights:true (Renderer befüllt Shadow-Uniforms)",
-                    v848Results.terrainLightsTrue
-                );
-                check(
-                    "V8.48: Terrain-Uniforms enthalten directionalShadowMap-Slot",
-                    v848Results.terrainHasShadowUniform
-                );
+                // V9.39 Phase 5c.2.c.3.b.iii — die V8.48-Terrain-Shader-
+                // Schatten-Tests sind tot — `state.terrainMaterial` existiert
+                // nicht mehr. Die V8.48-Vision (Schatten aufs Terrain) lebt
+                // im Voxel-Mesh weiter (`MeshToonMaterial` mit `receiveShadow`,
+                // die DirectionalLight-Shadow-Map). Die Schatten-Frustum-folgt-
+                // Spieler-Mechanik lebt; die `usesSunDir`-Probe in
+                // `_applyDayNightToScene` lebt auch.
                 check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
                 check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)", v848Results.shadowFollowsPlayer);
-                check("V8.48: Terrain-lightDirection aus reiner Sonnen-Richtung (sunDir)", v848Results.usesSunDir);
+                check("V8.48: _applyDayNightToScene leitet lightDir aus sunDir ab", v848Results.usesSunDir);
             } else {
                 check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
             }
