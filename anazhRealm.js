@@ -8730,7 +8730,11 @@ class AnazhRealm {
         // Welt (brandneuer Spieler ohne localStorage — auch der Playtest)
         // bleibt heightfield: Lehrling-freundlich, deterministisch für die
         // Test-Suite. `chunkDeltas` (Heightfield-Grab-Edits) gehen verloren —
-        // bewusst akzeptiert, der Schöpfer kennt den Preis.
+        // bewusst akzeptiert, der Schöpfer kennt den Preis. V9.31 ehrlich
+        // zerlegt: der Eingangs-Welt-Flip braucht zuerst Ammo-Heap-Reduktion
+        // (motionState-Leck in `_disposeStaticCollision`, V9.31 geheilt) +
+        // Test-Migration der ~25 heightfield-spezifischen Invarianten —
+        // beides eigene Folgeschritte (5c.2.b + 5c.2.c).
         if (!fresh && m.voxelTerrain !== true && m.voxelTerrain !== false) {
             m.voxelTerrain = true;
             if (typeof this.journalAppend === "function") {
@@ -12508,7 +12512,12 @@ class AnazhRealm {
         // Frustum-Culling und wechselt jeden Frame – früher führte das zu einer
         // Death-Spiral, sobald der Spieler so guckte, dass alle Chunks off-screen
         // waren: Welt regen → Spieler bei (0,50,0) → fällt → 1s Worldgen → wieder.
-        if (!this.state.groundChunks || this.state.groundChunks.length === 0) {
+        // V9.31: voxel-aware — in einer Voxel-Welt sind groundChunks LEGITIM leer
+        // (V9.27 überspringt den Heightfield-Chunk-Build), der Voxel-Streaming-
+        // Ring trägt den Boden. Der Boden-Fehlt-Pfad gilt nur für Heightfield-
+        // Welten (`voxelTerrainActive === false`).
+        const voxelActive = this.state.voxelTerrainActive === true;
+        if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
             this.recordWeakness("Boden fehlt");
             this.log("Selbstanalyse: Boden fehlt – Erzeuge neuen Boden...");
             this.generateNewWorld();
@@ -25168,7 +25177,12 @@ class AnazhRealm {
             Ammo.destroy(inertia);
             Ammo.destroy(origin);
             Ammo.destroy(transform);
-            mesh.userData.collision = { body, shape, tmesh, kind };
+            // V9.31 — motionState mitspeichern, sonst leakt er bei
+            // _disposeStaticCollision (Ammo.destroy(body) cascadiert nicht zu
+            // seinen Auxiliars, V8.26-§6.4-Muster). Pre-V9.31-Bug seit V9.08:
+            // mit 81 Voxel-Chunks initial × mehreren Welt-Regens summierte
+            // sich das zu OOM (`_buildStaticTriMeshCollision: Aborted(OOM)`).
+            mesh.userData.collision = { body, shape, tmesh, motionState, kind };
             return body;
         } catch (err) {
             this.log(`_buildStaticTriMeshCollision: ${err.message}`, "ERROR");
@@ -25203,6 +25217,14 @@ class AnazhRealm {
         }
         try {
             if (c.tmesh) Ammo.destroy(c.tmesh);
+        } catch {
+            /* ignore */
+        }
+        // V9.31 — motionState muss explizit destroyed werden; Ammo.destroy(body)
+        // cascadiert nicht (V8.26-§6.4-Muster). Pre-V9.31-Bug: 81 voxel-chunks
+        // × Test-Welt-Regens haben den Ammo-Heap ausgeschöpft.
+        try {
+            if (c.motionState) Ammo.destroy(c.motionState);
         } catch {
             /* ignore */
         }
@@ -33757,8 +33779,11 @@ class AnazhRealm {
             this.p2pTick(performance.now());
 
             // ### Bodenprüfung ###
+            // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
+            // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
             if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
-                if (!this.state.groundChunks || this.state.groundChunks.length === 0) {
+                const voxelActive = this.state.voxelTerrainActive === true;
+                if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
                     this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
                     this.generateNewWorld();
                 }

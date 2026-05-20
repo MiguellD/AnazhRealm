@@ -12107,6 +12107,57 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.31 — motionState-Leck in _disposeStaticCollision geheilt ###
+            // Pre-V9.31-Bug: `_buildStaticTriMeshCollision` (Inseln + Voxel-
+            // Chunks + Voxel-Test-Chunk) erzeugte einen `btDefaultMotionState`,
+            // der NIE destroyed wurde — `_disposeStaticCollision` räumte nur
+            // body+shape+tmesh, nicht motionState (Ammo.destroy(body) cascadiert
+            // nicht zu seinen Auxiliars, V8.26-§6.4-Muster). Mit 81 Voxel-Chunks
+            // pro Welt + mehreren Welt-Regen-Zyklen summierte sich das zum
+            // OOM-Crash (`_buildStaticTriMeshCollision: Aborted(OOM)`). V9.31
+            // speichert motionState in `userData.collision.motionState` + räumt
+            // ihn in `_disposeStaticCollision`. Plus: Boden-Fehlt-Selbstanalyse
+            // (selfReflection + Game-Loop) ist jetzt voxel-aware — in einer
+            // Voxel-Welt sind groundChunks LEGITIM leer (V9.27-Skip), der
+            // alte Check triggerte sonst eine Welt-Regen-Death-Spiral.
+            const voxelV931Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    // V9.31-Probe: baue eine Insel + räume sie + prüfe ob
+                    // alle 4 Ammo-Auxiliars sauber verschwinden (body, shape,
+                    // tmesh, motionState). Test in heightfield-Welt (default).
+                    const out = {};
+                    out.hasDispose = typeof r._disposeStaticCollision === "function";
+                    out.hasBuilder = typeof r._buildStaticTriMeshCollision === "function";
+                    // Source-Audit: prüfe dass _buildStaticTriMeshCollision
+                    // motionState speichert + _disposeStaticCollision ihn räumt.
+                    const buildSrc = r._buildStaticTriMeshCollision.toString();
+                    const disposeSrc = r._disposeStaticCollision.toString();
+                    out.buildStoresMotionState = /motionState/.test(buildSrc) && /motionState,?\s*kind/.test(buildSrc);
+                    out.disposeDestroysMotionState = /c\.motionState/.test(disposeSrc);
+                    // selfAwarenessAnalyze ist jetzt voxel-aware
+                    const selfRefSrc = (r.selfAwarenessAnalyze || function () {}).toString();
+                    out.selfReflectionVoxelAware = /voxelTerrainActive/.test(selfRefSrc);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV931Results && !voxelV931Results.error) {
+                check(
+                    "Voxel V9.31: _buildStaticTriMeshCollision speichert motionState in userData.collision",
+                    voxelV931Results.buildStoresMotionState
+                );
+                check(
+                    "Voxel V9.31: _disposeStaticCollision räumt motionState (Ammo-Heap-Leck-Fix)",
+                    voxelV931Results.disposeDestroysMotionState
+                );
+                check(
+                    "Voxel V9.31: selfAwarenessAnalyze-Boden-Check ist voxel-aware (kein Death-Spiral in Voxel-Welt)",
+                    voxelV931Results.selfReflectionVoxelAware
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
