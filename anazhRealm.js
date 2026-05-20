@@ -13629,9 +13629,27 @@ class AnazhRealm {
             this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
         }
 
-        for (let cz = 0; cz < CHUNKS_Z; cz++) {
-            for (let cx = 0; cx < CHUNKS_X; cx++) {
-                this.ensureChunkAt(cx, cz);
+        // V9.27 Phase 5c.1 — eine voxel-basierte Welt überspringt die
+        // initiale Heightfield-Chunk-Generierung ganz. Vorher baute der
+        // Loop 64 Chunks + Kollisionen, die `_restoreVoxelTerrain` Sekunden
+        // später via `_setHeightfieldDormant` schlafenlegte — das war
+        // wasteful (V9.26 ehrlich benannt). `worldMeta.voxelTerrain` ist
+        // die persistente Wahrheit, von `_preloadActiveWorldMeta` schon
+        // hydratisiert + von V9.26 für migrierte Welten gesetzt, BEVOR
+        // `generateNewWorld` läuft. Das Heightfield-Material + leeres
+        // chunkMap bleiben — wer per Chat `voxel terrain off` toggelt,
+        // bekommt Chunks vom Streaming-Ring (line 34204+) nachgeladen.
+        const isVoxelWorldGen = !!(this.state.worldMeta && this.state.worldMeta.voxelTerrain);
+        if (isVoxelWorldGen) {
+            this.log(
+                `Phase 5c.1: voxel-basierte Welt — ${CHUNKS_Z * CHUNKS_X} initiale Heightfield-Chunks übersprungen.`,
+                "INFO"
+            );
+        } else {
+            for (let cz = 0; cz < CHUNKS_Z; cz++) {
+                for (let cx = 0; cx < CHUNKS_X; cx++) {
+                    this.ensureChunkAt(cx, cz);
+                }
             }
         }
 

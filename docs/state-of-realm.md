@@ -1,4 +1,6 @@
-# Zustand des Realm — Stand: 19.05.2026 (V9.26)
+# Zustand des Realm — Stand: 20.05.2026 (V9.27)
+
+**V9.27 — Voxel-Terrain-Bogen Phase 5c.1 (Heightfield-Init für Voxel-Welten übersprungen)**: der erste ehrliche Schritt der grossen 5c-Aufräumarbeit. Eine voxel-basierte Welt baut die initialen 64 Heightfield-Chunks gar nicht mehr (vorher: bauen + via `_setHeightfieldDormant` schlafenlegen — wasteful). Der Gate in `generateTerrainWithParameters` liest `worldMeta.voxelTerrain` — von V9.26-Migration + `_preloadActiveWorldMeta` korrekt gesetzt, BEVOR `generateNewWorld` läuft. Das Heightfield-Material bleibt erhalten (Reversibilität: `voxel terrain off` lädt vom Streaming-Ring nach). Die fresh-Eingangs-Welt (Playtest) bleibt heightfield → bestehende Tests unberührt. +3 Invarianten. Voller Eintrag in `CLAUDE.md` V9.27.
 
 **V9.26 — Voxel-Terrain-Bogen Phase 5c-Start (Chunk-Loch-Heilung + Migrations-Flip)**: zwei Schöpfer-Browser-Befunde nach V9.25 geheilt. (1) Chunk-Löcher im erweiterten Sicht-Ring — `dimY` 68→80, `oy=base-58`, Marge ~22 gegen ridged-Spikes. (2) Migrations-Flip in `ensureWorldMeta`: eine geladene alte Welt ohne `voxelTerrain`-Flag wird voxel-basiert; eine frische Eingangs-Welt bleibt heightfield (Playtest-Schutz). Heightfield-Code-Entfernung + Test-Suite-Umschreibung bleiben eine spätere Welle. Voller Eintrag in `CLAUDE.md` V9.26.
 

@@ -11849,6 +11849,64 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.27 Phase 5c.1 — Heightfield-Init für Voxel-Welten übersprungen ###
+            // Eine voxel-basierte Welt baut die initialen 64 Heightfield-Chunks
+            // GAR NICHT mehr — vorher (V9.26) wurden sie gebaut und dann via
+            // `_setHeightfieldDormant` schlafengelegt (wasteful). Der Skip
+            // wird in `generateTerrainWithParameters` über die persistente
+            // `worldMeta.voxelTerrain`-Marke entschieden. Eine Heightfield-
+            // Welt (worldMeta.voxelTerrain falsy) baut weiter alle Chunks.
+            const voxelP5c1Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // State sichern (Restoration am Ende). voxelP2c hat
+                    // worldMeta.voxelTerrain = false gesetzt — entrance world
+                    // ist eine fresh heightfield-Welt.
+                    const origVoxel = r.state.worldMeta && r.state.worldMeta.voxelTerrain;
+                    // (1) Voxel-Welt → kein initialer Chunk-Build.
+                    r.state.worldMeta.voxelTerrain = true;
+                    r.state.lastWorldgen = 0;
+                    r.generateNewWorld({ force: true });
+                    out.voxelChunkMapEmpty = r.state.chunkMap && r.state.chunkMap.size === 0;
+                    out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
+                    // (2) Heightfield-Welt → der Loop läuft + füllt 64 Chunks.
+                    r.state.worldMeta.voxelTerrain = false;
+                    r.state.lastWorldgen = 0;
+                    r.generateNewWorld({ force: true });
+                    out.heightfieldChunkMapFilled = r.state.chunkMap && r.state.chunkMap.size === 64;
+                    // Restore: ursprünglichen voxelTerrain-Zustand wiederherstellen.
+                    // Wenn die Welt vorher heightfield war (origVoxel falsy), bleibt
+                    // chunkMap mit 64 Chunks gefüllt — das ist der Ausgangszustand.
+                    if (origVoxel === true) {
+                        r.state.worldMeta.voxelTerrain = true;
+                        r.state.lastWorldgen = 0;
+                        r.generateNewWorld({ force: true });
+                    } else {
+                        // origVoxel war false oder undefined → heightfield bleibt,
+                        // worldMeta.voxelTerrain auf den ursprünglichen Wert ziehen.
+                        r.state.worldMeta.voxelTerrain = origVoxel;
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelP5c1Results && !voxelP5c1Results.error) {
+                check(
+                    "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
+                    voxelP5c1Results.voxelChunkMapEmpty
+                );
+                check(
+                    "Voxel V9.27 Phase 5c.1: das Heightfield-Material bleibt erhalten (für späteres voxel-off-Toggle)",
+                    voxelP5c1Results.voxelMaterialKept
+                );
+                check(
+                    "Voxel V9.27 Phase 5c.1: eine Heightfield-Welt baut alle 64 Chunks weiter (Regression-Schutz)",
+                    voxelP5c1Results.heightfieldChunkMapFilled
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
