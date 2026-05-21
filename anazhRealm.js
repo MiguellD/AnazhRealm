@@ -8148,6 +8148,24 @@ class AnazhRealm {
         return this._chatCommandHelpCache;
     }
 
+    // V9.44-e — die `data-cmd → processChatCommand`-Klick-Delegation. Vier
+    // Container (quick-actions, creature-actions, architecture-actions,
+    // help-list) trugen denselben Listener fast-identisch; jetzt EINE Quelle.
+    // `closeDrawers`: der help-list-Pfad schliesst nach dem Befehl die Drawer
+    // (der einzige Unterschied der vier — als ein Flag-Parameter geführt).
+    _wireCmdDelegation(elementId, closeDrawers) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const cmd = target.getAttribute("data-cmd");
+            if (!cmd) return;
+            this.processChatCommand(cmd);
+            if (closeDrawers) this.closeAllDrawers();
+        });
+    }
+
     initStatusPanel() {
         // UI V2: kein zentrales #status-panel mehr — Sektionen leben in den
         // sechs Drawer (Welt, Kreaturen, Spieler, Fähigkeiten, Einstellungen,
@@ -8255,38 +8273,11 @@ class AnazhRealm {
             p.emotionApplyCooldown = v;
         });
 
-        // Quick-Action-Buttons: data-cmd-Attribut → processChatCommand
-        const quick = document.getElementById("quick-actions");
-        if (quick) {
-            quick.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) this.processChatCommand(cmd);
-            });
-        }
-
-        // Kreatur-Actions teilen denselben Klick-Handler wie Quick-Actions.
-        const creatureActions = document.getElementById("creature-actions");
-        if (creatureActions) {
-            creatureActions.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) this.processChatCommand(cmd);
-            });
-        }
-
-        // Ring 6 — Bauwerk-Actions teilen denselben Mechanismus.
-        const architectureActions = document.getElementById("architecture-actions");
-        if (architectureActions) {
-            architectureActions.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) this.processChatCommand(cmd);
-            });
-        }
+        // Quick-Action-, Kreatur- und Bauwerk-Buttons teilen den
+        // data-cmd → processChatCommand-Delegate (V9.44-e: eine Quelle).
+        this._wireCmdDelegation("quick-actions");
+        this._wireCmdDelegation("creature-actions");
+        this._wireCmdDelegation("architecture-actions");
 
         // Hilfe-Drawer: Befehl-Liste aus chatCommandHelp generieren. Der
         // Hilfe-Drawer ist einer der sechs Tabs; Anzeige + Schließen läuft
@@ -8307,15 +8298,8 @@ class AnazhRealm {
                     helpList.appendChild(btn);
                 }
             }
-            helpList.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) {
-                    this.processChatCommand(cmd);
-                    this.closeAllDrawers();
-                }
-            });
+            // V9.44-e — der help-list-Delegate schliesst zusätzlich die Drawer.
+            this._wireCmdDelegation("help-list", true);
         }
     }
 
@@ -27231,12 +27215,33 @@ class AnazhRealm {
         return true;
     }
 
+    // V9.44-e — der Werkstatt-DOM-Builder ist ein Orchestrator. Vor V9.44-e
+    // war _renderWorkshopDOM eine ~644-Zeilen-Funktion mit 159 DOM-Operationen.
+    // Jetzt: neun in-sich-geschlossene Sektionen als `_workshopRender<X>`-
+    // Sub-Methoden (das erprobte `_workshopRenderStatsPanel`-Muster, weiter
+    // geschnitten). Jede Sektion baut ihren DOM-Teilbaum + hängt ihn an;
+    // sie teilen nur `list`/`editor`/`ws`/`selected` — die Methoden-Parameter.
     _renderWorkshopDOM() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("workshop-list");
         const editor = document.getElementById("workshop-editor");
         if (!list || !editor) return;
         const ws = this._ensureWorkshopState();
+        this._workshopRenderBlueprintList(list, ws);
+        editor.innerHTML = "";
+        const selected = this.state.blueprints[ws.selectedBlueprint];
+        if (!selected) return;
+        this._workshopRenderHeader(editor, selected);
+        this._workshopRenderToolsBox(editor);
+        this._workshopRenderPartsList(editor, selected, ws);
+        this._workshopRenderConnections(editor, selected);
+        this._workshopRenderToolRecursion(editor, selected);
+        this._workshopRenderTagsSection(editor, selected);
+        this._workshopRenderActions(editor, selected);
+        this._workshopRenderTail(selected);
+    }
+
+    _workshopRenderBlueprintList(list, ws) {
         const blueprintNames = Object.keys(this.state.blueprints);
         // Liste der Baupläne
         list.innerHTML = "";
@@ -27263,10 +27268,9 @@ class AnazhRealm {
             row.addEventListener("click", () => this.selectBlueprintForEdit(name));
             list.appendChild(row);
         }
-        // Editor
-        editor.innerHTML = "";
-        const selected = this.state.blueprints[ws.selectedBlueprint];
-        if (!selected) return;
+    }
+
+    _workshopRenderHeader(editor, selected) {
         // Header mit Label + Aktionen
         const header = document.createElement("div");
         header.className = "workshop-header";
@@ -27295,6 +27299,9 @@ class AnazhRealm {
         }
         header.appendChild(status);
         editor.appendChild(header);
+    }
+
+    _workshopRenderToolsBox(editor) {
         // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
         // Tools mit ihrem Cap. Sichtbarmacht, womit Spieler aktuell arbeiten
         // kann. Read-only in Phase 3 (eigene Werkzeuge gehen in Welle 6 auf).
@@ -27328,6 +27335,9 @@ class AnazhRealm {
             toolsBox.appendChild(chip);
         }
         editor.appendChild(toolsBox);
+    }
+
+    _workshopRenderPartsList(editor, selected, ws) {
         // Parts-Liste — bei Built-ins nur lesbar
         const partsDiv = document.createElement("div");
         partsDiv.className = "workshop-parts";
@@ -27518,6 +27528,9 @@ class AnazhRealm {
             partsDiv.appendChild(row);
         }
         editor.appendChild(partsDiv);
+    }
+
+    _workshopRenderConnections(editor, selected) {
         // Welle 5 A — Verbindungen zwischen Parts. Acht Typen aus Konzept
         // §5.1, jede mit eigener Last-Formel (Material-Tags × Kontaktfläche
         // × Typ-Multiplier). Built-ins read-only.
@@ -27622,6 +27635,9 @@ class AnazhRealm {
             connectionsSection.appendChild(addRow);
         }
         editor.appendChild(connectionsSection);
+    }
+
+    _workshopRenderToolRecursion(editor, selected) {
         // Welle 5 C — Bauplan als Werkzeug markieren + registrieren. Nur für
         // eigene Baupläne. UI zeigt: aktuelle Bauplan-Präzision (= zukünftiger
         // Cap), opName + opClass Inputs, „als Werkzeug registrieren"-Button.
@@ -27692,6 +27708,9 @@ class AnazhRealm {
             toolSection.appendChild(toolRow);
             editor.appendChild(toolSection);
         }
+    }
+
+    _workshopRenderTagsSection(editor, selected) {
         // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
         // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
         // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
@@ -27779,6 +27798,9 @@ class AnazhRealm {
                 : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint bei pointed-Spitzen am Rand, Hohlraum-Paaren (Sphere/Torus mit Inhalt), Y-Achsen-Symmetrie oder Resonanz-Arrays (≥3 gleiche Shape auf gleichem Radius).";
         tagsSection.appendChild(tagsHint);
         editor.appendChild(tagsSection);
+    }
+
+    _workshopRenderActions(editor, selected) {
         // Aktions-Buttons
         const actions = document.createElement("div");
         actions.className = "workshop-actions";
@@ -27850,6 +27872,9 @@ class AnazhRealm {
         });
         actions.appendChild(newBtn);
         editor.appendChild(actions);
+    }
+
+    _workshopRenderTail(selected) {
         // Hotbar-Config und alle Phantom-Mesh updaten, falls der aktive
         // Bauplan editiert wurde.
         this._renderHotbarConfigDOM();
