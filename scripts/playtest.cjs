@@ -12461,6 +12461,128 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.43-a — Wasser-Ultiversum: Wasserfälle werden Planes ###
+            // V9.32 baute Wasserfälle als THREE.Points-Partikel — eine zweite
+            // Wasser-Sprache neben der Gerstner-Plane des Meeres (Schöpfer-
+            // Audit-Befund #5, Vision §1.3 gebrochen). V9.43-a vereinheitlicht:
+            // eine vertikale PlaneGeometry mit dem geteilten Flow-Shader
+            // (`_ensureWaterfallMaterial`, uFlowDir abwärts), welt-global ein
+            // Material, uTime-animiert (kein per-Partikel-Loop mehr). Eine
+            // Wasser-Sprache: Plane + Wasser-Shader + Flow-Vektor.
+            const voxelV943Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r) return null;
+                    const out = {};
+                    out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
+                    let mat = null;
+                    if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
+                    out.matIsShader = !!mat && mat.type === "ShaderMaterial";
+                    const u = (mat && mat.uniforms) || {};
+                    out.hasFlowUniforms =
+                        !!u.uFlowDir &&
+                        !!u.uFlowDir.value &&
+                        u.uFlowDir.value.y < 0 &&
+                        typeof (u.uFlowSpeed && u.uFlowSpeed.value) === "number" &&
+                        !!u.uTime;
+                    out.sharesWaterUniforms =
+                        !!u.uDeep &&
+                        !!u.uShallow &&
+                        !!u.fogColor &&
+                        typeof (u.fogNear && u.fogNear.value) === "number" &&
+                        typeof (u.fogFar && u.fogFar.value) === "number" &&
+                        !!u.uSunDir &&
+                        !!u.uLight;
+                    const buildSrc = (r._buildVoxelChunkWaterfalls || function () {}).toString();
+                    out.buildUsesPlanes =
+                        /PlaneGeometry/.test(buildSrc) &&
+                        /_ensureWaterfallMaterial/.test(buildSrc) &&
+                        !/THREE\.Points/.test(buildSrc) &&
+                        !/PointsMaterial/.test(buildSrc) &&
+                        !/["']velocity["']/.test(buildSrc);
+                    out.noParticleAnimData =
+                        !/userData\.minY/.test(buildSrc) && !/baseHeight/.test(buildSrc);
+                    const dispSrc = (r._disposeVoxelChunkWaterfalls || function () {}).toString();
+                    out.disposeKeepsMaterial = !/\.material\.dispose/.test(dispSrc);
+                    // Day-Night synct das Wasserfall-Material (Fog-Uniform).
+                    out.dayNightSyncsWaterfall = false;
+                    if (mat && typeof r._applyDayNightToScene === "function") {
+                        try {
+                            r._applyDayNightToScene();
+                            out.dayNightSyncsWaterfall =
+                                typeof u.fogNear.value === "number" && u.fogNear.value > 0;
+                        } catch {
+                            out.dayNightSyncsWaterfall = false;
+                        }
+                    }
+                    // Synthetic-Scan: einen Chunk mit echter Voxel-Klippe finden
+                    // und prüfen, dass der Wasserfall eine Plane-Mesh ist.
+                    out.planeWaterfallFound = false;
+                    out.planeWaterfallValid = true;
+                    if (out.hasEnsureMat && r.state && typeof THREE !== "undefined") {
+                        if (!r.state.voxelChunkWaterfalls) r.state.voxelChunkWaterfalls = new Map();
+                        const builtKeys = [];
+                        outer: for (let cz = -7; cz <= 7; cz++) {
+                            for (let cx = -7; cx <= 7; cx++) {
+                                const key = cx + "," + cz;
+                                const pre = r.state.voxelChunkWaterfalls.has(key);
+                                r._buildVoxelChunkWaterfalls(cx, cz);
+                                if (!pre) builtKeys.push(key);
+                                const arr = r.state.voxelChunkWaterfalls.get(key);
+                                if (Array.isArray(arr) && arr.length > 0) {
+                                    const wf = arr[0];
+                                    out.planeWaterfallFound = true;
+                                    out.planeWaterfallValid =
+                                        !!wf &&
+                                        wf.isMesh === true &&
+                                        !!wf.geometry &&
+                                        wf.geometry.type === "PlaneGeometry" &&
+                                        wf.material === r.state.waterfallMaterial;
+                                    break outer;
+                                }
+                            }
+                        }
+                        for (const key of builtKeys) r._disposeVoxelChunkWaterfalls(key);
+                    }
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV943Results && !voxelV943Results.error) {
+                check(
+                    "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein ShaderMaterial",
+                    voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
+                );
+                check(
+                    "Voxel V9.43-a: das Wasserfall-Material trägt uFlowDir (abwärts) + uFlowSpeed + uTime",
+                    voxelV943Results.hasFlowUniforms
+                );
+                check(
+                    "Voxel V9.43-a: das Wasserfall-Material teilt die Wasser-Substanz-Uniforms mit dem Meer",
+                    voxelV943Results.sharesWaterUniforms
+                );
+                check(
+                    "Voxel V9.43-a: _buildVoxelChunkWaterfalls baut Wasser-Planes statt THREE.Points-Partikel",
+                    voxelV943Results.buildUsesPlanes
+                );
+                check(
+                    "Voxel V9.43-a: _buildVoxelChunkWaterfalls trägt keine per-Partikel-Animationsdaten mehr",
+                    voxelV943Results.noParticleAnimData
+                );
+                check(
+                    "Voxel V9.43-a: _disposeVoxelChunkWaterfalls disposed NICHT das geteilte Material",
+                    voxelV943Results.disposeKeepsMaterial
+                );
+                check(
+                    "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Fog-Uniform gesetzt)",
+                    voxelV943Results.dayNightSyncsWaterfall
+                );
+                check(
+                    "Voxel V9.43-a: ein gebauter Wasserfall ist eine PlaneGeometry-Mesh mit dem geteilten Material",
+                    !voxelV943Results.planeWaterfallFound || voxelV943Results.planeWaterfallValid
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
