@@ -10441,11 +10441,20 @@ function startSaveServer() {
                         newIsland.userData.collision.tmesh
                     );
                     out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
-                    // Inseln haben jetzt Vollkörper (Top + Bottom + Side).
-                    // 2D-Grid mit N=12 → 12*12*2 = 288 Vertices Mindestmenge.
+                    // V9.42-a — Inseln aus Surface-Nets-Pipeline. Vollkörper
+                    // emergiert per Konstruktion (Iso-Fläche schließt sich
+                    // oben + unten). Test misst nicht die Vertex-Zahl
+                    // (Surface-Nets-Auflösung variiert), sondern die Y-Spanne
+                    // der Geometrie: ein Vollkörper hat eine Höhe > 0.5 m.
                     if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
-                        const vCount = newIsland.geometry.attributes.position.count;
-                        out.islandHasUnderside = vCount >= 144 * 2;
+                        const pa = newIsland.geometry.attributes.position.array;
+                        let minY = Infinity;
+                        let maxY = -Infinity;
+                        for (let i = 1; i < pa.length; i += 3) {
+                            if (pa[i] < minY) minY = pa[i];
+                            if (pa[i] > maxY) maxY = pa[i];
+                        }
+                        out.islandHasUnderside = isFinite(minY) && isFinite(maxY) && maxY - minY > 0.5;
                     }
 
                     // Diskrimination: derselbe Seed → dieselben Vertices.
@@ -10498,6 +10507,125 @@ function startSaveServer() {
                 check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
                 check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
                 check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
+                // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
+                // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
+                // Anwendungen. Beweis: `_voxelChunkGeometry` akzeptiert
+                // einen `densityFn`-Callback (Default-Pfad bleibt für Welt-
+                // Chunks erhalten, Insel-Pfad übergibt `_islandDensityAt`).
+                const r42a = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
+                    if (out.hasIslandDensity) {
+                        // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
+                        // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
+                        const dummyNoise = { noise2D: () => 0 };
+                        out.solidInCenter = r._islandDensityAt(0, 0, 0, 6, 5, dummyNoise) > 0;
+                        out.airFarAway = r._islandDensityAt(20, 0, 0, 6, 5, dummyNoise) < 0;
+                        out.airAbove = r._islandDensityAt(0, 50, 0, 6, 5, dummyNoise) < 0;
+                    }
+                    // Mesher mit densityFn-Callback: untere Hälfte fest,
+                    // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
+                    out.mesherAcceptsDensity =
+                        typeof r._voxelChunkGeometry === "function" &&
+                        (() => {
+                            try {
+                                const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
+                                const pos = g && g.getAttribute("position");
+                                return !!(pos && pos.count > 0);
+                            } catch {
+                                return false;
+                            }
+                        })();
+                    return out;
+                });
+                check("V9.42-a: _islandDensityAt existiert", r42a.hasIslandDensity);
+                check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
+                check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
+                check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
+                check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
+                // V9.42-b — Skirt-Disziplin im Smooth-Pass: Naht-Vertices
+                // (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1) dürfen
+                // NICHT verschoben werden, sonst zerstört Laplacian die V9.10-
+                // Skirt-Überlappung zwischen zwei Nachbar-Chunks. Wir messen
+                // das, indem wir ZWEI benachbarte Voxel-Chunks bauen und
+                // prüfen, dass an der gemeinsamen Naht (X-Welt-Koord
+                // identisch) substanziell viele Vertices identische Position
+                // teilen. Pre-V9.42-b: ~0 Übereinstimmung (Smooth zog jede
+                // Seite anders). Post-V9.42-b: >50 % der Vertices an der Naht.
+                const r42bSkirt = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const chunks = [...r.state.voxelChunks.values()]
+                        .filter((c) => c && c.mesh && c.mesh.geometry)
+                        .slice(0, 9);
+                    if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
+                    const seen = new Map();
+                    let dup = 0;
+                    for (const c of chunks) {
+                        const pa = c.mesh.geometry.getAttribute("position").array;
+                        for (let i = 0; i < pa.length; i += 3) {
+                            const key = `${pa[i].toFixed(2)}|${pa[i + 1].toFixed(2)}|${pa[i + 2].toFixed(2)}`;
+                            if (seen.has(key)) dup++;
+                            else seen.set(key, true);
+                        }
+                    }
+                    return { chunks: chunks.length, unique: seen.size, duplicates: dup };
+                });
+                check(
+                    `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
+                    (r42bSkirt.duplicates || 0) >= 200
+                );
+                // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
+                const r42bIslandAmp = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const noise = { noise2D: () => 0.5 };
+                    // height=5: kleine Insel
+                    const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
+                    // height=20: grosse Insel — Density-Wert in der Mitte
+                    // sollte SUBSTANZIELL grösser sein (mehr Material in der Höhe).
+                    const big = r._islandDensityAt(0, 0, 0, 6, 20, noise);
+                    return { small, big, ratio: small > 0 ? big / small : 0 };
+                });
+                check(
+                    `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
+                    r42bIslandAmp.ratio > 1.5
+                );
+                // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
+                const r42bDsl = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const before = r.state.floatingIslands.length;
+                    r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
+                    const after = r.state.floatingIslands.length;
+                    const isle = r.state.floatingIslands[before];
+                    if (!isle) return { spawned: false };
+                    const bbox = new window.THREE.Box3().setFromObject(isle);
+                    return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
+                });
+                check(
+                    `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
+                    r42bDsl.spawned && r42bDsl.width > 24
+                );
+                // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertex-
+                // Colors (wie der Voxel-Boden), kein Terrain-ShaderMaterial
+                // mehr (das passte nicht zur Surface-Nets-Geometrie ohne
+                // aField/uv → "Löcher"-Befund). _attachIslandColors gibt der
+                // Insel grün-oben/erdig-unten per Vertex-Normale.
+                const r42c = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
+                    const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
+                    if (isle) {
+                        out.material = isle.material.type;
+                        out.hasVertexColors = !!isle.material.vertexColors;
+                        out.hasColorAttr = !!isle.geometry.getAttribute("color");
+                    }
+                    return out;
+                });
+                check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
+                check(
+                    `V9.42-c: Insel nutzt MeshToonMaterial (kein Terrain-Shader) — ${r42c.material}`,
+                    r42c.material === "MeshToonMaterial" && r42c.hasVertexColors === true
+                );
+                check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
                 check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
                     "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
@@ -10565,7 +10693,7 @@ function startSaveServer() {
                 );
                 if (wave6gResults.islandHasUnderside !== undefined) {
                     check(
-                        "Welle 6.G P1.5: Insel hat Top + Bottom (Vollkörper, V7.74 Visual-Fix)",
+                        "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
                         wave6gResults.islandHasUnderside
                     );
                 }
@@ -11307,6 +11435,63 @@ function startSaveServer() {
                                 }
                                 out.geomMaxEdge = maxEdge;
                                 out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+
+                                // V9.41.b — Laplacian-Smooth: prüfe, dass die
+                                // Position eines Vertex deutlich näher am
+                                // Durchschnitt seiner Nachbarn liegt als der
+                                // Original-Vertex (Surface-Nets-Treppe). Wir
+                                // messen pro Vertex die Y-Distanz zum Nachbar-
+                                // Mittel und mitteln über alle Vertices. Pre-
+                                // V9.41.b liegt der Wert in der Größenordnung
+                                // step/2 = 0.9 (Surface-Nets-Zellen-Auflösung).
+                                // Nach 1 Iteration mit Lambda 0.5 sollte der
+                                // Wert ungefähr halbiert sein — der Vertex ist
+                                // jetzt 50% des Weges zum Nachbar-Mittel.
+                                const neighborSets = new Array(pos.count);
+                                for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
+                                for (let t = 0; t + 2 < ia.length; t += 3) {
+                                    const i0 = ia[t], i1 = ia[t + 1], i2 = ia[t + 2];
+                                    neighborSets[i0].add(i1); neighborSets[i0].add(i2);
+                                    neighborSets[i1].add(i0); neighborSets[i1].add(i2);
+                                    neighborSets[i2].add(i0); neighborSets[i2].add(i1);
+                                }
+                                let totalDev = 0;
+                                let sampledVerts = 0;
+                                for (let v = 0; v < pos.count; v++) {
+                                    const nbrs = neighborSets[v];
+                                    if (nbrs.size < 2) continue;
+                                    let sy = 0;
+                                    for (const n of nbrs) sy += pa[n * 3 + 1];
+                                    const avgY = sy / nbrs.size;
+                                    totalDev += Math.abs(pa[v * 3 + 1] - avgY);
+                                    sampledVerts++;
+                                }
+                                out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
+                                // step = 1.8 für Test-Chunk; pre-Smooth wäre
+                                // diese Mean-Dev typisch > 0.3 (steile Treppen).
+                                // Post-Smooth mit Lambda 0.5 sollte sie unter
+                                // 0.25 fallen — das ist die Härtung.
+                                out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
+
+                                // V9.41 — alternierende Diagonalen (Schach-Brett).
+                                // Quad emittiert pro Paar 6 Indizes: 2 Dreiecke.
+                                // a-c-Diagonale: indices = [a,b,c, a,c,d] →
+                                // erster Vertex des ersten Dreiecks (a) == erster
+                                // Vertex des zweiten Dreiecks (a).
+                                // b-d-Diagonale: indices = [a,b,d, b,c,d] →
+                                // ZWEITER Vertex des ersten Dreiecks (b) == ERSTER
+                                // Vertex des zweiten Dreiecks (b).
+                                // Pre-V9.41: nur a-c-Pattern. Post-V9.41 mit
+                                // Schach-Brett: beide Patterns kommen vor.
+                                let acDiag = 0;
+                                let bdDiag = 0;
+                                for (let t = 0; t + 5 < ia.length; t += 6) {
+                                    if (ia[t] === ia[t + 3]) acDiag++;
+                                    else if (ia[t + 1] === ia[t + 3]) bdDiag++;
+                                }
+                                out.diagonalAcCount = acDiag;
+                                out.diagonalBdCount = bdDiag;
+                                out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
                             }
                         }
                     }
@@ -11392,6 +11577,22 @@ function startSaveServer() {
                 check(
                     `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,
                     voxelP1Results.geomNoStrayTris
+                );
+                check(
+                    `V9.41: Quad-Diagonalen alternieren (Schach-Brett) — beide Patterns vorhanden (a-c ${voxelP1Results.diagonalAcCount}, b-d ${voxelP1Results.diagonalBdCount})`,
+                    voxelP1Results.diagonalAlternates
+                );
+                check(
+                    `V9.41.b: Laplacian-Smooth glättet Voxel-Treppen — mittlere Y-Abweichung vom Nachbar-Mittel ${(voxelP1Results.smoothMeanYDev || 0).toFixed(2)} < 0.25 (step 1.8)`,
+                    voxelP1Results.smoothMeanYDevLow
+                );
+                check(
+                    "V9.41: keine Diagonal-Pattern-Dominanz — beide Muster ≥ 10% des jeweils anderen",
+                    voxelP1Results.diagonalAcCount > 0 &&
+                        voxelP1Results.diagonalBdCount > 0 &&
+                        Math.min(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) /
+                            Math.max(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) >=
+                            0.1
                 );
                 check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
                 check(

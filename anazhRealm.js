@@ -1394,7 +1394,7 @@ class AnazhRealm {
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
             },
-            spawn_island: ([positionNode, height, seed], ctx) => {
+            spawn_island: ([positionNode, height, seed, size], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -1406,14 +1406,19 @@ class AnazhRealm {
                 // Determinismus. Wenn nicht gesetzt, würfeln. Chat-Pattern
                 // „setze insel hier" embedded das Seed bei Build-Zeit.
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+                // V9.42-b — `size` (Durchmesser in m) ist DSL-erreichbar, 6..48.
+                const sz = Number.isFinite(Number(size)) ? c(Number(size), 6, 48) : undefined;
                 // Islands spawnen ein Stück über dem angegebenen Punkt —
                 // sonst würde der at_player-Pfad sie auf Spieler-Höhe legen
                 // und der Spieler stünde im Erd-Inneren der Insel.
-                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, { seed: s });
+                const opts = { seed: s };
+                if (sz !== undefined) opts.size = sz;
+                const island = this.spawnIslandAt(pos.x, pos.y + 12, pos.z, h, opts);
                 ctx.log.push({
                     event: "spawned_island",
                     pos: island ? { x: island.position.x, y: island.position.y, z: island.position.z } : pos,
                     height: h,
+                    size: sz,
                     seed: s,
                 });
             },
@@ -9367,8 +9372,36 @@ class AnazhRealm {
             if (typeof Ammo === "undefined") {
                 throw new Error("Ammo.js fehlt – index.html prüfen, ob Ammo.js-Skript geladen wurde");
             }
-            await Ammo();
-            this.log("Ammo.js geladen – Physik initialisiert");
+            // V9.40-f: Ammo wird mit `window.Module` als moduleArg gerufen —
+            // `ammo-bootstrap.js` setzte den `instantiateWasm`-Hook dort ab.
+            // Ammo's IIFE-Header (`function(moduleArg = {})`) liest NUR sein
+            // Argument, NICHT `window.Module` automatisch — wer das nicht
+            // übergibt, verliert den Pre-Grow-Hook und Ammo OOMt bei großen
+            // Voxel-Welten. `typeof window`-Check für Node-Headless-Pfade.
+            const ammoModule = typeof window !== "undefined" ? window.Module || {} : {};
+            await Ammo(ammoModule);
+            // V9.40-f: der vendored ammo.wasm.wasm wurde via
+            // `scripts/patch-ammo-memory.cjs` von max=64 MB auf max=256 MB
+            // (growable) gepatcht — eine Voxel-Welt mit Ring 4-8 (81-289
+            // Chunks × btBvhTriangleMeshShape + BVH-Baum) braucht mehr Heap.
+            // `ArrayBuffer.maxByteLength` ist ein Snapshot-Wert; der wahre
+            // Grow-Test ist `wasmMemory.grow(0)` (return = aktuelle Pages)
+            // + die Tatsache, dass Ammo bei OOM jetzt selbst grow() rufen
+            // kann. Diagnose-Log zeigt die aktuelle Heap-Größe — bei einem
+            // späteren OOM-Befund kann der Schöpfer hier den Wachstums-Lauf
+            // sehen (50 → 90 → 160 → …; bleibt er bei 64 MB stehen + OOM
+            // tritt auf, fehlt der Patch).
+            try {
+                const mem = Ammo.HEAPU8 && Ammo.HEAPU8.buffer;
+                if (mem) {
+                    const curMb = (mem.byteLength / 1024 / 1024).toFixed(0);
+                    this.log(`Ammo.js geladen – Physik initialisiert (Heap: ${curMb} MB initial, growable bis 256 MB)`);
+                } else {
+                    this.log("Ammo.js geladen – Physik initialisiert");
+                }
+            } catch {
+                this.log("Ammo.js geladen – Physik initialisiert");
+            }
 
             // Physik-Welt initialisieren
             const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
@@ -13142,202 +13175,6 @@ class AnazhRealm {
         const minHeight = 0;
         const maxHeight = 0;
 
-        // ### Shader-Material ###
-        // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
-        const vertexShader = `
-        // V8.48 — Drei.js-Shadow-Chunks: shadowmap_pars_vertex deklariert
-        // directionalShadowMatrix + vDirectionalShadowCoord, common liefert
-        // inverseTransformDirection (von shadowmap_vertex gebraucht).
-        #include <common>
-        #include <shadowmap_pars_vertex>
-        attribute vec4 aField;
-        varying float vHeight;
-        varying vec3 vNormal;
-        varying vec4 vField;
-        varying float vFogDepth;
-        // V8.43 — der Detail-Noise wird PER VERTEX berechnet und als varying
-        // interpoliert. Vorher lief noise() im Fragment-Shader (per-Pixel) →
-        // bei Kamera-Drehung kroch das hochfrequente Muster per Sub-Pixel-
-        // Aliasing übers Terrain (dieselbe Klasse wie die alten prozeduralen
-        // Skybox-Sterne, bevor sie echte Geometrie wurden). Per-Vertex +
-        // Interpolation = band-limitiert, stabil unter Kamera-Bewegung.
-        varying float vJitter;
-        float random(vec2 st) {
-            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-        }
-        float noise(vec2 st) {
-            vec2 i = floor(st);
-            vec2 f = fract(st);
-            float a = random(i);
-            float b = random(i + vec2(1.0, 0.0));
-            float c = random(i + vec2(0.0, 1.0));
-            float d = random(i + vec2(1.0, 1.0));
-            vec2 u = f * f * (3.0 - 2.0 * f);
-            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-        }
-        void main() {
-            vHeight = position.y;
-            // V8.44 — vNormal in WELT-Raum (mat3(modelMatrix)). Der Diffuse
-            // dottet vNormal mit der world-space lightDirection; mit einem
-            // View-Raum-Normal (normalMatrix) driftete das Ergebnis mit der
-            // Kamera — beim Yaw glitt das Hell/Dunkel-Muster horizontal übers
-            // Terrain. Welt-Normal + Welt-Licht = kamera-unabhängig, korrekt.
-            vNormal = normalize(mat3(modelMatrix) * normal);
-            vField = aField;
-            // Townscaper-Detail-Jitter — zwei Noise-Oktaven, hier per Vertex.
-            float n1 = noise(uv * 3.0);
-            float n2 = noise(uv * 9.0);
-            vJitter = (n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035;
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            // V8.45 — Fog-Tiefe = RADIALE Distanz zur Kamera (length), nicht
-            // View-Space-Z (-mvPosition.z). View-Z hängt von der Blick-
-            // RICHTUNG ab: beim reinen Drehen änderte sich die Fog-Menge auf
-            // einem festen Terrain-Punkt → der Dunst „atmete" beim langsamen
-            // Kamera-Schwenk (das letzte kamera-abhängige Glied im Terrain-
-            // Shader nach dem V8.44-Lighting-Frame-Fix). Radiale Distanz ist
-            // dreh-invariant → das Terrain ist jetzt voll kamera-unabhängig.
-            vFogDepth = length(mvPosition.xyz);
-            gl_Position = projectionMatrix * mvPosition;
-            // V8.48 — Schatten empfangen: Shadow-Map-Koordinaten berechnen,
-            // damit der Terrain-Custom-Shader dieselbe DirectionalLight-
-            // Shadow-Map sampelt wie die MeshToon-Strukturen. Der Chunk
-            // shadowmap_vertex braucht transformedNormal + worldPosition.
-            vec3 objectNormal = vec3(normal);
-            vec3 transformedNormal = normalMatrix * objectNormal;
-            vec3 transformed = vec3(position);
-            vec4 worldPosition = modelMatrix * vec4(transformed, 1.0);
-            #include <shadowmap_vertex>
-        }
-    `;
-        const fragmentShader = `
-        // V8.48 — highp (statt mediump): die Shadow-Map-Koordinate
-        // vDirectionalShadowCoord braucht volle Präzision, sonst flackert
-        // die Tiefen-Vergleichs-Kante. Die Strukturen (MeshToon) rechnen
-        // ebenfalls highp — gleiche Präzision = konsistenter Schatten.
-        precision highp float;
-        // V8.48 — packing liefert unpackRGBAToDepth (von getShadow gebraucht),
-        // shadowmap_pars_fragment deklariert directionalShadowMap + getShadow.
-        #include <common>
-        #include <packing>
-        #include <shadowmap_pars_fragment>
-        varying float vHeight;
-        varying vec3 vNormal;
-        varying vec4 vField;
-        varying float vFogDepth;
-        varying float vJitter;
-        uniform vec3 lightDirection;
-        uniform float weatherEffect;
-        // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
-        // den Diffuse-Anteil (Mittag = voll, Nacht = ~0.3), ambientIntensity
-        // den Grund-Schein (Mittag = 0.6, Mitternacht = 0.18).
-        uniform float lightIntensity;
-        uniform float ambientIntensity;
-        // V8.28 6.G4.b C — Cel-Shading-Stufen (2 = bold, 8 ≈ smooth).
-        uniform float celLevels;
-        // V8.31 — Fog. Custom-ShaderMaterials erben THREE.Fog NICHT
-        // automatisch (nur eingebaute Lambert/Toon/Standard). Ohne diese
-        // Uniforms blieb das Terrain knackscharf, während das Gras
-        // (Lambert) verblasste → der Fog-Slider "verfärbte" scheinbar nur
-        // das Gras. Jetzt trägt auch das Terrain den Dunst.
-        uniform vec3 fogColor;
-        uniform float fogNear;
-        uniform float fogFar;
-        void main() {
-            // V8.28 6.G4.b B — die Grundfarbe EMERGIERT aus der Welt-
-            // Affinität, NICHT aus der Höhe. Dieselbe worldFieldAt-Sprache
-            // wie die Architektur-Verteilung (Vision §1.3 fraktal). Höhe
-            // wird sekundär (Schnee oben, Sand/Geröll in tiefen Senken).
-            float lebendig = vField.x;
-            float dichte   = vField.y;
-            float glut     = vField.z;
-            float magie    = vField.w;
-            vec3 stoneCol = vec3(0.42, 0.44, 0.49); // dichte → grau-bläulich
-            vec3 earthCol = vec3(0.27, 0.49, 0.19); // lebendig → satt-grün-erdig
-            vec3 lavaCol  = vec3(0.46, 0.20, 0.11); // glut → rot-braun vulkanisch
-            // Stein ist die Saat; lebendig blendet Erdgrün ein, glut Vulkan.
-            vec3 color = stoneCol;
-            color = mix(color, earthCol, smoothstep(0.25, 0.85, lebendig));
-            color = mix(color, lavaCol, smoothstep(0.38, 0.92, glut));
-            // magie ist ein SCHIMMER über allem (nicht sättigend) — das
-            // normal-Magische hebt sich aus dem Normalen, ersetzt es nicht.
-            vec3 violet = vec3(0.55, 0.36, 0.86);
-            color = mix(color, violet, smoothstep(0.55, 1.0, magie) * 0.33);
-            // Höhe sekundär: Schnee auf Gipfeln, helle Senken-Ablagerung.
-            float height = vHeight;
-            color = mix(color, vec3(0.92, 0.93, 1.0), smoothstep(12.0, 42.0, height));
-            color = mix(color, vec3(0.78, 0.72, 0.52), smoothstep(-2.0, -14.0, height));
-            // V8.43 — Townscaper-Detail-Jitter, jetzt per Vertex berechnet
-            // und interpoliert (crawl-frei — siehe Vertex-Shader). Vorher
-            // lief noise() hier per-Pixel und kroch bei Kamera-Drehung.
-            color += vec3(vJitter);
-            color = mix(color, color * 0.7, weatherEffect);
-            // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
-            // Wrapped Lambert (half-Lambert) für sanfteren Schatten-Übergang.
-            float ndotl = dot(vNormal, normalize(lightDirection));
-            float diffuse = max(ndotl * 0.5 + 0.5, 0.0);
-            diffuse = diffuse * diffuse;
-            // V8.29 — Cel-Shading: diffuse in celLevels Stufen quantisieren.
-            // celLevels >= 7.5 (Slider-Maximum 8) = SMOOTH, kein floor.
-            // 2..7 = harte Cel-Plateaus. So geht der Slider von bold-Cel
-            // bis echt-stufenlos.
-            if (celLevels >= 1.5 && celLevels < 7.5) {
-                diffuse = (floor(diffuse * celLevels) + 0.5) / celLevels;
-            }
-            // V8.48 — Schatten der Strukturen aufs Terrain. getShadow sampelt
-            // dieselbe DirectionalLight-Shadow-Map wie die MeshToon-Struk-
-            // turen (gleiche PCFSoft-Filterung + Bias → konsistenter Look).
-            // Der Schatten dämpft NUR den Diffuse-Anteil; das Ambient bleibt,
-            // ein Schatten ist nie ganz schwarz. Nach der Cel-Quantisierung
-            // als sanfter Multiplikator — wie der Schatten bei MeshToon.
-            float shadowFactor = 1.0;
-            #if defined(USE_SHADOWMAP) && NUM_DIR_LIGHT_SHADOWS > 0
-                DirectionalLightShadow dls = directionalLightShadows[0];
-                shadowFactor = getShadow(directionalShadowMap[0], dls.shadowMapSize, dls.shadowBias, dls.shadowRadius, vDirectionalShadowCoord[0]);
-            #endif
-            vec3 ambient = color * ambientIntensity;
-            vec3 diffuseColor = color * diffuse * lightIntensity * shadowFactor;
-            vec3 finalColor = ambient + diffuseColor;
-            // V8.31 — Fog: in der Distanz mit der Fog-Farbe verschmelzen.
-            float fogF = smoothstep(fogNear, fogFar, vFogDepth);
-            finalColor = mix(finalColor, fogColor, fogF);
-            gl_FragColor = vec4(finalColor, 1.0);
-        }
-    `;
-
-        // V8.48 — Terrain-Uniforms: die eigenen Uniforms mit THREE.UniformsLib.lights
-        // gemergt. Ein ShaderMaterial mit `lights: true` empfängt die Shadow-
-        // Uniforms (directionalShadowMap/-Matrix/-Shadows) nur, wenn deren
-        // Slots in material.uniforms vorhanden sind — der Renderer befüllt sie
-        // dann pro Frame. UniformsUtils.merge klont, also liefert die Factory
-        // bei jedem Aufruf eine frische Instanz (Terrain + Inseln teilen den
-        // Shader, brauchen aber je eigene Uniform-Objekte).
-        const buildTerrainUniforms = () =>
-            THREE.UniformsUtils.merge([
-                THREE.UniformsLib.lights,
-                {
-                    lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                    weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
-                    // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
-                    // werden in _applyDayNightToScene live überschrieben.
-                    lightIntensity: { value: 1.0 },
-                    ambientIntensity: { value: 0.45 },
-                    // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
-                    celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
-                    // V8.31 — Fog. Aus state.fog in _applyDayNightToScene gesetzt.
-                    fogColor: { value: new THREE.Color(0x88a0c8) },
-                    fogNear: { value: 35 },
-                    fogFar: { value: 150 },
-                },
-            ]);
-        // V9.39 Phase 5c.2.c.3.b.iii — der Terrain-Heightfield-`material`-
-        // Bau ist als toter Pfad entfernt (sein Konsument `ensureChunkAt`
-        // stirbt mit dieser Welle, kein Heightfield-Chunk wird mehr gebaut).
-        // Der ShaderString (vertexShader/fragmentShader/buildTerrainUniforms)
-        // BLEIBT — er trägt weiter das Insel-Material `islandMaterial` (unten).
-        // `state.terrainMaterial` wird damit nie mehr gesetzt — der Cel-
-        // Slider-Pfad in `_refreshToonGradient` ist defensiv und no-ops, das
-        // toonGradientMap-Pendant (für die voxel-MeshToon-Welt) bleibt aktiv.
-
         // ### Initiale Chunks generieren ###
         // Alle Chunks gehen jetzt durch ensureChunkAt — denselben Pfad wie
         // spätere Erweiterungen. Damit haben initial UND extension Chunks
@@ -13381,254 +13218,40 @@ class AnazhRealm {
         this.state.floatingIslands = [];
         this.state.ufos = [];
         const numIslands = 3; // Reduziere Anzahl für bessere Performance
-        // V8.48 — Inseln teilen den Terrain-Shader, brauchen also dieselbe
-        // lights/Shadow-Verkabelung (sonst sampelt der geteilte Fragment-
-        // Shader eine ungebundene Shadow-Textur). Volle Uniform-Liste über
-        // dieselbe Factory — das gibt den Inseln zugleich korrektes Cel +
-        // Fog statt der bisherigen ungesetzten Default-0-Uniforms.
-        let islandMaterial = new THREE.ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms: buildTerrainUniforms(),
-            lights: true,
-            side: THREE.DoubleSide,
-            depthTest: true,
-            depthWrite: true,
-        });
-
-        this.log("Shader-Material für fliegende Inseln erstellt. Überprüfe Shader-Status...");
-        if (!islandMaterial.isShaderMaterial || !islandMaterial.vertexShader || !islandMaterial.fragmentShader) {
-            this.log("Shader-Programm für fliegende Inseln konnte nicht erstellt werden.", "ERROR");
-            this.log("Falle zurück auf MeshLambertMaterial für fliegende Inseln mit einfacher Textur.");
-            const textureLoader = new THREE.TextureLoader();
-            const texture = textureLoader.load("https://threejs.org/examples/textures/terrain/grasslight-big.jpg");
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(5, 5);
-            // V8.27 6.G4.a — Lambert statt Basic für Tag-Nacht-Reaktion
-            islandMaterial = new THREE.MeshLambertMaterial({
-                map: texture,
-                side: THREE.DoubleSide,
-            });
-        } else {
-            this.log("Shader-Programm für fliegende Inseln erfolgreich erstellt.");
-        }
-
+        // V9.42-c — Worldgen-Inseln gehen durch die V9.42-a-Pipeline
+        // (Surface-Nets via `spawnIslandAt`). Eine Mesh-Sprache, ein Pfad.
+        // Spawn-Y aus echter Voxel-Surface (in Voxel-Welten ist `maxHeight=0`,
+        // die alte `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
+        // `spawnIslandAt` übernimmt scene.add + floatingIslands.push + Kollision
+        // + Material (MeshToon + vertexColors — kein Terrain-Shader mehr; der
+        // passte nicht zur Surface-Nets-Geometrie und rendete "Löcher").
         for (let i = 0; i < numIslands; i++) {
-            const islandSize = Math.random() * 20 + 10;
-            const islandHeight = 5;
-            const geometry = new THREE.BufferGeometry();
-            const vertices = [];
-            const indices = [];
-            const uvs = [];
-
-            const islandNoise = new SimplexNoise(
-                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`
-            );
-            const points = [];
-            for (let z = 0; z < islandSize; z++) {
-                const row = [];
-                for (let x = 0; x < islandSize; x++) {
-                    const xPos = x - islandSize / 2;
-                    const zPos = z - islandSize / 2;
-                    const distance = Math.sqrt(xPos * xPos + zPos * zPos);
-                    const maxDistance = islandSize / 2;
-                    let height = 0;
-                    if (distance < maxDistance) {
-                        const heightFactor = 1 - distance / maxDistance;
-                        const height1 = islandNoise.noise2D(x * 0.1, z * 0.1) * 3 * heightFactor;
-                        const height2 = islandNoise.noise2D(x * 0.3, z * 0.3) * 2 * heightFactor;
-                        const height3 = islandNoise.noise2D(x * 0.5, z * 0.5) * 1 * heightFactor;
-                        height = height1 + height2 + height3;
-                        height = Math.max(0, height);
-                        height -= (1 - heightFactor) * islandHeight;
-                        const irregularity = islandNoise.noise2D(x * 0.8, z * 0.8) * 1.5;
-                        height += irregularity;
-
-                        if (!Number.isFinite(height)) {
-                            this.log(
-                                `Ungültiger Höhenwert für fliegende Insel ${i} bei (${x}, ${z}): ${height}. Setze auf 0.`,
-                                "ERROR"
-                            );
-                            height = 0;
-                        }
-                    }
-                    row.push(height);
-                    vertices.push(xPos, height, zPos);
-                    uvs.push(x / (islandSize - 1), z / (islandSize - 1));
-                }
-                points.push(row);
-            }
-
-            for (let z = 0; z < islandSize - 1; z++) {
-                for (let x = 0; x < islandSize - 1; x++) {
-                    const a = z * islandSize + x;
-                    const b = z * islandSize + (x + 1);
-                    const c = (z + 1) * islandSize + x;
-                    const d = (z + 1) * islandSize + (x + 1);
-                    if (
-                        points[z][x] > -islandHeight &&
-                        points[z][x + 1] > -islandHeight &&
-                        points[z + 1][x] > -islandHeight &&
-                        points[z + 1][x + 1] > -islandHeight
-                    ) {
-                        if (
-                            a >= 0 &&
-                            b >= 0 &&
-                            c >= 0 &&
-                            d >= 0 &&
-                            a < vertices.length / 3 &&
-                            b < vertices.length / 3 &&
-                            c < vertices.length / 3 &&
-                            d < vertices.length / 3
-                        ) {
-                            indices.push(a, b, d);
-                            indices.push(a, d, c);
-                        } else {
-                            this.log(
-                                `Ungültige Indices für fliegende Insel ${i}: (${a}, ${b}, ${d}, ${c}). Überspringe Dreieck.`,
-                                "ERROR"
-                            );
-                        }
-                    }
-                }
-            }
-
-            geometry.setIndex(indices);
-            geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-            geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-            geometry.computeVertexNormals();
-
-            const positions = geometry.attributes.position.array;
-            let hasInvalidValues = false;
-            for (let j = 0; j < positions.length; j++) {
-                if (!Number.isFinite(positions[j])) {
-                    this.log(
-                        `Ungültiger Vertex-Wert in fliegender Insel ${i} bei Index ${j}: ${positions[j]}. Setze auf 0.`,
-                        "ERROR"
-                    );
-                    positions[j] = 0;
-                    hasInvalidValues = true;
-                }
-            }
-            if (hasInvalidValues) {
-                geometry.attributes.position.needsUpdate = true;
-                geometry.computeVertexNormals();
-            }
-
-            try {
-                geometry.computeBoundingSphere();
-                geometry.computeBoundingBox();
-            } catch (e) {
-                this.log(
-                    `Fehler beim Berechnen der Bounding Sphere/Box für fliegende Insel ${i}: ${e.message}. Insel wird übersprungen.`,
-                    "ERROR"
-                );
-                continue;
-            }
-
-            const island = new THREE.Mesh(geometry, islandMaterial);
-            const islandX = (Math.random() - 0.5) * WORLD_SIZE;
-            const islandZ = (Math.random() - 0.5) * WORLD_SIZE;
-            const islandY = maxHeight + 20 + Math.random() * 30;
-            if (!Number.isFinite(islandX) || !Number.isFinite(islandY) || !Number.isFinite(islandZ)) {
-                this.log(
-                    `Ungültige Position für fliegende Insel ${i}: (${islandX}, ${islandY}, ${islandZ}). Insel wird übersprungen.`,
-                    "ERROR"
-                );
-                continue;
-            }
-            island.position.set(islandX, islandY, islandZ);
-            island.visible = true;
-            island.castShadow = true;
-            island.receiveShadow = true;
-
-            const numTrees = Math.floor(Math.random() * 3 + 1); // Reduziere Anzahl der Bäume
-            for (let t = 0; t < numTrees; t++) {
-                const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.3, 3, 8);
-                const trunkMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 });
-                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                const leavesGeometry = new THREE.SphereGeometry(1.5, 8, 8);
-                const leavesMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                const treeX = (Math.random() - 0.5) * (islandSize - 4);
-                const treeZ = (Math.random() - 0.5) * (islandSize - 4);
-                let treeHeight = islandNoise.noise2D((islandX + treeX) * 0.1, (islandZ + treeZ) * 0.1) * 3;
-                if (!Number.isFinite(treeHeight)) {
-                    this.log(
-                        `Ungültiger Baumhöhenwert für fliegende Insel ${i} bei (${treeX}, ${treeZ}): ${treeHeight}. Setze auf 0.`,
-                        "ERROR"
-                    );
-                    treeHeight = 0;
-                }
-                if (!Number.isFinite(treeX) || !Number.isFinite(treeZ)) {
-                    this.log(
-                        `Ungültige Baumposition für fliegende Insel ${i}: (${treeX}, ${treeZ}). Baum wird übersprungen.`,
-                        "ERROR"
-                    );
-                    continue;
-                }
-                if (treeHeight > 0) {
-                    trunk.position.set(treeX, treeHeight + 1.5, treeZ);
-                    leaves.position.set(treeX, treeHeight + 3, treeZ);
-                    const tree = new THREE.Group();
-                    tree.add(trunk);
-                    tree.add(leaves);
-
-                    try {
-                        trunkGeometry.computeBoundingSphere();
-                        trunkGeometry.computeBoundingBox();
-                        leavesGeometry.computeBoundingSphere();
-                        leavesGeometry.computeBoundingBox();
-                    } catch (e) {
-                        this.log(
-                            `Fehler beim Berechnen der Bounding Sphere/Box für Baum auf fliegender Insel ${i}: ${e.message}. Baum wird übersprungen.`,
-                            "ERROR"
-                        );
-                        continue;
-                    }
-
-                    island.add(tree);
-                }
-            }
-
-            this.state.scene.add(island);
-            this.state.floatingIslands.push(island);
-            // Welle 6.G Phase 1 — Insel sofort kollidierbar machen.
-            // Triangle-Mesh-Shape aus den echten Vertices, statischer Body
-            // an island.position. Spieler kann nicht mehr durchfallen.
-            this._buildIslandCollision(island);
+            const islandSize = 14 + Math.random() * 30; // 14..44 m Durchmesser
+            const islandHeight = 6 + Math.random() * 10; // 6..16 m Wölbung
+            const islandX = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+            const islandZ = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+            const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
+            const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
+            const islandY = baseSurf + 50 + Math.random() * 90; // 50..140 m über dem Boden
+            const islandSeed =
+                ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + `-island-${i}`;
+            const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
+                size: islandSize,
+                seed: islandSeed,
+            });
+            if (!island) continue;
             this.log(
-                `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(2)}, ${islandY.toFixed(2)}, ${islandZ.toFixed(2)})`
+                `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
             );
-
+            // UFO als Begleiter (kosmetisch, kein Compound-Architektur — eigene Welle).
             const ufoGeometry = new THREE.ConeGeometry(1, 2, 8);
             const ufoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const ufo = new THREE.Mesh(ufoGeometry, ufoMaterial);
             const ufoY = islandY + 5;
-            if (!Number.isFinite(ufoY)) {
-                this.log(`Ungültige UFO-Höhe für fliegende Insel ${i}: ${ufoY}. UFO wird übersprungen.`, "ERROR");
-                continue;
-            }
             ufo.position.set(islandX, ufoY, islandZ);
-            ufo.visible = true;
-
-            try {
-                ufoGeometry.computeBoundingSphere();
-                ufoGeometry.computeBoundingBox();
-            } catch (e) {
-                this.log(
-                    `Fehler beim Berechnen der Bounding Sphere/Box für UFO auf fliegender Insel ${i}: ${e.message}. UFO wird übersprungen.`,
-                    "ERROR"
-                );
-                continue;
-            }
-
             this.state.scene.add(ufo);
             this.state.ufos.push(ufo);
             ufo.userData = { baseY: ufoY, speed: Math.random() * 0.5 + 0.5 };
-            this.log(
-                `UFO für Insel ${i} erstellt: Position (${islandX.toFixed(2)}, ${ufo.position.y.toFixed(2)}, ${islandZ.toFixed(2)})`
-            );
         }
 
         // ### Dynamische Vegetation und Wasserfälle ###
@@ -13858,7 +13481,8 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step) {
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0) {
+        const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
@@ -13867,7 +13491,7 @@ class AnazhRealm {
         for (let k = 0; k < Nz; k++) {
             for (let j = 0; j < Ny; j++) {
                 for (let i = 0; i < Nx; i++) {
-                    density[gi(i, j, k)] = this._terrainDensityAt(ox + i * step, oy + j * step, oz + k * step);
+                    density[gi(i, j, k)] = sample(ox + i * step, oy + j * step, oz + k * step);
                 }
             }
         }
@@ -13889,6 +13513,13 @@ class AnazhRealm {
         const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
         const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
         const positions = [];
+        // V9.42-b — Vertex→Zell-Lookup für die Smooth-Skirt-Disziplin:
+        // Naht-Vertices (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1)
+        // dürfen NICHT vom Laplacian-Smooth verschoben werden, sonst
+        // verlieren benachbarte Chunks die V9.10-Skirt-Übereinstimmung
+        // an der Naht (jeder Chunk zieht den Naht-Vertex zu SEINER inneren
+        // Topologie → Spalt). Vertices in Rand-Zellen bleiben unverschoben.
+        const vertCells = [];
         const solid = (v) => v > 0;
         // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
         for (let k = 0; k < dimZ; k++) {
@@ -13928,16 +13559,30 @@ class AnazhRealm {
                     if (count === 0) continue;
                     const s = 1 / count;
                     cellVert[ci(i, j, k)] = positions.length / 3;
+                    vertCells.push(i, j, k);
                     positions.push(ox + (i + vx * s) * step, oy + (j + vy * s) * step, oz + (k + vz * s) * step);
                 }
             }
         }
         if (positions.length === 0) return null;
         // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad.
+        // V9.41: alternierende Diagonale je nach Zell-Parität `(i+j+k) & 1`.
+        // Vor V9.41 trianguliert quad() IMMER mit a→c (`indices.push(a,b,c, a,c,d)`)
+        // — alle Diagonal-Falten zeigen in dieselbe Richtung → sichtbares Streifen-
+        // Muster auf flachen Hügeln (Schöpfer-Browser-Befund 20.05.2026, Punkt 3).
+        // Schach-Brett: gerade Zellen behalten a→c, ungerade nutzen b→d. Beide
+        // Triangulierungen sind CCW-konsistent (das Quad ist ccw a→b→c→d auf-
+        // gebaut, beide Diagonal-Wahlen erhalten das Winding). Geometrie-Kosten:
+        // null (gleich viele Dreiecke, gleicher Vertex-Buffer); Lichtwirkung:
+        // die Falten brechen sich auf statt sich zu Streifen zu addieren.
         const indices = [];
-        const quad = (a, b, c, d) => {
+        const quad = (a, b, c, d, parity) => {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
-            indices.push(a, b, c, a, c, d);
+            if (parity & 1) {
+                indices.push(a, b, d, b, c, d);
+            } else {
+                indices.push(a, b, c, a, c, d);
+            }
         };
         // cv() liefert den Zell-Vertex ODER -1 für jeden out-of-range Index.
         // OHNE diese Wand aliaste `ci(dim, j, k)` (= dim + j*dim + …) in einen
@@ -13952,22 +13597,126 @@ class AnazhRealm {
             for (let j = 0; j <= dimY; j++) {
                 for (let i = 0; i <= dimX; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
+                    // V9.41: parity = (i+j+k) & 1 entscheidet die Quad-Diagonale.
+                    // Eine GITTER-KANTE wird von zwei Zellen geteilt (links/rechts
+                    // der Kante); die Parität EINER konsistent gewählten Ecke
+                    // (hier (i,j,k)) gibt jeder Kante eine eindeutige Diagonale.
+                    const parity = (i + j + k) & 1;
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k));
+                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k), parity);
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
                     if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k));
+                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k), parity);
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
                     if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k));
+                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k), parity);
                     }
                 }
             }
         }
         const geom = new THREE.BufferGeometry();
+        // V9.41.b — Laplacian-Smooth-Pass. Surface-Nets liefert EINEN Vertex
+        // je Zelle (Auflösungs-Grenze); auf einer schrägen flachen Fläche
+        // entstehen sichtbare Treppen, weil benachbarte Zellen denselben
+        // Y-Slot teilen. V9.41-Schach-Brett-Diagonalen haben das STREIFEN-
+        // Muster gebrochen, aber die Treppen-GEOMETRIE blieb (Schöpfer-
+        // Browser-Test: „keine Änderung"). Laplacian-Smooth glättet die
+        // Vertex-Positionen iterativ über ihre topologischen Nachbarn —
+        // die Treppen werden zu sanften Schrägen. Eine Iteration mit
+        // Lambda 0.5 reicht visuell ohne sichtbare Volumen-Schrumpfung;
+        // die Normalen werden danach aus dem Dichte-Gradient an der
+        // NEUEN Vertex-Position gesampelt (V9.16-Pfad bleibt erhalten —
+        // die echte Iso-Fläche ist unverschoben, nur das Mesh-Approx).
+        if (indices.length >= 3) {
+            const vertCount = positions.length / 3;
+            const neighborSets = new Array(vertCount);
+            for (let v = 0; v < vertCount; v++) neighborSets[v] = new Set();
+            for (let t = 0; t + 2 < indices.length; t += 3) {
+                const ia = indices[t];
+                const ib = indices[t + 1];
+                const ic = indices[t + 2];
+                neighborSets[ia].add(ib);
+                neighborSets[ia].add(ic);
+                neighborSets[ib].add(ia);
+                neighborSets[ib].add(ic);
+                neighborSets[ic].add(ia);
+                neighborSets[ic].add(ib);
+            }
+            // V9.42-d — der Smooth läuft über ALLE Vertices, kein Skirt-
+            // Sonderfall. V9.42-b liess Skirt-Vertices ungesmootht (sicht-
+            // barer Treppen-Streifen an jeder Naht); V9.42-c smoothte sie
+            // mit Rand-Ebenen-Nachbarn (NICHT deterministisch — die Ebenen-
+            // Quad-Topologie hängt von Density auf BEIDEN Naht-Seiten ab →
+            // 6.7 % Spalt). Die KORREKTE Lösung ist das pad: der Chunk
+            // mesht `cropMargin` Zellen ÜBER seinen Skirt hinaus, smootht
+            // voll, schneidet den pad-Überhang danach ab. Jeder behaltene
+            // Vertex — auch der Skirt-Naht-Vertex — wurde mit seinen ECHTEN
+            // Welt-Nachbarn gesmootht (die im pad lagen). Der Nachbar-Chunk
+            // hat seinen pad an derselben Welt-Region → identischer Smooth
+            // → nahtlos UND ohne ungesmootht-Streifen.
+            const lambda = 0.5;
+            const smoothed = new Array(positions.length);
+            for (let v = 0; v < vertCount; v++) {
+                const nbrs = neighborSets[v];
+                const cnt = nbrs.size;
+                if (cnt === 0) {
+                    smoothed[v * 3] = positions[v * 3];
+                    smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                    smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                    continue;
+                }
+                let sx = 0;
+                let sy = 0;
+                let sz = 0;
+                for (const n of nbrs) {
+                    sx += positions[n * 3];
+                    sy += positions[n * 3 + 1];
+                    sz += positions[n * 3 + 2];
+                }
+                const ax = sx / cnt;
+                const ay = sy / cnt;
+                const az = sz / cnt;
+                smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+                smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+                smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
+            }
+            for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
+        }
+        // V9.42-d — Crop-Pass: die äussersten `cropMargin` Zell-Ebenen in
+        // X/Z verwerfen. Sie waren nur Smooth-Stützen (pad); der behaltene
+        // Kern + Skirt ist voll-deterministisch gesmootht. Vertices in den
+        // pad-Zellen + Quads, die sie referenzieren, fallen weg; der Rest
+        // wird neu indiziert.
+        if (cropMargin > 0 && positions.length > 0) {
+            const vc = positions.length / 3;
+            const remap = new Int32Array(vc).fill(-1);
+            const keptPos = [];
+            let kept = 0;
+            for (let v = 0; v < vc; v++) {
+                const ciV = vertCells[v * 3];
+                const ckV = vertCells[v * 3 + 2];
+                if (ciV < cropMargin || ciV >= dimX - cropMargin || ckV < cropMargin || ckV >= dimZ - cropMargin) {
+                    continue;
+                }
+                remap[v] = kept++;
+                keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+            }
+            const keptIdx = [];
+            for (let t = 0; t + 2 < indices.length; t += 3) {
+                const a = remap[indices[t]];
+                const b = remap[indices[t + 1]];
+                const c = remap[indices[t + 2]];
+                if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+            }
+            positions.length = 0;
+            for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
+            indices.length = 0;
+            for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+        }
+        if (positions.length === 0) return null;
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
         // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der
@@ -13983,9 +13732,9 @@ class AnazhRealm {
             const px = positions[v];
             const py = positions[v + 1];
             const pz = positions[v + 2];
-            const gx = this._terrainDensityAt(px + eps, py, pz) - this._terrainDensityAt(px - eps, py, pz);
-            const gy = this._terrainDensityAt(px, py + eps, pz) - this._terrainDensityAt(px, py - eps, pz);
-            const gz = this._terrainDensityAt(px, py, pz + eps) - this._terrainDensityAt(px, py, pz - eps);
+            const gx = sample(px + eps, py, pz) - sample(px - eps, py, pz);
+            const gy = sample(px, py + eps, pz) - sample(px, py - eps, pz);
+            const gz = sample(px, py, pz + eps) - sample(px, py, pz - eps);
             const len = Math.hypot(gx, gy, gz);
             if (len < 1e-6) {
                 // Gradient ~0 (sehr seltener Sattelpunkt) → Default „oben".
@@ -14137,7 +13886,12 @@ class AnazhRealm {
         const ox = cx * span;
         const oz = cz * span;
         const oy = base - 58;
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
+        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
+        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
+        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
+        // gesmootht (seine Welt-Nachbarn lagen im pad).
+        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
         const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -14247,7 +14001,12 @@ class AnazhRealm {
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
         // nistisch — die Überlapp-Zelle ist in beiden Chunks identisch.
         // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
+        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
+        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
+        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
+        // gesmootht (seine Welt-Nachbarn lagen im pad).
+        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
         if (!geom) {
             // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
             // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an Rand-
@@ -24709,89 +24468,72 @@ class AnazhRealm {
     // hohl sichtbar, harte Triangle-Kanten). MeshLambertMaterial nimmt
     // Szenenlicht an (kein „Papier-Sticker"-Look mehr). Seed-deterministisch
     // für Multi-User-Sync (Ring 11 V2.1-Stil).
+    // V9.42-a — Insel-Dichte-Feld (per-Insel, lokal um die Insel-Mitte).
+    // Vision §1.3 fraktal: dieselbe Surface-Nets-Pipeline wie Voxel-Welt-
+    // Chunks, nur mit anderem Dichte-Generator. `lx/ly/lz` sind LOKALE
+    // Koordinaten (Insel-Mitte bei (0,0,0)). Oberseite: radiale Noise-Höhe
+    // mit Rim-Falloff (analog V7.74-spawnIslandAt-Logik). Unterseite: flach,
+    // verjüngt zum Rand. Aussen-radial: hart Luft (Insel ist gekapselt,
+    // kein Boden-Anker). Iso-Schicht ist `min(topY-ly, ly-botY)` im Innern.
+    _islandDensityAt(lx, ly, lz, radius, height, noise) {
+        const dx = lx;
+        const dz = lz;
+        const distXZ = Math.sqrt(dx * dx + dz * dz);
+        if (distXZ >= radius) return -1;
+        const factor = 1 - distXZ / radius;
+        if (factor <= 0) return -1;
+        // V9.42-b — Höhen-Amplitude skaliert mit `height`-Parameter
+        // (Schöpfer-Befund: "Höhenwerte zu beschränkt"). Frequenz-Mix
+        // gibt mehr Variation; Basis-Lift ebenso höhen-skaliert.
+        const ampScale = Math.max(1, height * 0.35);
+        const h1 = noise.noise2D(lx * 0.18, lz * 0.18) * 1.5 * factor * ampScale;
+        const h2 = noise.noise2D(lx * 0.45, lz * 0.45) * 0.7 * factor * ampScale;
+        const h3 = noise.noise2D(lx * 0.85, lz * 0.85) * 0.35 * factor;
+        const topY = Math.max(0, h1 + h2 + h3 + factor * 0.4 * ampScale);
+        // Unterseite — sanft verjüngt, flach im Innern.
+        const botY = -Math.max(2, height * 0.4) * factor;
+        if (ly > topY || ly < botY) return -1;
+        return Math.min(topY - ly, ly - botY);
+    }
+
     spawnIslandAt(x, y, z, height = 6, opts = {}) {
         if (!this.state.scene) return null;
-        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(24, opts.size)) : 12;
+        // V9.42-b — Schöpfer-Wahl: Insel-Grösse jetzt bis 48 m Durchmesser
+        // (vorher 24, immer gleich gefühlt) + size-Parameter ist DSL-erreichbar.
+        const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(48, opts.size)) : 12;
         const seedStr = opts.seed != null ? String(opts.seed) : `island-${Date.now()}-${Math.random()}`;
         const noise = new SimplexNoise(seedStr);
-        const geometry = new THREE.BufferGeometry();
-        const vertices = [];
-        const indices = [];
-        const N = Math.max(8, Math.min(20, Math.round(size)));
-        // Top-Vertices (Index 0..N*N-1) — radiale Noise-Höhe, an der Rim h=0.
-        for (let zi = 0; zi < N; zi++) {
-            for (let xi = 0; xi < N; xi++) {
-                const xp = xi - (N - 1) / 2;
-                const zp = zi - (N - 1) / 2;
-                const distance = Math.sqrt(xp * xp + zp * zp);
-                const maxDist = (N - 1) / 2;
-                let h = 0;
-                if (distance < maxDist * 0.95) {
-                    const factor = 1 - distance / maxDist;
-                    const h1 = noise.noise2D(xi * 0.25, zi * 0.25) * 1.5 * factor;
-                    const h2 = noise.noise2D(xi * 0.6, zi * 0.6) * 0.7 * factor;
-                    h = Math.max(0, h1 + h2 + factor * 0.4);
-                }
-                vertices.push(xp, h, zp);
-            }
-        }
-        // Bottom-Vertices (Index N*N..2*N*N-1) — flache Unterseite, gibt
-        // der Insel sichtbaren Körper. bottomY skaliert mit Wunsch-Höhe.
-        const bottomY = -Math.max(2, height * 0.4);
-        for (let zi = 0; zi < N; zi++) {
-            for (let xi = 0; xi < N; xi++) {
-                const xp = xi - (N - 1) / 2;
-                const zp = zi - (N - 1) / 2;
-                vertices.push(xp, bottomY, zp);
-            }
-        }
-        // Top-Triangles (Winding gegen Uhrzeigersinn → Normal nach oben).
-        for (let zi = 0; zi < N - 1; zi++) {
-            for (let xi = 0; xi < N - 1; xi++) {
-                const a = zi * N + xi;
-                const b = zi * N + (xi + 1);
-                const cc = (zi + 1) * N + xi;
-                const d = (zi + 1) * N + (xi + 1);
-                indices.push(a, b, d, a, d, cc);
-            }
-        }
-        // Bottom-Triangles (umgekehrte Winding → Normal nach unten).
-        const bOff = N * N;
-        for (let zi = 0; zi < N - 1; zi++) {
-            for (let xi = 0; xi < N - 1; xi++) {
-                const a = bOff + zi * N + xi;
-                const b = bOff + zi * N + (xi + 1);
-                const cc = bOff + (zi + 1) * N + xi;
-                const d = bOff + (zi + 1) * N + (xi + 1);
-                indices.push(a, d, b, a, cc, d);
-            }
-        }
-        // Side-Strip um die vier Ränder verbindet Top-Rim mit Bottom-Rim.
-        const addQuad = (t1, t2, b1, b2) => {
-            indices.push(t1, b1, t2, t2, b1, b2);
-        };
-        // North-Rand (zi = 0): top zeigt zur Außenseite (-Z)
-        for (let xi = 0; xi < N - 1; xi++) {
-            addQuad(xi + 1, xi, bOff + xi + 1, bOff + xi);
-        }
-        // South-Rand (zi = N-1): top zeigt zur Außenseite (+Z)
-        for (let xi = 0; xi < N - 1; xi++) {
-            const z = N - 1;
-            addQuad(z * N + xi, z * N + xi + 1, bOff + z * N + xi, bOff + z * N + xi + 1);
-        }
-        // West-Rand (xi = 0): top zeigt nach -X
-        for (let zi = 0; zi < N - 1; zi++) {
-            addQuad(zi * N, (zi + 1) * N, bOff + zi * N, bOff + (zi + 1) * N);
-        }
-        // East-Rand (xi = N-1): top zeigt nach +X
-        for (let zi = 0; zi < N - 1; zi++) {
-            const last = N - 1;
-            addQuad((zi + 1) * N + last, zi * N + last, bOff + (zi + 1) * N + last, bOff + zi * N + last);
-        }
-        geometry.setIndex(indices);
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-        geometry.computeVertexNormals();
-        const material = new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
+        // V9.42-a — Geometrie aus der Surface-Nets-Pipeline. Voxel-Welt-Chunks
+        // + Inseln teilen sich `_voxelChunkGeometry` (eine Mesh-Sprache, zwei
+        // Anwendungen). Lokales Volumen mit ~1.5-Marge gegen das Iso-Band.
+        const radius = size / 2;
+        const step = 0.9;
+        const margin = 1.5;
+        const halfXZ = radius + margin;
+        const dimXZ = Math.max(8, Math.ceil((2 * halfXZ) / step));
+        // V9.42-b — Höhen-Amplitude wächst mit `height` (siehe _islandDensityAt).
+        const ampScale = Math.max(1, height * 0.35);
+        const topMax = (1.5 + 0.7) * ampScale + 0.35 + 0.4 * ampScale + margin;
+        const botMin = -(Math.max(2, height * 0.4) + margin);
+        const dimYNeeded = Math.max(6, Math.ceil((topMax - botMin) / step));
+        const islandDensity = (px, py, pz) => this._islandDensityAt(px, py, pz, radius, height, noise);
+        const geometry = this._voxelChunkGeometry(
+            -halfXZ,
+            botMin,
+            -halfXZ,
+            dimXZ,
+            dimYNeeded,
+            dimXZ,
+            step,
+            islandDensity
+        );
+        // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertexColors,
+        // dieselbe Cel-Sprache wie der Voxel-Boden (Vision §1.3 fraktal).
+        // Das alte Terrain-ShaderMaterial passte nicht zur Surface-Nets-
+        // Geometrie (fehlende aField/uv → kaputtes Rendering, "Löcher").
+        this._attachIslandColors(geometry);
+        const material = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) material.gradientMap = this.state.toonGradientMap;
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
         island.castShadow = true;
@@ -24968,6 +24710,44 @@ class AnazhRealm {
             field[i * 4 + 3] = f.magieleitung;
         }
         geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
+    }
+
+    // V9.42-c — per-Vertex-Farbe für eine fliegende Insel. Die Surface-Nets-
+    // Insel-Geometrie hat nur position+normal (kein aField/uv) — der Terrain-
+    // ShaderMaterial-Pfad passt darum nicht (er rendert mit ungebundenen
+    // Attributen kaputt → der Schöpfer-Befund „Oberfläche schliesst nicht").
+    // Stattdessen MeshToonMaterial + vertexColors (wie der Voxel-Boden,
+    // Vision §1.3 fraktal). Die Farbe folgt der Vertex-Normale: nach oben
+    // → Gras-Grün, seitlich → Erd-Hang, nach unten → Fels-Unterseite.
+    _attachIslandColors(geom) {
+        const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
+        const norm = geom && geom.getAttribute ? geom.getAttribute("normal") : null;
+        if (!pos || !norm) return;
+        const n = pos.count;
+        const colors = new Float32Array(n * 3);
+        const grass = [0.3, 0.52, 0.22];
+        const earth = [0.4, 0.3, 0.18];
+        const rock = [0.34, 0.32, 0.3];
+        for (let i = 0; i < n; i++) {
+            const ny = norm.getY(i);
+            let c;
+            if (ny > 0.55) {
+                c = grass;
+            } else if (ny < -0.1) {
+                c = rock;
+            } else {
+                const t = Math.max(0, Math.min(1, (0.55 - ny) / 0.65));
+                c = [
+                    grass[0] + (earth[0] - grass[0]) * t,
+                    grass[1] + (earth[1] - grass[1]) * t,
+                    grass[2] + (earth[2] - grass[2]) * t,
+                ];
+            }
+            colors[i * 3] = c[0];
+            colors[i * 3 + 1] = c[1];
+            colors[i * 3 + 2] = c[2];
+        }
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
     // V8.29 — Cel-Shading gradientMap für MeshToonMaterial.
