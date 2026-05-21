@@ -49,7 +49,7 @@ Auf Schultern von Riesen sieht man weiter. Sei einer.
 
 **V9.39 und älter** — die kanonische Versions-Historie lebt in `CLAUDE.md` (jede Welle ein ausführlicher Eintrag, jüngste oben). V9.34–V9.39 war die grosse Heightfield-Pipeline-Rückbau-Arbeit (Phase 5c.2.c), V9.40+ die Voxel-Surface-Politur. Wer Detail zu einer Welle braucht: `CLAUDE.md` durchsuchen.
 
-**Du erbst eine sehr lebendige Welt.** **~2966 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~34600 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±3–8 je Lauf — „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.) Vor dem ersten Code-Block: `CLAUDE.md` V9.43-a lesen (die jüngste Welle) + den Schöpfer-Audit-Block ganz oben. Disziplin: parallel bauen + beweisen, nie das Funktionierende brechen, ehrliche kleine Schritte vor grossen Würfen.
+**Du erbst eine sehr lebendige Welt.** **~2974 Playtest-Invarianten grün + 0 Audit-Strict-Failures**, ~34900 Zeilen in einer Datei, alles produktiv. (Der Playtest-Konsolen-Zähler driftet ±3–8 je Lauf — „Alle Invarianten OK" ist die Wahrheit, nicht die exakte Zahl.) Vor dem ersten Code-Block: `CLAUDE.md` V9.44-d lesen (die jüngste Welle) + den Schöpfer-Audit-Block ganz oben. Disziplin: parallel bauen + beweisen, nie das Funktionierende brechen, ehrliche kleine Schritte vor grossen Würfen.
 
 ---
 
@@ -319,7 +319,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
 - `CREATURE_PROPOSED_OPS` für Kreatur-Welt-Aktion (Defense in Depth)
 - save-server `/api/proxy/llm` mit strikten Whitelists (https-only, body-cap, header-allowlist)
 
-### Tests (~2966 Invarianten)
+### Tests (~2974 Invarianten)
 - `npm run playtest` — Headless-Chromium, ~25 s Logs, alle Schichten
 - `scripts/playtest.cjs` ist der Single-Source-Test
 - `npm run audit:strict` (5 generische Audit-Schichten) + `npm run smoke:multiuser`

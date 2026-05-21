@@ -8,7 +8,7 @@ Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Ei
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~31000 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~34900 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
@@ -31,7 +31,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # ~2966 Headless-Invarianten (~60s)
+npm run playtest        # ~2974 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 
