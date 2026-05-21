@@ -5528,6 +5528,17 @@ class AnazhRealm {
         this._p2pUpdateMeshActive();
     }
 
+    // V9.44-c — der Mesh-Router ist ein Dispatch-Table. Vor V9.44-c war
+    // p2pHandleMessage eine ~280-Zeilen-Funktion mit 18 sequentiellen
+    // `if (msg.type === …)`-Branches (bis 6 Ebenen tief) — jeder neue
+    // Mesh-Typ wuchs die Kette. Jetzt mappt AnazhRealm.P2P_MESSAGE_HANDLERS
+    // den Typ auf einen `_p2pMsg<Type>`-Methodennamen; der Router schrumpft
+    // auf einen Dispatcher. Die Extraktion ist mechanisch sicher — jeder
+    // Branch war schon return-terminiert + in sich geschlossen. HINWEIS:
+    // die kanal-exklusiven Typen (world-pull, llm-request, subworld-srv, …)
+    // leben weiter in _p2pHandleChannelMessage — V9.44-c berührt nur diesen
+    // WS-Router. `_p2pMsg`-Präfix statt `_p2pHandle`, weil drei Branches
+    // schon `_p2pHandle*`-Worker delegieren (kein Namens-Konflikt).
     p2pHandleMessage(raw) {
         let msg;
         try {
@@ -5536,281 +5547,289 @@ class AnazhRealm {
             return;
         }
         if (!msg || typeof msg !== "object") return;
-        const p2p = this.state.p2p;
-        if (msg.type === "welcome") {
-            if (Array.isArray(msg.peers)) {
-                for (const pid of msg.peers) {
-                    if (typeof pid === "string" && pid !== p2p.peerId) {
-                        this._p2pEnsurePeerEntry(pid);
-                        // W7 Phase 1 — WebRTC-Verbindung zu jedem schon
-                        // anwesenden Peer aufbauen.
-                        this._p2pConnectToPeer(pid);
-                    }
+        const handlerName = AnazhRealm.P2P_MESSAGE_HANDLERS[msg.type];
+        // typeof-Wache: ein Müll-Typ (etwa "__proto__") liefert über das
+        // Objekt-Literal die Prototype-Kette statt undefined — der String-
+        // Check no-oppt das sauber (wie die alte if-Kette für jeden
+        // unbekannten Typ no-oppte).
+        if (typeof handlerName === "string") {
+            this[handlerName](msg, this.state.p2p);
+        }
+    }
+
+    _p2pMsgWelcome(msg, p2p) {
+        if (Array.isArray(msg.peers)) {
+            for (const pid of msg.peers) {
+                if (typeof pid === "string" && pid !== p2p.peerId) {
+                    this._p2pEnsurePeerEntry(pid);
+                    // W7 Phase 1 — WebRTC-Verbindung zu jedem schon
+                    // anwesenden Peer aufbauen.
+                    this._p2pConnectToPeer(pid);
                 }
             }
-            // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
-            // Clients ihre Einladungs-URL bauen können ohne nach der IP
-            // zu fragen. Bei mehreren Interfaces nehmen wir die erste —
-            // typisch das primäre LAN-Interface.
-            if (Array.isArray(msg.lanAddresses)) {
-                p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
-            }
-            // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
-            // neu rendern, sobald wir die LAN-Adressen kennen.
-            if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
-                this.updateWorldInfo();
-            }
-            // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
+        }
+        // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
+        // Clients ihre Einladungs-URL bauen können ohne nach der IP
+        // zu fragen. Bei mehreren Interfaces nehmen wir die erste —
+        // typisch das primäre LAN-Interface.
+        if (Array.isArray(msg.lanAddresses)) {
+            p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
+        }
+        // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
+        // neu rendern, sobald wir die LAN-Adressen kennen.
+        if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
+            this.updateWorldInfo();
+        }
+        // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
+        this._p2pBroadcastSoul();
+        // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
+        this._p2pBroadcastVibe();
+    }
+
+    _p2pMsgPeerJoin(msg, p2p) {
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pEnsurePeerEntry(msg.peerId);
+            // W7 Phase 1 — WebRTC-Verbindung zum Neuankömmling aufbauen.
+            this._p2pConnectToPeer(msg.peerId);
+            // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
             this._p2pBroadcastSoul();
-            // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
+            // W13 Phase 3 — und meine Vibe-Pass-Identität.
             this._p2pBroadcastVibe();
-            return;
         }
-        if (msg.type === "peer-join") {
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pEnsurePeerEntry(msg.peerId);
-                // W7 Phase 1 — WebRTC-Verbindung zum Neuankömmling aufbauen.
-                this._p2pConnectToPeer(msg.peerId);
-                // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
-                this._p2pBroadcastSoul();
-                // W13 Phase 3 — und meine Vibe-Pass-Identität.
-                this._p2pBroadcastVibe();
+    }
+
+    _p2pMsgPeerLeave(msg) {
+        if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
+    }
+
+    _p2pMsgLobbyRooms(msg, p2p) {
+        // W7 Phase 4 — die Lobby-Liste vom Server.
+        p2p.lobby.rooms = Array.isArray(msg.rooms) ? msg.rooms : [];
+        if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
+    }
+
+    _p2pMsgCreaturePos(msg, p2p) {
+        // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pHandleCreaturePos(msg.peerId, msg);
+        }
+    }
+
+    _p2pMsgCompanionSay(msg, p2p) {
+        // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pHandleCompanionSay(msg.peerId, msg);
+        }
+    }
+
+    _p2pMsgSubworldNet(msg, p2p) {
+        // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Mitspielers.
+        // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
+        // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
+        // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._portalNetDeliver(msg);
+        }
+    }
+
+    _p2pMsgPortalInvite(msg, p2p) {
+        // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
+        // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pHandlePortalInvite(msg.peerId, msg);
+        }
+    }
+
+    _p2pMsgPos(msg, p2p) {
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const x = Number(msg.x);
+        const y = Number(msg.y);
+        const z = Number(msg.z);
+        const yaw = Number(msg.yaw);
+        if (![x, y, z, yaw].every(Number.isFinite)) return;
+        // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
+        // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
+        // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
+        if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
+            entry.lastMovedAt = performance.now() / 1000;
+        }
+        entry.x = x;
+        entry.y = y;
+        entry.z = z;
+        entry.yaw = yaw;
+        entry.lastSeen = performance.now() / 1000;
+    }
+
+    _p2pMsgDsl(msg, p2p) {
+        // Ring 11 V2: eingehendes DSL-Programm von einem Peer.
+        // STRENGE Sandbox-Disziplin: läuft durch denselben dslRun-Pfad
+        // wie eigene Programme, mit identischen Budget-Limits und
+        // Op-Whitelist. source="remote:<peerId>" markiert es —
+        // verhindert Re-Broadcast in dslRun (sonst Endlos-Echo).
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+        try {
+            this.dslRun(msg.program, { source: `remote:${pid}` });
+        } catch (err) {
+            this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
+        }
+    }
+
+    _p2pMsgSoul(msg, p2p) {
+        // Ring 11 V3 — Soul-Sync. Der Peer teilt seine Seele; wir bauen
+        // seinen Avatar daraus (Built-in via def.build, Custom via
+        // _buildFromBlueprint). KEIN DSL-Pfad — die Seele eines Peers ist
+        // eine Darstellungs-Tatsache, keine Welt-Mutation.
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
+        if (!soulName) return;
+        const changed = entry.soulName !== soulName;
+        entry.soulName = soulName;
+        entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
+        if (typeof msg.name === "string" && msg.name.trim()) {
+            const nm = msg.name.trim().slice(0, 48);
+            if (entry.avatarName !== nm) {
+                entry.avatarName = nm;
+                this._p2pRefreshPeerNameLabel(entry);
             }
-            return;
         }
-        if (msg.type === "peer-leave") {
-            if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
-            return;
+        // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
+        if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
+        // W7 Phase 3 — teilt der Peer seine Stimme?
+        if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
+        // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
+        if (Array.isArray(msg.catalog)) {
+            entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
+            this._renderMeshWorldCatalog();
         }
-        if (msg.type === "lobby-rooms") {
-            // W7 Phase 4 — die Lobby-Liste vom Server.
-            p2p.lobby.rooms = Array.isArray(msg.rooms) ? msg.rooms : [];
-            if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
-            return;
+        if (changed) this._p2pApplyPeerSoul(entry);
+        entry.lastSeen = performance.now() / 1000;
+    }
+
+    _p2pMsgAura(msg, p2p) {
+        // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const hue = Number(msg.hue);
+        const intensity = Number(msg.intensity);
+        if (Number.isFinite(hue)) entry.auraHue = hue;
+        if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
+        entry.lastSeen = performance.now() / 1000;
+    }
+
+    _p2pMsgVibe(msg, p2p) {
+        // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
+        // der behauptete öffentliche Schlüssel, proof eine Signatur über
+        // die peerId des Senders. Verifiziert die Signatur gegen den
+        // Schlüssel, IST der Peer dieser Schlüssel — beweisbar, nicht nur
+        // behauptet. Die Verifikation ist async; der Schlüssel-Wächter im
+        // .then verwirft veraltete Läufe (Peer hat neu gesendet).
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId : "";
+        const proof = typeof msg.proof === "string" ? msg.proof : "";
+        entry.vibePassId = vibePassId || null;
+        entry.vibeVerified = false;
+        entry.lastSeen = performance.now() / 1000;
+        const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
+        if (m && proof) {
+            this._vibeVerify(pid, proof, m[1]).then((ok) => {
+                const cur = p2p.peers.get(pid);
+                if (!cur || cur.vibePassId !== vibePassId) return;
+                cur.vibeVerified = ok === true;
+                this._p2pRefreshPeerNameLabel(cur);
+            });
         }
-        if (msg.type === "creature-pos") {
-            // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pHandleCreaturePos(msg.peerId, msg);
-            }
-            return;
-        }
-        if (msg.type === "companion-say") {
-            // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pHandleCompanionSay(msg.peerId, msg);
-            }
-            return;
-        }
-        if (msg.type === "subworld-net") {
-            // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Mitspielers.
-            // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
-            // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
-            // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._portalNetDeliver(msg);
-            }
-            return;
-        }
-        if (msg.type === "portal-invite") {
-            // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
-            // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pHandlePortalInvite(msg.peerId, msg);
-            }
-            return;
-        }
-        if (msg.type === "pos") {
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const x = Number(msg.x);
-            const y = Number(msg.y);
-            const z = Number(msg.z);
-            const yaw = Number(msg.yaw);
-            if (![x, y, z, yaw].every(Number.isFinite)) return;
-            // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
-            // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
-            // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
-            if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
-                entry.lastMovedAt = performance.now() / 1000;
-            }
-            entry.x = x;
-            entry.y = y;
-            entry.z = z;
-            entry.yaw = yaw;
-            entry.lastSeen = performance.now() / 1000;
-            return;
-        }
-        if (msg.type === "dsl") {
-            // Ring 11 V2: eingehendes DSL-Programm von einem Peer.
-            // STRENGE Sandbox-Disziplin: läuft durch denselben dslRun-Pfad
-            // wie eigene Programme, mit identischen Budget-Limits und
-            // Op-Whitelist. source="remote:<peerId>" markiert es —
-            // verhindert Re-Broadcast in dslRun (sonst Endlos-Echo).
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            if (!Array.isArray(msg.program) || msg.program.length === 0) return;
-            try {
-                this.dslRun(msg.program, { source: `remote:${pid}` });
-            } catch (err) {
-                this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
-            }
-            return;
-        }
-        if (msg.type === "soul") {
-            // Ring 11 V3 — Soul-Sync. Der Peer teilt seine Seele; wir bauen
-            // seinen Avatar daraus (Built-in via def.build, Custom via
-            // _buildFromBlueprint). KEIN DSL-Pfad — die Seele eines Peers ist
-            // eine Darstellungs-Tatsache, keine Welt-Mutation.
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
-            if (!soulName) return;
-            const changed = entry.soulName !== soulName;
-            entry.soulName = soulName;
-            entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
-            if (typeof msg.name === "string" && msg.name.trim()) {
-                const nm = msg.name.trim().slice(0, 48);
-                if (entry.avatarName !== nm) {
-                    entry.avatarName = nm;
-                    this._p2pRefreshPeerNameLabel(entry);
-                }
-            }
-            // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
-            if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
-            // W7 Phase 3 — teilt der Peer seine Stimme?
-            if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
-            // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
-            if (Array.isArray(msg.catalog)) {
-                entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
-                this._renderMeshWorldCatalog();
-            }
-            if (changed) this._p2pApplyPeerSoul(entry);
-            entry.lastSeen = performance.now() / 1000;
-            return;
-        }
-        if (msg.type === "aura") {
-            // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const hue = Number(msg.hue);
-            const intensity = Number(msg.intensity);
-            if (Number.isFinite(hue)) entry.auraHue = hue;
-            if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
-            entry.lastSeen = performance.now() / 1000;
-            return;
-        }
-        if (msg.type === "vibe") {
-            // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
-            // der behauptete öffentliche Schlüssel, proof eine Signatur über
-            // die peerId des Senders. Verifiziert die Signatur gegen den
-            // Schlüssel, IST der Peer dieser Schlüssel — beweisbar, nicht nur
-            // behauptet. Die Verifikation ist async; der Schlüssel-Wächter im
-            // .then verwirft veraltete Läufe (Peer hat neu gesendet).
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId : "";
-            const proof = typeof msg.proof === "string" ? msg.proof : "";
-            entry.vibePassId = vibePassId || null;
-            entry.vibeVerified = false;
-            entry.lastSeen = performance.now() / 1000;
-            const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
-            if (m && proof) {
-                this._vibeVerify(pid, proof, m[1]).then((ok) => {
-                    const cur = p2p.peers.get(pid);
-                    if (!cur || cur.vibePassId !== vibePassId) return;
-                    cur.vibeVerified = ok === true;
-                    this._p2pRefreshPeerNameLabel(cur);
-                });
-            }
-            this._p2pRefreshPeerNameLabel(entry);
-            return;
-        }
-        if (msg.type === "rtc-offer") {
-            // W7 Phase 1 — eingehender WebRTC-Offer. Wir sind hier der
-            // Nicht-Initiator: pc ggf. anlegen, Remote-Description setzen,
-            // mit einem Answer zurück. Danach gepufferte ICE anwenden.
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId || !msg.sdp) return;
-            let rtc = p2p.rtcPeers.get(pid);
-            if (!rtc) rtc = this._p2pCreatePeerConnection(pid);
-            if (!rtc) return;
+        this._p2pRefreshPeerNameLabel(entry);
+    }
+
+    _p2pMsgRtcOffer(msg, p2p) {
+        // W7 Phase 1 — eingehender WebRTC-Offer. Wir sind hier der
+        // Nicht-Initiator: pc ggf. anlegen, Remote-Description setzen,
+        // mit einem Answer zurück. Danach gepufferte ICE anwenden.
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId || !msg.sdp) return;
+        let rtc = p2p.rtcPeers.get(pid);
+        if (!rtc) rtc = this._p2pCreatePeerConnection(pid);
+        if (!rtc) return;
+        rtc.pc
+            .setRemoteDescription(msg.sdp)
+            .then(() => {
+                this._p2pDrainIce(rtc, pid);
+                return rtc.pc.createAnswer();
+            })
+            .then((answer) => rtc.pc.setLocalDescription(answer))
+            .then(() => {
+                this._p2pSignal({ type: "rtc-answer", to: pid, sdp: rtc.pc.localDescription });
+            })
+            .catch((err) => this.log(`RTC-Answer an ${pid} fehlgeschlagen: ${err.message}`, "WARN"));
+    }
+
+    _p2pMsgRtcAnswer(msg, p2p) {
+        // W7 Phase 1 — der Peer hat unseren Offer beantwortet.
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || !msg.sdp) return;
+        const rtc = p2p.rtcPeers.get(pid);
+        if (!rtc) return;
+        rtc.pc
+            .setRemoteDescription(msg.sdp)
+            .then(() => this._p2pDrainIce(rtc, pid))
+            .catch((err) => this.log(`RTC setRemoteDescription(answer) von ${pid}: ${err.message}`, "WARN"));
+    }
+
+    _p2pMsgRtcIce(msg, p2p) {
+        // W7 Phase 1 — ICE-Kandidat eines Peers. candidate=null ist
+        // end-of-candidates (ignorieren). Vor gesetzter Remote-
+        // Description puffern (addIceCandidate würde sonst werfen).
+        const pid = msg.peerId;
+        if (typeof pid !== "string") return;
+        const rtc = p2p.rtcPeers.get(pid);
+        if (!rtc || !msg.candidate) return;
+        if (rtc.pc.remoteDescription && rtc.pc.remoteDescription.type) {
             rtc.pc
-                .setRemoteDescription(msg.sdp)
-                .then(() => {
-                    this._p2pDrainIce(rtc, pid);
-                    return rtc.pc.createAnswer();
-                })
-                .then((answer) => rtc.pc.setLocalDescription(answer))
-                .then(() => {
-                    this._p2pSignal({ type: "rtc-answer", to: pid, sdp: rtc.pc.localDescription });
-                })
-                .catch((err) => this.log(`RTC-Answer an ${pid} fehlgeschlagen: ${err.message}`, "WARN"));
+                .addIceCandidate(msg.candidate)
+                .catch((err) => this.log(`RTC ICE-Kandidat von ${pid} verworfen: ${err.message}`, "WARN"));
+        } else {
+            rtc.pendingIce.push(msg.candidate);
+        }
+    }
+
+    _p2pMsgWorldRequest(msg, p2p) {
+        // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
+        // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
+        // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
+        // nicht im selben Raum.
+        if (p2p.role !== "host") return;
+        const requesterId = msg.peerId;
+        if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
+        try {
+            const snapshot = this.buildStateSnapshot();
+            this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
+            this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
+        } catch (err) {
+            this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
+        }
+    }
+
+    _p2pMsgWorldSnapshot(msg, p2p) {
+        // Ring 11.5: eingehender Welt-Snapshot vom Host. Wird nur
+        // akzeptiert, wenn wir gerade joinen (pendingWorldSnapshot=true)
+        // — sonst könnte ein bösartiger Peer den Spielstand stehlen.
+        if (!p2p.pendingWorldSnapshot) {
+            this.log("world-snapshot empfangen ohne pending-Flag — ignoriert", "WARN");
             return;
         }
-        if (msg.type === "rtc-answer") {
-            // W7 Phase 1 — der Peer hat unseren Offer beantwortet.
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || !msg.sdp) return;
-            const rtc = p2p.rtcPeers.get(pid);
-            if (!rtc) return;
-            rtc.pc
-                .setRemoteDescription(msg.sdp)
-                .then(() => this._p2pDrainIce(rtc, pid))
-                .catch((err) => this.log(`RTC setRemoteDescription(answer) von ${pid}: ${err.message}`, "WARN"));
-            return;
-        }
-        if (msg.type === "rtc-ice") {
-            // W7 Phase 1 — ICE-Kandidat eines Peers. candidate=null ist
-            // end-of-candidates (ignorieren). Vor gesetzter Remote-
-            // Description puffern (addIceCandidate würde sonst werfen).
-            const pid = msg.peerId;
-            if (typeof pid !== "string") return;
-            const rtc = p2p.rtcPeers.get(pid);
-            if (!rtc || !msg.candidate) return;
-            if (rtc.pc.remoteDescription && rtc.pc.remoteDescription.type) {
-                rtc.pc
-                    .addIceCandidate(msg.candidate)
-                    .catch((err) => this.log(`RTC ICE-Kandidat von ${pid} verworfen: ${err.message}`, "WARN"));
-            } else {
-                rtc.pendingIce.push(msg.candidate);
-            }
-            return;
-        }
-        if (msg.type === "world-request") {
-            // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
-            // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
-            // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
-            // nicht im selben Raum.
-            if (p2p.role !== "host") return;
-            const requesterId = msg.peerId;
-            if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
-            try {
-                const snapshot = this.buildStateSnapshot();
-                this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
-                this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
-            } catch (err) {
-                this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
-            }
-            return;
-        }
-        if (msg.type === "world-snapshot") {
-            // Ring 11.5: eingehender Welt-Snapshot vom Host. Wird nur
-            // akzeptiert, wenn wir gerade joinen (pendingWorldSnapshot=true)
-            // — sonst könnte ein bösartiger Peer den Spielstand stehlen.
-            if (!p2p.pendingWorldSnapshot) {
-                this.log("world-snapshot empfangen ohne pending-Flag — ignoriert", "WARN");
-                return;
-            }
-            const senderId = msg.peerId;
-            if (typeof senderId !== "string" || senderId === p2p.peerId) return;
-            if (!msg.state || typeof msg.state !== "object") return;
-            this._p2pApplyWorldSnapshot(senderId, msg.state);
-        }
+        const senderId = msg.peerId;
+        if (typeof senderId !== "string" || senderId === p2p.peerId) return;
+        if (!msg.state || typeof msg.state !== "object") return;
+        this._p2pApplyWorldSnapshot(senderId, msg.state);
     }
 
     // Ring 11.5 / W7 Phase 2 — einen empfangenen Welt-Snapshot übernehmen:
@@ -34644,6 +34663,32 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
 AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
 AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
+// V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
+// WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
+// statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein
+// neuer Mesh-Typ ist danach ein Tabellen-Eintrag + eine Methode. Die
+// kanal-exklusiven Typen (world-pull, llm-request, subworld-srv, …) leben
+// bewusst NICHT hier — sie laufen über _p2pHandleChannelMessage.
+AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
+    welcome: "_p2pMsgWelcome",
+    "peer-join": "_p2pMsgPeerJoin",
+    "peer-leave": "_p2pMsgPeerLeave",
+    "lobby-rooms": "_p2pMsgLobbyRooms",
+    "creature-pos": "_p2pMsgCreaturePos",
+    "companion-say": "_p2pMsgCompanionSay",
+    "subworld-net": "_p2pMsgSubworldNet",
+    "portal-invite": "_p2pMsgPortalInvite",
+    pos: "_p2pMsgPos",
+    dsl: "_p2pMsgDsl",
+    soul: "_p2pMsgSoul",
+    aura: "_p2pMsgAura",
+    vibe: "_p2pMsgVibe",
+    "rtc-offer": "_p2pMsgRtcOffer",
+    "rtc-answer": "_p2pMsgRtcAnswer",
+    "rtc-ice": "_p2pMsgRtcIce",
+    "world-request": "_p2pMsgWorldRequest",
+    "world-snapshot": "_p2pMsgWorldSnapshot",
+});
 // W4 V2/V3 — die Lofi-Pad-Schicht. Eine Harmonie in A-Moll (die Wurzel 110 Hz
 // = A2 deckt sich mit dem Ambient-Drone). W4 V3: die Akkordfolge wächst aus
 // einer Tonleiter + einer funktionalen Markov-Kette — kein fester Akkord-Satz
