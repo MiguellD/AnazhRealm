@@ -2,13 +2,13 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V9.43-a (21.05.2026) — **Wasser-Ultiversum Welle D.1: Wasserfälle werden Wasser-Planes**. V9.32 baute Wasserfälle als `THREE.Points`-Partikel, das Meer ist eine Gerstner-Shader-Plane — zwei Wasser-Sprachen, Vision §1.3 fraktal verletzt (der letzte offene Schöpfer-Audit-Befund). V9.43 ist die Schöpfer-Wahl a+b+c (das komplette Wasser-Ultiversum, ~4-5 Sessions); V9.43-a ist der erste ehrliche Schnitt — die Wasserfälle. `_ensureWaterfallMaterial()` baut EIN welt-global geteiltes `ShaderMaterial`: eine vertikale Flow-Plane mit `uFlowDir` (0,−1) + `uFlowSpeed`, die Schaum-Streifen die Plane hinab scrollt; teilt die Wasser-Substanz-Uniforms (`uDeep`/`uShallow`/`uSunDir`/`uLight`/`fog*`) mit dem Meer. `_buildVoxelChunkWaterfalls` baut statt Partikel je Klippe eine `PlaneGeometry`, gedreht so dass die Normale die Klippe hinab zeigt; die Animation läuft über `uTime` (zentral gebumpt), der per-Partikel-Loop ist gelöscht. Eine Wasser-Sprache: Plane + Wasser-Shader + Flow-Vektor.
+**Stand**: V9.44-f (21.05.2026) — **Stamm-Pflege-Bogen VOLLSTÄNDIG: der Game-Loop bekommt Phasen-Struktur**. Ein Code-Hygiene-Audit fand strukturelle Reibung (Großfunktionen, Snapshot↔Restore-Handkopplung, gestreute Magic Values); der Stamm-Pflege-Bogen V9.44-a..f heilt sie als reines verhaltensneutrales Refactoring — kein neues Modul, kein State-Manager, keine neue Abstraktionsschicht. V9.44-a vereinheitlichte das Persistenz-Schema, V9.44-b baute `_applyPlayerSpeed(v)`, V9.44-c zerlegte `p2pHandleMessage` zu einem Dispatch-Table, V9.44-d konsolidierte die Infrastruktur-Konstanten, V9.44-e zerlegte den grössten UI-Builder (`_renderWorkshopDOM`). V9.44-f zerlegt die heisseste Stelle der Datei: `startEternalLoop` (~696 Z.) wird ein 157-Zeilen-Orchestrator + 13 `_loop<Phase>`-Methoden (`_loopPhysicsSync`/`_loopPlayerMovement`/`_loopCamera`/…); die geteilten Frame-Werte `delta`/`currentTime` werden explizite Parameter. Browser-verifiziert (0 Page-Errors, der Loop läuft). **Die Datei trägt keine Kontrollfluss-Funktion über ~200 Zeilen mehr.** Plan: `docs/code-hygiene.md`. Nächste Welle: die Hydrosphäre (V9.43-b/c/d/e — Flüsse/Seen/Wasserfälle als Drainage-Netz).
 
 **Davor — Voxel-Surface-Politur V9.40–V9.42** (fünf Schöpfer-Browser-Befunde nach V9.39): V9.40 a–f heilte die Chunk-Löcher beim Carve/Fill (Async-Rebuild + Pre-Build-Pattern + die Wurzel: vendored `ammo.wasm` auf 256 MB growable gepatcht) + den fehlenden P2P-Sync der Maus-Voxel-Edits. V9.41 + V9.41-b heilte die Trapeze/Linien auf flachen Hügeln (Schach-Brett-Diagonalen + Laplacian-Smooth gegen die Surface-Nets-Treppen). V9.42 a–d die Insel-Inkonsistenz (Inseln teilen die Surface-Nets-Pipeline + MeshToon-Material + Naht-pad-Smooth). Offen: V9.43-b/c/d/e — das volle Drainage-Netz (Schöpfer-Browser-Test der V9.43-a: die isolierten Wasserfall-Planes wirken als „fliegende Sheets"; Schöpfer-Wahl: das komplette Hydrosphären-System — Flow-Accumulation → Flüsse/Seen/Wasserfälle, Flüsse carven echte Betten; ausführliche Planung in `docs/hydrosphere.md`). Die volle Versions-Historie lebt in `CLAUDE.md` (kanonisch); `docs/roadmap.md` §3 trägt den Wellen-Plan, `docs/handover.md` die Erstorientierung.
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~31000 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~34900 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
@@ -31,7 +31,7 @@ Browser öffnen: `http://localhost:4312/` (oder `index.html` direkt).
 npm run check           # Syntax-Check (node --check)
 npm run lint            # ESLint
 npm run format:check    # Prettier
-npm run playtest        # ~2966 Headless-Invarianten (~60s)
+npm run playtest        # ~2974 Headless-Invarianten (~60s)
 npm run audit:strict    # 5 generische Audit-Schichten (~25s)
 ```
 

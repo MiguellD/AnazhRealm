@@ -8203,9 +8203,10 @@ function startSaveServer() {
 
                     // 6.A3 — Diskriminations-Test: Bewegungs-Loop drosselt auf
                     // steilem Hang. Wir prüfen die slopePenalty-Logik im
-                    // Quellcode der Loop-Init-Methode (statischer Check, weil
-                    // einen echten Slope im Headless zu synthetisieren fragil ist).
-                    const loopSrc = r.startEternalLoop ? r.startEternalLoop.toString() : "";
+                    // Quellcode der Bewegungs-Phase (statischer Check, weil
+                    // einen echten Slope im Headless zu synthetisieren fragil
+                    // ist). V9.44-f — die Bewegung lebt in _loopPlayerMovement.
+                    const loopSrc = r._loopPlayerMovement ? r._loopPlayerMovement.toString() : "";
                     out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
                     out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
                     out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
@@ -8885,8 +8886,9 @@ function startSaveServer() {
                     // (1) WASD: Original-Mapping wiederhergestellt. Geometrisch
                     // ist state.right tatsächlich „player-links" wegen Right-Hand-
                     // Coords (forward × up = -X). A=+right=player-links, D=-right=
-                    // player-rechts — wie es immer war.
-                    const loopSrc = r.startEternalLoop.toString();
+                    // player-rechts — wie es immer war. V9.44-f — die WASD-Logik
+                    // lebt in der Bewegungs-Phase _loopPlayerMovement.
+                    const loopSrc = r._loopPlayerMovement.toString();
                     out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
                     out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
 
@@ -16186,17 +16188,20 @@ function startSaveServer() {
                         out.deathAddsLossJournal = true;
                     }
 
-                    // _creatureNaturalBirth fügt Kreatur hinzu + Journal
+                    // _creatureNaturalBirth fügt Kreatur hinzu + Journal.
+                    // Flaky-Heilung (V8.96-Klasse): NICHT count(growth)
+                    // before/after vergleichen — am 200-FIFO-Cap verdrängt das
+                    // Anhängen einen alten Eintrag; ist der evictete selbst ein
+                    // growth-Eintrag, bleibt die Zahl gleich. Stattdessen die
+                    // Eintrags-OBJEKT-Identität messen: ein frisch angehängter
+                    // growth-Eintrag ist ein Objekt, das vorher nicht da war.
                     const beforeBirthCount = r.state.creatures.length;
-                    const beforeBirthGrowth = (r.state.worldJournal.entries || []).filter(
-                        (e) => e.type === "growth"
-                    ).length;
+                    const beforeBirthEntries = new Set(r.state.worldJournal.entries || []);
                     r._creatureNaturalBirth();
                     out.birthIncreasesCount = r.state.creatures.length === beforeBirthCount + 1;
-                    const afterBirthGrowth = (r.state.worldJournal.entries || []).filter(
-                        (e) => e.type === "growth"
-                    ).length;
-                    out.birthAddsGrowthJournal = afterBirthGrowth > beforeBirthGrowth;
+                    out.birthAddsGrowthJournal = (r.state.worldJournal.entries || []).some(
+                        (e) => e && e.type === "growth" && !beforeBirthEntries.has(e)
+                    );
 
                     return out;
                 })
@@ -17900,9 +17905,10 @@ function startSaveServer() {
                     out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
                     out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
 
-                    // 2. 3rd-Person-Kamera — Kollisions-Raycast im Render-Loop.
+                    // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
+                    //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
                     {
-                        const src = srcOf("startEternalLoop");
+                        const src = srcOf("_loopCamera");
                         out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
                     }
 
@@ -17919,8 +17925,9 @@ function startSaveServer() {
                     out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
                     // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
+                    //    V9.44-f — die Physik-Phase lebt in _loopPhysicsSync.
                     {
-                        const src = srcOf("startEternalLoop");
+                        const src = srcOf("_loopPhysicsSync");
                         out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
                     }
 
@@ -19307,14 +19314,20 @@ function startSaveServer() {
                     // flutende fremde Welt: nach PORTAL_EVENT_RATE_MAX je
                     // Fenster wird verworfen, das Journal nicht überrannt.
                     r._portalOverlay = { label: "Flut-Welt", world: "worlds/skeleton/index.html", dsl: null };
-                    const floodBefore = journal().length;
                     let floodAccepted = 0;
                     for (let i = 0; i < 20; i++) {
                         if (r._portalReceiveEvent({ type: "event", text: "Flut " + i }) === true) floodAccepted++;
                     }
                     out.rateLimitCapsBurst = floodAccepted === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+                    // Flaky-Heilung (V8.96-Klasse): NICHT die journal().length-
+                    // Differenz messen — am 200-FIFO-Cap verdrängt jedes Anhängen
+                    // einen alten Eintrag, die Längen-Differenz wäre dann 0 statt
+                    // PORTAL_EVENT_RATE_MAX. Stattdessen die Flut-Einträge selbst
+                    // zählen: genau RATE_MAX tragen den "Flut "-Text (die zuletzt
+                    // angehängten — nie von ihren eigenen Geschwistern evictet).
                     out.rateLimitNoJournalOverflow =
-                        journal().length - floodBefore === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+                        journal().filter((e) => e && typeof e.text === "string" && e.text.startsWith("Flut "))
+                            .length === AnazhRealm.PORTAL_EVENT_RATE_MAX;
                     r._portalOverlay = null;
                     // Das Overlay aus _buildPortalOverlay trägt das Rate-Limit-Fenster.
                     r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Fenster-Welt", dsl: null });
@@ -19584,11 +19597,19 @@ function startSaveServer() {
                     out.verifyDefensive =
                         (await r._vibeVerify("x", null, null)) === false &&
                         (await r._vibeVerify("x", "zzz", "kurz")) === false;
-                    // Genesis-Erinnerung im Journal (Typ "ritual").
-                    const entries = (r.state.worldJournal && r.state.worldJournal.entries) || [];
-                    out.journalGenesis = entries.some(
-                        (e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || "")
-                    );
+                    // Genesis-Erinnerung im Journal (Typ "ritual"). Flaky-
+                    // Heilung (V8.96-Klasse): der Vibe-Pass-Genesis-Eintrag wird
+                    // früh geschrieben; nach einem langen Lauf kann der 200-FIFO-
+                    // Cap ihn evicten. _ensureVibePass nutzt journalAppendOnce(
+                    // "vibepass:genesis", …) — der seen-Schlüssel ist cap-
+                    // unabhängig (seen wird nie FIFO-gedeckelt) und beweist, dass
+                    // der Genesis-Eintrag geschrieben WURDE; der entries-Scan
+                    // bleibt als Fallback, falls er noch im Fenster liegt.
+                    const wj = r.state.worldJournal || {};
+                    const entries = wj.entries || [];
+                    out.journalGenesis =
+                        !!(wj.seen && wj.seen["vibepass:genesis"] === true) ||
+                        entries.some((e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || ""));
                     // Sicherheit: der private Schlüssel darf NIE im Welt-Save landen.
                     const snapJson = JSON.stringify(r.buildStateSnapshot());
                     out.snapshotClean =

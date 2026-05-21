@@ -313,7 +313,12 @@ class AnazhRealm {
                     anthropic: { apiKey: "", model: "claude-haiku-4-5" },
                     google: { apiKey: "", model: "gemini-2.5-flash" },
                     openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
-                    ollama: { apiKey: "", model: "llama3.2", endpoint: "http://localhost:11434", useProxy: false },
+                    ollama: {
+                        apiKey: "",
+                        model: "llama3.2",
+                        endpoint: AnazhRealm.OLLAMA_DEFAULT_ENDPOINT,
+                        useProxy: false,
+                    },
                 },
                 inFlight: false,
                 lastError: null,
@@ -329,7 +334,7 @@ class AnazhRealm {
             // ein Sandbox-Risiko bevor die Vertrauens-Grenzen klar sind.
             p2p: {
                 enabled: false,
-                url: "ws://127.0.0.1:4313",
+                url: AnazhRealm.P2P_DEFAULT_WS_URL,
                 peerId: null,
                 room: null,
                 roomOverride: "",
@@ -1182,17 +1187,28 @@ class AnazhRealm {
         ctx.budget.depthLeft++;
     }
 
+    // V9.44-d — die Default-Spawn-Position. Y=50 wie beim allerersten
+    // Spawn: der Spieler fällt sauber aufs Terrain (Y=5 würde ihn in steile
+    // Hänge clippen lassen — das Terrain kann je nach Seed 30+ Einheiten
+    // hoch sein). Vorher ein an ~15 Stellen hand-getipptes Literal. EINE
+    // Factory, KEINE geteilte Konstante — ein geteiltes Objekt-Literal wäre
+    // ein Bug, sobald ein Aufrufer es mutiert; jeder Aufruf liefert ein
+    // frisches Objekt (bit-genau das alte Verhalten je Stelle).
+    _defaultSpawnPos() {
+        return { x: 0, y: 50, z: 0 };
+    }
+
     dslEvalPos(node, ctx) {
-        if (!Array.isArray(node) || node.length === 0) return { x: 0, y: 50, z: 0 };
+        if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();
         const fn = this.dslPositions[node[0]];
         if (!fn) {
             ctx.log.push({ event: "unknown_position_op", op: String(node[0]) });
-            return { x: 0, y: 50, z: 0 };
+            return this._defaultSpawnPos();
         }
         try {
             return fn.call(this, node.slice(1), ctx);
         } catch {
-            return { x: 0, y: 50, z: 0 };
+            return this._defaultSpawnPos();
         }
     }
 
@@ -2021,14 +2037,11 @@ class AnazhRealm {
                 this.state.jumpPower = c(value, 5, 40);
             },
             player_speed: ([value]) => {
-                // Schöpfer-Bug-Fund 13.05.2026: player_speed setzte nur
-                // state.speed, NICHT state.sprintSpeed. Wenn der Nexus
-                // via DSL `player_speed 25` ausführte, blieb sprintSpeed
-                // bei z. B. 12 (vom letzten Soul-Wechsel) — Shift drücken
-                // gab dann LANGSAMERE Geschwindigkeit als gehen. Jetzt
-                // halten wir Sprint = 2× Walk konsistent.
-                this.state.speed = c(value, 1, 30);
-                this.state.sprintSpeed = this.state.speed * 2;
+                // Schöpfer-Bug-Fund 13.05.2026 (V7.72): player_speed setzte
+                // nur state.speed, NICHT state.sprintSpeed → Shift wurde
+                // LANGSAMER als Gehen. V9.44-b: die Kopplung lebt jetzt in
+                // _applyPlayerSpeed — hier nur noch der DSL-Eingabe-Clamp.
+                this._applyPlayerSpeed(c(value, 1, 30));
             },
             // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
             // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
@@ -2137,7 +2150,7 @@ class AnazhRealm {
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslPositionsCache = {
             at_player: (_args, ctx) => {
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 return { x: p.x, y: p.y, z: p.z };
             },
             // Welle 6.X.3 C1 (Audit 17.05.2026) — Spawn-Position vor dem
@@ -2148,7 +2161,7 @@ class AnazhRealm {
             // wenn von Chat-Pattern ausgelöst — gibt einen kleinen Abstand.
             at_player_forward: ([dist], ctx) => {
                 const d = c(dist, 1, 50) || 5;
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
                 // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
                 // Standard-„forward"-Richtung im AnazhRealm-Coord-System
@@ -2161,11 +2174,14 @@ class AnazhRealm {
             },
             near_player: ([radius], ctx) => {
                 const r = c(radius, 1, 100);
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = ctx.rng() * r;
                 return { x: p.x + Math.cos(angle) * dist, y: p.y, z: p.z + Math.sin(angle) * dist };
             },
+            // at_origin behält sein eigenes Literal — es ist semantisch der
+            // Welt-Ursprung (0,50,0), nicht der Spawn-Fallback; eine Kopplung
+            // an _defaultSpawnPos() wäre falsch, falls dieser je driftet.
             at_origin: () => ({ x: 0, y: 50, z: 0 }),
             random_position: ([range], ctx) => {
                 const r = c(range, 1, 500);
@@ -3020,7 +3036,9 @@ class AnazhRealm {
                 // (Ollama-Native-Default). So funktionieren beide Welten:
                 // klassisches Ollama + OpenAI-kompatible Cloud-Provider.
                 endpoint: (_model, _apiKey, cfg) => {
-                    const base = ((cfg && cfg.endpoint) || "http://localhost:11434").trim().replace(/\/$/, "");
+                    const base = ((cfg && cfg.endpoint) || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT)
+                        .trim()
+                        .replace(/\/$/, "");
                     if (/\/(api|v1)\//.test(base) || /\/(api|v1)\/[^/]+$/.test(base)) {
                         return base;
                     }
@@ -3952,7 +3970,7 @@ class AnazhRealm {
         // anderen Provider unverändert: nur sichtbar wenn requiresKey.
         if (keyRow) keyRow.hidden = !def.requiresKey && this.state.llm.provider !== "ollama";
         if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
-        if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
+        if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT;
         // V7.96 — Proxy-Toggle nur bei Ollama sichtbar (andere Provider haben CORS).
         const proxyRow = document.getElementById("llm-proxy-row");
         const proxyHint = document.getElementById("llm-proxy-hint");
@@ -4036,7 +4054,7 @@ class AnazhRealm {
         if (endpointInput) {
             endpointInput.addEventListener("change", () => {
                 const cfg = this.state.llm.providerConfig.ollama;
-                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+                cfg.endpoint = endpointInput.value.trim() || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT;
                 this.llmPersist();
                 this.llmUpdateStatus();
                 // V7.97 — Endpoint-Wechsel triggert Proxy-Label-Refresh
@@ -4051,7 +4069,7 @@ class AnazhRealm {
             cfg.apiKey = trimmed;
             cfg.model = modelSel.value;
             if (this.state.llm.provider === "ollama" && endpointInput) {
-                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+                cfg.endpoint = endpointInput.value.trim() || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT;
             }
             // Sanfte Format-Warnung gegen Provider/Key-Mismatch — z. B. Gemini-
             // Key (AIza…) versehentlich im OpenRouter-Feld. Verhindert Save
@@ -4319,7 +4337,7 @@ class AnazhRealm {
         // P2P-Settings für Auto-Connect nach Reload schreiben
         try {
             localStorage.setItem("anazh.p2p.enabled", "true");
-            localStorage.setItem("anazh.p2p.url", hostInfo.url || "ws://127.0.0.1:4313");
+            localStorage.setItem("anazh.p2p.url", hostInfo.url || AnazhRealm.P2P_DEFAULT_WS_URL);
             localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
         } catch {
             /* defensive */
@@ -4332,7 +4350,7 @@ class AnazhRealm {
     initP2PSync(roomId, opts = {}) {
         const p2p = this.state.p2p;
         if (p2p.ws) this.shutdownP2PSync();
-        const url = (opts.url || p2p.url || "ws://127.0.0.1:4313").trim();
+        const url = (opts.url || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL).trim();
         // Ring 11 V2.1: Raum-Auflösung — explizites Argument > localStorage-
         // Override > aktive worldId. Leer-String im Override gilt als
         // „nicht gesetzt" → Fallback auf worldId.
@@ -4726,7 +4744,7 @@ class AnazhRealm {
         for (let seq = 0; seq < total; seq++) {
             // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
             let guard = 0;
-            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+            while (rtc.channel.bufferedAmount > AnazhRealm.P2P_BACKPRESSURE_BYTES && guard++ < 600) {
                 await new Promise((r) => setTimeout(r, 16));
             }
             if (rtc.channel.readyState !== "open") return;
@@ -4914,7 +4932,7 @@ class AnazhRealm {
         for (let seq = 0; seq < total; seq++) {
             // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
             let guard = 0;
-            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+            while (rtc.channel.bufferedAmount > AnazhRealm.P2P_BACKPRESSURE_BYTES && guard++ < 600) {
                 await new Promise((r) => setTimeout(r, 16));
             }
             if (rtc.channel.readyState !== "open") return;
@@ -5531,6 +5549,17 @@ class AnazhRealm {
         this._p2pUpdateMeshActive();
     }
 
+    // V9.44-c — der Mesh-Router ist ein Dispatch-Table. Vor V9.44-c war
+    // p2pHandleMessage eine ~280-Zeilen-Funktion mit 18 sequentiellen
+    // `if (msg.type === …)`-Branches (bis 6 Ebenen tief) — jeder neue
+    // Mesh-Typ wuchs die Kette. Jetzt mappt AnazhRealm.P2P_MESSAGE_HANDLERS
+    // den Typ auf einen `_p2pMsg<Type>`-Methodennamen; der Router schrumpft
+    // auf einen Dispatcher. Die Extraktion ist mechanisch sicher — jeder
+    // Branch war schon return-terminiert + in sich geschlossen. HINWEIS:
+    // die kanal-exklusiven Typen (world-pull, llm-request, subworld-srv, …)
+    // leben weiter in _p2pHandleChannelMessage — V9.44-c berührt nur diesen
+    // WS-Router. `_p2pMsg`-Präfix statt `_p2pHandle`, weil drei Branches
+    // schon `_p2pHandle*`-Worker delegieren (kein Namens-Konflikt).
     p2pHandleMessage(raw) {
         let msg;
         try {
@@ -5539,281 +5568,289 @@ class AnazhRealm {
             return;
         }
         if (!msg || typeof msg !== "object") return;
-        const p2p = this.state.p2p;
-        if (msg.type === "welcome") {
-            if (Array.isArray(msg.peers)) {
-                for (const pid of msg.peers) {
-                    if (typeof pid === "string" && pid !== p2p.peerId) {
-                        this._p2pEnsurePeerEntry(pid);
-                        // W7 Phase 1 — WebRTC-Verbindung zu jedem schon
-                        // anwesenden Peer aufbauen.
-                        this._p2pConnectToPeer(pid);
-                    }
+        const handlerName = AnazhRealm.P2P_MESSAGE_HANDLERS[msg.type];
+        // typeof-Wache: ein Müll-Typ (etwa "__proto__") liefert über das
+        // Objekt-Literal die Prototype-Kette statt undefined — der String-
+        // Check no-oppt das sauber (wie die alte if-Kette für jeden
+        // unbekannten Typ no-oppte).
+        if (typeof handlerName === "string") {
+            this[handlerName](msg, this.state.p2p);
+        }
+    }
+
+    _p2pMsgWelcome(msg, p2p) {
+        if (Array.isArray(msg.peers)) {
+            for (const pid of msg.peers) {
+                if (typeof pid === "string" && pid !== p2p.peerId) {
+                    this._p2pEnsurePeerEntry(pid);
+                    // W7 Phase 1 — WebRTC-Verbindung zu jedem schon
+                    // anwesenden Peer aufbauen.
+                    this._p2pConnectToPeer(pid);
                 }
             }
-            // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
-            // Clients ihre Einladungs-URL bauen können ohne nach der IP
-            // zu fragen. Bei mehreren Interfaces nehmen wir die erste —
-            // typisch das primäre LAN-Interface.
-            if (Array.isArray(msg.lanAddresses)) {
-                p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
-            }
-            // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
-            // neu rendern, sobald wir die LAN-Adressen kennen.
-            if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
-                this.updateWorldInfo();
-            }
-            // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
+        }
+        // Ring 11.5: Server schickt seine LAN-Adressen mit, damit Host-
+        // Clients ihre Einladungs-URL bauen können ohne nach der IP
+        // zu fragen. Bei mehreren Interfaces nehmen wir die erste —
+        // typisch das primäre LAN-Interface.
+        if (Array.isArray(msg.lanAddresses)) {
+            p2p.lanAddresses = msg.lanAddresses.filter((a) => typeof a === "string");
+        }
+        // Falls wir gerade als Host aktiv sind: UI mit Einladungs-Code
+        // neu rendern, sobald wir die LAN-Adressen kennen.
+        if (p2p.role === "host" && typeof this.updateWorldInfo === "function") {
+            this.updateWorldInfo();
+        }
+        // Ring 11 V3 — den bereits anwesenden Peers meine Seele zeigen.
+        this._p2pBroadcastSoul();
+        // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
+        this._p2pBroadcastVibe();
+    }
+
+    _p2pMsgPeerJoin(msg, p2p) {
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pEnsurePeerEntry(msg.peerId);
+            // W7 Phase 1 — WebRTC-Verbindung zum Neuankömmling aufbauen.
+            this._p2pConnectToPeer(msg.peerId);
+            // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
             this._p2pBroadcastSoul();
-            // W13 Phase 3 — und meine Vibe-Pass-Identität (beweisbar).
+            // W13 Phase 3 — und meine Vibe-Pass-Identität.
             this._p2pBroadcastVibe();
-            return;
         }
-        if (msg.type === "peer-join") {
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pEnsurePeerEntry(msg.peerId);
-                // W7 Phase 1 — WebRTC-Verbindung zum Neuankömmling aufbauen.
-                this._p2pConnectToPeer(msg.peerId);
-                // Ring 11 V3 — dem Neuankömmling meine Seele zeigen.
-                this._p2pBroadcastSoul();
-                // W13 Phase 3 — und meine Vibe-Pass-Identität.
-                this._p2pBroadcastVibe();
+    }
+
+    _p2pMsgPeerLeave(msg) {
+        if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
+    }
+
+    _p2pMsgLobbyRooms(msg, p2p) {
+        // W7 Phase 4 — die Lobby-Liste vom Server.
+        p2p.lobby.rooms = Array.isArray(msg.rooms) ? msg.rooms : [];
+        if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
+    }
+
+    _p2pMsgCreaturePos(msg, p2p) {
+        // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pHandleCreaturePos(msg.peerId, msg);
+        }
+    }
+
+    _p2pMsgCompanionSay(msg, p2p) {
+        // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pHandleCompanionSay(msg.peerId, msg);
+        }
+    }
+
+    _p2pMsgSubworldNet(msg, p2p) {
+        // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Mitspielers.
+        // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
+        // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
+        // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._portalNetDeliver(msg);
+        }
+    }
+
+    _p2pMsgPortalInvite(msg, p2p) {
+        // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
+        // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
+        if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
+            this._p2pHandlePortalInvite(msg.peerId, msg);
+        }
+    }
+
+    _p2pMsgPos(msg, p2p) {
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const x = Number(msg.x);
+        const y = Number(msg.y);
+        const z = Number(msg.z);
+        const yaw = Number(msg.yaw);
+        if (![x, y, z, yaw].every(Number.isFinite)) return;
+        // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
+        // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
+        // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
+        if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
+            entry.lastMovedAt = performance.now() / 1000;
+        }
+        entry.x = x;
+        entry.y = y;
+        entry.z = z;
+        entry.yaw = yaw;
+        entry.lastSeen = performance.now() / 1000;
+    }
+
+    _p2pMsgDsl(msg, p2p) {
+        // Ring 11 V2: eingehendes DSL-Programm von einem Peer.
+        // STRENGE Sandbox-Disziplin: läuft durch denselben dslRun-Pfad
+        // wie eigene Programme, mit identischen Budget-Limits und
+        // Op-Whitelist. source="remote:<peerId>" markiert es —
+        // verhindert Re-Broadcast in dslRun (sonst Endlos-Echo).
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        if (!Array.isArray(msg.program) || msg.program.length === 0) return;
+        try {
+            this.dslRun(msg.program, { source: `remote:${pid}` });
+        } catch (err) {
+            this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
+        }
+    }
+
+    _p2pMsgSoul(msg, p2p) {
+        // Ring 11 V3 — Soul-Sync. Der Peer teilt seine Seele; wir bauen
+        // seinen Avatar daraus (Built-in via def.build, Custom via
+        // _buildFromBlueprint). KEIN DSL-Pfad — die Seele eines Peers ist
+        // eine Darstellungs-Tatsache, keine Welt-Mutation.
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
+        if (!soulName) return;
+        const changed = entry.soulName !== soulName;
+        entry.soulName = soulName;
+        entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
+        if (typeof msg.name === "string" && msg.name.trim()) {
+            const nm = msg.name.trim().slice(0, 48);
+            if (entry.avatarName !== nm) {
+                entry.avatarName = nm;
+                this._p2pRefreshPeerNameLabel(entry);
             }
-            return;
         }
-        if (msg.type === "peer-leave") {
-            if (typeof msg.peerId === "string") this._p2pRemovePeer(msg.peerId);
-            return;
+        // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
+        if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
+        // W7 Phase 3 — teilt der Peer seine Stimme?
+        if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
+        // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
+        if (Array.isArray(msg.catalog)) {
+            entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
+            this._renderMeshWorldCatalog();
         }
-        if (msg.type === "lobby-rooms") {
-            // W7 Phase 4 — die Lobby-Liste vom Server.
-            p2p.lobby.rooms = Array.isArray(msg.rooms) ? msg.rooms : [];
-            if (typeof this._renderLobbyUI === "function") this._renderLobbyUI();
-            return;
+        if (changed) this._p2pApplyPeerSoul(entry);
+        entry.lastSeen = performance.now() / 1000;
+    }
+
+    _p2pMsgAura(msg, p2p) {
+        // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const hue = Number(msg.hue);
+        const intensity = Number(msg.intensity);
+        if (Number.isFinite(hue)) entry.auraHue = hue;
+        if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
+        entry.lastSeen = performance.now() / 1000;
+    }
+
+    _p2pMsgVibe(msg, p2p) {
+        // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
+        // der behauptete öffentliche Schlüssel, proof eine Signatur über
+        // die peerId des Senders. Verifiziert die Signatur gegen den
+        // Schlüssel, IST der Peer dieser Schlüssel — beweisbar, nicht nur
+        // behauptet. Die Verifikation ist async; der Schlüssel-Wächter im
+        // .then verwirft veraltete Läufe (Peer hat neu gesendet).
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId) return;
+        const entry = this._p2pEnsurePeerEntry(pid);
+        const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId : "";
+        const proof = typeof msg.proof === "string" ? msg.proof : "";
+        entry.vibePassId = vibePassId || null;
+        entry.vibeVerified = false;
+        entry.lastSeen = performance.now() / 1000;
+        const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
+        if (m && proof) {
+            this._vibeVerify(pid, proof, m[1]).then((ok) => {
+                const cur = p2p.peers.get(pid);
+                if (!cur || cur.vibePassId !== vibePassId) return;
+                cur.vibeVerified = ok === true;
+                this._p2pRefreshPeerNameLabel(cur);
+            });
         }
-        if (msg.type === "creature-pos") {
-            // Kreatur-Sicht-Sync — die Kreatur-Positionen eines Mitspielers.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pHandleCreaturePos(msg.peerId, msg);
-            }
-            return;
-        }
-        if (msg.type === "companion-say") {
-            // W11 Phase 4 — Voice-Sync: der Begleiter-Output eines Mitspielers.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pHandleCompanionSay(msg.peerId, msg);
-            }
-            return;
-        }
-        if (msg.type === "subworld-net") {
-            // W17 Phase B-Relay — der Sub-Welt-Verkehr eines Mitspielers.
-            // _portalNetDeliver stellt ihn nur ins eigene iframe zu, wenn ich
-            // im SELBEN Multiplayer-Portal bin (B2 — worldId-Pfad-Match);
-            // sonst sähe ein Mesh-Mitspieler ohne Portal fremden Verkehr.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._portalNetDeliver(msg);
-            }
-            return;
-        }
-        if (msg.type === "portal-invite") {
-            // W17 Phase C — ein Mitspieler öffnete ein Multiplayer-Portal und
-            // lädt die Gruppe ein. _p2pHandlePortalInvite zeigt den Prompt.
-            if (typeof msg.peerId === "string" && msg.peerId !== p2p.peerId) {
-                this._p2pHandlePortalInvite(msg.peerId, msg);
-            }
-            return;
-        }
-        if (msg.type === "pos") {
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const x = Number(msg.x);
-            const y = Number(msg.y);
-            const z = Number(msg.z);
-            const yaw = Number(msg.yaw);
-            if (![x, y, z, yaw].every(Number.isFinite)) return;
-            // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
-            // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
-            // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
-            if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
-                entry.lastMovedAt = performance.now() / 1000;
-            }
-            entry.x = x;
-            entry.y = y;
-            entry.z = z;
-            entry.yaw = yaw;
-            entry.lastSeen = performance.now() / 1000;
-            return;
-        }
-        if (msg.type === "dsl") {
-            // Ring 11 V2: eingehendes DSL-Programm von einem Peer.
-            // STRENGE Sandbox-Disziplin: läuft durch denselben dslRun-Pfad
-            // wie eigene Programme, mit identischen Budget-Limits und
-            // Op-Whitelist. source="remote:<peerId>" markiert es —
-            // verhindert Re-Broadcast in dslRun (sonst Endlos-Echo).
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            if (!Array.isArray(msg.program) || msg.program.length === 0) return;
-            try {
-                this.dslRun(msg.program, { source: `remote:${pid}` });
-            } catch (err) {
-                this.log(`P2P-DSL Ausführungsfehler von ${pid}: ${err.message}`, "WARN");
-            }
-            return;
-        }
-        if (msg.type === "soul") {
-            // Ring 11 V3 — Soul-Sync. Der Peer teilt seine Seele; wir bauen
-            // seinen Avatar daraus (Built-in via def.build, Custom via
-            // _buildFromBlueprint). KEIN DSL-Pfad — die Seele eines Peers ist
-            // eine Darstellungs-Tatsache, keine Welt-Mutation.
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const soulName = typeof msg.soulName === "string" ? msg.soulName : "";
-            if (!soulName) return;
-            const changed = entry.soulName !== soulName;
-            entry.soulName = soulName;
-            entry.bodyParts = Array.isArray(msg.bodyParts) ? msg.bodyParts : null;
-            if (typeof msg.name === "string" && msg.name.trim()) {
-                const nm = msg.name.trim().slice(0, 48);
-                if (entry.avatarName !== nm) {
-                    entry.avatarName = nm;
-                    this._p2pRefreshPeerNameLabel(entry);
-                }
-            }
-            // W7 Phase 2 — Welt-Rolle des Peers merken (Resync-Ziel-Findung).
-            if (typeof msg.worldRole === "string") entry.worldRole = msg.worldRole;
-            // W7 Phase 3 — teilt der Peer seine Stimme?
-            if (typeof msg.voiceShared === "boolean") entry.voiceShared = msg.voiceShared;
-            // W16 Phase 2 — der Welt-Katalog des Peers (seine vendorten Welten).
-            if (Array.isArray(msg.catalog)) {
-                entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
-                this._renderMeshWorldCatalog();
-            }
-            if (changed) this._p2pApplyPeerSoul(entry);
-            entry.lastSeen = performance.now() / 1000;
-            return;
-        }
-        if (msg.type === "aura") {
-            // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const hue = Number(msg.hue);
-            const intensity = Number(msg.intensity);
-            if (Number.isFinite(hue)) entry.auraHue = hue;
-            if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
-            entry.lastSeen = performance.now() / 1000;
-            return;
-        }
-        if (msg.type === "vibe") {
-            // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
-            // der behauptete öffentliche Schlüssel, proof eine Signatur über
-            // die peerId des Senders. Verifiziert die Signatur gegen den
-            // Schlüssel, IST der Peer dieser Schlüssel — beweisbar, nicht nur
-            // behauptet. Die Verifikation ist async; der Schlüssel-Wächter im
-            // .then verwirft veraltete Läufe (Peer hat neu gesendet).
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId) return;
-            const entry = this._p2pEnsurePeerEntry(pid);
-            const vibePassId = typeof msg.vibePassId === "string" ? msg.vibePassId : "";
-            const proof = typeof msg.proof === "string" ? msg.proof : "";
-            entry.vibePassId = vibePassId || null;
-            entry.vibeVerified = false;
-            entry.lastSeen = performance.now() / 1000;
-            const m = /^ed25519:([0-9a-f]{64})$/i.exec(vibePassId);
-            if (m && proof) {
-                this._vibeVerify(pid, proof, m[1]).then((ok) => {
-                    const cur = p2p.peers.get(pid);
-                    if (!cur || cur.vibePassId !== vibePassId) return;
-                    cur.vibeVerified = ok === true;
-                    this._p2pRefreshPeerNameLabel(cur);
-                });
-            }
-            this._p2pRefreshPeerNameLabel(entry);
-            return;
-        }
-        if (msg.type === "rtc-offer") {
-            // W7 Phase 1 — eingehender WebRTC-Offer. Wir sind hier der
-            // Nicht-Initiator: pc ggf. anlegen, Remote-Description setzen,
-            // mit einem Answer zurück. Danach gepufferte ICE anwenden.
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || pid === p2p.peerId || !msg.sdp) return;
-            let rtc = p2p.rtcPeers.get(pid);
-            if (!rtc) rtc = this._p2pCreatePeerConnection(pid);
-            if (!rtc) return;
+        this._p2pRefreshPeerNameLabel(entry);
+    }
+
+    _p2pMsgRtcOffer(msg, p2p) {
+        // W7 Phase 1 — eingehender WebRTC-Offer. Wir sind hier der
+        // Nicht-Initiator: pc ggf. anlegen, Remote-Description setzen,
+        // mit einem Answer zurück. Danach gepufferte ICE anwenden.
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || pid === p2p.peerId || !msg.sdp) return;
+        let rtc = p2p.rtcPeers.get(pid);
+        if (!rtc) rtc = this._p2pCreatePeerConnection(pid);
+        if (!rtc) return;
+        rtc.pc
+            .setRemoteDescription(msg.sdp)
+            .then(() => {
+                this._p2pDrainIce(rtc, pid);
+                return rtc.pc.createAnswer();
+            })
+            .then((answer) => rtc.pc.setLocalDescription(answer))
+            .then(() => {
+                this._p2pSignal({ type: "rtc-answer", to: pid, sdp: rtc.pc.localDescription });
+            })
+            .catch((err) => this.log(`RTC-Answer an ${pid} fehlgeschlagen: ${err.message}`, "WARN"));
+    }
+
+    _p2pMsgRtcAnswer(msg, p2p) {
+        // W7 Phase 1 — der Peer hat unseren Offer beantwortet.
+        const pid = msg.peerId;
+        if (typeof pid !== "string" || !msg.sdp) return;
+        const rtc = p2p.rtcPeers.get(pid);
+        if (!rtc) return;
+        rtc.pc
+            .setRemoteDescription(msg.sdp)
+            .then(() => this._p2pDrainIce(rtc, pid))
+            .catch((err) => this.log(`RTC setRemoteDescription(answer) von ${pid}: ${err.message}`, "WARN"));
+    }
+
+    _p2pMsgRtcIce(msg, p2p) {
+        // W7 Phase 1 — ICE-Kandidat eines Peers. candidate=null ist
+        // end-of-candidates (ignorieren). Vor gesetzter Remote-
+        // Description puffern (addIceCandidate würde sonst werfen).
+        const pid = msg.peerId;
+        if (typeof pid !== "string") return;
+        const rtc = p2p.rtcPeers.get(pid);
+        if (!rtc || !msg.candidate) return;
+        if (rtc.pc.remoteDescription && rtc.pc.remoteDescription.type) {
             rtc.pc
-                .setRemoteDescription(msg.sdp)
-                .then(() => {
-                    this._p2pDrainIce(rtc, pid);
-                    return rtc.pc.createAnswer();
-                })
-                .then((answer) => rtc.pc.setLocalDescription(answer))
-                .then(() => {
-                    this._p2pSignal({ type: "rtc-answer", to: pid, sdp: rtc.pc.localDescription });
-                })
-                .catch((err) => this.log(`RTC-Answer an ${pid} fehlgeschlagen: ${err.message}`, "WARN"));
+                .addIceCandidate(msg.candidate)
+                .catch((err) => this.log(`RTC ICE-Kandidat von ${pid} verworfen: ${err.message}`, "WARN"));
+        } else {
+            rtc.pendingIce.push(msg.candidate);
+        }
+    }
+
+    _p2pMsgWorldRequest(msg, p2p) {
+        // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
+        // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
+        // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
+        // nicht im selben Raum.
+        if (p2p.role !== "host") return;
+        const requesterId = msg.peerId;
+        if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
+        try {
+            const snapshot = this.buildStateSnapshot();
+            this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
+            this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
+        } catch (err) {
+            this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
+        }
+    }
+
+    _p2pMsgWorldSnapshot(msg, p2p) {
+        // Ring 11.5: eingehender Welt-Snapshot vom Host. Wird nur
+        // akzeptiert, wenn wir gerade joinen (pendingWorldSnapshot=true)
+        // — sonst könnte ein bösartiger Peer den Spielstand stehlen.
+        if (!p2p.pendingWorldSnapshot) {
+            this.log("world-snapshot empfangen ohne pending-Flag — ignoriert", "WARN");
             return;
         }
-        if (msg.type === "rtc-answer") {
-            // W7 Phase 1 — der Peer hat unseren Offer beantwortet.
-            const pid = msg.peerId;
-            if (typeof pid !== "string" || !msg.sdp) return;
-            const rtc = p2p.rtcPeers.get(pid);
-            if (!rtc) return;
-            rtc.pc
-                .setRemoteDescription(msg.sdp)
-                .then(() => this._p2pDrainIce(rtc, pid))
-                .catch((err) => this.log(`RTC setRemoteDescription(answer) von ${pid}: ${err.message}`, "WARN"));
-            return;
-        }
-        if (msg.type === "rtc-ice") {
-            // W7 Phase 1 — ICE-Kandidat eines Peers. candidate=null ist
-            // end-of-candidates (ignorieren). Vor gesetzter Remote-
-            // Description puffern (addIceCandidate würde sonst werfen).
-            const pid = msg.peerId;
-            if (typeof pid !== "string") return;
-            const rtc = p2p.rtcPeers.get(pid);
-            if (!rtc || !msg.candidate) return;
-            if (rtc.pc.remoteDescription && rtc.pc.remoteDescription.type) {
-                rtc.pc
-                    .addIceCandidate(msg.candidate)
-                    .catch((err) => this.log(`RTC ICE-Kandidat von ${pid} verworfen: ${err.message}`, "WARN"));
-            } else {
-                rtc.pendingIce.push(msg.candidate);
-            }
-            return;
-        }
-        if (msg.type === "world-request") {
-            // Ring 11.5: ein Peer (frischer Joiner) bittet um Welt-Snapshot.
-            // Nur Hosts antworten — Guests haben selbst eine Kopie, sollen
-            // nicht mehrere snapshots schicken. Solo-Welten sind sowieso
-            // nicht im selben Raum.
-            if (p2p.role !== "host") return;
-            const requesterId = msg.peerId;
-            if (typeof requesterId !== "string" || requesterId === p2p.peerId) return;
-            try {
-                const snapshot = this.buildStateSnapshot();
-                this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
-                this.log(`Welt-Snapshot an Joiner ${requesterId.slice(0, 8)}… gesendet`, "INFO");
-            } catch (err) {
-                this.log(`Welt-Snapshot konnte nicht erstellt werden: ${err.message}`, "WARN");
-            }
-            return;
-        }
-        if (msg.type === "world-snapshot") {
-            // Ring 11.5: eingehender Welt-Snapshot vom Host. Wird nur
-            // akzeptiert, wenn wir gerade joinen (pendingWorldSnapshot=true)
-            // — sonst könnte ein bösartiger Peer den Spielstand stehlen.
-            if (!p2p.pendingWorldSnapshot) {
-                this.log("world-snapshot empfangen ohne pending-Flag — ignoriert", "WARN");
-                return;
-            }
-            const senderId = msg.peerId;
-            if (typeof senderId !== "string" || senderId === p2p.peerId) return;
-            if (!msg.state || typeof msg.state !== "object") return;
-            this._p2pApplyWorldSnapshot(senderId, msg.state);
-        }
+        const senderId = msg.peerId;
+        if (typeof senderId !== "string" || senderId === p2p.peerId) return;
+        if (!msg.state || typeof msg.state !== "object") return;
+        this._p2pApplyWorldSnapshot(senderId, msg.state);
     }
 
     // Ring 11.5 / W7 Phase 2 — einen empfangenen Welt-Snapshot übernehmen:
@@ -6369,13 +6406,13 @@ class AnazhRealm {
         const statusEl = document.getElementById("p2p-status");
         if (!toggle || !urlInput || !statusEl) return;
         // UI auf gespeicherten Stand setzen
-        urlInput.value = this.state.p2p.url || "ws://127.0.0.1:4313";
+        urlInput.value = this.state.p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL;
         if (roomInput) roomInput.value = this.state.p2p.roomOverride || "";
         toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
         toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
         this.p2pUpdateStatus();
         urlInput.addEventListener("change", () => {
-            this.state.p2p.url = urlInput.value.trim() || "ws://127.0.0.1:4313";
+            this.state.p2p.url = urlInput.value.trim() || AnazhRealm.P2P_DEFAULT_WS_URL;
             this.p2pPersist();
             this.p2pUpdateStatus();
         });
@@ -6616,7 +6653,7 @@ class AnazhRealm {
                 re: /^spawne\s+kreaturen\s+(\d+)\s*$/i,
                 build: (m) => {
                     const count = Math.max(1, Math.min(20, parseInt(m[1], 10) || 1));
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["repeat", count, ["spawn_creature", ["at", p.x, p.y, p.z], 1, "happy"]],
                         describe: `${count} Kreaturen gespawnt (am Spieler)`,
@@ -6737,7 +6774,7 @@ class AnazhRealm {
                     // im Bauwerk. Vision §11: ich stelle hier was hin, ich
                     // werde nicht zum Etwas. Position+Seed wird auch hier zur
                     // Build-Zeit explizit eingebettet (Multi-User-Determinismus).
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     const yaw = typeof this.state.yaw === "number" ? this.state.yaw : 0;
                     const dist = 8;
                     const fx = p.x - Math.sin(yaw) * dist;
@@ -6756,7 +6793,7 @@ class AnazhRealm {
                 build: (m) => {
                     const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
                     const t = (m[1] || "tempel").toLowerCase();
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
                         program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
@@ -6774,7 +6811,7 @@ class AnazhRealm {
                 example: "pflanze baum hier",
                 re: /^(?:pflanze|baue|setze|erschaffe)\s+baum\s+hier\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_tree", ["at", p.x, p.y, p.z], 1],
                         describe: "Baum gepflanzt",
@@ -6785,7 +6822,7 @@ class AnazhRealm {
                 example: "pflanze hain",
                 re: /^pflanze\s+(?:einen\s+)?hain\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_tree", ["at", p.x, p.y, p.z], 5],
                         describe: "Hain (5 Bäume) gepflanzt",
@@ -6796,7 +6833,7 @@ class AnazhRealm {
                 example: "setze insel hier",
                 re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
                         program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
@@ -6808,7 +6845,7 @@ class AnazhRealm {
                 example: "rufe ufo hier",
                 re: /^(?:rufe|setze|spawne)\s+ufo\s+hier\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_ufo", ["at", p.x, p.y, p.z]],
                         describe: "UFO gerufen",
@@ -8111,6 +8148,24 @@ class AnazhRealm {
         return this._chatCommandHelpCache;
     }
 
+    // V9.44-e — die `data-cmd → processChatCommand`-Klick-Delegation. Vier
+    // Container (quick-actions, creature-actions, architecture-actions,
+    // help-list) trugen denselben Listener fast-identisch; jetzt EINE Quelle.
+    // `closeDrawers`: der help-list-Pfad schliesst nach dem Befehl die Drawer
+    // (der einzige Unterschied der vier — als ein Flag-Parameter geführt).
+    _wireCmdDelegation(elementId, closeDrawers) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const cmd = target.getAttribute("data-cmd");
+            if (!cmd) return;
+            this.processChatCommand(cmd);
+            if (closeDrawers) this.closeAllDrawers();
+        });
+    }
+
     initStatusPanel() {
         // UI V2: kein zentrales #status-panel mehr — Sektionen leben in den
         // sechs Drawer (Welt, Kreaturen, Spieler, Fähigkeiten, Einstellungen,
@@ -8218,38 +8273,11 @@ class AnazhRealm {
             p.emotionApplyCooldown = v;
         });
 
-        // Quick-Action-Buttons: data-cmd-Attribut → processChatCommand
-        const quick = document.getElementById("quick-actions");
-        if (quick) {
-            quick.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) this.processChatCommand(cmd);
-            });
-        }
-
-        // Kreatur-Actions teilen denselben Klick-Handler wie Quick-Actions.
-        const creatureActions = document.getElementById("creature-actions");
-        if (creatureActions) {
-            creatureActions.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) this.processChatCommand(cmd);
-            });
-        }
-
-        // Ring 6 — Bauwerk-Actions teilen denselben Mechanismus.
-        const architectureActions = document.getElementById("architecture-actions");
-        if (architectureActions) {
-            architectureActions.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) this.processChatCommand(cmd);
-            });
-        }
+        // Quick-Action-, Kreatur- und Bauwerk-Buttons teilen den
+        // data-cmd → processChatCommand-Delegate (V9.44-e: eine Quelle).
+        this._wireCmdDelegation("quick-actions");
+        this._wireCmdDelegation("creature-actions");
+        this._wireCmdDelegation("architecture-actions");
 
         // Hilfe-Drawer: Befehl-Liste aus chatCommandHelp generieren. Der
         // Hilfe-Drawer ist einer der sechs Tabs; Anzeige + Schließen läuft
@@ -8270,15 +8298,8 @@ class AnazhRealm {
                     helpList.appendChild(btn);
                 }
             }
-            helpList.addEventListener("click", (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) return;
-                const cmd = target.getAttribute("data-cmd");
-                if (cmd) {
-                    this.processChatCommand(cmd);
-                    this.closeAllDrawers();
-                }
-            });
+            // V9.44-e — der help-list-Delegate schliesst zusätzlich die Drawer.
+            this._wireCmdDelegation("help-list", true);
         }
     }
 
@@ -8995,7 +9016,7 @@ class AnazhRealm {
             // lassen, weil das Terrain je nach Seed auch 30+ Einheiten hoch
             // sein kann. Die loadState-Position-Restore-Logik teleportiert
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
-            playerPosition: { x: 0, y: 50, z: 0 },
+            playerPosition: this._defaultSpawnPos(),
             knowledgeBase: [],
             version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
@@ -9079,18 +9100,16 @@ class AnazhRealm {
                     sourceBlueprint: t.sourceBlueprint || null,
                 }));
             // Eigene Baupläne ebenfalls — sie sind Schöpfer-Wissen, kein
-            // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch).
+            // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch). V9.44-a:
+            // über _serializeBlueprint. Vorher trug dieser Pfad NUR
+            // name/label/parts/connections + role:"tool" — Portal-Rolle +
+            // W13-Signatur gingen bei „Person übernehmen" still verloren
+            // (die V8.59-Bug-Klasse, hier ehrlich mitgeheilt: ein vom
+            // Schöpfer gebautes Portal / signiertes Werk reist jetzt in die
+            // neue Welt mit).
             snap.blueprints = Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => ({
-                    name: bp.name,
-                    label: bp.label || bp.name,
-                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
-                    connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
-                    ...(bp.role === "tool" && bp.toolMeta
-                        ? { role: "tool", toolMeta: { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass } }
-                        : {}),
-                }));
+                .map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
     }
@@ -14703,6 +14722,149 @@ class AnazhRealm {
     }
 
     // ### Persistenz ###
+
+    // V9.44-a — Persistenz-Schema vereinheitlichen. _serializeBlueprint +
+    // _deserializeBlueprint sind die EINE Quelle des persistenten Bauplan-
+    // Feld-Satzes. Vor V9.44-a kopierten buildStateSnapshot UND loadState
+    // UND _buildEmptyWorldSnapshot den Feld-Satz hand-getippt an drei weit
+    // auseinanderliegenden Stellen — V8.59 war ein Bug genau hier (portalMeta
+    // fehlte im loadState-Restore-Pfad, ein geholtes Portal verlor beim
+    // Reload seine Ausrichtung). Der inheritPlayer-Pfad in
+    // _buildEmptyWorldSnapshot war noch weiter gedriftet: er trug NUR
+    // name/label/parts/connections + role:"tool" — Portal-Rolle + W13-
+    // Signatur gingen bei „Person übernehmen" still verloren. Jetzt ist
+    // jede persistente Bauplan-Eigenschaft ein Ein-Stellen-Edit. Spiegelt
+    // das erprobte _serializeCreature/_restoreCreatureFromSnapshot-Paar.
+    //
+    // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
+    // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
+    // (sie entstehen je Init aus _defaultBlueprints()).
+    _serializeBlueprint(bp) {
+        const out = {
+            name: bp.name,
+            label: bp.label || bp.name,
+            parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+            connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+        };
+        if (bp.role === "tool" && bp.toolMeta) {
+            out.role = "tool";
+            out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+        }
+        // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel) müssen
+        // mitreisen. Ohne das verlöre ein über die Bibliothek geholtes
+        // Portal beim Reload seine Ausrichtung — role + portalMeta fehlten,
+        // es fiele auf die Skelett-Welt zurück und der welt_portal-Klon
+        // träfe wieder _isMoveable (der V8.51-„Portal klebt am Körper"-Bug).
+        // roleManual sichert, dass die Rolle nicht von der Emergenz
+        // überschrieben wird.
+        if (bp.role === "portal" && bp.portalMeta) {
+            out.role = "portal";
+            if (bp.roleManual) out.roleManual = true;
+            out.portalMeta = {
+                world: bp.portalMeta.world,
+                label: bp.portalMeta.label,
+                dsl: Array.isArray(bp.portalMeta.dsl) ? bp.portalMeta.dsl.slice() : null,
+            };
+            // KI-Übersetzer Phase 2 — die translatedWorldId muss mitreisen,
+            // sonst verlöre ein geholtes Übersetzer-Portal beim Reload sein
+            // Szenen-Ziel (V8.59-Lehre).
+            if (bp.portalMeta.translatedWorldId) {
+                out.portalMeta.translatedWorldId = bp.portalMeta.translatedWorldId;
+            }
+            // V8.70 — die Vertrauensstufe reist mit, sonst verlöre ein
+            // geholtes Untrusted-Portal beim Reload seine null-origin-Sandbox.
+            if (bp.portalMeta.trust) out.portalMeta.trust = bp.portalMeta.trust;
+            // W17 Phase A — die Multiplayer-Marke reist mit, sonst verlöre
+            // ein Multiplayer-Portal beim Reload den Transport-Shim.
+            if (bp.portalMeta.multiplayer === true) out.portalMeta.multiplayer = true;
+            // W17 Phase B-JS-Compute — der Server-Modus reist mit, sonst
+            // verlöre ein js-compute-Portal beim Reload den Compute-Host-Pfad.
+            if (bp.portalMeta.serverMode === "js-compute") {
+                out.portalMeta.serverMode = "js-compute";
+            }
+        }
+        // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan (Save,
+        // Welt-Tor-Export, Recipe-Import, Fusion). Echtheit prüft
+        // verifyBlueprintSignature beim Anzeigen.
+        if (bp.signature && bp.authorPubKey) {
+            out.signature = bp.signature;
+            out.authorPubKey = bp.authorPubKey;
+            if (bp.signedHash) out.signedHash = bp.signedHash;
+            if (bp.signedAt) out.signedAt = bp.signedAt;
+        }
+        return out;
+    }
+
+    // Wiederherstellung: nimmt ein serialisiertes Bauplan-Objekt (aus dem
+    // Save / Welt-Tor / Mesh) und baut den lebenden Bauplan-Eintrag.
+    // Migriert alte Parts (kein material → „stein", keine opChain →
+    // Default-Kette), sanitisiert die Verbindungen, lässt portalMeta durch
+    // _sanitizePortalMeta (kein fremdes Origin schmuggelbar) und prüft die
+    // Signatur strukturell. Liefert den Bauplan-Eintrag (builtIn:false)
+    // oder null bei Müll-Daten. Der Aufrufer entscheidet die Registrierungs-
+    // Politik (Built-in-Kollision skippen).
+    _deserializeBlueprint(data) {
+        if (!data || typeof data.name !== "string" || !Array.isArray(data.parts)) return null;
+        // Welle 4 Phase 1+3 — Migration alter Parts: kein material → Default
+        // „stein", keine opChain → Default-Kette. Sicheres Default, keine
+        // Datenverluste.
+        const migratedParts = data.parts.map((p) => {
+            if (!p || typeof p !== "object") return p;
+            const out = { ...p };
+            if (typeof out.material !== "string" || !this.state.materials[out.material]) {
+                out.material = "stein";
+            }
+            if (!Array.isArray(out.opChain) || out.opChain.length === 0) {
+                out.opChain = this._defaultPartOpChain();
+            }
+            return out;
+        });
+        // Welle 5 A — connections sanitisieren beim Load.
+        const validConnections = this.validateBlueprintConnections(data.connections || [], migratedParts.length);
+        const restored = {
+            name: data.name,
+            label: data.label || data.name,
+            builtIn: false,
+            parts: migratedParts,
+            connections: validConnections,
+        };
+        // Welle 5 C — role + toolMeta beim Load wiederherstellen.
+        if (
+            data.role === "tool" &&
+            data.toolMeta &&
+            AnazhRealm.TOOL_OP_CLASSES.has(data.toolMeta.opClass) &&
+            AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(data.toolMeta.opName || ""))
+        ) {
+            restored.role = "tool";
+            restored.toolMeta = { opName: data.toolMeta.opName, opClass: data.toolMeta.opClass };
+        }
+        // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
+        // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad) —
+        // ein manipulierter Save kann so kein fremdes Origin ins Portal-
+        // iframe schmuggeln.
+        if (data.role === "portal" && data.portalMeta && typeof data.portalMeta === "object") {
+            restored.role = "portal";
+            if (data.roleManual === true) restored.roleManual = true;
+            restored.portalMeta = this._sanitizePortalMeta(data.portalMeta, restored.label);
+        }
+        // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
+        // plausibel prüfen (Hex-Form); die echte Verifikation macht
+        // verifyBlueprintSignature beim Anzeigen — eine kaputte oder
+        // gefälschte Signatur wird dort als „forged" sichtbar.
+        if (
+            typeof data.signature === "string" &&
+            /^[0-9a-f]{2,256}$/i.test(data.signature) &&
+            typeof data.authorPubKey === "string" &&
+            /^[0-9a-f]{64}$/i.test(data.authorPubKey)
+        ) {
+            restored.signature = data.signature;
+            restored.authorPubKey = data.authorPubKey;
+            if (typeof data.signedHash === "string") restored.signedHash = data.signedHash;
+            if (typeof data.signedAt === "number") restored.signedAt = data.signedAt;
+        }
+        return restored;
+    }
+
     buildStateSnapshot() {
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
         return {
@@ -14788,67 +14950,12 @@ class AnazhRealm {
             })),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
-            // wir speichern nur, was der Spieler dazugefügt hat.
+            // wir speichern nur, was der Spieler dazugefügt hat. V9.44-a:
+            // der persistente Feld-Satz lebt in _serializeBlueprint — eine
+            // Quelle für alle drei Snapshot-Pfade.
             blueprints: Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => {
-                    const out = {
-                        name: bp.name,
-                        label: bp.label || bp.name,
-                        parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
-                        connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
-                    };
-                    if (bp.role === "tool" && bp.toolMeta) {
-                        out.role = "tool";
-                        out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
-                    }
-                    // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel)
-                    // müssen mitreisen. Ohne das verlöre ein über die Bibliothek
-                    // geholtes Portal beim Reload seine Ausrichtung — role +
-                    // portalMeta fehlten, es fiele auf die Skelett-Welt zurück
-                    // und der welt_portal-Klon träfe wieder _isMoveable (der
-                    // V8.51-„Portal klebt am Körper"-Bug). roleManual sichert,
-                    // dass die Rolle nicht von der Emergenz überschrieben wird.
-                    if (bp.role === "portal" && bp.portalMeta) {
-                        out.role = "portal";
-                        if (bp.roleManual) out.roleManual = true;
-                        out.portalMeta = {
-                            world: bp.portalMeta.world,
-                            label: bp.portalMeta.label,
-                            dsl: Array.isArray(bp.portalMeta.dsl) ? bp.portalMeta.dsl.slice() : null,
-                        };
-                        // KI-Übersetzer Phase 2 — die translatedWorldId muss
-                        // mitreisen, sonst verlöre ein geholtes Übersetzer-
-                        // Portal beim Reload sein Szenen-Ziel (V8.59-Lehre).
-                        if (bp.portalMeta.translatedWorldId) {
-                            out.portalMeta.translatedWorldId = bp.portalMeta.translatedWorldId;
-                        }
-                        // V8.70 — die Vertrauensstufe reist mit, sonst verlöre
-                        // ein geholtes Untrusted-Portal beim Reload seine
-                        // null-origin-Sandbox.
-                        if (bp.portalMeta.trust) out.portalMeta.trust = bp.portalMeta.trust;
-                        // W17 Phase A — die Multiplayer-Marke reist mit, sonst
-                        // verlöre ein Multiplayer-Portal beim Reload den
-                        // Transport-Shim (V8.59-Lehre: der feste Feld-Satz).
-                        if (bp.portalMeta.multiplayer === true) out.portalMeta.multiplayer = true;
-                        // W17 Phase B-JS-Compute — der Server-Modus reist mit,
-                        // sonst verlöre ein js-compute-Portal beim Reload den
-                        // Compute-Host-Pfad (es fiele auf relay zurück).
-                        if (bp.portalMeta.serverMode === "js-compute") {
-                            out.portalMeta.serverMode = "js-compute";
-                        }
-                    }
-                    // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
-                    // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
-                    // prüft verifyBlueprintSignature beim Anzeigen.
-                    if (bp.signature && bp.authorPubKey) {
-                        out.signature = bp.signature;
-                        out.authorPubKey = bp.authorPubKey;
-                        if (bp.signedHash) out.signedHash = bp.signedHash;
-                        if (bp.signedAt) out.signedAt = bp.signedAt;
-                    }
-                    return out;
-                }),
+                .map((bp) => this._serializeBlueprint(bp)),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
             // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
             // bei jedem Init, deshalb nur eigene speichern.
@@ -16442,7 +16549,7 @@ class AnazhRealm {
         if (lanAddrs.length > 0) {
             inviteUrl = `ws://${lanAddrs[0]}`;
         } else {
-            inviteUrl = (this.state.p2p && this.state.p2p.url) || "ws://127.0.0.1:4313";
+            inviteUrl = (this.state.p2p && this.state.p2p.url) || AnazhRealm.P2P_DEFAULT_WS_URL;
         }
         const code = this.makeInvitationCode(inviteUrl, worldId) || "(Code-Erzeugung fehlgeschlagen)";
         const connected = this.state.p2p && this.state.p2p.connected;
@@ -16916,69 +17023,15 @@ class AnazhRealm {
         // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
         // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
         if (Array.isArray(state.blueprints)) {
+            // V9.44-a — der Restore-Feld-Satz (Part-Migration, Connection-
+            // Sanitizing, portalMeta-Sanitizer, Signatur-Prüfung) lebt in
+            // _deserializeBlueprint. Hier bleibt nur die Registrierungs-
+            // Politik: einen Built-in-Namen NICHT überschreiben.
             for (const bp of state.blueprints) {
-                if (!bp || typeof bp.name !== "string" || !Array.isArray(bp.parts)) continue;
-                // Built-in nicht überschreiben — sicherheitshalber prefixen
-                // oder skip wenn Name kollidiert.
+                if (!bp || typeof bp.name !== "string") continue;
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
-                // Welle 4 Phase 1+3 — Migration alter Parts: kein material →
-                // Default „stein", keine opChain → Default-Kette. Sicheres
-                // Default, keine Datenverluste.
-                const migratedParts = bp.parts.map((p) => {
-                    if (!p || typeof p !== "object") return p;
-                    const out = { ...p };
-                    if (typeof out.material !== "string" || !this.state.materials[out.material]) {
-                        out.material = "stein";
-                    }
-                    if (!Array.isArray(out.opChain) || out.opChain.length === 0) {
-                        out.opChain = this._defaultPartOpChain();
-                    }
-                    return out;
-                });
-                // Welle 5 A — connections sanitisieren beim Load.
-                const validConnections = this.validateBlueprintConnections(bp.connections || [], migratedParts.length);
-                const restored = {
-                    name: bp.name,
-                    label: bp.label || bp.name,
-                    builtIn: false,
-                    parts: migratedParts,
-                    connections: validConnections,
-                };
-                // Welle 5 C — role + toolMeta beim Load wiederherstellen.
-                if (
-                    bp.role === "tool" &&
-                    bp.toolMeta &&
-                    AnazhRealm.TOOL_OP_CLASSES.has(bp.toolMeta.opClass) &&
-                    AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(bp.toolMeta.opName || ""))
-                ) {
-                    restored.role = "tool";
-                    restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
-                }
-                // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
-                // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad)
-                // — ein manipulierter Save kann so kein fremdes Origin ins
-                // Portal-iframe schmuggeln.
-                if (bp.role === "portal" && bp.portalMeta && typeof bp.portalMeta === "object") {
-                    restored.role = "portal";
-                    if (bp.roleManual === true) restored.roleManual = true;
-                    restored.portalMeta = this._sanitizePortalMeta(bp.portalMeta, restored.label);
-                }
-                // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
-                // plausibel prüfen (Hex-Form); die echte Verifikation macht
-                // verifyBlueprintSignature beim Anzeigen — eine kaputte oder
-                // gefälschte Signatur wird dort als „forged" sichtbar.
-                if (
-                    typeof bp.signature === "string" &&
-                    /^[0-9a-f]{2,256}$/i.test(bp.signature) &&
-                    typeof bp.authorPubKey === "string" &&
-                    /^[0-9a-f]{64}$/i.test(bp.authorPubKey)
-                ) {
-                    restored.signature = bp.signature;
-                    restored.authorPubKey = bp.authorPubKey;
-                    if (typeof bp.signedHash === "string") restored.signedHash = bp.signedHash;
-                    if (typeof bp.signedAt === "number") restored.signedAt = bp.signedAt;
-                }
-                this.state.blueprints[bp.name] = restored;
+                const restored = this._deserializeBlueprint(bp);
+                if (restored) this.state.blueprints[restored.name] = restored;
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
         }
@@ -18044,7 +18097,7 @@ class AnazhRealm {
         const fusedEntries = [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
 
         const snap = {
-            playerPosition: { x: 0, y: 50, z: 0 },
+            playerPosition: this._defaultSpawnPos(),
             knowledgeBase: [
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
@@ -22096,6 +22149,20 @@ class AnazhRealm {
         return { tags: finalTags, stats };
     }
 
+    // V9.44-b — kanonischer Setter für die Spieler-Geschwindigkeit. speed
+    // und sprintSpeed sind GEKOPPELT: sprintSpeed = 2× speed (die Konvention
+    // seit Ring 5 — z. B. speed 6 ⇒ sprintSpeed 12). Vor V9.44-b kannten
+    // BEIDE Schreibpfade (der player_speed-DSL-Op + recomputePlayerStats)
+    // die Kopplung selbst — V7.72 war ein Bug genau hier (player_speed setzte
+    // nur speed, sprintSpeed blieb stale → Shift drücken wurde LANGSAMER als
+    // Gehen). Jetzt hält EIN Setter die Kopplung; jeder künftige Schreibpfad
+    // kann sie nicht mehr vergessen. Die Eingabe-Validierung (Clamp) bleibt
+    // beim Aufrufer — der Setter wendet nur die Kopplung an.
+    _applyPlayerSpeed(v) {
+        this.state.speed = v;
+        this.state.sprintSpeed = v * 2;
+    }
+
     // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
     // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
     // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
@@ -22105,10 +22172,9 @@ class AnazhRealm {
         if (!this.state.player) return computed;
         this.state.player.stats = computed.stats;
         this.state.player.statTags = computed.tags;
-        // Anwendung auf die Live-Bewegungs-Werte. Sprint = 2× speed (heutige
-        // Konvention: speed=6, sprintSpeed=12).
-        this.state.speed = computed.stats.speed;
-        this.state.sprintSpeed = computed.stats.speed * 2;
+        // Anwendung auf die Live-Bewegungs-Werte. V9.44-b: speed + sprintSpeed
+        // über den kanonischen Setter — Sprint = 2× speed konsistent gehalten.
+        this._applyPlayerSpeed(computed.stats.speed);
         this.state.jumpPower = computed.stats.jumpPower;
         // HP + Stamina als Lebens-Werte (V1 noch ohne Schadens-System; werden
         // mit 6.C2 pfad-Modus aktiv). Auf MAX setzen bei jedem Soul-Wechsel.
@@ -27149,12 +27215,33 @@ class AnazhRealm {
         return true;
     }
 
+    // V9.44-e — der Werkstatt-DOM-Builder ist ein Orchestrator. Vor V9.44-e
+    // war _renderWorkshopDOM eine ~644-Zeilen-Funktion mit 159 DOM-Operationen.
+    // Jetzt: neun in-sich-geschlossene Sektionen als `_workshopRender<X>`-
+    // Sub-Methoden (das erprobte `_workshopRenderStatsPanel`-Muster, weiter
+    // geschnitten). Jede Sektion baut ihren DOM-Teilbaum + hängt ihn an;
+    // sie teilen nur `list`/`editor`/`ws`/`selected` — die Methoden-Parameter.
     _renderWorkshopDOM() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("workshop-list");
         const editor = document.getElementById("workshop-editor");
         if (!list || !editor) return;
         const ws = this._ensureWorkshopState();
+        this._workshopRenderBlueprintList(list, ws);
+        editor.innerHTML = "";
+        const selected = this.state.blueprints[ws.selectedBlueprint];
+        if (!selected) return;
+        this._workshopRenderHeader(editor, selected);
+        this._workshopRenderToolsBox(editor);
+        this._workshopRenderPartsList(editor, selected, ws);
+        this._workshopRenderConnections(editor, selected);
+        this._workshopRenderToolRecursion(editor, selected);
+        this._workshopRenderTagsSection(editor, selected);
+        this._workshopRenderActions(editor, selected);
+        this._workshopRenderTail(selected);
+    }
+
+    _workshopRenderBlueprintList(list, ws) {
         const blueprintNames = Object.keys(this.state.blueprints);
         // Liste der Baupläne
         list.innerHTML = "";
@@ -27181,10 +27268,9 @@ class AnazhRealm {
             row.addEventListener("click", () => this.selectBlueprintForEdit(name));
             list.appendChild(row);
         }
-        // Editor
-        editor.innerHTML = "";
-        const selected = this.state.blueprints[ws.selectedBlueprint];
-        if (!selected) return;
+    }
+
+    _workshopRenderHeader(editor, selected) {
         // Header mit Label + Aktionen
         const header = document.createElement("div");
         header.className = "workshop-header";
@@ -27213,6 +27299,9 @@ class AnazhRealm {
         }
         header.appendChild(status);
         editor.appendChild(header);
+    }
+
+    _workshopRenderToolsBox(editor) {
         // Welle 4 Phase 3 — Werkzeug-Sammlung. Eine Liste der besessenen
         // Tools mit ihrem Cap. Sichtbarmacht, womit Spieler aktuell arbeiten
         // kann. Read-only in Phase 3 (eigene Werkzeuge gehen in Welle 6 auf).
@@ -27246,6 +27335,9 @@ class AnazhRealm {
             toolsBox.appendChild(chip);
         }
         editor.appendChild(toolsBox);
+    }
+
+    _workshopRenderPartsList(editor, selected, ws) {
         // Parts-Liste — bei Built-ins nur lesbar
         const partsDiv = document.createElement("div");
         partsDiv.className = "workshop-parts";
@@ -27436,6 +27528,9 @@ class AnazhRealm {
             partsDiv.appendChild(row);
         }
         editor.appendChild(partsDiv);
+    }
+
+    _workshopRenderConnections(editor, selected) {
         // Welle 5 A — Verbindungen zwischen Parts. Acht Typen aus Konzept
         // §5.1, jede mit eigener Last-Formel (Material-Tags × Kontaktfläche
         // × Typ-Multiplier). Built-ins read-only.
@@ -27540,6 +27635,9 @@ class AnazhRealm {
             connectionsSection.appendChild(addRow);
         }
         editor.appendChild(connectionsSection);
+    }
+
+    _workshopRenderToolRecursion(editor, selected) {
         // Welle 5 C — Bauplan als Werkzeug markieren + registrieren. Nur für
         // eigene Baupläne. UI zeigt: aktuelle Bauplan-Präzision (= zukünftiger
         // Cap), opName + opClass Inputs, „als Werkzeug registrieren"-Button.
@@ -27610,6 +27708,9 @@ class AnazhRealm {
             toolSection.appendChild(toolRow);
             editor.appendChild(toolSection);
         }
+    }
+
+    _workshopRenderTagsSection(editor, selected) {
         // Welle 4 Phase 2 — emergente Tag-Anzeige für den ganzen Compound.
         // Read-only: Spieler sehen, was Form + Material zusammen aktivieren.
         // Hinweis-Text dokumentiert die Grenze zur räumlichen Emergenz
@@ -27697,6 +27798,9 @@ class AnazhRealm {
                 : "Atomare Schicht: pro Part. Räumliche Verstärkung erscheint bei pointed-Spitzen am Rand, Hohlraum-Paaren (Sphere/Torus mit Inhalt), Y-Achsen-Symmetrie oder Resonanz-Arrays (≥3 gleiche Shape auf gleichem Radius).";
         tagsSection.appendChild(tagsHint);
         editor.appendChild(tagsSection);
+    }
+
+    _workshopRenderActions(editor, selected) {
         // Aktions-Buttons
         const actions = document.createElement("div");
         actions.className = "workshop-actions";
@@ -27768,6 +27872,9 @@ class AnazhRealm {
         });
         actions.appendChild(newBtn);
         editor.appendChild(actions);
+    }
+
+    _workshopRenderTail(selected) {
         // Hotbar-Config und alle Phantom-Mesh updaten, falls der aktive
         // Bauplan editiert wurde.
         this._renderHotbarConfigDOM();
@@ -32966,54 +33073,8 @@ class AnazhRealm {
             // ### FPS aktualisieren ###
             this.updateFps(delta);
 
-            // ### Nexus-Update ###
-            if (this.state.nexusEvolutionQueue.length > 0) {
-                const evolution = this.state.nexusEvolutionQueue.shift();
-                if (Array.isArray(evolution.program)) {
-                    const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
-                    // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
-                    // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
-                    const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
-                    const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
-                    const abilityEntry = {
-                        name: evolution.name,
-                        program: evolution.program,
-                        source: evolution.source || "nexus",
-                        createdAt: evolution.createdAt || performance.now() / 1000,
-                        fitness: initialFitness,
-                    };
-                    this.state.dsl.abilities.push(abilityEntry);
-                    const historyEntry = {
-                        id: evolution.name,
-                        program: evolution.program,
-                        at: performance.now() / 1000,
-                        outcome: result.outcome,
-                        ok: result.ok,
-                        fitness: initialFitness,
-                        finalized: false,
-                    };
-                    this.state.dsl.history.push(historyEntry);
-                    if (this.state.dsl.history.length > this.state.dsl.historyCap) {
-                        this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
-                    }
-                    // Pending einreihen — Finalizer holt 5 s später Emotion/Activity-Delta.
-                    if (result.ok) {
-                        this.state.dsl.pendingOutcomes.push({
-                            name: evolution.name,
-                            program: evolution.program,
-                            outcome: result.outcome,
-                            historyRef: historyEntry,
-                        });
-                    }
-                    this.log(
-                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${initialFitness.toFixed(2)}`,
-                        "INFO"
-                    );
-                } else {
-                    this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
-                }
-                this.grokSpeak("nexus");
-            }
+            // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
+            this._loopNexusUpdate();
 
             // ### Grok-Stimme (Ring 1) ###
             this.grokTick(currentTime);
@@ -33069,54 +33130,10 @@ class AnazhRealm {
             // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
             this.p2pTick(performance.now());
 
-            // ### Bodenprüfung ###
-            // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
-            // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
-            if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
-                const voxelActive = this.state.voxelTerrainActive === true;
-                if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
-                    this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
-                    this.generateNewWorld();
-                }
-                this.state.lastGroundCheck = currentTime;
-            }
-
-            // ### Frustum Culling ###
-            // V8.26 Polish §6.1 — Frustum + Matrix4 als state-Pool statt
-            // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
-            // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
-            if (!this._frustumCache) {
-                this._frustumCache = new THREE.Frustum();
-                this._frustumMatrixCache = new THREE.Matrix4();
-            }
-            this._frustumMatrixCache.multiplyMatrices(
-                this.state.camera.projectionMatrix,
-                this.state.camera.matrixWorldInverse
-            );
-            this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
-            const frustum = this._frustumCache;
-            // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
-            // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
-            if (this.state.voxelTerrainActive) {
-                this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
-            } else {
-                this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
-            }
-            if (this.state.floatingIslands)
-                this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
-            if (this.state.creatures)
-                this.state.creatures.forEach((creature) => (creature.visible = this.isInFrustum(creature, frustum)));
-
-            // ### UFOs animieren ###
-            if (this.state.ufos && this.state.playerMesh) {
-                const playerPos = this.state.playerMesh.position;
-                this.state.ufos.forEach((ufo) => {
-                    const distance = playerPos.distanceTo(ufo.position);
-                    if (distance < 50) {
-                        ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
-                    }
-                });
-            }
+            // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+            this._loopGroundCheck(currentTime);
+            this._loopFrustumCulling();
+            this._loopAnimateUfos(currentTime);
 
             // Welle 6.G Phase 1: der frühere lazy-physics-Pfad für
             // floatingIslands ist hier gelöscht. Inseln bekommen ihre
@@ -33127,279 +33144,14 @@ class AnazhRealm {
 
             this.updateWallCollisions();
 
-            // ### Physik-Simulation ###
-            if (this.state.physicsWorld) {
-                this.state.physicsWorld.stepSimulation(delta, 20, 1 / 60);
-                for (let i = 0; i < this.state.rigidBodies.length; i++) {
-                    const mesh = this.state.rigidBodies[i];
-                    const body = mesh.userData.physicsBody;
-                    const motionState = body.getMotionState();
-                    if (motionState) {
-                        motionState.getWorldTransform(this.state.tmpTransform);
-                        const pos = this.state.tmpTransform.getOrigin();
-                        let scaledY = pos.y() * this.state.scaleFactor;
-                        const velocity = body.getLinearVelocity();
+            // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
+            this._loopPhysicsSync(delta, currentTime);
 
-                        // Fall-Geschwindigkeit cappen: ohne Cap zog die
-                        // Schwerkraft den Spieler in eine sehr hohe vy, sodass
-                        // er pro Frame eine ganze Heightfield-Cell (~1.17 m)
-                        // überspringen konnte — Tunneling durch steile Hänge.
-                        // -25 m/s ist eine plausible Terminal Velocity und
-                        // bleibt unter Cell-Breite × 60 fps.
-                        if (mesh === this.state.playerMesh && velocity.y() < -25) {
-                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
-                        }
+            // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
+            this._loopPlayerMovement(currentTime);
 
-                        // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
-                        // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
-                        // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
-                        // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
-                        // V8.32 — zwei getrennte Flags: playerUnderwater
-                        // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
-                        // playerEyesUnderwater (Augen/Kamera unter Wasser →
-                        // blauer Tint). Sonst sprang der Tint schon beim
-                        // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
-                        if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
-                            const submerged = scaledY < this.state.waterLevel;
-                            this.state.playerUnderwater = submerged;
-                            // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
-                            this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
-                            if (submerged) {
-                                // V8.36 — Auftrieb wirkt NUR über dem Terrain.
-                                // Fällt der Spieler durch die Welt (weit unter
-                                // die Terrain-Oberfläche), fing ihn der Auftrieb
-                                // sonst ab — er „schwamm" unter dem Boden statt
-                                // von der Killplane resettet zu werden. Wasser
-                                // sitzt immer auf festem Grund; ist man weit
-                                // darunter, trägt nichts → die Killplane greift.
-                                const wTerrainY = this.getTerrainHeightAt(
-                                    pos.x() * this.state.scaleFactor,
-                                    pos.z() * this.state.scaleFactor
-                                );
-                                if (scaledY >= wTerrainY - 22) {
-                                    // V8.33 — Tauchen + Auftauchen. Shift taucht
-                                    // ab (Minecraft-Konvention), Space hebt; ohne
-                                    // Eingabe wirkt der natürliche Auftrieb.
-                                    const swimVy = this._swimVerticalVelocity(
-                                        velocity.y(),
-                                        this.state.waterLevel - scaledY,
-                                        !!this.state.keys["shift"],
-                                        !!this.state.keys[" "]
-                                    );
-                                    body.setLinearVelocity(
-                                        this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
-                                    );
-                                }
-                            }
-                        }
-
-                        // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
-                        // in Reichweite eines lifting-Compounds (Flag aus
-                        // _tickLiftingAffordances), trägt ihn das Feld: der Fall
-                        // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
-                        // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
-                        // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
-                        if (
-                            mesh === this.state.playerMesh &&
-                            !this.state.playerUnderwater &&
-                            this.state.player &&
-                            this.state.player.liftingField &&
-                            this.state.player.liftingField.active
-                        ) {
-                            const liftVy = this._liftVerticalVelocity(
-                                velocity.y(),
-                                this.state.player.liftingField.strength
-                            );
-                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
-                        }
-
-                        // Kill-Plane näher an den Welt-Boden gerückt: vorher
-                        // erst nach 1000 m freiem Fall — der Spieler war
-                        // gefühlt "verloren". 30 m unter dem tiefsten Welt-
-                        // Punkt ist nah genug, dass Resets sofort spürbar
-                        // sind, aber tief genug, dass eine legitime Schlucht
-                        // (heights -100..+100) den Spieler nicht reset.
-                        // V9.25 Phase 5b — der Killplane folgt der Welt. In
-                        // einer Voxel-Welt liegt der Chunk-Boden bei base-58
-                        // (V9.26); der Killplane gehört DARUNTER (base-88),
-                        // sonst würde ein Spieler in einem tiefen Voxel-Tal
-                        // resettet. Das heightfield-abgeleitete `minHeight`
-                        // kennt das Voxel-Band nicht.
-                        const killPlaneY =
-                            this.state.worldMeta && this.state.worldMeta.voxelTerrain
-                                ? (this.state.terrainBaseHeight || 0) - 88
-                                : (this.state.minHeight || -50) - 30;
-                        if (scaledY < killPlaneY) {
-                            const currentX = pos.x() * this.state.scaleFactor;
-                            const currentZ = pos.z() * this.state.scaleFactor;
-
-                            // Funktion zum Finden der Oberfläche über dem Spieler
-                            const surfaceHeight = this.findSurfaceAbove(currentX, scaledY, currentZ);
-                            scaledY = surfaceHeight + 0.5; // Spieler wird knapp über die Oberfläche gesetzt
-
-                            const transform = this.state.tmpTransform;
-                            transform.setIdentity();
-                            transform.setOrigin(
-                                this.setVec(
-                                    this.state.tmpVec1,
-                                    currentX / this.state.scaleFactor,
-                                    scaledY / this.state.scaleFactor,
-                                    currentZ / this.state.scaleFactor
-                                )
-                            );
-                            body.setWorldTransform(transform);
-                            body.setLinearVelocity(this.setVec(this.state.tmpVec2, velocity.x(), 0, velocity.z()));
-                            this.state.isJumping = false;
-                            this.state.isInAir = false;
-                            mesh.position.set(currentX, scaledY, currentZ);
-                            this.log(
-                                `Spieler auf Oberfläche zurückgesetzt: (${currentX.toFixed(2)}, ${scaledY.toFixed(2)}, ${currentZ.toFixed(2)})`,
-                                "INFO"
-                            );
-                        }
-
-                        if (mesh === this.state.playerMesh) {
-                            mesh.position.set(
-                                pos.x() * this.state.scaleFactor,
-                                scaledY,
-                                pos.z() * this.state.scaleFactor
-                            );
-                            const isGrounded = this.isPlayerGrounded();
-                            if (isGrounded) {
-                                this.state.lastGroundedTime = currentTime;
-                                this.state.isInAir = false;
-                                this.state.isJumping = false;
-                                // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
-                                if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
-                                    this.log("Spieler geerdet!", "INFO");
-                                    this.state.lastGroundedLog = currentTime;
-                                }
-                            } else {
-                                this.state.isInAir = true;
-                            }
-                        } else {
-                            mesh.position.set(
-                                pos.x() * this.state.scaleFactor,
-                                scaledY,
-                                pos.z() * this.state.scaleFactor
-                            );
-                        }
-                    }
-                }
-            }
-
-            // ### Spielerbewegung ###
-            const player = this.state.playerMesh;
-            const camera = this.state.camera;
-            const playerBody = this.state.playerBody;
-            // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
-            // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
-            let currentSpeed =
-                this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
-            // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
-            // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
-            if (this.state.playerUnderwater) currentSpeed *= 0.55;
-
-            this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
-            this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
-            this.state.moveDirection.set(0, 0, 0);
-            if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
-            if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
-            // Bewusst NICHT „intuitiv" inverten: `state.right` ist die ARITHMETISCHE
-            // Richtung (cos yaw, 0, −sin yaw), nicht die anatomische Rechts-Seite
-            // des Spielers. In Right-Hand-Coords mit Y up: forward × up = −X,
-            // also ist player-anatomisch-RECHTS = −X = −state.right. Original-Mapping:
-            // A → +state.right (= player-links), D → −state.right (= player-rechts).
-            // (Schöpfer-Hinweis 13.05.2026: vorherige „Fix"-Vertauschung brach das
-            // konsistente Verhalten, jetzt revertiert.)
-            if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
-            if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
-
-            if (this.state.physicsWorld && playerBody) {
-                // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
-                // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
-                // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
-                // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
-                // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
-                const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
-                if (this.state.moveDirection.length() > 0) {
-                    this.state.moveDirection.normalize();
-                    playerBody.setLinearVelocity(
-                        this.setVec(
-                            this.state.tmpVec1,
-                            this.state.moveDirection.x * currentSpeed * slopePenalty,
-                            playerBody.getLinearVelocity().y(),
-                            this.state.moveDirection.z * currentSpeed * slopePenalty
-                        )
-                    );
-                    // V8.36 — kein forceActivationState mehr nötig: der
-                    // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
-                    // (schläft nie). Ein forceActivationState(1) HIER würde ihn
-                    // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
-                    // zurück, sobald man stehen bleibt.
-                } else if (!this.state.onSteepSlope) {
-                    // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
-                    // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
-                    // die existierende Velocity stehen — Gravitation + Slope-
-                    // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
-                    // (Voraussetzung: Player-Friction 0 aus 6.A1).
-                    playerBody.setLinearVelocity(
-                        this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0)
-                    );
-                }
-
-                if (this.state.keys[" "] && !this.state.isJumping) {
-                    const isGrounded = this.isPlayerGrounded();
-                    const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
-                    // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
-                    // ob der Soul leicht genug zum Abdrücken am Hang ist.
-                    // Bei false: Sprung-Block wird übersprungen, restlicher
-                    // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
-                    // weiter wie gewohnt.
-                    if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
-                        // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
-                        // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
-                        // ein forceActivationState aufgerufen — Stand-Sprung würde
-                        // sonst verpuffen wenn der Body im Ammo-Sleep ist.
-                        playerBody.activate(true);
-                        const jumpForce = this.state.jumpPower;
-                        const currentVelocity = playerBody.getLinearVelocity();
-                        playerBody.setLinearVelocity(
-                            this.setVec(
-                                this.state.tmpVec1,
-                                currentVelocity.x(),
-                                jumpForce / this.state.scaleFactor,
-                                currentVelocity.z()
-                            )
-                        );
-                        this.state.isJumping = true;
-                        this.state.isInAir = true;
-                        if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
-                            this.log("Spieler springt!", "INFO");
-                            this.state.lastJumpLog = currentTime;
-                        }
-                    }
-                }
-            }
-
-            // ### Selbstanalyse + Nexus-Evolution-Trigger ###
-            // Früher hing das am TF-Trainings-Tick (`learn()`); nach TF-Cleanup
-            // läuft die Zeit-Schwelle direkt. `selfAwarenessAnalyze` macht den
-            // FPS-/Tunneling-/Boden-Check, `evolveNexus` queued ein DSL-Programm
-            // in den `nexusEvolutionQueue`.
-            if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
-                this.selfAwarenessAnalyze();
-                if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
-                    this.nexus.processOptimization({ fps: this.state.fps });
-                }
-                this.journalTick(currentTime);
-                // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
-                // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
-                this.updateWorldInfo();
-            }
-            if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
-                this.evolveNexus(currentTime);
-            }
+            // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
+            this._loopSelfAnalysis(currentTime);
 
             // ### Schicht 1 — IQ-Ticks ###
             // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame, billig),
@@ -33410,160 +33162,25 @@ class AnazhRealm {
             this.pruneRecentKeywords(currentTime);
             this.finalizePendingOutcomes(currentTime);
 
-            // ### Kreaturen, Wetter, Wachstum ###
-            this.updateCreatures(delta);
-            this.state.weatherEffectTime += delta;
-            if (this.state.weatherEffectTime >= 30.0) {
-                this.state.weather = this.state.weather === "sunny" ? "rainy" : "sunny";
-                this.updateSkyboxWeather();
-                this.updateCreatureEmotions();
-                this.log(`Wetter gewechselt zu ${this.state.weather}`, "INFO");
-                this.state.weatherEffectTime = 0;
-            }
+            // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
+            this._loopWeatherAndGrowth(delta, currentTime);
 
-            if (currentTime - this.state.lastGrowthUpdate >= 1.0) {
-                this.updateGrowth(); // Fehler behoben
-                this.state.lastGrowthUpdate = currentTime;
-            }
+            // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
+            this._loopVoxelStreaming();
 
-            // ### Unendliches Terrain – spieler-zentriert ###
-            // Statt Map-Mittelpunkt-Extension (die Chunks weit weg vom Spieler
-            // entstehen ließ und Lücken hinterließ) füllen wir jetzt einen
-            // 5×5-Ring um den Chunk, in dem der Spieler steht. Pro Frame max
-            // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Streaming-Ring ist
-            // als toter Pfad entfernt — Voxel ist permanent seit V9.35.
-            // Der Voxel-Chunk-Streaming-Ring trägt jeden Spieler-Schritt
-            // (Ring-Radius lebt in `_voxelChunkConfig().ringRadius`, der
-            // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
-            // V9.24-Verdrahtung).
-            const playerPos = this.state.playerMesh.position;
-            this._tickVoxelChunkStreaming(playerPos);
-            // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
-            // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
-            // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
-            // V9.40-c alle in einem Frame; jetzt verteilt. Bei dirty-empty
-            // ist es ein no-op (eine Set.size-Lesung). Tests, die direkt nach
-            // einem Edit den Mesh prüfen, rufen `_drainDirtyVoxelChunks()`.
-            this._tickDirtyVoxelChunks(playerPos);
-
-            // ### Skybox und Planeten ###
-            this.state.skybox.material.uniforms.time.value = currentTime;
-            this.state.planets.forEach((planet) => {
-                const theta = currentTime / 10;
-                const radius = 400;
-                planet.position.x = radius * Math.cos(theta);
-                planet.position.z = radius * Math.sin(theta);
-            });
+            // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
+            this._loopSkyboxPlanets(currentTime);
 
             // ### Fähigkeiten ###
             Object.keys(this.state.abilities).forEach((ability) => {
                 if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
             });
 
-            // ### Speichern ###
-            if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
-                this.saveState();
-                this.state.lastSaveUpdate = currentTime;
-            }
-            if (
-                !this.state.isServerSaveInFlight &&
-                currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
-            ) {
-                this.state.isServerSaveInFlight = true;
-                this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                    this.state.isServerSaveInFlight = false;
-                });
-                this.state.lastServerSaveUpdate = currentTime;
-            }
+            // ### Speichern ### (V9.44-f → _loopAutoSave)
+            this._loopAutoSave(currentTime);
 
-            // ### Kamera ###
-            if (player && camera) {
-                // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
-                // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
-                // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
-                player.rotation.y = this.state.yaw;
-                // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
-                // den eigenen Körper zu sehen ist normal — Minecraft etc.
-                // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
-                // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
-                // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
-                // Runterschauen. Im 3rd-Person ist alles sichtbar.
-                player.visible = true;
-                {
-                    const headPart = player.userData && player.userData.parts && player.userData.parts.head;
-                    if (headPart) headPart.visible = this.state.cameraMode === "third";
-                }
-                if (this.state.cameraMode === "third") {
-                    // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
-                    // die Kamera vertikal; Distance bleibt konstant. Look-At
-                    // zielt auf den Brust-Punkt.
-                    //
-                    // Pitch-Vorzeichen ist gegenüber 1st bewusst invertiert:
-                    // im 1st-Modus heißt "nach oben schauen" = Welt nach unten
-                    // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
-                    // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
-                    // = Kamera höher um den Charakter herum).
-                    const dist = this.state.cameraThirdDistance;
-                    const height = this.state.cameraThirdHeight;
-                    const cosPitch = Math.cos(this.state.pitch);
-                    const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
-                    const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
-                    let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
-                    // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
-                    const minCamY = player.position.y - 0.2;
-                    if (camY < minCamY) camY = minCamY;
-                    // V8.57 — die pitch-gesteuerte Wunsch-Höhe der Kamera (nach
-                    // Boden-Clamp, VOR der Kamera-Kollision unten) als State
-                    // spiegeln. Der Playtest prüft die Pitch-Inversion daran
-                    // deterministisch: die Kollisions-Raycast unten hängt von der
-                    // nicht-deterministischen Umgebung des Spielers ab und gehört
-                    // nicht in den reinen Pitch-Test.
-                    this.state._cameraDesiredY = camY;
-                    // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
-                    // kannte das Terrain an der KAMERA-Position nicht — in einem
-                    // Loch (oder hinter einer Wand) tauchte die Kamera durch das
-                    // Terrain. Jetzt: Raycast vom Blickziel (Spieler-Brust) zur
-                    // Wunsch-Position; trifft er Terrain/Struktur, wird die Kamera
-                    // an den Treffer herangezogen (15 % Puffer davor). Eine Lösung
-                    // für Loch UND Wand UND Bauwerk — kein Sonderfall pro Geometrie.
-                    const tx = player.position.x;
-                    const ty = player.position.y + 1.0;
-                    const tz = player.position.z;
-                    let finalX = camX;
-                    let finalY = camY;
-                    let finalZ = camZ;
-                    if (this.state.physicsWorld && typeof Ammo !== "undefined") {
-                        const sf = this.state.scaleFactor || 1;
-                        const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
-                        const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
-                        const hp = this._runRaycast(rs, re, (cb, hit) => {
-                            if (!hit) return null;
-                            const p = cb.get_m_hitPointWorld();
-                            return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
-                        });
-                        if (hp) {
-                            finalX = tx + (hp.x - tx) * 0.85;
-                            finalY = ty + (hp.y - ty) * 0.85;
-                            finalZ = tz + (hp.z - tz) * 0.85;
-                        }
-                    }
-                    camera.position.set(finalX, finalY, finalZ);
-                    camera.lookAt(tx, ty, tz);
-                } else {
-                    camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
-                    camera.lookAt(
-                        player.position.x + Math.sin(this.state.yaw),
-                        player.position.y + 1.6 + Math.sin(this.state.pitch),
-                        player.position.z + Math.cos(this.state.yaw)
-                    );
-                }
-                if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
-                    this.log(
-                        `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
-                        "DEBUG"
-                    );
-                }
-            }
+            // ### Kamera ### (V9.44-f → _loopCamera)
+            this._loopCamera(currentTime);
 
             // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
             // jeden Frame über sin/cos relativ zum aktuellen walkPhase
@@ -33581,55 +33198,8 @@ class AnazhRealm {
             // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
             this.tickAffordances(delta);
 
-            // V9.39 Phase 5c.2.c.3.b.iii — `pruneDistantChunks` ist als
-            // Phantom-Aufrufer entfernt (Heightfield-Chunks werden seit V9.35
-            // nicht mehr gebaut → die Schleife lief leer). Voxel-Chunks werden
-            // im `_tickVoxelChunkStreaming`-Pfad bzw. via `_pruneDistantVoxel-
-            // Chunks` direkt verwaltet.
-
-            // ### Rendering ###
-            // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
-            // Vorher in V8.26: kopiert war es zu früh (vor Camera-Update),
-            // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
-            // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
-            // Z. ~25049), Skybox-Position folgt SYNCHRON.
-            if (this.state.camera && this.state.skybox) {
-                this.state.skybox.position.copy(this.state.camera.position);
-            }
-            // V8.28 6.G4.b A — Stern-Feld folgt der Kamera (sonst wandert
-            // der Spieler aus dem Feld heraus) + dreht sidereal mit der
-            // Tageszeit um eine geneigte Achse (Erd-Achsen-Mimik). Die
-            // Rotation gibt den klassischen "Sterne ziehen über den Himmel"-
-            // Effekt — Astronomie statt statischer Tapete.
-            if (this.state.camera && this.state.starField) {
-                this.state.starField.position.copy(this.state.camera.position);
-                const tod = this.state.timeOfDay || 0;
-                this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
-            }
-            // V8.28 6.G4.b D — Welt-Wasser folgt der Kamera in xz (eine
-            // grosse Plane, die immer um den Spieler liegt). y bleibt fix
-            // auf waterLevel — das Wasser ist sichtbar nur wo Terrain
-            // darunter liegt (natürliche Senken).
-            if (this.state.camera && this.state.waterPlane) {
-                this.state.waterPlane.position.x = this.state.camera.position.x;
-                this.state.waterPlane.position.z = this.state.camera.position.z;
-                if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
-                    this.state.waterPlane.material.uniforms.uTime.value = currentTime;
-                }
-            }
-            // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
-            // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
-            // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
-            if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
-                this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
-            }
-            // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
-            // uWindStrength emergiert aus weather (rainy = kräftiger).
-            if (this.state.windUniforms) {
-                this.state.windUniforms.uWindTime.value = currentTime;
-                this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
-            }
-            this.state.renderer.render(this.state.scene, this.state.camera);
+            // ### Rendering ### (V9.44-f → _loopRender)
+            this._loopRender(currentTime);
         };
         // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
         // einen Frame SYNCHRON treiben können statt auf das im Headless auf
@@ -33639,6 +33209,595 @@ class AnazhRealm {
         // dies ist nur eine zusätzliche, frei aufrufbare Referenz.
         this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
+    }
+
+    // V9.44-f — der Game-Loop bekommt Phasen-Struktur. Vor V9.44-f war der
+    // `loop`-Closure-Body eine ~677-Zeilen-Inline-Kette; jetzt ruft er
+    // benannte `_loop<Phase>`-Methoden. Die geteilten Frame-Werte (`delta`,
+    // `currentTime`) sind explizite Parameter; `playerMesh`/`camera`/
+    // `playerBody` werden je Phase aus `this.state` neu gelesen (sie kamen
+    // schon vorher aus `this.state`, kein geteilter lokaler Zustand). Reines
+    // verhaltensneutrales Refactoring — die Phasen laufen in derselben
+    // Reihenfolge, keine liest einen Wert, den eine spätere mutiert.
+    _loopNexusUpdate() {
+        if (this.state.nexusEvolutionQueue.length > 0) {
+            const evolution = this.state.nexusEvolutionQueue.shift();
+            if (Array.isArray(evolution.program)) {
+                const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
+                // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
+                const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
+                const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
+                const abilityEntry = {
+                    name: evolution.name,
+                    program: evolution.program,
+                    source: evolution.source || "nexus",
+                    createdAt: evolution.createdAt || performance.now() / 1000,
+                    fitness: initialFitness,
+                };
+                this.state.dsl.abilities.push(abilityEntry);
+                const historyEntry = {
+                    id: evolution.name,
+                    program: evolution.program,
+                    at: performance.now() / 1000,
+                    outcome: result.outcome,
+                    ok: result.ok,
+                    fitness: initialFitness,
+                    finalized: false,
+                };
+                this.state.dsl.history.push(historyEntry);
+                if (this.state.dsl.history.length > this.state.dsl.historyCap) {
+                    this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
+                }
+                // Pending einreihen — Finalizer holt 5 s später Emotion/Activity-Delta.
+                if (result.ok) {
+                    this.state.dsl.pendingOutcomes.push({
+                        name: evolution.name,
+                        program: evolution.program,
+                        outcome: result.outcome,
+                        historyRef: historyEntry,
+                    });
+                }
+                this.log(
+                    `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${initialFitness.toFixed(2)}`,
+                    "INFO"
+                );
+            } else {
+                this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
+            }
+            this.grokSpeak("nexus");
+        }
+    }
+
+    _loopGroundCheck(currentTime) {
+        // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
+        // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
+        if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
+            const voxelActive = this.state.voxelTerrainActive === true;
+            if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
+                this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
+                this.generateNewWorld();
+            }
+            this.state.lastGroundCheck = currentTime;
+        }
+    }
+
+    _loopFrustumCulling() {
+        // V8.26 Polish §6.1 — Frustum + Matrix4 als state-Pool statt
+        // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
+        // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
+        if (!this._frustumCache) {
+            this._frustumCache = new THREE.Frustum();
+            this._frustumMatrixCache = new THREE.Matrix4();
+        }
+        this._frustumMatrixCache.multiplyMatrices(
+            this.state.camera.projectionMatrix,
+            this.state.camera.matrixWorldInverse
+        );
+        this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+        const frustum = this._frustumCache;
+        // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
+        // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
+        if (this.state.voxelTerrainActive) {
+            this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
+        } else {
+            this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
+        }
+        if (this.state.floatingIslands)
+            this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
+        if (this.state.creatures)
+            this.state.creatures.forEach((creature) => (creature.visible = this.isInFrustum(creature, frustum)));
+    }
+
+    _loopAnimateUfos(currentTime) {
+        if (this.state.ufos && this.state.playerMesh) {
+            const playerPos = this.state.playerMesh.position;
+            this.state.ufos.forEach((ufo) => {
+                const distance = playerPos.distanceTo(ufo.position);
+                if (distance < 50) {
+                    ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
+                }
+            });
+        }
+    }
+
+    _loopPhysicsSync(delta, currentTime) {
+        if (this.state.physicsWorld) {
+            this.state.physicsWorld.stepSimulation(delta, 20, 1 / 60);
+            for (let i = 0; i < this.state.rigidBodies.length; i++) {
+                const mesh = this.state.rigidBodies[i];
+                const body = mesh.userData.physicsBody;
+                const motionState = body.getMotionState();
+                if (motionState) {
+                    motionState.getWorldTransform(this.state.tmpTransform);
+                    const pos = this.state.tmpTransform.getOrigin();
+                    let scaledY = pos.y() * this.state.scaleFactor;
+                    const velocity = body.getLinearVelocity();
+
+                    // Fall-Geschwindigkeit cappen: ohne Cap zog die
+                    // Schwerkraft den Spieler in eine sehr hohe vy, sodass
+                    // er pro Frame eine ganze Heightfield-Cell (~1.17 m)
+                    // überspringen konnte — Tunneling durch steile Hänge.
+                    // -25 m/s ist eine plausible Terminal Velocity und
+                    // bleibt unter Cell-Breite × 60 fps.
+                    if (mesh === this.state.playerMesh && velocity.y() < -25) {
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
+                    }
+
+                    // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
+                    // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
+                    // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
+                    // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
+                    // V8.32 — zwei getrennte Flags: playerUnderwater
+                    // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
+                    // playerEyesUnderwater (Augen/Kamera unter Wasser →
+                    // blauer Tint). Sonst sprang der Tint schon beim
+                    // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
+                    if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
+                        const submerged = scaledY < this.state.waterLevel;
+                        this.state.playerUnderwater = submerged;
+                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
+                        this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
+                        if (submerged) {
+                            // V8.36 — Auftrieb wirkt NUR über dem Terrain.
+                            // Fällt der Spieler durch die Welt (weit unter
+                            // die Terrain-Oberfläche), fing ihn der Auftrieb
+                            // sonst ab — er „schwamm" unter dem Boden statt
+                            // von der Killplane resettet zu werden. Wasser
+                            // sitzt immer auf festem Grund; ist man weit
+                            // darunter, trägt nichts → die Killplane greift.
+                            const wTerrainY = this.getTerrainHeightAt(
+                                pos.x() * this.state.scaleFactor,
+                                pos.z() * this.state.scaleFactor
+                            );
+                            if (scaledY >= wTerrainY - 22) {
+                                // V8.33 — Tauchen + Auftauchen. Shift taucht
+                                // ab (Minecraft-Konvention), Space hebt; ohne
+                                // Eingabe wirkt der natürliche Auftrieb.
+                                const swimVy = this._swimVerticalVelocity(
+                                    velocity.y(),
+                                    this.state.waterLevel - scaledY,
+                                    !!this.state.keys["shift"],
+                                    !!this.state.keys[" "]
+                                );
+                                body.setLinearVelocity(
+                                    this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
+                                );
+                            }
+                        }
+                    }
+
+                    // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
+                    // in Reichweite eines lifting-Compounds (Flag aus
+                    // _tickLiftingAffordances), trägt ihn das Feld: der Fall
+                    // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
+                    // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
+                    // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
+                    if (
+                        mesh === this.state.playerMesh &&
+                        !this.state.playerUnderwater &&
+                        this.state.player &&
+                        this.state.player.liftingField &&
+                        this.state.player.liftingField.active
+                    ) {
+                        const liftVy = this._liftVerticalVelocity(
+                            velocity.y(),
+                            this.state.player.liftingField.strength
+                        );
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
+                    }
+
+                    // Kill-Plane näher an den Welt-Boden gerückt: vorher
+                    // erst nach 1000 m freiem Fall — der Spieler war
+                    // gefühlt "verloren". 30 m unter dem tiefsten Welt-
+                    // Punkt ist nah genug, dass Resets sofort spürbar
+                    // sind, aber tief genug, dass eine legitime Schlucht
+                    // (heights -100..+100) den Spieler nicht reset.
+                    // V9.25 Phase 5b — der Killplane folgt der Welt. In
+                    // einer Voxel-Welt liegt der Chunk-Boden bei base-58
+                    // (V9.26); der Killplane gehört DARUNTER (base-88),
+                    // sonst würde ein Spieler in einem tiefen Voxel-Tal
+                    // resettet. Das heightfield-abgeleitete `minHeight`
+                    // kennt das Voxel-Band nicht.
+                    const killPlaneY =
+                        this.state.worldMeta && this.state.worldMeta.voxelTerrain
+                            ? (this.state.terrainBaseHeight || 0) - 88
+                            : (this.state.minHeight || -50) - 30;
+                    if (scaledY < killPlaneY) {
+                        const currentX = pos.x() * this.state.scaleFactor;
+                        const currentZ = pos.z() * this.state.scaleFactor;
+
+                        // Funktion zum Finden der Oberfläche über dem Spieler
+                        const surfaceHeight = this.findSurfaceAbove(currentX, scaledY, currentZ);
+                        scaledY = surfaceHeight + 0.5; // Spieler wird knapp über die Oberfläche gesetzt
+
+                        const transform = this.state.tmpTransform;
+                        transform.setIdentity();
+                        transform.setOrigin(
+                            this.setVec(
+                                this.state.tmpVec1,
+                                currentX / this.state.scaleFactor,
+                                scaledY / this.state.scaleFactor,
+                                currentZ / this.state.scaleFactor
+                            )
+                        );
+                        body.setWorldTransform(transform);
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec2, velocity.x(), 0, velocity.z()));
+                        this.state.isJumping = false;
+                        this.state.isInAir = false;
+                        mesh.position.set(currentX, scaledY, currentZ);
+                        this.log(
+                            `Spieler auf Oberfläche zurückgesetzt: (${currentX.toFixed(2)}, ${scaledY.toFixed(2)}, ${currentZ.toFixed(2)})`,
+                            "INFO"
+                        );
+                    }
+
+                    if (mesh === this.state.playerMesh) {
+                        mesh.position.set(pos.x() * this.state.scaleFactor, scaledY, pos.z() * this.state.scaleFactor);
+                        const isGrounded = this.isPlayerGrounded();
+                        if (isGrounded) {
+                            this.state.lastGroundedTime = currentTime;
+                            this.state.isInAir = false;
+                            this.state.isJumping = false;
+                            // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
+                            if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
+                                this.log("Spieler geerdet!", "INFO");
+                                this.state.lastGroundedLog = currentTime;
+                            }
+                        } else {
+                            this.state.isInAir = true;
+                        }
+                    } else {
+                        mesh.position.set(pos.x() * this.state.scaleFactor, scaledY, pos.z() * this.state.scaleFactor);
+                    }
+                }
+            }
+        }
+    }
+
+    _loopPlayerMovement(currentTime) {
+        // ### Spielerbewegung ###
+        // V9.44-f — player/camera werden hier nicht mehr gelesen (die
+        // Kamera-Phase liest sie selbst); nur playerBody bleibt.
+        const playerBody = this.state.playerBody;
+        // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
+        // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
+        let currentSpeed =
+            this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
+        // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
+        // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
+        if (this.state.playerUnderwater) currentSpeed *= 0.55;
+
+        this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
+        this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
+        this.state.moveDirection.set(0, 0, 0);
+        if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
+        if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
+        // Bewusst NICHT „intuitiv" inverten: `state.right` ist die ARITHMETISCHE
+        // Richtung (cos yaw, 0, −sin yaw), nicht die anatomische Rechts-Seite
+        // des Spielers. In Right-Hand-Coords mit Y up: forward × up = −X,
+        // also ist player-anatomisch-RECHTS = −X = −state.right. Original-Mapping:
+        // A → +state.right (= player-links), D → −state.right (= player-rechts).
+        // (Schöpfer-Hinweis 13.05.2026: vorherige „Fix"-Vertauschung brach das
+        // konsistente Verhalten, jetzt revertiert.)
+        if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
+        if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
+
+        if (this.state.physicsWorld && playerBody) {
+            // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
+            // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
+            // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
+            // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
+            // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
+            const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
+            if (this.state.moveDirection.length() > 0) {
+                this.state.moveDirection.normalize();
+                playerBody.setLinearVelocity(
+                    this.setVec(
+                        this.state.tmpVec1,
+                        this.state.moveDirection.x * currentSpeed * slopePenalty,
+                        playerBody.getLinearVelocity().y(),
+                        this.state.moveDirection.z * currentSpeed * slopePenalty
+                    )
+                );
+                // V8.36 — kein forceActivationState mehr nötig: der
+                // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
+                // (schläft nie). Ein forceActivationState(1) HIER würde ihn
+                // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
+                // zurück, sobald man stehen bleibt.
+            } else if (!this.state.onSteepSlope) {
+                // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
+                // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
+                // die existierende Velocity stehen — Gravitation + Slope-
+                // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
+                // (Voraussetzung: Player-Friction 0 aus 6.A1).
+                playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0));
+            }
+
+            if (this.state.keys[" "] && !this.state.isJumping) {
+                const isGrounded = this.isPlayerGrounded();
+                const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
+                // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
+                // ob der Soul leicht genug zum Abdrücken am Hang ist.
+                // Bei false: Sprung-Block wird übersprungen, restlicher
+                // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
+                // weiter wie gewohnt.
+                if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
+                    // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
+                    // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
+                    // ein forceActivationState aufgerufen — Stand-Sprung würde
+                    // sonst verpuffen wenn der Body im Ammo-Sleep ist.
+                    playerBody.activate(true);
+                    const jumpForce = this.state.jumpPower;
+                    const currentVelocity = playerBody.getLinearVelocity();
+                    playerBody.setLinearVelocity(
+                        this.setVec(
+                            this.state.tmpVec1,
+                            currentVelocity.x(),
+                            jumpForce / this.state.scaleFactor,
+                            currentVelocity.z()
+                        )
+                    );
+                    this.state.isJumping = true;
+                    this.state.isInAir = true;
+                    if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
+                        this.log("Spieler springt!", "INFO");
+                        this.state.lastJumpLog = currentTime;
+                    }
+                }
+            }
+        }
+    }
+
+    _loopSelfAnalysis(currentTime) {
+        // ### Selbstanalyse + Nexus-Evolution-Trigger ###
+        // Früher hing das am TF-Trainings-Tick (`learn()`); nach TF-Cleanup
+        // läuft die Zeit-Schwelle direkt. `selfAwarenessAnalyze` macht den
+        // FPS-/Tunneling-/Boden-Check, `evolveNexus` queued ein DSL-Programm
+        // in den `nexusEvolutionQueue`.
+        if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
+            this.selfAwarenessAnalyze();
+            if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
+                this.nexus.processOptimization({ fps: this.state.fps });
+            }
+            this.journalTick(currentTime);
+            // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
+            // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
+            this.updateWorldInfo();
+        }
+        if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
+            this.evolveNexus(currentTime);
+        }
+    }
+
+    _loopWeatherAndGrowth(delta, currentTime) {
+        // ### Kreaturen, Wetter, Wachstum ###
+        this.updateCreatures(delta);
+        this.state.weatherEffectTime += delta;
+        if (this.state.weatherEffectTime >= 30.0) {
+            this.state.weather = this.state.weather === "sunny" ? "rainy" : "sunny";
+            this.updateSkyboxWeather();
+            this.updateCreatureEmotions();
+            this.log(`Wetter gewechselt zu ${this.state.weather}`, "INFO");
+            this.state.weatherEffectTime = 0;
+        }
+
+        if (currentTime - this.state.lastGrowthUpdate >= 1.0) {
+            this.updateGrowth(); // Fehler behoben
+            this.state.lastGrowthUpdate = currentTime;
+        }
+    }
+
+    _loopVoxelStreaming() {
+        // ### Unendliches Terrain – spieler-zentriert ###
+        // Statt Map-Mittelpunkt-Extension (die Chunks weit weg vom Spieler
+        // entstehen ließ und Lücken hinterließ) füllen wir jetzt einen
+        // 5×5-Ring um den Chunk, in dem der Spieler steht. Pro Frame max
+        // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Streaming-Ring ist
+        // als toter Pfad entfernt — Voxel ist permanent seit V9.35.
+        // Der Voxel-Chunk-Streaming-Ring trägt jeden Spieler-Schritt
+        // (Ring-Radius lebt in `_voxelChunkConfig().ringRadius`, der
+        // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
+        // V9.24-Verdrahtung).
+        const playerPos = this.state.playerMesh.position;
+        this._tickVoxelChunkStreaming(playerPos);
+        // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
+        // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
+        // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
+        // V9.40-c alle in einem Frame; jetzt verteilt. Bei dirty-empty
+        // ist es ein no-op (eine Set.size-Lesung). Tests, die direkt nach
+        // einem Edit den Mesh prüfen, rufen `_drainDirtyVoxelChunks()`.
+        this._tickDirtyVoxelChunks(playerPos);
+    }
+
+    _loopSkyboxPlanets(currentTime) {
+        // ### Skybox und Planeten ###
+        this.state.skybox.material.uniforms.time.value = currentTime;
+        this.state.planets.forEach((planet) => {
+            const theta = currentTime / 10;
+            const radius = 400;
+            planet.position.x = radius * Math.cos(theta);
+            planet.position.z = radius * Math.sin(theta);
+        });
+    }
+
+    _loopAutoSave(currentTime) {
+        // ### Speichern ###
+        if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
+            this.saveState();
+            this.state.lastSaveUpdate = currentTime;
+        }
+        if (
+            !this.state.isServerSaveInFlight &&
+            currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
+        ) {
+            this.state.isServerSaveInFlight = true;
+            this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                this.state.isServerSaveInFlight = false;
+            });
+            this.state.lastServerSaveUpdate = currentTime;
+        }
+    }
+
+    _loopCamera(currentTime) {
+        // ### Kamera ###
+        // V9.44-f — player/camera kamen vorher aus der Bewegungs-Sektion
+        // (gemeinsame Loop-locals); jetzt aus this.state neu gelesen.
+        const player = this.state.playerMesh;
+        const camera = this.state.camera;
+        if (player && camera) {
+            // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
+            // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
+            // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
+            player.rotation.y = this.state.yaw;
+            // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
+            // den eigenen Körper zu sehen ist normal — Minecraft etc.
+            // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
+            // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
+            // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
+            // Runterschauen. Im 3rd-Person ist alles sichtbar.
+            player.visible = true;
+            {
+                const headPart = player.userData && player.userData.parts && player.userData.parts.head;
+                if (headPart) headPart.visible = this.state.cameraMode === "third";
+            }
+            if (this.state.cameraMode === "third") {
+                // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
+                // die Kamera vertikal; Distance bleibt konstant. Look-At
+                // zielt auf den Brust-Punkt.
+                //
+                // Pitch-Vorzeichen ist gegenüber 1st bewusst invertiert:
+                // im 1st-Modus heißt "nach oben schauen" = Welt nach unten
+                // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
+                // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
+                // = Kamera höher um den Charakter herum).
+                const dist = this.state.cameraThirdDistance;
+                const height = this.state.cameraThirdHeight;
+                const cosPitch = Math.cos(this.state.pitch);
+                const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
+                const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
+                let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
+                const minCamY = player.position.y - 0.2;
+                if (camY < minCamY) camY = minCamY;
+                // V8.57 — die pitch-gesteuerte Wunsch-Höhe der Kamera (nach
+                // Boden-Clamp, VOR der Kamera-Kollision unten) als State
+                // spiegeln. Der Playtest prüft die Pitch-Inversion daran
+                // deterministisch: die Kollisions-Raycast unten hängt von der
+                // nicht-deterministischen Umgebung des Spielers ab und gehört
+                // nicht in den reinen Pitch-Test.
+                this.state._cameraDesiredY = camY;
+                // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
+                // kannte das Terrain an der KAMERA-Position nicht — in einem
+                // Loch (oder hinter einer Wand) tauchte die Kamera durch das
+                // Terrain. Jetzt: Raycast vom Blickziel (Spieler-Brust) zur
+                // Wunsch-Position; trifft er Terrain/Struktur, wird die Kamera
+                // an den Treffer herangezogen (15 % Puffer davor). Eine Lösung
+                // für Loch UND Wand UND Bauwerk — kein Sonderfall pro Geometrie.
+                const tx = player.position.x;
+                const ty = player.position.y + 1.0;
+                const tz = player.position.z;
+                let finalX = camX;
+                let finalY = camY;
+                let finalZ = camZ;
+                if (this.state.physicsWorld && typeof Ammo !== "undefined") {
+                    const sf = this.state.scaleFactor || 1;
+                    const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
+                    const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
+                    const hp = this._runRaycast(rs, re, (cb, hit) => {
+                        if (!hit) return null;
+                        const p = cb.get_m_hitPointWorld();
+                        return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+                    });
+                    if (hp) {
+                        finalX = tx + (hp.x - tx) * 0.85;
+                        finalY = ty + (hp.y - ty) * 0.85;
+                        finalZ = tz + (hp.z - tz) * 0.85;
+                    }
+                }
+                camera.position.set(finalX, finalY, finalZ);
+                camera.lookAt(tx, ty, tz);
+            } else {
+                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                camera.lookAt(
+                    player.position.x + Math.sin(this.state.yaw),
+                    player.position.y + 1.6 + Math.sin(this.state.pitch),
+                    player.position.z + Math.cos(this.state.yaw)
+                );
+            }
+            if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
+                this.log(
+                    `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
+                    "DEBUG"
+                );
+            }
+        }
+    }
+
+    _loopRender(currentTime) {
+        // ### Rendering ###
+        // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
+        // Vorher in V8.26: kopiert war es zu früh (vor Camera-Update),
+        // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
+        // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
+        // Z. ~25049), Skybox-Position folgt SYNCHRON.
+        if (this.state.camera && this.state.skybox) {
+            this.state.skybox.position.copy(this.state.camera.position);
+        }
+        // V8.28 6.G4.b A — Stern-Feld folgt der Kamera (sonst wandert
+        // der Spieler aus dem Feld heraus) + dreht sidereal mit der
+        // Tageszeit um eine geneigte Achse (Erd-Achsen-Mimik). Die
+        // Rotation gibt den klassischen "Sterne ziehen über den Himmel"-
+        // Effekt — Astronomie statt statischer Tapete.
+        if (this.state.camera && this.state.starField) {
+            this.state.starField.position.copy(this.state.camera.position);
+            const tod = this.state.timeOfDay || 0;
+            this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
+        }
+        // V8.28 6.G4.b D — Welt-Wasser folgt der Kamera in xz (eine
+        // grosse Plane, die immer um den Spieler liegt). y bleibt fix
+        // auf waterLevel — das Wasser ist sichtbar nur wo Terrain
+        // darunter liegt (natürliche Senken).
+        if (this.state.camera && this.state.waterPlane) {
+            this.state.waterPlane.position.x = this.state.camera.position.x;
+            this.state.waterPlane.position.z = this.state.camera.position.z;
+            if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
+                this.state.waterPlane.material.uniforms.uTime.value = currentTime;
+            }
+        }
+        // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
+        // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
+        // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
+        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
+            this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
+        }
+        // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
+        // uWindStrength emergiert aus weather (rainy = kräftiger).
+        if (this.state.windUniforms) {
+            this.state.windUniforms.uWindTime.value = currentTime;
+            this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
+        }
+        this.state.renderer.render(this.state.scene, this.state.camera);
     }
 
     // ### Hilfsfunktionen ### V7.56
@@ -33935,6 +34094,18 @@ AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
 // Stück ist die interop-sichere DataChannel-Nachrichtengröße; Backpressure
 // über channel.bufferedAmount fängt grosse Welten ab.
 AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
+// V9.44-d — die Backpressure-Schwelle für den RTCDataChannel-Versand.
+// Steigt `channel.bufferedAmount` über diesen Wert, pausiert der Sender.
+// Als 16 × P2P_WORLD_CHUNK_SIZE definiert (= 262144) — die Beziehung
+// „16 Stücke dürfen im Puffer warten" sichtbar gemacht statt eines
+// gestreuten Magic-Literals (vorher 262144 ×2 hand-getippt).
+AnazhRealm.P2P_BACKPRESSURE_BYTES = 16 * AnazhRealm.P2P_WORLD_CHUNK_SIZE;
+// V9.44-d — Infrastruktur-Defaults, vorher als gestreute Literale.
+// Ollama-Endpoint: der lokale Default-Server (8 Stellen vorher hand-
+// getippt). P2P-WS-URL: die Default-Signaling-Server-Adresse (6 Stellen).
+// Eine zentrale Stelle pro Wert — Drift-Schutz.
+AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
+AnazhRealm.P2P_DEFAULT_WS_URL = "ws://127.0.0.1:4313";
 // W7 Phase 2 — Mindestabstand zwischen zwei world-pull-Antworten an
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
@@ -34602,6 +34773,32 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // Bursts (eine Welt meldet mehrere sichtbare Momente zugleich), hart gegen Flut.
 AnazhRealm.PORTAL_EVENT_RATE_WINDOW_MS = 1000;
 AnazhRealm.PORTAL_EVENT_RATE_MAX = 8;
+// V9.44-c — der Mesh-Router-Dispatch-Table. p2pHandleMessage mappt den
+// WS-Nachrichtentyp über diese Tabelle auf eine `_p2pMsg<Type>`-Methode,
+// statt 18 sequentielle `if (msg.type === …)`-Branches durchzulaufen. Ein
+// neuer Mesh-Typ ist danach ein Tabellen-Eintrag + eine Methode. Die
+// kanal-exklusiven Typen (world-pull, llm-request, subworld-srv, …) leben
+// bewusst NICHT hier — sie laufen über _p2pHandleChannelMessage.
+AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
+    welcome: "_p2pMsgWelcome",
+    "peer-join": "_p2pMsgPeerJoin",
+    "peer-leave": "_p2pMsgPeerLeave",
+    "lobby-rooms": "_p2pMsgLobbyRooms",
+    "creature-pos": "_p2pMsgCreaturePos",
+    "companion-say": "_p2pMsgCompanionSay",
+    "subworld-net": "_p2pMsgSubworldNet",
+    "portal-invite": "_p2pMsgPortalInvite",
+    pos: "_p2pMsgPos",
+    dsl: "_p2pMsgDsl",
+    soul: "_p2pMsgSoul",
+    aura: "_p2pMsgAura",
+    vibe: "_p2pMsgVibe",
+    "rtc-offer": "_p2pMsgRtcOffer",
+    "rtc-answer": "_p2pMsgRtcAnswer",
+    "rtc-ice": "_p2pMsgRtcIce",
+    "world-request": "_p2pMsgWorldRequest",
+    "world-snapshot": "_p2pMsgWorldSnapshot",
+});
 // W4 V2/V3 — die Lofi-Pad-Schicht. Eine Harmonie in A-Moll (die Wurzel 110 Hz
 // = A2 deckt sich mit dem Ambient-Drone). W4 V3: die Akkordfolge wächst aus
 // einer Tonleiter + einer funktionalen Markov-Kette — kein fester Akkord-Satz
