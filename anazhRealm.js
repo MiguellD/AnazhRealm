@@ -313,7 +313,12 @@ class AnazhRealm {
                     anthropic: { apiKey: "", model: "claude-haiku-4-5" },
                     google: { apiKey: "", model: "gemini-2.5-flash" },
                     openrouter: { apiKey: "", model: "meta-llama/llama-3.3-70b-instruct:free" },
-                    ollama: { apiKey: "", model: "llama3.2", endpoint: "http://localhost:11434", useProxy: false },
+                    ollama: {
+                        apiKey: "",
+                        model: "llama3.2",
+                        endpoint: AnazhRealm.OLLAMA_DEFAULT_ENDPOINT,
+                        useProxy: false,
+                    },
                 },
                 inFlight: false,
                 lastError: null,
@@ -329,7 +334,7 @@ class AnazhRealm {
             // ein Sandbox-Risiko bevor die Vertrauens-Grenzen klar sind.
             p2p: {
                 enabled: false,
-                url: "ws://127.0.0.1:4313",
+                url: AnazhRealm.P2P_DEFAULT_WS_URL,
                 peerId: null,
                 room: null,
                 roomOverride: "",
@@ -1182,17 +1187,28 @@ class AnazhRealm {
         ctx.budget.depthLeft++;
     }
 
+    // V9.44-d — die Default-Spawn-Position. Y=50 wie beim allerersten
+    // Spawn: der Spieler fällt sauber aufs Terrain (Y=5 würde ihn in steile
+    // Hänge clippen lassen — das Terrain kann je nach Seed 30+ Einheiten
+    // hoch sein). Vorher ein an ~15 Stellen hand-getipptes Literal. EINE
+    // Factory, KEINE geteilte Konstante — ein geteiltes Objekt-Literal wäre
+    // ein Bug, sobald ein Aufrufer es mutiert; jeder Aufruf liefert ein
+    // frisches Objekt (bit-genau das alte Verhalten je Stelle).
+    _defaultSpawnPos() {
+        return { x: 0, y: 50, z: 0 };
+    }
+
     dslEvalPos(node, ctx) {
-        if (!Array.isArray(node) || node.length === 0) return { x: 0, y: 50, z: 0 };
+        if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();
         const fn = this.dslPositions[node[0]];
         if (!fn) {
             ctx.log.push({ event: "unknown_position_op", op: String(node[0]) });
-            return { x: 0, y: 50, z: 0 };
+            return this._defaultSpawnPos();
         }
         try {
             return fn.call(this, node.slice(1), ctx);
         } catch {
-            return { x: 0, y: 50, z: 0 };
+            return this._defaultSpawnPos();
         }
     }
 
@@ -2134,7 +2150,7 @@ class AnazhRealm {
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslPositionsCache = {
             at_player: (_args, ctx) => {
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 return { x: p.x, y: p.y, z: p.z };
             },
             // Welle 6.X.3 C1 (Audit 17.05.2026) — Spawn-Position vor dem
@@ -2145,7 +2161,7 @@ class AnazhRealm {
             // wenn von Chat-Pattern ausgelöst — gibt einen kleinen Abstand.
             at_player_forward: ([dist], ctx) => {
                 const d = c(dist, 1, 50) || 5;
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
                 // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
                 // Standard-„forward"-Richtung im AnazhRealm-Coord-System
@@ -2158,11 +2174,14 @@ class AnazhRealm {
             },
             near_player: ([radius], ctx) => {
                 const r = c(radius, 1, 100);
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = ctx.rng() * r;
                 return { x: p.x + Math.cos(angle) * dist, y: p.y, z: p.z + Math.sin(angle) * dist };
             },
+            // at_origin behält sein eigenes Literal — es ist semantisch der
+            // Welt-Ursprung (0,50,0), nicht der Spawn-Fallback; eine Kopplung
+            // an _defaultSpawnPos() wäre falsch, falls dieser je driftet.
             at_origin: () => ({ x: 0, y: 50, z: 0 }),
             random_position: ([range], ctx) => {
                 const r = c(range, 1, 500);
@@ -3017,7 +3036,9 @@ class AnazhRealm {
                 // (Ollama-Native-Default). So funktionieren beide Welten:
                 // klassisches Ollama + OpenAI-kompatible Cloud-Provider.
                 endpoint: (_model, _apiKey, cfg) => {
-                    const base = ((cfg && cfg.endpoint) || "http://localhost:11434").trim().replace(/\/$/, "");
+                    const base = ((cfg && cfg.endpoint) || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT)
+                        .trim()
+                        .replace(/\/$/, "");
                     if (/\/(api|v1)\//.test(base) || /\/(api|v1)\/[^/]+$/.test(base)) {
                         return base;
                     }
@@ -3949,7 +3970,7 @@ class AnazhRealm {
         // anderen Provider unverändert: nur sichtbar wenn requiresKey.
         if (keyRow) keyRow.hidden = !def.requiresKey && this.state.llm.provider !== "ollama";
         if (endpointRow) endpointRow.hidden = this.state.llm.provider !== "ollama";
-        if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || "http://localhost:11434";
+        if (endpointInput) endpointInput.value = (cfg && cfg.endpoint) || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT;
         // V7.96 — Proxy-Toggle nur bei Ollama sichtbar (andere Provider haben CORS).
         const proxyRow = document.getElementById("llm-proxy-row");
         const proxyHint = document.getElementById("llm-proxy-hint");
@@ -4033,7 +4054,7 @@ class AnazhRealm {
         if (endpointInput) {
             endpointInput.addEventListener("change", () => {
                 const cfg = this.state.llm.providerConfig.ollama;
-                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+                cfg.endpoint = endpointInput.value.trim() || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT;
                 this.llmPersist();
                 this.llmUpdateStatus();
                 // V7.97 — Endpoint-Wechsel triggert Proxy-Label-Refresh
@@ -4048,7 +4069,7 @@ class AnazhRealm {
             cfg.apiKey = trimmed;
             cfg.model = modelSel.value;
             if (this.state.llm.provider === "ollama" && endpointInput) {
-                cfg.endpoint = endpointInput.value.trim() || "http://localhost:11434";
+                cfg.endpoint = endpointInput.value.trim() || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT;
             }
             // Sanfte Format-Warnung gegen Provider/Key-Mismatch — z. B. Gemini-
             // Key (AIza…) versehentlich im OpenRouter-Feld. Verhindert Save
@@ -4316,7 +4337,7 @@ class AnazhRealm {
         // P2P-Settings für Auto-Connect nach Reload schreiben
         try {
             localStorage.setItem("anazh.p2p.enabled", "true");
-            localStorage.setItem("anazh.p2p.url", hostInfo.url || "ws://127.0.0.1:4313");
+            localStorage.setItem("anazh.p2p.url", hostInfo.url || AnazhRealm.P2P_DEFAULT_WS_URL);
             localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
         } catch {
             /* defensive */
@@ -4329,7 +4350,7 @@ class AnazhRealm {
     initP2PSync(roomId, opts = {}) {
         const p2p = this.state.p2p;
         if (p2p.ws) this.shutdownP2PSync();
-        const url = (opts.url || p2p.url || "ws://127.0.0.1:4313").trim();
+        const url = (opts.url || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL).trim();
         // Ring 11 V2.1: Raum-Auflösung — explizites Argument > localStorage-
         // Override > aktive worldId. Leer-String im Override gilt als
         // „nicht gesetzt" → Fallback auf worldId.
@@ -4723,7 +4744,7 @@ class AnazhRealm {
         for (let seq = 0; seq < total; seq++) {
             // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
             let guard = 0;
-            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+            while (rtc.channel.bufferedAmount > AnazhRealm.P2P_BACKPRESSURE_BYTES && guard++ < 600) {
                 await new Promise((r) => setTimeout(r, 16));
             }
             if (rtc.channel.readyState !== "open") return;
@@ -4911,7 +4932,7 @@ class AnazhRealm {
         for (let seq = 0; seq < total; seq++) {
             // Backpressure: warten, bis der Sende-Puffer abgeflossen ist.
             let guard = 0;
-            while (rtc.channel.bufferedAmount > 262144 && guard++ < 600) {
+            while (rtc.channel.bufferedAmount > AnazhRealm.P2P_BACKPRESSURE_BYTES && guard++ < 600) {
                 await new Promise((r) => setTimeout(r, 16));
             }
             if (rtc.channel.readyState !== "open") return;
@@ -6385,13 +6406,13 @@ class AnazhRealm {
         const statusEl = document.getElementById("p2p-status");
         if (!toggle || !urlInput || !statusEl) return;
         // UI auf gespeicherten Stand setzen
-        urlInput.value = this.state.p2p.url || "ws://127.0.0.1:4313";
+        urlInput.value = this.state.p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL;
         if (roomInput) roomInput.value = this.state.p2p.roomOverride || "";
         toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
         toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
         this.p2pUpdateStatus();
         urlInput.addEventListener("change", () => {
-            this.state.p2p.url = urlInput.value.trim() || "ws://127.0.0.1:4313";
+            this.state.p2p.url = urlInput.value.trim() || AnazhRealm.P2P_DEFAULT_WS_URL;
             this.p2pPersist();
             this.p2pUpdateStatus();
         });
@@ -6632,7 +6653,7 @@ class AnazhRealm {
                 re: /^spawne\s+kreaturen\s+(\d+)\s*$/i,
                 build: (m) => {
                     const count = Math.max(1, Math.min(20, parseInt(m[1], 10) || 1));
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["repeat", count, ["spawn_creature", ["at", p.x, p.y, p.z], 1, "happy"]],
                         describe: `${count} Kreaturen gespawnt (am Spieler)`,
@@ -6753,7 +6774,7 @@ class AnazhRealm {
                     // im Bauwerk. Vision §11: ich stelle hier was hin, ich
                     // werde nicht zum Etwas. Position+Seed wird auch hier zur
                     // Build-Zeit explizit eingebettet (Multi-User-Determinismus).
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     const yaw = typeof this.state.yaw === "number" ? this.state.yaw : 0;
                     const dist = 8;
                     const fx = p.x - Math.sin(yaw) * dist;
@@ -6772,7 +6793,7 @@ class AnazhRealm {
                 build: (m) => {
                     const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
                     const t = (m[1] || "tempel").toLowerCase();
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
                         program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
@@ -6790,7 +6811,7 @@ class AnazhRealm {
                 example: "pflanze baum hier",
                 re: /^(?:pflanze|baue|setze|erschaffe)\s+baum\s+hier\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_tree", ["at", p.x, p.y, p.z], 1],
                         describe: "Baum gepflanzt",
@@ -6801,7 +6822,7 @@ class AnazhRealm {
                 example: "pflanze hain",
                 re: /^pflanze\s+(?:einen\s+)?hain\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_tree", ["at", p.x, p.y, p.z], 5],
                         describe: "Hain (5 Bäume) gepflanzt",
@@ -6812,7 +6833,7 @@ class AnazhRealm {
                 example: "setze insel hier",
                 re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     return {
                         program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
@@ -6824,7 +6845,7 @@ class AnazhRealm {
                 example: "rufe ufo hier",
                 re: /^(?:rufe|setze|spawne)\s+ufo\s+hier\s*$/i,
                 build: () => {
-                    const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+                    const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
                     return {
                         program: ["spawn_ufo", ["at", p.x, p.y, p.z]],
                         describe: "UFO gerufen",
@@ -9011,7 +9032,7 @@ class AnazhRealm {
             // lassen, weil das Terrain je nach Seed auch 30+ Einheiten hoch
             // sein kann. Die loadState-Position-Restore-Logik teleportiert
             // sonst auf die zu tiefe Höhe, statt einen Spawn-Fall zu lassen.
-            playerPosition: { x: 0, y: 50, z: 0 },
+            playerPosition: this._defaultSpawnPos(),
             knowledgeBase: [],
             version: this.state.currentVersion || "7.71",
             selfAwareness: { components: [], weaknesses: [] },
@@ -16544,7 +16565,7 @@ class AnazhRealm {
         if (lanAddrs.length > 0) {
             inviteUrl = `ws://${lanAddrs[0]}`;
         } else {
-            inviteUrl = (this.state.p2p && this.state.p2p.url) || "ws://127.0.0.1:4313";
+            inviteUrl = (this.state.p2p && this.state.p2p.url) || AnazhRealm.P2P_DEFAULT_WS_URL;
         }
         const code = this.makeInvitationCode(inviteUrl, worldId) || "(Code-Erzeugung fehlgeschlagen)";
         const connected = this.state.p2p && this.state.p2p.connected;
@@ -18092,7 +18113,7 @@ class AnazhRealm {
         const fusedEntries = [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
 
         const snap = {
-            playerPosition: { x: 0, y: 50, z: 0 },
+            playerPosition: this._defaultSpawnPos(),
             knowledgeBase: [
                 ...((Array.isArray(saveA.knowledgeBase) && saveA.knowledgeBase.slice(-100)) || []),
                 ...((Array.isArray(saveB.knowledgeBase) && saveB.knowledgeBase.slice(-100)) || []),
@@ -33996,6 +34017,18 @@ AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
 // Stück ist die interop-sichere DataChannel-Nachrichtengröße; Backpressure
 // über channel.bufferedAmount fängt grosse Welten ab.
 AnazhRealm.P2P_WORLD_CHUNK_SIZE = 16384;
+// V9.44-d — die Backpressure-Schwelle für den RTCDataChannel-Versand.
+// Steigt `channel.bufferedAmount` über diesen Wert, pausiert der Sender.
+// Als 16 × P2P_WORLD_CHUNK_SIZE definiert (= 262144) — die Beziehung
+// „16 Stücke dürfen im Puffer warten" sichtbar gemacht statt eines
+// gestreuten Magic-Literals (vorher 262144 ×2 hand-getippt).
+AnazhRealm.P2P_BACKPRESSURE_BYTES = 16 * AnazhRealm.P2P_WORLD_CHUNK_SIZE;
+// V9.44-d — Infrastruktur-Defaults, vorher als gestreute Literale.
+// Ollama-Endpoint: der lokale Default-Server (8 Stellen vorher hand-
+// getippt). P2P-WS-URL: die Default-Signaling-Server-Adresse (6 Stellen).
+// Eine zentrale Stelle pro Wert — Drift-Schutz.
+AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
+AnazhRealm.P2P_DEFAULT_WS_URL = "ws://127.0.0.1:4313";
 // W7 Phase 2 — Mindestabstand zwischen zwei world-pull-Antworten an
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
