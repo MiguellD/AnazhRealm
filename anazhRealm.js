@@ -548,6 +548,10 @@ class AnazhRealm {
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
                 lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
+                // V9.43-e — die Hydrosphären-Klang-Schicht: zwei positions-
+                // modulierte White-Noise-Layer (Fluss-Rauschen + Wasserfall-
+                // Donnern), lazy in initSymphony. Runtime-only, NIE im Save.
+                hydroAudio: null, // { river:{noise,filter,gain,target}, waterfall:{…}, lastTick }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7313,11 +7317,16 @@ class AnazhRealm {
         // W4 V2 — die Lofi-Pad-Schicht: eine ruhige Minor-7th-Akkordfolge.
         s.lofi = this._buildLofiLayer(ctx, masterGain);
 
+        // V9.43-e — die Hydrosphären-Klang-Schicht (Vision §1.4): zwei
+        // White-Noise-Layer, deren Gain `_tickHydrosphereAudio` nach der
+        // Spieler-Nähe zu Fluss bzw. Wasserfall moduliert.
+        s.hydroAudio = this._buildHydroAudioLayer(ctx, masterGain);
+
         s.ctx = ctx;
         s.masterGain = masterGain;
         s.enabled = true;
         s.lastWeather = this.state.weather;
-        this.log("anazhSymphony aktiviert: ambient + wetter + lofi live", "INFO");
+        this.log("anazhSymphony aktiviert: ambient + wetter + lofi + wasser live", "INFO");
         return true;
     }
 
@@ -7331,6 +7340,10 @@ class AnazhRealm {
                 s.ambient.lfo.stop();
             }
             if (s.weather) s.weather.noise.stop();
+            if (s.hydroAudio) {
+                s.hydroAudio.river.noise.stop();
+                s.hydroAudio.waterfall.noise.stop();
+            }
             s.ctx.close();
         } catch (err) {
             this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
@@ -7339,10 +7352,46 @@ class AnazhRealm {
         s.enabled = false;
         s.ambient = null;
         s.weather = null;
+        s.hydroAudio = null;
         // W4 V2 — die Lofi-Akkord-Oszillatoren sind transient (auto-stop);
         // Gain + Filter werden mit dem geschlossenen ctx vom GC geräumt.
         s.lofi = null;
         s.masterGain = null;
+    }
+
+    // V9.43-e — baut die zwei Hydrosphären-Klang-Layer. Jeder ist ein
+    // looping White-Noise-Source → Filter → Gain (Start 0), Spiegel des
+    // Wetter-Layer-Musters aus initSymphony. Fluss: heller Bandpass — das
+    // Rauschen eines Bachs. Wasserfall: dunkler Lowpass — das Donnern.
+    _buildHydroAudioLayer(ctx, masterGain) {
+        const makeLayer = (filterType, freq, q) => {
+            const bufferSize = 2 * ctx.sampleRate;
+            const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) d[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            noise.loop = true;
+            const filter = ctx.createBiquadFilter();
+            filter.type = filterType;
+            filter.frequency.value = freq;
+            filter.Q.value = q;
+            const gain = ctx.createGain();
+            gain.gain.value = 0;
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            noise.start();
+            return { noise, filter, gain, target: 0 };
+        };
+        return {
+            river: makeLayer("bandpass", 2200, 0.5),
+            waterfall: makeLayer("lowpass", 520, 0.85),
+            // -Infinity, nicht 0 — sonst throttelt der erste Tick in den
+            // ersten 130 ms der AudioContext-Lebenszeit fälschlich (0 ist ein
+            // gültiger ctx-Zeitpunkt; die Sentinel-Gotcha aus CLAUDE.md).
+            lastTick: -Infinity,
+        };
     }
 
     playCreaturePing(emotion = "happy") {
@@ -7502,6 +7551,8 @@ class AnazhRealm {
         if (!s.enabled || !s.ctx) return;
         // W4 V2 — der Lofi-Pad-Scheduler (eigene Akkord-Dauer-Drosselung).
         this._lofiTick();
+        // V9.43-e — die positions-abhängige Wasser-Klang-Schicht.
+        this._tickHydrosphereAudio();
         // (1) Wetter-Cross-Fade (wie V8.24)
         if (s.lastWeather !== this.state.weather) {
             const target = this._symphonyWeatherTarget();
@@ -7545,6 +7596,86 @@ class AnazhRealm {
                 void e;
             }
         }
+    }
+
+    // V9.43-e — moduliert die zwei Hydrosphären-Klang-Layer nach der
+    // Spieler-Nähe: Fluss-Rauschen wächst, je näher die Fluss-Mittellinie
+    // liegt; Wasserfall-Donnern trägt weiter + lauter. Das Drainage-Netz hat
+    // ~14 Fluss-Punkte + wenige Wasserfälle — ein linearer Scan je Tick ist
+    // billig. Throttle ~7 Hz; jede Layer rampt sanft auf ihr Ziel. Das
+    // berechnete Ziel liegt auf `layer.target` (deterministischer Mess-Punkt
+    // für den Playtest — der GainNode-Wert rampt verzögert hinterher).
+    _tickHydrosphereAudio() {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.hydroAudio) return;
+        const hydro = this.state.hydrosphere;
+        if (!hydro || !hydro.ready || !this.state.playerMesh) return;
+        const ctx = s.ctx;
+        const nowMs = ctx.currentTime * 1000;
+        if (nowMs - (s.hydroAudio.lastTick || 0) < 130) return;
+        s.hydroAudio.lastTick = nowMs;
+
+        const px = this.state.playerMesh.position.x;
+        const pz = this.state.playerMesh.position.z;
+
+        // Nächste Fluss-Mittellinie — Segment-Distanz über alle Polylinien.
+        let riverDist = Infinity;
+        const rivers = Array.isArray(hydro.rivers) ? hydro.rivers : [];
+        for (const r of rivers) {
+            const pts = r.points;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const d = this._pointSegDist2D(px, pz, pts[k].x, pts[k].z, pts[k + 1].x, pts[k + 1].z);
+                if (d < riverDist) riverDist = d;
+            }
+        }
+        // Nächster Wasserfall — Punkt-Distanz in der xz-Ebene.
+        let fallDist = Infinity;
+        const falls = Array.isArray(hydro.waterfalls) ? hydro.waterfalls : [];
+        for (const wf of falls) {
+            const d = Math.hypot(px - wf.x, pz - wf.z);
+            if (d < fallDist) fallDist = d;
+        }
+
+        // Distanz → Gain: quadratischer Falloff bis zur Hörweite, dann 0.
+        // Der Wasserfall trägt weiter (75 m) + lauter (Peak 0.22) — er
+        // donnert; der Bach rauscht leiser (0.10) + nur nah (42 m).
+        const falloff = (d, range) => {
+            if (!Number.isFinite(d) || d >= range) return 0;
+            const k = 1 - d / range;
+            return k * k;
+        };
+        s.hydroAudio.river.target = falloff(riverDist, 42) * 0.1;
+        s.hydroAudio.waterfall.target = falloff(fallDist, 75) * 0.22;
+
+        const ramp = (layer) => {
+            const g = layer.gain.gain;
+            const now = ctx.currentTime;
+            try {
+                g.cancelScheduledValues(now);
+                g.setValueAtTime(g.value, now);
+                g.linearRampToValueAtTime(layer.target, now + 0.2);
+            } catch (e) {
+                void e;
+            }
+        };
+        ramp(s.hydroAudio.river);
+        ramp(s.hydroAudio.waterfall);
+    }
+
+    // 2D-Distanz (xz-Ebene) eines Punkts zum nächsten Punkt auf einem
+    // Segment — die saubere Mess-Grundlage für das Fluss-Rauschen, damit der
+    // Klang gleichmäßig bleibt, wenn man einem Fluss entlanggeht (eine reine
+    // Vertex-Distanz triebe ihn zwischen weit gesetzten Fluss-Punkten).
+    _pointSegDist2D(px, pz, ax, az, bx, bz) {
+        const dx = bx - ax;
+        const dz = bz - az;
+        const len2 = dx * dx + dz * dz;
+        let t = len2 > 0 ? ((px - ax) * dx + (pz - az) * dz) / len2 : 0;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const cx = ax + t * dx;
+        const cz = az + t * dz;
+        return Math.hypot(px - cx, pz - cz);
     }
 
     // ### W4 V2 — die Lofi-Pad-Schicht ###

@@ -1,10 +1,11 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ gebaut** (der
-Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten;
-siehe §8 + §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**. Dieses
-Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
-Phasen geschnitten. Offen: V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
+**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ + V9.43-e ✅ gebaut** (der
+Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten,
+der Klang; siehe §8 + §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**.
+Dieses Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
+Phasen geschnitten. Offen: nur zwei kosmetische Politur-Reste (See-Ufer-Schaum, Flow-Speed
+nach Gefälle — §9 V9.43-e). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
 V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
 Versions-Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
 §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
@@ -353,11 +354,29 @@ gelegentliche 3D-Roughness-Crag-Inseln in grossen Seen (der Carve senkt die Makr
 Surface, die `±~12`-Roughness-Bänder bleiben) — eine spätere `carveLakeBedDepth`-Tuning-
 Welle könnte sie heben.
 
-### V9.43-e — Politur + Klang
-Vision §1.4: Fluss-Rauschen + Wasserfall-Donnern (positions-abhängige Audio-Schicht,
-das V9.32-Audio-Versprechen eingelöst). Plus: Fluss-Mündung blendet sanft ins Meer,
-See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
-*~1 Session.*
+### V9.43-e — Politur + Klang ✅ (21.05.2026)
+Vision §1.4: Fluss-Rauschen + Wasserfall-Donnern als positions-abhängige Audio-Schicht
+— das V9.32-Audio-Versprechen eingelöst.
+
+**Geliefert (V9.43-e)**: `_buildHydroAudioLayer` baut zwei White-Noise-Layer in
+`state.symphony.hydroAudio` — Fluss = heller Bandpass (2200 Hz, das Rauschen eines
+Bachs), Wasserfall = dunkler Lowpass (520 Hz, das Donnern), beide am Master-Bus, Gain 0.
+`_tickHydrosphereAudio` (aus `symphonyTick`, ~7 Hz gedrosselt) misst je Tick die
+Spieler-Distanz zur nächsten Fluss-Mittellinie (`_pointSegDist2D` — Segment-Distanz,
+damit der Klang gleichmäßig bleibt, wenn man dem Fluss entlanggeht statt zwischen weit
+gesetzten Fluss-Punkten zu springen) und zum nächsten Wasserfall; ein quadratischer
+Falloff (Fluss 42 m / Peak 0.10, Wasserfall 75 m / Peak 0.22 — er trägt weiter +
+donnert) setzt das Gain-Ziel, der GainNode rampt sanft (0.2 s). 14 Invarianten grün.
+**Eine Sentinel-Falle ehrlich benannt**: der erste Wurf initialisierte den Throttle-
+Zeitstempel mit `0` — der erste Tick in den ersten 130 ms der AudioContext-Lebenszeit
+throttelte fälschlich (der Headless-Playtest erzeugt die Symphonie frisch → `ctx.current-
+Time` ≈ 0; im echten Spiel harmlos, aber der Test fing es). Fix: `-Infinity` als Sentinel
+(die `CLAUDE.md`-Gotcha „Zeitstempel sind `-Infinity`, nie `0`").
+
+**Ehrliche Rest-Naht** (kosmetisch, kein eigener Bogen): die Fluss-Mündung blendet seit
+V9.43-c.2 schon sichtbar ins Meer; See-Ufer-Schaum + eine Flow-Speed-Feinabstimmung nach
+Gefälle bleiben als optionale visuelle Mikro-Politur offen — die Hydrosphäre ist
+funktional + sensorisch vollständig.
 
 ---
 
@@ -404,13 +423,15 @@ See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
 - **§1.3 fraktal** ✅ — eine Wasser-Sprache (ein Shader + `uFlowDir`) regelt Meer, See,
   Fluss, Wasserfall. Dasselbe Welt-Feld (`worldFieldAt.lebendig`), das regelt was wo
   wächst, speist optional die Drainage-Gewichte.
-- **§1.4 multisensorisch** ✅ — V9.43-e: man hört, wo Wasser fließt.
+- **§1.4 multisensorisch** ✅ — V9.43-e: man hört, wo Wasser fließt — Bach-Rauschen
+  (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass), positions-moduliert.
 - **§3 Welt-Atmen** ✅ — die Welt hat einen Wasser-Kreis; das Wasser fließt, wie in der
   echten Natur.
 - **Heilige Lektion** ✅ — EIN neues Subsystem (`_computeHydrosphere` + ein Carve-Term +
   Render-Meshes), deterministisch + gut fundiert. Kein Re-Komplexifizieren — ein
   Wachstumsring auf dem Voxel-Stamm.
 
-**Nächster Schritt**: V9.43-e — Politur + Klang (Fluss-Rauschen, Wasserfall-Donnern,
-See-Ufer-Schaum). V9.43-b/c/c.2/d sind gebaut. Plus die offene Netz-Qualitäts-Frage
-(kurze, see-zerstückelte Flüsse — §10) als eigene Welle.
+**Stand**: V9.43-b/c/c.2/d/e sind gebaut — der Hydrosphären-Bogen (Atlas → Rendering →
+Synergie → Carven → Klang) ist abgeschlossen, das Wasser-Ultiversum V9.43 vollständig.
+Offen nur die kosmetische Rest-Naht (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9
+V9.43-e) + die Netz-Qualitäts-Frage (kurze, see-zerstückelte Flüsse — §10) als eigene Welle.

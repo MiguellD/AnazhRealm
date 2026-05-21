@@ -12976,6 +12976,128 @@ function startSaveServer() {
                 );
             }
 
+            // ### V9.43-e — das Wasser-Ultiversum bekommt Klang ###
+            // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen
+            // (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass).
+            // `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
+            // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode
+            // rampt verzögert hinterher). Vision §1.4 multisensorisch.
+            const voxelV943e = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasBuild = typeof r._buildHydroAudioLayer === "function";
+                    out.hasTick = typeof r._tickHydrosphereAudio === "function";
+                    out.hasSegDist = typeof r._pointSegDist2D === "function";
+                    if (out.hasSegDist) {
+                        out.segPerp = Math.abs(r._pointSegDist2D(0, 5, -10, 0, 10, 0) - 5) < 1e-6;
+                        out.segClamp = Math.abs(r._pointSegDist2D(20, 0, -10, 0, 10, 0) - 10) < 1e-6;
+                        out.segZero = r._pointSegDist2D(3, 0, -10, 0, 10, 0) < 1e-6;
+                    }
+                    if (!r.state.symphony.enabled) {
+                        try {
+                            r.initSymphony();
+                        } catch (e) {
+                            void e;
+                        }
+                    }
+                    const s = r.state.symphony;
+                    out.symphonyOn = !!s.enabled;
+                    const ha = s.hydroAudio;
+                    out.hasHydroAudio = !!ha;
+                    if (ha) {
+                        out.riverLayer = !!(ha.river && ha.river.noise && ha.river.filter && ha.river.gain);
+                        out.fallLayer = !!(
+                            ha.waterfall &&
+                            ha.waterfall.noise &&
+                            ha.waterfall.filter &&
+                            ha.waterfall.gain
+                        );
+                        out.riverBandpass = !!(ha.river && ha.river.filter.type === "bandpass");
+                        out.fallLowpass = !!(ha.waterfall && ha.waterfall.filter.type === "lowpass");
+                    }
+                    const hydro = r.state.hydrosphere;
+                    out.hasHydro = !!(hydro && hydro.ready);
+                    if (out.hasHydro && ha && r.state.playerMesh) {
+                        const pm = r.state.playerMesh.position;
+                        const orig = { x: pm.x, z: pm.z };
+                        let rp = null;
+                        if (Array.isArray(hydro.rivers)) {
+                            for (const rv of hydro.rivers) {
+                                if (rv.points && rv.points.length) {
+                                    rp = rv.points[0];
+                                    break;
+                                }
+                            }
+                        }
+                        out.hasRiver = !!rp;
+                        if (rp) {
+                            pm.x = rp.x;
+                            pm.z = rp.z;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.riverNear = ha.river.target;
+                            pm.x = rp.x + 5000;
+                            pm.z = rp.z + 5000;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.riverFar = ha.river.target;
+                        }
+                        const wf =
+                            Array.isArray(hydro.waterfalls) && hydro.waterfalls.length ? hydro.waterfalls[0] : null;
+                        out.hasWaterfall = !!wf;
+                        if (wf) {
+                            pm.x = wf.x;
+                            pm.z = wf.z;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.fallNear = ha.waterfall.target;
+                            pm.x = wf.x + 5000;
+                            pm.z = wf.z + 5000;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.fallFar = ha.waterfall.target;
+                        }
+                        pm.x = orig.x;
+                        pm.z = orig.z;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!voxelV943e || voxelV943e.error) {
+                check(
+                    "V9.43-e: Wasser-Klang-Snapshot erreichbar",
+                    false,
+                    (voxelV943e && voxelV943e.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                const e = voxelV943e;
+                check("V9.43-e: _buildHydroAudioLayer existiert", e.hasBuild);
+                check("V9.43-e: _tickHydrosphereAudio existiert", e.hasTick);
+                check("V9.43-e: _pointSegDist2D existiert", e.hasSegDist);
+                check("V9.43-e: _pointSegDist2D — Lot auf das Segment (5 m)", e.segPerp);
+                check("V9.43-e: _pointSegDist2D — Klemmung auf den Endpunkt (10 m)", e.segClamp);
+                check("V9.43-e: _pointSegDist2D — Punkt auf dem Segment ist 0", e.segZero);
+                check("V9.43-e: Symphonie aktiv (initSymphony headless)", e.symphonyOn);
+                check("V9.43-e: state.symphony.hydroAudio gebaut", e.hasHydroAudio);
+                check("V9.43-e: Fluss-Layer komplett (noise + filter + gain)", e.riverLayer);
+                check("V9.43-e: Wasserfall-Layer komplett (noise + filter + gain)", e.fallLayer);
+                check("V9.43-e: Fluss-Filter ist Bandpass (helles Rauschen)", e.riverBandpass);
+                check("V9.43-e: Wasserfall-Filter ist Lowpass (dunkles Donnern)", e.fallLowpass);
+                check(
+                    "V9.43-e: Fluss-Klang reagiert auf Distanz (nah laut, fern still)",
+                    e.hasRiver === true && e.riverNear > 0.05 && e.riverFar === 0,
+                    `nah=${(e.riverNear || 0).toFixed(3)} fern=${(e.riverFar || 0).toFixed(3)}`
+                );
+                check(
+                    "V9.43-e: Wasserfall-Donnern reagiert auf Distanz (nah laut, fern still)",
+                    e.hasWaterfall === true && e.fallNear > 0.05 && e.fallFar === 0,
+                    `nah=${(e.fallNear || 0).toFixed(3)} fern=${(e.fallFar || 0).toFixed(3)}`
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
