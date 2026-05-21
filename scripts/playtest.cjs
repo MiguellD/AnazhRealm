@@ -10867,9 +10867,7 @@ function startSaveServer() {
                     // Der Test scant `voxelPopulatedChunks` (der Voxel-
                     // Idempotenz-Cache, befüllt durch die initialen ~81
                     // Voxel-Chunks beim Welt-Aufbau).
-                    out.populatedChunksSize = r.state.voxelPopulatedChunks
-                        ? r.state.voxelPopulatedChunks.size
-                        : 0;
+                    out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
                     if (typeof r._populateVoxelChunkVegetation === "function") {
                         const before = archs.length;
                         // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
@@ -11452,10 +11450,15 @@ function startSaveServer() {
                                 const neighborSets = new Array(pos.count);
                                 for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
                                 for (let t = 0; t + 2 < ia.length; t += 3) {
-                                    const i0 = ia[t], i1 = ia[t + 1], i2 = ia[t + 2];
-                                    neighborSets[i0].add(i1); neighborSets[i0].add(i2);
-                                    neighborSets[i1].add(i0); neighborSets[i1].add(i2);
-                                    neighborSets[i2].add(i0); neighborSets[i2].add(i1);
+                                    const i0 = ia[t],
+                                        i1 = ia[t + 1],
+                                        i2 = ia[t + 2];
+                                    neighborSets[i0].add(i1);
+                                    neighborSets[i0].add(i2);
+                                    neighborSets[i1].add(i0);
+                                    neighborSets[i1].add(i2);
+                                    neighborSets[i2].add(i0);
+                                    neighborSets[i2].add(i1);
                                 }
                                 let totalDev = 0;
                                 let sampledVerts = 0;
@@ -12163,18 +12166,15 @@ function startSaveServer() {
                             r.generateTerrainWithParameters.toString()) ||
                         "";
                     const srcGet =
-                        (typeof r.getTerrainHeightAt === "function" && r.getTerrainHeightAt.toString()) ||
-                        "";
-                    const srcFind =
-                        (typeof r.findSurfaceAbove === "function" && r.findSurfaceAbove.toString()) || "";
+                        (typeof r.getTerrainHeightAt === "function" && r.getTerrainHeightAt.toString()) || "";
+                    const srcFind = (typeof r.findSurfaceAbove === "function" && r.findSurfaceAbove.toString()) || "";
                     return {
                         // (1) `calculateTerrainSteepness` ist gelöscht — kein
                         // Aufrufer mehr nach Wasserfall-Loop-Lösch.
                         noCalcSteepness: typeof r.calculateTerrainSteepness !== "function",
                         // (2) heightData-Allokations-Loop in generateTerrain*
                         // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
-                        noHeightDataAlloc:
-                            !/new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/.test(srcGen),
+                        noHeightDataAlloc: !/new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/.test(srcGen),
                         // (3) der Wasserfall-Loop (256×256) ist weg:
                         // kein `for (let z = 0; z < DEPTH; z++)` mehr.
                         noWaterfallLoop: !/for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/.test(srcGen),
@@ -12184,8 +12184,7 @@ function startSaveServer() {
                         // (5) `findSurfaceAbove` ist voxel-only — kein
                         // `groundHeightField`-Read mehr, kein floatingIslands-
                         // Loop.
-                        findSurfaceVoxelOnly:
-                            !/groundHeightField/.test(srcFind) && !/floatingIslands/.test(srcFind),
+                        findSurfaceVoxelOnly: !/groundHeightField/.test(srcFind) && !/floatingIslands/.test(srcFind),
                         // Regression-Schutz: die zwei verschlankten Funktionen
                         // leben weiter + liefern eine endliche Zahl.
                         getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
@@ -12255,10 +12254,14 @@ function startSaveServer() {
                         loopHasNoPrune: !(
                             proto._gameLoopTick &&
                             /pruneDistantChunks/.test(
-                                (Object.getOwnPropertyNames(proto)
-                                    .map((n) => proto[n])
-                                    .find((f) => typeof f === "function" && /tickArchitectureCulling/.test(f.toString())) ||
-                                    function () {}).toString()
+                                (
+                                    Object.getOwnPropertyNames(proto)
+                                        .map((n) => proto[n])
+                                        .find(
+                                            (f) =>
+                                                typeof f === "function" && /tickArchitectureCulling/.test(f.toString())
+                                        ) || function () {}
+                                ).toString()
                             )
                         ),
                         // (9) `_buildWaterPlane` ist voxel-only — kein echter
@@ -12270,8 +12273,7 @@ function startSaveServer() {
                             !/this\._terrainHeightAtWorld\s*\(/.test(r._buildWaterPlane.toString()),
                         // (10) Voxel-Pendants leben weiter (Vision-Anker)
                         voxelGrassAlive:
-                            typeof r._buildVoxelChunkGrass === "function" &&
-                            r.state.voxelChunkGrass instanceof Map,
+                            typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
                         voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
                         voxelSurfaceYAlive: typeof r._voxelSurfaceY === "function",
                         // (11) Die geteilten Helper bleiben:
@@ -12286,10 +12288,7 @@ function startSaveServer() {
 
             if (voxelV939Results && !voxelV939Results.error) {
                 check("Voxel V9.39: ensureChunkAt ist gelöscht", voxelV939Results.noEnsureChunkAt);
-                check(
-                    "Voxel V9.39: populateChunkVegetation ist gelöscht",
-                    voxelV939Results.noPopulateChunkVegetation
-                );
+                check("Voxel V9.39: populateChunkVegetation ist gelöscht", voxelV939Results.noPopulateChunkVegetation);
                 check(
                     "Voxel V9.39: _buildChunkGrass + _disposeChunkGrass sind gelöscht",
                     voxelV939Results.noBuildChunkGrass && voxelV939Results.noDisposeChunkGrass
@@ -12502,8 +12501,7 @@ function startSaveServer() {
                         !/THREE\.Points/.test(buildSrc) &&
                         !/PointsMaterial/.test(buildSrc) &&
                         !/["']velocity["']/.test(buildSrc);
-                    out.noParticleAnimData =
-                        !/userData\.minY/.test(buildSrc) && !/baseHeight/.test(buildSrc);
+                    out.noParticleAnimData = !/userData\.minY/.test(buildSrc) && !/baseHeight/.test(buildSrc);
                     const dispSrc = (r._disposeVoxelChunkWaterfalls || function () {}).toString();
                     out.disposeKeepsMaterial = !/\.material\.dispose/.test(dispSrc);
                     // Day-Night synct das Wasserfall-Material (Fog-Uniform).
@@ -12511,8 +12509,7 @@ function startSaveServer() {
                     if (mat && typeof r._applyDayNightToScene === "function") {
                         try {
                             r._applyDayNightToScene();
-                            out.dayNightSyncsWaterfall =
-                                typeof u.fogNear.value === "number" && u.fogNear.value > 0;
+                            out.dayNightSyncsWaterfall = typeof u.fogNear.value === "number" && u.fogNear.value > 0;
                         } catch {
                             out.dayNightSyncsWaterfall = false;
                         }
@@ -12583,6 +12580,94 @@ function startSaveServer() {
                     "Voxel V9.43-a: ein gebauter Wasserfall ist eine PlaneGeometry-Mesh mit dem geteilten Material",
                     !voxelV943Results.planeWaterfallFound || voxelV943Results.planeWaterfallValid
                 );
+            }
+
+            // ### Voxel V9.43-b — Der Hydrosphären-Atlas ###
+            // Aus der Voxel-Surface ein deterministisches Drainage-Netz:
+            // Priority-Flood (Senken auffüllen → Seen) → D8-Flow-Direction →
+            // Flow-Accumulation → Netz-Extraktion (Flüsse/Seen/Wasserfälle).
+            // Reine Daten, headless-prüfbar — kein Rendering, kein Carven.
+            const voxelV943bResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.methodExists = typeof r._computeHydrosphere === "function";
+                    out.stateDeclared = "hydrosphere" in r.state;
+                    if (!out.methodExists) return out;
+                    const t0 = performance.now();
+                    const h1 = r._computeHydrosphere();
+                    out.perfMs = performance.now() - t0;
+                    out.shape =
+                        !!h1 &&
+                        h1.ready === true &&
+                        Array.isArray(h1.rivers) &&
+                        Array.isArray(h1.lakes) &&
+                        Array.isArray(h1.waterfalls) &&
+                        typeof h1.dim === "number" &&
+                        typeof h1.cell === "number";
+                    out.riverCount = h1.rivers.length;
+                    out.lakeCount = h1.lakes.length;
+                    out.waterfallCount = h1.waterfalls.length;
+                    out.maxAccum = h1.stats ? h1.stats.maxAccum : 0;
+                    // Determinismus — zwei Läufe, byte-identisches Netz
+                    const h2 = r._computeHydrosphere();
+                    out.deterministic =
+                        JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
+                        JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
+                        JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
+                    // Jeder Fluss steigt STRIKT monoton ab — point.y ist die
+                    // Füllhöhe, die entlang flowTo strikt monoton fällt.
+                    out.riversDescend = h1.rivers.every((rv) => {
+                        for (let k = 0; k + 1 < rv.points.length; k++) {
+                            if (rv.points[k].y <= rv.points[k + 1].y) return false;
+                        }
+                        return true;
+                    });
+                    // Jeder Fluss endet an Meer, See oder Region-Rand
+                    out.riverMouths = h1.rivers.every(
+                        (rv) =>
+                            rv.mouth === "sea" ||
+                            rv.mouth === "border" ||
+                            (rv.mouth && typeof rv.mouth.lake === "number")
+                    );
+                    // Flow-Accumulation stromab monoton → Breite wächst
+                    out.widthGrows = h1.rivers.every((rv) => {
+                        for (let k = 0; k + 1 < rv.points.length; k++) {
+                            if (rv.points[k].width > rv.points[k + 1].width + 1e-6) return false;
+                        }
+                        return true;
+                    });
+                    // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
+                    out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
+                    // Jede Land-Zelle hat nach dem Priority-Flood einen Abfluss
+                    out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
+                    // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
+                    out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV943bResults && !voxelV943bResults.error) {
+                const hb = voxelV943bResults;
+                check("Voxel V9.43-b: _computeHydrosphere existiert", hb.methodExists);
+                check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
+                check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
+                check(
+                    `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum})`,
+                    hb.riverCount > 0
+                );
+                check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
+                check("Voxel V9.43-b: jeder Fluss steigt monoton ab (Quelle → Mündung)", hb.riversDescend);
+                check("Voxel V9.43-b: jeder Fluss endet an Meer, See oder Region-Rand", hb.riverMouths);
+                check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
+                check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
+                check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
+                check(
+                    `Voxel V9.43-b: Berechnung im Perf-Budget (${Math.round(hb.perfMs || 0)} ms < 500 ms)`,
+                    typeof hb.perfMs === "number" && hb.perfMs < 500
+                );
+                check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
             }
 
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
@@ -12719,12 +12804,27 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
-                check("V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren", voxelV940cResults.hasTick && voxelV940cResults.hasDrain);
-                check("V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)", voxelV940cResults.editMarksDirty);
-                check("V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set", voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet);
-                check("V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks", voxelV940cResults.drainReturnedCount);
+                check(
+                    "V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren",
+                    voxelV940cResults.hasTick && voxelV940cResults.hasDrain
+                );
+                check(
+                    "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
+                    voxelV940cResults.editMarksDirty
+                );
+                check(
+                    "V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set",
+                    voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet
+                );
+                check(
+                    "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
+                    voxelV940cResults.drainReturnedCount
+                );
                 check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
-                check("V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)", voxelV940cResults.disposeClearsDirty);
+                check(
+                    "V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
+                    voxelV940cResults.disposeClearsDirty
+                );
             }
 
             // V9.40-d — Dispose-Before-Build (Heap-Druck-Heilung) + Retry-
@@ -12774,12 +12874,15 @@ function startSaveServer() {
                     out.dirtyAfterFail = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.has(someKey));
                     // 2. Versuch: fail → attempts=2
                     r._rebuildVoxelChunk(cx, cz);
-                    out.retryCounter2 = (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
+                    out.retryCounter2 =
+                        (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
                     // 3. Versuch: fail → empty markiert, counter weg
                     r._rebuildVoxelChunk(cx, cz);
                     const finalEntry = r.state.voxelChunks.get(someKey);
                     out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
-                    out.counterClearedAfterGiveUp = !(r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey));
+                    out.counterClearedAfterGiveUp = !(
+                        r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey)
+                    );
                     // Restore.
                     r._buildVoxelChunkData = origBuild;
                     if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
@@ -12788,12 +12891,27 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (voxelV940dResults && !voxelV940dResults.error && !voxelV940dResults.skip) {
-                check("V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt", voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged);
-                check("V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)", voxelV940dResults.retryCounter1);
-                check("V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)", voxelV940dResults.dirtyAfterFail);
+                check(
+                    "V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt",
+                    voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged
+                );
+                check(
+                    "V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)",
+                    voxelV940dResults.retryCounter1
+                );
+                check(
+                    "V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)",
+                    voxelV940dResults.dirtyAfterFail
+                );
                 check("V9.40-d: Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
-                check("V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940dResults.giveUpAsEmpty);
-                check("V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)", voxelV940dResults.counterClearedAfterGiveUp);
+                check(
+                    "V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert",
+                    voxelV940dResults.giveUpAsEmpty
+                );
+                check(
+                    "V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)",
+                    voxelV940dResults.counterClearedAfterGiveUp
+                );
             }
 
             // V9.40-e — drei Heilungen nach dem zweiten Schöpfer-Browser-
@@ -12814,7 +12932,8 @@ function startSaveServer() {
                     const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
                     const farUpResult = r._addVoxelEdit(0, base + 10000, 0, 3, "carve");
                     out.farEditRejected = farUpResult === false;
-                    out.farEditNotStored = (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
+                    out.farEditNotStored =
+                        (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
                     const farDownResult = r._addVoxelEdit(0, base - 10000, 0, 3, "carve");
                     out.farDownRejected = farDownResult === false;
                     // Normaler Edit innerhalb Band bleibt erhalten.
@@ -12857,15 +12976,42 @@ function startSaveServer() {
                 .catch((e) => ({ error: String(e) }));
 
             if (voxelV940eResults && !voxelV940eResults.error) {
-                check("V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)", voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored);
-                check("V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
-                check("V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
-                check("V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)", voxelV940eResults.nearEdgeAccepted);
-                check("V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)", voxelV940eResults.disposeClearsAttempts);
-                check("V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)", voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1);
-                check("V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940eResults.streamAttempt2);
-                check("V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert", voxelV940eResults.streamGiveUpAsEmpty);
-                check("V9.40-e: Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
+                check(
+                    "V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
+                    voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
+                );
+                check(
+                    "V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden",
+                    voxelV940eResults.farDownRejected
+                );
+                check(
+                    "V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands",
+                    voxelV940eResults.inBoundAccepted
+                );
+                check(
+                    "V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)",
+                    voxelV940eResults.nearEdgeAccepted
+                );
+                check(
+                    "V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)",
+                    voxelV940eResults.disposeClearsAttempts
+                );
+                check(
+                    "V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)",
+                    voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1
+                );
+                check(
+                    "V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)",
+                    voxelV940eResults.streamAttempt2
+                );
+                check(
+                    "V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert",
+                    voxelV940eResults.streamGiveUpAsEmpty
+                );
+                check(
+                    "V9.40-e: Streaming-Counter geräumt nach give-up",
+                    voxelV940eResults.streamCounterClearedAfterGiveUp
+                );
             }
 
             // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###

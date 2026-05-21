@@ -59,6 +59,11 @@ class AnazhRealm {
             ufos: [],
             waterfalls: [],
             waterfallMaterial: null,
+            // V9.43-b — der Hydrosphären-Atlas (Flüsse/Seen/Wasserfälle als
+            // deterministisches Drainage-Netz). Lazy beim Worldgen gebaut,
+            // NICHT im Save persistiert (deterministisch aus dem Seed neu
+            // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
+            hydrosphere: null,
             keys: {},
             speed: 6,
             sprintSpeed: 12,
@@ -10971,6 +10976,30 @@ class AnazhRealm {
         return 35000; // mind. 35 s zwischen Toden — Welt soll nicht massensterben
     }
 
+    // V9.43-b — Hydrosphären-Atlas. Das Drainage-Netz wird über eine feste
+    // Region um den Welt-Ursprung berechnet (bounded domain — Flow-
+    // Accumulation braucht eine endliche Wasserscheide). cell 16 m → 128²
+    // Zellen: ein substanzielles Netz im Perf-Budget. Plan: docs/hydrosphere.md.
+    static get HYDROSPHERE() {
+        return Object.freeze({
+            regionSize: 2048, // Region-Kantenlänge in m (um den Welt-Ursprung)
+            cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
+            fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
+            // Fluss-Schwelle adaptiv: max(absoluter Boden, Anteil des größten
+            // Durchflusses) — robust über verschiedene Seeds (anderes Relief →
+            // andere Max-Akkumulation). Eine Zelle ist Fluss ab dieser Akkum.
+            riverThresholdMin: 60, // absoluter Boden (Zell-Zahl)
+            riverThresholdFrac: 0.04, // Anteil der Max-Akkumulation
+            minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
+            // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
+            widthMin: 3, // Fluss-Mindestbreite in m
+            widthK: 0.32, // Breiten-Faktor: width = widthMin + widthK·√Akkumulation
+            waterfallSlope: 0.55, // Δy/Δhoriz, ab dem ein Fluss-Segment ein Wasserfall ist
+            waterfallMinDrop: 6, // Mindest-Höhendrop in m für einen Wasserfall
+            maxRiverPoints: 800, // Sicherheits-Cap je Fluss-Polylinie
+        });
+    }
+
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
     }
@@ -13335,6 +13364,25 @@ class AnazhRealm {
             this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
         }
 
+        // V9.43-b — der Hydrosphären-Atlas. Aus der Voxel-Surface ein
+        // deterministisches Drainage-Netz (Flüsse/Seen/Wasserfälle) ableiten.
+        // Reine Daten — kein Rendering (V9.43-c), kein Carven (V9.43-d). Der
+        // Bau läuft in eine lokale Variable; state.hydrosphere wird erst NACH
+        // vollständigem Bau gesetzt — der V9.43-d-Carve-Term liest dann ein
+        // null-Feld und greift nicht (Zirkel-Freiheit, hydrosphere.md §8).
+        // try/catch: ein Hydrosphären-Fehler darf den Worldgen nie brechen.
+        try {
+            const hydro = this._computeHydrosphere();
+            this.state.hydrosphere = hydro;
+            this.log(
+                `V9.43-b: Hydrosphäre berechnet — ${hydro.rivers.length} Flüsse, ${hydro.lakes.length} Seen, ${hydro.waterfalls.length} Wasserfälle`,
+                "INFO"
+            );
+        } catch (e) {
+            this.state.hydrosphere = null;
+            this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
+        }
+
         this.spawnCreatures();
 
         // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
@@ -13422,6 +13470,39 @@ class AnazhRealm {
     // rollende 2D-Noise-Oberfläche (`surf − y` reproduziert das Height-
     // field) PLUS zwei 3D-Noise-Bänder, die Höhlen schnitzen + Überhänge
     // wölben — das, was ein Heightfield pro (x,z) nie kann.
+    // V9.43-b — die 2D-Makro-Oberfläche des Voxel-Terrains aus den drei
+    // Worldgen-Oktaven, OHNE die 3D-Roughness-Bänder + Höhlen.
+    // `_terrainDensityAt` nutzt sie für sein `surf` (verhaltensidentisch zu
+    // V9.20); der Hydrosphären-Atlas sampelt sie als hydrologische Basis-
+    // Oberfläche — eine Quelle für beide (V9.44-a-Disziplin: ein Wert, der
+    // zweimal gebraucht wird, lebt an einer Stelle).
+    // V9.20 — Grösse + Hierarchie. Drei 2D-Oktaven statt einer mittleren:
+    // (1) eine KONTINENTALE Oktave (~1500 m Wellenlänge ≈ 35 Chunks,
+    //     Amplitude 26) — die grosse Gebirgs-Masse, die sich über viele
+    //     Chunks aufbaut; wo sie tief ist, liegt Tiefland. (2) Eine
+    //     RIDGED-Oktave (`(1−|noise|)²`) — scharfe Gebirgs-Grate +
+    //     Felswände (ridged-Noise faltet die Oberfläche zu Kämmen, kein
+    //     rundes Hügel-Blob). (3) Eine feine Detail-Oktave. Die Hierarchie
+    //     (gross → Grat → Detail) gibt der Welt Massstab.
+    // `includeDetail` (Default true) — `_terrainDensityAt` braucht die feine
+    // Detail-Oktave (λ~22 m); der Hydrosphären-Sampler ruft mit `false`: die
+    // Detail-Oktave (±4 m) aliast bei der 16-m-Abtastung und ist grösser als
+    // das Makro-Gefälle pro Zelle → das Drainage-Netz würde dem Rauschen
+    // statt dem Tal-Relief folgen. Die Drainage sieht nur kontinental + ridged.
+    _terrainMacroSurfaceY(x, z, includeDetail = true) {
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const n = this._voxelNoise;
+        const base = this.state.terrainBaseHeight || 0;
+        const cont = n.noise2D(x * 0.0042, z * 0.0042) * 26;
+        const rN = n.noise2D(x * 0.013, z * 0.013);
+        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * 22;
+        const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
+        return base + cont + ranges + detail;
+    }
+
     _terrainDensityAt(x, y, z) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -13429,19 +13510,10 @@ class AnazhRealm {
         }
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        // V9.20 — Grösse + Hierarchie. Drei 2D-Oktaven statt einer mittleren:
-        // (1) eine KONTINENTALE Oktave (~1500 m Wellenlänge ≈ 35 Chunks,
-        //     Amplitude 26) — die grosse Gebirgs-Masse, die sich über viele
-        //     Chunks aufbaut; wo sie tief ist, liegt Tiefland. (2) Eine
-        //     RIDGED-Oktave (`(1−|noise|)²`) — scharfe Gebirgs-Grate +
-        //     Felswände (ridged-Noise faltet die Oberfläche zu Kämmen, kein
-        //     rundes Hügel-Blob). (3) Eine feine Detail-Oktave. Die Hierarchie
-        //     (gross → Grat → Detail) gibt der Welt Massstab.
-        const cont = n.noise2D(x * 0.0042, z * 0.0042) * 26;
-        const rN = n.noise2D(x * 0.013, z * 0.013);
-        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * 22;
-        const detail = n.noise2D(x * 0.045, z * 0.045) * 4;
-        const surf = base + cont + ranges + detail;
+        // V9.43-b — die 2D-Makro-Oberfläche lebt jetzt in
+        // `_terrainMacroSurfaceY` (eine Quelle, auch vom Hydrosphären-
+        // Sampler genutzt). Verhaltensidentisch zu V9.20.
+        const surf = this._terrainMacroSurfaceY(x, z);
         let d = surf - y;
         // Oberflächen-Roughness — zwei 3D-Bänder: das feine schnitzt Crags +
         // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
@@ -14128,6 +14200,578 @@ class AnazhRealm {
             prevAir = !solid;
         }
         return null;
+    }
+
+    // === V9.43-b — Der Hydrosphären-Atlas ================================
+    // Ein deterministisches Drainage-Netz aus der Voxel-Surface: Flüsse,
+    // Seen, Wasserfälle als reine Daten in `state.hydrosphere`. Der Profi-
+    // Weg für prozedurale Welten (Gaea, World Machine) — keine Live-Fluid-
+    // Simulation, sondern Flow-Accumulation: einmal aus dem Seed berechnet,
+    // multiplayer-sicher per Konstruktion. Sieben Phasen, je eine Methode
+    // (V9.44-f-Disziplin: pre-cut gebaut, keine neuen Giganten). Voller
+    // Plan: docs/hydrosphere.md. `_computeHydrosphere` ist der Orchestrator;
+    // er baut in eine lokale Variable und LIEFERT sie — der Worldgen-
+    // Aufrufer setzt `state.hydrosphere` erst nach vollständigem Bau (so
+    // greift der spätere V9.43-d-Carve-Term während des Baus nicht — kein
+    // Zirkel: die Surface wird un-gecarvt gesampelt).
+    _computeHydrosphere() {
+        const ctx = this._hydroInit();
+        this._hydroMarkOcean(ctx);
+        this._hydroPriorityFlood(ctx);
+        this._hydroFlowDirection(ctx);
+        this._hydroAccumulate(ctx);
+        const lakes = this._hydroExtractLakes(ctx);
+        const rivers = this._hydroExtractRivers(ctx);
+        const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
+        // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
+        // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
+        // es; undrainedLand > 0 wäre ein Algorithmus-Bug.
+        const { dim, surf, waterLevel, flowTo, lakeOf, isOcean } = ctx;
+        let undrainedLand = 0;
+        let landCells = 0;
+        let lakeCells = 0;
+        let seaCells = 0;
+        let surfMin = Infinity;
+        let surfMax = -Infinity;
+        for (let idx = 0; idx < dim * dim; idx++) {
+            const s = surf[idx];
+            if (s < surfMin) surfMin = s;
+            if (s > surfMax) surfMax = s;
+            if (lakeOf[idx] >= 0) lakeCells++;
+            if (isOcean[idx]) {
+                seaCells++;
+                continue;
+            }
+            const i = idx % dim;
+            const j = (idx / dim) | 0;
+            if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
+            landCells++;
+            if (flowTo[idx] < 0) undrainedLand++;
+        }
+        return {
+            ready: true,
+            originX: ctx.originX,
+            originZ: ctx.originZ,
+            size: ctx.size,
+            cell: ctx.cell,
+            dim: ctx.dim,
+            rivers,
+            lakes,
+            waterfalls,
+            stats: {
+                cells: dim * dim,
+                landCells,
+                lakeCells,
+                seaCells,
+                undrainedLand,
+                maxAccum: Math.round(ctx.maxAccum),
+                waterLevel: Math.round(waterLevel),
+                surfMin: Math.round(surfMin),
+                surfMax: Math.round(surfMax),
+            },
+        };
+    }
+
+    // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`
+    // abtasten, OHNE die Detail-Oktave (`includeDetail=false`): die feine
+    // Oktave (±4 m, λ~22 m) aliast bei der 16-m-Abtastung und ist grösser
+    // als das Makro-Gefälle pro Zelle — das Drainage-Netz würde dem Rauschen
+    // statt dem Tal-Relief folgen (V9.43-b erster Wurf: maxAccum 52, kein
+    // Fluss konzentrierte). Die Drainage sieht nur kontinental + ridged: ein
+    // glattes Relief, an 16-m-Zellen sauber aufgelöst. Auch die 3D-Roughness-
+    // Bänder + Höhlen fließen NICHT ein. Plus billig (3 Noise-Calls je Zelle
+    // statt eines 91-Schritt-Säulen-Scans). Ein 3×3-Blur glättet jeden Rest
+    // (defense-in-depth). `state.hydrosphere` ist während des Baus noch
+    // null — der V9.43-d-Carve-Term greift also nicht (kein Zirkel).
+    _hydroInit() {
+        const H = AnazhRealm.HYDROSPHERE;
+        const base = this.state.terrainBaseHeight || 0;
+        let waterLevel = this.state.waterLevel;
+        if (typeof waterLevel !== "number" || !Number.isFinite(waterLevel)) {
+            waterLevel = base - 3;
+        }
+        const size = H.regionSize;
+        const cell = H.cell;
+        const dim = Math.max(8, Math.round(size / cell));
+        const originX = -size / 2;
+        const originZ = -size / 2;
+        const n = dim * dim;
+        const raw = new Float64Array(n);
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const s = this._terrainMacroSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell, false);
+                raw[j * dim + i] = Number.isFinite(s) ? s : base - 44;
+            }
+        }
+        const surf = this._hydroBlur(raw, dim);
+        return {
+            base,
+            waterLevel,
+            size,
+            cell,
+            dim,
+            originX,
+            originZ,
+            surf,
+            isOcean: null,
+            filled: null,
+            flowTo: null,
+            accum: null,
+            maxAccum: 0,
+            lakeOf: null,
+        };
+    }
+
+    // Ein 3×3-Box-Blur über das Höhen-Raster (Rand-clamp — die Region-Ränder
+    // sind ohnehin Priority-Flood-Auslässe). Da die Detail-Oktave schon beim
+    // Sampling weggelassen ist, ist das Relief weitgehend glatt — der Blur
+    // ist defense-in-depth gegen jeden Aliasing-Rest der ridged-Oktave und
+    // hält das Drainage-Netz robust am echten Tal-Relief.
+    _hydroBlur(src, dim) {
+        const out = new Float64Array(dim * dim);
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                let sum = 0;
+                let cnt = 0;
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        const ni = i + di;
+                        const nj = j + dj;
+                        if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                        sum += src[ni + nj * dim];
+                        cnt++;
+                    }
+                }
+                out[i + j * dim] = sum / cnt;
+            }
+        }
+        return out;
+    }
+
+    // Phase 1.5 — die Ozean-Maske. „Meer" ist NICHT jede Zelle unter dem
+    // Meeresspiegel: eine Mulde unter Meeresspiegel mitten im Land ist ein
+    // abflussloses Becken (ein See, evtl. unter Meereshöhe — wie das Tote
+    // Meer), KEIN Ozean. Der Ozean ist die mit dem Region-RAND verbundene
+    // Komponente der Unter-Meeresspiegel-Zellen. Ohne diese Unterscheidung
+    // wäre jede Senke ein Ozean-Auslass — der Abfluss versickerte sofort,
+    // statt sich zu Flüssen zu sammeln (V9.43-b erster Wurf: maxAccum 50).
+    _hydroMarkOcean(ctx) {
+        const { dim, surf, waterLevel } = ctx;
+        const n = dim * dim;
+        const isOcean = new Uint8Array(n);
+        const stack = [];
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
+                if (!border) continue;
+                const idx = i + j * dim;
+                if (surf[idx] <= waterLevel && !isOcean[idx]) {
+                    isOcean[idx] = 1;
+                    stack.push(idx);
+                }
+            }
+        }
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        while (stack.length) {
+            const c = stack.pop();
+            const ci = c % dim;
+            const cj = (c / dim) | 0;
+            for (let k = 0; k < 8; k++) {
+                const ni = ci + NB[k][0];
+                const nj = cj + NB[k][1];
+                if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                const nidx = ni + nj * dim;
+                if (!isOcean[nidx] && surf[nidx] <= waterLevel) {
+                    isOcean[nidx] = 1;
+                    stack.push(nidx);
+                }
+            }
+        }
+        ctx.isOcean = isOcean;
+    }
+
+    // Phase 2 — Depression-Filling (Priority-Flood + ε, Barnes et al. 2014).
+    // Ein Min-Heap, geseedet mit den Rand-Zellen + den Ozean-Zellen (die
+    // Basis-Senke). Die tiefste Zelle poppen, jeden Nachbarn auf
+    // max(seine Höhe, Pop-Füllhöhe + ε) füllen. Das +ε gibt jeder Zelle ein
+    // definiertes Gefälle (löst flache See-Innenflächen für die D8-Richtung)
+    // und garantiert, dass jede Zelle einen echt-tieferen Nachbarn hat.
+    // Zellen mit filled > surf sind aufgefüllt — die Seen (auch ein
+    // abflussloses Becken unter Meereshöhe, das nicht Ozean ist).
+    _hydroPriorityFlood(ctx) {
+        const { dim, surf, isOcean, waterLevel } = ctx;
+        const EPS = AnazhRealm.HYDROSPHERE.fillEpsilon;
+        const n = dim * dim;
+        const filled = new Float64Array(n);
+        const visited = new Uint8Array(n);
+        // Binärer Min-Heap, parallele Arrays (Prioritäten + Zell-Indizes).
+        // Strikte Total-Ordnung: bei gleicher Höhe nach Index → der Pop
+        // ist deterministisch (sonst hinge das filled-Ergebnis an der
+        // Heap-Reihenfolge gleich-hoher Zellen).
+        const hp = [];
+        const hv = [];
+        const less = (a, b) => hp[a] < hp[b] || (hp[a] === hp[b] && hv[a] < hv[b]);
+        const swap = (a, b) => {
+            const tp = hp[a];
+            hp[a] = hp[b];
+            hp[b] = tp;
+            const tv = hv[a];
+            hv[a] = hv[b];
+            hv[b] = tv;
+        };
+        const push = (p, v) => {
+            hp.push(p);
+            hv.push(v);
+            let c = hp.length - 1;
+            while (c > 0) {
+                const par = (c - 1) >> 1;
+                if (!less(c, par)) break;
+                swap(c, par);
+                c = par;
+            }
+        };
+        const pop = () => {
+            const top = hv[0];
+            const lastP = hp.pop();
+            const lastV = hv.pop();
+            if (hp.length) {
+                hp[0] = lastP;
+                hv[0] = lastV;
+                let c = 0;
+                for (;;) {
+                    const l = c * 2 + 1;
+                    const r = l + 1;
+                    let s = c;
+                    if (l < hp.length && less(l, s)) s = l;
+                    if (r < hp.length && less(r, s)) s = r;
+                    if (s === c) break;
+                    swap(s, c);
+                    c = s;
+                }
+            }
+            return top;
+        };
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const idx = i + j * dim;
+                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
+                const sea = isOcean[idx] === 1;
+                if (border || sea) {
+                    // Ozean-Zellen werden auf den flachen Meeresspiegel
+                    // geseedet; eine Rand-Land-Zelle auf ihre echte Höhe.
+                    filled[idx] = sea ? waterLevel : surf[idx];
+                    visited[idx] = 1;
+                    push(filled[idx], idx);
+                }
+            }
+        }
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        while (hp.length) {
+            const c = pop();
+            const ci = c % dim;
+            const cj = (c / dim) | 0;
+            for (let k = 0; k < 8; k++) {
+                const ni = ci + NB[k][0];
+                const nj = cj + NB[k][1];
+                if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                const nidx = ni + nj * dim;
+                if (visited[nidx]) continue;
+                filled[nidx] = Math.max(surf[nidx], filled[c] + EPS);
+                visited[nidx] = 1;
+                push(filled[nidx], nidx);
+            }
+        }
+        ctx.filled = filled;
+    }
+
+    // Phase 3 — Flow-Direction (D8). Jede Land-Zelle zeigt zum Nachbarn mit
+    // der kleinsten Füllhöhe. Das Priority-Flood-ε garantiert, dass dieser
+    // Nachbar echt tiefer liegt (jede Nicht-Seed-Zelle hat ihren Entdecker
+    // als tieferen Nachbarn) — ein Abfluss existiert immer. Rand- + Meer-
+    // Zellen sind Auslässe (flowTo = -1).
+    _hydroFlowDirection(ctx) {
+        const { dim, filled, isOcean } = ctx;
+        const n = dim * dim;
+        const flowTo = new Int32Array(n).fill(-1);
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const idx = i + j * dim;
+                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
+                if (border || isOcean[idx]) continue; // Auslass (Rand/Ozean)
+                let bestN = -1;
+                let bestF = filled[idx];
+                for (let k = 0; k < 8; k++) {
+                    const ni = i + NB[k][0];
+                    const nj = j + NB[k][1];
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nidx = ni + nj * dim;
+                    if (filled[nidx] < bestF) {
+                        bestF = filled[nidx];
+                        bestN = nidx;
+                    }
+                }
+                flowTo[idx] = bestN;
+            }
+        }
+        ctx.flowTo = flowTo;
+    }
+
+    // Phase 4 — Flow-Accumulation. Die Zellen in absteigender Füllhöhe
+    // verarbeiten; jede gibt ihre Akkumulation an die Abfluss-Zelle weiter.
+    // Da jede Zelle zu einer echt-tieferen fließt (kleinere Füllhöhe → in
+    // der Reihenfolge SPÄTER), ist die Akkumulation einer Zelle final,
+    // bevor sie weitergereicht wird. A[idx] = Drainage durch die Zelle.
+    _hydroAccumulate(ctx) {
+        const { dim, filled, flowTo } = ctx;
+        const n = dim * dim;
+        const accum = new Float64Array(n).fill(1);
+        const order = new Array(n);
+        for (let i = 0; i < n; i++) order[i] = i;
+        // absteigend nach Füllhöhe; Gleichstand nach Index → deterministisch
+        order.sort((a, b) => filled[b] - filled[a] || a - b);
+        let maxAccum = 0;
+        for (let o = 0; o < n; o++) {
+            const idx = order[o];
+            const t = flowTo[idx];
+            if (t >= 0) accum[t] += accum[idx];
+            if (accum[idx] > maxAccum) maxAccum = accum[idx];
+        }
+        ctx.accum = accum;
+        ctx.maxAccum = maxAccum;
+    }
+
+    // Phase 5a — Seen: zusammenhängende Komponenten der aufgefüllten Zellen
+    // (filled > surf, über dem Meeresspiegel). Pro See: Füll-Level (die
+    // Wasser-Oberfläche ≈ Überlauf-Höhe), Boden, Rand-Höhe, Bounding-Box,
+    // die Zell-Indizes (V9.43-c formt daraus die See-Plane).
+    _hydroExtractLakes(ctx) {
+        const { dim, surf, filled, isOcean } = ctx;
+        const n = dim * dim;
+        const TOL = 0.02;
+        const lakeOf = new Int32Array(n).fill(-1);
+        const lakes = [];
+        // ein See ist eine aufgefüllte Zelle (filled > surf), die NICHT
+        // Ozean ist — ein abflussloses Becken, das das Priority-Flood füllte
+        // (auch eines unter Meereshöhe — wie das Tote Meer).
+        const isLakeCell = (idx) => !isOcean[idx] && filled[idx] > surf[idx] + TOL;
+        const NB = [
+            [-1, -1],
+            [0, -1],
+            [1, -1],
+            [-1, 0],
+            [1, 0],
+            [-1, 1],
+            [0, 1],
+            [1, 1],
+        ];
+        for (let start = 0; start < n; start++) {
+            if (lakeOf[start] >= 0 || !isLakeCell(start)) continue;
+            const id = lakes.length;
+            const cells = [];
+            const stack = [start];
+            lakeOf[start] = id;
+            let floorY = Infinity;
+            let level = Infinity;
+            let minX = Infinity;
+            let minZ = Infinity;
+            let maxX = -Infinity;
+            let maxZ = -Infinity;
+            while (stack.length) {
+                const c = stack.pop();
+                cells.push(c);
+                if (surf[c] < floorY) floorY = surf[c];
+                if (filled[c] < level) level = filled[c];
+                const ci = c % dim;
+                const cj = (c / dim) | 0;
+                const wx = ctx.originX + (ci + 0.5) * ctx.cell;
+                const wz = ctx.originZ + (cj + 0.5) * ctx.cell;
+                if (wx < minX) minX = wx;
+                if (wx > maxX) maxX = wx;
+                if (wz < minZ) minZ = wz;
+                if (wz > maxZ) maxZ = wz;
+                for (let k = 0; k < 8; k++) {
+                    const ni = ci + NB[k][0];
+                    const nj = cj + NB[k][1];
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nidx = ni + nj * dim;
+                    if (lakeOf[nidx] < 0 && isLakeCell(nidx)) {
+                        lakeOf[nidx] = id;
+                        stack.push(nidx);
+                    }
+                }
+            }
+            // V9.43-b — Mikro-Senken (< minLakeCells Zellen) sind keine Seen:
+            // das Priority-Flood hat sie gefüllt (die Drainage bleibt
+            // korrekt), aber sie werden NICHT gelistet + lakeOf wird
+            // zurückgesetzt, sodass ein Fluss hindurchfließen darf. Nur echte
+            // Becken zählen als See (sonst aliasen 16-m-Mikro-Pits aus der
+            // Detail-Oktave zu hunderten Geister-Seen).
+            if (cells.length < AnazhRealm.HYDROSPHERE.minLakeCells) {
+                for (let ci2 = 0; ci2 < cells.length; ci2++) lakeOf[cells[ci2]] = -1;
+                continue;
+            }
+            // Rand-Höhe: kleinste Füllhöhe der Nicht-See-Nachbarn ringsum.
+            // Der See füllt bis zu seinem Überlauf — level ≈ rimY.
+            let rimY = Infinity;
+            for (let ci2 = 0; ci2 < cells.length; ci2++) {
+                const c = cells[ci2];
+                const ci = c % dim;
+                const cj = (c / dim) | 0;
+                for (let k = 0; k < 8; k++) {
+                    const ni = ci + NB[k][0];
+                    const nj = cj + NB[k][1];
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nidx = ni + nj * dim;
+                    // nur der Nicht-See-, Nicht-Ozean-Rand zählt — der
+                    // Überlauf läuft über Land zum Abfluss, nicht in den Ozean.
+                    if (lakeOf[nidx] !== id && !isOcean[nidx] && filled[nidx] < rimY) {
+                        rimY = filled[nidx];
+                    }
+                }
+            }
+            lakes.push({
+                id,
+                level,
+                floorY,
+                rimY: Number.isFinite(rimY) ? rimY : level,
+                cells,
+                bbox: { minX, minZ, maxX, maxZ },
+            });
+        }
+        ctx.lakeOf = lakeOf;
+        return lakes;
+    }
+
+    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwellwert. Von jeder
+    // Quelle (Fluss-Zelle ohne Fluss-Zelle stromauf) entlang flowTo zu einer
+    // Polylinie verketten — bis Meer, See oder Region-Rand. Da die
+    // Akkumulation stromab nur wächst, bleibt ein Fluss ab der Quelle bis
+    // zur Mündung Fluss. Breite w = widthMin + widthK·√A (hydraulische
+    // Geometrie — echte Flüsse verbreitern sich mit √Durchfluss).
+    _hydroExtractRivers(ctx) {
+        const { dim, cell, originX, originZ, filled, accum, flowTo, lakeOf, isOcean } = ctx;
+        const HC = AnazhRealm.HYDROSPHERE;
+        const n = dim * dim;
+        // adaptive Fluss-Schwelle: ein Bruchteil des größten Durchflusses der
+        // Welt, mit einem absoluten Boden — robust über verschiedene Seeds
+        // (anderes Relief → andere Max-Akkumulation).
+        const threshold = Math.max(HC.riverThresholdMin, ctx.maxAccum * HC.riverThresholdFrac);
+        const isSea = (idx) => isOcean[idx] === 1;
+        const isRiver = (idx) => !isSea(idx) && lakeOf[idx] < 0 && accum[idx] >= threshold;
+        // Quelle = Fluss-Zelle, in die KEINE Fluss-Zelle mündet.
+        const hasUpstream = new Uint8Array(n);
+        for (let idx = 0; idx < n; idx++) {
+            if (!isRiver(idx)) continue;
+            const t = flowTo[idx];
+            if (t >= 0 && isRiver(t)) hasUpstream[t] = 1;
+        }
+        const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
+        const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
+        const rivers = [];
+        for (let src = 0; src < n; src++) {
+            if (!isRiver(src) || hasUpstream[src]) continue;
+            const points = [];
+            let cur = src;
+            let mouth = "border";
+            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
+                const t = flowTo[cur];
+                let fx = 0;
+                let fz = 0;
+                if (t >= 0) {
+                    fx = wx(t) - wx(cur);
+                    fz = wz(t) - wz(cur);
+                    const L = Math.hypot(fx, fz) || 1;
+                    fx /= L;
+                    fz /= L;
+                }
+                points.push({
+                    x: wx(cur),
+                    z: wz(cur),
+                    // y = die Füllhöhe (die hydrologische Routing-Oberfläche),
+                    // nicht surf — filled fällt entlang flowTo STRIKT monoton,
+                    // surf könnte in einer gefüllten Mikro-Senke kurz steigen.
+                    y: filled[cur],
+                    width: HC.widthMin + HC.widthK * Math.sqrt(accum[cur]),
+                    flowX: fx,
+                    flowZ: fz,
+                });
+                if (t < 0) {
+                    mouth = "border";
+                    break;
+                }
+                if (isSea(t)) {
+                    mouth = "sea";
+                    break;
+                }
+                if (lakeOf[t] >= 0) {
+                    mouth = { lake: lakeOf[t] };
+                    break;
+                }
+                cur = t;
+            }
+            if (points.length >= 2) rivers.push({ points, mouth });
+        }
+        return rivers;
+    }
+
+    // Phase 5c — Wasserfälle: entlang jeder Fluss-Polylinie die Segmente mit
+    // steilem Surface-Drop (Δy/Δhoriz über dem Schwellwert UND ein echter
+    // Mindest-Drop). Hier verankert — ein Wasserfall ist ein Fluss-Abschnitt
+    // an einer Klippe, kein per-Chunk-Zufall (V9.43-c löst damit den V9.43-a-
+    // Zufalls-Spawner ab).
+    _hydroExtractWaterfalls(ctx, rivers) {
+        const HC = AnazhRealm.HYDROSPHERE;
+        const waterfalls = [];
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                const drop = a.y - b.y;
+                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
+                if (drop >= HC.waterfallMinDrop && drop / horiz > HC.waterfallSlope) {
+                    waterfalls.push({
+                        x: (a.x + b.x) / 2,
+                        z: (a.z + b.z) / 2,
+                        topY: a.y,
+                        bottomY: b.y,
+                        width: a.width,
+                        flowX: a.flowX,
+                        flowZ: a.flowZ,
+                        riverIndex: ri,
+                    });
+                }
+            }
+        }
+        return waterfalls;
     }
 
     // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
