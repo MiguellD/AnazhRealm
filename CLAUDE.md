@@ -12,7 +12,7 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 
 **Letzte Arbeit — das Wasser-Ultiversum (V9.43-b..d):** die Hydrosphäre. `_computeHydrosphere` leitet aus der Voxel-Surface ein deterministisches Drainage-Netz ab (Flüsse/Seen/Wasserfälle); `_buildHydrosphereMeshes` rendert es; die Flüsse carven echte Betten ins Terrain (`_hydrosphereCarveAt`, Phase 7), Seen sind schwimmbar. Algorithmus + Wellen-Schnitt: `docs/hydrosphere.md`.
 
-**Davor — der Stamm-Pflege-Bogen (V9.44-a..f), abgeschlossen:** ein Code-Hygiene-Bogen, reines verhaltensneutrales Refactoring (`docs/code-hygiene.md`). Die drei Kontrollfluss-Giganten zerlegt (`startEternalLoop` 696→157, `_renderWorkshopDOM`, `p2pHandleMessage`), Persistenz-Schema vereinheitlicht, kanonische Setter, Mesh-Router-Dispatch-Table, Konstanten konsolidiert. KEIN neues Modul, kein State-Manager — der Heiligen Lektion treu.
+**Davor — der Stamm-Pflege-Bogen (V9.44-a..f), abgeschlossen:** ein Code-Hygiene-Bogen, reines verhaltensneutrales Refactoring (`docs/archiv/code-hygiene.md`). Die drei Kontrollfluss-Giganten zerlegt (`startEternalLoop` 696→157, `_renderWorkshopDOM`, `p2pHandleMessage`), Persistenz-Schema vereinheitlicht, kanonische Setter, Mesh-Router-Dispatch-Table, Konstanten konsolidiert. KEIN neues Modul, kein State-Manager — der Heiligen Lektion treu.
 
 **Nächste Welle:** V9.43-e — Politur + Klang (Fluss-Rauschen, Wasserfall-Donnern); damit ist das Wasser-Ultiversum V9.43 vollständig.
 
@@ -117,14 +117,12 @@ Kuratierte **quer-schneidende Stolperdrähte** — die Fallen, die in jeder Well
 | `docs/handover.md` | **Die Chronik + wie du startest** — die volle Wellen-Historie (jede Welle ein ausführlicher Eintrag, jüngste oben) plus die Orientierung für den nächsten Agenten (heilige Gesetze, Rhythmus, bewährte Muster). Beim Erwachen den Start-Kopf lesen, die Chronik bei Bedarf durchsuchen. |
 | `docs/state-of-realm.md` | **Die Vision** — die vier Testamente kondensiert + Stand-vs-Vision-Matrix. |
 | `docs/roadmap.md` | **Vollständige Projekt-Roadmap** — alle Ringe 0-11+ mit Aufwand, Vorbedingungen, Meilensteinen, Risiken |
-| `docs/nexus-dsl.md` | DSL-Design für Ring 2 (Mensch+Grok teilen Sprache) |
 | `vendor/README.md` | Vendor-Libs Versionen + Update-Befehl |
 | `docs/crafting-konzept.md` | **Hylomorphismus-Konzept** — Bausteine, Operationen, Compounds, räumliche Prinzipien (Welle 4-6 Vorlage) |
 | `docs/aktivierungsmatrix.md` | Form-Tag-Aktivierungs-Matrix v2 (9 × 10), Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION` |
 | `docs/world-portal.md` | **W12-Vision-Anker** — AnazhRealm als Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Vor einer Welle 12+ ZUERST lesen. |
-| `docs/hydrosphere.md` | **V9.43-Wasser-Design** — das Drainage-Netz (Flüsse/Seen/Wasserfälle/Meer als ein Hydrosphären-System). Algorithmus, Datenstrukturen, Wellen-Schnitt b/c/d/e. Vor V9.43-b+ ZUERST lesen. |
-| `docs/code-hygiene.md` | **V9.44-Stamm-Pflege-Plan** — der Code-Hygiene-Bogen (Befund, Vision-Abgleich, sechs verhaltensneutrale Refactoring-Sub-Wellen a-f, bewusste Nicht-Wellen). Kommt VOR der Hydrosphäre. Vor V9.44-a+ ZUERST lesen. |
-| `docs/archiv/` | **Abgeschlossene Dokumente** — fertige Designs (`wave-6-design.md`), Audit-Snapshots (`system-audit.md`, `system-audit-v8.25.md`), die gesammelten Session-Learnings (`learnings.md`). Reine Referenz, nicht mehr gepflegt. |
+| `docs/hydrosphere.md` | **V9.43-Wasser-Design** — das Drainage-Netz (Flüsse/Seen/Wasserfälle/Meer als ein Hydrosphären-System). Algorithmus, Datenstrukturen, Wellen-Schnitt b/c/d/e. Offen: V9.43-e (Klang). |
+| `docs/archiv/` | **Abgeschlossene Dokumente** — fertige Designs (`wave-6-design.md`, `nexus-dsl.md` Ring-2-DSL, `code-hygiene.md` V9.44-Stamm-Pflege), Audit-Snapshots (`system-audit.md`, `system-audit-v8.25.md`), die gesammelten Session-Learnings (`learnings.md`). Reine Referenz, nicht mehr gepflegt. |
 | `scripts/playtest.cjs` | Headless-Playtest mit **~3000 Invarianten** als CI-Gate (Stand V9.43-d; der Konsolen-Zähler driftet ±2-3 je Lauf — „Alle Invarianten OK" ist die Wahrheit) |
 | `scripts/smoke-multiuser.cjs` | End-to-End-Test des signaling-servers: spawnt ihn, öffnet zwei WS-Clients, prüft welcome/peer-join/pos/dsl/soul/aura/vibe/rtc-Relay/peer-leave-Flow (`npm run smoke:multiuser`) |
 | `scripts/smoke-webrtc.cjs` | W7+W16+W17 — echter Zwei-Browser-WebRTC-Test: zwei Puppeteer-Seiten treten einem Raum bei, bauen einen RTCDataChannel auf, Positions-/Bau-/Kreatur-/Stimm-Traffic fliesst peer-to-peer; W16 — A vendort eine Welt, B holt ihr Bündel peer-to-peer über das Mesh; W17 B-Relay — beide betreten dasselbe Multiplayer-Portal, A's Sub-Welt-`ws-send` erscheint bei B als `ws-recv`; W17 C — A betritt ein Multiplayer-Portal, B bekommt die `portal-invite` + folgt ihr ins selbe Portal; W17 B-JS-Compute — A wird Compute-Host, B Gast, B's Verkehr fliesst peer-to-peer durch A's Server-Kontext (die laufende Summe 12=7+5 beweist die autoritative Rechnung); W17 B-JS-Compute Phase 2 — A verlässt das Mesh, B übernimmt als Compute-Host mit frischem Server-Kontext (`npm run smoke:webrtc`) |
