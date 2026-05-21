@@ -12798,6 +12798,184 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.43-d — die Flüsse carven echte Betten ###
+            // `_terrainDensityAt` fragt die Hydrosphäre (Bucket-Index) + senkt
+            // die Dichte im Fluss-Kanal + in See-Senken → der Chunk-Mesher
+            // produziert echte Rinnen mit Ufern + gemuldete Becken. Zirkel-frei
+            // über das `_hydroComputing`-Suppress-Flag. Ohne Hydrosphäre
+            // bit-identisch zu vor V9.43-d.
+            const voxelV943d = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.methodsExist =
+                        typeof r._hydrosphereCarveAt === "function" && typeof r._hydroBuildCarveIndex === "function";
+                    const hydro = r.state.hydrosphere;
+                    out.hydroReady = !!(hydro && hydro.ready);
+                    if (!out.methodsExist || !out.hydroReady) return out;
+                    if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
+                    // (2) der Carve-Index ist an state.hydrosphere verdrahtet
+                    out.indexWired =
+                        Array.isArray(hydro.riverBuckets) &&
+                        hydro.lakeCutCell instanceof Float32Array &&
+                        hydro.lakeNear instanceof Uint8Array &&
+                        typeof hydro.bucketSize === "number" &&
+                        typeof hydro.bucketsDim === "number";
+                    // einen Fluss-Punkt mit echter Flow-Richtung finden
+                    let rp = null;
+                    for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
+                        const pts = hydro.rivers[ri].points;
+                        for (let k = 0; k < pts.length; k++) {
+                            if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) > 0.5) {
+                                rp = pts[k];
+                                break;
+                            }
+                        }
+                    }
+                    out.foundRiverPoint = !!rp;
+                    if (rp) {
+                        const HC = r.constructor.HYDROSPHERE;
+                        const rx = rp.x;
+                        const rz = rp.z;
+                        // (3) der Fluss-Mittelpunkt wird gecarvt
+                        const carveCenter = r._hydrosphereCarveAt(rx, rz);
+                        out.riverCenterCarved = carveCenter > 0.5;
+                        // (4) das Bett liegt unter den Ufern: das Carve-Profil
+                        // fällt von der Fluss-Mitte zur Bank-Rampe hin ab. Seen
+                        // sind für diesen river-only-Sub-Test neutralisiert — ein
+                        // zufällig benachbarter See (~20 % der Region) würde sonst
+                        // beide Mess-Punkte gleich tief carven.
+                        const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
+                        const bankW = Math.max(2, D * HC.carveBankSlope);
+                        const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
+                        const pX = -rp.flowZ;
+                        const pZ = rp.flowX;
+                        const savedLC = hydro.lakeCutCell;
+                        const savedLN = hydro.lakeNear;
+                        hydro.lakeCutCell = new Float32Array(savedLC.length);
+                        hydro.lakeNear = new Uint8Array(savedLN.length);
+                        const rcCenter = r._hydrosphereCarveAt(rx, rz);
+                        const midOff = halfW + bankW * 0.45;
+                        const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
+                        hydro.lakeCutCell = savedLC;
+                        hydro.lakeNear = savedLN;
+                        out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
+                        // (5) der Carve senkt die Voxel-Surface am Fluss
+                        const sCarve = r._voxelSurfaceY(rx, rz);
+                        r._hydroComputing = true;
+                        const sNoCarve = r._voxelSurfaceY(rx, rz);
+                        r._hydroComputing = false;
+                        out.surfaceLowered =
+                            Number.isFinite(sCarve) && Number.isFinite(sNoCarve) && sCarve < sNoCarve - 0.3;
+                        // (8) der Carve ist rein subtraktiv: die _terrainDensityAt-
+                        // Differenz (Carve aktiv vs. suppressed) === der Carve-Betrag
+                        const y = (r.state.terrainBaseHeight || 0) + 10;
+                        const dCarve = r._terrainDensityAt(rx, y, rz);
+                        r._hydroComputing = true;
+                        const dSuppressed = r._terrainDensityAt(rx, y, rz);
+                        r._hydroComputing = false;
+                        out.carveIsSubtractive = Math.abs(dSuppressed - dCarve - carveCenter) < 0.001;
+                        // (9) ohne Hydrosphäre bit-identisch — _hydrosphereCarveAt → 0
+                        const savedHydro = r.state.hydrosphere;
+                        r.state.hydrosphere = null;
+                        out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === 0;
+                        r.state.hydrosphere = savedHydro;
+                        // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
+                        const base = r.state.terrainBaseHeight || 0;
+                        out.floorSolid = r._terrainDensityAt(rx, base - 56, rz) > 0;
+                    }
+                    // (6+7) ein See-Becken wird gecarvt, der Boden liegt unter dem Spiegel
+                    out.lakeCarved = false;
+                    out.lakeFloorBelowLevel = false;
+                    for (let li = 0; li < hydro.lakes.length && !out.lakeCarved; li++) {
+                        const lk = hydro.lakes[li];
+                        if (!Array.isArray(lk.cells)) continue;
+                        for (let c = 0; c < lk.cells.length; c++) {
+                            const idx = lk.cells[c];
+                            const ci = idx % hydro.dim;
+                            const cj = (idx / hydro.dim) | 0;
+                            const wx = hydro.originX + (ci + 0.5) * hydro.cell;
+                            const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                            if (r._hydrosphereCarveAt(wx, wz) > 0.5) {
+                                out.lakeCarved = true;
+                                const sC = r._voxelSurfaceY(wx, wz);
+                                r._hydroComputing = true;
+                                const sN = r._voxelSurfaceY(wx, wz);
+                                r._hydroComputing = false;
+                                out.lakeFloorBelowLevel = Number.isFinite(sC) && Number.isFinite(sN) && sC < sN - 0.3;
+                                break;
+                            }
+                        }
+                    }
+                    // (11) Re-Compute ist zirkel-frei: das Suppress-Flag hält den
+                    // Carve aus der eigenen Berechnung — ein Re-Compute liefert
+                    // dasselbe Netz wie der un-gecarvte Worldgen-Compute.
+                    const reHydro = r._computeHydrosphere();
+                    out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
+                    // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
+                    out.flagClean = !r._hydroComputing;
+                    // (13) _buildRiverRibbon sampelt _voxelSurfaceY live (folgt der Furche)
+                    out.ribbonResamples = /_voxelSurfaceY/.test(r._buildRiverRibbon.toString());
+                    // (14) der Carve ist im Perf-Budget
+                    const t0 = performance.now();
+                    const span = hydro.size;
+                    for (let i = 0; i < 50000; i++) {
+                        r._hydrosphereCarveAt(
+                            hydro.originX + (i % 211) * (span / 211),
+                            hydro.originZ + ((i * 7) % 211) * (span / 211)
+                        );
+                    }
+                    out.carvePerfMs = performance.now() - t0;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV943d && !voxelV943d.error) {
+                const d = voxelV943d;
+                check("Voxel V9.43-d: _hydrosphereCarveAt + _hydroBuildCarveIndex existieren", d.methodsExist);
+                check(
+                    "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeCutCell/lakeNear)",
+                    d.indexWired
+                );
+                check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
+                check(
+                    "Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (Carve-Profil fällt zur Bank ab)",
+                    d.bedBelowBanks
+                );
+                check("Voxel V9.43-d: der Carve senkt die Voxel-Surface am Fluss", d.surfaceLowered);
+                check(
+                    "Voxel V9.43-d: der Carve ist rein subtraktiv (_terrainDensityAt-Differenz === Carve-Betrag)",
+                    d.carveIsSubtractive
+                );
+                check(
+                    "Voxel V9.43-d: ohne Hydrosphäre ist der Carve 0 (bit-identisch zu vor V9.43-d)",
+                    d.carveZeroWithoutHydro
+                );
+                check(
+                    "Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)",
+                    d.floorSolid
+                );
+                check("Voxel V9.43-d: ein See-Becken wird gecarvt", d.lakeCarved);
+                check(
+                    "Voxel V9.43-d: der See-Boden wird unter den un-gecarvten Stand gesenkt (gemuldetes Becken)",
+                    d.lakeFloorBelowLevel
+                );
+                check(
+                    "Voxel V9.43-d: ein Re-Compute bleibt zirkel-frei (Suppress-Flag — gleiches Netz wie der Worldgen-Compute)",
+                    d.recomputeStable
+                );
+                check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
+                check(
+                    "Voxel V9.43-d: _buildRiverRibbon sampelt _voxelSurfaceY live (das Ribbon folgt in die Furche)",
+                    d.ribbonResamples
+                );
+                check(
+                    `Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe in ${Math.round(d.carvePerfMs || 0)} ms < 300 ms)`,
+                    typeof d.carvePerfMs === "number" && d.carvePerfMs < 300
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
