@@ -123,6 +123,7 @@ Kuratierte **quer-schneidende Stolperdrähte** — die Fallen, die in jeder Well
 | `docs/aktivierungsmatrix.md` | Form-Tag-Aktivierungs-Matrix v2 (9 × 10), Quellcode für `AnazhRealm.FORM_TAG_ACTIVATION` |
 | `docs/world-portal.md` | **W12-Vision-Anker** — AnazhRealm als Tor zu anderen Vibecode-Welten („Bibliothek von Alexandria"). Vor einer Welle 12+ ZUERST lesen. |
 | `docs/hydrosphere.md` | **V9.43-Wasser-Design** — das Drainage-Netz (Flüsse/Seen/Wasserfälle/Meer als ein Hydrosphären-System). Algorithmus, Datenstrukturen, Wellen-Schnitt b/c/d/e. Offen: V9.43-e (Klang). |
+| `docs/playtest-hygiene.md` | **Playtest-Pflege-Plan** — der Test-Hygiene-Bogen (`playtest.cjs` 31 k Z., eine Funktion → benannte Sektions-Funktionen; Befund, Disziplin, sechs Sub-Wellen a-f). Geplant, vor dem ersten Code-Block ZUERST lesen. |
 | `docs/archiv/` | **Abgeschlossene Dokumente** — fertige Designs (`wave-6-design.md`, `nexus-dsl.md` Ring-2-DSL, `code-hygiene.md` V9.44-Stamm-Pflege), Audit-Snapshots (`system-audit.md`, `system-audit-v8.25.md`), die gesammelten Session-Learnings (`learnings.md`). Reine Referenz, nicht mehr gepflegt. |
 | `scripts/playtest.cjs` | Headless-Playtest mit **~3000 Invarianten** als CI-Gate (Stand V9.43-d; der Konsolen-Zähler driftet ±2-3 je Lauf — „Alle Invarianten OK" ist die Wahrheit) |
 | `scripts/smoke-multiuser.cjs` | End-to-End-Test des signaling-servers: spawnt ihn, öffnet zwei WS-Clients, prüft welcome/peer-join/pos/dsl/soul/aura/vibe/rtc-Relay/peer-leave-Flow (`npm run smoke:multiuser`) |
