@@ -10604,6 +10604,28 @@ function startSaveServer() {
                     `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
                     r42bDsl.spawned && r42bDsl.width > 24
                 );
+                // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertex-
+                // Colors (wie der Voxel-Boden), kein Terrain-ShaderMaterial
+                // mehr (das passte nicht zur Surface-Nets-Geometrie ohne
+                // aField/uv → "Löcher"-Befund). _attachIslandColors gibt der
+                // Insel grün-oben/erdig-unten per Vertex-Normale.
+                const r42c = await page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
+                    const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
+                    if (isle) {
+                        out.material = isle.material.type;
+                        out.hasVertexColors = !!isle.material.vertexColors;
+                        out.hasColorAttr = !!isle.geometry.getAttribute("color");
+                    }
+                    return out;
+                });
+                check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
+                check(
+                    `V9.42-c: Insel nutzt MeshToonMaterial (kein Terrain-Shader) — ${r42c.material}`,
+                    r42c.material === "MeshToonMaterial" && r42c.hasVertexColors === true
+                );
+                check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
                 check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
                 check(
                     "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",

@@ -13175,202 +13175,6 @@ class AnazhRealm {
         const minHeight = 0;
         const maxHeight = 0;
 
-        // ### Shader-Material ###
-        // V8.28 6.G4.b B — Terrain-Shader liest Welt-Affinität pro Vertex.
-        const vertexShader = `
-        // V8.48 — Drei.js-Shadow-Chunks: shadowmap_pars_vertex deklariert
-        // directionalShadowMatrix + vDirectionalShadowCoord, common liefert
-        // inverseTransformDirection (von shadowmap_vertex gebraucht).
-        #include <common>
-        #include <shadowmap_pars_vertex>
-        attribute vec4 aField;
-        varying float vHeight;
-        varying vec3 vNormal;
-        varying vec4 vField;
-        varying float vFogDepth;
-        // V8.43 — der Detail-Noise wird PER VERTEX berechnet und als varying
-        // interpoliert. Vorher lief noise() im Fragment-Shader (per-Pixel) →
-        // bei Kamera-Drehung kroch das hochfrequente Muster per Sub-Pixel-
-        // Aliasing übers Terrain (dieselbe Klasse wie die alten prozeduralen
-        // Skybox-Sterne, bevor sie echte Geometrie wurden). Per-Vertex +
-        // Interpolation = band-limitiert, stabil unter Kamera-Bewegung.
-        varying float vJitter;
-        float random(vec2 st) {
-            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
-        }
-        float noise(vec2 st) {
-            vec2 i = floor(st);
-            vec2 f = fract(st);
-            float a = random(i);
-            float b = random(i + vec2(1.0, 0.0));
-            float c = random(i + vec2(0.0, 1.0));
-            float d = random(i + vec2(1.0, 1.0));
-            vec2 u = f * f * (3.0 - 2.0 * f);
-            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-        }
-        void main() {
-            vHeight = position.y;
-            // V8.44 — vNormal in WELT-Raum (mat3(modelMatrix)). Der Diffuse
-            // dottet vNormal mit der world-space lightDirection; mit einem
-            // View-Raum-Normal (normalMatrix) driftete das Ergebnis mit der
-            // Kamera — beim Yaw glitt das Hell/Dunkel-Muster horizontal übers
-            // Terrain. Welt-Normal + Welt-Licht = kamera-unabhängig, korrekt.
-            vNormal = normalize(mat3(modelMatrix) * normal);
-            vField = aField;
-            // Townscaper-Detail-Jitter — zwei Noise-Oktaven, hier per Vertex.
-            float n1 = noise(uv * 3.0);
-            float n2 = noise(uv * 9.0);
-            vJitter = (n1 - 0.5) * 0.07 + (n2 - 0.5) * 0.035;
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            // V8.45 — Fog-Tiefe = RADIALE Distanz zur Kamera (length), nicht
-            // View-Space-Z (-mvPosition.z). View-Z hängt von der Blick-
-            // RICHTUNG ab: beim reinen Drehen änderte sich die Fog-Menge auf
-            // einem festen Terrain-Punkt → der Dunst „atmete" beim langsamen
-            // Kamera-Schwenk (das letzte kamera-abhängige Glied im Terrain-
-            // Shader nach dem V8.44-Lighting-Frame-Fix). Radiale Distanz ist
-            // dreh-invariant → das Terrain ist jetzt voll kamera-unabhängig.
-            vFogDepth = length(mvPosition.xyz);
-            gl_Position = projectionMatrix * mvPosition;
-            // V8.48 — Schatten empfangen: Shadow-Map-Koordinaten berechnen,
-            // damit der Terrain-Custom-Shader dieselbe DirectionalLight-
-            // Shadow-Map sampelt wie die MeshToon-Strukturen. Der Chunk
-            // shadowmap_vertex braucht transformedNormal + worldPosition.
-            vec3 objectNormal = vec3(normal);
-            vec3 transformedNormal = normalMatrix * objectNormal;
-            vec3 transformed = vec3(position);
-            vec4 worldPosition = modelMatrix * vec4(transformed, 1.0);
-            #include <shadowmap_vertex>
-        }
-    `;
-        const fragmentShader = `
-        // V8.48 — highp (statt mediump): die Shadow-Map-Koordinate
-        // vDirectionalShadowCoord braucht volle Präzision, sonst flackert
-        // die Tiefen-Vergleichs-Kante. Die Strukturen (MeshToon) rechnen
-        // ebenfalls highp — gleiche Präzision = konsistenter Schatten.
-        precision highp float;
-        // V8.48 — packing liefert unpackRGBAToDepth (von getShadow gebraucht),
-        // shadowmap_pars_fragment deklariert directionalShadowMap + getShadow.
-        #include <common>
-        #include <packing>
-        #include <shadowmap_pars_fragment>
-        varying float vHeight;
-        varying vec3 vNormal;
-        varying vec4 vField;
-        varying float vFogDepth;
-        varying float vJitter;
-        uniform vec3 lightDirection;
-        uniform float weatherEffect;
-        // V8.27 6.G4.a — Tag-Nacht synchronisiert. lightIntensity moduliert
-        // den Diffuse-Anteil (Mittag = voll, Nacht = ~0.3), ambientIntensity
-        // den Grund-Schein (Mittag = 0.6, Mitternacht = 0.18).
-        uniform float lightIntensity;
-        uniform float ambientIntensity;
-        // V8.28 6.G4.b C — Cel-Shading-Stufen (2 = bold, 8 ≈ smooth).
-        uniform float celLevels;
-        // V8.31 — Fog. Custom-ShaderMaterials erben THREE.Fog NICHT
-        // automatisch (nur eingebaute Lambert/Toon/Standard). Ohne diese
-        // Uniforms blieb das Terrain knackscharf, während das Gras
-        // (Lambert) verblasste → der Fog-Slider "verfärbte" scheinbar nur
-        // das Gras. Jetzt trägt auch das Terrain den Dunst.
-        uniform vec3 fogColor;
-        uniform float fogNear;
-        uniform float fogFar;
-        void main() {
-            // V8.28 6.G4.b B — die Grundfarbe EMERGIERT aus der Welt-
-            // Affinität, NICHT aus der Höhe. Dieselbe worldFieldAt-Sprache
-            // wie die Architektur-Verteilung (Vision §1.3 fraktal). Höhe
-            // wird sekundär (Schnee oben, Sand/Geröll in tiefen Senken).
-            float lebendig = vField.x;
-            float dichte   = vField.y;
-            float glut     = vField.z;
-            float magie    = vField.w;
-            vec3 stoneCol = vec3(0.42, 0.44, 0.49); // dichte → grau-bläulich
-            vec3 earthCol = vec3(0.27, 0.49, 0.19); // lebendig → satt-grün-erdig
-            vec3 lavaCol  = vec3(0.46, 0.20, 0.11); // glut → rot-braun vulkanisch
-            // Stein ist die Saat; lebendig blendet Erdgrün ein, glut Vulkan.
-            vec3 color = stoneCol;
-            color = mix(color, earthCol, smoothstep(0.25, 0.85, lebendig));
-            color = mix(color, lavaCol, smoothstep(0.38, 0.92, glut));
-            // magie ist ein SCHIMMER über allem (nicht sättigend) — das
-            // normal-Magische hebt sich aus dem Normalen, ersetzt es nicht.
-            vec3 violet = vec3(0.55, 0.36, 0.86);
-            color = mix(color, violet, smoothstep(0.55, 1.0, magie) * 0.33);
-            // Höhe sekundär: Schnee auf Gipfeln, helle Senken-Ablagerung.
-            float height = vHeight;
-            color = mix(color, vec3(0.92, 0.93, 1.0), smoothstep(12.0, 42.0, height));
-            color = mix(color, vec3(0.78, 0.72, 0.52), smoothstep(-2.0, -14.0, height));
-            // V8.43 — Townscaper-Detail-Jitter, jetzt per Vertex berechnet
-            // und interpoliert (crawl-frei — siehe Vertex-Shader). Vorher
-            // lief noise() hier per-Pixel und kroch bei Kamera-Drehung.
-            color += vec3(vJitter);
-            color = mix(color, color * 0.7, weatherEffect);
-            // V8.27 6.G4.a — Diffuse + Ambient mit Tag-Nacht-Intensities.
-            // Wrapped Lambert (half-Lambert) für sanfteren Schatten-Übergang.
-            float ndotl = dot(vNormal, normalize(lightDirection));
-            float diffuse = max(ndotl * 0.5 + 0.5, 0.0);
-            diffuse = diffuse * diffuse;
-            // V8.29 — Cel-Shading: diffuse in celLevels Stufen quantisieren.
-            // celLevels >= 7.5 (Slider-Maximum 8) = SMOOTH, kein floor.
-            // 2..7 = harte Cel-Plateaus. So geht der Slider von bold-Cel
-            // bis echt-stufenlos.
-            if (celLevels >= 1.5 && celLevels < 7.5) {
-                diffuse = (floor(diffuse * celLevels) + 0.5) / celLevels;
-            }
-            // V8.48 — Schatten der Strukturen aufs Terrain. getShadow sampelt
-            // dieselbe DirectionalLight-Shadow-Map wie die MeshToon-Struk-
-            // turen (gleiche PCFSoft-Filterung + Bias → konsistenter Look).
-            // Der Schatten dämpft NUR den Diffuse-Anteil; das Ambient bleibt,
-            // ein Schatten ist nie ganz schwarz. Nach der Cel-Quantisierung
-            // als sanfter Multiplikator — wie der Schatten bei MeshToon.
-            float shadowFactor = 1.0;
-            #if defined(USE_SHADOWMAP) && NUM_DIR_LIGHT_SHADOWS > 0
-                DirectionalLightShadow dls = directionalLightShadows[0];
-                shadowFactor = getShadow(directionalShadowMap[0], dls.shadowMapSize, dls.shadowBias, dls.shadowRadius, vDirectionalShadowCoord[0]);
-            #endif
-            vec3 ambient = color * ambientIntensity;
-            vec3 diffuseColor = color * diffuse * lightIntensity * shadowFactor;
-            vec3 finalColor = ambient + diffuseColor;
-            // V8.31 — Fog: in der Distanz mit der Fog-Farbe verschmelzen.
-            float fogF = smoothstep(fogNear, fogFar, vFogDepth);
-            finalColor = mix(finalColor, fogColor, fogF);
-            gl_FragColor = vec4(finalColor, 1.0);
-        }
-    `;
-
-        // V8.48 — Terrain-Uniforms: die eigenen Uniforms mit THREE.UniformsLib.lights
-        // gemergt. Ein ShaderMaterial mit `lights: true` empfängt die Shadow-
-        // Uniforms (directionalShadowMap/-Matrix/-Shadows) nur, wenn deren
-        // Slots in material.uniforms vorhanden sind — der Renderer befüllt sie
-        // dann pro Frame. UniformsUtils.merge klont, also liefert die Factory
-        // bei jedem Aufruf eine frische Instanz (Terrain + Inseln teilen den
-        // Shader, brauchen aber je eigene Uniform-Objekte).
-        const buildTerrainUniforms = () =>
-            THREE.UniformsUtils.merge([
-                THREE.UniformsLib.lights,
-                {
-                    lightDirection: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                    weatherEffect: { value: this.state.weather === "rainy" ? 1.0 : 0.0 },
-                    // V8.27 6.G4.a — Tag-Nacht synchronisiert. Default-Werte
-                    // werden in _applyDayNightToScene live überschrieben.
-                    lightIntensity: { value: 1.0 },
-                    ambientIntensity: { value: 0.45 },
-                    // V8.28 6.G4.b C — Cel-Shading-Stufen (Atmosphäre-Slider).
-                    celLevels: { value: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8 },
-                    // V8.31 — Fog. Aus state.fog in _applyDayNightToScene gesetzt.
-                    fogColor: { value: new THREE.Color(0x88a0c8) },
-                    fogNear: { value: 35 },
-                    fogFar: { value: 150 },
-                },
-            ]);
-        // V9.39 Phase 5c.2.c.3.b.iii — der Terrain-Heightfield-`material`-
-        // Bau ist als toter Pfad entfernt (sein Konsument `ensureChunkAt`
-        // stirbt mit dieser Welle, kein Heightfield-Chunk wird mehr gebaut).
-        // Der ShaderString (vertexShader/fragmentShader/buildTerrainUniforms)
-        // BLEIBT — er trägt weiter das Insel-Material `islandMaterial` (unten).
-        // `state.terrainMaterial` wird damit nie mehr gesetzt — der Cel-
-        // Slider-Pfad in `_refreshToonGradient` ist defensiv und no-ops, das
-        // toonGradientMap-Pendant (für die voxel-MeshToon-Welt) bleibt aktiv.
-
         // ### Initiale Chunks generieren ###
         // Alle Chunks gehen jetzt durch ensureChunkAt — denselben Pfad wie
         // spätere Erweiterungen. Damit haben initial UND extension Chunks
@@ -13414,43 +13218,13 @@ class AnazhRealm {
         this.state.floatingIslands = [];
         this.state.ufos = [];
         const numIslands = 3; // Reduziere Anzahl für bessere Performance
-        // V8.48 — Inseln teilen den Terrain-Shader, brauchen also dieselbe
-        // lights/Shadow-Verkabelung (sonst sampelt der geteilte Fragment-
-        // Shader eine ungebundene Shadow-Textur). Volle Uniform-Liste über
-        // dieselbe Factory — das gibt den Inseln zugleich korrektes Cel +
-        // Fog statt der bisherigen ungesetzten Default-0-Uniforms.
-        let islandMaterial = new THREE.ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms: buildTerrainUniforms(),
-            lights: true,
-            side: THREE.DoubleSide,
-            depthTest: true,
-            depthWrite: true,
-        });
-
-        this.log("Shader-Material für fliegende Inseln erstellt. Überprüfe Shader-Status...");
-        if (!islandMaterial.isShaderMaterial || !islandMaterial.vertexShader || !islandMaterial.fragmentShader) {
-            this.log("Shader-Programm für fliegende Inseln konnte nicht erstellt werden.", "ERROR");
-            this.log("Falle zurück auf MeshLambertMaterial für fliegende Inseln mit einfacher Textur.");
-            const textureLoader = new THREE.TextureLoader();
-            const texture = textureLoader.load("https://threejs.org/examples/textures/terrain/grasslight-big.jpg");
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(5, 5);
-            // V8.27 6.G4.a — Lambert statt Basic für Tag-Nacht-Reaktion
-            islandMaterial = new THREE.MeshLambertMaterial({
-                map: texture,
-                side: THREE.DoubleSide,
-            });
-        } else {
-            this.log("Shader-Programm für fliegende Inseln erfolgreich erstellt.");
-        }
-
-        // V9.42-b — Worldgen-Inseln gehen jetzt durch die V9.42-a-Pipeline
+        // V9.42-c — Worldgen-Inseln gehen durch die V9.42-a-Pipeline
         // (Surface-Nets via `spawnIslandAt`). Eine Mesh-Sprache, ein Pfad.
         // Spawn-Y aus echter Voxel-Surface (in Voxel-Welten ist `maxHeight=0`,
         // die alte `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
-        // `spawnIslandAt` übernimmt scene.add + floatingIslands.push + Kollision.
+        // `spawnIslandAt` übernimmt scene.add + floatingIslands.push + Kollision
+        // + Material (MeshToon + vertexColors — kein Terrain-Shader mehr; der
+        // passte nicht zur Surface-Nets-Geometrie und rendete "Löcher").
         for (let i = 0; i < numIslands; i++) {
             const islandSize = 14 + Math.random() * 30; // 14..44 m Durchmesser
             const islandHeight = 6 + Math.random() * 10; // 6..16 m Wölbung
@@ -13464,7 +13238,6 @@ class AnazhRealm {
             const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
                 size: islandSize,
                 seed: islandSeed,
-                material: islandMaterial,
             });
             if (!island) continue;
             this.log(
@@ -13708,7 +13481,7 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn) {
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         const Nx = dimX + 1;
         const Ny = dimY + 1;
@@ -13872,20 +13645,24 @@ class AnazhRealm {
                 neighborSets[ic].add(ia);
                 neighborSets[ic].add(ib);
             }
+            // V9.42-d — der Smooth läuft über ALLE Vertices, kein Skirt-
+            // Sonderfall. V9.42-b liess Skirt-Vertices ungesmootht (sicht-
+            // barer Treppen-Streifen an jeder Naht); V9.42-c smoothte sie
+            // mit Rand-Ebenen-Nachbarn (NICHT deterministisch — die Ebenen-
+            // Quad-Topologie hängt von Density auf BEIDEN Naht-Seiten ab →
+            // 6.7 % Spalt). Die KORREKTE Lösung ist das pad: der Chunk
+            // mesht `cropMargin` Zellen ÜBER seinen Skirt hinaus, smootht
+            // voll, schneidet den pad-Überhang danach ab. Jeder behaltene
+            // Vertex — auch der Skirt-Naht-Vertex — wurde mit seinen ECHTEN
+            // Welt-Nachbarn gesmootht (die im pad lagen). Der Nachbar-Chunk
+            // hat seinen pad an derselben Welt-Region → identischer Smooth
+            // → nahtlos UND ohne ungesmootht-Streifen.
             const lambda = 0.5;
             const smoothed = new Array(positions.length);
             for (let v = 0; v < vertCount; v++) {
-                // V9.42-b — Naht-Schutz: Vertices in Rand-Zellen (X/Z-Skirt)
-                // bleiben unverschoben, damit zwei Nachbar-Chunks dieselbe
-                // Naht-Position teilen. Y hat keine Skirt-Nachbarn, also
-                // nur i + k checken.
-                const ci0 = v * 3;
-                const cellI = vertCells[ci0];
-                const cellK = vertCells[ci0 + 2];
-                const isSkirt = cellI === 0 || cellI === dimX - 1 || cellK === 0 || cellK === dimZ - 1;
                 const nbrs = neighborSets[v];
                 const cnt = nbrs.size;
-                if (cnt === 0 || isSkirt) {
+                if (cnt === 0) {
                     smoothed[v * 3] = positions[v * 3];
                     smoothed[v * 3 + 1] = positions[v * 3 + 1];
                     smoothed[v * 3 + 2] = positions[v * 3 + 2];
@@ -13908,6 +13685,38 @@ class AnazhRealm {
             }
             for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
         }
+        // V9.42-d — Crop-Pass: die äussersten `cropMargin` Zell-Ebenen in
+        // X/Z verwerfen. Sie waren nur Smooth-Stützen (pad); der behaltene
+        // Kern + Skirt ist voll-deterministisch gesmootht. Vertices in den
+        // pad-Zellen + Quads, die sie referenzieren, fallen weg; der Rest
+        // wird neu indiziert.
+        if (cropMargin > 0 && positions.length > 0) {
+            const vc = positions.length / 3;
+            const remap = new Int32Array(vc).fill(-1);
+            const keptPos = [];
+            let kept = 0;
+            for (let v = 0; v < vc; v++) {
+                const ciV = vertCells[v * 3];
+                const ckV = vertCells[v * 3 + 2];
+                if (ciV < cropMargin || ciV >= dimX - cropMargin || ckV < cropMargin || ckV >= dimZ - cropMargin) {
+                    continue;
+                }
+                remap[v] = kept++;
+                keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+            }
+            const keptIdx = [];
+            for (let t = 0; t + 2 < indices.length; t += 3) {
+                const a = remap[indices[t]];
+                const b = remap[indices[t + 1]];
+                const c = remap[indices[t + 2]];
+                if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+            }
+            positions.length = 0;
+            for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
+            indices.length = 0;
+            for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+        }
+        if (positions.length === 0) return null;
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
         // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der
@@ -14077,7 +13886,12 @@ class AnazhRealm {
         const ox = cx * span;
         const oz = cz * span;
         const oy = base - 58;
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
+        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
+        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
+        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
+        // gesmootht (seine Welt-Nachbarn lagen im pad).
+        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
         const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -14187,7 +14001,12 @@ class AnazhRealm {
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
         // nistisch — die Überlapp-Zelle ist in beiden Chunks identisch.
         // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim + 1, dimY, dim + 1, step);
+        // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
+        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
+        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
+        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
+        // gesmootht (seine Welt-Nachbarn lagen im pad).
+        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
         if (!geom) {
             // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
             // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an Rand-
@@ -24708,7 +24527,13 @@ class AnazhRealm {
             step,
             islandDensity
         );
-        const material = opts.material || new THREE.MeshLambertMaterial({ color: 0x6b9e4f, side: THREE.FrontSide });
+        // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertexColors,
+        // dieselbe Cel-Sprache wie der Voxel-Boden (Vision §1.3 fraktal).
+        // Das alte Terrain-ShaderMaterial passte nicht zur Surface-Nets-
+        // Geometrie (fehlende aField/uv → kaputtes Rendering, "Löcher").
+        this._attachIslandColors(geometry);
+        const material = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) material.gradientMap = this.state.toonGradientMap;
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
         island.castShadow = true;
@@ -24885,6 +24710,44 @@ class AnazhRealm {
             field[i * 4 + 3] = f.magieleitung;
         }
         geometry.setAttribute("aField", new THREE.BufferAttribute(field, 4));
+    }
+
+    // V9.42-c — per-Vertex-Farbe für eine fliegende Insel. Die Surface-Nets-
+    // Insel-Geometrie hat nur position+normal (kein aField/uv) — der Terrain-
+    // ShaderMaterial-Pfad passt darum nicht (er rendert mit ungebundenen
+    // Attributen kaputt → der Schöpfer-Befund „Oberfläche schliesst nicht").
+    // Stattdessen MeshToonMaterial + vertexColors (wie der Voxel-Boden,
+    // Vision §1.3 fraktal). Die Farbe folgt der Vertex-Normale: nach oben
+    // → Gras-Grün, seitlich → Erd-Hang, nach unten → Fels-Unterseite.
+    _attachIslandColors(geom) {
+        const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
+        const norm = geom && geom.getAttribute ? geom.getAttribute("normal") : null;
+        if (!pos || !norm) return;
+        const n = pos.count;
+        const colors = new Float32Array(n * 3);
+        const grass = [0.3, 0.52, 0.22];
+        const earth = [0.4, 0.3, 0.18];
+        const rock = [0.34, 0.32, 0.3];
+        for (let i = 0; i < n; i++) {
+            const ny = norm.getY(i);
+            let c;
+            if (ny > 0.55) {
+                c = grass;
+            } else if (ny < -0.1) {
+                c = rock;
+            } else {
+                const t = Math.max(0, Math.min(1, (0.55 - ny) / 0.65));
+                c = [
+                    grass[0] + (earth[0] - grass[0]) * t,
+                    grass[1] + (earth[1] - grass[1]) * t,
+                    grass[2] + (earth[2] - grass[2]) * t,
+                ];
+            }
+            colors[i * 3] = c[0];
+            colors[i * 3 + 1] = c[1];
+            colors[i * 3 + 2] = c[2];
+        }
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
     // V8.29 — Cel-Shading gradientMap für MeshToonMaterial.
