@@ -230,6 +230,17 @@ Test-Cleanup muss State UND DOM gleichermaßen aufräumen. Wenn du
 sonst belastet dein Test seine Nachfahren mit Geister-Einträgen.
 Hartnäckige Falle — schon zweimal gesehen.
 
+### Doku-Status ist eine Hypothese, kein Beweis
+
+Ein „✅ live" in `roadmap.md` / `handover.md` ist, was eine frühere
+Session GLAUBTE — nicht zwingend, was im Code steht. Die Doku-Sichtung
+am 21.05.2026 fand: die Roadmap meldete „6.F live", obwohl 6.F3
+(Maschinen-Antrieb) + 6.F5 (echte Ammo-Constraints) nie gebaut wurden
+(`grep` fand 0 Treffer für `energySource` / `btHingeConstraint`). Bevor
+du auf einer Status-Behauptung aufbaust: ein `grep` gegen den Code. Eine
+Behauptung ist eine Hypothese, der Code ist die Wahrheit — dieselbe
+V9.44-d-Lehre, jetzt auf die Doku selbst angewandt.
+
 ---
 
 ## Wie der Schöpfer arbeitet
