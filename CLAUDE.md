@@ -41,7 +41,7 @@ Kuratierte **quer-schneidende Stolperdrähte** — die Fallen, die in jeder Well
 
 - Voxel-/Heightfield-Chunks haben `position=(0,0,0)`, Vertices in Welt-Koords. NIEMALS in `state.rigidBodies` pushen — der Physik-Sync-Loop überschriebe sonst `mesh.position` und verschöbe den ganzen Chunk. Body über `mesh.userData.physicsBody` greifen.
 - Visual = Collision per Konstruktion: jeder Chunk hat ein `btBvhTriangleMeshShape` aus EXAKT denselben Triangle-Indices wie sein `BufferGeometry`. Wer den einen Pfad ändert, ändert den anderen.
-- Eine Quelle für Chunk-Geometrie (`_chunkGeometry()`), eine für Höhen (`getTerrainHeightAt(x,z)` — voxel-aware seit V9.25). ALLE Höhen-Konsumenten routen durch `getTerrainHeightAt`, NIE `state.groundHeightField[idx]` direkt (das ist in Voxel-Welten `null`).
+- Eine Quelle für die Voxel-Chunk-Geometrie (`_voxelChunkGeometry`), eine für Höhen (`getTerrainHeightAt(x,z)` — voxel-aware seit V9.25). ALLE Höhen-Konsumenten routen durch `getTerrainHeightAt`, NIE `state.groundHeightField[idx]` direkt (das ist in Voxel-Welten `null`).
 - Player-Chunk-Math braucht den `+WORLD_SIZE/2`-Offset: `floor((playerX + 150) / chunkWorldSize)`. Vergessen = nahe Chunks werden gepruned.
 - `state.voxelTerrainActive` ist seit V9.35 effektiv konstant `true` (alle Welten sind voxel-basiert, es gibt keinen Schreib-Pfad mehr). Die `if (state.voxelTerrainActive)`-Gates bleiben als Defense-in-Depth.
 
