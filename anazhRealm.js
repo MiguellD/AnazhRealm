@@ -33073,54 +33073,8 @@ class AnazhRealm {
             // ### FPS aktualisieren ###
             this.updateFps(delta);
 
-            // ### Nexus-Update ###
-            if (this.state.nexusEvolutionQueue.length > 0) {
-                const evolution = this.state.nexusEvolutionQueue.shift();
-                if (Array.isArray(evolution.program)) {
-                    const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
-                    // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
-                    // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
-                    const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
-                    const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
-                    const abilityEntry = {
-                        name: evolution.name,
-                        program: evolution.program,
-                        source: evolution.source || "nexus",
-                        createdAt: evolution.createdAt || performance.now() / 1000,
-                        fitness: initialFitness,
-                    };
-                    this.state.dsl.abilities.push(abilityEntry);
-                    const historyEntry = {
-                        id: evolution.name,
-                        program: evolution.program,
-                        at: performance.now() / 1000,
-                        outcome: result.outcome,
-                        ok: result.ok,
-                        fitness: initialFitness,
-                        finalized: false,
-                    };
-                    this.state.dsl.history.push(historyEntry);
-                    if (this.state.dsl.history.length > this.state.dsl.historyCap) {
-                        this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
-                    }
-                    // Pending einreihen — Finalizer holt 5 s später Emotion/Activity-Delta.
-                    if (result.ok) {
-                        this.state.dsl.pendingOutcomes.push({
-                            name: evolution.name,
-                            program: evolution.program,
-                            outcome: result.outcome,
-                            historyRef: historyEntry,
-                        });
-                    }
-                    this.log(
-                        `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${initialFitness.toFixed(2)}`,
-                        "INFO"
-                    );
-                } else {
-                    this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
-                }
-                this.grokSpeak("nexus");
-            }
+            // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
+            this._loopNexusUpdate();
 
             // ### Grok-Stimme (Ring 1) ###
             this.grokTick(currentTime);
@@ -33176,54 +33130,10 @@ class AnazhRealm {
             // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
             this.p2pTick(performance.now());
 
-            // ### Bodenprüfung ###
-            // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
-            // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
-            if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
-                const voxelActive = this.state.voxelTerrainActive === true;
-                if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
-                    this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
-                    this.generateNewWorld();
-                }
-                this.state.lastGroundCheck = currentTime;
-            }
-
-            // ### Frustum Culling ###
-            // V8.26 Polish §6.1 — Frustum + Matrix4 als state-Pool statt
-            // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
-            // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
-            if (!this._frustumCache) {
-                this._frustumCache = new THREE.Frustum();
-                this._frustumMatrixCache = new THREE.Matrix4();
-            }
-            this._frustumMatrixCache.multiplyMatrices(
-                this.state.camera.projectionMatrix,
-                this.state.camera.matrixWorldInverse
-            );
-            this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
-            const frustum = this._frustumCache;
-            // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
-            // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
-            if (this.state.voxelTerrainActive) {
-                this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
-            } else {
-                this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
-            }
-            if (this.state.floatingIslands)
-                this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
-            if (this.state.creatures)
-                this.state.creatures.forEach((creature) => (creature.visible = this.isInFrustum(creature, frustum)));
-
-            // ### UFOs animieren ###
-            if (this.state.ufos && this.state.playerMesh) {
-                const playerPos = this.state.playerMesh.position;
-                this.state.ufos.forEach((ufo) => {
-                    const distance = playerPos.distanceTo(ufo.position);
-                    if (distance < 50) {
-                        ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
-                    }
-                });
-            }
+            // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+            this._loopGroundCheck(currentTime);
+            this._loopFrustumCulling();
+            this._loopAnimateUfos(currentTime);
 
             // Welle 6.G Phase 1: der frühere lazy-physics-Pfad für
             // floatingIslands ist hier gelöscht. Inseln bekommen ihre
@@ -33234,279 +33144,14 @@ class AnazhRealm {
 
             this.updateWallCollisions();
 
-            // ### Physik-Simulation ###
-            if (this.state.physicsWorld) {
-                this.state.physicsWorld.stepSimulation(delta, 20, 1 / 60);
-                for (let i = 0; i < this.state.rigidBodies.length; i++) {
-                    const mesh = this.state.rigidBodies[i];
-                    const body = mesh.userData.physicsBody;
-                    const motionState = body.getMotionState();
-                    if (motionState) {
-                        motionState.getWorldTransform(this.state.tmpTransform);
-                        const pos = this.state.tmpTransform.getOrigin();
-                        let scaledY = pos.y() * this.state.scaleFactor;
-                        const velocity = body.getLinearVelocity();
+            // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
+            this._loopPhysicsSync(delta, currentTime);
 
-                        // Fall-Geschwindigkeit cappen: ohne Cap zog die
-                        // Schwerkraft den Spieler in eine sehr hohe vy, sodass
-                        // er pro Frame eine ganze Heightfield-Cell (~1.17 m)
-                        // überspringen konnte — Tunneling durch steile Hänge.
-                        // -25 m/s ist eine plausible Terminal Velocity und
-                        // bleibt unter Cell-Breite × 60 fps.
-                        if (mesh === this.state.playerMesh && velocity.y() < -25) {
-                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
-                        }
+            // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
+            this._loopPlayerMovement(currentTime);
 
-                        // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
-                        // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
-                        // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
-                        // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
-                        // V8.32 — zwei getrennte Flags: playerUnderwater
-                        // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
-                        // playerEyesUnderwater (Augen/Kamera unter Wasser →
-                        // blauer Tint). Sonst sprang der Tint schon beim
-                        // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
-                        if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
-                            const submerged = scaledY < this.state.waterLevel;
-                            this.state.playerUnderwater = submerged;
-                            // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
-                            this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
-                            if (submerged) {
-                                // V8.36 — Auftrieb wirkt NUR über dem Terrain.
-                                // Fällt der Spieler durch die Welt (weit unter
-                                // die Terrain-Oberfläche), fing ihn der Auftrieb
-                                // sonst ab — er „schwamm" unter dem Boden statt
-                                // von der Killplane resettet zu werden. Wasser
-                                // sitzt immer auf festem Grund; ist man weit
-                                // darunter, trägt nichts → die Killplane greift.
-                                const wTerrainY = this.getTerrainHeightAt(
-                                    pos.x() * this.state.scaleFactor,
-                                    pos.z() * this.state.scaleFactor
-                                );
-                                if (scaledY >= wTerrainY - 22) {
-                                    // V8.33 — Tauchen + Auftauchen. Shift taucht
-                                    // ab (Minecraft-Konvention), Space hebt; ohne
-                                    // Eingabe wirkt der natürliche Auftrieb.
-                                    const swimVy = this._swimVerticalVelocity(
-                                        velocity.y(),
-                                        this.state.waterLevel - scaledY,
-                                        !!this.state.keys["shift"],
-                                        !!this.state.keys[" "]
-                                    );
-                                    body.setLinearVelocity(
-                                        this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
-                                    );
-                                }
-                            }
-                        }
-
-                        // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
-                        // in Reichweite eines lifting-Compounds (Flag aus
-                        // _tickLiftingAffordances), trägt ihn das Feld: der Fall
-                        // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
-                        // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
-                        // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
-                        if (
-                            mesh === this.state.playerMesh &&
-                            !this.state.playerUnderwater &&
-                            this.state.player &&
-                            this.state.player.liftingField &&
-                            this.state.player.liftingField.active
-                        ) {
-                            const liftVy = this._liftVerticalVelocity(
-                                velocity.y(),
-                                this.state.player.liftingField.strength
-                            );
-                            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
-                        }
-
-                        // Kill-Plane näher an den Welt-Boden gerückt: vorher
-                        // erst nach 1000 m freiem Fall — der Spieler war
-                        // gefühlt "verloren". 30 m unter dem tiefsten Welt-
-                        // Punkt ist nah genug, dass Resets sofort spürbar
-                        // sind, aber tief genug, dass eine legitime Schlucht
-                        // (heights -100..+100) den Spieler nicht reset.
-                        // V9.25 Phase 5b — der Killplane folgt der Welt. In
-                        // einer Voxel-Welt liegt der Chunk-Boden bei base-58
-                        // (V9.26); der Killplane gehört DARUNTER (base-88),
-                        // sonst würde ein Spieler in einem tiefen Voxel-Tal
-                        // resettet. Das heightfield-abgeleitete `minHeight`
-                        // kennt das Voxel-Band nicht.
-                        const killPlaneY =
-                            this.state.worldMeta && this.state.worldMeta.voxelTerrain
-                                ? (this.state.terrainBaseHeight || 0) - 88
-                                : (this.state.minHeight || -50) - 30;
-                        if (scaledY < killPlaneY) {
-                            const currentX = pos.x() * this.state.scaleFactor;
-                            const currentZ = pos.z() * this.state.scaleFactor;
-
-                            // Funktion zum Finden der Oberfläche über dem Spieler
-                            const surfaceHeight = this.findSurfaceAbove(currentX, scaledY, currentZ);
-                            scaledY = surfaceHeight + 0.5; // Spieler wird knapp über die Oberfläche gesetzt
-
-                            const transform = this.state.tmpTransform;
-                            transform.setIdentity();
-                            transform.setOrigin(
-                                this.setVec(
-                                    this.state.tmpVec1,
-                                    currentX / this.state.scaleFactor,
-                                    scaledY / this.state.scaleFactor,
-                                    currentZ / this.state.scaleFactor
-                                )
-                            );
-                            body.setWorldTransform(transform);
-                            body.setLinearVelocity(this.setVec(this.state.tmpVec2, velocity.x(), 0, velocity.z()));
-                            this.state.isJumping = false;
-                            this.state.isInAir = false;
-                            mesh.position.set(currentX, scaledY, currentZ);
-                            this.log(
-                                `Spieler auf Oberfläche zurückgesetzt: (${currentX.toFixed(2)}, ${scaledY.toFixed(2)}, ${currentZ.toFixed(2)})`,
-                                "INFO"
-                            );
-                        }
-
-                        if (mesh === this.state.playerMesh) {
-                            mesh.position.set(
-                                pos.x() * this.state.scaleFactor,
-                                scaledY,
-                                pos.z() * this.state.scaleFactor
-                            );
-                            const isGrounded = this.isPlayerGrounded();
-                            if (isGrounded) {
-                                this.state.lastGroundedTime = currentTime;
-                                this.state.isInAir = false;
-                                this.state.isJumping = false;
-                                // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
-                                if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
-                                    this.log("Spieler geerdet!", "INFO");
-                                    this.state.lastGroundedLog = currentTime;
-                                }
-                            } else {
-                                this.state.isInAir = true;
-                            }
-                        } else {
-                            mesh.position.set(
-                                pos.x() * this.state.scaleFactor,
-                                scaledY,
-                                pos.z() * this.state.scaleFactor
-                            );
-                        }
-                    }
-                }
-            }
-
-            // ### Spielerbewegung ###
-            const player = this.state.playerMesh;
-            const camera = this.state.camera;
-            const playerBody = this.state.playerBody;
-            // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
-            // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
-            let currentSpeed =
-                this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
-            // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
-            // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
-            if (this.state.playerUnderwater) currentSpeed *= 0.55;
-
-            this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
-            this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
-            this.state.moveDirection.set(0, 0, 0);
-            if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
-            if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
-            // Bewusst NICHT „intuitiv" inverten: `state.right` ist die ARITHMETISCHE
-            // Richtung (cos yaw, 0, −sin yaw), nicht die anatomische Rechts-Seite
-            // des Spielers. In Right-Hand-Coords mit Y up: forward × up = −X,
-            // also ist player-anatomisch-RECHTS = −X = −state.right. Original-Mapping:
-            // A → +state.right (= player-links), D → −state.right (= player-rechts).
-            // (Schöpfer-Hinweis 13.05.2026: vorherige „Fix"-Vertauschung brach das
-            // konsistente Verhalten, jetzt revertiert.)
-            if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
-            if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
-
-            if (this.state.physicsWorld && playerBody) {
-                // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
-                // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
-                // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
-                // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
-                // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
-                const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
-                if (this.state.moveDirection.length() > 0) {
-                    this.state.moveDirection.normalize();
-                    playerBody.setLinearVelocity(
-                        this.setVec(
-                            this.state.tmpVec1,
-                            this.state.moveDirection.x * currentSpeed * slopePenalty,
-                            playerBody.getLinearVelocity().y(),
-                            this.state.moveDirection.z * currentSpeed * slopePenalty
-                        )
-                    );
-                    // V8.36 — kein forceActivationState mehr nötig: der
-                    // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
-                    // (schläft nie). Ein forceActivationState(1) HIER würde ihn
-                    // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
-                    // zurück, sobald man stehen bleibt.
-                } else if (!this.state.onSteepSlope) {
-                    // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
-                    // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
-                    // die existierende Velocity stehen — Gravitation + Slope-
-                    // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
-                    // (Voraussetzung: Player-Friction 0 aus 6.A1).
-                    playerBody.setLinearVelocity(
-                        this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0)
-                    );
-                }
-
-                if (this.state.keys[" "] && !this.state.isJumping) {
-                    const isGrounded = this.isPlayerGrounded();
-                    const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
-                    // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
-                    // ob der Soul leicht genug zum Abdrücken am Hang ist.
-                    // Bei false: Sprung-Block wird übersprungen, restlicher
-                    // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
-                    // weiter wie gewohnt.
-                    if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
-                        // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
-                        // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
-                        // ein forceActivationState aufgerufen — Stand-Sprung würde
-                        // sonst verpuffen wenn der Body im Ammo-Sleep ist.
-                        playerBody.activate(true);
-                        const jumpForce = this.state.jumpPower;
-                        const currentVelocity = playerBody.getLinearVelocity();
-                        playerBody.setLinearVelocity(
-                            this.setVec(
-                                this.state.tmpVec1,
-                                currentVelocity.x(),
-                                jumpForce / this.state.scaleFactor,
-                                currentVelocity.z()
-                            )
-                        );
-                        this.state.isJumping = true;
-                        this.state.isInAir = true;
-                        if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
-                            this.log("Spieler springt!", "INFO");
-                            this.state.lastJumpLog = currentTime;
-                        }
-                    }
-                }
-            }
-
-            // ### Selbstanalyse + Nexus-Evolution-Trigger ###
-            // Früher hing das am TF-Trainings-Tick (`learn()`); nach TF-Cleanup
-            // läuft die Zeit-Schwelle direkt. `selfAwarenessAnalyze` macht den
-            // FPS-/Tunneling-/Boden-Check, `evolveNexus` queued ein DSL-Programm
-            // in den `nexusEvolutionQueue`.
-            if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
-                this.selfAwarenessAnalyze();
-                if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
-                    this.nexus.processOptimization({ fps: this.state.fps });
-                }
-                this.journalTick(currentTime);
-                // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
-                // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
-                this.updateWorldInfo();
-            }
-            if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
-                this.evolveNexus(currentTime);
-            }
+            // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
+            this._loopSelfAnalysis(currentTime);
 
             // ### Schicht 1 — IQ-Ticks ###
             // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame, billig),
@@ -33517,160 +33162,25 @@ class AnazhRealm {
             this.pruneRecentKeywords(currentTime);
             this.finalizePendingOutcomes(currentTime);
 
-            // ### Kreaturen, Wetter, Wachstum ###
-            this.updateCreatures(delta);
-            this.state.weatherEffectTime += delta;
-            if (this.state.weatherEffectTime >= 30.0) {
-                this.state.weather = this.state.weather === "sunny" ? "rainy" : "sunny";
-                this.updateSkyboxWeather();
-                this.updateCreatureEmotions();
-                this.log(`Wetter gewechselt zu ${this.state.weather}`, "INFO");
-                this.state.weatherEffectTime = 0;
-            }
+            // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
+            this._loopWeatherAndGrowth(delta, currentTime);
 
-            if (currentTime - this.state.lastGrowthUpdate >= 1.0) {
-                this.updateGrowth(); // Fehler behoben
-                this.state.lastGrowthUpdate = currentTime;
-            }
+            // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
+            this._loopVoxelStreaming();
 
-            // ### Unendliches Terrain – spieler-zentriert ###
-            // Statt Map-Mittelpunkt-Extension (die Chunks weit weg vom Spieler
-            // entstehen ließ und Lücken hinterließ) füllen wir jetzt einen
-            // 5×5-Ring um den Chunk, in dem der Spieler steht. Pro Frame max
-            // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Streaming-Ring ist
-            // als toter Pfad entfernt — Voxel ist permanent seit V9.35.
-            // Der Voxel-Chunk-Streaming-Ring trägt jeden Spieler-Schritt
-            // (Ring-Radius lebt in `_voxelChunkConfig().ringRadius`, der
-            // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
-            // V9.24-Verdrahtung).
-            const playerPos = this.state.playerMesh.position;
-            this._tickVoxelChunkStreaming(playerPos);
-            // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
-            // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
-            // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
-            // V9.40-c alle in einem Frame; jetzt verteilt. Bei dirty-empty
-            // ist es ein no-op (eine Set.size-Lesung). Tests, die direkt nach
-            // einem Edit den Mesh prüfen, rufen `_drainDirtyVoxelChunks()`.
-            this._tickDirtyVoxelChunks(playerPos);
-
-            // ### Skybox und Planeten ###
-            this.state.skybox.material.uniforms.time.value = currentTime;
-            this.state.planets.forEach((planet) => {
-                const theta = currentTime / 10;
-                const radius = 400;
-                planet.position.x = radius * Math.cos(theta);
-                planet.position.z = radius * Math.sin(theta);
-            });
+            // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
+            this._loopSkyboxPlanets(currentTime);
 
             // ### Fähigkeiten ###
             Object.keys(this.state.abilities).forEach((ability) => {
                 if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
             });
 
-            // ### Speichern ###
-            if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
-                this.saveState();
-                this.state.lastSaveUpdate = currentTime;
-            }
-            if (
-                !this.state.isServerSaveInFlight &&
-                currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
-            ) {
-                this.state.isServerSaveInFlight = true;
-                this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
-                    this.state.isServerSaveInFlight = false;
-                });
-                this.state.lastServerSaveUpdate = currentTime;
-            }
+            // ### Speichern ### (V9.44-f → _loopAutoSave)
+            this._loopAutoSave(currentTime);
 
-            // ### Kamera ###
-            if (player && camera) {
-                // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
-                // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
-                // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
-                player.rotation.y = this.state.yaw;
-                // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
-                // den eigenen Körper zu sehen ist normal — Minecraft etc.
-                // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
-                // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
-                // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
-                // Runterschauen. Im 3rd-Person ist alles sichtbar.
-                player.visible = true;
-                {
-                    const headPart = player.userData && player.userData.parts && player.userData.parts.head;
-                    if (headPart) headPart.visible = this.state.cameraMode === "third";
-                }
-                if (this.state.cameraMode === "third") {
-                    // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
-                    // die Kamera vertikal; Distance bleibt konstant. Look-At
-                    // zielt auf den Brust-Punkt.
-                    //
-                    // Pitch-Vorzeichen ist gegenüber 1st bewusst invertiert:
-                    // im 1st-Modus heißt "nach oben schauen" = Welt nach unten
-                    // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
-                    // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
-                    // = Kamera höher um den Charakter herum).
-                    const dist = this.state.cameraThirdDistance;
-                    const height = this.state.cameraThirdHeight;
-                    const cosPitch = Math.cos(this.state.pitch);
-                    const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
-                    const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
-                    let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
-                    // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
-                    const minCamY = player.position.y - 0.2;
-                    if (camY < minCamY) camY = minCamY;
-                    // V8.57 — die pitch-gesteuerte Wunsch-Höhe der Kamera (nach
-                    // Boden-Clamp, VOR der Kamera-Kollision unten) als State
-                    // spiegeln. Der Playtest prüft die Pitch-Inversion daran
-                    // deterministisch: die Kollisions-Raycast unten hängt von der
-                    // nicht-deterministischen Umgebung des Spielers ab und gehört
-                    // nicht in den reinen Pitch-Test.
-                    this.state._cameraDesiredY = camY;
-                    // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
-                    // kannte das Terrain an der KAMERA-Position nicht — in einem
-                    // Loch (oder hinter einer Wand) tauchte die Kamera durch das
-                    // Terrain. Jetzt: Raycast vom Blickziel (Spieler-Brust) zur
-                    // Wunsch-Position; trifft er Terrain/Struktur, wird die Kamera
-                    // an den Treffer herangezogen (15 % Puffer davor). Eine Lösung
-                    // für Loch UND Wand UND Bauwerk — kein Sonderfall pro Geometrie.
-                    const tx = player.position.x;
-                    const ty = player.position.y + 1.0;
-                    const tz = player.position.z;
-                    let finalX = camX;
-                    let finalY = camY;
-                    let finalZ = camZ;
-                    if (this.state.physicsWorld && typeof Ammo !== "undefined") {
-                        const sf = this.state.scaleFactor || 1;
-                        const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
-                        const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
-                        const hp = this._runRaycast(rs, re, (cb, hit) => {
-                            if (!hit) return null;
-                            const p = cb.get_m_hitPointWorld();
-                            return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
-                        });
-                        if (hp) {
-                            finalX = tx + (hp.x - tx) * 0.85;
-                            finalY = ty + (hp.y - ty) * 0.85;
-                            finalZ = tz + (hp.z - tz) * 0.85;
-                        }
-                    }
-                    camera.position.set(finalX, finalY, finalZ);
-                    camera.lookAt(tx, ty, tz);
-                } else {
-                    camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
-                    camera.lookAt(
-                        player.position.x + Math.sin(this.state.yaw),
-                        player.position.y + 1.6 + Math.sin(this.state.pitch),
-                        player.position.z + Math.cos(this.state.yaw)
-                    );
-                }
-                if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
-                    this.log(
-                        `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
-                        "DEBUG"
-                    );
-                }
-            }
+            // ### Kamera ### (V9.44-f → _loopCamera)
+            this._loopCamera(currentTime);
 
             // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
             // jeden Frame über sin/cos relativ zum aktuellen walkPhase
@@ -33688,55 +33198,8 @@ class AnazhRealm {
             // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
             this.tickAffordances(delta);
 
-            // V9.39 Phase 5c.2.c.3.b.iii — `pruneDistantChunks` ist als
-            // Phantom-Aufrufer entfernt (Heightfield-Chunks werden seit V9.35
-            // nicht mehr gebaut → die Schleife lief leer). Voxel-Chunks werden
-            // im `_tickVoxelChunkStreaming`-Pfad bzw. via `_pruneDistantVoxel-
-            // Chunks` direkt verwaltet.
-
-            // ### Rendering ###
-            // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
-            // Vorher in V8.26: kopiert war es zu früh (vor Camera-Update),
-            // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
-            // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
-            // Z. ~25049), Skybox-Position folgt SYNCHRON.
-            if (this.state.camera && this.state.skybox) {
-                this.state.skybox.position.copy(this.state.camera.position);
-            }
-            // V8.28 6.G4.b A — Stern-Feld folgt der Kamera (sonst wandert
-            // der Spieler aus dem Feld heraus) + dreht sidereal mit der
-            // Tageszeit um eine geneigte Achse (Erd-Achsen-Mimik). Die
-            // Rotation gibt den klassischen "Sterne ziehen über den Himmel"-
-            // Effekt — Astronomie statt statischer Tapete.
-            if (this.state.camera && this.state.starField) {
-                this.state.starField.position.copy(this.state.camera.position);
-                const tod = this.state.timeOfDay || 0;
-                this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
-            }
-            // V8.28 6.G4.b D — Welt-Wasser folgt der Kamera in xz (eine
-            // grosse Plane, die immer um den Spieler liegt). y bleibt fix
-            // auf waterLevel — das Wasser ist sichtbar nur wo Terrain
-            // darunter liegt (natürliche Senken).
-            if (this.state.camera && this.state.waterPlane) {
-                this.state.waterPlane.position.x = this.state.camera.position.x;
-                this.state.waterPlane.position.z = this.state.camera.position.z;
-                if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
-                    this.state.waterPlane.material.uniforms.uTime.value = currentTime;
-                }
-            }
-            // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
-            // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
-            // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
-            if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
-                this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
-            }
-            // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
-            // uWindStrength emergiert aus weather (rainy = kräftiger).
-            if (this.state.windUniforms) {
-                this.state.windUniforms.uWindTime.value = currentTime;
-                this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
-            }
-            this.state.renderer.render(this.state.scene, this.state.camera);
+            // ### Rendering ### (V9.44-f → _loopRender)
+            this._loopRender(currentTime);
         };
         // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
         // einen Frame SYNCHRON treiben können statt auf das im Headless auf
@@ -33746,6 +33209,595 @@ class AnazhRealm {
         // dies ist nur eine zusätzliche, frei aufrufbare Referenz.
         this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
+    }
+
+    // V9.44-f — der Game-Loop bekommt Phasen-Struktur. Vor V9.44-f war der
+    // `loop`-Closure-Body eine ~677-Zeilen-Inline-Kette; jetzt ruft er
+    // benannte `_loop<Phase>`-Methoden. Die geteilten Frame-Werte (`delta`,
+    // `currentTime`) sind explizite Parameter; `playerMesh`/`camera`/
+    // `playerBody` werden je Phase aus `this.state` neu gelesen (sie kamen
+    // schon vorher aus `this.state`, kein geteilter lokaler Zustand). Reines
+    // verhaltensneutrales Refactoring — die Phasen laufen in derselben
+    // Reihenfolge, keine liest einen Wert, den eine spätere mutiert.
+    _loopNexusUpdate() {
+        if (this.state.nexusEvolutionQueue.length > 0) {
+            const evolution = this.state.nexusEvolutionQueue.shift();
+            if (Array.isArray(evolution.program)) {
+                const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
+                // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
+                const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
+                const initialFitness = result.ok ? Math.max(0, 1 - fpsDmg / 100) : 0;
+                const abilityEntry = {
+                    name: evolution.name,
+                    program: evolution.program,
+                    source: evolution.source || "nexus",
+                    createdAt: evolution.createdAt || performance.now() / 1000,
+                    fitness: initialFitness,
+                };
+                this.state.dsl.abilities.push(abilityEntry);
+                const historyEntry = {
+                    id: evolution.name,
+                    program: evolution.program,
+                    at: performance.now() / 1000,
+                    outcome: result.outcome,
+                    ok: result.ok,
+                    fitness: initialFitness,
+                    finalized: false,
+                };
+                this.state.dsl.history.push(historyEntry);
+                if (this.state.dsl.history.length > this.state.dsl.historyCap) {
+                    this.state.dsl.history = this.state.dsl.history.slice(-this.state.dsl.historyCap);
+                }
+                // Pending einreihen — Finalizer holt 5 s später Emotion/Activity-Delta.
+                if (result.ok) {
+                    this.state.dsl.pendingOutcomes.push({
+                        name: evolution.name,
+                        program: evolution.program,
+                        outcome: result.outcome,
+                        historyRef: historyEntry,
+                    });
+                }
+                this.log(
+                    `Nexus-Evolution (DSL) ausgeführt: ${evolution.name}, fitness=${initialFitness.toFixed(2)}`,
+                    "INFO"
+                );
+            } else {
+                this.log(`Nexus-Evolution ohne DSL-Programm verworfen: ${evolution.name}`, "WARNING");
+            }
+            this.grokSpeak("nexus");
+        }
+    }
+
+    _loopGroundCheck(currentTime) {
+        // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
+        // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
+        if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
+            const voxelActive = this.state.voxelTerrainActive === true;
+            if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
+                this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
+                this.generateNewWorld();
+            }
+            this.state.lastGroundCheck = currentTime;
+        }
+    }
+
+    _loopFrustumCulling() {
+        // V8.26 Polish §6.1 — Frustum + Matrix4 als state-Pool statt
+        // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
+        // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
+        if (!this._frustumCache) {
+            this._frustumCache = new THREE.Frustum();
+            this._frustumMatrixCache = new THREE.Matrix4();
+        }
+        this._frustumMatrixCache.multiplyMatrices(
+            this.state.camera.projectionMatrix,
+            this.state.camera.matrixWorldInverse
+        );
+        this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+        const frustum = this._frustumCache;
+        // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
+        // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
+        if (this.state.voxelTerrainActive) {
+            this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
+        } else {
+            this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
+        }
+        if (this.state.floatingIslands)
+            this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
+        if (this.state.creatures)
+            this.state.creatures.forEach((creature) => (creature.visible = this.isInFrustum(creature, frustum)));
+    }
+
+    _loopAnimateUfos(currentTime) {
+        if (this.state.ufos && this.state.playerMesh) {
+            const playerPos = this.state.playerMesh.position;
+            this.state.ufos.forEach((ufo) => {
+                const distance = playerPos.distanceTo(ufo.position);
+                if (distance < 50) {
+                    ufo.position.y = ufo.userData.baseY + Math.sin(currentTime * ufo.userData.speed) * 2;
+                }
+            });
+        }
+    }
+
+    _loopPhysicsSync(delta, currentTime) {
+        if (this.state.physicsWorld) {
+            this.state.physicsWorld.stepSimulation(delta, 20, 1 / 60);
+            for (let i = 0; i < this.state.rigidBodies.length; i++) {
+                const mesh = this.state.rigidBodies[i];
+                const body = mesh.userData.physicsBody;
+                const motionState = body.getMotionState();
+                if (motionState) {
+                    motionState.getWorldTransform(this.state.tmpTransform);
+                    const pos = this.state.tmpTransform.getOrigin();
+                    let scaledY = pos.y() * this.state.scaleFactor;
+                    const velocity = body.getLinearVelocity();
+
+                    // Fall-Geschwindigkeit cappen: ohne Cap zog die
+                    // Schwerkraft den Spieler in eine sehr hohe vy, sodass
+                    // er pro Frame eine ganze Heightfield-Cell (~1.17 m)
+                    // überspringen konnte — Tunneling durch steile Hänge.
+                    // -25 m/s ist eine plausible Terminal Velocity und
+                    // bleibt unter Cell-Breite × 60 fps.
+                    if (mesh === this.state.playerMesh && velocity.y() < -25) {
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
+                    }
+
+                    // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
+                    // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
+                    // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
+                    // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
+                    // V8.32 — zwei getrennte Flags: playerUnderwater
+                    // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
+                    // playerEyesUnderwater (Augen/Kamera unter Wasser →
+                    // blauer Tint). Sonst sprang der Tint schon beim
+                    // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
+                    if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
+                        const submerged = scaledY < this.state.waterLevel;
+                        this.state.playerUnderwater = submerged;
+                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
+                        this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
+                        if (submerged) {
+                            // V8.36 — Auftrieb wirkt NUR über dem Terrain.
+                            // Fällt der Spieler durch die Welt (weit unter
+                            // die Terrain-Oberfläche), fing ihn der Auftrieb
+                            // sonst ab — er „schwamm" unter dem Boden statt
+                            // von der Killplane resettet zu werden. Wasser
+                            // sitzt immer auf festem Grund; ist man weit
+                            // darunter, trägt nichts → die Killplane greift.
+                            const wTerrainY = this.getTerrainHeightAt(
+                                pos.x() * this.state.scaleFactor,
+                                pos.z() * this.state.scaleFactor
+                            );
+                            if (scaledY >= wTerrainY - 22) {
+                                // V8.33 — Tauchen + Auftauchen. Shift taucht
+                                // ab (Minecraft-Konvention), Space hebt; ohne
+                                // Eingabe wirkt der natürliche Auftrieb.
+                                const swimVy = this._swimVerticalVelocity(
+                                    velocity.y(),
+                                    this.state.waterLevel - scaledY,
+                                    !!this.state.keys["shift"],
+                                    !!this.state.keys[" "]
+                                );
+                                body.setLinearVelocity(
+                                    this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
+                                );
+                            }
+                        }
+                    }
+
+                    // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
+                    // in Reichweite eines lifting-Compounds (Flag aus
+                    // _tickLiftingAffordances), trägt ihn das Feld: der Fall
+                    // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
+                    // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
+                    // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
+                    if (
+                        mesh === this.state.playerMesh &&
+                        !this.state.playerUnderwater &&
+                        this.state.player &&
+                        this.state.player.liftingField &&
+                        this.state.player.liftingField.active
+                    ) {
+                        const liftVy = this._liftVerticalVelocity(
+                            velocity.y(),
+                            this.state.player.liftingField.strength
+                        );
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
+                    }
+
+                    // Kill-Plane näher an den Welt-Boden gerückt: vorher
+                    // erst nach 1000 m freiem Fall — der Spieler war
+                    // gefühlt "verloren". 30 m unter dem tiefsten Welt-
+                    // Punkt ist nah genug, dass Resets sofort spürbar
+                    // sind, aber tief genug, dass eine legitime Schlucht
+                    // (heights -100..+100) den Spieler nicht reset.
+                    // V9.25 Phase 5b — der Killplane folgt der Welt. In
+                    // einer Voxel-Welt liegt der Chunk-Boden bei base-58
+                    // (V9.26); der Killplane gehört DARUNTER (base-88),
+                    // sonst würde ein Spieler in einem tiefen Voxel-Tal
+                    // resettet. Das heightfield-abgeleitete `minHeight`
+                    // kennt das Voxel-Band nicht.
+                    const killPlaneY =
+                        this.state.worldMeta && this.state.worldMeta.voxelTerrain
+                            ? (this.state.terrainBaseHeight || 0) - 88
+                            : (this.state.minHeight || -50) - 30;
+                    if (scaledY < killPlaneY) {
+                        const currentX = pos.x() * this.state.scaleFactor;
+                        const currentZ = pos.z() * this.state.scaleFactor;
+
+                        // Funktion zum Finden der Oberfläche über dem Spieler
+                        const surfaceHeight = this.findSurfaceAbove(currentX, scaledY, currentZ);
+                        scaledY = surfaceHeight + 0.5; // Spieler wird knapp über die Oberfläche gesetzt
+
+                        const transform = this.state.tmpTransform;
+                        transform.setIdentity();
+                        transform.setOrigin(
+                            this.setVec(
+                                this.state.tmpVec1,
+                                currentX / this.state.scaleFactor,
+                                scaledY / this.state.scaleFactor,
+                                currentZ / this.state.scaleFactor
+                            )
+                        );
+                        body.setWorldTransform(transform);
+                        body.setLinearVelocity(this.setVec(this.state.tmpVec2, velocity.x(), 0, velocity.z()));
+                        this.state.isJumping = false;
+                        this.state.isInAir = false;
+                        mesh.position.set(currentX, scaledY, currentZ);
+                        this.log(
+                            `Spieler auf Oberfläche zurückgesetzt: (${currentX.toFixed(2)}, ${scaledY.toFixed(2)}, ${currentZ.toFixed(2)})`,
+                            "INFO"
+                        );
+                    }
+
+                    if (mesh === this.state.playerMesh) {
+                        mesh.position.set(pos.x() * this.state.scaleFactor, scaledY, pos.z() * this.state.scaleFactor);
+                        const isGrounded = this.isPlayerGrounded();
+                        if (isGrounded) {
+                            this.state.lastGroundedTime = currentTime;
+                            this.state.isInAir = false;
+                            this.state.isJumping = false;
+                            // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
+                            if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
+                                this.log("Spieler geerdet!", "INFO");
+                                this.state.lastGroundedLog = currentTime;
+                            }
+                        } else {
+                            this.state.isInAir = true;
+                        }
+                    } else {
+                        mesh.position.set(pos.x() * this.state.scaleFactor, scaledY, pos.z() * this.state.scaleFactor);
+                    }
+                }
+            }
+        }
+    }
+
+    _loopPlayerMovement(currentTime) {
+        // ### Spielerbewegung ###
+        // V9.44-f — player/camera werden hier nicht mehr gelesen (die
+        // Kamera-Phase liest sie selbst); nur playerBody bleibt.
+        const playerBody = this.state.playerBody;
+        // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
+        // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
+        let currentSpeed =
+            this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
+        // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
+        // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
+        if (this.state.playerUnderwater) currentSpeed *= 0.55;
+
+        this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
+        this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
+        this.state.moveDirection.set(0, 0, 0);
+        if (this.state.keys["w"]) this.state.moveDirection.addScaledVector(this.state.forward, 1);
+        if (this.state.keys["s"]) this.state.moveDirection.addScaledVector(this.state.forward, -1);
+        // Bewusst NICHT „intuitiv" inverten: `state.right` ist die ARITHMETISCHE
+        // Richtung (cos yaw, 0, −sin yaw), nicht die anatomische Rechts-Seite
+        // des Spielers. In Right-Hand-Coords mit Y up: forward × up = −X,
+        // also ist player-anatomisch-RECHTS = −X = −state.right. Original-Mapping:
+        // A → +state.right (= player-links), D → −state.right (= player-rechts).
+        // (Schöpfer-Hinweis 13.05.2026: vorherige „Fix"-Vertauschung brach das
+        // konsistente Verhalten, jetzt revertiert.)
+        if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
+        if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
+
+        if (this.state.physicsWorld && playerBody) {
+            // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
+            // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
+            // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
+            // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
+            // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
+            const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
+            if (this.state.moveDirection.length() > 0) {
+                this.state.moveDirection.normalize();
+                playerBody.setLinearVelocity(
+                    this.setVec(
+                        this.state.tmpVec1,
+                        this.state.moveDirection.x * currentSpeed * slopePenalty,
+                        playerBody.getLinearVelocity().y(),
+                        this.state.moveDirection.z * currentSpeed * slopePenalty
+                    )
+                );
+                // V8.36 — kein forceActivationState mehr nötig: der
+                // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
+                // (schläft nie). Ein forceActivationState(1) HIER würde ihn
+                // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
+                // zurück, sobald man stehen bleibt.
+            } else if (!this.state.onSteepSlope) {
+                // Auf flachem Boden: ohne Eingabe vx + vz auf 0 zwingen
+                // (Standard-Stopp-Verhalten). Auf steilem Hang lassen wir
+                // die existierende Velocity stehen — Gravitation + Slope-
+                // Kontakt erzeugen so eine natürliche Rutsch-Bewegung
+                // (Voraussetzung: Player-Friction 0 aus 6.A1).
+                playerBody.setLinearVelocity(this.setVec(this.state.tmpVec1, 0, playerBody.getLinearVelocity().y(), 0));
+            }
+
+            if (this.state.keys[" "] && !this.state.isJumping) {
+                const isGrounded = this.isPlayerGrounded();
+                const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
+                // Welle 6.X.3 C3 — Soul-bound Steilheits-Toleranz prüft
+                // ob der Soul leicht genug zum Abdrücken am Hang ist.
+                // Bei false: Sprung-Block wird übersprungen, restlicher
+                // Update-Loop (Selbstanalyse, Wolken, Lebensdauer …) läuft
+                // weiter wie gewohnt.
+                if ((isGrounded || withinCoyoteTime) && this._canSoulJumpFromSlope()) {
+                    // Welle 6.X.1 A1 — siehe handleJump: Body wecken vor Velocity.
+                    // Im Loop-Jump-Pfad wird nur bei moveDirection.length() > 0
+                    // ein forceActivationState aufgerufen — Stand-Sprung würde
+                    // sonst verpuffen wenn der Body im Ammo-Sleep ist.
+                    playerBody.activate(true);
+                    const jumpForce = this.state.jumpPower;
+                    const currentVelocity = playerBody.getLinearVelocity();
+                    playerBody.setLinearVelocity(
+                        this.setVec(
+                            this.state.tmpVec1,
+                            currentVelocity.x(),
+                            jumpForce / this.state.scaleFactor,
+                            currentVelocity.z()
+                        )
+                    );
+                    this.state.isJumping = true;
+                    this.state.isInAir = true;
+                    if (currentTime - this.state.lastJumpLog >= this.state.jumpLogInterval) {
+                        this.log("Spieler springt!", "INFO");
+                        this.state.lastJumpLog = currentTime;
+                    }
+                }
+            }
+        }
+    }
+
+    _loopSelfAnalysis(currentTime) {
+        // ### Selbstanalyse + Nexus-Evolution-Trigger ###
+        // Früher hing das am TF-Trainings-Tick (`learn()`); nach TF-Cleanup
+        // läuft die Zeit-Schwelle direkt. `selfAwarenessAnalyze` macht den
+        // FPS-/Tunneling-/Boden-Check, `evolveNexus` queued ein DSL-Programm
+        // in den `nexusEvolutionQueue`.
+        if (currentTime - this.state.lastSelfAnalysis >= 5.0) {
+            this.selfAwarenessAnalyze();
+            if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
+                this.nexus.processOptimization({ fps: this.state.fps });
+            }
+            this.journalTick(currentTime);
+            // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
+            // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
+            this.updateWorldInfo();
+        }
+        if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
+            this.evolveNexus(currentTime);
+        }
+    }
+
+    _loopWeatherAndGrowth(delta, currentTime) {
+        // ### Kreaturen, Wetter, Wachstum ###
+        this.updateCreatures(delta);
+        this.state.weatherEffectTime += delta;
+        if (this.state.weatherEffectTime >= 30.0) {
+            this.state.weather = this.state.weather === "sunny" ? "rainy" : "sunny";
+            this.updateSkyboxWeather();
+            this.updateCreatureEmotions();
+            this.log(`Wetter gewechselt zu ${this.state.weather}`, "INFO");
+            this.state.weatherEffectTime = 0;
+        }
+
+        if (currentTime - this.state.lastGrowthUpdate >= 1.0) {
+            this.updateGrowth(); // Fehler behoben
+            this.state.lastGrowthUpdate = currentTime;
+        }
+    }
+
+    _loopVoxelStreaming() {
+        // ### Unendliches Terrain – spieler-zentriert ###
+        // Statt Map-Mittelpunkt-Extension (die Chunks weit weg vom Spieler
+        // entstehen ließ und Lücken hinterließ) füllen wir jetzt einen
+        // 5×5-Ring um den Chunk, in dem der Spieler steht. Pro Frame max
+        // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Streaming-Ring ist
+        // als toter Pfad entfernt — Voxel ist permanent seit V9.35.
+        // Der Voxel-Chunk-Streaming-Ring trägt jeden Spieler-Schritt
+        // (Ring-Radius lebt in `_voxelChunkConfig().ringRadius`, der
+        // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
+        // V9.24-Verdrahtung).
+        const playerPos = this.state.playerMesh.position;
+        this._tickVoxelChunkStreaming(playerPos);
+        // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
+        // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
+        // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
+        // V9.40-c alle in einem Frame; jetzt verteilt. Bei dirty-empty
+        // ist es ein no-op (eine Set.size-Lesung). Tests, die direkt nach
+        // einem Edit den Mesh prüfen, rufen `_drainDirtyVoxelChunks()`.
+        this._tickDirtyVoxelChunks(playerPos);
+    }
+
+    _loopSkyboxPlanets(currentTime) {
+        // ### Skybox und Planeten ###
+        this.state.skybox.material.uniforms.time.value = currentTime;
+        this.state.planets.forEach((planet) => {
+            const theta = currentTime / 10;
+            const radius = 400;
+            planet.position.x = radius * Math.cos(theta);
+            planet.position.z = radius * Math.sin(theta);
+        });
+    }
+
+    _loopAutoSave(currentTime) {
+        // ### Speichern ###
+        if (currentTime - this.state.lastSaveUpdate >= this.state.saveInterval) {
+            this.saveState();
+            this.state.lastSaveUpdate = currentTime;
+        }
+        if (
+            !this.state.isServerSaveInFlight &&
+            currentTime - this.state.lastServerSaveUpdate >= this.state.serverSaveInterval
+        ) {
+            this.state.isServerSaveInFlight = true;
+            this.saveToProjectFolder({ fallbackToDownload: false }).finally(() => {
+                this.state.isServerSaveInFlight = false;
+            });
+            this.state.lastServerSaveUpdate = currentTime;
+        }
+    }
+
+    _loopCamera(currentTime) {
+        // ### Kamera ###
+        // V9.44-f — player/camera kamen vorher aus der Bewegungs-Sektion
+        // (gemeinsame Loop-locals); jetzt aus this.state neu gelesen.
+        const player = this.state.playerMesh;
+        const camera = this.state.camera;
+        if (player && camera) {
+            // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
+            // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
+            // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
+            player.rotation.y = this.state.yaw;
+            // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
+            // den eigenen Körper zu sehen ist normal — Minecraft etc.
+            // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
+            // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
+            // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
+            // Runterschauen. Im 3rd-Person ist alles sichtbar.
+            player.visible = true;
+            {
+                const headPart = player.userData && player.userData.parts && player.userData.parts.head;
+                if (headPart) headPart.visible = this.state.cameraMode === "third";
+            }
+            if (this.state.cameraMode === "third") {
+                // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
+                // die Kamera vertikal; Distance bleibt konstant. Look-At
+                // zielt auf den Brust-Punkt.
+                //
+                // Pitch-Vorzeichen ist gegenüber 1st bewusst invertiert:
+                // im 1st-Modus heißt "nach oben schauen" = Welt nach unten
+                // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
+                // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
+                // = Kamera höher um den Charakter herum).
+                const dist = this.state.cameraThirdDistance;
+                const height = this.state.cameraThirdHeight;
+                const cosPitch = Math.cos(this.state.pitch);
+                const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
+                const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
+                let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
+                const minCamY = player.position.y - 0.2;
+                if (camY < minCamY) camY = minCamY;
+                // V8.57 — die pitch-gesteuerte Wunsch-Höhe der Kamera (nach
+                // Boden-Clamp, VOR der Kamera-Kollision unten) als State
+                // spiegeln. Der Playtest prüft die Pitch-Inversion daran
+                // deterministisch: die Kollisions-Raycast unten hängt von der
+                // nicht-deterministischen Umgebung des Spielers ab und gehört
+                // nicht in den reinen Pitch-Test.
+                this.state._cameraDesiredY = camY;
+                // V8.36 — echte Kamera-Kollision. Der statische minCamY-Clamp
+                // kannte das Terrain an der KAMERA-Position nicht — in einem
+                // Loch (oder hinter einer Wand) tauchte die Kamera durch das
+                // Terrain. Jetzt: Raycast vom Blickziel (Spieler-Brust) zur
+                // Wunsch-Position; trifft er Terrain/Struktur, wird die Kamera
+                // an den Treffer herangezogen (15 % Puffer davor). Eine Lösung
+                // für Loch UND Wand UND Bauwerk — kein Sonderfall pro Geometrie.
+                const tx = player.position.x;
+                const ty = player.position.y + 1.0;
+                const tz = player.position.z;
+                let finalX = camX;
+                let finalY = camY;
+                let finalZ = camZ;
+                if (this.state.physicsWorld && typeof Ammo !== "undefined") {
+                    const sf = this.state.scaleFactor || 1;
+                    const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
+                    const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
+                    const hp = this._runRaycast(rs, re, (cb, hit) => {
+                        if (!hit) return null;
+                        const p = cb.get_m_hitPointWorld();
+                        return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+                    });
+                    if (hp) {
+                        finalX = tx + (hp.x - tx) * 0.85;
+                        finalY = ty + (hp.y - ty) * 0.85;
+                        finalZ = tz + (hp.z - tz) * 0.85;
+                    }
+                }
+                camera.position.set(finalX, finalY, finalZ);
+                camera.lookAt(tx, ty, tz);
+            } else {
+                camera.position.set(player.position.x, player.position.y + 1.6, player.position.z);
+                camera.lookAt(
+                    player.position.x + Math.sin(this.state.yaw),
+                    player.position.y + 1.6 + Math.sin(this.state.pitch),
+                    player.position.z + Math.cos(this.state.yaw)
+                );
+            }
+            if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
+                this.log(
+                    `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
+                    "DEBUG"
+                );
+            }
+        }
+    }
+
+    _loopRender(currentTime) {
+        // ### Rendering ###
+        // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
+        // Vorher in V8.26: kopiert war es zu früh (vor Camera-Update),
+        // Skybox lief 1 Frame hinterher → Sterne rauschten bei Bewegung
+        // + 2 s Nachlauf. Jetzt: Camera ist bereits aktualisiert (siehe
+        // Z. ~25049), Skybox-Position folgt SYNCHRON.
+        if (this.state.camera && this.state.skybox) {
+            this.state.skybox.position.copy(this.state.camera.position);
+        }
+        // V8.28 6.G4.b A — Stern-Feld folgt der Kamera (sonst wandert
+        // der Spieler aus dem Feld heraus) + dreht sidereal mit der
+        // Tageszeit um eine geneigte Achse (Erd-Achsen-Mimik). Die
+        // Rotation gibt den klassischen "Sterne ziehen über den Himmel"-
+        // Effekt — Astronomie statt statischer Tapete.
+        if (this.state.camera && this.state.starField) {
+            this.state.starField.position.copy(this.state.camera.position);
+            const tod = this.state.timeOfDay || 0;
+            this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
+        }
+        // V8.28 6.G4.b D — Welt-Wasser folgt der Kamera in xz (eine
+        // grosse Plane, die immer um den Spieler liegt). y bleibt fix
+        // auf waterLevel — das Wasser ist sichtbar nur wo Terrain
+        // darunter liegt (natürliche Senken).
+        if (this.state.camera && this.state.waterPlane) {
+            this.state.waterPlane.position.x = this.state.camera.position.x;
+            this.state.waterPlane.position.z = this.state.camera.position.z;
+            if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
+                this.state.waterPlane.material.uniforms.uTime.value = currentTime;
+            }
+        }
+        // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
+        // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
+        // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
+        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
+            this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
+        }
+        // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
+        // uWindStrength emergiert aus weather (rainy = kräftiger).
+        if (this.state.windUniforms) {
+            this.state.windUniforms.uWindTime.value = currentTime;
+            this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
+        }
+        this.state.renderer.render(this.state.scene, this.state.camera);
     }
 
     // ### Hilfsfunktionen ### V7.56
