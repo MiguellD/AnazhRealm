@@ -12203,7 +12203,7 @@ function startSaveServer() {
                     voxelV938Results.noHeightDataAlloc
                 );
                 check(
-                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Voxel-Wasserfälle leben weiter über _buildVoxelChunkWaterfalls)",
+                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Wasser kommt aus dem Hydrosphären-Netz)",
                     voxelV938Results.noWaterfallLoop
                 );
                 check(
@@ -12374,102 +12374,62 @@ function startSaveServer() {
                 );
             }
 
-            // ### Voxel V9.32 — Phase 5d-Mini: Wasserfälle aus der Voxel-Klippen-Steilheit ###
-            // Die heightfield-Wasserfall-Heuristik (`generateTerrainWithParameters`
-            // Zeile 13866+) ist in einer Voxel-Welt seit V9.28 ausgeschaltet —
-            // sie las `heightData[idx]` direkt, was in einer Voxel-Welt null
-            // ist. V9.32 baut den Voxel-Pendant: `_buildVoxelChunkWaterfalls`
-            // sampelt pro Voxel-Chunk 6×6 Stellen, misst die Steilheit via
-            // `_voxelSurfaceY`-Gradient zu vier Nachbar-Punkten, spawnt einen
-            // Partikel-Wasserfall bei einem Höhen-Drop ≥4 m über 4 m Distanz.
-            // Die Partikel-Struktur ist Zeile für Zeile die Heightfield-Variante
-            // — sie landet in state.waterfalls und wird vom bestehenden
-            // Animations-Loop (Zeile ~34208) animiert. Pro-Chunk-Lifecycle
-            // analog Gras (V9.22) + Vegetation (V9.24). Eine voxel-basierte
-            // Welt mit echten Schluchten + Klippen aus dem 3D-Dichte-Feld
-            // bekommt damit ihre eigene Wasserfall-Dramatik.
-            const voxelV932Results = await page
+            // ### Voxel V9.43-c — der per-Chunk-Wasserfall-Spawner ist abgelöst ###
+            // V9.32/V9.43-a spawnten Wasserfälle per-Chunk-Zufall
+            // (`_buildVoxelChunkWaterfalls`: 6×6-Raster, 12 % Hash-Wahrschein-
+            // lichkeit an steilen Voxel-Klippen). V9.43-c löst das ab —
+            // Wasserfälle kommen aus dem Hydrosphären-Netz (ein Fluss kreuzt
+            // eine echte Voxel-Klippe, `_hydroExtractWaterfalls`). Der
+            // per-Chunk-Spawner + seine State-Map sind gelöscht; `_ensure-
+            // VoxelChunkAt`/`_disposeVoxelChunk` hooken sie nicht mehr. Das
+            // Material `_ensureWaterfallMaterial` + die vertikale Plane-
+            // Geometrie bleiben (von `_buildHydroWaterfall` reuset) — nur die
+            // Spawn-Quelle wanderte vom Zufall zum Drainage-Netz (§7/§10).
+            const voxelV943cAblation = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasBuild = typeof r._buildVoxelChunkWaterfalls === "function";
-                    out.hasDispose = typeof r._disposeVoxelChunkWaterfalls === "function";
-                    // Lifecycle: in einer voxel-aktiven Welt sollte zumindest
-                    // _ein_ Chunk Wasserfälle erzeugt haben (die V9.31-Eingangs-
-                    // Welt ist heightfield, aber wir aktivieren voxel hier
-                    // synthetisch — ein einzelner Chunk-Build sollte die
-                    // Method-Existenz beweisen).
-                    if (!r.state) return out;
-                    if (out.hasBuild && r.state.voxelTerrainActive && r.state.voxelChunks) {
-                        let waterfallChunks = 0;
-                        if (r.state.voxelChunkWaterfalls) {
-                            for (const v of r.state.voxelChunkWaterfalls.values()) {
-                                if (Array.isArray(v)) waterfallChunks++;
-                            }
-                        }
-                        out.lifecycleMapBuilt = waterfallChunks >= 0; // Map existiert
-                    } else {
-                        out.lifecycleMapBuilt = true; // skip wenn voxel nicht aktiv
-                    }
-                    // Source-Audit: _ensureVoxelChunkAt + _disposeVoxelChunk
-                    // hooken die Wasserfall-Methoden.
+                    if (!r || !r.state) return null;
                     const ensureSrc = (r._ensureVoxelChunkAt || function () {}).toString();
                     const disposeSrc = (r._disposeVoxelChunk || function () {}).toString();
-                    out.ensureCallsBuild = /_buildVoxelChunkWaterfalls/.test(ensureSrc);
-                    out.disposeCallsDispose = /_disposeVoxelChunkWaterfalls/.test(disposeSrc);
-                    // Idempotenz: zweiter Build-Aufruf für denselben Chunk
-                    // ändert die Map-Eintrags-Identität nicht (idempotent).
-                    if (out.hasBuild) {
-                        // Synthetischer Test: rufe build für (999, 999) zweimal,
-                        // dann dispose. Funktioniert auch wenn der Chunk-Key
-                        // gar keine Voxel-Klippe trifft (created-Array kann
-                        // leer sein — die Map-Eintrags-Existenz reicht).
-                        r._buildVoxelChunkWaterfalls(999, 999);
-                        const first = r.state.voxelChunkWaterfalls && r.state.voxelChunkWaterfalls.get("999,999");
-                        r._buildVoxelChunkWaterfalls(999, 999);
-                        const second = r.state.voxelChunkWaterfalls && r.state.voxelChunkWaterfalls.get("999,999");
-                        out.idempotent = first === second;
-                        r._disposeVoxelChunkWaterfalls("999,999");
-                        out.disposeClears =
-                            !r.state.voxelChunkWaterfalls || !r.state.voxelChunkWaterfalls.has("999,999");
-                    }
-                    return out;
+                    return {
+                        buildGone: typeof r._buildVoxelChunkWaterfalls !== "function",
+                        disposeGone: typeof r._disposeVoxelChunkWaterfalls !== "function",
+                        ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
+                        disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
+                        stateMapGone: !("voxelChunkWaterfalls" in r.state),
+                        materialKept: typeof r._ensureWaterfallMaterial === "function",
+                    };
                 })
                 .catch((e) => ({ error: String(e) }));
 
-            if (voxelV932Results && !voxelV932Results.error) {
-                check("Voxel V9.32: _buildVoxelChunkWaterfalls existiert (Phase 5d-Mini)", voxelV932Results.hasBuild);
+            if (voxelV943cAblation && !voxelV943cAblation.error) {
                 check(
-                    "Voxel V9.32: _disposeVoxelChunkWaterfalls existiert (Lifecycle-Räumung)",
-                    voxelV932Results.hasDispose
+                    "Voxel V9.43-c: _buildVoxelChunkWaterfalls ist gelöscht (per-Chunk-Spawner abgelöst)",
+                    voxelV943cAblation.buildGone
+                );
+                check("Voxel V9.43-c: _disposeVoxelChunkWaterfalls ist gelöscht", voxelV943cAblation.disposeGone);
+                check(
+                    "Voxel V9.43-c: _ensureVoxelChunkAt hookt den Wasserfall-Spawner nicht mehr",
+                    voxelV943cAblation.ensureNoHook
                 );
                 check(
-                    "Voxel V9.32: _ensureVoxelChunkAt ruft _buildVoxelChunkWaterfalls (Hook)",
-                    voxelV932Results.ensureCallsBuild
+                    "Voxel V9.43-c: _disposeVoxelChunk hookt den Wasserfall-Spawner nicht mehr",
+                    voxelV943cAblation.disposeNoHook
                 );
+                check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
                 check(
-                    "Voxel V9.32: _disposeVoxelChunk ruft _disposeVoxelChunkWaterfalls (Hook)",
-                    voxelV932Results.disposeCallsDispose
-                );
-                check(
-                    "Voxel V9.32: _buildVoxelChunkWaterfalls ist idempotent (zweiter Aufruf no-op)",
-                    voxelV932Results.idempotent
-                );
-                check(
-                    "Voxel V9.32: _disposeVoxelChunkWaterfalls räumt die Map (key weg nach dispose)",
-                    voxelV932Results.disposeClears
+                    "Voxel V9.43-c: _ensureWaterfallMaterial lebt weiter (von _buildHydroWaterfall reuset)",
+                    voxelV943cAblation.materialKept
                 );
             }
 
-            // ### Voxel V9.43-a — Wasser-Ultiversum: Wasserfälle werden Planes ###
-            // V9.32 baute Wasserfälle als THREE.Points-Partikel — eine zweite
-            // Wasser-Sprache neben der Gerstner-Plane des Meeres (Schöpfer-
-            // Audit-Befund #5, Vision §1.3 gebrochen). V9.43-a vereinheitlicht:
-            // eine vertikale PlaneGeometry mit dem geteilten Flow-Shader
-            // (`_ensureWaterfallMaterial`, uFlowDir abwärts), welt-global ein
-            // Material, uTime-animiert (kein per-Partikel-Loop mehr). Eine
-            // Wasser-Sprache: Plane + Wasser-Shader + Flow-Vektor.
+            // ### Voxel V9.43-a — Wasser-Ultiversum: das Wasserfall-Material ###
+            // V9.43-a vereinheitlichte die Wasser-Sprache: ein geteiltes
+            // ShaderMaterial mit Abwärts-Flow (`_ensureWaterfallMaterial`),
+            // das die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog) mit dem Meer
+            // teilt. V9.43-c reuset dieses Material für die netz-verankerten
+            // Wasserfall-Planes (`_buildHydroWaterfall`) — der per-Chunk-
+            // Zufalls-Spawner ist abgelöst (siehe V9.43-c-Ablösungs-Block).
             const voxelV943Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
@@ -12494,16 +12454,6 @@ function startSaveServer() {
                         typeof (u.fogFar && u.fogFar.value) === "number" &&
                         !!u.uSunDir &&
                         !!u.uLight;
-                    const buildSrc = (r._buildVoxelChunkWaterfalls || function () {}).toString();
-                    out.buildUsesPlanes =
-                        /PlaneGeometry/.test(buildSrc) &&
-                        /_ensureWaterfallMaterial/.test(buildSrc) &&
-                        !/THREE\.Points/.test(buildSrc) &&
-                        !/PointsMaterial/.test(buildSrc) &&
-                        !/["']velocity["']/.test(buildSrc);
-                    out.noParticleAnimData = !/userData\.minY/.test(buildSrc) && !/baseHeight/.test(buildSrc);
-                    const dispSrc = (r._disposeVoxelChunkWaterfalls || function () {}).toString();
-                    out.disposeKeepsMaterial = !/\.material\.dispose/.test(dispSrc);
                     // Day-Night synct das Wasserfall-Material (Fog-Uniform).
                     out.dayNightSyncsWaterfall = false;
                     if (mat && typeof r._applyDayNightToScene === "function") {
@@ -12513,35 +12463,6 @@ function startSaveServer() {
                         } catch {
                             out.dayNightSyncsWaterfall = false;
                         }
-                    }
-                    // Synthetic-Scan: einen Chunk mit echter Voxel-Klippe finden
-                    // und prüfen, dass der Wasserfall eine Plane-Mesh ist.
-                    out.planeWaterfallFound = false;
-                    out.planeWaterfallValid = true;
-                    if (out.hasEnsureMat && r.state && typeof THREE !== "undefined") {
-                        if (!r.state.voxelChunkWaterfalls) r.state.voxelChunkWaterfalls = new Map();
-                        const builtKeys = [];
-                        outer: for (let cz = -7; cz <= 7; cz++) {
-                            for (let cx = -7; cx <= 7; cx++) {
-                                const key = cx + "," + cz;
-                                const pre = r.state.voxelChunkWaterfalls.has(key);
-                                r._buildVoxelChunkWaterfalls(cx, cz);
-                                if (!pre) builtKeys.push(key);
-                                const arr = r.state.voxelChunkWaterfalls.get(key);
-                                if (Array.isArray(arr) && arr.length > 0) {
-                                    const wf = arr[0];
-                                    out.planeWaterfallFound = true;
-                                    out.planeWaterfallValid =
-                                        !!wf &&
-                                        wf.isMesh === true &&
-                                        !!wf.geometry &&
-                                        wf.geometry.type === "PlaneGeometry" &&
-                                        wf.material === r.state.waterfallMaterial;
-                                    break outer;
-                                }
-                            }
-                        }
-                        for (const key of builtKeys) r._disposeVoxelChunkWaterfalls(key);
                     }
                     return out;
                 })
@@ -12561,24 +12482,8 @@ function startSaveServer() {
                     voxelV943Results.sharesWaterUniforms
                 );
                 check(
-                    "Voxel V9.43-a: _buildVoxelChunkWaterfalls baut Wasser-Planes statt THREE.Points-Partikel",
-                    voxelV943Results.buildUsesPlanes
-                );
-                check(
-                    "Voxel V9.43-a: _buildVoxelChunkWaterfalls trägt keine per-Partikel-Animationsdaten mehr",
-                    voxelV943Results.noParticleAnimData
-                );
-                check(
-                    "Voxel V9.43-a: _disposeVoxelChunkWaterfalls disposed NICHT das geteilte Material",
-                    voxelV943Results.disposeKeepsMaterial
-                );
-                check(
                     "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Fog-Uniform gesetzt)",
                     voxelV943Results.dayNightSyncsWaterfall
-                );
-                check(
-                    "Voxel V9.43-a: ein gebauter Wasserfall ist eine PlaneGeometry-Mesh mit dem geteilten Material",
-                    !voxelV943Results.planeWaterfallFound || voxelV943Results.planeWaterfallValid
                 );
             }
 
@@ -12610,6 +12515,12 @@ function startSaveServer() {
                     out.lakeCount = h1.lakes.length;
                     out.waterfallCount = h1.waterfalls.length;
                     out.maxAccum = h1.stats ? h1.stats.maxAccum : 0;
+                    out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
+                    out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
+                    out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
+                    out.riverPointsTotal = h1.stats ? h1.stats.riverPointsTotal : 0;
+                    out.lakeCellsMax = h1.stats ? h1.stats.lakeCellsMax : 0;
+                    out.lakeCells = h1.stats ? h1.stats.lakeCells : 0;
                     // Determinismus — zwei Läufe, byte-identisches Netz
                     const h2 = r._computeHydrosphere();
                     out.deterministic =
@@ -12654,7 +12565,7 @@ function startSaveServer() {
                 check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
                 check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
                 check(
-                    `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum})`,
+                    `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum}, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
                     hb.riverCount > 0
                 );
                 check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
@@ -12668,6 +12579,148 @@ function startSaveServer() {
                     typeof hb.perfMs === "number" && hb.perfMs < 500
                 );
                 check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
+            }
+
+            // ### Voxel V9.43-c — Flüsse + Seen werden sichtbar (Rendering) ###
+            // Phase 6 (hydrosphere.md §7): das Drainage-Netz aus V9.43-b wird
+            // gerendert — See-Planes (per-Zelle-Quads auf der Füll-Höhe) +
+            // Fluss-Ribbon-Meshes (Quad-Streifen, Breite ∝ √A, der Flow steckt
+            // im per-Vertex-aFlow) + Wasserfall-Planes (V9.43-a-Material reuset,
+            // jetzt am Fluss-Klippen-Kreuz statt per-Chunk-Zufall). See + Fluss
+            // teilen das geteilte horizontale `_ensureHydroSurfaceMaterial`.
+            const voxelV943cResults = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
+                    out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
+                    out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
+                    out.hasSample = typeof r._hydroSampleRiverSurfaces === "function";
+                    if (!out.hasBuild || !out.hasSurfMat) return out;
+                    const sm = r._ensureHydroSurfaceMaterial();
+                    out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
+                    const su = (sm && sm.uniforms) || {};
+                    out.surfMatSharesUniforms =
+                        !!su.uDeep &&
+                        !!su.uShallow &&
+                        !!su.uFoam &&
+                        !!su.uSunDir &&
+                        !!su.uLight &&
+                        !!su.fogColor &&
+                        !!su.uTime;
+                    const hydro = r.state.hydrosphere;
+                    out.hydroReady = !!(hydro && hydro.ready);
+                    if (!out.hydroReady) return out;
+                    // V9.43-c — jeder Fluss-Punkt trägt voxelY (Voxel-Surface).
+                    out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
+                        rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
+                    );
+                    // _buildHydrosphereMeshes idempotent neu aufrufen
+                    r._buildHydrosphereMeshes();
+                    const meshes = r.state.hydrosphereMeshes;
+                    out.meshesArray = Array.isArray(meshes);
+                    if (out.meshesArray) {
+                        const lakes = meshes.filter((m) => m.userData && m.userData.hydroKind === "lake");
+                        const rivers = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
+                        const falls = meshes.filter((m) => m.userData && m.userData.hydroKind === "waterfall");
+                        out.lakeMeshCount = lakes.length;
+                        out.riverMeshCount = rivers.length;
+                        out.fallMeshCount = falls.length;
+                        out.countsMatch =
+                            lakes.length === hydro.lakes.length &&
+                            rivers.length === hydro.rivers.length &&
+                            falls.length === hydro.waterfalls.length;
+                        // See + Fluss nutzen das geteilte Surface-Material
+                        out.surfaceMeshesShareMat = [...lakes, ...rivers].every((m) => m.material === sm);
+                        // Wasserfall-Plane nutzt das V9.43-a-Material + PlaneGeometry
+                        out.fallsUseWaterfallMat =
+                            falls.length === 0 ||
+                            falls.every(
+                                (m) =>
+                                    m.material === r.state.waterfallMaterial &&
+                                    m.geometry &&
+                                    m.geometry.type === "PlaneGeometry"
+                            );
+                        // See-Plane sitzt auf der Füll-Höhe (lake.level)
+                        out.lakeOnLevel =
+                            lakes.length === 0 ||
+                            lakes.every((m, k) => {
+                                const lk = hydro.lakes[k];
+                                const py = m.geometry.attributes.position.array[1];
+                                return lk && Math.abs(py - (lk.level + 0.12)) < 0.5;
+                            });
+                        // Fluss-Ribbon trägt das aFlow-Attribut + wird stromab breiter
+                        out.ribbonHasFlow = true;
+                        out.ribbonWidens = true;
+                        for (const m of rivers) {
+                            const g = m.geometry;
+                            if (!g.attributes.aFlow) {
+                                out.ribbonHasFlow = false;
+                                break;
+                            }
+                            const pos = g.attributes.position.array;
+                            const vc = pos.length / 3;
+                            if (vc >= 4) {
+                                const sp0 = Math.hypot(pos[0] - pos[3], pos[2] - pos[5]);
+                                const li = (vc - 2) * 3;
+                                const lj = (vc - 1) * 3;
+                                const spN = Math.hypot(pos[li] - pos[lj], pos[li + 2] - pos[lj + 2]);
+                                if (spN < sp0 - 0.01) {
+                                    out.ribbonWidens = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // _disposeHydrosphereMeshes räumt die Liste
+                    r._disposeHydrosphereMeshes();
+                    out.disposeClears =
+                        Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
+                    // Rebuild — idempotent, baut wieder auf
+                    r._buildHydrosphereMeshes();
+                    out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV943cResults && !voxelV943cResults.error) {
+                const hc = voxelV943cResults;
+                check(
+                    "Voxel V9.43-c: _buildHydrosphereMeshes + _disposeHydrosphereMeshes existieren",
+                    hc.hasBuild && hc.hasDispose
+                );
+                check(
+                    "Voxel V9.43-c: _ensureHydroSurfaceMaterial + _hydroSampleRiverSurfaces existieren",
+                    hc.hasSurfMat && hc.hasSample
+                );
+                check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
+                check(
+                    "Voxel V9.43-c: das Wasser-Material teilt die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog)",
+                    hc.surfMatSharesUniforms
+                );
+                check(
+                    "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
+                    hc.riverPointsHaveVoxelY
+                );
+                check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
+                check(
+                    `Voxel V9.43-c: je ein Mesh pro See/Fluss/Wasserfall (${hc.lakeMeshCount}/${hc.riverMeshCount}/${hc.fallMeshCount})`,
+                    hc.countsMatch
+                );
+                check(
+                    "Voxel V9.43-c: See-Planes + Fluss-Ribbons nutzen das geteilte Wasser-Material",
+                    hc.surfaceMeshesShareMat
+                );
+                check(
+                    "Voxel V9.43-c: Wasserfall-Planes nutzen das V9.43-a-Material + PlaneGeometry",
+                    hc.fallsUseWaterfallMat
+                );
+                check("Voxel V9.43-c: See-Plane sitzt auf der Füll-Höhe (lake.level)", hc.lakeOnLevel);
+                check("Voxel V9.43-c: Fluss-Ribbon trägt das aFlow-Attribut (Flow-Ribbon)", hc.ribbonHasFlow);
+                check("Voxel V9.43-c: Fluss-Ribbon wird stromab breiter (hydraulische Geometrie)", hc.ribbonWidens);
+                check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
+                check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
             }
 
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
