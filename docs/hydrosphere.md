@@ -1,8 +1,9 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026, nach V9.43-a + Schöpfer-Browser-Test. Schöpfer-Wahl: **volles
-Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung
-des Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Die kanonische
+**Stand**: 21.05.2026 — **V9.43-b ✅ gebaut** (der Hydrosphären-Atlas, die Berechnung;
+siehe §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**. Dieses
+Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
+Phasen geschnitten. Offen: V9.43-c (Rendering), V9.43-d (Carven), V9.43-e (Klang). Die kanonische
 Versions-Historie lebt in `CLAUDE.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
 §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
@@ -248,7 +249,7 @@ Spieler-Edits nicht neu (ehrliche, dokumentierte Grenze, §10).
 Eine ~4-5-Session-Welle, in vier playtest-grüne Phasen geschnitten — jede für sich
 ausliefer­bar, jede vom Schöpfer-Browser-Auge prüfbar.
 
-### V9.43-b — Der Hydrosphären-Atlas (die Berechnung, keine Sicht)
+### V9.43-b — Der Hydrosphären-Atlas (die Berechnung, keine Sicht) ✅ (21.05.2026)
 Phasen 1-5 des Algorithmus: `_computeHydrosphere()` baut `state.hydrosphere` (Surface-
 Sampling → Priority-Flood → Flow-Direction → Flow-Accumulation → Netz-Extraktion). KEIN
 Rendering, KEIN Carven. Reine Daten — vollständig headless-prüfbar.
@@ -257,6 +258,23 @@ steigt monoton ab; ein Fluss endet am Meer oder in einem See; Flow-Accumulation 
 stromab monoton; ein See-Füll-Level liegt über dem Senken-Boden + unter der Überlauf-
 Höhe; jede Land-Zelle hat nach dem Filling einen definierten Abfluss; die Berechnung
 bleibt im Perf-Budget (< 500 ms, gemessen). *~1-2 Sessions.*
+
+**Geliefert (V9.43-b)**: `_computeHydrosphere()` als Orchestrator + acht `_hydro*`-Phasen-
+Methoden (`_hydroInit`/`_hydroBlur`/`_hydroMarkOcean`/`_hydroPriorityFlood`/
+`_hydroFlowDirection`/`_hydroAccumulate`/`_hydroExtractLakes`/`_hydroExtractRivers`/
+`_hydroExtractWaterfalls`). 12 Invarianten grün, Perf 17 ms, 6 Flüsse + 12 Seen.
+**Zwei Abweichungen vom Plan, an der echten Messung erzwungen** — beide ehrlich:
+(a) **Surface-Sampling nutzt `_terrainMacroSurfaceY`, nicht `_voxelSurfaceY`.** Der Plan
+§5 Phase 1 nannte `_voxelSurfaceY`; dessen 3D-Crags (λ~20 m) aliasen bei der 16-m-
+Abtastung zu 276 Mikro-Senken. Die Drainage sampelt jetzt die glatte 2D-Makro-Surface
+(`_terrainMacroSurfaceY`, aus `_terrainDensityAt` extrahiert — eine Quelle) + ein 3×3-Blur.
+Das ist die „Basis-Oberfläche" aus §1 Phase 1, treuer gelesen.
+(b) **`cell` ist 16 m, `dim` 128** (Plan-Schätzung: 8 m / 250²) — der Perf-Test entschied;
+ein 128²-Netz ist substanziell, V9.43-c kann nachtunen. **Plus eine nicht-geplante,
+nötige Phase 1.5**: `_hydroMarkOcean` — „Meer" ist nur die rand-verbundene Komponente der
+Unter-Meeresspiegel-Zellen (siehe §5 Phase 2: jede Senke als Auslass zu seeden ließ den
+Abfluss versickern, maxAccum 50). **0 Wasserfälle** in V9.43-b — die Makro-Surface ist
+glatt; die Wasserfall-Re-Verankerung gegen die echte Voxel-Surface ist V9.43-c (§7).
 
 ### V9.43-c — Flüsse + Seen werden sichtbar (Rendering)
 Phase 6: `_buildHydrosphereMeshes()` rendert See-Planes (zur Senke geformt) + Fluss-
