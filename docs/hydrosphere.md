@@ -1,10 +1,10 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ gebaut** (der
-Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer; siehe §9). Schöpfer-Wahl:
-**volles Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche
-Planung des Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: V9.43-d
-(Carven), V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
+**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ gebaut** (der
+Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten;
+siehe §8 + §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**. Dieses
+Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
+Phasen geschnitten. Offen: V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
 V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
 Versions-Historie lebt in `CLAUDE.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
 §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
@@ -220,25 +220,35 @@ das Shader-Fundament; sein Spawn-Pfad war ein ehrlicher Zwischenschritt.
 `_terrainDensityAt(x, y, z)` bekommt am Ende einen Carve-Term:
 ```
 let d = <bestehende Dichte-Logik>;
-if (state.hydrosphere && state.hydrosphere.ready) d -= _hydrosphereChannelCut(x, y, z);
+if (state.hydrosphere && state.hydrosphere.ready && !this._hydroComputing)
+    d -= _hydrosphereCarveAt(x, z);
 return d;
 ```
 
-`_hydrosphereChannelCut`: fragt über den `riverBuckets`-Spatial-Index die nächste
-Fluss-Polylinie ab — liegt (x,z) innerhalb `width/2`, wird im Oberflächen-Band ein
-U-Profil-Schnitt angewandt (Bett-Tiefe ~`D`, Ufer steigen sanft an). See-Senken
-analog (Boden auf `floorY` gesenkt). **O(1) amortisiert** dank Bucket-Grid — kritisch,
-weil `_terrainDensityAt` beim Meshing millionenfach gerufen wird.
+`_hydrosphereCarveAt` fragt über den `riverBuckets`-Bucket-Index das nächste
+Fluss-Segment ab + senkt im Fluss-Kanal die Dichte; See-Senken senkt ein bilinear
+interpoliertes Cut-Feld. **O(1) amortisiert** dank Bucket-Grid + zweier Early-Outs —
+kritisch, weil `_terrainDensityAt` beim Meshing millionenfach gerufen wird.
 
-**Zirkel-Freiheit**: während die Hydrosphäre berechnet wird, ist `state.hydrosphere`
-noch `null` → der Carve-Term ist 0 → `_voxelSurfaceY` sieht die Basis-Oberfläche. Erst
-nach vollständigem Bau wird `state.hydrosphere` zugewiesen. Worldgen-Ordnung:
-`waterLevel` → Hydrosphäre berechnen → `state.hydrosphere` setzen → Chunk-Streaming.
-Kein Flag, kein zweiter Sampler — die Reihenfolge IST die Trennung.
+**Geliefert (V9.43-d, 21.05.2026)** — drei Abweichungen vom Plan oben, ehrlich benannt:
 
-**Wasser-Niveau im Fluss**: der Carve senkt das Bett um `D`; die Wasser-Oberfläche (das
-Fluss-Ribbon-Mesh) sitzt ~`0.4·D` unter der Original-Oberfläche → das Wasser liegt in
-einer echten Furche, die Ufer (Original-Surface) ragen darüber. Ein echtes Fluss-Bett.
+(a) **Flachboden statt reines U-Profil.** Ein flaches Wasser-Ribbon über einem
+U-Profil-Bett sänke an seinen Rändern in die gewölbte Rinnen-Wand. Der Fluss-Kanal hat
+darum einen flachen Boden (volle Tiefe `D` bis zur halben Fluss-Breite, exakt so breit
+wie das Ribbon), dann eine smoothstep-Bank-Rampe (`bankW = D·1.4`). Bett-Tiefe
+`D = 1.4 + 0.16·width`. See-Becken werden auf `level − 8` gesenkt (`carveLakeBedDepth`).
+
+(b) **Zirkel-Freiheit über ein Flag, nicht über die Reihenfolge.** Der Plan hoffte „kein
+Flag — die Reihenfolge IST die Trennung". Das gilt nur beim ERSTEN Worldgen; ein
+Re-Compute (Welt-Regen, Test) hat `state.hydrosphere` gesetzt → der Carve läse die
+gecarvte Surface → Drift. `_computeHydrosphere` setzt darum ein transientes
+`this._hydroComputing` (try/finally); der Carve-Guard prüft `!this._hydroComputing`.
+
+(c) **Das Ribbon sampelt `_voxelSurfaceY` live.** Der Plan nahm an, das Ribbon folge
+automatisch; `_buildRiverRibbon` las aber den compute-zeitlich gespeicherten,
+un-gecarvten `point.voxelY`. Es sampelt jetzt `_voxelSurfaceY` LIVE (`_buildHydrosphere-
+Meshes` läuft nach `state.hydrosphere`, Carve aktiv) → das Ribbon sitzt an der gecarvten
+Surface + 0.18-Lift in der Furche, die un-gecarvten Ufer ragen darüber.
 
 **Spieler-Carven** (`voxel_carve`) bleibt eine separate lokale Edit-Schicht — das
 Fluss-Netz ist die natürliche Drainage der *generierten* Welt und rechnet bei
@@ -325,7 +335,7 @@ Seen sind schwimm-/tauchbar wie das Meer. Was V9.43-c.2 NICHT heilt: die Seen li
 weiter über dem Meer (Hydrologie) und wirken als flache Sheets statt als Wasser in
 gemuldeten Becken — das ist die un-gecarvte Surface, V9.43-d carvt die Becken-Furchen.
 
-### V9.43-d — Die Flüsse carven echte Betten
+### V9.43-d — Die Flüsse carven echte Betten ✅ (21.05.2026)
 Phase 7: `_terrainDensityAt` fragt die Hydrosphäre, senkt die Dichte im Fluss-Kanal +
 in See-Senken. Spatial-Index (`riverBuckets`). Worldgen-Ordnung verdrahtet. Das Wasser
 liegt jetzt in einer echten Rinne mit Ufern.
@@ -333,6 +343,15 @@ liegt jetzt in einer echten Rinne mit Ufern.
 die un-gecarvte Basis; das Fluss-Bett liegt unter den Ufern; der Carve ist während der
 Hydrosphären-Berechnung übersprungen (kein Zirkel); eine Welt ohne Hydrosphäre ist
 bit-identisch zu heute. *~1 Session.*
+
+**Geliefert (V9.43-d)**: `_hydrosphereCarveAt(x, z)` (der Carve-Term) +
+`_hydroBuildCarveIndex` (Bucket-Grid + See-Cut-Feld, gebaut in `_computeHydrosphere`).
+14 Invarianten grün, 3000 → 3014, Carve-Perf 50k Aufrufe in 5 ms. Drei Plan-Abweichungen
+in §8 „Geliefert" benannt (Flachboden statt U-Profil, `_hydroComputing`-Suppress-Flag
+statt Reihenfolge-Trennung, `_buildRiverRibbon` re-sampelt live). Ehrliche Grenze:
+gelegentliche 3D-Roughness-Crag-Inseln in grossen Seen (der Carve senkt die Makro-
+Surface, die `±~12`-Roughness-Bänder bleiben) — eine spätere `carveLakeBedDepth`-Tuning-
+Welle könnte sie heben.
 
 ### V9.43-e — Politur + Klang
 Vision §1.4: Fluss-Rauschen + Wasserfall-Donnern (positions-abhängige Audio-Schicht,
@@ -392,4 +411,6 @@ See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
   Render-Meshes), deterministisch + gut fundiert. Kein Re-Komplexifizieren — ein
   Wachstumsring auf dem Voxel-Stamm.
 
-**Nächster Schritt**: V9.43-b — der Hydrosphären-Atlas (Berechnung, headless-prüfbar).
+**Nächster Schritt**: V9.43-e — Politur + Klang (Fluss-Rauschen, Wasserfall-Donnern,
+See-Ufer-Schaum). V9.43-b/c/c.2/d sind gebaut. Plus die offene Netz-Qualitäts-Frage
+(kurze, see-zerstückelte Flüsse — §10) als eigene Welle.

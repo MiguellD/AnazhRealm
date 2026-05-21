@@ -11014,6 +11014,14 @@ class AnazhRealm {
             waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
             waterfallMinDrop: 6, // Mindest-Gesamtdrop in m für einen Wasserfall
             maxRiverPoints: 800, // Sicherheits-Cap je Fluss-Polylinie
+            // V9.43-d — der Carve: `_terrainDensityAt` senkt die Dichte im
+            // Fluss-Kanal + in See-Senken, der Chunk-Mesher produziert echte
+            // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
+            carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
+            carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
+            carveBankSlope: 1.4, // Bank-Rampe = Bett-Tiefe × dieser Faktor
+            carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
+            carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
         });
     }
 
@@ -13582,7 +13590,99 @@ class AnazhRealm {
                 }
             }
         }
+        // V9.43-d — der Hydrosphären-Carve: das Drainage-Netz senkt die
+        // Dichte im Fluss-Kanal + in See-Senken → der Mesher produziert echte
+        // Rinnen mit Ufern + gemuldete Becken. Zirkel-frei: `_hydroComputing`
+        // unterdrückt den Carve, während `_computeHydrosphere` selbst die
+        // Surface sampelt (sonst läse ein Re-Compute die gecarvte Surface —
+        // hydrosphere.md §8). Ohne Hydrosphäre bit-identisch zu vor V9.43-d.
+        const hydro = this.state.hydrosphere;
+        if (hydro && hydro.ready && !this._hydroComputing) {
+            d -= this._hydrosphereCarveAt(x, z);
+        }
         return d;
+    }
+
+    // V9.43-d — die Bett-Senkung an einer xz-Welt-Position (≥ 0; subtrahiert
+    // von der Dichte → senkt die Surface um genau diesen Betrag). Zwei
+    // Quellen: (1) der Fluss-Kanal — über den Bucket-Index die Segmente der
+    // Umgebung, je Segment der nächste Punkt + ein Flachboden-Profil (volle
+    // Tiefe bis zur halben Fluss-Breite, dann eine smoothstep-Bank-Rampe);
+    // (2) das See-Becken — ein vorberechnetes Cut-Feld, bilinear interpoliert
+    // (glatte ~16-m-Ufer-Rampe). MAX statt Summe (an einer Fluss-See-Mündung
+    // gewinnt der tiefere Schnitt — keine Über-Senkung). O(1) amortisiert:
+    // die zwei Early-Outs (leerer Bucket / `lakeNear==0`) machen die 99 % der
+    // Welt ohne Wasser zu ~6 Ops — `_terrainDensityAt` wird millionenfach
+    // beim Meshing gerufen.
+    _hydrosphereCarveAt(x, z) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return 0;
+        let cut = 0;
+        // --- Fluss-Kanal: nächstes Segment im Bucket ---
+        const rb = h.riverBuckets;
+        if (rb) {
+            const bs = h.bucketSize;
+            const bd = h.bucketsDim;
+            const bi = Math.floor((x - h.originX) / bs);
+            const bj = Math.floor((z - h.originZ) / bs);
+            if (bi >= 0 && bj >= 0 && bi < bd && bj < bd) {
+                const list = rb[bj * bd + bi];
+                if (list) {
+                    for (let s = 0; s < list.length; s++) {
+                        const seg = list[s];
+                        const ex = seg.bx - seg.ax;
+                        const ez = seg.bz - seg.az;
+                        const len2 = ex * ex + ez * ez || 1;
+                        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                        if (t < 0) t = 0;
+                        else if (t > 1) t = 1;
+                        const px = seg.ax + ex * t;
+                        const pz = seg.az + ez * t;
+                        const dist = Math.hypot(x - px, z - pz);
+                        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
+                        const D = seg.dA + (seg.dB - seg.dA) * t;
+                        const bankW = Math.max(2, D * AnazhRealm.HYDROSPHERE.carveBankSlope);
+                        let rc = 0;
+                        if (dist <= halfW) {
+                            rc = D; // Flachboden — so breit wie das Fluss-Ribbon
+                        } else if (dist < halfW + bankW) {
+                            const u = (dist - halfW) / bankW;
+                            rc = D * (1 - u * u * (3 - 2 * u)); // smoothstep-Bank
+                        }
+                        if (rc > cut) cut = rc;
+                    }
+                }
+            }
+        }
+        // --- See-Becken: bilineare Interpolation des Cut-Felds ---
+        const lc = h.lakeCutCell;
+        const ln = h.lakeNear;
+        if (lc && ln) {
+            const dim = h.dim;
+            const cell = h.cell;
+            const ci = Math.floor((x - h.originX) / cell);
+            const cj = Math.floor((z - h.originZ) / cell);
+            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim && ln[ci + cj * dim]) {
+                const cf = (x - h.originX) / cell - 0.5;
+                const gf = (z - h.originZ) / cell - 0.5;
+                const i0 = Math.floor(cf);
+                const j0 = Math.floor(gf);
+                const tx = cf - i0;
+                const tz = gf - j0;
+                const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
+                const i0c = cl(i0);
+                const i1c = cl(i0 + 1);
+                const j0c = cl(j0);
+                const j1c = cl(j0 + 1);
+                const v00 = lc[i0c + j0c * dim];
+                const v10 = lc[i1c + j0c * dim];
+                const v01 = lc[i0c + j1c * dim];
+                const v11 = lc[i1c + j1c * dim];
+                const lcut = (v00 * (1 - tx) + v10 * tx) * (1 - tz) + (v01 * (1 - tx) + v11 * tx) * tz;
+                if (lcut > cut) cut = lcut;
+            }
+        }
+        return cut;
     }
 
     // Surface Nets — ein 3D-Dichte-Feld zu einem glatten Mesh. Zwei Pässe:
@@ -14231,100 +14331,119 @@ class AnazhRealm {
     // greift der spätere V9.43-d-Carve-Term während des Baus nicht — kein
     // Zirkel: die Surface wird un-gecarvt gesampelt).
     _computeHydrosphere() {
-        const ctx = this._hydroInit();
-        this._hydroMarkOcean(ctx);
-        this._hydroPriorityFlood(ctx);
-        this._hydroFlowDirection(ctx);
-        this._hydroAccumulate(ctx);
-        const lakes = this._hydroExtractLakes(ctx);
-        const rivers = this._hydroExtractRivers(ctx);
-        // V9.43-c — jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe
-        // (`voxelY`). Die Drainage routet auf der glatten Makro-Surface (§9
-        // V9.43-b), aber Wasserfälle leben an den echten Klippen der 3D-Voxel-
-        // Surface; der Render-Layer hängt das Fluss-Ribbon ans Voxel-Relief.
-        this._hydroSampleRiverSurfaces(rivers);
-        const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
-        // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
-        // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
-        // es; undrainedLand > 0 wäre ein Algorithmus-Bug.
-        const { dim, surf, waterLevel, flowTo, lakeOf, isOcean } = ctx;
-        let undrainedLand = 0;
-        let landCells = 0;
-        let lakeCells = 0;
-        let seaCells = 0;
-        let surfMin = Infinity;
-        let surfMax = -Infinity;
-        for (let idx = 0; idx < dim * dim; idx++) {
-            const s = surf[idx];
-            if (s < surfMin) surfMin = s;
-            if (s > surfMax) surfMax = s;
-            if (lakeOf[idx] >= 0) lakeCells++;
-            if (isOcean[idx]) {
-                seaCells++;
-                continue;
+        // V9.43-d — der Carve darf NICHT in die eigene Berechnung leiten: ein
+        // Re-Compute (Welt-Regen, Test) hätte ein gesetztes `state.hydrosphere`,
+        // und `_voxelSurfaceY` läse dann die GECARVTE Surface → Zirkel. Das
+        // transiente Flag unterdrückt den Carve für die Dauer des Baus
+        // (try/finally — auch bei einem Fehler sauber zurückgesetzt). Beim
+        // allerersten Worldgen ist `state.hydrosphere` ohnehin noch null.
+        this._hydroComputing = true;
+        try {
+            const ctx = this._hydroInit();
+            this._hydroMarkOcean(ctx);
+            this._hydroPriorityFlood(ctx);
+            this._hydroFlowDirection(ctx);
+            this._hydroAccumulate(ctx);
+            const lakes = this._hydroExtractLakes(ctx);
+            const rivers = this._hydroExtractRivers(ctx);
+            // V9.43-c — jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe
+            // (`voxelY`). Die Drainage routet auf der glatten Makro-Surface (§9
+            // V9.43-b), aber Wasserfälle leben an den echten Klippen der 3D-Voxel-
+            // Surface; der Render-Layer hängt das Fluss-Ribbon ans Voxel-Relief.
+            this._hydroSampleRiverSurfaces(rivers);
+            const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
+            // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
+            // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
+            // es; undrainedLand > 0 wäre ein Algorithmus-Bug.
+            const { dim, surf, waterLevel, flowTo, lakeOf, isOcean } = ctx;
+            let undrainedLand = 0;
+            let landCells = 0;
+            let lakeCells = 0;
+            let seaCells = 0;
+            let surfMin = Infinity;
+            let surfMax = -Infinity;
+            for (let idx = 0; idx < dim * dim; idx++) {
+                const s = surf[idx];
+                if (s < surfMin) surfMin = s;
+                if (s > surfMax) surfMax = s;
+                if (lakeOf[idx] >= 0) lakeCells++;
+                if (isOcean[idx]) {
+                    seaCells++;
+                    continue;
+                }
+                const i = idx % dim;
+                const j = (idx / dim) | 0;
+                if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
+                landCells++;
+                if (flowTo[idx] < 0) undrainedLand++;
             }
-            const i = idx % dim;
-            const j = (idx / dim) | 0;
-            if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
-            landCells++;
-            if (flowTo[idx] < 0) undrainedLand++;
-        }
-        // V9.43-c-Diagnostik: das steilste Fluss-Segment der echten Voxel-
-        // Surface + Netz-Vermessung (Fluss-Längen, See-Grössen). `waterfall-
-        // Slope` wird hieran getunt; die Fluss-Längen zeigen, ob das Netz
-        // echte Flüsse trägt oder ein See-zerstückelter Pfützen-Chain ist.
-        let lakeCellsMax = 0;
-        for (let li = 0; li < lakes.length; li++) {
-            const c = lakes[li].cells ? lakes[li].cells.length : 0;
-            if (c > lakeCellsMax) lakeCellsMax = c;
-        }
-        let riverMaxSlope = 0;
-        let riverMaxDrop = 0;
-        let riverPointsTotal = 0;
-        let riverLenMax = 0;
-        for (let ri = 0; ri < rivers.length; ri++) {
-            const pts = rivers[ri].points;
-            riverPointsTotal += pts.length;
-            if (pts.length > riverLenMax) riverLenMax = pts.length;
-            for (let k = 0; k + 1 < pts.length; k++) {
-                const a = pts[k];
-                const b = pts[k + 1];
-                const ay = typeof a.voxelY === "number" ? a.voxelY : a.y;
-                const by = typeof b.voxelY === "number" ? b.voxelY : b.y;
-                const drop = ay - by;
-                if (drop <= 0) continue;
-                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
-                if (drop / horiz > riverMaxSlope) riverMaxSlope = drop / horiz;
-                if (drop > riverMaxDrop) riverMaxDrop = drop;
+            // V9.43-c-Diagnostik: das steilste Fluss-Segment der echten Voxel-
+            // Surface + Netz-Vermessung (Fluss-Längen, See-Grössen). `waterfall-
+            // Slope` wird hieran getunt; die Fluss-Längen zeigen, ob das Netz
+            // echte Flüsse trägt oder ein See-zerstückelter Pfützen-Chain ist.
+            let lakeCellsMax = 0;
+            for (let li = 0; li < lakes.length; li++) {
+                const c = lakes[li].cells ? lakes[li].cells.length : 0;
+                if (c > lakeCellsMax) lakeCellsMax = c;
             }
+            let riverMaxSlope = 0;
+            let riverMaxDrop = 0;
+            let riverPointsTotal = 0;
+            let riverLenMax = 0;
+            for (let ri = 0; ri < rivers.length; ri++) {
+                const pts = rivers[ri].points;
+                riverPointsTotal += pts.length;
+                if (pts.length > riverLenMax) riverLenMax = pts.length;
+                for (let k = 0; k + 1 < pts.length; k++) {
+                    const a = pts[k];
+                    const b = pts[k + 1];
+                    const ay = typeof a.voxelY === "number" ? a.voxelY : a.y;
+                    const by = typeof b.voxelY === "number" ? b.voxelY : b.y;
+                    const drop = ay - by;
+                    if (drop <= 0) continue;
+                    const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
+                    if (drop / horiz > riverMaxSlope) riverMaxSlope = drop / horiz;
+                    if (drop > riverMaxDrop) riverMaxDrop = drop;
+                }
+            }
+            // V9.43-d — den Carve-Index aus dem fertigen Netz bauen (Fluss-Bucket-
+            // Grid + See-Cut-Feld); `_terrainDensityAt` liest ihn beim Meshen.
+            const carve = this._hydroBuildCarveIndex(ctx, rivers, lakes);
+            return {
+                ready: true,
+                originX: ctx.originX,
+                originZ: ctx.originZ,
+                size: ctx.size,
+                cell: ctx.cell,
+                dim: ctx.dim,
+                rivers,
+                lakes,
+                waterfalls,
+                riverBuckets: carve.riverBuckets,
+                bucketSize: carve.bucketSize,
+                bucketsDim: carve.bucketsDim,
+                lakeCutCell: carve.lakeCutCell,
+                lakeNear: carve.lakeNear,
+                stats: {
+                    cells: dim * dim,
+                    landCells,
+                    lakeCells,
+                    seaCells,
+                    undrainedLand,
+                    maxAccum: Math.round(ctx.maxAccum),
+                    waterLevel: Math.round(waterLevel),
+                    surfMin: Math.round(surfMin),
+                    surfMax: Math.round(surfMax),
+                    riverMaxSlope: Math.round(riverMaxSlope * 100) / 100,
+                    riverMaxDrop: Math.round(riverMaxDrop * 10) / 10,
+                    riverPointsTotal,
+                    riverLenMax,
+                    lakeCellsMax,
+                },
+            };
+        } finally {
+            this._hydroComputing = false;
         }
-        return {
-            ready: true,
-            originX: ctx.originX,
-            originZ: ctx.originZ,
-            size: ctx.size,
-            cell: ctx.cell,
-            dim: ctx.dim,
-            rivers,
-            lakes,
-            waterfalls,
-            stats: {
-                cells: dim * dim,
-                landCells,
-                lakeCells,
-                seaCells,
-                undrainedLand,
-                maxAccum: Math.round(ctx.maxAccum),
-                waterLevel: Math.round(waterLevel),
-                surfMin: Math.round(surfMin),
-                surfMax: Math.round(surfMax),
-                riverMaxSlope: Math.round(riverMaxSlope * 100) / 100,
-                riverMaxDrop: Math.round(riverMaxDrop * 10) / 10,
-                riverPointsTotal,
-                riverLenMax,
-                lakeCellsMax,
-            },
-        };
     }
 
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`
@@ -14865,6 +14984,85 @@ class AnazhRealm {
         return waterfalls;
     }
 
+    // V9.43-d — der Carve-Index. Aus dem fertigen Netz (Flüsse + Seen) zwei
+    // Lookup-Strukturen, die `_hydrosphereCarveAt` O(1) machen: (1) ein
+    // Fluss-Bucket-Grid — jedes Fluss-Segment wird in alle Buckets eingetragen,
+    // die seine um die Kanal-Reichweite erweiterte Bounding-Box berührt; eine
+    // Carve-Abfrage liest einen Bucket. (2) ein See-Cut-Feld `lakeCutCell`
+    // (je Region-Zelle die Bett-Senkung, vorberechnet aus `ctx.surf`) + die
+    // dilatierte Maske `lakeNear` (Early-Out: kein See in der 3×3-Nachbarschaft
+    // → die bilineare Abfrage entfällt). Pure Daten — kein `_terrainDensityAt`-
+    // Aufruf, kein Zirkel.
+    _hydroBuildCarveIndex(ctx, rivers, lakes) {
+        const HC = AnazhRealm.HYDROSPHERE;
+        const { dim, originX, originZ, size, surf } = ctx;
+        const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
+        // --- Fluss-Bucket-Grid ---
+        const bucketSize = HC.carveBucketSize;
+        const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
+        const riverBuckets = new Array(bucketsDim * bucketsDim);
+        const addSeg = (seg) => {
+            const reach = Math.max(seg.hwA, seg.hwB) + Math.max(2, Math.max(seg.dA, seg.dB) * HC.carveBankSlope);
+            let bi0 = Math.floor((Math.min(seg.ax, seg.bx) - reach - originX) / bucketSize);
+            let bi1 = Math.floor((Math.max(seg.ax, seg.bx) + reach - originX) / bucketSize);
+            let bj0 = Math.floor((Math.min(seg.az, seg.bz) - reach - originZ) / bucketSize);
+            let bj1 = Math.floor((Math.max(seg.az, seg.bz) + reach - originZ) / bucketSize);
+            if (bi0 < 0) bi0 = 0;
+            if (bj0 < 0) bj0 = 0;
+            if (bi1 >= bucketsDim) bi1 = bucketsDim - 1;
+            if (bj1 >= bucketsDim) bj1 = bucketsDim - 1;
+            for (let bj = bj0; bj <= bj1; bj++) {
+                for (let bi = bi0; bi <= bi1; bi++) {
+                    const k = bj * bucketsDim + bi;
+                    if (!riverBuckets[k]) riverBuckets[k] = [];
+                    riverBuckets[k].push(seg);
+                }
+            }
+        };
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                addSeg({
+                    ax: a.x,
+                    az: a.z,
+                    bx: b.x,
+                    bz: b.z,
+                    hwA: Math.max(1, (a.width || HC.widthMin) * 0.5),
+                    hwB: Math.max(1, (b.width || HC.widthMin) * 0.5),
+                    dA: depthFor(a.width),
+                    dB: depthFor(b.width),
+                });
+            }
+        }
+        // --- See-Cut-Feld + dilatierte Nähe-Maske ---
+        const n = dim * dim;
+        const lakeCutCell = new Float32Array(n);
+        const lakeNear = new Uint8Array(n);
+        for (let li = 0; li < lakes.length; li++) {
+            const lake = lakes[li];
+            const targetFloor = lake.level - HC.carveLakeBedDepth;
+            const cells = lake.cells || [];
+            for (let c = 0; c < cells.length; c++) {
+                const idx = cells[c];
+                const cutv = surf[idx] - targetFloor;
+                lakeCutCell[idx] = cutv > 0 ? cutv : 0;
+                const ci = idx % dim;
+                const cj = (idx / dim) | 0;
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        const ni = ci + di;
+                        const nj = cj + dj;
+                        if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                        lakeNear[ni + nj * dim] = 1;
+                    }
+                }
+            }
+        }
+        return { riverBuckets, bucketSize, bucketsDim, lakeCutCell, lakeNear };
+    }
+
     // === V9.43-c — die Hydrosphäre wird sichtbar ==========================
     // Phase 6 (docs/hydrosphere.md §7): das Drainage-Netz aus V9.43-b
     // (`state.hydrosphere`) wird gerendert — Fluss-Ribbons, See-Planes,
@@ -14874,9 +15072,9 @@ class AnazhRealm {
     // Material, fließende Flüsse + stille Seen); der Wasserfall reuset das
     // V9.43-a-`_ensureWaterfallMaterial` (vertikale Flow-Plane). Alle drei
     // Materialien werden von `_applyDayNightToScene` mit derselben Sonne/Fog
-    // gespeist. Kein Carven — V9.43-c rendert auf der un-gecarvten Surface;
-    // V9.43-d senkt die Betten, die Render-Höhe (`_voxelSurfaceY`) folgt
-    // dann automatisch in die Furche.
+    // gespeist. V9.43-d carvt die Betten — diese Methode läuft NACH
+    // `state.hydrosphere` (Carve aktiv), `_buildRiverRibbon` sampelt
+    // `_voxelSurfaceY` live → die Fluss-Ribbons sitzen in der gecarvten Furche.
     _buildHydrosphereMeshes() {
         if (!this.state.scene || typeof THREE === "undefined") return;
         const hydro = this.state.hydrosphere;
@@ -15026,19 +15224,22 @@ class AnazhRealm {
 
     // Ein Fluss-Ribbon: ein Quad-Streifen entlang der Polylinie, Breite ∝ √A
     // (hydraulische Geometrie, aus den Punkt-`width`-Werten). Die Höhe folgt
-    // der ECHTEN Voxel-Surface (`point.voxelY`), geglättet + strikt fallend
-    // geklemmt (das Wasser hugt den Boden + fließt nie bergauf). V9.43-d
-    // senkt die Betten — `voxelY` an der Fluss-Mitte fällt dann, das Ribbon
-    // sitzt automatisch in der Furche. Jeder Vertex trägt `aFlow` = die
-    // Gefälle-Tangente → der Shader scrollt den Schaum stromab.
+    // der ECHTEN Voxel-Surface, geglättet + strikt fallend geklemmt (das
+    // Wasser hugt den Boden + fließt nie bergauf). V9.43-d: `_buildHydro-
+    // sphereMeshes` läuft NACH `state.hydrosphere` → der Carve ist aktiv; das
+    // Ribbon sampelt `_voxelSurfaceY` LIVE (nicht den compute-zeitlich
+    // gespeicherten, un-gecarvten `point.voxelY`) → es sitzt automatisch in
+    // der gecarvten Furche. Jeder Vertex trägt `aFlow` = die Gefälle-Tangente
+    // → der Shader scrollt den Schaum stromab.
     _buildRiverRibbon(river, mat, mouthY) {
         const pts = river.points;
         if (!Array.isArray(pts) || pts.length < 2) return null;
         const n = pts.length;
-        // Render-Höhe: Voxel-Surface, geglättet, strikt fallend, kleiner Lift.
+        // Render-Höhe: Voxel-Surface (live re-sampled — V9.43-d-Carve aktiv),
+        // geglättet, strikt fallend, kleiner Lift.
         const ry = new Float64Array(n);
         for (let i = 0; i < n; i++) {
-            const v = pts[i].voxelY;
+            const v = this._voxelSurfaceY(pts[i].x, pts[i].z);
             ry[i] = typeof v === "number" && Number.isFinite(v) ? v : pts[i].y;
         }
         for (let pass = 0; pass < 3; pass++) {
