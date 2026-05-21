@@ -9079,18 +9079,16 @@ class AnazhRealm {
                     sourceBlueprint: t.sourceBlueprint || null,
                 }));
             // Eigene Baupläne ebenfalls — sie sind Schöpfer-Wissen, kein
-            // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch).
+            // Welt-Erlebnis. Hotbar bleibt leer (Welt-spezifisch). V9.44-a:
+            // über _serializeBlueprint. Vorher trug dieser Pfad NUR
+            // name/label/parts/connections + role:"tool" — Portal-Rolle +
+            // W13-Signatur gingen bei „Person übernehmen" still verloren
+            // (die V8.59-Bug-Klasse, hier ehrlich mitgeheilt: ein vom
+            // Schöpfer gebautes Portal / signiertes Werk reist jetzt in die
+            // neue Welt mit).
             snap.blueprints = Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => ({
-                    name: bp.name,
-                    label: bp.label || bp.name,
-                    parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
-                    connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
-                    ...(bp.role === "tool" && bp.toolMeta
-                        ? { role: "tool", toolMeta: { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass } }
-                        : {}),
-                }));
+                .map((bp) => this._serializeBlueprint(bp));
         }
         return snap;
     }
@@ -14703,6 +14701,149 @@ class AnazhRealm {
     }
 
     // ### Persistenz ###
+
+    // V9.44-a — Persistenz-Schema vereinheitlichen. _serializeBlueprint +
+    // _deserializeBlueprint sind die EINE Quelle des persistenten Bauplan-
+    // Feld-Satzes. Vor V9.44-a kopierten buildStateSnapshot UND loadState
+    // UND _buildEmptyWorldSnapshot den Feld-Satz hand-getippt an drei weit
+    // auseinanderliegenden Stellen — V8.59 war ein Bug genau hier (portalMeta
+    // fehlte im loadState-Restore-Pfad, ein geholtes Portal verlor beim
+    // Reload seine Ausrichtung). Der inheritPlayer-Pfad in
+    // _buildEmptyWorldSnapshot war noch weiter gedriftet: er trug NUR
+    // name/label/parts/connections + role:"tool" — Portal-Rolle + W13-
+    // Signatur gingen bei „Person übernehmen" still verloren. Jetzt ist
+    // jede persistente Bauplan-Eigenschaft ein Ein-Stellen-Edit. Spiegelt
+    // das erprobte _serializeCreature/_restoreCreatureFromSnapshot-Paar.
+    //
+    // Serialisiert einen Bauplan in ein JSON-taugliches Objekt. Reine
+    // Transformation (liest nur bp.*); der Aufrufer filtert die Built-ins
+    // (sie entstehen je Init aus _defaultBlueprints()).
+    _serializeBlueprint(bp) {
+        const out = {
+            name: bp.name,
+            label: bp.label || bp.name,
+            parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+            connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
+        };
+        if (bp.role === "tool" && bp.toolMeta) {
+            out.role = "tool";
+            out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
+        }
+        // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel) müssen
+        // mitreisen. Ohne das verlöre ein über die Bibliothek geholtes
+        // Portal beim Reload seine Ausrichtung — role + portalMeta fehlten,
+        // es fiele auf die Skelett-Welt zurück und der welt_portal-Klon
+        // träfe wieder _isMoveable (der V8.51-„Portal klebt am Körper"-Bug).
+        // roleManual sichert, dass die Rolle nicht von der Emergenz
+        // überschrieben wird.
+        if (bp.role === "portal" && bp.portalMeta) {
+            out.role = "portal";
+            if (bp.roleManual) out.roleManual = true;
+            out.portalMeta = {
+                world: bp.portalMeta.world,
+                label: bp.portalMeta.label,
+                dsl: Array.isArray(bp.portalMeta.dsl) ? bp.portalMeta.dsl.slice() : null,
+            };
+            // KI-Übersetzer Phase 2 — die translatedWorldId muss mitreisen,
+            // sonst verlöre ein geholtes Übersetzer-Portal beim Reload sein
+            // Szenen-Ziel (V8.59-Lehre).
+            if (bp.portalMeta.translatedWorldId) {
+                out.portalMeta.translatedWorldId = bp.portalMeta.translatedWorldId;
+            }
+            // V8.70 — die Vertrauensstufe reist mit, sonst verlöre ein
+            // geholtes Untrusted-Portal beim Reload seine null-origin-Sandbox.
+            if (bp.portalMeta.trust) out.portalMeta.trust = bp.portalMeta.trust;
+            // W17 Phase A — die Multiplayer-Marke reist mit, sonst verlöre
+            // ein Multiplayer-Portal beim Reload den Transport-Shim.
+            if (bp.portalMeta.multiplayer === true) out.portalMeta.multiplayer = true;
+            // W17 Phase B-JS-Compute — der Server-Modus reist mit, sonst
+            // verlöre ein js-compute-Portal beim Reload den Compute-Host-Pfad.
+            if (bp.portalMeta.serverMode === "js-compute") {
+                out.portalMeta.serverMode = "js-compute";
+            }
+        }
+        // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan (Save,
+        // Welt-Tor-Export, Recipe-Import, Fusion). Echtheit prüft
+        // verifyBlueprintSignature beim Anzeigen.
+        if (bp.signature && bp.authorPubKey) {
+            out.signature = bp.signature;
+            out.authorPubKey = bp.authorPubKey;
+            if (bp.signedHash) out.signedHash = bp.signedHash;
+            if (bp.signedAt) out.signedAt = bp.signedAt;
+        }
+        return out;
+    }
+
+    // Wiederherstellung: nimmt ein serialisiertes Bauplan-Objekt (aus dem
+    // Save / Welt-Tor / Mesh) und baut den lebenden Bauplan-Eintrag.
+    // Migriert alte Parts (kein material → „stein", keine opChain →
+    // Default-Kette), sanitisiert die Verbindungen, lässt portalMeta durch
+    // _sanitizePortalMeta (kein fremdes Origin schmuggelbar) und prüft die
+    // Signatur strukturell. Liefert den Bauplan-Eintrag (builtIn:false)
+    // oder null bei Müll-Daten. Der Aufrufer entscheidet die Registrierungs-
+    // Politik (Built-in-Kollision skippen).
+    _deserializeBlueprint(data) {
+        if (!data || typeof data.name !== "string" || !Array.isArray(data.parts)) return null;
+        // Welle 4 Phase 1+3 — Migration alter Parts: kein material → Default
+        // „stein", keine opChain → Default-Kette. Sicheres Default, keine
+        // Datenverluste.
+        const migratedParts = data.parts.map((p) => {
+            if (!p || typeof p !== "object") return p;
+            const out = { ...p };
+            if (typeof out.material !== "string" || !this.state.materials[out.material]) {
+                out.material = "stein";
+            }
+            if (!Array.isArray(out.opChain) || out.opChain.length === 0) {
+                out.opChain = this._defaultPartOpChain();
+            }
+            return out;
+        });
+        // Welle 5 A — connections sanitisieren beim Load.
+        const validConnections = this.validateBlueprintConnections(data.connections || [], migratedParts.length);
+        const restored = {
+            name: data.name,
+            label: data.label || data.name,
+            builtIn: false,
+            parts: migratedParts,
+            connections: validConnections,
+        };
+        // Welle 5 C — role + toolMeta beim Load wiederherstellen.
+        if (
+            data.role === "tool" &&
+            data.toolMeta &&
+            AnazhRealm.TOOL_OP_CLASSES.has(data.toolMeta.opClass) &&
+            AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(data.toolMeta.opName || ""))
+        ) {
+            restored.role = "tool";
+            restored.toolMeta = { opName: data.toolMeta.opName, opClass: data.toolMeta.opClass };
+        }
+        // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
+        // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad) —
+        // ein manipulierter Save kann so kein fremdes Origin ins Portal-
+        // iframe schmuggeln.
+        if (data.role === "portal" && data.portalMeta && typeof data.portalMeta === "object") {
+            restored.role = "portal";
+            if (data.roleManual === true) restored.roleManual = true;
+            restored.portalMeta = this._sanitizePortalMeta(data.portalMeta, restored.label);
+        }
+        // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
+        // plausibel prüfen (Hex-Form); die echte Verifikation macht
+        // verifyBlueprintSignature beim Anzeigen — eine kaputte oder
+        // gefälschte Signatur wird dort als „forged" sichtbar.
+        if (
+            typeof data.signature === "string" &&
+            /^[0-9a-f]{2,256}$/i.test(data.signature) &&
+            typeof data.authorPubKey === "string" &&
+            /^[0-9a-f]{64}$/i.test(data.authorPubKey)
+        ) {
+            restored.signature = data.signature;
+            restored.authorPubKey = data.authorPubKey;
+            if (typeof data.signedHash === "string") restored.signedHash = data.signedHash;
+            if (typeof data.signedAt === "number") restored.signedAt = data.signedAt;
+        }
+        return restored;
+    }
+
     buildStateSnapshot() {
         const knowledgeBase = this.state.knowledgeBase.slice(-200);
         return {
@@ -14788,67 +14929,12 @@ class AnazhRealm {
             })),
             // Ring 6.4 — eigene Baupläne (nicht built-in) persistieren. Die
             // Built-ins werden beim Init aus _defaultBlueprints() erzeugt;
-            // wir speichern nur, was der Spieler dazugefügt hat.
+            // wir speichern nur, was der Spieler dazugefügt hat. V9.44-a:
+            // der persistente Feld-Satz lebt in _serializeBlueprint — eine
+            // Quelle für alle drei Snapshot-Pfade.
             blueprints: Object.values(this.state.blueprints || {})
                 .filter((bp) => bp && !bp.builtIn)
-                .map((bp) => {
-                    const out = {
-                        name: bp.name,
-                        label: bp.label || bp.name,
-                        parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
-                        connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
-                    };
-                    if (bp.role === "tool" && bp.toolMeta) {
-                        out.role = "tool";
-                        out.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
-                    }
-                    // W14 — Portal-Bauplan: Rolle + portalMeta (das Welt-Ziel)
-                    // müssen mitreisen. Ohne das verlöre ein über die Bibliothek
-                    // geholtes Portal beim Reload seine Ausrichtung — role +
-                    // portalMeta fehlten, es fiele auf die Skelett-Welt zurück
-                    // und der welt_portal-Klon träfe wieder _isMoveable (der
-                    // V8.51-„Portal klebt am Körper"-Bug). roleManual sichert,
-                    // dass die Rolle nicht von der Emergenz überschrieben wird.
-                    if (bp.role === "portal" && bp.portalMeta) {
-                        out.role = "portal";
-                        if (bp.roleManual) out.roleManual = true;
-                        out.portalMeta = {
-                            world: bp.portalMeta.world,
-                            label: bp.portalMeta.label,
-                            dsl: Array.isArray(bp.portalMeta.dsl) ? bp.portalMeta.dsl.slice() : null,
-                        };
-                        // KI-Übersetzer Phase 2 — die translatedWorldId muss
-                        // mitreisen, sonst verlöre ein geholtes Übersetzer-
-                        // Portal beim Reload sein Szenen-Ziel (V8.59-Lehre).
-                        if (bp.portalMeta.translatedWorldId) {
-                            out.portalMeta.translatedWorldId = bp.portalMeta.translatedWorldId;
-                        }
-                        // V8.70 — die Vertrauensstufe reist mit, sonst verlöre
-                        // ein geholtes Untrusted-Portal beim Reload seine
-                        // null-origin-Sandbox.
-                        if (bp.portalMeta.trust) out.portalMeta.trust = bp.portalMeta.trust;
-                        // W17 Phase A — die Multiplayer-Marke reist mit, sonst
-                        // verlöre ein Multiplayer-Portal beim Reload den
-                        // Transport-Shim (V8.59-Lehre: der feste Feld-Satz).
-                        if (bp.portalMeta.multiplayer === true) out.portalMeta.multiplayer = true;
-                        // W17 Phase B-JS-Compute — der Server-Modus reist mit,
-                        // sonst verlöre ein js-compute-Portal beim Reload den
-                        // Compute-Host-Pfad (es fiele auf relay zurück).
-                        if (bp.portalMeta.serverMode === "js-compute") {
-                            out.portalMeta.serverMode = "js-compute";
-                        }
-                    }
-                    // W13 Phase 2 — die Bauplan-Signatur reist mit dem Bauplan
-                    // (Save, Welt-Tor-Export, Recipe-Import, Fusion). Echtheit
-                    // prüft verifyBlueprintSignature beim Anzeigen.
-                    if (bp.signature && bp.authorPubKey) {
-                        out.signature = bp.signature;
-                        out.authorPubKey = bp.authorPubKey;
-                        if (bp.signedHash) out.signedHash = bp.signedHash;
-                        if (bp.signedAt) out.signedAt = bp.signedAt;
-                    }
-                    return out;
-                }),
+                .map((bp) => this._serializeBlueprint(bp)),
             // Welle 5 C — eigene Werkzeuge (aus registrierten Bauplänen)
             // persistieren. Starter-Werkzeuge entstehen aus _defaultTools()
             // bei jedem Init, deshalb nur eigene speichern.
@@ -16916,69 +17002,15 @@ class AnazhRealm {
         // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
         // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
         if (Array.isArray(state.blueprints)) {
+            // V9.44-a — der Restore-Feld-Satz (Part-Migration, Connection-
+            // Sanitizing, portalMeta-Sanitizer, Signatur-Prüfung) lebt in
+            // _deserializeBlueprint. Hier bleibt nur die Registrierungs-
+            // Politik: einen Built-in-Namen NICHT überschreiben.
             for (const bp of state.blueprints) {
-                if (!bp || typeof bp.name !== "string" || !Array.isArray(bp.parts)) continue;
-                // Built-in nicht überschreiben — sicherheitshalber prefixen
-                // oder skip wenn Name kollidiert.
+                if (!bp || typeof bp.name !== "string") continue;
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
-                // Welle 4 Phase 1+3 — Migration alter Parts: kein material →
-                // Default „stein", keine opChain → Default-Kette. Sicheres
-                // Default, keine Datenverluste.
-                const migratedParts = bp.parts.map((p) => {
-                    if (!p || typeof p !== "object") return p;
-                    const out = { ...p };
-                    if (typeof out.material !== "string" || !this.state.materials[out.material]) {
-                        out.material = "stein";
-                    }
-                    if (!Array.isArray(out.opChain) || out.opChain.length === 0) {
-                        out.opChain = this._defaultPartOpChain();
-                    }
-                    return out;
-                });
-                // Welle 5 A — connections sanitisieren beim Load.
-                const validConnections = this.validateBlueprintConnections(bp.connections || [], migratedParts.length);
-                const restored = {
-                    name: bp.name,
-                    label: bp.label || bp.name,
-                    builtIn: false,
-                    parts: migratedParts,
-                    connections: validConnections,
-                };
-                // Welle 5 C — role + toolMeta beim Load wiederherstellen.
-                if (
-                    bp.role === "tool" &&
-                    bp.toolMeta &&
-                    AnazhRealm.TOOL_OP_CLASSES.has(bp.toolMeta.opClass) &&
-                    AnazhRealm.TOOL_OP_NAME_PATTERN.test(String(bp.toolMeta.opName || ""))
-                ) {
-                    restored.role = "tool";
-                    restored.toolMeta = { opName: bp.toolMeta.opName, opClass: bp.toolMeta.opClass };
-                }
-                // W14 — Portal-Bauplan wiederherstellen. portalMeta läuft durch
-                // _sanitizePortalMeta (erzwingt einen same-origin worlds/-Pfad)
-                // — ein manipulierter Save kann so kein fremdes Origin ins
-                // Portal-iframe schmuggeln.
-                if (bp.role === "portal" && bp.portalMeta && typeof bp.portalMeta === "object") {
-                    restored.role = "portal";
-                    if (bp.roleManual === true) restored.roleManual = true;
-                    restored.portalMeta = this._sanitizePortalMeta(bp.portalMeta, restored.label);
-                }
-                // W13 Phase 2 — Bauplan-Signatur wiederherstellen. Strukturell
-                // plausibel prüfen (Hex-Form); die echte Verifikation macht
-                // verifyBlueprintSignature beim Anzeigen — eine kaputte oder
-                // gefälschte Signatur wird dort als „forged" sichtbar.
-                if (
-                    typeof bp.signature === "string" &&
-                    /^[0-9a-f]{2,256}$/i.test(bp.signature) &&
-                    typeof bp.authorPubKey === "string" &&
-                    /^[0-9a-f]{64}$/i.test(bp.authorPubKey)
-                ) {
-                    restored.signature = bp.signature;
-                    restored.authorPubKey = bp.authorPubKey;
-                    if (typeof bp.signedHash === "string") restored.signedHash = bp.signedHash;
-                    if (typeof bp.signedAt === "number") restored.signedAt = bp.signedAt;
-                }
-                this.state.blueprints[bp.name] = restored;
+                const restored = this._deserializeBlueprint(bp);
+                if (restored) this.state.blueprints[restored.name] = restored;
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
         }
