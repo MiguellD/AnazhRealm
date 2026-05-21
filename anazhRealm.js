@@ -2021,14 +2021,11 @@ class AnazhRealm {
                 this.state.jumpPower = c(value, 5, 40);
             },
             player_speed: ([value]) => {
-                // Schöpfer-Bug-Fund 13.05.2026: player_speed setzte nur
-                // state.speed, NICHT state.sprintSpeed. Wenn der Nexus
-                // via DSL `player_speed 25` ausführte, blieb sprintSpeed
-                // bei z. B. 12 (vom letzten Soul-Wechsel) — Shift drücken
-                // gab dann LANGSAMERE Geschwindigkeit als gehen. Jetzt
-                // halten wir Sprint = 2× Walk konsistent.
-                this.state.speed = c(value, 1, 30);
-                this.state.sprintSpeed = this.state.speed * 2;
+                // Schöpfer-Bug-Fund 13.05.2026 (V7.72): player_speed setzte
+                // nur state.speed, NICHT state.sprintSpeed → Shift wurde
+                // LANGSAMER als Gehen. V9.44-b: die Kopplung lebt jetzt in
+                // _applyPlayerSpeed — hier nur noch der DSL-Eingabe-Clamp.
+                this._applyPlayerSpeed(c(value, 1, 30));
             },
             // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
             // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
@@ -22128,6 +22125,20 @@ class AnazhRealm {
         return { tags: finalTags, stats };
     }
 
+    // V9.44-b — kanonischer Setter für die Spieler-Geschwindigkeit. speed
+    // und sprintSpeed sind GEKOPPELT: sprintSpeed = 2× speed (die Konvention
+    // seit Ring 5 — z. B. speed 6 ⇒ sprintSpeed 12). Vor V9.44-b kannten
+    // BEIDE Schreibpfade (der player_speed-DSL-Op + recomputePlayerStats)
+    // die Kopplung selbst — V7.72 war ein Bug genau hier (player_speed setzte
+    // nur speed, sprintSpeed blieb stale → Shift drücken wurde LANGSAMER als
+    // Gehen). Jetzt hält EIN Setter die Kopplung; jeder künftige Schreibpfad
+    // kann sie nicht mehr vergessen. Die Eingabe-Validierung (Clamp) bleibt
+    // beim Aufrufer — der Setter wendet nur die Kopplung an.
+    _applyPlayerSpeed(v) {
+        this.state.speed = v;
+        this.state.sprintSpeed = v * 2;
+    }
+
     // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
     // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
     // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
@@ -22137,10 +22148,9 @@ class AnazhRealm {
         if (!this.state.player) return computed;
         this.state.player.stats = computed.stats;
         this.state.player.statTags = computed.tags;
-        // Anwendung auf die Live-Bewegungs-Werte. Sprint = 2× speed (heutige
-        // Konvention: speed=6, sprintSpeed=12).
-        this.state.speed = computed.stats.speed;
-        this.state.sprintSpeed = computed.stats.speed * 2;
+        // Anwendung auf die Live-Bewegungs-Werte. V9.44-b: speed + sprintSpeed
+        // über den kanonischen Setter — Sprint = 2× speed konsistent gehalten.
+        this._applyPlayerSpeed(computed.stats.speed);
         this.state.jumpPower = computed.stats.jumpPower;
         // HP + Stamina als Lebens-Werte (V1 noch ohne Schadens-System; werden
         // mit 6.C2 pfad-Modus aktiv). Auf MAX setzen bei jedem Soul-Wechsel.
