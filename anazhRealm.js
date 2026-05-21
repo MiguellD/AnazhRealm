@@ -58,6 +58,7 @@ class AnazhRealm {
             creatureUpdateIndex: 0,
             ufos: [],
             waterfalls: [],
+            waterfallMaterial: null,
             keys: {},
             speed: 6,
             sprintSpeed: 12,
@@ -14062,10 +14063,9 @@ class AnazhRealm {
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
         this._populateVoxelChunkVegetation(cx, cz);
-        // V9.32 Phase 5d-Mini — Wasserfälle an steilen Voxel-Klippen.
-        // Idempotent über state.voxelChunkWaterfalls. Die Partikel landen
-        // in state.waterfalls und werden vom existierenden Animations-Loop
-        // (Zeile ~34208) animiert.
+        // V9.43-a — Wasserfälle an steilen Voxel-Klippen, als vertikale
+        // Wasser-Planes mit dem geteilten Flow-Shader (`uTime`-animiert,
+        // kein per-Partikel-Loop mehr). Idempotent über voxelChunkWaterfalls.
         this._buildVoxelChunkWaterfalls(cx, cz);
         return entry;
     }
@@ -14195,23 +14195,156 @@ class AnazhRealm {
         this.state.voxelChunkGrass.delete(key);
     }
 
-    // V9.32 Phase 5d-Mini — Wasserfälle aus der Voxel-Surface-Steilheit.
-    // Spiegelt die heightfield-Wasserfall-Heuristik aus `generateTerrain-
-    // WithParameters` (Zeile 13866+), aber für die 3D-Voxel-Welt: pro Chunk
-    // ein 6×6-Raster, an jedem Sample wird die Steilheit über die `_voxel-
-    // SurfaceY`-Differenz zu vier Nachbar-Punkten gemessen; ein steiles
-    // Voxel-Profil (≥4 m Höhen-Drop über 4 m Distanz) bekommt mit ~12 %
-    // Hash-Wahrscheinlichkeit einen Partikel-Wasserfall an seiner Oberkante.
-    // Die Partikel-Schicht ist Zeile für Zeile die Heightfield-Variante
-    // (`THREE.Points` + `velocity`-Attribut + `userData.{baseHeight, minY}`)
-    // — sie landet in `state.waterfalls`, der bestehende Animations-Loop
-    // (Zeile ~34208) animiert sie geschenkt. Pro-Chunk-Lifecycle via
-    // `state.voxelChunkWaterfalls`-Map (analog `voxelChunkGrass`), in
-    // `_disposeVoxelChunkWaterfalls` sauber abgeräumt. Eine voxel-basierte
-    // Welt hat damit ihre eigene Wasserfall-Dramatik aus dem 3D-Dichte-
-    // Feld, statt der 2D-Heightfield-Heuristik die in V9.28 deaktiviert
-    // wurde. Vision §1.3 fraktal: dieselbe Spawn-Sprache wie Gras (V9.22)
-    // + Vegetation (V9.24) — am Voxel-Chunk-Lifecycle aufgehängt.
+    // V9.43-a — das geteilte Wasserfall-Material. EIN ShaderMaterial für
+    // ALLE Wasserfall-Planes der Welt (lazy gebaut, in state.waterfallMaterial
+    // gehalten). Eine vertikale Wasser-Plane mit Abwärts-Flow: `uFlowDir`
+    // (0,−1) + `uFlowSpeed` scrollen Schaum-Streifen + Turbulenz die Plane
+    // hinab. Teilt die Wasser-Substanz-Sprache mit dem Meer (`_buildWaterPlane`):
+    // dieselben `uDeep`/`uShallow`-Farben, dieselben `uSunDir`/`uLight`/`fog*`-
+    // Uniforms (von `_applyDayNightToScene` gespeist), dieselbe Fresnel-/Fog-
+    // Disziplin. Vision §1.3 fraktal: Meer + Wasserfall sind dieselbe Materie,
+    // nur ein anderer Flow-Vektor + eine andere Geometrie (horizontale Gerstner-
+    // Plane vs. vertikale Flow-Plane). Der `uFlowDir`-Vektor ist für Wasserfälle
+    // konstant (0,−1); als Uniform geführt macht er V9.43-b/c (Meeres-Strömung,
+    // Bäche) zu blossen Flow-Vektor-Varianten.
+    _ensureWaterfallMaterial() {
+        if (this.state.waterfallMaterial) return this.state.waterfallMaterial;
+        if (typeof THREE === "undefined") return null;
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uFlowDir: { value: new THREE.Vector2(0, -1) },
+                uFlowSpeed: { value: 0.62 },
+                uDeep: { value: new THREE.Color(0x16364f) },
+                uShallow: { value: new THREE.Color(0x3f88a8) },
+                uFoam: { value: new THREE.Color(0xdff1ff) },
+                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
+                uLight: { value: 1.0 },
+                fogColor: { value: new THREE.Color(0x88a0c8) },
+                fogNear: { value: 35 },
+                fogFar: { value: 150 },
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform vec2 uFlowDir;
+                uniform float uFlowSpeed;
+                varying vec2 vUv;
+                varying vec3 vWorldPos;
+                varying vec3 vNormal;
+                varying float vFogDepth;
+                void main() {
+                    vUv = uv;
+                    vec3 p = position;
+                    // Billow: das Wasser-Tuch flattert, während es dem Flow
+                    // folgt — ein scrollendes sin-Muster drückt die Fläche
+                    // entlang ihrer lokalen Normale (+z). Am Lippen-Rand
+                    // (uv.y~1) + Tal-Boden (uv.y~0) gedämpft (dort verankert).
+                    float fp = dot(uv, uFlowDir) * 9.0 + uTime * uFlowSpeed * 3.2;
+                    float billow = sin(fp) * 0.20 + sin(fp * 2.4 + uv.x * 15.0) * 0.10;
+                    float edgeY = smoothstep(0.0, 0.18, uv.y) * smoothstep(1.0, 0.80, uv.y);
+                    p.z += billow * edgeY;
+                    vec4 wp = modelMatrix * vec4(p, 1.0);
+                    vWorldPos = wp.xyz;
+                    // V8.44 — Welt-Raum-Normale (mat3(modelMatrix)), nicht
+                    // normalMatrix: die Beleuchtung darf nicht mit der Kamera
+                    // wandern.
+                    vNormal = normalize(mat3(modelMatrix) * normal);
+                    vec4 mv = viewMatrix * wp;
+                    // V8.45 — radiale Distanz (dreh-invariant) wie Terrain + Meer.
+                    vFogDepth = length(mv.xyz);
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader: `
+                uniform float uTime;
+                uniform vec2 uFlowDir;
+                uniform float uFlowSpeed;
+                uniform vec3 uDeep;
+                uniform vec3 uShallow;
+                uniform vec3 uFoam;
+                uniform vec3 uSunDir;
+                uniform float uLight;
+                uniform vec3 fogColor;
+                uniform float fogNear;
+                uniform float fogFar;
+                varying vec2 vUv;
+                varying vec3 vWorldPos;
+                varying vec3 vNormal;
+                varying float vFogDepth;
+                float hash(vec2 p) {
+                    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
+                }
+                float vnoise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    vec2 u = f * f * (3.0 - 2.0 * f);
+                    return mix(
+                        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+                        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+                        u.y
+                    );
+                }
+                void main() {
+                    // Flow-Offset — scrollt das Wasser-Muster den Flow entlang.
+                    vec2 flow = uFlowDir * uTime * uFlowSpeed;
+                    vec2 sc = vUv + flow;
+                    // Vertikale Strähnen: hochfrequent quer (uv.x), scrollend
+                    // den Flow hinab.
+                    float streak = vnoise(vec2(vUv.x * 26.0, sc.y * 7.0));
+                    streak += 0.5 * vnoise(vec2(vUv.x * 55.0, sc.y * 15.0 + 3.0));
+                    streak /= 1.5;
+                    // Turbulente Schaum-Ballen, die mit dem Flow hinabtreiben.
+                    float turb = vnoise(vUv * vec2(9.0, 5.0) + flow * 1.7);
+                    // Schaum-Maske: Strähnen + Turbulenz, verstärkt am Aufprall
+                    // (oben) + am Spritzer (unten).
+                    float impact = smoothstep(0.86, 1.0, vUv.y);
+                    float splash = smoothstep(0.22, 0.0, vUv.y);
+                    float foam = clamp(streak * 0.8 + turb * 0.35 + impact * 0.7 + splash * 0.6, 0.0, 1.0);
+                    // Basis-Wasserfarbe, Schaum darüber.
+                    vec3 col = mix(uDeep, uShallow, 0.4 + 0.6 * streak);
+                    col = mix(col, uFoam, foam * 0.85);
+                    col *= uLight;
+                    // Sonnen-Glitzern (Blinn-Phong wie das Meer).
+                    vec3 n = normalize(vNormal);
+                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
+                    float spec = pow(max(dot(n, halfV), 0.0), 40.0);
+                    col += vec3(1.0, 0.97, 0.85) * spec * 0.5 * uLight;
+                    // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
+                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
+                    col = mix(col, fogColor, fogF);
+                    // Alpha: dichter Körper, weiche Seiten-Ränder.
+                    float edgeX = smoothstep(0.0, 0.10, vUv.x) * smoothstep(1.0, 0.90, vUv.x);
+                    float alpha = (0.62 + 0.33 * foam) * edgeX;
+                    gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
+        this.state.waterfallMaterial = mat;
+        return mat;
+    }
+
+    // V9.43-a — Wasserfälle aus der Voxel-Surface-Steilheit, als vertikale
+    // Wasser-Planes. Pro Chunk ein 6×6-Raster; an jedem Sample wird die
+    // Steilheit über die `_voxelSurfaceY`-Differenz zu vier Nachbar-Punkten
+    // gemessen; ein steiles Voxel-Profil (≥4 m Höhen-Drop über 4 m Distanz)
+    // bekommt mit ~12 % Hash-Wahrscheinlichkeit einen Wasserfall an seiner
+    // Klippen-Kante. **V9.43-a heilt den Schöpfer-Audit-Befund #5**: V9.32
+    // baute Wasserfälle als `THREE.Points`-Partikel — eine zweite Wasser-
+    // Sprache neben der Gerstner-Plane des Meeres (Vision §1.3 gebrochen).
+    // Jetzt: eine vertikale `PlaneGeometry`, gedreht so dass die Normale die
+    // Klippe hinab zeigt, mit dem geteilten `_ensureWaterfallMaterial`-Shader
+    // (Abwärts-Flow). Eine Wasser-Sprache: Plane + Wasser-Shader + Flow-Vektor.
+    // Das Material ist welt-global geteilt (alle Wasserfälle, ein Material) —
+    // die Animation läuft über `uTime`, kein per-Partikel-Loop mehr. Pro-Chunk-
+    // Lifecycle via `state.voxelChunkWaterfalls`-Map (analog `voxelChunkGrass`),
+    // in `_disposeVoxelChunkWaterfalls` abgeräumt (NUR die Geometrie — das
+    // Material ist geteilt). Spawn-Sprache wie Gras (V9.22) + Vegetation
+    // (V9.24), am Voxel-Chunk-Lifecycle aufgehängt; deterministisch (chunk-key-
+    // gebundener RNG → Mesh-Mitspieler sehen identische Wasserfälle).
     _buildVoxelChunkWaterfalls(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return;
         if (!this.state.voxelChunkWaterfalls) this.state.voxelChunkWaterfalls = new Map();
@@ -14236,6 +14369,11 @@ class AnazhRealm {
         const minDrop = 4.0; // ≥4 m Höhen-Differenz über 4 m Distanz = steil
         const spawnProbability = 0.12;
         const created = [];
+        const mat = this._ensureWaterfallMaterial();
+        if (!mat) {
+            this.state.voxelChunkWaterfalls.set(key, created);
+            return;
+        }
         for (let zi = 0; zi < SAMPLES; zi++) {
             for (let xi = 0; xi < SAMPLES; xi++) {
                 const sx = ox + (xi + 0.5) * step;
@@ -14245,50 +14383,39 @@ class AnazhRealm {
                 // Steilheit aus Voxel-Surface-Gradient: max Höhen-Drop zu
                 // den vier achsen-parallelen Nachbarn. Eine Klippe trifft
                 // dieselbe Stelle aus mehreren Richtungen — wir nehmen das
-                // Maximum.
-                const yE = this._voxelSurfaceY(sx + delta, sz);
-                const yW = this._voxelSurfaceY(sx - delta, sz);
-                const yN = this._voxelSurfaceY(sx, sz + delta);
-                const yS = this._voxelSurfaceY(sx, sz - delta);
+                // Maximum UND merken uns die Richtung (für die Plane-Drehung).
+                const neighbors = [
+                    { dx: delta, dz: 0, y: this._voxelSurfaceY(sx + delta, sz) },
+                    { dx: -delta, dz: 0, y: this._voxelSurfaceY(sx - delta, sz) },
+                    { dx: 0, dz: delta, y: this._voxelSurfaceY(sx, sz + delta) },
+                    { dx: 0, dz: -delta, y: this._voxelSurfaceY(sx, sz - delta) },
+                ];
                 let maxDrop = 0;
-                for (const yn of [yE, yW, yN, yS]) {
-                    if (Number.isFinite(yn) && y0 - yn > maxDrop) maxDrop = y0 - yn;
+                let bestDir = null;
+                for (const nb of neighbors) {
+                    if (Number.isFinite(nb.y) && y0 - nb.y > maxDrop) {
+                        maxDrop = y0 - nb.y;
+                        bestDir = nb;
+                    }
                 }
-                if (maxDrop < minDrop) continue;
+                if (maxDrop < minDrop || !bestDir) continue;
                 if (rnd() > spawnProbability) continue;
 
-                // Partikel-Wasserfall — gleiche Struktur wie der Heightfield-
-                // Pfad in `generateTerrainWithParameters`. Der Fall-Stop
-                // (`minY`) ist auf den Tal-Boden gesetzt (y0 - maxDrop - 2),
-                // damit die Partikel nicht ewig ins Nichts fallen.
-                const particleCount = 50;
-                const particles = new THREE.BufferGeometry();
-                const positions = new Float32Array(particleCount * 3);
-                const velocities = new Float32Array(particleCount * 3);
-                for (let p = 0; p < particleCount; p++) {
-                    positions[p * 3] = sx + (rnd() - 0.5) * 1;
-                    positions[p * 3 + 1] = y0 + (rnd() - 0.5) * 5;
-                    positions[p * 3 + 2] = sz + (rnd() - 0.5) * 1;
-                    velocities[p * 3] = 0;
-                    velocities[p * 3 + 1] = -(rnd() * 5 + 2);
-                    velocities[p * 3 + 2] = 0;
-                }
-                particles.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-                particles.setAttribute("velocity", new THREE.BufferAttribute(velocities, 3));
-                try {
-                    particles.computeBoundingSphere();
-                    particles.computeBoundingBox();
-                } catch {
-                    continue;
-                }
-                const mat = new THREE.PointsMaterial({
-                    color: 0x00aaff,
-                    size: 0.2,
-                    transparent: true,
-                    opacity: 0.8,
-                });
-                const wf = new THREE.Points(particles, mat);
-                wf.userData = { baseHeight: y0, minY: y0 - maxDrop - 2 };
+                // Vertikale Wasser-Plane an der Klippen-Kante. Die Plane liegt
+                // in xy (Höhe entlang y); gedreht so dass ihre Normale (+z)
+                // die Klippe hinab zeigt (Richtung des steilsten Nachbarn).
+                const dirX = bestDir.dx / delta;
+                const dirZ = bestDir.dz / delta;
+                const dropH = Math.min(maxDrop, 44);
+                const width = 3 + rnd() * 3; // 3–6 m
+                const planeH = dropH + 2; // etwas über die Lippe + in den Pool
+                const segH = Math.max(6, Math.round(planeH / 2.5));
+                const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
+                const wf = new THREE.Mesh(geo, mat);
+                wf.position.set(sx + dirX * (delta * 0.5), y0 + 0.5 - planeH / 2, sz + dirZ * (delta * 0.5));
+                wf.rotation.y = Math.atan2(dirX, dirZ);
+                wf.renderOrder = 1;
+                wf.userData = { isWaterfall: true };
                 this.state.scene.add(wf);
                 if (!Array.isArray(this.state.waterfalls)) this.state.waterfalls = [];
                 this.state.waterfalls.push(wf);
@@ -14305,7 +14432,9 @@ class AnazhRealm {
             for (const wf of wfs) {
                 if (this.state.scene) this.state.scene.remove(wf);
                 if (wf.geometry) wf.geometry.dispose();
-                if (wf.material) wf.material.dispose();
+                // V9.43-a — das Material NICHT disposen: es ist welt-global
+                // geteilt (`state.waterfallMaterial`). Ein Dispose hier würde
+                // beim ersten Chunk-Prune jeden anderen Wasserfall brechen.
                 if (Array.isArray(this.state.waterfalls)) {
                     const idx = this.state.waterfalls.indexOf(wf);
                     if (idx >= 0) this.state.waterfalls.splice(idx, 1);
@@ -30572,6 +30701,19 @@ class AnazhRealm {
                 if (wu.fogFar) wu.fogFar.value = fog.far;
             }
         }
+        // V9.43-a — das geteilte Wasserfall-Material teilt die Wasser-
+        // Substanz-Uniforms (Sonne, Licht, Fog) mit dem Meer — eine Wasser-
+        // Sprache, von derselben Tag-Nacht-Quelle gespeist.
+        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms && this.state.directionalLight) {
+            const wfu = this.state.waterfallMaterial.uniforms;
+            if (wfu.uSunDir) wfu.uSunDir.value.copy(sunDir);
+            if (wfu.uLight) wfu.uLight.value = Math.max(0.22, dl.intensity);
+            if (fog) {
+                if (wfu.fogColor) wfu.fogColor.value.copy(fog.color);
+                if (wfu.fogNear) wfu.fogNear.value = fog.near;
+                if (wfu.fogFar) wfu.fogFar.value = fog.far;
+            }
+        }
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
@@ -33334,23 +33476,6 @@ class AnazhRealm {
                 this.state.lastServerSaveUpdate = currentTime;
             }
 
-            // ### Wasserfälle ###
-            if (this.state.waterfalls) {
-                this.state.waterfalls.forEach((waterfall) => {
-                    const positions = waterfall.geometry.attributes.position.array;
-                    const velocities = waterfall.geometry.attributes.velocity.array;
-                    for (let p = 0; p < positions.length / 3; p++) {
-                        positions[p * 3 + 1] += velocities[p * 3 + 1] * delta;
-                        if (positions[p * 3 + 1] < waterfall.userData.minY) {
-                            positions[p * 3 + 1] = waterfall.userData.baseHeight;
-                            positions[p * 3] += (Math.random() - 0.5) * 1;
-                            positions[p * 3 + 2] += (Math.random() - 0.5) * 1;
-                        }
-                    }
-                    waterfall.geometry.attributes.position.needsUpdate = true;
-                });
-            }
-
             // ### Kamera ###
             if (player && camera) {
                 // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
@@ -33491,6 +33616,12 @@ class AnazhRealm {
                 if (this.state.waterPlane.material && this.state.waterPlane.material.uniforms) {
                     this.state.waterPlane.material.uniforms.uTime.value = currentTime;
                 }
+            }
+            // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
+            // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
+            // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
+            if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
+                this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
             }
             // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
             // uWindStrength emergiert aus weather (rainy = kräftiger).
