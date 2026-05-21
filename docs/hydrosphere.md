@@ -1,13 +1,13 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ gebaut** (der Hydrosphären-Atlas + das
-Rendering; siehe §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**.
-Dieses Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich
-in Phasen geschnitten. Offen: V9.43-d (Carven), V9.43-e (Klang). Plus eine ehrliche
-offene Netz-Qualitäts-Frage aus der V9.43-c-Browser-Verifikation — die Flüsse sind kurz
-(siehe §9 + §10). Die kanonische Versions-Historie lebt in `CLAUDE.md`; der Wellen-Plan
-im Überblick in `docs/roadmap.md` §3. Dieses Doc ist die *Tiefe* — Algorithmus,
-Datenstrukturen, Risiken.
+**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ gebaut** (der
+Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer; siehe §9). Schöpfer-Wahl:
+**volles Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche
+Planung des Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: V9.43-d
+(Carven), V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
+V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
+Versions-Historie lebt in `CLAUDE.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
+§3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
 ---
 
@@ -311,6 +311,20 @@ Netz-Qualitäts-Frage, kein Render-Bug** — V9.43-c rendert das Netz ehrlich. H
 (eigene Welle, siehe §10): Flüsse durch Seen hindurchführen als EINE Polylinie, ODER
 eine weniger Basin-y hydrologische Surface.
 
+**V9.43-c.2 — das Wasser wird synergetisch (Folge-Schnitt, 21.05.2026)**: Schöpfer-
+Browser-Test der V9.43-c — „die Seen und Flüsse scheinen eine Fläche ein paar Meter über
+dem Meer zu sein, nicht synergetisch mit dem bestehenden Wasser". Eine Höhen-Messung
+trennte Bug von Hydrologie (Meer y=4.8, Seen y=5–14): Seen ÜBER dem Meer sind korrekt
+(aufgesetzte Wasserkörper), aber zwei echte Bugs: (1) ein Meer-Mündungs-Fluss endete bis
+2 m über der Meeresoberfläche — `_buildRiverRibbon` bekommt jetzt ein `mouthY` und blendet
+die Ribbon-Höhe über die letzten ~40 % auf den Mündungs-Wasserspiegel (`waterLevel` bzw.
+den Ziel-See-Level); der Fluss fließt sichtbar INS Wasser. (2) man konnte in Seen nicht
+schwimmen — `_hydroWaterLevelAt(x,z)` liefert den effektiven Wasserspiegel (See-Level über
+einer See-Zelle, sonst `waterLevel`), die Schwimm-Physik in `_loopPhysicsSync` nutzt ihn →
+Seen sind schwimm-/tauchbar wie das Meer. Was V9.43-c.2 NICHT heilt: die Seen liegen
+weiter über dem Meer (Hydrologie) und wirken als flache Sheets statt als Wasser in
+gemuldeten Becken — das ist die un-gecarvte Surface, V9.43-d carvt die Becken-Furchen.
+
 ### V9.43-d — Die Flüsse carven echte Betten
 Phase 7: `_terrainDensityAt` fragt die Hydrosphäre, senkt die Dichte im Fluss-Kanal +
 in See-Senken. Spatial-Index (`riverBuckets`). Worldgen-Ordnung verdrahtet. Das Wasser
@@ -346,7 +360,9 @@ See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
   Surface-Sampling (62k × ~90 Density-Evals) ist der teure Teil — ~100-300 ms beim
   Worldgen. Der Carve-Term in `_terrainDensityAt` MUSS O(1) sein (Bucket-Index) — wird
   millionenfach gerufen. Perf-Invariante in V9.43-b + V9.43-d.
-- **Naht zum Meer.** Fluss-Mündungen müssen sanft auf `waterLevel` auslaufen — V9.43-e.
+- **Naht zum Meer.** Fluss-Mündungen blenden seit V9.43-c.2 sichtbar auf `waterLevel`
+  (bzw. den Ziel-See-Level) aus — der Fluss erreicht sein Wasser. Feinpolitur (Ufer-
+  Schaum an der Mündung, Flow-Speed-Übergang) bleibt V9.43-e.
 - **V9.43-a-Ablösung.** Der per-Chunk-Wasserfall-Spawner ist mit V9.43-c abgelöst
   (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls` gelöscht). Das ist kein
   Wegwerfen — das Material + die Plane-Geometrie bleiben (von `_buildHydroWaterfall`

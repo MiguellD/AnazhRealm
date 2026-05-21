@@ -14894,7 +14894,20 @@ class AnazhRealm {
                 }
             }
             for (let ri = 0; ri < hydro.rivers.length; ri++) {
-                const m = this._buildRiverRibbon(hydro.rivers[ri], surfMat);
+                const river = hydro.rivers[ri];
+                // V9.43-c.2 — der Fluss endet SICHTBAR an seinem Wasser: ein
+                // Meer-Mündungs-Fluss blendet auf `waterLevel`, ein See-
+                // Mündungs-Fluss auf `lake.level`. So fließt er INS Wasser,
+                // statt ein paar Meter darüber in der Luft zu enden (Schöpfer-
+                // Befund: „nicht synergetisch mit dem bestehenden Wasser").
+                let mouthY = null;
+                if (river.mouth === "sea") {
+                    mouthY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
+                } else if (river.mouth && typeof river.mouth.lake === "number") {
+                    const lk = hydro.lakes[river.mouth.lake];
+                    if (lk) mouthY = lk.level;
+                }
+                const m = this._buildRiverRibbon(river, surfMat, mouthY);
                 if (m) {
                     this.state.scene.add(m);
                     meshes.push(m);
@@ -14931,6 +14944,33 @@ class AnazhRealm {
             if (m.geometry) m.geometry.dispose();
         }
         this.state.hydrosphereMeshes = [];
+    }
+
+    // V9.43-c.2 — der effektive Wasserspiegel an einer xz-Welt-Position:
+    // liegt (x,z) über einer See-Zelle, ist es der See-Füllstand
+    // (`lake.level`); sonst der globale Meeresspiegel (`state.waterLevel`).
+    // Die Physik-Schleife nutzt das, damit der Spieler in einem See genauso
+    // schwimmt wie im Meer — die Hydrosphäre ist EIN Wasser-System mit dem
+    // Meer (Schöpfer-Befund V9.43-c: „nicht synergetisch"). O(Seen) +ein
+    // `.includes` nur für den einen See, dessen bbox (x,z) umschliesst — pro
+    // Frame vernachlässigbar.
+    _hydroWaterLevelAt(x, z) {
+        const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
+        const hydro = this.state.hydrosphere;
+        if (!hydro || !hydro.ready || !Array.isArray(hydro.lakes)) return base;
+        const { dim, cell, originX, originZ } = hydro;
+        const i = Math.floor((x - originX) / cell);
+        const j = Math.floor((z - originZ) / cell);
+        if (i < 0 || j < 0 || i >= dim || j >= dim) return base;
+        const idx = i + j * dim;
+        for (const lake of hydro.lakes) {
+            const b = lake.bbox;
+            if (!b || x < b.minX - cell || x > b.maxX + cell || z < b.minZ - cell || z > b.maxZ + cell) {
+                continue;
+            }
+            if (Array.isArray(lake.cells) && lake.cells.includes(idx)) return lake.level;
+        }
+        return base;
     }
 
     // Eine See-Plane: ein Quad je See-Zelle, flach auf der Füll-Höhe
@@ -14991,7 +15031,7 @@ class AnazhRealm {
     // senkt die Betten — `voxelY` an der Fluss-Mitte fällt dann, das Ribbon
     // sitzt automatisch in der Furche. Jeder Vertex trägt `aFlow` = die
     // Gefälle-Tangente → der Shader scrollt den Schaum stromab.
-    _buildRiverRibbon(river, mat) {
+    _buildRiverRibbon(river, mat, mouthY) {
         const pts = river.points;
         if (!Array.isArray(pts) || pts.length < 2) return null;
         const n = pts.length;
@@ -15009,6 +15049,24 @@ class AnazhRealm {
         }
         for (let i = 1; i < n; i++) {
             if (ry[i] > ry[i - 1]) ry[i] = ry[i - 1];
+        }
+        // V9.43-c.2 — die Mündung erreicht ihr Wasser. Über die letzten ~40 %
+        // der Polylinie blendet die Render-Höhe zum Mündungs-Wasserspiegel
+        // (`mouthY`: `waterLevel` bzw. der Ziel-See-Level) → der Fluss fließt
+        // sichtbar INS Meer/den See, kein Rinnsal-Ende in der Luft mehr. Der
+        // +0.18-Lift verschwindet zur Mündung hin (`liftScale`), sodass der
+        // letzte Vertex exakt auf dem Mündungs-Wasserspiegel sitzt.
+        const liftScale = new Float64Array(n).fill(1);
+        if (typeof mouthY === "number" && Number.isFinite(mouthY)) {
+            const blendStart = Math.max(0, Math.floor(n * 0.6));
+            const span = n - 1 - blendStart;
+            for (let i = blendStart; i < n; i++) {
+                const t = span > 0 ? (i - blendStart) / span : 1;
+                ry[i] = ry[i] * (1 - t) + mouthY * t;
+                liftScale[i] = 1 - t;
+            }
+            ry[n - 1] = mouthY;
+            liftScale[n - 1] = 0;
         }
         // Flow-Richtung je Punkt — der letzte Punkt erbt die des vorletzten
         // (an der Mündung ist flowX/flowZ 0).
@@ -15041,7 +15099,7 @@ class AnazhRealm {
             const perpX = -fz[i];
             const perpZ = fx[i];
             const halfW = Math.max(1.0, p.width * 0.5);
-            const y = ry[i] + 0.18; // kleiner Lift gegen Z-Fighting
+            const y = ry[i] + 0.18 * liftScale[i]; // Lift gegen Z-Fighting, an der Mündung 0
             positions.push(p.x + perpX * halfW, y, p.z + perpZ * halfW);
             positions.push(p.x - perpX * halfW, y, p.z - perpZ * halfW);
             const v = cum[i] / total;
@@ -34343,10 +34401,20 @@ class AnazhRealm {
                     // blauer Tint). Sonst sprang der Tint schon beim
                     // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
                     if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
-                        const submerged = scaledY < this.state.waterLevel;
+                        // V9.43-c.2 — der effektive Wasserspiegel: steht der
+                        // Spieler über einem See, dessen Füll-Level; sonst der
+                        // Meeresspiegel. So schwimmt/taucht er im See wie im
+                        // Meer — die Hydrosphäre ist EIN Wasser-System mit dem
+                        // Meer (Schöpfer-Befund: „nicht synergetisch").
+                        const effWater = this._hydroWaterLevelAt(
+                            pos.x() * this.state.scaleFactor,
+                            pos.z() * this.state.scaleFactor
+                        );
+                        const waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
+                        const submerged = scaledY < waterY;
                         this.state.playerUnderwater = submerged;
                         // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
-                        this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
+                        this.state.playerEyesUnderwater = scaledY + 1.6 < waterY;
                         if (submerged) {
                             // V8.36 — Auftrieb wirkt NUR über dem Terrain.
                             // Fällt der Spieler durch die Welt (weit unter
@@ -34365,7 +34433,7 @@ class AnazhRealm {
                                 // Eingabe wirkt der natürliche Auftrieb.
                                 const swimVy = this._swimVerticalVelocity(
                                     velocity.y(),
-                                    this.state.waterLevel - scaledY,
+                                    waterY - scaledY,
                                     !!this.state.keys["shift"],
                                     !!this.state.keys[" "]
                                 );

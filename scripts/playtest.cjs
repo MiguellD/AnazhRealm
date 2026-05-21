@@ -12723,6 +12723,81 @@ function startSaveServer() {
                 check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
             }
 
+            // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
+            // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
+            // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
+            // erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel`
+            // bzw. den Ziel-See-Level), und der Spieler schwimmt in einem See
+            // wie im Meer (`_hydroWaterLevelAt` speist die Schwimm-Physik).
+            const voxelV943c2 = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasWaterLevelAt = typeof r._hydroWaterLevelAt === "function";
+                    const hydro = r.state.hydrosphere;
+                    out.hydroReady = !!(hydro && hydro.ready);
+                    if (!out.hasWaterLevelAt || !out.hydroReady) return out;
+                    // _hydroWaterLevelAt: über einer See-Zelle → der See-Level.
+                    out.lakeLevelOk = true;
+                    if (hydro.lakes.length > 0 && hydro.lakes[0].cells.length > 0) {
+                        const lk = hydro.lakes[0];
+                        const cellIdx = lk.cells[0];
+                        const ci = cellIdx % hydro.dim;
+                        const cj = (cellIdx / hydro.dim) | 0;
+                        const wx = hydro.originX + (ci + 0.5) * hydro.cell;
+                        const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                        out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - lk.level) < 0.01;
+                    }
+                    // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
+                    out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
+                    // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
+                    // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
+                    r._buildHydrosphereMeshes();
+                    const meshes = r.state.hydrosphereMeshes || [];
+                    const riverMeshes = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
+                    out.mouthReachesSea = true;
+                    out.seaMouthChecked = false;
+                    for (let i = 0; i < hydro.rivers.length; i++) {
+                        if (hydro.rivers[i].mouth !== "sea") continue;
+                        const m = riverMeshes[i];
+                        if (!m || !m.geometry || !m.geometry.attributes.position) continue;
+                        const pos = m.geometry.attributes.position.array;
+                        const vc = pos.length / 3;
+                        const lastY = pos[(vc - 1) * 3 + 1];
+                        out.seaMouthChecked = true;
+                        if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
+                    }
+                    // Die Schwimm-Physik (in _loopPhysicsSync) speist den
+                    // effektiven Wasserspiegel aus _hydroWaterLevelAt.
+                    out.physicsUsesEffWater =
+                        typeof r._loopPhysicsSync === "function" &&
+                        /_hydroWaterLevelAt/.test(r._loopPhysicsSync.toString());
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV943c2 && !voxelV943c2.error) {
+                const h2 = voxelV943c2;
+                check("Voxel V9.43-c.2: _hydroWaterLevelAt existiert", h2.hasWaterLevelAt);
+                check(
+                    "Voxel V9.43-c.2: _hydroWaterLevelAt liefert über einer See-Zelle den See-Füllstand",
+                    h2.lakeLevelOk
+                );
+                check(
+                    "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
+                    h2.seaFallbackOk
+                );
+                check(
+                    "Voxel V9.43-c.2: ein Meer-Mündungs-Fluss-Ribbon endet sichtbar auf dem Meeresspiegel",
+                    h2.mouthReachesSea
+                );
+                check(
+                    "Voxel V9.43-c.2: die Schwimm-Physik speist den effektiven Wasserspiegel (Seen schwimmbar)",
+                    h2.physicsUsesEffWater
+                );
+            }
+
             // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
             // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
             const voxelP3Results = await page
