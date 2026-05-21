@@ -6,7 +6,7 @@ siehe §8 + §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten
 Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
 Phasen geschnitten. Offen: V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
 V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
-Versions-Historie lebt in `CLAUDE.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
+Versions-Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
 §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
 ---
