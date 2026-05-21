@@ -1,9 +1,11 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026 — **V9.43-b ✅ gebaut** (der Hydrosphären-Atlas, die Berechnung;
-siehe §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**. Dieses
-Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
-Phasen geschnitten. Offen: V9.43-c (Rendering), V9.43-d (Carven), V9.43-e (Klang). Die kanonische
+**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ gebaut** (der
+Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer; siehe §9). Schöpfer-Wahl:
+**volles Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche
+Planung des Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: V9.43-d
+(Carven), V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
+V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
 Versions-Historie lebt in `CLAUDE.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
 §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
@@ -276,7 +278,7 @@ Unter-Meeresspiegel-Zellen (siehe §5 Phase 2: jede Senke als Auslass zu seeden 
 Abfluss versickern, maxAccum 50). **0 Wasserfälle** in V9.43-b — die Makro-Surface ist
 glatt; die Wasserfall-Re-Verankerung gegen die echte Voxel-Surface ist V9.43-c (§7).
 
-### V9.43-c — Flüsse + Seen werden sichtbar (Rendering)
+### V9.43-c — Flüsse + Seen werden sichtbar (Rendering) ✅ (21.05.2026)
 Phase 6: `_buildHydrosphereMeshes()` rendert See-Planes (zur Senke geformt) + Fluss-
 Ribbon-Meshes (Breite ∝ √A, `uFlowDir` = Gefälle-Tangente). Wasserfälle re-verankert:
 eine V9.43-a-Plane an jedem Fluss-Klippen-Kreuz, mit Fluss oben + Becken unten. Der
@@ -285,6 +287,43 @@ V9.43-a-Material-Familie.
 *Test-Invarianten*: Fluss-Ribbon-Breite wächst stromab; See-Plane sitzt auf Füll-Höhe;
 Wasserfall-Plane sitzt an einem Fluss-Klippen-Kreuz (nicht per-Chunk-Zufall); alle
 Wasser-Meshes nutzen die geteilte Material-Familie. *~1-2 Sessions.*
+
+**Geliefert (V9.43-c)**: `_buildHydrosphereMeshes()` als Orchestrator + `_buildLakeMesh`
+(ein Quad je See-Zelle, `lake.level`), `_buildRiverRibbon` (Quad-Streifen, Höhe geglättet
++ strikt fallend an `_voxelSurfaceY`), `_buildHydroWaterfall` (V9.43-a-Plane + -Material),
+`_disposeHydrosphereMeshes`, `_ensureHydroSurfaceMaterial`, `_hydroSampleRiverSurfaces`.
+17 Invarianten grün. **Eine Material-Wahl-Verfeinerung gegenüber dem Plan**: §7 nannte
+einen `uFlowDir`-Uniform; ein gebogener Fluss hat aber je Polylinie-Knick eine andere
+Tangente — ein einzelner Uniform könnte das nicht. Lösung: der Flow lebt in einem
+per-Vertex-`aFlow`-Attribut (See-Vertex `(0,0)` = still, Fluss-Vertex = Gefälle-Tangente)
+→ EIN Material für See + Fluss. `waterfallSlope` 0.55→0.4 gegen die echte Voxel-Surface
+getunt (V9.43-b mass die glatte Makro-Surface, fand 0; die steilste Stelle ist 0.53).
+Ergebnis: 12 See-Planes, 6 Fluss-Ribbons, 2 Wasserfall-Planes.
+
+**Ehrlicher Befund (V9.43-c-Browser-Verifikation)**: das Wasser rendert sichtbar — die
+Seen sind große, klare Wasser-Flächen. ABER: das V9.43-b-Drainage-Netz dieser Welt ist
+**see-dominant** — 12 Seen (~20 % der Region, der größte ~1259 Zellen ≈ 570 m), die
+Flüsse sind 32-48-m-Verbinder (längster 3 Punkte, Σ 14 Punkte). Die Basin-Topographie der
+ridged-Makro-Surface staut das Wasser zu Seen; jeder See zerstückelt die Drainage (ein
+Fluss endet an jedem See). Eine niedrigere Fluss-Schwelle / ein höheres `minLakeCells`
+heilte es NICHT (gemessen — die 12 Seen sind echte grosse Becken). **Das ist eine
+Netz-Qualitäts-Frage, kein Render-Bug** — V9.43-c rendert das Netz ehrlich. Heilung
+(eigene Welle, siehe §10): Flüsse durch Seen hindurchführen als EINE Polylinie, ODER
+eine weniger Basin-y hydrologische Surface.
+
+**V9.43-c.2 — das Wasser wird synergetisch (Folge-Schnitt, 21.05.2026)**: Schöpfer-
+Browser-Test der V9.43-c — „die Seen und Flüsse scheinen eine Fläche ein paar Meter über
+dem Meer zu sein, nicht synergetisch mit dem bestehenden Wasser". Eine Höhen-Messung
+trennte Bug von Hydrologie (Meer y=4.8, Seen y=5–14): Seen ÜBER dem Meer sind korrekt
+(aufgesetzte Wasserkörper), aber zwei echte Bugs: (1) ein Meer-Mündungs-Fluss endete bis
+2 m über der Meeresoberfläche — `_buildRiverRibbon` bekommt jetzt ein `mouthY` und blendet
+die Ribbon-Höhe über die letzten ~40 % auf den Mündungs-Wasserspiegel (`waterLevel` bzw.
+den Ziel-See-Level); der Fluss fließt sichtbar INS Wasser. (2) man konnte in Seen nicht
+schwimmen — `_hydroWaterLevelAt(x,z)` liefert den effektiven Wasserspiegel (See-Level über
+einer See-Zelle, sonst `waterLevel`), die Schwimm-Physik in `_loopPhysicsSync` nutzt ihn →
+Seen sind schwimm-/tauchbar wie das Meer. Was V9.43-c.2 NICHT heilt: die Seen liegen
+weiter über dem Meer (Hydrologie) und wirken als flache Sheets statt als Wasser in
+gemuldeten Becken — das ist die un-gecarvte Surface, V9.43-d carvt die Becken-Furchen.
 
 ### V9.43-d — Die Flüsse carven echte Betten
 Phase 7: `_terrainDensityAt` fragt die Hydrosphäre, senkt die Dichte im Fluss-Kanal +
@@ -321,10 +360,23 @@ See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
   Surface-Sampling (62k × ~90 Density-Evals) ist der teure Teil — ~100-300 ms beim
   Worldgen. Der Carve-Term in `_terrainDensityAt` MUSS O(1) sein (Bucket-Index) — wird
   millionenfach gerufen. Perf-Invariante in V9.43-b + V9.43-d.
-- **Naht zum Meer.** Fluss-Mündungen müssen sanft auf `waterLevel` auslaufen — V9.43-e.
-- **V9.43-a-Ablösung.** Der per-Chunk-Wasserfall-Spawner wird in V9.43-c abgelöst. Das
-  ist kein Wegwerfen — das Material + die Plane-Geometrie bleiben; nur die Spawn-Quelle
-  wandert vom Zufall zum Fluss-Netz. Ehrlich benannt, nicht still.
+- **Naht zum Meer.** Fluss-Mündungen blenden seit V9.43-c.2 sichtbar auf `waterLevel`
+  (bzw. den Ziel-See-Level) aus — der Fluss erreicht sein Wasser. Feinpolitur (Ufer-
+  Schaum an der Mündung, Flow-Speed-Übergang) bleibt V9.43-e.
+- **V9.43-a-Ablösung.** Der per-Chunk-Wasserfall-Spawner ist mit V9.43-c abgelöst
+  (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls` gelöscht). Das ist kein
+  Wegwerfen — das Material + die Plane-Geometrie bleiben (von `_buildHydroWaterfall`
+  reuset); nur die Spawn-Quelle wanderte vom Zufall zum Fluss-Netz. Ehrlich benannt.
+- **Kurze Flüsse — die offene Netz-Qualitäts-Frage (V9.43-c-Befund).** Das Drainage-Netz
+  der Test-Welt ist see-dominant: 12 Seen, die Flüsse sind 32-48-m-Verbinder. Wurzel: die
+  ridged-Makro-Surface ist basin-y → das Priority-Flood füllt grosse Becken → die Seen
+  zerstückeln die Drainage (`_hydroExtractRivers` endet einen Fluss an jedem See). Der
+  Vision-Wunsch („Flüsse, die die Hänge runterfliessen") braucht lange, frei fließende
+  Flüsse. Heilungs-Optionen (eine eigene Welle, NICHT V9.43-c-Render-Scope): (a) ein Fluss
+  fließt durch einen See HINDURCH als eine logische Polylinie (BFS vom Zufluss zum
+  Überlauf durch die See-Zellen); (b) eine glattere, weniger Basin-y hydrologische
+  Surface fürs Routing; (c) hydraulische Erosion, die Täler carvt (gross). Bewusst der
+  Render-Welle V9.43-c nicht aufgebürdet — V9.43-c rendert das Netz, das V9.43-b liefert.
 
 ---
 

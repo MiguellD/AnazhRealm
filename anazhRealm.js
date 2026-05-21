@@ -30,8 +30,6 @@ class AnazhRealm {
             voxelChunks: null,
             voxelChunkGrass: null,
             voxelPopulatedChunks: null,
-            // V9.32 Phase 5d-Mini — Voxel-Wasserfälle pro Chunk.
-            voxelChunkWaterfalls: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
@@ -57,8 +55,21 @@ class AnazhRealm {
             creatureAnimationTime: 0,
             creatureUpdateIndex: 0,
             ufos: [],
-            waterfalls: [],
+            // V9.43-a/c — das geteilte Wasserfall-Material (lazy, in
+            // `_ensureWaterfallMaterial`). V9.43-c löste den per-Chunk-Zufalls-
+            // Spawner ab — Wasserfälle kommen jetzt aus dem Hydrosphären-Netz
+            // (`_buildHydrosphereMeshes`), das Material + die Plane-Geometrie
+            // werden wiederverwendet.
             waterfallMaterial: null,
+            // V9.43-c — das geteilte horizontale Wasser-Material für die
+            // Fluss-Ribbon-Meshes + See-Planes (lazy, `_ensureHydroSurface-
+            // Material`). Teilt die Wasser-Substanz-Sprache (Farbe/Sonne/Fog)
+            // mit Meer + Wasserfall — eine Wasser-Sprache, vier Geometrien.
+            hydroSurfaceMaterial: null,
+            // V9.43-c — die gerenderten Hydrosphären-Meshes (Fluss-Ribbons,
+            // See-Planes, Wasserfall-Planes). Lazy beim Worldgen gebaut, beim
+            // Welt-Regen über `_disposeHydrosphereMeshes` abgeräumt.
+            hydrosphereMeshes: null,
             // V9.43-b — der Hydrosphären-Atlas (Flüsse/Seen/Wasserfälle als
             // deterministisches Drainage-Netz). Lazy beim Worldgen gebaut,
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
@@ -10994,8 +11005,14 @@ class AnazhRealm {
             // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
             widthMin: 3, // Fluss-Mindestbreite in m
             widthK: 0.32, // Breiten-Faktor: width = widthMin + widthK·√Akkumulation
-            waterfallSlope: 0.55, // Δy/Δhoriz, ab dem ein Fluss-Segment ein Wasserfall ist
-            waterfallMinDrop: 6, // Mindest-Höhendrop in m für einen Wasserfall
+            // V9.43-c — gegen die ECHTE Voxel-Surface getunt (V9.43-b war
+            // 0.55/6 — eine Plan-Schätzung gegen die glatte Makro-Surface).
+            // Gemessen: das steilste Fluss-Segment liegt bei ~0.5; ein
+            // Wasserfall ist ein Fluss-Lauf, der STEILER als ein 0.4-Gefälle
+            // fällt UND in Summe ≥ 6 m abstürzt (run-merge in
+            // `_hydroExtractWaterfalls` verschmilzt eine Kaskade zu einem).
+            waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
+            waterfallMinDrop: 6, // Mindest-Gesamtdrop in m für einen Wasserfall
             maxRiverPoints: 800, // Sicherheits-Cap je Fluss-Polylinie
         });
     }
@@ -13174,11 +13191,11 @@ class AnazhRealm {
             this.state.vegetation = [];
             this.log("Alte Vegetation entfernt");
         }
-        if (this.state.waterfalls) {
-            this.state.waterfalls.forEach((wf) => this.state.scene.remove(wf));
-            this.state.waterfalls = [];
-            this.log("Alte Wasserfälle entfernt");
-        }
+        // V9.43-c — die gerenderten Hydrosphären-Meshes (Fluss-Ribbons, See-
+        // Planes, Wasserfall-Planes) abräumen. Der V9.43-a-per-Chunk-Wasser-
+        // fall-Spawner ist abgelöst — alle Wasser-Geometrien des Drainage-
+        // Netzes leben jetzt in `state.hydrosphereMeshes`.
+        this._disposeHydrosphereMeshes();
 
         // ### Spieler-Position ###
         // Beim allerersten Worldgen wird der Spieler in die Welt-Mitte gesetzt.
@@ -13303,18 +13320,13 @@ class AnazhRealm {
             ufo.userData = { baseY: ufoY, speed: Math.random() * 0.5 + 0.5 };
         }
 
-        // ### Dynamische Vegetation und Wasserfälle ###
+        // ### Dynamische Vegetation ###
         // V9.38 Phase 5c.2.c.3.b.ii — der 256×256-Heightfield-Wasserfall-Loop
-        // ist als toter Pfad entfernt. Er las `heightData[idx]` direkt + war
-        // seit V9.28 voxel-gated (`if (!isVoxelWorldGen2)`); mit V9.35 (Voxel
-        // permanent) wurde der Gate konstant-false, der Loop nie betreten.
-        // Eine Voxel-Welt baut Wasser über `_buildWaterPlane` (V9.25) +
-        // ihre eigenen Voxel-Wasserfälle aus der Klippen-Steilheit
-        // (V9.32 `_buildVoxelChunkWaterfalls` am Voxel-Chunk-Lifecycle).
-        // `state.vegetation`/`state.waterfalls` bleiben als Sammler-Listen
-        // (der V9.32-Voxel-Wasserfall-Tick pusht in `state.waterfalls`).
+        // ist als toter Pfad entfernt. V9.43-c — der V9.32/V9.43-a-per-Chunk-
+        // Wasserfall-Spawner ist abgelöst: Wasser (Meer/See/Fluss/Wasserfall)
+        // kommt jetzt aus dem Hydrosphären-Netz (`_buildHydrosphereMeshes`).
+        // `state.vegetation` bleibt als Sammler-Liste.
         this.state.vegetation = [];
-        this.state.waterfalls = [];
 
         // ### Terrain-State setzen ###
         // V9.38 Phase 5c.2.c.3.b.ii — in einer Voxel-Welt sind heightData/
@@ -13381,6 +13393,16 @@ class AnazhRealm {
         } catch (e) {
             this.state.hydrosphere = null;
             this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
+        }
+
+        // V9.43-c — die Hydrosphäre wird sichtbar: Fluss-Ribbons + See-Planes
+        // + Wasserfall-Planes, alle aus der V9.43-a-Wasser-Material-Familie.
+        // Läuft NACH `state.hydrosphere` (es liest das Netz). try/catch — ein
+        // Render-Fehler darf den Worldgen nie brechen.
+        try {
+            this._buildHydrosphereMeshes();
+        } catch (e) {
+            this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
 
         this.spawnCreatures();
@@ -14059,7 +14081,6 @@ class AnazhRealm {
         this.state.voxelChunks.set(key, entry);
         this._buildVoxelChunkGrass(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
-        this._buildVoxelChunkWaterfalls(cx, cz);
         return true;
     }
 
@@ -14154,10 +14175,6 @@ class AnazhRealm {
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
         this._populateVoxelChunkVegetation(cx, cz);
-        // V9.43-a — Wasserfälle an steilen Voxel-Klippen, als vertikale
-        // Wasser-Planes mit dem geteilten Flow-Shader (`uTime`-animiert,
-        // kein per-Partikel-Loop mehr). Idempotent über voxelChunkWaterfalls.
-        this._buildVoxelChunkWaterfalls(cx, cz);
         return entry;
     }
 
@@ -14173,7 +14190,6 @@ class AnazhRealm {
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
         this._disposeVoxelChunkGrass(key);
-        this._disposeVoxelChunkWaterfalls(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -14222,6 +14238,11 @@ class AnazhRealm {
         this._hydroAccumulate(ctx);
         const lakes = this._hydroExtractLakes(ctx);
         const rivers = this._hydroExtractRivers(ctx);
+        // V9.43-c — jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe
+        // (`voxelY`). Die Drainage routet auf der glatten Makro-Surface (§9
+        // V9.43-b), aber Wasserfälle leben an den echten Klippen der 3D-Voxel-
+        // Surface; der Render-Layer hängt das Fluss-Ribbon ans Voxel-Relief.
+        this._hydroSampleRiverSurfaces(rivers);
         const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
         // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
         // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
@@ -14248,6 +14269,35 @@ class AnazhRealm {
             landCells++;
             if (flowTo[idx] < 0) undrainedLand++;
         }
+        // V9.43-c-Diagnostik: das steilste Fluss-Segment der echten Voxel-
+        // Surface + Netz-Vermessung (Fluss-Längen, See-Grössen). `waterfall-
+        // Slope` wird hieran getunt; die Fluss-Längen zeigen, ob das Netz
+        // echte Flüsse trägt oder ein See-zerstückelter Pfützen-Chain ist.
+        let lakeCellsMax = 0;
+        for (let li = 0; li < lakes.length; li++) {
+            const c = lakes[li].cells ? lakes[li].cells.length : 0;
+            if (c > lakeCellsMax) lakeCellsMax = c;
+        }
+        let riverMaxSlope = 0;
+        let riverMaxDrop = 0;
+        let riverPointsTotal = 0;
+        let riverLenMax = 0;
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            riverPointsTotal += pts.length;
+            if (pts.length > riverLenMax) riverLenMax = pts.length;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                const ay = typeof a.voxelY === "number" ? a.voxelY : a.y;
+                const by = typeof b.voxelY === "number" ? b.voxelY : b.y;
+                const drop = ay - by;
+                if (drop <= 0) continue;
+                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
+                if (drop / horiz > riverMaxSlope) riverMaxSlope = drop / horiz;
+                if (drop > riverMaxDrop) riverMaxDrop = drop;
+            }
+        }
         return {
             ready: true,
             originX: ctx.originX,
@@ -14268,6 +14318,11 @@ class AnazhRealm {
                 waterLevel: Math.round(waterLevel),
                 surfMin: Math.round(surfMin),
                 surfMax: Math.round(surfMax),
+                riverMaxSlope: Math.round(riverMaxSlope * 100) / 100,
+                riverMaxDrop: Math.round(riverMaxDrop * 10) / 10,
+                riverPointsTotal,
+                riverLenMax,
+                lakeCellsMax,
             },
         };
     }
@@ -14742,36 +14797,474 @@ class AnazhRealm {
         return rivers;
     }
 
-    // Phase 5c — Wasserfälle: entlang jeder Fluss-Polylinie die Segmente mit
-    // steilem Surface-Drop (Δy/Δhoriz über dem Schwellwert UND ein echter
-    // Mindest-Drop). Hier verankert — ein Wasserfall ist ein Fluss-Abschnitt
-    // an einer Klippe, kein per-Chunk-Zufall (V9.43-c löst damit den V9.43-a-
-    // Zufalls-Spawner ab).
+    // V9.43-c — Phase 5c-Vorbereitung. Jeder Fluss-Punkt bekommt `voxelY`:
+    // die ECHTE Voxel-Surface-Höhe (`_voxelSurfaceY`) an seiner xz-Position.
+    // Das Drainage-Netz routet auf der glatten Makro-Surface (V9.43-b §9 —
+    // die 3D-Crags würden das Routing verrauschen); gerendert + nach
+    // Wasserfällen durchsucht wird gegen die ECHTE Voxel-Surface, auf der
+    // der Spieler steht. `state.hydrosphere` ist während des Baus noch null
+    // → `_voxelSurfaceY` sieht die un-gecarvte Surface (kein Zirkel, §8).
+    _hydroSampleRiverSurfaces(rivers) {
+        for (let ri = 0; ri < rivers.length; ri++) {
+            const pts = rivers[ri].points;
+            for (let k = 0; k < pts.length; k++) {
+                const p = pts[k];
+                const v = this._voxelSurfaceY(p.x, p.z);
+                p.voxelY = Number.isFinite(v) ? v : p.y;
+            }
+        }
+    }
+
+    // Phase 5c — Wasserfälle: entlang jeder Fluss-Polylinie die Läufe mit
+    // steilem Drop in der ECHTEN Voxel-Surface (`voxelY`, V9.43-c). Ein
+    // Wasserfall ist ein Fluss-Abschnitt, der eine echte Voxel-Klippe kreuzt
+    // — kein per-Chunk-Zufall (V9.43-c löst den V9.43-a-Zufalls-Spawner ab).
+    // Aufeinander folgende steile Segmente werden zu EINEM Wasserfall
+    // verschmolzen (eine lange Klippe ist ein Sturz, nicht zehn Stücke).
     _hydroExtractWaterfalls(ctx, rivers) {
         const HC = AnazhRealm.HYDROSPHERE;
         const waterfalls = [];
+        const yOf = (p) => (typeof p.voxelY === "number" ? p.voxelY : p.y);
         for (let ri = 0; ri < rivers.length; ri++) {
             const pts = rivers[ri].points;
-            for (let k = 0; k + 1 < pts.length; k++) {
-                const a = pts[k];
-                const b = pts[k + 1];
-                const drop = a.y - b.y;
-                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
-                if (drop >= HC.waterfallMinDrop && drop / horiz > HC.waterfallSlope) {
+            let runStart = -1; // Index des oberen Punkts des steilen Laufs
+            const flush = (lowerK) => {
+                if (runStart < 0) return;
+                const a = pts[runStart];
+                const b = pts[lowerK];
+                const topY = yOf(a);
+                const bottomY = yOf(b);
+                if (topY - bottomY >= HC.waterfallMinDrop) {
                     waterfalls.push({
                         x: (a.x + b.x) / 2,
                         z: (a.z + b.z) / 2,
-                        topY: a.y,
-                        bottomY: b.y,
+                        topY,
+                        bottomY,
                         width: a.width,
-                        flowX: a.flowX,
-                        flowZ: a.flowZ,
+                        flowX: a.flowX || b.flowX,
+                        flowZ: a.flowZ || b.flowZ,
                         riverIndex: ri,
                     });
                 }
+                runStart = -1;
+            };
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const a = pts[k];
+                const b = pts[k + 1];
+                const drop = yOf(a) - yOf(b);
+                const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
+                const steep = drop > 0 && drop / horiz > HC.waterfallSlope;
+                if (steep) {
+                    if (runStart < 0) runStart = k;
+                } else {
+                    flush(k); // k ist der untere Punkt des letzten steilen Segments
+                }
             }
+            flush(pts.length - 1);
         }
         return waterfalls;
+    }
+
+    // === V9.43-c — die Hydrosphäre wird sichtbar ==========================
+    // Phase 6 (docs/hydrosphere.md §7): das Drainage-Netz aus V9.43-b
+    // (`state.hydrosphere`) wird gerendert — Fluss-Ribbons, See-Planes,
+    // Wasserfall-Planes. Vision §1.3 fraktal: vier Wasser-Geometrien, eine
+    // Wasser-Sprache. See + Fluss teilen das horizontale `_ensureHydro-
+    // SurfaceMaterial` (Flow steckt im per-Vertex-`aFlow`-Attribut — ein
+    // Material, fließende Flüsse + stille Seen); der Wasserfall reuset das
+    // V9.43-a-`_ensureWaterfallMaterial` (vertikale Flow-Plane). Alle drei
+    // Materialien werden von `_applyDayNightToScene` mit derselben Sonne/Fog
+    // gespeist. Kein Carven — V9.43-c rendert auf der un-gecarvten Surface;
+    // V9.43-d senkt die Betten, die Render-Höhe (`_voxelSurfaceY`) folgt
+    // dann automatisch in die Furche.
+    _buildHydrosphereMeshes() {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        const hydro = this.state.hydrosphere;
+        if (!hydro || !hydro.ready) return;
+        this._disposeHydrosphereMeshes(); // idempotenter Rebuild
+        const meshes = [];
+        const surfMat = this._ensureHydroSurfaceMaterial();
+        const wfMat = this._ensureWaterfallMaterial();
+        if (surfMat) {
+            for (const lake of hydro.lakes) {
+                const m = this._buildLakeMesh(hydro, lake, surfMat);
+                if (m) {
+                    this.state.scene.add(m);
+                    meshes.push(m);
+                }
+            }
+            for (let ri = 0; ri < hydro.rivers.length; ri++) {
+                const river = hydro.rivers[ri];
+                // V9.43-c.2 — der Fluss endet SICHTBAR an seinem Wasser: ein
+                // Meer-Mündungs-Fluss blendet auf `waterLevel`, ein See-
+                // Mündungs-Fluss auf `lake.level`. So fließt er INS Wasser,
+                // statt ein paar Meter darüber in der Luft zu enden (Schöpfer-
+                // Befund: „nicht synergetisch mit dem bestehenden Wasser").
+                let mouthY = null;
+                if (river.mouth === "sea") {
+                    mouthY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
+                } else if (river.mouth && typeof river.mouth.lake === "number") {
+                    const lk = hydro.lakes[river.mouth.lake];
+                    if (lk) mouthY = lk.level;
+                }
+                const m = this._buildRiverRibbon(river, surfMat, mouthY);
+                if (m) {
+                    this.state.scene.add(m);
+                    meshes.push(m);
+                }
+            }
+        }
+        if (wfMat) {
+            for (const wf of hydro.waterfalls) {
+                const m = this._buildHydroWaterfall(wf, wfMat);
+                if (m) {
+                    this.state.scene.add(m);
+                    meshes.push(m);
+                }
+            }
+        }
+        this.state.hydrosphereMeshes = meshes;
+        this.log(
+            `V9.43-c: Hydrosphäre gerendert — ${hydro.lakes.length} See-Planes, ${hydro.rivers.length} Fluss-Ribbons, ${hydro.waterfalls.length} Wasserfall-Planes`,
+            "INFO"
+        );
+    }
+
+    // Räumt alle gerenderten Hydrosphären-Meshes (Geometrie disposen, aus der
+    // Scene nehmen). Die Materialien sind welt-global geteilt — NICHT disposen
+    // (V9.43-a-Lehre: ein geteiltes Material disposen bricht jedes andere
+    // Wasser-Mesh). Idempotent.
+    _disposeHydrosphereMeshes() {
+        if (!Array.isArray(this.state.hydrosphereMeshes)) {
+            this.state.hydrosphereMeshes = [];
+            return;
+        }
+        for (const m of this.state.hydrosphereMeshes) {
+            if (this.state.scene) this.state.scene.remove(m);
+            if (m.geometry) m.geometry.dispose();
+        }
+        this.state.hydrosphereMeshes = [];
+    }
+
+    // V9.43-c.2 — der effektive Wasserspiegel an einer xz-Welt-Position:
+    // liegt (x,z) über einer See-Zelle, ist es der See-Füllstand
+    // (`lake.level`); sonst der globale Meeresspiegel (`state.waterLevel`).
+    // Die Physik-Schleife nutzt das, damit der Spieler in einem See genauso
+    // schwimmt wie im Meer — die Hydrosphäre ist EIN Wasser-System mit dem
+    // Meer (Schöpfer-Befund V9.43-c: „nicht synergetisch"). O(Seen) +ein
+    // `.includes` nur für den einen See, dessen bbox (x,z) umschliesst — pro
+    // Frame vernachlässigbar.
+    _hydroWaterLevelAt(x, z) {
+        const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
+        const hydro = this.state.hydrosphere;
+        if (!hydro || !hydro.ready || !Array.isArray(hydro.lakes)) return base;
+        const { dim, cell, originX, originZ } = hydro;
+        const i = Math.floor((x - originX) / cell);
+        const j = Math.floor((z - originZ) / cell);
+        if (i < 0 || j < 0 || i >= dim || j >= dim) return base;
+        const idx = i + j * dim;
+        for (const lake of hydro.lakes) {
+            const b = lake.bbox;
+            if (!b || x < b.minX - cell || x > b.maxX + cell || z < b.minZ - cell || z > b.maxZ + cell) {
+                continue;
+            }
+            if (Array.isArray(lake.cells) && lake.cells.includes(idx)) return lake.level;
+        }
+        return base;
+    }
+
+    // Eine See-Plane: ein Quad je See-Zelle, flach auf der Füll-Höhe
+    // (`lake.level`). Nur die echten See-Zellen werden gedeckt — kein bbox-
+    // Rechteck (das legte Wasser über trockenes Terrain in den Ecken). Jeder
+    // Vertex trägt `aFlow=(0,0)` → stilles Wasser (kein Flow-Scroll).
+    _buildLakeMesh(hydro, lake, mat) {
+        if (!Array.isArray(lake.cells) || lake.cells.length === 0) return null;
+        const { dim, cell, originX, originZ } = hydro;
+        const half = cell / 2;
+        const y = lake.level + 0.12; // knapp über dem Senken-Boden-Wasser
+        const positions = [];
+        const uvs = [];
+        const flow = [];
+        const indices = [];
+        let vi = 0;
+        for (const idx of lake.cells) {
+            const i = idx % dim;
+            const j = (idx / dim) | 0;
+            const cx = originX + (i + 0.5) * cell;
+            const cz = originZ + (j + 0.5) * cell;
+            positions.push(
+                cx - half,
+                y,
+                cz - half,
+                cx + half,
+                y,
+                cz - half,
+                cx + half,
+                y,
+                cz + half,
+                cx - half,
+                y,
+                cz + half
+            );
+            uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
+            flow.push(0, 0, 0, 0, 0, 0, 0, 0);
+            indices.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+            vi += 4;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geo.setAttribute("aFlow", new THREE.Float32BufferAttribute(flow, 2));
+        geo.setIndex(indices);
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "lake" };
+        return mesh;
+    }
+
+    // Ein Fluss-Ribbon: ein Quad-Streifen entlang der Polylinie, Breite ∝ √A
+    // (hydraulische Geometrie, aus den Punkt-`width`-Werten). Die Höhe folgt
+    // der ECHTEN Voxel-Surface (`point.voxelY`), geglättet + strikt fallend
+    // geklemmt (das Wasser hugt den Boden + fließt nie bergauf). V9.43-d
+    // senkt die Betten — `voxelY` an der Fluss-Mitte fällt dann, das Ribbon
+    // sitzt automatisch in der Furche. Jeder Vertex trägt `aFlow` = die
+    // Gefälle-Tangente → der Shader scrollt den Schaum stromab.
+    _buildRiverRibbon(river, mat, mouthY) {
+        const pts = river.points;
+        if (!Array.isArray(pts) || pts.length < 2) return null;
+        const n = pts.length;
+        // Render-Höhe: Voxel-Surface, geglättet, strikt fallend, kleiner Lift.
+        const ry = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+            const v = pts[i].voxelY;
+            ry[i] = typeof v === "number" && Number.isFinite(v) ? v : pts[i].y;
+        }
+        for (let pass = 0; pass < 3; pass++) {
+            const prev = ry.slice();
+            for (let i = 1; i < n - 1; i++) {
+                ry[i] = prev[i - 1] * 0.25 + prev[i] * 0.5 + prev[i + 1] * 0.25;
+            }
+        }
+        for (let i = 1; i < n; i++) {
+            if (ry[i] > ry[i - 1]) ry[i] = ry[i - 1];
+        }
+        // V9.43-c.2 — die Mündung erreicht ihr Wasser. Über die letzten ~40 %
+        // der Polylinie blendet die Render-Höhe zum Mündungs-Wasserspiegel
+        // (`mouthY`: `waterLevel` bzw. der Ziel-See-Level) → der Fluss fließt
+        // sichtbar INS Meer/den See, kein Rinnsal-Ende in der Luft mehr. Der
+        // +0.18-Lift verschwindet zur Mündung hin (`liftScale`), sodass der
+        // letzte Vertex exakt auf dem Mündungs-Wasserspiegel sitzt.
+        const liftScale = new Float64Array(n).fill(1);
+        if (typeof mouthY === "number" && Number.isFinite(mouthY)) {
+            const blendStart = Math.max(0, Math.floor(n * 0.6));
+            const span = n - 1 - blendStart;
+            for (let i = blendStart; i < n; i++) {
+                const t = span > 0 ? (i - blendStart) / span : 1;
+                ry[i] = ry[i] * (1 - t) + mouthY * t;
+                liftScale[i] = 1 - t;
+            }
+            ry[n - 1] = mouthY;
+            liftScale[n - 1] = 0;
+        }
+        // Flow-Richtung je Punkt — der letzte Punkt erbt die des vorletzten
+        // (an der Mündung ist flowX/flowZ 0).
+        const fx = new Float64Array(n);
+        const fz = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+            let dx = pts[i].flowX || 0;
+            let dz = pts[i].flowZ || 0;
+            if (dx === 0 && dz === 0 && i > 0) {
+                dx = fx[i - 1];
+                dz = fz[i - 1];
+            }
+            fx[i] = dx;
+            fz[i] = dz;
+        }
+        const positions = [];
+        const uvs = [];
+        const flow = [];
+        const indices = [];
+        let acc = 0;
+        const cum = new Float64Array(n);
+        for (let i = 1; i < n; i++) {
+            acc += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+            cum[i] = acc;
+        }
+        const total = acc || 1;
+        for (let i = 0; i < n; i++) {
+            const p = pts[i];
+            // perpendikulär zur Flow-Tangente (Flow ist normalisiert).
+            const perpX = -fz[i];
+            const perpZ = fx[i];
+            const halfW = Math.max(1.0, p.width * 0.5);
+            const y = ry[i] + 0.18 * liftScale[i]; // Lift gegen Z-Fighting, an der Mündung 0
+            positions.push(p.x + perpX * halfW, y, p.z + perpZ * halfW);
+            positions.push(p.x - perpX * halfW, y, p.z - perpZ * halfW);
+            const v = cum[i] / total;
+            uvs.push(0, v, 1, v);
+            flow.push(fx[i], fz[i], fx[i], fz[i]);
+        }
+        for (let i = 0; i + 1 < n; i++) {
+            const a = i * 2;
+            indices.push(a, a + 1, a + 3, a, a + 3, a + 2);
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        geo.setAttribute("aFlow", new THREE.Float32BufferAttribute(flow, 2));
+        geo.setIndex(indices);
+        geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "river" };
+        return mesh;
+    }
+
+    // Eine Wasserfall-Plane: die V9.43-a-Geometrie + das geteilte
+    // `_ensureWaterfallMaterial` — wiederverwendet, nur die Spawn-Quelle ist
+    // jetzt das Drainage-Netz (`hydro.waterfalls`) statt per-Chunk-Zufall.
+    // Vertikale Plane an der Fluss-Klippen-Kreuzung, gedreht so dass die
+    // Normale (+z) den Sturz hinab zeigt (die Gefälle-Tangente).
+    _buildHydroWaterfall(wf, mat) {
+        const dropH = Math.min(Math.max(wf.topY - wf.bottomY, 2), 60);
+        const width = Math.max(3, wf.width || 3);
+        const planeH = dropH + 2;
+        const segH = Math.max(6, Math.round(planeH / 2.5));
+        const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(wf.x, (wf.topY + wf.bottomY) / 2, wf.z);
+        let dx = wf.flowX || 0;
+        let dz = wf.flowZ || 0;
+        if (dx === 0 && dz === 0) dz = 1;
+        mesh.rotation.y = Math.atan2(dx, dz);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall" };
+        return mesh;
+    }
+
+    // V9.43-c — das geteilte horizontale Wasser-Material für Fluss-Ribbons
+    // + See-Planes. EIN ShaderMaterial für beide: der Flow steckt im per-
+    // Vertex-`aFlow`-Attribut — ein Fluss-Vertex trägt seine Gefälle-Tangente
+    // (Schaum scrollt stromab), ein See-Vertex trägt (0,0) (stilles Wasser).
+    // So bewältigt ein Material den bog-bewegten See UND den bog-gebogenen
+    // Fluss (jede Polylinie-Biegung ist eine andere Flow-Tangente). Teilt die
+    // Wasser-Substanz-Sprache mit Meer (`_buildWaterPlane`) + Wasserfall
+    // (`_ensureWaterfallMaterial`): dieselben uDeep/uShallow/uFoam-Farben,
+    // dieselben uSunDir/uLight/fog*-Uniforms (von `_applyDayNightToScene`
+    // gespeist). Vision §1.3 fraktal — eine Wasser-Sprache, vier Geometrien.
+    _ensureHydroSurfaceMaterial() {
+        if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
+        if (typeof THREE === "undefined") return null;
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uFlowSpeed: { value: 0.5 },
+                uDeep: { value: new THREE.Color(0x16364f) },
+                uShallow: { value: new THREE.Color(0x3f88a8) },
+                uFoam: { value: new THREE.Color(0xdff1ff) },
+                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
+                uLight: { value: 1.0 },
+                fogColor: { value: new THREE.Color(0x88a0c8) },
+                fogNear: { value: 35 },
+                fogFar: { value: 150 },
+            },
+            vertexShader: `
+                attribute vec2 aFlow;
+                varying vec3 vWorldPos;
+                varying vec3 vNormal;
+                varying vec2 vFlow;
+                varying float vFogDepth;
+                void main() {
+                    vFlow = aFlow;
+                    vec4 wp = modelMatrix * vec4(position, 1.0);
+                    vWorldPos = wp.xyz;
+                    // V8.44 — Welt-Raum-Normale (Beleuchtung wandert nicht mit
+                    // der Kamera).
+                    vNormal = normalize(mat3(modelMatrix) * normal);
+                    vec4 mv = viewMatrix * wp;
+                    // V8.45 — radiale Distanz (dreh-invariant) wie Terrain.
+                    vFogDepth = length(mv.xyz);
+                    gl_Position = projectionMatrix * mv;
+                }
+            `,
+            fragmentShader: `
+                uniform float uTime;
+                uniform float uFlowSpeed;
+                uniform vec3 uDeep;
+                uniform vec3 uShallow;
+                uniform vec3 uFoam;
+                uniform vec3 uSunDir;
+                uniform float uLight;
+                uniform vec3 fogColor;
+                uniform float fogNear;
+                uniform float fogFar;
+                varying vec3 vWorldPos;
+                varying vec3 vNormal;
+                varying vec2 vFlow;
+                varying float vFogDepth;
+                float hash(vec2 p) {
+                    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
+                }
+                float vnoise(vec2 p) {
+                    vec2 i = floor(p);
+                    vec2 f = fract(p);
+                    vec2 u = f * f * (3.0 - 2.0 * f);
+                    return mix(
+                        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+                        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+                        u.y
+                    );
+                }
+                void main() {
+                    vec2 xz = vWorldPos.xz;
+                    // Welt-Raum-Normale, nach oben gezwungen (Lighting).
+                    vec3 n = normalize(vNormal);
+                    if (n.y < 0.0) n = -n;
+                    // Basis-Wasserfarbe: sanftes Welt-Raum-Noise mischt tief/flach.
+                    float baseN = vnoise(xz * 0.05 + uTime * 0.03);
+                    vec3 col = mix(uDeep, uShallow, 0.32 + 0.42 * baseN);
+                    // Schaum: für einen Fluss (aFlow != 0) Strähnen, die stromab
+                    // treiben; für einen See (aFlow == 0) ein ruhiges Schimmern.
+                    float fmag = length(vFlow);
+                    float foam;
+                    if (fmag > 0.01) {
+                        vec2 fdir = vFlow / fmag;
+                        vec2 perp = vec2(-fdir.y, fdir.x);
+                        float along = dot(xz, fdir);
+                        float across = dot(xz, perp);
+                        float s = vnoise(vec2(across * 0.55, along * 0.13 - uTime * uFlowSpeed));
+                        s += 0.5 * vnoise(vec2(across * 1.2, along * 0.32 - uTime * uFlowSpeed * 1.7));
+                        foam = clamp((s / 1.5 - 0.42) * 2.4, 0.0, 1.0);
+                    } else {
+                        float rip = vnoise(xz * 0.13 + uTime * 0.05);
+                        foam = clamp((rip - 0.74) * 2.6, 0.0, 1.0) * 0.5;
+                    }
+                    col = mix(col, uFoam, foam * 0.7);
+                    col *= uLight;
+                    // Sonnen-Glitzern (Blinn-Phong wie Meer + Wasserfall).
+                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
+                    float spec = pow(max(dot(n, halfV), 0.0), 48.0);
+                    col += vec3(1.0, 0.97, 0.85) * spec * 0.7 * uLight;
+                    // Fog — Custom-Shader erbt THREE.Fog nicht.
+                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
+                    col = mix(col, fogColor, fogF);
+                    // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
+                    float fres = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
+                    float alpha = mix(0.80, 0.97, fres);
+                    gl_FragColor = vec4(col, alpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
+        this.state.hydroSurfaceMaterial = mat;
+        return mat;
     }
 
     // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
@@ -14990,122 +15483,14 @@ class AnazhRealm {
         return mat;
     }
 
-    // V9.43-a — Wasserfälle aus der Voxel-Surface-Steilheit, als vertikale
-    // Wasser-Planes. Pro Chunk ein 6×6-Raster; an jedem Sample wird die
-    // Steilheit über die `_voxelSurfaceY`-Differenz zu vier Nachbar-Punkten
-    // gemessen; ein steiles Voxel-Profil (≥4 m Höhen-Drop über 4 m Distanz)
-    // bekommt mit ~12 % Hash-Wahrscheinlichkeit einen Wasserfall an seiner
-    // Klippen-Kante. **V9.43-a heilt den Schöpfer-Audit-Befund #5**: V9.32
-    // baute Wasserfälle als `THREE.Points`-Partikel — eine zweite Wasser-
-    // Sprache neben der Gerstner-Plane des Meeres (Vision §1.3 gebrochen).
-    // Jetzt: eine vertikale `PlaneGeometry`, gedreht so dass die Normale die
-    // Klippe hinab zeigt, mit dem geteilten `_ensureWaterfallMaterial`-Shader
-    // (Abwärts-Flow). Eine Wasser-Sprache: Plane + Wasser-Shader + Flow-Vektor.
-    // Das Material ist welt-global geteilt (alle Wasserfälle, ein Material) —
-    // die Animation läuft über `uTime`, kein per-Partikel-Loop mehr. Pro-Chunk-
-    // Lifecycle via `state.voxelChunkWaterfalls`-Map (analog `voxelChunkGrass`),
-    // in `_disposeVoxelChunkWaterfalls` abgeräumt (NUR die Geometrie — das
-    // Material ist geteilt). Spawn-Sprache wie Gras (V9.22) + Vegetation
-    // (V9.24), am Voxel-Chunk-Lifecycle aufgehängt; deterministisch (chunk-key-
-    // gebundener RNG → Mesh-Mitspieler sehen identische Wasserfälle).
-    _buildVoxelChunkWaterfalls(cx, cz) {
-        if (!this.state.scene || typeof THREE === "undefined") return;
-        if (!this.state.voxelChunkWaterfalls) this.state.voxelChunkWaterfalls = new Map();
-        const key = `${cx},${cz}`;
-        if (this.state.voxelChunkWaterfalls.has(key)) return; // idempotent
-        const { span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        const SAMPLES = 6;
-        const step = span / SAMPLES;
-        // Deterministic-RNG (chunk-key + seed-gebunden) — zwei Spieler im
-        // Mesh sehen identische Wasserfälle an identischen Stellen.
-        let rs = ((cx * 73856093) ^ (cz * 19349663) ^ 0xc2b2ae35) >>> 0 || 1;
-        const rnd = () => {
-            rs = (rs + 0x6d2b79f5) >>> 0;
-            let t = rs;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-        const delta = 4.0; // Nachbar-Distanz für Steilheits-Messung
-        const minDrop = 4.0; // ≥4 m Höhen-Differenz über 4 m Distanz = steil
-        const spawnProbability = 0.12;
-        const created = [];
-        const mat = this._ensureWaterfallMaterial();
-        if (!mat) {
-            this.state.voxelChunkWaterfalls.set(key, created);
-            return;
-        }
-        for (let zi = 0; zi < SAMPLES; zi++) {
-            for (let xi = 0; xi < SAMPLES; xi++) {
-                const sx = ox + (xi + 0.5) * step;
-                const sz = oz + (zi + 0.5) * step;
-                const y0 = this._voxelSurfaceY(sx, sz);
-                if (!Number.isFinite(y0)) continue;
-                // Steilheit aus Voxel-Surface-Gradient: max Höhen-Drop zu
-                // den vier achsen-parallelen Nachbarn. Eine Klippe trifft
-                // dieselbe Stelle aus mehreren Richtungen — wir nehmen das
-                // Maximum UND merken uns die Richtung (für die Plane-Drehung).
-                const neighbors = [
-                    { dx: delta, dz: 0, y: this._voxelSurfaceY(sx + delta, sz) },
-                    { dx: -delta, dz: 0, y: this._voxelSurfaceY(sx - delta, sz) },
-                    { dx: 0, dz: delta, y: this._voxelSurfaceY(sx, sz + delta) },
-                    { dx: 0, dz: -delta, y: this._voxelSurfaceY(sx, sz - delta) },
-                ];
-                let maxDrop = 0;
-                let bestDir = null;
-                for (const nb of neighbors) {
-                    if (Number.isFinite(nb.y) && y0 - nb.y > maxDrop) {
-                        maxDrop = y0 - nb.y;
-                        bestDir = nb;
-                    }
-                }
-                if (maxDrop < minDrop || !bestDir) continue;
-                if (rnd() > spawnProbability) continue;
-
-                // Vertikale Wasser-Plane an der Klippen-Kante. Die Plane liegt
-                // in xy (Höhe entlang y); gedreht so dass ihre Normale (+z)
-                // die Klippe hinab zeigt (Richtung des steilsten Nachbarn).
-                const dirX = bestDir.dx / delta;
-                const dirZ = bestDir.dz / delta;
-                const dropH = Math.min(maxDrop, 44);
-                const width = 3 + rnd() * 3; // 3–6 m
-                const planeH = dropH + 2; // etwas über die Lippe + in den Pool
-                const segH = Math.max(6, Math.round(planeH / 2.5));
-                const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
-                const wf = new THREE.Mesh(geo, mat);
-                wf.position.set(sx + dirX * (delta * 0.5), y0 + 0.5 - planeH / 2, sz + dirZ * (delta * 0.5));
-                wf.rotation.y = Math.atan2(dirX, dirZ);
-                wf.renderOrder = 1;
-                wf.userData = { isWaterfall: true };
-                this.state.scene.add(wf);
-                if (!Array.isArray(this.state.waterfalls)) this.state.waterfalls = [];
-                this.state.waterfalls.push(wf);
-                created.push(wf);
-            }
-        }
-        this.state.voxelChunkWaterfalls.set(key, created);
-    }
-
-    _disposeVoxelChunkWaterfalls(key) {
-        if (!this.state.voxelChunkWaterfalls) return;
-        const wfs = this.state.voxelChunkWaterfalls.get(key);
-        if (Array.isArray(wfs)) {
-            for (const wf of wfs) {
-                if (this.state.scene) this.state.scene.remove(wf);
-                if (wf.geometry) wf.geometry.dispose();
-                // V9.43-a — das Material NICHT disposen: es ist welt-global
-                // geteilt (`state.waterfallMaterial`). Ein Dispose hier würde
-                // beim ersten Chunk-Prune jeden anderen Wasserfall brechen.
-                if (Array.isArray(this.state.waterfalls)) {
-                    const idx = this.state.waterfalls.indexOf(wf);
-                    if (idx >= 0) this.state.waterfalls.splice(idx, 1);
-                }
-            }
-        }
-        this.state.voxelChunkWaterfalls.delete(key);
-    }
+    // V9.43-c — der V9.32/V9.43-a per-Chunk-Zufalls-Wasserfall-Spawner
+    // (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls`) ist hier
+    // gelöscht. Wasserfälle kommen jetzt aus dem Hydrosphären-Netz: ein
+    // Wasserfall ist ein Fluss-Abschnitt, der eine echte Voxel-Klippe kreuzt
+    // (`_hydroExtractWaterfalls` + `_buildHydroWaterfall`) — kontextvoll
+    // statt per-Chunk-Zufall. Das Material `_ensureWaterfallMaterial` + die
+    // vertikale Plane-Geometrie bleiben (von `_buildHydroWaterfall` reuset);
+    // nur die Spawn-Quelle wanderte vom Zufall zum Drainage-Netz (§7/§10).
 
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
     // Distanz über dem Ring-Radius + 1 — eine Pufferzone gegen Flackern).
@@ -31465,6 +31850,24 @@ class AnazhRealm {
                 if (wfu.fogFar) wfu.fogFar.value = fog.far;
             }
         }
+        // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
+        // + See-Planes) teilt dieselbe Wasser-Substanz-Sprache: Sonne, Licht,
+        // Fog von derselben Tag-Nacht-Quelle. Eine Wasser-Sprache, vier
+        // Geometrien (Meer, Wasserfall, Fluss, See).
+        if (
+            this.state.hydroSurfaceMaterial &&
+            this.state.hydroSurfaceMaterial.uniforms &&
+            this.state.directionalLight
+        ) {
+            const hsu = this.state.hydroSurfaceMaterial.uniforms;
+            if (hsu.uSunDir) hsu.uSunDir.value.copy(sunDir);
+            if (hsu.uLight) hsu.uLight.value = Math.max(0.22, dl.intensity);
+            if (fog) {
+                if (hsu.fogColor) hsu.fogColor.value.copy(fog.color);
+                if (hsu.fogNear) hsu.fogNear.value = fog.near;
+                if (hsu.fogFar) hsu.fogFar.value = fog.far;
+            }
+        }
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
@@ -33998,10 +34401,20 @@ class AnazhRealm {
                     // blauer Tint). Sonst sprang der Tint schon beim
                     // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
                     if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
-                        const submerged = scaledY < this.state.waterLevel;
+                        // V9.43-c.2 — der effektive Wasserspiegel: steht der
+                        // Spieler über einem See, dessen Füll-Level; sonst der
+                        // Meeresspiegel. So schwimmt/taucht er im See wie im
+                        // Meer — die Hydrosphäre ist EIN Wasser-System mit dem
+                        // Meer (Schöpfer-Befund: „nicht synergetisch").
+                        const effWater = this._hydroWaterLevelAt(
+                            pos.x() * this.state.scaleFactor,
+                            pos.z() * this.state.scaleFactor
+                        );
+                        const waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
+                        const submerged = scaledY < waterY;
                         this.state.playerUnderwater = submerged;
                         // Augen sitzen auf Kamera-Höhe (scaledY + 1.6).
-                        this.state.playerEyesUnderwater = scaledY + 1.6 < this.state.waterLevel;
+                        this.state.playerEyesUnderwater = scaledY + 1.6 < waterY;
                         if (submerged) {
                             // V8.36 — Auftrieb wirkt NUR über dem Terrain.
                             // Fällt der Spieler durch die Welt (weit unter
@@ -34020,7 +34433,7 @@ class AnazhRealm {
                                 // Eingabe wirkt der natürliche Auftrieb.
                                 const swimVy = this._swimVerticalVelocity(
                                     velocity.y(),
-                                    this.state.waterLevel - scaledY,
+                                    waterY - scaledY,
                                     !!this.state.keys["shift"],
                                     !!this.state.keys[" "]
                                 );
@@ -34434,6 +34847,12 @@ class AnazhRealm {
         // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
         if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
             this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
+        }
+        // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
+        // + See-Planes) wird zentral animiert; der Flow-Shader scrollt den
+        // Schaum stromab je nach per-Vertex-`aFlow`.
+        if (this.state.hydroSurfaceMaterial && this.state.hydroSurfaceMaterial.uniforms) {
+            this.state.hydroSurfaceMaterial.uniforms.uTime.value = currentTime;
         }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
