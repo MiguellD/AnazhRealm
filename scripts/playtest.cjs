@@ -12627,8 +12627,13 @@ function startSaveServer() {
                         out.lakeMeshCount = lakes.length;
                         out.riverMeshCount = rivers.length;
                         out.fallMeshCount = falls.length;
+                        // V9.45-b — Seen ≤ waterLevel+2 sind faktisch
+                        // Meeresspiegel: sie bekommen KEINE eigene Plane (die
+                        // Meeres-Plane deckt sie, sonst zwei Wasser-Ebenen).
+                        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
+                        const renderedLakes = hydro.lakes.filter((l) => l.level > wl + 2);
                         out.countsMatch =
-                            lakes.length === hydro.lakes.length &&
+                            lakes.length === renderedLakes.length &&
                             rivers.length === hydro.rivers.length &&
                             falls.length === hydro.waterfalls.length;
                         // See + Fluss nutzen das geteilte Surface-Material
@@ -12642,13 +12647,14 @@ function startSaveServer() {
                                     m.geometry &&
                                     m.geometry.type === "PlaneGeometry"
                             );
-                        // See-Plane sitzt auf der Füll-Höhe (lake.level)
+                        // See-Plane sitzt auf der Füll-Höhe (lake.level) —
+                        // V9.45-b: über userData.lakeLevel geprüft (die
+                        // Mesh-Liste deckt nur die gerenderten Seen).
                         out.lakeOnLevel =
                             lakes.length === 0 ||
-                            lakes.every((m, k) => {
-                                const lk = hydro.lakes[k];
+                            lakes.every((m) => {
                                 const py = m.geometry.attributes.position.array[1];
-                                return lk && Math.abs(py - (lk.level + 0.12)) < 0.5;
+                                return Math.abs(py - (m.userData.lakeLevel + 0.12)) < 0.5;
                             });
                         // Fluss-Ribbon trägt das aFlow-Attribut + wird stromab breiter
                         out.ribbonHasFlow = true;
@@ -12818,7 +12824,8 @@ function startSaveServer() {
                     // (2) der Carve-Index ist an state.hydrosphere verdrahtet
                     out.indexWired =
                         Array.isArray(hydro.riverBuckets) &&
-                        hydro.lakeCutCell instanceof Float32Array &&
+                        hydro.lakeBedCell instanceof Float32Array &&
+                        hydro.lakeW instanceof Float32Array &&
                         hydro.lakeNear instanceof Uint8Array &&
                         typeof hydro.bucketSize === "number" &&
                         typeof hydro.bucketsDim === "number";
@@ -12838,28 +12845,26 @@ function startSaveServer() {
                         const HC = r.constructor.HYDROSPHERE;
                         const rx = rp.x;
                         const rz = rp.z;
+                        // V9.45-b — lakeNear neutralisiert: alle Fluss-Sub-Tests
+                        // messen den reinen Fluss-Carve + das Terrain, ohne dass
+                        // ein zufällig benachbarter See-Blend die Mess-Punkte
+                        // verfälscht (ein Fluss-Punkt kann im 1-Ring eines Sees
+                        // liegen). Am Ende des Blocks wiederhergestellt.
+                        const savedLN = hydro.lakeNear;
+                        hydro.lakeNear = new Uint8Array(savedLN.length);
                         // (3) der Fluss-Mittelpunkt wird gecarvt
                         const carveCenter = r._hydrosphereCarveAt(rx, rz);
                         out.riverCenterCarved = carveCenter > 0.5;
                         // (4) das Bett liegt unter den Ufern: das Carve-Profil
-                        // fällt von der Fluss-Mitte zur Bank-Rampe hin ab. Seen
-                        // sind für diesen river-only-Sub-Test neutralisiert — ein
-                        // zufällig benachbarter See (~20 % der Region) würde sonst
-                        // beide Mess-Punkte gleich tief carven.
+                        // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
                         const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
                         const bankW = Math.max(2, D * HC.carveBankSlope);
                         const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
                         const pX = -rp.flowZ;
                         const pZ = rp.flowX;
-                        const savedLC = hydro.lakeCutCell;
-                        const savedLN = hydro.lakeNear;
-                        hydro.lakeCutCell = new Float32Array(savedLC.length);
-                        hydro.lakeNear = new Uint8Array(savedLN.length);
                         const rcCenter = r._hydrosphereCarveAt(rx, rz);
                         const midOff = halfW + bankW * 0.45;
                         const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-                        hydro.lakeCutCell = savedLC;
-                        hydro.lakeNear = savedLN;
                         out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
                         // (5) der Carve senkt die Voxel-Surface am Fluss
                         const sCarve = r._voxelSurfaceY(rx, rz);
@@ -12884,28 +12889,33 @@ function startSaveServer() {
                         // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
                         const base = r.state.terrainBaseHeight || 0;
                         out.floorSolid = r._terrainDensityAt(rx, base - 56, rz) > 0;
+                        hydro.lakeNear = savedLN;
                     }
-                    // (6+7) ein See-Becken wird gecarvt, der Boden liegt unter dem Spiegel
-                    out.lakeCarved = false;
-                    out.lakeFloorBelowLevel = false;
-                    for (let li = 0; li < hydro.lakes.length && !out.lakeCarved; li++) {
+                    // (6+7) V9.45-b — ein See-Becken wird zu einem flachen,
+                    // wasserdichten Topf gesculptet: `_hydrosphereLakeAt` liefert
+                    // ein bedY über dem Meeresspiegel (die Meeres-Plane bleibt
+                    // verdeckt) + unter dem See-Spiegel; die geblendete Voxel-
+                    // Surface sitzt auf bedY, knapp darunter ist fester Grund.
+                    out.lakeSculpted = false;
+                    out.lakeBedWatertight = false;
+                    const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
+                    for (let li = 0; li < hydro.lakes.length && !out.lakeSculpted; li++) {
                         const lk = hydro.lakes[li];
-                        if (!Array.isArray(lk.cells)) continue;
-                        for (let c = 0; c < lk.cells.length; c++) {
-                            const idx = lk.cells[c];
-                            const ci = idx % hydro.dim;
-                            const cj = (idx / hydro.dim) | 0;
-                            const wx = hydro.originX + (ci + 0.5) * hydro.cell;
-                            const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                            if (r._hydrosphereCarveAt(wx, wz) > 0.5) {
-                                out.lakeCarved = true;
-                                const sC = r._voxelSurfaceY(wx, wz);
-                                r._hydroComputing = true;
-                                const sN = r._voxelSurfaceY(wx, wz);
-                                r._hydroComputing = false;
-                                out.lakeFloorBelowLevel = Number.isFinite(sC) && Number.isFinite(sN) && sC < sN - 0.3;
-                                break;
-                            }
+                        if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
+                        if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
+                        const idx = lk.cells[(lk.cells.length / 2) | 0];
+                        const ci = idx % hydro.dim;
+                        const cj = (idx / hydro.dim) | 0;
+                        const wx = hydro.originX + (ci + 0.5) * hydro.cell;
+                        const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                        const la = r._hydrosphereLakeAt(wx, wz);
+                        if (la && la.w > 0.5 && Number.isFinite(la.bedY)) {
+                            out.lakeSculpted = true;
+                            const bedOk = la.bedY > wl2 && la.bedY < lk.level;
+                            const solidBelow = r._terrainDensityAt(wx, la.bedY - 2, wz) > 0;
+                            const surfY = r._voxelSurfaceY(wx, wz);
+                            const surfOnBed = Number.isFinite(surfY) && Math.abs(surfY - la.bedY) < 2.5;
+                            out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
                         }
                     }
                     // (11) Re-Compute ist zirkel-frei: das Suppress-Flag hält den
@@ -12935,7 +12945,7 @@ function startSaveServer() {
                 const d = voxelV943d;
                 check("Voxel V9.43-d: _hydrosphereCarveAt + _hydroBuildCarveIndex existieren", d.methodsExist);
                 check(
-                    "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeCutCell/lakeNear)",
+                    "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
                     d.indexWired
                 );
                 check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
@@ -12956,10 +12966,10 @@ function startSaveServer() {
                     "Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)",
                     d.floorSolid
                 );
-                check("Voxel V9.43-d: ein See-Becken wird gecarvt", d.lakeCarved);
+                check("Voxel V9.45-b: ein See-Becken wird zu einem flachen Topf gesculptet", d.lakeSculpted);
                 check(
-                    "Voxel V9.43-d: der See-Boden wird unter den un-gecarvten Stand gesenkt (gemuldetes Becken)",
-                    d.lakeFloorBelowLevel
+                    "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
+                    d.lakeBedWatertight
                 );
                 check(
                     "Voxel V9.43-d: ein Re-Compute bleibt zirkel-frei (Suppress-Flag — gleiches Netz wie der Worldgen-Compute)",

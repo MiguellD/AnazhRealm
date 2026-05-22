@@ -13725,9 +13725,31 @@ class AnazhRealm {
             const cave = Math.max(0, (ridge - 0.7) / 0.3);
             d -= cave * caveEnv * 36;
         }
-        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
-        // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die
-        // Edits leben in worldMeta.voxelEdits (persistiert mit der Welt).
+        // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
+        // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
+        // flachen, wasserdichten Topf geblendet: die Dichte rampt zur Bett-
+        // Ebene `bedY` (w=1 im See-Innern, 0 am Ufer) → der Boden ist
+        // lückenlos, die 3D-Roughness verschwindet im Becken, und das Bett
+        // liegt über dem Meeresspiegel (die Meeres-Plane bleibt verdeckt —
+        // kein Durchsehen aufs Meer mehr). Zirkel-frei: `_hydroComputing`
+        // unterdrückt beides, während `_computeHydrosphere` selbst die
+        // Surface sampelt. Ohne Hydrosphäre bit-identisch zu vor V9.43-d.
+        // VOR den Voxel-Edits — ein Spieler-Edit gilt zuletzt + gewinnt über
+        // das prozedurale Wasser-Sculpting (V9.45-b-Lehre: sonst überschriebe
+        // der See-Blend einen Fill mitten im Becken).
+        const hydro = this.state.hydrosphere;
+        if (hydro && hydro.ready && !this._hydroComputing) {
+            d -= this._hydrosphereCarveAt(x, z);
+            const lk = this._hydrosphereLakeAt(x, z);
+            if (lk) {
+                const flatD = lk.bedY - y;
+                d = d * (1 - lk.w) + flatD * lk.w;
+            }
+        }
+        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab (carve)
+        // oder schüttet auf (fill). Die Edits leben in worldMeta.voxelEdits
+        // (persistiert mit der Welt) und gelten ZULETZT — der Spieler-Wille
+        // überschreibt Terrain UND Hydrosphäre-Sculpting an seiner Kugel.
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         if (edits && edits.length) {
             for (let e = 0; e < edits.length; e++) {
@@ -13741,37 +13763,25 @@ class AnazhRealm {
                 if (dist2 < r * r) {
                     const fall = 1 - Math.sqrt(dist2) / r;
                     const amt = fall * (ed.strength || 48);
-                    // Phase 3b — `fill` addiert Dichte (Boden aufschütten),
-                    // `carve` (Default, auch mode-lose Alt-Edits) zieht ab.
+                    // `fill` addiert Dichte (Boden aufschütten), `carve`
+                    // (Default, auch mode-lose Alt-Edits) zieht ab.
                     if (ed.mode === "fill") d += amt;
                     else d -= amt;
                 }
             }
         }
-        // V9.43-d — der Hydrosphären-Carve: das Drainage-Netz senkt die
-        // Dichte im Fluss-Kanal + in See-Senken → der Mesher produziert echte
-        // Rinnen mit Ufern + gemuldete Becken. Zirkel-frei: `_hydroComputing`
-        // unterdrückt den Carve, während `_computeHydrosphere` selbst die
-        // Surface sampelt (sonst läse ein Re-Compute die gecarvte Surface —
-        // hydrosphere.md §8). Ohne Hydrosphäre bit-identisch zu vor V9.43-d.
-        const hydro = this.state.hydrosphere;
-        if (hydro && hydro.ready && !this._hydroComputing) {
-            d -= this._hydrosphereCarveAt(x, z);
-        }
         return d;
     }
 
-    // V9.43-d — die Bett-Senkung an einer xz-Welt-Position (≥ 0; subtrahiert
-    // von der Dichte → senkt die Surface um genau diesen Betrag). Zwei
-    // Quellen: (1) der Fluss-Kanal — über den Bucket-Index die Segmente der
-    // Umgebung, je Segment der nächste Punkt + ein Flachboden-Profil (volle
-    // Tiefe bis zur halben Fluss-Breite, dann eine smoothstep-Bank-Rampe);
-    // (2) das See-Becken — ein vorberechnetes Cut-Feld, bilinear interpoliert
-    // (glatte ~16-m-Ufer-Rampe). MAX statt Summe (an einer Fluss-See-Mündung
-    // gewinnt der tiefere Schnitt — keine Über-Senkung). O(1) amortisiert:
-    // die zwei Early-Outs (leerer Bucket / `lakeNear==0`) machen die 99 % der
-    // Welt ohne Wasser zu ~6 Ops — `_terrainDensityAt` wird millionenfach
-    // beim Meshing gerufen.
+    // V9.43-d / V9.45-b — die FLUSS-Bett-Senkung an einer xz-Welt-Position
+    // (≥ 0; subtrahiert von der Dichte → senkt die Surface um diesen Betrag).
+    // Über den Bucket-Index die Fluss-Segmente der Umgebung, je Segment der
+    // nächste Punkt + ein Flachboden-Profil (volle Tiefe bis zur halben
+    // Fluss-Breite, dann eine smoothstep-Bank-Rampe). MAX über die Segmente.
+    // O(1) amortisiert: der leere-Bucket-Early-Out macht die wasserlose Welt
+    // zu ~5 Ops — `_terrainDensityAt` wird millionenfach beim Meshing gerufen.
+    // Die SEE-Becken wandern seit V9.45-b nach `_hydrosphereLakeAt` — sie
+    // sind kein reiner Schnitt mehr, sondern ein flacher, wasserdichter Topf.
     _hydrosphereCarveAt(x, z) {
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return 0;
@@ -13812,35 +13822,49 @@ class AnazhRealm {
                 }
             }
         }
-        // --- See-Becken: bilineare Interpolation des Cut-Felds ---
-        const lc = h.lakeCutCell;
-        const ln = h.lakeNear;
-        if (lc && ln) {
-            const dim = h.dim;
-            const cell = h.cell;
-            const ci = Math.floor((x - h.originX) / cell);
-            const cj = Math.floor((z - h.originZ) / cell);
-            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim && ln[ci + cj * dim]) {
-                const cf = (x - h.originX) / cell - 0.5;
-                const gf = (z - h.originZ) / cell - 0.5;
-                const i0 = Math.floor(cf);
-                const j0 = Math.floor(gf);
-                const tx = cf - i0;
-                const tz = gf - j0;
-                const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
-                const i0c = cl(i0);
-                const i1c = cl(i0 + 1);
-                const j0c = cl(j0);
-                const j1c = cl(j0 + 1);
-                const v00 = lc[i0c + j0c * dim];
-                const v10 = lc[i1c + j0c * dim];
-                const v01 = lc[i0c + j1c * dim];
-                const v11 = lc[i1c + j1c * dim];
-                const lcut = (v00 * (1 - tx) + v10 * tx) * (1 - tz) + (v01 * (1 - tx) + v11 * tx) * tz;
-                if (lcut > cut) cut = lcut;
-            }
-        }
         return cut;
+    }
+
+    // V9.45-b — das See-Becken an einer xz-Welt-Position. Liefert `{bedY, w}`
+    // oder null: `bedY` ist die flache, wasserdichte Bett-Höhe des Sees,
+    // `w` ∈ [0,1] die Becken-Zugehörigkeit (1 im See-Innern, rampt über den
+    // 1-Zellen-Ring auf 0 zum Ufer). `_terrainDensityAt` blendet die Dichte
+    // mit `w` zur flachen Bett-Ebene → der Boden ist lückenlos (kein
+    // Durchtauchen mehr), die 3D-Roughness verschwindet im Becken, und das
+    // Bett liegt garantiert über dem Meeresspiegel (die globale Meeres-Plane
+    // bleibt vom festen Bett verdeckt — kein zweites Wasser-Layer mehr).
+    // Bilinear; der `lakeNear`-Early-Out hält die wasserlose Welt billig.
+    _hydrosphereLakeAt(x, z) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return null;
+        const lw = h.lakeW;
+        const lb = h.lakeBedCell;
+        const ln = h.lakeNear;
+        if (!lw || !lb || !ln) return null;
+        const dim = h.dim;
+        const cell = h.cell;
+        const ci = Math.floor((x - h.originX) / cell);
+        const cj = Math.floor((z - h.originZ) / cell);
+        if (ci < 0 || cj < 0 || ci >= dim || cj >= dim || !ln[ci + cj * dim]) return null;
+        const cf = (x - h.originX) / cell - 0.5;
+        const gf = (z - h.originZ) / cell - 0.5;
+        const i0 = Math.floor(cf);
+        const j0 = Math.floor(gf);
+        const tx = cf - i0;
+        const tz = gf - j0;
+        const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
+        const i0c = cl(i0);
+        const i1c = cl(i0 + 1);
+        const r0 = cl(j0) * dim;
+        const r1 = cl(j0 + 1) * dim;
+        const w =
+            (lw[i0c + r0] * (1 - tx) + lw[i1c + r0] * tx) * (1 - tz) +
+            (lw[i0c + r1] * (1 - tx) + lw[i1c + r1] * tx) * tz;
+        if (w <= 0) return null;
+        const bedY =
+            (lb[i0c + r0] * (1 - tx) + lb[i1c + r0] * tx) * (1 - tz) +
+            (lb[i0c + r1] * (1 - tx) + lb[i1c + r1] * tx) * tz;
+        return { bedY, w };
     }
 
     // Surface Nets — ein 3D-Dichte-Feld zu einem glatten Mesh. Zwei Pässe:
@@ -14590,7 +14614,8 @@ class AnazhRealm {
                 riverBuckets: carve.riverBuckets,
                 bucketSize: carve.bucketSize,
                 bucketsDim: carve.bucketsDim,
-                lakeCutCell: carve.lakeCutCell,
+                lakeBedCell: carve.lakeBedCell,
+                lakeW: carve.lakeW,
                 lakeNear: carve.lakeNear,
                 stats: {
                     cells: dim * dim,
@@ -15152,18 +15177,17 @@ class AnazhRealm {
         return waterfalls;
     }
 
-    // V9.43-d — der Carve-Index. Aus dem fertigen Netz (Flüsse + Seen) zwei
-    // Lookup-Strukturen, die `_hydrosphereCarveAt` O(1) machen: (1) ein
-    // Fluss-Bucket-Grid — jedes Fluss-Segment wird in alle Buckets eingetragen,
-    // die seine um die Kanal-Reichweite erweiterte Bounding-Box berührt; eine
-    // Carve-Abfrage liest einen Bucket. (2) ein See-Cut-Feld `lakeCutCell`
-    // (je Region-Zelle die Bett-Senkung, vorberechnet aus `ctx.surf`) + die
-    // dilatierte Maske `lakeNear` (Early-Out: kein See in der 3×3-Nachbarschaft
-    // → die bilineare Abfrage entfällt). Pure Daten — kein `_terrainDensityAt`-
-    // Aufruf, kein Zirkel.
+    // V9.43-d / V9.45-b — der Carve-Index. Aus dem fertigen Netz die
+    // Lookup-Strukturen für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`:
+    // (1) ein Fluss-Bucket-Grid — jedes Fluss-Segment wird in alle Buckets
+    // eingetragen, die seine um die Kanal-Reichweite erweiterte Bounding-Box
+    // berührt; eine Carve-Abfrage liest einen Bucket. (2) die See-Becken-
+    // Raster `lakeBedCell` (die flache Bett-Höhe je Zelle), `lakeW` (die
+    // Becken-Zugehörigkeit 0/1) + die dilatierte Maske `lakeNear` (Early-Out).
+    // Pure Daten — kein `_terrainDensityAt`-Aufruf, kein Zirkel.
     _hydroBuildCarveIndex(ctx, rivers, lakes) {
         const HC = AnazhRealm.HYDROSPHERE;
-        const { dim, originX, originZ, size, surf } = ctx;
+        const { dim, originX, originZ, size, waterLevel } = ctx;
         const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
         // --- Fluss-Bucket-Grid ---
         const bucketSize = HC.carveBucketSize;
@@ -15204,31 +15228,49 @@ class AnazhRealm {
                 });
             }
         }
-        // --- See-Cut-Feld + dilatierte Nähe-Maske ---
+        // --- See-Becken-Raster (V9.45-b) ---
+        // `lakeBedCell` = die flache, wasserdichte Bett-Höhe `bedY` je Zelle
+        // (auf 2 Ringe propagiert, damit die bilineare Ufer-Interpolation
+        // saubere Eck-Werte hat); `lakeW` = die Becken-Zugehörigkeit (1 in
+        // einer echten See-Zelle, sonst 0 — die Interpolation rampt daraus
+        // die 0..1-Ufer-Mischung); `lakeNear` = die 1-Ring-Maske (Early-Out).
+        // `bedY` wird in [waterLevel+0.5, level−1.2] geklemmt: das Bett liegt
+        // garantiert über dem Meeresspiegel (die globale Meeres-Plane bleibt
+        // verdeckt) UND unter dem See-Spiegel (das Becken ist nie degeneriert).
+        // Seen ≤ waterLevel+2 sind faktisch Meeresspiegel — sie werden NICHT
+        // gesculptet, die Meeres-Plane deckt sie (`_buildLakeMesh` lässt ihre
+        // Plane ebenfalls weg → keine zwei Wasser-Ebenen übereinander).
         const n = dim * dim;
-        const lakeCutCell = new Float32Array(n);
+        const lakeBedCell = new Float32Array(n);
+        const lakeW = new Float32Array(n);
         const lakeNear = new Uint8Array(n);
         for (let li = 0; li < lakes.length; li++) {
             const lake = lakes[li];
-            const targetFloor = lake.level - HC.carveLakeBedDepth;
+            if (lake.level <= waterLevel + 2.0) continue; // faktisch Meeresspiegel
+            let bedY = lake.level - HC.carveLakeBedDepth;
+            const minBed = waterLevel + 0.5;
+            const maxBed = lake.level - 1.2;
+            if (bedY < minBed) bedY = minBed;
+            if (bedY > maxBed) bedY = maxBed;
             const cells = lake.cells || [];
             for (let c = 0; c < cells.length; c++) {
                 const idx = cells[c];
-                const cutv = surf[idx] - targetFloor;
-                lakeCutCell[idx] = cutv > 0 ? cutv : 0;
                 const ci = idx % dim;
                 const cj = (idx / dim) | 0;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
+                lakeW[idx] = 1;
+                for (let dj = -2; dj <= 2; dj++) {
+                    for (let di = -2; di <= 2; di++) {
                         const ni = ci + di;
                         const nj = cj + dj;
                         if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                        lakeNear[ni + nj * dim] = 1;
+                        const nidx = ni + nj * dim;
+                        lakeBedCell[nidx] = bedY; // bedY auf 2 Ringe propagiert
+                        if (di >= -1 && di <= 1 && dj >= -1 && dj <= 1) lakeNear[nidx] = 1;
                     }
                 }
             }
         }
-        return { riverBuckets, bucketSize, bucketsDim, lakeCutCell, lakeNear };
+        return { riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
     }
 
     // === V9.43-c — die Hydrosphäre wird sichtbar ==========================
@@ -15339,21 +15381,42 @@ class AnazhRealm {
         return base;
     }
 
-    // Eine See-Plane: ein Quad je See-Zelle, flach auf der Füll-Höhe
-    // (`lake.level`). Nur die echten See-Zellen werden gedeckt — kein bbox-
-    // Rechteck (das legte Wasser über trockenes Terrain in den Ecken). Jeder
+    // V9.45-b — eine See-Plane: ein Quad je gedeckter Zelle, flach auf der
+    // Füll-Höhe (`lake.level`). Gedeckt sind die echten See-Zellen PLUS ein
+    // 1-Zellen-Ring — die Plane schiebt sich unter das ansteigende Ufer-
+    // Terrain, das opake Terrain schneidet die Wasserlinie sauber (kein in
+    // der Luft schwebender Rand, kein Ufer-im-Boden-Klaffen mehr). Ein See ≤
+    // waterLevel+2 ist faktisch Meeresspiegel — die Meeres-Plane deckt ihn,
+    // hier KEINE eigene Plane (sonst zwei Wasser-Ebenen übereinander). Jeder
     // Vertex trägt `aFlow=(0,0)` → stilles Wasser (kein Flow-Scroll).
     _buildLakeMesh(hydro, lake, mat) {
         if (!Array.isArray(lake.cells) || lake.cells.length === 0) return null;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : -Infinity;
+        if (lake.level <= waterLevel + 2.0) return null; // faktisch Meeresspiegel
         const { dim, cell, originX, originZ } = hydro;
         const half = cell / 2;
-        const y = lake.level + 0.12; // knapp über dem Senken-Boden-Wasser
+        const y = lake.level + 0.12; // knapp über dem Becken-Boden-Wasser
+        // die See-Zellen + 1-Ring decken — so schneidet das opake Ufer-
+        // Terrain die Wasserlinie, statt sie an der Zell-Kante abzuschneiden.
+        const covered = new Set();
+        for (const idx of lake.cells) {
+            const lci = idx % dim;
+            const lcj = (idx / dim) | 0;
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    const ni = lci + di;
+                    const nj = lcj + dj;
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    covered.add(ni + nj * dim);
+                }
+            }
+        }
         const positions = [];
         const uvs = [];
         const flow = [];
         const indices = [];
         let vi = 0;
-        for (const idx of lake.cells) {
+        for (const idx of covered) {
             const i = idx % dim;
             const j = (idx / dim) | 0;
             const cx = originX + (i + 0.5) * cell;
@@ -15386,7 +15449,7 @@ class AnazhRealm {
         const mesh = new THREE.Mesh(geo, mat);
         mesh.renderOrder = 1;
         mesh.frustumCulled = false;
-        mesh.userData = { isHydrosphere: true, hydroKind: "lake" };
+        mesh.userData = { isHydrosphere: true, hydroKind: "lake", lakeLevel: lake.level };
         return mesh;
     }
 
