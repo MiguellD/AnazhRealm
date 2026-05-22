@@ -610,19 +610,18 @@ Playtest-Invarianten (`_buildWaterPlane`-Existenz/-Höhe). Bewusst eng.
 
 ```
 state.hydrosphere.water = {
-  waterY:   Float32Array(dim*dim),   // Flut-Oberfläche je Zelle (= filled) — stehendes Wasser
-  terrainY: Float32Array(dim*dim),   // Makro-Gelände je Zelle (= surf) — das Fluss-Bett
+  waterY:    Float32Array(dim*dim),  // flacher Spiegel je Wasser-Körper (Ozean/See)
   waterKind: Uint8Array(dim*dim),    // 0 Land · 1 Ozean · 2 See
 }
 ```
 
-Aus `ctx` der bestehenden Berechnung: `waterKind` aus `isOcean`/`lakeOf`, `waterY` aus
-`filled` (Ozean → `waterLevel`, See → `lake.level`), `terrainY` aus der geblurrten
-Makro-Surface `surf`. Rein deterministisch, headless-prüfbar — wie das ganze restliche
-Hydrosphären-Feld nicht im Save persistiert. **Warum zwei Höhen** (V9.49-d): stehendes
-Wasser (See/Ozean) sitzt auf `waterY` — flach gepoolt; fliessendes Wasser (Fluss) +
-die Ufer-Kante folgen `terrainY` — sonst schwebt ein Fluss an steilen Hängen, weil der
-Priority-Flood `filled` fast flach hält (nur ε-Gefälle), das Gelände aber steil fällt.
+Aus `ctx` der bestehenden Berechnung: `waterKind` aus `isOcean`/`lakeOf`, `waterY` als
+flacher Spiegel je Körper (Ozean → `waterLevel`, See → `lake.level`; eine trockene Zelle
+trägt den Meeresspiegel-Default). Rein deterministisch, headless-prüfbar — wie das ganze
+restliche Hydrosphären-Feld nicht im Save persistiert. **V9.49-d hatte hier zusätzlich
+ein `terrainY`-Feld** (Makro-Gelände, für die Fluss-Vertices); V9.49-e hat es wieder
+entfernt — der Fluss liest sein Bett live aus `_terrainMacroSurfaceY` minus der
+Carve-Tiefe, das Feld trägt nur noch `waterY` + `waterKind` (§13.10).
 
 ### 12.8 Die Wellen-Schneidung
 
@@ -815,3 +814,30 @@ heute; der Rebuild bleibt im Perf-Budget (kein Vollscan dazugekommen).
   Konsolidierung, keine Re-Komplexifizierung.
 - **Roadmap-Lehre 1 + V9.47-Lehre** — nicht die Naht polieren (das wäre der fünfte
   Anlauf), das Verfahren wechseln: die Wasser-Kante wird nicht mehr autorisiert.
+
+### 13.10 Geliefert (V9.49-e) — und die ehrliche Plan-Abweichung
+
+Gebaut 22.05.2026, playtest-grün („Alle Invarianten OK"); der Schöpfer-Browser-Audit
+steht aus (wie bei jeder Wasser-Welle). Vier Code-Stellen, netto schlanker:
+
+- **`_hydroBuildWaterField`** legt nur noch `{waterY, waterKind}` ab — `terrainY` ist
+  entfallen. `waterY` trägt den flachen Spiegel je Wasser-Körper (Ozean → `waterLevel`,
+  See → `lake.level`), eine trockene Zelle den Meeresspiegel-Default.
+- **`_buildUnifiedWaterGeometry`** — der trockene Rand-Skirt bleibt auf dem Spiegel
+  (kein `terrainY`-Sprung mehr); ein Boundary-Quad fällt zum Meeresspiegel-Default ab
+  und taucht unter das opake Ufer. Fluss-Vertices sitzen auf `_terrainMacroSurfaceY −
+  0.4·D` — im gecarvten Bett, dem Gefälle folgend.
+- **`_unifiedNearestRiverSeg`** liefert zusätzlich die Carve-Tiefe `D` und greift bis
+  zur vollen Carve-Breite (`halfW + bankW`) — das Ribbon deckt den ganzen Kanal, die
+  ansteigende Bank-Rampe verdeckt seinen Rand.
+- **Playtest**: das `waterY ≥ terrainY`-Invariant (V9.49-d) ist entfallen, ersetzt
+  durch „alle Ozean-Zellen teilen EINEN flachen Spiegel" — netto ±0 Invarianten.
+
+**Die ehrliche Plan-Abweichung**: §13.3 entwarf einen ~2-Zell-Skirt, dessen Vertices
+ALLE explizit auf dem Spiegel sitzen. Die Implementierung braucht keinen expliziten
+Skirt-Ring: weil eine trockene Zelle im Feld den Meeresspiegel-Default trägt, fällt
+jedes Boundary-Quad von selbst dorthin ab und taucht unter das ansteigende Ufer. Der
+Skirt ist keine Zähl-Konstante, sondern eine Konsequenz des Defaults — einfacher als
+geplant, dasselbe Ergebnis (das Quad ist verdeckt, ob es bei einem See zum Meeres-
+spiegel kippt oder flach auf dem See-Level läge). Der Tarn-Pass (§13.6, V9.49-f)
+bleibt offen.

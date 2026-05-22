@@ -12665,39 +12665,41 @@ function startSaveServer() {
                     out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
                     // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
                     out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-                    // V9.49-a — das vereinte Wasser-Feld: `waterY` (Flut-
-                    // Oberfläche, stehendes Wasser) + `terrainY` (Makro-Gelände,
-                    // das Fluss-Bett) + Klassifikation (`waterKind` 0 Land ·
-                    // 1 Ozean · 2 See). Die Wahrheit, aus der V9.49 EIN
-                    // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12).
+                    // V9.49-a/e — das vereinte Wasser-Feld: je Region-Zelle der
+                    // flache Wasser-Spiegel (`waterY`) + die Klassifikation
+                    // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt
+                    // `waterLevel`, ein See `lake.level`, eine trockene Zelle
+                    // den Meeresspiegel-Default. Die Wahrheit, aus der V9.49 EIN
+                    // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12 + §13).
                     const wf = h1.water;
                     out.waterFieldShape =
                         !!wf &&
                         wf.waterY instanceof Float32Array &&
-                        wf.terrainY instanceof Float32Array &&
                         wf.waterKind instanceof Uint8Array &&
                         wf.waterY.length === h1.dim * h1.dim &&
-                        wf.terrainY.length === h1.dim * h1.dim &&
                         wf.waterKind.length === h1.dim * h1.dim;
                     let kindOk = true;
                     let finiteOk = true;
-                    let aboveTerrain = true;
                     let oceanCells = 0;
                     let lakeFieldCells = 0;
+                    let oceanY = null;
+                    let oceanFlat = true;
                     if (out.waterFieldShape) {
                         for (let i = 0; i < wf.waterKind.length; i++) {
                             const k = wf.waterKind[i];
                             if (k > 2) kindOk = false;
-                            if (k === 1) oceanCells++;
-                            else if (k === 2) lakeFieldCells++;
+                            if (k === 1) {
+                                oceanCells++;
+                                // V9.49-e — alle Ozean-Zellen teilen EINEN
+                                // flachen Spiegel (kein per-Zelle-filled mehr).
+                                if (oceanY === null) oceanY = wf.waterY[i];
+                                else if (Math.abs(wf.waterY[i] - oceanY) > 1e-4) oceanFlat = false;
+                            } else if (k === 2) lakeFieldCells++;
                             if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
-                            if (!Number.isFinite(wf.terrainY[i])) finiteOk = false;
-                            // die Flut liegt nie unter dem Gelände (filled ≥ surf)
-                            if (wf.waterY[i] < wf.terrainY[i] - 0.01) aboveTerrain = false;
                         }
                     }
                     out.waterKindValid = kindOk && finiteOk;
-                    out.waterAboveTerrain = aboveTerrain;
+                    out.waterFieldOceanFlat = oceanFlat && oceanCells > 0;
                     out.waterFieldOceanCells = oceanCells;
                     out.waterFieldLakeCells = lakeFieldCells;
                     // das Feld IST das Netz: Ozean-/See-Zell-Zahl deckt sich mit
@@ -12741,13 +12743,13 @@ function startSaveServer() {
                 );
                 check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
                 check(
-                    "Voxel V9.49-a: das vereinte Wasser-Feld {waterY, terrainY, waterKind} hat dim²-Form",
+                    "Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form",
                     hb.waterFieldShape
                 );
-                check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY + terrainY je Zelle endlich", hb.waterKindValid);
+                check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
                 check(
-                    "Voxel V9.49-a: die Flut-Oberfläche liegt nie unter dem Gelände (waterY ≥ terrainY)",
-                    hb.waterAboveTerrain
+                    "Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel",
+                    hb.waterFieldOceanFlat
                 );
                 check(
                     `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,

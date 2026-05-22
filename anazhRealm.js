@@ -10031,11 +10031,13 @@ class AnazhRealm {
         this._buildUnifiedWaterMesh(cx, cz);
     }
 
-    // V9.49-b — die nächste Fluss-Mittellinie an (x,z), falls (x,z) im Kanal
-    // liegt (Distanz ≤ halbe Fluss-Breite). Liefert die normierte Flow-
-    // Richtung oder null. Reuse des `riverBuckets`-O(1)-Index (wie
-    // `_hydrosphereCarveAt`) — der Fluss entsteht im vereinten Mesh als nasse
-    // Quads, deren Oberfläche das Wasser-Feld trägt.
+    // V9.49-b/e — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
+    // Kanal liegt: Distanz ≤ halbe Fluss-Breite + Bank-Rampe (die VOLLE
+    // Carve-Breite, damit das Wasser-Ribbon den ganzen Kanal deckt und seine
+    // ansteigende Bank-Rampe den Ribbon-Rand verdeckt — die Uferlinie ist der
+    // emergente Schnitt). Liefert die normierte Flow-Richtung + die Carve-Tiefe
+    // `depth` (das Ribbon liegt damit IN seinem Bett), oder null. Reuse des
+    // `riverBuckets`-O(1)-Index (wie `_hydrosphereCarveAt`).
     _unifiedNearestRiverSeg(x, z) {
         const h = this.state.hydrosphere;
         if (!h || !h.ready || !h.riverBuckets) return null;
@@ -10046,9 +10048,11 @@ class AnazhRealm {
         if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
         const list = h.riverBuckets[bj * bd + bi];
         if (!list) return null;
+        const bankSlope = AnazhRealm.HYDROSPHERE.carveBankSlope;
         let bestD = Infinity;
         let dirX = 0;
         let dirZ = 0;
+        let depth = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -10061,14 +10065,17 @@ class AnazhRealm {
             const pz = seg.az + ez * t;
             const dist = Math.hypot(x - px, z - pz);
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-            if (dist <= halfW && dist < bestD) {
+            const D = seg.dA + (seg.dB - seg.dA) * t;
+            const bankW = Math.max(2, D * bankSlope);
+            if (dist <= halfW + bankW && dist < bestD) {
                 bestD = dist;
                 const len = Math.sqrt(len2);
                 dirX = ex / len;
                 dirZ = ez / len;
+                depth = D;
             }
         }
-        return bestD < Infinity ? { dirX, dirZ } : null;
+        return bestD < Infinity ? { dirX, dirZ, depth } : null;
     }
 
     // V9.49-b — die Geometrie des vereinten Wasser-Meshes: ein Höhenfeld-
@@ -10092,7 +10099,6 @@ class AnazhRealm {
         const oX = ready ? hydro.originX : 0;
         const oZ = ready ? hydro.originZ : 0;
         const wY = ready ? hydro.water.waterY : null;
-        const tYf = ready ? hydro.water.terrainY : null;
         const wK = ready ? hydro.water.waterKind : null;
         const cl = (v, hi) => (v < 0 ? 0 : v > hi ? hi : v);
         const positions = new Float32Array(NV * NV * 3);
@@ -10105,13 +10111,12 @@ class AnazhRealm {
                 const vIdx = i + j * NV;
                 const vx = ox + i * CELL;
                 const vz = oz + j * CELL;
-                // waterSurf = Flut-Oberfläche (stehendes Wasser, See/Ozean
-                // flach gepoolt); terrSurf = Makro-Gelände = das Fluss-Bett.
+                // waterSurf = der flache Spiegel des deckenden Wasser-Körpers;
+                // eine trockene Zelle trägt im Feld den Meeresspiegel-Default.
                 let waterSurf = waterLevel;
-                let terrSurf = waterLevel;
                 let oceanC = 4;
                 let waterC = 4;
-                let fieldWet = true; // Default: Fallback-Meer (keine Hydrosphäre)
+                let pooled = true; // Default: Fallback-Meer (keine Hydrosphäre)
                 if (ready) {
                     const inRegion = vx >= oX && vz >= oZ && vx < oX + dim * cellH && vz < oZ + dim * cellH;
                     const cf = (vx - oX) / cellH - 0.5;
@@ -10126,8 +10131,6 @@ class AnazhRealm {
                     const d = cl(i0 + 1, dim - 1) + cl(j0 + 1, dim - 1) * dim;
                     if (inRegion) {
                         waterSurf = (wY[a] * (1 - tx) + wY[b] * tx) * (1 - tz) + (wY[c] * (1 - tx) + wY[d] * tx) * tz;
-                        terrSurf =
-                            (tYf[a] * (1 - tx) + tYf[b] * tx) * (1 - tz) + (tYf[c] * (1 - tx) + tYf[d] * tx) * tz;
                         oceanC = 0;
                         waterC = 0;
                         const corners = [a, b, c, d];
@@ -10140,30 +10143,35 @@ class AnazhRealm {
                                 waterC++;
                             }
                         }
-                        fieldWet = waterC > 0;
+                        pooled = waterC > 0;
                     }
-                    // ausserhalb der Region bleiben beide auf waterLevel (Ozean)
+                    // ausserhalb der Region bleibt der Vertex Fallback-Meer
                 }
                 positions[vIdx * 3] = vx;
                 positions[vIdx * 3 + 2] = vz;
-                if (fieldWet) {
-                    // stehendes Wasser — die flache Flut-Oberfläche
+                if (pooled) {
+                    // stehendes Wasser — der flache Spiegel des Wasser-Körpers
                     wet[vIdx] = 1;
                     positions[vIdx * 3 + 1] = waterSurf;
                     aWave[vIdx] = oceanC / 4;
                     aShore[vIdx] = waterC < 4 ? Math.min(1, (4 - waterC) / 4 + 0.15) : 0;
                 } else {
-                    // im Feld trocken — der Vertex sitzt auf dem Makro-Gelände:
-                    // so taucht die Wasserkante (Dilatations-Ring) ins Terrain,
-                    // statt an steilen Stellen in der Luft zu schweben. Liegt
-                    // (vx,vz) in einem Fluss-Kanal, fliesst das Wasser dem Bett
-                    // nach (terrSurf), nicht der fast flachen Flut-Oberfläche.
-                    positions[vIdx * 3 + 1] = terrSurf;
+                    // im Feld trocken. Liegt (vx,vz) im gecarvten Fluss-Kanal,
+                    // fliesst hier Wasser — es liegt in seinem Bett (Makro-
+                    // Gelände − 0.4·Carve-Tiefe → 60 % gefüllter Kanal), folgt
+                    // also dem Gefälle; die ansteigende Carve-Bank verdeckt den
+                    // Ribbon-Rand. Sonst ist der Vertex der Rand-Skirt: er sitzt
+                    // auf dem Meeresspiegel-Default und taucht unter das
+                    // ansteigende Ufer (V9.49-e — die Uferlinie ist der
+                    // emergente Terrain-Schnitt, nicht autorisiert).
                     const seg = ready ? this._unifiedNearestRiverSeg(vx, vz) : null;
                     if (seg) {
                         wet[vIdx] = 1;
+                        positions[vIdx * 3 + 1] = this._terrainMacroSurfaceY(vx, vz) - seg.depth * 0.4;
                         aFlow[vIdx * 2] = seg.dirX;
                         aFlow[vIdx * 2 + 1] = seg.dirZ;
+                    } else {
+                        positions[vIdx * 3 + 1] = waterSurf;
                     }
                 }
             }
@@ -14981,8 +14989,8 @@ class AnazhRealm {
             // V9.43-d — den Carve-Index aus dem fertigen Netz bauen (Fluss-Bucket-
             // Grid + See-Cut-Feld); `_terrainDensityAt` liest ihn beim Meshen.
             const carve = this._hydroBuildCarveIndex(ctx, rivers, lakes);
-            // V9.49-a — das vereinte Wasser-Feld (`docs/hydrosphere.md` §12).
-            const water = this._hydroBuildWaterField(ctx);
+            // V9.49-a/e — das vereinte Wasser-Feld (`docs/hydrosphere.md` §12 + §13).
+            const water = this._hydroBuildWaterField(ctx, lakes);
             return {
                 ready: true,
                 originX: ctx.originX,
@@ -15022,28 +15030,35 @@ class AnazhRealm {
         }
     }
 
-    // V9.49-a — das vereinte Wasser-Feld. Das Priority-Flood-`filled` IST per
-    // Konstruktion eine kontinuierliche Wasser-Oberfläche über die ganze Region
-    // (Ozean = waterLevel, See = Füll-Höhe, Land ≈ Surface — der Flut-Pass
-    // hebt nur Senken). V9.49 baut daraus EIN spieler-folgendes Höhenfeld-Mesh
-    // statt vier getrennter Wasser-Schichten: `waterY` trägt die Flut-Oberfläche
-    // (stehendes Wasser — See/Ozean), `terrainY` die Makro-Gelände-Oberfläche
-    // (das Fluss-Bett — fliessendes Wasser folgt dem Hang, nicht der flachen
-    // Flut, sonst schwebt es an steilen Stellen), `waterKind` die Klassifikation
-    // (0 Land · 1 Ozean · 2 See). Reine Daten. `docs/hydrosphere.md` §12.
-    _hydroBuildWaterField(ctx) {
-        const { dim, filled, surf, isOcean, lakeOf } = ctx;
+    // V9.49-a/e — das vereinte Wasser-Feld: je Region-Zelle der flache
+    // Wasser-Spiegel (`waterY`) + die Klassifikation (`waterKind` 0 Land ·
+    // 1 Ozean · 2 See). Ozean trägt `waterLevel`, ein See seinen flachen
+    // Füll-Spiegel `lake.level` — stehendes Wasser ist EINE Höhe je Körper,
+    // kein per-Zelle-`filled` (dessen ε-Gefälle würde den See minimal kippen).
+    // Eine trockene Zelle bekommt den Meeresspiegel als Default: ein Rand-Quad
+    // fällt damit zum Meeresspiegel ab und taucht garantiert unter das
+    // ansteigende Ufer — das opake Terrain verdeckt es, die Uferlinie ist der
+    // emergente Schnitt (V9.49-e, `docs/hydrosphere.md` §13). `terrainY` ist
+    // mit V9.49-e entfallen — der Fluss liest sein Bett live aus
+    // `_terrainMacroSurfaceY` minus der Carve-Tiefe. Reine Daten.
+    _hydroBuildWaterField(ctx, lakes) {
+        const { dim, isOcean, lakeOf, waterLevel } = ctx;
         const n = dim * dim;
         const waterY = new Float32Array(n);
-        const terrainY = new Float32Array(n);
         const waterKind = new Uint8Array(n);
         for (let idx = 0; idx < n; idx++) {
-            waterY[idx] = filled[idx];
-            terrainY[idx] = surf[idx];
-            if (isOcean[idx]) waterKind[idx] = 1;
-            else if (lakeOf[idx] >= 0) waterKind[idx] = 2;
+            if (isOcean[idx]) {
+                waterKind[idx] = 1;
+                waterY[idx] = waterLevel;
+            } else if (lakeOf[idx] >= 0) {
+                waterKind[idx] = 2;
+                const lk = lakes[lakeOf[idx]];
+                waterY[idx] = lk ? lk.level : waterLevel;
+            } else {
+                waterY[idx] = waterLevel;
+            }
         }
-        return { waterY, terrainY, waterKind };
+        return { waterY, waterKind };
     }
 
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`
