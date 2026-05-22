@@ -680,3 +680,138 @@ See/Ozean-Vertices auf `waterY` (flach gepoolt), Fluss-Vertices + den trockenen
 Dilatations-Ring auf `terrainY` → der Fluss folgt dem Hang, die Ufer-Kante taucht ins
 Terrain. +1 Invariante (`waterY ≥ terrainY`). Das ist exakt, was das alte Fluss-Ribbon
 mit `_voxelSurfaceY` tat — nur feld-getrieben + billig. Ein zweiter Audit-Befund → V9.49-e.
+
+---
+
+## 13. V9.49-e — die Naht schliessen: das Wasser taucht, das Land schneidet
+
+**Stand**: geplant (22.05.2026), noch kein Code. Auslösung ist der zweite Schöpfer-
+Browser-Audit — „das Wasser, das Ufer, der Flusslauf teils in der Luft und
+unnatürlich; ein Flickenteppich?". Dieser Abschnitt ist die Wurzel-Antwort — und der
+bewusste Verzicht auf eine fünfte Naht-Politur.
+
+### 13.1 Der Befund — zwei Gelände-Wahrheiten, die sich nie versöhnen
+
+V9.49 hat die vier Wasser-Schichten zu einem Feld vereint — die richtige, vision-treue
+Idee. Der Rest-Fehler ist NICHT das Feld, sondern seine Datenquelle. Der Stamm trägt
+zwei Gelände-Wahrheiten:
+
+- **das gerenderte Voxel-Gelände** (`_voxelSurfaceY` / `_terrainDensityAt`): Makro-
+  Surface + zwei 3D-Roughness-Bänder (`noise3D·7 + noise3D·5`, zusammen ±12 m Crags) +
+  der Fluss-Carve + der See-Topf-Blend + Spieler-Edits;
+- **das Hydrosphären-Raster** (`_hydroInit`): 128² Zellen à 16 m, gesampelt aus
+  `_terrainMacroSurfaceY` OHNE Detail-Oktave und OHNE die 3D-Roughness, dann 3×3 verwischt.
+
+Das vereinte Mesh interpoliert das 16-m-Raster bilinear auf sein 3-m-Gitter — es trägt
+3-m-Auflösung, aber 16-m-Daten, und diese Daten beschreiben ein glatteres, ANDERES
+Gelände als das gemeshte. V9.49-d versuchte, die trockenen Ufer-/Fluss-Vertices auf
+dieses Makro-Gelände (`terrainY`) zu legen, damit sie das Terrain „küssen". Diese
+Koinzidenz KANN nicht halten — die zwei Wahrheiten driften per Konstruktion um bis zu
+±12 m. Das IST die Naht; jedes „in der Luft" ist sie. V9.43-d (Carve), V9.45-b (See-
+Topf), V9.49-d (`terrainY`-Sprung), der Dilatations-Ring — vier Anläufe an DERSELBEN
+Naht. Roadmap-Lehre 1 + V9.47-Lehre: hat ein Verfahren einen harten Konflikt, ist das
+*Verfahren* falsch, nicht der Parameter. Das Verfahren „die Wasser-Kante soll die
+Terrain-Kante treffen" IST der Konflikt.
+
+### 13.2 Wie es die Vorbilder tun — das Wasser berührt die Uferlinie nie
+
+Die professionelle Wasser-Darstellung (Sea of Thieves, Witcher 3, jede gute Engine-
+Wasser-Pipeline) löst die Uferlinie NICHT, indem das Wasser-Mesh an genau der richtigen
+Stelle endet. Sie lösen es umgekehrt:
+
+> Das Wasser ist eine simple Fläche, die UNTER das opake Gelände taucht. Das Gelände
+> wird zuerst gezeichnet und schreibt Tiefe; das Wasser (transparent, danach
+> gezeichnet) wird per Tiefen-Test überall dort verdeckt, wo Land davor liegt. Die
+> Uferlinie ist damit der **emergente Schnitt** von Wasser-Spiegel und Gelände —
+> pixelgenau, gratis, und so fein wie das Gelände-Mesh (das feine Voxel-Mesh).
+
+Man AUTORISIERT die Wasser-Kante nie. Man lässt das Land sie schneiden. Der Ufer-Schaum
+entsteht im Shader aus der Tiefen-Differenz (Wassertiefe ≈ 0 am Ufer) — V9.48 hat den
+Schaum schon tiefen-getrieben pro Vertex gemacht, das passt exakt dazu.
+
+Die Vorbedingung steht schon: `depthWrite:true` (V9.49-c) + das Wasser nach den opaken
+Objekten gezeichnet (`renderOrder 1`). Es fehlt nur der eine Schritt: **aufhören, den
+Rand-Vertex anzuheben.** Er bleibt auf dem Wasser-Spiegel und taucht unter das
+ansteigende Land — `terrainY` für stehendes Wasser wird damit überflüssig.
+
+### 13.3 Stehendes Wasser — die flache Platte taucht unter
+
+Jede Ozean-/See-Zelle emittiert ein Quad auf dem flachen Spiegel ihres Wasser-Körpers
+(`waterLevel` bzw. `lake.level`). Die nasse Maske wird um ~2 Zellen ins Land dilatiert;
+ALLE diese Vertices — nass UND der Dilatations-Skirt — sitzen auf dem flachen Spiegel.
+Das ansteigende opake Terrain verdeckt den Skirt; die Uferlinie emergiert dort, wo das
+Voxel-Gelände den Spiegel kreuzt. Gelöscht: die `terrSurf`-Platzierung der trockenen
+Ringe, das `terrainY`-Feld (für stehendes Wasser), die Ecken-Höhen-Logik. Netto weniger
+Code — Konsolidierung, Heilige Lektion.
+
+### 13.4 Fliessendes Wasser — das Ribbon liegt im gecarvten Trog
+
+Ein Fluss ist nicht flach — er folgt dem Gefälle. Sein Wasser gehört in den Trog, den
+`_hydrosphereCarveAt` schon gräbt (Flachboden-Profil, Tiefe `D = 1.4 + 0.16·Breite`,
+je Segment in `dA`/`dB` abgelegt). Die Fluss-Vertices sitzen darum auf
+`_terrainMacroSurfaceY(x,z) − D + flacheTiefe`: die Makro-Surface ist billig, `D` kommt
+aus dem nächsten Fluss-Segment — `_unifiedNearestRiverSeg` liefert schon `t` + die
+Breite, es bekommt zusätzlich `D`. Das Ribbon ist etwas breiter als der Kanal; die
+un-gecarvten Crag-Ufer verdecken den Überstand. Der Fluss folgt so dem Bett-Gefälle und
+liegt IN seiner Rinne — kein flacher Flut-Spiegel (V9.49-b), keine un-gecarvte
+Makro-Oberkante (V9.49-d).
+
+### 13.5 Warum die 16-m-Grobheit aufhört zu zählen
+
+Sobald die Uferlinie der Terrain-Schnitt ist, braucht das 16-m-Feld nur noch zweierlei:
+(a) die nasse MASKE — welcher Wasser-Körper deckt eine Zelle (grob genügt: der Skirt +
+die Terrain-Verdeckung schlucken die 16-m-Zacken); (b) den SPIEGEL je Körper — ein
+flacher Skalar, dessen 16-m-Abtastung exakt ist. Die Verfeinerung — die „lokale
+Annäherung", die der Schöpfer benannte — leistet das feine Voxel-Gelände, indem es
+schneidet. Gratis. Kein feineres Wasser-Feld nötig, kein `_voxelSurfaceY`-Vollscan
+(der §12.10-Einwand entfällt — man braucht die echte Surface gar nicht, man braucht das
+Land, das verdeckt).
+
+### 13.6 Bergseen — der additive Tarn-Pass (eigene Mini-Welle)
+
+„Flüsse ja, Bergseen nein" hat einen eigenen Grund: die Stream-Power-Erosion (V9.47)
+ist ein drainage-PERFEKTIONIERENDES Verfahren — sie senkt Kanäle, füllt nie Becken,
+entwässert über 36 Iterationen jedes Hochbecken. Echte Bergseen (Kar-Seen, Moränen-/
+Bergsturz-Stauungen, Krater) kommen aus STÖR-Ereignissen, die geschlossene Hochmulden
+hinterlassen — kein Erosions-Nebenprodukt. Man bekämpft die Erosion nicht, man ADDIERT:
+ein `_hydroSeedTarns`-Pass setzt nach der Erosion ein paar kleine Gauss-Mulden an
+hohen, sanft geneigten Stellen (Tief-Frequenz-Noise-Gate + Höhen-Gate + Hang-Gate). Die
+Mulde fliesst als Term ins erodierte Makro-Feld → das bestehende Priority-Flood
+ENTDECKT das geschlossene Becken und füllt es zum See, durch die schon gebaute
+Maschinerie. Eine Wasser-Sprache: eine Mulde wird zum See, gratis. Das ist eine eigene
+kleine Welle (V9.49-f), NICHT Teil der Naht-Heilung — ehrlich getrennt.
+
+### 13.7 Die Wellen-Schneidung
+
+| Sub-Welle | Inhalt |
+|---|---|
+| **V9.49-e** | Die tauchende Platte. `_buildUnifiedWaterGeometry`: der Dilatations-Skirt bleibt auf dem Wasser-Spiegel (kein `terrainY`-Sprung mehr); das Fluss-Ribbon auf `Makro − D`; `_unifiedNearestRiverSeg` um `D` erweitert. `terrainY` aus dem Wasser-Feld entfernt. depthWrite ist schon true (V9.49-c). |
+| **V9.49-f** | Der Tarn-Pass — Bergseen als additive Hochmulden (separat, optional). |
+
+*Test-Invarianten V9.49-e*: kein See-/Ozean-Vertex liegt über seinem Spiegel; ein
+Fluss-Vertex liegt unter der un-gecarvten Makro-Surface an seiner xz-Position; das Mesh
+bleibt ein geschweisstes Höhenfeld; eine Welt ohne Hydrosphäre ist bit-identisch zu
+heute; der Rebuild bleibt im Perf-Budget (kein Vollscan dazugekommen).
+
+### 13.8 Risiken, ehrlich benannt
+
+- **Z-Fighting an der Schnitt-Linie.** Wo Wasser-Spiegel und Terrain tiefen-gleich
+  liegen, kann die Uferlinie flimmern. Üblich; ein kleiner `polygonOffset` / eine
+  Tiefen-Bias am Wasser-Material heilt es — beim Browser-Audit prüfen.
+- **Fluss-Crag-Leck.** Die ±12-m-Roughness kann ein Ufer lokal unter `Makro − D`
+  drücken → das Ribbon quillt seitlich heraus. Die Carve-Bank-Rampe dämpft es; eine
+  optionale Roughness-Dämpfung im Kanal-Band (wie der See-Topf) bleibt als Reserve.
+- **Ultra-flaches Ufer.** Steigt das Terrain über den 2-Zell-Skirt nicht über den
+  Spiegel, bleibt ein schmaler Wasser-Saum sichtbar — das ist echtes Flachwasser,
+  korrekt, kein Bug.
+- **Der Wasserfall** bleibt die vertikale Ausnahme (§12.5), unverändert.
+
+### 13.9 Vision-Pfeiler-Check
+
+- **§1.1 / §1.3 fraktal** — das Feld hat keine Kanten; das LAND hat Kanten. Die
+  Uferlinie ist emergent, nicht autorisiert. „Wasser ist ein Feld" wird wörtlich: ein
+  Feld endet nicht, es taucht.
+- **Heilige Lektion** — V9.49-e LÖSCHT Code (`terrainY`-Feld, die Ecken-Höhen-Logik).
+  Konsolidierung, keine Re-Komplexifizierung.
+- **Roadmap-Lehre 1 + V9.47-Lehre** — nicht die Naht polieren (das wäre der fünfte
+  Anlauf), das Verfahren wechseln: die Wasser-Kante wird nicht mehr autorisiert.
