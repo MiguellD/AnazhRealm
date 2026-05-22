@@ -10091,6 +10091,10 @@ class AnazhRealm {
         const CELL = AnazhRealm.HYDROSPHERE.unifiedCell;
         const N = Math.round(AnazhRealm.HYDROSPHERE.unifiedExt / CELL);
         const NV = N + 1;
+        // V9.49-f — Roughness-Amplitude (m): bis `waterSurf + RIDGE_MARGIN` über
+        // der Makro-Surface gilt eine Zelle als nass; ein höherer Hügel klemmt
+        // das Wasser ab, sodass die flache Fläche nicht durch einen Grat ragt.
+        const RIDGE_MARGIN = 12;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         const hydro = this.state.hydrosphere;
         const ready = !!(hydro && hydro.ready && hydro.water && hydro.water.waterY);
@@ -10111,12 +10115,18 @@ class AnazhRealm {
                 const vIdx = i + j * NV;
                 const vx = ox + i * CELL;
                 const vz = oz + j * CELL;
+                // V9.49-f — die Makro-Gelände-Höhe an (vx,vz). Sie klemmt die
+                // nasse Maske an die Terrain-Wahrheit (kein Quad ragt durch
+                // einen Hügel ins nächste Tal) und trägt das Fluss-Bett.
+                // `_terrainMacroSurfaceY` ist billig — ein paar Noise-Calls,
+                // NICHT der `_voxelSurfaceY`-Säulen-March.
+                const macroY = this._terrainMacroSurfaceY(vx, vz);
                 // waterSurf = der flache Spiegel des deckenden Wasser-Körpers;
                 // eine trockene Zelle trägt im Feld den Meeresspiegel-Default.
                 let waterSurf = waterLevel;
                 let oceanC = 4;
                 let waterC = 4;
-                let pooled = true; // Default: Fallback-Meer (keine Hydrosphäre)
+                let inField = false; // in der Hydrosphären-Region klassifiziert?
                 if (ready) {
                     const inRegion = vx >= oX && vz >= oZ && vx < oX + dim * cellH && vz < oZ + dim * cellH;
                     const cf = (vx - oX) / cellH - 0.5;
@@ -10143,10 +10153,18 @@ class AnazhRealm {
                                 waterC++;
                             }
                         }
-                        pooled = waterC > 0;
+                        inField = true;
                     }
                     // ausserhalb der Region bleibt der Vertex Fallback-Meer
                 }
+                // V9.49-f — nass nur, wo das Makro-Gelände WIRKLICH unter dem
+                // Wasser-Spiegel liegt (+ Roughness-Marge): ein Grat zwischen
+                // zwei Buchten wird so NICHT geflutet, die flache Fläche ragt
+                // nicht ins nächste Tal hervor. In der Region zusätzlich auf
+                // die klassifizierten Ozean/See-Zellen (waterC) beschränkt;
+                // ausserhalb der Region das ebenso geklemmte Fallback-Meer.
+                const belowSurf = macroY < waterSurf + RIDGE_MARGIN;
+                const pooled = inField ? waterC > 0 && belowSurf : belowSurf;
                 positions[vIdx * 3] = vx;
                 positions[vIdx * 3 + 2] = vz;
                 if (pooled) {
@@ -10167,7 +10185,7 @@ class AnazhRealm {
                     const seg = ready ? this._unifiedNearestRiverSeg(vx, vz) : null;
                     if (seg) {
                         wet[vIdx] = 1;
-                        positions[vIdx * 3 + 1] = this._terrainMacroSurfaceY(vx, vz) - seg.depth * 0.4;
+                        positions[vIdx * 3 + 1] = macroY - seg.depth * 0.4;
                         aFlow[vIdx * 2] = seg.dirX;
                         aFlow[vIdx * 2 + 1] = seg.dirZ;
                     } else {
@@ -10197,6 +10215,10 @@ class AnazhRealm {
         geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlow, 2));
         geo.setAttribute("aShore", new THREE.BufferAttribute(aShore, 1));
         geo.setAttribute("aWave", new THREE.BufferAttribute(aWave, 1));
+        // V9.49-f — `aWet` (1 nass, 0 trockener Rand-Skirt): der Shader nutzt
+        // es nicht, aber es trennt im Playtest nasse Vertices vom trockenen
+        // Skirt (der bewusst unter das Terrain abtaucht — kein Defekt).
+        geo.setAttribute("aWet", new THREE.BufferAttribute(wet, 1));
         geo.setIndex(indices);
         return geo;
     }
@@ -16041,6 +16063,14 @@ class AnazhRealm {
             // (das „gestapelte Sheets"-Bild ist strukturell weg — es gibt nur
             // EINE Wasserfläche). Die Fresnel-Alpha hält den Grund von oben sichtbar.
             depthWrite: true,
+            // V9.49-f — polygonOffset: an einer streifenden Schnitt-Linie
+            // (flaches Wasser ⟂ sanft geneigtes Terrain) gewänne sonst mal das
+            // Wasser, mal das Terrain den Tiefen-Test → flimmernde Schnitt-
+            // Splitter. Der Offset schiebt das Wasser minimal in die Tiefe →
+            // das opake Terrain gewinnt jeden Gleichstand, die Uferlinie ist sauber.
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1,
             side: THREE.DoubleSide,
         });
         this.state.hydroSurfaceMaterial = mat;

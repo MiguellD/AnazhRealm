@@ -778,14 +778,15 @@ hohen, sanft geneigten Stellen (Tief-Frequenz-Noise-Gate + Höhen-Gate + Hang-Ga
 Mulde fliesst als Term ins erodierte Makro-Feld → das bestehende Priority-Flood
 ENTDECKT das geschlossene Becken und füllt es zum See, durch die schon gebaute
 Maschinerie. Eine Wasser-Sprache: eine Mulde wird zum See, gratis. Das ist eine eigene
-kleine Welle (V9.49-f), NICHT Teil der Naht-Heilung — ehrlich getrennt.
+kleine Welle (V9.49-g), NICHT Teil der Naht-Heilung — ehrlich getrennt.
 
 ### 13.7 Die Wellen-Schneidung
 
 | Sub-Welle | Inhalt |
 |---|---|
 | **V9.49-e** | Die tauchende Platte. `_buildUnifiedWaterGeometry`: der Dilatations-Skirt bleibt auf dem Wasser-Spiegel (kein `terrainY`-Sprung mehr); das Fluss-Ribbon auf `Makro − D`; `_unifiedNearestRiverSeg` um `D` erweitert. `terrainY` aus dem Wasser-Feld entfernt. depthWrite ist schon true (V9.49-c). |
-| **V9.49-f** | Der Tarn-Pass — Bergseen als additive Hochmulden (separat, optional). |
+| **V9.49-f** | ✅ Die Wasser-Fläche an die Terrain-Wahrheit klemmen (§13.11) — die nasse Maske liest `_terrainMacroSurfaceY`, kein Grat-Bleed mehr; `polygonOffset`. |
+| **V9.49-g** | Der Tarn-Pass — Bergseen als additive Hochmulden (separat, optional). |
 
 *Test-Invarianten V9.49-e*: kein See-/Ozean-Vertex liegt über seinem Spiegel; ein
 Fluss-Vertex liegt unter der un-gecarvten Makro-Surface an seiner xz-Position; das Mesh
@@ -839,5 +840,36 @@ Skirt-Ring: weil eine trockene Zelle im Feld den Meeresspiegel-Default trägt, f
 jedes Boundary-Quad von selbst dorthin ab und taucht unter das ansteigende Ufer. Der
 Skirt ist keine Zähl-Konstante, sondern eine Konsequenz des Defaults — einfacher als
 geplant, dasselbe Ergebnis (das Quad ist verdeckt, ob es bei einem See zum Meeres-
-spiegel kippt oder flach auf dem See-Level läge). Der Tarn-Pass (§13.6, V9.49-f)
+spiegel kippt oder flach auf dem See-Level läge). Der Tarn-Pass (§13.6, V9.49-g)
 bleibt offen.
+
+### 13.11 Geliefert (V9.49-f) — die Wasser-Fläche an die Terrain-Wahrheit geklemmt
+
+Gebaut 22.05.2026, playtest-grün. **Zweiter Schöpfer-Browser-Audit nach V9.49-e**:
+„direkt auf der anderen Seite eines Hügels, wieder ein Tal — die Wasseroberfläche
+durchschiesst, die andere Seite sieht unsauber aus, es ragt hervor." Befund: die nasse
+Maske kam allein aus der 16-m-`waterKind`-Klassifikation plus einer blinden Dilatation
+(die 4-Ecken-Abtastung weitet die nasse Region ~16 m ins Land). Über einen schmalen
+Grat bleeded die flache Fläche so ins nächste Tal. §13.5 hatte gehofft, die 16-m-Maske
+genüge — der Audit zeigte: die MASKE braucht die Terrain-Wahrheit (nur die HÖHE bleibt
+flach).
+
+Der Profi-Weg: **das Wasser an das submerse Gelände klemmen.** `_buildUnifiedWater-
+Geometry` fragt je Vertex `_terrainMacroSurfaceY` (billig — ein paar Noise-Calls, NICHT
+der `_voxelSurfaceY`-Säulen-March) und ist nass nur, wo `macroY < waterSpiegel +
+RIDGE_MARGIN` (12 m, die 3D-Roughness-Amplitude — so deckt das Wasser die ganze
+mögliche Ufer-Bandbreite, klemmt aber jeden Grat darüber ab). Das gilt auch fürs
+Fallback-Meer ausserhalb der Region (sonst läge dort eine Platte auf trockenem
+Hochland — exakt der Bug, den die neue Invariante beim ersten Wurf fing). Plus
+`polygonOffset` am Wasser-Material: an einer streifenden Schnitt-Linie gewinnt jetzt
+verlässlich das opake Terrain den Tiefen-Test → keine flimmernden Splitter mehr.
+
+Ein neues Geometrie-Attribut `aWet` (1 nass, 0 trockener Skirt) — der Shader nutzt es
+nicht, aber der Playtest trennt damit nasse Vertices vom Skirt (der bewusst abtaucht):
++1 Invariante (kein nasser Vertex liegt > RIDGE_MARGIN unter dem Makro-Gelände).
+
+**Plan-Korrektur zu §13.5**: „die 16-m-Grobheit hört auf zu zählen" galt für die HÖHE
+(die bleibt der flache Spiegel) — nicht für die MASKE. Eine flache Fläche, deren Rand
+allein eine 16-m-Klassifikation + blinde Dilatation bestimmt, ragt über schmale Grate.
+Die Maske braucht je Vertex `macroY` — das ist die „lokale Verfeinerung", die der
+Schöpfer von Anfang an benannte, jetzt am rechten Ort: an der Maske, nicht der Höhe.

@@ -12844,6 +12844,7 @@ function startSaveServer() {
                     // V9.49-b — das Mesh deckt den Ozean: an einer Ozean-Zelle
                     // gebaut, trägt es Vertices mit aWave ≈ 1 (Gerstner voll).
                     out.unifiedHasOcean = false;
+                    out.unifiedClippedToTerrain = true;
                     if (hydro.water && hydro.water.waterKind) {
                         let oi = -1;
                         for (let k = 0; k < hydro.water.waterKind.length; k++) {
@@ -12867,6 +12868,22 @@ function startSaveServer() {
                                     if (oaw[k] > 0.99) {
                                         out.unifiedHasOcean = true;
                                         break;
+                                    }
+                                }
+                                // V9.49-f — kein NASSER Vertex (aWet) ragt durch
+                                // einen Hügel: er liegt unter dem Makro-Gelände
+                                // + Roughness-Marge. Der trockene Rand-Skirt
+                                // (aWet 0) taucht bewusst ab — er zählt nicht.
+                                if (og.attributes.position && og.attributes.aWet) {
+                                    const pos = og.attributes.position.array;
+                                    const wetA = og.attributes.aWet.array;
+                                    for (let v = 0; v < wetA.length; v++) {
+                                        if (!wetA[v]) continue;
+                                        const mY = r._terrainMacroSurfaceY(pos[v * 3], pos[v * 3 + 2]);
+                                        if (mY > pos[v * 3 + 1] + 13.5) {
+                                            out.unifiedClippedToTerrain = false;
+                                            break;
+                                        }
                                     }
                                 }
                                 og.dispose();
@@ -12935,6 +12952,10 @@ function startSaveServer() {
                 );
                 check("Voxel V9.49-b: aWave ist je Vertex in [0,1]", hc.unifiedWaveValid);
                 check("Voxel V9.49-b: das vereinte Mesh deckt den Ozean (Vertices mit aWave ≈ 1)", hc.unifiedHasOcean);
+                check(
+                    "Voxel V9.49-f: das Wasser ist an die Terrain-Wahrheit geklemmt (kein nasses Quad ragt durch einen Hügel)",
+                    hc.unifiedClippedToTerrain
+                );
                 check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
                 check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
                 check("Voxel V9.49-b: _tickUnifiedWater baut das Mesh bei einem Zell-Wechsel neu", hc.tickRebuilds);
