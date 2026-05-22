@@ -75,6 +75,10 @@ class AnazhRealm {
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
             // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
             hydrosphere: null,
+            // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
+            // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
+            // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
+            erosion: null,
             keys: {},
             speed: 6,
             sprintSpeed: 12,
@@ -548,6 +552,10 @@ class AnazhRealm {
                 // W4 V2/V3 — die Lofi-Pad-Schicht: eine seed- + emotion-
                 // getriebene Akkordfolge (~60 BPM), lazy in initSymphony.
                 lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
+                // V9.43-e — die Hydrosphären-Klang-Schicht: zwei positions-
+                // modulierte White-Noise-Layer (Fluss-Rauschen + Wasserfall-
+                // Donnern), lazy in initSymphony. Runtime-only, NIE im Save.
+                hydroAudio: null, // { river:{noise,filter,gain,target}, waterfall:{…}, lastTick }
             },
             player: {
                 // Welle 6.X.4 F1 (Audit 17.05.2026) — Avatar-Name. Default
@@ -7313,11 +7321,16 @@ class AnazhRealm {
         // W4 V2 — die Lofi-Pad-Schicht: eine ruhige Minor-7th-Akkordfolge.
         s.lofi = this._buildLofiLayer(ctx, masterGain);
 
+        // V9.43-e — die Hydrosphären-Klang-Schicht (Vision §1.4): zwei
+        // White-Noise-Layer, deren Gain `_tickHydrosphereAudio` nach der
+        // Spieler-Nähe zu Fluss bzw. Wasserfall moduliert.
+        s.hydroAudio = this._buildHydroAudioLayer(ctx, masterGain);
+
         s.ctx = ctx;
         s.masterGain = masterGain;
         s.enabled = true;
         s.lastWeather = this.state.weather;
-        this.log("anazhSymphony aktiviert: ambient + wetter + lofi live", "INFO");
+        this.log("anazhSymphony aktiviert: ambient + wetter + lofi + wasser live", "INFO");
         return true;
     }
 
@@ -7331,6 +7344,10 @@ class AnazhRealm {
                 s.ambient.lfo.stop();
             }
             if (s.weather) s.weather.noise.stop();
+            if (s.hydroAudio) {
+                s.hydroAudio.river.noise.stop();
+                s.hydroAudio.waterfall.noise.stop();
+            }
             s.ctx.close();
         } catch (err) {
             this.log(`Symphonie-Dispose-Fehler: ${err.message}`, "WARNING");
@@ -7339,10 +7356,46 @@ class AnazhRealm {
         s.enabled = false;
         s.ambient = null;
         s.weather = null;
+        s.hydroAudio = null;
         // W4 V2 — die Lofi-Akkord-Oszillatoren sind transient (auto-stop);
         // Gain + Filter werden mit dem geschlossenen ctx vom GC geräumt.
         s.lofi = null;
         s.masterGain = null;
+    }
+
+    // V9.43-e — baut die zwei Hydrosphären-Klang-Layer. Jeder ist ein
+    // looping White-Noise-Source → Filter → Gain (Start 0), Spiegel des
+    // Wetter-Layer-Musters aus initSymphony. Fluss: heller Bandpass — das
+    // Rauschen eines Bachs. Wasserfall: dunkler Lowpass — das Donnern.
+    _buildHydroAudioLayer(ctx, masterGain) {
+        const makeLayer = (filterType, freq, q) => {
+            const bufferSize = 2 * ctx.sampleRate;
+            const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) d[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            noise.loop = true;
+            const filter = ctx.createBiquadFilter();
+            filter.type = filterType;
+            filter.frequency.value = freq;
+            filter.Q.value = q;
+            const gain = ctx.createGain();
+            gain.gain.value = 0;
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(masterGain);
+            noise.start();
+            return { noise, filter, gain, target: 0 };
+        };
+        return {
+            river: makeLayer("bandpass", 2200, 0.5),
+            waterfall: makeLayer("lowpass", 520, 0.85),
+            // -Infinity, nicht 0 — sonst throttelt der erste Tick in den
+            // ersten 130 ms der AudioContext-Lebenszeit fälschlich (0 ist ein
+            // gültiger ctx-Zeitpunkt; die Sentinel-Gotcha aus CLAUDE.md).
+            lastTick: -Infinity,
+        };
     }
 
     playCreaturePing(emotion = "happy") {
@@ -7502,6 +7555,8 @@ class AnazhRealm {
         if (!s.enabled || !s.ctx) return;
         // W4 V2 — der Lofi-Pad-Scheduler (eigene Akkord-Dauer-Drosselung).
         this._lofiTick();
+        // V9.43-e — die positions-abhängige Wasser-Klang-Schicht.
+        this._tickHydrosphereAudio();
         // (1) Wetter-Cross-Fade (wie V8.24)
         if (s.lastWeather !== this.state.weather) {
             const target = this._symphonyWeatherTarget();
@@ -7545,6 +7600,86 @@ class AnazhRealm {
                 void e;
             }
         }
+    }
+
+    // V9.43-e — moduliert die zwei Hydrosphären-Klang-Layer nach der
+    // Spieler-Nähe: Fluss-Rauschen wächst, je näher die Fluss-Mittellinie
+    // liegt; Wasserfall-Donnern trägt weiter + lauter. Das Drainage-Netz hat
+    // ~14 Fluss-Punkte + wenige Wasserfälle — ein linearer Scan je Tick ist
+    // billig. Throttle ~7 Hz; jede Layer rampt sanft auf ihr Ziel. Das
+    // berechnete Ziel liegt auf `layer.target` (deterministischer Mess-Punkt
+    // für den Playtest — der GainNode-Wert rampt verzögert hinterher).
+    _tickHydrosphereAudio() {
+        const s = this.state.symphony;
+        if (!s.enabled || !s.ctx || !s.hydroAudio) return;
+        const hydro = this.state.hydrosphere;
+        if (!hydro || !hydro.ready || !this.state.playerMesh) return;
+        const ctx = s.ctx;
+        const nowMs = ctx.currentTime * 1000;
+        if (nowMs - (s.hydroAudio.lastTick || 0) < 130) return;
+        s.hydroAudio.lastTick = nowMs;
+
+        const px = this.state.playerMesh.position.x;
+        const pz = this.state.playerMesh.position.z;
+
+        // Nächste Fluss-Mittellinie — Segment-Distanz über alle Polylinien.
+        let riverDist = Infinity;
+        const rivers = Array.isArray(hydro.rivers) ? hydro.rivers : [];
+        for (const r of rivers) {
+            const pts = r.points;
+            for (let k = 0; k + 1 < pts.length; k++) {
+                const d = this._pointSegDist2D(px, pz, pts[k].x, pts[k].z, pts[k + 1].x, pts[k + 1].z);
+                if (d < riverDist) riverDist = d;
+            }
+        }
+        // Nächster Wasserfall — Punkt-Distanz in der xz-Ebene.
+        let fallDist = Infinity;
+        const falls = Array.isArray(hydro.waterfalls) ? hydro.waterfalls : [];
+        for (const wf of falls) {
+            const d = Math.hypot(px - wf.x, pz - wf.z);
+            if (d < fallDist) fallDist = d;
+        }
+
+        // Distanz → Gain: quadratischer Falloff bis zur Hörweite, dann 0.
+        // Der Wasserfall trägt weiter (75 m) + lauter (Peak 0.22) — er
+        // donnert; der Bach rauscht leiser (0.10) + nur nah (42 m).
+        const falloff = (d, range) => {
+            if (!Number.isFinite(d) || d >= range) return 0;
+            const k = 1 - d / range;
+            return k * k;
+        };
+        s.hydroAudio.river.target = falloff(riverDist, 42) * 0.1;
+        s.hydroAudio.waterfall.target = falloff(fallDist, 75) * 0.22;
+
+        const ramp = (layer) => {
+            const g = layer.gain.gain;
+            const now = ctx.currentTime;
+            try {
+                g.cancelScheduledValues(now);
+                g.setValueAtTime(g.value, now);
+                g.linearRampToValueAtTime(layer.target, now + 0.2);
+            } catch (e) {
+                void e;
+            }
+        };
+        ramp(s.hydroAudio.river);
+        ramp(s.hydroAudio.waterfall);
+    }
+
+    // 2D-Distanz (xz-Ebene) eines Punkts zum nächsten Punkt auf einem
+    // Segment — die saubere Mess-Grundlage für das Fluss-Rauschen, damit der
+    // Klang gleichmäßig bleibt, wenn man einem Fluss entlanggeht (eine reine
+    // Vertex-Distanz triebe ihn zwischen weit gesetzten Fluss-Punkten).
+    _pointSegDist2D(px, pz, ax, az, bx, bz) {
+        const dx = bx - ax;
+        const dz = bz - az;
+        const len2 = dx * dx + dz * dz;
+        let t = len2 > 0 ? ((px - ax) * dx + (pz - az) * dz) / len2 : 0;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const cx = ax + t * dx;
+        const cz = az + t * dz;
+        return Math.hypot(px - cx, pz - cz);
     }
 
     // ### W4 V2 — die Lofi-Pad-Schicht ###
@@ -11025,6 +11160,38 @@ class AnazhRealm {
         });
     }
 
+    // V9.47 — Fluviale Erosion via STREAM-POWER-Inzision (Braun & Willett /
+    // Fastscape — das geomorphologische Standard-Modell, NICHT Tröpfchen-
+    // Blanket-Erosion). Vor dem Worldgen läuft `_computeErosion`: es sampelt
+    // die Makro-Surface in ein Heightfield und lässt Terrain + Drainage über
+    // ~30 Iterationen ko-evolvieren. Je Iteration: Priority-Flood (Becken
+    // füllen) → Flow-Direction → Flow-Accumulation → Inzision. Das Stream-
+    // Power-Gesetz `Δh = k·A^m·S^n` schneidet EXAKT dort ein, wo viel Wasser
+    // fliesst (grosse Drainage-Fläche A = Tal-Kanäle); ein Grat hat A≈1 →
+    // ~null Inzision. Die Grate bleiben scharf, die Täler schneiden tief →
+    // das Relief WÄCHST (kein Tröpfchen-Blanket-Zielkonflikt). Becken
+    // entwässern, weil ihr Auslass die ganze Becken-Drainage trägt → dort
+    // schneidet es am stärksten. `_terrainMacroSurfaceY` addiert das Delta.
+    // Deterministisch ohne RNG. Plan: hydrosphere.md §10b.
+    static get EROSION() {
+        return Object.freeze({
+            regionSize: 2048, // m — dieselbe Region wie die Hydrosphäre
+            cell: 16, // m → dim = 128 (dasselbe Raster wie die Hydrosphäre)
+            iterations: 36, // Landschafts-Evolutions-Iterationen
+            fillEpsilon: 0.01, // Priority-Flood-ε (definiertes Gefälle je Zelle)
+            streamK: 0.4, // Stream-Power-Konstante k in Δh = k·A^m·S^n
+            channelMinArea: 14, // Zellen — Inzision NUR ab dieser Drainage-Fläche
+            // (fluviale Erosion gilt für Kanäle; Hänge/Grate mit A darunter
+            // bleiben unberührt → die scharfen Gipfel überleben unversehrt; die
+            // Schwelle schützt die Grate, also dürfen k/Iterationen kräftig sein).
+            areaExp: 0.5, // m — Exponent der Drainage-Fläche A (Zell-Zahl)
+            slopeExp: 1.0, // n — Exponent des Gefälles S
+            maxIncisionPerPass: 1.1, // m — Klemme je Iteration (Stabilität)
+            edgeTaper: 10, // Zellen — das Delta wird zum Region-Rand auf 0 getapert
+            maxDelta: 18, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle)
+        });
+    }
+
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
     }
@@ -13234,6 +13401,20 @@ class AnazhRealm {
         this.state.terrainEverGenerated = true;
         if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
+        // ### Hydraulische Erosion ### V9.47
+        // Tröpfchen-Erosion carvt dendritische Täler + füllt Becken mit
+        // Sediment. MUSS hier laufen — VOR allem Surface-abhängigen Worldgen
+        // (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) → alle
+        // sehen das erodierte Gelände. `_terrainMacroSurfaceY` addiert das
+        // Delta. try/catch — ein Erosions-Fehler darf den Worldgen nie brechen.
+        try {
+            this.state.erosion = this._computeErosion();
+            this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
+        } catch (e) {
+            this.state.erosion = null;
+            this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
+        }
+
         // ### Höhendaten ###
         // V9.38 Phase 5c.2.c.3.b.ii — der heightData-Allokations-`else`-Pfad
         // ist als toter Pfad entfernt. Vor V9.38: ein `if (isVoxelWorldGen2)`
@@ -13506,19 +13687,254 @@ class AnazhRealm {
     // V9.20); der Hydrosphären-Atlas sampelt sie als hydrologische Basis-
     // Oberfläche — eine Quelle für beide (V9.44-a-Disziplin: ein Wert, der
     // zweimal gebraucht wird, lebt an einer Stelle).
-    // V9.20 — Grösse + Hierarchie. Drei 2D-Oktaven statt einer mittleren:
-    // (1) eine KONTINENTALE Oktave (~1500 m Wellenlänge ≈ 35 Chunks,
-    //     Amplitude 26) — die grosse Gebirgs-Masse, die sich über viele
-    //     Chunks aufbaut; wo sie tief ist, liegt Tiefland. (2) Eine
-    //     RIDGED-Oktave (`(1−|noise|)²`) — scharfe Gebirgs-Grate +
-    //     Felswände (ridged-Noise faltet die Oberfläche zu Kämmen, kein
-    //     rundes Hügel-Blob). (3) Eine feine Detail-Oktave. Die Hierarchie
-    //     (gross → Grat → Detail) gibt der Welt Massstab.
+    // V9.47 — der fluviale Erosions-Pass (Stream-Power-Inzision). Sampelt die
+    // ROHE Makro-Surface in ein Heightfield und lässt Terrain + Drainage über
+    // `EROSION.iterations` Iterationen ko-evolvieren (`_erosionIncisionPass`).
+    // Speichert das Delta (erodiert − roh) als Raster. Läuft VOR
+    // `_computeHydrosphere` im Worldgen → die Hydrosphäre routet auf dem
+    // erodierten Gelände. Zirkel-frei: solange `state.erosion` null ist,
+    // liefert `_erosionDeltaAt` 0 → die Sample-Schleife sieht die rohe
+    // Surface. Voll deterministisch (kein RNG) → multiplayer-sicher.
+    _computeErosion() {
+        const E = AnazhRealm.EROSION;
+        const dim = Math.max(8, Math.round(E.regionSize / E.cell));
+        const originX = -E.regionSize / 2;
+        const originZ = -E.regionSize / 2;
+        const n = dim * dim;
+        // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
+        // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
+        this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
+        const h = new Float64Array(n);
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                h[i + j * dim] = this._terrainMacroSurfaceY(originX + i * E.cell, originZ + j * E.cell, false);
+            }
+        }
+        const orig = Float64Array.from(h);
+        // (2) Scratch-Puffer EINMAL allozieren — die Iterationen verwenden sie
+        // wieder (kein GC-Druck über die Pässe).
+        const buf = {
+            filled: new Float64Array(n),
+            flowTo: new Int32Array(n),
+            accum: new Float64Array(n),
+            visited: new Uint8Array(n),
+            order: new Int32Array(n),
+            hpK: new Float64Array(n),
+            hpV: new Int32Array(n),
+        };
+        // (3) Terrain + Drainage ko-evolvieren lassen.
+        for (let it = 0; it < E.iterations; it++) {
+            this._erosionIncisionPass(h, dim, buf, E);
+        }
+        // (4) Delta = erodiert − roh, geklemmt + zum Region-Rand auf 0 getapert
+        // (sonst klaffte eine Stufe zum un-erodierten Umland jenseits der Region).
+        const delta = new Float32Array(n);
+        const taper = E.edgeTaper;
+        const md = E.maxDelta;
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const idx = i + j * dim;
+                let dv = h[idx] - orig[idx];
+                if (dv > md) dv = md;
+                else if (dv < -md) dv = -md;
+                const edge = Math.min(i, j, dim - 1 - i, dim - 1 - j);
+                if (edge < taper) dv *= edge / taper;
+                delta[idx] = dv;
+            }
+        }
+        return { delta, dim, cell: E.cell, originX, originZ, regionSize: E.regionSize };
+    }
+
+    // V9.47 — eine Stream-Power-Inzisions-Iteration. Vier Phasen auf dem
+    // Erosions-Heightfield `h` (mutiert es in-place): (1) Priority-Flood
+    // (Barnes) füllt die Becken → `filled`, jede Zelle hat ein definiertes
+    // Gefälle; (2) Flow-Direction (D8) → `flowTo`; (3) Flow-Accumulation →
+    // `accum` (Drainage-Fläche je Zelle); (4) Inzision `Δh = k·A^m·S^n` senkt
+    // jede Zelle proportional zu Drainage-Fläche × Gefälle. Grate (A≈1)
+    // schneiden ~nicht ein, Tal-Kanäle (A gross) tief → die Grate bleiben
+    // scharf, die Täler vertiefen sich, das Relief WÄCHST. Die `buf`-Scratch-
+    // Arrays kommen vom Aufrufer (Wiederverwendung über die Iterationen).
+    _erosionIncisionPass(h, dim, buf, E) {
+        const n = dim * dim;
+        const { filled, flowTo, accum, visited, order, hpK, hpV } = buf;
+        visited.fill(0);
+        // --- (1) Priority-Flood: binärer Min-Heap, mit den Rand-Zellen geseedet ---
+        let hlen = 0;
+        const swap = (a, b) => {
+            const k = hpK[a];
+            hpK[a] = hpK[b];
+            hpK[b] = k;
+            const v = hpV[a];
+            hpV[a] = hpV[b];
+            hpV[b] = v;
+        };
+        const push = (k, v) => {
+            hpK[hlen] = k;
+            hpV[hlen] = v;
+            let c = hlen++;
+            while (c > 0) {
+                const p = (c - 1) >> 1;
+                if (hpK[p] <= hpK[c]) break;
+                swap(p, c);
+                c = p;
+            }
+        };
+        const pop = () => {
+            const top = hpV[0];
+            hlen--;
+            if (hlen > 0) {
+                hpK[0] = hpK[hlen];
+                hpV[0] = hpV[hlen];
+                let c = 0;
+                for (;;) {
+                    const l = c * 2 + 1;
+                    const r = l + 1;
+                    let s = c;
+                    if (l < hlen && hpK[l] < hpK[s]) s = l;
+                    if (r < hlen && hpK[r] < hpK[s]) s = r;
+                    if (s === c) break;
+                    swap(s, c);
+                    c = s;
+                }
+            }
+            return top;
+        };
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                if (i !== 0 && j !== 0 && i !== dim - 1 && j !== dim - 1) continue;
+                const idx = i + j * dim;
+                filled[idx] = h[idx];
+                visited[idx] = 1;
+                push(h[idx], idx);
+            }
+        }
+        const eps = E.fillEpsilon;
+        // Die Pop-Reihenfolge IST die nach Füllhöhe aufsteigend sortierte
+        // Reihenfolge — in `order` festgehalten spart das einen O(n log n)-
+        // Sort je Iteration (Accumulation + Inzision brauchen diese Ordnung).
+        let oi = 0;
+        while (hlen > 0) {
+            const c = pop();
+            order[oi++] = c;
+            const ci = c % dim;
+            const cj = (c / dim) | 0;
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    if (di === 0 && dj === 0) continue;
+                    const ni = ci + di;
+                    const nj = cj + dj;
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nb = ni + nj * dim;
+                    if (visited[nb]) continue;
+                    filled[nb] = h[nb] > filled[c] + eps ? h[nb] : filled[c] + eps;
+                    visited[nb] = 1;
+                    push(filled[nb], nb);
+                }
+            }
+        }
+        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → tiefster filled-Nachbar ---
+        for (let j = 1; j < dim - 1; j++) {
+            for (let i = 1; i < dim - 1; i++) {
+                const idx = i + j * dim;
+                let best = -1;
+                let bestF = filled[idx];
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        if (di === 0 && dj === 0) continue;
+                        const nb = i + di + (j + dj) * dim;
+                        if (filled[nb] < bestF) {
+                            bestF = filled[nb];
+                            best = nb;
+                        }
+                    }
+                }
+                flowTo[idx] = best;
+            }
+        }
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) flowTo[i + j * dim] = -1;
+            }
+        }
+        // --- (3) Flow-Accumulation: `order` rückwärts (absteigende Füllhöhe)
+        // → eine Zelle wird VOR ihrer Abfluss-Zelle verarbeitet. ---
+        for (let i = 0; i < n; i++) accum[i] = 1;
+        for (let o = n - 1; o >= 0; o--) {
+            const c = order[o];
+            const t = flowTo[c];
+            if (t >= 0) accum[t] += accum[c];
+        }
+        // --- (4) Inzision: Δh = k·A^m·S^n je Zelle. STROMAB-ZUERST (`order`
+        // vorwärts, aufsteigende Füllhöhe): die Abfluss-Zelle ist schon
+        // gesenkt, wenn ihr Zufluss dran ist → der ganze Kanal wandert
+        // gemeinsam nach unten, statt am Unterlauf-Nachbarn hängenzubleiben. ---
+        const k = E.streamK;
+        const cap = E.maxIncisionPerPass;
+        const m = E.areaExp;
+        const nn = E.slopeExp;
+        const minA = E.channelMinArea;
+        for (let o = 0; o < n; o++) {
+            const c = order[o];
+            const t = flowTo[c];
+            if (t < 0) continue;
+            // fluviale Inzision nur in Kanälen — Hänge/Grate (A < minA)
+            // bleiben unberührt, die scharfen Gipfel überleben.
+            if (accum[c] < minA) continue;
+            const slope = (filled[c] - filled[t]) / E.cell;
+            if (slope <= 0) continue;
+            // nicht unter den Abfluss-Nachbarn schneiden (keine Flow-Inversion).
+            const room = h[c] - h[t];
+            if (room <= 0) continue;
+            let inc = k * Math.pow(accum[c], m) * Math.pow(slope, nn);
+            if (inc > cap) inc = cap;
+            if (inc > room) inc = room;
+            h[c] -= inc;
+        }
+    }
+
+    // V9.47 — das Erosions-Delta an einer xz-Welt-Position (bilinear aus dem
+    // `state.erosion.delta`-Raster; 0 ausserhalb der Region ODER solange das
+    // Raster noch nicht gebaut ist). `_terrainMacroSurfaceY` addiert es → die
+    // ganze Welt (Dichte, Hydrosphäre) sieht das erodierte Gelände. O(1) —
+    // wird beim Meshing millionenfach gerufen.
+    _erosionDeltaAt(x, z) {
+        const e = this.state.erosion;
+        if (!e) return 0;
+        const fx = (x - e.originX) / e.cell;
+        const fz = (z - e.originZ) / e.cell;
+        if (fx < 0 || fz < 0 || fx >= e.dim - 1 || fz >= e.dim - 1) return 0;
+        const i0 = fx | 0;
+        const j0 = fz | 0;
+        const tx = fx - i0;
+        const tz = fz - j0;
+        const d = e.delta;
+        const dim = e.dim;
+        const a = i0 + j0 * dim;
+        return (d[a] * (1 - tx) + d[a + 1] * tx) * (1 - tz) + (d[a + dim] * (1 - tx) + d[a + dim + 1] * tx) * tz;
+    }
+
+    // V9.45-a — Grösse, Hierarchie + REGIONALE Vielfalt. Der V9.20-Aufbau
+    // (drei feste Oktaven) liess alle Berge ähnlich hoch wirken: die
+    // kontinentale Oktave variierte über ~1500 m kaum innerhalb einer Welt,
+    // und die ridged-Oktave faltet von Natur aus selbst-ähnliche Kämme
+    // gleicher Höhe. V9.45-a bringt die zwei Profi-Werkzeuge prozeduraler
+    // Welten (Minecraft-1.18-Density-Functions, Quílez):
+    //  (a) DOMAIN-WARP — die Sample-Koordinaten werden VOR dem Noise um ein
+    //      niederfrequentes Feld verschoben (±70 m) → die Kämme mäandern,
+    //      laufen nicht mehr gitter-parallel.
+    //  (b) EROSIONS-FELD — ein eigenes, sehr niederfrequentes Noise
+    //      entscheidet REGIONAL den Charakter: hohe Erosion → flache Ebene,
+    //      niedrige → schroffes Hochgebirge. Es moduliert die ridged-
+    //      Amplitude (9..42 m) → manche Striche sind Tiefland, andere alpin.
+    // Drei addierte 2D-Oktaven bleiben: (1) eine KONTINENTALE (λ~1080 m,
+    // Amplitude 34) — die grosse Gebirgs-Masse; (2) die EROSIONS-modulierte
+    // RIDGED-Oktave — scharfe Grate + Felswände; (3) eine feine Detail-Oktave.
     // `includeDetail` (Default true) — `_terrainDensityAt` braucht die feine
     // Detail-Oktave (λ~22 m); der Hydrosphären-Sampler ruft mit `false`: die
     // Detail-Oktave (±4 m) aliast bei der 16-m-Abtastung und ist grösser als
     // das Makro-Gefälle pro Zelle → das Drainage-Netz würde dem Rauschen
-    // statt dem Tal-Relief folgen. Die Drainage sieht nur kontinental + ridged.
+    // statt dem Tal-Relief folgen. Warp + Erosion formen das echte Tal-Relief
+    // → die Drainage sieht sie, nur die Detail-Oktave bleibt ihr verborgen.
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -13526,11 +13942,32 @@ class AnazhRealm {
         }
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        const cont = n.noise2D(x * 0.0042, z * 0.0042) * 26;
-        const rN = n.noise2D(x * 0.013, z * 0.013);
-        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * 22;
+        // (a) Domain-Warp — verschobene Sample-Koordinaten (bricht die
+        // Gitter-Parallelität der ridged-Kämme; λ~3900 m, ±70 m Versatz).
+        const warpX = n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+        const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+        const wx = x + warpX;
+        const wz = z + warpZ;
+        // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
+        // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
+        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
+        // (b) Erosions-Feld [0,1] — regional (λ~1850 m); `mtn` ist die
+        // Gebirgs-Neigung (1 = alpin), quadriert → Tiefland ist der Normal-
+        // fall, Hochgebirge die Ausnahme. Es moduliert die ridged-Amplitude.
+        const ero = n.noise2D(x * 0.0034, z * 0.0034) * 0.5 + 0.5;
+        let mtn = 1 - ero;
+        if (mtn < 0) mtn = 0;
+        mtn *= mtn;
+        const ridgeAmp = 9 + 33 * mtn;
+        // (2) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
+        const rN = n.noise2D(wx * 0.013, wz * 0.013);
+        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
+        // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
-        return base + cont + ranges + detail;
+        // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
+        // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
+        // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
+        return base + cont + ranges + detail + this._erosionDeltaAt(x, z);
     }
 
     _terrainDensityAt(x, y, z) {
@@ -13567,9 +14004,31 @@ class AnazhRealm {
             const cave = Math.max(0, (ridge - 0.7) / 0.3);
             d -= cave * caveEnv * 36;
         }
-        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab, sodass
-        // fester Grund zu Luft wird (ein echtes Loch / Tunnel / Höhle). Die
-        // Edits leben in worldMeta.voxelEdits (persistiert mit der Welt).
+        // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
+        // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
+        // flachen, wasserdichten Topf geblendet: die Dichte rampt zur Bett-
+        // Ebene `bedY` (w=1 im See-Innern, 0 am Ufer) → der Boden ist
+        // lückenlos, die 3D-Roughness verschwindet im Becken, und das Bett
+        // liegt über dem Meeresspiegel (die Meeres-Plane bleibt verdeckt —
+        // kein Durchsehen aufs Meer mehr). Zirkel-frei: `_hydroComputing`
+        // unterdrückt beides, während `_computeHydrosphere` selbst die
+        // Surface sampelt. Ohne Hydrosphäre bit-identisch zu vor V9.43-d.
+        // VOR den Voxel-Edits — ein Spieler-Edit gilt zuletzt + gewinnt über
+        // das prozedurale Wasser-Sculpting (V9.45-b-Lehre: sonst überschriebe
+        // der See-Blend einen Fill mitten im Becken).
+        const hydro = this.state.hydrosphere;
+        if (hydro && hydro.ready && !this._hydroComputing) {
+            d -= this._hydrosphereCarveAt(x, z);
+            const lk = this._hydrosphereLakeAt(x, z);
+            if (lk) {
+                const flatD = lk.bedY - y;
+                d = d * (1 - lk.w) + flatD * lk.w;
+            }
+        }
+        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab (carve)
+        // oder schüttet auf (fill). Die Edits leben in worldMeta.voxelEdits
+        // (persistiert mit der Welt) und gelten ZULETZT — der Spieler-Wille
+        // überschreibt Terrain UND Hydrosphäre-Sculpting an seiner Kugel.
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         if (edits && edits.length) {
             for (let e = 0; e < edits.length; e++) {
@@ -13583,37 +14042,25 @@ class AnazhRealm {
                 if (dist2 < r * r) {
                     const fall = 1 - Math.sqrt(dist2) / r;
                     const amt = fall * (ed.strength || 48);
-                    // Phase 3b — `fill` addiert Dichte (Boden aufschütten),
-                    // `carve` (Default, auch mode-lose Alt-Edits) zieht ab.
+                    // `fill` addiert Dichte (Boden aufschütten), `carve`
+                    // (Default, auch mode-lose Alt-Edits) zieht ab.
                     if (ed.mode === "fill") d += amt;
                     else d -= amt;
                 }
             }
         }
-        // V9.43-d — der Hydrosphären-Carve: das Drainage-Netz senkt die
-        // Dichte im Fluss-Kanal + in See-Senken → der Mesher produziert echte
-        // Rinnen mit Ufern + gemuldete Becken. Zirkel-frei: `_hydroComputing`
-        // unterdrückt den Carve, während `_computeHydrosphere` selbst die
-        // Surface sampelt (sonst läse ein Re-Compute die gecarvte Surface —
-        // hydrosphere.md §8). Ohne Hydrosphäre bit-identisch zu vor V9.43-d.
-        const hydro = this.state.hydrosphere;
-        if (hydro && hydro.ready && !this._hydroComputing) {
-            d -= this._hydrosphereCarveAt(x, z);
-        }
         return d;
     }
 
-    // V9.43-d — die Bett-Senkung an einer xz-Welt-Position (≥ 0; subtrahiert
-    // von der Dichte → senkt die Surface um genau diesen Betrag). Zwei
-    // Quellen: (1) der Fluss-Kanal — über den Bucket-Index die Segmente der
-    // Umgebung, je Segment der nächste Punkt + ein Flachboden-Profil (volle
-    // Tiefe bis zur halben Fluss-Breite, dann eine smoothstep-Bank-Rampe);
-    // (2) das See-Becken — ein vorberechnetes Cut-Feld, bilinear interpoliert
-    // (glatte ~16-m-Ufer-Rampe). MAX statt Summe (an einer Fluss-See-Mündung
-    // gewinnt der tiefere Schnitt — keine Über-Senkung). O(1) amortisiert:
-    // die zwei Early-Outs (leerer Bucket / `lakeNear==0`) machen die 99 % der
-    // Welt ohne Wasser zu ~6 Ops — `_terrainDensityAt` wird millionenfach
-    // beim Meshing gerufen.
+    // V9.43-d / V9.45-b — die FLUSS-Bett-Senkung an einer xz-Welt-Position
+    // (≥ 0; subtrahiert von der Dichte → senkt die Surface um diesen Betrag).
+    // Über den Bucket-Index die Fluss-Segmente der Umgebung, je Segment der
+    // nächste Punkt + ein Flachboden-Profil (volle Tiefe bis zur halben
+    // Fluss-Breite, dann eine smoothstep-Bank-Rampe). MAX über die Segmente.
+    // O(1) amortisiert: der leere-Bucket-Early-Out macht die wasserlose Welt
+    // zu ~5 Ops — `_terrainDensityAt` wird millionenfach beim Meshing gerufen.
+    // Die SEE-Becken wandern seit V9.45-b nach `_hydrosphereLakeAt` — sie
+    // sind kein reiner Schnitt mehr, sondern ein flacher, wasserdichter Topf.
     _hydrosphereCarveAt(x, z) {
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return 0;
@@ -13654,35 +14101,49 @@ class AnazhRealm {
                 }
             }
         }
-        // --- See-Becken: bilineare Interpolation des Cut-Felds ---
-        const lc = h.lakeCutCell;
-        const ln = h.lakeNear;
-        if (lc && ln) {
-            const dim = h.dim;
-            const cell = h.cell;
-            const ci = Math.floor((x - h.originX) / cell);
-            const cj = Math.floor((z - h.originZ) / cell);
-            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim && ln[ci + cj * dim]) {
-                const cf = (x - h.originX) / cell - 0.5;
-                const gf = (z - h.originZ) / cell - 0.5;
-                const i0 = Math.floor(cf);
-                const j0 = Math.floor(gf);
-                const tx = cf - i0;
-                const tz = gf - j0;
-                const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
-                const i0c = cl(i0);
-                const i1c = cl(i0 + 1);
-                const j0c = cl(j0);
-                const j1c = cl(j0 + 1);
-                const v00 = lc[i0c + j0c * dim];
-                const v10 = lc[i1c + j0c * dim];
-                const v01 = lc[i0c + j1c * dim];
-                const v11 = lc[i1c + j1c * dim];
-                const lcut = (v00 * (1 - tx) + v10 * tx) * (1 - tz) + (v01 * (1 - tx) + v11 * tx) * tz;
-                if (lcut > cut) cut = lcut;
-            }
-        }
         return cut;
+    }
+
+    // V9.45-b — das See-Becken an einer xz-Welt-Position. Liefert `{bedY, w}`
+    // oder null: `bedY` ist die flache, wasserdichte Bett-Höhe des Sees,
+    // `w` ∈ [0,1] die Becken-Zugehörigkeit (1 im See-Innern, rampt über den
+    // 1-Zellen-Ring auf 0 zum Ufer). `_terrainDensityAt` blendet die Dichte
+    // mit `w` zur flachen Bett-Ebene → der Boden ist lückenlos (kein
+    // Durchtauchen mehr), die 3D-Roughness verschwindet im Becken, und das
+    // Bett liegt garantiert über dem Meeresspiegel (die globale Meeres-Plane
+    // bleibt vom festen Bett verdeckt — kein zweites Wasser-Layer mehr).
+    // Bilinear; der `lakeNear`-Early-Out hält die wasserlose Welt billig.
+    _hydrosphereLakeAt(x, z) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return null;
+        const lw = h.lakeW;
+        const lb = h.lakeBedCell;
+        const ln = h.lakeNear;
+        if (!lw || !lb || !ln) return null;
+        const dim = h.dim;
+        const cell = h.cell;
+        const ci = Math.floor((x - h.originX) / cell);
+        const cj = Math.floor((z - h.originZ) / cell);
+        if (ci < 0 || cj < 0 || ci >= dim || cj >= dim || !ln[ci + cj * dim]) return null;
+        const cf = (x - h.originX) / cell - 0.5;
+        const gf = (z - h.originZ) / cell - 0.5;
+        const i0 = Math.floor(cf);
+        const j0 = Math.floor(gf);
+        const tx = cf - i0;
+        const tz = gf - j0;
+        const cl = (v) => (v < 0 ? 0 : v >= dim ? dim - 1 : v);
+        const i0c = cl(i0);
+        const i1c = cl(i0 + 1);
+        const r0 = cl(j0) * dim;
+        const r1 = cl(j0 + 1) * dim;
+        const w =
+            (lw[i0c + r0] * (1 - tx) + lw[i1c + r0] * tx) * (1 - tz) +
+            (lw[i0c + r1] * (1 - tx) + lw[i1c + r1] * tx) * tz;
+        if (w <= 0) return null;
+        const bedY =
+            (lb[i0c + r0] * (1 - tx) + lb[i1c + r0] * tx) * (1 - tz) +
+            (lb[i0c + r1] * (1 - tx) + lb[i1c + r1] * tx) * tz;
+        return { bedY, w };
     }
 
     // Surface Nets — ein 3D-Dichte-Feld zu einem glatten Mesh. Zwei Pässe:
@@ -14073,16 +14534,20 @@ class AnazhRealm {
         // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
         // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
         // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
-        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — die V9.20-Marge 8
-        // reichte nicht für ridged-Spikes weiter draussen (Sicht-Ring 4-8
-        // erreicht Chunks, in denen die Oberfläche über base+72 ragte → keine
-        // Iso-Fläche → kein Mesh → sichtbares Loch). Marge jetzt ~22.
+        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — Marge ~22.
+        // V9.45-a: das Relief wuchs (Domain-Warp + grössere Amplituden,
+        // Makro-Oberfläche bis ~base+80). V9.47: die hydraulische Erosion
+        // carvt Täler bis ~16 m tiefer (`EROSION.maxDelta`) → dimY 96 → 100,
+        // `floorDrop` 66 → 74 → Band base-74..base+106, Marge unten + oben ~14.
+        // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
+        // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
+        // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
         // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
         // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
         // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 80 };
+        return { dim, step, span: dim * step, ringRadius, dimY: 100, floorDrop: 74 };
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
@@ -14095,11 +14560,11 @@ class AnazhRealm {
     // passiert — atomarer Swap im `_rebuildVoxelChunk` (Re-Mesh nach Edit).
     _buildVoxelChunkData(cx, cz) {
         if (!this.state.scene) return null;
-        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        const oy = base - 58;
+        const oy = base - floorDrop;
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
         // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
         // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
@@ -14199,16 +14664,15 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
-        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        // Das Oberflächen-Band reicht ~base-42..base+64 — der Chunk muss es
+        // Das Oberflächen-Band reicht ~base-50..base+92 — der Chunk muss es
         // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // V9.26: base-58 + 144 m = base+86 → Marge ~22 oben/unten gegen das
-        // theoretische Surface-Band base-42..base+64 (Schutz gegen ridged-
-        // Spike-Löcher am Sicht-Ring-Rand).
-        const oy = base - 58;
+        // hindurch). V9.45-a: dimY 96, oy = base − floorDrop(66) → Decke
+        // base+106.8 → Marge ~15 gegen ridged-Spike-Löcher am Sicht-Ring-Rand.
+        const oy = base - floorDrop;
         // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
         // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
@@ -14309,8 +14773,16 @@ class AnazhRealm {
     // die Säule im Band kein festes Terrain trägt.
     _voxelSurfaceY(x, z) {
         const base = this.state.terrainBaseHeight || 0;
+        // V9.45-a — der Scan-Bereich leitet sich aus `_voxelChunkConfig` ab
+        // (eine Quelle): vom Chunk-Decke-nahen Rand abwärts bis knapp über
+        // den Chunk-Boden. `-8`/`+12` sind die schmale Marge, in der nie
+        // Terrain liegt — der Scan beginnt sicher über dem höchsten Gipfel.
+        const cfg = this._voxelChunkConfig();
+        const floorY = base - cfg.floorDrop;
+        const top = floorY + cfg.dimY * cfg.step - 8;
+        const bottom = floorY + 12;
         let prevAir = true;
-        for (let y = base + 66; y >= base - 44; y -= 1.2) {
+        for (let y = top; y >= bottom; y -= 1.2) {
             const solid = this._terrainDensityAt(x, y, z) > 0;
             if (solid && prevAir) return y;
             prevAir = !solid;
@@ -14422,7 +14894,8 @@ class AnazhRealm {
                 riverBuckets: carve.riverBuckets,
                 bucketSize: carve.bucketSize,
                 bucketsDim: carve.bucketsDim,
-                lakeCutCell: carve.lakeCutCell,
+                lakeBedCell: carve.lakeBedCell,
+                lakeW: carve.lakeW,
                 lakeNear: carve.lakeNear,
                 stats: {
                     cells: dim * dim,
@@ -14474,7 +14947,7 @@ class AnazhRealm {
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
                 const s = this._terrainMacroSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell, false);
-                raw[j * dim + i] = Number.isFinite(s) ? s : base - 44;
+                raw[j * dim + i] = Number.isFinite(s) ? s : base - 52;
             }
         }
         const surf = this._hydroBlur(raw, dim);
@@ -14844,12 +15317,16 @@ class AnazhRealm {
         return lakes;
     }
 
-    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwellwert. Von jeder
-    // Quelle (Fluss-Zelle ohne Fluss-Zelle stromauf) entlang flowTo zu einer
-    // Polylinie verketten — bis Meer, See oder Region-Rand. Da die
-    // Akkumulation stromab nur wächst, bleibt ein Fluss ab der Quelle bis
-    // zur Mündung Fluss. Breite w = widthMin + widthK·√A (hydraulische
-    // Geometrie — echte Flüsse verbreitern sich mit √Durchfluss).
+    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwellwert. V9.46 — die
+    // Flüsse fliessen durch Seen HINDURCH: ein „Conduit" ist eine Durchfluss-
+    // Zelle, OB See oder nicht; die Polylinie folgt `flowTo` vom Quell-Hang
+    // über die Seen-Kette bis zum Meer (statt an jedem See zu enden — das
+    // heilt den V9.43-c-„kurze-Flüsse"-Befund, hydrosphere.md §10a). Da das
+    // Priority-Flood-ε auch INNERHALB eines Sees ein Mini-Gefälle legt,
+    // routet `flowTo` durch das Becken zum Überlauf. See-Punkte tragen
+    // `inLake: true` + den See-Füllstand als `y` — der Renderer überspringt
+    // ihre Quads (die See-Plane deckt die Strecke), der Carve lässt sie aus.
+    // Breite w = widthMin + widthK·√A (hydraulische Geometrie).
     _hydroExtractRivers(ctx) {
         const { dim, cell, originX, originZ, filled, accum, flowTo, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
@@ -14859,19 +15336,32 @@ class AnazhRealm {
         // (anderes Relief → andere Max-Akkumulation).
         const threshold = Math.max(HC.riverThresholdMin, ctx.maxAccum * HC.riverThresholdFrac);
         const isSea = (idx) => isOcean[idx] === 1;
-        const isRiver = (idx) => !isSea(idx) && lakeOf[idx] < 0 && accum[idx] >= threshold;
-        // Quelle = Fluss-Zelle, in die KEINE Fluss-Zelle mündet.
+        // ein Conduit trägt echten Durchfluss — auch eine See-Zelle (der
+        // Fluss fliesst durch den See HINDURCH, statt an ihm zu enden).
+        const isConduit = (idx) => !isSea(idx) && accum[idx] >= threshold;
+        // Quelle = LAND-Conduit-Zelle (kein See) ohne Land-Conduit stromauf.
+        // Seen sind für die Quell-Suche „transparent": ein Fluss startet an
+        // einem echten Hang-Quell, NICHT an einer See-internen Akkumulations-
+        // Verzweigung (sonst spawnte jeder See dutzende Geister-Quellen — das
+        // ε-Flow-Tree eines flachen Beckens verzweigt fein). Die hasUpstream-
+        // Propagation überspringt See-Zellen → markiert den nächsten LAND-
+        // Conduit stromab; ein See-Kopf-Fluss (See ohne Land-Zufluss) startet
+        // dann an seinem Auslass.
+        const isLandConduit = (idx) => isConduit(idx) && lakeOf[idx] < 0;
         const hasUpstream = new Uint8Array(n);
         for (let idx = 0; idx < n; idx++) {
-            if (!isRiver(idx)) continue;
-            const t = flowTo[idx];
-            if (t >= 0 && isRiver(t)) hasUpstream[t] = 1;
+            if (!isLandConduit(idx)) continue;
+            let cur = flowTo[idx];
+            for (let g = 0; g < HC.maxRiverPoints && cur >= 0 && lakeOf[cur] >= 0; g++) {
+                cur = flowTo[cur];
+            }
+            if (cur >= 0 && isLandConduit(cur)) hasUpstream[cur] = 1;
         }
         const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
         const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
         const rivers = [];
         for (let src = 0; src < n; src++) {
-            if (!isRiver(src) || hasUpstream[src]) continue;
+            if (!isLandConduit(src) || hasUpstream[src]) continue;
             const points = [];
             let cur = src;
             let mouth = "border";
@@ -14889,13 +15379,15 @@ class AnazhRealm {
                 points.push({
                     x: wx(cur),
                     z: wz(cur),
-                    // y = die Füllhöhe (die hydrologische Routing-Oberfläche),
-                    // nicht surf — filled fällt entlang flowTo STRIKT monoton,
-                    // surf könnte in einer gefüllten Mikro-Senke kurz steigen.
+                    // y = die hydrologische Füllhöhe — fällt entlang flowTo
+                    // STRIKT monoton, auch durch eine See-Durchquerung (das
+                    // Priority-Flood-ε legt selbst im flachen Becken ein
+                    // Mini-Gefälle; ε≈0.01 → die See-Strecke ist nahezu flach).
                     y: filled[cur],
                     width: HC.widthMin + HC.widthK * Math.sqrt(accum[cur]),
                     flowX: fx,
                     flowZ: fz,
+                    inLake: lakeOf[cur] >= 0,
                 });
                 if (t < 0) {
                     mouth = "border";
@@ -14903,10 +15395,6 @@ class AnazhRealm {
                 }
                 if (isSea(t)) {
                     mouth = "sea";
-                    break;
-                }
-                if (lakeOf[t] >= 0) {
-                    mouth = { lake: lakeOf[t] };
                     break;
                 }
                 cur = t;
@@ -14928,6 +15416,13 @@ class AnazhRealm {
             const pts = rivers[ri].points;
             for (let k = 0; k < pts.length; k++) {
                 const p = pts[k];
+                if (p.inLake) {
+                    // V9.46 — im See ist die Wasser-Oberfläche der Füllstand
+                    // (`p.y`), NICHT die gecarvte Bett-Surface — sonst meldete
+                    // der Wasserfall-Scan einen Sturz am flachen See-Boden.
+                    p.voxelY = p.y;
+                    continue;
+                }
                 const v = this._voxelSurfaceY(p.x, p.z);
                 p.voxelY = Number.isFinite(v) ? v : p.y;
             }
@@ -14970,6 +15465,12 @@ class AnazhRealm {
             for (let k = 0; k + 1 < pts.length; k++) {
                 const a = pts[k];
                 const b = pts[k + 1];
+                // V9.46 — eine See-Durchquerung ist flach (Wasser-Oberfläche),
+                // kein Wasserfall; ein laufender steiler Lauf endet an ihr.
+                if (a.inLake || b.inLake) {
+                    flush(k);
+                    continue;
+                }
                 const drop = yOf(a) - yOf(b);
                 const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
                 const steep = drop > 0 && drop / horiz > HC.waterfallSlope;
@@ -14984,18 +15485,17 @@ class AnazhRealm {
         return waterfalls;
     }
 
-    // V9.43-d — der Carve-Index. Aus dem fertigen Netz (Flüsse + Seen) zwei
-    // Lookup-Strukturen, die `_hydrosphereCarveAt` O(1) machen: (1) ein
-    // Fluss-Bucket-Grid — jedes Fluss-Segment wird in alle Buckets eingetragen,
-    // die seine um die Kanal-Reichweite erweiterte Bounding-Box berührt; eine
-    // Carve-Abfrage liest einen Bucket. (2) ein See-Cut-Feld `lakeCutCell`
-    // (je Region-Zelle die Bett-Senkung, vorberechnet aus `ctx.surf`) + die
-    // dilatierte Maske `lakeNear` (Early-Out: kein See in der 3×3-Nachbarschaft
-    // → die bilineare Abfrage entfällt). Pure Daten — kein `_terrainDensityAt`-
-    // Aufruf, kein Zirkel.
+    // V9.43-d / V9.45-b — der Carve-Index. Aus dem fertigen Netz die
+    // Lookup-Strukturen für `_hydrosphereCarveAt` + `_hydrosphereLakeAt`:
+    // (1) ein Fluss-Bucket-Grid — jedes Fluss-Segment wird in alle Buckets
+    // eingetragen, die seine um die Kanal-Reichweite erweiterte Bounding-Box
+    // berührt; eine Carve-Abfrage liest einen Bucket. (2) die See-Becken-
+    // Raster `lakeBedCell` (die flache Bett-Höhe je Zelle), `lakeW` (die
+    // Becken-Zugehörigkeit 0/1) + die dilatierte Maske `lakeNear` (Early-Out).
+    // Pure Daten — kein `_terrainDensityAt`-Aufruf, kein Zirkel.
     _hydroBuildCarveIndex(ctx, rivers, lakes) {
         const HC = AnazhRealm.HYDROSPHERE;
-        const { dim, originX, originZ, size, surf } = ctx;
+        const { dim, originX, originZ, size, waterLevel } = ctx;
         const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
         // --- Fluss-Bucket-Grid ---
         const bucketSize = HC.carveBucketSize;
@@ -15024,6 +15524,10 @@ class AnazhRealm {
             for (let k = 0; k + 1 < pts.length; k++) {
                 const a = pts[k];
                 const b = pts[k + 1];
+                // V9.46 — eine See-Durchquerung NICHT carven: das Becken-Bett
+                // ist schon von `_hydrosphereLakeAt` flach gesculptet; ein
+                // Fluss-Carve grübe sonst eine Rinne in den flachen See-Boden.
+                if (a.inLake || b.inLake) continue;
                 addSeg({
                     ax: a.x,
                     az: a.z,
@@ -15036,31 +15540,49 @@ class AnazhRealm {
                 });
             }
         }
-        // --- See-Cut-Feld + dilatierte Nähe-Maske ---
+        // --- See-Becken-Raster (V9.45-b) ---
+        // `lakeBedCell` = die flache, wasserdichte Bett-Höhe `bedY` je Zelle
+        // (auf 2 Ringe propagiert, damit die bilineare Ufer-Interpolation
+        // saubere Eck-Werte hat); `lakeW` = die Becken-Zugehörigkeit (1 in
+        // einer echten See-Zelle, sonst 0 — die Interpolation rampt daraus
+        // die 0..1-Ufer-Mischung); `lakeNear` = die 1-Ring-Maske (Early-Out).
+        // `bedY` wird in [waterLevel+0.5, level−1.2] geklemmt: das Bett liegt
+        // garantiert über dem Meeresspiegel (die globale Meeres-Plane bleibt
+        // verdeckt) UND unter dem See-Spiegel (das Becken ist nie degeneriert).
+        // Seen ≤ waterLevel+2 sind faktisch Meeresspiegel — sie werden NICHT
+        // gesculptet, die Meeres-Plane deckt sie (`_buildLakeMesh` lässt ihre
+        // Plane ebenfalls weg → keine zwei Wasser-Ebenen übereinander).
         const n = dim * dim;
-        const lakeCutCell = new Float32Array(n);
+        const lakeBedCell = new Float32Array(n);
+        const lakeW = new Float32Array(n);
         const lakeNear = new Uint8Array(n);
         for (let li = 0; li < lakes.length; li++) {
             const lake = lakes[li];
-            const targetFloor = lake.level - HC.carveLakeBedDepth;
+            if (lake.level <= waterLevel + 2.0) continue; // faktisch Meeresspiegel
+            let bedY = lake.level - HC.carveLakeBedDepth;
+            const minBed = waterLevel + 0.5;
+            const maxBed = lake.level - 1.2;
+            if (bedY < minBed) bedY = minBed;
+            if (bedY > maxBed) bedY = maxBed;
             const cells = lake.cells || [];
             for (let c = 0; c < cells.length; c++) {
                 const idx = cells[c];
-                const cutv = surf[idx] - targetFloor;
-                lakeCutCell[idx] = cutv > 0 ? cutv : 0;
                 const ci = idx % dim;
                 const cj = (idx / dim) | 0;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
+                lakeW[idx] = 1;
+                for (let dj = -2; dj <= 2; dj++) {
+                    for (let di = -2; di <= 2; di++) {
                         const ni = ci + di;
                         const nj = cj + dj;
                         if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                        lakeNear[ni + nj * dim] = 1;
+                        const nidx = ni + nj * dim;
+                        lakeBedCell[nidx] = bedY; // bedY auf 2 Ringe propagiert
+                        if (di >= -1 && di <= 1 && dj >= -1 && dj <= 1) lakeNear[nidx] = 1;
                     }
                 }
             }
         }
-        return { riverBuckets, bucketSize, bucketsDim, lakeCutCell, lakeNear };
+        return { riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear };
     }
 
     // === V9.43-c — die Hydrosphäre wird sichtbar ==========================
@@ -15093,17 +15615,15 @@ class AnazhRealm {
             }
             for (let ri = 0; ri < hydro.rivers.length; ri++) {
                 const river = hydro.rivers[ri];
-                // V9.43-c.2 — der Fluss endet SICHTBAR an seinem Wasser: ein
-                // Meer-Mündungs-Fluss blendet auf `waterLevel`, ein See-
-                // Mündungs-Fluss auf `lake.level`. So fließt er INS Wasser,
-                // statt ein paar Meter darüber in der Luft zu enden (Schöpfer-
-                // Befund: „nicht synergetisch mit dem bestehenden Wasser").
+                // V9.43-c.2 / V9.46 — der Fluss endet SICHTBAR an seinem
+                // Wasser: ein Meer-Mündungs-Fluss blendet die Render-Höhe auf
+                // `waterLevel` aus, statt ein paar Meter darüber in der Luft
+                // zu enden. Seen sind seit V9.46 keine Mündung mehr — der
+                // Fluss fliesst durch sie HINDURCH (`inLake`-Punkte, deren
+                // Quads der Ribbon-Bauer überspringt; die See-Plane deckt sie).
                 let mouthY = null;
                 if (river.mouth === "sea") {
                     mouthY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
-                } else if (river.mouth && typeof river.mouth.lake === "number") {
-                    const lk = hydro.lakes[river.mouth.lake];
-                    if (lk) mouthY = lk.level;
                 }
                 const m = this._buildRiverRibbon(river, surfMat, mouthY);
                 if (m) {
@@ -15144,14 +15664,16 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = [];
     }
 
-    // V9.43-c.2 — der effektive Wasserspiegel an einer xz-Welt-Position:
-    // liegt (x,z) über einer See-Zelle, ist es der See-Füllstand
-    // (`lake.level`); sonst der globale Meeresspiegel (`state.waterLevel`).
-    // Die Physik-Schleife nutzt das, damit der Spieler in einem See genauso
-    // schwimmt wie im Meer — die Hydrosphäre ist EIN Wasser-System mit dem
-    // Meer (Schöpfer-Befund V9.43-c: „nicht synergetisch"). O(Seen) +ein
-    // `.includes` nur für den einen See, dessen bbox (x,z) umschliesst — pro
-    // Frame vernachlässigbar.
+    // V9.43-c.2 / V9.45-c — der effektive Wasserspiegel an einer xz-Welt-
+    // Position: liegt (x,z) über einer GERENDERTEN See-Wasserfläche, ist es
+    // der See-Füllstand (`lake.level`); sonst der globale Meeresspiegel
+    // (`state.waterLevel`). Die Physik-Schleife nutzt das, damit der Spieler
+    // im See genauso schwimmt wie im Meer — die Hydrosphäre ist EIN Wasser-
+    // System mit dem Meer. V9.45-c koppelt das an die SICHTBARE See-Plane:
+    // (1) `lakeNear` (1-Ring-Maske der gerenderten Seen) ist der O(1)-Early-
+    // Out + deckt exakt die Region, die `_buildLakeMesh` mit Wasser deckt;
+    // (2) absorbierte Seen (`level ≤ waterLevel+2`, ohne eigene Plane) zählen
+    // nicht — die Meeres-Plane vertritt sie. Sonst klafften Optik + Physik.
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
         const hydro = this.state.hydrosphere;
@@ -15161,31 +15683,71 @@ class AnazhRealm {
         const j = Math.floor((z - originZ) / cell);
         if (i < 0 || j < 0 || i >= dim || j >= dim) return base;
         const idx = i + j * dim;
+        // Early-Out: `lakeNear` ist 1 nur in der See-Zellen+1-Ring-Region der
+        // gerenderten Seen — exakt, was `_buildLakeMesh` mit Wasser deckt.
+        if (hydro.lakeNear && !hydro.lakeNear[idx]) return base;
+        const wl = base != null ? base : -Infinity;
         for (const lake of hydro.lakes) {
+            if (lake.level <= wl + 2) continue; // absorbiert — die Meeres-Plane deckt ihn
             const b = lake.bbox;
-            if (!b || x < b.minX - cell || x > b.maxX + cell || z < b.minZ - cell || z > b.maxZ + cell) {
+            if (
+                !b ||
+                x < b.minX - 2 * cell ||
+                x > b.maxX + 2 * cell ||
+                z < b.minZ - 2 * cell ||
+                z > b.maxZ + 2 * cell
+            ) {
                 continue;
             }
-            if (Array.isArray(lake.cells) && lake.cells.includes(idx)) return lake.level;
+            const cells = lake.cells;
+            if (!Array.isArray(cells)) continue;
+            // die See-Plane deckt die See-Zellen + 1-Ring → der Auftrieb
+            // folgt derselben dilatierten Region (Optik == Physik).
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    if (cells.includes(i + di + (j + dj) * dim)) return lake.level;
+                }
+            }
         }
         return base;
     }
 
-    // Eine See-Plane: ein Quad je See-Zelle, flach auf der Füll-Höhe
-    // (`lake.level`). Nur die echten See-Zellen werden gedeckt — kein bbox-
-    // Rechteck (das legte Wasser über trockenes Terrain in den Ecken). Jeder
+    // V9.45-b — eine See-Plane: ein Quad je gedeckter Zelle, flach auf der
+    // Füll-Höhe (`lake.level`). Gedeckt sind die echten See-Zellen PLUS ein
+    // 1-Zellen-Ring — die Plane schiebt sich unter das ansteigende Ufer-
+    // Terrain, das opake Terrain schneidet die Wasserlinie sauber (kein in
+    // der Luft schwebender Rand, kein Ufer-im-Boden-Klaffen mehr). Ein See ≤
+    // waterLevel+2 ist faktisch Meeresspiegel — die Meeres-Plane deckt ihn,
+    // hier KEINE eigene Plane (sonst zwei Wasser-Ebenen übereinander). Jeder
     // Vertex trägt `aFlow=(0,0)` → stilles Wasser (kein Flow-Scroll).
     _buildLakeMesh(hydro, lake, mat) {
         if (!Array.isArray(lake.cells) || lake.cells.length === 0) return null;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : -Infinity;
+        if (lake.level <= waterLevel + 2.0) return null; // faktisch Meeresspiegel
         const { dim, cell, originX, originZ } = hydro;
         const half = cell / 2;
-        const y = lake.level + 0.12; // knapp über dem Senken-Boden-Wasser
+        const y = lake.level + 0.12; // knapp über dem Becken-Boden-Wasser
+        // die See-Zellen + 1-Ring decken — so schneidet das opake Ufer-
+        // Terrain die Wasserlinie, statt sie an der Zell-Kante abzuschneiden.
+        const covered = new Set();
+        for (const idx of lake.cells) {
+            const lci = idx % dim;
+            const lcj = (idx / dim) | 0;
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    const ni = lci + di;
+                    const nj = lcj + dj;
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    covered.add(ni + nj * dim);
+                }
+            }
+        }
         const positions = [];
         const uvs = [];
         const flow = [];
         const indices = [];
         let vi = 0;
-        for (const idx of lake.cells) {
+        for (const idx of covered) {
             const i = idx % dim;
             const j = (idx / dim) | 0;
             const cx = originX + (i + 0.5) * cell;
@@ -15218,7 +15780,7 @@ class AnazhRealm {
         const mesh = new THREE.Mesh(geo, mat);
         mesh.renderOrder = 1;
         mesh.frustumCulled = false;
-        mesh.userData = { isHydrosphere: true, hydroKind: "lake" };
+        mesh.userData = { isHydrosphere: true, hydroKind: "lake", lakeLevel: lake.level };
         return mesh;
     }
 
@@ -15239,6 +15801,15 @@ class AnazhRealm {
         // geglättet, strikt fallend, kleiner Lift.
         const ry = new Float64Array(n);
         for (let i = 0; i < n; i++) {
+            if (pts[i].inLake) {
+                // V9.46 — See-Durchquerung: die flache Wasser-Oberfläche
+                // (`pts[i].y` = See-Füllstand), nicht die gecarvte Bett-
+                // Surface. Die Quads dieser Strecke werden ohnehin
+                // übersprungen — der Wert hält nur den Smooth/Klemm-Verlauf
+                // der benachbarten Land-Punkte plausibel.
+                ry[i] = pts[i].y;
+                continue;
+            }
             const v = this._voxelSurfaceY(pts[i].x, pts[i].z);
             ry[i] = typeof v === "number" && Number.isFinite(v) ? v : pts[i].y;
         }
@@ -15308,6 +15879,10 @@ class AnazhRealm {
             flow.push(fx[i], fz[i], fx[i], fz[i]);
         }
         for (let i = 0; i + 1 < n; i++) {
+            // V9.46 — kein Quad über eine See-Durchquerung: die See-Plane
+            // deckt die Strecke, der Fluss-Ribbon hat dort eine Lücke (der
+            // Fluss bleibt EINE logische Polylinie, nur visuell unterbrochen).
+            if (pts[i].inLake || pts[i + 1].inLake) continue;
             const a = i * 2;
             indices.push(a, a + 1, a + 3, a, a + 3, a + 2);
         }
@@ -15752,19 +16327,23 @@ class AnazhRealm {
         const edits = this.state.worldMeta.voxelEdits;
         const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
         // V9.40-e Schöpfer-Befund: Edits außerhalb des Voxel-Chunk-Höhen-
-        // Bands (base-58..base+86, der vertikalen Spanne der Surface-Nets-
-        // Mesher) sind nutzlos — der Edit ist gespeichert, kann aber nichts
-        // schnitzen/aufschütten, weil keine Dichte-Zellen in seinem Radius
-        // liegen. Plus: `_remeshVoxelChunksAround` markiert trotzdem ±1-
-        // Skirt-Chunks dirty (ignoriert Y), was Re-Meshes ohne Effekt
-        // triggert. Wir clampen darum y auf den (mit Radius-Marge erweiterten)
-        // nutzbaren Bereich. Edits, die WEIT außerhalb sind (>r+8 Marge),
-        // werden silent verworfen — sie hätten keinen Effekt.
+        // Bands (der vertikalen Spanne der Surface-Nets-Mesher) sind nutzlos
+        // — der Edit ist gespeichert, kann aber nichts schnitzen/aufschütten,
+        // weil keine Dichte-Zellen in seinem Radius liegen. Plus:
+        // `_remeshVoxelChunksAround` markiert trotzdem ±1-Skirt-Chunks dirty
+        // (ignoriert Y), was Re-Meshes ohne Effekt triggert. Wir clampen
+        // darum y auf den (mit Radius-Marge erweiterten) nutzbaren Bereich.
+        // Edits, die WEIT außerhalb sind (>r+8 Marge), werden silent
+        // verworfen — sie hätten keinen Effekt. V9.45-a: die Band-Grenzen
+        // leiten sich aus `_voxelChunkConfig` ab (eine Quelle).
         const base = this.state.terrainBaseHeight || 0;
-        const Y_MIN = base - 58 - radius - 8;
-        const Y_MAX = base + 86 + radius + 8;
+        const cfg = this._voxelChunkConfig();
+        const floorY = base - cfg.floorDrop;
+        const ceilY = floorY + cfg.dimY * cfg.step;
+        const Y_MIN = floorY - radius - 8;
+        const Y_MAX = ceilY + radius + 8;
         if (y < Y_MIN || y > Y_MAX) return false;
-        const yClamped = Math.max(base - 58 - radius, Math.min(base + 86 + radius, y));
+        const yClamped = Math.max(floorY - radius, Math.min(ceilY + radius, y));
         edits.push({ x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
@@ -34672,8 +35251,8 @@ class AnazhRealm {
                     // sind, aber tief genug, dass eine legitime Schlucht
                     // (heights -100..+100) den Spieler nicht reset.
                     // V9.25 Phase 5b — der Killplane folgt der Welt. In
-                    // einer Voxel-Welt liegt der Chunk-Boden bei base-58
-                    // (V9.26); der Killplane gehört DARUNTER (base-88),
+                    // einer Voxel-Welt liegt der Chunk-Boden bei base-66
+                    // (V9.45-a); der Killplane gehört DARUNTER (base-88),
                     // sonst würde ein Spieler in einem tiefen Voxel-Tal
                     // resettet. Das heightfield-abgeleitete `minHeight`
                     // kennt das Voxel-Band nicht.

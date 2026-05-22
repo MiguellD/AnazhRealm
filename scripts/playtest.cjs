@@ -12487,6 +12487,108 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.47 — Fluviale Erosion (Stream-Power-Inzision) ###
+            // `_computeErosion` lässt Terrain + Drainage ko-evolvieren: je
+            // Iteration Priority-Flood → Flow-Accumulation → Inzision
+            // `Δh=k·A^m·S^n` NUR in Kanälen (A ≥ channelMinArea). Grate bleiben
+            // unberührt, Täler schneiden ein. Delta fliesst in _terrainMacroSurfaceY.
+            const voxelV947Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // `_computeErosion` nullt state.erosion beim Start — der
+                    // Worldgen-Stand wird gesichert + am Ende wiederhergestellt,
+                    // damit die nachfolgenden Hydrosphäre-Tests das erodierte
+                    // Gelände sehen.
+                    const savedEro = r.state.erosion;
+                    out.methodsExist =
+                        typeof r._computeErosion === "function" &&
+                        typeof r._erosionIncisionPass === "function" &&
+                        typeof r._erosionDeltaAt === "function";
+                    out.stateDeclared = "erosion" in r.state;
+                    const e = r.state.erosion;
+                    out.wired =
+                        !!e &&
+                        e.delta instanceof Float32Array &&
+                        typeof e.dim === "number" &&
+                        typeof e.cell === "number" &&
+                        e.delta.length === e.dim * e.dim;
+                    if (!out.methodsExist || !out.wired) return out;
+                    const E = r.constructor.EROSION;
+                    // (1) reine Inzision: jedes Delta ≤ 0, keines unter −maxDelta.
+                    let allNeg = true;
+                    let minD = 0;
+                    let sumD = 0;
+                    let carved = 0;
+                    for (let i = 0; i < e.delta.length; i++) {
+                        const v = e.delta[i];
+                        if (v > 1e-4) allNeg = false;
+                        if (v < minD) minD = v;
+                        sumD += v;
+                        if (v < -3) carved++;
+                    }
+                    out.pureIncision = allNeg;
+                    out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01;
+                    out.carvesChannels = minD < -5 && carved > 0;
+                    // (2) der Schnitt ist gezielt — nur ein Bruchteil der Welt
+                    // wird berührt (Kanäle), nicht die ganze Fläche (Blanket).
+                    out.channelFocused = carved / e.delta.length < 0.3;
+                    // (3) Determinismus — zwei Läufe byte-identisch (kein RNG).
+                    const t0 = performance.now();
+                    const e2 = r._computeErosion();
+                    out.recomputeMs = performance.now() - t0;
+                    let sum2 = 0;
+                    for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
+                    out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
+                    // (4) `_erosionDeltaAt`: 0 weit ausserhalb der Region, im
+                    // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
+                    out.deltaZeroOutside = r._erosionDeltaAt(99999, 99999) === 0;
+                    out.deltaFiniteInside = Number.isFinite(r._erosionDeltaAt(0, 0));
+                    out.perfOk = out.recomputeMs < 600;
+                    // den Worldgen-Erosions-Stand wiederherstellen (das letzte
+                    // `_computeErosion` liess state.erosion null).
+                    r.state.erosion = savedEro;
+                    return out;
+                })
+                .catch((err) => ({ error: String(err) }));
+
+            if (voxelV947Results && !voxelV947Results.error) {
+                const ev = voxelV947Results;
+                check(
+                    "Voxel V9.47: _computeErosion + _erosionIncisionPass + _erosionDeltaAt existieren",
+                    ev.methodsExist
+                );
+                check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
+                check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
+                if (ev.methodsExist && ev.wired) {
+                    check(
+                        "Voxel V9.47: reine Inzision — jedes Delta ≤ 0, ≥ −maxDelta",
+                        ev.pureIncision && ev.boundedByMaxDelta
+                    );
+                    check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
+                    check("Voxel V9.47: der Schnitt ist kanal-fokussiert, kein Flächen-Blanket", ev.channelFocused);
+                    check(
+                        "Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)",
+                        ev.deterministic
+                    );
+                    check(
+                        "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
+                        ev.deltaZeroOutside && ev.deltaFiniteInside
+                    );
+                    check(
+                        `Voxel V9.47: _computeErosion im Perf-Budget (${Math.round(ev.recomputeMs || 0)} ms < 600)`,
+                        ev.perfOk
+                    );
+                }
+            } else {
+                check(
+                    "Voxel V9.47: Erosions-Tests laufen",
+                    false,
+                    voxelV947Results ? voxelV947Results.error : "no result"
+                );
+            }
+
             // ### Voxel V9.43-b — Der Hydrosphären-Atlas ###
             // Aus der Voxel-Surface ein deterministisches Drainage-Netz:
             // Priority-Flood (Senken auffüllen → Seen) → D8-Flow-Direction →
@@ -12528,20 +12630,28 @@ function startSaveServer() {
                         JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
                         JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
                     // Jeder Fluss steigt STRIKT monoton ab — point.y ist die
-                    // Füllhöhe, die entlang flowTo strikt monoton fällt.
+                    // Füllhöhe, die entlang flowTo strikt monoton fällt (V9.46:
+                    // auch durch eine See-Durchquerung — das Priority-Flood-ε
+                    // hält filled selbst im Becken strikt fallend).
                     out.riversDescend = h1.rivers.every((rv) => {
                         for (let k = 0; k + 1 < rv.points.length; k++) {
                             if (rv.points[k].y <= rv.points[k + 1].y) return false;
                         }
                         return true;
                     });
-                    // Jeder Fluss endet an Meer, See oder Region-Rand
-                    out.riverMouths = h1.rivers.every(
-                        (rv) =>
-                            rv.mouth === "sea" ||
-                            rv.mouth === "border" ||
-                            (rv.mouth && typeof rv.mouth.lake === "number")
-                    );
+                    // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
+                    // sind keine Mündung mehr — der Fluss fliesst hindurch).
+                    out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
+                    // V9.46 — mindestens ein Fluss fliesst durch einen See
+                    // HINDURCH: ein Land-Punkt NACH einer See-Durchquerung.
+                    out.riverThroughLake = h1.rivers.some((rv) => {
+                        let sawLake = false;
+                        for (const p of rv.points) {
+                            if (p.inLake) sawLake = true;
+                            else if (sawLake) return true;
+                        }
+                        return false;
+                    });
                     // Flow-Accumulation stromab monoton → Breite wächst
                     out.widthGrows = h1.rivers.every((rv) => {
                         for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -12569,8 +12679,15 @@ function startSaveServer() {
                     hb.riverCount > 0
                 );
                 check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-                check("Voxel V9.43-b: jeder Fluss steigt monoton ab (Quelle → Mündung)", hb.riversDescend);
-                check("Voxel V9.43-b: jeder Fluss endet an Meer, See oder Region-Rand", hb.riverMouths);
+                check(
+                    "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)",
+                    hb.riversDescend
+                );
+                check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
+                check(
+                    "Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)",
+                    hb.riverThroughLake
+                );
                 check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
                 check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
                 check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
@@ -12627,8 +12744,13 @@ function startSaveServer() {
                         out.lakeMeshCount = lakes.length;
                         out.riverMeshCount = rivers.length;
                         out.fallMeshCount = falls.length;
+                        // V9.45-b — Seen ≤ waterLevel+2 sind faktisch
+                        // Meeresspiegel: sie bekommen KEINE eigene Plane (die
+                        // Meeres-Plane deckt sie, sonst zwei Wasser-Ebenen).
+                        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
+                        const renderedLakes = hydro.lakes.filter((l) => l.level > wl + 2);
                         out.countsMatch =
-                            lakes.length === hydro.lakes.length &&
+                            lakes.length === renderedLakes.length &&
                             rivers.length === hydro.rivers.length &&
                             falls.length === hydro.waterfalls.length;
                         // See + Fluss nutzen das geteilte Surface-Material
@@ -12642,13 +12764,14 @@ function startSaveServer() {
                                     m.geometry &&
                                     m.geometry.type === "PlaneGeometry"
                             );
-                        // See-Plane sitzt auf der Füll-Höhe (lake.level)
+                        // See-Plane sitzt auf der Füll-Höhe (lake.level) —
+                        // V9.45-b: über userData.lakeLevel geprüft (die
+                        // Mesh-Liste deckt nur die gerenderten Seen).
                         out.lakeOnLevel =
                             lakes.length === 0 ||
-                            lakes.every((m, k) => {
-                                const lk = hydro.lakes[k];
+                            lakes.every((m) => {
                                 const py = m.geometry.attributes.position.array[1];
-                                return lk && Math.abs(py - (lk.level + 0.12)) < 0.5;
+                                return Math.abs(py - (m.userData.lakeLevel + 0.12)) < 0.5;
                             });
                         // Fluss-Ribbon trägt das aFlow-Attribut + wird stromab breiter
                         out.ribbonHasFlow = true;
@@ -12738,16 +12861,39 @@ function startSaveServer() {
                     const hydro = r.state.hydrosphere;
                     out.hydroReady = !!(hydro && hydro.ready);
                     if (!out.hasWaterLevelAt || !out.hydroReady) return out;
-                    // _hydroWaterLevelAt: über einer See-Zelle → der See-Level.
+                    // _hydroWaterLevelAt: über einer GERENDERTEN See-Zelle → der
+                    // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
+                    // zählen nicht — die Meeres-Plane vertritt sie.
                     out.lakeLevelOk = true;
-                    if (hydro.lakes.length > 0 && hydro.lakes[0].cells.length > 0) {
-                        const lk = hydro.lakes[0];
-                        const cellIdx = lk.cells[0];
+                    out.ringFollowsPlane = true;
+                    const wlT = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+                    const renderedLk = hydro.lakes.find(
+                        (l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0
+                    );
+                    if (renderedLk) {
+                        const cellIdx = renderedLk.cells[0];
                         const ci = cellIdx % hydro.dim;
                         const cj = (cellIdx / hydro.dim) | 0;
                         const wx = hydro.originX + (ci + 0.5) * hydro.cell;
                         const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                        out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - lk.level) < 0.01;
+                        out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+                        // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
+                        // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
+                        // einen See-Wasserspiegel, nicht den Meeresspiegel.
+                        const cellsSet = new Set(renderedLk.cells);
+                        let ringChecked = false;
+                        for (let dj = -1; dj <= 1 && !ringChecked; dj++) {
+                            for (let di = -1; di <= 1 && !ringChecked; di++) {
+                                const ni = ci + di;
+                                const nj = cj + dj;
+                                if (ni < 0 || nj < 0 || ni >= hydro.dim || nj >= hydro.dim) continue;
+                                if (cellsSet.has(ni + nj * hydro.dim)) continue;
+                                const rx = hydro.originX + (ni + 0.5) * hydro.cell;
+                                const rz = hydro.originZ + (nj + 0.5) * hydro.cell;
+                                out.ringFollowsPlane = r._hydroWaterLevelAt(rx, rz) > wlT + 1.5;
+                                ringChecked = true;
+                            }
+                        }
                     }
                     // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
                     out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
@@ -12785,6 +12931,10 @@ function startSaveServer() {
                     h2.lakeLevelOk
                 );
                 check(
+                    "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
+                    h2.ringFollowsPlane
+                );
+                check(
                     "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
                     h2.seaFallbackOk
                 );
@@ -12818,15 +12968,20 @@ function startSaveServer() {
                     // (2) der Carve-Index ist an state.hydrosphere verdrahtet
                     out.indexWired =
                         Array.isArray(hydro.riverBuckets) &&
-                        hydro.lakeCutCell instanceof Float32Array &&
+                        hydro.lakeBedCell instanceof Float32Array &&
+                        hydro.lakeW instanceof Float32Array &&
                         hydro.lakeNear instanceof Uint8Array &&
                         typeof hydro.bucketSize === "number" &&
                         typeof hydro.bucketsDim === "number";
-                    // einen Fluss-Punkt mit echter Flow-Richtung finden
+                    // einen Fluss-Punkt mit echter Flow-Richtung finden —
+                    // V9.46: NICHT in einem See (See-Durchquerungs-Segmente
+                    // werden bewusst nicht gecarvt) und mit nicht-See-Nachbar,
+                    // damit das Segment rp→next im Carve-Index liegt.
                     let rp = null;
                     for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
                         const pts = hydro.rivers[ri].points;
-                        for (let k = 0; k < pts.length; k++) {
+                        for (let k = 0; k + 1 < pts.length; k++) {
+                            if (pts[k].inLake || pts[k + 1].inLake) continue;
                             if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) > 0.5) {
                                 rp = pts[k];
                                 break;
@@ -12838,28 +12993,26 @@ function startSaveServer() {
                         const HC = r.constructor.HYDROSPHERE;
                         const rx = rp.x;
                         const rz = rp.z;
+                        // V9.45-b — lakeNear neutralisiert: alle Fluss-Sub-Tests
+                        // messen den reinen Fluss-Carve + das Terrain, ohne dass
+                        // ein zufällig benachbarter See-Blend die Mess-Punkte
+                        // verfälscht (ein Fluss-Punkt kann im 1-Ring eines Sees
+                        // liegen). Am Ende des Blocks wiederhergestellt.
+                        const savedLN = hydro.lakeNear;
+                        hydro.lakeNear = new Uint8Array(savedLN.length);
                         // (3) der Fluss-Mittelpunkt wird gecarvt
                         const carveCenter = r._hydrosphereCarveAt(rx, rz);
                         out.riverCenterCarved = carveCenter > 0.5;
                         // (4) das Bett liegt unter den Ufern: das Carve-Profil
-                        // fällt von der Fluss-Mitte zur Bank-Rampe hin ab. Seen
-                        // sind für diesen river-only-Sub-Test neutralisiert — ein
-                        // zufällig benachbarter See (~20 % der Region) würde sonst
-                        // beide Mess-Punkte gleich tief carven.
+                        // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
                         const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
                         const bankW = Math.max(2, D * HC.carveBankSlope);
                         const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
                         const pX = -rp.flowZ;
                         const pZ = rp.flowX;
-                        const savedLC = hydro.lakeCutCell;
-                        const savedLN = hydro.lakeNear;
-                        hydro.lakeCutCell = new Float32Array(savedLC.length);
-                        hydro.lakeNear = new Uint8Array(savedLN.length);
                         const rcCenter = r._hydrosphereCarveAt(rx, rz);
                         const midOff = halfW + bankW * 0.45;
                         const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-                        hydro.lakeCutCell = savedLC;
-                        hydro.lakeNear = savedLN;
                         out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
                         // (5) der Carve senkt die Voxel-Surface am Fluss
                         const sCarve = r._voxelSurfaceY(rx, rz);
@@ -12884,28 +13037,33 @@ function startSaveServer() {
                         // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
                         const base = r.state.terrainBaseHeight || 0;
                         out.floorSolid = r._terrainDensityAt(rx, base - 56, rz) > 0;
+                        hydro.lakeNear = savedLN;
                     }
-                    // (6+7) ein See-Becken wird gecarvt, der Boden liegt unter dem Spiegel
-                    out.lakeCarved = false;
-                    out.lakeFloorBelowLevel = false;
-                    for (let li = 0; li < hydro.lakes.length && !out.lakeCarved; li++) {
+                    // (6+7) V9.45-b — ein See-Becken wird zu einem flachen,
+                    // wasserdichten Topf gesculptet: `_hydrosphereLakeAt` liefert
+                    // ein bedY über dem Meeresspiegel (die Meeres-Plane bleibt
+                    // verdeckt) + unter dem See-Spiegel; die geblendete Voxel-
+                    // Surface sitzt auf bedY, knapp darunter ist fester Grund.
+                    out.lakeSculpted = false;
+                    out.lakeBedWatertight = false;
+                    const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
+                    for (let li = 0; li < hydro.lakes.length && !out.lakeSculpted; li++) {
                         const lk = hydro.lakes[li];
-                        if (!Array.isArray(lk.cells)) continue;
-                        for (let c = 0; c < lk.cells.length; c++) {
-                            const idx = lk.cells[c];
-                            const ci = idx % hydro.dim;
-                            const cj = (idx / hydro.dim) | 0;
-                            const wx = hydro.originX + (ci + 0.5) * hydro.cell;
-                            const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                            if (r._hydrosphereCarveAt(wx, wz) > 0.5) {
-                                out.lakeCarved = true;
-                                const sC = r._voxelSurfaceY(wx, wz);
-                                r._hydroComputing = true;
-                                const sN = r._voxelSurfaceY(wx, wz);
-                                r._hydroComputing = false;
-                                out.lakeFloorBelowLevel = Number.isFinite(sC) && Number.isFinite(sN) && sC < sN - 0.3;
-                                break;
-                            }
+                        if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
+                        if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
+                        const idx = lk.cells[(lk.cells.length / 2) | 0];
+                        const ci = idx % hydro.dim;
+                        const cj = (idx / hydro.dim) | 0;
+                        const wx = hydro.originX + (ci + 0.5) * hydro.cell;
+                        const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                        const la = r._hydrosphereLakeAt(wx, wz);
+                        if (la && la.w > 0.5 && Number.isFinite(la.bedY)) {
+                            out.lakeSculpted = true;
+                            const bedOk = la.bedY > wl2 && la.bedY < lk.level;
+                            const solidBelow = r._terrainDensityAt(wx, la.bedY - 2, wz) > 0;
+                            const surfY = r._voxelSurfaceY(wx, wz);
+                            const surfOnBed = Number.isFinite(surfY) && Math.abs(surfY - la.bedY) < 2.5;
+                            out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
                         }
                     }
                     // (11) Re-Compute ist zirkel-frei: das Suppress-Flag hält den
@@ -12935,7 +13093,7 @@ function startSaveServer() {
                 const d = voxelV943d;
                 check("Voxel V9.43-d: _hydrosphereCarveAt + _hydroBuildCarveIndex existieren", d.methodsExist);
                 check(
-                    "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeCutCell/lakeNear)",
+                    "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
                     d.indexWired
                 );
                 check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
@@ -12956,10 +13114,10 @@ function startSaveServer() {
                     "Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)",
                     d.floorSolid
                 );
-                check("Voxel V9.43-d: ein See-Becken wird gecarvt", d.lakeCarved);
+                check("Voxel V9.45-b: ein See-Becken wird zu einem flachen Topf gesculptet", d.lakeSculpted);
                 check(
-                    "Voxel V9.43-d: der See-Boden wird unter den un-gecarvten Stand gesenkt (gemuldetes Becken)",
-                    d.lakeFloorBelowLevel
+                    "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
+                    d.lakeBedWatertight
                 );
                 check(
                     "Voxel V9.43-d: ein Re-Compute bleibt zirkel-frei (Suppress-Flag — gleiches Netz wie der Worldgen-Compute)",
@@ -12973,6 +13131,128 @@ function startSaveServer() {
                 check(
                     `Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe in ${Math.round(d.carvePerfMs || 0)} ms < 300 ms)`,
                     typeof d.carvePerfMs === "number" && d.carvePerfMs < 300
+                );
+            }
+
+            // ### V9.43-e — das Wasser-Ultiversum bekommt Klang ###
+            // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen
+            // (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass).
+            // `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
+            // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode
+            // rampt verzögert hinterher). Vision §1.4 multisensorisch.
+            const voxelV943e = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasBuild = typeof r._buildHydroAudioLayer === "function";
+                    out.hasTick = typeof r._tickHydrosphereAudio === "function";
+                    out.hasSegDist = typeof r._pointSegDist2D === "function";
+                    if (out.hasSegDist) {
+                        out.segPerp = Math.abs(r._pointSegDist2D(0, 5, -10, 0, 10, 0) - 5) < 1e-6;
+                        out.segClamp = Math.abs(r._pointSegDist2D(20, 0, -10, 0, 10, 0) - 10) < 1e-6;
+                        out.segZero = r._pointSegDist2D(3, 0, -10, 0, 10, 0) < 1e-6;
+                    }
+                    if (!r.state.symphony.enabled) {
+                        try {
+                            r.initSymphony();
+                        } catch (e) {
+                            void e;
+                        }
+                    }
+                    const s = r.state.symphony;
+                    out.symphonyOn = !!s.enabled;
+                    const ha = s.hydroAudio;
+                    out.hasHydroAudio = !!ha;
+                    if (ha) {
+                        out.riverLayer = !!(ha.river && ha.river.noise && ha.river.filter && ha.river.gain);
+                        out.fallLayer = !!(
+                            ha.waterfall &&
+                            ha.waterfall.noise &&
+                            ha.waterfall.filter &&
+                            ha.waterfall.gain
+                        );
+                        out.riverBandpass = !!(ha.river && ha.river.filter.type === "bandpass");
+                        out.fallLowpass = !!(ha.waterfall && ha.waterfall.filter.type === "lowpass");
+                    }
+                    const hydro = r.state.hydrosphere;
+                    out.hasHydro = !!(hydro && hydro.ready);
+                    if (out.hasHydro && ha && r.state.playerMesh) {
+                        const pm = r.state.playerMesh.position;
+                        const orig = { x: pm.x, z: pm.z };
+                        let rp = null;
+                        if (Array.isArray(hydro.rivers)) {
+                            for (const rv of hydro.rivers) {
+                                if (rv.points && rv.points.length) {
+                                    rp = rv.points[0];
+                                    break;
+                                }
+                            }
+                        }
+                        out.hasRiver = !!rp;
+                        if (rp) {
+                            pm.x = rp.x;
+                            pm.z = rp.z;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.riverNear = ha.river.target;
+                            pm.x = rp.x + 5000;
+                            pm.z = rp.z + 5000;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.riverFar = ha.river.target;
+                        }
+                        const wf =
+                            Array.isArray(hydro.waterfalls) && hydro.waterfalls.length ? hydro.waterfalls[0] : null;
+                        out.hasWaterfall = !!wf;
+                        if (wf) {
+                            pm.x = wf.x;
+                            pm.z = wf.z;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.fallNear = ha.waterfall.target;
+                            pm.x = wf.x + 5000;
+                            pm.z = wf.z + 5000;
+                            ha.lastTick = -Infinity;
+                            r._tickHydrosphereAudio();
+                            out.fallFar = ha.waterfall.target;
+                        }
+                        pm.x = orig.x;
+                        pm.z = orig.z;
+                    }
+                    return out;
+                })
+                .catch((err) => ({ error: err.message }));
+
+            if (!voxelV943e || voxelV943e.error) {
+                check(
+                    "V9.43-e: Wasser-Klang-Snapshot erreichbar",
+                    false,
+                    (voxelV943e && voxelV943e.error) || "page.evaluate fehlgeschlagen"
+                );
+            } else {
+                const e = voxelV943e;
+                check("V9.43-e: _buildHydroAudioLayer existiert", e.hasBuild);
+                check("V9.43-e: _tickHydrosphereAudio existiert", e.hasTick);
+                check("V9.43-e: _pointSegDist2D existiert", e.hasSegDist);
+                check("V9.43-e: _pointSegDist2D — Lot auf das Segment (5 m)", e.segPerp);
+                check("V9.43-e: _pointSegDist2D — Klemmung auf den Endpunkt (10 m)", e.segClamp);
+                check("V9.43-e: _pointSegDist2D — Punkt auf dem Segment ist 0", e.segZero);
+                check("V9.43-e: Symphonie aktiv (initSymphony headless)", e.symphonyOn);
+                check("V9.43-e: state.symphony.hydroAudio gebaut", e.hasHydroAudio);
+                check("V9.43-e: Fluss-Layer komplett (noise + filter + gain)", e.riverLayer);
+                check("V9.43-e: Wasserfall-Layer komplett (noise + filter + gain)", e.fallLayer);
+                check("V9.43-e: Fluss-Filter ist Bandpass (helles Rauschen)", e.riverBandpass);
+                check("V9.43-e: Wasserfall-Filter ist Lowpass (dunkles Donnern)", e.fallLowpass);
+                check(
+                    "V9.43-e: Fluss-Klang reagiert auf Distanz (nah laut, fern still)",
+                    e.hasRiver === true && e.riverNear > 0.05 && e.riverFar === 0,
+                    `nah=${(e.riverNear || 0).toFixed(3)} fern=${(e.riverFar || 0).toFixed(3)}`
+                );
+                check(
+                    "V9.43-e: Wasserfall-Donnern reagiert auf Distanz (nah laut, fern still)",
+                    e.hasWaterfall === true && e.fallNear > 0.05 && e.fallFar === 0,
+                    `nah=${(e.fallNear || 0).toFixed(3)} fern=${(e.fallFar || 0).toFixed(3)}`
                 );
             }
 

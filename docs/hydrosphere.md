@@ -1,13 +1,19 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ gebaut** (der
-Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten;
-siehe §8 + §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**. Dieses
-Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
-Phasen geschnitten. Offen: V9.43-e (Klang). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
-V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
-Versions-Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
-§3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
+**Stand**: 22.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ + V9.43-e ✅ gebaut** (der
+Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten,
+der Klang; siehe §8 + §9). **V9.45-b** löste danach den See-Carve ab — die Seebecken sind
+jetzt flach gesculptete, wasserdichte Töpfe (`_hydrosphereLakeAt` statt des V9.43-d-
+`lakeCutCell`-Schnitts; siehe §8). **V9.46** heilte die kurzen Flüsse — sie fliessen jetzt
+durch Seen HINDURCH (§10a; längster Fluss 45 m → 1361 m). **V9.47** formt das Gelände
+via fluviale Stream-Power-Erosion um — dendritische Täler, halbierte See-Fläche, die
+Gipfel erhalten (§10b). Schöpfer-Wahl war: **volles
+Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
+Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: zwei kosmetische
+Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e) + die tiefere
+Netz-CHARAKTERISTIK-Frage (die Welt ist see-dominant — §10b). Die kanonische Versions-
+Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md` §3.
+Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
 ---
 
@@ -236,7 +242,19 @@ kritisch, weil `_terrainDensityAt` beim Meshing millionenfach gerufen wird.
 U-Profil-Bett sänke an seinen Rändern in die gewölbte Rinnen-Wand. Der Fluss-Kanal hat
 darum einen flachen Boden (volle Tiefe `D` bis zur halben Fluss-Breite, exakt so breit
 wie das Ribbon), dann eine smoothstep-Bank-Rampe (`bankW = D·1.4`). Bett-Tiefe
-`D = 1.4 + 0.16·width`. See-Becken werden auf `level − 8` gesenkt (`carveLakeBedDepth`).
+`D = 1.4 + 0.16·width`. See-Becken wurden in V9.43-d auf `level − 8` gesenkt
+(`carveLakeBedDepth`).
+
+**V9.45-b — der See-Carve abgelöst.** Der V9.43-d-See-Schnitt (`lakeCutCell`, reine
+Dichte-Senkung) hatte zwei Bugs: (1) der Boden behielt die volle 3D-Roughness → löchrig,
+durch die Löcher schien die globale Meeres-Plane als zweites Wasser-Layer; (2) der
+Schnitt war auf `cut ≥ 0` geklemmt → tiefe Becken-Stellen blieben un-gefüllt. Neu:
+`_hydrosphereLakeAt(x,z)` liefert `{bedY, w}`, `_terrainDensityAt` blendet die Dichte
+zur flachen Bett-Ebene (`d = d·(1−w) + (bedY−y)·w`). `bedY` ist in
+`[waterLevel+0.5, level−1.2]` geklemmt → der Boden ist lückenlos flach UND liegt
+garantiert über dem Meeresspiegel (die Meeres-Plane bleibt verdeckt). Seen ≤
+`waterLevel+2` werden absorbiert (keine eigene Plane). `_hydrosphereCarveAt` ist
+seither fluss-only. Volle Begründung: die `handover.md`-V9.45-b-Chronik.
 
 (b) **Zirkel-Freiheit über ein Flag, nicht über die Reihenfolge.** Der Plan hoffte „kein
 Flag — die Reihenfolge IST die Trennung". Das gilt nur beim ERSTEN Worldgen; ein
@@ -353,11 +371,29 @@ gelegentliche 3D-Roughness-Crag-Inseln in grossen Seen (der Carve senkt die Makr
 Surface, die `±~12`-Roughness-Bänder bleiben) — eine spätere `carveLakeBedDepth`-Tuning-
 Welle könnte sie heben.
 
-### V9.43-e — Politur + Klang
-Vision §1.4: Fluss-Rauschen + Wasserfall-Donnern (positions-abhängige Audio-Schicht,
-das V9.32-Audio-Versprechen eingelöst). Plus: Fluss-Mündung blendet sanft ins Meer,
-See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
-*~1 Session.*
+### V9.43-e — Politur + Klang ✅ (21.05.2026)
+Vision §1.4: Fluss-Rauschen + Wasserfall-Donnern als positions-abhängige Audio-Schicht
+— das V9.32-Audio-Versprechen eingelöst.
+
+**Geliefert (V9.43-e)**: `_buildHydroAudioLayer` baut zwei White-Noise-Layer in
+`state.symphony.hydroAudio` — Fluss = heller Bandpass (2200 Hz, das Rauschen eines
+Bachs), Wasserfall = dunkler Lowpass (520 Hz, das Donnern), beide am Master-Bus, Gain 0.
+`_tickHydrosphereAudio` (aus `symphonyTick`, ~7 Hz gedrosselt) misst je Tick die
+Spieler-Distanz zur nächsten Fluss-Mittellinie (`_pointSegDist2D` — Segment-Distanz,
+damit der Klang gleichmäßig bleibt, wenn man dem Fluss entlanggeht statt zwischen weit
+gesetzten Fluss-Punkten zu springen) und zum nächsten Wasserfall; ein quadratischer
+Falloff (Fluss 42 m / Peak 0.10, Wasserfall 75 m / Peak 0.22 — er trägt weiter +
+donnert) setzt das Gain-Ziel, der GainNode rampt sanft (0.2 s). 14 Invarianten grün.
+**Eine Sentinel-Falle ehrlich benannt**: der erste Wurf initialisierte den Throttle-
+Zeitstempel mit `0` — der erste Tick in den ersten 130 ms der AudioContext-Lebenszeit
+throttelte fälschlich (der Headless-Playtest erzeugt die Symphonie frisch → `ctx.current-
+Time` ≈ 0; im echten Spiel harmlos, aber der Test fing es). Fix: `-Infinity` als Sentinel
+(die `CLAUDE.md`-Gotcha „Zeitstempel sind `-Infinity`, nie `0`").
+
+**Ehrliche Rest-Naht** (kosmetisch, kein eigener Bogen): die Fluss-Mündung blendet seit
+V9.43-c.2 schon sichtbar ins Meer; See-Ufer-Schaum + eine Flow-Speed-Feinabstimmung nach
+Gefälle bleiben als optionale visuelle Mikro-Politur offen — die Hydrosphäre ist
+funktional + sensorisch vollständig.
 
 ---
 
@@ -386,16 +422,29 @@ See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
   (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls` gelöscht). Das ist kein
   Wegwerfen — das Material + die Plane-Geometrie bleiben (von `_buildHydroWaterfall`
   reuset); nur die Spawn-Quelle wanderte vom Zufall zum Fluss-Netz. Ehrlich benannt.
-- **Kurze Flüsse — die offene Netz-Qualitäts-Frage (V9.43-c-Befund).** Das Drainage-Netz
-  der Test-Welt ist see-dominant: 12 Seen, die Flüsse sind 32-48-m-Verbinder. Wurzel: die
-  ridged-Makro-Surface ist basin-y → das Priority-Flood füllt grosse Becken → die Seen
-  zerstückeln die Drainage (`_hydroExtractRivers` endet einen Fluss an jedem See). Der
-  Vision-Wunsch („Flüsse, die die Hänge runterfliessen") braucht lange, frei fließende
-  Flüsse. Heilungs-Optionen (eine eigene Welle, NICHT V9.43-c-Render-Scope): (a) ein Fluss
-  fließt durch einen See HINDURCH als eine logische Polylinie (BFS vom Zufluss zum
-  Überlauf durch die See-Zellen); (b) eine glattere, weniger Basin-y hydrologische
-  Surface fürs Routing; (c) hydraulische Erosion, die Täler carvt (gross). Bewusst der
-  Render-Welle V9.43-c nicht aufgebürdet — V9.43-c rendert das Netz, das V9.43-b liefert.
+- **(a) Netz-VERBINDUNG — ✅ V9.46 geheilt.** Befund (V9.43-c, gemessen): das Netz war
+  see-zerstückelt — 6 Flüsse, längster 45 m, 4 von 6 endeten an einem See, weil
+  `_hydroExtractRivers` einen Fluss an JEDER See-Zelle beendete. Heilung V9.46: ein Fluss
+  fliesst durch einen See HINDURCH als EINE logische Polylinie. Kein BFS nötig — der
+  Walk folgt schlicht `flowTo` durch die See-Zellen (das Priority-Flood-ε legt selbst im
+  Becken ein Mini-Gefälle → `flowTo` routet zum Überlauf). Ein „Conduit" ist jede
+  Durchfluss-Zelle, OB See oder nicht; die Quell-Suche bleibt aber LAND-only (`isLand-
+  Conduit`) — sonst spawnt das fein verzweigte ε-Flow-Tree eines Beckens Geister-Quellen.
+  See-Punkte tragen `inLake`: der Renderer überspringt ihre Ribbon-Quads, der Carve lässt
+  sie aus. Ergebnis: längster Fluss 45 m → 1361 m, alle münden ins Meer.
+- **(b) Netz-CHARAKTERISTIK — ✅ V9.47 (fluviale Erosion).** Befund: die Welt war
+  see-dominant, die Becken 12-20 m tief (echte Topographie — kein Blur-Trick hilft).
+  Heilung: fluviale **Stream-Power-Inzision** (`_computeErosion`, Braun & Willett /
+  Fastscape — das geomorphologische Standard-Modell). 36 Iterationen ko-evolvieren
+  Terrain + Drainage: je Iteration Priority-Flood → Flow-Accumulation → Inzision
+  `Δh = k·A^m·S^n`, NUR in Kanälen (`accum ≥ channelMinArea`). Grate (A≈1) bleiben
+  unberührt — die scharfen Gipfel überleben, das Relief wächst. Ein erster Tröpfchen-
+  Erosions-Versuch hatte einen harten Zielkonflikt (Blanket-Erosion: entwässern ⟺
+  Gipfel abtragen); Stream-Power mit der Kanal-Schwelle hat ihn nicht. Ergebnis:
+  Gipfel exakt erhalten, See-Fläche halbiert, dendritische Tal-Netze gecarvt, Flüsse
+  länger + offener. Ehrliche Rest-Grenze: die Inzision carvt einen Kanal DURCH ein
+  breites Becken, leert es aber nicht restlos (der Becken-Boden bleibt ein kleinerer
+  See — geomorphologisch korrekt). Volle Begründung: die `handover.md`-V9.47-Chronik.
 
 ---
 
@@ -404,13 +453,15 @@ See-Ufer-Schaum, Flow-Speed-Feinabstimmung nach Gefälle.
 - **§1.3 fraktal** ✅ — eine Wasser-Sprache (ein Shader + `uFlowDir`) regelt Meer, See,
   Fluss, Wasserfall. Dasselbe Welt-Feld (`worldFieldAt.lebendig`), das regelt was wo
   wächst, speist optional die Drainage-Gewichte.
-- **§1.4 multisensorisch** ✅ — V9.43-e: man hört, wo Wasser fließt.
+- **§1.4 multisensorisch** ✅ — V9.43-e: man hört, wo Wasser fließt — Bach-Rauschen
+  (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass), positions-moduliert.
 - **§3 Welt-Atmen** ✅ — die Welt hat einen Wasser-Kreis; das Wasser fließt, wie in der
   echten Natur.
 - **Heilige Lektion** ✅ — EIN neues Subsystem (`_computeHydrosphere` + ein Carve-Term +
   Render-Meshes), deterministisch + gut fundiert. Kein Re-Komplexifizieren — ein
   Wachstumsring auf dem Voxel-Stamm.
 
-**Nächster Schritt**: V9.43-e — Politur + Klang (Fluss-Rauschen, Wasserfall-Donnern,
-See-Ufer-Schaum). V9.43-b/c/c.2/d sind gebaut. Plus die offene Netz-Qualitäts-Frage
-(kurze, see-zerstückelte Flüsse — §10) als eigene Welle.
+**Stand**: V9.43-b/c/c.2/d/e sind gebaut — der Hydrosphären-Bogen (Atlas → Rendering →
+Synergie → Carven → Klang) ist abgeschlossen, das Wasser-Ultiversum V9.43 vollständig.
+Offen nur die kosmetische Rest-Naht (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9
+V9.43-e) + die Netz-Qualitäts-Frage (kurze, see-zerstückelte Flüsse — §10) als eigene Welle.
