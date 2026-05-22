@@ -29,6 +29,7 @@ class AnazhRealm {
             voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
+            voxelChunkWater: null,
             voxelPopulatedChunks: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
@@ -170,12 +171,6 @@ class AnazhRealm {
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
             starField: null,
-            // waterPlane ist seit V9.49-b das vereinte Wasser-Mesh (ein
-            // spieler-folgendes Höhenfeld — Ozean + Seen + Flüsse in EINEM
-            // geschweissten Mesh). unifiedWaterOrigin merkt den gesnappten
-            // Raster-Origin, damit der Game-Loop nur bei Zell-Wechsel neu baut.
-            waterPlane: null,
-            unifiedWaterOrigin: null,
             // V8.29.1 — true wenn der Spieler unter waterLevel ist. Treibt
             // Auftrieb (Physik-Loop), langsamere Bewegung + Unterwasser-Tint.
             playerUnderwater: false,
@@ -9969,258 +9964,12 @@ class AnazhRealm {
                 this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
             }
         }
-        // V9.49-b — das vereinte Wasser-Mesh. Beim Erst-Aufruf (vor dem
-        // Hydrosphären-Atlas) rendert es als flaches Meer; `_buildHydrosphere-
-        // Meshes` triggert nach dem Atlas den ersten feld-getriebenen Aufbau.
-        this._buildUnifiedWaterMesh(0, 0);
-        this.log(`Welt-Wasser — Niveau y=${this.state.waterLevel.toFixed(1)}, vereintes Wasser-Mesh (V9.49)`);
-    }
-
-    // V9.49-b — baut/erneuert das vereinte Wasser-Mesh um (centerX, centerZ).
-    // Das Mesh-Objekt + das geteilte Material bleiben über Rebuilds bestehen
-    // (nur die Geometrie wird getauscht). Der Origin wird auf das Zell-Raster
-    // gesnappt → die Vertices landen über Rebuilds auf denselben Welt-
-    // Positionen (kein Kriechen/Flimmern). `docs/hydrosphere.md` §12.
-    _buildUnifiedWaterMesh(centerX, centerZ) {
-        if (!this.state.scene || typeof THREE === "undefined") return;
-        const CELL = AnazhRealm.HYDROSPHERE.unifiedCell;
-        const EXT = AnazhRealm.HYDROSPHERE.unifiedExt;
-        const cx = Number.isFinite(centerX) ? centerX : 0;
-        const cz = Number.isFinite(centerZ) ? centerZ : 0;
-        const ox = Math.floor(cx / CELL) * CELL - EXT / 2;
-        const oz = Math.floor(cz / CELL) * CELL - EXT / 2;
-        // den Origin SOFORT merken — auch wenn die Geometrie leer ausfällt
-        // (Spieler in einem wasserlosen Binnen-Gebiet). Sonst stimmte
-        // `unifiedWaterOrigin` nie überein und `_tickUnifiedWater` baute jeden
-        // Frame erneut (das stale Mesh weit weg ist ohnehin fern-vernebelt).
-        this.state.unifiedWaterOrigin = { ox, oz };
-        const geo = this._buildUnifiedWaterGeometry(ox, oz);
-        if (!geo) return;
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) {
-            geo.dispose();
-            return;
-        }
-        if (this.state.waterPlane) {
-            if (this.state.waterPlane.geometry) this.state.waterPlane.geometry.dispose();
-            this.state.waterPlane.geometry = geo;
-        } else {
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.frustumCulled = false; // welt-verankert, folgt dem Spieler
-            mesh.renderOrder = 1; // nach den opaken Objekten (transparent)
-            mesh.userData = { isHydrosphere: true, hydroKind: "unified-water" };
-            this.state.scene.add(mesh);
-            this.state.waterPlane = mesh;
-        }
-    }
-
-    // V9.49-b — folgt dem Spieler: kreuzt er eine Raster-Zelle, wird das
-    // vereinte Wasser-Mesh um seine Position neu gebaut (die Vertices sind
-    // welt-verankert + gesnappt → der Geometrie-Tausch ist nahtlos). Aus dem
-    // Game-Loop, idempotent solange der Spieler in derselben Zelle bleibt.
-    _tickUnifiedWater(centerX, centerZ) {
-        if (!this.state.waterPlane) return;
-        const CELL = AnazhRealm.HYDROSPHERE.unifiedCell;
-        const EXT = AnazhRealm.HYDROSPHERE.unifiedExt;
-        const cx = Number.isFinite(centerX) ? centerX : 0;
-        const cz = Number.isFinite(centerZ) ? centerZ : 0;
-        const ox = Math.floor(cx / CELL) * CELL - EXT / 2;
-        const oz = Math.floor(cz / CELL) * CELL - EXT / 2;
-        const cur = this.state.unifiedWaterOrigin;
-        if (cur && cur.ox === ox && cur.oz === oz) return;
-        this._buildUnifiedWaterMesh(cx, cz);
-    }
-
-    // V9.49-b/e — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
-    // Kanal liegt: Distanz ≤ halbe Fluss-Breite + Bank-Rampe (die VOLLE
-    // Carve-Breite, damit das Wasser-Ribbon den ganzen Kanal deckt und seine
-    // ansteigende Bank-Rampe den Ribbon-Rand verdeckt — die Uferlinie ist der
-    // emergente Schnitt). Liefert die normierte Flow-Richtung + die Carve-Tiefe
-    // `depth` (das Ribbon liegt damit IN seinem Bett), oder null. Reuse des
-    // `riverBuckets`-O(1)-Index (wie `_hydrosphereCarveAt`).
-    _unifiedNearestRiverSeg(x, z) {
-        const h = this.state.hydrosphere;
-        if (!h || !h.ready || !h.riverBuckets) return null;
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi = Math.floor((x - h.originX) / bs);
-        const bj = Math.floor((z - h.originZ) / bs);
-        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
-        const list = h.riverBuckets[bj * bd + bi];
-        if (!list) return null;
-        const bankSlope = AnazhRealm.HYDROSPHERE.carveBankSlope;
-        let bestD = Infinity;
-        let dirX = 0;
-        let dirZ = 0;
-        let depth = 0;
-        for (let s = 0; s < list.length; s++) {
-            const seg = list[s];
-            const ex = seg.bx - seg.ax;
-            const ez = seg.bz - seg.az;
-            const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-            if (t < 0) t = 0;
-            else if (t > 1) t = 1;
-            const px = seg.ax + ex * t;
-            const pz = seg.az + ez * t;
-            const dist = Math.hypot(x - px, z - pz);
-            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-            const D = seg.dA + (seg.dB - seg.dA) * t;
-            const bankW = Math.max(2, D * bankSlope);
-            if (dist <= halfW + bankW && dist < bestD) {
-                bestD = dist;
-                const len = Math.sqrt(len2);
-                dirX = ex / len;
-                dirZ = ez / len;
-                depth = D;
-            }
-        }
-        return bestD < Infinity ? { dirX, dirZ, depth } : null;
-    }
-
-    // V9.49-b — die Geometrie des vereinten Wasser-Meshes: ein Höhenfeld-
-    // Raster (Welt-Koords, Origin gesnappt). Jeder Vertex fragt das
-    // Hydrosphären-Wasser-Feld (`waterY`/`waterKind`, V9.49-a) bilinear + das
-    // Fluss-Netz. Nasse Zellen (≥ 1 nasse Ecke → 1-Zell-Dilatation, damit das
-    // opake Ufer-Terrain die Wasserlinie schneidet) emittieren ein Quad auf
-    // der Flut-Oberfläche. Ozean/See/Fluss aus EINEM geschweissten Mesh — ein
-    // Höhenfeld kann sich nicht selbst überlappen → keine Nähte, kein Sheet-
-    // Stapeln. `aWave` ∈ [0,1] (Ozean-Anteil) moduliert den Gerstner-Shader.
-    _buildUnifiedWaterGeometry(ox, oz) {
-        if (typeof THREE === "undefined") return null;
-        const CELL = AnazhRealm.HYDROSPHERE.unifiedCell;
-        const N = Math.round(AnazhRealm.HYDROSPHERE.unifiedExt / CELL);
-        const NV = N + 1;
-        // V9.49-f — Roughness-Amplitude (m): bis `waterSurf + RIDGE_MARGIN` über
-        // der Makro-Surface gilt eine Zelle als nass; ein höherer Hügel klemmt
-        // das Wasser ab, sodass die flache Fläche nicht durch einen Grat ragt.
-        const RIDGE_MARGIN = 12;
-        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const hydro = this.state.hydrosphere;
-        const ready = !!(hydro && hydro.ready && hydro.water && hydro.water.waterY);
-        const dim = ready ? hydro.dim : 0;
-        const cellH = ready ? hydro.cell : 1;
-        const oX = ready ? hydro.originX : 0;
-        const oZ = ready ? hydro.originZ : 0;
-        const wY = ready ? hydro.water.waterY : null;
-        const wK = ready ? hydro.water.waterKind : null;
-        const cl = (v, hi) => (v < 0 ? 0 : v > hi ? hi : v);
-        const positions = new Float32Array(NV * NV * 3);
-        const aFlow = new Float32Array(NV * NV * 2);
-        const aShore = new Float32Array(NV * NV);
-        const aWave = new Float32Array(NV * NV);
-        const wet = new Uint8Array(NV * NV);
-        for (let j = 0; j < NV; j++) {
-            for (let i = 0; i < NV; i++) {
-                const vIdx = i + j * NV;
-                const vx = ox + i * CELL;
-                const vz = oz + j * CELL;
-                // V9.49-f — die Makro-Gelände-Höhe an (vx,vz). Sie klemmt die
-                // nasse Maske an die Terrain-Wahrheit (kein Quad ragt durch
-                // einen Hügel ins nächste Tal) und trägt das Fluss-Bett.
-                // `_terrainMacroSurfaceY` ist billig — ein paar Noise-Calls,
-                // NICHT der `_voxelSurfaceY`-Säulen-March.
-                const macroY = this._terrainMacroSurfaceY(vx, vz);
-                // waterSurf = der flache Spiegel des deckenden Wasser-Körpers;
-                // eine trockene Zelle trägt im Feld den Meeresspiegel-Default.
-                let waterSurf = waterLevel;
-                let oceanC = 4;
-                let waterC = 4;
-                let inField = false; // in der Hydrosphären-Region klassifiziert?
-                if (ready) {
-                    const inRegion = vx >= oX && vz >= oZ && vx < oX + dim * cellH && vz < oZ + dim * cellH;
-                    const cf = (vx - oX) / cellH - 0.5;
-                    const gf = (vz - oZ) / cellH - 0.5;
-                    const i0 = Math.floor(cf);
-                    const j0 = Math.floor(gf);
-                    const tx = cf - i0;
-                    const tz = gf - j0;
-                    const a = cl(i0, dim - 1) + cl(j0, dim - 1) * dim;
-                    const b = cl(i0 + 1, dim - 1) + cl(j0, dim - 1) * dim;
-                    const c = cl(i0, dim - 1) + cl(j0 + 1, dim - 1) * dim;
-                    const d = cl(i0 + 1, dim - 1) + cl(j0 + 1, dim - 1) * dim;
-                    if (inRegion) {
-                        waterSurf = (wY[a] * (1 - tx) + wY[b] * tx) * (1 - tz) + (wY[c] * (1 - tx) + wY[d] * tx) * tz;
-                        oceanC = 0;
-                        waterC = 0;
-                        const corners = [a, b, c, d];
-                        for (let k = 0; k < 4; k++) {
-                            const kind = wK[corners[k]];
-                            if (kind === 1) {
-                                oceanC++;
-                                waterC++;
-                            } else if (kind === 2) {
-                                waterC++;
-                            }
-                        }
-                        inField = true;
-                    }
-                    // ausserhalb der Region bleibt der Vertex Fallback-Meer
-                }
-                // V9.49-f — nass nur, wo das Makro-Gelände WIRKLICH unter dem
-                // Wasser-Spiegel liegt (+ Roughness-Marge): ein Grat zwischen
-                // zwei Buchten wird so NICHT geflutet, die flache Fläche ragt
-                // nicht ins nächste Tal hervor. In der Region zusätzlich auf
-                // die klassifizierten Ozean/See-Zellen (waterC) beschränkt;
-                // ausserhalb der Region das ebenso geklemmte Fallback-Meer.
-                const belowSurf = macroY < waterSurf + RIDGE_MARGIN;
-                const pooled = inField ? waterC > 0 && belowSurf : belowSurf;
-                positions[vIdx * 3] = vx;
-                positions[vIdx * 3 + 2] = vz;
-                if (pooled) {
-                    // stehendes Wasser — der flache Spiegel des Wasser-Körpers
-                    wet[vIdx] = 1;
-                    positions[vIdx * 3 + 1] = waterSurf;
-                    aWave[vIdx] = oceanC / 4;
-                    aShore[vIdx] = waterC < 4 ? Math.min(1, (4 - waterC) / 4 + 0.15) : 0;
-                } else {
-                    // im Feld trocken. Liegt (vx,vz) im gecarvten Fluss-Kanal,
-                    // fliesst hier Wasser — es liegt in seinem Bett (Makro-
-                    // Gelände − 0.4·Carve-Tiefe → 60 % gefüllter Kanal), folgt
-                    // also dem Gefälle; die ansteigende Carve-Bank verdeckt den
-                    // Ribbon-Rand. Sonst ist der Vertex der Rand-Skirt: er sitzt
-                    // auf dem Meeresspiegel-Default und taucht unter das
-                    // ansteigende Ufer (V9.49-e — die Uferlinie ist der
-                    // emergente Terrain-Schnitt, nicht autorisiert).
-                    const seg = ready ? this._unifiedNearestRiverSeg(vx, vz) : null;
-                    if (seg) {
-                        wet[vIdx] = 1;
-                        positions[vIdx * 3 + 1] = macroY - seg.depth * 0.4;
-                        aFlow[vIdx * 2] = seg.dirX;
-                        aFlow[vIdx * 2 + 1] = seg.dirZ;
-                    } else {
-                        positions[vIdx * 3 + 1] = waterSurf;
-                    }
-                }
-            }
-        }
-        const indices = [];
-        for (let j = 0; j < N; j++) {
-            for (let i = 0; i < N; i++) {
-                const v00 = i + j * NV;
-                const v10 = v00 + 1;
-                const v01 = v00 + NV;
-                const v11 = v01 + 1;
-                // eine Zelle ist nass, sobald EINE Ecke nass ist → 1-Zell-
-                // Dilatation: das Wasser schiebt sich unter das ansteigende
-                // Ufer, das opake Terrain schneidet die Wasserlinie sauber.
-                if (wet[v00] || wet[v10] || wet[v01] || wet[v11]) {
-                    indices.push(v00, v10, v11, v00, v11, v01);
-                }
-            }
-        }
-        if (indices.length === 0) return null;
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlow, 2));
-        geo.setAttribute("aShore", new THREE.BufferAttribute(aShore, 1));
-        geo.setAttribute("aWave", new THREE.BufferAttribute(aWave, 1));
-        // V9.49-f — `aWet` (1 nass, 0 trockener Rand-Skirt): der Shader nutzt
-        // es nicht, aber es trennt im Playtest nasse Vertices vom trockenen
-        // Skirt (der bewusst unter das Terrain abtaucht — kein Defekt).
-        geo.setAttribute("aWet", new THREE.BufferAttribute(wet, 1));
-        geo.setIndex(indices);
-        return geo;
+        // V9.50 — das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk
+        // baut seine Wasser-Fläche selbst (`_buildVoxelChunkWater`, aus
+        // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
+        // Terrain). `_buildWaterPlane` setzt nur noch den Meeresspiegel; die
+        // Flächen entstehen mit dem Chunk-Stream.
+        this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Chunk-Wasser, V9.50)`);
     }
 
     // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
@@ -11280,13 +11029,6 @@ class AnazhRealm {
             carveBankSlope: 1.4, // Bank-Rampe = Bett-Tiefe × dieser Faktor
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
-            // V9.49-b — das vereinte Wasser-Mesh: ein spieler-folgendes
-            // Höhenfeld-Raster. `unifiedExt` ist die Kantenlänge (m) — die
-            // halbe Kante liegt über `fogFar` (150 m), der Mesh-Rand also im
-            // Voll-Nebel. `unifiedCell` ist die Vertex-Schrittweite (m) — fein
-            // genug, einen Fluss aufzulösen. `docs/hydrosphere.md` §12.
-            unifiedExt: 384,
-            unifiedCell: 3,
         });
     }
 
@@ -14775,6 +14517,7 @@ class AnazhRealm {
         const entry = { mesh: fresh.mesh };
         this.state.voxelChunks.set(key, entry);
         this._buildVoxelChunkGrass(cx, cz);
+        this._buildVoxelChunkWater(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
         return true;
     }
@@ -14865,6 +14608,9 @@ class AnazhRealm {
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
+        // V9.50-b — und seine Wasser-Fläche (aus `_voxelSurfaceY` vs
+        // `_waterLevelAt` — dieselbe Quelle wie das Terrain).
+        this._buildVoxelChunkWater(cx, cz);
         // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
@@ -14884,6 +14630,7 @@ class AnazhRealm {
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
         this._disposeVoxelChunkGrass(key);
+        this._disposeVoxelChunkWater(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -15855,10 +15602,10 @@ class AnazhRealm {
         if (!hydro || !hydro.ready) return;
         this._disposeHydrosphereMeshes(); // idempotenter Rebuild
         const meshes = [];
-        // V9.49-b — Seen + Flüsse leben nicht mehr in eigenen Meshes: sie sind
-        // nasse Quads im vereinten Wasser-Mesh (`_buildUnifiedWaterMesh`). Hier
-        // bleiben nur die Wasserfälle — die eine ehrliche vertikale Ausnahme
-        // (ein Höhenfeld kann nichts Vertikales tragen). `docs/hydrosphere.md` §12.
+        // V9.50 — Ozean + Seen + Flüsse leben als nasse Quads in den per-Chunk
+        // gebauten Wasser-Flächen (`_buildVoxelChunkWater`). Hier bleiben nur
+        // die Wasserfälle — die eine ehrliche vertikale Ausnahme (ein Höhenfeld
+        // kann nichts Vertikales tragen). `docs/hydrosphere.md` §14.
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
@@ -15870,13 +15617,18 @@ class AnazhRealm {
             }
         }
         this.state.hydrosphereMeshes = meshes;
-        // Der Atlas ist fertig → erster feld-getriebener Aufbau des vereinten
-        // Wasser-Meshes (vorher war es das flache Fallback-Meer).
-        this._buildUnifiedWaterMesh(0, 0);
-        this.log(
-            `V9.49: Hydrosphäre gerendert — vereintes Wasser-Mesh + ${hydro.waterfalls.length} Wasserfall-Planes`,
-            "INFO"
-        );
+        // V9.50 — der Atlas ist fertig: jeder schon gestreamte Voxel-Chunk
+        // bekommt sein Wasser neu gebaut. Ein Chunk, der VOR der Hydrosphäre
+        // gebaut wurde, kannte nur den Ozean-Default — jetzt sieht er Seen +
+        // Flüsse. Neue Chunks bauen ihr Wasser im `_ensureVoxelChunkAt`-Pfad.
+        if (this.state.voxelChunks) {
+            for (const key of this.state.voxelChunks.keys()) {
+                this._disposeVoxelChunkWater(key);
+                const ci = key.indexOf(",");
+                this._buildVoxelChunkWater(Number(key.slice(0, ci)), Number(key.slice(ci + 1)));
+            }
+        }
+        this.log(`V9.50: Hydrosphäre gerendert — Chunk-Wasser + ${hydro.waterfalls.length} Wasserfall-Planes`, "INFO");
     }
 
     // Räumt alle gerenderten Hydrosphären-Meshes (Geometrie disposen, aus der
@@ -15971,8 +15723,8 @@ class AnazhRealm {
     // Gerstner-Wellen-Verschiebung (1 offener Ozean, weich auf 0 am Ufer →
     // kein Küsten-Riss); `aFlow` trägt die Fluss-Gefälle-Tangente (Schaum
     // scrollt stromab); `aShore` das tiefen-getriebene Ufer-Schaum-Band.
-    // EIN Material für Ozean + See + Fluss des vereinten Höhenfeld-Meshes
-    // (`_buildUnifiedWaterMesh`). Teilt die Wasser-Substanz mit dem Wasserfall
+    // EIN Material für Ozean + See + Fluss aller per-Chunk-Wasser-Flächen
+    // (`_buildVoxelChunkWater`). Teilt die Wasser-Substanz mit dem Wasserfall
     // (`_ensureWaterfallMaterial`); uSunDir/uLight/fog* speist
     // `_applyDayNightToScene`. Vision §1.3 fraktal — eine Wasser-Sprache.
     _ensureHydroSurfaceMaterial() {
@@ -16247,6 +15999,160 @@ class AnazhRealm {
             if (grass.geometry) grass.geometry.dispose();
         }
         this.state.voxelChunkGrass.delete(key);
+    }
+
+    // V9.50-b — die Wasser-Fläche EINES Voxel-Chunks. Geschwisterlich zu
+    // `_buildVoxelChunkGrass`: ein Höhenfeld-Raster über den Chunk, je Zelle
+    // nass, wo `_voxelSurfaceY < _waterLevelAt`. Die Geometrie kommt damit aus
+    // DERSELBEN Voxel-Oberfläche wie das Terrain → die Uferlinie ist der
+    // exakte Schnitt (kein 16-m-Modell, kein Bleed, kein Schweben — strukturell,
+    // das „Visual = Collision"-Gesetz aufs Wasser angewandt). Die Quad-Höhe ist
+    // der flache Wasser-Spiegel; das opake Terrain verdeckt, was darüber liegt.
+    // Über das Gate gegatet — ein trockener Hochland-Chunk baut kein Wasser.
+    // `docs/hydrosphere.md` §14.
+    _buildVoxelChunkWater(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (!this.state.voxelChunkWater) this.state.voxelChunkWater = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunkWater.has(key)) return;
+        const { dim, step, span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        if (!this._voxelChunkTouchesWater(cx, cz)) {
+            this.state.voxelChunkWater.set(key, null);
+            return;
+        }
+        const NV = dim + 1;
+        const positions = new Float32Array(NV * NV * 3);
+        const aFlow = new Float32Array(NV * NV * 2);
+        const aShore = new Float32Array(NV * NV);
+        const aWave = new Float32Array(NV * NV);
+        const wet = new Uint8Array(NV * NV);
+        for (let j = 0; j < NV; j++) {
+            for (let i = 0; i < NV; i++) {
+                const v = i + j * NV;
+                const vx = ox + i * step;
+                const vz = oz + j * step;
+                const wl = this._waterLevelAt(vx, vz);
+                const sy = this._voxelSurfaceY(vx, vz);
+                positions[v * 3] = vx;
+                positions[v * 3 + 1] = wl;
+                positions[v * 3 + 2] = vz;
+                // nass: die ECHTE Voxel-Oberfläche liegt unter dem Spiegel
+                // (sy null = die Säule trägt kein Fest → tiefes Wasser).
+                const depth = sy === null ? 999 : wl - sy;
+                if (depth <= 0) continue;
+                wet[v] = 1;
+                const river = this._hydroRiverAt(vx, vz);
+                if (river) {
+                    aFlow[v * 2] = river.flowX;
+                    aFlow[v * 2 + 1] = river.flowZ;
+                } else if (wl <= waterLevel + 0.01) {
+                    // offener Ozean wogt; am flachen Ufer weich auf 0 (kein Riss).
+                    aWave[v] = depth < 6 ? depth / 6 : 1;
+                }
+                // Ufer-Schaum tiefen-getrieben: 1 an der Wasserlinie, 0 tief.
+                aShore[v] = depth < 4 ? 1 - depth / 4 : 0;
+            }
+        }
+        const indices = [];
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const v00 = i + j * NV;
+                const v10 = v00 + 1;
+                const v01 = v00 + NV;
+                const v11 = v01 + 1;
+                // ein Quad je Zelle mit ≥ 1 nasser Ecke → 1-Zell-Dilatation,
+                // damit das opake Ufer-Terrain die Wasserlinie sauber schneidet.
+                if (wet[v00] || wet[v10] || wet[v01] || wet[v11]) {
+                    indices.push(v00, v10, v11, v00, v11, v01);
+                }
+            }
+        }
+        if (indices.length === 0) {
+            this.state.voxelChunkWater.set(key, null);
+            return;
+        }
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) {
+            this.state.voxelChunkWater.set(key, null);
+            return;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlow, 2));
+        geo.setAttribute("aShore", new THREE.BufferAttribute(aShore, 1));
+        geo.setAttribute("aWave", new THREE.BufferAttribute(aWave, 1));
+        geo.setIndex(indices);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
+        mesh.userData = { isHydrosphere: true, hydroKind: "chunk-water" };
+        this.state.scene.add(mesh);
+        this.state.voxelChunkWater.set(key, mesh);
+    }
+
+    // V9.50-b — räumt die Wasser-Fläche eines Chunks. Das Wasser-Material ist
+    // welt-global geteilt — NICHT disposen (V9.43-a-Lehre). Idempotent.
+    _disposeVoxelChunkWater(key) {
+        if (!this.state.voxelChunkWater) return;
+        const mesh = this.state.voxelChunkWater.get(key);
+        if (mesh) {
+            if (this.state.scene) this.state.scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+        }
+        this.state.voxelChunkWater.delete(key);
+    }
+
+    // V9.50-b — der Wasser-Gate: trägt der Chunk-Fussabdruck überhaupt Wasser?
+    // Billig + konservativ (lieber bauen als ein Loch riskieren). Drei Fragen:
+    // (1) dippt die Makro-Surface nahe den Meeresspiegel (möglicher Ozean)?
+    // (2) liegt eine See-Zelle im Fussabdruck? (3) ein Fluss-Bucket? Trockenes
+    // Hochland fällt durch → kein per-Zelle-Säulen-Scan dort.
+    _voxelChunkTouchesWater(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        // (1) Ozean — die Makro-Surface an einem 4×4-Raster; dippt das Minimum
+        // unter waterLevel + 16 (Roughness-Marge), ist Ozean möglich.
+        for (let j = 0; j <= 3; j++) {
+            for (let i = 0; i <= 3; i++) {
+                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
+                    return true;
+                }
+            }
+        }
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        // (2) See — die 16-m-Hydro-Zellen im Fussabdruck (+1 Zelle Marge).
+        if (h.water && h.water.waterKind) {
+            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
+            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
+            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
+            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+            for (let cj = c0j; cj <= c1j; cj++) {
+                for (let ci = c0i; ci <= c1i; ci++) {
+                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
+                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
+                }
+            }
+        }
+        // (3) Fluss — die `riverBuckets` im Fussabdruck.
+        if (h.riverBuckets) {
+            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
+            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
+            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
+            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
+            for (let bj = b0j; bj <= b1j; bj++) {
+                for (let bi = b0i; bi <= b1i; bi++) {
+                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
+                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
+                    if (list && list.length) return true;
+                }
+            }
+        }
+        return false;
     }
 
     // V9.43-a — das geteilte Wasserfall-Material. EIN ShaderMaterial für
@@ -32723,8 +32629,8 @@ class AnazhRealm {
         // V8.29.1 — Welt-Wasser mit der Sonne synchronisieren: Sonnen-
         // Richtung für das Glitzern + Licht-Intensität für Tag-Nacht-Tint.
         // V8.31 — plus Fog-Uniforms (Custom-Shader erbt THREE.Fog nicht).
-        if (this.state.waterPlane && this.state.waterPlane.material && this.state.directionalLight) {
-            const wu = this.state.waterPlane.material.uniforms;
+        if (this.state.hydroSurfaceMaterial && this.state.directionalLight) {
+            const wu = this.state.hydroSurfaceMaterial.uniforms;
             if (wu && wu.uSunDir) {
                 // V8.48 — reine Sonnen-Richtung (Licht-Position folgt seit
                 // V8.48 dem Spieler, ihre Normalisierung wäre keine Richtung).
@@ -35732,14 +35638,6 @@ class AnazhRealm {
             this.state.starField.position.copy(this.state.camera.position);
             const tod = this.state.timeOfDay || 0;
             this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
-        }
-        // V9.49-b — das vereinte Wasser-Mesh folgt dem Spieler: kreuzt er
-        // eine Raster-Zelle, wird das Höhenfeld neu um seine Position gebaut
-        // (die Vertices sind welt-verankert + gesnappt → nahtlos). Anders als
-        // die alte Plane wandert nicht die Mesh-`position` — die Geometrie
-        // selbst wird neu abgetastet, damit Seen/Flüsse an ihrem Ort bleiben.
-        if (this.state.camera) {
-            this._tickUnifiedWater(this.state.camera.position.x, this.state.camera.position.z);
         }
         // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
         // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen

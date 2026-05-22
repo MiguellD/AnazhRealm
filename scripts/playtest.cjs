@@ -12791,25 +12791,23 @@ function startSaveServer() {
                 );
             }
 
-            // ### Voxel V9.49-b/c — das vereinte Wasser-Mesh (Rendering) ###
-            // Seen + Flüsse + Ozean leben nicht mehr in N getrennten Meshes —
-            // sie sind nasse Quads in EINEM spieler-folgenden Höhenfeld-Mesh
-            // (`_buildUnifiedWaterMesh`, `state.waterPlane`). `hydrosphereMeshes`
-            // trägt nur noch die Wasserfälle (die vertikale Ausnahme). EIN
-            // Shader (Gerstner am Ozean, still am See). `docs/hydrosphere.md` §12.
-            const voxelV943cResults = await page
+            // ### Voxel V9.50-b — das Chunk-Wasser (Rendering) ###
+            // Das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk baut
+            // seine Wasser-Fläche selbst (`_buildVoxelChunkWater`) aus
+            // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
+            // Terrain. `hydrosphereMeshes` trägt nur noch die Wasserfälle.
+            const voxelChunkWaterResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state) return null;
                     const out = {};
                     out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
                     out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
+                    out.hasChunkWater = typeof r._buildVoxelChunkWater === "function";
+                    out.hasChunkWaterDispose = typeof r._disposeVoxelChunkWater === "function";
+                    out.hasGate = typeof r._voxelChunkTouchesWater === "function";
                     out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
-                    out.hasUnifiedMesh = typeof r._buildUnifiedWaterMesh === "function";
-                    out.hasUnifiedGeo = typeof r._buildUnifiedWaterGeometry === "function";
-                    out.hasUnifiedTick = typeof r._tickUnifiedWater === "function";
-                    out.hasRiverSeg = typeof r._unifiedNearestRiverSeg === "function";
-                    if (!out.hasBuild || !out.hasSurfMat || !out.hasUnifiedMesh) return out;
+                    if (!out.hasBuild || !out.hasSurfMat || !out.hasChunkWater) return out;
                     const sm = r._ensureHydroSurfaceMaterial();
                     out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
                     const su = (sm && sm.uniforms) || {};
@@ -12821,10 +12819,8 @@ function startSaveServer() {
                         !!su.uLight &&
                         !!su.fogColor &&
                         !!su.uTime;
-                    // V9.49-c — Gerstner-Wellen + aWave-Modulation im Shader
                     out.shaderHasGerstner =
                         !!sm && /gerstnerWave/.test(sm.vertexShader || "") && /aWave/.test(sm.vertexShader || "");
-                    // V9.49-c — depthWrite an (keine durchscheinenden Sheets)
                     out.depthWriteOn = !!sm && sm.depthWrite === true;
                     const hydro = r.state.hydrosphere;
                     out.hydroReady = !!(hydro && hydro.ready);
@@ -12832,11 +12828,9 @@ function startSaveServer() {
                     out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
                         rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
                     );
-                    // idempotent neu aufbauen → Wasserfälle + vereintes Mesh
                     r._buildHydrosphereMeshes();
                     const meshes = r.state.hydrosphereMeshes;
                     out.meshesArray = Array.isArray(meshes);
-                    // V9.49-b — hydrosphereMeshes trägt NUR Wasserfälle
                     out.onlyWaterfalls =
                         out.meshesArray && meshes.every((m) => m.userData && m.userData.hydroKind === "waterfall");
                     out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length;
@@ -12849,36 +12843,16 @@ function startSaveServer() {
                                     m.geometry &&
                                     m.geometry.type === "PlaneGeometry"
                             ));
-                    // V9.49-b — das vereinte Wasser-Mesh
-                    const wp = r.state.waterPlane;
-                    out.unifiedIsMesh = !!(wp && wp.type === "Mesh");
-                    out.unifiedUsesMat = !!(wp && wp.material === sm);
-                    out.unifiedHasAttrs = false;
-                    out.unifiedHasQuads = false;
-                    out.unifiedWaveValid = false;
-                    if (out.unifiedIsMesh && wp.geometry) {
-                        const g = wp.geometry;
-                        out.unifiedHasAttrs = !!(
-                            g.attributes.position &&
-                            g.attributes.aFlow &&
-                            g.attributes.aShore &&
-                            g.attributes.aWave
-                        );
-                        out.unifiedHasQuads = !!(g.index && g.index.count > 0);
-                        if (g.attributes.aWave) {
-                            const aw = g.attributes.aWave.array;
-                            let waveOk = true;
-                            for (let k = 0; k < aw.length; k++) {
-                                if (aw[k] < -0.001 || aw[k] > 1.001) waveOk = false;
-                            }
-                            out.unifiedWaveValid = waveOk;
-                        }
-                    }
-                    // V9.49-b — das Mesh deckt den Ozean: an einer Ozean-Zelle
-                    // gebaut, trägt es Vertices mit aWave ≈ 1 (Gerstner voll).
-                    out.unifiedHasOcean = false;
-                    out.unifiedClippedToTerrain = true;
+                    out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
+                    out.chunkWaterIsMesh = false;
+                    out.chunkWaterUsesMat = false;
+                    out.chunkWaterHasAttrs = false;
+                    out.chunkWaterHasQuads = false;
+                    out.chunkWaterOnLevel = true;
+                    out.chunkWaterWaveValid = true;
+                    out.gateOceanTrue = false;
                     if (hydro.water && hydro.water.waterKind) {
+                        const span = r._voxelChunkConfig().span;
                         let oi = -1;
                         for (let k = 0; k < hydro.water.waterKind.length; k++) {
                             if (hydro.water.waterKind[k] === 1) {
@@ -12887,67 +12861,62 @@ function startSaveServer() {
                             }
                         }
                         if (oi >= 0) {
-                            const ci = oi % hydro.dim;
-                            const cj = (oi / hydro.dim) | 0;
-                            const owx = hydro.originX + (ci + 0.5) * hydro.cell;
-                            const owz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                            const og = r._buildUnifiedWaterGeometry(
-                                Math.floor(owx / 3) * 3 - 192,
-                                Math.floor(owz / 3) * 3 - 192
-                            );
-                            if (og && og.attributes.aWave) {
-                                const oaw = og.attributes.aWave.array;
-                                for (let k = 0; k < oaw.length; k++) {
-                                    if (oaw[k] > 0.99) {
-                                        out.unifiedHasOcean = true;
+                            const owx = hydro.originX + ((oi % hydro.dim) + 0.5) * hydro.cell;
+                            const owz = hydro.originZ + (((oi / hydro.dim) | 0) + 0.5) * hydro.cell;
+                            const cx = Math.floor(owx / span);
+                            const cz = Math.floor(owz / span);
+                            out.gateOceanTrue = r._voxelChunkTouchesWater(cx, cz) === true;
+                            r._disposeVoxelChunkWater(`${cx},${cz}`);
+                            r._buildVoxelChunkWater(cx, cz);
+                            const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
+                            out.chunkWaterIsMesh = !!(wm && wm.type === "Mesh");
+                            out.chunkWaterUsesMat = !!(wm && wm.material === sm);
+                            if (out.chunkWaterIsMesh && wm.geometry) {
+                                const g = wm.geometry;
+                                out.chunkWaterHasAttrs = !!(
+                                    g.attributes.position &&
+                                    g.attributes.aFlow &&
+                                    g.attributes.aShore &&
+                                    g.attributes.aWave
+                                );
+                                out.chunkWaterHasQuads = !!(g.index && g.index.count > 0);
+                                const pos = g.attributes.position.array;
+                                // Exaktheit: jeder Vertex sitzt auf `_waterLevelAt`
+                                // — das Wasser liegt auf dem Level-Feld, kein Schweben.
+                                for (let v = 0; v < pos.length; v += 3) {
+                                    if (Math.abs(pos[v + 1] - r._waterLevelAt(pos[v], pos[v + 2])) > 0.05) {
+                                        out.chunkWaterOnLevel = false;
                                         break;
                                     }
                                 }
-                                // V9.49-f — kein NASSER Vertex (aWet) ragt durch
-                                // einen Hügel: er liegt unter dem Makro-Gelände
-                                // + Roughness-Marge. Der trockene Rand-Skirt
-                                // (aWet 0) taucht bewusst ab — er zählt nicht.
-                                if (og.attributes.position && og.attributes.aWet) {
-                                    const pos = og.attributes.position.array;
-                                    const wetA = og.attributes.aWet.array;
-                                    for (let v = 0; v < wetA.length; v++) {
-                                        if (!wetA[v]) continue;
-                                        const mY = r._terrainMacroSurfaceY(pos[v * 3], pos[v * 3 + 2]);
-                                        if (mY > pos[v * 3 + 1] + 13.5) {
-                                            out.unifiedClippedToTerrain = false;
-                                            break;
-                                        }
+                                const aw = g.attributes.aWave.array;
+                                for (let k = 0; k < aw.length; k++) {
+                                    if (aw[k] < -0.001 || aw[k] > 1.001) {
+                                        out.chunkWaterWaveValid = false;
+                                        break;
                                     }
                                 }
-                                og.dispose();
                             }
                         }
                     }
-                    // _disposeHydrosphereMeshes räumt die Wasserfall-Liste
                     r._disposeHydrosphereMeshes();
                     out.disposeClears =
                         Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
                     r._buildHydrosphereMeshes();
                     out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
-                    // _tickUnifiedWater baut bei einem Zell-Wechsel neu
-                    const o0 = r.state.unifiedWaterOrigin;
-                    r._tickUnifiedWater(4000, 4000);
-                    const o1 = r.state.unifiedWaterOrigin;
-                    out.tickRebuilds = !!(o0 && o1 && (o0.ox !== o1.ox || o0.oz !== o1.oz));
-                    r._buildUnifiedWaterMesh(0, 0); // zurück zur Welt-Mitte
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
 
-            if (voxelV943cResults && !voxelV943cResults.error) {
-                const hc = voxelV943cResults;
+            if (voxelChunkWaterResults && !voxelChunkWaterResults.error) {
+                const hc = voxelChunkWaterResults;
                 check(
                     "Voxel V9.43-c: _buildHydrosphereMeshes + _disposeHydrosphereMeshes existieren",
                     hc.hasBuild && hc.hasDispose
                 );
                 check(
-                    "Voxel V9.49-b: die vereinten Wasser-Methoden existieren (Mesh/Geometry/Tick/RiverSeg)",
-                    hc.hasUnifiedMesh && hc.hasUnifiedGeo && hc.hasUnifiedTick && hc.hasRiverSeg
+                    "Voxel V9.50-b: die Chunk-Wasser-Methoden existieren (Build/Dispose/Gate)",
+                    hc.hasChunkWater && hc.hasChunkWaterDispose && hc.hasGate
                 );
                 check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
                 check(
@@ -12958,48 +12927,46 @@ function startSaveServer() {
                     "Voxel V9.49-c: der vereinte Shader trägt Gerstner-Wellen + aWave-Modulation",
                     hc.shaderHasGerstner
                 );
-                check(
-                    "Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an — kein Sheet-Stapeln)",
-                    hc.depthWriteOn
-                );
-                check(
-                    "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
-                    hc.riverPointsHaveVoxelY
-                );
-                check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
-                check(
-                    `Voxel V9.49-b: hydrosphereMeshes trägt nur Wasserfälle (Anzahl == hydro.waterfalls: ${hc.fallCountMatches})`,
-                    hc.onlyWaterfalls && hc.fallCountMatches
-                );
-                check(
-                    "Voxel V9.43-c: Wasserfall-Planes nutzen das V9.43-a-Material + PlaneGeometry",
-                    hc.fallsUseWaterfallMat
-                );
-                check(
-                    "Voxel V9.49-b: state.waterPlane ist das vereinte Wasser-Mesh (geteiltes Material)",
-                    hc.unifiedIsMesh && hc.unifiedUsesMat
-                );
-                check(
-                    "Voxel V9.49-b: das vereinte Mesh trägt position/aFlow/aShore/aWave + nasse Quads",
-                    hc.unifiedHasAttrs && hc.unifiedHasQuads
-                );
-                check("Voxel V9.49-b: aWave ist je Vertex in [0,1]", hc.unifiedWaveValid);
-                check("Voxel V9.49-b: das vereinte Mesh deckt den Ozean (Vertices mit aWave ≈ 1)", hc.unifiedHasOcean);
-                check(
-                    "Voxel V9.49-f: das Wasser ist an die Terrain-Wahrheit geklemmt (kein nasses Quad ragt durch einen Hügel)",
-                    hc.unifiedClippedToTerrain
-                );
-                check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
-                check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
-                check("Voxel V9.49-b: _tickUnifiedWater baut das Mesh bei einem Zell-Wechsel neu", hc.tickRebuilds);
+                check("Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an)", hc.depthWriteOn);
+                if (hc.hydroReady) {
+                    check(
+                        "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
+                        hc.riverPointsHaveVoxelY
+                    );
+                    check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
+                    check(
+                        `Voxel V9.50-b: hydrosphereMeshes trägt nur Wasserfälle (== hydro.waterfalls: ${hc.fallCountMatches})`,
+                        hc.onlyWaterfalls && hc.fallCountMatches
+                    );
+                    check(
+                        "Voxel V9.43-c: Wasserfall-Planes nutzen das V9.43-a-Material + PlaneGeometry",
+                        hc.fallsUseWaterfallMat
+                    );
+                    check("Voxel V9.50-b: state.voxelChunkWater ist eine Map", hc.waterMapIsMap);
+                    check(
+                        "Voxel V9.50-b: ein Ozean-Chunk baut eine Wasser-Fläche (Mesh, geteiltes Material)",
+                        hc.chunkWaterIsMesh && hc.chunkWaterUsesMat
+                    );
+                    check(
+                        "Voxel V9.50-b: das Chunk-Wasser trägt position/aFlow/aShore/aWave + nasse Quads",
+                        hc.chunkWaterHasAttrs && hc.chunkWaterHasQuads
+                    );
+                    check(
+                        "Voxel V9.50-b: jeder Wasser-Vertex sitzt EXAKT auf `_waterLevelAt` (kein Schweben)",
+                        hc.chunkWaterOnLevel
+                    );
+                    check("Voxel V9.50-b: aWave ist je Vertex in [0,1]", hc.chunkWaterWaveValid);
+                    check("Voxel V9.50-b: der Wasser-Gate erkennt einen Ozean-Chunk", hc.gateOceanTrue);
+                    check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
+                    check(
+                        "Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf",
+                        hc.rebuildsAfterDispose
+                    );
+                }
             }
 
-            // ### Voxel V9.49-c — Ufer-Schaum + Fluss-Flow im vereinten Mesh ###
-            // Der V9.48-Ufer-Schaum lebt jetzt feld-getrieben im vereinten
-            // Mesh: `aShore` aus der Wasser-Nähe zum Land (kein BFS mehr),
-            // `aFlow` aus dem Fluss-Netz. Der Shader trägt Still-Schimmer,
-            // Flow-Schaum, Ufer-Band + Ozean-Schaumkämme. `hydrosphere.md` §12.4.
-            const voxelV948Results = await page
+            // ### Voxel V9.50-b — Ufer-Schaum + Fluss-Flow im Chunk-Wasser ###
+            const voxelFoamResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state) return null;
@@ -13012,19 +12979,10 @@ function startSaveServer() {
                     const hydro = r.state.hydrosphere;
                     out.hydroReady = !!(hydro && hydro.ready);
                     if (!out.hydroReady) return out;
-                    r._buildUnifiedWaterMesh(0, 0);
-                    const g = r.state.waterPlane && r.state.waterPlane.geometry;
-                    out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
+                    const span = r._voxelChunkConfig().span;
                     out.shoreInRange = true;
-                    if (out.hasGeo) {
-                        const aSh = g.attributes.aShore.array;
-                        for (let k = 0; k < aSh.length; k++) {
-                            if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
-                        }
-                    }
-                    // ein Fluss-Vertex trägt eine Flow-Richtung — geprüft an
-                    // einer um einen Land-Fluss-Punkt gebauten Geometrie.
                     out.riverHasFlow = false;
+                    out.hasGeo = true;
                     let rp = null;
                     for (const rv of hydro.rivers) {
                         for (const p of rv.points) {
@@ -13036,19 +12994,25 @@ function startSaveServer() {
                         if (rp) break;
                     }
                     if (rp) {
-                        const rg = r._buildUnifiedWaterGeometry(
-                            Math.floor(rp.x / 3) * 3 - 192,
-                            Math.floor(rp.z / 3) * 3 - 192
-                        );
-                        if (rg && rg.attributes.aFlow) {
-                            const fa = rg.attributes.aFlow.array;
+                        const cx = Math.floor(rp.x / span);
+                        const cz = Math.floor(rp.z / span);
+                        r._disposeVoxelChunkWater(`${cx},${cz}`);
+                        r._buildVoxelChunkWater(cx, cz);
+                        const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
+                        const g = wm && wm.geometry;
+                        out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
+                        if (out.hasGeo) {
+                            const aSh = g.attributes.aShore.array;
+                            for (let k = 0; k < aSh.length; k++) {
+                                if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
+                            }
+                            const fa = g.attributes.aFlow.array;
                             for (let k = 0; k + 1 < fa.length; k += 2) {
                                 if (Math.hypot(fa[k], fa[k + 1]) > 0.5) {
                                     out.riverHasFlow = true;
                                     break;
                                 }
                             }
-                            rg.dispose();
                         }
                     } else {
                         out.riverHasFlow = true; // keine Land-Flüsse → vacuous
@@ -13057,8 +13021,8 @@ function startSaveServer() {
                 })
                 .catch((e) => ({ error: String(e) }));
 
-            if (voxelV948Results && !voxelV948Results.error) {
-                const h = voxelV948Results;
+            if (voxelFoamResults && !voxelFoamResults.error) {
+                const h = voxelFoamResults;
                 check("Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
                 check(
                     "Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)",
@@ -13066,9 +13030,9 @@ function startSaveServer() {
                 );
                 check("Voxel V9.49-c: der Shader trägt Ozean-Schaumkämme (crest)", h.shaderHasCrest);
                 if (h.hydroReady) {
-                    check("Voxel V9.49-b: das vereinte Mesh trägt aShore + aFlow", h.hasGeo);
-                    check("Voxel V9.49-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
-                    check("Voxel V9.49-b: ein Fluss-Vertex trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
+                    check("Voxel V9.50-b: das Chunk-Wasser trägt aShore + aFlow", h.hasGeo);
+                    check("Voxel V9.50-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
+                    check("Voxel V9.50-b: ein Fluss-Chunk trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
                 }
             }
 
@@ -13299,13 +13263,12 @@ function startSaveServer() {
                     out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
                     // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
                     out.flagClean = !r._hydroComputing;
-                    // (13) V9.49-b — das vereinte Wasser-Mesh fragt das Fluss-
-                    // Netz: `_buildUnifiedWaterGeometry` ruft `_unifiedNearest-
-                    // RiverSeg` (denselben riverBuckets-Index wie der Carve) →
-                    // der Fluss entsteht als nasse Quads im Höhenfeld.
+                    // (13) V9.50 — das Chunk-Wasser fragt das Fluss-Netz:
+                    // `_buildVoxelChunkWater` ruft `_waterLevelAt` (das über
+                    // `_hydroRiverAt` denselben `riverBuckets`-Index liest).
                     out.unifiedQueriesRivers =
-                        typeof r._buildUnifiedWaterGeometry === "function" &&
-                        /_unifiedNearestRiverSeg/.test(r._buildUnifiedWaterGeometry.toString());
+                        typeof r._buildVoxelChunkWater === "function" &&
+                        /_waterLevelAt/.test(r._buildVoxelChunkWater.toString());
                     // (14) der Carve ist im Perf-Budget
                     const t0 = performance.now();
                     const span = hydro.size;
@@ -13356,7 +13319,7 @@ function startSaveServer() {
                 );
                 check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
                 check(
-                    "Voxel V9.49-b: das vereinte Wasser-Mesh fragt das Fluss-Netz (riverBuckets-Index)",
+                    "Voxel V9.50-b: das Chunk-Wasser fragt das Wasser-Level-Feld (`_waterLevelAt`)",
                     d.unifiedQueriesRivers
                 );
                 check(
@@ -18038,25 +18001,10 @@ function startSaveServer() {
                     r._applyDayNightToScene();
                     const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
                     out.cloudsFollowWeather = cloudRainy > cloudSunny;
-                    // Welt-Wasser — V9.49-b: das vereinte Wasser-Mesh ist ein
-                    // Höhenfeld (Vertices in Welt-Y, Mesh-position bleibt 0);
-                    // ein Ozean-Vertex sitzt auf `waterLevel`.
-                    out.waterPlaneExists = !!(r.state.waterPlane && r.state.waterPlane.type === "Mesh");
-                    out.waterAtLevel = false;
-                    if (
-                        r.state.waterPlane &&
-                        r.state.waterPlane.geometry &&
-                        r.state.waterPlane.geometry.attributes.position &&
-                        typeof r.state.waterLevel === "number"
-                    ) {
-                        const wpos = r.state.waterPlane.geometry.attributes.position.array;
-                        for (let k = 1; k < wpos.length; k += 3) {
-                            if (Math.abs(wpos[k] - r.state.waterLevel) < 1.0) {
-                                out.waterAtLevel = true;
-                                break;
-                            }
-                        }
-                    }
+                    // Welt-Wasser — V9.50: das Wasser sind per-Chunk-Flächen
+                    // (`voxelChunkWater`-Map), kein eigenes Mesh mehr; die
+                    // Vertex-Höhe + die Uferlinie prüft der V9.50-b-Block.
+                    out.waterSystemOk = r.state.voxelChunkWater instanceof Map;
 
                     // --- Atmosphäre-Persistenz ---
                     r.setCelLevels(7);
@@ -18098,11 +18046,7 @@ function startSaveServer() {
                 check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
                 check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
                 check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
-                check("V8.28 D: state.waterPlane existiert (THREE.Mesh)", v828Results.waterPlaneExists);
-                check(
-                    "V9.49-b: das vereinte Wasser-Mesh trägt einen Ozean-Vertex auf waterLevel",
-                    v828Results.waterAtLevel
-                );
+                check("V9.50: das Chunk-Wasser-System ist verdrahtet (voxelChunkWater-Map)", v828Results.waterSystemOk);
                 check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
             } else {
                 check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
@@ -18248,21 +18192,17 @@ function startSaveServer() {
                     // Richtungs-Vektoren) + Sonnen-Glitzern (Spekular).
                     let waterDiagonal = false;
                     let waterSpecular = false;
-                    if (r.state.waterPlane && r.state.waterPlane.material) {
-                        const vs = r.state.waterPlane.material.vertexShader || "";
-                        const fs = r.state.waterPlane.material.fragmentShader || "";
+                    const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+                    if (wMat) {
+                        const vs = wMat.vertexShader || "";
+                        const fs = wMat.fragmentShader || "";
                         waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
                         waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
                     }
                     out.waterDiagonalWaves = waterDiagonal;
                     out.waterSunGlitter = waterSpecular;
                     // Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)
-                    out.waterHasSunUniform = !!(
-                        r.state.waterPlane &&
-                        r.state.waterPlane.material &&
-                        r.state.waterPlane.material.uniforms &&
-                        r.state.waterPlane.material.uniforms.uSunDir
-                    );
+                    out.waterHasSunUniform = !!(wMat && wMat.uniforms && wMat.uniforms.uSunDir);
 
                     // Wasser-Physik: state.playerUnderwater existiert als Flag
                     out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -18329,8 +18269,8 @@ function startSaveServer() {
                             /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
                     }
                     // Wasser-Custom-Shader hat Fog + Domain-Warp.
-                    if (r.state.waterPlane && r.state.waterPlane.material) {
-                        const wm = r.state.waterPlane.material;
+                    const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+                    if (wm) {
                         out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
                         out.waterDomainWarp =
                             /waveDisplace/.test(wm.vertexShader || "") && /warp/.test(wm.vertexShader || "");
@@ -18405,8 +18345,9 @@ function startSaveServer() {
                     }
 
                     // Wasser-Shader hat Fresnel-Opazität.
-                    if (r.state.waterPlane && r.state.waterPlane.material) {
-                        const fs = r.state.waterPlane.material.fragmentShader || "";
+                    const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+                    if (wFresMat) {
+                        const fs = wFresMat.fragmentShader || "";
                         out.waterFresnel = /fres/.test(fs) && /pow\(1\.0 - max\(dot\(viewDir, n\)/.test(fs);
                     }
 
@@ -18515,8 +18456,9 @@ function startSaveServer() {
                     }
 
                     // --- Gerstner-Wellen im Wasser-Shader ---
-                    if (r.state.waterPlane && r.state.waterPlane.material) {
-                        const vs = r.state.waterPlane.material.vertexShader || "";
+                    const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+                    if (wGerstMat) {
+                        const vs = wGerstMat.vertexShader || "";
                         out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
                         out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
                         out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);

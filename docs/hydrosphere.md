@@ -1005,3 +1005,29 @@ derselbe Konsolidierungs-Pfeil, ein Ring weiter.
   4 → 1 → 0.
 - **V9.47-Lehre, endlich zu Ende gedacht**: nicht die Naht polieren — das Verfahren
   wechseln. Diesmal das echte Verfahren: das Wasser hört auf, ein eigenes Modell zu sein.
+
+### 14.11 Geliefert (V9.50)
+
+Gebaut 22.05.2026 in drei playtest-grünen Sub-Wellen, netto **−102 Zeilen** (das
+getrennte Wasser-Modell ist gelöscht — Konsolidierung):
+
+- **V9.50-a** — `_waterLevelAt(x,z)` (Ozean-Default `waterLevel`, lokal von See/Fluss
+  per MAX überschrieben) + `_hydroRiverAt` (nächstes Fluss-Segment, Flow, Bett-Profil).
+  Reine Daten, +3 Invarianten.
+- **V9.50-b/c** — `_buildVoxelChunkWater` baut je Voxel-Chunk eine Wasser-Fläche, nass
+  je Zelle wo `_voxelSurfaceY < _waterLevelAt`. Geschwisterlich zu `_buildVoxelChunk-
+  Grass`, in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` eingehängt, über
+  `_voxelChunkTouchesWater` gegatet (trockenes Hochland baut kein Wasser). Der
+  Wasser-Spiegel kommt aus `_waterLevelAt`, die Wet-Maske aus dem ECHTEN
+  `_voxelSurfaceY`. Gelöscht: das V9.49-Vereinte-Mesh + alle Workarounds
+  (`_buildUnifiedWaterMesh/-Geometry`, `_tickUnifiedWater`, `_unifiedNearestRiverSeg`,
+  `state.waterPlane`, das `RIDGE_MARGIN`-Clip, `aWet`, `unifiedExt/-Cell`).
+  `_applyDayNightToScene` synct jetzt direkt `state.hydroSurfaceMaterial`.
+
+**Die Bug-Klasse ist strukturell beendet**: Wasser + Terrain teilen dieselbe Geometrie-
+Quelle (`_voxelSurfaceY`) → kein 16-m-Modell, kein Bleed, kein Schweben, keine
+Verengungs-Naht — sie sind nicht mehr möglich, nicht poliert. Playtest-grün (das
+`_waterLevelAt`-Feld, das Chunk-Wasser-Mesh, jeder Vertex exakt auf `_waterLevelAt`,
+der Gate). Der Schöpfer-Browser-Audit steht aus (wie bei jeder Wasser-Welle). §14.5
+(Weg B) ist 1:1 gebaut. Der Tarn-Pass (§13.6, Bergseen) bleibt der offene additive
+Schritt danach.
