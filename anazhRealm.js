@@ -15037,12 +15037,16 @@ class AnazhRealm {
         return lakes;
     }
 
-    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwellwert. Von jeder
-    // Quelle (Fluss-Zelle ohne Fluss-Zelle stromauf) entlang flowTo zu einer
-    // Polylinie verketten — bis Meer, See oder Region-Rand. Da die
-    // Akkumulation stromab nur wächst, bleibt ein Fluss ab der Quelle bis
-    // zur Mündung Fluss. Breite w = widthMin + widthK·√A (hydraulische
-    // Geometrie — echte Flüsse verbreitern sich mit √Durchfluss).
+    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwellwert. V9.46 — die
+    // Flüsse fliessen durch Seen HINDURCH: ein „Conduit" ist eine Durchfluss-
+    // Zelle, OB See oder nicht; die Polylinie folgt `flowTo` vom Quell-Hang
+    // über die Seen-Kette bis zum Meer (statt an jedem See zu enden — das
+    // heilt den V9.43-c-„kurze-Flüsse"-Befund, hydrosphere.md §10a). Da das
+    // Priority-Flood-ε auch INNERHALB eines Sees ein Mini-Gefälle legt,
+    // routet `flowTo` durch das Becken zum Überlauf. See-Punkte tragen
+    // `inLake: true` + den See-Füllstand als `y` — der Renderer überspringt
+    // ihre Quads (die See-Plane deckt die Strecke), der Carve lässt sie aus.
+    // Breite w = widthMin + widthK·√A (hydraulische Geometrie).
     _hydroExtractRivers(ctx) {
         const { dim, cell, originX, originZ, filled, accum, flowTo, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
@@ -15052,19 +15056,32 @@ class AnazhRealm {
         // (anderes Relief → andere Max-Akkumulation).
         const threshold = Math.max(HC.riverThresholdMin, ctx.maxAccum * HC.riverThresholdFrac);
         const isSea = (idx) => isOcean[idx] === 1;
-        const isRiver = (idx) => !isSea(idx) && lakeOf[idx] < 0 && accum[idx] >= threshold;
-        // Quelle = Fluss-Zelle, in die KEINE Fluss-Zelle mündet.
+        // ein Conduit trägt echten Durchfluss — auch eine See-Zelle (der
+        // Fluss fliesst durch den See HINDURCH, statt an ihm zu enden).
+        const isConduit = (idx) => !isSea(idx) && accum[idx] >= threshold;
+        // Quelle = LAND-Conduit-Zelle (kein See) ohne Land-Conduit stromauf.
+        // Seen sind für die Quell-Suche „transparent": ein Fluss startet an
+        // einem echten Hang-Quell, NICHT an einer See-internen Akkumulations-
+        // Verzweigung (sonst spawnte jeder See dutzende Geister-Quellen — das
+        // ε-Flow-Tree eines flachen Beckens verzweigt fein). Die hasUpstream-
+        // Propagation überspringt See-Zellen → markiert den nächsten LAND-
+        // Conduit stromab; ein See-Kopf-Fluss (See ohne Land-Zufluss) startet
+        // dann an seinem Auslass.
+        const isLandConduit = (idx) => isConduit(idx) && lakeOf[idx] < 0;
         const hasUpstream = new Uint8Array(n);
         for (let idx = 0; idx < n; idx++) {
-            if (!isRiver(idx)) continue;
-            const t = flowTo[idx];
-            if (t >= 0 && isRiver(t)) hasUpstream[t] = 1;
+            if (!isLandConduit(idx)) continue;
+            let cur = flowTo[idx];
+            for (let g = 0; g < HC.maxRiverPoints && cur >= 0 && lakeOf[cur] >= 0; g++) {
+                cur = flowTo[cur];
+            }
+            if (cur >= 0 && isLandConduit(cur)) hasUpstream[cur] = 1;
         }
         const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
         const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
         const rivers = [];
         for (let src = 0; src < n; src++) {
-            if (!isRiver(src) || hasUpstream[src]) continue;
+            if (!isLandConduit(src) || hasUpstream[src]) continue;
             const points = [];
             let cur = src;
             let mouth = "border";
@@ -15082,13 +15099,15 @@ class AnazhRealm {
                 points.push({
                     x: wx(cur),
                     z: wz(cur),
-                    // y = die Füllhöhe (die hydrologische Routing-Oberfläche),
-                    // nicht surf — filled fällt entlang flowTo STRIKT monoton,
-                    // surf könnte in einer gefüllten Mikro-Senke kurz steigen.
+                    // y = die hydrologische Füllhöhe — fällt entlang flowTo
+                    // STRIKT monoton, auch durch eine See-Durchquerung (das
+                    // Priority-Flood-ε legt selbst im flachen Becken ein
+                    // Mini-Gefälle; ε≈0.01 → die See-Strecke ist nahezu flach).
                     y: filled[cur],
                     width: HC.widthMin + HC.widthK * Math.sqrt(accum[cur]),
                     flowX: fx,
                     flowZ: fz,
+                    inLake: lakeOf[cur] >= 0,
                 });
                 if (t < 0) {
                     mouth = "border";
@@ -15096,10 +15115,6 @@ class AnazhRealm {
                 }
                 if (isSea(t)) {
                     mouth = "sea";
-                    break;
-                }
-                if (lakeOf[t] >= 0) {
-                    mouth = { lake: lakeOf[t] };
                     break;
                 }
                 cur = t;
@@ -15121,6 +15136,13 @@ class AnazhRealm {
             const pts = rivers[ri].points;
             for (let k = 0; k < pts.length; k++) {
                 const p = pts[k];
+                if (p.inLake) {
+                    // V9.46 — im See ist die Wasser-Oberfläche der Füllstand
+                    // (`p.y`), NICHT die gecarvte Bett-Surface — sonst meldete
+                    // der Wasserfall-Scan einen Sturz am flachen See-Boden.
+                    p.voxelY = p.y;
+                    continue;
+                }
                 const v = this._voxelSurfaceY(p.x, p.z);
                 p.voxelY = Number.isFinite(v) ? v : p.y;
             }
@@ -15163,6 +15185,12 @@ class AnazhRealm {
             for (let k = 0; k + 1 < pts.length; k++) {
                 const a = pts[k];
                 const b = pts[k + 1];
+                // V9.46 — eine See-Durchquerung ist flach (Wasser-Oberfläche),
+                // kein Wasserfall; ein laufender steiler Lauf endet an ihr.
+                if (a.inLake || b.inLake) {
+                    flush(k);
+                    continue;
+                }
                 const drop = yOf(a) - yOf(b);
                 const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
                 const steep = drop > 0 && drop / horiz > HC.waterfallSlope;
@@ -15216,6 +15244,10 @@ class AnazhRealm {
             for (let k = 0; k + 1 < pts.length; k++) {
                 const a = pts[k];
                 const b = pts[k + 1];
+                // V9.46 — eine See-Durchquerung NICHT carven: das Becken-Bett
+                // ist schon von `_hydrosphereLakeAt` flach gesculptet; ein
+                // Fluss-Carve grübe sonst eine Rinne in den flachen See-Boden.
+                if (a.inLake || b.inLake) continue;
                 addSeg({
                     ax: a.x,
                     az: a.z,
@@ -15303,17 +15335,15 @@ class AnazhRealm {
             }
             for (let ri = 0; ri < hydro.rivers.length; ri++) {
                 const river = hydro.rivers[ri];
-                // V9.43-c.2 — der Fluss endet SICHTBAR an seinem Wasser: ein
-                // Meer-Mündungs-Fluss blendet auf `waterLevel`, ein See-
-                // Mündungs-Fluss auf `lake.level`. So fließt er INS Wasser,
-                // statt ein paar Meter darüber in der Luft zu enden (Schöpfer-
-                // Befund: „nicht synergetisch mit dem bestehenden Wasser").
+                // V9.43-c.2 / V9.46 — der Fluss endet SICHTBAR an seinem
+                // Wasser: ein Meer-Mündungs-Fluss blendet die Render-Höhe auf
+                // `waterLevel` aus, statt ein paar Meter darüber in der Luft
+                // zu enden. Seen sind seit V9.46 keine Mündung mehr — der
+                // Fluss fliesst durch sie HINDURCH (`inLake`-Punkte, deren
+                // Quads der Ribbon-Bauer überspringt; die See-Plane deckt sie).
                 let mouthY = null;
                 if (river.mouth === "sea") {
                     mouthY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
-                } else if (river.mouth && typeof river.mouth.lake === "number") {
-                    const lk = hydro.lakes[river.mouth.lake];
-                    if (lk) mouthY = lk.level;
                 }
                 const m = this._buildRiverRibbon(river, surfMat, mouthY);
                 if (m) {
@@ -15491,6 +15521,15 @@ class AnazhRealm {
         // geglättet, strikt fallend, kleiner Lift.
         const ry = new Float64Array(n);
         for (let i = 0; i < n; i++) {
+            if (pts[i].inLake) {
+                // V9.46 — See-Durchquerung: die flache Wasser-Oberfläche
+                // (`pts[i].y` = See-Füllstand), nicht die gecarvte Bett-
+                // Surface. Die Quads dieser Strecke werden ohnehin
+                // übersprungen — der Wert hält nur den Smooth/Klemm-Verlauf
+                // der benachbarten Land-Punkte plausibel.
+                ry[i] = pts[i].y;
+                continue;
+            }
             const v = this._voxelSurfaceY(pts[i].x, pts[i].z);
             ry[i] = typeof v === "number" && Number.isFinite(v) ? v : pts[i].y;
         }
@@ -15560,6 +15599,10 @@ class AnazhRealm {
             flow.push(fx[i], fz[i], fx[i], fz[i]);
         }
         for (let i = 0; i + 1 < n; i++) {
+            // V9.46 — kein Quad über eine See-Durchquerung: die See-Plane
+            // deckt die Strecke, der Fluss-Ribbon hat dort eine Lücke (der
+            // Fluss bleibt EINE logische Polylinie, nur visuell unterbrochen).
+            if (pts[i].inLake || pts[i + 1].inLake) continue;
             const a = i * 2;
             indices.push(a, a + 1, a + 3, a, a + 3, a + 2);
         }

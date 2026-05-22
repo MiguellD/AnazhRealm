@@ -4,13 +4,14 @@
 Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten,
 der Klang; siehe §8 + §9). **V9.45-b** löste danach den See-Carve ab — die Seebecken sind
 jetzt flach gesculptete, wasserdichte Töpfe (`_hydrosphereLakeAt` statt des V9.43-d-
-`lakeCutCell`-Schnitts; siehe §8 + die `handover.md`-Chronik). Schöpfer-Wahl war: **volles
+`lakeCutCell`-Schnitts; siehe §8). **V9.46** heilte die kurzen Flüsse — sie fliessen jetzt
+durch Seen HINDURCH (§10a; längster Fluss 45 m → 1361 m). Schöpfer-Wahl war: **volles
 Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
-Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: nur zwei kosmetische
-Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e). Plus eine ehrliche
-offene Netz-Qualitäts-Frage aus der V9.43-c-Browser-Verifikation — die Flüsse sind kurz
-(siehe §9 + §10). Die kanonische Versions-Chronik lebt in `docs/handover.md`; der Wellen-Plan
-im Überblick in `docs/roadmap.md` §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
+Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: zwei kosmetische
+Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e) + die tiefere
+Netz-CHARAKTERISTIK-Frage (die Welt ist see-dominant — §10b). Die kanonische Versions-
+Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md` §3.
+Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
 ---
 
@@ -419,16 +420,23 @@ funktional + sensorisch vollständig.
   (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls` gelöscht). Das ist kein
   Wegwerfen — das Material + die Plane-Geometrie bleiben (von `_buildHydroWaterfall`
   reuset); nur die Spawn-Quelle wanderte vom Zufall zum Fluss-Netz. Ehrlich benannt.
-- **Kurze Flüsse — die offene Netz-Qualitäts-Frage (V9.43-c-Befund).** Das Drainage-Netz
-  der Test-Welt ist see-dominant: 12 Seen, die Flüsse sind 32-48-m-Verbinder. Wurzel: die
-  ridged-Makro-Surface ist basin-y → das Priority-Flood füllt grosse Becken → die Seen
-  zerstückeln die Drainage (`_hydroExtractRivers` endet einen Fluss an jedem See). Der
-  Vision-Wunsch („Flüsse, die die Hänge runterfliessen") braucht lange, frei fließende
-  Flüsse. Heilungs-Optionen (eine eigene Welle, NICHT V9.43-c-Render-Scope): (a) ein Fluss
-  fließt durch einen See HINDURCH als eine logische Polylinie (BFS vom Zufluss zum
-  Überlauf durch die See-Zellen); (b) eine glattere, weniger Basin-y hydrologische
-  Surface fürs Routing; (c) hydraulische Erosion, die Täler carvt (gross). Bewusst der
-  Render-Welle V9.43-c nicht aufgebürdet — V9.43-c rendert das Netz, das V9.43-b liefert.
+- **(a) Netz-VERBINDUNG — ✅ V9.46 geheilt.** Befund (V9.43-c, gemessen): das Netz war
+  see-zerstückelt — 6 Flüsse, längster 45 m, 4 von 6 endeten an einem See, weil
+  `_hydroExtractRivers` einen Fluss an JEDER See-Zelle beendete. Heilung V9.46: ein Fluss
+  fliesst durch einen See HINDURCH als EINE logische Polylinie. Kein BFS nötig — der
+  Walk folgt schlicht `flowTo` durch die See-Zellen (das Priority-Flood-ε legt selbst im
+  Becken ein Mini-Gefälle → `flowTo` routet zum Überlauf). Ein „Conduit" ist jede
+  Durchfluss-Zelle, OB See oder nicht; die Quell-Suche bleibt aber LAND-only (`isLand-
+  Conduit`) — sonst spawnt das fein verzweigte ε-Flow-Tree eines Beckens Geister-Quellen.
+  See-Punkte tragen `inLake`: der Renderer überspringt ihre Ribbon-Quads, der Carve lässt
+  sie aus. Ergebnis: längster Fluss 45 m → 1361 m, alle münden ins Meer.
+- **(b) Netz-CHARAKTERISTIK — offen.** Die Welt bleibt see-dominant: die langen Flüsse
+  fädeln Seen-Ketten (61 von 67 Punkten des längsten Flusses sind `inLake`), statt lange
+  offene Hang-Läufe zu sein. Wurzel: die ridged-Makro-Surface ist basin-y → das Priority-
+  Flood füllt grosse Becken. V9.46 verbindet das Netz korrekt; dass die Drainage *durch
+  viele Seen* statt *über offene Hänge* führt, bräuchte eine glattere, weniger basin-y
+  Routing-Surface — ein eigener Bogen (oder (c) hydraulische Erosion, die Täler carvt,
+  gross). Nicht terminiert.
 
 ---
 

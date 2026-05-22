@@ -12528,20 +12528,28 @@ function startSaveServer() {
                         JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
                         JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
                     // Jeder Fluss steigt STRIKT monoton ab — point.y ist die
-                    // Füllhöhe, die entlang flowTo strikt monoton fällt.
+                    // Füllhöhe, die entlang flowTo strikt monoton fällt (V9.46:
+                    // auch durch eine See-Durchquerung — das Priority-Flood-ε
+                    // hält filled selbst im Becken strikt fallend).
                     out.riversDescend = h1.rivers.every((rv) => {
                         for (let k = 0; k + 1 < rv.points.length; k++) {
                             if (rv.points[k].y <= rv.points[k + 1].y) return false;
                         }
                         return true;
                     });
-                    // Jeder Fluss endet an Meer, See oder Region-Rand
-                    out.riverMouths = h1.rivers.every(
-                        (rv) =>
-                            rv.mouth === "sea" ||
-                            rv.mouth === "border" ||
-                            (rv.mouth && typeof rv.mouth.lake === "number")
-                    );
+                    // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
+                    // sind keine Mündung mehr — der Fluss fliesst hindurch).
+                    out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
+                    // V9.46 — mindestens ein Fluss fliesst durch einen See
+                    // HINDURCH: ein Land-Punkt NACH einer See-Durchquerung.
+                    out.riverThroughLake = h1.rivers.some((rv) => {
+                        let sawLake = false;
+                        for (const p of rv.points) {
+                            if (p.inLake) sawLake = true;
+                            else if (sawLake) return true;
+                        }
+                        return false;
+                    });
                     // Flow-Accumulation stromab monoton → Breite wächst
                     out.widthGrows = h1.rivers.every((rv) => {
                         for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -12569,8 +12577,9 @@ function startSaveServer() {
                     hb.riverCount > 0
                 );
                 check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-                check("Voxel V9.43-b: jeder Fluss steigt monoton ab (Quelle → Mündung)", hb.riversDescend);
-                check("Voxel V9.43-b: jeder Fluss endet an Meer, See oder Region-Rand", hb.riverMouths);
+                check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)", hb.riversDescend);
+                check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
+                check("Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)", hb.riverThroughLake);
                 check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
                 check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
                 check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
@@ -12856,11 +12865,15 @@ function startSaveServer() {
                         hydro.lakeNear instanceof Uint8Array &&
                         typeof hydro.bucketSize === "number" &&
                         typeof hydro.bucketsDim === "number";
-                    // einen Fluss-Punkt mit echter Flow-Richtung finden
+                    // einen Fluss-Punkt mit echter Flow-Richtung finden —
+                    // V9.46: NICHT in einem See (See-Durchquerungs-Segmente
+                    // werden bewusst nicht gecarvt) und mit nicht-See-Nachbar,
+                    // damit das Segment rp→next im Carve-Index liegt.
                     let rp = null;
                     for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
                         const pts = hydro.rivers[ri].points;
-                        for (let k = 0; k < pts.length; k++) {
+                        for (let k = 0; k + 1 < pts.length; k++) {
+                            if (pts[k].inLake || pts[k + 1].inLake) continue;
                             if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) > 0.5) {
                                 rp = pts[k];
                                 break;
