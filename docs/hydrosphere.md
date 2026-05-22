@@ -1,14 +1,16 @@
 # Das Wasser-Ultiversum — Hydrosphären-Design (V9.43)
 
-**Stand**: 21.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ + V9.43-e ✅ gebaut** (der
+**Stand**: 22.05.2026 — **V9.43-b ✅ + V9.43-c ✅ + V9.43-c.2 ✅ + V9.43-d ✅ + V9.43-e ✅ gebaut** (der
 Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter Betten,
-der Klang; siehe §8 + §9). Schöpfer-Wahl: **volles Drainage-Netz mit echten Fluss-Betten**.
-Dieses Dokument ist die ausführliche Planung des Wasser-Systems — der Profi-Weg, ehrlich in
-Phasen geschnitten. Offen: nur zwei kosmetische Politur-Reste (See-Ufer-Schaum, Flow-Speed
-nach Gefälle — §9 V9.43-e). Plus eine ehrliche offene Netz-Qualitäts-Frage aus der
-V9.43-c-Browser-Verifikation — die Flüsse sind kurz (siehe §9 + §10). Die kanonische
-Versions-Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md`
-§3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
+der Klang; siehe §8 + §9). **V9.45-b** löste danach den See-Carve ab — die Seebecken sind
+jetzt flach gesculptete, wasserdichte Töpfe (`_hydrosphereLakeAt` statt des V9.43-d-
+`lakeCutCell`-Schnitts; siehe §8 + die `handover.md`-Chronik). Schöpfer-Wahl war: **volles
+Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
+Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: nur zwei kosmetische
+Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e). Plus eine ehrliche
+offene Netz-Qualitäts-Frage aus der V9.43-c-Browser-Verifikation — die Flüsse sind kurz
+(siehe §9 + §10). Die kanonische Versions-Chronik lebt in `docs/handover.md`; der Wellen-Plan
+im Überblick in `docs/roadmap.md` §3. Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
 ---
 
@@ -237,7 +239,19 @@ kritisch, weil `_terrainDensityAt` beim Meshing millionenfach gerufen wird.
 U-Profil-Bett sänke an seinen Rändern in die gewölbte Rinnen-Wand. Der Fluss-Kanal hat
 darum einen flachen Boden (volle Tiefe `D` bis zur halben Fluss-Breite, exakt so breit
 wie das Ribbon), dann eine smoothstep-Bank-Rampe (`bankW = D·1.4`). Bett-Tiefe
-`D = 1.4 + 0.16·width`. See-Becken werden auf `level − 8` gesenkt (`carveLakeBedDepth`).
+`D = 1.4 + 0.16·width`. See-Becken wurden in V9.43-d auf `level − 8` gesenkt
+(`carveLakeBedDepth`).
+
+**V9.45-b — der See-Carve abgelöst.** Der V9.43-d-See-Schnitt (`lakeCutCell`, reine
+Dichte-Senkung) hatte zwei Bugs: (1) der Boden behielt die volle 3D-Roughness → löchrig,
+durch die Löcher schien die globale Meeres-Plane als zweites Wasser-Layer; (2) der
+Schnitt war auf `cut ≥ 0` geklemmt → tiefe Becken-Stellen blieben un-gefüllt. Neu:
+`_hydrosphereLakeAt(x,z)` liefert `{bedY, w}`, `_terrainDensityAt` blendet die Dichte
+zur flachen Bett-Ebene (`d = d·(1−w) + (bedY−y)·w`). `bedY` ist in
+`[waterLevel+0.5, level−1.2]` geklemmt → der Boden ist lückenlos flach UND liegt
+garantiert über dem Meeresspiegel (die Meeres-Plane bleibt verdeckt). Seen ≤
+`waterLevel+2` werden absorbiert (keine eigene Plane). `_hydrosphereCarveAt` ist
+seither fluss-only. Volle Begründung: die `handover.md`-V9.45-b-Chronik.
 
 (b) **Zirkel-Freiheit über ein Flag, nicht über die Reihenfolge.** Der Plan hoffte „kein
 Flag — die Reihenfolge IST die Trennung". Das gilt nur beim ERSTEN Worldgen; ein
