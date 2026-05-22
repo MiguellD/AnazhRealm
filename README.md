@@ -2,15 +2,15 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V9.48 (22.05.2026) — **Hydrosphäre-Politur**. Die letzte kosmetische Naht des Wasser-Bogens: **See-Ufer-Schaum** (ein wellen-pulsierendes Schaum-Band an der Wasserlinie — `_lakeShoreFoamField` baut per BFS ein Distanz-Feld von der Wasserlinie ins Becken, der Shader rendert es über ein neues `aShore`-Vertex-Attribut) + **Flow-Speed nach Gefälle** (ein steiles Fluss-Segment scrollt den Schaum schneller als ein flacher Lauf — der Speed-Faktor reist im Betrag des `aFlow`-Vektors). Kosmetisch, kein eigener Bogen. Pläne: `docs/hydrosphere.md` §9.
+**Stand**: V9.49 (22.05.2026) — **das vereinte Wasser-System**. Meer, Seen, Flüsse und Wasserfälle waren vier gestapelte, durchscheinende Render-Schichten; V9.49 macht daraus EIN spieler-folgendes Höhenfeld-Mesh + EINEN Shader — Wasser ist ein Feld, kein Körper. Drei Browser-Audits (V9.49-d/e/f) schlossen die Terrain-Naht: das Wasser taucht unter das opake Terrain, die Uferlinie ist der emergente Schnitt. Als nächstes Schöpfer-entschieden: **V9.50** — das Wasser-Mesh aus dem Voxel-Chunk-Pipeline, derselben Quelle wie das Terrain (exakt per Konstruktion). Design + Lernschlüsse: `docs/hydrosphere.md` §12–§14.
 
-**Davor — fluviale Erosion V9.47**: die Welt war see-dominant (die Becken 12–20 m tief). V9.47 formt das Gelände via **Stream-Power-Inzision** um (Braun & Willett / Fastscape — das geomorphologische Standard-Modell): `_computeErosion` lässt Terrain + Drainage über 36 Iterationen ko-evolvieren, das Stream-Power-Gesetz `Δh = k·A^m·S^n` schneidet proportional zu Drainage-Fläche × Gefälle ein — aber NUR in Kanälen (`accum ≥ channelMinArea`). Ergebnis: Gipfel exakt erhalten, dendritische Tal-Netze gecarvt, See-Fläche halbiert, Flüsse länger + offener.
+**Davor — Hydrosphäre-Politur V9.48** (See-Ufer-Schaum + Flow-Speed nach Gefälle, `docs/hydrosphere.md` §9) + **fluviale Erosion V9.47**: die Welt war see-dominant (die Becken 12–20 m tief). V9.47 formt das Gelände via **Stream-Power-Inzision** um (Braun & Willett / Fastscape — das geomorphologische Standard-Modell): `_computeErosion` lässt Terrain + Drainage über 36 Iterationen ko-evolvieren, das Stream-Power-Gesetz `Δh = k·A^m·S^n` schneidet proportional zu Drainage-Fläche × Gefälle ein — aber NUR in Kanälen (`accum ≥ channelMinArea`). Ergebnis: Gipfel exakt erhalten, dendritische Tal-Netze gecarvt, See-Fläche halbiert, Flüsse länger + offener.
 
 **Davor — lange Flüsse V9.46** (Flüsse durch Seen hindurch als eine logische Polylinie) + **der Gelände- & Wasser-Bogen V9.45-a..c** (Domain-Warp + Erosions-Feld gegen monotones Gelände; Seebecken als wasserdichte Töpfe; Auftrieb an die See-Plane gekoppelt). Davor das Wasser-Ultiversum V9.43-b..e (Hydrosphären-Atlas, Rendering, gecarvte Fluss-Betten, Klang), die Voxel-Surface-Politur V9.40–V9.42 + der Stamm-Pflege-Bogen V9.44. Die volle Versions-Historie lebt in `CLAUDE.md` (kanonisch); `docs/roadmap.md` trägt den Wellen-Plan, `docs/handover.md` die Chronik + Erstorientierung.
 
 ## Was es ist
 
-AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~34900 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
+AnazhRealm ist eine 3D-Browser-Sandbox in **einer einzigen Datei** (`anazhRealm.js`, ~36 000 Zeilen, Vanilla JS + Three.js + Ammo.js). Drei zentrale Vision-Pfeiler:
 
 - **Hylomorphismus als Sprache**: Form × Material × Werkzeug × räumliche Konfiguration → emergente Identität. Player-Seele, Bauwerk, Kreatur, Werkzeug, Rüstung, Trank — alles spricht dieselbe Compound-Tag-Sprache.
 - **DSL als Co-Schöpfer-Werkzeug**: 41 Ops, Sandbox mit Budget-Limits + Op-Whitelist + kein `eval`. Mensch und Welt-LLM teilen sich die Sprache. CSP-strict.
@@ -43,8 +43,8 @@ Pre-Push-Empfehlung: `npm run check && npm run playtest && npm run audit:strict`
 
 | Datei | Was |
 |---|---|
-| `docs/handover.md` | **Für den nächsten Agenten** — Schnell-Lage + drei heilige Gesetze |
-| `docs/state-of-realm.md` | Vision, Historie, Stand, Plan, ~120 Learnings |
+| `docs/handover.md` | **Die Chronik + Erstorientierung** — volle Wellen-Historie, drei heilige Gesetze, wie du eine Session startest |
+| `docs/state-of-realm.md` | **Die Vision** — fünf Pfeiler, Heilige Lektion, Stand-vs-Vision-Matrix |
 | `docs/roadmap.md` | Vollständige Roadmap aller Ringe + zukünftige Wellen |
 | `docs/world-portal.md` | **W12-Vision-Anker** — Bibliothek von Alexandria der Vibecode-Ära |
 | `docs/crafting-konzept.md` | Hylomorphismus-Konzept |

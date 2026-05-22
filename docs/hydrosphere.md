@@ -502,8 +502,8 @@ Schnitt, die **Render-Architektur**: vier getrennte Wasser-Meshes werden ein Fel
 
 ## 12. Das vereinte Wasser-System (V9.49) — Wasser ist ein Feld, kein Körper
 
-**Stand**: gebaut V9.49-a/b/c (22.05.2026), playtest-grün; der Schöpfer-Browser-Audit
-steht aus (wie bei jeder Wasser-Welle). Schöpfer-Browser-Befund nach V9.48: das Wasser
+**Stand**: gebaut V9.49-a/b/c (22.05.2026), playtest-grün. Die Audit-Folgen V9.49-d/e/f
+schlossen danach die Terrain-Naht (§13); V9.50 schneidet die Wurzel (§14). Schöpfer-Browser-Befund nach V9.48: das Wasser
 „schliesst nicht" — Meer, Seen, Flüsse, Wasserfälle wirken als gestapelte, durchscheinende
 Sheets, nicht als *ein* Wasserkörper. V9.48 hat Schaum + Flow poliert; die Wurzel liegt
 tiefer. Schöpfer-Wort: *„was wird mit Begeisterung betrachtet, welches ist weitsichtig
