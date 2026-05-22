@@ -14881,6 +14881,8 @@ class AnazhRealm {
             // V9.43-d — den Carve-Index aus dem fertigen Netz bauen (Fluss-Bucket-
             // Grid + See-Cut-Feld); `_terrainDensityAt` liest ihn beim Meshen.
             const carve = this._hydroBuildCarveIndex(ctx, rivers, lakes);
+            // V9.49-a — das vereinte Wasser-Feld (`docs/hydrosphere.md` §12).
+            const water = this._hydroBuildWaterField(ctx);
             return {
                 ready: true,
                 originX: ctx.originX,
@@ -14897,6 +14899,7 @@ class AnazhRealm {
                 lakeBedCell: carve.lakeBedCell,
                 lakeW: carve.lakeW,
                 lakeNear: carve.lakeNear,
+                water,
                 stats: {
                     cells: dim * dim,
                     landCells,
@@ -14917,6 +14920,27 @@ class AnazhRealm {
         } finally {
             this._hydroComputing = false;
         }
+    }
+
+    // V9.49-a — das vereinte Wasser-Feld. Das Priority-Flood-`filled` IST per
+    // Konstruktion eine kontinuierliche Wasser-Oberfläche über die ganze Region
+    // (Ozean = waterLevel, See = Füll-Höhe, Land ≈ Surface — der Flut-Pass
+    // hebt nur Senken). V9.49 baut daraus EIN spieler-folgendes Höhenfeld-Mesh
+    // statt vier getrennter Wasser-Schichten: `waterY` trägt die Oberfläche je
+    // Zelle, `waterKind` die Klassifikation (0 Land · 1 Ozean · 2 See) für den
+    // vereinten Shader (Gerstner-Wellen am Ozean, still am See). Reine Daten,
+    // headless-prüfbar. `docs/hydrosphere.md` §12.
+    _hydroBuildWaterField(ctx) {
+        const { dim, filled, isOcean, lakeOf } = ctx;
+        const n = dim * dim;
+        const waterY = new Float32Array(n);
+        const waterKind = new Uint8Array(n);
+        for (let idx = 0; idx < n; idx++) {
+            waterY[idx] = filled[idx];
+            if (isOcean[idx]) waterKind[idx] = 1;
+            else if (lakeOf[idx] >= 0) waterKind[idx] = 2;
+        }
+        return { waterY, waterKind };
     }
 
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`

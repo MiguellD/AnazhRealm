@@ -12665,6 +12665,44 @@ function startSaveServer() {
                     out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
                     // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
                     out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
+                    // V9.49-a — das vereinte Wasser-Feld: `filled` als per-Zelle
+                    // Wasser-Oberfläche (`waterY`) + Klassifikation (`waterKind`
+                    // 0 Land · 1 Ozean · 2 See). Die Wahrheit, aus der V9.49 EIN
+                    // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12).
+                    const wf = h1.water;
+                    out.waterFieldShape =
+                        !!wf &&
+                        wf.waterY instanceof Float32Array &&
+                        wf.waterKind instanceof Uint8Array &&
+                        wf.waterY.length === h1.dim * h1.dim &&
+                        wf.waterKind.length === h1.dim * h1.dim;
+                    let kindOk = true;
+                    let finiteOk = true;
+                    let oceanCells = 0;
+                    let lakeFieldCells = 0;
+                    if (out.waterFieldShape) {
+                        for (let i = 0; i < wf.waterKind.length; i++) {
+                            const k = wf.waterKind[i];
+                            if (k > 2) kindOk = false;
+                            if (k === 1) oceanCells++;
+                            else if (k === 2) lakeFieldCells++;
+                            if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
+                        }
+                    }
+                    out.waterKindValid = kindOk && finiteOk;
+                    out.waterFieldOceanCells = oceanCells;
+                    out.waterFieldLakeCells = lakeFieldCells;
+                    // das Feld IST das Netz: Ozean-/See-Zell-Zahl deckt sich mit
+                    // den Netz-Extraktions-Zählern (eine Quelle, keine Drift).
+                    out.waterFieldMatchesNet =
+                        !!h1.stats &&
+                        oceanCells === h1.stats.seaCells &&
+                        lakeFieldCells === h1.stats.lakeCells;
+                    // Determinismus — das Feld ist so deterministisch wie das Netz.
+                    out.waterFieldDeterministic =
+                        !!(h2.water && h2.water.waterKind) &&
+                        wf.waterKind.length === h2.water.waterKind.length &&
+                        wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12696,6 +12734,19 @@ function startSaveServer() {
                     typeof hb.perfMs === "number" && hb.perfMs < 500
                 );
                 check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
+                check(
+                    "Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form",
+                    hb.waterFieldShape
+                );
+                check(
+                    "Voxel V9.49-a: waterKind ∈ {0,1,2}, jede Zelle trägt eine endliche waterY",
+                    hb.waterKindValid
+                );
+                check(
+                    `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
+                    hb.waterFieldMatchesNet
+                );
+                check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
             }
 
             // ### Voxel V9.43-c — Flüsse + Seen werden sichtbar (Rendering) ###
