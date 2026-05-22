@@ -13637,19 +13637,28 @@ class AnazhRealm {
     // V9.20); der Hydrosphären-Atlas sampelt sie als hydrologische Basis-
     // Oberfläche — eine Quelle für beide (V9.44-a-Disziplin: ein Wert, der
     // zweimal gebraucht wird, lebt an einer Stelle).
-    // V9.20 — Grösse + Hierarchie. Drei 2D-Oktaven statt einer mittleren:
-    // (1) eine KONTINENTALE Oktave (~1500 m Wellenlänge ≈ 35 Chunks,
-    //     Amplitude 26) — die grosse Gebirgs-Masse, die sich über viele
-    //     Chunks aufbaut; wo sie tief ist, liegt Tiefland. (2) Eine
-    //     RIDGED-Oktave (`(1−|noise|)²`) — scharfe Gebirgs-Grate +
-    //     Felswände (ridged-Noise faltet die Oberfläche zu Kämmen, kein
-    //     rundes Hügel-Blob). (3) Eine feine Detail-Oktave. Die Hierarchie
-    //     (gross → Grat → Detail) gibt der Welt Massstab.
+    // V9.45-a — Grösse, Hierarchie + REGIONALE Vielfalt. Der V9.20-Aufbau
+    // (drei feste Oktaven) liess alle Berge ähnlich hoch wirken: die
+    // kontinentale Oktave variierte über ~1500 m kaum innerhalb einer Welt,
+    // und die ridged-Oktave faltet von Natur aus selbst-ähnliche Kämme
+    // gleicher Höhe. V9.45-a bringt die zwei Profi-Werkzeuge prozeduraler
+    // Welten (Minecraft-1.18-Density-Functions, Quílez):
+    //  (a) DOMAIN-WARP — die Sample-Koordinaten werden VOR dem Noise um ein
+    //      niederfrequentes Feld verschoben (±70 m) → die Kämme mäandern,
+    //      laufen nicht mehr gitter-parallel.
+    //  (b) EROSIONS-FELD — ein eigenes, sehr niederfrequentes Noise
+    //      entscheidet REGIONAL den Charakter: hohe Erosion → flache Ebene,
+    //      niedrige → schroffes Hochgebirge. Es moduliert die ridged-
+    //      Amplitude (9..42 m) → manche Striche sind Tiefland, andere alpin.
+    // Drei addierte 2D-Oktaven bleiben: (1) eine KONTINENTALE (λ~1080 m,
+    // Amplitude 34) — die grosse Gebirgs-Masse; (2) die EROSIONS-modulierte
+    // RIDGED-Oktave — scharfe Grate + Felswände; (3) eine feine Detail-Oktave.
     // `includeDetail` (Default true) — `_terrainDensityAt` braucht die feine
     // Detail-Oktave (λ~22 m); der Hydrosphären-Sampler ruft mit `false`: die
     // Detail-Oktave (±4 m) aliast bei der 16-m-Abtastung und ist grösser als
     // das Makro-Gefälle pro Zelle → das Drainage-Netz würde dem Rauschen
-    // statt dem Tal-Relief folgen. Die Drainage sieht nur kontinental + ridged.
+    // statt dem Tal-Relief folgen. Warp + Erosion formen das echte Tal-Relief
+    // → die Drainage sieht sie, nur die Detail-Oktave bleibt ihr verborgen.
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -13657,9 +13666,27 @@ class AnazhRealm {
         }
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        const cont = n.noise2D(x * 0.0042, z * 0.0042) * 26;
-        const rN = n.noise2D(x * 0.013, z * 0.013);
-        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * 22;
+        // (a) Domain-Warp — verschobene Sample-Koordinaten (bricht die
+        // Gitter-Parallelität der ridged-Kämme; λ~3900 m, ±70 m Versatz).
+        const warpX = n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+        const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+        const wx = x + warpX;
+        const wz = z + warpZ;
+        // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
+        // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
+        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
+        // (b) Erosions-Feld [0,1] — regional (λ~1850 m); `mtn` ist die
+        // Gebirgs-Neigung (1 = alpin), quadriert → Tiefland ist der Normal-
+        // fall, Hochgebirge die Ausnahme. Es moduliert die ridged-Amplitude.
+        const ero = n.noise2D(x * 0.0034, z * 0.0034) * 0.5 + 0.5;
+        let mtn = 1 - ero;
+        if (mtn < 0) mtn = 0;
+        mtn *= mtn;
+        const ridgeAmp = 9 + 33 * mtn;
+        // (2) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
+        const rN = n.noise2D(wx * 0.013, wz * 0.013);
+        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
+        // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
         return base + cont + ranges + detail;
     }
@@ -14204,16 +14231,19 @@ class AnazhRealm {
         // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
         // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
         // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
-        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — die V9.20-Marge 8
-        // reichte nicht für ridged-Spikes weiter draussen (Sicht-Ring 4-8
-        // erreicht Chunks, in denen die Oberfläche über base+72 ragte → keine
-        // Iso-Fläche → kein Mesh → sichtbares Loch). Marge jetzt ~22.
+        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — Marge ~22.
+        // V9.45-a: das Relief wuchs (Domain-Warp + grössere Amplituden,
+        // Makro-Oberfläche bis ~base+80, +3D ±12 → base-50..base+92). dimY
+        // 80 → 96, `floorDrop` 58 → 66 → Band base-66..base+106.8, Marge ~15.
+        // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
+        // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
+        // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
         // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
         // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
         // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 80 };
+        return { dim, step, span: dim * step, ringRadius, dimY: 96, floorDrop: 66 };
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
@@ -14226,11 +14256,11 @@ class AnazhRealm {
     // passiert — atomarer Swap im `_rebuildVoxelChunk` (Re-Mesh nach Edit).
     _buildVoxelChunkData(cx, cz) {
         if (!this.state.scene) return null;
-        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        const oy = base - 58;
+        const oy = base - floorDrop;
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
         // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
         // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
@@ -14330,16 +14360,15 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
-        const { dim, step, span, dimY } = this._voxelChunkConfig();
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
-        // Das Oberflächen-Band reicht ~base-42..base+64 — der Chunk muss es
+        // Das Oberflächen-Band reicht ~base-50..base+92 — der Chunk muss es
         // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // V9.26: base-58 + 144 m = base+86 → Marge ~22 oben/unten gegen das
-        // theoretische Surface-Band base-42..base+64 (Schutz gegen ridged-
-        // Spike-Löcher am Sicht-Ring-Rand).
-        const oy = base - 58;
+        // hindurch). V9.45-a: dimY 96, oy = base − floorDrop(66) → Decke
+        // base+106.8 → Marge ~15 gegen ridged-Spike-Löcher am Sicht-Ring-Rand.
+        const oy = base - floorDrop;
         // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
         // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
         // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
@@ -14440,8 +14469,16 @@ class AnazhRealm {
     // die Säule im Band kein festes Terrain trägt.
     _voxelSurfaceY(x, z) {
         const base = this.state.terrainBaseHeight || 0;
+        // V9.45-a — der Scan-Bereich leitet sich aus `_voxelChunkConfig` ab
+        // (eine Quelle): vom Chunk-Decke-nahen Rand abwärts bis knapp über
+        // den Chunk-Boden. `-8`/`+12` sind die schmale Marge, in der nie
+        // Terrain liegt — der Scan beginnt sicher über dem höchsten Gipfel.
+        const cfg = this._voxelChunkConfig();
+        const floorY = base - cfg.floorDrop;
+        const top = floorY + cfg.dimY * cfg.step - 8;
+        const bottom = floorY + 12;
         let prevAir = true;
-        for (let y = base + 66; y >= base - 44; y -= 1.2) {
+        for (let y = top; y >= bottom; y -= 1.2) {
             const solid = this._terrainDensityAt(x, y, z) > 0;
             if (solid && prevAir) return y;
             prevAir = !solid;
@@ -14605,7 +14642,7 @@ class AnazhRealm {
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
                 const s = this._terrainMacroSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell, false);
-                raw[j * dim + i] = Number.isFinite(s) ? s : base - 44;
+                raw[j * dim + i] = Number.isFinite(s) ? s : base - 52;
             }
         }
         const surf = this._hydroBlur(raw, dim);
@@ -15883,19 +15920,23 @@ class AnazhRealm {
         const edits = this.state.worldMeta.voxelEdits;
         const radius = Math.max(1, Math.min(12, Number(r) || 3.5));
         // V9.40-e Schöpfer-Befund: Edits außerhalb des Voxel-Chunk-Höhen-
-        // Bands (base-58..base+86, der vertikalen Spanne der Surface-Nets-
-        // Mesher) sind nutzlos — der Edit ist gespeichert, kann aber nichts
-        // schnitzen/aufschütten, weil keine Dichte-Zellen in seinem Radius
-        // liegen. Plus: `_remeshVoxelChunksAround` markiert trotzdem ±1-
-        // Skirt-Chunks dirty (ignoriert Y), was Re-Meshes ohne Effekt
-        // triggert. Wir clampen darum y auf den (mit Radius-Marge erweiterten)
-        // nutzbaren Bereich. Edits, die WEIT außerhalb sind (>r+8 Marge),
-        // werden silent verworfen — sie hätten keinen Effekt.
+        // Bands (der vertikalen Spanne der Surface-Nets-Mesher) sind nutzlos
+        // — der Edit ist gespeichert, kann aber nichts schnitzen/aufschütten,
+        // weil keine Dichte-Zellen in seinem Radius liegen. Plus:
+        // `_remeshVoxelChunksAround` markiert trotzdem ±1-Skirt-Chunks dirty
+        // (ignoriert Y), was Re-Meshes ohne Effekt triggert. Wir clampen
+        // darum y auf den (mit Radius-Marge erweiterten) nutzbaren Bereich.
+        // Edits, die WEIT außerhalb sind (>r+8 Marge), werden silent
+        // verworfen — sie hätten keinen Effekt. V9.45-a: die Band-Grenzen
+        // leiten sich aus `_voxelChunkConfig` ab (eine Quelle).
         const base = this.state.terrainBaseHeight || 0;
-        const Y_MIN = base - 58 - radius - 8;
-        const Y_MAX = base + 86 + radius + 8;
+        const cfg = this._voxelChunkConfig();
+        const floorY = base - cfg.floorDrop;
+        const ceilY = floorY + cfg.dimY * cfg.step;
+        const Y_MIN = floorY - radius - 8;
+        const Y_MAX = ceilY + radius + 8;
         if (y < Y_MIN || y > Y_MAX) return false;
-        const yClamped = Math.max(base - 58 - radius, Math.min(base + 86 + radius, y));
+        const yClamped = Math.max(floorY - radius, Math.min(ceilY + radius, y));
         edits.push({ x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
@@ -34803,8 +34844,8 @@ class AnazhRealm {
                     // sind, aber tief genug, dass eine legitime Schlucht
                     // (heights -100..+100) den Spieler nicht reset.
                     // V9.25 Phase 5b — der Killplane folgt der Welt. In
-                    // einer Voxel-Welt liegt der Chunk-Boden bei base-58
-                    // (V9.26); der Killplane gehört DARUNTER (base-88),
+                    // einer Voxel-Welt liegt der Chunk-Boden bei base-66
+                    // (V9.45-a); der Killplane gehört DARUNTER (base-88),
                     // sonst würde ein Spieler in einem tiefen Voxel-Tal
                     // resettet. Das heightfield-abgeleitete `minHeight`
                     // kennt das Voxel-Band nicht.
