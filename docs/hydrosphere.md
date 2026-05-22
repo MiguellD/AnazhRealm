@@ -10,9 +10,9 @@ via fluviale Stream-Power-Erosion um — dendritische Täler, halbierte See-Flä
 Gipfel erhalten (§10b). **V9.48** schloss die zwei kosmetischen Politur-Reste —
 See-Ufer-Schaum + Flow-Speed nach Gefälle (§9). Schöpfer-Wahl war: **volles
 Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
-Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. **V9.49 ist geplant**:
-das vereinte Wasser-System (Architektur-Bogen) — Wasser wird ein Feld statt N Körper;
-voller Entwurf + die Lernschlüsse in **§12**. Offen davor blieb die tiefere Netz-
+Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. **V9.49 ist gebaut**:
+das vereinte Wasser-System (Architektur-Bogen) — Wasser wurde ein Feld statt N Körper;
+voller Entwurf, die Lernschlüsse + das Geliefert-Protokoll in **§12**. Offen davor blieb die tiefere Netz-
 CHARAKTERISTIK-Frage (die Welt ist see-dominant — §10b). Die kanonische Versions-
 Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md` §3.
 Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
@@ -502,11 +502,13 @@ Schnitt, die **Render-Architektur**: vier getrennte Wasser-Meshes werden ein Fel
 
 ## 12. Das vereinte Wasser-System (V9.49) — Wasser ist ein Feld, kein Körper
 
-**Stand**: geplant (22.05.2026). Schöpfer-Browser-Befund nach V9.48: das Wasser
+**Stand**: gebaut V9.49-a/b/c (22.05.2026), playtest-grün; der Schöpfer-Browser-Audit
+steht aus (wie bei jeder Wasser-Welle). Schöpfer-Browser-Befund nach V9.48: das Wasser
 „schliesst nicht" — Meer, Seen, Flüsse, Wasserfälle wirken als gestapelte, durchscheinende
 Sheets, nicht als *ein* Wasserkörper. V9.48 hat Schaum + Flow poliert; die Wurzel liegt
 tiefer. Schöpfer-Wort: *„was wird mit Begeisterung betrachtet, welches ist weitsichtig
-die bessere, sauberere Lösung, was erfüllt die Vision?"*
+die bessere, sauberere Lösung, was erfüllt die Vision?"* Das Geliefert-Protokoll +
+die ehrliche Plan-Abweichung stehen unten in §12.10.
 
 ### 12.1 Der Befund — die alte Architektur
 
@@ -621,7 +623,7 @@ prüfbar — wie das ganze restliche Hydrosphären-Feld nicht im Save persistier
 | Sub-Welle | Inhalt |
 |---|---|
 | **V9.49-a** | Das Wasser-Feld (`state.hydrosphere.water`) — reine Daten, headless-prüfbar. |
-| **V9.49-b** | `_buildUnifiedWaterMesh` — das spieler-folgende Höhenfeld-Mesh; ersetzt `_buildLakeMesh` + `_buildRiverRibbon` + `_buildWaterPlane`. `depthWrite:true`. |
+| **V9.49-b** | `_buildUnifiedWaterMesh` — das spieler-folgende Höhenfeld-Mesh; ersetzt `_buildLakeMesh` + `_buildRiverRibbon` + die Gerstner-Meeres-Plane (`_buildWaterPlane` bleibt der Einstieg: setzt `waterLevel`, baut dann das vereinte Mesh). `depthWrite:true`. |
 | **V9.49-c** | Der vereinte Shader (Gerstner/Schimmer/Flow/Ufer-Schaum) + Wasserfall-Anschluss. |
 
 ### 12.9 Vision-Pfeiler-Check
@@ -635,3 +637,34 @@ prüfbar — wie das ganze restliche Hydrosphären-Feld nicht im Save persistier
   V9.49 ist genau das: ein Browser-Audit fand, was 3000 headless-Invarianten nie fingen.
 - **Roadmap-Lehre 1 + V9.47-Lehre** — nicht die Naht polieren (Symptom), das Verfahren
   wechseln (Wurzel). Das Feld IST der Verfahrens-Wechsel.
+
+### 12.10 Geliefert (V9.49-a/b/c) — und die ehrliche Plan-Abweichung
+
+Gebaut in drei playtest-grünen Sub-Wellen, netto **−117 Zeilen** (vier Bau-Pfade →
+einer — Konsolidierung, nicht Re-Komplexifizierung):
+
+- **V9.49-a** — `_hydroBuildWaterField` legt `state.hydrosphere.water = {waterY,
+  waterKind}` ab. +4 Invarianten; das Feld deckt sich EXAKT mit den Netz-Extraktions-
+  Zählern (5403 Ozean + 1489 See).
+- **V9.49-b** — `_buildUnifiedWaterMesh` / `_buildUnifiedWaterGeometry` /
+  `_tickUnifiedWater` / `_unifiedNearestRiverSeg`; `_buildLakeMesh`, `_buildRiverRibbon`,
+  `_lakeShoreFoamField` + der alte Gerstner-Plane-Block gelöscht.
+- **V9.49-c** — `_ensureHydroSurfaceMaterial` mit Gerstner + `aWave`/`aShore`,
+  `depthWrite:true`.
+
+**Die ehrliche Plan-Abweichung** (V9.43-Disziplin — „an der echten Messung erzwungen"):
+§12.3 entwarf das Nass-Kriterium als `bilinear(filled) > Ty` mit `Ty` = gecarvtes
+Gelände. Die Implementierung nutzt KEINEN `Ty`-Vergleich — Ozean/See kommen aus
+`waterKind`, die Fluss-Zellen aus dem `riverBuckets`-Polylinien-Index (`_unifiedNearest-
+RiverSeg`, Distanz ≤ halbe Fluss-Breite). **Grund**: eine billige, exakte „gecarvtes
+Gelände"-Funktion existiert nicht — der Carve ist eine Dichte-Modulation in
+`_terrainDensityAt`, und `_voxelSurfaceY` für ~16 000 Vertices je Mesh-Rebuild (alle
+3 m Spieler-Bewegung) wäre Sekunden statt Millisekunden. Das Ergebnis ist gleichwertig:
+die Fluss-Breite kommt aus derselben Polylinie, die auch der Carve nutzt; die Wasser-
+Oberfläche aus dem Feld (`waterY` = `filled`). Ein Mesh, ein Shader, kein Stapeln —
+das Vision-Ziel ist erreicht, nur der Weg zur Fluss-Maske ist ein anderer als skizziert.
+
+**Offen**: der Schöpfer-Browser-Audit. Zu prüfen — liest sich das Wasser als EIN
+Körper; schliessen Fluss-Mündung + Küste nahtlos; tuckt die Wasserlinie sauber unters
+opake Ufer-Terrain; sind Headwater-Bäche bei 3-m-Raster fein genug; wirkt der Wasserfall
+an Ober- + Unterkante angeschlossen. Befunde → eine etwaige V9.49-Politur-Welle.
