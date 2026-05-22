@@ -12749,13 +12749,12 @@ function startSaveServer() {
                 check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
             }
 
-            // ### Voxel V9.43-c — Flüsse + Seen werden sichtbar (Rendering) ###
-            // Phase 6 (hydrosphere.md §7): das Drainage-Netz aus V9.43-b wird
-            // gerendert — See-Planes (per-Zelle-Quads auf der Füll-Höhe) +
-            // Fluss-Ribbon-Meshes (Quad-Streifen, Breite ∝ √A, der Flow steckt
-            // im per-Vertex-aFlow) + Wasserfall-Planes (V9.43-a-Material reuset,
-            // jetzt am Fluss-Klippen-Kreuz statt per-Chunk-Zufall). See + Fluss
-            // teilen das geteilte horizontale `_ensureHydroSurfaceMaterial`.
+            // ### Voxel V9.49-b/c — das vereinte Wasser-Mesh (Rendering) ###
+            // Seen + Flüsse + Ozean leben nicht mehr in N getrennten Meshes —
+            // sie sind nasse Quads in EINEM spieler-folgenden Höhenfeld-Mesh
+            // (`_buildUnifiedWaterMesh`, `state.waterPlane`). `hydrosphereMeshes`
+            // trägt nur noch die Wasserfälle (die vertikale Ausnahme). EIN
+            // Shader (Gerstner am Ozean, still am See). `docs/hydrosphere.md` §12.
             const voxelV943cResults = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
@@ -12764,8 +12763,11 @@ function startSaveServer() {
                     out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
                     out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
                     out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
-                    out.hasSample = typeof r._hydroSampleRiverSurfaces === "function";
-                    if (!out.hasBuild || !out.hasSurfMat) return out;
+                    out.hasUnifiedMesh = typeof r._buildUnifiedWaterMesh === "function";
+                    out.hasUnifiedGeo = typeof r._buildUnifiedWaterGeometry === "function";
+                    out.hasUnifiedTick = typeof r._tickUnifiedWater === "function";
+                    out.hasRiverSeg = typeof r._unifiedNearestRiverSeg === "function";
+                    if (!out.hasBuild || !out.hasSurfMat || !out.hasUnifiedMesh) return out;
                     const sm = r._ensureHydroSurfaceMaterial();
                     out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
                     const su = (sm && sm.uniforms) || {};
@@ -12777,83 +12779,106 @@ function startSaveServer() {
                         !!su.uLight &&
                         !!su.fogColor &&
                         !!su.uTime;
+                    // V9.49-c — Gerstner-Wellen + aWave-Modulation im Shader
+                    out.shaderHasGerstner =
+                        !!sm &&
+                        /gerstnerWave/.test(sm.vertexShader || "") &&
+                        /aWave/.test(sm.vertexShader || "");
+                    // V9.49-c — depthWrite an (keine durchscheinenden Sheets)
+                    out.depthWriteOn = !!sm && sm.depthWrite === true;
                     const hydro = r.state.hydrosphere;
                     out.hydroReady = !!(hydro && hydro.ready);
                     if (!out.hydroReady) return out;
-                    // V9.43-c — jeder Fluss-Punkt trägt voxelY (Voxel-Surface).
                     out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
                         rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
                     );
-                    // _buildHydrosphereMeshes idempotent neu aufrufen
+                    // idempotent neu aufbauen → Wasserfälle + vereintes Mesh
                     r._buildHydrosphereMeshes();
                     const meshes = r.state.hydrosphereMeshes;
                     out.meshesArray = Array.isArray(meshes);
-                    if (out.meshesArray) {
-                        const lakes = meshes.filter((m) => m.userData && m.userData.hydroKind === "lake");
-                        const rivers = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
-                        const falls = meshes.filter((m) => m.userData && m.userData.hydroKind === "waterfall");
-                        out.lakeMeshCount = lakes.length;
-                        out.riverMeshCount = rivers.length;
-                        out.fallMeshCount = falls.length;
-                        // V9.45-b — Seen ≤ waterLevel+2 sind faktisch
-                        // Meeresspiegel: sie bekommen KEINE eigene Plane (die
-                        // Meeres-Plane deckt sie, sonst zwei Wasser-Ebenen).
-                        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
-                        const renderedLakes = hydro.lakes.filter((l) => l.level > wl + 2);
-                        out.countsMatch =
-                            lakes.length === renderedLakes.length &&
-                            rivers.length === hydro.rivers.length &&
-                            falls.length === hydro.waterfalls.length;
-                        // See + Fluss nutzen das geteilte Surface-Material
-                        out.surfaceMeshesShareMat = [...lakes, ...rivers].every((m) => m.material === sm);
-                        // Wasserfall-Plane nutzt das V9.43-a-Material + PlaneGeometry
-                        out.fallsUseWaterfallMat =
-                            falls.length === 0 ||
-                            falls.every(
+                    // V9.49-b — hydrosphereMeshes trägt NUR Wasserfälle
+                    out.onlyWaterfalls =
+                        out.meshesArray &&
+                        meshes.every((m) => m.userData && m.userData.hydroKind === "waterfall");
+                    out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length;
+                    out.fallsUseWaterfallMat =
+                        out.meshesArray &&
+                        (meshes.length === 0 ||
+                            meshes.every(
                                 (m) =>
                                     m.material === r.state.waterfallMaterial &&
                                     m.geometry &&
                                     m.geometry.type === "PlaneGeometry"
-                            );
-                        // See-Plane sitzt auf der Füll-Höhe (lake.level) —
-                        // V9.45-b: über userData.lakeLevel geprüft (die
-                        // Mesh-Liste deckt nur die gerenderten Seen).
-                        out.lakeOnLevel =
-                            lakes.length === 0 ||
-                            lakes.every((m) => {
-                                const py = m.geometry.attributes.position.array[1];
-                                return Math.abs(py - (m.userData.lakeLevel + 0.12)) < 0.5;
-                            });
-                        // Fluss-Ribbon trägt das aFlow-Attribut + wird stromab breiter
-                        out.ribbonHasFlow = true;
-                        out.ribbonWidens = true;
-                        for (const m of rivers) {
-                            const g = m.geometry;
-                            if (!g.attributes.aFlow) {
-                                out.ribbonHasFlow = false;
+                            ));
+                    // V9.49-b — das vereinte Wasser-Mesh
+                    const wp = r.state.waterPlane;
+                    out.unifiedIsMesh = !!(wp && wp.type === "Mesh");
+                    out.unifiedUsesMat = !!(wp && wp.material === sm);
+                    out.unifiedHasAttrs = false;
+                    out.unifiedHasQuads = false;
+                    out.unifiedWaveValid = false;
+                    if (out.unifiedIsMesh && wp.geometry) {
+                        const g = wp.geometry;
+                        out.unifiedHasAttrs = !!(
+                            g.attributes.position &&
+                            g.attributes.aFlow &&
+                            g.attributes.aShore &&
+                            g.attributes.aWave
+                        );
+                        out.unifiedHasQuads = !!(g.index && g.index.count > 0);
+                        if (g.attributes.aWave) {
+                            const aw = g.attributes.aWave.array;
+                            let waveOk = true;
+                            for (let k = 0; k < aw.length; k++) {
+                                if (aw[k] < -0.001 || aw[k] > 1.001) waveOk = false;
+                            }
+                            out.unifiedWaveValid = waveOk;
+                        }
+                    }
+                    // V9.49-b — das Mesh deckt den Ozean: an einer Ozean-Zelle
+                    // gebaut, trägt es Vertices mit aWave ≈ 1 (Gerstner voll).
+                    out.unifiedHasOcean = false;
+                    if (hydro.water && hydro.water.waterKind) {
+                        let oi = -1;
+                        for (let k = 0; k < hydro.water.waterKind.length; k++) {
+                            if (hydro.water.waterKind[k] === 1) {
+                                oi = k;
                                 break;
                             }
-                            const pos = g.attributes.position.array;
-                            const vc = pos.length / 3;
-                            if (vc >= 4) {
-                                const sp0 = Math.hypot(pos[0] - pos[3], pos[2] - pos[5]);
-                                const li = (vc - 2) * 3;
-                                const lj = (vc - 1) * 3;
-                                const spN = Math.hypot(pos[li] - pos[lj], pos[li + 2] - pos[lj + 2]);
-                                if (spN < sp0 - 0.01) {
-                                    out.ribbonWidens = false;
-                                    break;
+                        }
+                        if (oi >= 0) {
+                            const ci = oi % hydro.dim;
+                            const cj = (oi / hydro.dim) | 0;
+                            const owx = hydro.originX + (ci + 0.5) * hydro.cell;
+                            const owz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                            const og = r._buildUnifiedWaterGeometry(
+                                Math.floor(owx / 3) * 3 - 192,
+                                Math.floor(owz / 3) * 3 - 192
+                            );
+                            if (og && og.attributes.aWave) {
+                                const oaw = og.attributes.aWave.array;
+                                for (let k = 0; k < oaw.length; k++) {
+                                    if (oaw[k] > 0.99) {
+                                        out.unifiedHasOcean = true;
+                                        break;
+                                    }
                                 }
+                                og.dispose();
                             }
                         }
                     }
-                    // _disposeHydrosphereMeshes räumt die Liste
+                    // _disposeHydrosphereMeshes räumt die Wasserfall-Liste
                     r._disposeHydrosphereMeshes();
                     out.disposeClears =
                         Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
-                    // Rebuild — idempotent, baut wieder auf
                     r._buildHydrosphereMeshes();
                     out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
+                    // _tickUnifiedWater baut bei einem Zell-Wechsel neu
+                    const o0 = r.state.unifiedWaterOrigin;
+                    r._tickUnifiedWater(4000, 4000);
+                    const o1 = r.state.unifiedWaterOrigin;
+                    out.tickRebuilds = !!(o0 && o1 && (o0.ox !== o1.ox || o0.oz !== o1.oz));
+                    r._buildUnifiedWaterMesh(0, 0); // zurück zur Welt-Mitte
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12865,8 +12890,8 @@ function startSaveServer() {
                     hc.hasBuild && hc.hasDispose
                 );
                 check(
-                    "Voxel V9.43-c: _ensureHydroSurfaceMaterial + _hydroSampleRiverSurfaces existieren",
-                    hc.hasSurfMat && hc.hasSample
+                    "Voxel V9.49-b: die vereinten Wasser-Methoden existieren (Mesh/Geometry/Tick/RiverSeg)",
+                    hc.hasUnifiedMesh && hc.hasUnifiedGeo && hc.hasUnifiedTick && hc.hasRiverSeg
                 );
                 check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
                 check(
@@ -12874,112 +12899,124 @@ function startSaveServer() {
                     hc.surfMatSharesUniforms
                 );
                 check(
+                    "Voxel V9.49-c: der vereinte Shader trägt Gerstner-Wellen + aWave-Modulation",
+                    hc.shaderHasGerstner
+                );
+                check(
+                    "Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an — kein Sheet-Stapeln)",
+                    hc.depthWriteOn
+                );
+                check(
                     "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
                     hc.riverPointsHaveVoxelY
                 );
                 check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
                 check(
-                    `Voxel V9.43-c: je ein Mesh pro See/Fluss/Wasserfall (${hc.lakeMeshCount}/${hc.riverMeshCount}/${hc.fallMeshCount})`,
-                    hc.countsMatch
-                );
-                check(
-                    "Voxel V9.43-c: See-Planes + Fluss-Ribbons nutzen das geteilte Wasser-Material",
-                    hc.surfaceMeshesShareMat
+                    `Voxel V9.49-b: hydrosphereMeshes trägt nur Wasserfälle (Anzahl == hydro.waterfalls: ${hc.fallCountMatches})`,
+                    hc.onlyWaterfalls && hc.fallCountMatches
                 );
                 check(
                     "Voxel V9.43-c: Wasserfall-Planes nutzen das V9.43-a-Material + PlaneGeometry",
                     hc.fallsUseWaterfallMat
                 );
-                check("Voxel V9.43-c: See-Plane sitzt auf der Füll-Höhe (lake.level)", hc.lakeOnLevel);
-                check("Voxel V9.43-c: Fluss-Ribbon trägt das aFlow-Attribut (Flow-Ribbon)", hc.ribbonHasFlow);
-                check("Voxel V9.43-c: Fluss-Ribbon wird stromab breiter (hydraulische Geometrie)", hc.ribbonWidens);
+                check(
+                    "Voxel V9.49-b: state.waterPlane ist das vereinte Wasser-Mesh (geteiltes Material)",
+                    hc.unifiedIsMesh && hc.unifiedUsesMat
+                );
+                check(
+                    "Voxel V9.49-b: das vereinte Mesh trägt position/aFlow/aShore/aWave + nasse Quads",
+                    hc.unifiedHasAttrs && hc.unifiedHasQuads
+                );
+                check("Voxel V9.49-b: aWave ist je Vertex in [0,1]", hc.unifiedWaveValid);
+                check(
+                    "Voxel V9.49-b: das vereinte Mesh deckt den Ozean (Vertices mit aWave ≈ 1)",
+                    hc.unifiedHasOcean
+                );
                 check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
                 check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
+                check("Voxel V9.49-b: _tickUnifiedWater baut das Mesh bei einem Zell-Wechsel neu", hc.tickRebuilds);
             }
 
-            // ### Voxel V9.48 — Hydrosphäre-Politur ###
-            // See-Ufer-Schaum (`aShore`-Attribut + Shader-Band an der
-            // Wasserlinie) + Flow-Speed nach Gefälle (der Betrag von `aFlow`
-            // trägt die Geschwindigkeit — steiles Fluss-Segment scrollt
-            // schneller). Die letzte kosmetische Naht des Wasser-Bogens.
+            // ### Voxel V9.49-c — Ufer-Schaum + Fluss-Flow im vereinten Mesh ###
+            // Der V9.48-Ufer-Schaum lebt jetzt feld-getrieben im vereinten
+            // Mesh: `aShore` aus der Wasser-Nähe zum Land (kein BFS mehr),
+            // `aFlow` aus dem Fluss-Netz. Der Shader trägt Still-Schimmer,
+            // Flow-Schaum, Ufer-Band + Ozean-Schaumkämme. `hydrosphere.md` §12.4.
             const voxelV948Results = await page
                 .evaluate(() => {
                     const r = window.anazhRealm;
                     if (!r || !r.state) return null;
                     const out = {};
-                    out.hasShoreField = typeof r._lakeShoreFoamField === "function";
                     const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
                     out.shaderHasShore =
                         !!sm &&
                         /aShore/.test(sm.vertexShader || "") &&
                         /vShore/.test(sm.fragmentShader || "");
                     out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
+                    out.shaderHasCrest = !!sm && /crest/.test(sm.fragmentShader || "");
                     const hydro = r.state.hydrosphere;
                     out.hydroReady = !!(hydro && hydro.ready);
                     if (!out.hydroReady) return out;
-                    r._buildHydrosphereMeshes();
-                    const meshes = r.state.hydrosphereMeshes || [];
-                    const lakes = meshes.filter((m) => m.userData && m.userData.hydroKind === "lake");
-                    const rivers = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
-                    // (1) See- + Fluss-Meshes tragen das aShore-Attribut
-                    out.lakesHaveShore = lakes.every((m) => !!(m.geometry && m.geometry.attributes.aShore));
-                    out.riversHaveShore = rivers.every((m) => !!(m.geometry && m.geometry.attributes.aShore));
-                    // (2) aShore ist je Wert in [0,1]; eine See-Plane trägt ein Band (>0)
-                    let shoreInRange = true;
-                    let lakeHasFoamBand = lakes.length === 0;
-                    for (const m of lakes) {
-                        const a = m.geometry.attributes.aShore.array;
-                        for (let k = 0; k < a.length; k++) {
-                            if (a[k] < -0.001 || a[k] > 1.001) shoreInRange = false;
-                            if (a[k] > 0.2) lakeHasFoamBand = true;
+                    r._buildUnifiedWaterMesh(0, 0);
+                    const g = r.state.waterPlane && r.state.waterPlane.geometry;
+                    out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
+                    out.shoreInRange = true;
+                    if (out.hasGeo) {
+                        const aSh = g.attributes.aShore.array;
+                        for (let k = 0; k < aSh.length; k++) {
+                            if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
                         }
                     }
-                    out.shoreInRange = shoreInRange;
-                    out.lakeHasFoamBand = lakeHasFoamBand;
-                    // (3) Fluss-aShore ist überall 0 (Ufer-Schaum nur am See)
-                    out.riverShoreZero = rivers.every((m) => {
-                        const a = m.geometry.attributes.aShore.array;
-                        for (let k = 0; k < a.length; k++) if (a[k] !== 0) return false;
-                        return true;
-                    });
-                    // (4) der Betrag von aFlow trägt die Speed: jeder Fluss-
-                    // Vertex liegt im [0.55, 2.2]-Band, und er variiert nach Gefälle
-                    let speedInRange = true;
-                    let minMag = Infinity;
-                    let maxMag = -Infinity;
-                    for (const m of rivers) {
-                        const f = m.geometry.attributes.aFlow.array;
-                        for (let k = 0; k + 1 < f.length; k += 2) {
-                            const mag = Math.hypot(f[k], f[k + 1]);
-                            if (mag < 0.54 || mag > 2.21) speedInRange = false;
-                            if (mag < minMag) minMag = mag;
-                            if (mag > maxMag) maxMag = mag;
+                    // ein Fluss-Vertex trägt eine Flow-Richtung — geprüft an
+                    // einer um einen Land-Fluss-Punkt gebauten Geometrie.
+                    out.riverHasFlow = false;
+                    let rp = null;
+                    for (const rv of hydro.rivers) {
+                        for (const p of rv.points) {
+                            if (!p.inLake) {
+                                rp = p;
+                                break;
+                            }
                         }
+                        if (rp) break;
                     }
-                    out.speedInRange = speedInRange;
-                    out.speedVaries = rivers.length === 0 ? true : maxMag - minMag > 0.02;
+                    if (rp) {
+                        const rg = r._buildUnifiedWaterGeometry(
+                            Math.floor(rp.x / 3) * 3 - 192,
+                            Math.floor(rp.z / 3) * 3 - 192
+                        );
+                        if (rg && rg.attributes.aFlow) {
+                            const fa = rg.attributes.aFlow.array;
+                            for (let k = 0; k + 1 < fa.length; k += 2) {
+                                if (Math.hypot(fa[k], fa[k + 1]) > 0.5) {
+                                    out.riverHasFlow = true;
+                                    break;
+                                }
+                            }
+                            rg.dispose();
+                        }
+                    } else {
+                        out.riverHasFlow = true; // keine Land-Flüsse → vacuous
+                    }
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
 
             if (voxelV948Results && !voxelV948Results.error) {
                 const h = voxelV948Results;
-                check("Voxel V9.48: _lakeShoreFoamField existiert (Ufer-Schaum-Feld)", h.hasShoreField);
-                check("Voxel V9.48: das Wasser-Material verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
                 check(
-                    "Voxel V9.48: der Fluss-Schaum scrollt nach Gefälle (uFlowSpeed * fmag)",
+                    "Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)",
+                    h.shaderHasShore
+                );
+                check(
+                    "Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)",
                     h.shaderScaledScroll
                 );
+                check("Voxel V9.49-c: der Shader trägt Ozean-Schaumkämme (crest)", h.shaderHasCrest);
                 if (h.hydroReady) {
-                    check(
-                        "Voxel V9.48: See- + Fluss-Meshes tragen das aShore-Attribut",
-                        h.lakesHaveShore && h.riversHaveShore
-                    );
-                    check("Voxel V9.48: aShore ist je Vertex in [0,1]", h.shoreInRange);
-                    check("Voxel V9.48: eine See-Plane trägt ein Ufer-Schaum-Band (aShore > 0)", h.lakeHasFoamBand);
-                    check("Voxel V9.48: der Fluss-aShore ist 0 (Ufer-Schaum nur am See)", h.riverShoreZero);
-                    check("Voxel V9.48: der Betrag von aFlow liegt im Speed-Band [0.55, 2.2]", h.speedInRange);
-                    check("Voxel V9.48: die Flow-Speed variiert nach Gefälle", h.speedVaries);
+                    check("Voxel V9.49-b: das vereinte Mesh trägt aShore + aFlow", h.hasGeo);
+                    check("Voxel V9.49-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
+                    check("Voxel V9.49-b: ein Fluss-Vertex trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
                 }
             }
 
@@ -13210,8 +13247,13 @@ function startSaveServer() {
                     out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
                     // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
                     out.flagClean = !r._hydroComputing;
-                    // (13) _buildRiverRibbon sampelt _voxelSurfaceY live (folgt der Furche)
-                    out.ribbonResamples = /_voxelSurfaceY/.test(r._buildRiverRibbon.toString());
+                    // (13) V9.49-b — das vereinte Wasser-Mesh fragt das Fluss-
+                    // Netz: `_buildUnifiedWaterGeometry` ruft `_unifiedNearest-
+                    // RiverSeg` (denselben riverBuckets-Index wie der Carve) →
+                    // der Fluss entsteht als nasse Quads im Höhenfeld.
+                    out.unifiedQueriesRivers =
+                        typeof r._buildUnifiedWaterGeometry === "function" &&
+                        /_unifiedNearestRiverSeg/.test(r._buildUnifiedWaterGeometry.toString());
                     // (14) der Carve ist im Perf-Budget
                     const t0 = performance.now();
                     const span = hydro.size;
@@ -13262,8 +13304,8 @@ function startSaveServer() {
                 );
                 check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
                 check(
-                    "Voxel V9.43-d: _buildRiverRibbon sampelt _voxelSurfaceY live (das Ribbon folgt in die Furche)",
-                    d.ribbonResamples
+                    "Voxel V9.49-b: das vereinte Wasser-Mesh fragt das Fluss-Netz (riverBuckets-Index)",
+                    d.unifiedQueriesRivers
                 );
                 check(
                     `Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe in ${Math.round(d.carvePerfMs || 0)} ms < 300 ms)`,
@@ -17944,13 +17986,25 @@ function startSaveServer() {
                     r._applyDayNightToScene();
                     const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
                     out.cloudsFollowWeather = cloudRainy > cloudSunny;
-                    // Welt-Wasser
+                    // Welt-Wasser — V9.49-b: das vereinte Wasser-Mesh ist ein
+                    // Höhenfeld (Vertices in Welt-Y, Mesh-position bleibt 0);
+                    // ein Ozean-Vertex sitzt auf `waterLevel`.
                     out.waterPlaneExists = !!(r.state.waterPlane && r.state.waterPlane.type === "Mesh");
-                    out.waterAtLevel = !!(
+                    out.waterAtLevel = false;
+                    if (
                         r.state.waterPlane &&
-                        typeof r.state.waterLevel === "number" &&
-                        Math.abs(r.state.waterPlane.position.y - r.state.waterLevel) < 0.01
-                    );
+                        r.state.waterPlane.geometry &&
+                        r.state.waterPlane.geometry.attributes.position &&
+                        typeof r.state.waterLevel === "number"
+                    ) {
+                        const wpos = r.state.waterPlane.geometry.attributes.position.array;
+                        for (let k = 1; k < wpos.length; k += 3) {
+                            if (Math.abs(wpos[k] - r.state.waterLevel) < 1.0) {
+                                out.waterAtLevel = true;
+                                break;
+                            }
+                        }
+                    }
 
                     // --- Atmosphäre-Persistenz ---
                     r.setCelLevels(7);
@@ -17993,7 +18047,10 @@ function startSaveServer() {
                 check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
                 check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
                 check("V8.28 D: state.waterPlane existiert (THREE.Mesh)", v828Results.waterPlaneExists);
-                check("V8.28 D: Wasser-Plane liegt auf waterLevel", v828Results.waterAtLevel);
+                check(
+                    "V9.49-b: das vereinte Wasser-Mesh trägt einen Ozean-Vertex auf waterLevel",
+                    v828Results.waterAtLevel
+                );
                 check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
             } else {
                 check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
