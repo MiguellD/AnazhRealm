@@ -10092,6 +10092,7 @@ class AnazhRealm {
         const oX = ready ? hydro.originX : 0;
         const oZ = ready ? hydro.originZ : 0;
         const wY = ready ? hydro.water.waterY : null;
+        const tYf = ready ? hydro.water.terrainY : null;
         const wK = ready ? hydro.water.waterKind : null;
         const cl = (v, hi) => (v < 0 ? 0 : v > hi ? hi : v);
         const positions = new Float32Array(NV * NV * 3);
@@ -10104,7 +10105,10 @@ class AnazhRealm {
                 const vIdx = i + j * NV;
                 const vx = ox + i * CELL;
                 const vz = oz + j * CELL;
-                let surfY = waterLevel;
+                // waterSurf = Flut-Oberfläche (stehendes Wasser, See/Ozean
+                // flach gepoolt); terrSurf = Makro-Gelände = das Fluss-Bett.
+                let waterSurf = waterLevel;
+                let terrSurf = waterLevel;
                 let oceanC = 4;
                 let waterC = 4;
                 let fieldWet = true; // Default: Fallback-Meer (keine Hydrosphäre)
@@ -10120,8 +10124,10 @@ class AnazhRealm {
                     const b = cl(i0 + 1, dim - 1) + cl(j0, dim - 1) * dim;
                     const c = cl(i0, dim - 1) + cl(j0 + 1, dim - 1) * dim;
                     const d = cl(i0 + 1, dim - 1) + cl(j0 + 1, dim - 1) * dim;
-                    surfY = (wY[a] * (1 - tx) + wY[b] * tx) * (1 - tz) + (wY[c] * (1 - tx) + wY[d] * tx) * tz;
                     if (inRegion) {
+                        waterSurf = (wY[a] * (1 - tx) + wY[b] * tx) * (1 - tz) + (wY[c] * (1 - tx) + wY[d] * tx) * tz;
+                        terrSurf =
+                            (tYf[a] * (1 - tx) + tYf[b] * tx) * (1 - tz) + (tYf[c] * (1 - tx) + tYf[d] * tx) * tz;
                         oceanC = 0;
                         waterC = 0;
                         const corners = [a, b, c, d];
@@ -10135,22 +10141,25 @@ class AnazhRealm {
                             }
                         }
                         fieldWet = waterC > 0;
-                    } else {
-                        // ausserhalb der Hydrosphären-Region: offener Ozean
-                        surfY = waterLevel;
                     }
+                    // ausserhalb der Region bleiben beide auf waterLevel (Ozean)
                 }
                 positions[vIdx * 3] = vx;
                 positions[vIdx * 3 + 2] = vz;
                 if (fieldWet) {
+                    // stehendes Wasser — die flache Flut-Oberfläche
                     wet[vIdx] = 1;
-                    positions[vIdx * 3 + 1] = surfY;
+                    positions[vIdx * 3 + 1] = waterSurf;
                     aWave[vIdx] = oceanC / 4;
                     aShore[vIdx] = waterC < 4 ? Math.min(1, (4 - waterC) / 4 + 0.15) : 0;
                 } else {
-                    // im Feld trocken — vielleicht ein Fluss-Kanal
+                    // im Feld trocken — der Vertex sitzt auf dem Makro-Gelände:
+                    // so taucht die Wasserkante (Dilatations-Ring) ins Terrain,
+                    // statt an steilen Stellen in der Luft zu schweben. Liegt
+                    // (vx,vz) in einem Fluss-Kanal, fliesst das Wasser dem Bett
+                    // nach (terrSurf), nicht der fast flachen Flut-Oberfläche.
+                    positions[vIdx * 3 + 1] = terrSurf;
                     const seg = ready ? this._unifiedNearestRiverSeg(vx, vz) : null;
-                    positions[vIdx * 3 + 1] = surfY;
                     if (seg) {
                         wet[vIdx] = 1;
                         aFlow[vIdx * 2] = seg.dirX;
@@ -15017,21 +15026,24 @@ class AnazhRealm {
     // Konstruktion eine kontinuierliche Wasser-Oberfläche über die ganze Region
     // (Ozean = waterLevel, See = Füll-Höhe, Land ≈ Surface — der Flut-Pass
     // hebt nur Senken). V9.49 baut daraus EIN spieler-folgendes Höhenfeld-Mesh
-    // statt vier getrennter Wasser-Schichten: `waterY` trägt die Oberfläche je
-    // Zelle, `waterKind` die Klassifikation (0 Land · 1 Ozean · 2 See) für den
-    // vereinten Shader (Gerstner-Wellen am Ozean, still am See). Reine Daten,
-    // headless-prüfbar. `docs/hydrosphere.md` §12.
+    // statt vier getrennter Wasser-Schichten: `waterY` trägt die Flut-Oberfläche
+    // (stehendes Wasser — See/Ozean), `terrainY` die Makro-Gelände-Oberfläche
+    // (das Fluss-Bett — fliessendes Wasser folgt dem Hang, nicht der flachen
+    // Flut, sonst schwebt es an steilen Stellen), `waterKind` die Klassifikation
+    // (0 Land · 1 Ozean · 2 See). Reine Daten. `docs/hydrosphere.md` §12.
     _hydroBuildWaterField(ctx) {
-        const { dim, filled, isOcean, lakeOf } = ctx;
+        const { dim, filled, surf, isOcean, lakeOf } = ctx;
         const n = dim * dim;
         const waterY = new Float32Array(n);
+        const terrainY = new Float32Array(n);
         const waterKind = new Uint8Array(n);
         for (let idx = 0; idx < n; idx++) {
             waterY[idx] = filled[idx];
+            terrainY[idx] = surf[idx];
             if (isOcean[idx]) waterKind[idx] = 1;
             else if (lakeOf[idx] >= 0) waterKind[idx] = 2;
         }
-        return { waterY, waterKind };
+        return { waterY, terrainY, waterKind };
     }
 
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`

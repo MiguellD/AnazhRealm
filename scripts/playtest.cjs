@@ -12665,19 +12665,23 @@ function startSaveServer() {
                     out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
                     // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
                     out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-                    // V9.49-a — das vereinte Wasser-Feld: `filled` als per-Zelle
-                    // Wasser-Oberfläche (`waterY`) + Klassifikation (`waterKind`
-                    // 0 Land · 1 Ozean · 2 See). Die Wahrheit, aus der V9.49 EIN
+                    // V9.49-a — das vereinte Wasser-Feld: `waterY` (Flut-
+                    // Oberfläche, stehendes Wasser) + `terrainY` (Makro-Gelände,
+                    // das Fluss-Bett) + Klassifikation (`waterKind` 0 Land ·
+                    // 1 Ozean · 2 See). Die Wahrheit, aus der V9.49 EIN
                     // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12).
                     const wf = h1.water;
                     out.waterFieldShape =
                         !!wf &&
                         wf.waterY instanceof Float32Array &&
+                        wf.terrainY instanceof Float32Array &&
                         wf.waterKind instanceof Uint8Array &&
                         wf.waterY.length === h1.dim * h1.dim &&
+                        wf.terrainY.length === h1.dim * h1.dim &&
                         wf.waterKind.length === h1.dim * h1.dim;
                     let kindOk = true;
                     let finiteOk = true;
+                    let aboveTerrain = true;
                     let oceanCells = 0;
                     let lakeFieldCells = 0;
                     if (out.waterFieldShape) {
@@ -12687,17 +12691,19 @@ function startSaveServer() {
                             if (k === 1) oceanCells++;
                             else if (k === 2) lakeFieldCells++;
                             if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
+                            if (!Number.isFinite(wf.terrainY[i])) finiteOk = false;
+                            // die Flut liegt nie unter dem Gelände (filled ≥ surf)
+                            if (wf.waterY[i] < wf.terrainY[i] - 0.01) aboveTerrain = false;
                         }
                     }
                     out.waterKindValid = kindOk && finiteOk;
+                    out.waterAboveTerrain = aboveTerrain;
                     out.waterFieldOceanCells = oceanCells;
                     out.waterFieldLakeCells = lakeFieldCells;
                     // das Feld IST das Netz: Ozean-/See-Zell-Zahl deckt sich mit
                     // den Netz-Extraktions-Zählern (eine Quelle, keine Drift).
                     out.waterFieldMatchesNet =
-                        !!h1.stats &&
-                        oceanCells === h1.stats.seaCells &&
-                        lakeFieldCells === h1.stats.lakeCells;
+                        !!h1.stats && oceanCells === h1.stats.seaCells && lakeFieldCells === h1.stats.lakeCells;
                     // Determinismus — das Feld ist so deterministisch wie das Netz.
                     out.waterFieldDeterministic =
                         !!(h2.water && h2.water.waterKind) &&
@@ -12735,12 +12741,13 @@ function startSaveServer() {
                 );
                 check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
                 check(
-                    "Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form",
+                    "Voxel V9.49-a: das vereinte Wasser-Feld {waterY, terrainY, waterKind} hat dim²-Form",
                     hb.waterFieldShape
                 );
+                check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY + terrainY je Zelle endlich", hb.waterKindValid);
                 check(
-                    "Voxel V9.49-a: waterKind ∈ {0,1,2}, jede Zelle trägt eine endliche waterY",
-                    hb.waterKindValid
+                    "Voxel V9.49-a: die Flut-Oberfläche liegt nie unter dem Gelände (waterY ≥ terrainY)",
+                    hb.waterAboveTerrain
                 );
                 check(
                     `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
@@ -12781,9 +12788,7 @@ function startSaveServer() {
                         !!su.uTime;
                     // V9.49-c — Gerstner-Wellen + aWave-Modulation im Shader
                     out.shaderHasGerstner =
-                        !!sm &&
-                        /gerstnerWave/.test(sm.vertexShader || "") &&
-                        /aWave/.test(sm.vertexShader || "");
+                        !!sm && /gerstnerWave/.test(sm.vertexShader || "") && /aWave/.test(sm.vertexShader || "");
                     // V9.49-c — depthWrite an (keine durchscheinenden Sheets)
                     out.depthWriteOn = !!sm && sm.depthWrite === true;
                     const hydro = r.state.hydrosphere;
@@ -12798,8 +12803,7 @@ function startSaveServer() {
                     out.meshesArray = Array.isArray(meshes);
                     // V9.49-b — hydrosphereMeshes trägt NUR Wasserfälle
                     out.onlyWaterfalls =
-                        out.meshesArray &&
-                        meshes.every((m) => m.userData && m.userData.hydroKind === "waterfall");
+                        out.meshesArray && meshes.every((m) => m.userData && m.userData.hydroKind === "waterfall");
                     out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length;
                     out.fallsUseWaterfallMat =
                         out.meshesArray &&
@@ -12928,10 +12932,7 @@ function startSaveServer() {
                     hc.unifiedHasAttrs && hc.unifiedHasQuads
                 );
                 check("Voxel V9.49-b: aWave ist je Vertex in [0,1]", hc.unifiedWaveValid);
-                check(
-                    "Voxel V9.49-b: das vereinte Mesh deckt den Ozean (Vertices mit aWave ≈ 1)",
-                    hc.unifiedHasOcean
-                );
+                check("Voxel V9.49-b: das vereinte Mesh deckt den Ozean (Vertices mit aWave ≈ 1)", hc.unifiedHasOcean);
                 check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
                 check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
                 check("Voxel V9.49-b: _tickUnifiedWater baut das Mesh bei einem Zell-Wechsel neu", hc.tickRebuilds);
@@ -12949,9 +12950,7 @@ function startSaveServer() {
                     const out = {};
                     const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
                     out.shaderHasShore =
-                        !!sm &&
-                        /aShore/.test(sm.vertexShader || "") &&
-                        /vShore/.test(sm.fragmentShader || "");
+                        !!sm && /aShore/.test(sm.vertexShader || "") && /vShore/.test(sm.fragmentShader || "");
                     out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
                     out.shaderHasCrest = !!sm && /crest/.test(sm.fragmentShader || "");
                     const hydro = r.state.hydrosphere;
@@ -13004,10 +13003,7 @@ function startSaveServer() {
 
             if (voxelV948Results && !voxelV948Results.error) {
                 const h = voxelV948Results;
-                check(
-                    "Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)",
-                    h.shaderHasShore
-                );
+                check("Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
                 check(
                     "Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)",
                     h.shaderScaledScroll

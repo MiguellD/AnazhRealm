@@ -560,11 +560,12 @@ Ein einziges, spieler-folgendes Höhenfeld-Mesh ersetzt die Meeres-Plane + alle 
   `Wy`, trockene werden ausgelassen → das Mesh trägt nur Wasser. Beide Abfragen sind
   billig (O(1)-Bilinear + Makro-Surface ein paar Noise-Calls) → der Rebuild bei jeder
   Zell-Kreuzung des Spielers kostet nichts. **Kein** `_voxelSurfaceY`-Vollscan.
-- **Der Fluss entsteht von selbst**: der V9.43-d-Carve hat schon einen echten Kanal in
-  der hydraulischen √A-Breite gegraben. Das Höhenfeld senkt sich in diesen Kanal — der
-  Fluss IST das Feld, das in eine gecarvte Rinne taucht. Die Fluss-Breite kommt aus dem
-  Carve (fein, mäandernd — der `riverBuckets`-Index folgt der Polylinie), die Oberfläche
-  aus `filled` (glatt). Kein 16-m-Klotz-Fluss, keine Ribbon-Naht.
+- **Der Fluss folgt seinem Bett**: die Fluss-Zellen kommen aus dem `riverBuckets`-
+  Polylinien-Index (fein, mäandernd — Distanz ≤ halbe Fluss-Breite). Die Oberfläche eines
+  Fluss-Vertex ist `terrainY` (das Makro-Gelände), NICHT `filled` — fliessendes Wasser
+  hugt den Hang, sonst schwebt es an steilen Stellen (der Priority-Flood hält `filled`
+  fast flach, V9.49-d). Der V9.43-d-Carve hat die echte Rinne in hydraulischer √A-Breite
+  gegraben; das Wasser bei `terrainY` füllt sie. Kein 16-m-Klotz-Fluss, keine Ribbon-Naht.
 - **Keine Nähte mehr**: ein Höhenfeld kann sich nicht selbst überlappen. Das „Sheets
   übereinander" ist *strukturell* weg — nicht mit depthWrite überdeckt.
 - **Der ferne See rendert**: das Mesh ist feld-getrieben und folgt dem Spieler — wo immer
@@ -609,14 +610,19 @@ Playtest-Invarianten (`_buildWaterPlane`-Existenz/-Höhe). Bewusst eng.
 
 ```
 state.hydrosphere.water = {
-  waterY:   Float32Array(dim*dim),   // Wasser-Oberfläche je Zelle (= filled, wo nass)
-  waterKind: Uint8Array(dim*dim),    // 0 trocken · 1 Ozean · 2 See
+  waterY:   Float32Array(dim*dim),   // Flut-Oberfläche je Zelle (= filled) — stehendes Wasser
+  terrainY: Float32Array(dim*dim),   // Makro-Gelände je Zelle (= surf) — das Fluss-Bett
+  waterKind: Uint8Array(dim*dim),    // 0 Land · 1 Ozean · 2 See
 }
 ```
 
 Aus `ctx` der bestehenden Berechnung: `waterKind` aus `isOcean`/`lakeOf`, `waterY` aus
-`filled` (Ozean → `waterLevel`, See → `lake.level`). Rein deterministisch, headless-
-prüfbar — wie das ganze restliche Hydrosphären-Feld nicht im Save persistiert.
+`filled` (Ozean → `waterLevel`, See → `lake.level`), `terrainY` aus der geblurrten
+Makro-Surface `surf`. Rein deterministisch, headless-prüfbar — wie das ganze restliche
+Hydrosphären-Feld nicht im Save persistiert. **Warum zwei Höhen** (V9.49-d): stehendes
+Wasser (See/Ozean) sitzt auf `waterY` — flach gepoolt; fliessendes Wasser (Fluss) +
+die Ufer-Kante folgen `terrainY` — sonst schwebt ein Fluss an steilen Hängen, weil der
+Priority-Flood `filled` fast flach hält (nur ε-Gefälle), das Gelände aber steil fällt.
 
 ### 12.8 Die Wellen-Schneidung
 
@@ -664,7 +670,13 @@ die Fluss-Breite kommt aus derselben Polylinie, die auch der Carve nutzt; die Wa
 Oberfläche aus dem Feld (`waterY` = `filled`). Ein Mesh, ein Shader, kein Stapeln —
 das Vision-Ziel ist erreicht, nur der Weg zur Fluss-Maske ist ein anderer als skizziert.
 
-**Offen**: der Schöpfer-Browser-Audit. Zu prüfen — liest sich das Wasser als EIN
-Körper; schliessen Fluss-Mündung + Küste nahtlos; tuckt die Wasserlinie sauber unters
-opake Ufer-Terrain; sind Headwater-Bäche bei 3-m-Raster fein genug; wirkt der Wasserfall
-an Ober- + Unterkante angeschlossen. Befunde → eine etwaige V9.49-Politur-Welle.
+**V9.49-d — erster Browser-Audit (Schöpfer, 22.05.2026).** Befund: „deutlich besser",
+aber an steilen Stellen schwebt die Fluss-Oberfläche/-kante in der Luft statt am Terrain.
+Wurzel: ein Fluss-Vertex sass auf `waterY` (= `filled`, der fast flachen Flut-Oberfläche
+— der Priority-Flood erlaubt nur ε-Gefälle je Zelle). An einem steilen Hang fällt das
+Gelände schnell, `filled` nicht → die Wasserfläche schwebt. Fix: `_hydroBuildWaterField`
+hebt zusätzlich `terrainY` (das Makro-Gelände); `_buildUnifiedWaterGeometry` setzt
+See/Ozean-Vertices auf `waterY` (flach gepoolt), Fluss-Vertices + den trockenen
+Dilatations-Ring auf `terrainY` → der Fluss folgt dem Hang, die Ufer-Kante taucht ins
+Terrain. +1 Invariante (`waterY ≥ terrainY`). Das ist exakt, was das alte Fluss-Ribbon
+mit `_voxelSurfaceY` tat — nur feld-getrieben + billig. Ein zweiter Audit-Befund → V9.49-e.
