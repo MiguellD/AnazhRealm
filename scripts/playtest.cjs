@@ -12744,16 +12744,39 @@ function startSaveServer() {
                     const hydro = r.state.hydrosphere;
                     out.hydroReady = !!(hydro && hydro.ready);
                     if (!out.hasWaterLevelAt || !out.hydroReady) return out;
-                    // _hydroWaterLevelAt: über einer See-Zelle → der See-Level.
+                    // _hydroWaterLevelAt: über einer GERENDERTEN See-Zelle → der
+                    // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
+                    // zählen nicht — die Meeres-Plane vertritt sie.
                     out.lakeLevelOk = true;
-                    if (hydro.lakes.length > 0 && hydro.lakes[0].cells.length > 0) {
-                        const lk = hydro.lakes[0];
-                        const cellIdx = lk.cells[0];
+                    out.ringFollowsPlane = true;
+                    const wlT = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+                    const renderedLk = hydro.lakes.find(
+                        (l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0
+                    );
+                    if (renderedLk) {
+                        const cellIdx = renderedLk.cells[0];
                         const ci = cellIdx % hydro.dim;
                         const cj = (cellIdx / hydro.dim) | 0;
                         const wx = hydro.originX + (ci + 0.5) * hydro.cell;
                         const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                        out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - lk.level) < 0.01;
+                        out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+                        // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
+                        // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
+                        // einen See-Wasserspiegel, nicht den Meeresspiegel.
+                        const cellsSet = new Set(renderedLk.cells);
+                        let ringChecked = false;
+                        for (let dj = -1; dj <= 1 && !ringChecked; dj++) {
+                            for (let di = -1; di <= 1 && !ringChecked; di++) {
+                                const ni = ci + di;
+                                const nj = cj + dj;
+                                if (ni < 0 || nj < 0 || ni >= hydro.dim || nj >= hydro.dim) continue;
+                                if (cellsSet.has(ni + nj * hydro.dim)) continue;
+                                const rx = hydro.originX + (ni + 0.5) * hydro.cell;
+                                const rz = hydro.originZ + (nj + 0.5) * hydro.cell;
+                                out.ringFollowsPlane = r._hydroWaterLevelAt(rx, rz) > wlT + 1.5;
+                                ringChecked = true;
+                            }
+                        }
                     }
                     // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
                     out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
@@ -12789,6 +12812,10 @@ function startSaveServer() {
                 check(
                     "Voxel V9.43-c.2: _hydroWaterLevelAt liefert über einer See-Zelle den See-Füllstand",
                     h2.lakeLevelOk
+                );
+                check(
+                    "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
+                    h2.ringFollowsPlane
                 );
                 check(
                     "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",

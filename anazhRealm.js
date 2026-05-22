@@ -15354,14 +15354,16 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = [];
     }
 
-    // V9.43-c.2 — der effektive Wasserspiegel an einer xz-Welt-Position:
-    // liegt (x,z) über einer See-Zelle, ist es der See-Füllstand
-    // (`lake.level`); sonst der globale Meeresspiegel (`state.waterLevel`).
-    // Die Physik-Schleife nutzt das, damit der Spieler in einem See genauso
-    // schwimmt wie im Meer — die Hydrosphäre ist EIN Wasser-System mit dem
-    // Meer (Schöpfer-Befund V9.43-c: „nicht synergetisch"). O(Seen) +ein
-    // `.includes` nur für den einen See, dessen bbox (x,z) umschliesst — pro
-    // Frame vernachlässigbar.
+    // V9.43-c.2 / V9.45-c — der effektive Wasserspiegel an einer xz-Welt-
+    // Position: liegt (x,z) über einer GERENDERTEN See-Wasserfläche, ist es
+    // der See-Füllstand (`lake.level`); sonst der globale Meeresspiegel
+    // (`state.waterLevel`). Die Physik-Schleife nutzt das, damit der Spieler
+    // im See genauso schwimmt wie im Meer — die Hydrosphäre ist EIN Wasser-
+    // System mit dem Meer. V9.45-c koppelt das an die SICHTBARE See-Plane:
+    // (1) `lakeNear` (1-Ring-Maske der gerenderten Seen) ist der O(1)-Early-
+    // Out + deckt exakt die Region, die `_buildLakeMesh` mit Wasser deckt;
+    // (2) absorbierte Seen (`level ≤ waterLevel+2`, ohne eigene Plane) zählen
+    // nicht — die Meeres-Plane vertritt sie. Sonst klafften Optik + Physik.
     _hydroWaterLevelAt(x, z) {
         const base = typeof this.state.waterLevel === "number" ? this.state.waterLevel : null;
         const hydro = this.state.hydrosphere;
@@ -15371,12 +15373,31 @@ class AnazhRealm {
         const j = Math.floor((z - originZ) / cell);
         if (i < 0 || j < 0 || i >= dim || j >= dim) return base;
         const idx = i + j * dim;
+        // Early-Out: `lakeNear` ist 1 nur in der See-Zellen+1-Ring-Region der
+        // gerenderten Seen — exakt, was `_buildLakeMesh` mit Wasser deckt.
+        if (hydro.lakeNear && !hydro.lakeNear[idx]) return base;
+        const wl = base != null ? base : -Infinity;
         for (const lake of hydro.lakes) {
+            if (lake.level <= wl + 2) continue; // absorbiert — die Meeres-Plane deckt ihn
             const b = lake.bbox;
-            if (!b || x < b.minX - cell || x > b.maxX + cell || z < b.minZ - cell || z > b.maxZ + cell) {
+            if (
+                !b ||
+                x < b.minX - 2 * cell ||
+                x > b.maxX + 2 * cell ||
+                z < b.minZ - 2 * cell ||
+                z > b.maxZ + 2 * cell
+            ) {
                 continue;
             }
-            if (Array.isArray(lake.cells) && lake.cells.includes(idx)) return lake.level;
+            const cells = lake.cells;
+            if (!Array.isArray(cells)) continue;
+            // die See-Plane deckt die See-Zellen + 1-Ring → der Auftrieb
+            // folgt derselben dilatierten Region (Optik == Physik).
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    if (cells.includes(i + di + (j + dj) * dim)) return lake.level;
+                }
+            }
         }
         return base;
     }
