@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — der Plan
 
-Stand: V9.47 (22.05.2026). Diese Doc trägt den **Plan vorwärts** — die Ring-Übersicht 0-17, was offen ist, die Meilenstein- und Risiko-Sicht. Die anderen Zeit-Ebenen: der aktuelle Stand + die Gotchas in `CLAUDE.md`, die volle Wellen-Chronik in `docs/handover.md`, die Vision in `docs/state-of-realm.md`.
+Stand: V9.48 (22.05.2026). Diese Doc trägt den **Plan vorwärts** — die Ring-Übersicht 0-17, was offen ist, die Meilenstein- und Risiko-Sicht. Die anderen Zeit-Ebenen: der aktuelle Stand + die Gotchas in `CLAUDE.md`, die volle Wellen-Chronik in `docs/handover.md`, die Vision in `docs/state-of-realm.md`.
 
 Aufwandsschätzungen in §3 sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase (linear, ohne Puffer). Diese Roadmap ist ein lebendes Dokument — nach jedem Ring-Abschluss aktualisiert; Pfeile zwischen Ringen sind weiche Abhängigkeiten.
 
@@ -14,7 +14,7 @@ Alle fünf Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) st
 
 **Offen / benannt:**
 
-- **Gelände-Relief + Wasser-Schliff** — V9.45-a..c erledigt: Domain-Warp + Erosions-Feld gegen monotones Gelände, die Seebecken als wasserdichte flache Töpfe (kein zwei-Schichten-Wasser mehr), Auftrieb an die sichtbare See-Plane gekoppelt. Offen bleibt nur kosmetische Mikro-Politur (See-Ufer-Schaum, Flow-Speed nach Gefälle — `docs/hydrosphere.md` §9). Kein eigener Bogen, eine optionale Nicety.
+- **Gelände-Relief + Wasser-Schliff** — V9.45-a..c erledigt: Domain-Warp + Erosions-Feld gegen monotones Gelände, die Seebecken als wasserdichte flache Töpfe (kein zwei-Schichten-Wasser mehr), Auftrieb an die sichtbare See-Plane gekoppelt. V9.48 schloss die letzte kosmetische Mikro-Politur (See-Ufer-Schaum + Flow-Speed nach Gefälle — `docs/hydrosphere.md` §9). Der Wasser-Bogen ist damit kosmetisch vollständig.
 - **Ein vereintes Wasser-System** — heute ist das Meer eine getrennte globale 900×900-Plane, Seen sind separate Meshes, die sich per Vertrag (`bedY ≥ waterLevel`) nicht überlappen dürfen. Echte Synergie wäre EIN Wasser-Konzept (ein Wasserkörper-Modell statt „globale Platte + Ausnahmen"). Folgen heute ehrlich benannt: ein absorbierter See > ~450 m vom Ursprung rendert trocken (die Meeres-Plane reicht nicht so weit). Ein eigener Architektur-Bogen, nicht terminiert (V9.45-c-Reflexion).
 - **Hydrosphäre-Netz-Qualität** — V9.46 erledigte die Netz-VERBINDUNG (Flüsse durch Seen hindurch — `hydrosphere.md` §10a); V9.47 die Netz-CHARAKTERISTIK via fluviale Stream-Power-Erosion (`_computeErosion` carvt dendritische Tal-Netze, halbiert die See-Fläche, bewahrt die Gipfel — §10b). Offen-ehrlich: die fluviale Inzision leert ein breites Becken nicht restlos (der Becken-Boden bleibt ein kleinerer See — geomorphologisch korrekt). Restlose Becken-Leerung bräuchte laterale Becken-Erosion oder Deposition-Fill — ein optionaler eigener Schritt, nicht terminiert.
 - **B-WASM** — ein Rust→WASM-Server in einem Peer-Tab (der letzte offene Punkt des Fremd-Engine-Bogens W17; bewusst per-Projekt, kein Auto-Pfad).

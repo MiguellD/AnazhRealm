@@ -15712,6 +15712,53 @@ class AnazhRealm {
         return base;
     }
 
+    // V9.48 — das Ufer-Schaum-Feld einer See-Plane: je gedeckter Zelle ein
+    // Schaum-Wert ∈ [0,1], hoch an der Wasserlinie (dem Rand der echten
+    // See-Zellen), fallend ins offene Wasser. Multi-Source-BFS: die Ring-
+    // Zellen (gedeckt, aber keine echte See-Zelle — sie liegen unter dem
+    // ansteigenden Ufer) sind die Distanz-0-Quellen, die Distanz wächst ins
+    // Becken hinein. `_buildLakeMesh` mittelt das Zell-Feld auf die Quad-
+    // Ecken → ein weiches Band statt einer Zell-Treppe.
+    _lakeShoreFoamField(lake, covered, dim) {
+        const lakeCells = new Set(lake.cells);
+        const dist = new Map();
+        let frontier = [];
+        for (const k of covered) {
+            if (!lakeCells.has(k)) {
+                dist.set(k, 0);
+                frontier.push(k);
+            }
+        }
+        for (let d = 0; frontier.length; d++) {
+            const next = [];
+            for (const k of frontier) {
+                const ci = k % dim;
+                const cj = (k / dim) | 0;
+                const nb = [
+                    [ci + 1, cj],
+                    [ci - 1, cj],
+                    [ci, cj + 1],
+                    [ci, cj - 1],
+                ];
+                for (const [ni, nj] of nb) {
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nk = ni + nj * dim;
+                    if (covered.has(nk) && !dist.has(nk)) {
+                        dist.set(nk, d + 1);
+                        next.push(nk);
+                    }
+                }
+            }
+            frontier = next;
+        }
+        const foam = new Map();
+        for (const k of covered) {
+            const d = dist.has(k) ? dist.get(k) : 99;
+            foam.set(k, Math.max(0, Math.min(1, 1.3 - d * 0.5)));
+        }
+        return foam;
+    }
+
     // V9.45-b — eine See-Plane: ein Quad je gedeckter Zelle, flach auf der
     // Füll-Höhe (`lake.level`). Gedeckt sind die echten See-Zellen PLUS ein
     // 1-Zellen-Ring — die Plane schiebt sich unter das ansteigende Ufer-
@@ -15719,7 +15766,9 @@ class AnazhRealm {
     // der Luft schwebender Rand, kein Ufer-im-Boden-Klaffen mehr). Ein See ≤
     // waterLevel+2 ist faktisch Meeresspiegel — die Meeres-Plane deckt ihn,
     // hier KEINE eigene Plane (sonst zwei Wasser-Ebenen übereinander). Jeder
-    // Vertex trägt `aFlow=(0,0)` → stilles Wasser (kein Flow-Scroll).
+    // Vertex trägt `aFlow=(0,0)` → stilles Wasser (kein Flow-Scroll) + ein
+    // `aShore` ∈ [0,1] (V9.48) — der Ufer-Schaum-Wert, hoch an der
+    // Wasserlinie, 0 im offenen See.
     _buildLakeMesh(hydro, lake, mat) {
         if (!Array.isArray(lake.cells) || lake.cells.length === 0) return null;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : -Infinity;
@@ -15742,9 +15791,31 @@ class AnazhRealm {
                 }
             }
         }
+        // V9.48 — Ufer-Schaum: das Zell-Schaum-Feld auf die Quad-Ecken
+        // mitteln (jede Ecke teilt bis zu 4 Zellen) → ein weiches Band
+        // statt einer Zell-Treppe.
+        const shoreFoam = this._lakeShoreFoamField(lake, covered, dim);
+        const cornerFoam = (gi, gj) => {
+            let sum = 0;
+            let cnt = 0;
+            for (let dj = -1; dj <= 0; dj++) {
+                for (let di = -1; di <= 0; di++) {
+                    const ci = gi + di;
+                    const cj = gj + dj;
+                    if (ci < 0 || cj < 0 || ci >= dim || cj >= dim) continue;
+                    const k = ci + cj * dim;
+                    if (covered.has(k)) {
+                        sum += shoreFoam.get(k);
+                        cnt++;
+                    }
+                }
+            }
+            return cnt > 0 ? sum / cnt : 0;
+        };
         const positions = [];
         const uvs = [];
         const flow = [];
+        const shore = [];
         const indices = [];
         let vi = 0;
         for (const idx of covered) {
@@ -15768,6 +15839,7 @@ class AnazhRealm {
             );
             uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
             flow.push(0, 0, 0, 0, 0, 0, 0, 0);
+            shore.push(cornerFoam(i, j), cornerFoam(i + 1, j), cornerFoam(i + 1, j + 1), cornerFoam(i, j + 1));
             indices.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
             vi += 4;
         }
@@ -15775,6 +15847,7 @@ class AnazhRealm {
         geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
         geo.setAttribute("aFlow", new THREE.Float32BufferAttribute(flow, 2));
+        geo.setAttribute("aShore", new THREE.Float32BufferAttribute(shore, 1));
         geo.setIndex(indices);
         geo.computeVertexNormals();
         const mesh = new THREE.Mesh(geo, mat);
@@ -15792,7 +15865,10 @@ class AnazhRealm {
     // Ribbon sampelt `_voxelSurfaceY` LIVE (nicht den compute-zeitlich
     // gespeicherten, un-gecarvten `point.voxelY`) → es sitzt automatisch in
     // der gecarvten Furche. Jeder Vertex trägt `aFlow` = die Gefälle-Tangente
-    // → der Shader scrollt den Schaum stromab.
+    // → der Shader scrollt den Schaum stromab. V9.48: der BETRAG von `aFlow`
+    // trägt zusätzlich die Flow-Speed nach Gefälle (steiles Segment →
+    // schneller scrollender Schaum) — der Shader liest `length(aFlow)` als
+    // Speed, `aFlow/length` als Richtung. `aShore` ist 0 (Ufer-Schaum nur am See).
     _buildRiverRibbon(river, mat, mouthY) {
         const pts = river.points;
         if (!Array.isArray(pts) || pts.length < 2) return null;
@@ -15857,6 +15933,7 @@ class AnazhRealm {
         const positions = [];
         const uvs = [];
         const flow = [];
+        const shore = [];
         const indices = [];
         let acc = 0;
         const cum = new Float64Array(n);
@@ -15865,6 +15942,32 @@ class AnazhRealm {
             cum[i] = acc;
         }
         const total = acc || 1;
+        // V9.48 — Flow-Speed nach Gefälle: das mittlere Gefälle aus ein- und
+        // ausgehendem Segment (`ry` fällt strikt, `cum` ist die kumulative
+        // Horizontaldistanz) → ein Speed-Faktor ∈ [0.55, 2.2]. Er reist im
+        // BETRAG des `aFlow`-Vektors — ein flacher Lauf scrollt den Schaum
+        // langsam, ein steiles Segment schnell.
+        const speed = new Float64Array(n);
+        for (let i = 0; i < n; i++) {
+            let slopeSum = 0;
+            let segCount = 0;
+            if (i > 0) {
+                const dh = cum[i] - cum[i - 1];
+                if (dh > 0.01) {
+                    slopeSum += (ry[i - 1] - ry[i]) / dh;
+                    segCount++;
+                }
+            }
+            if (i < n - 1) {
+                const dh = cum[i + 1] - cum[i];
+                if (dh > 0.01) {
+                    slopeSum += (ry[i] - ry[i + 1]) / dh;
+                    segCount++;
+                }
+            }
+            const slope = segCount > 0 ? slopeSum / segCount : 0;
+            speed[i] = Math.max(0.55, Math.min(2.2, 0.55 + slope * 3.2));
+        }
         for (let i = 0; i < n; i++) {
             const p = pts[i];
             // perpendikulär zur Flow-Tangente (Flow ist normalisiert).
@@ -15876,7 +15979,10 @@ class AnazhRealm {
             positions.push(p.x - perpX * halfW, y, p.z - perpZ * halfW);
             const v = cum[i] / total;
             uvs.push(0, v, 1, v);
-            flow.push(fx[i], fz[i], fx[i], fz[i]);
+            // der Speed-Faktor moduliert den BETRAG (Richtung bleibt fx/fz).
+            const sp = speed[i];
+            flow.push(fx[i] * sp, fz[i] * sp, fx[i] * sp, fz[i] * sp);
+            shore.push(0, 0);
         }
         for (let i = 0; i + 1 < n; i++) {
             // V9.46 — kein Quad über eine See-Durchquerung: die See-Plane
@@ -15890,6 +15996,7 @@ class AnazhRealm {
         geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
         geo.setAttribute("aFlow", new THREE.Float32BufferAttribute(flow, 2));
+        geo.setAttribute("aShore", new THREE.Float32BufferAttribute(shore, 1));
         geo.setIndex(indices);
         geo.computeVertexNormals();
         const mesh = new THREE.Mesh(geo, mat);
@@ -15950,12 +16057,15 @@ class AnazhRealm {
             },
             vertexShader: `
                 attribute vec2 aFlow;
+                attribute float aShore;
                 varying vec3 vWorldPos;
                 varying vec3 vNormal;
                 varying vec2 vFlow;
+                varying float vShore;
                 varying float vFogDepth;
                 void main() {
                     vFlow = aFlow;
+                    vShore = aShore;
                     vec4 wp = modelMatrix * vec4(position, 1.0);
                     vWorldPos = wp.xyz;
                     // V8.44 — Welt-Raum-Normale (Beleuchtung wandert nicht mit
@@ -15981,6 +16091,7 @@ class AnazhRealm {
                 varying vec3 vWorldPos;
                 varying vec3 vNormal;
                 varying vec2 vFlow;
+                varying float vShore;
                 varying float vFogDepth;
                 float hash(vec2 p) {
                     return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
@@ -16008,16 +16119,29 @@ class AnazhRealm {
                     float fmag = length(vFlow);
                     float foam;
                     if (fmag > 0.01) {
+                        // V9.48 — der Betrag von aFlow trägt die Flow-Speed
+                        // nach Gefälle: ein steileres Segment scrollt schneller.
                         vec2 fdir = vFlow / fmag;
                         vec2 perp = vec2(-fdir.y, fdir.x);
                         float along = dot(xz, fdir);
                         float across = dot(xz, perp);
-                        float s = vnoise(vec2(across * 0.55, along * 0.13 - uTime * uFlowSpeed));
-                        s += 0.5 * vnoise(vec2(across * 1.2, along * 0.32 - uTime * uFlowSpeed * 1.7));
+                        float scroll = uTime * uFlowSpeed * fmag;
+                        float s = vnoise(vec2(across * 0.55, along * 0.13 - scroll));
+                        s += 0.5 * vnoise(vec2(across * 1.2, along * 0.32 - scroll * 1.7));
                         foam = clamp((s / 1.5 - 0.42) * 2.4, 0.0, 1.0);
                     } else {
                         float rip = vnoise(xz * 0.13 + uTime * 0.05);
                         foam = clamp((rip - 0.74) * 2.6, 0.0, 1.0) * 0.5;
+                        // V9.48 — Ufer-Schaum: ein lebendiges, wellen-
+                        // pulsierendes Schaum-Band am See-Rand (vShore: 1 an
+                        // der Wasserlinie, 0 im offenen See).
+                        float band = smoothstep(0.04, 0.9, vShore);
+                        float sn = vnoise(xz * 0.34 + uTime * 0.15)
+                            + 0.5 * vnoise(xz * 0.82 - uTime * 0.21);
+                        sn /= 1.5;
+                        float lap = 0.62 + 0.38 * sin(uTime * 0.7 + (xz.x + xz.y) * 0.07);
+                        float shoreFoam = clamp(band * (0.4 + 0.9 * sn) * lap, 0.0, 1.0);
+                        foam = max(foam, shoreFoam);
                     }
                     col = mix(col, uFoam, foam * 0.7);
                     col *= uLight;

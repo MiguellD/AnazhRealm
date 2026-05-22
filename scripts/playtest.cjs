@@ -12846,6 +12846,92 @@ function startSaveServer() {
                 check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
             }
 
+            // ### Voxel V9.48 — Hydrosphäre-Politur ###
+            // See-Ufer-Schaum (`aShore`-Attribut + Shader-Band an der
+            // Wasserlinie) + Flow-Speed nach Gefälle (der Betrag von `aFlow`
+            // trägt die Geschwindigkeit — steiles Fluss-Segment scrollt
+            // schneller). Die letzte kosmetische Naht des Wasser-Bogens.
+            const voxelV948Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    out.hasShoreField = typeof r._lakeShoreFoamField === "function";
+                    const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+                    out.shaderHasShore =
+                        !!sm &&
+                        /aShore/.test(sm.vertexShader || "") &&
+                        /vShore/.test(sm.fragmentShader || "");
+                    out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
+                    const hydro = r.state.hydrosphere;
+                    out.hydroReady = !!(hydro && hydro.ready);
+                    if (!out.hydroReady) return out;
+                    r._buildHydrosphereMeshes();
+                    const meshes = r.state.hydrosphereMeshes || [];
+                    const lakes = meshes.filter((m) => m.userData && m.userData.hydroKind === "lake");
+                    const rivers = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
+                    // (1) See- + Fluss-Meshes tragen das aShore-Attribut
+                    out.lakesHaveShore = lakes.every((m) => !!(m.geometry && m.geometry.attributes.aShore));
+                    out.riversHaveShore = rivers.every((m) => !!(m.geometry && m.geometry.attributes.aShore));
+                    // (2) aShore ist je Wert in [0,1]; eine See-Plane trägt ein Band (>0)
+                    let shoreInRange = true;
+                    let lakeHasFoamBand = lakes.length === 0;
+                    for (const m of lakes) {
+                        const a = m.geometry.attributes.aShore.array;
+                        for (let k = 0; k < a.length; k++) {
+                            if (a[k] < -0.001 || a[k] > 1.001) shoreInRange = false;
+                            if (a[k] > 0.2) lakeHasFoamBand = true;
+                        }
+                    }
+                    out.shoreInRange = shoreInRange;
+                    out.lakeHasFoamBand = lakeHasFoamBand;
+                    // (3) Fluss-aShore ist überall 0 (Ufer-Schaum nur am See)
+                    out.riverShoreZero = rivers.every((m) => {
+                        const a = m.geometry.attributes.aShore.array;
+                        for (let k = 0; k < a.length; k++) if (a[k] !== 0) return false;
+                        return true;
+                    });
+                    // (4) der Betrag von aFlow trägt die Speed: jeder Fluss-
+                    // Vertex liegt im [0.55, 2.2]-Band, und er variiert nach Gefälle
+                    let speedInRange = true;
+                    let minMag = Infinity;
+                    let maxMag = -Infinity;
+                    for (const m of rivers) {
+                        const f = m.geometry.attributes.aFlow.array;
+                        for (let k = 0; k + 1 < f.length; k += 2) {
+                            const mag = Math.hypot(f[k], f[k + 1]);
+                            if (mag < 0.54 || mag > 2.21) speedInRange = false;
+                            if (mag < minMag) minMag = mag;
+                            if (mag > maxMag) maxMag = mag;
+                        }
+                    }
+                    out.speedInRange = speedInRange;
+                    out.speedVaries = rivers.length === 0 ? true : maxMag - minMag > 0.02;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+
+            if (voxelV948Results && !voxelV948Results.error) {
+                const h = voxelV948Results;
+                check("Voxel V9.48: _lakeShoreFoamField existiert (Ufer-Schaum-Feld)", h.hasShoreField);
+                check("Voxel V9.48: das Wasser-Material verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
+                check(
+                    "Voxel V9.48: der Fluss-Schaum scrollt nach Gefälle (uFlowSpeed * fmag)",
+                    h.shaderScaledScroll
+                );
+                if (h.hydroReady) {
+                    check(
+                        "Voxel V9.48: See- + Fluss-Meshes tragen das aShore-Attribut",
+                        h.lakesHaveShore && h.riversHaveShore
+                    );
+                    check("Voxel V9.48: aShore ist je Vertex in [0,1]", h.shoreInRange);
+                    check("Voxel V9.48: eine See-Plane trägt ein Ufer-Schaum-Band (aShore > 0)", h.lakeHasFoamBand);
+                    check("Voxel V9.48: der Fluss-aShore ist 0 (Ufer-Schaum nur am See)", h.riverShoreZero);
+                    check("Voxel V9.48: der Betrag von aFlow liegt im Speed-Band [0.55, 2.2]", h.speedInRange);
+                    check("Voxel V9.48: die Flow-Speed variiert nach Gefälle", h.speedVaries);
+                }
+            }
+
             // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
             // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
             // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen

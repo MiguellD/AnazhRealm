@@ -7,10 +7,10 @@ jetzt flach gesculptete, wasserdichte Töpfe (`_hydrosphereLakeAt` statt des V9.
 `lakeCutCell`-Schnitts; siehe §8). **V9.46** heilte die kurzen Flüsse — sie fliessen jetzt
 durch Seen HINDURCH (§10a; längster Fluss 45 m → 1361 m). **V9.47** formt das Gelände
 via fluviale Stream-Power-Erosion um — dendritische Täler, halbierte See-Fläche, die
-Gipfel erhalten (§10b). Schöpfer-Wahl war: **volles
+Gipfel erhalten (§10b). **V9.48** schloss die zwei kosmetischen Politur-Reste —
+See-Ufer-Schaum + Flow-Speed nach Gefälle (§9). Schöpfer-Wahl war: **volles
 Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
-Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: zwei kosmetische
-Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e) + die tiefere
+Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen nur noch die tiefere
 Netz-CHARAKTERISTIK-Frage (die Welt ist see-dominant — §10b). Die kanonische Versions-
 Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md` §3.
 Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
@@ -392,8 +392,34 @@ Time` ≈ 0; im echten Spiel harmlos, aber der Test fing es). Fix: `-Infinity` a
 
 **Ehrliche Rest-Naht** (kosmetisch, kein eigener Bogen): die Fluss-Mündung blendet seit
 V9.43-c.2 schon sichtbar ins Meer; See-Ufer-Schaum + eine Flow-Speed-Feinabstimmung nach
-Gefälle bleiben als optionale visuelle Mikro-Politur offen — die Hydrosphäre ist
-funktional + sensorisch vollständig.
+Gefälle blieben als optionale visuelle Mikro-Politur offen — ✅ **V9.48 geschlossen**
+(siehe unten). Die Hydrosphäre ist funktional + sensorisch vollständig.
+
+### V9.48 — kosmetische Politur ✅ (22.05.2026)
+Die zwei seit V9.43-e benannten Mikro-Politur-Reste, geschlossen — kein eigener Bogen,
+eine Nicety.
+
+**(1) See-Ufer-Schaum.** `_lakeShoreFoamField` baut per Multi-Source-BFS ein Zell-
+Distanz-Feld: die Ring-Zellen (gedeckt, aber keine echte See-Zelle — sie liegen unter
+dem ansteigenden Ufer) sind die Distanz-0-Quellen, die Distanz wächst ins Becken hinein,
+ein Schaum-Wert ∈ [0,1] fällt mit der Distanz (`1.3 − d·0.5`, geclamped). `_buildLakeMesh`
+mittelt das Zell-Feld auf die Quad-Ecken (jede Ecke teilt bis zu 4 Zellen → ein weiches
+Band statt einer Zell-Treppe) und schreibt es ins neue `aShore`-Vertex-Attribut. Der
+Shader rendert in seinem Stilles-Wasser-Zweig ein wellen-pulsierendes Schaum-Band:
+animiertes Welt-Raum-Noise × einem langsamen `sin`-Lap-Puls, auf das `aShore`-Band
+(`smoothstep`) geclamped.
+
+**(2) Flow-Speed nach Gefälle.** `_buildRiverRibbon` rechnet je Fluss-Punkt das mittlere
+Gefälle (aus dem geglätteten strikt-fallenden `ry` und der kumulativen Horizontaldistanz
+`cum`) in einen Speed-Faktor ∈ [0.55, 2.2] (`0.55 + slope·3.2`, geclamped). Der Faktor
+reist im **Betrag** des `aFlow`-Vektors — kein neues Attribut nötig: der Shader liest
+`length(aFlow)` als Speed (`scroll = uTime · uFlowSpeed · fmag`), `aFlow/length` als
+Richtung. Ein steiles Segment scrollt den Schaum sichtbar schneller als ein flacher Lauf.
+
+**Geteilte-Material-Disziplin**: `_ensureHydroSurfaceMaterial` speist See-Plane UND
+Fluss-Ribbon. Das `aShore`-Attribut sitzt auf beiden — am Ribbon explizit 0 (Ufer-Schaum
+nur am See) — sonst läse der ShaderMaterial bei der einen Geometrie Müll. 9 Invarianten
+grün, Audit-Strict 0 Failures.
 
 ---
 
@@ -416,8 +442,8 @@ funktional + sensorisch vollständig.
   Worldgen. Der Carve-Term in `_terrainDensityAt` MUSS O(1) sein (Bucket-Index) — wird
   millionenfach gerufen. Perf-Invariante in V9.43-b + V9.43-d.
 - **Naht zum Meer.** Fluss-Mündungen blenden seit V9.43-c.2 sichtbar auf `waterLevel`
-  (bzw. den Ziel-See-Level) aus — der Fluss erreicht sein Wasser. Feinpolitur (Ufer-
-  Schaum an der Mündung, Flow-Speed-Übergang) bleibt V9.43-e.
+  (bzw. den Ziel-See-Level) aus — der Fluss erreicht sein Wasser. Die Feinpolitur
+  (See-Ufer-Schaum, Flow-Speed nach Gefälle) ist mit V9.48 geschlossen — siehe §9.
 - **V9.43-a-Ablösung.** Der per-Chunk-Wasserfall-Spawner ist mit V9.43-c abgelöst
   (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls` gelöscht). Das ist kein
   Wegwerfen — das Material + die Plane-Geometrie bleiben (von `_buildHydroWaterfall`
@@ -463,5 +489,7 @@ funktional + sensorisch vollständig.
 
 **Stand**: V9.43-b/c/c.2/d/e sind gebaut — der Hydrosphären-Bogen (Atlas → Rendering →
 Synergie → Carven → Klang) ist abgeschlossen, das Wasser-Ultiversum V9.43 vollständig.
-Offen nur die kosmetische Rest-Naht (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9
-V9.43-e) + die Netz-Qualitäts-Frage (kurze, see-zerstückelte Flüsse — §10) als eigene Welle.
+V9.46 heilte die Netz-VERBINDUNG (§10a), V9.47 die Netz-CHARAKTERISTIK (§10b), V9.48
+schloss die kosmetische Rest-Naht (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9). Der
+Wasser-Bogen ist damit kosmetisch + funktional vollständig; offen nur die in §10b
+benannte Becken-Restleerung als optionaler eigener Schritt.
