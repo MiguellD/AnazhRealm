@@ -873,3 +873,135 @@ nicht, aber der Playtest trennt damit nasse Vertices vom Skirt (der bewusst abta
 allein eine 16-m-Klassifikation + blinde Dilatation bestimmt, ragt über schmale Grate.
 Die Maske braucht je Vertex `macroY` — das ist die „lokale Verfeinerung", die der
 Schöpfer von Anfang an benannte, jetzt am rechten Ort: an der Maske, nicht der Höhe.
+
+---
+
+## 14. Wasser aus der Terrain-Wahrheit (V9.50) — der letzte Ring
+
+**Stand**: geplant (22.05.2026), noch kein Code — Plan zur Durchsicht. Auslöser: der
+Schöpfer-Befund nach V9.49-f — „bei Verengungen, in Bereichen die kleiner und dann
+wieder grösser werden, gibt es noch Probleme … wir bewegen uns im Kreis." Der Befund
+ist richtig. Dieser Abschnitt ist die Antwort — das Ende einer Bug-Klasse, nicht ihr
+nächster Patch.
+
+### 14.1 Warum V9.49-d/e/f kreiste — ehrlich
+
+V9.49-d (Fluss schwebt), -e (Ufer schwebt), -f (Bleed über den Grat), die Verengungen —
+das sind nicht vier Bugs. Es ist EIN Bug, vier Mal, auf vier Auflösungs-Ebenen: **das
+Wasser wird auf einem Modell gerechnet** (16-m-Raster, Makro-Surface — glatt, grob),
+**das gerenderte Terrain ist ein anderes** (Voxel, ±12-m-Crags, gecarvt). Zwei
+Gelände-Wahrheiten; sie decken sich nie — an einer Verengung, wo die Voxel-Wände am
+schärfsten sind, am wenigsten.
+
+§13.1 hat genau das diagnostiziert — „zwei Gelände-Wahrheiten, die sich nie versöhnen".
+Und dann hielten -e und -f BEIDE Wahrheiten. V9.49-e war als „Verfahrenswechsel"
+benannt, wechselte aber nur den Render-Trick (das Wasser taucht unter); das VERFAHREN —
+Wasser als getrenntes Modell — blieb. -e und -f waren Naht-Politur des neuen Verfahrens,
+genau was die V9.47-Lehre verbietet. Der Kreis war: eine korrekt benannte Wurzel nicht
+bis zum Schluss zu denken.
+
+### 14.2 Das Prinzip — das Projekt kennt die Lösung schon
+
+`CLAUDE.md`-Gesetz: **„Visual = Collision per Konstruktion — jeder Chunk hat ein
+Collision-Shape aus EXAKT denselben Triangle-Indices wie seine Geometrie."** Das Terrain
+hat sein Visual-vs-Collision-Problem nicht poliert — es hat beide zu DERSELBEN Geometrie
+gemacht. Deckungsgleich per Konstruktion.
+
+Das Wasser hat ein Visual-vs-Terrain-Problem. Dieselbe Kur: **das Wasser aus DERSELBEN
+Quelle meshen wie das Terrain** — der Voxel-Oberfläche `_voxelSurfaceY`. Dann ist die
+Uferlinie der exakte Schnitt auf der Zell-Ebene des Terrains. Schweben, Bleed,
+Schnitt-Splitter, Verengungs-Bugs sind dann nicht geheilt — sie sind strukturell
+unmöglich.
+
+### 14.3 Was bleibt — bewusst eng
+
+- **Die Hydrosphäre** (`_computeHydrosphere` — Drainage-Netz, Seen, Flüsse, Ozean-Maske,
+  Carve, Erosion). Sie ist das **Wasser-Level-Feld**: WO Wasser ist + auf welcher Höhe.
+  Reine Daten, deterministisch. Unangetastet.
+- **Der Wasser-Shader** (`_ensureHydroSurfaceMaterial` — Gerstner/Flow/Schaum,
+  welt-verankert). Je Chunk-Wasser-Mesh wiederverwendet.
+- **Der Wasserfall** — die vertikale Ausnahme. Unverändert.
+- **Die Auftrieb-Physik** (`_hydroWaterLevelAt`, `state.waterLevel`). Liest Daten, kein
+  Mesh. Unangetastet.
+
+V9.50 fasst NUR das Wasser-Oberflächen-MESH an.
+
+### 14.4 Das Wasser-Level-Feld — `_waterLevelAt(x, z)`
+
+Eine Funktion bündelt „welches Wasser deckt (x,z), auf welcher Höhe": Ozean →
+`waterLevel`; See → `lake.level`; Fluss → das Fluss-Oberflächen-Profil (Bett + flache
+Tiefe, entlang der Polylinie interpoliert); sonst → trocken. Ein dünner Leser über
+`hydrosphere.water` + `riverBuckets`. Deterministisch, headless-prüfbar.
+
+### 14.5 Weg B (empfohlen) — Wasser im Voxel-Chunk-Pipeline
+
+Beim Chunk-Bau (`_ensureVoxelChunkAt`) entsteht — geschwisterlich zu
+`_buildVoxelChunkGrass` — ein Wasser-Mesh DES Chunks: je Chunk-Zelle, wo
+`_voxelSurfaceY(zelle) < _waterLevelAt(zelle)`, ein Quad auf `_waterLevelAt`. Die
+Geometrie kommt aus DERSELBEN Voxel-Oberfläche, die der Chunk gerade gemesht hat. Das
+Wasser-Mesh lebt im Chunk-`entry` (`entry.waterMesh`), `_disposeVoxelChunk` räumt es
+mit. Geteiltes Shader-Material. Die Spieler-Folge fällt gratis aus dem bestehenden
+Chunk-Streaming.
+
+- **Exakt**: Wasser + Terrain teilen das Zell-Raster → die Uferlinie ist der echte
+  Schnitt. Kein Schweben, kein Bleed, keine Splitter, kein Verengungs-Bug — strukturell.
+- **Kein zweites Modell**: kein 16-m-Raster fürs Mesh, kein spieler-folgendes 384-m-
+  Mesh, keine Dilatation, kein Clip, kein `polygonOffset`-Hack, kein `aWet`, kein
+  Makro-Proxy.
+- **Kosten**: ein per-Zelle-`_voxelSurfaceY`-Scan je wasser-berührtem Chunk — genau das
+  Muster, das `_buildVoxelChunkGrass` schon fährt, einmal je Chunk-Leben amortisiert.
+  Über die Hydrosphäre gegatet: ein Chunk ohne Ozean/See/Fluss im Fussabdruck baut KEIN
+  Wasser.
+
+### 14.6 Weg C (verworfen) — der geteilte Echt-Oberflächen-Cache
+
+Das vereinte Mesh (V9.49) bliebe, läse aber statt Makro einen `_voxelSurfaceY`-Cache,
+den die Chunk-Builds füllen. **Verworfen**: C tut dieselbe Oberflächen-Scan-Arbeit wie B
+(den Cache füllen = derselbe per-Zelle-Scan), BEHÄLT aber das vereinte Mesh als
+jetzt-redundante Schicht UND fügt Cache-Buchhaltung dazu — mehr Maschinerie für dieselbe
+Wahrheit. Der scheinbare Vorteil „weniger invasiv, das Mesh bleibt" ist Schein: die
+Clip/Dilatations/`polygonOffset`-Workarounds des Meshes waren NUR da, weil ihm die
+Wahrheit fehlte — mit der Wahrheit gehören sie ohnehin gelöscht. C ist fast so viel
+Änderung wie B, mit einem redundanten Mesh obendrauf. **B löscht, C behält.**
+
+### 14.7 Was gelöscht wird
+
+`_buildUnifiedWaterMesh`, `_buildUnifiedWaterGeometry`, `_tickUnifiedWater`,
+`_unifiedNearestRiverSeg`, `state.waterPlane`, das `RIDGE_MARGIN`-Clip, das
+`aWet`-Attribut, der `polygonOffset`-Hack, der 16-m-`waterY`-Mesh-Pfad. Netto deutlich
+weniger Stamm. 4 Meshes (V9.43) → 1 (V9.49) → 0 getrennte Wasser-Modelle (V9.50) —
+derselbe Konsolidierungs-Pfeil, ein Ring weiter.
+
+### 14.8 Die Wellen-Schneidung
+
+| Sub-Welle | Inhalt |
+|---|---|
+| **V9.50-a** | `_waterLevelAt(x,z)` — das Wasser-Level-Feld als eine Funktion. Reine Daten, headless-prüfbar. |
+| **V9.50-b** | `_buildVoxelChunkWater` — das per-Chunk-Wasser-Mesh aus `_voxelSurfaceY` vs `_waterLevelAt`; in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` eingehängt, über die Hydrosphäre gegatet. |
+| **V9.50-c** | Das V9.49-Vereinte-Mesh + seine Workarounds löschen; die V9.49-b/e/f-Playtest-Invarianten durch Chunk-Wasser-Invarianten ersetzen. |
+
+### 14.9 Risiken, ehrlich
+
+- **Chunk-Bau wird schwerer.** Ein per-Zelle-Scan je Wasser-Chunk. Gemildert: nur
+  wasser-berührte Chunks, amortisiert über das Chunk-Leben (wie das Gras). Im Playtest
+  am Perf-Budget messen.
+- **Hydrosphäre-Rebuild.** Wird die Hydrosphäre neu gerechnet (neue Welt), brauchen die
+  schon gestreamten Chunks ein Wasser-Rebuild — `_buildHydrosphereMeshes` triggert es
+  über die `voxelChunks`-Map.
+- **Fluss über Chunk-Grenzen.** Jeder Chunk mesht seinen Anteil; `_waterLevelAt` ist
+  welt-stetig, der Shader welt-verankert → die Nähte sind nahtlos (wie die
+  Terrain-Chunk-Nähte). Kein Sonder-Code.
+- **Wellen-Animation.** Der Shader ist welt-verankert (`position` trägt Welt-xz) →
+  per-Chunk-Meshes wogen deckungsgleich. Erprobt — heute schon so.
+- **Der Wasserfall** bleibt die vertikale Ausnahme.
+
+### 14.10 Vision-Pfeiler-Check
+
+- **§1.1 — Wasser ist ein Feld**: das Feld endet nicht; das Land schneidet es — jetzt
+  aus EINER Geometrie-Wahrheit, exakt.
+- **„Visual = Collision per Konstruktion"**: das Projekt-Gesetz, aufs Wasser angewandt —
+  kein Abgleich, Deckung per Konstruktion.
+- **Heilige Lektion**: V9.50 LÖSCHT (das getrennte Wasser-Modell). Konsolidierung,
+  4 → 1 → 0.
+- **V9.47-Lehre, endlich zu Ende gedacht**: nicht die Naht polieren — das Verfahren
+  wechseln. Diesmal das echte Verfahren: das Wasser hört auf, ein eigenes Modell zu sein.
