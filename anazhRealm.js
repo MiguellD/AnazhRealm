@@ -15083,6 +15083,94 @@ class AnazhRealm {
         return { waterY, waterKind };
     }
 
+    // V9.50-a — das Wasser-Level-Feld: die Wasser-Oberflächen-Höhe an einer
+    // xz-Welt-Position. Der Ozean ist der Default (`waterLevel`, gilt überall);
+    // ein See-Becken hebt sie lokal auf `lake.level`, ein Fluss-Kanal auf sein
+    // Bett-Profil. MAX über die drei → ein Punkt im See/Fluss bekommt deren
+    // höhere Fläche, ein Punkt sonst den Meeresspiegel. Das Chunk-Wasser-Mesh
+    // (V9.50-b) ist nass, wo `_voxelSurfaceY < _waterLevelAt` — die Uferlinie
+    // ist der exakte Schnitt mit dem ECHTEN Voxel-Terrain. `hydrosphere.md` §14.
+    _waterLevelAt(x, z) {
+        let level = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        const h = this.state.hydrosphere;
+        if (h && h.ready && h.water && h.water.waterKind) {
+            // See: das 3×3 der 16-m-Zellen (1-Zell-Dilatation gegen den
+            // 16-m-quantisierten Becken-Rand — der `_voxelSurfaceY`-Test klemmt
+            // danach exakt; ein See liegt über Meereshöhe, sein Rand-Vertex
+            // testet also ohnehin trocken).
+            const dim = h.dim;
+            const cell = h.cell;
+            const ci = Math.floor((x - h.originX) / cell);
+            const cj = Math.floor((z - h.originZ) / cell);
+            const wK = h.water.waterKind;
+            const wY = h.water.waterY;
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    const ni = ci + di;
+                    const nj = cj + dj;
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const idx = ni + nj * dim;
+                    if (wK[idx] === 2 && wY[idx] > level) level = wY[idx];
+                }
+            }
+        }
+        const river = this._hydroRiverAt(x, z);
+        if (river && river.surfaceY > level) level = river.surfaceY;
+        return level;
+    }
+
+    // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
+    // Kanal liegt (Distanz ≤ halbe Fluss-Breite + Bank-Rampe — die volle
+    // Carve-Breite). Liefert die normierte Flow-Richtung, die Carve-Tiefe
+    // `depth` und die Wasser-Oberfläche `surfaceY` (= Makro-Gelände − 0.4·Tiefe
+    // → das Wasser füllt den Kanal zu ~60 %, folgt dem Gefälle), oder null.
+    // O(1) über den `riverBuckets`-Index (wie `_hydrosphereCarveAt`).
+    _hydroRiverAt(x, z) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready || !h.riverBuckets) return null;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi = Math.floor((x - h.originX) / bs);
+        const bj = Math.floor((z - h.originZ) / bs);
+        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
+        const list = h.riverBuckets[bj * bd + bi];
+        if (!list) return null;
+        const bankSlope = AnazhRealm.HYDROSPHERE.carveBankSlope;
+        let bestD = Infinity;
+        let dirX = 0;
+        let dirZ = 0;
+        let depth = 0;
+        for (let s = 0; s < list.length; s++) {
+            const seg = list[s];
+            const ex = seg.bx - seg.ax;
+            const ez = seg.bz - seg.az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const px = seg.ax + ex * t;
+            const pz = seg.az + ez * t;
+            const dist = Math.hypot(x - px, z - pz);
+            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
+            const D = seg.dA + (seg.dB - seg.dA) * t;
+            const bankW = Math.max(2, D * bankSlope);
+            if (dist <= halfW + bankW && dist < bestD) {
+                bestD = dist;
+                const len = Math.sqrt(len2);
+                dirX = ex / len;
+                dirZ = ez / len;
+                depth = D;
+            }
+        }
+        if (bestD === Infinity) return null;
+        return {
+            flowX: dirX,
+            flowZ: dirZ,
+            depth,
+            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.4,
+        };
+    }
+
     // Phase 1 — Surface-Sampling. Das Region-Raster mit `_terrainMacroSurfaceY`
     // abtasten, OHNE die Detail-Oktave (`includeDetail=false`): die feine
     // Oktave (±4 m, λ~22 m) aliast bei der 16-m-Abtastung und ist grösser

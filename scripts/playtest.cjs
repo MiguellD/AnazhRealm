@@ -12711,6 +12711,30 @@ function startSaveServer() {
                         !!(h2.water && h2.water.waterKind) &&
                         wf.waterKind.length === h2.water.waterKind.length &&
                         wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
+                    // V9.50-a — das Wasser-Level-Feld `_waterLevelAt`.
+                    out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
+                    out.hasRiverAt = typeof r._hydroRiverAt === "function";
+                    out.waterLevelOceanOk = false;
+                    out.waterLevelLakeOk = false;
+                    if (out.hasWaterLevelAt && out.waterFieldShape) {
+                        const dimH = h1.dim;
+                        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+                        let oceanProbed = false;
+                        let lakeProbed = false;
+                        for (let i = 0; i < wf.waterKind.length && !(oceanProbed && lakeProbed); i++) {
+                            const wx = h1.originX + ((i % dimH) + 0.5) * h1.cell;
+                            const wz = h1.originZ + (((i / dimH) | 0) + 0.5) * h1.cell;
+                            if (wf.waterKind[i] === 1 && !oceanProbed) {
+                                const lv = r._waterLevelAt(wx, wz);
+                                out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
+                                oceanProbed = true;
+                            } else if (wf.waterKind[i] === 2 && !lakeProbed) {
+                                const lv = r._waterLevelAt(wx, wz);
+                                out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
+                                lakeProbed = true;
+                            }
+                        }
+                    }
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12756,6 +12780,15 @@ function startSaveServer() {
                     hb.waterFieldMatchesNet
                 );
                 check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
+                check(
+                    "Voxel V9.50-a: `_waterLevelAt` + `_hydroRiverAt` existieren (das Wasser-Level-Feld)",
+                    hb.hasWaterLevelAt && hb.hasRiverAt
+                );
+                check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
+                check(
+                    "Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)",
+                    hb.waterLevelLakeOk
+                );
             }
 
             // ### Voxel V9.49-b/c — das vereinte Wasser-Mesh (Rendering) ###
