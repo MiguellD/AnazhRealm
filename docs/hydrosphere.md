@@ -5,7 +5,9 @@ Hydrosphären-Atlas, das Rendering, die Synergie mit dem Meer, das Carven echter
 der Klang; siehe §8 + §9). **V9.45-b** löste danach den See-Carve ab — die Seebecken sind
 jetzt flach gesculptete, wasserdichte Töpfe (`_hydrosphereLakeAt` statt des V9.43-d-
 `lakeCutCell`-Schnitts; siehe §8). **V9.46** heilte die kurzen Flüsse — sie fliessen jetzt
-durch Seen HINDURCH (§10a; längster Fluss 45 m → 1361 m). Schöpfer-Wahl war: **volles
+durch Seen HINDURCH (§10a; längster Fluss 45 m → 1361 m). **V9.47** formt das Gelände
+via fluviale Stream-Power-Erosion um — dendritische Täler, halbierte See-Fläche, die
+Gipfel erhalten (§10b). Schöpfer-Wahl war: **volles
 Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
 Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: zwei kosmetische
 Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e) + die tiefere
@@ -430,13 +432,19 @@ funktional + sensorisch vollständig.
   Conduit`) — sonst spawnt das fein verzweigte ε-Flow-Tree eines Beckens Geister-Quellen.
   See-Punkte tragen `inLake`: der Renderer überspringt ihre Ribbon-Quads, der Carve lässt
   sie aus. Ergebnis: längster Fluss 45 m → 1361 m, alle münden ins Meer.
-- **(b) Netz-CHARAKTERISTIK — offen.** Die Welt bleibt see-dominant: die langen Flüsse
-  fädeln Seen-Ketten (61 von 67 Punkten des längsten Flusses sind `inLake`), statt lange
-  offene Hang-Läufe zu sein. Wurzel: die ridged-Makro-Surface ist basin-y → das Priority-
-  Flood füllt grosse Becken. V9.46 verbindet das Netz korrekt; dass die Drainage *durch
-  viele Seen* statt *über offene Hänge* führt, bräuchte eine glattere, weniger basin-y
-  Routing-Surface — ein eigener Bogen (oder (c) hydraulische Erosion, die Täler carvt,
-  gross). Nicht terminiert.
+- **(b) Netz-CHARAKTERISTIK — ✅ V9.47 (fluviale Erosion).** Befund: die Welt war
+  see-dominant, die Becken 12-20 m tief (echte Topographie — kein Blur-Trick hilft).
+  Heilung: fluviale **Stream-Power-Inzision** (`_computeErosion`, Braun & Willett /
+  Fastscape — das geomorphologische Standard-Modell). 36 Iterationen ko-evolvieren
+  Terrain + Drainage: je Iteration Priority-Flood → Flow-Accumulation → Inzision
+  `Δh = k·A^m·S^n`, NUR in Kanälen (`accum ≥ channelMinArea`). Grate (A≈1) bleiben
+  unberührt — die scharfen Gipfel überleben, das Relief wächst. Ein erster Tröpfchen-
+  Erosions-Versuch hatte einen harten Zielkonflikt (Blanket-Erosion: entwässern ⟺
+  Gipfel abtragen); Stream-Power mit der Kanal-Schwelle hat ihn nicht. Ergebnis:
+  Gipfel exakt erhalten, See-Fläche halbiert, dendritische Tal-Netze gecarvt, Flüsse
+  länger + offener. Ehrliche Rest-Grenze: die Inzision carvt einen Kanal DURCH ein
+  breites Becken, leert es aber nicht restlos (der Becken-Boden bleibt ein kleinerer
+  See — geomorphologisch korrekt). Volle Begründung: die `handover.md`-V9.47-Chronik.
 
 ---
 

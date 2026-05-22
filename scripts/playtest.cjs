@@ -12487,6 +12487,108 @@ function startSaveServer() {
                 );
             }
 
+            // ### Voxel V9.47 — Fluviale Erosion (Stream-Power-Inzision) ###
+            // `_computeErosion` lässt Terrain + Drainage ko-evolvieren: je
+            // Iteration Priority-Flood → Flow-Accumulation → Inzision
+            // `Δh=k·A^m·S^n` NUR in Kanälen (A ≥ channelMinArea). Grate bleiben
+            // unberührt, Täler schneiden ein. Delta fliesst in _terrainMacroSurfaceY.
+            const voxelV947Results = await page
+                .evaluate(() => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state) return null;
+                    const out = {};
+                    // `_computeErosion` nullt state.erosion beim Start — der
+                    // Worldgen-Stand wird gesichert + am Ende wiederhergestellt,
+                    // damit die nachfolgenden Hydrosphäre-Tests das erodierte
+                    // Gelände sehen.
+                    const savedEro = r.state.erosion;
+                    out.methodsExist =
+                        typeof r._computeErosion === "function" &&
+                        typeof r._erosionIncisionPass === "function" &&
+                        typeof r._erosionDeltaAt === "function";
+                    out.stateDeclared = "erosion" in r.state;
+                    const e = r.state.erosion;
+                    out.wired =
+                        !!e &&
+                        e.delta instanceof Float32Array &&
+                        typeof e.dim === "number" &&
+                        typeof e.cell === "number" &&
+                        e.delta.length === e.dim * e.dim;
+                    if (!out.methodsExist || !out.wired) return out;
+                    const E = r.constructor.EROSION;
+                    // (1) reine Inzision: jedes Delta ≤ 0, keines unter −maxDelta.
+                    let allNeg = true;
+                    let minD = 0;
+                    let sumD = 0;
+                    let carved = 0;
+                    for (let i = 0; i < e.delta.length; i++) {
+                        const v = e.delta[i];
+                        if (v > 1e-4) allNeg = false;
+                        if (v < minD) minD = v;
+                        sumD += v;
+                        if (v < -3) carved++;
+                    }
+                    out.pureIncision = allNeg;
+                    out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01;
+                    out.carvesChannels = minD < -5 && carved > 0;
+                    // (2) der Schnitt ist gezielt — nur ein Bruchteil der Welt
+                    // wird berührt (Kanäle), nicht die ganze Fläche (Blanket).
+                    out.channelFocused = carved / e.delta.length < 0.3;
+                    // (3) Determinismus — zwei Läufe byte-identisch (kein RNG).
+                    const t0 = performance.now();
+                    const e2 = r._computeErosion();
+                    out.recomputeMs = performance.now() - t0;
+                    let sum2 = 0;
+                    for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
+                    out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
+                    // (4) `_erosionDeltaAt`: 0 weit ausserhalb der Region, im
+                    // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
+                    out.deltaZeroOutside = r._erosionDeltaAt(99999, 99999) === 0;
+                    out.deltaFiniteInside = Number.isFinite(r._erosionDeltaAt(0, 0));
+                    out.perfOk = out.recomputeMs < 600;
+                    // den Worldgen-Erosions-Stand wiederherstellen (das letzte
+                    // `_computeErosion` liess state.erosion null).
+                    r.state.erosion = savedEro;
+                    return out;
+                })
+                .catch((err) => ({ error: String(err) }));
+
+            if (voxelV947Results && !voxelV947Results.error) {
+                const ev = voxelV947Results;
+                check(
+                    "Voxel V9.47: _computeErosion + _erosionIncisionPass + _erosionDeltaAt existieren",
+                    ev.methodsExist
+                );
+                check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
+                check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
+                if (ev.methodsExist && ev.wired) {
+                    check(
+                        "Voxel V9.47: reine Inzision — jedes Delta ≤ 0, ≥ −maxDelta",
+                        ev.pureIncision && ev.boundedByMaxDelta
+                    );
+                    check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
+                    check("Voxel V9.47: der Schnitt ist kanal-fokussiert, kein Flächen-Blanket", ev.channelFocused);
+                    check(
+                        "Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)",
+                        ev.deterministic
+                    );
+                    check(
+                        "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
+                        ev.deltaZeroOutside && ev.deltaFiniteInside
+                    );
+                    check(
+                        `Voxel V9.47: _computeErosion im Perf-Budget (${Math.round(ev.recomputeMs || 0)} ms < 600)`,
+                        ev.perfOk
+                    );
+                }
+            } else {
+                check(
+                    "Voxel V9.47: Erosions-Tests laufen",
+                    false,
+                    voxelV947Results ? voxelV947Results.error : "no result"
+                );
+            }
+
             // ### Voxel V9.43-b — Der Hydrosphären-Atlas ###
             // Aus der Voxel-Surface ein deterministisches Drainage-Netz:
             // Priority-Flood (Senken auffüllen → Seen) → D8-Flow-Direction →
@@ -12577,9 +12679,15 @@ function startSaveServer() {
                     hb.riverCount > 0
                 );
                 check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-                check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)", hb.riversDescend);
+                check(
+                    "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)",
+                    hb.riversDescend
+                );
                 check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
-                check("Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)", hb.riverThroughLake);
+                check(
+                    "Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)",
+                    hb.riverThroughLake
+                );
                 check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
                 check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
                 check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);

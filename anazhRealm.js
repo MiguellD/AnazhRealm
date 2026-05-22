@@ -75,6 +75,10 @@ class AnazhRealm {
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
             // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
             hydrosphere: null,
+            // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
+            // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
+            // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
+            erosion: null,
             keys: {},
             speed: 6,
             sprintSpeed: 12,
@@ -11156,6 +11160,38 @@ class AnazhRealm {
         });
     }
 
+    // V9.47 — Fluviale Erosion via STREAM-POWER-Inzision (Braun & Willett /
+    // Fastscape — das geomorphologische Standard-Modell, NICHT Tröpfchen-
+    // Blanket-Erosion). Vor dem Worldgen läuft `_computeErosion`: es sampelt
+    // die Makro-Surface in ein Heightfield und lässt Terrain + Drainage über
+    // ~30 Iterationen ko-evolvieren. Je Iteration: Priority-Flood (Becken
+    // füllen) → Flow-Direction → Flow-Accumulation → Inzision. Das Stream-
+    // Power-Gesetz `Δh = k·A^m·S^n` schneidet EXAKT dort ein, wo viel Wasser
+    // fliesst (grosse Drainage-Fläche A = Tal-Kanäle); ein Grat hat A≈1 →
+    // ~null Inzision. Die Grate bleiben scharf, die Täler schneiden tief →
+    // das Relief WÄCHST (kein Tröpfchen-Blanket-Zielkonflikt). Becken
+    // entwässern, weil ihr Auslass die ganze Becken-Drainage trägt → dort
+    // schneidet es am stärksten. `_terrainMacroSurfaceY` addiert das Delta.
+    // Deterministisch ohne RNG. Plan: hydrosphere.md §10b.
+    static get EROSION() {
+        return Object.freeze({
+            regionSize: 2048, // m — dieselbe Region wie die Hydrosphäre
+            cell: 16, // m → dim = 128 (dasselbe Raster wie die Hydrosphäre)
+            iterations: 36, // Landschafts-Evolutions-Iterationen
+            fillEpsilon: 0.01, // Priority-Flood-ε (definiertes Gefälle je Zelle)
+            streamK: 0.4, // Stream-Power-Konstante k in Δh = k·A^m·S^n
+            channelMinArea: 14, // Zellen — Inzision NUR ab dieser Drainage-Fläche
+            // (fluviale Erosion gilt für Kanäle; Hänge/Grate mit A darunter
+            // bleiben unberührt → die scharfen Gipfel überleben unversehrt; die
+            // Schwelle schützt die Grate, also dürfen k/Iterationen kräftig sein).
+            areaExp: 0.5, // m — Exponent der Drainage-Fläche A (Zell-Zahl)
+            slopeExp: 1.0, // n — Exponent des Gefälles S
+            maxIncisionPerPass: 1.1, // m — Klemme je Iteration (Stabilität)
+            edgeTaper: 10, // Zellen — das Delta wird zum Region-Rand auf 0 getapert
+            maxDelta: 18, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle)
+        });
+    }
+
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
     }
@@ -13365,6 +13401,20 @@ class AnazhRealm {
         this.state.terrainEverGenerated = true;
         if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
+        // ### Hydraulische Erosion ### V9.47
+        // Tröpfchen-Erosion carvt dendritische Täler + füllt Becken mit
+        // Sediment. MUSS hier laufen — VOR allem Surface-abhängigen Worldgen
+        // (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) → alle
+        // sehen das erodierte Gelände. `_terrainMacroSurfaceY` addiert das
+        // Delta. try/catch — ein Erosions-Fehler darf den Worldgen nie brechen.
+        try {
+            this.state.erosion = this._computeErosion();
+            this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
+        } catch (e) {
+            this.state.erosion = null;
+            this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
+        }
+
         // ### Höhendaten ###
         // V9.38 Phase 5c.2.c.3.b.ii — der heightData-Allokations-`else`-Pfad
         // ist als toter Pfad entfernt. Vor V9.38: ein `if (isVoxelWorldGen2)`
@@ -13637,6 +13687,232 @@ class AnazhRealm {
     // V9.20); der Hydrosphären-Atlas sampelt sie als hydrologische Basis-
     // Oberfläche — eine Quelle für beide (V9.44-a-Disziplin: ein Wert, der
     // zweimal gebraucht wird, lebt an einer Stelle).
+    // V9.47 — der fluviale Erosions-Pass (Stream-Power-Inzision). Sampelt die
+    // ROHE Makro-Surface in ein Heightfield und lässt Terrain + Drainage über
+    // `EROSION.iterations` Iterationen ko-evolvieren (`_erosionIncisionPass`).
+    // Speichert das Delta (erodiert − roh) als Raster. Läuft VOR
+    // `_computeHydrosphere` im Worldgen → die Hydrosphäre routet auf dem
+    // erodierten Gelände. Zirkel-frei: solange `state.erosion` null ist,
+    // liefert `_erosionDeltaAt` 0 → die Sample-Schleife sieht die rohe
+    // Surface. Voll deterministisch (kein RNG) → multiplayer-sicher.
+    _computeErosion() {
+        const E = AnazhRealm.EROSION;
+        const dim = Math.max(8, Math.round(E.regionSize / E.cell));
+        const originX = -E.regionSize / 2;
+        const originZ = -E.regionSize / 2;
+        const n = dim * dim;
+        // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
+        // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
+        this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
+        const h = new Float64Array(n);
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                h[i + j * dim] = this._terrainMacroSurfaceY(originX + i * E.cell, originZ + j * E.cell, false);
+            }
+        }
+        const orig = Float64Array.from(h);
+        // (2) Scratch-Puffer EINMAL allozieren — die Iterationen verwenden sie
+        // wieder (kein GC-Druck über die Pässe).
+        const buf = {
+            filled: new Float64Array(n),
+            flowTo: new Int32Array(n),
+            accum: new Float64Array(n),
+            visited: new Uint8Array(n),
+            order: new Int32Array(n),
+            hpK: new Float64Array(n),
+            hpV: new Int32Array(n),
+        };
+        // (3) Terrain + Drainage ko-evolvieren lassen.
+        for (let it = 0; it < E.iterations; it++) {
+            this._erosionIncisionPass(h, dim, buf, E);
+        }
+        // (4) Delta = erodiert − roh, geklemmt + zum Region-Rand auf 0 getapert
+        // (sonst klaffte eine Stufe zum un-erodierten Umland jenseits der Region).
+        const delta = new Float32Array(n);
+        const taper = E.edgeTaper;
+        const md = E.maxDelta;
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                const idx = i + j * dim;
+                let dv = h[idx] - orig[idx];
+                if (dv > md) dv = md;
+                else if (dv < -md) dv = -md;
+                const edge = Math.min(i, j, dim - 1 - i, dim - 1 - j);
+                if (edge < taper) dv *= edge / taper;
+                delta[idx] = dv;
+            }
+        }
+        return { delta, dim, cell: E.cell, originX, originZ, regionSize: E.regionSize };
+    }
+
+    // V9.47 — eine Stream-Power-Inzisions-Iteration. Vier Phasen auf dem
+    // Erosions-Heightfield `h` (mutiert es in-place): (1) Priority-Flood
+    // (Barnes) füllt die Becken → `filled`, jede Zelle hat ein definiertes
+    // Gefälle; (2) Flow-Direction (D8) → `flowTo`; (3) Flow-Accumulation →
+    // `accum` (Drainage-Fläche je Zelle); (4) Inzision `Δh = k·A^m·S^n` senkt
+    // jede Zelle proportional zu Drainage-Fläche × Gefälle. Grate (A≈1)
+    // schneiden ~nicht ein, Tal-Kanäle (A gross) tief → die Grate bleiben
+    // scharf, die Täler vertiefen sich, das Relief WÄCHST. Die `buf`-Scratch-
+    // Arrays kommen vom Aufrufer (Wiederverwendung über die Iterationen).
+    _erosionIncisionPass(h, dim, buf, E) {
+        const n = dim * dim;
+        const { filled, flowTo, accum, visited, order, hpK, hpV } = buf;
+        visited.fill(0);
+        // --- (1) Priority-Flood: binärer Min-Heap, mit den Rand-Zellen geseedet ---
+        let hlen = 0;
+        const swap = (a, b) => {
+            const k = hpK[a];
+            hpK[a] = hpK[b];
+            hpK[b] = k;
+            const v = hpV[a];
+            hpV[a] = hpV[b];
+            hpV[b] = v;
+        };
+        const push = (k, v) => {
+            hpK[hlen] = k;
+            hpV[hlen] = v;
+            let c = hlen++;
+            while (c > 0) {
+                const p = (c - 1) >> 1;
+                if (hpK[p] <= hpK[c]) break;
+                swap(p, c);
+                c = p;
+            }
+        };
+        const pop = () => {
+            const top = hpV[0];
+            hlen--;
+            if (hlen > 0) {
+                hpK[0] = hpK[hlen];
+                hpV[0] = hpV[hlen];
+                let c = 0;
+                for (;;) {
+                    const l = c * 2 + 1;
+                    const r = l + 1;
+                    let s = c;
+                    if (l < hlen && hpK[l] < hpK[s]) s = l;
+                    if (r < hlen && hpK[r] < hpK[s]) s = r;
+                    if (s === c) break;
+                    swap(s, c);
+                    c = s;
+                }
+            }
+            return top;
+        };
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                if (i !== 0 && j !== 0 && i !== dim - 1 && j !== dim - 1) continue;
+                const idx = i + j * dim;
+                filled[idx] = h[idx];
+                visited[idx] = 1;
+                push(h[idx], idx);
+            }
+        }
+        const eps = E.fillEpsilon;
+        // Die Pop-Reihenfolge IST die nach Füllhöhe aufsteigend sortierte
+        // Reihenfolge — in `order` festgehalten spart das einen O(n log n)-
+        // Sort je Iteration (Accumulation + Inzision brauchen diese Ordnung).
+        let oi = 0;
+        while (hlen > 0) {
+            const c = pop();
+            order[oi++] = c;
+            const ci = c % dim;
+            const cj = (c / dim) | 0;
+            for (let dj = -1; dj <= 1; dj++) {
+                for (let di = -1; di <= 1; di++) {
+                    if (di === 0 && dj === 0) continue;
+                    const ni = ci + di;
+                    const nj = cj + dj;
+                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                    const nb = ni + nj * dim;
+                    if (visited[nb]) continue;
+                    filled[nb] = h[nb] > filled[c] + eps ? h[nb] : filled[c] + eps;
+                    visited[nb] = 1;
+                    push(filled[nb], nb);
+                }
+            }
+        }
+        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → tiefster filled-Nachbar ---
+        for (let j = 1; j < dim - 1; j++) {
+            for (let i = 1; i < dim - 1; i++) {
+                const idx = i + j * dim;
+                let best = -1;
+                let bestF = filled[idx];
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        if (di === 0 && dj === 0) continue;
+                        const nb = i + di + (j + dj) * dim;
+                        if (filled[nb] < bestF) {
+                            bestF = filled[nb];
+                            best = nb;
+                        }
+                    }
+                }
+                flowTo[idx] = best;
+            }
+        }
+        for (let j = 0; j < dim; j++) {
+            for (let i = 0; i < dim; i++) {
+                if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) flowTo[i + j * dim] = -1;
+            }
+        }
+        // --- (3) Flow-Accumulation: `order` rückwärts (absteigende Füllhöhe)
+        // → eine Zelle wird VOR ihrer Abfluss-Zelle verarbeitet. ---
+        for (let i = 0; i < n; i++) accum[i] = 1;
+        for (let o = n - 1; o >= 0; o--) {
+            const c = order[o];
+            const t = flowTo[c];
+            if (t >= 0) accum[t] += accum[c];
+        }
+        // --- (4) Inzision: Δh = k·A^m·S^n je Zelle. STROMAB-ZUERST (`order`
+        // vorwärts, aufsteigende Füllhöhe): die Abfluss-Zelle ist schon
+        // gesenkt, wenn ihr Zufluss dran ist → der ganze Kanal wandert
+        // gemeinsam nach unten, statt am Unterlauf-Nachbarn hängenzubleiben. ---
+        const k = E.streamK;
+        const cap = E.maxIncisionPerPass;
+        const m = E.areaExp;
+        const nn = E.slopeExp;
+        const minA = E.channelMinArea;
+        for (let o = 0; o < n; o++) {
+            const c = order[o];
+            const t = flowTo[c];
+            if (t < 0) continue;
+            // fluviale Inzision nur in Kanälen — Hänge/Grate (A < minA)
+            // bleiben unberührt, die scharfen Gipfel überleben.
+            if (accum[c] < minA) continue;
+            const slope = (filled[c] - filled[t]) / E.cell;
+            if (slope <= 0) continue;
+            // nicht unter den Abfluss-Nachbarn schneiden (keine Flow-Inversion).
+            const room = h[c] - h[t];
+            if (room <= 0) continue;
+            let inc = k * Math.pow(accum[c], m) * Math.pow(slope, nn);
+            if (inc > cap) inc = cap;
+            if (inc > room) inc = room;
+            h[c] -= inc;
+        }
+    }
+
+    // V9.47 — das Erosions-Delta an einer xz-Welt-Position (bilinear aus dem
+    // `state.erosion.delta`-Raster; 0 ausserhalb der Region ODER solange das
+    // Raster noch nicht gebaut ist). `_terrainMacroSurfaceY` addiert es → die
+    // ganze Welt (Dichte, Hydrosphäre) sieht das erodierte Gelände. O(1) —
+    // wird beim Meshing millionenfach gerufen.
+    _erosionDeltaAt(x, z) {
+        const e = this.state.erosion;
+        if (!e) return 0;
+        const fx = (x - e.originX) / e.cell;
+        const fz = (z - e.originZ) / e.cell;
+        if (fx < 0 || fz < 0 || fx >= e.dim - 1 || fz >= e.dim - 1) return 0;
+        const i0 = fx | 0;
+        const j0 = fz | 0;
+        const tx = fx - i0;
+        const tz = fz - j0;
+        const d = e.delta;
+        const dim = e.dim;
+        const a = i0 + j0 * dim;
+        return (d[a] * (1 - tx) + d[a + 1] * tx) * (1 - tz) + (d[a + dim] * (1 - tx) + d[a + dim + 1] * tx) * tz;
+    }
+
     // V9.45-a — Grösse, Hierarchie + REGIONALE Vielfalt. Der V9.20-Aufbau
     // (drei feste Oktaven) liess alle Berge ähnlich hoch wirken: die
     // kontinentale Oktave variierte über ~1500 m kaum innerhalb einer Welt,
@@ -13688,7 +13964,10 @@ class AnazhRealm {
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
-        return base + cont + ranges + detail;
+        // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
+        // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
+        // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
+        return base + cont + ranges + detail + this._erosionDeltaAt(x, z);
     }
 
     _terrainDensityAt(x, y, z) {
@@ -14257,8 +14536,9 @@ class AnazhRealm {
         // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
         // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — Marge ~22.
         // V9.45-a: das Relief wuchs (Domain-Warp + grössere Amplituden,
-        // Makro-Oberfläche bis ~base+80, +3D ±12 → base-50..base+92). dimY
-        // 80 → 96, `floorDrop` 58 → 66 → Band base-66..base+106.8, Marge ~15.
+        // Makro-Oberfläche bis ~base+80). V9.47: die hydraulische Erosion
+        // carvt Täler bis ~16 m tiefer (`EROSION.maxDelta`) → dimY 96 → 100,
+        // `floorDrop` 66 → 74 → Band base-74..base+106, Marge unten + oben ~14.
         // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
         // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
         // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
@@ -14267,7 +14547,7 @@ class AnazhRealm {
         // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
         // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 96, floorDrop: 66 };
+        return { dim, step, span: dim * step, ringRadius, dimY: 100, floorDrop: 74 };
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
