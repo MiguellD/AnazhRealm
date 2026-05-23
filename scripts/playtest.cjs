@@ -12730,6 +12730,119 @@ async function checkBandWelleA2Blocker(ctx) {
     );
 }
 
+// V9.66 (Welle A.3) — die Wahrheits-Quelle der Hydrosphäre. `_effectiveSurfaceY`
+// kombiniert Worldgen-Surface + Voxel-Edits + Blocker zur EINEN Höhe, die der
+// Spieler wirklich sieht. Verifiziert: ohne Spieler-Mutation = Macro-Surface;
+// mit Damm = höher; mit Fill-Edit = höher; mit Carve-Edit = tiefer; die
+// Hydrosphäre-Sample-Pfade rufen die neue Funktion (Source-Probe).
+async function checkBandWelleA3EffectiveSurface(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) Wahrheits-Funktion + Edit-Delta-Helfer existieren
+        out.hasEffective = typeof r._effectiveSurfaceY === "function";
+        out.hasEditDelta = typeof r._voxelEditSurfaceDelta === "function";
+        // 2) Ohne Mutation: effective ≈ macro (Toleranz für ±1 mm Floating-Point)
+        const x = 250;
+        const z = 250;
+        const macroRaw = r._terrainMacroSurfaceY(x, z, false);
+        // Vorbereitung: alle Test-Edits + Test-Architekturen weg, sauberer Stand
+        const editsBefore = (r.state.worldMeta && r.state.worldMeta.voxelEdits) || [];
+        const editsCountBefore = editsBefore.length;
+        const baselineEff = r._effectiveSurfaceY(x, z);
+        out.baselineMatchesMacro = Math.abs(baselineEff - macroRaw) < 0.001;
+        out.baselineValue = baselineEff;
+        // 3) Mit einer Damm-Architektur an (x,z) — effective lifts to dam-top
+        const damEntry = r.spawnArchitecture("damm", { x, y: macroRaw + 2, z }, { silent: true });
+        out.damSpawnSucceeded = !!damEntry;
+        if (damEntry) {
+            const withDam = r._effectiveSurfaceY(x, z);
+            out.damLiftsSurface = withDam > baselineEff + 0.5;
+            out.damEffValue = withDam;
+            // Genau auf der Dam-Top sollte der effective ≈ dam-topY sein
+            const blockerTop = r._blockerTopAt(x, z);
+            out.effMatchesBlockerTop = Math.abs(withDam - blockerTop) < 0.001;
+            r.removeArchitecture(damEntry);
+            const afterRemove = r._effectiveSurfaceY(x, z);
+            out.removeRestoresSurface = Math.abs(afterRemove - baselineEff) < 0.001;
+        }
+        // 4) Mit einem Fill-Edit über der Surface — effective lifts
+        const fillX = 280;
+        const fillZ = 280;
+        const macroFill = r._terrainMacroSurfaceY(fillX, fillZ, false);
+        if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
+        const fillEdit = { x: fillX, y: macroFill + 3, z: fillZ, r: 4, mode: "fill", strength: 48 };
+        r.state.worldMeta.voxelEdits.push(fillEdit);
+        const withFill = r._effectiveSurfaceY(fillX, fillZ);
+        out.fillLiftsSurface = withFill > macroFill + 1;
+        out.fillEffValue = withFill;
+        out.fillEffExpected = macroFill + 3 + 4; // ed.y + r
+        out.fillEffMatches = Math.abs(withFill - out.fillEffExpected) < 0.1;
+        // 5) Mit einem Carve-Edit, der die Surface schneidet — effective lowers
+        const carveX = 320;
+        const carveZ = 320;
+        const macroCarve = r._terrainMacroSurfaceY(carveX, carveZ, false);
+        const carveEdit = { x: carveX, y: macroCarve - 1, z: carveZ, r: 4, mode: "carve", strength: 48 };
+        r.state.worldMeta.voxelEdits.push(carveEdit);
+        const withCarve = r._effectiveSurfaceY(carveX, carveZ);
+        out.carveLowersSurface = withCarve < macroCarve - 1;
+        out.carveEffValue = withCarve;
+        // 6) Edit ausserhalb der xz-Reichweite hat keinen Effekt
+        const farX = 500;
+        const farZ = 500;
+        const macroFar = r._terrainMacroSurfaceY(farX, farZ, false);
+        const effFar = r._effectiveSurfaceY(farX, farZ);
+        out.distantEditNoEffect = Math.abs(effFar - macroFar) < 0.001;
+        // Cleanup: nur unsere zwei Edits entfernen
+        r.state.worldMeta.voxelEdits.length = editsCountBefore;
+        // 7) Source-Probe: Hydrosphäre-Compute-Pfade rufen _effectiveSurfaceY
+        const seedTarnsSrc = r._hydroSeedTarns.toString();
+        out.tarnsUsesEffective = /this\._effectiveSurfaceY\(/.test(seedTarnsSrc);
+        const hydroInitSrc = r._hydroInit.toString();
+        out.hydroInitUsesEffective = /this\._effectiveSurfaceY\(/.test(hydroInitSrc);
+        return out;
+    });
+    if (res.error) {
+        check("Welle A.3 V9.66: Effective-Surface-Band-Test (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle A.3 V9.66: _effectiveSurfaceY existiert", res.hasEffective);
+    check("Welle A.3 V9.66: _voxelEditSurfaceDelta existiert", res.hasEditDelta);
+    check(
+        "Welle A.3 V9.66: ohne Mutation = _terrainMacroSurfaceY (≤ 1 mm)",
+        res.baselineMatchesMacro,
+        `eff=${res.baselineValue}`
+    );
+    check("Welle A.3 V9.66: spawnArchitecture('damm') als Test-Setup", res.damSpawnSucceeded);
+    check(
+        "Welle A.3 V9.66: Damm hebt die effektive Surface",
+        res.damLiftsSurface,
+        `vor=${res.baselineValue}, mit Damm=${res.damEffValue}`
+    );
+    check("Welle A.3 V9.66: effective == _blockerTopAt am Damm-Zentrum", res.effMatchesBlockerTop);
+    check("Welle A.3 V9.66: Damm-Remove stellt die Surface wieder her", res.removeRestoresSurface);
+    check(
+        "Welle A.3 V9.66: Fill-Edit hebt die effektive Surface",
+        res.fillLiftsSurface,
+        `eff=${res.fillEffValue}`
+    );
+    check(
+        "Welle A.3 V9.66: Fill-Edit hebt auf erwartete Höhe (ed.y + r)",
+        res.fillEffMatches,
+        `eff=${res.fillEffValue}, erwartet=${res.fillEffExpected}`
+    );
+    check(
+        "Welle A.3 V9.66: Carve-Edit senkt die effektive Surface",
+        res.carveLowersSurface,
+        `eff=${res.carveEffValue}`
+    );
+    check("Welle A.3 V9.66: ferner Edit hat keinen Effekt am fremden Punkt", res.distantEditNoEffect);
+    check("Welle A.3 V9.66: _hydroSeedTarns ruft _effectiveSurfaceY", res.tarnsUsesEffective);
+    check("Welle A.3 V9.66: _hydroInit ruft _effectiveSurfaceY", res.hydroInitUsesEffective);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -29616,6 +29729,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelle6Keybindings(ctx);
             await checkBandWelle6HCreatures(ctx);
             await checkBandWelleA2Blocker(ctx);
+            await checkBandWelleA3EffectiveSurface(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

@@ -13663,12 +13663,17 @@ class AnazhRealm {
         // Erosion läuft VOR `_hydroSeedTarns` (tarn-frei) und muss bei einem
         // Re-Run (Determinismus-Test) ebenfalls tarn-frei sampeln, sonst
         // unterscheiden sich die beiden Läufe. Saved + restored im finally.
+        // V9.66 (Welle A.3) — Erosion läuft am Worldgen-Start, BEVOR Architekturen
+        // gespawnt sind und Voxel-Edits gemacht wurden; daher hier weiterhin
+        // `_terrainMacroSurfaceY` direkt (Blocker-/Edit-Schichten sind leer).
+        // Der reaktive Recompute (A.4) ruft Erosion absichtlich NICHT neu —
+        // sie bleibt die statische Worldgen-Geomorphologie.
         const savedTarns = this.state.tarns;
         this.state.tarns = null;
         const h = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
-                h[i + j * dim] = this._terrainMacroSurfaceY(originX + i * E.cell, originZ + j * E.cell, false);
+                h[i + j * dim] = this._effectiveSurfaceY(originX + i * E.cell, originZ + j * E.cell);
             }
         }
         const orig = Float64Array.from(h);
@@ -13904,7 +13909,7 @@ class AnazhRealm {
                 const jz = n.noise2D(ci * 4.41 + 50.3, cj * 4.41 + 31.8) * cellW * 0.34;
                 const x = -half + (ci + 0.5) * cellW + jx;
                 const z = -half + (cj + 0.5) * cellW + jz;
-                pts.push({ ci, cj, x, z, surf: this._terrainMacroSurfaceY(x, z, false) });
+                pts.push({ ci, cj, x, z, surf: this._effectiveSurfaceY(x, z) });
             }
         }
         // ADAPTIVE Höhen-Schwelle — die Tarns sitzen im oberen Relief-Anteil
@@ -13927,12 +13932,8 @@ class AnazhRealm {
             // Hang messen — ein Tarn sitzt in einer sanften Hochmulde; sanft
             // genug, dass die grosse, tiefe Gauss-Mulde ein geschlossenes
             // Becken formt (`depthMin` > 0.83·maxSlope·radiusMax).
-            const gx =
-                (this._terrainMacroSurfaceY(p.x + d, p.z, false) - this._terrainMacroSurfaceY(p.x - d, p.z, false)) /
-                (2 * d);
-            const gz =
-                (this._terrainMacroSurfaceY(p.x, p.z + d, false) - this._terrainMacroSurfaceY(p.x, p.z - d, false)) /
-                (2 * d);
+            const gx = (this._effectiveSurfaceY(p.x + d, p.z) - this._effectiveSurfaceY(p.x - d, p.z)) / (2 * d);
+            const gz = (this._effectiveSurfaceY(p.x, p.z + d) - this._effectiveSurfaceY(p.x, p.z - d)) / (2 * d);
             const slope = Math.hypot(gx, gz);
             if (slope > T.maxSlope) continue;
             let tooClose = false;
@@ -14105,6 +14106,72 @@ class AnazhRealm {
         if (tarnDelta === 0) return withoutTarnFinal;
         const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
         return Math.max(withoutTarnFinal + tarnDelta, waterRef + 1);
+    }
+
+    // V9.66 (Welle A.3) — 2D-Voxel-Edit-Delta für die Hydrosphäre. Welches
+    // Surface-Delta erzeugen die persistierten Voxel-Edits (`worldMeta.voxel-
+    // Edits`-Map) an der Säule (x, z)? Approximativ: für jede Edit-Kugel, die
+    // diese Säule schneidet, berechne den vertikalen Span (`±√(r²−d_xz²)`).
+    // Edits sind chronologisch im Array — wir wenden sie der Reihe nach an,
+    // sodass ein späteres `fill` ein früheres `carve` überschreiben kann (die
+    // 3D-Wahrheit, projiziert auf 2D). Ein `fill`, dessen Top über die aktuelle
+    // Surface ragt, hebt sie auf diesen Top; ein `carve`, der die aktuelle
+    // Surface erreicht, senkt sie auf den Carve-Boden. Edits, die die Säule
+    // nicht erreichen oder ganz unterhalb liegen, werden ignoriert. Performance:
+    // linearer Scan über alle Edits — für Welt mit > 1000 Edits später bucketn,
+    // jetzt einfach + ehrlich. Aufrufer: `_effectiveSurfaceY`.
+    _voxelEditSurfaceDelta(x, z, macro) {
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!Array.isArray(edits) || edits.length === 0) return 0;
+        let effSurf = macro;
+        for (let i = 0; i < edits.length; i++) {
+            const ed = edits[i];
+            if (!ed || !Number.isFinite(ed.r) || ed.r <= 0) continue;
+            const dx = x - ed.x;
+            const dz = z - ed.z;
+            const d2 = dx * dx + dz * dz;
+            const r2 = ed.r * ed.r;
+            if (d2 >= r2) continue;
+            const halfV = Math.sqrt(r2 - d2);
+            const top = ed.y + halfV;
+            const bot = ed.y - halfV;
+            if (ed.mode === "fill") {
+                if (top > effSurf) effSurf = top;
+            } else {
+                // carve schneidet nur, wenn die Kugel die aktuelle Surface
+                // erreicht (top ≥ effSurf) — eine vergrabene Carve-Kugel weit
+                // unter der Surface erzeugt eine Höhle, kein Surface-Loch.
+                if (top >= effSurf && bot < effSurf) effSurf = bot;
+            }
+        }
+        return effSurf - macro;
+    }
+
+    // V9.66 (Welle A.3) — die Wahrheits-Quelle der Hydrosphäre. Kombiniert
+    // drei Schichten zur EINEN Surface, die der Spieler wirklich sieht:
+    //
+    //   1. `_terrainMacroSurfaceY(x, z, false)` — die Worldgen-Surface
+    //      (Tektonik + Kontinent + Erosion + Submarine + Tarn). Ohne die feine
+    //      Detail-Oktave (die das Drainage-Netz nur verrauschte — V9.43-b).
+    //   2. + `_voxelEditSurfaceDelta(x, z, macro)` — die Spieler-Voxel-Edits
+    //      (carve senkt, fill hebt). Approximativ als 2D-Projektion der
+    //      3D-Kugeln.
+    //   3. + `_blockerTopAt(x, z)` — die V9.65-Architektur-Blocker (Damm,
+    //      Stein-Block, Baum-Stamm, jede Architektur mit dichte ≥ 0.3).
+    //      MAX statt Addition, weil eine 3-m-Damm-Wand auf 5-m-Terrain das
+    //      Land auf 8 m hebt (3 m über Terrain), nicht auf 13 m.
+    //
+    // Vision (Welle A): die Hydrosphäre sieht die WIRKLICHE Welt-Geometrie —
+    // jede solide Geste blockiert Wasser, jede Wegnahme öffnet einen Pfad.
+    // Genutzt vom Hydrosphäre-Compute-Pfad (`_computeErosion`, `_hydroSeedTarns`,
+    // `_hydroInit`); der reaktive Recompute (V9.67 A.4) ruft diese Funktion
+    // erneut auf, sodass die Hydrosphäre auf Welt-Mutation reagiert.
+    _effectiveSurfaceY(x, z) {
+        const macro = this._terrainMacroSurfaceY(x, z, false);
+        if (!Number.isFinite(macro)) return macro;
+        const surfWithEdits = macro + this._voxelEditSurfaceDelta(x, z, macro);
+        const blockerTop = this._blockerTopAt(x, z);
+        return blockerTop > surfWithEdits ? blockerTop : surfWithEdits;
     }
 
     _terrainDensityAt(x, y, z) {
@@ -15415,7 +15482,7 @@ class AnazhRealm {
         const raw = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
-                const s = this._terrainMacroSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell, false);
+                const s = this._effectiveSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell);
                 raw[j * dim + i] = Number.isFinite(s) ? s : base - 52;
             }
         }
