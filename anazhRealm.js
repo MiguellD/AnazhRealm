@@ -32674,6 +32674,28 @@ class AnazhRealm {
         if (!this.state.directionalLight) return; // Pre-init safe
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const stop = this._interpolateDayNight(t);
+        const tint = this._dayNightComputeTint(stop);
+        const angle = t * Math.PI * 2 - Math.PI / 2;
+        const sunDir = this._dayNightSunDirection(angle);
+        this._dayNightApplySkybox(tint);
+        this._dayNightApplyStarField(t, tint.skyMul);
+        this._dayNightApplyDirectionalLight(sunDir, tint);
+        this._dayNightApplyAmbient(angle);
+        this._updateCelestialBodies(angle, tint.lightMul);
+        this._dayNightApplyHemiAndFog(angle, tint);
+        this._dayNightApplyTerrainShaderUniforms(sunDir);
+        this._dayNightApplyWaterMaterials(sunDir);
+    }
+
+    // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor /
+    // lightColor / lightIntensity der vorigen):
+    //   1) Wetter-Tint (skyMul/lightMul aus WEATHER_TINTS oder Transition)
+    //   2) Welt-Feld-Tint (magieleitung→violett, glut→rot-orange, lebendig→grün)
+    //   3) Emotion-Tint (joy→gold, sorrow→entsättigt, awe→lila, chaos→Flimmern)
+    // Liefert das Tint-Objekt + die mit skyMul derivierten skyR/G/B (HemiFog
+    // braucht sie). Schichten teilen Variablen → bleiben in EINER Methode
+    // (V9.56-d/f/g-Lehre).
+    _dayNightComputeTint(stop) {
         // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
         const tints = this.constructor.WEATHER_TINTS;
@@ -32689,7 +32711,6 @@ class AnazhRealm {
             skyMul = currentTint.skyMul;
             lightMul = currentTint.lightMul;
         }
-        // Stop-Sky als THREE.Color, davon eine clone-Kopie zum Modulieren
         const skyColor = stop.sky.clone();
         const lightColor = stop.light.clone();
         let lightIntensity = stop.intensity * lightMul;
@@ -32701,23 +32722,20 @@ class AnazhRealm {
                 const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
                 const glut = Math.max(0, Math.min(1, field.glut || 0));
                 const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
-                // magieleitung-Region: Sky leicht ins Violett verschieben
                 if (mag > 0.5) {
-                    const m = (mag - 0.5) * 0.3; // 0..0.15
+                    const m = (mag - 0.5) * 0.3;
                     skyColor.r = Math.min(1, skyColor.r + m * 0.6);
                     skyColor.b = Math.min(1, skyColor.b + m * 1.0);
                     lightColor.b = Math.min(1, lightColor.b + m * 0.4);
                 }
-                // glut-Region: ins Rot-Orange
                 if (glut > 0.5) {
-                    const g = (glut - 0.5) * 0.4; // 0..0.2
+                    const g = (glut - 0.5) * 0.4;
                     skyColor.r = Math.min(1, skyColor.r + g);
                     skyColor.g = Math.max(0, skyColor.g - g * 0.3);
                     lightColor.r = Math.min(1, lightColor.r + g * 0.6);
                 }
-                // lebendig-Region: warm-grünlich
                 if (lebendig > 0.5) {
-                    const l = (lebendig - 0.5) * 0.25; // 0..0.125
+                    const l = (lebendig - 0.5) * 0.25;
                     skyColor.g = Math.min(1, skyColor.g + l);
                     skyColor.r = Math.min(1, skyColor.r + l * 0.3);
                 }
@@ -32729,112 +32747,122 @@ class AnazhRealm {
         const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
         const awe = Math.max(0, Math.min(1, emotions.awe || 0));
         const chaos = Math.max(0, Math.min(1, emotions.chaos || 0));
-        // joy → gold (warm)
         if (joy > 0.2) {
-            const j = (joy - 0.2) * 0.25; // 0..0.2
+            const j = (joy - 0.2) * 0.25;
             skyColor.r = Math.min(1, skyColor.r + j);
             skyColor.g = Math.min(1, skyColor.g + j * 0.7);
             lightColor.r = Math.min(1, lightColor.r + j * 0.5);
             lightIntensity *= 1 + (joy - 0.2) * 0.15;
         }
-        // sorrow → entsättigt + dämpft
         if (sorrow > 0.2) {
-            const s = (sorrow - 0.2) * 0.5; // 0..0.4
+            const s = (sorrow - 0.2) * 0.5;
             const greyR = (skyColor.r + skyColor.g + skyColor.b) / 3;
             skyColor.r = skyColor.r * (1 - s) + greyR * s;
             skyColor.g = skyColor.g * (1 - s) + greyR * s;
             skyColor.b = skyColor.b * (1 - s) + greyR * s;
             lightIntensity *= 1 - (sorrow - 0.2) * 0.2;
         }
-        // awe → magisches Lila im Sky + Light
         if (awe > 0.2) {
-            const a = (awe - 0.2) * 0.35; // 0..0.28
+            const a = (awe - 0.2) * 0.35;
             skyColor.b = Math.min(1, skyColor.b + a);
             skyColor.r = Math.min(1, skyColor.r + a * 0.6);
             lightColor.b = Math.min(1, lightColor.b + a * 0.5);
         }
-        // chaos → leichtes Flimmern (sin über performance.now)
         if (chaos > 0.3) {
-            const c = (chaos - 0.3) * 0.15; // 0..0.105
+            // performance.now() — Side-Effect-Stream-Position: das chaos-Flimmern
+            // liest die Zeit hier (Tint-Phase). V9.56-i bewahrt die Aufruf-
+            // Reihenfolge bit-identisch.
+            const c = (chaos - 0.3) * 0.15;
             const flutter = Math.sin(performance.now() / 180) * c;
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
         }
-        // Schicht 1 final anwenden — skyMul auf den modulierten Sky-Color
-        const skyR = skyColor.r * skyMul;
-        const skyG = skyColor.g * skyMul;
-        const skyB = skyColor.b * skyMul;
-        if (this.state.skybox && this.state.skybox.material && this.state.skybox.material.uniforms) {
-            const u = this.state.skybox.material.uniforms.nebulaColor;
-            if (u && u.value) {
-                u.value.setRGB(skyR, skyG, skyB);
-            }
-            // V8.28 6.G4.b D — Wolken-Deckung aus weather. sunny ~0.22,
-            // rainy ~0.85. V8.46 — über die Wetter-Transition cross-gefadet
-            // (vorher flippte cloudCover sofort → harter Wetter-Sprung,
-            // während Licht/Skybox sanft faden).
-            const cloudU = this.state.skybox.material.uniforms.cloudCover;
-            if (cloudU) {
-                cloudU.value = this._weatherBlendedValue(0.22, 0.85);
-            }
-        }
-        // V8.28 6.G4.b A — Stern-Feld-Opacity. starField statt skybox-uniform
-        // (Sterne sind jetzt diskrete Points). Sterne nur bei Nacht sichtbar:
-        // umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
-        if (this.state.starField && this.state.starField.material) {
-            const sa = t * Math.PI * 2 - Math.PI / 2;
-            const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
-            const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
-            const su = this.state.starField.material.uniforms.uOpacity;
-            if (su) su.value = nightFactor * skyMul;
-        }
-        // Light-Position über Halbkreis (azimut über Tag).
-        const dl = this.state.directionalLight;
-        const angle = t * Math.PI * 2 - Math.PI / 2;
-        const lightDist = 200;
-        // V8.48 — reine Sonnen-RICHTUNG (Einheitsvektor Oberfläche→Sonne),
-        // getrennt von der Licht-POSITION. Vorher waren beide dasselbe
-        // (position.normalize() = Richtung). Jetzt folgt die Position dem
-        // Spieler, damit das Shadow-Frustum um ihn liegt — die Richtung
-        // für Beleuchtung + Shader-Uniforms bleibt das reine sunDir.
+        return {
+            skyColor,
+            lightColor,
+            lightIntensity,
+            skyMul,
+            lightMul,
+            skyR: skyColor.r * skyMul,
+            skyG: skyColor.g * skyMul,
+            skyB: skyColor.b * skyMul,
+        };
+    }
+
+    // Sonnen-Richtung (Einheitsvektor Oberfläche→Sonne) aus dem Tageswinkel.
+    // V8.48 — getrennt von der Licht-POSITION (die folgt dem Spieler für das
+    // Shadow-Frustum); diese reine Richtung füttert Beleuchtung + Shader.
+    _dayNightSunDirection(angle) {
         const sunDirX = Math.cos(angle);
         const sunDirY = Math.sin(angle);
         const sunDirZ = Math.sin(angle * 0.5) * 0.4;
         const sunLen = Math.hypot(sunDirX, sunDirY, sunDirZ) || 1;
-        const sunDir = new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+        return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+    }
+
+    // Skybox-Uniforms: nebulaColor aus skyR/G/B + Wolken-Deckung aus weather
+    // (V8.28 6.G4.b D, V8.46 Cross-Fade über Wetter-Transition).
+    _dayNightApplySkybox(tint) {
+        if (!this.state.skybox || !this.state.skybox.material || !this.state.skybox.material.uniforms) return;
+        const u = this.state.skybox.material.uniforms.nebulaColor;
+        if (u && u.value) u.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+        const cloudU = this.state.skybox.material.uniforms.cloudCover;
+        if (cloudU) cloudU.value = this._weatherBlendedValue(0.22, 0.85);
+    }
+
+    // V8.28 6.G4.b A — Stern-Feld-Opacity. starField (diskrete Points) nur
+    // bei Nacht sichtbar: umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
+    _dayNightApplyStarField(t, skyMul) {
+        if (!this.state.starField || !this.state.starField.material) return;
+        const sa = t * Math.PI * 2 - Math.PI / 2;
+        const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
+        const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
+        const su = this.state.starField.material.uniforms.uOpacity;
+        if (su) su.value = nightFactor * skyMul;
+    }
+
+    // DirectionalLight: Position folgt dem Spieler (V8.48 — Shadow-Frustum
+    // zentriert), Target am Spieler-Boden (y=0), Color = lightColor × lightMul,
+    // Intensity aus akkumuliertem lightIntensity.
+    _dayNightApplyDirectionalLight(sunDir, tint) {
+        const dl = this.state.directionalLight;
+        const pm = this.state.playerMesh;
+        const lightDist = 200;
         const focusX = pm ? pm.position.x : 0;
         const focusZ = pm ? pm.position.z : 0;
         dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
         if (dl.target) {
-            // Schatten-Frustum zentriert auf den Spieler (y=0 als Boden-Saat).
             dl.target.position.set(focusX, 0, focusZ);
             dl.target.updateMatrixWorld();
         }
-        dl.color.setRGB(lightColor.r * lightMul, lightColor.g * lightMul, lightColor.b * lightMul);
-        dl.intensity = lightIntensity;
-        // Ambient: Mitternacht 0.18, Mittag 0.6 + leichte Modulation durch
-        // joy/awe (positive Emotion erhöht ambient leicht — Welt wirkt heller)
+        dl.color.setRGB(
+            tint.lightColor.r * tint.lightMul,
+            tint.lightColor.g * tint.lightMul,
+            tint.lightColor.b * tint.lightMul
+        );
+        dl.intensity = tint.lightIntensity;
+    }
+
+    // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
+    // moduliert (positive Emotion erhöht ambient leicht — Welt wirkt heller).
+    _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
-        if (al) {
-            const sunHeight = Math.max(0, Math.sin(angle));
-            const baseAmb = 0.18 + 0.42 * sunHeight;
-            al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
-        }
-        // V8.25 — Sonne + Mond Position aktualisieren (falls Meshes existieren)
-        this._updateCelestialBodies(angle, lightMul);
-        // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide
-        // emergieren aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler:
-        //   - hemiLight.color (oben) ≈ skyColor (warmer/kühler je Tag-Phase)
-        //   - hemiLight.groundColor (unten) ≈ Welt-Affinität (lebendig→
-        //     erdgrün, glut→rotbraun, dichte→steingrau, magie→violett)
-        //   - hemiLight.intensity moduliert mit sunHeight + lightMul
-        //   - fog.color ≈ lerp(skyColor, groundColor, 0.5) — atmosphärisch
-        //   - fog.near/far moduliert mit Wetter + Welt-Lebendigkeit
+        if (!al) return;
+        const sunHeight = Math.max(0, Math.sin(angle));
+        const baseAmb = 0.18 + 0.42 * sunHeight;
+        al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+    }
+
+    // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
+    // aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler. fog.color ≈ lerp(sky,
+    // ground, 0.15) — V8.28 6.G4.b: Fog ist LUFT, nicht Dreck-Schicht.
+    // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (playerEyesUnderwater).
+    _dayNightApplyHemiAndFog(angle, tint) {
         const hl = this.state.hemiLight;
         const fog = this.state.fog;
+        const pm = this.state.playerMesh;
         if (hl) {
-            hl.color.setRGB(skyR * 1.1, skyG * 1.1, skyB * 1.1); // Sky-Tint, leicht angehellt
-            // Ground-Color aus Welt-Affinität ableiten (mit Saat-Earth-Tone)
+            hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
             if (pm && typeof this.worldFieldAt === "function") {
                 const field = this.worldFieldAt(pm.position.x, pm.position.z);
@@ -32842,138 +32870,84 @@ class AnazhRealm {
                     const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
                     const glut = Math.max(0, Math.min(1, field.glut || 0));
                     const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
-                    // lebendig pushes ground toward warm green
                     earth.r = Math.min(1, earth.r + lebendig * 0.15);
                     earth.g = Math.min(1, earth.g + lebendig * 0.25);
-                    // glut pushes toward red-orange
                     earth.r = Math.min(1, earth.r + glut * 0.35);
                     earth.g = Math.max(0, earth.g + glut * 0.1);
-                    // magieleitung pushes toward violet
                     earth.r = Math.min(1, earth.r + mag * 0.15);
                     earth.b = Math.min(1, earth.b + mag * 0.3);
                 }
             }
             hl.groundColor.copy(earth);
-            // Intensity: bei Tag mehr (0.6), bei Nacht weniger (0.25)
             const sunHeight = Math.max(0, Math.sin(angle));
-            hl.intensity = (0.25 + 0.35 * sunHeight) * lightMul;
+            hl.intensity = (0.25 + 0.35 * sunHeight) * tint.lightMul;
         }
         if (fog) {
-            // V8.28 6.G4.b — Fog ist LUFT, also überwiegend Himmelsfarbe
-            // (nur 15 % Boden-Tint). lerp 0.5 mischte blauen Himmel mit
-            // braunem Boden zu schmutzigem Rosa — der Fog wirkte wie eine
-            // Dreck-Schicht statt wie atmosphärischer Dunst. Mit 0.15
-            // verschmilzt der Fog sauber mit dem Himmel am Horizont.
             const gMix = 0.15;
-            const fogR = skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
-            const fogG = skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
-            const fogB = skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
+            const fogR = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
+            const fogG = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
+            const fogB = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
             fog.color.setRGB(fogR, fogG, fogB);
-            // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy
-            // 22..95. Bei 235 m far griff der Fog in einer Bergwelt nie
-            // (Berge verdeckten vorher). 150 m ist nah genug, dass der
-            // atmosphärische Gradient klar sichtbar ist — die fernen Berge
-            // verschmelzen mit dem Himmel. Slider geht 30..200 % für weniger
-            // (weiter) bis mehr (dichter) Dunst.
+            // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy 22..95.
+            // Slider 30..200 % via state.atmosphere.fogDistance.
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
-            // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (Augen unter
-            // Wasser), nicht schon beim Waten/Schwimmen. Vorher triggerte er
-            // bei playerUnderwater (Körper-Mitte im Wasser) → der blaue Fog
-            // sprang an, sobald das Wasser halbe Körperhöhe erreichte. Jetzt:
-            // playerEyesUnderwater. Der dichte 4..34-Fog ignoriert bewusst
-            // den fogDistance-Slider — Tauch-Trübung ist fest, nicht die
-            // Land-Sicht-Einstellung (Schöpfer-Wunsch V8.32).
             if (this.state.playerEyesUnderwater) {
+                // V8.32 — Tauch-Trübung ist fest, ignoriert fogDistance-Slider.
                 fog.color.setRGB(0.06, 0.19, 0.32);
                 fog.near = 4;
                 fog.far = 34;
             }
         }
-        // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
-        // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
-        // lightDirection auf die ECHTE DirectionalLight-Richtung (normalisiert).
-        if (this.state.groundChunks && this.state.directionalLight) {
-            // V8.48 — die reine Sonnen-Richtung (sunDir), NICHT mehr
-            // position.normalize(): die Licht-Position folgt seit V8.48 dem
-            // Spieler, ihre Normalisierung wäre keine Richtung mehr.
-            const lightDir = sunDir;
-            for (const chunk of this.state.groundChunks) {
-                if (chunk.material && chunk.material.uniforms) {
-                    const cu = chunk.material.uniforms;
-                    if (cu.lightDirection) cu.lightDirection.value.copy(lightDir);
-                    if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
-                    if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
-                    // V8.46 — weatherEffect (Terrain-Verdunklung bei Regen)
-                    // pro Frame + über die Transition cross-faden. Vorher nur
-                    // beim Chunk-Bau gesetzt → es flippte hart, und alte Chunks
-                    // behielten ihren Stand (Patchwork). Jetzt sanft + einheitlich.
-                    if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
-                    // V8.31 — Fog an den Terrain-Custom-Shader anschließen.
-                    // Ohne das blieb das Terrain knackscharf, während nur
-                    // das Gras (Lambert) verblasste → der Fog-Slider wirkte
-                    // wie eine Gras-Verfärbung. Jetzt trägt das Terrain den
-                    // Dunst — der Fog wird zur echten atmosphärischen Schicht.
-                    if (fog) {
-                        if (cu.fogColor) cu.fogColor.value.copy(fog.color);
-                        if (cu.fogNear) cu.fogNear.value = fog.near;
-                        if (cu.fogFar) cu.fogFar.value = fog.far;
-                    }
-                }
-            }
-        }
-        // V8.29.1 — Welt-Wasser mit der Sonne synchronisieren: Sonnen-
-        // Richtung für das Glitzern + Licht-Intensität für Tag-Nacht-Tint.
-        // V8.31 — plus Fog-Uniforms (Custom-Shader erbt THREE.Fog nicht).
-        if (this.state.hydroSurfaceMaterial && this.state.directionalLight) {
-            const wu = this.state.hydroSurfaceMaterial.uniforms;
-            if (wu && wu.uSunDir) {
-                // V8.48 — reine Sonnen-Richtung (Licht-Position folgt seit
-                // V8.48 dem Spieler, ihre Normalisierung wäre keine Richtung).
-                wu.uSunDir.value.copy(sunDir);
-            }
-            if (wu && wu.uLight) {
-                wu.uLight.value = Math.max(0.22, dl.intensity);
-            }
-            if (wu && fog) {
-                if (wu.fogColor) wu.fogColor.value.copy(fog.color);
-                if (wu.fogNear) wu.fogNear.value = fog.near;
-                if (wu.fogFar) wu.fogFar.value = fog.far;
-            }
-        }
-        // V9.43-a — das geteilte Wasserfall-Material teilt die Wasser-
-        // Substanz-Uniforms (Sonne, Licht, Fog) mit dem Meer — eine Wasser-
-        // Sprache, von derselben Tag-Nacht-Quelle gespeist.
-        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms && this.state.directionalLight) {
-            const wfu = this.state.waterfallMaterial.uniforms;
-            if (wfu.uSunDir) wfu.uSunDir.value.copy(sunDir);
-            if (wfu.uLight) wfu.uLight.value = Math.max(0.22, dl.intensity);
+    }
+
+    // V8.27 6.G4.a / V8.31 / V8.46 / V8.48 — Terrain-Custom-Shader-Uniforms
+    // synchronisieren: lightDirection (sunDir), lightIntensity, ambientIntensity,
+    // weatherEffect (Cross-Fade), fog (Color/Near/Far).
+    _dayNightApplyTerrainShaderUniforms(sunDir) {
+        if (!this.state.groundChunks || !this.state.directionalLight) return;
+        const dl = this.state.directionalLight;
+        const al = this.state.ambientLight;
+        const fog = this.state.fog;
+        for (const chunk of this.state.groundChunks) {
+            if (!chunk.material || !chunk.material.uniforms) continue;
+            const cu = chunk.material.uniforms;
+            if (cu.lightDirection) cu.lightDirection.value.copy(sunDir);
+            if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
+            if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
+            if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
             if (fog) {
-                if (wfu.fogColor) wfu.fogColor.value.copy(fog.color);
-                if (wfu.fogNear) wfu.fogNear.value = fog.near;
-                if (wfu.fogFar) wfu.fogFar.value = fog.far;
+                if (cu.fogColor) cu.fogColor.value.copy(fog.color);
+                if (cu.fogNear) cu.fogNear.value = fog.near;
+                if (cu.fogFar) cu.fogFar.value = fog.far;
             }
         }
-        // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
-        // + See-Planes) teilt dieselbe Wasser-Substanz-Sprache: Sonne, Licht,
-        // Fog von derselben Tag-Nacht-Quelle. Eine Wasser-Sprache, vier
-        // Geometrien (Meer, Wasserfall, Fluss, See).
-        if (
-            this.state.hydroSurfaceMaterial &&
-            this.state.hydroSurfaceMaterial.uniforms &&
-            this.state.directionalLight
-        ) {
-            const hsu = this.state.hydroSurfaceMaterial.uniforms;
-            if (hsu.uSunDir) hsu.uSunDir.value.copy(sunDir);
-            if (hsu.uLight) hsu.uLight.value = Math.max(0.22, dl.intensity);
+    }
+
+    // V8.29.1 / V8.31 / V9.43-a/c — Wasser-Materialien (Meer/Fluss/See via
+    // hydroSurfaceMaterial + Wasserfall via waterfallMaterial) teilen DIESELBE
+    // Tag-Nacht-Wasser-Sprache: uSunDir + uLight + fog. Der ursprüngliche
+    // Pfad rief das Hydro-Material zweimal (Duplikat aus V8.29.1 + V9.43-c);
+    // die Writes sind idempotent → eine Anwendung ist verhaltensneutral.
+    _dayNightApplyWaterMaterials(sunDir) {
+        if (!this.state.directionalLight) return;
+        const dl = this.state.directionalLight;
+        const fog = this.state.fog;
+        const applyTo = (material) => {
+            if (!material || !material.uniforms) return;
+            const u = material.uniforms;
+            if (u.uSunDir) u.uSunDir.value.copy(sunDir);
+            if (u.uLight) u.uLight.value = Math.max(0.22, dl.intensity);
             if (fog) {
-                if (hsu.fogColor) hsu.fogColor.value.copy(fog.color);
-                if (hsu.fogNear) hsu.fogNear.value = fog.near;
-                if (hsu.fogFar) hsu.fogFar.value = fog.far;
+                if (u.fogColor) u.fogColor.value.copy(fog.color);
+                if (u.fogNear) u.fogNear.value = fog.near;
+                if (u.fogFar) u.fogFar.value = fog.far;
             }
-        }
+        };
+        applyTo(this.state.hydroSurfaceMaterial);
+        applyTo(this.state.waterfallMaterial);
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
