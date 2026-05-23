@@ -34055,9 +34055,16 @@ class AnazhRealm {
         if (!container) return;
         container.innerHTML = "";
         if (!this.state.soulEditor) this.state.soulEditor = { editingName: null };
-
-        // Section 1 — Liste der eigenen Seelen
         const customs = this.state.customSouls || {};
+        this._soulEditorAppendCustomList(container, customs);
+        this._soulEditorAppendActions(container, customs);
+        const editingName = this.state.soulEditor.editingName;
+        const editing = editingName && customs[editingName];
+        if (editing) this._soulEditorAppendEditorPane(container, editingName, editing);
+    }
+
+    // Section 1 — Liste der eigenen Seelen mit „Werde" + „Bearbeiten" + „Löschen".
+    _soulEditorAppendCustomList(container, customs) {
         const customNames = Object.keys(customs);
         const customList = document.createElement("div");
         customList.className = "soul-editor-list";
@@ -34104,8 +34111,10 @@ class AnazhRealm {
             }
         }
         container.appendChild(customList);
+    }
 
-        // Section 2 — Klone / Neu anlegen
+    // Section 2 — aktuelle Seele klonen oder leere Seele neu anlegen.
+    _soulEditorAppendActions(container, customs) {
         const actions = document.createElement("div");
         actions.className = "soul-editor-actions";
         const cloneBtn = document.createElement("button");
@@ -34130,7 +34139,7 @@ class AnazhRealm {
         newBtn.addEventListener("click", () => {
             const base = `neue_seele_${Object.keys(customs).length + 1}`;
             // Eine Seele braucht mindestens einen Körper-Teil; geben wir ein
-            // sinnvolles Start-Teil aus stein vor (Standard-Default-Material).
+            // sinnvolles Start-Teil aus fleisch vor (Standard-Default-Material).
             const startPart = {
                 shape: "box",
                 material: "fleisch",
@@ -34149,137 +34158,135 @@ class AnazhRealm {
         });
         actions.appendChild(newBtn);
         container.appendChild(actions);
+    }
 
-        // Section 3 — Inline-Editor für die ausgewählte Seele
-        const editingName = this.state.soulEditor.editingName;
-        const editing = editingName && customs[editingName];
-        if (editing) {
-            const editor = document.createElement("div");
-            editor.className = "soul-editor-pane";
-            const head = document.createElement("div");
-            head.className = "soul-editor-pane-head";
-            head.textContent = `Edit: ${editing.label}`;
-            editor.appendChild(head);
-            // Parts
-            const partList = document.createElement("div");
-            partList.className = "soul-part-list";
-            const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
-            const materials = Object.keys(this.state.materials || {});
-            editing.bodyParts.forEach((part, idx) => {
-                const partRow = document.createElement("div");
-                partRow.className = "soul-part-row";
-                const indexLabel = document.createElement("span");
-                indexLabel.className = "soul-part-idx";
-                indexLabel.textContent = `#${idx + 1}`;
-                partRow.appendChild(indexLabel);
-                // Shape-Select
-                const shapeSel = document.createElement("select");
-                shapeSel.title = "Form";
-                for (const s of shapes) {
-                    const opt = document.createElement("option");
-                    opt.value = s;
-                    opt.textContent = s;
-                    if (s === part.shape) opt.selected = true;
-                    shapeSel.appendChild(opt);
-                }
-                shapeSel.addEventListener("change", () => {
-                    this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
-                });
-                partRow.appendChild(shapeSel);
-                // Material-Select
-                const matSel = document.createElement("select");
-                matSel.title = "Material";
-                for (const m of materials) {
-                    const opt = document.createElement("option");
-                    opt.value = m;
-                    opt.textContent = this.state.materials[m].label || m;
-                    if (m === part.material) opt.selected = true;
-                    matSel.appendChild(opt);
-                }
-                matSel.addEventListener("change", () => {
-                    this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
-                });
-                partRow.appendChild(matSel);
-                // Position + Size — kompakte Number-Inputs
-                const makeNumberInput = (val, axis, kind) => {
-                    const inp = document.createElement("input");
-                    inp.type = "number";
-                    inp.step = "0.05";
-                    inp.value = Number(val || 0).toFixed(2);
-                    inp.className = "soul-part-num";
-                    inp.title = `${kind} ${axis}`;
-                    inp.addEventListener("change", () => {
-                        const next = Number(inp.value);
-                        const field = kind === "pos" ? "position" : "size";
-                        const current = part[field] || { x: 0, y: 0, z: 0 };
-                        this.updatePartInCustomSoul(editingName, idx, {
-                            [field]: { ...current, [axis]: next },
-                        });
-                    });
-                    return inp;
-                };
-                const posGrp = document.createElement("span");
-                posGrp.className = "soul-part-group";
-                posGrp.title = "Position x/y/z";
-                posGrp.appendChild(document.createTextNode("Pos"));
-                posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
-                posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
-                posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
-                partRow.appendChild(posGrp);
-                const sizeGrp = document.createElement("span");
-                sizeGrp.className = "soul-part-group";
-                sizeGrp.title = "Größe x/y/z";
-                sizeGrp.appendChild(document.createTextNode("Größe"));
-                sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
-                sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
-                sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
-                partRow.appendChild(sizeGrp);
-                // Remove
-                const rmBtn = document.createElement("button");
-                rmBtn.type = "button";
-                rmBtn.textContent = "✕";
-                rmBtn.className = "soul-editor-danger";
-                rmBtn.title = "Teil entfernen";
-                rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
-                partRow.appendChild(rmBtn);
-                partList.appendChild(partRow);
+    // Section 3 — Inline-Editor: Pane-Head · Parts-Liste · Add-Part · Apply/Close.
+    _soulEditorAppendEditorPane(container, editingName, editing) {
+        const editor = document.createElement("div");
+        editor.className = "soul-editor-pane";
+        const head = document.createElement("div");
+        head.className = "soul-editor-pane-head";
+        head.textContent = `Edit: ${editing.label}`;
+        editor.appendChild(head);
+        const partList = document.createElement("div");
+        partList.className = "soul-part-list";
+        const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
+        const materials = Object.keys(this.state.materials || {});
+        editing.bodyParts.forEach((part, idx) => {
+            partList.appendChild(this._soulEditorBuildPartRow(part, idx, editingName, shapes, materials));
+        });
+        editor.appendChild(partList);
+        const addPartBtn = document.createElement("button");
+        addPartBtn.type = "button";
+        addPartBtn.textContent = "+ Teil hinzufügen";
+        addPartBtn.className = "soul-editor-add";
+        addPartBtn.addEventListener("click", () => {
+            this.addPartToCustomSoul(editingName, {
+                shape: "sphere",
+                material: "fleisch",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 0.3, y: 0.3, z: 0.3 },
+                label: "Neuer Teil",
             });
-            editor.appendChild(partList);
-            // Add-Part-Button
-            const addPartBtn = document.createElement("button");
-            addPartBtn.type = "button";
-            addPartBtn.textContent = "+ Teil hinzufügen";
-            addPartBtn.className = "soul-editor-add";
-            addPartBtn.addEventListener("click", () => {
-                this.addPartToCustomSoul(editingName, {
-                    shape: "sphere",
-                    material: "fleisch",
-                    position: { x: 0, y: 0.5, z: 0 },
-                    size: { x: 0.3, y: 0.3, z: 0.3 },
-                    label: "Neuer Teil",
-                });
-            });
-            editor.appendChild(addPartBtn);
-            // Apply (Become) + Close
-            const applyRow = document.createElement("div");
-            applyRow.className = "soul-editor-apply-row";
-            const becomeNow = document.createElement("button");
-            becomeNow.type = "button";
-            becomeNow.textContent = "Werde diese Seele";
-            becomeNow.className = "soul-editor-primary";
-            becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
-            applyRow.appendChild(becomeNow);
-            const closeEdit = document.createElement("button");
-            closeEdit.type = "button";
-            closeEdit.textContent = "Editor schließen";
-            closeEdit.addEventListener("click", () => {
-                this.state.soulEditor.editingName = null;
-                this.renderSoulEditorUI();
-            });
-            applyRow.appendChild(closeEdit);
-            editor.appendChild(applyRow);
-            container.appendChild(editor);
+        });
+        editor.appendChild(addPartBtn);
+        const applyRow = document.createElement("div");
+        applyRow.className = "soul-editor-apply-row";
+        const becomeNow = document.createElement("button");
+        becomeNow.type = "button";
+        becomeNow.textContent = "Werde diese Seele";
+        becomeNow.className = "soul-editor-primary";
+        becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
+        applyRow.appendChild(becomeNow);
+        const closeEdit = document.createElement("button");
+        closeEdit.type = "button";
+        closeEdit.textContent = "Editor schließen";
+        closeEdit.addEventListener("click", () => {
+            this.state.soulEditor.editingName = null;
+            this.renderSoulEditorUI();
+        });
+        applyRow.appendChild(closeEdit);
+        editor.appendChild(applyRow);
+        container.appendChild(editor);
+    }
+
+    // Eine Part-Zeile im Inline-Editor: Index · Shape · Material · Pos x/y/z ·
+    // Größe x/y/z · ✕. Die makeNumberInput-Closure bleibt lokal — sie capturet
+    // editingName + idx + part + this; sechs Aufrufe pro Zeile.
+    _soulEditorBuildPartRow(part, idx, editingName, shapes, materials) {
+        const partRow = document.createElement("div");
+        partRow.className = "soul-part-row";
+        const indexLabel = document.createElement("span");
+        indexLabel.className = "soul-part-idx";
+        indexLabel.textContent = `#${idx + 1}`;
+        partRow.appendChild(indexLabel);
+        const shapeSel = document.createElement("select");
+        shapeSel.title = "Form";
+        for (const s of shapes) {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            if (s === part.shape) opt.selected = true;
+            shapeSel.appendChild(opt);
         }
+        shapeSel.addEventListener("change", () => {
+            this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
+        });
+        partRow.appendChild(shapeSel);
+        const matSel = document.createElement("select");
+        matSel.title = "Material";
+        for (const m of materials) {
+            const opt = document.createElement("option");
+            opt.value = m;
+            opt.textContent = this.state.materials[m].label || m;
+            if (m === part.material) opt.selected = true;
+            matSel.appendChild(opt);
+        }
+        matSel.addEventListener("change", () => {
+            this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
+        });
+        partRow.appendChild(matSel);
+        const makeNumberInput = (val, axis, kind) => {
+            const inp = document.createElement("input");
+            inp.type = "number";
+            inp.step = "0.05";
+            inp.value = Number(val || 0).toFixed(2);
+            inp.className = "soul-part-num";
+            inp.title = `${kind} ${axis}`;
+            inp.addEventListener("change", () => {
+                const next = Number(inp.value);
+                const field = kind === "pos" ? "position" : "size";
+                const current = part[field] || { x: 0, y: 0, z: 0 };
+                this.updatePartInCustomSoul(editingName, idx, {
+                    [field]: { ...current, [axis]: next },
+                });
+            });
+            return inp;
+        };
+        const posGrp = document.createElement("span");
+        posGrp.className = "soul-part-group";
+        posGrp.title = "Position x/y/z";
+        posGrp.appendChild(document.createTextNode("Pos"));
+        posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
+        posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
+        posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
+        partRow.appendChild(posGrp);
+        const sizeGrp = document.createElement("span");
+        sizeGrp.className = "soul-part-group";
+        sizeGrp.title = "Größe x/y/z";
+        sizeGrp.appendChild(document.createTextNode("Größe"));
+        sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
+        sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
+        sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
+        partRow.appendChild(sizeGrp);
+        const rmBtn = document.createElement("button");
+        rmBtn.type = "button";
+        rmBtn.textContent = "✕";
+        rmBtn.className = "soul-editor-danger";
+        rmBtn.title = "Teil entfernen";
+        rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
+        partRow.appendChild(rmBtn);
+        return partRow;
     }
 
     // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).
