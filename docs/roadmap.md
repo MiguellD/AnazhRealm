@@ -26,7 +26,7 @@ Alle fünf Vision-Pfeiler (Symbiose, Emotion, Fraktal, Multisensorik, Stimme) st
 
 Schöpfer-Selbst-Audit: „das wasser weiss nicht was es ist, was es bedeutet zu fliessen". Riesen-Vergleich: kein AAA-Spiel macht prozedurale Wasserfälle wirklich (Genshin handgemacht; Minecraft reaktiv mit Damm; Noita Pixel-Sim). Welle A bringt **Bedeutung statt Politur**.
 
-**A.1 — Damm-Bauplan + Architektur-Index (V9.64)**: ein neuer Compound-Bauplan `damm` (Stein-Block-Wall, ~1m × 5m × 3m). Architektur-Index als 2D-Grid für O(1)-Lookup-pro-(x,z). Spawn via Hotbar oder DSL.
+**A.1 — Damm-Bauplan + Architektur-Index (V9.64) ✅ erledigt**: neuer built-in Bauplan `damm` (Stein-Wall 8 × 3 × 1.2 m). `state.damIndex` als 16-m-Bucket-Grid. Helper `_damIndexAdd`/`_damIndexRemove`/`_damTopAt` für O(1)-Lookup. Spawn pflegt Index automatisch, Remove cleared. Test-Band `checkBandWelleA1Damm` mit 7 Invarianten. Bereit für A.2.
 
 **A.2 — Terrain liest Damm (V9.65)**: `_terrainMacroSurfaceY(x, z)` prüft Damm-Index, addiert Damm-Höhe wenn (x,z) im Damm-Footprint. Hydrosphäre sieht den Damm als Land → Fluss-Pfad muss umrouten.
 

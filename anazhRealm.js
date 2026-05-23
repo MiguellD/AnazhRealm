@@ -31,6 +31,9 @@ class AnazhRealm {
             voxelChunkGrass: null,
             voxelChunkWater: null,
             voxelPopulatedChunks: null,
+            // V9.64 (Welle A.1) — Damm-Architektur-Bucket-Index (16-m-Zellen).
+            // O(1)-Lookup via `_damTopAt(x, z)` für Terrain-Sampling (V9.65).
+            damIndex: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
@@ -15203,6 +15206,98 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
+    // V9.64 (Welle A.1) — Damm-Index: ein 2D-Bucket-Grid (16-m-Zellen) für
+    // O(1)-Lookup im Terrain-Sampling. Jeder Damm-Architektur-Eintrag wird in
+    // alle Buckets eingetragen, die seine Bounding-Box berührt (eine Damm-
+    // Plane überspannt mehrere Buckets). `_isDamAt` liest einen einzigen
+    // Bucket + prüft AABB pro Eintrag. Vision-Pfeiler "Wasser ↔ Spieler-
+    // Wille" — der Spieler baut Damm, das Terrain liest ihn, der Fluss
+    // weicht ihm aus (V9.65 + V9.66).
+    static get DAM_BUCKET_SIZE() {
+        return 16;
+    }
+
+    _damBucketKey(bi, bj) {
+        return `${bi},${bj}`;
+    }
+
+    _damArchAABB(entry) {
+        // Damm-Bounding-Box im Welt-Raum aus parts[0].size (V9.64-Damm hat
+        // ein box-Part). Position-Rotation wird hier ignoriert — die Damm-
+        // Box-Form ist orientation-frei via max(x,z)-Halbradius (sichere
+        // Überdeckung bei jeder Rotation).
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp || !bp.parts || !bp.parts[0]) return null;
+        const part = bp.parts[0];
+        const sx = part.size.x || 1;
+        const sz = part.size.z || 1;
+        const halfMax = Math.max(sx, sz) * 0.5;
+        const cx = entry.position.x;
+        const cz = entry.position.z;
+        const topY = entry.position.y - 0.5 + (part.position.y || 0) + (part.size.y || 1) * 0.5;
+        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY };
+    }
+
+    _damIndexAdd(entry) {
+        if (!this.state.damIndex) this.state.damIndex = new Map();
+        const aabb = this._damArchAABB(entry);
+        if (!aabb) return;
+        entry.damAABB = aabb;
+        const bs = AnazhRealm.DAM_BUCKET_SIZE;
+        const i0 = Math.floor(aabb.minX / bs);
+        const i1 = Math.floor(aabb.maxX / bs);
+        const j0 = Math.floor(aabb.minZ / bs);
+        const j1 = Math.floor(aabb.maxZ / bs);
+        for (let j = j0; j <= j1; j++) {
+            for (let i = i0; i <= i1; i++) {
+                const key = this._damBucketKey(i, j);
+                let bucket = this.state.damIndex.get(key);
+                if (!bucket) {
+                    bucket = new Set();
+                    this.state.damIndex.set(key, bucket);
+                }
+                bucket.add(entry);
+            }
+        }
+    }
+
+    _damIndexRemove(entry) {
+        if (!this.state.damIndex || !entry.damAABB) return;
+        const bs = AnazhRealm.DAM_BUCKET_SIZE;
+        const a = entry.damAABB;
+        const i0 = Math.floor(a.minX / bs);
+        const i1 = Math.floor(a.maxX / bs);
+        const j0 = Math.floor(a.minZ / bs);
+        const j1 = Math.floor(a.maxZ / bs);
+        for (let j = j0; j <= j1; j++) {
+            for (let i = i0; i <= i1; i++) {
+                const bucket = this.state.damIndex.get(this._damBucketKey(i, j));
+                if (bucket) bucket.delete(entry);
+            }
+        }
+        entry.damAABB = null;
+    }
+
+    // V9.64 (Welle A.1) — Damm-Höhe an (x,z): liefert die Welt-Y-Koordinate
+    // der Damm-Oberkante, wenn (x,z) im AABB eines Damms liegt; sonst -Infinity.
+    // O(1) Bucket-Lookup + linearer Scan der Bucket-Einträge (typisch ≤2-3
+    // Dämme pro Bucket). Nutzt entry.damAABB-Cache (statt jeden Frame neu).
+    _damTopAt(x, z) {
+        if (!this.state.damIndex) return -Infinity;
+        const bs = AnazhRealm.DAM_BUCKET_SIZE;
+        const bucket = this.state.damIndex.get(this._damBucketKey(Math.floor(x / bs), Math.floor(z / bs)));
+        if (!bucket) return -Infinity;
+        let top = -Infinity;
+        for (const entry of bucket) {
+            const a = entry.damAABB;
+            if (!a) continue;
+            if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) {
+                if (a.topY > top) top = a.topY;
+            }
+        }
+        return top;
+    }
+
     // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
     // Kanal liegt (Distanz ≤ halbe Fluss-Breite + Bank-Rampe — die volle
     // Carve-Breite). Liefert die normierte Flow-Richtung, die Carve-Tiefe
@@ -19325,6 +19420,9 @@ class AnazhRealm {
             }
         }
         this.state.architectures = [];
+        // V9.64 — Damm-Index muss beim Restore neu aufgebaut werden
+        // (spawnArchitecture pflegt ihn automatisch).
+        this.state.damIndex = new Map();
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
             this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
@@ -25020,6 +25118,20 @@ class AnazhRealm {
                 size: { x: 2.4, y: 2.4, z: 2.4 },
             },
         ];
+        // V9.64 (Welle A.1) — Damm-Bauplan: ein Stein-Wall, der das Wasser
+        // physisch blockiert. Lang quer zum Fluss (~8m), schmal in Fluss-
+        // richtung (~1.2m), hoch genug um den See-Spiegel aufzustauen (~3m).
+        // Die Damm-Architektur wird in `_terrainMacroSurfaceY` als zusätzliche
+        // Surface-Höhe gelesen (V9.65) → die Hydrosphäre sieht den Damm als
+        // Land. Vision-Pfeiler "Wasser ↔ Spieler-Wille" der Welle A.
+        const dammParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 8.0, y: 3.0, z: 1.2 },
+            },
+        ];
         // V8.29 — Genesis-Plattform. Wird beim Erschaffen einer neuen Welt
         // am Welt-Zentrum gespawnt, der Spieler startet darauf. So fällt er
         // nicht blind in ein Tal — er sieht von erhöhter Warte die Welt,
@@ -25387,6 +25499,8 @@ class AnazhRealm {
             baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
             baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
+            damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
             start_plattform: {
                 name: "start_plattform",
                 label: "Genesis-Plattform",
@@ -27104,6 +27218,10 @@ class AnazhRealm {
             entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
+        // V9.64 (Welle A.1) — Damm-Index pflegen: ein 2D-Grid für O(1)-Lookup
+        // im Terrain-Sampling (V9.65). Nur Damm-Architekturen werden indexiert
+        // (kein Index-Wachstum für Bäume/Tempel/etc.).
+        if (type === "damm") this._damIndexAdd(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
         // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
@@ -28090,6 +28208,8 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        // V9.64 (Welle A.1) — Damm-Index pflegen beim Remove.
+        if (entry.type === "damm") this._damIndexRemove(entry);
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
         // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.

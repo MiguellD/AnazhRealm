@@ -12612,6 +12612,60 @@ async function checkBandHydrosphere(ctx) {
     }
 }
 
+// V9.64 (Welle A.1) — Damm-Bauplan + Architektur-Index. Verifiziert die
+// Vision-Pfeiler-Vorbereitung: Damm-Bauplan existiert, Spawn pflegt den
+// Index, _damTopAt liefert die richtige Höhe an der Damm-Position.
+async function checkBandWelleA1Damm(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.scene) return { error: "no realm" };
+        const out = {};
+        // 1) Damm-Bauplan existiert als built-in
+        out.hasDammBlueprint =
+            !!(r.state.blueprints && r.state.blueprints.damm && r.state.blueprints.damm.parts);
+        // 2) Damm-Index-Methoden existieren
+        out.hasIndexMethods =
+            typeof r._damIndexAdd === "function" &&
+            typeof r._damIndexRemove === "function" &&
+            typeof r._damTopAt === "function";
+        // 3) Spawn an einer Test-Position, prüfe damIndex + _damTopAt
+        const testPos = { x: 300, y: 5, z: 300 };
+        const entry = r.spawnArchitecture("damm", testPos, { silent: true });
+        out.spawnSucceeded = !!entry;
+        if (entry) {
+            out.indexHasEntry = !!(r.state.damIndex && r.state.damIndex.size > 0);
+            // _damTopAt am Damm-Zentrum sollte > 0 sein (Damm-Top)
+            const top = r._damTopAt(testPos.x, testPos.z);
+            out.damTopReturnsHeight = Number.isFinite(top) && top > 0;
+            out.damTopValue = top;
+            // _damTopAt 50m weg sollte -Infinity (kein Damm dort)
+            const offTop = r._damTopAt(testPos.x + 50, testPos.z + 50);
+            out.damTopOffReturnsNone = offTop === -Infinity;
+            // 4) Remove pflegt den Index
+            r.removeArchitecture(entry);
+            const topAfter = r._damTopAt(testPos.x, testPos.z);
+            out.indexClearedAfterRemove = topAfter === -Infinity;
+        }
+        return out;
+    });
+    if (res.error) {
+        check("Welle A.1 V9.64: Damm-Band-Test (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle A.1 V9.64: Damm-Bauplan als built-in", res.hasDammBlueprint);
+    check("Welle A.1 V9.64: _damIndexAdd / _damIndexRemove / _damTopAt existieren", res.hasIndexMethods);
+    check("Welle A.1 V9.64: spawnArchitecture('damm') liefert einen Eintrag", res.spawnSucceeded);
+    check("Welle A.1 V9.64: state.damIndex hat nach Spawn einen Eintrag", res.indexHasEntry);
+    check(
+        "Welle A.1 V9.64: _damTopAt liefert die Damm-Top-Höhe am Damm-Zentrum",
+        res.damTopReturnsHeight,
+        `top=${res.damTopValue}`
+    );
+    check("Welle A.1 V9.64: _damTopAt liefert -Infinity ausserhalb des Damm-AABB", res.damTopOffReturnsNone);
+    check("Welle A.1 V9.64: removeArchitecture cleared den Index-Eintrag", res.indexClearedAfterRemove);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -29497,6 +29551,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandVoxelP3AndInventory(ctx);
             await checkBandWelle6Keybindings(ctx);
             await checkBandWelle6HCreatures(ctx);
+            await checkBandWelleA1Damm(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
