@@ -191,6 +191,81 @@ function histogram(values, bucketSize) {
             }
             const awareness = { archTotal, archInWater, grassTotal, grassInWater };
 
+            // (V9.60-b.diag) Hydrosphäre-Topologie — empirische Metriken für
+            // die Wurzel-Welle. Misst (1) Fluss-Längen-Verteilung, (2) See-
+            // Höhen-Varianz, (3) Uferlinien-Variations-Index (Buchten),
+            // (4) Land-über-Wasser-Marge. Schöpfer-Befund nach V9.59-d.1:
+            // "Sand-Streifen zu homogen, in echt gibt es buchten und karge
+            // stellen" + "Biome scheinen unter Wasser". Beide Wurzeln leben
+            // in der Hydrosphäre-Topologie — diese Metriken sind die
+            // Erfolgs-Akzeptanz für V9.60-b-Sub-Wellen.
+            const rivers = hs.rivers || [];
+            const cell = hs.cell || 16;
+            const riverLengths = rivers
+                .filter((rv) => rv && rv.points)
+                .map((rv) => rv.points.length * cell);
+            riverLengths.sort((a, b) => a - b);
+            const riverMedian = riverLengths.length
+                ? riverLengths[Math.floor(riverLengths.length * 0.5)]
+                : 0;
+            const riverStats = {
+                count: riverLengths.length,
+                min: riverLengths[0] || 0,
+                median: riverMedian,
+                max: riverLengths[riverLengths.length - 1] || 0,
+                longCount: riverLengths.filter((l) => l > 500).length,
+                shortCount: riverLengths.filter((l) => l < 100).length,
+            };
+            const lakeLevels = (hs.lakes || []).map((lk) => lk.level).filter((v) => Number.isFinite(v));
+            let lakeStdDev = 0;
+            if (lakeLevels.length > 1) {
+                const mean = lakeLevels.reduce((a, b) => a + b, 0) / lakeLevels.length;
+                const variance = lakeLevels.reduce((sum, v) => sum + (v - mean) ** 2, 0) / lakeLevels.length;
+                lakeStdDev = Math.sqrt(variance);
+            }
+            // Uferlinien-Variations-Index: Anzahl Wasser-Land-Kanten geteilt
+            // durch sqrt(Wasser-Zellen). Theoretisch: Kreis ~3.5, gerade Linie
+            // → klein, Buchten → hoch (>5 = fraktal-küstenartig).
+            let coastEdges = 0;
+            let waterCells = 0;
+            let landCellsAboveWater = 0;
+            if (hs.water && hs.water.waterKind && hs.dim) {
+                const wK = hs.water.waterKind;
+                const dim = hs.dim;
+                for (let j = 0; j < dim; j++) {
+                    for (let i = 0; i < dim; i++) {
+                        const idx = i + j * dim;
+                        const wet = wK[idx] !== 0;
+                        if (wet) waterCells++;
+                        else landCellsAboveWater++;
+                        if (wet) {
+                            const ns = [
+                                i > 0 ? wK[i - 1 + j * dim] : 0,
+                                i < dim - 1 ? wK[i + 1 + j * dim] : 0,
+                                j > 0 ? wK[i + (j - 1) * dim] : 0,
+                                j < dim - 1 ? wK[i + (j + 1) * dim] : 0,
+                            ];
+                            for (const n of ns) if (n === 0) coastEdges++;
+                        }
+                    }
+                }
+            }
+            const coastIndex = waterCells > 0 ? coastEdges / Math.sqrt(waterCells) : 0;
+            // Land-über-Wasser-Marge: Median(Surface) − waterLevel. Positiv
+            // = Median-Land liegt über Wasser; negativ = die Hälfte der
+            // Welt ertrinkt. V9.59-Diagnose: +0.8 m (fast genau am Wasser).
+            const sortedMacro = Array.from(macroY).sort((a, b) => a - b);
+            const medianSurf = sortedMacro[Math.floor(sortedMacro.length * 0.5)] || 0;
+            const landMargin = medianSurf - (s.waterLevel || 0);
+            const topology = {
+                rivers: riverStats,
+                lakeLevelStdDev: lakeStdDev,
+                coastIndex,
+                waterCells,
+                landCells: landCellsAboveWater,
+                landMargin,
+            };
+
             // (e) Welt-Meta
             const meta = {
                 seed: s.worldMeta && s.worldMeta.seed,
@@ -211,6 +286,7 @@ function histogram(values, bucketSize) {
                 tarns,
                 lakes,
                 awareness,
+                topology,
                 macroY: Array.from(macroY),
                 voxelY: Array.from(voxelY),
                 chunkCfg: { dimY: cfg.dimY, step: cfg.step, floorDrop: cfg.floorDrop, ceiling },
@@ -328,6 +404,18 @@ function histogram(values, bucketSize) {
         if (ceiling - surfMax < 8) {
             console.log("  ⚠  WARNUNG: Decken-Marge knapp — eine Berg-Vertiefung BRAUCHT eine Decken-Erhöhung");
         }
+        console.log("");
+
+        console.log("=== HYDROSPHAERE-TOPOLOGIE (V9.60-b — Wurzel-Wahrheit) ===");
+        const tp = data.topology;
+        console.log(`  Land-Marge:               ${tp.landMargin.toFixed(1)} m  (Median Surface ueber waterLevel — sollte > +15 m sein damit Biome ueber Wasser liegen)`);
+        console.log(`  Land-Anteil:              ${tp.landCells} / ${tp.landCells + tp.waterCells} (${((tp.landCells / (tp.landCells + tp.waterCells)) * 100).toFixed(1)}%)`);
+        console.log(`  Fluss-Anzahl:             ${tp.rivers.count}`);
+        console.log(`  Fluss-Laengen:            min ${tp.rivers.min} m, median ${(tp.rivers.median || 0).toFixed(0)} m, max ${tp.rivers.max} m`);
+        console.log(`  Davon lange (>500m):      ${tp.rivers.longCount} ${tp.rivers.longCount >= 3 ? "✓" : "⚠ (braucht mehr lange Fluesse)"}`);
+        console.log(`  Davon kurze (<100m):      ${tp.rivers.shortCount}`);
+        console.log(`  See-Hoehen Std-Abw:       ${tp.lakeLevelStdDev.toFixed(1)} m  (${tp.lakeLevelStdDev > 8 ? "✓ differenziert" : "⚠ zu uniform"})`);
+        console.log(`  Uferlinien-Index:         ${tp.coastIndex.toFixed(2)} (Kreis ~3.5, Buchten >5, fraktale Kueste >7)`);
         console.log("");
 
         console.log("=== WELT-AWARENESS (V9.59 — kennt die Welt ihr Wasser?) ===");
