@@ -14563,16 +14563,29 @@ class AnazhRealm {
                 c[1] += (target[1] - c[1]) * t;
                 c[2] += (target[2] - c[2]) * t;
             };
-            mix(earth, ss(0.25, 0.85, f.lebendig));
-            mix(lava, ss(0.38, 0.92, f.glut));
-            mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
+            // V9.60-a — Submarine-Biom-Dämpfung. Schöpfer-Befund nach V9.59:
+            // "viele der unterschiedlichen biome scheinen aktuell unterwasser".
+            // Wurzel: 46% der Welt ist Ozean (waterLevel=35-Perzentil), aber
+            // worldFieldAt verteilt Biome (Lava, Magie, Wiese) gleichmäßig
+            // über die ganze Welt — Lava-Felder leuchten durch das Wasser
+            // durch, Wiesen werden zur grünen See-Sohle. Heilung: unter
+            // Wasser dämpfen wir die spezifischen Biom-Schichten (lava,
+            // violet, earth) sanft aus, der See-Boden bekommt einen
+            // ruhigen Stein-Sediment-Look. Übergangs-Zone -3..0 m für
+            // weichen Crossfade (kein harter Schnitt an der Uferlinie).
+            // Der Wurzel-Bruch (waterLevel selbst senken) bricht das V9.51-
+            // Tarn-System — das ist der sauberere visuelle Schliff.
+            const waterY = this._waterLevelAt(x, z);
+            const aboveWater = y - waterY;
+            const biomeStrength = aboveWater <= -3 ? 0 : aboveWater >= 0 ? 1 : (aboveWater + 3) / 3;
+            mix(earth, ss(0.25, 0.85, f.lebendig) * biomeStrength);
+            mix(lava, ss(0.38, 0.92, f.glut) * biomeStrength);
+            mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33 * biomeStrength);
             mix(snow, ss(12, 42, y));
             mix(sed, ss(-2, -14, y));
             // Strand: Glocken-Profil über dem Wasser. `_waterLevelAt` ist
             // O(1) für Ozean (häufig); seetiefe Vertices haben den See-
             // Spiegel als waterY und kriegen denselben Strand am Ufer.
-            const waterY = this._waterLevelAt(x, z);
-            const aboveWater = y - waterY;
             if (aboveWater > -1.5 && aboveWater < 2.0) {
                 // Peak bei +0.6 m, breit ~1.2 m. Unter Wasser sanft fallend.
                 const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / 1.2);
