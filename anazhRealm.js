@@ -14542,6 +14542,16 @@ class AnazhRealm {
         const violet = [0.55, 0.36, 0.86];
         const snow = [0.92, 0.93, 1.0];
         const sed = [0.78, 0.72, 0.52];
+        // V9.59-d.1 — Sand-Tint am Ufer. Vertices, deren Höhe knapp über
+        // dem Wasser-Spiegel liegt, bekommen einen warmen Beige-Anteil.
+        // Glocken-Profil (Peak bei +0.6 m über Wasser, abklingend zu 0 bei
+        // +2 m und unter Wasser): "die Welt versteht, wo Strand ist". Plus
+        // Submarine-Sand-Anteil (-1.5..0 m): der See-Boden bekommt einen
+        // weichen Sediment-Sand-Ton statt Stone, sodass der durchsichtige
+        // Wasser-Shader nicht auf grauen Fels zeigt. Diese Schicht macht
+        // die Uferlinie zu einer emergenten Beige-Linie — der Schöpfer-
+        // Befund "küste versteht das sie küste ist".
+        const sand = [0.87, 0.78, 0.55];
         for (let i = 0; i < n; i++) {
             const x = pos.getX(i);
             const y = pos.getY(i);
@@ -14558,6 +14568,16 @@ class AnazhRealm {
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
             mix(snow, ss(12, 42, y));
             mix(sed, ss(-2, -14, y));
+            // Strand: Glocken-Profil über dem Wasser. `_waterLevelAt` ist
+            // O(1) für Ozean (häufig); seetiefe Vertices haben den See-
+            // Spiegel als waterY und kriegen denselben Strand am Ufer.
+            const waterY = this._waterLevelAt(x, z);
+            const aboveWater = y - waterY;
+            if (aboveWater > -1.5 && aboveWater < 2.0) {
+                // Peak bei +0.6 m, breit ~1.2 m. Unter Wasser sanft fallend.
+                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / 1.2);
+                mix(sand, shoreBlend * 0.85);
+            }
             colors[i * 3] = c[0];
             colors[i * 3 + 1] = c[1];
             colors[i * 3 + 2] = c[2];
