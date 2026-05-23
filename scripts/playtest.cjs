@@ -39,6 +39,278 @@ function startSaveServer() {
     });
 }
 
+// V9.52 Sub-Welle a — der `safeEvaluate`-Helfer + `ctx` für den Playtest-Pflege-
+// Bogen (`docs/playtest-hygiene.md`). Kapselt das `page.evaluate(fn).catch(() => null)`-
+// Boilerplate, das die alte IIFE ~200× wiederholte. Verhaltens-IDENTISCH zur alten
+// Inline-Form (return null on catch); die Sektions-Funktionen guarden weiter selbst.
+async function safeEvaluate(page, fn) {
+    return await page.evaluate(fn).catch(() => null);
+}
+
+// V9.52 Sub-Welle a — die Initial-State-Probe als benannte Funktion. War vorher der
+// erste `page.evaluate`-Block der `### Invarianten`-Sektion. Liefert das `finalState`-
+// Objekt, das die ersten Basis-Checks + Ring 1 (Grok) konsumieren; alles weiter unten
+// fasst es nicht mehr an.
+async function gatherInitialFinalState(page) {
+    return await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return null;
+        // V8.83 — deterministische Mechanik-Probe statt der flaky
+        // Messung des Box-Inhalts am Lauf-Ende (V8.57-Disziplin):
+        // grokRender schreibt einen Prüfsatz, die Box muss ihn tragen;
+        // ein leerer Satz blankt sie NICHT (der V8.83-Guard).
+        let grokRenderProbe = null;
+        let grokRenderEmptyGuard = false;
+        try {
+            r.grokRender("Prüfsatz für den Dialog.");
+            const pb = document.getElementById("dialogue-box");
+            grokRenderProbe = pb ? pb.textContent : null;
+            r.grokRender("");
+            r.grokRender(null);
+            grokRenderEmptyGuard = !!pb && pb.textContent === "Prüfsatz für den Dialog.";
+        } catch (e) {
+            grokRenderProbe = "ERR:" + (e && e.message);
+        }
+        return {
+            terrainEverGenerated: r.state.terrainEverGenerated,
+            groundChunks: r.state.groundChunks?.length || 0,
+            chunkMapSize: r.state.chunkMap?.size || 0,
+            // V9.33 Phase 5c.2.b — die Eingangs-Welt ist jetzt voxel-
+            // default; chunkMap/groundChunks sind dann legitim leer,
+            // voxelChunks/voxelTerrainActive sind die neue Wahrheit.
+            voxelChunksSize: r.state.voxelChunks?.size || 0,
+            voxelTerrainActive: r.state.voxelTerrainActive === true,
+            voxelTerrainFlag: !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain),
+            playerY: r.state.playerMesh?.position?.y,
+            playerX: r.state.playerMesh?.position?.x,
+            playerZ: r.state.playerMesh?.position?.z,
+            creatures: r.state.creatures?.length || 0,
+            floatingIslands: r.state.floatingIslands?.length || 0,
+            hasPlayerBody: !!r.state.playerBody,
+            grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
+            grokLastSpoke: r.state.grok?.lastSpoke || 0,
+            grokRenderProbe,
+            grokRenderEmptyGuard,
+        };
+    });
+}
+
+// V9.52 Sub-Welle a — die Basis-Invarianten direkt nach dem `finalState`-Greifen.
+// Welt-/Terrain-/Spieler-Grundprüfungen — verhaltens-identisch zur alten Inline-Form.
+function checkInitialState(ctx) {
+    const { check, finalState } = ctx;
+    check(
+        "Welt initial generiert (terrainEverGenerated=true)",
+        finalState.terrainEverGenerated === true,
+        `terrainEverGenerated=${finalState.terrainEverGenerated}`
+    );
+    // V9.33 Phase 5c.2.b — die Eingangs-Welt ist seit dem Flip voxel-
+    // default. Die zwei alten Heightfield-Invarianten sind in einer
+    // voxel-aktiven Welt legitim leer; jetzt prüfen wir, dass IRGEND-
+    // EIN Terrain-Ring um den Spieler gefüllt ist (heightfield ODER
+    // voxel), und dass die voxel-default-Welt das Flag trägt.
+    check(
+        "Voxel V9.33 Phase 5c.2.b: die Eingangs-Welt ist per Default voxel-basiert (worldMeta.voxelTerrain=true)",
+        finalState.voxelTerrainFlag === true,
+        `voxelTerrainFlag=${finalState.voxelTerrainFlag}`
+    );
+    check(
+        "Voxel V9.33 Phase 5c.2.b: das Voxel-Terrain ist nach Init aktiv (parallel, hinter dem Flag)",
+        finalState.voxelTerrainActive === true,
+        `voxelTerrainActive=${finalState.voxelTerrainActive}`
+    );
+    check(
+        "Welt-Terrain ist gefüllt (Voxel-Chunks ODER Heightfield-Chunks)",
+        finalState.voxelChunksSize >= 20 || finalState.groundChunks >= 25,
+        `voxelChunks=${finalState.voxelChunksSize}, groundChunks=${finalState.groundChunks}`
+    );
+    check(
+        "Spieler nicht durch den Boden gefallen",
+        typeof finalState.playerY === "number" && finalState.playerY > -50,
+        `playerY=${finalState.playerY?.toFixed(2)}`
+    );
+    check("Kreaturen gespawnt", finalState.creatures >= 5, `creatures=${finalState.creatures}`);
+    check(
+        "Fliegende Inseln gespawnt",
+        finalState.floatingIslands >= 1,
+        `floatingIslands=${finalState.floatingIslands}`
+    );
+    check(
+        "Physik-Body für Spieler vorhanden",
+        finalState.hasPlayerBody === true,
+        `hasPlayerBody=${finalState.hasPlayerBody}`
+    );
+}
+
+// V9.52 Sub-Welle a — Ring 1 Grok-Stimme als benannte Funktion.
+// firstSpawn feuert mit 1.5s Delay nach Erst-Worldgen und ist der einzige Trigger,
+// der in 20-25 s Headless-Lauf zuverlässig kommt (idle braucht 45 s, jumpBurst
+// keine Keys, rainLong 60 s, nexus irregulär). Daher: seenFirstSpawn + lastSpoke +
+// Dialog-Text + mindestens ein "Grok: ..."-Log werden gateweise geprüft.
+function checkRing1Grok(ctx) {
+    const { check, finalState, logs } = ctx;
+    check(
+        "Grok hat Erst-Spawn registriert",
+        finalState.grokSeenFirstSpawn === true,
+        `seenFirstSpawn=${finalState.grokSeenFirstSpawn}`
+    );
+    check(
+        "Grok hat mindestens einmal gesprochen",
+        typeof finalState.grokLastSpoke === "number" && finalState.grokLastSpoke > 0,
+        `lastSpoke=${finalState.grokLastSpoke}`
+    );
+    check(
+        "grokRender schreibt einen Satz in die Dialogue-Box",
+        finalState.grokRenderProbe === "Prüfsatz für den Dialog.",
+        `probe="${(finalState.grokRenderProbe || "").slice(0, 60)}"`
+    );
+    check(
+        "grokRender ignoriert leeren Text — die Stimme wird nicht geblankt",
+        finalState.grokRenderEmptyGuard === true
+    );
+    const grokLogs = logs.filter((l) => /\[INFO\] Grok: /.test(l.text));
+    check(
+        "Mindestens ein Grok-Log im Buffer",
+        grokLogs.length >= 1,
+        `grokLogs=${grokLogs.length}${grokLogs.length ? ` erster: "${grokLogs[0].text.slice(0, 80)}"` : ""}`
+    );
+}
+
+// V9.52 Sub-Welle a — Ring 2 DSL-Interpreter + die Terrain-Erweiterungs-Sektion,
+// die historisch nur den Phase-2-Loop-Dispatch fasst. Beide teilen `dslResults` +
+// `phase2Results` und werden daher als EIN Block extrahiert (Sektions-Reihenfolge
+// bleibt unverändert).
+//
+// Ring 2: live-Smoketest der DSL-Sandbox — Welt-Identität, Effekte auf state,
+// Budget-Limits, unbekannte-Op-Ablehnung, delay-Scheduler, dslCompose.
+// Terrain-Erweiterung: V9.39 Phase 5c.2.c.3.b.iii — der alte ensureChunkAt-Smoke
+// ist tot (Voxel-Streaming hat eigene Naht-Logik); übrig bleibt der Nexus-Loop-
+// Dispatch-Beweis (V8.50 — _gameLoopTick deterministisch synchron treiben, da
+// Headless-Chromium rAF auf ~1 Hz drosselt).
+async function checkRing2Dsl(ctx) {
+    const { page, check } = ctx;
+    const dslResults = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {
+            worldIdSet: false,
+            slugSet: false,
+            weatherEffect: false,
+            chainEffect: false,
+            positionEffect: false,
+            conditionEffect: false,
+            unknownOpRejected: false,
+            depthBudgetEnforced: false,
+            delayScheduled: false,
+        };
+        if (!r || !r.state || typeof r.dslRun !== "function") return out;
+        const m = r.state.worldMeta || {};
+        out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
+        out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
+
+        const jpBefore = r.state.jumpPower;
+        const res1 = r.dslRun(["weather", "rainy"]);
+        out.weatherEffect = res1.ok && r.state.weather === "rainy";
+
+        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", 17]]);
+        out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === 17;
+
+        const creBefore = r.state.creatures.length;
+        const res3 = r.dslRun(["spawn_creature", ["at_origin"], 2, "happy"]);
+        out.positionEffect =
+            res3.ok &&
+            res3.log.some((e) => e.event === "spawned_creature") &&
+            r.state.creatures.length === creBefore + 2;
+
+        const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", 22]]);
+        out.conditionEffect = res4.ok && r.state.jumpPower === 22;
+
+        const res5 = r.dslRun(["unbekannte_op_xyz", 1, 2]);
+        out.unknownOpRejected = !res5.ok && res5.log.some((e) => e.event === "unknown_op");
+
+        let deep = ["chain"];
+        let inner = deep;
+        for (let i = 0; i < 12; i++) {
+            const next = ["chain"];
+            inner.push(next);
+            inner = next;
+        }
+        const res6 = r.dslRun(deep);
+        out.depthBudgetEnforced = res6.log.some((e) => e.event === "budget_exceeded" && e.budget === "depth");
+
+        const pendingBefore = r.state.dsl.pending.length;
+        r.dslRun(["delay", 999, ["weather", "rainy"]]);
+        out.delayScheduled = r.state.dsl.pending.length === pendingBefore + 1;
+        r.state.dsl.pending = r.state.dsl.pending.filter((p) => p.runAt < 9999999);
+
+        // Phase 2: dslCompose + Loop-Dispatch.
+        const composed = r.dslCompose();
+        out.composeIsArray = Array.isArray(composed);
+        out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
+        const histBefore = r.state.dsl.history.length;
+        r.state.nexusEvolutionQueue.push({
+            name: `playtest_evo_${Date.now()}`,
+            program: composed,
+            source: "playtest",
+            createdAt: performance.now() / 1000,
+        });
+        out.histBefore = histBefore;
+
+        r.state.jumpPower = jpBefore;
+        return out;
+    });
+
+    const phase2Results = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        if (typeof r._gameLoopTick === "function") {
+            for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
+        }
+        return {
+            historyLen: r.state.dsl.history.length,
+            queueLen: r.state.nexusEvolutionQueue.length,
+            lastHistory: r.state.dsl.history[r.state.dsl.history.length - 1] || null,
+        };
+    });
+
+    if (!dslResults) {
+        check("DSL-Smoketest erreichbar", false, "dslRun nicht aufrufbar");
+    } else {
+        check("Welt-Identität (worldId) gesetzt", dslResults.worldIdSet);
+        check("Welt-Slug gesetzt", dslResults.slugSet);
+        check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
+        check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
+        check("DSL-Position: at_origin + spawn_creature wirkt", dslResults.positionEffect);
+        check("DSL-Condition: when/weather_is verzweigt korrekt", dslResults.conditionEffect);
+        check("DSL-Sicherheit: unbekannte Op wird abgelehnt", dslResults.unknownOpRejected);
+        check("DSL-Budget: maxDepth greift bei tiefer Verschachtelung", dslResults.depthBudgetEnforced);
+        check("DSL-Scheduler: delay reiht in pending ein", dslResults.delayScheduled);
+        check("Nexus-Generator: dslCompose produziert Array", dslResults.composeIsArray);
+        check(
+            "Nexus-Generator: Komposition hat chain als Wurzel",
+            dslResults.composeRootIsChain,
+            `root=${dslResults.composeIsArray ? `"${(dslResults.composeRootIsChain && "chain") || "?"}"` : "n/a"}`
+        );
+        if (phase2Results) {
+            // FPS-Drop-Handler kann während des Wait-Intervalls neue
+            // Legacy-Evolutionen in die Queue schieben — wir prüfen
+            // daher Effekt (history grew), nicht Queue-Tiefe.
+            check(
+                "Nexus-Loop verarbeitet DSL-Evolution (history wächst)",
+                phase2Results.historyLen > dslResults.histBefore,
+                `history before=${dslResults.histBefore}, after=${phase2Results.historyLen}`
+            );
+            check(
+                "Letzte History-Einheit hat Outcome + Fitness-Daten",
+                phase2Results.lastHistory &&
+                    phase2Results.lastHistory.outcome &&
+                    typeof phase2Results.lastHistory.outcome.fpsBefore === "number",
+                phase2Results.lastHistory ? `id=${phase2Results.lastHistory.id}` : "kein Eintrag"
+            );
+        } else {
+            check("Phase-2-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+        }
+    }
+}
+
 (async () => {
     console.log(`Starte Save-Server ...`);
     const server = await startSaveServer();
@@ -113,274 +385,23 @@ function startSaveServer() {
         for (const [msg, count] of top) console.log(`  ${String(count).padStart(4)}× ${msg.slice(0, 110)}`);
 
         // ### Invarianten (gatekeeping) ###
-        const finalState = await page
-            .evaluate(() => {
-                const r = window.anazhRealm;
-                if (!r || !r.state) return null;
-                // V8.83 — deterministische Mechanik-Probe statt der flaky
-                // Messung des Box-Inhalts am Lauf-Ende (V8.57-Disziplin):
-                // grokRender schreibt einen Prüfsatz, die Box muss ihn tragen;
-                // ein leerer Satz blankt sie NICHT (der V8.83-Guard).
-                let grokRenderProbe = null;
-                let grokRenderEmptyGuard = false;
-                try {
-                    r.grokRender("Prüfsatz für den Dialog.");
-                    const pb = document.getElementById("dialogue-box");
-                    grokRenderProbe = pb ? pb.textContent : null;
-                    r.grokRender("");
-                    r.grokRender(null);
-                    grokRenderEmptyGuard = !!pb && pb.textContent === "Prüfsatz für den Dialog.";
-                } catch (e) {
-                    grokRenderProbe = "ERR:" + (e && e.message);
-                }
-                return {
-                    terrainEverGenerated: r.state.terrainEverGenerated,
-                    groundChunks: r.state.groundChunks?.length || 0,
-                    chunkMapSize: r.state.chunkMap?.size || 0,
-                    // V9.33 Phase 5c.2.b — die Eingangs-Welt ist jetzt voxel-
-                    // default; chunkMap/groundChunks sind dann legitim leer,
-                    // voxelChunks/voxelTerrainActive sind die neue Wahrheit.
-                    voxelChunksSize: r.state.voxelChunks?.size || 0,
-                    voxelTerrainActive: r.state.voxelTerrainActive === true,
-                    voxelTerrainFlag: !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain),
-                    playerY: r.state.playerMesh?.position?.y,
-                    playerX: r.state.playerMesh?.position?.x,
-                    playerZ: r.state.playerMesh?.position?.z,
-                    creatures: r.state.creatures?.length || 0,
-                    floatingIslands: r.state.floatingIslands?.length || 0,
-                    hasPlayerBody: !!r.state.playerBody,
-                    grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
-                    grokLastSpoke: r.state.grok?.lastSpoke || 0,
-                    grokRenderProbe,
-                    grokRenderEmptyGuard,
-                };
-            })
-            .catch(() => null);
+        // V9.52 Sub-Welle a — der Playtest-Pflege-Bogen hat begonnen. `ctx` ist die
+        // geteilte Sammlung der Akkumulatoren (page, check, logs, errors, finalState);
+        // jede benannte `checkX(ctx)`-Sektion liest daraus + ruft `ctx.check(...)`.
+        // Weitere Bänder ziehen Sub-Welle b-e nach (`docs/playtest-hygiene.md`).
+        const ctx = { page, check, logs, errors };
+        ctx.finalState = await gatherInitialFinalState(page);
 
         console.log(`\n=== Invarianten ===`);
-        if (!finalState) {
+        if (!ctx.finalState) {
             failures.push("Game-State erreichbar");
             console.log("  ❌ window.anazhRealm.state nicht erreichbar (Seite tot?)");
         } else {
-            check(
-                "Welt initial generiert (terrainEverGenerated=true)",
-                finalState.terrainEverGenerated === true,
-                `terrainEverGenerated=${finalState.terrainEverGenerated}`
-            );
-            // V9.33 Phase 5c.2.b — die Eingangs-Welt ist seit dem Flip voxel-
-            // default. Die zwei alten Heightfield-Invarianten sind in einer
-            // voxel-aktiven Welt legitim leer; jetzt prüfen wir, dass IRGEND-
-            // EIN Terrain-Ring um den Spieler gefüllt ist (heightfield ODER
-            // voxel), und dass die voxel-default-Welt das Flag trägt.
-            check(
-                "Voxel V9.33 Phase 5c.2.b: die Eingangs-Welt ist per Default voxel-basiert (worldMeta.voxelTerrain=true)",
-                finalState.voxelTerrainFlag === true,
-                `voxelTerrainFlag=${finalState.voxelTerrainFlag}`
-            );
-            check(
-                "Voxel V9.33 Phase 5c.2.b: das Voxel-Terrain ist nach Init aktiv (parallel, hinter dem Flag)",
-                finalState.voxelTerrainActive === true,
-                `voxelTerrainActive=${finalState.voxelTerrainActive}`
-            );
-            check(
-                "Welt-Terrain ist gefüllt (Voxel-Chunks ODER Heightfield-Chunks)",
-                finalState.voxelChunksSize >= 20 || finalState.groundChunks >= 25,
-                `voxelChunks=${finalState.voxelChunksSize}, groundChunks=${finalState.groundChunks}`
-            );
-            check(
-                "Spieler nicht durch den Boden gefallen",
-                typeof finalState.playerY === "number" && finalState.playerY > -50,
-                `playerY=${finalState.playerY?.toFixed(2)}`
-            );
-            check("Kreaturen gespawnt", finalState.creatures >= 5, `creatures=${finalState.creatures}`);
-            check(
-                "Fliegende Inseln gespawnt",
-                finalState.floatingIslands >= 1,
-                `floatingIslands=${finalState.floatingIslands}`
-            );
-            check(
-                "Physik-Body für Spieler vorhanden",
-                finalState.hasPlayerBody === true,
-                `hasPlayerBody=${finalState.hasPlayerBody}`
-            );
+            checkInitialState(ctx);
+            checkRing1Grok(ctx);
+            await checkRing2Dsl(ctx);
 
-            // ### Ring 1 – Grok-Stimme ###
-            // firstSpawn feuert mit 1.5s Delay nach Erst-Worldgen und ist der
-            // einzige Trigger, der in 20-25 s Headless-Lauf zuverlässig kommt
-            // (idle braucht 45 s, jumpBurst keine Keys, rainLong 60 s, nexus
-            // irregulär). Daher: seenFirstSpawn + lastSpoke + Dialog-Text +
-            // mindestens ein "Grok: ..."-Log werden gateweise geprüft.
-            check(
-                "Grok hat Erst-Spawn registriert",
-                finalState.grokSeenFirstSpawn === true,
-                `seenFirstSpawn=${finalState.grokSeenFirstSpawn}`
-            );
-            check(
-                "Grok hat mindestens einmal gesprochen",
-                typeof finalState.grokLastSpoke === "number" && finalState.grokLastSpoke > 0,
-                `lastSpoke=${finalState.grokLastSpoke}`
-            );
-            check(
-                "grokRender schreibt einen Satz in die Dialogue-Box",
-                finalState.grokRenderProbe === "Prüfsatz für den Dialog.",
-                `probe="${(finalState.grokRenderProbe || "").slice(0, 60)}"`
-            );
-            check(
-                "grokRender ignoriert leeren Text — die Stimme wird nicht geblankt",
-                finalState.grokRenderEmptyGuard === true
-            );
-            const grokLogs = logs.filter((l) => /\[INFO\] Grok: /.test(l.text));
-            check(
-                "Mindestens ein Grok-Log im Buffer",
-                grokLogs.length >= 1,
-                `grokLogs=${grokLogs.length}${grokLogs.length ? ` erster: "${grokLogs[0].text.slice(0, 80)}"` : ""}`
-            );
-
-            // ### Ring 2 – DSL-Interpreter ###
-            // Live-Smoketest: führt mehrere kleine DSL-Programme aus und prüft,
-            // dass Effekte real auf state durchschlagen, Budgets greifen,
-            // unbekannte Ops sauber abgelehnt werden und Welt-Identität anliegt.
-            const dslResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {
-                        worldIdSet: false,
-                        slugSet: false,
-                        weatherEffect: false,
-                        chainEffect: false,
-                        positionEffect: false,
-                        conditionEffect: false,
-                        unknownOpRejected: false,
-                        depthBudgetEnforced: false,
-                        delayScheduled: false,
-                    };
-                    if (!r || !r.state || typeof r.dslRun !== "function") return out;
-                    const m = r.state.worldMeta || {};
-                    out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
-                    out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
-
-                    const jpBefore = r.state.jumpPower;
-                    const res1 = r.dslRun(["weather", "rainy"]);
-                    out.weatherEffect = res1.ok && r.state.weather === "rainy";
-
-                    const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", 17]]);
-                    out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === 17;
-
-                    const creBefore = r.state.creatures.length;
-                    const res3 = r.dslRun(["spawn_creature", ["at_origin"], 2, "happy"]);
-                    out.positionEffect =
-                        res3.ok &&
-                        res3.log.some((e) => e.event === "spawned_creature") &&
-                        r.state.creatures.length === creBefore + 2;
-
-                    const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", 22]]);
-                    out.conditionEffect = res4.ok && r.state.jumpPower === 22;
-
-                    const res5 = r.dslRun(["unbekannte_op_xyz", 1, 2]);
-                    out.unknownOpRejected = !res5.ok && res5.log.some((e) => e.event === "unknown_op");
-
-                    let deep = ["chain"];
-                    let inner = deep;
-                    for (let i = 0; i < 12; i++) {
-                        const next = ["chain"];
-                        inner.push(next);
-                        inner = next;
-                    }
-                    const res6 = r.dslRun(deep);
-                    out.depthBudgetEnforced = res6.log.some(
-                        (e) => e.event === "budget_exceeded" && e.budget === "depth"
-                    );
-
-                    const pendingBefore = r.state.dsl.pending.length;
-                    r.dslRun(["delay", 999, ["weather", "rainy"]]);
-                    out.delayScheduled = r.state.dsl.pending.length === pendingBefore + 1;
-                    r.state.dsl.pending = r.state.dsl.pending.filter((p) => p.runAt < 9999999);
-
-                    // Phase 2: dslCompose + Loop-Dispatch.
-                    const composed = r.dslCompose();
-                    out.composeIsArray = Array.isArray(composed);
-                    out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
-                    const histBefore = r.state.dsl.history.length;
-                    r.state.nexusEvolutionQueue.push({
-                        name: `playtest_evo_${Date.now()}`,
-                        program: composed,
-                        source: "playtest",
-                        createdAt: performance.now() / 1000,
-                    });
-                    out.histBefore = histBefore;
-
-                    r.state.jumpPower = jpBefore;
-                    return out;
-                })
-                .catch(() => null);
-
-            // ### Terrain-Erweiterung ###
-            // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Extension-Smoke
-            // (`ensureChunkAt(20,20)` direkt, Naht-Treue zwischen 33×33-
-            // Vertex-Chunks) ist als toter Test gestrichen. `ensureChunkAt`,
-            // `_chunkGeometry` und die `state.chunkMap`-basierte Naht-Mechanik
-            // existieren nicht mehr. Voxel-Chunks streamen über
-            // `_tickVoxelChunkStreaming` mit eigener Naht-Logik (V9.10
-            // 1-Zellen-Skirt im Surface-Nets-Pfad).
-
-            // V8.50 — den Game-Loop deterministisch synchron treiben statt auf
-            // rAF zu warten. Headless-Chromium drosselt requestAnimationFrame
-            // auf ~1 Hz → ein 500-ms-Fenster enthielt oft 0 Loop-Ticks → der
-            // Nexus zog die Test-Evolution nicht aus der Queue → flaky CI.
-            // _gameLoopTick ist die Loop-Funktion selbst (5× = bis zu 5
-            // Queue-Einträge verarbeitet).
-            const phase2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (typeof r._gameLoopTick === "function") {
-                        for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
-                    }
-                    return {
-                        historyLen: r.state.dsl.history.length,
-                        queueLen: r.state.nexusEvolutionQueue.length,
-                        lastHistory: r.state.dsl.history[r.state.dsl.history.length - 1] || null,
-                    };
-                })
-                .catch(() => null);
-
-            if (!dslResults) {
-                check("DSL-Smoketest erreichbar", false, "dslRun nicht aufrufbar");
-            } else {
-                check("Welt-Identität (worldId) gesetzt", dslResults.worldIdSet);
-                check("Welt-Slug gesetzt", dslResults.slugSet);
-                check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
-                check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
-                check("DSL-Position: at_origin + spawn_creature wirkt", dslResults.positionEffect);
-                check("DSL-Condition: when/weather_is verzweigt korrekt", dslResults.conditionEffect);
-                check("DSL-Sicherheit: unbekannte Op wird abgelehnt", dslResults.unknownOpRejected);
-                check("DSL-Budget: maxDepth greift bei tiefer Verschachtelung", dslResults.depthBudgetEnforced);
-                check("DSL-Scheduler: delay reiht in pending ein", dslResults.delayScheduled);
-                check("Nexus-Generator: dslCompose produziert Array", dslResults.composeIsArray);
-                check(
-                    "Nexus-Generator: Komposition hat chain als Wurzel",
-                    dslResults.composeRootIsChain,
-                    `root=${dslResults.composeIsArray ? `"${(dslResults.composeRootIsChain && "chain") || "?"}"` : "n/a"}`
-                );
-                if (phase2Results) {
-                    // FPS-Drop-Handler kann während des Wait-Intervalls neue
-                    // Legacy-Evolutionen in die Queue schieben — wir prüfen
-                    // daher Effekt (history grew), nicht Queue-Tiefe.
-                    check(
-                        "Nexus-Loop verarbeitet DSL-Evolution (history wächst)",
-                        phase2Results.historyLen > dslResults.histBefore,
-                        `history before=${dslResults.histBefore}, after=${phase2Results.historyLen}`
-                    );
-                    check(
-                        "Letzte History-Einheit hat Outcome + Fitness-Daten",
-                        phase2Results.lastHistory &&
-                            phase2Results.lastHistory.outcome &&
-                            typeof phase2Results.lastHistory.outcome.fpsBefore === "number",
-                        phase2Results.lastHistory ? `id=${phase2Results.lastHistory.id}` : "kein Eintrag"
-                    );
-                } else {
-                    check("Phase-2-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
-                }
-            }
+            // --- Ab hier weiter inline (Sub-Wellen b-e ziehen die übrigen Bänder nach) ---
 
             // ### Ring 2 Phase 3 – Chat → DSL ###
             // Wir verifizieren drei Dinge: Parser liefert das richtige AST,
@@ -12797,15 +12818,9 @@ function startSaveServer() {
                     typeof hb.perfMs === "number" && hb.perfMs < 500
                 );
                 check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
-                check(
-                    "Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form",
-                    hb.waterFieldShape
-                );
+                check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
                 check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
-                check(
-                    "Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel",
-                    hb.waterFieldOceanFlat
-                );
+                check("Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel", hb.waterFieldOceanFlat);
                 check(
                     `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
                     hb.waterFieldMatchesNet
@@ -12821,10 +12836,7 @@ function startSaveServer() {
                     hb.waterLevelLakeOk
                 );
                 check("Voxel V9.51: `_hydroSeedTarns` existiert (der Tarn-Pass)", hb.hasTarnPass);
-                check(
-                    `Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden (${hb.tarnCount} Tarns)`,
-                    hb.tarnCount >= 1
-                );
+                check(`Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden (${hb.tarnCount} Tarns)`, hb.tarnCount >= 1);
                 check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
                 check(
                     `Voxel V9.51: jede Tarn-Mulde wurde zu einem See (${hb.tarnsBecameLakes}/${hb.tarnCount})`,

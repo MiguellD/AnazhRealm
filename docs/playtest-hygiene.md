@@ -105,14 +105,14 @@ Bei diesem Bogen ist das Netz das, was umgebaut wird. Es gibt keinen Meta-Test.
 
 Reihenfolge-Prinzip wie V9.44: vom Gerüst zum Detail, jede Sub-Welle ein Commit.
 
-| # | Welle | Was | Aufwand | Risiko |
-|---|---|---|---|---|
-| a | **Gerüst + Beweis-Schnitt** | `ctx`-Objekt + `safeEvaluate`-Helfer; das erste Band (Ring 1+2, ~12 Sektionen) als benannte Funktionen, vom schlanken Orchestrator `await`-et. Etabliert Muster + Beweis-Methode. | ~1 Session | niedrig |
-| b | **Band 1 — Ringe + frühe Hylomorphismus-Wellen** | Welle 1-5, Ring 8-11.5 (~50 Sektionen) | ~1-1.5 Sessions | niedrig |
-| c | **Band 2 — Welle 6 + Voxel-Bogen** | 6.A-6.X, Voxel-Terrain-Phasen, Hydrosphäre (~55 Sektionen) | ~1.5 Sessions | niedrig |
-| d | **Band 3 — Atmosphäre + Fremd-Engine-Bogen** | 6.G3/G4, V8.24-V8.93, W12-W17 (~55 Sektionen) | ~1.5 Sessions | niedrig |
-| e | **Band 4 — Rest + Schluss** | die übrigen Sektionen, der Report-Block, `finally`/Exit | ~1 Session | niedrig |
-| f | **Politur — Helfer-Durchzug** | jede Sektion, die das `evaluate`-Boilerplate noch inline trägt, durch `safeEvaluate` routen; `### `-Header-Stil vereinheitlichen; Orchestrator schlank ziehen; Rest-Grenze dokumentieren | ~1 Session | niedrig |
+| # | Welle | Was | Aufwand | Risiko | Status |
+|---|---|---|---|---|---|
+| a | **Gerüst + Beweis-Schnitt** | `ctx`-Objekt + `safeEvaluate`-Helfer; die ersten drei extrahierbaren Sektionen (Initial-State-Basis, Ring 1 Grok, Ring 2 DSL+Terrain-Erweiterung) als benannte Module-Scope-Funktionen, vom Orchestrator `await`-et. Etabliert Muster + Beweis-Methode. | ~1 Session | niedrig | ✅ V9.52-a (23.05.2026, vier Baseline-Läufe bit-identisch; nur pre-existing Drift-Bänder verbleiben) |
+| b | **Band 1 — Ringe + frühe Hylomorphismus-Wellen** | Welle 1-5, Ring 8-11.5 (~50 Sektionen) | ~1-1.5 Sessions | niedrig | offen |
+| c | **Band 2 — Welle 6 + Voxel-Bogen** | 6.A-6.X, Voxel-Terrain-Phasen, Hydrosphäre (~55 Sektionen) | ~1.5 Sessions | niedrig | offen |
+| d | **Band 3 — Atmosphäre + Fremd-Engine-Bogen** | 6.G3/G4, V8.24-V8.93, W12-W17 (~55 Sektionen) | ~1.5 Sessions | niedrig | offen |
+| e | **Band 4 — Rest + Schluss** | die übrigen Sektionen, der Report-Block, `finally`/Exit | ~1 Session | niedrig | offen |
+| f | **Politur — Helfer-Durchzug** | jede Sektion, die das `evaluate`-Boilerplate noch inline trägt, durch `safeEvaluate` routen; `### `-Header-Stil vereinheitlichen; Orchestrator schlank ziehen; Rest-Grenze dokumentieren | ~1 Session | niedrig | offen |
 
 **Sub-Welle a — das Gerüst.** Der Orchestrator wird: Setup (Server-Start, Browser-Launch,
 Log-Sammlung — Zeile 1-114, bleibt unangetastet) → Report → eine geordnete Liste
