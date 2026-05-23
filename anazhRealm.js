@@ -14200,18 +14200,56 @@ class AnazhRealm {
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
     _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
+        const density = this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        const { positions, vertCells, cellVert } = this._voxelExtractSurfaceVertices(
+            density,
+            ox,
+            oy,
+            oz,
+            dimX,
+            dimY,
+            dimZ,
+            step
+        );
+        if (positions.length === 0) return null;
+        const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
+        this._voxelLaplacianSmoothPositions(positions, indices);
+        this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
+        if (positions.length === 0) return null;
+        const normals = this._voxelGradientNormals(positions, sample, step);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        if (indices.length > 0) geom.setIndex(indices);
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        return geom;
+    }
+
+    // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
+    // Indizierung gi = i + j*Nx + k*Nx*Ny.
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
-        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
         for (let k = 0; k < Nz; k++) {
             for (let j = 0; j < Ny; j++) {
                 for (let i = 0; i < Nx; i++) {
-                    density[gi(i, j, k)] = sample(ox + i * step, oy + j * step, oz + k * step);
+                    density[i + j * Nx + k * Nx * Ny] = sample(ox + i * step, oy + j * step, oz + k * step);
                 }
             }
         }
+        return density;
+    }
+
+    // Pass 1 — Surface-Nets: ein Vertex pro oberflächen-schneidender Zelle.
+    // Liefert positions (x/y/z-Tripel), cellVert (Zell-Index → Vertex-Index,
+    // -1 wenn keine Oberfläche) und vertCells (i/j/k pro Vertex für den
+    // Crop-Pass-Skirt-Filter, V9.42-b).
+    _voxelExtractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
+        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
         // Die 12 Würfel-Kanten als Eck-Paare (Eck c: bit0=x, bit1=y, bit2=z).
         const EDGES = [
             [0, 1],
@@ -14227,18 +14265,10 @@ class AnazhRealm {
             [5, 7],
             [6, 7],
         ];
-        const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
-        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
-        const positions = [];
-        // V9.42-b — Vertex→Zell-Lookup für die Smooth-Skirt-Disziplin:
-        // Naht-Vertices (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1)
-        // dürfen NICHT vom Laplacian-Smooth verschoben werden, sonst
-        // verlieren benachbarte Chunks die V9.10-Skirt-Übereinstimmung
-        // an der Naht (jeder Chunk zieht den Naht-Vertex zu SEINER inneren
-        // Topologie → Spalt). Vertices in Rand-Zellen bleiben unverschoben.
-        const vertCells = [];
         const solid = (v) => v > 0;
-        // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
+        const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
+        const positions = [];
+        const vertCells = [];
         for (let k = 0; k < dimZ; k++) {
             for (let j = 0; j < dimY; j++) {
                 for (let i = 0; i < dimX; i++) {
@@ -14281,17 +14311,25 @@ class AnazhRealm {
                 }
             }
         }
-        if (positions.length === 0) return null;
-        // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad.
-        // V9.41: alternierende Diagonale je nach Zell-Parität `(i+j+k) & 1`.
-        // Vor V9.41 trianguliert quad() IMMER mit a→c (`indices.push(a,b,c, a,c,d)`)
-        // — alle Diagonal-Falten zeigen in dieselbe Richtung → sichtbares Streifen-
-        // Muster auf flachen Hügeln (Schöpfer-Browser-Befund 20.05.2026, Punkt 3).
-        // Schach-Brett: gerade Zellen behalten a→c, ungerade nutzen b→d. Beide
-        // Triangulierungen sind CCW-konsistent (das Quad ist ccw a→b→c→d auf-
-        // gebaut, beide Diagonal-Wahlen erhalten das Winding). Geometrie-Kosten:
-        // null (gleich viele Dreiecke, gleicher Vertex-Buffer); Lichtwirkung:
-        // die Falten brechen sich auf statt sich zu Streifen zu addieren.
+        return { positions, vertCells, cellVert };
+    }
+
+    // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad. V9.41
+    // alternierende Diagonale je nach Zell-Parität `(i+j+k) & 1` bricht das
+    // sichtbare Streifen-Muster auf flachen Hügeln (Schöpfer-Browser-Befund
+    // 20.05.2026). cv() ist die Out-of-Range-Wand: OHNE sie aliaste
+    // `ci(dim, j, k)` in einen FREMDEN Zell-Slot → Streck-Dreieck quer durch
+    // den Chunk an JEDER Naht.
+    _voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
+        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
+        const solid = (v) => v > 0;
+        const cv = (i, j, k) => {
+            if (i < 0 || j < 0 || k < 0 || i >= dimX || j >= dimY || k >= dimZ) return -1;
+            return cellVert[ci(i, j, k)];
+        };
         const indices = [];
         const quad = (a, b, c, d, parity) => {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
@@ -14301,23 +14339,10 @@ class AnazhRealm {
                 indices.push(a, b, c, a, c, d);
             }
         };
-        // cv() liefert den Zell-Vertex ODER -1 für jeden out-of-range Index.
-        // OHNE diese Wand aliaste `ci(dim, j, k)` (= dim + j*dim + …) in einen
-        // FREMDEN Zell-Slot — `cellVert` dort konnte einen gültigen Vertex
-        // tragen → ein Streck-Dreieck quer durch den Chunk an JEDER i/j/k=dim-
-        // Randebene (= an jeder Chunk-Naht). Das war die „unsaubere Naht".
-        const cv = (i, j, k) => {
-            if (i < 0 || j < 0 || k < 0 || i >= dimX || j >= dimY || k >= dimZ) return -1;
-            return cellVert[ci(i, j, k)];
-        };
         for (let k = 0; k <= dimZ; k++) {
             for (let j = 0; j <= dimY; j++) {
                 for (let i = 0; i <= dimX; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
-                    // V9.41: parity = (i+j+k) & 1 entscheidet die Quad-Diagonale.
-                    // Eine GITTER-KANTE wird von zwei Zellen geteilt (links/rechts
-                    // der Kante); die Parität EINER konsistent gewählten Ecke
-                    // (hier (i,j,k)) gibt jeder Kante eine eindeutige Diagonale.
                     const parity = (i + j + k) & 1;
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
@@ -14334,115 +14359,99 @@ class AnazhRealm {
                 }
             }
         }
-        const geom = new THREE.BufferGeometry();
-        // V9.41.b — Laplacian-Smooth-Pass. Surface-Nets liefert EINEN Vertex
-        // je Zelle (Auflösungs-Grenze); auf einer schrägen flachen Fläche
-        // entstehen sichtbare Treppen, weil benachbarte Zellen denselben
-        // Y-Slot teilen. V9.41-Schach-Brett-Diagonalen haben das STREIFEN-
-        // Muster gebrochen, aber die Treppen-GEOMETRIE blieb (Schöpfer-
-        // Browser-Test: „keine Änderung"). Laplacian-Smooth glättet die
-        // Vertex-Positionen iterativ über ihre topologischen Nachbarn —
-        // die Treppen werden zu sanften Schrägen. Eine Iteration mit
-        // Lambda 0.5 reicht visuell ohne sichtbare Volumen-Schrumpfung;
-        // die Normalen werden danach aus dem Dichte-Gradient an der
-        // NEUEN Vertex-Position gesampelt (V9.16-Pfad bleibt erhalten —
-        // die echte Iso-Fläche ist unverschoben, nur das Mesh-Approx).
-        if (indices.length >= 3) {
-            const vertCount = positions.length / 3;
-            const neighborSets = new Array(vertCount);
-            for (let v = 0; v < vertCount; v++) neighborSets[v] = new Set();
-            for (let t = 0; t + 2 < indices.length; t += 3) {
-                const ia = indices[t];
-                const ib = indices[t + 1];
-                const ic = indices[t + 2];
-                neighborSets[ia].add(ib);
-                neighborSets[ia].add(ic);
-                neighborSets[ib].add(ia);
-                neighborSets[ib].add(ic);
-                neighborSets[ic].add(ia);
-                neighborSets[ic].add(ib);
-            }
-            // V9.42-d — der Smooth läuft über ALLE Vertices, kein Skirt-
-            // Sonderfall. V9.42-b liess Skirt-Vertices ungesmootht (sicht-
-            // barer Treppen-Streifen an jeder Naht); V9.42-c smoothte sie
-            // mit Rand-Ebenen-Nachbarn (NICHT deterministisch — die Ebenen-
-            // Quad-Topologie hängt von Density auf BEIDEN Naht-Seiten ab →
-            // 6.7 % Spalt). Die KORREKTE Lösung ist das pad: der Chunk
-            // mesht `cropMargin` Zellen ÜBER seinen Skirt hinaus, smootht
-            // voll, schneidet den pad-Überhang danach ab. Jeder behaltene
-            // Vertex — auch der Skirt-Naht-Vertex — wurde mit seinen ECHTEN
-            // Welt-Nachbarn gesmootht (die im pad lagen). Der Nachbar-Chunk
-            // hat seinen pad an derselben Welt-Region → identischer Smooth
-            // → nahtlos UND ohne ungesmootht-Streifen.
-            const lambda = 0.5;
-            const smoothed = new Array(positions.length);
-            for (let v = 0; v < vertCount; v++) {
-                const nbrs = neighborSets[v];
-                const cnt = nbrs.size;
-                if (cnt === 0) {
-                    smoothed[v * 3] = positions[v * 3];
-                    smoothed[v * 3 + 1] = positions[v * 3 + 1];
-                    smoothed[v * 3 + 2] = positions[v * 3 + 2];
-                    continue;
-                }
-                let sx = 0;
-                let sy = 0;
-                let sz = 0;
-                for (const n of nbrs) {
-                    sx += positions[n * 3];
-                    sy += positions[n * 3 + 1];
-                    sz += positions[n * 3 + 2];
-                }
-                const ax = sx / cnt;
-                const ay = sy / cnt;
-                const az = sz / cnt;
-                smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
-                smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
-                smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
-            }
-            for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
+        return indices;
+    }
+
+    // V9.41.b/V9.42-d — Laplacian-Smooth (1 Iteration, λ=0.5) MUTIERT positions
+    // in place. Surface-Nets liefert EINEN Vertex pro Zelle → schräge flache
+    // Flächen zeigen Treppen; Smooth glättet zu sanften Schrägen über die
+    // topologischen Nachbarn. Läuft über ALLE Vertices (kein Skirt-Sonderfall;
+    // der pad+Crop-Pass sichert den Naht-Determinismus — jeder Nachbar-Chunk
+    // hat seinen pad an derselben Welt-Region, identischer Smooth → nahtlos).
+    _voxelLaplacianSmoothPositions(positions, indices) {
+        if (indices.length < 3) return;
+        const vertCount = positions.length / 3;
+        const neighborSets = new Array(vertCount);
+        for (let v = 0; v < vertCount; v++) neighborSets[v] = new Set();
+        for (let t = 0; t + 2 < indices.length; t += 3) {
+            const ia = indices[t];
+            const ib = indices[t + 1];
+            const ic = indices[t + 2];
+            neighborSets[ia].add(ib);
+            neighborSets[ia].add(ic);
+            neighborSets[ib].add(ia);
+            neighborSets[ib].add(ic);
+            neighborSets[ic].add(ia);
+            neighborSets[ic].add(ib);
         }
-        // V9.42-d — Crop-Pass: die äussersten `cropMargin` Zell-Ebenen in
-        // X/Z verwerfen. Sie waren nur Smooth-Stützen (pad); der behaltene
-        // Kern + Skirt ist voll-deterministisch gesmootht. Vertices in den
-        // pad-Zellen + Quads, die sie referenzieren, fallen weg; der Rest
-        // wird neu indiziert.
-        if (cropMargin > 0 && positions.length > 0) {
-            const vc = positions.length / 3;
-            const remap = new Int32Array(vc).fill(-1);
-            const keptPos = [];
-            let kept = 0;
-            for (let v = 0; v < vc; v++) {
-                const ciV = vertCells[v * 3];
-                const ckV = vertCells[v * 3 + 2];
-                if (ciV < cropMargin || ciV >= dimX - cropMargin || ckV < cropMargin || ckV >= dimZ - cropMargin) {
-                    continue;
-                }
-                remap[v] = kept++;
-                keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+        const lambda = 0.5;
+        const smoothed = new Array(positions.length);
+        for (let v = 0; v < vertCount; v++) {
+            const nbrs = neighborSets[v];
+            const cnt = nbrs.size;
+            if (cnt === 0) {
+                smoothed[v * 3] = positions[v * 3];
+                smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                continue;
             }
-            const keptIdx = [];
-            for (let t = 0; t + 2 < indices.length; t += 3) {
-                const a = remap[indices[t]];
-                const b = remap[indices[t + 1]];
-                const c = remap[indices[t + 2]];
-                if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+            let sx = 0;
+            let sy = 0;
+            let sz = 0;
+            for (const n of nbrs) {
+                sx += positions[n * 3];
+                sy += positions[n * 3 + 1];
+                sz += positions[n * 3 + 2];
             }
-            positions.length = 0;
-            for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
-            indices.length = 0;
-            for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+            const ax = sx / cnt;
+            const ay = sy / cnt;
+            const az = sz / cnt;
+            smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+            smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+            smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
         }
-        if (positions.length === 0) return null;
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        if (indices.length > 0) geom.setIndex(indices);
-        // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der
-        // Mesh-Triangulierung. `computeVertexNormals` mittelt die Flächen-
-        // Normalen der triangulierten Quads → es nimmt jede Quad-Diagonal-
-        // Faltung auf → ein hartes Rauten-/Trapez-Facetten-Muster auf der
-        // Oberfläche. Der Gradient `∇d` IST die wahre Iso-Oberflächen-
-        // Normale — glatt, unabhängig von der Facettierung. Die Oberfläche
-        // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
+        for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
+    }
+
+    // V9.42-d Crop-Pass — die äussersten `cropMargin` Zell-Ebenen in X/Z
+    // verwerfen. Sie waren nur Smooth-Stützen (pad); der behaltene Kern +
+    // Skirt ist voll-deterministisch gesmootht. MUTIERT positions + indices
+    // in place (.length=0 + push, weil der Aufrufer Referenzen hält).
+    _voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
+        if (cropMargin <= 0 || positions.length === 0) return;
+        const vc = positions.length / 3;
+        const remap = new Int32Array(vc).fill(-1);
+        const keptPos = [];
+        let kept = 0;
+        for (let v = 0; v < vc; v++) {
+            const ciV = vertCells[v * 3];
+            const ckV = vertCells[v * 3 + 2];
+            if (ciV < cropMargin || ciV >= dimX - cropMargin || ckV < cropMargin || ckV >= dimZ - cropMargin) {
+                continue;
+            }
+            remap[v] = kept++;
+            keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+        }
+        const keptIdx = [];
+        for (let t = 0; t + 2 < indices.length; t += 3) {
+            const a = remap[indices[t]];
+            const b = remap[indices[t + 1]];
+            const c = remap[indices[t + 2]];
+            if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+        }
+        positions.length = 0;
+        for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
+        indices.length = 0;
+        for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+    }
+
+    // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der Mesh-
+    // Triangulierung. `computeVertexNormals` mittelt die Flächen-Normalen
+    // der triangulierten Quads → nimmt jede Quad-Diagonal-Faltung auf →
+    // hartes Rauten-/Trapez-Facetten-Muster. Der Gradient `∇d` IST die wahre
+    // Iso-Oberflächen-Normale — glatt, facettierungs-unabhängig. Die Oberfläche
+    // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
+    _voxelGradientNormals(positions, sample, step) {
         const normals = new Float32Array(positions.length);
         const eps = step * 0.5;
         for (let v = 0; v < positions.length; v += 3) {
@@ -14464,8 +14473,7 @@ class AnazhRealm {
                 normals[v + 2] = -gz / len;
             }
         }
-        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-        return geom;
+        return normals;
     }
 
     // V9.10 — Welt-Feld-Farbe pro Voxel-Vertex. Mirrort die Farb-Logik des

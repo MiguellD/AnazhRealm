@@ -2,7 +2,9 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V9.56-f (23.05.2026) — **Kontrollfluss-Etappe Sub-Welle f**. `_tickCreatureTaskDirection` 267 → 8 Zeilen Orchestrator (Task-Dispatcher) + drei Helfer entlang der vier Task-Branches: `_tickCreatureFollowPlayer` 17 Z. (Halt-Distanz + Happy-Speed-Boost), `_tickCreatureGather` 107 Z. (2-Phasen bring/harvest), `_tickCreatureBuild` 125 Z. (3-Phasen take/walk/spawn). Block-Grenzen-Inspektion (V9.56-e-Lehre): die vier Task-Branches haben ZERO shared lokale State zwischen sich; die internen Phasen-Logik in gather/build teilt Material/Blueprint-Validation + Speed-Computation und bleibt EINE Schicht tiefer (kein Bonus-Refactoring). Side-Effect-Stream bit-identisch. Verhaltensneutral, Playtest grün vor + nach. Datei +7 Z.
+**Stand**: V9.56-g (23.05.2026) — **Kontrollfluss-Etappe Sub-Welle g**. `_voxelChunkGeometry` 269 → 25 Zeilen Orchestrator (Surface-Nets-Pipeline) + sechs Pass-Helfer: `_voxelSampleDensityGrid` 14 Z., `_voxelExtractSurfaceVertices` 68 Z. (Pass 1), `_voxelEmitQuadIndices` 41 Z. (Pass 2, V9.41-Parity-Diagonalen), `_voxelLaplacianSmoothPositions` 44 Z. (V9.41.b, mutate in place), `_voxelCropPad` 27 Z. (V9.42-d, mutate in place), `_voxelGradientNormals` 24 Z. (V9.16). Median ~34 Z. Saubere Pipeline-Sequenz: jede Phase liest ihre Vorgänger und übergibt an die nächste — Block-Grenzen sind sequenziell-einseitig, keine Phase schreibt zurück. Das mutate-in-place-Pattern (Smooth+Crop) wurde EXPLIZIT gemacht statt Return-new-Array-Variante mit Re-Assignments. Verhaltensneutral, Playtest grün vor + nach (Voxel-Terrain rendert, Spieler steht drauf). Datei +8 Z.
+
+**Davor — V9.56-f**: `_tickCreatureTaskDirection` 267 → 8 Z. (Task-Dispatcher) + 3 Helfer (Follow 17, Gather 107, Build 125). Block-Grenzen sind eine HIERARCHIE: Task-Branch hat ZERO shared State, Phasen-Ebene teilt Validation+Speed.
 
 **Davor — V9.56-e die Kontrollfluss-Etappe ERÖFFNET**: `fuseWorlds` 239 → 114 Z. + 8 Helfer (median ~16). Pure Sequenz mit Snap-Object inline, Math.random-Reihenfolge bit-identisch.
 
