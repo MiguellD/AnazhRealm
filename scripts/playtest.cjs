@@ -15554,6 +15554,6156 @@ async function checkBandWelle6HCreatures(ctx) {
     }
 }
 
+// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.X.1 + X.2 + X.3 + X.4/X.5 — der Audit-Fixes-Quartett (17.05.2026)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6XAudit(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.X.1 Audit-Fixes (17.05.2026) ###
+    // Vier Bug-Quartett-Fixes aus dem Schöpfer-Audit:
+    //   A1 — Ammo-Body activate(true) vor Jump-Velocity (Stand-Sprung)
+    //   A2 — confirmBuild blockt bei instabilem Phantom im pfad-Modus
+    //   A3 — Markier-UI zeigt Baupläne mit emergenter Rolle (filter
+    //        auf !roleManual statt !role), Stat-Panel zeigt Equipped
+    //   A4 — Player-Aura in 1st-Person ausgeblendet (Position bleibt
+    //        getrackt, nur Visibility togglet)
+    const wave6x1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- A1: Code-Strukturtest — activate(true) im handleJump-Pfad
+            // (Quelltext-Inspektion: das ist die einzige zuverlässige Art
+            // den Ammo-Sleep-Wakeup zu prüfen ohne echte Physik-Sim).
+            // Wichtig: nicht den ersten setLinearVelocity-Match nehmen
+            // (der könnte in einem Kommentar stehen), sondern den ECHTEN
+            // Method-Call mit `playerBody.setLinearVelocity(`.
+            const jumpSrc = r.handleJump.toString();
+            const activatePos = jumpSrc.indexOf(".activate(true)");
+            const setVelPos = jumpSrc.indexOf("playerBody.setLinearVelocity(");
+            out.handleJumpActivatesBody = activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
+
+            // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
+            r.setGameMode("pfad");
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("stein", 200);
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "stein_block");
+            r.selectHotbarSlot(0);
+            if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
+            const archBeforeBlock = r.state.architectures.length;
+            const stoneBeforeBlock = r.state.player.inventory[0].count;
+            const blocked = r.confirmBuild();
+            const stoneAfterBlock = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+            out.pfadBlocksUnstable = blocked === false;
+            out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
+            out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
+
+            // schöpfer-Modus: gleiches Setup, instabil → trotzdem baut
+            r.setGameMode("schöpfer");
+            if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
+            const archBeforeS = r.state.architectures.length;
+            const builtS = r.confirmBuild();
+            out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
+
+            r._clearBuildMode && r._clearBuildMode();
+            r.setGameMode("frieden");
+
+            // --- A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf
+            // (filter auf !roleManual statt !role). Wir machen einen
+            // eigenen Bauplan mit forcierter emergenter Rolle ohne
+            // roleManual-Flag — vor dem Fix wäre er gefiltert worden.
+            // createBlueprint returnt true/false, nicht {ok}.
+            const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
+            out._a3aCreated = bpCreated === true;
+            if (bpCreated) {
+                const bpRef = r.state.blueprints["audit_armor_test"];
+                bpRef.role = "tool"; // emergent gesetzt, kein Manual
+                bpRef.roleManual = false;
+                r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+                // Alle .equip-mark-label durchsuchen — der Test-Bauplan
+                // hat "Audit-Test" als Label und muss in mindestens
+                // einem .equip-mark-label gerendert sein.
+                const labels = document.querySelectorAll(".equip-mark-label");
+                out._a3aLabelCount = labels.length;
+                let found = false;
+                for (const l of labels) {
+                    if (/audit-test/i.test(l.textContent || "")) {
+                        found = true;
+                        break;
+                    }
+                }
+                out.markListShowsEmergentRole = found;
+                delete r.state.blueprints["audit_armor_test"];
+                r.renderPlayerEquipUI && r.renderPlayerEquipUI();
+            } else {
+                out.markListShowsEmergentRole = false;
+            }
+
+            // --- A3b: Stat-Panel zeigt Equipped-Zeile wenn Armor an
+            const bp2Created = r.createBlueprint("audit_armor_real", "Audit-Helm");
+            out._a3bCreated = bp2Created === true;
+            if (bp2Created) {
+                r.addPartToBlueprint("audit_armor_real", {
+                    shape: "sphere",
+                    material: "stein",
+                    size: { x: 0.5, y: 0.5, z: 0.5 },
+                });
+                const armorResult = r.setBlueprintAsArmor("audit_armor_real");
+                out._a3bMarked = !!(armorResult && armorResult.ok);
+                const equipResult = r.equipArmor("audit_armor_real");
+                out._a3bEquipped = !!(equipResult && equipResult.ok);
+                // Stat-Panel muss tatsächlich rendern — `recomputePlayerStats`
+                // ist in equipArmor schon drin, aber renderPlayerStatsUI
+                // muss explizit aufgerufen werden.
+                r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+                const container = document.getElementById("player-stats");
+                out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
+                out.statsShowsArmorRow = !!container && /Rüstung/.test(container.textContent || "");
+                r.equipArmor(null);
+                delete r.state.blueprints["audit_armor_real"];
+                r.renderPlayerStatsUI && r.renderPlayerStatsUI();
+            } else {
+                out.statsShowsArmorRow = false;
+            }
+
+            // --- A4: 1st-Person → Aura unsichtbar, 3rd-Person → sichtbar
+            r.setCameraMode("first");
+            r.tickPlayerAura();
+            const glow = r.state.playerAuraGlow;
+            out.auraHiddenInFirst = !!glow && glow.visible === false;
+            r.setCameraMode("third");
+            r.tickPlayerAura();
+            out.auraVisibleInThird = !!glow && glow.visible === true;
+            // Position bleibt getrackt auch in 1st-Person
+            r.setCameraMode("first");
+            r.tickPlayerAura();
+            const pp = r.state.playerMesh.position;
+            out.auraPositionStillTracked = !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
+
+            // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
+            // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
+            // zurücksetzen (Ring 6.5 prüft Default-Hotbar).
+            r.setCameraMode("first");
+            try {
+                localStorage.removeItem("anazhRealmCameraMode");
+            } catch {
+                /* ignore */
+            }
+            if (r.state.hotbar && r.state.hotbar.length === 9) {
+                const builtIns = ["village", "temple", "waterfall"];
+                for (let i = 0; i < 9; i++) {
+                    r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
+                }
+            }
+            r._clearBuildMode && r._clearBuildMode();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6x1Results && !wave6x1Results.error) {
+        check(
+            "Welle 6.X.1 A1: handleJump ruft activate(true) vor setLinearVelocity",
+            wave6x1Results.handleJumpActivatesBody
+        );
+        check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
+        check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
+        check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
+        check("Welle 6.X.1 A2: schöpfer-Modus überschreibt Stabilitäts-Gate", wave6x1Results.schoepferBypassesUnstable);
+        check(
+            "Welle 6.X.1 A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf",
+            wave6x1Results.markListShowsEmergentRole,
+            `created=${wave6x1Results._a3aCreated}, labelCount=${wave6x1Results._a3aLabelCount}`
+        );
+        check(
+            "Welle 6.X.1 A3b: Stat-Panel zeigt 'Rüstung'-Zeile wenn equipped",
+            wave6x1Results.statsShowsArmorRow,
+            `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
+        );
+        check("Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person", wave6x1Results.auraHiddenInFirst);
+        check("Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person", wave6x1Results.auraVisibleInThird);
+        check(
+            "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
+            wave6x1Results.auraPositionStillTracked
+        );
+    } else {
+        check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
+    }
+
+    // ### Welle 6.X.2 — UI-Politur (Audit 17.05.2026) ###
+    // B1 Logbuch-Toggle (default versteckt)
+    // B2 Welt-Bauwerke-Buttons aus dem world-drawer entfernt
+    // B4 Scrollrad zyklt durch Hotbar-Slots
+    const wave6x2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
+            out.logbookSectionExists = !!document.getElementById("logbook-section");
+            out.logbookToggleExists = !!document.getElementById("logbook-toggle");
+            const consoleLog = document.getElementById("console-log-section");
+            const logEl = document.getElementById("log");
+            out.logbookConsoleSectionExists = !!consoleLog;
+            // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
+            out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
+            out.logbookInitDOMExists = typeof r.logbookInitDOM === "function";
+            out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
+            // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
+            const toggle = document.getElementById("logbook-toggle");
+            if (toggle) {
+                toggle.checked = true;
+                toggle.dispatchEvent(new Event("change"));
+                out.logbookVisibleAfterToggle = !!logEl && logEl.hidden === false;
+                // Cleanup für nachfolgende Tests
+                toggle.checked = false;
+                toggle.dispatchEvent(new Event("change"));
+                out.logbookHiddenAfterUntoggle = !!logEl && logEl.hidden === true;
+            }
+            // V8.14: Inline-Console-Toggle togglet selber State
+            const inlineBtn = document.getElementById("console-log-toggle");
+            if (inlineBtn && logEl) {
+                inlineBtn.click();
+                out.inlineToggleExpands = logEl.hidden === false;
+                inlineBtn.click();
+                out.inlineToggleCollapses = logEl.hidden === true;
+            }
+
+            // B2 — Welt-Bauwerke-Buttons entfernt
+            out.architectureActionsRemoved = !document.getElementById("architecture-actions");
+            // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
+            out.spawnVillageStillCallable = typeof r.dslRun === "function";
+
+            // B4 — Scrollrad-Hotbar
+            // Code-Strukturtest: Wheel-Listener im init() (Methode liest
+            // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
+            const initSrc = typeof r.init === "function" ? r.init.toString() : "";
+            out.wheelListenerInstalled =
+                /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) && /selectHotbarSlot/.test(initSrc);
+
+            // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
+            if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
+            r.selectHotbarSlot(0);
+            const before = r.state.buildMode.slotIndex;
+            // Ein Wheel-Delta nach unten → nächster Slot
+            r.selectHotbarSlot((before + 1) % 9);
+            out.hotbarCyclesForward = r.state.buildMode.slotIndex === 1;
+            // Rückwärts (wrap)
+            r.selectHotbarSlot((1 - 1 + 9) % 9);
+            out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
+            r.selectHotbarSlot((0 - 1 + 9) % 9);
+            out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
+            r._clearBuildMode && r._clearBuildMode();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6x2Results && !wave6x2Results.error) {
+        check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
+        check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
+        check(
+            "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
+            wave6x2Results.logbookHiddenByDefault
+        );
+        check("Welle 6.X.2 B1: logbookInitDOM-Methode existiert", wave6x2Results.logbookInitDOMExists);
+        check("Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM", wave6x2Results.consoleLogToggleExists);
+        check("Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar", wave6x2Results.logbookVisibleAfterToggle);
+        check("Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch", wave6x2Results.logbookHiddenAfterUntoggle);
+        check("Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch", wave6x2Results.inlineToggleExpands);
+        check("Welle 6.X.2 V8.14: Inline-Toggle collapsed Logbuch", wave6x2Results.inlineToggleCollapses);
+        check(
+            "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
+            wave6x2Results.architectureActionsRemoved
+        );
+        check("Welle 6.X.2 B2: dslRun bleibt verfügbar (Chat-Pfad lebt)", wave6x2Results.spawnVillageStillCallable);
+        check("Welle 6.X.2 B4: Wheel-Listener mit selectHotbarSlot installiert", wave6x2Results.wheelListenerInstalled);
+        check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
+        check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
+        check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
+    } else {
+        check("Welle 6.X.2: UI-Politur-Tests laufen", false, wave6x2Results ? wave6x2Results.error : "no result");
+    }
+
+    // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
+    // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
+    // C3 Soul-bound Sprung-Steilheits-Toleranz
+    const wave6x3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- C1: at_player_forward DSL-Resolver
+            out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
+            if (r.dslPositions.at_player_forward) {
+                // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
+                // at_player_forward(8) sollte (10, 50, 12) liefern.
+                r.state.playerMesh.position.set(10, 50, 20);
+                r.state.yaw = 0;
+                const ctx = { state: r.state, rng: () => 0.5 };
+                const pos = r.dslPositions.at_player_forward([8], ctx);
+                out.atPlayerForwardOffset =
+                    Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 12) < 0.01;
+                // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
+                r.state.yaw = Math.PI / 2;
+                const pos2 = r.dslPositions.at_player_forward([5], ctx);
+                out.atPlayerForwardYawAware = Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+                // Reset
+                r.state.yaw = 0;
+            }
+
+            // --- C1: Chat „baue dorf hier" embedded forward-Position
+            r.state.playerMesh.position.set(0, 50, 0);
+            r.state.yaw = 0;
+            const dslOut = r.parseChatToDsl("baue dorf hier");
+            out.chatBuildDorfParses = !!(dslOut && dslOut.program);
+            if (dslOut && dslOut.program) {
+                // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
+                out.chatBuildDorfFormat =
+                    dslOut.program[0] === "spawn_village" &&
+                    Array.isArray(dslOut.program[1]) &&
+                    dslOut.program[1][0] === "at" &&
+                    typeof dslOut.program[2] === "number";
+                // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
+                // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
+                const z = dslOut.program[1][3];
+                out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
+            }
+
+            // --- C3: _canSoulJumpFromSlope existiert
+            out.canJumpFromSlopeExists = typeof r._canSoulJumpFromSlope === "function";
+
+            // --- C3: kein Slope → springen erlaubt
+            r.state.onSteepSlope = false;
+            out.flatGroundJumpAllowed = r._canSoulJumpFromSlope() === true;
+
+            // --- C3: Slope + frieden → springen erlaubt (Modus-Override)
+            r.state.onSteepSlope = true;
+            r.setGameMode("frieden");
+            out.peaceModeOverridesSlope = r._canSoulJumpFromSlope() === true;
+
+            // --- C3: Slope + schöpfer → springen erlaubt
+            r.setGameMode("schöpfer");
+            out.creatorModeOverridesSlope = r._canSoulJumpFromSlope() === true;
+
+            // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
+            r.setGameMode("pfad");
+            r.applyPlayerSoul("phoenix");
+            r.recomputePlayerStats && r.recomputePlayerStats();
+            out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
+            out._phoenixTags = r.state.player.statTags
+                ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+                : "no tags";
+
+            // --- C3: Slope + pfad + Drache → kann NICHT springen (dichte hoch)
+            r.applyPlayerSoul("dragon");
+            r.recomputePlayerStats && r.recomputePlayerStats();
+            out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
+            out._dragonTags = r.state.player.statTags
+                ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+                : "no tags";
+
+            // Cleanup
+            r.applyPlayerSoul("human");
+            r.recomputePlayerStats && r.recomputePlayerStats();
+            r.state.onSteepSlope = false;
+            r.setGameMode("frieden");
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6x3Results && !wave6x3Results.error) {
+        check("Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert", wave6x3Results.atPlayerForwardExists);
+        check(
+            "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
+            wave6x3Results.atPlayerForwardOffset
+        );
+        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)", wave6x3Results.atPlayerForwardYawAware);
+        check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
+        check(
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
+            wave6x3Results.chatBuildDorfFormat
+        );
+        check(
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
+            wave6x3Results.chatBuildDorfForwardOffset
+        );
+        check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
+        check("Welle 6.X.3 C3: kein Slope → Sprung erlaubt", wave6x3Results.flatGroundJumpAllowed);
+        check("Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block", wave6x3Results.peaceModeOverridesSlope);
+        check("Welle 6.X.3 C3: schöpfer-Modus überschreibt Slope-Block", wave6x3Results.creatorModeOverridesSlope);
+        check(
+            "Welle 6.X.3 C3: Phönix darf von Slope springen (lebendig hoch, dichte niedrig)",
+            wave6x3Results.phoenixCanJumpFromSlope,
+            wave6x3Results._phoenixTags
+        );
+        check(
+            "Welle 6.X.3 C3: Drache darf nicht von Slope springen (dichte hoch)",
+            wave6x3Results.dragonCannotJumpFromSlope,
+            wave6x3Results._dragonTags
+        );
+    } else {
+        check("Welle 6.X.3: Vision-Quick-Win-Tests laufen", false, wave6x3Results ? wave6x3Results.error : "no result");
+    }
+
+    // ### Welle 6.X.4 + 6.X.5 — Identity + Performance (Audit 17.05.2026) ###
+    // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
+    // D1 isPlayerGrounded-Cache (2 Frames, ~33 ms)
+    const wave6x45Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- F1: state-Felder existieren mit Defaults
+            out.companionNameDefault = r.state.grok.companionName === "Grok";
+            out.playerNameDefault = r.state.player.name === "Schöpfer";
+
+            // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
+            out.identityInitMethodExists = typeof r.identityInitDOM === "function";
+            out.companionInputExists = !!document.getElementById("companion-name-input");
+            out.playerInputExists = !!document.getElementById("player-name-input");
+            out.identitySectionExists = !!document.getElementById("identity-section");
+
+            // --- F1: Input-Change setzt state + localStorage
+            const ci = document.getElementById("companion-name-input");
+            if (ci) {
+                ci.value = "Lyra";
+                ci.dispatchEvent(new Event("input"));
+                out.companionNameUpdated = r.state.grok.companionName === "Lyra";
+                out.companionNamePersisted =
+                    typeof localStorage !== "undefined" && localStorage.getItem("anazh.companion.name") === "Lyra";
+                // Reset auf Default
+                ci.value = "Grok";
+                ci.dispatchEvent(new Event("input"));
+            }
+            const pi = document.getElementById("player-name-input");
+            if (pi) {
+                pi.value = "Aelyn";
+                pi.dispatchEvent(new Event("input"));
+                out.playerNameUpdated = r.state.player.name === "Aelyn";
+                out.playerNamePersisted =
+                    typeof localStorage !== "undefined" && localStorage.getItem("anazh.player.name") === "Aelyn";
+                pi.value = "Schöpfer";
+                pi.dispatchEvent(new Event("input"));
+            }
+
+            // --- F1: System-Prompt enthält die zwei Namen
+            r.state.grok.companionName = "TestCompanion";
+            r.state.player.name = "TestPlayer";
+            const prompt = r.llmBuildSystemPrompt();
+            out.promptContainsCompanionName = /TestCompanion/.test(prompt);
+            out.promptContainsPlayerName = /TestPlayer/.test(prompt);
+            // Reset auf Defaults
+            r.state.grok.companionName = "Grok";
+            r.state.player.name = "Schöpfer";
+
+            // --- D1: isPlayerGrounded-Cache
+            // Source-Check: Cache-Felder + Time-Check existieren
+            const isgSrc = r.isPlayerGrounded.toString();
+            out.cacheFieldsInSource = /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
+            out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
+
+            // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
+            delete r.state._groundedCache;
+            delete r.state._groundedCachedAt;
+            r.isPlayerGrounded();
+            out.cacheSetAfterCall = typeof r.state._groundedCachedAt === "number";
+
+            // Funktional: zweiter Aufruf direkt danach liefert cached
+            // result (kein Race-Free-Window) — wir prüfen dass der
+            // Wert nicht NaN ist und stabil bleibt.
+            const v1 = r.isPlayerGrounded();
+            const v2 = r.isPlayerGrounded();
+            out.cacheConsistentBetweenCalls = v1 === v2;
+
+            // Cache-Override-Test: setze cache manuell, prüfe dass Methode den Wert respektiert
+            r.state._groundedCache = true;
+            r.state._groundedCachedAt = performance.now();
+            out.cachedTrueRespected = r.isPlayerGrounded() === true;
+            r.state._groundedCache = false;
+            r.state._groundedCachedAt = performance.now();
+            out.cachedFalseRespected = r.isPlayerGrounded() === false;
+            // Cache-Expiry: alter timestamp → fresh compute
+            r.state._groundedCachedAt = performance.now() - 100; // > 33 ms her
+            // Wir prüfen NICHT das Ergebnis (das hängt von Physik ab),
+            // aber dass Cache-Time refreshed wird
+            const beforeRefresh = r.state._groundedCachedAt;
+            r.isPlayerGrounded();
+            out.cacheRefreshedAfterExpiry = r.state._groundedCachedAt > beforeRefresh;
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6x45Results && !wave6x45Results.error) {
+        check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
+        check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
+        check("Welle 6.X.4 F1: identityInitDOM-Methode existiert", wave6x45Results.identityInitMethodExists);
+        check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
+        check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
+        check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
+        check("Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName", wave6x45Results.companionNameUpdated);
+        check("Welle 6.X.4 F1: Companion-Name persistiert in localStorage", wave6x45Results.companionNamePersisted);
+        check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
+        check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
+        check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
+        check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
+        check(
+            "Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source",
+            wave6x45Results.cacheFieldsInSource
+        );
+        check("Welle 6.X.5 D1: Cache-Timeout 33 ms (≈2 Frames @ 60fps)", wave6x45Results.cacheTimeoutInSource);
+        check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
+        check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
+        check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
+        check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
+        check(
+            "Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)",
+            wave6x45Results.cacheRefreshedAfterExpiry
+        );
+    } else {
+        check(
+            "Welle 6.X.4+5: Identity + Performance-Tests laufen",
+            false,
+            wave6x45Results ? wave6x45Results.error : "no result"
+        );
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (Welle 6.G3 + 6.G3 V2 — Welt-Lebendigkeit + Vision-Invarianten).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6G3Lebendigkeit(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.G3 — Welt-Lebendigkeit (V8.24, 17.05.2026) ###
+    // Drei Schichten: (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang,
+    // (c) Fauna-Lifecycle mit Geburt + Tod. Testet Konstanten,
+    // Methoden, Persistenz, DSL-Op, UI-DOM.
+    const wave6g3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const AnazhRealm = window.AnazhRealm || r.constructor;
+
+            // --- a) Tag-Nacht-Zyklus
+            out.timeOfDayField =
+                typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
+            out.dayLengthDefault = r.state.dayLengthMinutes === 8;
+            out.dayLengthConstantsExist =
+                AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
+                AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
+                AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
+            out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
+            // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
+            // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
+            // prüft jetzt ≥7 Stops + monoton steigende t-Werte.
+            out.dayNightStopsSorted =
+                AnazhRealm.DAY_NIGHT_STOPS &&
+                AnazhRealm.DAY_NIGHT_STOPS.length >= 7 &&
+                AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
+                AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
+                AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
+            out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
+            out.interpolateMethod = typeof r._interpolateDayNight === "function";
+            out.applyMethod = typeof r._applyDayNightToScene === "function";
+            out.tickMethod = typeof r.tickDayNight === "function";
+            out.timeOfDayLabelMethod = typeof r._timeOfDayLabel === "function";
+            out.setTimeOfDayMethod = typeof r.setTimeOfDay === "function";
+            out.setDayLengthMethod = typeof r.setDayLength === "function";
+
+            // _interpolateDayNight Mid-Test: t=0.5 sollte Mittag (klar)
+            const midDay = r._interpolateDayNight(0.5);
+            out.interpolateMiddayClear = midDay && midDay.intensity >= 0.95;
+            const midNight = r._interpolateDayNight(0);
+            out.interpolateMidnightDim = midNight && midNight.intensity < 0.35;
+            out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
+
+            // setTimeOfDay setzt korrekt
+            r.setTimeOfDay(0.25);
+            out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
+            // Sonnenaufgang Label
+            out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
+            out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
+
+            // tickDayNight schreitet voran
+            r.setTimeOfDay(0.4);
+            const beforeT = r.state.timeOfDay;
+            r.state._lastDayNightTick = 0;
+            r.tickDayNight(0.5); // 0.5 s delta, dayLength=8min=480s → +0.001
+            out.tickAdvances = r.state.timeOfDay > beforeT;
+            // setDayLength clamped
+            r.setDayLength(5);
+            out.setDayLength5 = r.state.dayLengthMinutes === 5;
+            r.setDayLength(999); // > max 60
+            out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
+            r.setDayLength(0); // < min 1
+            out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
+            r.setDayLength(8); // zurück
+
+            // DSL-Op set_time_of_day
+            r.dslRun(["set_time_of_day", 0.7]);
+            out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
+            // NON_BROADCASTABLE
+            out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
+
+            // Status-Bar + Slider im DOM
+            out.statusTimeInDom = !!document.getElementById("status-time");
+            out.dayLengthSliderInDom = !!document.getElementById("slider-daylength");
+            out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
+            out.dayNightSectionInDom = !!document.getElementById("day-night-section");
+
+            // _applyDayNightToScene setzt DirectionalLight-Position
+            r.setTimeOfDay(0.5); // Mittag
+            const noonY = r.state.directionalLight.position.y;
+            r.setTimeOfDay(0); // Mitternacht
+            const midnightY = r.state.directionalLight.position.y;
+            out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY < noonY;
+
+            // --- b) Sanfte Wetter-Übergänge
+            out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
+            out.requestWeatherTransitionMethod = typeof r.requestWeatherTransition === "function";
+            out.tickWeatherTransitionMethod = typeof r.tickWeatherTransition === "function";
+            out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
+            out.weatherTintsSunnyRainy =
+                AnazhRealm.WEATHER_TINTS.sunny &&
+                AnazhRealm.WEATHER_TINTS.rainy &&
+                AnazhRealm.WEATHER_TINTS.sunny.skyMul === 1.0 &&
+                AnazhRealm.WEATHER_TINTS.rainy.skyMul < 1.0;
+
+            // Setze sunny als Ausgangspunkt
+            r.state.weather = "sunny";
+            r.state.weatherTransition = null;
+            // weather-DSL-Op startet Transition + setzt state.weather sofort
+            r.dslRun(["weather", "rainy"]);
+            out.weatherStateImmediate = r.state.weather === "rainy";
+            out.weatherTransitionStarted = !!r.state.weatherTransition;
+            out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
+            out.weatherTransitionToRainy = r.state.weatherTransition && r.state.weatherTransition.to === "rainy";
+            // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
+            const okSameTarget = r.requestWeatherTransition("rainy");
+            out.transitionSameTargetNoop = okSameTarget === true;
+            // Invalides Target
+            out.transitionInvalidRejected = r.requestWeatherTransition("hagel") === false;
+            // tickWeatherTransition setzt progress voran
+            r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
+            r.tickWeatherTransition(0);
+            out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
+            // Bei progress=1 → transition geclearet. Offset > Cap (120s)
+            // damit die Probe deterministisch ist (Emotion-Modulation
+            // kann die Default-Dauer auf bis zu ~86s strecken — V9.33
+            // mit voxel-default-Welt hat oft höhere peace-Werte).
+            if (r.state.weatherTransition) {
+                r.state.weatherTransition.startedAt = performance.now() - 200000; // 200s > 120s-Cap
+            }
+            r.tickWeatherTransition(0);
+            out.transitionClearedOnComplete = r.state.weatherTransition === null;
+
+            // --- c) Fauna-Lifecycle
+            out.faunaTargetPop = AnazhRealm.FAUNA_TARGET_POPULATION === 8;
+            out.faunaMaxPop = AnazhRealm.FAUNA_MAX_POPULATION === 20;
+            out.faunaTickInterval = AnazhRealm.FAUNA_TICK_INTERVAL_MS === 10000;
+            out.faunaBirthCdExists = AnazhRealm.FAUNA_BIRTH_COOLDOWN_MS > 0;
+            out.faunaDeathCdExists = AnazhRealm.FAUNA_DEATH_COOLDOWN_MS > 0;
+            out.findOldestMethod = typeof r._findOldestCreature === "function";
+            out.naturalBirthMethod = typeof r._creatureNaturalBirth === "function";
+            out.naturalDeathMethod = typeof r._creatureNaturalDeath === "function";
+            out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
+            out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
+
+            // _findOldestCreature liefert die älteste (kleinster bornAt)
+            if (r.state.creatures.length >= 2) {
+                const c0 = r.state.creatures[0];
+                const c1 = r.state.creatures[1];
+                if (!c0.userData) c0.userData = {};
+                if (!c1.userData) c1.userData = {};
+                c0.userData.bornAt = Date.now() - 5000;
+                c1.userData.bornAt = Date.now() - 10000;
+                const oldest = r._findOldestCreature();
+                out.oldestIsOlder = oldest === c1;
+            } else {
+                out.oldestIsOlder = true; // skip wenn keine Kreaturen
+            }
+
+            // _pickFaunaSoulAtPlayer liefert valide Soul
+            const soul = r._pickFaunaSoulAtPlayer();
+            out.faunaSoulValid = soul === "sprite" || soul === "wesen" || soul === "geist";
+
+            // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
+            if (r.state.creatures.length > 0) {
+                const beforeCount = r.state.creatures.length;
+                const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
+                const beforeJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
+                r._creatureNaturalDeath(r.state.creatures[0]);
+                out.deathReducesCount = r.state.creatures.length === beforeCount - 1;
+                out.deathIncreasesSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) > beforeSorrow;
+                const afterJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
+                out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
+            } else {
+                out.deathReducesCount = true;
+                out.deathIncreasesSorrow = true;
+                out.deathAddsLossJournal = true;
+            }
+
+            // _creatureNaturalBirth fügt Kreatur hinzu + Journal.
+            // Flaky-Heilung (V8.96-Klasse): NICHT count(growth)
+            // before/after vergleichen — am 200-FIFO-Cap verdrängt das
+            // Anhängen einen alten Eintrag; ist der evictete selbst ein
+            // growth-Eintrag, bleibt die Zahl gleich. Stattdessen die
+            // Eintrags-OBJEKT-Identität messen: ein frisch angehängter
+            // growth-Eintrag ist ein Objekt, das vorher nicht da war.
+            const beforeBirthCount = r.state.creatures.length;
+            const beforeBirthEntries = new Set(r.state.worldJournal.entries || []);
+            r._creatureNaturalBirth();
+            out.birthIncreasesCount = r.state.creatures.length === beforeBirthCount + 1;
+            out.birthAddsGrowthJournal = (r.state.worldJournal.entries || []).some(
+                (e) => e && e.type === "growth" && !beforeBirthEntries.has(e)
+            );
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (wave6g3Results && !wave6g3Results.error) {
+        // --- a) Tag-Nacht
+        check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
+        check("Welle 6.G3.a: dayLengthMinutes Default 8", wave6g3Results.dayLengthDefault);
+        check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
+        check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
+        check(
+            "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
+            wave6g3Results.dayNightStopsSorted
+        );
+        check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
+        check("Welle 6.G3.a: _interpolateDayNight-Methode existiert", wave6g3Results.interpolateMethod);
+        check("Welle 6.G3.a: _applyDayNightToScene-Methode existiert", wave6g3Results.applyMethod);
+        check("Welle 6.G3.a: tickDayNight-Methode existiert", wave6g3Results.tickMethod);
+        check("Welle 6.G3.a: _timeOfDayLabel-Methode existiert", wave6g3Results.timeOfDayLabelMethod);
+        check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
+        check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
+        check("Welle 6.G3.a: Mittag (0.5) hat hohe Intensity (>0.95)", wave6g3Results.interpolateMiddayClear);
+        check("Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)", wave6g3Results.interpolateMidnightDim);
+        check("Welle 6.G3.a: _interpolateDayNight wrapt korrekt (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
+        check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
+        check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
+        check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
+        check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
+        check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
+        check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
+        check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
+        check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt", wave6g3Results.dslSetTimeOfDay);
+        check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
+        check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
+        check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
+        check("Welle 6.G3.a: #slider-timeofday im DOM", wave6g3Results.timeOfDaySliderInDom);
+        check("Welle 6.G3.a: #day-night-section im DOM", wave6g3Results.dayNightSectionInDom);
+        check(
+            "Welle 6.G3.a: DirectionalLight.position.y folgt timeOfDay (Mittag oben, Mitternacht unten)",
+            wave6g3Results.lightPosFollowsTimeOfDay
+        );
+
+        // --- b) Wetter-Übergang
+        check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
+        check(
+            "Welle 6.G3.b: requestWeatherTransition-Methode existiert",
+            wave6g3Results.requestWeatherTransitionMethod
+        );
+        check("Welle 6.G3.b: tickWeatherTransition-Methode existiert", wave6g3Results.tickWeatherTransitionMethod);
+        check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
+        check(
+            "Welle 6.G3.b: WEATHER_TINTS — sunny skyMul 1.0, rainy < 1.0 (dämpft Sky)",
+            wave6g3Results.weatherTintsSunnyRainy
+        );
+        check(
+            "Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)",
+            wave6g3Results.weatherStateImmediate
+        );
+        check("Welle 6.G3.b: weather-Wechsel startet weatherTransition", wave6g3Results.weatherTransitionStarted);
+        check(
+            "Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)",
+            wave6g3Results.weatherTransitionFromSunny
+        );
+        check("Welle 6.G3.b: weatherTransition.to = Ziel (rainy)", wave6g3Results.weatherTransitionToRainy);
+        check(
+            "Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)",
+            wave6g3Results.transitionSameTargetNoop
+        );
+        check(
+            "Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab",
+            wave6g3Results.transitionInvalidRejected
+        );
+        check(
+            "Welle 6.G3.b: tickWeatherTransition schreitet progress voran",
+            wave6g3Results.transitionProgressAdvanced
+        );
+        check(
+            "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
+            wave6g3Results.transitionClearedOnComplete
+        );
+
+        // --- c) Fauna-Lifecycle
+        check("Welle 6.G3.c: FAUNA_TARGET_POPULATION === 8", wave6g3Results.faunaTargetPop);
+        check("Welle 6.G3.c: FAUNA_MAX_POPULATION === 20", wave6g3Results.faunaMaxPop);
+        check("Welle 6.G3.c: FAUNA_TICK_INTERVAL_MS === 10000", wave6g3Results.faunaTickInterval);
+        check("Welle 6.G3.c: FAUNA_BIRTH_COOLDOWN_MS > 0", wave6g3Results.faunaBirthCdExists);
+        check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
+        check("Welle 6.G3.c: _findOldestCreature-Methode existiert", wave6g3Results.findOldestMethod);
+        check("Welle 6.G3.c: _creatureNaturalBirth-Methode existiert", wave6g3Results.naturalBirthMethod);
+        check("Welle 6.G3.c: _creatureNaturalDeath-Methode existiert", wave6g3Results.naturalDeathMethod);
+        check("Welle 6.G3.c: _pickFaunaSoulAtPlayer-Methode existiert", wave6g3Results.pickFaunaSoulMethod);
+        check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
+        check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
+        check(
+            "Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide Soul (sprite/wesen/geist)",
+            wave6g3Results.faunaSoulValid
+        );
+        check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
+        check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
+        check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
+        check("Welle 6.G3.c: _creatureNaturalBirth fügt Kreatur hinzu", wave6g3Results.birthIncreasesCount);
+        check("Welle 6.G3.c: _creatureNaturalBirth schreibt growth-Journal", wave6g3Results.birthAddsGrowthJournal);
+    } else {
+        check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
+    }
+
+    // ### Welle 6.G3 V2 — Vision-Invarianten (V8.25, 17.05.2026) ###
+    // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität wirklich auf
+    // Soul-Wahl? Folgen Frequenzen den Tags? Modulieren Emotionen den
+    // Tint? Ist Wetter-Dauer emotion-abhängig? Vision §1.3 fraktal:
+    // alles emergiert aus dem System, nicht aus Tabellen.
+    const wave6g3v2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const AnazhRealm = window.AnazhRealm || r.constructor;
+
+            // --- Wurzel-Helper existieren
+            out.affinityPickHelper = typeof r._affinityPickFromCandidates === "function";
+            out.tagFrequencyHelper = typeof r._tagToFrequency === "function";
+            out.emotionModulateHelper = typeof r._emotionModulate === "function";
+            out.creatureSoulTagsHelper = typeof r._creatureSoulTags === "function";
+            out.faunaTargetHelper = typeof r._currentFaunaTarget === "function";
+
+            // --- Vision 1: Affinity-Pick wählt höhere Resonanz
+            // Test-Kandidaten mit klaren Tag-Profilen
+            const candidates = [
+                { name: "lebendigSoul", tags: { lebendig: 1.0, dichte: 0, glut: 0, magieleitung: 0 } },
+                { name: "magieSoul", tags: { lebendig: 0, dichte: 0, glut: 0, magieleitung: 1.0 } },
+                { name: "dichteSoul", tags: { lebendig: 0, dichte: 1.0, glut: 0, magieleitung: 0 } },
+            ];
+            // Welt-Feld mit dominanter Magie-Achse
+            const fieldMagie = { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
+            // 10× Durchläufe sammeln — Statistik gegen das Noise
+            let magieWins = 0;
+            for (let i = 0; i < 30; i++) {
+                const pickResult = r._affinityPickFromCandidates(candidates, fieldMagie, 0.05);
+                if (pickResult.pick && pickResult.pick.name === "magieSoul") magieWins++;
+            }
+            out.affinityPicksMagieInMagieField = magieWins > 20; // > 66% (statistisch sicher)
+
+            // Diskrimination: in einer dichte-Welt wird dichteSoul bevorzugt
+            const fieldDichte = { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
+            let dichteWins = 0;
+            for (let i = 0; i < 30; i++) {
+                const pickResult = r._affinityPickFromCandidates(candidates, fieldDichte, 0.05);
+                if (pickResult.pick && pickResult.pick.name === "dichteSoul") dichteWins++;
+            }
+            out.affinityPicksDichteInDichteField = dichteWins > 20;
+
+            // --- Vision 2: _tagToFrequency korreliert mit magieleitung
+            const f1 = r._tagToFrequency({ magieleitung: 0.9, dichte: 0.1 }, 220);
+            const f2 = r._tagToFrequency({ magieleitung: 0.1, dichte: 0.9 }, 220);
+            out.tagFreqHighMagieIsHigher = f1 > f2;
+            // Soul-spezifische Frequenzen (sprite > wesen)
+            const spriteTags = r._creatureSoulTags("sprite");
+            const wesenTags = r._creatureSoulTags("wesen");
+            const spriteFreq = r._tagToFrequency(spriteTags, 220);
+            const wesenFreq = r._tagToFrequency(wesenTags, 220);
+            out.spriteFreqHigherThanWesen = spriteFreq > wesenFreq;
+            out.bothFrequenciesInRange = spriteFreq >= 60 && spriteFreq <= 2000 && wesenFreq >= 60 && wesenFreq <= 2000;
+
+            // --- Vision 3: _emotionModulate moduliert mit Emotion-Achsen
+            const noEmo = { joy: 0, sorrow: 0 };
+            const happyEmo = { joy: 1, sorrow: 0 };
+            const baseMod = r._emotionModulate(10, { joy: 5 }, noEmo);
+            const happyMod = r._emotionModulate(10, { joy: 5 }, happyEmo);
+            out.emotionModulateAdditiveWorks = Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
+            // Mul-Spec
+            const peaceMod = r._emotionModulate(100, { peace: { mul: 1.5 } }, { peace: 1 });
+            out.emotionModulateMulWorks = Math.abs(peaceMod - 150) < 0.001;
+
+            // --- Vision 4: Sky-Tint moduliert mit awe
+            // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
+            r.setTimeOfDay(0.5); // Mittag
+            r.state.player.emotions.awe = 0;
+            r.state.player.emotions.joy = 0;
+            r.state.player.emotions.sorrow = 0;
+            r.state.weather = "sunny";
+            r.state.weatherTransition = null;
+            r._applyDayNightToScene();
+            const skyU = r.state.skybox.material.uniforms.nebulaColor;
+            const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+            r.state.player.emotions.awe = 1.0;
+            r._applyDayNightToScene();
+            const skyAtAweHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+            // Bei awe=1 sollte b (Blau-Anteil) sichtbar höher sein
+            out.aweRaisesBlue = skyAtAweHigh.b > skyAtAweZero.b + 0.02;
+            // r-Anteil auch (Lila = Rot + Blau)
+            out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
+
+            // --- Vision 5: sorrow entsättigt Sky-Tint
+            r.state.player.emotions.awe = 0;
+            r.state.player.emotions.sorrow = 0;
+            r._applyDayNightToScene();
+            const skyAtSorrowZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+            r.state.player.emotions.sorrow = 1.0;
+            r._applyDayNightToScene();
+            const skyAtSorrowHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+            // Sättigung = max(rgb) - min(rgb)
+            const satZero =
+                Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
+                Math.min(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b);
+            const satHigh =
+                Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
+                Math.min(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b);
+            out.sorrowReducesSaturation = satHigh < satZero;
+            // Reset
+            r.state.player.emotions.sorrow = 0;
+            r._applyDayNightToScene();
+
+            // --- Vision 6: Wetter-Dauer skaliert mit Emotion
+            // peace=1 → Dauer > Default. chaos=1 → Dauer < Default.
+            r.state.player.emotions.peace = 0;
+            r.state.player.emotions.chaos = 0;
+            r.state.weather = "sunny";
+            r.state.weatherTransition = null;
+            r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
+            const defaultDur = r.state.weatherTransition && r.state.weatherTransition.duration;
+            r.state.weatherTransition = null;
+            r.state.weather = "sunny";
+            r.state.player.emotions.peace = 1.0;
+            r.requestWeatherTransition("rainy");
+            const peaceDur = r.state.weatherTransition && r.state.weatherTransition.duration;
+            r.state.weatherTransition = null;
+            r.state.weather = "sunny";
+            r.state.player.emotions.peace = 0;
+            r.state.player.emotions.chaos = 1.0;
+            r.requestWeatherTransition("rainy");
+            const chaosDur = r.state.weatherTransition && r.state.weatherTransition.duration;
+            r.state.weatherTransition = null;
+            r.state.weather = "sunny";
+            r.state.player.emotions.chaos = 0;
+            out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
+            out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
+
+            // --- Vision 7: FAUNA_TARGET skaliert mit lebendig
+            // Simuliere zwei Positionen mit verschiedenem lebendig
+            const origWFA = r.worldFieldAt;
+            r.worldFieldAt = function (x, z) {
+                if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
+                return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
+            };
+            r.state.playerMesh.position.x = -100;
+            const targetLiv = r._currentFaunaTarget();
+            r.state.playerMesh.position.x = 100;
+            const targetKarg = r._currentFaunaTarget();
+            out.liveRegionHasHigherTarget = targetLiv > targetKarg;
+            out.targetInExpectedRange = targetLiv >= 10 && targetKarg <= 6;
+            r.worldFieldAt = origWFA;
+            r.state.playerMesh.position.x = 0;
+
+            // --- Vision 8: Stern-Feld (V8.28 THREE.Points) folgt Tageszeit
+            // Sterne sind jetzt diskrete Points, nicht mehr Skybox-Noise.
+            const starMat = r.state.starField && r.state.starField.material;
+            const starU = starMat && starMat.uniforms ? starMat.uniforms.uOpacity : null;
+            out.starIntensityExists = !!starU;
+            if (starU) {
+                r.setTimeOfDay(0.5); // Mittag
+                r._applyDayNightToScene();
+                const starsMittag = starU.value;
+                r.setTimeOfDay(0); // Mitternacht
+                r._applyDayNightToScene();
+                const starsNacht = starU.value;
+                out.starsBrighterAtNight = starsNacht > starsMittag + 0.2;
+            }
+
+            // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
+            out.sunMeshExists = !!r.state.sunMesh && r.state.sunMesh.type === "Mesh";
+            out.moonMeshExists = !!r.state.moonMesh && r.state.moonMesh.type === "Mesh";
+            if (r.state.sunMesh && r.state.moonMesh) {
+                r.setTimeOfDay(0.5); // Mittag
+                r._applyDayNightToScene();
+                const sunYNoon = r.state.sunMesh.position.y;
+                const moonYNoon = r.state.moonMesh.position.y;
+                r.setTimeOfDay(0); // Mitternacht
+                r._applyDayNightToScene();
+                const sunYMidnight = r.state.sunMesh.position.y;
+                const moonYMidnight = r.state.moonMesh.position.y;
+                // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
+                out.sunHighAtNoon = sunYNoon > 100;
+                out.moonLowAtNoon = moonYNoon < -100;
+                out.sunLowAtMidnight = sunYMidnight < -100;
+                out.moonHighAtMidnight = moonYMidnight > 100;
+            }
+            r.setTimeOfDay(0.5); // Reset
+
+            // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
+            // Mock worldFieldAt für hohe magieleitung
+            r.worldFieldAt = function () {
+                return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
+            };
+            r.state.player.emotions.awe = 0;
+            r._applyDayNightToScene();
+            const skyMagieField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+            r.worldFieldAt = function () {
+                return { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
+            };
+            r._applyDayNightToScene();
+            const skyDichteField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
+            // Magie-Region sollte mehr Blau haben als dichte-Region
+            out.magieFieldRaisesBlue = skyMagieField.b > skyDichteField.b + 0.02;
+            // Reset
+            r.worldFieldAt = origWFA;
+            r._applyDayNightToScene();
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (wave6g3v2Results && !wave6g3v2Results.error) {
+        check("Welle 6.G3 V2: _affinityPickFromCandidates existiert", wave6g3v2Results.affinityPickHelper);
+        check("Welle 6.G3 V2: _tagToFrequency existiert", wave6g3v2Results.tagFrequencyHelper);
+        check("Welle 6.G3 V2: _emotionModulate existiert", wave6g3v2Results.emotionModulateHelper);
+        check("Welle 6.G3 V2: _creatureSoulTags existiert", wave6g3v2Results.creatureSoulTagsHelper);
+        check("Welle 6.G3 V2: _currentFaunaTarget existiert", wave6g3v2Results.faunaTargetHelper);
+        check(
+            "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
+            wave6g3v2Results.affinityPicksMagieInMagieField
+        );
+        check(
+            "Welle 6.G3 V2 Vision: Affinity-Pick wählt dichteSoul in dichte-Welt (>66%, 30 Runs)",
+            wave6g3v2Results.affinityPicksDichteInDichteField
+        );
+        check(
+            "Welle 6.G3 V2 Vision: _tagToFrequency mit hoher magieleitung > niedriger magieleitung",
+            wave6g3v2Results.tagFreqHighMagieIsHigher
+        );
+        check(
+            "Welle 6.G3 V2 Vision: sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)",
+            wave6g3v2Results.spriteFreqHigherThanWesen
+        );
+        check("Welle 6.G3 V2 Vision: beide Frequenzen im Range [60, 2000] Hz", wave6g3v2Results.bothFrequenciesInRange);
+        check(
+            "Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)",
+            wave6g3v2Results.emotionModulateAdditiveWorks
+        );
+        check(
+            "Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)",
+            wave6g3v2Results.emotionModulateMulWorks
+        );
+        check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Blau-Anteil sichtbar", wave6g3v2Results.aweRaisesBlue);
+        check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)", wave6g3v2Results.aweRaisesRedToo);
+        check("Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung", wave6g3v2Results.sorrowReducesSaturation);
+        check("Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)", wave6g3v2Results.peaceSlowsWeather);
+        check("Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)", wave6g3v2Results.chaosSpeedsWeather);
+        check(
+            "Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge",
+            wave6g3v2Results.liveRegionHasHigherTarget
+        );
+        check(
+            "Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)",
+            wave6g3v2Results.targetInExpectedRange
+        );
+        check(
+            "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
+            wave6g3v2Results.starIntensityExists
+        );
+        check("Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags", wave6g3v2Results.starsBrighterAtNight);
+        check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
+        check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
+        check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
+        check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
+        check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
+        check("Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)", wave6g3v2Results.moonHighAtMidnight);
+        check(
+            "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
+            wave6g3v2Results.magieFieldRaisesBlue
+        );
+    } else {
+        check("Welle 6.G3 V2: Vision-Tests laufen", false, wave6g3v2Results ? wave6g3v2Results.error : "no result");
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (V8.26 Polish + V8.27 6.G4.a Sonne + V8.28 6.G4.b Welt-Atem + V8.29-V8.33 lebendige Welt/Politur/Tauchen).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6G4Atmosphere(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### V8.26 Browser-Bug-Fixes + Polish (17.05.2026) ###
+    // Zwei Browser-Test-Bugs aus V8.25-Session + vier Audit-Polish-
+    // Punkte. Tests sind PERMANENT (nicht nur regression catchers).
+    const v826Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Bug 1 — Stern-Stabilität: Skybox folgt Camera + Shader
+            // nutzt lokale vDir. Test: bewege Spieler 100 m → Skybox-
+            // Position folgt + nebulaColor-Sample-Achse bleibt vDir.
+            // Skybox-Folgt-Camera: durchsuche alle Prototype-Methoden auf
+            // das Pattern `skybox.position.copy(this.state.camera.position)`.
+            // Es lebt in der animate-Closure von init() — also irgendwo
+            // im Source der init-Methode.
+            out.skyboxFollowsCamera = false;
+            try {
+                const proto = Object.getPrototypeOf(r);
+                const names = Object.getOwnPropertyNames(proto);
+                for (const name of names) {
+                    try {
+                        const fn = proto[name];
+                        if (typeof fn !== "function") continue;
+                        const src = fn.toString();
+                        if (/skybox\.position\.copy\s*\(\s*this\.state\.camera\.position/.test(src)) {
+                            out.skyboxFollowsCamera = true;
+                            break;
+                        }
+                    } catch {
+                        /* getter that crashes — skip */
+                    }
+                }
+            } catch {
+                out.skyboxFollowsCamera = false;
+            }
+            // Shader nutzt lokale Position (vDir) statt vWorldPosition
+            if (r.state.skybox && r.state.skybox.material && r.state.skybox.material.vertexShader) {
+                out.shaderUsesLocalPosition =
+                    /varying vec3 vDir/.test(r.state.skybox.material.vertexShader) &&
+                    /vDir = normalize\(position\)/.test(r.state.skybox.material.vertexShader);
+                out.shaderFragmentUsesVDir = /vDir/.test(r.state.skybox.material.fragmentShader);
+            }
+
+            // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
+            const AnazhRealm = window.AnazhRealm || r.constructor;
+            // V8.26 iter2: 15 Stops (13 + 2 Vormittag/Nachmittag-Zwischenstops
+            // weil orange→blau noch zu hart war)
+            out.thirteenStops = AnazhRealm.DAY_NIGHT_STOPS.length >= 13;
+            // Stop bei t=0.32 sollte zwischen 0.27 (rotbraun) und 0.38 (orange) liegen
+            const stops = AnazhRealm.DAY_NIGHT_STOPS;
+            const t032 = stops.find((s) => s.t === 0.32);
+            out.intermediateStopExists = !!t032;
+            // V8.48 — _interpolateDayNight nutzt jetzt Catmull-Rom
+            // (global C1-stetig) statt per-Intervall-smoothstep.
+            const interpSrc = r._interpolateDayNight.toString();
+            out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
+
+            // V8.48 — kein Pulsen mehr. Die alte per-Intervall-
+            // smoothstep hatte Geschwindigkeit 0 an JEDEM Stop
+            // (slow→fast→slow → „ruckartig"). Catmull-Rom: die
+            // Steigung an einem Stop folgt der Nachbar-Differenz.
+            // An t=0.32 STEIGT die Intensität (0.65→0.78→0.9), die
+            // Steigung dort muss klar positiv sein (smoothstep: ≈0).
+            const dtN = 0.003;
+            const slopeAtStop =
+                (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32 - dtN).intensity) /
+                (2 * dtN);
+            out.dayNightNoPulse = slopeAtStop > 0.3;
+            // C1-Stetigkeit: Steigung kurz VOR und kurz NACH dem Stop
+            // sind nahezu gleich (kein Knick, glatte Geschwindigkeit).
+            const slopeBefore =
+                (r._interpolateDayNight(0.32).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / dtN;
+            const slopeAfter =
+                (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32).intensity) / dtN;
+            out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
+            // Stops werden weiterhin EXAKT reproduziert (Hermite trifft
+            // p1 bei u=0): t=0.5 (Mittag) muss intensity 1.0 liefern.
+            out.dayNightStopExact = Math.abs(r._interpolateDayNight(0.5).intensity - 1.0) < 0.001;
+            // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
+            let maxJump = 0;
+            for (let i = 1; i < stops.length; i++) {
+                const a = stops[i - 1].sky;
+                const b = stops[i].sky;
+                const aR = (a >> 16) & 0xff,
+                    bR = (b >> 16) & 0xff;
+                const aG = (a >> 8) & 0xff,
+                    bG = (b >> 8) & 0xff;
+                const aB = a & 0xff,
+                    bB = b & 0xff;
+                const dist = Math.max(Math.abs(aR - bR), Math.abs(aG - bG), Math.abs(aB - bB));
+                if (dist > maxJump) maxJump = dist;
+            }
+            // Max-Differenz pro Komponente sollte < 90 sein (vorher war 124 R)
+            out.noSharpColorJumps = maxJump < 95;
+            out.maxJump = maxJump;
+
+            // Polish §6.1 — Frustum-Pool
+            out.frustumPoolExists = !!r._frustumCache && !!r._frustumMatrixCache;
+
+            // Polish §6.3 — _runRaycast-Helper
+            out.runRaycastHelperExists = typeof r._runRaycast === "function";
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v826Results && !v826Results.error) {
+        check(
+            "V8.26 Bug 1: Skybox.position folgt camera.position (Stern-Rauschen-Fix)",
+            v826Results.skyboxFollowsCamera
+        );
+        check(
+            "V8.26 Bug 1: Vertex-Shader nutzt lokale `vDir = normalize(position)`",
+            v826Results.shaderUsesLocalPosition
+        );
+        check(
+            "V8.26 Bug 1: Fragment-Shader sampelt mit vDir (nicht vWorldPosition)",
+            v826Results.shaderFragmentUsesVDir
+        );
+        check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
+        check(
+            "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
+            v826Results.intermediateStopExists
+        );
+        check(
+            "V8.48: _interpolateDayNight nutzt Catmull-Rom (_catmullDayNight) statt smoothstep",
+            v826Results.interpUsesCatmull
+        );
+        check("V8.48: Tag-Nacht pulst nicht mehr (Steigung an Stop t=0.32 klar positiv)", v826Results.dayNightNoPulse);
+        check("V8.48: Tag-Nacht-Kurve ist C1-stetig (Steigung vor ≈ nach Stop, kein Knick)", v826Results.dayNightC1);
+        check(
+            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → intensity 1.0)",
+            v826Results.dayNightStopExact
+        );
+        check(
+            `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
+            v826Results.noSharpColorJumps
+        );
+        check(
+            "V8.26 Polish §6.1: _frustumCache + _frustumMatrixCache statt pro-Frame-Alloc",
+            v826Results.frustumPoolExists
+        );
+        check(
+            "V8.26 Polish §6.3: _runRaycast-Helper existiert (5 Call-Sites konsolidiert)",
+            v826Results.runRaycastHelperExists
+        );
+    } else {
+        check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
+    }
+
+    // ### V8.27 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Lambert + Fog) ###
+    // Tiefe-Welle nach Schöpfer-Beobachtung „Himmel und Licht wirken
+    // homogen, keine Tiefe". Genial-minimale Lösung: Hemisphere-Light
+    // (Sky-Tint oben + Erd-Tint unten) + Lambert-Material überall +
+    // atmosphärischer Fog. Self-Shadow durch Lambert ohne teure
+    // Shadow-Maps. Vision §3 Welt-Atem auf Material-Ebene.
+    const v827Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // 0. Stern-Bug fix — Skybox-Position-Copy DIREKT vor render
+            //    (nicht nach time-Uniform-Update). Verifiziere via Source-Pattern.
+            try {
+                const proto = Object.getPrototypeOf(r);
+                const names = Object.getOwnPropertyNames(proto);
+                let foundCount = 0;
+                for (const name of names) {
+                    try {
+                        const fn = proto[name];
+                        if (typeof fn !== "function") continue;
+                        const src = fn.toString();
+                        if (/skybox\.position\.copy/.test(src)) foundCount++;
+                    } catch {
+                        /* skip */
+                    }
+                }
+                // Nur EINE Stelle erwartet (direkt vor renderer.render)
+                out.skyboxPositionCopyExists = foundCount >= 1;
+            } catch {
+                out.skyboxPositionCopyExists = false;
+            }
+
+            // 1. HemisphereLight im Scene + state-cached
+            out.hemiLightExists = !!r.state.hemiLight && r.state.hemiLight.isHemisphereLight === true;
+            out.fogExists = !!r.state.fog && r.state.fog.isFog === true;
+            // Fog-Color sollte gesetzt sein nach erstem _applyDayNightToScene
+            r._applyDayNightToScene();
+            out.fogColorSet =
+                r.state.fog &&
+                r.state.fog.color &&
+                (r.state.fog.color.r > 0 || r.state.fog.color.g > 0 || r.state.fog.color.b > 0);
+
+            // 2. Hemisphere-skyColor moduliert mit Tageszeit
+            r.setTimeOfDay(0.5);
+            r._applyDayNightToScene();
+            const hemiNoonR = r.state.hemiLight.color.r;
+            const hemiNoonG = r.state.hemiLight.color.g;
+            const hemiNoonB = r.state.hemiLight.color.b;
+            r.setTimeOfDay(0); // Mitternacht
+            r._applyDayNightToScene();
+            const hemiNightR = r.state.hemiLight.color.r;
+            const hemiNightG = r.state.hemiLight.color.g;
+            const hemiNightB = r.state.hemiLight.color.b;
+            // Bei Mittag heller (Sky-Tint = mehr Blau-Hell), bei Mitternacht dunkler
+            const noonTotal = hemiNoonR + hemiNoonG + hemiNoonB;
+            const nightTotal = hemiNightR + hemiNightG + hemiNightB;
+            out.hemiSkyFollowsDayCycle = noonTotal > nightTotal;
+            // Hemisphere-Intensity moduliert mit Sonnenhöhe
+            r.setTimeOfDay(0.5);
+            r._applyDayNightToScene();
+            const intensityNoon = r.state.hemiLight.intensity;
+            r.setTimeOfDay(0);
+            r._applyDayNightToScene();
+            const intensityNight = r.state.hemiLight.intensity;
+            out.hemiIntensityFollowsDayCycle = intensityNoon > intensityNight;
+
+            // 3. Hemisphere-groundColor moduliert mit Welt-Affinität
+            r.setTimeOfDay(0.5);
+            const origWFA = r.worldFieldAt;
+            r.worldFieldAt = function () {
+                return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
+            };
+            r._applyDayNightToScene();
+            const groundLebendigG = r.state.hemiLight.groundColor.g;
+            r.worldFieldAt = function () {
+                return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
+            };
+            r._applyDayNightToScene();
+            const groundGlutR = r.state.hemiLight.groundColor.r;
+            // lebendig erhöht Grün, glut erhöht Rot
+            out.groundColorFollowsLebendig = groundLebendigG > 0.3;
+            out.groundColorFollowsGlut = groundGlutR > 0.5;
+            r.worldFieldAt = origWFA;
+            r._applyDayNightToScene();
+
+            // 4. Architektur-Material ist Lambert (nach V8.27 Build-Pipeline)
+            // V8.28 — Architektur-Material ist jetzt MeshToonMaterial
+            // (Cel-Shading). Reagiert auf Licht wie Lambert, aber
+            // quantisiert das Sonnen-Diffuse über die gradientMap.
+            let hasToonMaterial = false;
+            if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
+                const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
+                if (arch && arch.mesh) {
+                    arch.mesh.traverse((node) => {
+                        if (node.isMesh && node.material && node.material.isMeshToonMaterial) {
+                            hasToonMaterial = true;
+                        }
+                    });
+                    // Cleanup
+                    if (typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
+                }
+            }
+            out.architectureUsesLambert = hasToonMaterial;
+
+            // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms.
+            // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
+            // Init (V9.27-Skip); für den Shader-Test bauen wir uns einen
+            // via `ensureChunkAt` (die Heightfield-Chunk-Pipeline lebt
+            // noch — sie wird nur nicht mehr automatisch gerufen).
+            let shaderSample = null;
+            if (r.state.groundChunks && r.state.groundChunks.length > 0) {
+                shaderSample = r.state.groundChunks[0];
+            } else if (typeof r.ensureChunkAt === "function") {
+                r.ensureChunkAt(50, 50);
+                const entry = r.state.chunkMap && r.state.chunkMap.get("50,50");
+                if (entry && entry.mesh) shaderSample = entry.mesh;
+            }
+            if (shaderSample && shaderSample.material && shaderSample.material.uniforms) {
+                out.terrainHasLightIntensityUniform = !!shaderSample.material.uniforms.lightIntensity;
+                out.terrainHasAmbientIntensityUniform = !!shaderSample.material.uniforms.ambientIntensity;
+                // Werte sollten von _applyDayNightToScene gesetzt sein
+                r.setTimeOfDay(0.5);
+                r._applyDayNightToScene();
+                const liNoon = shaderSample.material.uniforms.lightIntensity
+                    ? shaderSample.material.uniforms.lightIntensity.value
+                    : -1;
+                r.setTimeOfDay(0);
+                r._applyDayNightToScene();
+                const liNight = shaderSample.material.uniforms.lightIntensity
+                    ? shaderSample.material.uniforms.lightIntensity.value
+                    : -1;
+                out.terrainLightFollowsDayCycle = liNoon > liNight;
+            }
+            r.setTimeOfDay(0.5);
+
+            // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
+            // Sterne sind jetzt THREE.Points mit color + aSize Attributen.
+            const sf = r.state.starField;
+            out.starHasHueVariation = !!(
+                sf &&
+                sf.geometry &&
+                sf.geometry.getAttribute &&
+                sf.geometry.getAttribute("color")
+            );
+            out.threeStarLayers = !!(
+                sf &&
+                sf.geometry &&
+                sf.geometry.getAttribute &&
+                sf.geometry.getAttribute("aSize")
+            );
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v827Results && !v827Results.error) {
+        check("V8.27: Skybox-position.copy existiert (direkt vor render)", v827Results.skyboxPositionCopyExists);
+        check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
+        check("V8.27: state.fog ist THREE.Fog", v827Results.fogExists);
+        check("V8.27: Fog-Color wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
+        check(
+            "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
+            v827Results.hemiSkyFollowsDayCycle
+        );
+        check("V8.27: HemisphereLight.intensity folgt Sonnenhöhe", v827Results.hemiIntensityFollowsDayCycle);
+        check("V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
+        check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
+        check("V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)", v827Results.architectureUsesLambert);
+        // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Terrain-Shader-
+        // spezifischen Checks (lightIntensity-Uniform, Tag-Nacht-Sync
+        // im Custom-Shader) sind gestrichen. Der Vision-Anker („Welt
+        // unter wandernder Sonne, von Tag-Nacht durchlebt") lebt in
+        // HemisphereLight + DirectionalLight + Fog + Skybox + dem
+        // MeshToonMaterial-Voxel-Mesh weiter (alles oben geprüft).
+        check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
+        check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
+    } else {
+        check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
+    }
+
+    // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
+    // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
+    // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
+    const v828Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- Phase A: Stern-Feld ---
+            const sf = r.state.starField;
+            out.starFieldIsPoints = !!(sf && sf.type === "Points");
+            out.starCount =
+                sf && sf.geometry && sf.geometry.getAttribute("position")
+                    ? sf.geometry.getAttribute("position").count
+                    : 0;
+            out.starFieldHasMany = out.starCount > 1000;
+            // Sidereal-Rotation: rotation ändert sich mit timeOfDay
+            out.starFieldRotates = !!(sf && sf.rotation);
+
+            // --- Phase B: Terrain-Affinität ---
+            out.attachFieldExists = typeof r._attachFieldAttribute === "function";
+            // terrainMaterial-Shader liest aField
+            const tm = r.state.terrainMaterial;
+            out.terrainShaderHasField = !!(
+                tm &&
+                tm.vertexShader &&
+                /aField/.test(tm.vertexShader) &&
+                tm.fragmentShader &&
+                /vField/.test(tm.fragmentShader)
+            );
+            // Chunk-Geometrie trägt aField-Attribut.
+            // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
+            // Init — wir bauen einen für den Test via ensureChunkAt.
+            let chunkHasField = false;
+            let aFieldChunk = null;
+            if (r.state.groundChunks && r.state.groundChunks.length > 0) {
+                aFieldChunk = r.state.groundChunks[0];
+            } else if (typeof r.ensureChunkAt === "function") {
+                r.ensureChunkAt(60, 60);
+                const entry = r.state.chunkMap && r.state.chunkMap.get("60,60");
+                if (entry && entry.mesh) aFieldChunk = entry.mesh;
+            }
+            if (aFieldChunk && aFieldChunk.geometry) {
+                const g = aFieldChunk.geometry;
+                chunkHasField = !!(g.getAttribute && g.getAttribute("aField"));
+            }
+            out.chunkHasFieldAttribute = chunkHasField;
+
+            // --- Phase C: Cel-Shading + Fog ---
+            out.celMethodsExist =
+                typeof r._refreshToonGradient === "function" &&
+                typeof r.setCelLevels === "function" &&
+                typeof r.setFogDistance === "function";
+            out.toonGradientExists = !!r.state.toonGradientMap;
+            out.terrainHasCelUniform = !!(tm && tm.uniforms && tm.uniforms.celLevels);
+            // setCelLevels ändert celLevels in state + terrainMaterial
+            r.setCelLevels(2);
+            const cel2 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
+            r.setCelLevels(6);
+            const cel6 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
+            out.celSliderWorks = cel2 === 2 && cel6 === 6;
+            r.setCelLevels(4);
+            // setFogDistance ändert fog.near/far. playerEyesUnderwater
+            // erzwingt sonst fog.near=4 (Tauch-Tint) — der überschreibt
+            // den fogDistance-Effekt; hier deterministisch ausnullen.
+            r.state.playerEyesUnderwater = false;
+            r.setFogDistance(0.5);
+            r._applyDayNightToScene();
+            const fogNear05 = r.state.fog ? r.state.fog.near : -1;
+            r.setFogDistance(2.0);
+            r._applyDayNightToScene();
+            const fogNear20 = r.state.fog ? r.state.fog.near : -1;
+            out.fogSliderWorks = fogNear20 > fogNear05;
+            r.setFogDistance(1.0);
+
+            // --- Phase D: Wind + Wolken + Wasser ---
+            // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
+            out.windMatExists = typeof r._grassInstanceMat === "function";
+            const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
+            const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
+            out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
+            out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
+            // Skybox-Shader hat cloudCover-Uniform
+            out.skyboxHasClouds = !!(
+                r.state.skybox &&
+                r.state.skybox.material &&
+                r.state.skybox.material.uniforms &&
+                r.state.skybox.material.uniforms.cloudCover
+            );
+            // Wolken-Cover folgt weather
+            r.state.weather = "rainy";
+            r._applyDayNightToScene();
+            const cloudRainy = r.state.skybox.material.uniforms.cloudCover.value;
+            r.state.weather = "sunny";
+            r._applyDayNightToScene();
+            const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
+            out.cloudsFollowWeather = cloudRainy > cloudSunny;
+            // Welt-Wasser — V9.50: das Wasser sind per-Chunk-Flächen
+            // (`voxelChunkWater`-Map), kein eigenes Mesh mehr; die
+            // Vertex-Höhe + die Uferlinie prüft der V9.50-b-Block.
+            out.waterSystemOk = r.state.voxelChunkWater instanceof Map;
+
+            // --- Atmosphäre-Persistenz ---
+            r.setCelLevels(7);
+            r.setFogDistance(1.5);
+            const snap = r.buildStateSnapshot();
+            out.atmospherePersisted = !!(
+                snap &&
+                snap.atmosphere &&
+                snap.atmosphere.celLevels === 7 &&
+                Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01
+            );
+            r.setCelLevels(4);
+            r.setFogDistance(1.0);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v828Results && !v828Results.error) {
+        check("V8.28 A: state.starField ist THREE.Points", v828Results.starFieldIsPoints);
+        check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
+        check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
+        check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
+        // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Shader-spezifischen
+        // Checks (`tm.vertexShader contains aField`, `chunkHasField-
+        // Attribute` via ensureChunkAt, `terrainHasCelUniform`,
+        // `celSliderWorks` via tm.uniforms.celLevels) sind tot. Die
+        // Vision-Anker (Welt-Affinität pro Vertex, Cel-Shading-Stufen)
+        // leben im Voxel-Mesh + toonGradientMap weiter (V9.10
+        // `_attachVoxelFieldColors`, V8.42 LinearFilter-Gradient).
+        check("V8.28 C: _refreshToonGradient + setCelLevels + setFogDistance existieren", v828Results.celMethodsExist);
+        check("V8.28 C: state.toonGradientMap existiert (Cel-gradientMap)", v828Results.toonGradientExists);
+        check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
+        check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
+        check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
+        check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
+        check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
+        check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
+        check("V9.50: das Chunk-Wasser-System ist verdrahtet (voxelChunkWater-Map)", v828Results.waterSystemOk);
+        check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
+    } else {
+        check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
+    }
+
+    // ### V8.29 — Die lebendige Welt (Instanced-Gras, Avatar-Hide,
+    // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
+    const v829Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- Avatar-Hide im 1st-Person ---
+            out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
+            // V8.29.1 — Render-Loop hält player.visible=true,
+            // versteckt nur den KOPF im 1st-Person (headPart.visible
+            // = cameraMode==="third"). Via Source-Pattern geprüft.
+            {
+                let found = false;
+                const proto = Object.getPrototypeOf(r);
+                for (const name of Object.getOwnPropertyNames(proto)) {
+                    try {
+                        const fn = proto[name];
+                        if (typeof fn !== "function") continue;
+                        if (/headPart\.visible\s*=\s*this\.state\.cameraMode/.test(fn.toString())) found = true;
+                    } catch {
+                        /* skip */
+                    }
+                }
+                out.avatarHideInLoop = found;
+            }
+
+            // --- Instanced-Gras (V9.39: Voxel-Gras-Pendant) ---
+            // V9.39 — der V8.29-Heightfield-Gras-Lifecycle
+            // (`_buildChunkGrass`/`_disposeChunkGrass`/`state.chunkGrass`)
+            // ist tot. Die Vision-Schicht („Welt grünt, Instanced-
+            // Gras pro Chunk") lebt im Voxel-Pendant
+            // `_buildVoxelChunkGrass` / `state.voxelChunkGrass`
+            // (V9.22-Verdrahtung). Das `_grassInstanceMat` (Wind-
+            // Material) wird von beiden geteilt — es lebt weiter.
+            out.grassMethodsExist =
+                typeof r._buildVoxelChunkGrass === "function" &&
+                typeof r._disposeVoxelChunkGrass === "function" &&
+                typeof r._grassInstanceMat === "function";
+            out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
+            let grassInstances = 0;
+            if (r.state.voxelChunkGrass) {
+                for (const v of r.state.voxelChunkGrass.values()) {
+                    if (v && v.isInstancedMesh) grassInstances++;
+                }
+            }
+            out.hasGrassInstances = grassInstances > 0;
+            out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
+
+            // --- Genesis-Plattform ---
+            out.genesisMethodExists = typeof r._ensureGenesisPlatform === "function";
+            out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
+            // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
+            out.genesisArchExists = !!(
+                r.state.architectures && r.state.architectures.some((a) => a && a.type === "start_plattform")
+            );
+            // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
+            const before = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+            r._ensureGenesisPlatform();
+            const after = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+            out.genesisIdempotent = before === after;
+
+            // --- Adaptives Wasser ---
+            out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
+
+            // --- Cel-gradientMap 32 px ---
+            out.gradientMap32 = !!(
+                r.state.toonGradientMap &&
+                r.state.toonGradientMap.image &&
+                r.state.toonGradientMap.image.width === 32
+            );
+            // celLevels 2 vs 8 → unterschiedliche Gradient-Daten
+            r.setCelLevels(2);
+            const g2 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
+            r.setCelLevels(8);
+            const g8 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
+            out.celGradientChanges = JSON.stringify(g2) !== JSON.stringify(g8);
+            r.setCelLevels(8);
+
+            // --- Stern-Mindestgröße (kein Flacker-Aliasing) ---
+            const sf = r.state.starField;
+            let minSize = 999;
+            if (sf && sf.geometry && sf.geometry.getAttribute("aSize")) {
+                const sizes = sf.geometry.getAttribute("aSize").array;
+                for (let i = 0; i < sizes.length; i++) if (sizes[i] < minSize) minSize = sizes[i];
+            }
+            out.starMinSize3 = minSize >= 3;
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v829Results && !v829Results.error) {
+        check(
+            "V8.29.1: nur der Kopf wird im 1st-Person versteckt (Avatar bleibt sichtbar)",
+            v829Results.avatarHideInLoop
+        );
+        check(
+            "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
+            v829Results.grassMethodsExist
+        );
+        check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
+        check("V8.29 (V9.39): mindestens ein Voxel-Chunk hat ein Gras-InstancedMesh", v829Results.hasGrassInstances);
+        check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
+        check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
+        check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
+        check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
+        check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
+        check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
+        check("V8.29: Cel-gradientMap ist 32 px breit (Smooth-Modus möglich)", v829Results.gradientMap32);
+        check("V8.29: setCelLevels 2↔8 ändert die gradientMap-Daten", v829Results.celGradientChanges);
+        check("V8.29: Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
+    } else {
+        check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
+    }
+
+    // ### V8.30 — Schnittstellen-Politur (Sterne-Tiefe, Avatar,
+    // Wasser-Wellen, Wasser-Physik) ###
+    const v830Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Sterne testen gegen den Tiefenpuffer (kein Overlay mehr)
+            out.starsDepthTest = !!(
+                r.state.starField &&
+                r.state.starField.material &&
+                r.state.starField.material.depthTest === true
+            );
+
+            // Wasser-Shader: diagonale Wellen (wave-Funktion mit
+            // Richtungs-Vektoren) + Sonnen-Glitzern (Spekular).
+            let waterDiagonal = false;
+            let waterSpecular = false;
+            const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+            if (wMat) {
+                const vs = wMat.vertexShader || "";
+                const fs = wMat.fragmentShader || "";
+                waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
+                waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
+            }
+            out.waterDiagonalWaves = waterDiagonal;
+            out.waterSunGlitter = waterSpecular;
+            // Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)
+            out.waterHasSunUniform = !!(wMat && wMat.uniforms && wMat.uniforms.uSunDir);
+
+            // Wasser-Physik: state.playerUnderwater existiert als Flag
+            out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
+            // Render-Loop hat Auftriebs- + Speed-Logik (Source-Pattern)
+            {
+                let buoy = false;
+                let speedCut = false;
+                const proto = Object.getPrototypeOf(r);
+                for (const name of Object.getOwnPropertyNames(proto)) {
+                    try {
+                        const fn = proto[name];
+                        if (typeof fn !== "function") continue;
+                        const src = fn.toString();
+                        if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
+                        if (/playerUnderwater\)\s*currentSpeed\s*\*=/.test(src)) speedCut = true;
+                    } catch {
+                        /* skip */
+                    }
+                }
+                out.waterBuoyancy = buoy;
+                out.waterSpeedCut = speedCut;
+            }
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v830Results && !v830Results.error) {
+        check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
+        check("V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)", v830Results.waterDiagonalWaves);
+        check("V8.30: Wasser-Shader hat Sonnen-Glitzern (Spekular)", v830Results.waterSunGlitter);
+        check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
+        check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
+        check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
+        check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
+    } else {
+        check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
+    }
+
+    // ### V8.31 — Fog an die Custom-Shader + heterogenere Wasser-Wellen ###
+    const v831Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Terrain-Custom-Shader hat jetzt Fog-Uniforms + fog-mix.
+            if (r.state.terrainMaterial) {
+                const tm = r.state.terrainMaterial;
+                out.terrainFogUniforms = !!(
+                    tm.uniforms &&
+                    tm.uniforms.fogColor &&
+                    tm.uniforms.fogNear &&
+                    tm.uniforms.fogFar
+                );
+                out.terrainFogInShader =
+                    /vFogDepth/.test(tm.vertexShader || "") &&
+                    /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
+            }
+            // Wasser-Custom-Shader hat Fog + Domain-Warp.
+            const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+            if (wm) {
+                out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
+                out.waterDomainWarp = /waveDisplace/.test(wm.vertexShader || "") && /warp/.test(wm.vertexShader || "");
+                out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
+            }
+            // Fog-Slider propagiert in die Custom-Shader-Uniforms.
+            // playerEyesUnderwater deterministisch ausnullen (sonst
+            // erzwingt der Tauch-Tint fog.near=4 unabhängig vom Slider).
+            r.state.playerEyesUnderwater = false;
+            r.setFogDistance(0.4);
+            r._applyDayNightToScene();
+            const tnNear =
+                r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
+                    ? r.state.terrainMaterial.uniforms.fogFar.value
+                    : -1;
+            r.setFogDistance(1.8);
+            r._applyDayNightToScene();
+            const tnFar =
+                r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
+                    ? r.state.terrainMaterial.uniforms.fogFar.value
+                    : -1;
+            out.fogSliderReachesTerrain = tnFar > tnNear;
+            r.setFogDistance(1.0);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v831Results && !v831Results.error) {
+        // V9.39 Phase 5c.2.c.3.b.iii — die Terrain-Shader-Fog-Checks
+        // (terrainFogUniforms, terrainFogInShader, fogSliderReachesTerrain)
+        // sind tot — `state.terrainMaterial` existiert nicht mehr,
+        // das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-Fog.
+        // Die Wasser-Shader-Checks leben — `_buildWaterPlane` läuft
+        // weiter (voxel-aware seit V9.39).
+        check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
+        check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
+        check("V8.31: Wasser-Wellen nutzen Domain-Warp (heterogener)", v831Results.waterDomainWarp);
+    } else {
+        check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
+    }
+
+    // ### V8.32 — Tauch-Tint nur bei Augen-unter-Wasser + Wasser-Fresnel ###
+    const v832Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Getrennte Flags: playerUnderwater (Körper) vs.
+            // playerEyesUnderwater (Augen/Tauchen).
+            out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
+            // Physik-Loop berechnet playerEyesUnderwater aus scaledY+1.6.
+            {
+                let found = false;
+                const proto = Object.getPrototypeOf(r);
+                for (const name of Object.getOwnPropertyNames(proto)) {
+                    try {
+                        const fn = proto[name];
+                        if (typeof fn !== "function") continue;
+                        if (/playerEyesUnderwater\s*=\s*scaledY \+ 1\.6/.test(fn.toString())) found = true;
+                    } catch {
+                        /* skip */
+                    }
+                }
+                out.eyesFlagComputed = found;
+            }
+            // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
+            // mehr playerUnderwater (Source-Pattern in _applyDayNightToScene).
+            {
+                const src = r._applyDayNightToScene.toString();
+                out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
+            }
+
+            // Wasser-Shader hat Fresnel-Opazität.
+            const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+            if (wFresMat) {
+                const fs = wFresMat.fragmentShader || "";
+                out.waterFresnel = /fres/.test(fs) && /pow\(1\.0 - max\(dot\(viewDir, n\)/.test(fs);
+            }
+
+            // Fog-Slider erlaubt bis 300 %.
+            const fs = document.getElementById("slider-fog");
+            out.fogSliderTo300 = !!(fs && parseInt(fs.max, 10) === 300);
+            // setFogDistance akzeptiert 3.0.
+            r.setFogDistance(3.0);
+            out.fogDistanceTo3 = Math.abs(r.state.atmosphere.fogDistance - 3.0) < 0.01;
+            r.setFogDistance(1.0);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v832Results && !v832Results.error) {
+        check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
+        check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
+        check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
+        check("V8.32: Wasser-Shader hat Fresnel-Opazität (Sterne nicht durchs Wasser)", v832Results.waterFresnel);
+        check("V8.32: Fog-Slider geht bis 300 %", v832Results.fogSliderTo300);
+        check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
+    } else {
+        check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
+    }
+
+    // ### V8.33 — Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
+    const v833Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
+            out.swimFnExists = typeof r._swimVerticalVelocity === "function";
+            if (out.swimFnExists) {
+                const dive = r._swimVerticalVelocity(0, 4, true, false);
+                const rise = r._swimVerticalVelocity(0, 4, false, true);
+                const neutral = r._swimVerticalVelocity(0, 4, false, false);
+                out.diveSinks = dive < 0;
+                out.riseLifts = rise > 0;
+                out.neutralFloats = neutral > 0 && neutral <= 2.5;
+                out.diveBelowNeutral = dive < neutral;
+                out.riseAboveNeutral = rise > neutral;
+                out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
+            }
+            // Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space,
+            // Shift ist unter Wasser KEIN Sprint mehr (Source-Pattern).
+            {
+                let usesFn = false;
+                let shiftNotSprint = false;
+                const proto = Object.getPrototypeOf(r);
+                for (const name of Object.getOwnPropertyNames(proto)) {
+                    try {
+                        const fn = proto[name];
+                        if (typeof fn !== "function") continue;
+                        const src = fn.toString();
+                        if (
+                            /_swimVerticalVelocity\(/.test(src) &&
+                            /keys\["shift"\]/.test(src) &&
+                            /keys\[" "\]/.test(src)
+                        )
+                            usesFn = true;
+                        if (/keys\["shift"\]\s*&&\s*!this\.state\.playerUnderwater/.test(src)) shiftNotSprint = true;
+                    } catch {
+                        /* skip */
+                    }
+                }
+                out.physicsUsesSwimFn = usesFn;
+                out.shiftNotSprintUnderwater = shiftNotSprint;
+            }
+
+            // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
+            {
+                const src = r.animatePlayerSoul.toString();
+                out.animPassesUnderwater = /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater\)/.test(src);
+            }
+            {
+                const gh = r._buildHumanGroup();
+                out.humanYXZ = gh.rotation.order === "YXZ";
+                r._animateHuman(gh, 1.0, 0, false, true);
+                out.humanSwimLean = Math.abs(gh.rotation.x) > 0.05;
+                r._animateHuman(gh, 1.0, 0, false, false);
+                out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
+                r._disposeSoulGroup(gh);
+
+                const gp = r._buildPhoenixGroup();
+                r._animatePhoenix(gp, 1.0, 0, true, true);
+                out.phoenixSwimLean = Math.abs(gp.rotation.x) > 0.05;
+                r._disposeSoulGroup(gp);
+
+                const gd = r._buildDragonGroup();
+                r._animateDragon(gd, 1.0, 0, true, true);
+                out.dragonSwimLean = Math.abs(gd.rotation.x) > 0.05;
+                r._disposeSoulGroup(gd);
+            }
+
+            // --- Gerstner-Wellen im Wasser-Shader ---
+            const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+            if (wGerstMat) {
+                const vs = wGerstMat.vertexShader || "";
+                out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
+                out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
+                out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);
+                out.gerstnerCrossNormal = /cross\(/.test(vs);
+                out.gerstnerKeepsWarp = /warp/.test(vs);
+            }
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v833Results && !v833Results.error) {
+        check("V8.33: _swimVerticalVelocity existiert (reine Funktion)", v833Results.swimFnExists);
+        check("V8.33: Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
+        check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
+        check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
+        check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
+        check("V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)", v833Results.riseAboveNeutral);
+        check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
+        check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
+        check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
+        check("V8.33: animatePlayerSoul reicht den underwater-Flag durch", v833Results.animPassesUnderwater);
+        check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
+        check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
+        check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
+        check("V8.33: Phönix neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
+        check("V8.33: Drache neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
+        check("V8.33: Wasser-Shader hat gerstnerWave-Funktion (vec3)", v833Results.gerstnerFn);
+        check("V8.33: Wasser-Shader hat waveDisplace (vec3-Verschiebung)", v833Results.waveDisplaceVec3);
+        check("V8.33: Gerstner-Wellen verschieben horizontal (spitze Kämme)", v833Results.gerstnerHorizontal);
+        check("V8.33: Wasser-Normale aus Kreuzprodukt der Tangenten", v833Results.gerstnerCrossNormal);
+        check("V8.33: Gerstner-Wellen behalten den Domain-Warp (V8.31-Erbe)", v833Results.gerstnerKeepsWarp);
+    } else {
+        check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (V8.34 Soul-Sync (Ring 11 V3) + V8.35 Substanz-Rolle + V8.36 Browser-Fixes + V8.37-V8.39 Werkstatt + Werkzeug-Klassen).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandV8SoulRoleAndWorkshop(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### V8.34 — Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
+    const v834Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const p2p = r.state.p2p;
+            p2p.peerId = "self-v834";
+            p2p.enabled = false;
+
+            out.methodsExist =
+                typeof r._p2pBuildPlaceholderMesh === "function" &&
+                typeof r._p2pApplyPeerSoul === "function" &&
+                typeof r._p2pBuildNameLabel === "function" &&
+                typeof r._p2pUpdatePeer === "function" &&
+                typeof r._p2pEnsurePeerAura === "function" &&
+                typeof r._p2pBroadcastSoul === "function" &&
+                typeof r._p2pBroadcastAura === "function";
+
+            // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
+            r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
+            const pv1 = p2p.peers.get("pv1");
+            out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
+            out.placeholderMesh = !!(pv1 && pv1.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
+            out.entryHasV3Fields =
+                !!pv1 && "soulName" in pv1 && "auraHue" in pv1 && "walkPhase" in pv1 && "nameLabel" in pv1;
+
+            // soul-Nachricht (Built-in Phönix) → echte Seele + Name-Schild.
+            r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "phoenix", name: "Aria" }));
+            const pv1b = p2p.peers.get("pv1");
+            out.builtinSoulName = !!pv1b && pv1b.soulName === "phoenix";
+            out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul";
+            out.builtinHasParts = !!(
+                pv1b &&
+                pv1b.mesh &&
+                pv1b.mesh.userData &&
+                pv1b.mesh.userData.parts &&
+                pv1b.mesh.userData.parts.leftWing
+            );
+            out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
+
+            // Soul-Wechsel phoenix → dragon → Mesh wird neu gebaut.
+            r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "dragon" }));
+            const pv1c = p2p.peers.get("pv1");
+            out.soulChangeRebuilt =
+                !!pv1c &&
+                pv1c.soulName === "dragon" &&
+                pv1c.mesh.userData.parts &&
+                !!pv1c.mesh.userData.parts.tailJoint;
+
+            // soul-Nachricht (Custom-Seele via bodyParts).
+            r.p2pHandleMessage(
+                JSON.stringify({
+                    type: "soul",
+                    peerId: "pv2",
+                    soulName: "custom-test-soul",
+                    bodyParts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                })
+            );
+            const pv2 = p2p.peers.get("pv2");
+            out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
+            out.customMeshBuilt = !!(pv2 && pv2.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
+
+            // aura-Nachricht.
+            r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "pv1", hue: 270, intensity: 0.8 }));
+            const pv1d = p2p.peers.get("pv1");
+            out.auraReceived = !!pv1d && pv1d.auraHue === 270 && Math.abs((pv1d.auraIntensity || 0) - 0.8) < 0.001;
+
+            // _p2pUpdatePeer erzeugt den Aura-Sprite + animiert.
+            r._p2pUpdatePeer(pv1d, 1.0, 0.016);
+            out.auraSpriteCreated = !!pv1d.auraGlow;
+
+            // _p2pBroadcastSoul-Payload (p2pSend gemockt).
+            p2p.enabled = true;
+            let captured = null;
+            const origSend = r.p2pSend;
+            r.p2pSend = (obj) => {
+                captured = obj;
+                return true;
+            };
+            r._p2pBroadcastSoul();
+            r.p2pSend = origSend;
+            p2p.enabled = false;
+            out.broadcastSoulPayload =
+                !!captured &&
+                captured.type === "soul" &&
+                captured.soulName === r.state.player.soul &&
+                typeof captured.name === "string";
+
+            // tickPlayerAura cached die Aura-Werte für den Sync.
+            r.tickPlayerAura();
+            out.auraOutCached =
+                typeof r.state.player._auraHueOut === "number" && typeof r.state.player._auraIntensityOut === "number";
+
+            // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
+            // den dedizierten `soul`-Kanal, NICHT über die DSL.
+            out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
+
+            // _p2pRemovePeer räumt Peer + Mesh + Aura + Name-Schild.
+            r._p2pRemovePeer("pv1");
+            r._p2pRemovePeer("pv2");
+            out.peersRemoved = !p2p.peers.has("pv1") && !p2p.peers.has("pv2");
+
+            p2p.enabled = false;
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v834Results && !v834Results.error) {
+        check("V8.34: Soul-Sync-Methoden existieren (7)", v834Results.methodsExist);
+        check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
+        check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
+        check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
+        check("V8.34: soul-Nachricht setzt soulName (Built-in)", v834Results.builtinSoulName);
+        check("V8.34: Built-in-Seele → meshKind 'soul'", v834Results.builtinMeshKind);
+        check("V8.34: Peer-Phönix hat animierbare Parts (Flügel)", v834Results.builtinHasParts);
+        check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
+        check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Drache)", v834Results.soulChangeRebuilt);
+        check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
+        check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
+        check("V8.34: aura-Nachricht setzt Hue + Intensität", v834Results.auraReceived);
+        check("V8.34: _p2pUpdatePeer erzeugt den Peer-Aura-Sprite", v834Results.auraSpriteCreated);
+        check("V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
+        check("V8.34: tickPlayerAura cached Hue+Intensität für den Sync", v834Results.auraOutCached);
+        check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
+        check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Aura + Schild", v834Results.peersRemoved);
+    } else {
+        check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
+    }
+
+    // ### V8.35 — Welle 11 ext.: Substanz-Rolle (Rolle aus der Substanz) ###
+    const v835Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const part = (mat, x, y, z) => ({
+                shape: "box",
+                material: mat,
+                size: { x: 1, y: 1, z: 1 },
+                position: { x, y, z },
+            });
+
+            out.methodsExist =
+                typeof r._compoundSymmetry === "function" &&
+                typeof r._isBodyShaped === "function" &&
+                typeof r._isFoodLike === "function";
+
+            // --- Körper-Form → Seele: Torso+Kopf auf der Achse,
+            //     Glieder als Spiegel-Paar ---
+            // Wesen: Torso+Kopf auf der Achse (vertikal gestreckt),
+            // Arme als Off-Achsen-Spiegel-Paar.
+            const bodyBp = {
+                name: "_t835_body",
+                parts: [
+                    part("fleisch", 0, 1, 0),
+                    part("knochen", 0, 3, 0),
+                    part("fleisch", -1, 2, 0),
+                    part("fleisch", 1, 2, 0),
+                ],
+            };
+            out.bodyIsShaped = r._isBodyShaped(bodyBp) === true;
+            out.bodyRoleSoul = r.computeBlueprintRole(bodyBp) === "soul";
+
+            // --- Turm: 3 Boxen gestapelt auf der Achse — symmetrisch,
+            //     aber KEINE Glieder → kein Körper ---
+            const towerBp = {
+                name: "_t835_tower",
+                parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)],
+            };
+            out.towerNotBody = r._isBodyShaped(towerBp) === false;
+            out.towerRoleArchitecture = r.computeBlueprintRole(towerBp) === "architecture";
+
+            // --- Asymmetrisch: kein Spiegel → kein Körper ---
+            const asymBp = {
+                name: "_t835_asym",
+                parts: [part("stein", 0, 0, 0), part("stein", 2, 1, 0), part("stein", 5, 2, 1)],
+            };
+            out.asymNotBody = r._isBodyShaped(asymBp) === false;
+
+            // --- lebendig+weich → Nahrung ---
+            const foodBp = {
+                name: "_t835_food",
+                parts: [
+                    {
+                        shape: "sphere",
+                        material: "fleisch",
+                        size: { x: 1, y: 1, z: 1 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                ],
+            };
+            out.foodIsFoodLike = r._isFoodLike(foodBp) === true;
+            out.foodRoleConsumable = r.computeBlueprintRole(foodBp) === "consumable";
+
+            const stoneBp = { name: "_t835_stone", parts: [part("stein", 0, 0, 0)] };
+            out.stoneNotFood = r._isFoodLike(stoneBp) === false;
+            out.stoneRoleArchitecture = r.computeBlueprintRole(stoneBp) === "architecture";
+
+            // --- Priorität: ein Körper aus lebendigem Material ist eine
+            //     SEELE (Körper-Form schlägt Nahrung) ---
+            out.priorityBodyBeatsFood = r.computeBlueprintRole(bodyBp) === "soul";
+
+            // --- _refreshBlueprintRoleEmergent: registrierter Körper-
+            //     Bauplan emergiert OHNE Werkzeug-Op als "soul" ---
+            r.state.blueprints["_t835_body_reg"] = {
+                name: "_t835_body_reg",
+                label: "Test-Körper",
+                builtIn: false,
+                parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+            };
+            r._refreshBlueprintRoleEmergent("_t835_body_reg");
+            out.refreshEmergesSoul = r.state.blueprints["_t835_body_reg"].role === "soul";
+
+            // registrierte Nahrung emergiert als "consumable"
+            r.state.blueprints["_t835_food_reg"] = {
+                name: "_t835_food_reg",
+                label: "Test-Frucht",
+                builtIn: false,
+                parts: JSON.parse(JSON.stringify(foodBp.parts)),
+            };
+            r._refreshBlueprintRoleEmergent("_t835_food_reg");
+            out.refreshEmergesFood = r.state.blueprints["_t835_food_reg"].role === "consumable";
+
+            // --- Manueller Override schlägt die Emergenz weiterhin ---
+            r.state.blueprints["_t835_manual"] = {
+                name: "_t835_manual",
+                label: "Test-Manuell",
+                builtIn: false,
+                roleManual: true,
+                role: "architecture",
+                parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+            };
+            r._refreshBlueprintRoleEmergent("_t835_manual");
+            out.roleManualStillWins = r.state.blueprints["_t835_manual"].role === "architecture";
+
+            // --- activateConsumable funktioniert OHNE consumableMeta
+            //     (emergente Nahrung ist essbar) ---
+            r.state.blueprints["_t835_food_reg"].role = "consumable";
+            const before = (r.state.player.boosts || []).length;
+            const eatRes = r.activateConsumable("_t835_food_reg");
+            out.metaLessConsumableWorks = !!(eatRes && eatRes.ok) && (r.state.player.boosts || []).length > before;
+
+            // Aufräumen
+            if (r.state.player.boosts) {
+                r.state.player.boosts = r.state.player.boosts.filter((b) => b.source !== "consume:_t835_food_reg");
+                if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
+            }
+            delete r.state.blueprints["_t835_body_reg"];
+            delete r.state.blueprints["_t835_food_reg"];
+            delete r.state.blueprints["_t835_manual"];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v835Results && !v835Results.error) {
+        check(
+            "V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)",
+            v835Results.methodsExist
+        );
+        check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
+        check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
+        check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
+        check("V8.35: Turm emergiert als 'architecture' (Default)", v835Results.towerRoleArchitecture);
+        check("V8.35: asymmetrisches Compound ist KEIN Körper", v835Results.asymNotBody);
+        check("V8.35: lebendig+weiche Substanz ist food-like", v835Results.foodIsFoodLike);
+        check("V8.35: lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
+        check("V8.35: Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
+        check("V8.35: Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
+        check(
+            "V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung",
+            v835Results.priorityBodyBeatsFood
+        );
+        check(
+            "V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)",
+            v835Results.refreshEmergesSoul
+        );
+        check(
+            "V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)",
+            v835Results.refreshEmergesFood
+        );
+        check("V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin", v835Results.roleManualStillWins);
+        check(
+            "V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)",
+            v835Results.metaLessConsumableWorks
+        );
+    } else {
+        check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
+    }
+
+    // ### V8.36 — Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
+    const v836Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const proto = Object.getPrototypeOf(r);
+            const allSrc = [];
+            for (const name of Object.getOwnPropertyNames(proto)) {
+                try {
+                    const fn = proto[name];
+                    if (typeof fn === "function") allSrc.push({ name, src: fn.toString() });
+                } catch {
+                    /* skip */
+                }
+            }
+            const anySrc = (re) => allSrc.some((m) => re.test(m.src));
+            const srcOf = (name) => {
+                const m = allSrc.find((x) => x.name === name);
+                return m ? m.src : "";
+            };
+
+            // 1. Jump — Player-Body schläft nie (DISABLE_DEACTIVATION=4);
+            //    der forceActivationState(1) im Geh-Block ist entfernt.
+            out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
+            out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
+
+            // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
+            //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
+            {
+                const src = srcOf("_loopCamera");
+                out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
+            }
+
+            // 3. Loch-Durchfall — V9.36 Phase 5c.2.c.3.a: der V8.36-
+            // Heightfield-Höhen-Clamp im `_applyModifyOpToChunk` ist
+            // mit der Lösch der ganzen modify_terrain-Schicht weg;
+            // die V9.36-`carveVoxelSphere`-Geste hat keinen Höhen-
+            // Clamp-Bedarf (das 3D-Voxel-Feld kennt keine Höhen-
+            // Säulen-Akkumulation). Der V8.36-Radius-Marker lebt
+            // weiter, jetzt als `carveRadius = 3.5` (im Voxel-Feld
+            // grösser als die alte 3.0-Heightfield-Mulde — eine
+            // Voxel-Kugel mit 3.5 m Radius spannt ~140 Zellen).
+            out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
+            out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
+
+            // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
+            //    V9.44-f — die Physik-Phase lebt in _loopPhysicsSync.
+            {
+                const src = srcOf("_loopPhysicsSync");
+                out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
+            }
+
+            // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
+            out.logCssRule = [...document.querySelectorAll("style")].some((s) =>
+                s.textContent.includes("console-log-section:has")
+            );
+
+            // 6. Neue Werkstatt-Parts landen im Ursprung (0,0,0).
+            {
+                if (r.state.blueprints["_t836"]) delete r.state.blueprints["_t836"];
+                r.createBlueprint("_t836", "T836");
+                if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t836");
+                const before = (r.state.blueprints["_t836"].parts || []).length;
+                r._workshopHandleShapeDrop("box");
+                const parts = r.state.blueprints["_t836"].parts || [];
+                const np = parts[parts.length - 1];
+                out.partAtOrigin =
+                    parts.length === before + 1 &&
+                    !!np &&
+                    !!np.position &&
+                    np.position.x === 0 &&
+                    np.position.y === 0 &&
+                    np.position.z === 0;
+                delete r.state.blueprints["_t836"];
+            }
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v836Results && !v836Results.error) {
+        check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
+        check(
+            "V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)",
+            v836Results.jumpNoActivate1
+        );
+        check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
+        check(
+            "V8.36 + V9.36: Grabe-Radius 3.5 im Voxel-Feld (Mulde statt Nadel, V9.36 ersetzt 3.0-Heightfield-Marker)",
+            v836Results.digRadiusVoxel
+        );
+        check(
+            "V9.36: _applyModifyOpToChunk ist gelöscht (Heightfield-Höhen-Clamp obsolet — Voxel-Feld braucht keinen)",
+            v836Results.digHeightClampObsolete
+        );
+        check("V8.36: Auftrieb-Gate via getTerrainHeightAt (Killplane greift wieder)", v836Results.waterGate);
+        check("V8.36: Logbuch-CSS teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
+        check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
+    } else {
+        check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
+    }
+
+    // ### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
+    const v837Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // A — Bau-Kosten sichtbar im Werkstatt-Stats-Panel.
+            {
+                if (r.state.blueprints["_t837a"]) delete r.state.blueprints["_t837a"];
+                r.createBlueprint("_t837a", "T837A");
+                r.state.blueprints["_t837a"].parts = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0, z: 0 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                        color: 0x888888,
+                    },
+                ];
+                if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t837a");
+                r._workshopRenderStatsPanel();
+                const panel = document.getElementById("workshop-stats-panel");
+                const txt = panel ? panel.textContent : "";
+                const cost = r.computeBuildCost("_t837a");
+                out.costPanelShown = /Bau-Kosten/.test(txt);
+                out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× stein`);
+                delete r.state.blueprints["_t837a"];
+            }
+
+            // B — 3D-Raster + Achsenkreuz im Werkstatt-Preview.
+            {
+                r._workshopEnsurePreview();
+                const pre = r.state.workshop && r.state.workshop.preview;
+                out.gridInScene = !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
+                out.axesInScene = !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
+                // raycast der Helfer ist als eigene no-op-Property
+                // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
+                out.helperRaycastNoop =
+                    !!pre &&
+                    Object.prototype.hasOwnProperty.call(pre.gridHelper, "raycast") &&
+                    Object.prototype.hasOwnProperty.call(pre.axesHelper, "raycast");
+            }
+
+            // C — Einstellungen-Sektionen faltbar.
+            {
+                r._initCollapsibleSettings(); // idempotent
+                const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+                const headers = drawer ? drawer.querySelectorAll("h3.collapsible-header") : [];
+                out.collapsibleHeaders = headers.length >= 12;
+                if (headers.length > 0) {
+                    const sec = headers[0].closest("section");
+                    const before = sec.classList.contains("collapsed");
+                    headers[0].click();
+                    const after = sec.classList.contains("collapsed");
+                    out.collapseToggles = before !== after;
+                    headers[0].click(); // Ausgangszustand wiederherstellen
+                } else {
+                    out.collapseToggles = false;
+                }
+            }
+
+            // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
+            {
+                const src = r._workshopInstallShapeDragDrop.toString();
+                // Delegation: EIN Listener am bleibenden Container, NICHT
+                // pro Karte (Karten verschwinden beim Re-Render).
+                out.dragDelegated = /container\.addEventListener\("dragstart"/.test(src) && !/cards\.forEach/.test(src);
+                out.dragSetData = /\.dataTransfer\.setData/.test(src);
+                // Re-Render der Tool-Palette: frische Karten bleiben draggable.
+                r._workshopRenderToolPalette();
+                const palette = document.getElementById("workshop-tool-palette");
+                const card = palette ? palette.querySelector(".workshop-tool-card") : null;
+                out.toolCardDraggable = !!card && card.getAttribute("draggable") === "true";
+                // Domänen-Farbpunkt bekommt einen erklärenden Tooltip.
+                out.dotHasTitle = /dot\.title\s*=/.test(r._workshopRenderToolPalette.toString());
+            }
+
+            // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
+            {
+                r.state._fpsFrames = 0;
+                r.state._fpsElapsed = 0;
+                r.state.fps = 0;
+                for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
+                out.fpsRollingAvg = r.state.fps === 60;
+                out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(r.updateFps.toString());
+                r.state._fpsFrames = 5;
+                r.state._fpsElapsed = 0.3;
+                r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
+                out.fpsResetsOnStall = r.state._fpsFrames === 0 && r.state._fpsElapsed === 0;
+            }
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v837Results && !v837Results.error) {
+        check("V8.37: Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
+        check("V8.37: Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
+        check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
+        check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
+        check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
+        check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥12)", v837Results.collapsibleHeaders);
+        check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
+        check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
+        check("V8.37: Werkzeug-Drag überträgt weiterhin Daten (setData)", v837Results.dragSetData);
+        check("V8.37: neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
+        check("V8.37: Domänen-Farbpunkt trägt einen erklärenden Tooltip", v837Results.dotHasTitle);
+        check("V8.37: FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
+        check("V8.37: FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
+        check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
+    } else {
+        check("V8.37: Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
+    }
+
+    // ### V8.38 — Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
+    const v838Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // C — Hover-Material-Info auf Bauplan-Slots.
+            {
+                if (r.state.blueprints["_t838c"]) delete r.state.blueprints["_t838c"];
+                r.createBlueprint("_t838c", "T838C");
+                r.state.blueprints["_t838c"].parts = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0, z: 0 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                        color: 0x888888,
+                    },
+                ];
+                out.costTooltipMethod = typeof r._blueprintCostTooltip === "function";
+                const tip = r._blueprintCostTooltip("_t838c");
+                out.costTooltipText = /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
+                const origHotbar0 = r.state.hotbar[0];
+                r.state.hotbar[0] = "_t838c";
+                r._renderHotbarDOM();
+                const hslot = document.querySelector('#hotbar .hotbar-slot[data-slot="0"]');
+                out.hotbarSlotTitle = !!hslot && /Bau-Kosten/.test(hslot.title || "");
+                r.state.hotbar[0] = origHotbar0;
+                r._renderHotbarDOM();
+                const origInv0 = r.state.player.inventory[0];
+                r.state.player.inventory[0] = { kind: "blueprint", blueprintName: "_t838c", count: 1 };
+                r.renderInventoryUI();
+                const islot = document.querySelector('#inventory-grid .inventory-slot[data-inv-slot="0"]');
+                out.invSlotTitle = !!islot && /Bau-Kosten/.test(islot.title || "");
+                r.state.player.inventory[0] = origInv0;
+                r.renderInventoryUI();
+                delete r.state.blueprints["_t838c"];
+            }
+
+            // D — Verbindungen im 3D-Preview sichtbar.
+            {
+                const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
+                if (r.state.blueprints["_t838d"]) delete r.state.blueprints["_t838d"];
+                r.createBlueprint("_t838d", "T838D");
+                const bp = r.state.blueprints["_t838d"];
+                bp.parts = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: -1, y: 0, z: 0 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        color: 0x888888,
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 1, y: 0, z: 0 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        color: 0x888888,
+                    },
+                ];
+                r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
+                const group = r._buildFromBlueprint(bp);
+                const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
+                out.connHasLine = conn.some((c) => c.isLine);
+                out.connHasMarker = conn.some((c) => c.isMesh);
+                out.connDepthTestOff =
+                    conn.length > 0 && conn.every((c) => c.material && c.material.depthTest === false);
+                // _workshopRebuildPreviewMesh zählt Verbindungen NICHT als Part.
+                if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t838d");
+                r._workshopEnsurePreview();
+                r._workshopRebuildPreviewMesh();
+                const pre = r.state.workshop && r.state.workshop.preview;
+                out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
+                r._renderWorkshopDOM();
+                const connSection = document.querySelector(".workshop-connections");
+                out.connHintShown = !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
+                delete r.state.blueprints["_t838d"];
+                // Auswahl wiederherstellen — kein hängender Verweis auf
+                // den gelöschten Test-Bauplan für nachfolgende Tests.
+                if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+                    r.selectBlueprintForEdit(origSel);
+                }
+            }
+
+            // F — 3D-Preview-Höhe.
+            {
+                out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
+                    /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
+                );
+                out.cameraAspectSync = /camera\.aspect = w \/ h/.test(r._workshopSyncCanvasSize.toString());
+            }
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v838Results && !v838Results.error) {
+        check("V8.38: _blueprintCostTooltip-Methode existiert", v838Results.costTooltipMethod);
+        check("V8.38: Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
+        check("V8.38: gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
+        check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
+        check("V8.38: Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
+        check("V8.38: Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
+        check("V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)", v838Results.connDepthTestOff);
+        check(
+            "V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
+            v838Results.connNotCountedAsPart
+        );
+        check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
+        check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
+        check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
+    } else {
+        check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
+    }
+
+    // ### V8.39 — Werkzeug-Klassen + Präzision→Qualität ###
+    const v839Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Farb-Sprache: Rollen-Farben-Konstante.
+            const rc = r.constructor && r.constructor.BLUEPRINT_ROLE_COLORS;
+            out.roleColorsExist =
+                !!rc &&
+                typeof rc.armor === "string" &&
+                typeof rc.tool === "string" &&
+                typeof rc.soul === "string" &&
+                typeof rc.architecture === "string";
+
+            // computeBlueprintQuality.
+            out.qualityMethod = typeof r.computeBlueprintQuality === "function";
+            out.qualityUnworked =
+                r.computeBlueprintQuality({
+                    parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+                }) === 1.0;
+            const qWorked = r.computeBlueprintQuality({
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        size: { x: 1, y: 1, z: 1 },
+                        opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                    },
+                ],
+            });
+            out.qualityWorked = qWorked > 0.3 && qWorked < 0.6;
+
+            // Aufwand: Stamina skaliert mit Werkzeug-cap (pfad-Modus).
+            {
+                const prevMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+                r.setGameMode("pfad");
+                if (r.state.blueprints["_t839s"]) delete r.state.blueprints["_t839s"];
+                r.createBlueprint("_t839s", "T839S");
+                r.state.blueprints["_t839s"].parts = [
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 0 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        color: 0x888888,
+                        opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                    },
+                ];
+                r.state.player.stamina = 500;
+                const b1 = r.state.player.stamina;
+                const res1 = r.applyOpToPart("_t839s", 0, "hände");
+                const costLow = b1 - r.state.player.stamina;
+                const b2 = r.state.player.stamina;
+                const res2 = r.applyOpToPart("_t839s", 0, "polierscheibe");
+                const costHigh = b2 - r.state.player.stamina;
+                out.staminaScales = !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
+                r.setGameMode(prevMode);
+                delete r.state.blueprints["_t839s"];
+            }
+
+            // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
+            out.creatureStatsQuality = /computeBlueprintQuality/.test(r.computeCreatureStats.toString());
+            out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
+
+            // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
+            {
+                const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
+                if (r.state.blueprints["_t839c"]) delete r.state.blueprints["_t839c"];
+                r.createBlueprint("_t839c", "T839C");
+                r.state.blueprints["_t839c"].parts = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0, z: 0 },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        color: 0x888888,
+                        opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                    },
+                ];
+                if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t839c");
+                r._workshopRenderStatsPanel();
+                const panel = document.getElementById("workshop-stats-panel");
+                const chip = panel ? panel.querySelector(".role-chip") : null;
+                out.roleChipGlow = !!chip && !!chip.style.boxShadow && chip.style.boxShadow.length > 0;
+                out.qualityRow = !!panel && /Qualität/.test(panel.textContent || "");
+                r._renderWorkshopDOM();
+                const lrow = document.querySelector("#workshop-list .workshop-list-row");
+                out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
+                delete r.state.blueprints["_t839c"];
+                if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
+                    r.selectBlueprintForEdit(origSel);
+                }
+            }
+
+            // Equip-Hinweis im Spieler-Drawer.
+            r.renderPlayerEquipUI();
+            const eq = document.getElementById("player-equip");
+            out.equipHint = !!eq && /Rüstung anziehen/.test(eq.textContent || "");
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v839Results && !v839Results.error) {
+        check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
+        check("V8.39: computeBlueprintQuality-Methode existiert", v839Results.qualityMethod);
+        check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
+        check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
+        check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
+        check("V8.39: computeCreatureStats skaliert Equip mit Qualität", v839Results.creatureStatsQuality);
+        check("V8.39: activateConsumable skaliert Trank-Stärke mit Qualität", v839Results.consumableQuality);
+        check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
+        check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
+        check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
+        check("V8.39: Spieler-Drawer zeigt den Rüstung-Equip-Hinweis", v839Results.equipHint);
+    } else {
+        check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (W12 Phase 1 (Portal-Rolle + Skelett + Betreten) + Phase 2 (fremde Welten + Registry + DSL-Brücke) + Phase 3 (Ereignisse zurück + Manifest)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandW12WorldPortal(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###
+    const w12c1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const C = r.constructor;
+
+            // Rolle "portal" in Label- + Farb-Konstanten.
+            out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
+            out.roleColor = !!C && !!C.BLUEPRINT_ROLE_COLORS && typeof C.BLUEPRINT_ROLE_COLORS.portal === "string";
+
+            // PORTAL_SKELETON_WORLD-Konstante zeigt auf einen worlds/-Pfad.
+            out.skeletonConst =
+                typeof C.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(C.PORTAL_SKELETON_WORLD);
+
+            // Built-in welt_portal-Bauplan.
+            const wp = r.state.blueprints && r.state.blueprints.welt_portal;
+            out.builtinExists = !!wp && wp.builtIn === true;
+            out.builtinRole = !!wp && wp.role === "portal" && wp.roleManual === true;
+            out.builtinMeta =
+                !!wp &&
+                !!wp.portalMeta &&
+                typeof wp.portalMeta.world === "string" &&
+                typeof wp.portalMeta.label === "string";
+            out.builtinHasParts = !!wp && Array.isArray(wp.parts) && wp.parts.length >= 2;
+
+            // setBlueprintAsPortal — Marker-Methode.
+            out.markMethod = typeof r.setBlueprintAsPortal === "function";
+            if (r.state.blueprints["_w12p"]) delete r.state.blueprints["_w12p"];
+            r.createBlueprint("_w12p", "W12P");
+            const markRes = r.setBlueprintAsPortal("_w12p");
+            const marked = r.state.blueprints["_w12p"];
+            out.markOk =
+                !!markRes &&
+                markRes.ok === true &&
+                !!marked &&
+                marked.role === "portal" &&
+                marked.roleManual === true &&
+                !!marked.portalMeta &&
+                typeof marked.portalMeta.world === "string";
+
+            // Manueller Override bleibt nach _refreshBlueprintRoleEmergent.
+            r._refreshBlueprintRoleEmergent("_w12p");
+            out.manualSticks = r.state.blueprints["_w12p"].role === "portal";
+
+            // Built-in-Schutz + Unknown-Reject.
+            const builtinRej = r.setBlueprintAsPortal("village");
+            out.rejectBuiltin =
+                !!builtinRej && builtinRej.ok === false && builtinRej.reason === "cannot_modify_builtin";
+            const unknownRej = r.setBlueprintAsPortal("_does_not_exist_xyz");
+            out.rejectUnknown = !!unknownRej && unknownRej.ok === false && unknownRej.reason === "blueprint_unknown";
+
+            // _sanitizePortalMeta — fremdes Origin + Pfad-Traversal werden verworfen.
+            const sanForeign = r._sanitizePortalMeta({ world: "https://evil.example/x" }, "fb");
+            out.sanitizeForeign = sanForeign.world === C.PORTAL_SKELETON_WORLD;
+            const sanTraversal = r._sanitizePortalMeta({ world: "worlds/../secret" }, "fb");
+            out.sanitizeTraversal = sanTraversal.world === C.PORTAL_SKELETON_WORLD;
+            const sanValid = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html", label: "Test-Welt" }, "fb");
+            out.sanitizeValid = sanValid.world === "worlds/skeleton/index.html" && sanValid.label === "Test-Welt";
+
+            // W12-Korrektur — die Portal-NATUR emergiert aus der Substanz:
+            // ein magie-leitender Ring wird zum Tor (das Ziel bleibt autoriert).
+            out.portalShapedMethod = typeof r._isPortalShaped === "function";
+
+            // Magie-Ring (Quarz-Torus, begehbar groß) → Portal.
+            const magicRing = {
+                parts: [
+                    {
+                        shape: "torus",
+                        material: "quarz",
+                        size: { x: 3.4, y: 3.4, z: 3.4 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                ],
+            };
+            out.magicRingIsPortalShaped = r._isPortalShaped(magicRing) === true;
+            out.magicRingRolePortal = r.computeBlueprintRole(magicRing) === "portal";
+
+            // Stein-Ring (kein Magie-Material) → KEIN Portal. Die
+            // "aus-Magie"-Diskrimination: ein schlichter Ring bleibt Bauwerk.
+            const stoneRing = {
+                parts: [
+                    {
+                        shape: "torus",
+                        material: "stein",
+                        size: { x: 3.4, y: 3.4, z: 3.4 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                ],
+            };
+            out.stoneRingNotPortal =
+                r._isPortalShaped(stoneRing) === false && r.computeBlueprintRole(stoneRing) !== "portal";
+
+            // Winziger Deko-Torus aus Quarz → KEIN Portal (nicht begehbar groß).
+            const tinyRing = {
+                parts: [
+                    {
+                        shape: "torus",
+                        material: "quarz",
+                        size: { x: 0.8, y: 0.8, z: 0.8 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                ],
+            };
+            out.tinyRingNotPortal = r._isPortalShaped(tinyRing) === false;
+
+            // kristall_geode (magisch, aber massiv, kein Ring) → KEIN Portal.
+            const geode = r.state.blueprints && r.state.blueprints.kristall_geode;
+            out.geodeNotPortal = !!geode && r._isPortalShaped(geode) === false;
+
+            // Built-in welt_portal erfüllt selbst die emergente Regel.
+            out.builtinSatisfiesRule = !!wp && r._isPortalShaped(wp) === true;
+
+            // Emergenter Pfad: ein eigener Bauplan mit Magie-Ring wird via
+            // _refreshBlueprintRoleEmergent zum Portal — OHNE setBlueprintAsPortal.
+            if (r.state.blueprints["_w12e"]) delete r.state.blueprints["_w12e"];
+            r.createBlueprint("_w12e", "W12E");
+            r.state.blueprints["_w12e"].parts = [
+                {
+                    shape: "torus",
+                    material: "quarz",
+                    size: { x: 3.4, y: 3.4, z: 3.4 },
+                    position: { x: 0, y: 0, z: 0 },
+                },
+            ];
+            r._refreshBlueprintRoleEmergent("_w12e");
+            out.emergentRefreshPortal = r.state.blueprints["_w12e"].role === "portal";
+            delete r.state.blueprints["_w12e"];
+
+            delete r.state.blueprints["_w12p"];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12c1Results && !w12c1Results.error) {
+        check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
+        check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
+        check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
+        check("W12 P1: Built-in welt_portal-Bauplan existiert", w12c1Results.builtinExists);
+        check("W12 P1: welt_portal hat role:'portal' + roleManual", w12c1Results.builtinRole);
+        check("W12 P1: welt_portal trägt portalMeta (world + label)", w12c1Results.builtinMeta);
+        check("W12 P1: welt_portal hat min. 2 Parts (Ring + Membran)", w12c1Results.builtinHasParts);
+        check("W12 P1: setBlueprintAsPortal-Methode existiert", w12c1Results.markMethod);
+        check("W12 P1: setBlueprintAsPortal markiert eigenen Bauplan", w12c1Results.markOk);
+        check("W12 P1: manuelle Portal-Rolle überlebt _refreshBlueprintRoleEmergent", w12c1Results.manualSticks);
+        check("W12 P1: setBlueprintAsPortal lehnt Built-in ab", w12c1Results.rejectBuiltin);
+        check("W12 P1: setBlueprintAsPortal lehnt unbekannten Bauplan ab", w12c1Results.rejectUnknown);
+        check("W12 P1: _sanitizePortalMeta verwirft fremdes Origin", w12c1Results.sanitizeForeign);
+        check("W12 P1: _sanitizePortalMeta verwirft Pfad-Traversal", w12c1Results.sanitizeTraversal);
+        check("W12 P1: _sanitizePortalMeta behält gültigen worlds/-Pfad", w12c1Results.sanitizeValid);
+        check("W12 P1: _isPortalShaped-Methode existiert", w12c1Results.portalShapedMethod);
+        check("W12 P1: Magie-Ring (Quarz-Torus) ist _isPortalShaped", w12c1Results.magicRingIsPortalShaped);
+        check(
+            "W12 P1: Magie-Ring emergiert als Rolle 'portal' (computeBlueprintRole)",
+            w12c1Results.magicRingRolePortal
+        );
+        check(
+            "W12 P1: Stein-Ring ohne Magie wird NICHT Portal (aus-Magie-Diskrimination)",
+            w12c1Results.stoneRingNotPortal
+        );
+        check("W12 P1: winziger Deko-Torus wird NICHT Portal (Begehbarkeit)", w12c1Results.tinyRingNotPortal);
+        check("W12 P1: kristall_geode (magisch, massiv) wird NICHT Portal (kein Ring)", w12c1Results.geodeNotPortal);
+        check("W12 P1: Built-in welt_portal erfüllt _isPortalShaped selbst", w12c1Results.builtinSatisfiesRule);
+        check(
+            "W12 P1: Magie-Ring emergiert via _refreshBlueprintRoleEmergent zu 'portal'",
+            w12c1Results.emergentRefreshPortal
+        );
+    } else {
+        check("W12 P1: Welt-Portal Commit 1 Tests laufen", false, w12c1Results ? w12c1Results.error : "no result");
+    }
+
+    // ### W12 Phase 1 Commit 2 — Skelett-Welt + iframe-Overlay + CSP ###
+    const w12c2Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // CSP: frame-src 'self' (nur same-origin iframes erlaubt).
+            const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+            const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
+            out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
+
+            // Skelett-Welt-Seite + Skript werden ausgeliefert.
+            try {
+                const htmlRes = await fetch("worlds/skeleton/index.html");
+                const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                out.skeletonHtmlServed =
+                    htmlRes.ok &&
+                    /SKELETT-WELT/.test(htmlBody) &&
+                    /id="avatar-name"/.test(htmlBody) &&
+                    /skeleton\.js/.test(htmlBody);
+                const jsRes = await fetch("worlds/skeleton/skeleton.js");
+                const jsBody = jsRes.ok ? await jsRes.text() : "";
+                out.skeletonJsServed =
+                    jsRes.ok &&
+                    /addEventListener\("message"/.test(jsBody) &&
+                    /"ready"/.test(jsBody) &&
+                    /"enter"/.test(jsBody);
+            } catch (e) {
+                out.skeletonHtmlServed = false;
+                out.skeletonJsServed = false;
+            }
+
+            // Overlay-Methoden.
+            out.buildMethod = typeof r._buildPortalOverlay === "function";
+            out.disposeMethod = typeof r._disposePortalOverlay === "function";
+            out.sendEnterMethod = typeof r._portalSendEnter === "function";
+
+            // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Test" });
+            const overlay = document.getElementById("portal-overlay");
+            const iframe = overlay ? overlay.querySelector("iframe.portal-frame") : null;
+            out.overlayBuilt = !!overlay && !!iframe;
+            out.iframeSandboxed = !!iframe && (iframe.getAttribute("sandbox") || "").includes("allow-scripts");
+            out.iframeSrcSkeleton = !!iframe && iframe.src.includes("worlds/skeleton/index.html");
+            out.overlayRefSet = !!r._portalOverlay;
+
+            // _disposePortalOverlay räumt Overlay + Ref.
+            r._disposePortalOverlay();
+            out.overlayDisposed = !document.getElementById("portal-overlay") && !r._portalOverlay;
+
+            // Defense-in-Depth: ein fremdes Origin im world-Feld wird auch im
+            // Overlay-Builder gesäubert (kein evil.example im iframe-src).
+            r._buildPortalOverlay({ world: "https://evil.example/pwn" });
+            const evilFrame = document.querySelector("#portal-overlay iframe.portal-frame");
+            out.overlaySanitizesForeign =
+                !!evilFrame && !evilFrame.src.includes("evil.example") && evilFrame.src.includes("worlds/skeleton");
+            r._disposePortalOverlay();
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12c2Results && !w12c2Results.error) {
+        check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
+        check("W12 P1 C2: Skelett-Welt-Seite wird ausgeliefert", w12c2Results.skeletonHtmlServed);
+        check("W12 P1 C2: skeleton.js mit Handshake wird ausgeliefert", w12c2Results.skeletonJsServed);
+        check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
+        check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
+        check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
+        check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
+        check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
+        check("W12 P1 C2: iframe-src zeigt auf die Skelett-Welt", w12c2Results.iframeSrcSkeleton);
+        check("W12 P1 C2: _portalOverlay-Ref nach Build gesetzt", w12c2Results.overlayRefSet);
+        check("W12 P1 C2: _disposePortalOverlay räumt Overlay + Ref", w12c2Results.overlayDisposed);
+        check(
+            "W12 P1 C2: Overlay-Builder säubert fremdes Origin (Defense-in-Depth)",
+            w12c2Results.overlaySanitizesForeign
+        );
+    } else {
+        check("W12 P1 C2: Skelett-Welt Commit 2 Tests laufen", false, w12c2Results ? w12c2Results.error : "no result");
+    }
+
+    // ### W12 Phase 1 Commit 3 — Betreten / Pause / Rückkehr ###
+    const w12c3Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Portal-Affordance: welt_portal trägt AUSSCHLIESSLICH isPortal
+            // (kein moveable/magnifying/focusing — ein Tor ist kein Fahrzeug).
+            const wpAff = r.computeBlueprintAffordances(r.state.blueprints.welt_portal);
+            out.affPortal = wpAff.isPortal === true;
+            out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
+            out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.village).isPortal;
+
+            out.methods =
+                typeof r.enterPortal === "function" &&
+                typeof r.exitPortal === "function" &&
+                typeof r._tickPortalAffordance === "function" &&
+                typeof r._tryEnterPortalAtPlayer === "function";
+
+            // spawnArchitecture eines Portals → Entry trägt affordances.isPortal.
+            const pm = r.state.playerMesh.position;
+            r.spawnArchitecture("welt_portal", { x: pm.x, y: pm.y, z: pm.z });
+            const portalEntry = (r.state.architectures || []).find((e) => e.type === "welt_portal");
+            out.spawnedHasAffordance =
+                !!portalEntry && !!portalEntry.affordances && portalEntry.affordances.isPortal === true;
+
+            // enterPortal baut das Overlay.
+            const enterRes = portalEntry ? r.enterPortal(portalEntry) : { ok: false };
+            out.enterBuildsOverlay = !!enterRes.ok && !!document.getElementById("portal-overlay") && !!r._portalOverlay;
+            // Doppel-Eintritt wird abgelehnt.
+            const doubleRes = r.enterPortal(portalEntry);
+            out.rejectsDoubleEnter = !doubleRes.ok && doubleRes.reason === "already_in_portal";
+
+            // Loop friert die Heimat-Welt ein, solange das Portal offen ist.
+            const framesBefore = r.state._fpsFrames;
+            r._gameLoopTick(performance.now());
+            const framesInPortal = r.state._fpsFrames;
+            out.loopFreezesInPortal = framesInPortal === framesBefore;
+
+            // exitPortal räumt Overlay + Tasten-Zustand.
+            r.state.keys.w = true;
+            const exitRes = r.exitPortal();
+            out.exitDisposesOverlay = !!exitRes.ok && !document.getElementById("portal-overlay") && !r._portalOverlay;
+            out.exitClearsKeys = !r.state.keys.w;
+
+            // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
+            r._gameLoopTick(performance.now());
+            out.loopResumesAfterPortal = r.state._fpsFrames !== framesInPortal;
+
+            // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.
+            const exitAgain = r.exitPortal();
+            out.rejectsExitWhenIdle = !exitAgain.ok && exitAgain.reason === "not_in_portal";
+            const badEnter = r.enterPortal({ type: "village", affordances: {} });
+            out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
+
+            // Loop-Guard ist verdrahtet.
+            out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
+
+            // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
+            r._tickPortalAffordance();
+            const promptEl = document.getElementById("portal-prompt");
+            out.promptShownNearPortal =
+                !!promptEl && !promptEl.hidden && /Portal betreten/.test(promptEl.textContent || "");
+
+            // _tryEnterPortalAtPlayer betritt das nahe Portal.
+            out.tryEnterWorks = r._tryEnterPortalAtPlayer() === true && !!r._portalOverlay;
+            r.exitPortal();
+
+            // Portal entfernen → Prompt verschwindet, _tryEnter scheitert.
+            if (portalEntry) r.removeArchitecture(portalEntry);
+            r._tickPortalAffordance();
+            out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
+            out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
+
+            // skeleton.js meldet Esc als {type:"exit"} an die Heimat-Welt.
+            try {
+                const jsRes = await fetch("worlds/skeleton/skeleton.js");
+                const jsBody = jsRes.ok ? await jsRes.text() : "";
+                out.skeletonForwardsEsc = /Escape/.test(jsBody) && /"exit"/.test(jsBody);
+            } catch (e) {
+                out.skeletonForwardsEsc = false;
+            }
+            // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
+            out.overlayHandlesExit = /"exit"/.test(r._buildPortalOverlay.toString());
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12c3Results && !w12c3Results.error) {
+        check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
+        check("W12 P1 C3: ein Portal ist kein Fahrzeug/keine Linse (nur isPortal)", w12c3Results.affPortalExclusive);
+        check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
+        check("W12 P1 C3: enterPortal/exitPortal/_tick/_tryEnter existieren", w12c3Results.methods);
+        check("W12 P1 C3: gespawntes Portal trägt affordances.isPortal", w12c3Results.spawnedHasAffordance);
+        check("W12 P1 C3: enterPortal baut das iframe-Overlay", w12c3Results.enterBuildsOverlay);
+        check("W12 P1 C3: enterPortal lehnt Doppel-Eintritt ab", w12c3Results.rejectsDoubleEnter);
+        check("W12 P1 C3: Loop friert die Heimat-Welt ein (Portal offen)", w12c3Results.loopFreezesInPortal);
+        check("W12 P1 C3: exitPortal räumt Overlay + Ref", w12c3Results.exitDisposesOverlay);
+        check("W12 P1 C3: exitPortal verwirft stale Tasten-Zustände", w12c3Results.exitClearsKeys);
+        check(
+            "W12 P1 C3: Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf",
+            w12c3Results.loopResumesAfterPortal
+        );
+        check("W12 P1 C3: exitPortal ohne offenes Portal wird abgelehnt", w12c3Results.rejectsExitWhenIdle);
+        check("W12 P1 C3: enterPortal lehnt eine Nicht-Portal-Architektur ab", w12c3Results.rejectsNonPortal);
+        check("W12 P1 C3: Game-Loop hat den Portal-Guard verdrahtet", w12c3Results.loopGuard);
+        check("W12 P1 C3: _tickPortalAffordance zeigt den Prompt am Portal", w12c3Results.promptShownNearPortal);
+        check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
+        check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
+        check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
+        check("W12 P1 C3: skeleton.js meldet Esc als exit an die Heimat-Welt", w12c3Results.skeletonForwardsEsc);
+        check("W12 P1 C3: _buildPortalOverlay behandelt die exit-Nachricht", w12c3Results.overlayHandlesExit);
+    } else {
+        check(
+            "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
+            false,
+            w12c3Results ? w12c3Results.error : "no result"
+        );
+    }
+
+    // ### W12 Phase 2 Commit 1 — Strom-Welt (three-fluid-fx) ###
+    const w12p2Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Fluid-Welt-Seite + Skript + vendored Engine werden ausgeliefert.
+            try {
+                const htmlRes = await fetch("worlds/fluid/index.html");
+                const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                out.fluidHtmlServed =
+                    htmlRes.ok &&
+                    /Strom-Welt/.test(htmlBody) &&
+                    /id="avatar-name"/.test(htmlBody) &&
+                    /type="module"/.test(htmlBody) &&
+                    /fluid\.js/.test(htmlBody);
+                const jsRes = await fetch("worlds/fluid/fluid.js");
+                const jsBody = jsRes.ok ? await jsRes.text() : "";
+                out.fluidJsServed =
+                    jsRes.ok &&
+                    /FluidSimulation/.test(jsBody) &&
+                    /"ready"/.test(jsBody) &&
+                    /"enter"/.test(jsBody) &&
+                    /"exit"/.test(jsBody) &&
+                    jsBody.includes("./lib/");
+                const coreRes = await fetch("worlds/fluid/lib/three.core.min.js");
+                const modRes = await fetch("worlds/fluid/lib/three.module.min.js");
+                const fxRes = await fetch("worlds/fluid/lib/three-fluid-fx.es.js");
+                out.engineVendored = coreRes.ok && modRes.ok && fxRes.ok;
+                const fxBody = fxRes.ok ? await fxRes.text() : "";
+                // three-fluid-fx ist gepatcht: kein bare "three"-Import mehr.
+                out.fxPatched = fxBody.includes('from "./three.module.min.js"') && !fxBody.includes('from "three"');
+            } catch (e) {
+                out.fluidHtmlServed = false;
+                out.fluidJsServed = false;
+                out.engineVendored = false;
+                out.fxPatched = false;
+            }
+
+            // Built-in welt_strom-Portal.
+            const ws = r.state.blueprints && r.state.blueprints.welt_strom;
+            out.stromExists = !!ws && ws.builtIn === true;
+            out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
+            out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
+
+            // welt_strom trägt exklusiv die isPortal-Affordance + ist _isPortalShaped.
+            const wsAff = r.computeBlueprintAffordances(ws);
+            out.stromAffordance = wsAff.isPortal === true && !wsAff.moveable && !wsAff.magnifying && !wsAff.focusing;
+            out.stromPortalShaped = r._isPortalShaped(ws) === true;
+
+            // _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad.
+            out.sanitizeFluidWorld =
+                r._sanitizePortalMeta({ world: "worlds/fluid/index.html" }, "fb").world === "worlds/fluid/index.html";
+
+            // enterPortal(welt_strom) → Overlay-iframe zeigt auf die Fluid-Welt.
+            const pm = r.state.playerMesh.position;
+            r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
+            const stromEntry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+            const enterRes = stromEntry ? r.enterPortal(stromEntry) : { ok: false };
+            const frame = document.querySelector("#portal-overlay iframe.portal-frame");
+            out.enterFluidWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/fluid/index.html");
+            r.exitPortal();
+            if (stromEntry) r.removeArchitecture(stromEntry);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12p2Results && !w12p2Results.error) {
+        check("W12 P2 C1: Fluid-Welt-Seite wird ausgeliefert", w12p2Results.fluidHtmlServed);
+        check("W12 P2 C1: fluid.js (FluidSimulation + Handshake) wird ausgeliefert", w12p2Results.fluidJsServed);
+        check("W12 P2 C1: Engine vendored (three.core/module + three-fluid-fx)", w12p2Results.engineVendored);
+        check("W12 P2 C1: three-fluid-fx three-Import auf lib gepatcht", w12p2Results.fxPatched);
+        check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
+        check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
+        check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
+        check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
+        check("W12 P2 C1: welt_strom ist _isPortalShaped (Quarz-Ring emergiert)", w12p2Results.stromPortalShaped);
+        check("W12 P2 C1: _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad", w12p2Results.sanitizeFluidWorld);
+        check("W12 P2 C1: enterPortal(welt_strom) lädt die Fluid-Welt ins iframe", w12p2Results.enterFluidWorld);
+    } else {
+        check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
+    }
+
+    // ### W12 Phase 2 Commit 2 — DSL-Brücke (das Protokoll) ###
+    const w12bridgeResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // _sanitizePortalMeta säubert das dsl-Manifest.
+            const sanA = r._sanitizePortalMeta({
+                world: "worlds/fluid/index.html",
+                dsl: ["weather", "BAD OP", 7, "set_turbulence"],
+            });
+            out.sanitizeDsl =
+                Array.isArray(sanA.dsl) &&
+                sanA.dsl.length === 2 &&
+                sanA.dsl.includes("weather") &&
+                sanA.dsl.includes("set_turbulence");
+            out.sanitizeNoDsl = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }).dsl === null;
+
+            // Built-in-Manifeste.
+            const ws = r.state.blueprints.welt_strom;
+            const wp = r.state.blueprints.welt_portal;
+            out.stromManifest =
+                !!ws.portalMeta.dsl &&
+                ws.portalMeta.dsl.includes("weather") &&
+                ws.portalMeta.dsl.includes("sturm") &&
+                ws.portalMeta.dsl.includes("set_turbulence");
+            out.skeletonManifest = !!wp.portalMeta.dsl && wp.portalMeta.dsl.includes("skybox_color");
+
+            // _portalProgramOps — chain ist Rahmen, kein Wort.
+            out.opsSingle = JSON.stringify(r._portalProgramOps(["weather", "rainy"])) === '["weather"]';
+            out.opsChain =
+                JSON.stringify(r._portalProgramOps(["chain", ["weather", "sunny"], ["sturm"]])) ===
+                '["weather","sturm"]';
+
+            // enterPortal(welt_strom) → Overlay trägt das Manifest + body.in-portal.
+            const pm = r.state.playerMesh.position;
+            r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
+            const entry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+            r.enterPortal(entry);
+            out.overlayCarriesManifest =
+                !!r._portalOverlay && Array.isArray(r._portalOverlay.dsl) && r._portalOverlay.dsl.includes("sturm");
+            out.bodyInPortal = document.body.classList.contains("in-portal");
+
+            // _portalParseWorldCommand — welt-eigene Wörter.
+            const wc = r._portalParseWorldCommand("set_turbulence 0.8");
+            out.parseWorldWord = Array.isArray(wc) && wc[0] === "set_turbulence" && wc[1] === 0.8;
+            out.parseWorldRejects = r._portalParseWorldCommand("flieg hoch") === null;
+
+            // _portalRouteDsl — Subset-Op weitergereicht, unbekanntes verworfen.
+            const rt1 = r._portalRouteDsl(["weather", "rainy"], "Wetter", null);
+            out.routeForward = rt1.forwarded === true && rt1.reason === "sent";
+            const rt2 = r._portalRouteDsl(["spawn_creature", 3], "x", null);
+            out.routeUnknown = rt2.forwarded === false && rt2.reason === "unknown_op";
+            // Stufe 0 — ausgestellte Welt (kein Manifest).
+            r._portalOverlay.dsl = null;
+            const rt3 = r._portalRouteDsl(["weather", "rainy"], "x", null);
+            out.routeExhibited = rt3.forwarded === false && rt3.reason === "exhibited";
+
+            // Intercept: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt.
+            r._portalOverlay.dsl = ["weather"];
+            r.state.weather = "sunny";
+            r.processChatCommand("setze wetter rainy");
+            out.homeWeatherUntouched = r.state.weather === "sunny";
+
+            r.exitPortal();
+            out.bodyClassCleared = !document.body.classList.contains("in-portal");
+            if (entry) r.removeArchitecture(entry);
+
+            // Sub-Welt-Adapter werden ausgeliefert.
+            try {
+                const fxBody = await (await fetch("worlds/fluid/fluid.js")).text();
+                out.fluidAdapter =
+                    /function applyDsl/.test(fxBody) && /"dsl"/.test(fxBody) && /function setEnergy/.test(fxBody);
+                // Render-Fix: das Dichtefeld (densityTexture) + Auto-Splats.
+                out.fluidRenders = /densityTexture/.test(fxBody) && /addSplat/.test(fxBody) && /uBackdrop/.test(fxBody);
+                const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
+                out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
+            } catch (e) {
+                out.fluidAdapter = false;
+                out.fluidRenders = false;
+                out.skeletonAdapter = false;
+            }
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12bridgeResults && !w12bridgeResults.error) {
+        check("W12 P2 C2: _sanitizePortalMeta säubert das dsl-Manifest", w12bridgeResults.sanitizeDsl);
+        check("W12 P2 C2: _sanitizePortalMeta — kein dsl → null (Stufe 0)", w12bridgeResults.sanitizeNoDsl);
+        check("W12 P2 C2: welt_strom trägt ein DSL-Manifest", w12bridgeResults.stromManifest);
+        check("W12 P2 C2: welt_portal (Skelett) trägt ein DSL-Manifest", w12bridgeResults.skeletonManifest);
+        check("W12 P2 C2: _portalProgramOps liest ein einzelnes Op", w12bridgeResults.opsSingle);
+        check("W12 P2 C2: _portalProgramOps liest eine chain (ohne 'chain')", w12bridgeResults.opsChain);
+        check("W12 P2 C2: das Portal-Overlay trägt das Manifest", w12bridgeResults.overlayCarriesManifest);
+        check("W12 P2 C2: body.in-portal hebt die Konsole im Portal", w12bridgeResults.bodyInPortal);
+        check("W12 P2 C2: _portalParseWorldCommand parst welt-eigene Wörter", w12bridgeResults.parseWorldWord);
+        check("W12 P2 C2: _portalParseWorldCommand verwirft Nicht-Manifest-Wörter", w12bridgeResults.parseWorldRejects);
+        check("W12 P2 C2: _portalRouteDsl reicht ein Subset-Op weiter", w12bridgeResults.routeForward);
+        check("W12 P2 C2: _portalRouteDsl verwirft ein unbekanntes Op", w12bridgeResults.routeUnknown);
+        check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
+        check("W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt", w12bridgeResults.homeWeatherUntouched);
+        check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
+        check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
+        check("W12 P2 C2: Strom-Welt rendert Dichtefeld + Auto-Splats", w12bridgeResults.fluidRenders);
+        check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
+    } else {
+        check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
+    }
+
+    // ### W12 Phase 2 — zweite fremde Welt: Terrain-Welt ###
+    const w12terrainResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Terrain-Welt-Dateien + vendored Engine werden ausgeliefert.
+            try {
+                const htmlRes = await fetch("worlds/terrain/index.html");
+                const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
+                out.terrainHtmlServed =
+                    htmlRes.ok &&
+                    /Terrain-Welt/.test(htmlBody) &&
+                    /id="avatar-name"/.test(htmlBody) &&
+                    /THREE\.Terrain\.min\.js/.test(htmlBody) &&
+                    /terrain\.js/.test(htmlBody);
+                const jsRes = await fetch("worlds/terrain/terrain.js");
+                const jsBody = jsRes.ok ? await jsRes.text() : "";
+                out.terrainJsServed =
+                    jsRes.ok &&
+                    /THREE\.Terrain/.test(jsBody) &&
+                    /function applyDsl/.test(jsBody) &&
+                    /"ready"/.test(jsBody) &&
+                    /"enter"/.test(jsBody) &&
+                    /"exit"/.test(jsBody);
+                const threeRes = await fetch("worlds/terrain/lib/three.min.js");
+                const terrRes = await fetch("worlds/terrain/lib/THREE.Terrain.min.js");
+                out.terrainEngineVendored = threeRes.ok && terrRes.ok;
+            } catch (e) {
+                out.terrainHtmlServed = false;
+                out.terrainJsServed = false;
+                out.terrainEngineVendored = false;
+            }
+
+            // Built-in welt_terrain-Portal + Manifest.
+            const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
+            out.terrainExists = !!wt && wt.builtIn === true;
+            out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
+            out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
+            out.terrainManifest =
+                !!wt &&
+                !!wt.portalMeta.dsl &&
+                wt.portalMeta.dsl.includes("gebirge") &&
+                wt.portalMeta.dsl.includes("ebene") &&
+                wt.portalMeta.dsl.includes("neu");
+
+            const wtAff = r.computeBlueprintAffordances(wt);
+            out.terrainAffordance = wtAff.isPortal === true && !wtAff.moveable;
+            out.terrainPortalShaped = r._isPortalShaped(wt) === true;
+
+            // enterPortal(welt_terrain) → iframe + Brücke trägt einen Manifest-Op.
+            const pm = r.state.playerMesh.position;
+            r.spawnArchitecture("welt_terrain", { x: pm.x, y: pm.y, z: pm.z });
+            const entry = (r.state.architectures || []).find((e) => e.type === "welt_terrain");
+            const enterRes = entry ? r.enterPortal(entry) : { ok: false };
+            const frame = document.querySelector("#portal-overlay iframe.portal-frame");
+            out.enterTerrainWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/terrain/index.html");
+            const rt = r._portalRouteDsl(["gebirge"], "Gebirge", null);
+            out.terrainBridge = rt.forwarded === true;
+            r.exitPortal();
+            if (entry) r.removeArchitecture(entry);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12terrainResults && !w12terrainResults.error) {
+        check("W12 P2: Terrain-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
+        check("W12 P2: terrain.js (THREE.Terrain + Handshake) wird ausgeliefert", w12terrainResults.terrainJsServed);
+        check("W12 P2: Terrain-Engine vendored (three + THREE.Terrain)", w12terrainResults.terrainEngineVendored);
+        check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
+        check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
+        check("W12 P2: welt_terrain portalMeta zeigt auf die Terrain-Welt", w12terrainResults.terrainMeta);
+        check("W12 P2: welt_terrain trägt ein DSL-Manifest (gebirge/ebene/neu)", w12terrainResults.terrainManifest);
+        check("W12 P2: welt_terrain trägt die isPortal-Affordance", w12terrainResults.terrainAffordance);
+        check("W12 P2: welt_terrain ist _isPortalShaped", w12terrainResults.terrainPortalShaped);
+        check("W12 P2: enterPortal(welt_terrain) lädt die Terrain-Welt", w12terrainResults.enterTerrainWorld);
+        check("W12 P2: die Brücke trägt einen Terrain-Manifest-Op", w12terrainResults.terrainBridge);
+    } else {
+        check("W12 P2: Terrain-Welt Tests laufen", false, w12terrainResults ? w12terrainResults.error : "no result");
+    }
+
+    // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
+    const w12registryResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const REG = r.constructor.WORLD_REGISTRY;
+
+            // Welt-Registry — eine Quelle, drei Welten je mit Pfad + Manifest.
+            out.registryExists = !!REG && !!REG.skeleton && !!REG.fluid && !!REG.terrain;
+            out.registryShape =
+                !!REG &&
+                REG.fluid.world === "worlds/fluid/index.html" &&
+                Array.isArray(REG.fluid.dsl) &&
+                REG.fluid.dsl.includes("sturm");
+
+            // Die 3 Built-in-Portale beziehen ihr portalMeta aus der Registry.
+            const ws = r.state.blueprints.welt_strom;
+            const wt = r.state.blueprints.welt_terrain;
+            const wp = r.state.blueprints.welt_portal;
+            out.builtinsFromRegistry =
+                ws.portalMeta.world === REG.fluid.world &&
+                wt.portalMeta.world === REG.terrain.world &&
+                wp.portalMeta.world === REG.skeleton.world &&
+                ws.portalMeta.dsl.includes("sturm") &&
+                wt.portalMeta.dsl.includes("gebirge");
+
+            out.aimExists = typeof r.aimBlueprintAtWorld === "function";
+
+            // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
+            r.state.blueprints.test_portal_ring = {
+                name: "test_portal_ring",
+                label: "Test-Ring",
+                builtIn: false,
+                parts: [],
+            };
+
+            // UI: die Markier-Reihe trägt eine Portal-Welt-Auswahl.
+            r.renderPlayerEquipUI();
+            out.uiPortalSelect = !!document.querySelector(".equip-portal-select");
+
+            // aimBlueprintAtWorld per id.
+            const aimId = r.aimBlueprintAtWorld("test_portal_ring", "fluid");
+            out.aimById =
+                aimId.ok === true &&
+                r.state.blueprints.test_portal_ring.role === "portal" &&
+                r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
+
+            // aimBlueprintAtWorld per Label (case-insensitive).
+            const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Terrain-Welt");
+            out.aimByLabel =
+                aimLabel.ok === true &&
+                r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
+
+            // Unbekannte Welt + Built-in werden abgelehnt.
+            out.aimUnknownRejected = r.aimBlueprintAtWorld("test_portal_ring", "nirgendwo").ok === false;
+            out.aimBuiltinRejected = r.aimBlueprintAtWorld("welt_portal", "fluid").ok === false;
+
+            // DSL-Op set_portal.
+            r.dslRun(["set_portal", "test_portal_ring", "skeleton"]);
+            out.dslSetPortal = r.state.blueprints.test_portal_ring.portalMeta.world === REG.skeleton.world;
+
+            // Chat-Pattern „richte portal X auf Y".
+            const parsed = r.parseChatToDsl("richte portal test_portal_ring auf fluid");
+            out.chatPattern =
+                !!parsed && JSON.stringify(parsed.program) === '["set_portal","test_portal_ring","fluid"]';
+
+            delete r.state.blueprints.test_portal_ring;
+            r.renderPlayerEquipUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12registryResults && !w12registryResults.error) {
+        check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
+        check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
+        check("W12 P2: Built-in-Portale beziehen portalMeta aus der Registry", w12registryResults.builtinsFromRegistry);
+        check("W12 P2: aimBlueprintAtWorld existiert", w12registryResults.aimExists);
+        check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);
+        check("W12 P2: aimBlueprintAtWorld richtet per Welt-id", w12registryResults.aimById);
+        check("W12 P2: aimBlueprintAtWorld richtet per Welt-Label", w12registryResults.aimByLabel);
+        check("W12 P2: aimBlueprintAtWorld verwirft unbekannte Welt", w12registryResults.aimUnknownRejected);
+        check("W12 P2: aimBlueprintAtWorld verwirft Built-in-Bauplan", w12registryResults.aimBuiltinRejected);
+        check("W12 P2: DSL-Op set_portal richtet den Bauplan", w12registryResults.dslSetPortal);
+        check("W12 P2: Chat-Pattern 'richte portal X auf Y'", w12registryResults.chatPattern);
+    } else {
+        check("W12 P2: Welt-Registry Tests laufen", false, w12registryResults ? w12registryResults.error : "no result");
+    }
+
+    // ### W12 Phase 2 — Portal-Größe emergiert aus der Avatar-Größe ###
+    const w12portalSizeResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.passageExists = typeof r._avatarPassageSize === "function";
+            const passage = r._avatarPassageSize();
+            out.passageSane = typeof passage === "number" && passage > 0.5 && passage < 30;
+            const torusBp = (sizeX, material) => ({
+                name: "t_test",
+                parts: [
+                    {
+                        shape: "torus",
+                        material: material,
+                        size: { x: sizeX, y: 1, z: 1 },
+                        position: { x: 0, y: 0, z: 0 },
+                    },
+                ],
+            });
+            // Ein magieleitender Torus deutlich größer als der Reisende → Tor-Form.
+            out.bigIsPortalShaped = r._isPortalShaped(torusBp(passage * 2.5, "quarz")) === true;
+            // Derselbe Ring deutlich kleiner als der Reisende → kein Tor.
+            out.smallNotPortalShaped = r._isPortalShaped(torusBp(passage * 0.3, "quarz")) === false;
+            // Magieleitung bleibt nötig: ein großer Eisen-Ring ist kein Tor.
+            out.ironStillNotPortal = r._isPortalShaped(torusBp(passage * 2.5, "eisen")) === false;
+            // Built-in-Portale bleiben Tore (Ring 3.4/3.6 > Avatar).
+            out.builtinsStayPortal =
+                r._isPortalShaped(r.state.blueprints.welt_strom) === true &&
+                r._isPortalShaped(r.state.blueprints.welt_terrain) === true;
+            // minRingSize ist als feste Zahl entfernt.
+            out.noFixedThreshold = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.portal.minRingSize === undefined;
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12portalSizeResults && !w12portalSizeResults.error) {
+        check("W12 P2: _avatarPassageSize existiert", w12portalSizeResults.passageExists);
+        check("W12 P2: Avatar-Durchgangsgröße ist plausibel", w12portalSizeResults.passageSane);
+        check("W12 P2: großer Magie-Ring ist Tor-förmig", w12portalSizeResults.bigIsPortalShaped);
+        check("W12 P2: zu kleiner Ring (< Avatar) ist kein Tor", w12portalSizeResults.smallNotPortalShaped);
+        check("W12 P2: großer Eisen-Ring bleibt kein Tor (Magie nötig)", w12portalSizeResults.ironStillNotPortal);
+        check("W12 P2: Built-in-Portale bleiben Tor-förmig", w12portalSizeResults.builtinsStayPortal);
+        check("W12 P2: feste minRingSize-Zahl ist entfernt", w12portalSizeResults.noFixedThreshold);
+    } else {
+        check(
+            "W12 P2: Portal-Größe Tests laufen",
+            false,
+            w12portalSizeResults ? w12portalSizeResults.error : "no result"
+        );
+    }
+
+    // ### W12 Phase 2 — Markier-Sektion: Portal-Knopf erreichbar + umwidmbar ###
+    const w12markResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            r.state.blueprints.test_mark_ring = {
+                name: "test_mark_ring",
+                label: "TestMarkRing",
+                builtIn: false,
+                parts: [],
+            };
+            r.renderPlayerEquipUI();
+            const rowsBefore = document.querySelectorAll(".equip-mark-row").length;
+            out.markRowRendered = rowsBefore > 0 && !!document.querySelector(".equip-portal-select");
+            // markieren → roleManual gesetzt
+            r.aimBlueprintAtWorld("test_mark_ring", "fluid");
+            r.renderPlayerEquipUI();
+            const rowsAfter = document.querySelectorAll(".equip-mark-row").length;
+            // Trap-Fix: ein markierter Bauplan bleibt re-markierbar in der Sektion.
+            out.markPersistsAfterRole = rowsAfter === rowsBefore;
+            // Die Reihe nennt die aktuelle Rolle.
+            out.rowShowsRole = Array.from(document.querySelectorAll(".equip-mark-label")).some(
+                (el) => /TestMarkRing/.test(el.textContent) && /portal/i.test(el.textContent)
+            );
+            delete r.state.blueprints.test_mark_ring;
+            r.renderPlayerEquipUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12markResults && !w12markResults.error) {
+        check("W12 P2: Markier-Reihe + Portal-Auswahl gerendert", w12markResults.markRowRendered);
+        check(
+            "W12 P2: markierter Bauplan bleibt umwidmbar (kein Sackgassen-Zustand)",
+            w12markResults.markPersistsAfterRole
+        );
+        check("W12 P2: Markier-Reihe nennt die aktuelle Rolle", w12markResults.rowShowsRole);
+    } else {
+        check("W12 P2: Markier-Sektion Tests laufen", false, w12markResults ? w12markResults.error : "no result");
+    }
+
+    // ### W12 Phase 3 — Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
+    const w12p3aResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const journal = () => r.state.worldJournal.entries;
+            const lastEntry = () => journal()[journal().length - 1];
+            out.methodExists = typeof r._portalReceiveEvent === "function";
+            // Stub-Overlay: _portalReceiveEvent braucht nur _portalOverlay-Truthiness.
+            r._portalOverlay = { label: "Test-Welt", world: "worlds/skeleton/index.html", dsl: null };
+            const ok = r._portalReceiveEvent({ type: "event", text: "Ein Sturm zog auf." });
+            const ev = lastEntry();
+            out.eventJournaled = ok === true && !!ev && ev.text === "Ein Sturm zog auf.";
+            out.eventTypeIsPortal = !!ev && ev.type === "portal";
+            out.eventCtxWorld = !!ev && !!ev.ctx && ev.ctx.world === "Test-Welt";
+            // Leeres/garbage Ereignis wird verworfen — der letzte Eintrag bleibt.
+            const guard = lastEntry();
+            r._portalReceiveEvent({ type: "event", text: "   " });
+            r._portalReceiveEvent({ type: "event" });
+            out.garbageIgnored = lastEntry() === guard;
+            // Text wird auf 160 gedeckelt — eine fremde Welt sprengt keine Zeile.
+            r._portalReceiveEvent({ type: "event", text: "x".repeat(400) });
+            out.textCapped = lastEntry().text.length <= 160;
+            // SICHERHEIT: ein Ereignis mit program-Feld führt NICHTS aus.
+            const weatherBefore = r.state.weather;
+            r._portalReceiveEvent({ type: "event", text: "harmlos", program: ["weather", "rainy"] });
+            out.eventNeverExecutes = r.state.weather === weatherBefore && lastEntry().text === "harmlos";
+            // Außerhalb eines Portals ist _portalReceiveEvent ein No-op.
+            r._portalOverlay = null;
+            out.noopOutsidePortal = r._portalReceiveEvent({ type: "event", text: "z" }) === false;
+            // Der onMessage-Dispatch leitet {type:"event"} an _portalReceiveEvent.
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Dispatch-Welt", dsl: null });
+            const po = r._portalOverlay;
+            po.onMessage({
+                source: po.iframe.contentWindow,
+                data: { type: "event", text: "Dispatch-Probe." },
+            });
+            out.onMessageDispatches = lastEntry().text === "Dispatch-Probe.";
+            r._disposePortalOverlay();
+            // W12 P3-Härtung — der Rückkanal-Rate-Limit deckelt eine
+            // flutende fremde Welt: nach PORTAL_EVENT_RATE_MAX je
+            // Fenster wird verworfen, das Journal nicht überrannt.
+            r._portalOverlay = { label: "Flut-Welt", world: "worlds/skeleton/index.html", dsl: null };
+            let floodAccepted = 0;
+            for (let i = 0; i < 20; i++) {
+                if (r._portalReceiveEvent({ type: "event", text: "Flut " + i }) === true) floodAccepted++;
+            }
+            out.rateLimitCapsBurst = floodAccepted === AnazhRealm.PORTAL_EVENT_RATE_MAX;
+            // Flaky-Heilung (V8.96-Klasse): NICHT die journal().length-
+            // Differenz messen — am 200-FIFO-Cap verdrängt jedes Anhängen
+            // einen alten Eintrag, die Längen-Differenz wäre dann 0 statt
+            // PORTAL_EVENT_RATE_MAX. Stattdessen die Flut-Einträge selbst
+            // zählen: genau RATE_MAX tragen den "Flut "-Text (die zuletzt
+            // angehängten — nie von ihren eigenen Geschwistern evictet).
+            out.rateLimitNoJournalOverflow =
+                journal().filter((e) => e && typeof e.text === "string" && e.text.startsWith("Flut ")).length ===
+                AnazhRealm.PORTAL_EVENT_RATE_MAX;
+            r._portalOverlay = null;
+            // Das Overlay aus _buildPortalOverlay trägt das Rate-Limit-Fenster.
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Fenster-Welt", dsl: null });
+            out.overlayHasEventWindow =
+                typeof r._portalOverlay.eventWindowStart === "number" &&
+                typeof r._portalOverlay.eventWindowCount === "number";
+            r._disposePortalOverlay();
+            // enterPortal schreibt den Erst-Besuch (journalAppendOnce).
+            // Der seen-Schlüssel wird vorab geleert — ein früherer
+            // Portal-Test könnte die Skelett-Welt schon betreten haben.
+            r.state.blueprints.test_p3_ring = {
+                name: "test_p3_ring",
+                label: "Test-P3-Ring",
+                builtIn: false,
+                parts: [],
+                portalMeta: { world: "worlds/skeleton/index.html", label: "P3-Tor", dsl: null },
+            };
+            const visitKey = "portalVisit:worlds/skeleton/index.html";
+            if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
+            r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
+            const visit = lastEntry();
+            out.entryJournaled = !!visit && visit.type === "portal" && /P3-Tor/.test(visit.text);
+            r.exitPortal();
+            // Zweites Betreten flutet das Journal NICHT (journalAppendOnce).
+            const reGuard = lastEntry();
+            r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
+            out.entryOncePerWorld = lastEntry() === reGuard;
+            r.exitPortal();
+            if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
+            delete r.state.blueprints.test_p3_ring;
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12p3aResults && !w12p3aResults.error) {
+        check("W12 P3a: _portalReceiveEvent existiert", w12p3aResults.methodExists);
+        check("W12 P3a: Welt-Ereignis wird ins Journal geschrieben", w12p3aResults.eventJournaled);
+        check("W12 P3a: Journal-Eintrag trägt den Typ 'portal'", w12p3aResults.eventTypeIsPortal);
+        check("W12 P3a: Eintrag merkt sich die Welt (ctx.world)", w12p3aResults.eventCtxWorld);
+        check("W12 P3a: leeres/garbage Ereignis wird verworfen", w12p3aResults.garbageIgnored);
+        check("W12 P3a: Ereignis-Text wird auf 160 Zeichen gedeckelt", w12p3aResults.textCapped);
+        check("W12 P3a: SICHERHEIT — ein Ereignis führt NIE DSL aus", w12p3aResults.eventNeverExecutes);
+        check("W12 P3a: außerhalb eines Portals ist es ein No-op", w12p3aResults.noopOutsidePortal);
+        check("W12 P3a: onMessage-Dispatch leitet {type:event} weiter", w12p3aResults.onMessageDispatches);
+        check("W12 P3a: enterPortal schreibt den Erst-Besuch ins Journal", w12p3aResults.entryJournaled);
+        check("W12 P3a: wiederholtes Betreten flutet das Journal nicht", w12p3aResults.entryOncePerWorld);
+        check("W12 P3-Härtung: Rückkanal-Rate-Limit deckelt einen Burst", w12p3aResults.rateLimitCapsBurst);
+        check(
+            "W12 P3-Härtung: das Journal wird nicht über den Deckel hinaus geflutet",
+            w12p3aResults.rateLimitNoJournalOverflow
+        );
+        check("W12 P3-Härtung: das Portal-Overlay trägt das Rate-Limit-Fenster", w12p3aResults.overlayHasEventWindow);
+    } else {
+        check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
+    }
+
+    // W12 P3a — die drei Welt-Adapter melden Ereignisse zurück (Quell-Check).
+    try {
+        for (const [w, file] of [
+            ["Skelett", "skeleton/skeleton.js"],
+            ["Strom", "fluid/fluid.js"],
+            ["Terrain", "terrain/terrain.js"],
+        ]) {
+            const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
+            check(
+                `W12 P3a: ${w}-Welt-Adapter meldet Ereignisse zurück`,
+                /function sendEvent/.test(src) && /type:\s*"event"/.test(src) && /sendEvent\("/.test(src)
+            );
+        }
+    } catch (err) {
+        check("W12 P3a: Welt-Adapter-Quell-Check läuft", false, err && err.message);
+    }
+
+    // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
+    const w12p3bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            // _sanitizeDslSubset — der gemeinsame Manifest-Sanitizer.
+            out.sanitizeExists = typeof r._sanitizeDslSubset === "function";
+            out.sanitizeFilters =
+                JSON.stringify(r._sanitizeDslSubset(["ok_op", "Bad Op", 5, "auch_gut", null])) ===
+                JSON.stringify(["ok_op", "auch_gut"]);
+            out.sanitizeNullOnEmpty = r._sanitizeDslSubset([]) === null && r._sanitizeDslSubset("nope") === null;
+            out.sanitizeCaps = r._sanitizeDslSubset(new Array(80).fill("op")).length === 64;
+            // _portalReceiveManifest — die Welt beschreibt sich selbst.
+            out.receiveExists = typeof r._portalReceiveManifest === "function";
+            r._portalOverlay = {
+                label: "Alt-Label",
+                world: "worlds/fluid/index.html",
+                dsl: ["skybox_color"],
+                manifestStage: "übersetzt",
+                hintEl: null,
+            };
+            const ok = r._portalReceiveManifest({
+                type: "ready",
+                dsl: ["skybox_color", "flut"],
+                label: "Strom-Welt",
+            });
+            out.nativeOverrides =
+                ok === true && r._portalOverlay.dsl.includes("flut") && r._portalOverlay.manifestStage === "nativ";
+            out.nativeLabel = r._portalOverlay.label === "Strom-Welt";
+            // Angekündigtes dsl wird gesäubert — kein garbage-Op.
+            r._portalOverlay.dsl = null;
+            r._portalReceiveManifest({ dsl: ["gut_op", "BÖSE OP", 42] });
+            out.nativeSanitized = JSON.stringify(r._portalOverlay.dsl) === JSON.stringify(["gut_op"]);
+            // Kein dsl → false, das vorhandene Manifest bleibt (Fallback).
+            r._portalOverlay.dsl = ["original"];
+            r._portalOverlay.manifestStage = "übersetzt";
+            out.noDslKeepsFallback =
+                r._portalReceiveManifest({ type: "ready" }) === false &&
+                r._portalOverlay.dsl[0] === "original" &&
+                r._portalOverlay.manifestStage === "übersetzt";
+            r._portalOverlay = null;
+            // _buildPortalOverlay setzt die Drei-Stufen-Marke + hintEl.
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: ["skybox_color"] });
+            out.stageUebersetzt = r._portalOverlay.manifestStage === "übersetzt" && !!r._portalOverlay.hintEl;
+            r._disposePortalOverlay();
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+            out.stageAusgestellt = r._portalOverlay.manifestStage === "ausgestellt";
+            r._disposePortalOverlay();
+            // Der ready-Handler wendet das native Manifest an.
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+            const po = r._portalOverlay;
+            po.onMessage({
+                source: po.iframe.contentWindow,
+                data: { type: "ready", dsl: ["skybox_color", "selbst_op"], label: "Selbst-Welt" },
+            });
+            out.readyAppliesManifest =
+                !!po.dsl && po.dsl.includes("selbst_op") && po.manifestStage === "nativ" && po.label === "Selbst-Welt";
+            r._disposePortalOverlay();
+            // Das Registry-Literal kennt „flut" NICHT — der Beweis,
+            // dass die native Stufe mehr trägt als die übersetzte.
+            out.registryLacksFlut = !r.constructor.WORLD_REGISTRY.fluid.dsl.includes("flut");
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w12p3bResults && !w12p3bResults.error) {
+        check("W12 P3b: _sanitizeDslSubset existiert", w12p3bResults.sanitizeExists);
+        check("W12 P3b: Sanitizer filtert Nicht-Ops raus", w12p3bResults.sanitizeFilters);
+        check("W12 P3b: Sanitizer liefert null bei leer/Nicht-Array", w12p3bResults.sanitizeNullOnEmpty);
+        check("W12 P3b: Sanitizer deckelt auf 64 Ops", w12p3bResults.sanitizeCaps);
+        check("W12 P3b: _portalReceiveManifest existiert", w12p3bResults.receiveExists);
+        check("W12 P3b: natives Manifest überschreibt po.dsl + setzt Stufe 'nativ'", w12p3bResults.nativeOverrides);
+        check("W12 P3b: natives Manifest übernimmt das Welt-Label", w12p3bResults.nativeLabel);
+        check("W12 P3b: angekündigtes dsl wird gesäubert (kein garbage-Op)", w12p3bResults.nativeSanitized);
+        check("W12 P3b: ready ohne dsl → Fallback aufs portalMeta-Manifest", w12p3bResults.noDslKeepsFallback);
+        check("W12 P3b: _buildPortalOverlay markiert Stufe 'übersetzt' + hintEl", w12p3bResults.stageUebersetzt);
+        check(
+            "W12 P3b: ohne Manifest markiert _buildPortalOverlay Stufe 'ausgestellt'",
+            w12p3bResults.stageAusgestellt
+        );
+        check("W12 P3b: der ready-Handler wendet das native Manifest an", w12p3bResults.readyAppliesManifest);
+        check("W12 P3b: das Registry-Literal kennt 'flut' nicht", w12p3bResults.registryLacksFlut);
+    } else {
+        check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
+    }
+
+    // W12 P3b — die manifest.json-Dateien + die Adapter-Verdrahtung (Quell-Check).
+    try {
+        let fluidManifestHasFlut = false;
+        for (const [w, id, file] of [
+            ["Skelett", "skeleton", "skeleton/manifest.json"],
+            ["Strom", "fluid", "fluid/manifest.json"],
+            ["Terrain", "terrain", "terrain/manifest.json"],
+        ]) {
+            const m = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8"));
+            check(
+                `W12 P3b: ${w}-Welt hat ein valides manifest.json`,
+                m &&
+                    m.schemaVersion === "1.0" &&
+                    m.id === id &&
+                    typeof m.label === "string" &&
+                    Array.isArray(m.dsl) &&
+                    m.dsl.length > 0 &&
+                    m.dsl.every((op) => typeof op === "string")
+            );
+            if (id === "fluid") fluidManifestHasFlut = m.dsl.includes("flut");
+        }
+        check("W12 P3b: das fluid-Manifest deklariert 'flut' (jenseits des Registry-Literals)", fluidManifestHasFlut);
+        for (const [w, file] of [
+            ["Skelett", "skeleton/skeleton.js"],
+            ["Strom", "fluid/fluid.js"],
+            ["Terrain", "terrain/terrain.js"],
+        ]) {
+            const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
+            check(
+                `W12 P3b: ${w}-Welt-Adapter lädt manifest.json + meldet es im ready`,
+                /fetch\(\s*["']\.\/manifest\.json["']\s*\)/.test(src) && /announceReady/.test(src)
+            );
+        }
+        const fluidSrc = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");
+        check('W12 P3b: der fluid-Adapter behandelt das native Wort "flut"', /op === "flut"/.test(fluidSrc));
+    } catch (err) {
+        check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandW13W14VibePassLibrary(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
+    const w13p1Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            // Methoden-Existenz.
+            out.methods =
+                typeof r._ensureVibePass === "function" &&
+                typeof r._vibeSign === "function" &&
+                typeof r._vibeVerify === "function" &&
+                typeof r.vibePassId === "function";
+            // Identität ist nach init bereit.
+            const vp = r.state.vibePass;
+            out.ready = !!vp && vp.ready === true;
+            // vibePassId — kanonisches ed25519:<64hex>-Format.
+            const id = r.vibePassId();
+            out.idFormat = typeof id === "string" && /^ed25519:[0-9a-f]{64}$/.test(id);
+            // localStorage trägt den privaten Schlüssel als JWK.
+            let stored = null;
+            try {
+                stored = JSON.parse(localStorage.getItem("anazh.vibePass"));
+            } catch {
+                stored = null;
+            }
+            out.persisted =
+                !!stored &&
+                stored.schemaVersion === "vibepass-1" &&
+                !!stored.privateKeyJwk &&
+                stored.privateKeyJwk.kty === "OKP" &&
+                stored.privateKeyJwk.crv === "Ed25519" &&
+                typeof stored.privateKeyJwk.d === "string" &&
+                typeof stored.privateKeyJwk.x === "string";
+            // Erneutes _ensureVibePass lädt denselben Schlüssel (kein Neu-Erzeugen).
+            const idBefore = r.vibePassId();
+            await r._ensureVibePass();
+            out.idStable = r.vibePassId() === idBefore;
+            // Fingerprint — Kurzform aus den ersten 16 Hex-Zeichen.
+            out.fingerprint = typeof vp.fingerprint === "string" && vp.fingerprint.replace(/ /g, "").length === 16;
+            // Signieren liefert eine 64-Byte-Signatur (128 Hex).
+            const sig = await r._vibeSign("anazh-vibe-pass-test");
+            out.signHex = typeof sig === "string" && /^[0-9a-f]{128}$/.test(sig);
+            // Verifizieren: gültige Signatur → true.
+            out.verifyValid = (await r._vibeVerify("anazh-vibe-pass-test", sig, vp.publicKeyHex)) === true;
+            // Manipulierte Nachricht → false.
+            out.verifyTampered = (await r._vibeVerify("anazh-vibe-pass-TAMPERED", sig, vp.publicKeyHex)) === false;
+            // Falscher öffentlicher Schlüssel → false.
+            out.verifyWrongKey = (await r._vibeVerify("anazh-vibe-pass-test", sig, "0".repeat(64))) === false;
+            // Defensiv: Müll-Eingabe wirft nicht, liefert false.
+            out.verifyDefensive =
+                (await r._vibeVerify("x", null, null)) === false && (await r._vibeVerify("x", "zzz", "kurz")) === false;
+            // Genesis-Erinnerung im Journal (Typ "ritual"). Flaky-
+            // Heilung (V8.96-Klasse): der Vibe-Pass-Genesis-Eintrag wird
+            // früh geschrieben; nach einem langen Lauf kann der 200-FIFO-
+            // Cap ihn evicten. _ensureVibePass nutzt journalAppendOnce(
+            // "vibepass:genesis", …) — der seen-Schlüssel ist cap-
+            // unabhängig (seen wird nie FIFO-gedeckelt) und beweist, dass
+            // der Genesis-Eintrag geschrieben WURDE; der entries-Scan
+            // bleibt als Fallback, falls er noch im Fenster liegt.
+            const wj = r.state.worldJournal || {};
+            const entries = wj.entries || [];
+            out.journalGenesis =
+                !!(wj.seen && wj.seen["vibepass:genesis"] === true) ||
+                entries.some((e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || ""));
+            // Sicherheit: der private Schlüssel darf NIE im Welt-Save landen.
+            const snapJson = JSON.stringify(r.buildStateSnapshot());
+            out.snapshotClean = snapJson.indexOf(vp._privateKeyJwk.d) === -1 && snapJson.indexOf('"vibePass"') === -1;
+            // Export → Import-Rundlauf bewahrt die Identität.
+            const exported = r.exportVibePass();
+            out.exportShape = !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
+            const imp = await r.importVibePass(exported, { skipConfirm: true });
+            out.importRoundTrip = !!imp && imp.ok === true && r.vibePassId() === idBefore;
+            const impBad = await r.importVibePass({ nonsense: true }, { skipConfirm: true });
+            out.importRejectsGarbage = !!impBad && impBad.ok === false;
+            // UI.
+            out.uiSection = !!document.getElementById("vibe-pass-section");
+            const body = document.getElementById("vibe-pass-body");
+            out.uiBody = !!body && body.textContent.indexOf(vp.fingerprint) !== -1;
+            out.uiButtons =
+                !!document.getElementById("vibe-pass-export") &&
+                !!document.getElementById("vibe-pass-import") &&
+                !!document.getElementById("vibe-pass-file-input");
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w13p1Results && !w13p1Results.error) {
+        check("W13 P1: _ensureVibePass/_vibeSign/_vibeVerify/vibePassId existieren", w13p1Results.methods);
+        check("W13 P1: Vibe-Pass ist nach init bereit", w13p1Results.ready);
+        check("W13 P1: vibePassId liefert ed25519:<64hex>", w13p1Results.idFormat);
+        check("W13 P1: privater Schlüssel als JWK in localStorage persistiert", w13p1Results.persisted);
+        check("W13 P1: erneutes _ensureVibePass lädt denselben Schlüssel", w13p1Results.idStable);
+        check("W13 P1: Fingerprint = 16 Hex-Zeichen in Vierergruppen", w13p1Results.fingerprint);
+        check("W13 P1: _vibeSign liefert eine 64-Byte-Signatur (128 Hex)", w13p1Results.signHex);
+        check("W13 P1: _vibeVerify akzeptiert eine gültige Signatur", w13p1Results.verifyValid);
+        check("W13 P1: _vibeVerify weist eine manipulierte Nachricht ab", w13p1Results.verifyTampered);
+        check("W13 P1: _vibeVerify weist einen falschen Schlüssel ab", w13p1Results.verifyWrongKey);
+        check("W13 P1: _vibeVerify ist defensiv gegen Müll-Eingabe", w13p1Results.verifyDefensive);
+        check("W13 P1: Genesis-Erinnerung (ritual) im Journal", w13p1Results.journalGenesis);
+        check("W13 P1: privater Schlüssel leckt NICHT in den Welt-Save", w13p1Results.snapshotClean);
+        check("W13 P1: exportVibePass liefert ein gültiges Sicherungs-Objekt", w13p1Results.exportShape);
+        check("W13 P1: Export→Import-Rundlauf bewahrt die Identität", w13p1Results.importRoundTrip);
+        check("W13 P1: importVibePass weist ungültige Daten ab", w13p1Results.importRejectsGarbage);
+        check("W13 P1: Vibe-Pass-Sektion im DOM", w13p1Results.uiSection);
+        check("W13 P1: Vibe-Pass-Body zeigt den Fingerprint", w13p1Results.uiBody);
+        check("W13 P1: Sichern/Wiederherstellen-Knöpfe + File-Input im DOM", w13p1Results.uiButtons);
+    } else {
+        check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
+    }
+
+    // ### W13 Phase 2 — Bauplan-Signaturen ###
+    const w13p2Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.methods =
+                typeof r.signBlueprint === "function" &&
+                typeof r.verifyBlueprintSignature === "function" &&
+                typeof r._canonicalBlueprint === "function" &&
+                typeof r._fastHash === "function";
+            // Einen eigenen Bauplan mit einem Part anlegen.
+            if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
+            r.createBlueprint("_w13p2", "W13P2-Werk");
+            r.addPartToBlueprint("_w13p2", { shape: "box", material: "stein" });
+            const bp = r.state.blueprints["_w13p2"];
+            // _canonicalBlueprint ist deterministisch.
+            out.canonDeterministic = r._canonicalBlueprint(bp) === r._canonicalBlueprint(bp);
+            // Das Label ist NICHT Teil der signierten Substanz.
+            const canonA = r._canonicalBlueprint(bp);
+            bp.label = "Ein anderer Name";
+            out.canonIgnoresLabel = r._canonicalBlueprint(bp) === canonA;
+            bp.label = "W13P2-Werk";
+            // Vor dem Signieren: Status "unsigned".
+            out.statusUnsigned = (await r.verifyBlueprintSignature(bp)) === "unsigned";
+            // Signieren.
+            const signRes = await r.signBlueprint("_w13p2");
+            out.signOk = !!signRes && signRes.ok === true;
+            out.signFields =
+                typeof bp.signature === "string" &&
+                /^[0-9a-f]{128}$/.test(bp.signature) &&
+                bp.authorPubKey === r.state.vibePass.publicKeyHex &&
+                typeof bp.signedHash === "string" &&
+                typeof bp.signedAt === "number";
+            out.statusValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+            // Built-in lässt sich nicht signieren.
+            const builtinRes = await r.signBlueprint("village");
+            out.rejectBuiltin = !!builtinRes && builtinRes.ok === false && builtinRes.reason === "builtin";
+            const unknownRes = await r.signBlueprint("_does_not_exist_w13");
+            out.rejectUnknown = !!unknownRes && unknownRes.ok === false && unknownRes.reason === "unknown";
+            // Substanz ändern → "modified".
+            bp.parts[0].material = "eisen";
+            out.statusModified = (await r.verifyBlueprintSignature(bp)) === "modified";
+            // Neu signieren heilt es.
+            await r.signBlueprint("_w13p2");
+            out.resignValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+            // Signatur fälschen (ein Hex-Zeichen kippen, Substanz unverändert) → "forged".
+            const goodSig = bp.signature;
+            bp.signature = (goodSig[0] === "a" ? "b" : "a") + goodSig.slice(1);
+            out.statusForged = (await r.verifyBlueprintSignature(bp)) === "forged";
+            bp.signature = goodSig;
+            // Die Signatur reist mit dem Bauplan durch den Snapshot.
+            const snap = r.buildStateSnapshot();
+            const snapBp = (snap.blueprints || []).find((b) => b && b.name === "_w13p2");
+            out.snapshotKeepsSig =
+                !!snapBp && snapBp.signature === bp.signature && snapBp.authorPubKey === bp.authorPubKey;
+            // Cross-Autor: ein mit FREMDEM Schlüssel signierter Bauplan
+            // verifiziert ebenso (das Fundament für W13 Phase 3).
+            const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+            const foreignJwk = await crypto.subtle.exportKey("jwk", foreignPair.privateKey);
+            const foreignCanon = r._canonicalBlueprint(bp);
+            const foreignSig = await crypto.subtle.sign(
+                { name: "Ed25519" },
+                foreignPair.privateKey,
+                new TextEncoder().encode(foreignCanon)
+            );
+            bp.signature = r._vibeBytesToHex(new Uint8Array(foreignSig));
+            bp.authorPubKey = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+            bp.signedHash = r._fastHash(foreignCanon);
+            out.crossAuthorValid = (await r.verifyBlueprintSignature(bp)) === "valid";
+            out.crossAuthorForeign = bp.authorPubKey !== r.state.vibePass.publicKeyHex;
+            // Ein Klon eines signierten Bauplans ist unsigniert (neues Werk).
+            if (r.state.blueprints["_w13p2clone"]) delete r.state.blueprints["_w13p2clone"];
+            r.cloneBlueprint("_w13p2", "_w13p2clone");
+            const clone = r.state.blueprints["_w13p2clone"];
+            out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
+            // verifyBlueprintSignature ist defensiv.
+            out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
+            // UI: Signatur-Sektion im Werkstatt-Panel.
+            r.selectBlueprintForEdit("_w13p2");
+            const panel = document.getElementById("workshop-stats-panel");
+            out.uiSigRow = !!panel && !!panel.querySelector(".workshop-sig-row");
+            out.uiSigBtn = !!panel && !!panel.querySelector(".workshop-sig-btn");
+            delete r.state.blueprints["_w13p2"];
+            delete r.state.blueprints["_w13p2clone"];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w13p2Results && !w13p2Results.error) {
+        check(
+            "W13 P2: signBlueprint/verifyBlueprintSignature/_canonicalBlueprint/_fastHash existieren",
+            w13p2Results.methods
+        );
+        check("W13 P2: _canonicalBlueprint ist deterministisch", w13p2Results.canonDeterministic);
+        check(
+            "W13 P2: _canonicalBlueprint ignoriert das Label (signiert die Substanz)",
+            w13p2Results.canonIgnoresLabel
+        );
+        check("W13 P2: unsignierter Bauplan → Status 'unsigned'", w13p2Results.statusUnsigned);
+        check("W13 P2: signBlueprint signiert einen eigenen Bauplan", w13p2Results.signOk);
+        check("W13 P2: Signatur-Felder gesetzt (signature/authorPubKey/signedHash/signedAt)", w13p2Results.signFields);
+        check("W13 P2: signierter Bauplan → Status 'valid'", w13p2Results.statusValid);
+        check("W13 P2: Built-in lässt sich nicht signieren", w13p2Results.rejectBuiltin);
+        check("W13 P2: unbekannter Bauplan-Name wird abgewiesen", w13p2Results.rejectUnknown);
+        check("W13 P2: geänderte Substanz → Status 'modified'", w13p2Results.statusModified);
+        check("W13 P2: neu signieren heilt 'modified' → 'valid'", w13p2Results.resignValid);
+        check("W13 P2: gefälschte Signatur → Status 'forged'", w13p2Results.statusForged);
+        check("W13 P2: Signatur überlebt den Snapshot-Rundlauf", w13p2Results.snapshotKeepsSig);
+        check("W13 P2: fremd-signierter Bauplan verifiziert (Cross-Autor)", w13p2Results.crossAuthorValid);
+        check("W13 P2: der Cross-Autor-Schlüssel ist nicht der eigene", w13p2Results.crossAuthorForeign);
+        check("W13 P2: Klon eines signierten Bauplans ist unsigniert", w13p2Results.cloneUnsigned);
+        check("W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')", w13p2Results.verifyDefensive);
+        check("W13 P2: Signatur-Sektion im Werkstatt-Panel", w13p2Results.uiSigRow);
+        check("W13 P2: Signier-Knopf im Werkstatt-Panel", w13p2Results.uiSigBtn);
+    } else {
+        check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
+    }
+
+    // ### W13 Phase 3 — Vibe-Pass-Identität im Multi-User ###
+    const w13p3Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            const p2p = r.state.p2p;
+            out.methods =
+                typeof r._p2pBroadcastVibe === "function" &&
+                typeof r._p2pBuildNameLabel === "function" &&
+                typeof r._p2pRefreshPeerNameLabel === "function";
+            // Peer-Entry trägt die Vibe-Pass-Felder.
+            const probe = r._p2pEnsurePeerEntry("_w13p3probe");
+            out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
+            r._p2pRemovePeer("_w13p3probe");
+            // --- _p2pBroadcastVibe: Payload + Beweis ---
+            const origSend = r.p2pSend;
+            const origEnabled = p2p.enabled;
+            const origPeerId = p2p.peerId;
+            let captured = null;
+            r.p2pSend = (m) => {
+                captured = m;
+            };
+            p2p.enabled = true;
+            p2p.peerId = "_w13p3self";
+            await r._p2pBroadcastVibe();
+            out.broadcastShape =
+                !!captured &&
+                captured.type === "vibe" &&
+                captured.vibePassId === r.vibePassId() &&
+                typeof captured.proof === "string";
+            out.broadcastProofVerifies =
+                !!captured &&
+                (await r._vibeVerify("_w13p3self", captured.proof, r.state.vibePass.publicKeyHex)) === true;
+            // Bei deaktiviertem P2P sendet _p2pBroadcastVibe nichts.
+            captured = null;
+            p2p.enabled = false;
+            await r._p2pBroadcastVibe();
+            out.broadcastSkipsDisabled = captured === null;
+            p2p.enabled = true;
+            r.p2pSend = origSend;
+            // --- vibe-Empfang: ein fremder Peer, drei Beweis-Fälle ---
+            const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+            const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+            const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+            const foreignId = "ed25519:" + foreignPubHex;
+            const sign = async (text) =>
+                r._vibeBytesToHex(
+                    new Uint8Array(
+                        await crypto.subtle.sign(
+                            { name: "Ed25519" },
+                            foreign.privateKey,
+                            new TextEncoder().encode(text)
+                        )
+                    )
+                );
+            // (a) gültiger Beweis (signiert die eigene peerId).
+            const proofA = await sign("_w13p3peerA");
+            r.p2pHandleMessage(
+                JSON.stringify({ type: "vibe", peerId: "_w13p3peerA", vibePassId: foreignId, proof: proofA })
+            );
+            // (b) manipulierter Beweis (ein Hex-Zeichen gekippt).
+            const proofB = await sign("_w13p3peerB");
+            const proofBad = (proofB[0] === "a" ? "b" : "a") + proofB.slice(1);
+            r.p2pHandleMessage(
+                JSON.stringify({ type: "vibe", peerId: "_w13p3peerB", vibePassId: foreignId, proof: proofBad })
+            );
+            // (c) Beweis über eine FREMDE peerId — die Bindung greift.
+            const proofWrong = await sign("_w13p3WRONG");
+            r.p2pHandleMessage(
+                JSON.stringify({
+                    type: "vibe",
+                    peerId: "_w13p3peerC",
+                    vibePassId: foreignId,
+                    proof: proofWrong,
+                })
+            );
+            // (d) ohne Beweis — vibePassId notiert, aber nicht verifiziert.
+            r.p2pHandleMessage(
+                JSON.stringify({ type: "vibe", peerId: "_w13p3peerD", vibePassId: foreignId, proof: "" })
+            );
+            // (e) eigene peerId — wird ignoriert.
+            r.p2pHandleMessage(
+                JSON.stringify({ type: "vibe", peerId: "_w13p3self", vibePassId: foreignId, proof: proofA })
+            );
+            await new Promise((res) => setTimeout(res, 140));
+            const peerA = p2p.peers.get("_w13p3peerA");
+            const peerB = p2p.peers.get("_w13p3peerB");
+            const peerC = p2p.peers.get("_w13p3peerC");
+            const peerD = p2p.peers.get("_w13p3peerD");
+            out.recvRecordsId = !!peerA && peerA.vibePassId === foreignId;
+            out.recvValidVerifies = !!peerA && peerA.vibeVerified === true;
+            out.recvTamperedRejected = !!peerB && peerB.vibeVerified === false;
+            out.recvWrongBindingRejected = !!peerC && peerC.vibeVerified === false;
+            out.recvNoProofUnverified = !!peerD && peerD.vibePassId === foreignId && peerD.vibeVerified === false;
+            out.recvIgnoresSelf = !p2p.peers.has("_w13p3self");
+            // Verifizierter Peer bekommt ein Name-Schild mit Fingerprint (zweizeilig).
+            out.verifiedPeerLabel = !!peerA && !!peerA.nameLabel && Math.abs(peerA.nameLabel.scale.y - 0.98) < 0.05;
+            // --- Name-Schild ein- vs. zweizeilig ---
+            const oneLine = r._p2pBuildNameLabel("Reisender");
+            const twoLine = r._p2pBuildNameLabel("Reisender", "a1b2 c3d4");
+            out.labelOneLine = !!oneLine && Math.abs(oneLine.scale.y - 0.65) < 0.01;
+            out.labelTwoLine = !!twoLine && Math.abs(twoLine.scale.y - 0.98) < 0.01;
+            // Aufräumen.
+            for (const id of ["_w13p3peerA", "_w13p3peerB", "_w13p3peerC", "_w13p3peerD"]) {
+                r._p2pRemovePeer(id);
+            }
+            p2p.enabled = origEnabled;
+            p2p.peerId = origPeerId;
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w13p3Results && !w13p3Results.error) {
+        check("W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren", w13p3Results.methods);
+        check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
+        check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
+        check(
+            "W13 P3: der gesendete Beweis verifiziert gegen den eigenen Schlüssel",
+            w13p3Results.broadcastProofVerifies
+        );
+        check("W13 P3: _p2pBroadcastVibe sendet nichts bei deaktiviertem P2P", w13p3Results.broadcastSkipsDisabled);
+        check("W13 P3: vibe-Empfang notiert die vibePassId des Peers", w13p3Results.recvRecordsId);
+        check("W13 P3: gültiger Beweis → der Peer ist verifiziert", w13p3Results.recvValidVerifies);
+        check("W13 P3: manipulierter Beweis → nicht verifiziert", w13p3Results.recvTamperedRejected);
+        check(
+            "W13 P3: Beweis über fremde peerId → nicht verifiziert (Bindung greift)",
+            w13p3Results.recvWrongBindingRejected
+        );
+        check(
+            "W13 P3: vibe ohne Beweis → vibePassId notiert, aber nicht verifiziert",
+            w13p3Results.recvNoProofUnverified
+        );
+        check("W13 P3: vibe mit eigener peerId wird ignoriert", w13p3Results.recvIgnoresSelf);
+        check("W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint", w13p3Results.verifiedPeerLabel);
+        check("W13 P3: Name-Schild ohne Fingerprint bleibt einzeilig", w13p3Results.labelOneLine);
+        check("W13 P3: Name-Schild mit Fingerprint wird zweizeilig", w13p3Results.labelTwoLine);
+    } else {
+        check("W13 P3: Vibe-Pass-Multi-User-Tests laufen", false, w13p3Results ? w13p3Results.error : "no result");
+    }
+
+    // W13 P3 — der signaling-server hat einen vibe-Handler (Quell-Check).
+    try {
+        const srvSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
+        check(
+            "W13 P3: signaling-server relayt den vibe-Nachrichtentyp mit peerId-Stempel",
+            /msg\.type === "vibe"/.test(srvSrc) &&
+                /broadcastToRoom\([^)]*type: "vibe", peerId: ws\.anazh\.peerId/.test(srvSrc)
+        );
+    } catch (err) {
+        check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
+    }
+
+    // ### W14 Phase 1 — Bibliothek: browsbare Welt-Registry ###
+    const w14Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const REG = r.constructor.WORLD_REGISTRY;
+            out.methods =
+                typeof r.renderLibraryUI === "function" &&
+                typeof r.obtainPortalForWorld === "function" &&
+                typeof r.libraryInitDOM === "function";
+            // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
+            out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
+            // Tab + Drawer im DOM.
+            out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
+            out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
+            // renderLibraryUI baut eine Karte pro Registry-Welt.
+            r.renderLibraryUI();
+            const cards = document.querySelectorAll("#library-list .library-card");
+            out.cardPerWorld = cards.length === Object.keys(REG).length;
+            // Eine Karte zeigt Label + DSL-Wörter + Stufen-Marke.
+            const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
+            out.cardShowsDsl =
+                !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
+            // obtainPortalForWorld: klont welt_portal, richtet, legt ins Inventar.
+            const res1 = r.obtainPortalForWorld("fluid");
+            out.obtainOk = res1.ok === true && res1.blueprint === "portal_fluid";
+            const bp = r.state.blueprints.portal_fluid;
+            out.bpIsPortal = !!bp && bp.role === "portal" && bp.builtIn !== true;
+            out.bpAimedAtFluid = !!bp && !!bp.portalMeta && bp.portalMeta.world === REG.fluid.world;
+            // Der geholte Bauplan ist betretbar (Affordance isPortal).
+            out.bpEnterable = !!bp && r.computeBlueprintAffordances(bp).isPortal === true;
+            // Im Inventar gelandet.
+            const slot1 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+            out.inInventory = !!slot1 && slot1.count >= 1;
+            // Zweites Holen stackt — kein zweiter Bauplan.
+            const bpCountBefore = Object.keys(r.state.blueprints).length;
+            const res2 = r.obtainPortalForWorld("fluid");
+            const bpCountAfter = Object.keys(r.state.blueprints).length;
+            const slot2 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+            out.secondStacks = res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
+            // Unbekannte Welt → abgelehnt.
+            out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
+            // V8.59 — portalMeta + role:portal überleben den Save.
+            // buildStateSnapshot muss sie schreiben, loadState sie
+            // wiederherstellen — sonst verlöre ein geholtes Portal beim
+            // Reload seine Ausrichtung (und träfe wieder _isMoveable).
+            const snap = r.buildStateSnapshot();
+            const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_fluid");
+            out.snapPersistsPortal =
+                !!snapBp &&
+                snapBp.role === "portal" &&
+                !!snapBp.portalMeta &&
+                snapBp.portalMeta.world === REG.fluid.world;
+            // Read-Seite: den Snapshot-Eintrag durch loadState zurückspielen.
+            delete r.state.blueprints.portal_fluid;
+            r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+            const reBp = r.state.blueprints.portal_fluid;
+            out.loadRestoresPortal =
+                !!reBp && reBp.role === "portal" && !!reBp.portalMeta && reBp.portalMeta.world === REG.fluid.world;
+            out.loadKeepsEnterable = !!reBp && r.computeBlueprintAffordances(reBp).isPortal === true;
+            // obtainPortalForWorld richtet bei jedem Aufruf neu aus —
+            // heilt ein Portal, dem (etwa aus einem alten Save) die
+            // Ausrichtung fehlt.
+            if (reBp) {
+                delete reBp.portalMeta;
+                reBp.role = "architecture";
+            }
+            r.obtainPortalForWorld("fluid");
+            const healedBp = r.state.blueprints.portal_fluid;
+            out.reaimHeals =
+                !!healedBp &&
+                healedBp.role === "portal" &&
+                !!healedBp.portalMeta &&
+                healedBp.portalMeta.world === REG.fluid.world;
+            // Aufräumen, damit spätere Blöcke einen sauberen Stand sehen.
+            delete r.state.blueprints.portal_fluid;
+            for (let i = 0; i < r.state.player.inventory.length; i++) {
+                const s = r.state.player.inventory[i];
+                if (s && s.blueprintName === "portal_fluid") r.state.player.inventory[i] = null;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w14Results && !w14Results.error) {
+        check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
+        check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
+        check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
+        check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
+        check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
+        check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
+        check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
+        check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);
+        check("W14 P1: der geholte Bauplan ist auf die Strom-Welt gerichtet", w14Results.bpAimedAtFluid);
+        check("W14 P1: der geholte Portal-Bauplan ist betretbar (Affordance isPortal)", w14Results.bpEnterable);
+        check("W14 P1: das Portal liegt im Inventar", w14Results.inInventory);
+        check("W14 P1: zweites Holen stackt im Inventar (kein zweiter Bauplan)", w14Results.secondStacks);
+        check("W14 P1: obtainPortalForWorld verwirft eine unbekannte Welt", w14Results.unknownRejected);
+        check("W14 P1: buildStateSnapshot persistiert role:portal + portalMeta", w14Results.snapPersistsPortal);
+        check("W14 P1: loadState stellt role:portal + portalMeta wieder her", w14Results.loadRestoresPortal);
+        check("W14 P1: der wiederhergestellte Portal-Bauplan bleibt betretbar", w14Results.loadKeepsEnterable);
+        check("W14 P1: obtainPortalForWorld richtet neu aus + heilt verlorenes portalMeta", w14Results.reaimHeals);
+    } else {
+        check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
+    }
+
+    // ### W14 Phase 2 Teil A — Welt-Manifest-Signatur ###
+    const w14p2Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            const REG = r.constructor.WORLD_REGISTRY;
+            out.methods =
+                typeof r._canonicalManifest === "function" &&
+                typeof r.signWorld === "function" &&
+                typeof r.verifyWorldSignature === "function" &&
+                typeof r._loadSignedWorlds === "function" &&
+                typeof r._portalShowSignature === "function";
+            // _canonicalManifest deterministisch + ignoriert world/desc.
+            const c1 = r._canonicalManifest(REG.fluid);
+            const c2 = r._canonicalManifest({
+                id: "fluid",
+                label: "Strom-Welt",
+                dsl: REG.fluid.dsl,
+                world: "anderer/pfad",
+                desc: "andere beschreibung",
+            });
+            out.canonDeterministic = c1 === c2 && c1.length > 0;
+            out.canonIgnoresPath = !c1.includes("worlds/");
+            // Vorzustand säubern.
+            delete r.state.signedWorlds.fluid;
+            delete r.state.signedWorlds.terrain;
+            // Unsigniert → "unsigned".
+            out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
+            // signWorld signiert + persistiert.
+            const signRes = await r.signWorld("fluid");
+            out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
+            out.signStored =
+                !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
+            out.signValid = (await r.verifyWorldSignature("fluid")) === "valid";
+            // signWorld verwirft eine unbekannte Welt.
+            out.signUnknownRejected = (await r.signWorld("nirgendwo")).ok === false;
+            // localStorage-Persistenz: _loadSignedWorlds liest die Signatur zurück.
+            const reloaded = r._loadSignedWorlds();
+            out.persistRoundtrip =
+                !!reloaded.fluid && reloaded.fluid.signature === r.state.signedWorlds.fluid.signature;
+            // "modified" — der Manifest-Hash passt nicht mehr.
+            const realHash = r.state.signedWorlds.fluid.signedHash;
+            r.state.signedWorlds.fluid.signedHash = "deadbeef";
+            out.modifiedState = (await r.verifyWorldSignature("fluid")) === "modified";
+            r.state.signedWorlds.fluid.signedHash = realHash;
+            // "forged" — die Signatur passt nicht zum Autor.
+            const realSig = r.state.signedWorlds.fluid.signature;
+            r.state.signedWorlds.fluid.signature = (realSig[0] === "a" ? "b" : "a") + realSig.slice(1);
+            out.forgedState = (await r.verifyWorldSignature("fluid")) === "forged";
+            r.state.signedWorlds.fluid.signature = realSig;
+            // Cross-Autor: ein mit FREMDEM Schlüssel signiertes Manifest verifiziert.
+            const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+            const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+            const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+            const canonTerrain = r._canonicalManifest(REG.terrain);
+            const foreignSig = r._vibeBytesToHex(
+                new Uint8Array(
+                    await crypto.subtle.sign(
+                        { name: "Ed25519" },
+                        foreign.privateKey,
+                        new TextEncoder().encode(canonTerrain)
+                    )
+                )
+            );
+            r.state.signedWorlds.terrain = {
+                authorPubKey: foreignPubHex,
+                signature: foreignSig,
+                signedHash: r._fastHash(canonTerrain),
+                signedAt: Date.now(),
+            };
+            out.crossAuthorValid = (await r.verifyWorldSignature("terrain")) === "valid";
+            // _loadSignedWorlds defensiv gegen korruptes localStorage.
+            const savedRaw = localStorage.getItem("anazh.signedWorlds");
+            localStorage.setItem("anazh.signedWorlds", "{kaputt");
+            out.loadDefensive = JSON.stringify(r._loadSignedWorlds()) === "{}";
+            if (savedRaw !== null) localStorage.setItem("anazh.signedWorlds", savedRaw);
+            // UI: Bibliothek-Karte trägt eine Signatur-Zeile + einen Knopf.
+            r.renderLibraryUI();
+            out.uiSigRow = !!document.querySelector("#library-list .library-sig-row");
+            out.uiSigBtn = !!document.querySelector("#library-list .library-sig-btn");
+            // Portal-Overlay: das Betreten einer signierten Welt zeigt
+            // „signiert von <Autor>".
+            r._buildPortalOverlay({ world: REG.fluid.world, label: "Strom-Welt", dsl: REG.fluid.dsl });
+            out.overlayHasSigEl = !!(r._portalOverlay && r._portalOverlay.sigEl);
+            out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
+            await new Promise((res) => setTimeout(res, 180));
+            const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
+            out.overlayShowsSigned = !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
+            r._disposePortalOverlay();
+            // Aufräumen.
+            delete r.state.signedWorlds.fluid;
+            delete r.state.signedWorlds.terrain;
+            r._saveSignedWorlds();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w14p2Results && !w14p2Results.error) {
+        check(
+            "W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren",
+            w14p2Results.methods
+        );
+        check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
+        check(
+            "W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)",
+            w14p2Results.canonIgnoresPath
+        );
+        check("W14 P2: unsignierte Welt → Status 'unsigned'", w14p2Results.unsignedState);
+        check("W14 P2: signWorld signiert eine registrierte Welt", w14p2Results.signOk);
+        check("W14 P2: Signatur in state.signedWorlds gespeichert", w14p2Results.signStored);
+        check("W14 P2: signierte Welt → Status 'valid'", w14p2Results.signValid);
+        check("W14 P2: signWorld verwirft eine unbekannte Welt", w14p2Results.signUnknownRejected);
+        check("W14 P2: Signatur überlebt den localStorage-Rundlauf (_loadSignedWorlds)", w14p2Results.persistRoundtrip);
+        check("W14 P2: geändertes Manifest → Status 'modified'", w14p2Results.modifiedState);
+        check("W14 P2: gefälschte Signatur → Status 'forged'", w14p2Results.forgedState);
+        check("W14 P2: fremd-signiertes Manifest verifiziert (Cross-Autor)", w14p2Results.crossAuthorValid);
+        check("W14 P2: _loadSignedWorlds ist defensiv gegen korruptes localStorage", w14p2Results.loadDefensive);
+        check(
+            "W14 P2: Bibliothek-Karte trägt eine Signatur-Zeile + Knopf",
+            w14p2Results.uiSigRow && w14p2Results.uiSigBtn
+        );
+        check(
+            "W14 P2: Portal-Overlay legt eine .portal-sig-Zeile an",
+            w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom
+        );
+        check("W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'", w14p2Results.overlayShowsSigned);
+    } else {
+        check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
+    }
+
+    // ### W14 Phase 2 Teil B — W13 V2: das Schaffen reist mit ###
+    const w13v2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.payloadMethods =
+                typeof r._portalEnterPayload === "function" && typeof r._portalSendEnter === "function";
+            const baseP = r._portalEnterPayload();
+            out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
+            out.payloadVibeId =
+                typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
+            out.payloadFingerprint = typeof baseP.fingerprint === "string" && baseP.fingerprint.length > 0;
+            out.payloadSoul =
+                !!baseP.soul && typeof baseP.soul.name === "string" && typeof baseP.soul.label === "string";
+            // Eigene Materialien/Werkzeuge reisen mit — Built-ins NICHT.
+            // Plus: der 16er-Deckel hält den postMessage-Payload klein.
+            for (let i = 0; i < 20; i++) {
+                r.state.materials["_w14m" + i] = {
+                    builtIn: false,
+                    color: 0x44cc88,
+                    label: "M" + i,
+                    tags: {},
+                };
+            }
+            r.state.tools._w14tool = {
+                builtIn: false,
+                label: "Testfeile",
+                opName: "test_op",
+                opClass: "subtractive",
+            };
+            const ownP = r._portalEnterPayload();
+            out.payloadOwnMaterials =
+                ownP.materials.some((m) => m.name === "_w14m0") && !ownP.materials.some((m) => m.name === "stein");
+            out.payloadMaterialCap = ownP.materials.length <= 16;
+            out.payloadOwnTools =
+                ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "hammer");
+            for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
+            delete r.state.tools._w14tool;
+            out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w13v2Results && !w13v2Results.error) {
+        check("W13 V2: _portalEnterPayload + _portalSendEnter existieren", w13v2Results.payloadMethods);
+        check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
+        check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
+        check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
+        check("W13 V2: der enter-Payload trägt die aktive Seele (name + label)", w13v2Results.payloadSoul);
+        check("W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnMaterials);
+        check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
+        check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
+        check("W13 V2: _portalSendEnter sendet den _portalEnterPayload", w13v2Results.sendUsesPayload);
+    } else {
+        check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
+    }
+    // W13 V2 — die Sub-Welten empfangen + zeigen das Schaffen (Quell-Check).
+    try {
+        const skJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "skeleton.js"), "utf8");
+        check(
+            "W13 V2: skeleton.js hat renderBrought + liest soul/materials/tools",
+            /function renderBrought/.test(skJs) &&
+                /avatar\.soul/.test(skJs) &&
+                /avatar\.materials/.test(skJs) &&
+                /avatar\.tools/.test(skJs)
+        );
+        check(
+            "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
+            /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
+        );
+        const skHtml = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "index.html"), "utf8");
+        check(
+            "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
+            /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
+        );
+        const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
+        const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "terrain.js"), "utf8");
+        check(
+            "W13 V2: fluid + terrain zeigen den Vibe-Pass-Fingerprint des Reisenden",
+            /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
+        );
+    } catch (err) {
+        check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
+    }
+
+    // ### W14 Phase 3 — fremde Welten empfangen ###
+    const w14p3Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            const REG = r.constructor.WORLD_REGISTRY;
+            out.methods =
+                typeof r._worldEntry === "function" &&
+                typeof r._libraryWorlds === "function" &&
+                typeof r._loadCustomWorlds === "function" &&
+                typeof r._sanitizeImportedManifest === "function" &&
+                typeof r.exportWorldManifest === "function" &&
+                typeof r.importWorldManifest === "function";
+            // Vorzustand säubern.
+            r.state.customWorlds = {};
+            r.state.signedWorlds = r.state.signedWorlds || {};
+            delete r.state.signedWorlds.fluid;
+            // _worldEntry: Built-in auflösbar.
+            out.worldEntryBuiltin = r._worldEntry("fluid") === REG.fluid;
+            // _sanitizeImportedManifest: Built-in-id + Müll-id abgelehnt.
+            out.sanitizeRejectsBuiltin =
+                r._sanitizeImportedManifest({
+                    id: "fluid",
+                    label: "X",
+                    world: "worlds/skeleton/index.html",
+                    dsl: [],
+                }) === null;
+            out.sanitizeRejectsBadId =
+                r._sanitizeImportedManifest({
+                    id: "BÖSE id!",
+                    label: "X",
+                    world: "worlds/skeleton/index.html",
+                }) === null;
+            // exportWorldManifest: unsigniert → not_signed.
+            out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
+            // fluid signieren, dann exportieren.
+            await r.signWorld("fluid");
+            const exp = r.exportWorldManifest("fluid");
+            out.exportOk =
+                exp.ok === true &&
+                !!exp.manifest &&
+                exp.manifest.id === "fluid" &&
+                exp.manifest.schemaVersion === "1.0" &&
+                /^[0-9a-f]{64}$/i.test(exp.manifest.authorPubKey || "");
+            // importWorldManifest: Built-in-id-Kollision + Müll.
+            const clash = await r.importWorldManifest({
+                schemaVersion: "1.0",
+                id: "terrain",
+                label: "X",
+                world: "worlds/skeleton/index.html",
+                dsl: [],
+            });
+            out.importBuiltinRejected = clash.ok === false && clash.reason === "id_is_builtin";
+            const garbage = await r.importWorldManifest({ nonsense: true });
+            out.importGarbageRejected = garbage.ok === false;
+            // Cross-Autor: ein fremd-signiertes Manifest (neue id, erreichbarer Pfad).
+            const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+            const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
+            const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+            const fm = {
+                schemaVersion: "1.0",
+                id: "void-zwei",
+                label: "Void Zwei",
+                desc: "Eine fremde Leere.",
+                world: "worlds/skeleton/index.html",
+                dsl: ["skybox_color"],
+            };
+            const fmCanon = r._canonicalManifest(fm);
+            const sign = async (canon) =>
+                r._vibeBytesToHex(
+                    new Uint8Array(
+                        await crypto.subtle.sign(
+                            { name: "Ed25519" },
+                            foreign.privateKey,
+                            new TextEncoder().encode(canon)
+                        )
+                    )
+                );
+            const fmSig = await sign(fmCanon);
+            const importValid = await r.importWorldManifest(
+                Object.assign({}, fm, {
+                    authorPubKey: foreignPubHex,
+                    signature: fmSig,
+                    signedHash: r._fastHash(fmCanon),
+                })
+            );
+            out.importCrossAuthorValid =
+                importValid.ok === true && importValid.signatureStatus === "valid" && importValid.reachable === true;
+            out.customWorldStored = !!(r.state.customWorlds && r.state.customWorlds["void-zwei"]);
+            out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
+            out.worldEntryCustom = !!r._worldEntry("void-zwei");
+            out.libraryWorldsMerged =
+                r._libraryWorlds().some((w) => w.id === "void-zwei") &&
+                r._libraryWorlds().length > Object.keys(REG).length;
+            // Gefälschte Signatur → forged.
+            const fmFalsch = Object.assign({}, fm, { id: "void-falsch" });
+            const importForged = await r.importWorldManifest(
+                Object.assign({}, fmFalsch, {
+                    authorPubKey: foreignPubHex,
+                    signature: (fmSig[0] === "a" ? "b" : "a") + fmSig.slice(1),
+                    signedHash: r._fastHash(r._canonicalManifest(fmFalsch)),
+                })
+            );
+            out.importForged = importForged.ok === true && importForged.signatureStatus === "forged";
+            // Unerreichbare Welt: die fetch-Probe schlägt fehl.
+            const importUnreach = await r.importWorldManifest({
+                schemaVersion: "1.0",
+                id: "void-fern",
+                label: "Ferne Welt",
+                world: "worlds/erfundene-welt/index.html",
+                dsl: [],
+            });
+            out.importUnreachable = importUnreach.ok === true && importUnreach.reachable === false;
+            // obtainPortalForWorld: erreichbare custom-Welt ok, unerreichbare abgelehnt.
+            out.obtainCustomReachable = r.obtainPortalForWorld("void-zwei").ok === true;
+            const obUn = r.obtainPortalForWorld("void-fern");
+            out.obtainCustomUnreachable = obUn.ok === false && obUn.reason === "world_unreachable";
+            // V8.61-Härtung — _runRaycast verzweigt defensiv bei
+            // null-physicsWorld (sonst flakte ein rayTest-on-null im
+            // rAF-Loop während eines Welt-Regens).
+            const savedPW = r.state.physicsWorld;
+            r.state.physicsWorld = null;
+            try {
+                out.raycastNullSafe = r._runRaycast(null, null, (_cb, hit) => hit) === false;
+            } catch (e) {
+                out.raycastNullSafe = false;
+            }
+            r.state.physicsWorld = savedPW;
+            // localStorage-Rundlauf.
+            const reloaded = r._loadCustomWorlds();
+            out.customWorldsRoundtrip =
+                !!reloaded["void-zwei"] &&
+                reloaded["void-zwei"].signature === r.state.customWorlds["void-zwei"].signature;
+            // UI: renderLibraryUI rendert eine importierte Karte + Import-Knopf im DOM.
+            r.renderLibraryUI();
+            out.uiImportedCard =
+                !!document.querySelector("#library-list .library-card-imported") &&
+                !!document.querySelector("#library-list .library-imported-mark");
+            out.uiImportButton =
+                !!document.getElementById("library-import") && !!document.getElementById("library-import-input");
+            // Aufräumen.
+            r.state.customWorlds = {};
+            r._saveCustomWorlds();
+            delete r.state.signedWorlds.fluid;
+            r._saveSignedWorlds();
+            delete r.state.blueprints["portal_void-zwei"];
+            for (let i = 0; i < r.state.player.inventory.length; i++) {
+                const s = r.state.player.inventory[i];
+                if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_void") === 0) {
+                    r.state.player.inventory[i] = null;
+                }
+            }
+            r.renderLibraryUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (w14p3Results && !w14p3Results.error) {
+        check(
+            "W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren",
+            w14p3Results.methods
+        );
+        check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
+        check(
+            "W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)",
+            w14p3Results.sanitizeRejectsBuiltin
+        );
+        check("W14 P3: _sanitizeImportedManifest lehnt eine ungültige id ab", w14p3Results.sanitizeRejectsBadId);
+        check("W14 P3: exportWorldManifest verlangt eine signierte Welt", w14p3Results.exportUnsignedRejected);
+        check("W14 P3: exportWorldManifest liefert das signierte §3.3-Manifest", w14p3Results.exportOk);
+        check("W14 P3: importWorldManifest verwirft eine Built-in-id-Kollision", w14p3Results.importBuiltinRejected);
+        check("W14 P3: importWorldManifest verwirft ein Müll-Manifest", w14p3Results.importGarbageRejected);
+        check(
+            "W14 P3: ein fremd-signiertes Manifest importiert + verifiziert (Cross-Autor)",
+            w14p3Results.importCrossAuthorValid
+        );
+        check("W14 P3: die importierte Welt landet in state.customWorlds", w14p3Results.customWorldStored);
+        check(
+            "W14 P3: verifyWorldSignature liest die manifest-getragene Signatur (valid)",
+            w14p3Results.verifyCustomValid
+        );
+        check(
+            "W14 P3: _worldEntry + _libraryWorlds umfassen die importierte Welt",
+            w14p3Results.worldEntryCustom && w14p3Results.libraryWorldsMerged
+        );
+        check("W14 P3: ein manipuliertes Manifest → Signatur 'forged'", w14p3Results.importForged);
+        check(
+            "W14 P3: eine Welt ohne erreichbare Dateien wird reachable:false markiert",
+            w14p3Results.importUnreachable
+        );
+        check(
+            "W14 P3: obtainPortalForWorld holt eine erreichbare importierte Welt",
+            w14p3Results.obtainCustomReachable
+        );
+        check(
+            "W14 P3: obtainPortalForWorld verweigert eine unerreichbare Welt (kein totes Portal)",
+            w14p3Results.obtainCustomUnreachable
+        );
+        check("W14 P3: importierte Welten überleben den localStorage-Rundlauf", w14p3Results.customWorldsRoundtrip);
+        check(
+            "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
+            w14p3Results.uiImportedCard
+        );
+        check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
+        check(
+            "W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)",
+            w14p3Results.raycastNullSafe
+        );
+    } else {
+        check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (KI-Übersetzer Phase 1+2 + V8.70 Untrusted-Welt-Tor + V8.71/V8.72 W15 Auto-Vendor/GitHub-Fetch).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandTranslatorAndUntrusted(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
+    const translatorResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.methods =
+                typeof r._buildTranslatorPrompt === "function" &&
+                typeof r._parseManifestResponse === "function" &&
+                typeof r.translateWorldManifest === "function" &&
+                typeof r.acceptTranslatedManifest === "function" &&
+                typeof r.translatorInitDOM === "function";
+            r.state.customWorlds = {};
+            // _buildTranslatorPrompt nennt das Manifest-Schema.
+            const prompt = r._buildTranslatorPrompt();
+            out.promptNamesSchema =
+                typeof prompt === "string" &&
+                prompt.includes('"id"') &&
+                prompt.includes('"label"') &&
+                prompt.includes('"dsl"');
+            // _parseManifestResponse — REIN DATEN, kein LLM nötig.
+            const p1 = r._parseManifestResponse('{"id":"voxelwelt","label":"Voxel","dsl":["place_block"]}');
+            out.parseClean = !!p1 && p1.id === "voxelwelt";
+            const p2 = r._parseManifestResponse('```json\n{"id":"x","label":"X"}\n```');
+            out.parseFenced = !!p2 && p2.id === "x";
+            const p3 = r._parseManifestResponse('<think>ich überlege ...</think>{"id":"y","label":"Y"}');
+            out.parseThink = !!p3 && p3.id === "y";
+            out.parseGarbage = r._parseManifestResponse("ich bin kein json") === null;
+            out.parseArray = r._parseManifestResponse("[1,2,3]") === null;
+            // translateWorldManifest — llmCall stubben (kein API-Key im Headless).
+            const origLlm = r.llmCall;
+            try {
+                r.llmCall = async () => ({
+                    say: "",
+                    program: null,
+                    raw: JSON.stringify({
+                        id: "voxel-traum",
+                        label: "Voxel-Traum",
+                        desc: "Eine Voxel-Sandbox mit Wetter.",
+                        dsl: ["place_block", "set_weather"],
+                    }),
+                });
+                // Zu kurze Beschreibung → vor dem LLM abgelehnt.
+                const tooShort = await r.translateWorldManifest("kurz");
+                out.rejectsTooShort = tooShort.ok === false && tooShort.reason === "description_too_short";
+                // Gültige Übersetzung → sanitiertes Vorschau-Manifest.
+                const tr = await r.translateWorldManifest("Eine Voxel-Sandbox mit Wetter und Block-Bauen.");
+                out.translateOk =
+                    tr.ok === true &&
+                    !!tr.manifest &&
+                    tr.manifest.id === "voxel-traum" &&
+                    /^worlds\//.test(tr.manifest.world || "");
+                // Übersetzer-UI-Pfad: _runTranslator füllt #translator-review.
+                const inp = document.getElementById("translator-input");
+                if (inp) inp.value = "Eine Voxel-Sandbox mit Wetter und Block-Bauen.";
+                await r._runTranslator();
+                const review = document.getElementById("translator-review");
+                out.runTranslatorRendersReview =
+                    !!review && review.hidden === false && !!review.querySelector(".translator-review-title");
+                // Übersetztes Manifest, das eine Built-in-id wählt → abgelehnt.
+                r.llmCall = async () => ({ raw: JSON.stringify({ id: "fluid", label: "X" }) });
+                const builtinId = await r.translateWorldManifest("Eine Welt namens fluid.");
+                out.rejectsBuiltinId = builtinId.ok === false && builtinId.reason === "id_is_builtin";
+                // LLM-Antwort ohne Manifest → no_manifest_in_response.
+                r.llmCall = async () => ({ raw: "Tut mir leid, ich weiss es nicht." });
+                const noManifest = await r.translateWorldManifest("Eine vage Welt ohne Form.");
+                out.rejectsNoManifest = noManifest.ok === false && noManifest.reason === "no_manifest_in_response";
+            } finally {
+                r.llmCall = origLlm;
+            }
+            // acceptTranslatedManifest — committet in customWorlds.
+            const acc = r.acceptTranslatedManifest({
+                id: "voxel-traum",
+                label: "Voxel-Traum",
+                desc: "Eine Voxel-Sandbox.",
+                dsl: ["place_block"],
+            });
+            const stored = r.state.customWorlds && r.state.customWorlds["voxel-traum"];
+            out.acceptCommits =
+                acc.ok === true &&
+                acc.id === "voxel-traum" &&
+                !!stored &&
+                stored.translated === true &&
+                stored.reachable === false;
+            // _sanitizeImportedManifest bewahrt das translated-Feld.
+            const reSan = r._sanitizeImportedManifest(stored);
+            out.sanitizePreservesTranslated = !!reSan && reSan.translated === true;
+            // localStorage-Rundlauf — die übersetzte Welt überlebt.
+            const reloaded = r._loadCustomWorlds();
+            out.roundtripKeepsTranslated = !!reloaded["voxel-traum"] && reloaded["voxel-traum"].translated === true;
+            // _worldEntry + _libraryWorlds umfassen die übersetzte Welt.
+            out.worldEntryMerged =
+                !!r._worldEntry("voxel-traum") && r._libraryWorlds().some((w) => w.id === "voxel-traum");
+            // obtainPortalForWorld verweigert die übersetzte Welt (kein totes Portal).
+            const ob = r.obtainPortalForWorld("voxel-traum");
+            out.obtainRefusesTranslated = ob.ok === false && ob.reason === "world_unreachable";
+            // renderLibraryUI rendert eine „KI-übersetzt"-Karte.
+            r.renderLibraryUI();
+            out.uiTranslatedCard =
+                !!document.querySelector("#library-list .library-card-translated") &&
+                !!document.querySelector("#library-list .library-translated-mark");
+            // UI: Übersetzer-Sektion im DOM.
+            out.uiTranslatorSection =
+                !!document.getElementById("translator-input") &&
+                !!document.getElementById("translator-run") &&
+                !!document.getElementById("translator-review");
+            // Aufräumen.
+            r.state.customWorlds = {};
+            r._saveCustomWorlds();
+            const cleanReview = document.getElementById("translator-review");
+            if (cleanReview) {
+                cleanReview.hidden = true;
+                cleanReview.innerHTML = "";
+            }
+            const cleanInput = document.getElementById("translator-input");
+            if (cleanInput) cleanInput.value = "";
+            r.renderLibraryUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (translatorResults && !translatorResults.error) {
+        check(
+            "KI-Übersetzer: _buildTranslatorPrompt/_parseManifestResponse/translateWorldManifest/acceptTranslatedManifest/translatorInitDOM existieren",
+            translatorResults.methods
+        );
+        check(
+            "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
+            translatorResults.promptNamesSchema
+        );
+        check("KI-Übersetzer: _parseManifestResponse liest sauberes JSON", translatorResults.parseClean);
+        check(
+            "KI-Übersetzer: _parseManifestResponse liest JSON aus einem Markdown-Fence",
+            translatorResults.parseFenced
+        );
+        check(
+            "KI-Übersetzer: _parseManifestResponse strippt <think>-Reasoning + liest das JSON danach",
+            translatorResults.parseThink
+        );
+        check(
+            "KI-Übersetzer: _parseManifestResponse liefert null bei Müll (kein JSON)",
+            translatorResults.parseGarbage
+        );
+        check(
+            "KI-Übersetzer: _parseManifestResponse liefert null bei einem JSON-Array (kein Objekt)",
+            translatorResults.parseArray
+        );
+        check(
+            "KI-Übersetzer: translateWorldManifest lehnt eine zu kurze Beschreibung ab",
+            translatorResults.rejectsTooShort
+        );
+        check(
+            "KI-Übersetzer: translateWorldManifest liefert ein sanitiertes Vorschau-Manifest",
+            translatorResults.translateOk
+        );
+        check(
+            "KI-Übersetzer: _runTranslator rendert den KI-Vorschlag im Review-Bereich",
+            translatorResults.runTranslatorRendersReview
+        );
+        check("KI-Übersetzer: translateWorldManifest lehnt eine Built-in-id ab", translatorResults.rejectsBuiltinId);
+        check(
+            "KI-Übersetzer: translateWorldManifest meldet no_manifest_in_response bei einer LLM-Antwort ohne Manifest",
+            translatorResults.rejectsNoManifest
+        );
+        check(
+            "KI-Übersetzer: acceptTranslatedManifest committet in customWorlds (translated:true, reachable:false)",
+            translatorResults.acceptCommits
+        );
+        check(
+            "KI-Übersetzer: _sanitizeImportedManifest bewahrt das translated-Feld",
+            translatorResults.sanitizePreservesTranslated
+        );
+        check(
+            "KI-Übersetzer: eine übersetzte Welt überlebt den localStorage-Rundlauf",
+            translatorResults.roundtripKeepsTranslated
+        );
+        check(
+            "KI-Übersetzer: _worldEntry + _libraryWorlds umfassen die übersetzte Welt",
+            translatorResults.worldEntryMerged
+        );
+        check(
+            "KI-Übersetzer: obtainPortalForWorld verweigert eine übersetzte Welt (kein totes Portal)",
+            translatorResults.obtainRefusesTranslated
+        );
+        check("KI-Übersetzer: renderLibraryUI rendert eine 'KI-übersetzt'-Karte", translatorResults.uiTranslatedCard);
+        check(
+            "KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM",
+            translatorResults.uiTranslatorSection
+        );
+    } else {
+        check("KI-Übersetzer: Phase-1-Tests laufen", false, translatorResults ? translatorResults.error : "no result");
+    }
+
+    // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
+    const transl2Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.methods =
+                typeof r._sanitizeWorldScene === "function" &&
+                typeof r._buildSceneTranslatorPrompt === "function" &&
+                typeof r.translateWorldScene === "function" &&
+                typeof r.buildTranslatedWorld === "function" &&
+                typeof r._runWorldBuild === "function";
+            out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
+            r.state.customWorlds = {};
+            // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
+            const prompt = r._buildSceneTranslatorPrompt();
+            out.promptNamesSchema =
+                typeof prompt === "string" &&
+                prompt.includes('"sky"') &&
+                prompt.includes('"ground"') &&
+                prompt.includes('"objects"') &&
+                prompt.includes('"dslEffects"');
+            // _sanitizeWorldScene — IMMER eine gültige Szene, REIN DATEN.
+            const empty = r._sanitizeWorldScene({});
+            out.sanitizeDefault =
+                !!empty &&
+                /^#[0-9a-f]{6}$/.test(empty.sky.top) &&
+                ["flat", "hills", "water", "void"].indexOf(empty.ground.style) >= 0 &&
+                Array.isArray(empty.objects);
+            out.sanitizeGarbage = !!r._sanitizeWorldScene("kaputt") && !!r._sanitizeWorldScene(null);
+            // Clamps: schlechte Farbe → Default-Hex, Objekte gedeckelt, Licht geklemmt.
+            const big = [];
+            for (let i = 0; i < 100; i++) big.push({ shape: "box", color: "#112233" });
+            const clamped = r._sanitizeWorldScene({
+                sky: { top: "keinhex", bottom: "#ff0000" },
+                light: { intensity: 99 },
+                objects: big,
+            });
+            out.sanitizeClamps =
+                clamped.sky.top === "#2a3a6a" &&
+                clamped.sky.bottom === "#ff0000" &&
+                clamped.light.intensity === 2 &&
+                clamped.objects.length === 14;
+            // dslEffects: op-förmige Schlüssel bleiben, Müll-Schlüssel fallen.
+            const eff = r._sanitizeWorldScene({
+                dslEffects: { good_op: { burst: 5 }, "BAD OP": { burst: 5 } },
+            });
+            out.sanitizeDslEffects = !!eff.dslEffects.good_op && eff.dslEffects["BAD OP"] === undefined;
+            // translateWorldScene — llmCall stubben.
+            const origLlm = r.llmCall;
+            try {
+                r.llmCall = async () => ({
+                    raw: JSON.stringify({
+                        sky: { top: "#102040", bottom: "#88aacc" },
+                        fog: "#aabbcc",
+                        ground: { color: "#3a7a3a", style: "hills" },
+                        light: { color: "#ffffff", intensity: 1.2 },
+                        objects: [{ shape: "box", color: "#8a6a3a", count: 30, area: 50, size: 3, spin: true }],
+                        ambient: { kind: "motes", color: "#ffffff" },
+                        dslEffects: { set_weather: { sky: "#222244", fogShift: 0.4, burst: 10 } },
+                    }),
+                });
+                const ts = await r.translateWorldScene({
+                    id: "x",
+                    label: "Voxel-Bau",
+                    desc: "Eine Voxel-Welt.",
+                    dsl: ["set_weather"],
+                });
+                out.translateSceneOk = ts.ok === true && !!ts.scene && ts.scene.ground.style === "hills";
+                // buildTranslatedWorld — eine übersetzte Welt aufbauen.
+                r.acceptTranslatedManifest({
+                    id: "voxel-bau",
+                    label: "Voxel-Bau",
+                    desc: "Eine Voxel-Welt mit Wetter.",
+                    dsl: ["set_weather", "place_block"],
+                });
+                out.beforeBuildNotReachable = r.state.customWorlds["voxel-bau"].reachable === false;
+                const bw = await r.buildTranslatedWorld("voxel-bau");
+                const built = r.state.customWorlds["voxel-bau"];
+                out.buildAttachesScene =
+                    bw.ok === true &&
+                    !!built.scene &&
+                    built.reachable === true &&
+                    built.world === "worlds/translated/index.html";
+                out.buildUnknownRejected = (await r.buildTranslatedWorld("nirgendwo")).reason === "world_unknown";
+                // Eine nicht-übersetzte Welt lässt sich nicht aufbauen.
+                r.state.customWorlds["plain-w"] = {
+                    id: "plain-w",
+                    label: "Plain",
+                    world: "worlds/skeleton/index.html",
+                    dsl: [],
+                    reachable: true,
+                };
+                out.buildNonTranslatedRejected = (await r.buildTranslatedWorld("plain-w")).reason === "not_translated";
+                delete r.state.customWorlds["plain-w"];
+                // translateWorldScene → no_scene_in_response bei Müll.
+                r.llmCall = async () => ({ raw: "ich weiss es nicht" });
+                out.translateSceneNoScene =
+                    (await r.translateWorldScene({ id: "x", label: "X", desc: "egal egal" })).reason ===
+                    "no_scene_in_response";
+            } finally {
+                r.llmCall = origLlm;
+            }
+            // _sanitizeImportedManifest bewahrt die Szene.
+            const reSan = r._sanitizeImportedManifest(r.state.customWorlds["voxel-bau"]);
+            out.sanitizeKeepsScene = !!reSan && !!reSan.scene && reSan.scene.ground.style === "hills";
+            // localStorage-Rundlauf — die aufgebaute Welt überlebt.
+            const reloaded = r._loadCustomWorlds();
+            out.roundtripKeepsScene =
+                !!reloaded["voxel-bau"] && !!reloaded["voxel-bau"].scene && reloaded["voxel-bau"].reachable === true;
+            // obtainPortalForWorld holt jetzt die AUFGEBAUTE übersetzte Welt.
+            const ob = r.obtainPortalForWorld("voxel-bau");
+            const portalBp = r.state.blueprints["portal_voxel-bau"];
+            out.obtainBuilt =
+                ob.ok === true &&
+                !!portalBp &&
+                !!portalBp.portalMeta &&
+                portalBp.portalMeta.world === "worlds/translated/index.html" &&
+                portalBp.portalMeta.translatedWorldId === "voxel-bau";
+            // _sanitizePortalMeta bewahrt translatedWorldId.
+            const sm = r._sanitizePortalMeta(
+                { world: "worlds/translated/index.html", label: "X", translatedWorldId: "voxel-bau" },
+                "X"
+            );
+            out.portalMetaKeepsId = sm.translatedWorldId === "voxel-bau";
+            // buildStateSnapshot/loadState — translatedWorldId überlebt.
+            const snap = r.buildStateSnapshot();
+            const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_voxel-bau");
+            out.snapKeepsId = !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.translatedWorldId === "voxel-bau";
+            delete r.state.blueprints["portal_voxel-bau"];
+            r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+            const reBp = r.state.blueprints["portal_voxel-bau"];
+            out.loadKeepsId = !!reBp && !!reBp.portalMeta && reBp.portalMeta.translatedWorldId === "voxel-bau";
+            // _portalSendEnter trägt die Szene mit (Fake-Overlay).
+            const savedPo = r._portalOverlay;
+            let captured = null;
+            r._portalOverlay = {
+                translatedWorldId: "voxel-bau",
+                iframe: { contentWindow: { postMessage: (m) => (captured = m) } },
+            };
+            r._portalSendEnter();
+            r._portalOverlay = savedPo;
+            out.enterCarriesScene =
+                !!captured && captured.type === "enter" && !!captured.scene && !!captured.scene.ground;
+            // renderLibraryUI: aufgebaute Welt → aktiver „Portal holen" + „neu aufbauen".
+            r.renderLibraryUI();
+            const builtCard = Array.from(document.querySelectorAll("#library-list .library-card")).find((c) =>
+                /Voxel-Bau/.test(c.textContent)
+            );
+            out.uiBuiltCard =
+                !!builtCard &&
+                !!builtCard.querySelector(".library-rebuild") &&
+                !builtCard.querySelector(".library-get[disabled]") &&
+                !builtCard.querySelector(".library-build");
+            // Eine NOCH NICHT aufgebaute übersetzte Welt → „Welt aufbauen".
+            r.acceptTranslatedManifest({ id: "voxel-roh", label: "Voxel-Roh", desc: "Roh.", dsl: [] });
+            r.renderLibraryUI();
+            const rohCard = Array.from(document.querySelectorAll("#library-list .library-card")).find((c) =>
+                /Voxel-Roh/.test(c.textContent)
+            );
+            out.uiBuildButton = !!rohCard && !!rohCard.querySelector(".library-build");
+            // Aufräumen.
+            r.state.customWorlds = {};
+            r._saveCustomWorlds();
+            delete r.state.blueprints["portal_voxel-bau"];
+            for (let i = 0; i < r.state.player.inventory.length; i++) {
+                const s = r.state.player.inventory[i];
+                if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_voxel") === 0) {
+                    r.state.player.inventory[i] = null;
+                }
+            }
+            r.renderLibraryUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (transl2Results && !transl2Results.error) {
+        check(
+            "KI-Übersetzer P2: _sanitizeWorldScene/_buildSceneTranslatorPrompt/translateWorldScene/buildTranslatedWorld/_runWorldBuild existieren",
+            transl2Results.methods
+        );
+        check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
+        check(
+            "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",
+            transl2Results.promptNamesSchema
+        );
+        check(
+            "KI-Übersetzer P2: _sanitizeWorldScene liefert aus {} eine gültige Szene",
+            transl2Results.sanitizeDefault
+        );
+        check("KI-Übersetzer P2: _sanitizeWorldScene ist crash-frei bei Müll/null", transl2Results.sanitizeGarbage);
+        check(
+            "KI-Übersetzer P2: _sanitizeWorldScene clampt Farbe + Objekt-Zahl + Licht",
+            transl2Results.sanitizeClamps
+        );
+        check("KI-Übersetzer P2: _sanitizeWorldScene filtert dslEffects-Schlüssel", transl2Results.sanitizeDslEffects);
+        check("KI-Übersetzer P2: translateWorldScene liefert eine sanitierte Szene", transl2Results.translateSceneOk);
+        check(
+            "KI-Übersetzer P2: translateWorldScene meldet no_scene_in_response bei Müll",
+            transl2Results.translateSceneNoScene
+        );
+        check(
+            "KI-Übersetzer P2: eine übersetzte Welt ist vor dem Aufbau nicht erreichbar",
+            transl2Results.beforeBuildNotReachable
+        );
+        check(
+            "KI-Übersetzer P2: buildTranslatedWorld heftet die Szene an + macht die Welt betretbar",
+            transl2Results.buildAttachesScene
+        );
+        check(
+            "KI-Übersetzer P2: buildTranslatedWorld lehnt eine unbekannte Welt ab",
+            transl2Results.buildUnknownRejected
+        );
+        check(
+            "KI-Übersetzer P2: buildTranslatedWorld lehnt eine nicht-übersetzte Welt ab",
+            transl2Results.buildNonTranslatedRejected
+        );
+        check("KI-Übersetzer P2: _sanitizeImportedManifest bewahrt die Szene", transl2Results.sanitizeKeepsScene);
+        check(
+            "KI-Übersetzer P2: eine aufgebaute Welt überlebt den localStorage-Rundlauf",
+            transl2Results.roundtripKeepsScene
+        );
+        check(
+            "KI-Übersetzer P2: obtainPortalForWorld holt eine aufgebaute übersetzte Welt (Portal mit translatedWorldId)",
+            transl2Results.obtainBuilt
+        );
+        check("KI-Übersetzer P2: _sanitizePortalMeta bewahrt translatedWorldId", transl2Results.portalMetaKeepsId);
+        check(
+            "KI-Übersetzer P2: translatedWorldId überlebt den buildStateSnapshot/loadState-Rundlauf",
+            transl2Results.snapKeepsId && transl2Results.loadKeepsId
+        );
+        check(
+            "KI-Übersetzer P2: _portalSendEnter trägt die deklarative Szene in die Sub-Welt",
+            transl2Results.enterCarriesScene
+        );
+        check(
+            "KI-Übersetzer P2: renderLibraryUI rendert 'Welt aufbauen' bzw. nach dem Aufbau 'Portal holen' + 'neu aufbauen'",
+            transl2Results.uiBuildButton && transl2Results.uiBuiltCard
+        );
+    } else {
+        check("KI-Übersetzer P2: Phase-2-Tests laufen", false, transl2Results ? transl2Results.error : "no result");
+    }
+
+    // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
+    const sandboxResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            const REG = r.constructor.WORLD_REGISTRY;
+            // schwarm in der Registry, als sandboxed markiert.
+            out.registryEntry =
+                !!REG.schwarm &&
+                REG.schwarm.trust === "sandboxed" &&
+                typeof REG.schwarm.desc === "string" &&
+                Array.isArray(REG.schwarm.dsl) &&
+                REG.schwarm.dsl.length > 0;
+            // Built-in-Welten bleiben trusted (kein sandboxed).
+            out.builtinsTrusted =
+                REG.skeleton.trust !== "sandboxed" &&
+                REG.fluid.trust !== "sandboxed" &&
+                REG.terrain.trust !== "sandboxed";
+            // _sanitizePortalMeta: default trusted, bewahrt sandboxed, Müll → trusted.
+            out.sanitizeTrust =
+                r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "X").trust === "trusted" &&
+                r._sanitizePortalMeta({ world: "worlds/schwarm/index.html", trust: "sandboxed" }, "X").trust ===
+                    "sandboxed" &&
+                r._sanitizePortalMeta({ world: "worlds/skeleton/index.html", trust: "BÖSE" }, "X").trust === "trusted";
+            // aimBlueprintAtWorld trägt die Vertrauensstufe in den Bauplan.
+            r.cloneBlueprint("welt_portal", "_t_sb");
+            r.aimBlueprintAtWorld("_t_sb", "schwarm");
+            r.cloneBlueprint("welt_portal", "_t_tr");
+            r.aimBlueprintAtWorld("_t_tr", "terrain");
+            out.aimCarriesTrust =
+                r.state.blueprints["_t_sb"].portalMeta.trust === "sandboxed" &&
+                r.state.blueprints["_t_tr"].portalMeta.trust === "trusted";
+            delete r.state.blueprints["_t_sb"];
+            delete r.state.blueprints["_t_tr"];
+            // obtainPortalForWorld holt die Schwarm-Welt.
+            const ob = r.obtainPortalForWorld("schwarm");
+            const pbp = r.state.blueprints["portal_schwarm"];
+            out.obtainSchwarm =
+                ob.ok === true &&
+                !!pbp &&
+                pbp.portalMeta.world === "worlds/schwarm/index.html" &&
+                pbp.portalMeta.trust === "sandboxed";
+            // _buildPortalOverlay: sandboxed → allow-scripts ALLEIN.
+            r._buildPortalOverlay({
+                world: "worlds/schwarm/index.html",
+                label: "S",
+                dsl: ["sturm"],
+                trust: "sandboxed",
+            });
+            out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
+            out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
+            r._disposePortalOverlay();
+            // trusted → mit allow-same-origin.
+            r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
+            out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
+            r._disposePortalOverlay();
+            // _portalSendEnter / _portalForwardDsl: targetOrigin "*" für null-origin.
+            const savedPo = r._portalOverlay;
+            let capEnter = null;
+            let capDsl = null;
+            r._portalOverlay = {
+                trust: "sandboxed",
+                iframe: { contentWindow: { postMessage: (m, o) => (capEnter = { m: m, o: o }) } },
+            };
+            r._portalSendEnter();
+            r._portalOverlay.iframe.contentWindow.postMessage = (m, o) => (capDsl = { m: m, o: o });
+            r._portalForwardDsl(["sturm"]);
+            out.starForSandbox =
+                !!capEnter && capEnter.o === "*" && capEnter.m.type === "enter" && !!capDsl && capDsl.o === "*";
+            let capTrusted = null;
+            r._portalOverlay = {
+                trust: "trusted",
+                iframe: { contentWindow: { postMessage: (m, o) => (capTrusted = { m: m, o: o }) } },
+            };
+            r._portalSendEnter();
+            out.originForTrusted = !!capTrusted && capTrusted.o === window.location.origin;
+            r._portalOverlay = savedPo;
+            // buildStateSnapshot/loadState — trust überlebt den Rundlauf.
+            const snap = r.buildStateSnapshot();
+            const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_schwarm");
+            delete r.state.blueprints["portal_schwarm"];
+            r.loadState({ blueprints: snapBp ? [snapBp] : [] });
+            const reBp = r.state.blueprints["portal_schwarm"];
+            out.trustRoundtrip =
+                !!snapBp &&
+                snapBp.portalMeta &&
+                snapBp.portalMeta.trust === "sandboxed" &&
+                !!reBp &&
+                reBp.portalMeta &&
+                reBp.portalMeta.trust === "sandboxed";
+            // renderLibraryUI rendert eine Schwarm-Welt-Karte.
+            r.renderLibraryUI();
+            out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
+                /Schwarm-Welt/.test(c.textContent)
+            );
+            // worlds/schwarm/index.html ist erreichbar (echte Datei).
+            out.worldReachable = await fetch("worlds/schwarm/index.html")
+                .then((res) => res.ok)
+                .catch(() => false);
+            // Aufräumen.
+            delete r.state.blueprints["portal_schwarm"];
+            for (let i = 0; i < r.state.player.inventory.length; i++) {
+                const s = r.state.player.inventory[i];
+                if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) {
+                    r.state.player.inventory[i] = null;
+                }
+            }
+            r.renderLibraryUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (sandboxResults && !sandboxResults.error) {
+        check(
+            "Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl",
+            sandboxResults.registryEntry
+        );
+        check(
+            "Untrusted-Tor: Built-in-Welten (skeleton/fluid/terrain) bleiben trusted",
+            sandboxResults.builtinsTrusted
+        );
+        check(
+            "Untrusted-Tor: _sanitizePortalMeta — default trusted, bewahrt sandboxed, Müll-trust → trusted",
+            sandboxResults.sanitizeTrust
+        );
+        check(
+            "Untrusted-Tor: aimBlueprintAtWorld trägt die Vertrauensstufe (schwarm→sandboxed, terrain→trusted)",
+            sandboxResults.aimCarriesTrust
+        );
+        check(
+            "Untrusted-Tor: obtainPortalForWorld holt die Schwarm-Welt (Portal trägt trust:sandboxed)",
+            sandboxResults.obtainSchwarm
+        );
+        check(
+            "Untrusted-Tor: _buildPortalOverlay — sandboxed → iframe-sandbox ist 'allow-scripts' ALLEIN",
+            sandboxResults.overlaySandboxAttr
+        );
+        check(
+            "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin",
+            sandboxResults.overlayTrustedAttr
+        );
+        check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);
+        check(
+            "Untrusted-Tor: _portalSendEnter + _portalForwardDsl posten mit '*' an eine null-origin-Welt",
+            sandboxResults.starForSandbox
+        );
+        check(
+            "Untrusted-Tor: _portalSendEnter postet mit dem Seiten-Origin an eine trusted Welt",
+            sandboxResults.originForTrusted
+        );
+        check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
+        check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
+        check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
+    } else {
+        check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
+    }
+
+    // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
+    // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
+    // der echte save-server-Round-Trip lebt in smoke-vendor.cjs.
+    const vendorResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.methods =
+                typeof r.vendorWorldBundle === "function" &&
+                typeof r._vendorSanitizeBundle === "function" &&
+                typeof r._vendorPostBundle === "function" &&
+                typeof r._runVendorDock === "function" &&
+                typeof r.vendorInitDOM === "function";
+            r.state.customWorlds = {};
+            const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
+            // _vendorSanitizeBundle — REIN, kein Netz.
+            const s1 = r._vendorSanitizeBundle("voxel-fremd", okBundle);
+            out.sanitizeOk = s1.ok === true && s1.worldId === "voxel-fremd" && s1.files.length === 1;
+            out.rejectsBadId = r._vendorSanitizeBundle("Bad ID!", okBundle).reason === "invalid_world_id";
+            out.rejectsReservedId = r._vendorSanitizeBundle("fluid", okBundle).reason === "reserved_world_id";
+            out.rejectsTranslatedId = r._vendorSanitizeBundle("translated", okBundle).reason === "reserved_world_id";
+            out.rejectsTraversal =
+                r._vendorSanitizeBundle("w", [{ path: "../evil.js", content: "x" }].concat(okBundle)).reason ===
+                "bad_file_path";
+            out.rejectsBackslash =
+                r._vendorSanitizeBundle("w", [{ path: "lib\\x.js", content: "x" }].concat(okBundle)).reason ===
+                "bad_file_path";
+            out.rejectsBadExt =
+                r._vendorSanitizeBundle("w", [{ path: "evil.sh", content: "x" }].concat(okBundle)).reason ===
+                "bad_file_ext";
+            out.rejectsNoIndex =
+                r._vendorSanitizeBundle("w", [{ path: "main.js", content: "x" }]).reason === "no_index_html";
+            out.rejectsNoFiles = r._vendorSanitizeBundle("w", []).reason === "no_files";
+            out.rejectsFileTooLarge =
+                r._vendorSanitizeBundle("w", [{ path: "index.html", content: "x".repeat(5 * 1024 * 1024) }]).reason ===
+                "file_too_large";
+            // vendorWorldBundle — _vendorPostBundle stubben (kein echter Schreib).
+            const origPost = r._vendorPostBundle;
+            try {
+                r._vendorPostBundle = async () => ({ ok: true, fileCount: 1, totalBytes: 31 });
+                const v = await r.vendorWorldBundle({
+                    worldId: "vendor-test",
+                    label: "Vendor-Test",
+                    desc: "Eine angedockte Test-Welt.",
+                    dsl: ["sturm"],
+                    files: okBundle,
+                });
+                const stored = r.state.customWorlds && r.state.customWorlds["vendor-test"];
+                out.vendorRegisters =
+                    v.ok === true &&
+                    !!stored &&
+                    stored.vendored === true &&
+                    stored.trust === "sandboxed" &&
+                    stored.reachable === true &&
+                    stored.world === "worlds/vendor-test/index.html";
+                // Sanitize-Fehler durchgereicht (Bad id → nicht registriert).
+                const vBad = await r.vendorWorldBundle({ worldId: "Bad ID!", files: okBundle });
+                out.vendorPropagatesSanitizeFail = vBad.ok === false && vBad.reason === "invalid_world_id";
+                // Post-Fehler durchgereicht (save-server weg → nicht registriert).
+                r._vendorPostBundle = async () => ({ ok: false, reason: "save_server_unreachable" });
+                const vUnreach = await r.vendorWorldBundle({
+                    worldId: "vendor-test-2",
+                    label: "X",
+                    files: okBundle,
+                });
+                out.vendorPropagatesPostFail =
+                    vUnreach.ok === false &&
+                    vUnreach.reason === "save_server_unreachable" &&
+                    !(r.state.customWorlds && r.state.customWorlds["vendor-test-2"]);
+            } finally {
+                r._vendorPostBundle = origPost;
+            }
+            // _sanitizeImportedManifest bewahrt trust + vendored.
+            const reSan = r._sanitizeImportedManifest(r.state.customWorlds["vendor-test"]);
+            out.sanitizeKeepsTrustVendored = !!reSan && reSan.trust === "sandboxed" && reSan.vendored === true;
+            // vendored erzwingt trust:"sandboxed", auch bei trust:"trusted".
+            const forced = r._sanitizeImportedManifest({
+                id: "forced-test",
+                label: "X",
+                world: "worlds/forced-test/index.html",
+                vendored: true,
+                trust: "trusted",
+            });
+            out.vendoredForcesSandbox = !!forced && forced.trust === "sandboxed";
+            // localStorage-Rundlauf — trust + vendored überleben.
+            const reloaded = r._loadCustomWorlds();
+            out.roundtripKeepsTrust =
+                !!reloaded["vendor-test"] &&
+                reloaded["vendor-test"].trust === "sandboxed" &&
+                reloaded["vendor-test"].vendored === true;
+            // obtainPortalForWorld — der Portal-Bauplan trägt trust:"sandboxed".
+            const ob = r.obtainPortalForWorld("vendor-test");
+            const portalBp = r.state.blueprints && r.state.blueprints["portal_vendor-test"];
+            out.portalCarriesSandbox =
+                ob.ok === true && !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.trust === "sandboxed";
+            // renderLibraryUI rendert eine „angedockt"-Karte.
+            r.renderLibraryUI();
+            out.uiVendoredCard =
+                !!document.querySelector("#library-list .library-card-vendored") &&
+                !!document.querySelector("#library-list .library-vendored-mark");
+            // UI: Andocken-Sektion im DOM.
+            out.uiVendorSection =
+                !!document.getElementById("vendor-id") &&
+                !!document.getElementById("vendor-files") &&
+                !!document.getElementById("vendor-dock");
+            // Aufräumen.
+            if (r.state.blueprints) delete r.state.blueprints["portal_vendor-test"];
+            if (r.state.player && Array.isArray(r.state.player.inventory)) {
+                r.state.player.inventory.forEach((sl, i) => {
+                    if (sl && sl.blueprintName === "portal_vendor-test") r.state.player.inventory[i] = null;
+                });
+            }
+            r.state.customWorlds = {};
+            r._saveCustomWorlds();
+            r.saveState();
+            r.renderLibraryUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (vendorResults && !vendorResults.error) {
+        check(
+            "W15 Auto-Vendor: vendorWorldBundle/_vendorSanitizeBundle/_vendorPostBundle/_runVendorDock/vendorInitDOM existieren",
+            vendorResults.methods
+        );
+        check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
+        check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
+        check(
+            "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine Built-in-id (fluid) ab",
+            vendorResults.rejectsReservedId
+        );
+        check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt die translated-id ab", vendorResults.rejectsTranslatedId);
+        check(
+            "W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Pfad-Ausbruch (../) ab",
+            vendorResults.rejectsTraversal
+        );
+        check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Backslash-Pfad ab", vendorResults.rejectsBackslash);
+        check(
+            "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine verbotene Datei-Endung (.sh) ab",
+            vendorResults.rejectsBadExt
+        );
+        check(
+            "W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein Bündel ohne index.html ab",
+            vendorResults.rejectsNoIndex
+        );
+        check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein leeres Bündel ab", vendorResults.rejectsNoFiles);
+        check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine zu große Datei ab", vendorResults.rejectsFileTooLarge);
+        check(
+            "W15 Auto-Vendor: vendorWorldBundle registriert einen customWorlds-Eintrag (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
+            vendorResults.vendorRegisters
+        );
+        check(
+            "W15 Auto-Vendor: vendorWorldBundle reicht einen Sanitize-Fehler durch (id → nicht registriert)",
+            vendorResults.vendorPropagatesSanitizeFail
+        );
+        check(
+            "W15 Auto-Vendor: vendorWorldBundle reicht einen Post-Fehler durch (save_server_unreachable → nicht registriert)",
+            vendorResults.vendorPropagatesPostFail
+        );
+        check(
+            "W15 Auto-Vendor: _sanitizeImportedManifest bewahrt trust + vendored",
+            vendorResults.sanitizeKeepsTrustVendored
+        );
+        check(
+            "W15 Auto-Vendor: vendored erzwingt trust:sandboxed (auch bei trust:trusted)",
+            vendorResults.vendoredForcesSandbox
+        );
+        check(
+            "W15 Auto-Vendor: trust + vendored überleben den localStorage-Rundlauf",
+            vendorResults.roundtripKeepsTrust
+        );
+        check(
+            "W15 Auto-Vendor: obtainPortalForWorld holt ein Portal — es trägt trust:sandboxed",
+            vendorResults.portalCarriesSandbox
+        );
+        check("W15 Auto-Vendor: renderLibraryUI rendert eine 'angedockt'-Karte", vendorResults.uiVendoredCard);
+        check(
+            "W15 Auto-Vendor: die 'Welt andocken'-Sektion (id + Ordner-Picker + Knopf) im DOM",
+            vendorResults.uiVendorSection
+        );
+    } else {
+        check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
+    }
+
+    // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
+    // _vendorPostRepo (der Netz-Schritt) wird gestubbt — der echte
+    // GitHub-Round-Trip lebt in smoke-vendor.cjs (gegen ein lokales
+    // Fake-GitHub, damit der Test offline + deterministisch bleibt).
+    const vendor2Results = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.methods =
+                typeof r.vendorWorldFromRepo === "function" &&
+                typeof r._vendorPostRepo === "function" &&
+                typeof r._vendorPostJson === "function" &&
+                typeof r._vendorRegisterWorld === "function" &&
+                typeof r._runVendorRepoDock === "function";
+            r.state.customWorlds = {};
+            const origRepo = r._vendorPostRepo;
+            const origBundle = r._vendorPostBundle;
+            try {
+                // Eingangs-Prüfungen — vor dem Netz-Schritt.
+                const badId = await r.vendorWorldFromRepo({
+                    worldId: "Bad ID!",
+                    repoUrl: "https://github.com/a/b",
+                });
+                out.rejectsBadId = badId.ok === false && badId.reason === "invalid_world_id";
+                const reservedId = await r.vendorWorldFromRepo({
+                    worldId: "fluid",
+                    repoUrl: "https://github.com/a/b",
+                });
+                out.rejectsReservedId = reservedId.ok === false && reservedId.reason === "reserved_world_id";
+                const nonGh = await r.vendorWorldFromRepo({
+                    worldId: "gh-test",
+                    repoUrl: "https://evil.example.com/a/b",
+                });
+                out.rejectsNonGithub = nonGh.ok === false && nonGh.reason === "not_a_github_url";
+                const emptyUrl = await r.vendorWorldFromRepo({ worldId: "gh-test", repoUrl: "" });
+                out.rejectsEmptyUrl = emptyUrl.ok === false && emptyUrl.reason === "not_a_github_url";
+                // Mit gestubbtem _vendorPostRepo → registriert die Welt.
+                r._vendorPostRepo = async () => ({ ok: true, fileCount: 5, branch: "main" });
+                const v = await r.vendorWorldFromRepo({
+                    worldId: "gh-test",
+                    repoUrl: "https://github.com/owner/repo",
+                    label: "GitHub-Test",
+                    desc: "Aus einem Repo geholt.",
+                    dsl: ["sturm"],
+                });
+                const stored = r.state.customWorlds && r.state.customWorlds["gh-test"];
+                out.registersOnSuccess =
+                    v.ok === true &&
+                    v.fileCount === 5 &&
+                    v.branch === "main" &&
+                    !!stored &&
+                    stored.vendored === true &&
+                    stored.trust === "sandboxed" &&
+                    stored.reachable === true &&
+                    stored.world === "worlds/gh-test/index.html";
+                // Eine /tree/<branch>-URL besteht die Client-URL-Prüfung.
+                const treeUrl = await r.vendorWorldFromRepo({
+                    worldId: "gh-tree",
+                    repoUrl: "https://github.com/owner/repo/tree/dev",
+                    label: "Tree",
+                });
+                out.acceptsTreeUrl = treeUrl.ok === true;
+                // Post-Fehler (GitHub 404 o.ä.) wird durchgereicht.
+                r._vendorPostRepo = async () => ({ ok: false, reason: "GitHub fetch failed: HTTP 404" });
+                const vFail = await r.vendorWorldFromRepo({
+                    worldId: "gh-missing",
+                    repoUrl: "https://github.com/owner/nope",
+                });
+                out.propagatesPostFail =
+                    vFail.ok === false &&
+                    /404/.test(vFail.reason) &&
+                    !(r.state.customWorlds && r.state.customWorlds["gh-missing"]);
+                // _vendorRegisterWorld direkt — sandgesichert + vendored.
+                const reg = r._vendorRegisterWorld("reg-test", { label: "Reg" });
+                const regStored = r.state.customWorlds && r.state.customWorlds["reg-test"];
+                out.registerWorldDirect =
+                    reg.ok === true &&
+                    !!regStored &&
+                    regStored.trust === "sandboxed" &&
+                    regStored.vendored === true &&
+                    regStored.world === "worlds/reg-test/index.html";
+                // Regression: der Bündel-Pfad (Phase 1) läuft nach dem Refactor.
+                r._vendorPostBundle = async () => ({ ok: true, fileCount: 1 });
+                const vb = await r.vendorWorldBundle({
+                    worldId: "bundle-regress",
+                    label: "B",
+                    files: [{ path: "index.html", content: "<!doctype html><title>x</title>" }],
+                });
+                out.bundlePathStillWorks =
+                    vb.ok === true &&
+                    !!(r.state.customWorlds && r.state.customWorlds["bundle-regress"]) &&
+                    r.state.customWorlds["bundle-regress"].trust === "sandboxed";
+            } finally {
+                r._vendorPostRepo = origRepo;
+                r._vendorPostBundle = origBundle;
+            }
+            // localStorage-Rundlauf — die repo-vendorte Welt überlebt.
+            const reloaded = r._loadCustomWorlds();
+            out.roundtripKeepsTrust =
+                !!reloaded["gh-test"] &&
+                reloaded["gh-test"].trust === "sandboxed" &&
+                reloaded["gh-test"].vendored === true;
+            // UI: die GitHub-Holen-Sektion im DOM.
+            out.uiRepoSection =
+                !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
+            // Aufräumen.
+            r.state.customWorlds = {};
+            r._saveCustomWorlds();
+            r.saveState();
+            r.renderLibraryUI();
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (vendor2Results && !vendor2Results.error) {
+        check(
+            "W15 GitHub-Fetch: vendorWorldFromRepo/_vendorPostRepo/_vendorPostJson/_vendorRegisterWorld/_runVendorRepoDock existieren",
+            vendor2Results.methods
+        );
+        check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
+        check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
+        check(
+            "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Nicht-github.com-URL ab",
+            vendor2Results.rejectsNonGithub
+        );
+        check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine leere URL ab", vendor2Results.rejectsEmptyUrl);
+        check(
+            "W15 GitHub-Fetch: vendorWorldFromRepo registriert die Welt (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
+            vendor2Results.registersOnSuccess
+        );
+        check(
+            "W15 GitHub-Fetch: eine /tree/<branch>-URL besteht die Client-URL-Prüfung",
+            vendor2Results.acceptsTreeUrl
+        );
+        check(
+            "W15 GitHub-Fetch: vendorWorldFromRepo reicht einen Fetch-Fehler durch (404 → nicht registriert)",
+            vendor2Results.propagatesPostFail
+        );
+        check(
+            "W15 GitHub-Fetch: _vendorRegisterWorld registriert sandgesichert + vendored",
+            vendor2Results.registerWorldDirect
+        );
+        check(
+            "W15 GitHub-Fetch: der Bündel-Pfad (Phase 1) läuft nach dem Refactor weiter",
+            vendor2Results.bundlePathStillWorks
+        );
+        check(
+            "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
+            vendor2Results.roundtripKeepsTrust
+        );
+        check("W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM", vendor2Results.uiRepoSection);
+    } else {
+        check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
+    }
+}
+
+// V9.52-d Sub-Welle d — Band-Funktion (V8.40+41 Regler + V8.46 Wetter + V8.48 Schatten + V8.49 updateCreatures + Welle 6.X.4 B3/D2 + 6.X.4 V8.16 Punkt 18 (späte Audit-Fixes)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandV8LatePolishAnd6XContinued(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
+    const v840Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const ring = document.getElementById("slider-ring");
+            out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
+            const cel = document.getElementById("slider-cel");
+            // V8.41 — Cel-Regler auf 2–8 zurückgenommen (Reserve verworfen).
+            out.celSliderRange = !!cel && cel.max === "8" && cel.value === "8";
+
+            // Cel-Stufen 2–8: 8 = smooth, höhere Werte clampen auf 8.
+            const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
+            out.celClampsAt8 = r.setCelLevels(8) === 8 && r.setCelLevels(20) === 8;
+            out.celSmoothThreshold = /n >= 8 \? W/.test(r._refreshToonGradient.toString());
+            // V8.42 — Gradient-Textur mit LinearFilter (crawl-frei).
+            out.celGradientLinear =
+                !!r.state.toonGradientMap &&
+                r.state.toonGradientMap.magFilter === (window.THREE && window.THREE.LinearFilter);
+            // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
+            out.terrainJitterPerVertex =
+                !!r.state.terrainMaterial &&
+                /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
+                /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
+                !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
+            // V8.44 — Terrain-vNormal in Welt-Raum (kamera-unabhängiger
+            // Diffuse): mat3(modelMatrix), nicht normalMatrix.
+            out.terrainNormalWorldSpace =
+                !!r.state.terrainMaterial &&
+                /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
+                !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
+            // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
+            // nicht View-Space-Z. Regex prüft die echte Zuweisung
+            // (nicht den erklärenden Kommentar-Text).
+            out.terrainFogRadial =
+                !!r.state.terrainMaterial &&
+                /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
+                !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
+            r.setCelLevels(origCel);
+
+            // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
+            const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
+            out.fogTripleRange =
+                r.setFogDistance(9.0) === 9.0 && r.setFogDistance(0.5) === 0.9 && r.setFogDistance(3.0) === 3.0;
+            out.fogDefault3 = r.setFogDistance() === 3.0;
+            r.setFogDistance(origFog);
+            out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(r.slidersInitDOM.toString());
+
+            // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
+            const appScript = [...document.querySelectorAll("script")].find((s) =>
+                (s.getAttribute("src") || "").includes("anazhRealm.js")
+            );
+            out.cacheBust = !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v840Results && !v840Results.error) {
+        check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
+        check("V8.41: Cel-Stufen-Regler 2–8, Default 8 (Reserve verworfen)", v840Results.celSliderRange);
+        check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
+        check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
+        check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
+        // V9.39 Phase 5c.2.c.3.b.iii — V8.43/V8.44/V8.45 prüften den
+        // Heightfield-Terrain-Shader (per-Vertex-Noise, Welt-Raum-Normal,
+        // radiale Fog-Distanz). `state.terrainMaterial` existiert nicht
+        // mehr; das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-
+        // eingebauten Lichtquellen + Fog (anders gerechnet). Tests
+        // gestrichen.
+        check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
+        check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
+        check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
+        check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
+    } else {
+        check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
+    }
+
+    // ### V8.46 — Sanfte Wetter-Übergänge ###
+    const v846Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            out.helperExists = typeof r._weatherBlendedValue === "function";
+            const origWeather = r.state.weather;
+            const origTrans = r.state.weatherTransition;
+            // Ohne Transition: sunny → sunnyVal, rainy → rainyVal.
+            r.state.weatherTransition = null;
+            r.state.weather = "sunny";
+            out.blendSunny = r._weatherBlendedValue(0, 1) === 0;
+            r.state.weather = "rainy";
+            out.blendRainy = r._weatherBlendedValue(0, 1) === 1;
+            // Mitten in der Transition: progress 0.5 → halber Weg.
+            r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
+            out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
+            r.state.weatherTransition = origTrans;
+            r.state.weather = origWeather;
+            // weatherEffect + cloudCover faden jetzt über den Helper.
+            const src = r._applyDayNightToScene.toString();
+            out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(src);
+            out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
+            // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
+            const sh = r.state.directionalLight && r.state.directionalLight.shadow;
+            out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v846Results && !v846Results.error) {
+        check("V8.46: _weatherBlendedValue-Helper existiert", v846Results.helperExists);
+        check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
+        check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
+        check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
+        check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
+        check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
+        check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
+    } else {
+        check("V8.46: Wetter-Übergangs-Tests laufen", false, v846Results ? v846Results.error : "no result");
+    }
+
+    // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
+    const v848Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const tm = r.state.terrainMaterial;
+            out.terrainIsShader = !!tm && tm.type === "ShaderMaterial";
+            if (out.terrainIsShader) {
+                out.vertexHasShadowChunks =
+                    /shadowmap_pars_vertex/.test(tm.vertexShader) && /shadowmap_vertex/.test(tm.vertexShader);
+                out.fragmentHasShadowChunks =
+                    /shadowmap_pars_fragment/.test(tm.fragmentShader) &&
+                    /getShadow\(/.test(tm.fragmentShader) &&
+                    /vDirectionalShadowCoord/.test(tm.fragmentShader);
+                out.fragmentHighp = /precision highp float/.test(tm.fragmentShader);
+                out.terrainLightsTrue = tm.lights === true;
+                out.terrainHasShadowUniform = !!tm.uniforms && !!tm.uniforms.directionalShadowMap;
+            }
+            // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
+            out.targetInScene =
+                !!r.state.directionalLight &&
+                !!r.state.directionalLight.target &&
+                r.state.directionalLight.target.parent === r.state.scene;
+            const pm = r.state.playerMesh;
+            if (pm) {
+                const ox = pm.position.x;
+                const oz = pm.position.z;
+                pm.position.x = 123.5;
+                pm.position.z = -77.25;
+                r._applyDayNightToScene();
+                const tgt = r.state.directionalLight.target.position;
+                out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
+                pm.position.x = ox;
+                pm.position.z = oz;
+                r._applyDayNightToScene();
+            }
+            // _applyDayNightToScene leitet die Terrain-lightDirection aus
+            // der reinen Sonnen-Richtung sunDir ab (nicht position.normalize()).
+            const adnSrc = r._applyDayNightToScene.toString();
+            out.usesSunDir = /const lightDir = sunDir/.test(adnSrc);
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v848Results && !v848Results.error) {
+        // V9.39 Phase 5c.2.c.3.b.iii — die V8.48-Terrain-Shader-
+        // Schatten-Tests sind tot — `state.terrainMaterial` existiert
+        // nicht mehr. Die V8.48-Vision (Schatten aufs Terrain) lebt
+        // im Voxel-Mesh weiter (`MeshToonMaterial` mit `receiveShadow`,
+        // die DirectionalLight-Shadow-Map). Die Schatten-Frustum-folgt-
+        // Spieler-Mechanik lebt; die `usesSunDir`-Probe in
+        // `_applyDayNightToScene` lebt auch.
+        check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
+        check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)", v848Results.shadowFollowsPlayer);
+        check("V8.48: _applyDayNightToScene leitet lightDir aus sunDir ab", v848Results.usesSunDir);
+    } else {
+        check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
+    }
+
+    // ### V8.49 — updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
+    const v849Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            const src = r.updateCreatures.toString();
+            // Strukturell: Kohäsion nutzt distanceToSquared (kein sqrt),
+            // der Raycast ist distanz-/sicht-gegated, Scratch gepoolt.
+            out.usesDistanceSquared = /distanceToSquared/.test(src);
+            out.raycastGated = /OBSTACLE_RAYCAST_MAX_DIST_SQ/.test(src) && /inFrustum/.test(src);
+            out.scratchPooled = /_creatureScratchDir/.test(src);
+            // Funktional: viele Kreaturen, mehrere Ticks → kein Crash,
+            // Bewegung erhalten, alle Positionen endlich.
+            while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function") {
+                const p = r.state.playerMesh.position;
+                r.spawnCreatureAt(p.x + (Math.random() - 0.5) * 50, p.y, p.z + (Math.random() - 0.5) * 50, "happy");
+            }
+            const before = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+            let crashed = false;
+            try {
+                for (let k = 0; k < 8; k++) r.updateCreatures(0.05);
+            } catch (e) {
+                crashed = true;
+                out.err = String(e && e.message);
+            }
+            out.noCrash = !crashed;
+            const after = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+            let moved = 0;
+            for (let k = 0; k < before.length; k++) {
+                if (Math.abs(before[k] - after[k]) > 0.001) moved++;
+            }
+            out.creaturesMoved = before.length > 0 && moved > before.length * 0.5;
+            out.allFinite = r.state.creatures.every(
+                (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
+            );
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (v849Results && !v849Results.error) {
+        check("V8.49: Kohäsion nutzt distanceToSquared (kein sqrt, O(N²) entschärft)", v849Results.usesDistanceSquared);
+        check("V8.49: Hindernis-Raycast ist off-screen-/distanz-gegated", v849Results.raycastGated);
+        check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
+        check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
+        check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
+        check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
+    } else {
+        check("V8.49: updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
+    }
+
+    // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
+    const wave6x4bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // --- B3: Stats-HUD DOM-Existenz
+            out.statsHudExists = !!document.getElementById("stats-hud");
+            out.statsHudHpFillExists = !!document.getElementById("stats-hud-hp-fill");
+            out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
+            out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
+            out.tickStatsHudMethodExists = typeof r.tickStatsHud === "function";
+
+            // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
+            // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
+            r.state.player.hp = 50;
+            r.state.player.hpMax = 100;
+            r.state.player.stamina = 75;
+            r.state.player.staminaMax = 100;
+            // Force-Update durch Reset des Throttles
+            delete r.state._statsHudLastTick;
+            delete r.state._statsHudTooltipLastTick;
+            r.tickStatsHud(performance.now() / 1000);
+            const hpText = document.getElementById("stats-hud-hp-text");
+            out.hpTextShowsRatio = !!hpText && /50\/100/.test(hpText.textContent);
+            const stamText = document.getElementById("stats-hud-stam-text");
+            out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
+            const hpFill = document.getElementById("stats-hud-hp-fill");
+            // V8.14: Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
+            out.hpFillProportional = !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
+
+            // --- B3: Tooltip enthält slow stats nach Hover
+            r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
+            const tooltip = document.getElementById("stats-hud-tooltip");
+            out.tooltipHasDamage = !!tooltip && /Schaden/.test(tooltip.innerHTML);
+            out.tooltipHasSpeed = !!tooltip && /Geschwindigk/.test(tooltip.innerHTML);
+            out.tooltipHasPrecision = !!tooltip && /Präzision/.test(tooltip.innerHTML);
+
+            // --- D2: state-Felder + UI-Slider existieren
+            out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
+            out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
+            out.ringRadiusDefault = r.state.chunkRingRadius === 4;
+            out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
+            out.slidersSectionExists = !!document.getElementById("sliders-section");
+            out.masterSliderExists = !!document.getElementById("slider-master");
+            out.pingsSliderExists = !!document.getElementById("slider-pings");
+            out.ringSliderExists = !!document.getElementById("slider-ring");
+
+            // --- D2: Master-Slider ändert state + Persistenz
+            const ms = document.getElementById("slider-master");
+            if (ms) {
+                ms.value = "50";
+                ms.dispatchEvent(new Event("input"));
+                out.masterSliderUpdates = Math.abs(r.state.symphony.masterVolume - 0.5) < 0.01;
+                out.masterSliderPersists =
+                    typeof localStorage !== "undefined" &&
+                    Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
+                // Reset auf default
+                ms.value = "100";
+                ms.dispatchEvent(new Event("input"));
+            }
+
+            // --- D2: Pings-Slider beeinflusst playCreaturePing-Peak
+            const ps = document.getElementById("slider-pings");
+            if (ps) {
+                ps.value = "0";
+                ps.dispatchEvent(new Event("input"));
+                out.pingsSliderUpdates = r.state.symphony.creaturePingVolume === 0;
+                ps.value = "100";
+                ps.dispatchEvent(new Event("input"));
+            }
+
+            // --- D2: Ring-Slider ändert chunkRingRadius
+            const rs = document.getElementById("slider-ring");
+            if (rs) {
+                rs.value = "3";
+                rs.dispatchEvent(new Event("input"));
+                out.ringSliderUpdates = r.state.chunkRingRadius === 3;
+                const rsv = document.getElementById("slider-ring-val");
+                out.ringValueDisplaysCorrectly = !!rsv && rsv.textContent === "7×7";
+                rs.value = "2";
+                rs.dispatchEvent(new Event("input"));
+            }
+
+            // --- D2: playCreaturePing-Source enthält creaturePingVolume
+            const pcpSrc = r.playCreaturePing.toString();
+            out.pingsSourceUsesVolume = /creaturePingVolume/.test(pcpSrc);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
+    const wave6x4cResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
+            out.domainCountsMethodExists = typeof r.computeBlueprintDomainCounts === "function";
+
+            // Test: Bauplan ohne opChain → leere counts
+            const tn = "audit_v816_test";
+            if (r.state.blueprints[tn]) delete r.state.blueprints[tn];
+            r.createBlueprint(tn, "V816-Test");
+            r.addPartToBlueprint(tn, {
+                shape: "sphere",
+                material: "stein",
+                size: { x: 0.5, y: 0.5, z: 0.5 },
+            });
+            const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+            out.emptyChainNoDomain = Object.keys(c0).length === 0;
+
+            // Wende einen Schmiede-Hammer (forging-domain) an → counts.forging = 1
+            // Hammer (Starter) hat domain:null; nur schmiede-hammer hat
+            // domain:"forging". Welle 9a-Architektur.
+            // schmiede-hammer ist nicht Starter — zum Besitz hinzufügen
+            // (frieden-Modus überspringt Stamina-Cost). Plus: opChain-
+            // Material-Compat — schmiede-hammer.opClass=plastic ist mit
+            // stein NICHT kompatibel (MATERIAL_OP_COMPATIBILITY). Eisen
+            // passt → wir wechseln das Test-Material auf eisen.
+            r.state.player.tools = Array.isArray(r.state.player.tools) ? r.state.player.tools : [];
+            if (!r.state.player.tools.includes("schmiede-hammer")) {
+                r.state.player.tools.push("schmiede-hammer");
+            }
+            r.state.blueprints[tn].parts[0].material = "eisen";
+            r.applyOpToPart(tn, 0, "schmiede-hammer");
+            const c1 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+            out.afterForgingHasDomain = (c1.forging || 0) === 1;
+
+            // Cleanup
+            delete r.state.blueprints[tn];
+
+            // UI-Rendering: Stats-Panel hat workshop-domain-row +
+            // workshop-synergy-row + workshop-growth-row Elemente nach
+            // Render eines eigenen Bauplans.
+            const tn2 = "audit_v816_render";
+            r.createBlueprint(tn2, "V816-Render");
+            r.addPartToBlueprint(tn2, {
+                shape: "sphere",
+                material: "eisen", // schmiede-hammer braucht plastic-kompatibles Material
+                size: { x: 0.5, y: 0.5, z: 0.5 },
+            });
+            r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
+            r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+            const panel = document.getElementById("workshop-stats-panel");
+            out.synergyRowRendered = !!(panel && panel.querySelector(".workshop-synergy-row"));
+            out.growthRowRendered = !!(panel && panel.querySelector(".workshop-growth-row"));
+            // Bei 0 opChain steht „Noch keine Werkzeug-Anwendung" im growth-text
+            const growthText = panel && panel.querySelector(".workshop-growth-text");
+            out.growthShowsEmptyHint = !!growthText && /Noch keine Werkzeug-Anwendung/.test(growthText.textContent);
+            // Nach Schmiede-Hammer-Anwendung erscheint die Domain-Bar
+            r.applyOpToPart(tn2, 0, "schmiede-hammer");
+            r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+            out.domainBarsAppearAfterOp = !!(panel && panel.querySelector(".workshop-domain-bar.dominant"));
+
+            // Cleanup
+            delete r.state.blueprints[tn2];
+            r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6x4cResults && !wave6x4cResults.error) {
+        check(
+            "Welle 6.X.4 V8.16 Punkt 18: computeBlueprintDomainCounts existiert",
+            wave6x4cResults.domainCountsMethodExists
+        );
+        check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
+        check(
+            "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
+            wave6x4cResults.afterForgingHasDomain
+        );
+        check("Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-synergy-row", wave6x4cResults.synergyRowRendered);
+        check("Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row", wave6x4cResults.growthRowRendered);
+        check("Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Wachstums-Hinweis", wave6x4cResults.growthShowsEmptyHint);
+        check(
+            "Welle 6.X.4 V8.16: Domain-Bar.dominant erscheint nach Schmiede-Hammer-Op",
+            wave6x4cResults.domainBarsAppearAfterOp
+        );
+    } else {
+        check(
+            "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
+            false,
+            wave6x4cResults ? wave6x4cResults.error : "no result"
+        );
+    }
+
+    if (wave6x4bResults && !wave6x4bResults.error) {
+        check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
+        check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
+        check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
+        check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
+        check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
+        check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
+        check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
+        check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
+        check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
+        check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
+        check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
+        check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
+        check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
+        check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
+        check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
+        check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
+        check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
+        check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
+        check("Welle 6.X.4 D2: #slider-ring im DOM", wave6x4bResults.ringSliderExists);
+        check("Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume", wave6x4bResults.masterSliderUpdates);
+        check("Welle 6.X.4 D2: Master-Slider persistiert in localStorage", wave6x4bResults.masterSliderPersists);
+        check(
+            "Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume",
+            wave6x4bResults.pingsSliderUpdates
+        );
+        check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
+        check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
+        check(
+            "Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume",
+            wave6x4bResults.pingsSourceUsesVolume
+        );
+    } else {
+        check(
+            "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
+            false,
+            wave6x4bResults ? wave6x4bResults.error : "no result"
+        );
+    }
+}
+
 (async () => {
     console.log(`Starte Save-Server ...`);
     const server = await startSaveServer();
@@ -15672,6587 +21822,20 @@ async function checkBandWelle6HCreatures(ctx) {
             await checkBandWelle6Keybindings(ctx);
             await checkBandWelle6HCreatures(ctx);
 
-            // --- Ab hier weiter inline (Sub-Wellen d-e ziehen Welle 6.X .. Datei-Ende nach) ---
-
-            // ### Welle 6.X.1 Audit-Fixes (17.05.2026) ###
-            // Vier Bug-Quartett-Fixes aus dem Schöpfer-Audit:
-            //   A1 — Ammo-Body activate(true) vor Jump-Velocity (Stand-Sprung)
-            //   A2 — confirmBuild blockt bei instabilem Phantom im pfad-Modus
-            //   A3 — Markier-UI zeigt Baupläne mit emergenter Rolle (filter
-            //        auf !roleManual statt !role), Stat-Panel zeigt Equipped
-            //   A4 — Player-Aura in 1st-Person ausgeblendet (Position bleibt
-            //        getrackt, nur Visibility togglet)
-            const wave6x1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- A1: Code-Strukturtest — activate(true) im handleJump-Pfad
-                    // (Quelltext-Inspektion: das ist die einzige zuverlässige Art
-                    // den Ammo-Sleep-Wakeup zu prüfen ohne echte Physik-Sim).
-                    // Wichtig: nicht den ersten setLinearVelocity-Match nehmen
-                    // (der könnte in einem Kommentar stehen), sondern den ECHTEN
-                    // Method-Call mit `playerBody.setLinearVelocity(`.
-                    const jumpSrc = r.handleJump.toString();
-                    const activatePos = jumpSrc.indexOf(".activate(true)");
-                    const setVelPos = jumpSrc.indexOf("playerBody.setLinearVelocity(");
-                    out.handleJumpActivatesBody = activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
-
-                    // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
-                    r.setGameMode("pfad");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("stein", 200);
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "stein_block");
-                    r.selectHotbarSlot(0);
-                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
-                    const archBeforeBlock = r.state.architectures.length;
-                    const stoneBeforeBlock = r.state.player.inventory[0].count;
-                    const blocked = r.confirmBuild();
-                    const stoneAfterBlock = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-                    out.pfadBlocksUnstable = blocked === false;
-                    out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
-                    out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
-
-                    // schöpfer-Modus: gleiches Setup, instabil → trotzdem baut
-                    r.setGameMode("schöpfer");
-                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
-                    const archBeforeS = r.state.architectures.length;
-                    const builtS = r.confirmBuild();
-                    out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
-
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setGameMode("frieden");
-
-                    // --- A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf
-                    // (filter auf !roleManual statt !role). Wir machen einen
-                    // eigenen Bauplan mit forcierter emergenter Rolle ohne
-                    // roleManual-Flag — vor dem Fix wäre er gefiltert worden.
-                    // createBlueprint returnt true/false, nicht {ok}.
-                    const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
-                    out._a3aCreated = bpCreated === true;
-                    if (bpCreated) {
-                        const bpRef = r.state.blueprints["audit_armor_test"];
-                        bpRef.role = "tool"; // emergent gesetzt, kein Manual
-                        bpRef.roleManual = false;
-                        r.renderPlayerEquipUI && r.renderPlayerEquipUI();
-                        // Alle .equip-mark-label durchsuchen — der Test-Bauplan
-                        // hat "Audit-Test" als Label und muss in mindestens
-                        // einem .equip-mark-label gerendert sein.
-                        const labels = document.querySelectorAll(".equip-mark-label");
-                        out._a3aLabelCount = labels.length;
-                        let found = false;
-                        for (const l of labels) {
-                            if (/audit-test/i.test(l.textContent || "")) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        out.markListShowsEmergentRole = found;
-                        delete r.state.blueprints["audit_armor_test"];
-                        r.renderPlayerEquipUI && r.renderPlayerEquipUI();
-                    } else {
-                        out.markListShowsEmergentRole = false;
-                    }
-
-                    // --- A3b: Stat-Panel zeigt Equipped-Zeile wenn Armor an
-                    const bp2Created = r.createBlueprint("audit_armor_real", "Audit-Helm");
-                    out._a3bCreated = bp2Created === true;
-                    if (bp2Created) {
-                        r.addPartToBlueprint("audit_armor_real", {
-                            shape: "sphere",
-                            material: "stein",
-                            size: { x: 0.5, y: 0.5, z: 0.5 },
-                        });
-                        const armorResult = r.setBlueprintAsArmor("audit_armor_real");
-                        out._a3bMarked = !!(armorResult && armorResult.ok);
-                        const equipResult = r.equipArmor("audit_armor_real");
-                        out._a3bEquipped = !!(equipResult && equipResult.ok);
-                        // Stat-Panel muss tatsächlich rendern — `recomputePlayerStats`
-                        // ist in equipArmor schon drin, aber renderPlayerStatsUI
-                        // muss explizit aufgerufen werden.
-                        r.renderPlayerStatsUI && r.renderPlayerStatsUI();
-                        const container = document.getElementById("player-stats");
-                        out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
-                        out.statsShowsArmorRow = !!container && /Rüstung/.test(container.textContent || "");
-                        r.equipArmor(null);
-                        delete r.state.blueprints["audit_armor_real"];
-                        r.renderPlayerStatsUI && r.renderPlayerStatsUI();
-                    } else {
-                        out.statsShowsArmorRow = false;
-                    }
-
-                    // --- A4: 1st-Person → Aura unsichtbar, 3rd-Person → sichtbar
-                    r.setCameraMode("first");
-                    r.tickPlayerAura();
-                    const glow = r.state.playerAuraGlow;
-                    out.auraHiddenInFirst = !!glow && glow.visible === false;
-                    r.setCameraMode("third");
-                    r.tickPlayerAura();
-                    out.auraVisibleInThird = !!glow && glow.visible === true;
-                    // Position bleibt getrackt auch in 1st-Person
-                    r.setCameraMode("first");
-                    r.tickPlayerAura();
-                    const pp = r.state.playerMesh.position;
-                    out.auraPositionStillTracked = !!glow && Math.abs(glow.position.x - pp.x) < 0.01;
-
-                    // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
-                    // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
-                    // zurücksetzen (Ring 6.5 prüft Default-Hotbar).
-                    r.setCameraMode("first");
-                    try {
-                        localStorage.removeItem("anazhRealmCameraMode");
-                    } catch {
-                        /* ignore */
-                    }
-                    if (r.state.hotbar && r.state.hotbar.length === 9) {
-                        const builtIns = ["village", "temple", "waterfall"];
-                        for (let i = 0; i < 9; i++) {
-                            r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
-                        }
-                    }
-                    r._clearBuildMode && r._clearBuildMode();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6x1Results && !wave6x1Results.error) {
-                check(
-                    "Welle 6.X.1 A1: handleJump ruft activate(true) vor setLinearVelocity",
-                    wave6x1Results.handleJumpActivatesBody
-                );
-                check(
-                    "Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt",
-                    wave6x1Results.pfadBlocksUnstable
-                );
-                check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
-                check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
-                check(
-                    "Welle 6.X.1 A2: schöpfer-Modus überschreibt Stabilitäts-Gate",
-                    wave6x1Results.schoepferBypassesUnstable
-                );
-                check(
-                    "Welle 6.X.1 A3a: Markier-UI nimmt Baupläne mit emergenter Rolle auf",
-                    wave6x1Results.markListShowsEmergentRole,
-                    `created=${wave6x1Results._a3aCreated}, labelCount=${wave6x1Results._a3aLabelCount}`
-                );
-                check(
-                    "Welle 6.X.1 A3b: Stat-Panel zeigt 'Rüstung'-Zeile wenn equipped",
-                    wave6x1Results.statsShowsArmorRow,
-                    `created=${wave6x1Results._a3bCreated} marked=${wave6x1Results._a3bMarked} equipped=${wave6x1Results._a3bEquipped} text=${(wave6x1Results._a3bContainerText || "").slice(0, 80)}`
-                );
-                check("Welle 6.X.1 A4: Player-Aura unsichtbar in 1st-Person", wave6x1Results.auraHiddenInFirst);
-                check("Welle 6.X.1 A4: Player-Aura sichtbar in 3rd-Person", wave6x1Results.auraVisibleInThird);
-                check(
-                    "Welle 6.X.1 A4: Aura-Position bleibt getrackt auch in 1st-Person",
-                    wave6x1Results.auraPositionStillTracked
-                );
-            } else {
-                check(
-                    "Welle 6.X.1: Audit-Fix-Tests laufen",
-                    false,
-                    wave6x1Results ? wave6x1Results.error : "no result"
-                );
-            }
-
-            // ### Welle 6.X.2 — UI-Politur (Audit 17.05.2026) ###
-            // B1 Logbuch-Toggle (default versteckt)
-            // B2 Welt-Bauwerke-Buttons aus dem world-drawer entfernt
-            // B4 Scrollrad zyklt durch Hotbar-Slots
-            const wave6x2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // B1 — Logbuch-Toggle (V8.14: Section sichtbar, #log toggelt)
-                    out.logbookSectionExists = !!document.getElementById("logbook-section");
-                    out.logbookToggleExists = !!document.getElementById("logbook-toggle");
-                    const consoleLog = document.getElementById("console-log-section");
-                    const logEl = document.getElementById("log");
-                    out.logbookConsoleSectionExists = !!consoleLog;
-                    // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
-                    out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
-                    out.logbookInitDOMExists = typeof r.logbookInitDOM === "function";
-                    out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
-                    // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
-                    const toggle = document.getElementById("logbook-toggle");
-                    if (toggle) {
-                        toggle.checked = true;
-                        toggle.dispatchEvent(new Event("change"));
-                        out.logbookVisibleAfterToggle = !!logEl && logEl.hidden === false;
-                        // Cleanup für nachfolgende Tests
-                        toggle.checked = false;
-                        toggle.dispatchEvent(new Event("change"));
-                        out.logbookHiddenAfterUntoggle = !!logEl && logEl.hidden === true;
-                    }
-                    // V8.14: Inline-Console-Toggle togglet selber State
-                    const inlineBtn = document.getElementById("console-log-toggle");
-                    if (inlineBtn && logEl) {
-                        inlineBtn.click();
-                        out.inlineToggleExpands = logEl.hidden === false;
-                        inlineBtn.click();
-                        out.inlineToggleCollapses = logEl.hidden === true;
-                    }
-
-                    // B2 — Welt-Bauwerke-Buttons entfernt
-                    out.architectureActionsRemoved = !document.getElementById("architecture-actions");
-                    // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
-                    out.spawnVillageStillCallable = typeof r.dslRun === "function";
-
-                    // B4 — Scrollrad-Hotbar
-                    // Code-Strukturtest: Wheel-Listener im init() (Methode liest
-                    // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
-                    const initSrc = typeof r.init === "function" ? r.init.toString() : "";
-                    out.wheelListenerInstalled =
-                        /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) && /selectHotbarSlot/.test(initSrc);
-
-                    // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
-                    if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
-                    r.selectHotbarSlot(0);
-                    const before = r.state.buildMode.slotIndex;
-                    // Ein Wheel-Delta nach unten → nächster Slot
-                    r.selectHotbarSlot((before + 1) % 9);
-                    out.hotbarCyclesForward = r.state.buildMode.slotIndex === 1;
-                    // Rückwärts (wrap)
-                    r.selectHotbarSlot((1 - 1 + 9) % 9);
-                    out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
-                    r.selectHotbarSlot((0 - 1 + 9) % 9);
-                    out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
-                    r._clearBuildMode && r._clearBuildMode();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6x2Results && !wave6x2Results.error) {
-                check("Welle 6.X.2 B1: #logbook-section im DOM", wave6x2Results.logbookSectionExists);
-                check("Welle 6.X.2 B1: #logbook-toggle im DOM", wave6x2Results.logbookToggleExists);
-                check(
-                    "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
-                    wave6x2Results.logbookHiddenByDefault
-                );
-                check("Welle 6.X.2 B1: logbookInitDOM-Methode existiert", wave6x2Results.logbookInitDOMExists);
-                check(
-                    "Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM",
-                    wave6x2Results.consoleLogToggleExists
-                );
-                check(
-                    "Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar",
-                    wave6x2Results.logbookVisibleAfterToggle
-                );
-                check(
-                    "Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch",
-                    wave6x2Results.logbookHiddenAfterUntoggle
-                );
-                check("Welle 6.X.2 V8.14: Inline-Toggle expandiert Logbuch", wave6x2Results.inlineToggleExpands);
-                check("Welle 6.X.2 V8.14: Inline-Toggle collapsed Logbuch", wave6x2Results.inlineToggleCollapses);
-                check(
-                    "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
-                    wave6x2Results.architectureActionsRemoved
-                );
-                check(
-                    "Welle 6.X.2 B2: dslRun bleibt verfügbar (Chat-Pfad lebt)",
-                    wave6x2Results.spawnVillageStillCallable
-                );
-                check(
-                    "Welle 6.X.2 B4: Wheel-Listener mit selectHotbarSlot installiert",
-                    wave6x2Results.wheelListenerInstalled
-                );
-                check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
-                check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
-                check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
-            } else {
-                check(
-                    "Welle 6.X.2: UI-Politur-Tests laufen",
-                    false,
-                    wave6x2Results ? wave6x2Results.error : "no result"
-                );
-            }
-
-            // ### Welle 6.X.3 — Vision-Quick-Wins (Audit 17.05.2026) ###
-            // C1 at_player_forward(dist) DSL-Resolver + Chat „baue X hier"
-            // C3 Soul-bound Sprung-Steilheits-Toleranz
-            const wave6x3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- C1: at_player_forward DSL-Resolver
-                    out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
-                    if (r.dslPositions.at_player_forward) {
-                        // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
-                        // at_player_forward(8) sollte (10, 50, 12) liefern.
-                        r.state.playerMesh.position.set(10, 50, 20);
-                        r.state.yaw = 0;
-                        const ctx = { state: r.state, rng: () => 0.5 };
-                        const pos = r.dslPositions.at_player_forward([8], ctx);
-                        out.atPlayerForwardOffset =
-                            Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 12) < 0.01;
-                        // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
-                        r.state.yaw = Math.PI / 2;
-                        const pos2 = r.dslPositions.at_player_forward([5], ctx);
-                        out.atPlayerForwardYawAware = Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
-                        // Reset
-                        r.state.yaw = 0;
-                    }
-
-                    // --- C1: Chat „baue dorf hier" embedded forward-Position
-                    r.state.playerMesh.position.set(0, 50, 0);
-                    r.state.yaw = 0;
-                    const dslOut = r.parseChatToDsl("baue dorf hier");
-                    out.chatBuildDorfParses = !!(dslOut && dslOut.program);
-                    if (dslOut && dslOut.program) {
-                        // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
-                        out.chatBuildDorfFormat =
-                            dslOut.program[0] === "spawn_village" &&
-                            Array.isArray(dslOut.program[1]) &&
-                            dslOut.program[1][0] === "at" &&
-                            typeof dslOut.program[2] === "number";
-                        // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-                        // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
-                        const z = dslOut.program[1][3];
-                        out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
-                    }
-
-                    // --- C3: _canSoulJumpFromSlope existiert
-                    out.canJumpFromSlopeExists = typeof r._canSoulJumpFromSlope === "function";
-
-                    // --- C3: kein Slope → springen erlaubt
-                    r.state.onSteepSlope = false;
-                    out.flatGroundJumpAllowed = r._canSoulJumpFromSlope() === true;
-
-                    // --- C3: Slope + frieden → springen erlaubt (Modus-Override)
-                    r.state.onSteepSlope = true;
-                    r.setGameMode("frieden");
-                    out.peaceModeOverridesSlope = r._canSoulJumpFromSlope() === true;
-
-                    // --- C3: Slope + schöpfer → springen erlaubt
-                    r.setGameMode("schöpfer");
-                    out.creatorModeOverridesSlope = r._canSoulJumpFromSlope() === true;
-
-                    // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
-                    r.setGameMode("pfad");
-                    r.applyPlayerSoul("phoenix");
-                    r.recomputePlayerStats && r.recomputePlayerStats();
-                    out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
-                    out._phoenixTags = r.state.player.statTags
-                        ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
-                        : "no tags";
-
-                    // --- C3: Slope + pfad + Drache → kann NICHT springen (dichte hoch)
-                    r.applyPlayerSoul("dragon");
-                    r.recomputePlayerStats && r.recomputePlayerStats();
-                    out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
-                    out._dragonTags = r.state.player.statTags
-                        ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
-                        : "no tags";
-
-                    // Cleanup
-                    r.applyPlayerSoul("human");
-                    r.recomputePlayerStats && r.recomputePlayerStats();
-                    r.state.onSteepSlope = false;
-                    r.setGameMode("frieden");
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6x3Results && !wave6x3Results.error) {
-                check("Welle 6.X.3 C1: at_player_forward DSL-Resolver existiert", wave6x3Results.atPlayerForwardExists);
-                check(
-                    "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
-                    wave6x3Results.atPlayerForwardOffset
-                );
-                check(
-                    "Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)",
-                    wave6x3Results.atPlayerForwardYawAware
-                );
-                check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
-                check(
-                    "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
-                    wave6x3Results.chatBuildDorfFormat
-                );
-                check(
-                    "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
-                    wave6x3Results.chatBuildDorfForwardOffset
-                );
-                check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
-                check("Welle 6.X.3 C3: kein Slope → Sprung erlaubt", wave6x3Results.flatGroundJumpAllowed);
-                check("Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block", wave6x3Results.peaceModeOverridesSlope);
-                check(
-                    "Welle 6.X.3 C3: schöpfer-Modus überschreibt Slope-Block",
-                    wave6x3Results.creatorModeOverridesSlope
-                );
-                check(
-                    "Welle 6.X.3 C3: Phönix darf von Slope springen (lebendig hoch, dichte niedrig)",
-                    wave6x3Results.phoenixCanJumpFromSlope,
-                    wave6x3Results._phoenixTags
-                );
-                check(
-                    "Welle 6.X.3 C3: Drache darf nicht von Slope springen (dichte hoch)",
-                    wave6x3Results.dragonCannotJumpFromSlope,
-                    wave6x3Results._dragonTags
-                );
-            } else {
-                check(
-                    "Welle 6.X.3: Vision-Quick-Win-Tests laufen",
-                    false,
-                    wave6x3Results ? wave6x3Results.error : "no result"
-                );
-            }
-
-            // ### Welle 6.X.4 + 6.X.5 — Identity + Performance (Audit 17.05.2026) ###
-            // F1 Begleiter-Name + Avatar-Name (LLM-Persona)
-            // D1 isPlayerGrounded-Cache (2 Frames, ~33 ms)
-            const wave6x45Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- F1: state-Felder existieren mit Defaults
-                    out.companionNameDefault = r.state.grok.companionName === "Grok";
-                    out.playerNameDefault = r.state.player.name === "Schöpfer";
-
-                    // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
-                    out.identityInitMethodExists = typeof r.identityInitDOM === "function";
-                    out.companionInputExists = !!document.getElementById("companion-name-input");
-                    out.playerInputExists = !!document.getElementById("player-name-input");
-                    out.identitySectionExists = !!document.getElementById("identity-section");
-
-                    // --- F1: Input-Change setzt state + localStorage
-                    const ci = document.getElementById("companion-name-input");
-                    if (ci) {
-                        ci.value = "Lyra";
-                        ci.dispatchEvent(new Event("input"));
-                        out.companionNameUpdated = r.state.grok.companionName === "Lyra";
-                        out.companionNamePersisted =
-                            typeof localStorage !== "undefined" &&
-                            localStorage.getItem("anazh.companion.name") === "Lyra";
-                        // Reset auf Default
-                        ci.value = "Grok";
-                        ci.dispatchEvent(new Event("input"));
-                    }
-                    const pi = document.getElementById("player-name-input");
-                    if (pi) {
-                        pi.value = "Aelyn";
-                        pi.dispatchEvent(new Event("input"));
-                        out.playerNameUpdated = r.state.player.name === "Aelyn";
-                        out.playerNamePersisted =
-                            typeof localStorage !== "undefined" &&
-                            localStorage.getItem("anazh.player.name") === "Aelyn";
-                        pi.value = "Schöpfer";
-                        pi.dispatchEvent(new Event("input"));
-                    }
-
-                    // --- F1: System-Prompt enthält die zwei Namen
-                    r.state.grok.companionName = "TestCompanion";
-                    r.state.player.name = "TestPlayer";
-                    const prompt = r.llmBuildSystemPrompt();
-                    out.promptContainsCompanionName = /TestCompanion/.test(prompt);
-                    out.promptContainsPlayerName = /TestPlayer/.test(prompt);
-                    // Reset auf Defaults
-                    r.state.grok.companionName = "Grok";
-                    r.state.player.name = "Schöpfer";
-
-                    // --- D1: isPlayerGrounded-Cache
-                    // Source-Check: Cache-Felder + Time-Check existieren
-                    const isgSrc = r.isPlayerGrounded.toString();
-                    out.cacheFieldsInSource = /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
-                    out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
-
-                    // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
-                    delete r.state._groundedCache;
-                    delete r.state._groundedCachedAt;
-                    r.isPlayerGrounded();
-                    out.cacheSetAfterCall = typeof r.state._groundedCachedAt === "number";
-
-                    // Funktional: zweiter Aufruf direkt danach liefert cached
-                    // result (kein Race-Free-Window) — wir prüfen dass der
-                    // Wert nicht NaN ist und stabil bleibt.
-                    const v1 = r.isPlayerGrounded();
-                    const v2 = r.isPlayerGrounded();
-                    out.cacheConsistentBetweenCalls = v1 === v2;
-
-                    // Cache-Override-Test: setze cache manuell, prüfe dass Methode den Wert respektiert
-                    r.state._groundedCache = true;
-                    r.state._groundedCachedAt = performance.now();
-                    out.cachedTrueRespected = r.isPlayerGrounded() === true;
-                    r.state._groundedCache = false;
-                    r.state._groundedCachedAt = performance.now();
-                    out.cachedFalseRespected = r.isPlayerGrounded() === false;
-                    // Cache-Expiry: alter timestamp → fresh compute
-                    r.state._groundedCachedAt = performance.now() - 100; // > 33 ms her
-                    // Wir prüfen NICHT das Ergebnis (das hängt von Physik ab),
-                    // aber dass Cache-Time refreshed wird
-                    const beforeRefresh = r.state._groundedCachedAt;
-                    r.isPlayerGrounded();
-                    out.cacheRefreshedAfterExpiry = r.state._groundedCachedAt > beforeRefresh;
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6x45Results && !wave6x45Results.error) {
-                check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
-                check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
-                check("Welle 6.X.4 F1: identityInitDOM-Methode existiert", wave6x45Results.identityInitMethodExists);
-                check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
-                check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
-                check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
-                check(
-                    "Welle 6.X.4 F1: Companion-Input ändert state.grok.companionName",
-                    wave6x45Results.companionNameUpdated
-                );
-                check(
-                    "Welle 6.X.4 F1: Companion-Name persistiert in localStorage",
-                    wave6x45Results.companionNamePersisted
-                );
-                check("Welle 6.X.4 F1: Player-Input ändert state.player.name", wave6x45Results.playerNameUpdated);
-                check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
-                check(
-                    "Welle 6.X.4 F1: System-Prompt enthält Companion-Name",
-                    wave6x45Results.promptContainsCompanionName
-                );
-                check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-                check(
-                    "Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source",
-                    wave6x45Results.cacheFieldsInSource
-                );
-                check("Welle 6.X.5 D1: Cache-Timeout 33 ms (≈2 Frames @ 60fps)", wave6x45Results.cacheTimeoutInSource);
-                check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
-                check(
-                    "Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe",
-                    wave6x45Results.cacheConsistentBetweenCalls
-                );
-                check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
-                check("Welle 6.X.5 D1: gecachtes false wird respektiert", wave6x45Results.cachedFalseRespected);
-                check(
-                    "Welle 6.X.5 D1: nach Cache-Expiry wird neu computed (timestamp refresht)",
-                    wave6x45Results.cacheRefreshedAfterExpiry
-                );
-            } else {
-                check(
-                    "Welle 6.X.4+5: Identity + Performance-Tests laufen",
-                    false,
-                    wave6x45Results ? wave6x45Results.error : "no result"
-                );
-            }
-
-            // ### Welle 6.G3 — Welt-Lebendigkeit (V8.24, 17.05.2026) ###
-            // Drei Schichten: (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang,
-            // (c) Fauna-Lifecycle mit Geburt + Tod. Testet Konstanten,
-            // Methoden, Persistenz, DSL-Op, UI-DOM.
-            const wave6g3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const AnazhRealm = window.AnazhRealm || r.constructor;
-
-                    // --- a) Tag-Nacht-Zyklus
-                    out.timeOfDayField =
-                        typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
-                    out.dayLengthDefault = r.state.dayLengthMinutes === 8;
-                    out.dayLengthConstantsExist =
-                        AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
-                        AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-                        AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
-                    out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
-                    // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
-                    // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
-                    // prüft jetzt ≥7 Stops + monoton steigende t-Werte.
-                    out.dayNightStopsSorted =
-                        AnazhRealm.DAY_NIGHT_STOPS &&
-                        AnazhRealm.DAY_NIGHT_STOPS.length >= 7 &&
-                        AnazhRealm.DAY_NIGHT_STOPS[0].t === 0 &&
-                        AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
-                        AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
-                    out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
-                    out.interpolateMethod = typeof r._interpolateDayNight === "function";
-                    out.applyMethod = typeof r._applyDayNightToScene === "function";
-                    out.tickMethod = typeof r.tickDayNight === "function";
-                    out.timeOfDayLabelMethod = typeof r._timeOfDayLabel === "function";
-                    out.setTimeOfDayMethod = typeof r.setTimeOfDay === "function";
-                    out.setDayLengthMethod = typeof r.setDayLength === "function";
-
-                    // _interpolateDayNight Mid-Test: t=0.5 sollte Mittag (klar)
-                    const midDay = r._interpolateDayNight(0.5);
-                    out.interpolateMiddayClear = midDay && midDay.intensity >= 0.95;
-                    const midNight = r._interpolateDayNight(0);
-                    out.interpolateMidnightDim = midNight && midNight.intensity < 0.35;
-                    out.interpolateWrap =
-                        r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
-
-                    // setTimeOfDay setzt korrekt
-                    r.setTimeOfDay(0.25);
-                    out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
-                    // Sonnenaufgang Label
-                    out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
-                    out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
-
-                    // tickDayNight schreitet voran
-                    r.setTimeOfDay(0.4);
-                    const beforeT = r.state.timeOfDay;
-                    r.state._lastDayNightTick = 0;
-                    r.tickDayNight(0.5); // 0.5 s delta, dayLength=8min=480s → +0.001
-                    out.tickAdvances = r.state.timeOfDay > beforeT;
-                    // setDayLength clamped
-                    r.setDayLength(5);
-                    out.setDayLength5 = r.state.dayLengthMinutes === 5;
-                    r.setDayLength(999); // > max 60
-                    out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
-                    r.setDayLength(0); // < min 1
-                    out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
-                    r.setDayLength(8); // zurück
-
-                    // DSL-Op set_time_of_day
-                    r.dslRun(["set_time_of_day", 0.7]);
-                    out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
-                    // NON_BROADCASTABLE
-                    out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
-
-                    // Status-Bar + Slider im DOM
-                    out.statusTimeInDom = !!document.getElementById("status-time");
-                    out.dayLengthSliderInDom = !!document.getElementById("slider-daylength");
-                    out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
-                    out.dayNightSectionInDom = !!document.getElementById("day-night-section");
-
-                    // _applyDayNightToScene setzt DirectionalLight-Position
-                    r.setTimeOfDay(0.5); // Mittag
-                    const noonY = r.state.directionalLight.position.y;
-                    r.setTimeOfDay(0); // Mitternacht
-                    const midnightY = r.state.directionalLight.position.y;
-                    out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY < noonY;
-
-                    // --- b) Sanfte Wetter-Übergänge
-                    out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
-                    out.requestWeatherTransitionMethod = typeof r.requestWeatherTransition === "function";
-                    out.tickWeatherTransitionMethod = typeof r.tickWeatherTransition === "function";
-                    out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
-                    out.weatherTintsSunnyRainy =
-                        AnazhRealm.WEATHER_TINTS.sunny &&
-                        AnazhRealm.WEATHER_TINTS.rainy &&
-                        AnazhRealm.WEATHER_TINTS.sunny.skyMul === 1.0 &&
-                        AnazhRealm.WEATHER_TINTS.rainy.skyMul < 1.0;
-
-                    // Setze sunny als Ausgangspunkt
-                    r.state.weather = "sunny";
-                    r.state.weatherTransition = null;
-                    // weather-DSL-Op startet Transition + setzt state.weather sofort
-                    r.dslRun(["weather", "rainy"]);
-                    out.weatherStateImmediate = r.state.weather === "rainy";
-                    out.weatherTransitionStarted = !!r.state.weatherTransition;
-                    out.weatherTransitionFromSunny =
-                        r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
-                    out.weatherTransitionToRainy =
-                        r.state.weatherTransition && r.state.weatherTransition.to === "rainy";
-                    // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
-                    const okSameTarget = r.requestWeatherTransition("rainy");
-                    out.transitionSameTargetNoop = okSameTarget === true;
-                    // Invalides Target
-                    out.transitionInvalidRejected = r.requestWeatherTransition("hagel") === false;
-                    // tickWeatherTransition setzt progress voran
-                    r.state.weatherTransition.startedAt = performance.now() - 100; // 100 ms
-                    r.tickWeatherTransition(0);
-                    out.transitionProgressAdvanced =
-                        r.state.weatherTransition && r.state.weatherTransition.progress > 0;
-                    // Bei progress=1 → transition geclearet. Offset > Cap (120s)
-                    // damit die Probe deterministisch ist (Emotion-Modulation
-                    // kann die Default-Dauer auf bis zu ~86s strecken — V9.33
-                    // mit voxel-default-Welt hat oft höhere peace-Werte).
-                    if (r.state.weatherTransition) {
-                        r.state.weatherTransition.startedAt = performance.now() - 200000; // 200s > 120s-Cap
-                    }
-                    r.tickWeatherTransition(0);
-                    out.transitionClearedOnComplete = r.state.weatherTransition === null;
-
-                    // --- c) Fauna-Lifecycle
-                    out.faunaTargetPop = AnazhRealm.FAUNA_TARGET_POPULATION === 8;
-                    out.faunaMaxPop = AnazhRealm.FAUNA_MAX_POPULATION === 20;
-                    out.faunaTickInterval = AnazhRealm.FAUNA_TICK_INTERVAL_MS === 10000;
-                    out.faunaBirthCdExists = AnazhRealm.FAUNA_BIRTH_COOLDOWN_MS > 0;
-                    out.faunaDeathCdExists = AnazhRealm.FAUNA_DEATH_COOLDOWN_MS > 0;
-                    out.findOldestMethod = typeof r._findOldestCreature === "function";
-                    out.naturalBirthMethod = typeof r._creatureNaturalBirth === "function";
-                    out.naturalDeathMethod = typeof r._creatureNaturalDeath === "function";
-                    out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
-                    out.faunaLifecycleField =
-                        r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
-
-                    // _findOldestCreature liefert die älteste (kleinster bornAt)
-                    if (r.state.creatures.length >= 2) {
-                        const c0 = r.state.creatures[0];
-                        const c1 = r.state.creatures[1];
-                        if (!c0.userData) c0.userData = {};
-                        if (!c1.userData) c1.userData = {};
-                        c0.userData.bornAt = Date.now() - 5000;
-                        c1.userData.bornAt = Date.now() - 10000;
-                        const oldest = r._findOldestCreature();
-                        out.oldestIsOlder = oldest === c1;
-                    } else {
-                        out.oldestIsOlder = true; // skip wenn keine Kreaturen
-                    }
-
-                    // _pickFaunaSoulAtPlayer liefert valide Soul
-                    const soul = r._pickFaunaSoulAtPlayer();
-                    out.faunaSoulValid = soul === "sprite" || soul === "wesen" || soul === "geist";
-
-                    // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
-                    if (r.state.creatures.length > 0) {
-                        const beforeCount = r.state.creatures.length;
-                        const beforeSorrow = (r.state.player.emotions && r.state.player.emotions.sorrow) || 0;
-                        const beforeJournalLoss = (r.state.worldJournal.entries || []).filter(
-                            (e) => e.type === "loss"
-                        ).length;
-                        r._creatureNaturalDeath(r.state.creatures[0]);
-                        out.deathReducesCount = r.state.creatures.length === beforeCount - 1;
-                        out.deathIncreasesSorrow =
-                            (r.state.player.emotions && r.state.player.emotions.sorrow) > beforeSorrow;
-                        const afterJournalLoss = (r.state.worldJournal.entries || []).filter(
-                            (e) => e.type === "loss"
-                        ).length;
-                        out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
-                    } else {
-                        out.deathReducesCount = true;
-                        out.deathIncreasesSorrow = true;
-                        out.deathAddsLossJournal = true;
-                    }
-
-                    // _creatureNaturalBirth fügt Kreatur hinzu + Journal.
-                    // Flaky-Heilung (V8.96-Klasse): NICHT count(growth)
-                    // before/after vergleichen — am 200-FIFO-Cap verdrängt das
-                    // Anhängen einen alten Eintrag; ist der evictete selbst ein
-                    // growth-Eintrag, bleibt die Zahl gleich. Stattdessen die
-                    // Eintrags-OBJEKT-Identität messen: ein frisch angehängter
-                    // growth-Eintrag ist ein Objekt, das vorher nicht da war.
-                    const beforeBirthCount = r.state.creatures.length;
-                    const beforeBirthEntries = new Set(r.state.worldJournal.entries || []);
-                    r._creatureNaturalBirth();
-                    out.birthIncreasesCount = r.state.creatures.length === beforeBirthCount + 1;
-                    out.birthAddsGrowthJournal = (r.state.worldJournal.entries || []).some(
-                        (e) => e && e.type === "growth" && !beforeBirthEntries.has(e)
-                    );
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (wave6g3Results && !wave6g3Results.error) {
-                // --- a) Tag-Nacht
-                check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
-                check("Welle 6.G3.a: dayLengthMinutes Default 8", wave6g3Results.dayLengthDefault);
-                check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
-                check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
-                check(
-                    "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
-                    wave6g3Results.dayNightStopsSorted
-                );
-                check(
-                    "Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt",
-                    wave6g3Results.lightsReferenced
-                );
-                check("Welle 6.G3.a: _interpolateDayNight-Methode existiert", wave6g3Results.interpolateMethod);
-                check("Welle 6.G3.a: _applyDayNightToScene-Methode existiert", wave6g3Results.applyMethod);
-                check("Welle 6.G3.a: tickDayNight-Methode existiert", wave6g3Results.tickMethod);
-                check("Welle 6.G3.a: _timeOfDayLabel-Methode existiert", wave6g3Results.timeOfDayLabelMethod);
-                check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
-                check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
-                check("Welle 6.G3.a: Mittag (0.5) hat hohe Intensity (>0.95)", wave6g3Results.interpolateMiddayClear);
-                check(
-                    "Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)",
-                    wave6g3Results.interpolateMidnightDim
-                );
-                check("Welle 6.G3.a: _interpolateDayNight wrapt korrekt (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
-                check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
-                check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
-                check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
-                check("Welle 6.G3.a: tickDayNight schreitet timeOfDay voran", wave6g3Results.tickAdvances);
-                check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
-                check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
-                check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
-                check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt", wave6g3Results.dslSetTimeOfDay);
-                check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
-                check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
-                check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
-                check("Welle 6.G3.a: #slider-timeofday im DOM", wave6g3Results.timeOfDaySliderInDom);
-                check("Welle 6.G3.a: #day-night-section im DOM", wave6g3Results.dayNightSectionInDom);
-                check(
-                    "Welle 6.G3.a: DirectionalLight.position.y folgt timeOfDay (Mittag oben, Mitternacht unten)",
-                    wave6g3Results.lightPosFollowsTimeOfDay
-                );
-
-                // --- b) Wetter-Übergang
-                check(
-                    "Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000",
-                    wave6g3Results.weatherTransitionDuration
-                );
-                check(
-                    "Welle 6.G3.b: requestWeatherTransition-Methode existiert",
-                    wave6g3Results.requestWeatherTransitionMethod
-                );
-                check(
-                    "Welle 6.G3.b: tickWeatherTransition-Methode existiert",
-                    wave6g3Results.tickWeatherTransitionMethod
-                );
-                check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
-                check(
-                    "Welle 6.G3.b: WEATHER_TINTS — sunny skyMul 1.0, rainy < 1.0 (dämpft Sky)",
-                    wave6g3Results.weatherTintsSunnyRainy
-                );
-                check(
-                    "Welle 6.G3.b: weather-DSL-Op setzt state.weather SOFORT (Backward-Compat)",
-                    wave6g3Results.weatherStateImmediate
-                );
-                check(
-                    "Welle 6.G3.b: weather-Wechsel startet weatherTransition",
-                    wave6g3Results.weatherTransitionStarted
-                );
-                check(
-                    "Welle 6.G3.b: weatherTransition.from = vorheriges Wetter (sunny)",
-                    wave6g3Results.weatherTransitionFromSunny
-                );
-                check("Welle 6.G3.b: weatherTransition.to = Ziel (rainy)", wave6g3Results.weatherTransitionToRainy);
-                check(
-                    "Welle 6.G3.b: requestWeatherTransition mit selbem Ziel ist idempotent (true ohne neu zu starten)",
-                    wave6g3Results.transitionSameTargetNoop
-                );
-                check(
-                    "Welle 6.G3.b: requestWeatherTransition lehnt ungültiges Wetter ab",
-                    wave6g3Results.transitionInvalidRejected
-                );
-                check(
-                    "Welle 6.G3.b: tickWeatherTransition schreitet progress voran",
-                    wave6g3Results.transitionProgressAdvanced
-                );
-                check(
-                    "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
-                    wave6g3Results.transitionClearedOnComplete
-                );
-
-                // --- c) Fauna-Lifecycle
-                check("Welle 6.G3.c: FAUNA_TARGET_POPULATION === 8", wave6g3Results.faunaTargetPop);
-                check("Welle 6.G3.c: FAUNA_MAX_POPULATION === 20", wave6g3Results.faunaMaxPop);
-                check("Welle 6.G3.c: FAUNA_TICK_INTERVAL_MS === 10000", wave6g3Results.faunaTickInterval);
-                check("Welle 6.G3.c: FAUNA_BIRTH_COOLDOWN_MS > 0", wave6g3Results.faunaBirthCdExists);
-                check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
-                check("Welle 6.G3.c: _findOldestCreature-Methode existiert", wave6g3Results.findOldestMethod);
-                check("Welle 6.G3.c: _creatureNaturalBirth-Methode existiert", wave6g3Results.naturalBirthMethod);
-                check("Welle 6.G3.c: _creatureNaturalDeath-Methode existiert", wave6g3Results.naturalDeathMethod);
-                check("Welle 6.G3.c: _pickFaunaSoulAtPlayer-Methode existiert", wave6g3Results.pickFaunaSoulMethod);
-                check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
-                check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
-                check(
-                    "Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide Soul (sprite/wesen/geist)",
-                    wave6g3Results.faunaSoulValid
-                );
-                check(
-                    "Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl",
-                    wave6g3Results.deathReducesCount
-                );
-                check(
-                    "Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow",
-                    wave6g3Results.deathIncreasesSorrow
-                );
-                check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
-                check("Welle 6.G3.c: _creatureNaturalBirth fügt Kreatur hinzu", wave6g3Results.birthIncreasesCount);
-                check(
-                    "Welle 6.G3.c: _creatureNaturalBirth schreibt growth-Journal",
-                    wave6g3Results.birthAddsGrowthJournal
-                );
-            } else {
-                check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
-            }
-
-            // ### Welle 6.G3 V2 — Vision-Invarianten (V8.25, 17.05.2026) ###
-            // Prüft EMERGENZ statt Mechanik: wirkt Welt-Affinität wirklich auf
-            // Soul-Wahl? Folgen Frequenzen den Tags? Modulieren Emotionen den
-            // Tint? Ist Wetter-Dauer emotion-abhängig? Vision §1.3 fraktal:
-            // alles emergiert aus dem System, nicht aus Tabellen.
-            const wave6g3v2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const AnazhRealm = window.AnazhRealm || r.constructor;
-
-                    // --- Wurzel-Helper existieren
-                    out.affinityPickHelper = typeof r._affinityPickFromCandidates === "function";
-                    out.tagFrequencyHelper = typeof r._tagToFrequency === "function";
-                    out.emotionModulateHelper = typeof r._emotionModulate === "function";
-                    out.creatureSoulTagsHelper = typeof r._creatureSoulTags === "function";
-                    out.faunaTargetHelper = typeof r._currentFaunaTarget === "function";
-
-                    // --- Vision 1: Affinity-Pick wählt höhere Resonanz
-                    // Test-Kandidaten mit klaren Tag-Profilen
-                    const candidates = [
-                        { name: "lebendigSoul", tags: { lebendig: 1.0, dichte: 0, glut: 0, magieleitung: 0 } },
-                        { name: "magieSoul", tags: { lebendig: 0, dichte: 0, glut: 0, magieleitung: 1.0 } },
-                        { name: "dichteSoul", tags: { lebendig: 0, dichte: 1.0, glut: 0, magieleitung: 0 } },
-                    ];
-                    // Welt-Feld mit dominanter Magie-Achse
-                    const fieldMagie = { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
-                    // 10× Durchläufe sammeln — Statistik gegen das Noise
-                    let magieWins = 0;
-                    for (let i = 0; i < 30; i++) {
-                        const pickResult = r._affinityPickFromCandidates(candidates, fieldMagie, 0.05);
-                        if (pickResult.pick && pickResult.pick.name === "magieSoul") magieWins++;
-                    }
-                    out.affinityPicksMagieInMagieField = magieWins > 20; // > 66% (statistisch sicher)
-
-                    // Diskrimination: in einer dichte-Welt wird dichteSoul bevorzugt
-                    const fieldDichte = { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
-                    let dichteWins = 0;
-                    for (let i = 0; i < 30; i++) {
-                        const pickResult = r._affinityPickFromCandidates(candidates, fieldDichte, 0.05);
-                        if (pickResult.pick && pickResult.pick.name === "dichteSoul") dichteWins++;
-                    }
-                    out.affinityPicksDichteInDichteField = dichteWins > 20;
-
-                    // --- Vision 2: _tagToFrequency korreliert mit magieleitung
-                    const f1 = r._tagToFrequency({ magieleitung: 0.9, dichte: 0.1 }, 220);
-                    const f2 = r._tagToFrequency({ magieleitung: 0.1, dichte: 0.9 }, 220);
-                    out.tagFreqHighMagieIsHigher = f1 > f2;
-                    // Soul-spezifische Frequenzen (sprite > wesen)
-                    const spriteTags = r._creatureSoulTags("sprite");
-                    const wesenTags = r._creatureSoulTags("wesen");
-                    const spriteFreq = r._tagToFrequency(spriteTags, 220);
-                    const wesenFreq = r._tagToFrequency(wesenTags, 220);
-                    out.spriteFreqHigherThanWesen = spriteFreq > wesenFreq;
-                    out.bothFrequenciesInRange =
-                        spriteFreq >= 60 && spriteFreq <= 2000 && wesenFreq >= 60 && wesenFreq <= 2000;
-
-                    // --- Vision 3: _emotionModulate moduliert mit Emotion-Achsen
-                    const noEmo = { joy: 0, sorrow: 0 };
-                    const happyEmo = { joy: 1, sorrow: 0 };
-                    const baseMod = r._emotionModulate(10, { joy: 5 }, noEmo);
-                    const happyMod = r._emotionModulate(10, { joy: 5 }, happyEmo);
-                    out.emotionModulateAdditiveWorks =
-                        Math.abs(happyMod - 15) < 0.001 && Math.abs(baseMod - 10) < 0.001;
-                    // Mul-Spec
-                    const peaceMod = r._emotionModulate(100, { peace: { mul: 1.5 } }, { peace: 1 });
-                    out.emotionModulateMulWorks = Math.abs(peaceMod - 150) < 0.001;
-
-                    // --- Vision 4: Sky-Tint moduliert mit awe
-                    // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
-                    r.setTimeOfDay(0.5); // Mittag
-                    r.state.player.emotions.awe = 0;
-                    r.state.player.emotions.joy = 0;
-                    r.state.player.emotions.sorrow = 0;
-                    r.state.weather = "sunny";
-                    r.state.weatherTransition = null;
-                    r._applyDayNightToScene();
-                    const skyU = r.state.skybox.material.uniforms.nebulaColor;
-                    const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-                    r.state.player.emotions.awe = 1.0;
-                    r._applyDayNightToScene();
-                    const skyAtAweHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-                    // Bei awe=1 sollte b (Blau-Anteil) sichtbar höher sein
-                    out.aweRaisesBlue = skyAtAweHigh.b > skyAtAweZero.b + 0.02;
-                    // r-Anteil auch (Lila = Rot + Blau)
-                    out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
-
-                    // --- Vision 5: sorrow entsättigt Sky-Tint
-                    r.state.player.emotions.awe = 0;
-                    r.state.player.emotions.sorrow = 0;
-                    r._applyDayNightToScene();
-                    const skyAtSorrowZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-                    r.state.player.emotions.sorrow = 1.0;
-                    r._applyDayNightToScene();
-                    const skyAtSorrowHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-                    // Sättigung = max(rgb) - min(rgb)
-                    const satZero =
-                        Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
-                        Math.min(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b);
-                    const satHigh =
-                        Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
-                        Math.min(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b);
-                    out.sorrowReducesSaturation = satHigh < satZero;
-                    // Reset
-                    r.state.player.emotions.sorrow = 0;
-                    r._applyDayNightToScene();
-
-                    // --- Vision 6: Wetter-Dauer skaliert mit Emotion
-                    // peace=1 → Dauer > Default. chaos=1 → Dauer < Default.
-                    r.state.player.emotions.peace = 0;
-                    r.state.player.emotions.chaos = 0;
-                    r.state.weather = "sunny";
-                    r.state.weatherTransition = null;
-                    r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
-                    const defaultDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-                    r.state.weatherTransition = null;
-                    r.state.weather = "sunny";
-                    r.state.player.emotions.peace = 1.0;
-                    r.requestWeatherTransition("rainy");
-                    const peaceDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-                    r.state.weatherTransition = null;
-                    r.state.weather = "sunny";
-                    r.state.player.emotions.peace = 0;
-                    r.state.player.emotions.chaos = 1.0;
-                    r.requestWeatherTransition("rainy");
-                    const chaosDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-                    r.state.weatherTransition = null;
-                    r.state.weather = "sunny";
-                    r.state.player.emotions.chaos = 0;
-                    out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
-                    out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
-
-                    // --- Vision 7: FAUNA_TARGET skaliert mit lebendig
-                    // Simuliere zwei Positionen mit verschiedenem lebendig
-                    const origWFA = r.worldFieldAt;
-                    r.worldFieldAt = function (x, z) {
-                        if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
-                        return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
-                    };
-                    r.state.playerMesh.position.x = -100;
-                    const targetLiv = r._currentFaunaTarget();
-                    r.state.playerMesh.position.x = 100;
-                    const targetKarg = r._currentFaunaTarget();
-                    out.liveRegionHasHigherTarget = targetLiv > targetKarg;
-                    out.targetInExpectedRange = targetLiv >= 10 && targetKarg <= 6;
-                    r.worldFieldAt = origWFA;
-                    r.state.playerMesh.position.x = 0;
-
-                    // --- Vision 8: Stern-Feld (V8.28 THREE.Points) folgt Tageszeit
-                    // Sterne sind jetzt diskrete Points, nicht mehr Skybox-Noise.
-                    const starMat = r.state.starField && r.state.starField.material;
-                    const starU = starMat && starMat.uniforms ? starMat.uniforms.uOpacity : null;
-                    out.starIntensityExists = !!starU;
-                    if (starU) {
-                        r.setTimeOfDay(0.5); // Mittag
-                        r._applyDayNightToScene();
-                        const starsMittag = starU.value;
-                        r.setTimeOfDay(0); // Mitternacht
-                        r._applyDayNightToScene();
-                        const starsNacht = starU.value;
-                        out.starsBrighterAtNight = starsNacht > starsMittag + 0.2;
-                    }
-
-                    // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
-                    out.sunMeshExists = !!r.state.sunMesh && r.state.sunMesh.type === "Mesh";
-                    out.moonMeshExists = !!r.state.moonMesh && r.state.moonMesh.type === "Mesh";
-                    if (r.state.sunMesh && r.state.moonMesh) {
-                        r.setTimeOfDay(0.5); // Mittag
-                        r._applyDayNightToScene();
-                        const sunYNoon = r.state.sunMesh.position.y;
-                        const moonYNoon = r.state.moonMesh.position.y;
-                        r.setTimeOfDay(0); // Mitternacht
-                        r._applyDayNightToScene();
-                        const sunYMidnight = r.state.sunMesh.position.y;
-                        const moonYMidnight = r.state.moonMesh.position.y;
-                        // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
-                        out.sunHighAtNoon = sunYNoon > 100;
-                        out.moonLowAtNoon = moonYNoon < -100;
-                        out.sunLowAtMidnight = sunYMidnight < -100;
-                        out.moonHighAtMidnight = moonYMidnight > 100;
-                    }
-                    r.setTimeOfDay(0.5); // Reset
-
-                    // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
-                    // Mock worldFieldAt für hohe magieleitung
-                    r.worldFieldAt = function () {
-                        return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
-                    };
-                    r.state.player.emotions.awe = 0;
-                    r._applyDayNightToScene();
-                    const skyMagieField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-                    r.worldFieldAt = function () {
-                        return { lebendig: 0.1, dichte: 0.9, glut: 0.1, magieleitung: 0.1 };
-                    };
-                    r._applyDayNightToScene();
-                    const skyDichteField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-                    // Magie-Region sollte mehr Blau haben als dichte-Region
-                    out.magieFieldRaisesBlue = skyMagieField.b > skyDichteField.b + 0.02;
-                    // Reset
-                    r.worldFieldAt = origWFA;
-                    r._applyDayNightToScene();
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (wave6g3v2Results && !wave6g3v2Results.error) {
-                check("Welle 6.G3 V2: _affinityPickFromCandidates existiert", wave6g3v2Results.affinityPickHelper);
-                check("Welle 6.G3 V2: _tagToFrequency existiert", wave6g3v2Results.tagFrequencyHelper);
-                check("Welle 6.G3 V2: _emotionModulate existiert", wave6g3v2Results.emotionModulateHelper);
-                check("Welle 6.G3 V2: _creatureSoulTags existiert", wave6g3v2Results.creatureSoulTagsHelper);
-                check("Welle 6.G3 V2: _currentFaunaTarget existiert", wave6g3v2Results.faunaTargetHelper);
-                check(
-                    "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
-                    wave6g3v2Results.affinityPicksMagieInMagieField
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: Affinity-Pick wählt dichteSoul in dichte-Welt (>66%, 30 Runs)",
-                    wave6g3v2Results.affinityPicksDichteInDichteField
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: _tagToFrequency mit hoher magieleitung > niedriger magieleitung",
-                    wave6g3v2Results.tagFreqHighMagieIsHigher
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: sprite-Frequenz > wesen-Frequenz (Klang folgt Substanz)",
-                    wave6g3v2Results.spriteFreqHigherThanWesen
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: beide Frequenzen im Range [60, 2000] Hz",
-                    wave6g3v2Results.bothFrequenciesInRange
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: _emotionModulate additiv (joy=1 → +5 auf base 10 = 15)",
-                    wave6g3v2Results.emotionModulateAdditiveWorks
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: _emotionModulate multiplikativ (peace=1 + mul:1.5 → ×1.5)",
-                    wave6g3v2Results.emotionModulateMulWorks
-                );
-                check("Welle 6.G3 V2 Vision: awe=1 hebt Sky-Blau-Anteil sichtbar", wave6g3v2Results.aweRaisesBlue);
-                check(
-                    "Welle 6.G3 V2 Vision: awe=1 hebt Sky-Rot-Anteil (Magie = Lila)",
-                    wave6g3v2Results.aweRaisesRedToo
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: sorrow=1 reduziert Sky-Sättigung",
-                    wave6g3v2Results.sorrowReducesSaturation
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: peace=1 verlängert Wetter-Dauer (>120%)",
-                    wave6g3v2Results.peaceSlowsWeather
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: chaos=1 verkürzt Wetter-Dauer (<70%)",
-                    wave6g3v2Results.chaosSpeedsWeather
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: lebendig-Region hat höheres FAUNA_TARGET als karge",
-                    wave6g3v2Results.liveRegionHasHigherTarget
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: FAUNA_TARGET-Range plausibel (lebendig ≥10, karg ≤6)",
-                    wave6g3v2Results.targetInExpectedRange
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
-                    wave6g3v2Results.starIntensityExists
-                );
-                check(
-                    "Welle 6.G3 V2 Vision: Sterne nachts sichtbar stärker als tags",
-                    wave6g3v2Results.starsBrighterAtNight
-                );
-                check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
-                check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
-                check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
-                check("Welle 6.G3 V2 Vision: Mond niedrig am Mittag (y < -100)", wave6g3v2Results.moonLowAtNoon);
-                check("Welle 6.G3 V2 Vision: Sonne niedrig nachts (y < -100)", wave6g3v2Results.sunLowAtMidnight);
-                check("Welle 6.G3 V2 Vision: Mond hoch nachts (y > 100)", wave6g3v2Results.moonHighAtMidnight);
-                check(
-                    "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
-                    wave6g3v2Results.magieFieldRaisesBlue
-                );
-            } else {
-                check(
-                    "Welle 6.G3 V2: Vision-Tests laufen",
-                    false,
-                    wave6g3v2Results ? wave6g3v2Results.error : "no result"
-                );
-            }
-
-            // ### V8.26 Browser-Bug-Fixes + Polish (17.05.2026) ###
-            // Zwei Browser-Test-Bugs aus V8.25-Session + vier Audit-Polish-
-            // Punkte. Tests sind PERMANENT (nicht nur regression catchers).
-            const v826Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Bug 1 — Stern-Stabilität: Skybox folgt Camera + Shader
-                    // nutzt lokale vDir. Test: bewege Spieler 100 m → Skybox-
-                    // Position folgt + nebulaColor-Sample-Achse bleibt vDir.
-                    // Skybox-Folgt-Camera: durchsuche alle Prototype-Methoden auf
-                    // das Pattern `skybox.position.copy(this.state.camera.position)`.
-                    // Es lebt in der animate-Closure von init() — also irgendwo
-                    // im Source der init-Methode.
-                    out.skyboxFollowsCamera = false;
-                    try {
-                        const proto = Object.getPrototypeOf(r);
-                        const names = Object.getOwnPropertyNames(proto);
-                        for (const name of names) {
-                            try {
-                                const fn = proto[name];
-                                if (typeof fn !== "function") continue;
-                                const src = fn.toString();
-                                if (/skybox\.position\.copy\s*\(\s*this\.state\.camera\.position/.test(src)) {
-                                    out.skyboxFollowsCamera = true;
-                                    break;
-                                }
-                            } catch {
-                                /* getter that crashes — skip */
-                            }
-                        }
-                    } catch {
-                        out.skyboxFollowsCamera = false;
-                    }
-                    // Shader nutzt lokale Position (vDir) statt vWorldPosition
-                    if (r.state.skybox && r.state.skybox.material && r.state.skybox.material.vertexShader) {
-                        out.shaderUsesLocalPosition =
-                            /varying vec3 vDir/.test(r.state.skybox.material.vertexShader) &&
-                            /vDir = normalize\(position\)/.test(r.state.skybox.material.vertexShader);
-                        out.shaderFragmentUsesVDir = /vDir/.test(r.state.skybox.material.fragmentShader);
-                    }
-
-                    // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
-                    const AnazhRealm = window.AnazhRealm || r.constructor;
-                    // V8.26 iter2: 15 Stops (13 + 2 Vormittag/Nachmittag-Zwischenstops
-                    // weil orange→blau noch zu hart war)
-                    out.thirteenStops = AnazhRealm.DAY_NIGHT_STOPS.length >= 13;
-                    // Stop bei t=0.32 sollte zwischen 0.27 (rotbraun) und 0.38 (orange) liegen
-                    const stops = AnazhRealm.DAY_NIGHT_STOPS;
-                    const t032 = stops.find((s) => s.t === 0.32);
-                    out.intermediateStopExists = !!t032;
-                    // V8.48 — _interpolateDayNight nutzt jetzt Catmull-Rom
-                    // (global C1-stetig) statt per-Intervall-smoothstep.
-                    const interpSrc = r._interpolateDayNight.toString();
-                    out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
-
-                    // V8.48 — kein Pulsen mehr. Die alte per-Intervall-
-                    // smoothstep hatte Geschwindigkeit 0 an JEDEM Stop
-                    // (slow→fast→slow → „ruckartig"). Catmull-Rom: die
-                    // Steigung an einem Stop folgt der Nachbar-Differenz.
-                    // An t=0.32 STEIGT die Intensität (0.65→0.78→0.9), die
-                    // Steigung dort muss klar positiv sein (smoothstep: ≈0).
-                    const dtN = 0.003;
-                    const slopeAtStop =
-                        (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32 - dtN).intensity) /
-                        (2 * dtN);
-                    out.dayNightNoPulse = slopeAtStop > 0.3;
-                    // C1-Stetigkeit: Steigung kurz VOR und kurz NACH dem Stop
-                    // sind nahezu gleich (kein Knick, glatte Geschwindigkeit).
-                    const slopeBefore =
-                        (r._interpolateDayNight(0.32).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / dtN;
-                    const slopeAfter =
-                        (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32).intensity) / dtN;
-                    out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
-                    // Stops werden weiterhin EXAKT reproduziert (Hermite trifft
-                    // p1 bei u=0): t=0.5 (Mittag) muss intensity 1.0 liefern.
-                    out.dayNightStopExact = Math.abs(r._interpolateDayNight(0.5).intensity - 1.0) < 0.001;
-                    // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
-                    let maxJump = 0;
-                    for (let i = 1; i < stops.length; i++) {
-                        const a = stops[i - 1].sky;
-                        const b = stops[i].sky;
-                        const aR = (a >> 16) & 0xff,
-                            bR = (b >> 16) & 0xff;
-                        const aG = (a >> 8) & 0xff,
-                            bG = (b >> 8) & 0xff;
-                        const aB = a & 0xff,
-                            bB = b & 0xff;
-                        const dist = Math.max(Math.abs(aR - bR), Math.abs(aG - bG), Math.abs(aB - bB));
-                        if (dist > maxJump) maxJump = dist;
-                    }
-                    // Max-Differenz pro Komponente sollte < 90 sein (vorher war 124 R)
-                    out.noSharpColorJumps = maxJump < 95;
-                    out.maxJump = maxJump;
-
-                    // Polish §6.1 — Frustum-Pool
-                    out.frustumPoolExists = !!r._frustumCache && !!r._frustumMatrixCache;
-
-                    // Polish §6.3 — _runRaycast-Helper
-                    out.runRaycastHelperExists = typeof r._runRaycast === "function";
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v826Results && !v826Results.error) {
-                check(
-                    "V8.26 Bug 1: Skybox.position folgt camera.position (Stern-Rauschen-Fix)",
-                    v826Results.skyboxFollowsCamera
-                );
-                check(
-                    "V8.26 Bug 1: Vertex-Shader nutzt lokale `vDir = normalize(position)`",
-                    v826Results.shaderUsesLocalPosition
-                );
-                check(
-                    "V8.26 Bug 1: Fragment-Shader sampelt mit vDir (nicht vWorldPosition)",
-                    v826Results.shaderFragmentUsesVDir
-                );
-                check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
-                check(
-                    "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
-                    v826Results.intermediateStopExists
-                );
-                check(
-                    "V8.48: _interpolateDayNight nutzt Catmull-Rom (_catmullDayNight) statt smoothstep",
-                    v826Results.interpUsesCatmull
-                );
-                check(
-                    "V8.48: Tag-Nacht pulst nicht mehr (Steigung an Stop t=0.32 klar positiv)",
-                    v826Results.dayNightNoPulse
-                );
-                check(
-                    "V8.48: Tag-Nacht-Kurve ist C1-stetig (Steigung vor ≈ nach Stop, kein Knick)",
-                    v826Results.dayNightC1
-                );
-                check(
-                    "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → intensity 1.0)",
-                    v826Results.dayNightStopExact
-                );
-                check(
-                    `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
-                    v826Results.noSharpColorJumps
-                );
-                check(
-                    "V8.26 Polish §6.1: _frustumCache + _frustumMatrixCache statt pro-Frame-Alloc",
-                    v826Results.frustumPoolExists
-                );
-                check(
-                    "V8.26 Polish §6.3: _runRaycast-Helper existiert (5 Call-Sites konsolidiert)",
-                    v826Results.runRaycastHelperExists
-                );
-            } else {
-                check(
-                    "V8.26: Browser-Bugs + Polish-Tests laufen",
-                    false,
-                    v826Results ? v826Results.error : "no result"
-                );
-            }
-
-            // ### V8.27 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Lambert + Fog) ###
-            // Tiefe-Welle nach Schöpfer-Beobachtung „Himmel und Licht wirken
-            // homogen, keine Tiefe". Genial-minimale Lösung: Hemisphere-Light
-            // (Sky-Tint oben + Erd-Tint unten) + Lambert-Material überall +
-            // atmosphärischer Fog. Self-Shadow durch Lambert ohne teure
-            // Shadow-Maps. Vision §3 Welt-Atem auf Material-Ebene.
-            const v827Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // 0. Stern-Bug fix — Skybox-Position-Copy DIREKT vor render
-                    //    (nicht nach time-Uniform-Update). Verifiziere via Source-Pattern.
-                    try {
-                        const proto = Object.getPrototypeOf(r);
-                        const names = Object.getOwnPropertyNames(proto);
-                        let foundCount = 0;
-                        for (const name of names) {
-                            try {
-                                const fn = proto[name];
-                                if (typeof fn !== "function") continue;
-                                const src = fn.toString();
-                                if (/skybox\.position\.copy/.test(src)) foundCount++;
-                            } catch {
-                                /* skip */
-                            }
-                        }
-                        // Nur EINE Stelle erwartet (direkt vor renderer.render)
-                        out.skyboxPositionCopyExists = foundCount >= 1;
-                    } catch {
-                        out.skyboxPositionCopyExists = false;
-                    }
-
-                    // 1. HemisphereLight im Scene + state-cached
-                    out.hemiLightExists = !!r.state.hemiLight && r.state.hemiLight.isHemisphereLight === true;
-                    out.fogExists = !!r.state.fog && r.state.fog.isFog === true;
-                    // Fog-Color sollte gesetzt sein nach erstem _applyDayNightToScene
-                    r._applyDayNightToScene();
-                    out.fogColorSet =
-                        r.state.fog &&
-                        r.state.fog.color &&
-                        (r.state.fog.color.r > 0 || r.state.fog.color.g > 0 || r.state.fog.color.b > 0);
-
-                    // 2. Hemisphere-skyColor moduliert mit Tageszeit
-                    r.setTimeOfDay(0.5);
-                    r._applyDayNightToScene();
-                    const hemiNoonR = r.state.hemiLight.color.r;
-                    const hemiNoonG = r.state.hemiLight.color.g;
-                    const hemiNoonB = r.state.hemiLight.color.b;
-                    r.setTimeOfDay(0); // Mitternacht
-                    r._applyDayNightToScene();
-                    const hemiNightR = r.state.hemiLight.color.r;
-                    const hemiNightG = r.state.hemiLight.color.g;
-                    const hemiNightB = r.state.hemiLight.color.b;
-                    // Bei Mittag heller (Sky-Tint = mehr Blau-Hell), bei Mitternacht dunkler
-                    const noonTotal = hemiNoonR + hemiNoonG + hemiNoonB;
-                    const nightTotal = hemiNightR + hemiNightG + hemiNightB;
-                    out.hemiSkyFollowsDayCycle = noonTotal > nightTotal;
-                    // Hemisphere-Intensity moduliert mit Sonnenhöhe
-                    r.setTimeOfDay(0.5);
-                    r._applyDayNightToScene();
-                    const intensityNoon = r.state.hemiLight.intensity;
-                    r.setTimeOfDay(0);
-                    r._applyDayNightToScene();
-                    const intensityNight = r.state.hemiLight.intensity;
-                    out.hemiIntensityFollowsDayCycle = intensityNoon > intensityNight;
-
-                    // 3. Hemisphere-groundColor moduliert mit Welt-Affinität
-                    r.setTimeOfDay(0.5);
-                    const origWFA = r.worldFieldAt;
-                    r.worldFieldAt = function () {
-                        return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
-                    };
-                    r._applyDayNightToScene();
-                    const groundLebendigG = r.state.hemiLight.groundColor.g;
-                    r.worldFieldAt = function () {
-                        return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
-                    };
-                    r._applyDayNightToScene();
-                    const groundGlutR = r.state.hemiLight.groundColor.r;
-                    // lebendig erhöht Grün, glut erhöht Rot
-                    out.groundColorFollowsLebendig = groundLebendigG > 0.3;
-                    out.groundColorFollowsGlut = groundGlutR > 0.5;
-                    r.worldFieldAt = origWFA;
-                    r._applyDayNightToScene();
-
-                    // 4. Architektur-Material ist Lambert (nach V8.27 Build-Pipeline)
-                    // V8.28 — Architektur-Material ist jetzt MeshToonMaterial
-                    // (Cel-Shading). Reagiert auf Licht wie Lambert, aber
-                    // quantisiert das Sonnen-Diffuse über die gradientMap.
-                    let hasToonMaterial = false;
-                    if (
-                        typeof r.spawnArchitecture === "function" &&
-                        r.state.blueprints &&
-                        r.state.blueprints.stein_block
-                    ) {
-                        const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
-                        if (arch && arch.mesh) {
-                            arch.mesh.traverse((node) => {
-                                if (node.isMesh && node.material && node.material.isMeshToonMaterial) {
-                                    hasToonMaterial = true;
-                                }
-                            });
-                            // Cleanup
-                            if (typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
-                        }
-                    }
-                    out.architectureUsesLambert = hasToonMaterial;
-
-                    // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms.
-                    // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
-                    // Init (V9.27-Skip); für den Shader-Test bauen wir uns einen
-                    // via `ensureChunkAt` (die Heightfield-Chunk-Pipeline lebt
-                    // noch — sie wird nur nicht mehr automatisch gerufen).
-                    let shaderSample = null;
-                    if (r.state.groundChunks && r.state.groundChunks.length > 0) {
-                        shaderSample = r.state.groundChunks[0];
-                    } else if (typeof r.ensureChunkAt === "function") {
-                        r.ensureChunkAt(50, 50);
-                        const entry = r.state.chunkMap && r.state.chunkMap.get("50,50");
-                        if (entry && entry.mesh) shaderSample = entry.mesh;
-                    }
-                    if (shaderSample && shaderSample.material && shaderSample.material.uniforms) {
-                        out.terrainHasLightIntensityUniform = !!shaderSample.material.uniforms.lightIntensity;
-                        out.terrainHasAmbientIntensityUniform = !!shaderSample.material.uniforms.ambientIntensity;
-                        // Werte sollten von _applyDayNightToScene gesetzt sein
-                        r.setTimeOfDay(0.5);
-                        r._applyDayNightToScene();
-                        const liNoon = shaderSample.material.uniforms.lightIntensity
-                            ? shaderSample.material.uniforms.lightIntensity.value
-                            : -1;
-                        r.setTimeOfDay(0);
-                        r._applyDayNightToScene();
-                        const liNight = shaderSample.material.uniforms.lightIntensity
-                            ? shaderSample.material.uniforms.lightIntensity.value
-                            : -1;
-                        out.terrainLightFollowsDayCycle = liNoon > liNight;
-                    }
-                    r.setTimeOfDay(0.5);
-
-                    // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
-                    // Sterne sind jetzt THREE.Points mit color + aSize Attributen.
-                    const sf = r.state.starField;
-                    out.starHasHueVariation = !!(
-                        sf &&
-                        sf.geometry &&
-                        sf.geometry.getAttribute &&
-                        sf.geometry.getAttribute("color")
-                    );
-                    out.threeStarLayers = !!(
-                        sf &&
-                        sf.geometry &&
-                        sf.geometry.getAttribute &&
-                        sf.geometry.getAttribute("aSize")
-                    );
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v827Results && !v827Results.error) {
-                check(
-                    "V8.27: Skybox-position.copy existiert (direkt vor render)",
-                    v827Results.skyboxPositionCopyExists
-                );
-                check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
-                check("V8.27: state.fog ist THREE.Fog", v827Results.fogExists);
-                check("V8.27: Fog-Color wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
-                check(
-                    "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
-                    v827Results.hemiSkyFollowsDayCycle
-                );
-                check("V8.27: HemisphereLight.intensity folgt Sonnenhöhe", v827Results.hemiIntensityFollowsDayCycle);
-                check(
-                    "V8.27: HemisphereLight.groundColor.g hoch in lebendig-Region",
-                    v827Results.groundColorFollowsLebendig
-                );
-                check("V8.27: HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
-                check(
-                    "V8.28: Architektur-Material ist MeshToonMaterial (Cel-Shading)",
-                    v827Results.architectureUsesLambert
-                );
-                // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Terrain-Shader-
-                // spezifischen Checks (lightIntensity-Uniform, Tag-Nacht-Sync
-                // im Custom-Shader) sind gestrichen. Der Vision-Anker („Welt
-                // unter wandernder Sonne, von Tag-Nacht durchlebt") lebt in
-                // HemisphereLight + DirectionalLight + Fog + Skybox + dem
-                // MeshToonMaterial-Voxel-Mesh weiter (alles oben geprüft).
-                check("V8.28: Stern-Feld hat per-Stern Hue (color-Attribut)", v827Results.starHasHueVariation);
-                check("V8.28: Stern-Feld hat per-Stern Größen-Variation (aSize-Attribut)", v827Results.threeStarLayers);
-            } else {
-                check("V8.27: Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
-            }
-
-            // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
-            // Schöpfer-Beobachtung: Sterne flackern bei Kamera-Rotation,
-            // Terrain nur nach Höhe gefärbt, kein Wind/Wolken/Wasser.
-            const v828Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- Phase A: Stern-Feld ---
-                    const sf = r.state.starField;
-                    out.starFieldIsPoints = !!(sf && sf.type === "Points");
-                    out.starCount =
-                        sf && sf.geometry && sf.geometry.getAttribute("position")
-                            ? sf.geometry.getAttribute("position").count
-                            : 0;
-                    out.starFieldHasMany = out.starCount > 1000;
-                    // Sidereal-Rotation: rotation ändert sich mit timeOfDay
-                    out.starFieldRotates = !!(sf && sf.rotation);
-
-                    // --- Phase B: Terrain-Affinität ---
-                    out.attachFieldExists = typeof r._attachFieldAttribute === "function";
-                    // terrainMaterial-Shader liest aField
-                    const tm = r.state.terrainMaterial;
-                    out.terrainShaderHasField = !!(
-                        tm &&
-                        tm.vertexShader &&
-                        /aField/.test(tm.vertexShader) &&
-                        tm.fragmentShader &&
-                        /vField/.test(tm.fragmentShader)
-                    );
-                    // Chunk-Geometrie trägt aField-Attribut.
-                    // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
-                    // Init — wir bauen einen für den Test via ensureChunkAt.
-                    let chunkHasField = false;
-                    let aFieldChunk = null;
-                    if (r.state.groundChunks && r.state.groundChunks.length > 0) {
-                        aFieldChunk = r.state.groundChunks[0];
-                    } else if (typeof r.ensureChunkAt === "function") {
-                        r.ensureChunkAt(60, 60);
-                        const entry = r.state.chunkMap && r.state.chunkMap.get("60,60");
-                        if (entry && entry.mesh) aFieldChunk = entry.mesh;
-                    }
-                    if (aFieldChunk && aFieldChunk.geometry) {
-                        const g = aFieldChunk.geometry;
-                        chunkHasField = !!(g.getAttribute && g.getAttribute("aField"));
-                    }
-                    out.chunkHasFieldAttribute = chunkHasField;
-
-                    // --- Phase C: Cel-Shading + Fog ---
-                    out.celMethodsExist =
-                        typeof r._refreshToonGradient === "function" &&
-                        typeof r.setCelLevels === "function" &&
-                        typeof r.setFogDistance === "function";
-                    out.toonGradientExists = !!r.state.toonGradientMap;
-                    out.terrainHasCelUniform = !!(tm && tm.uniforms && tm.uniforms.celLevels);
-                    // setCelLevels ändert celLevels in state + terrainMaterial
-                    r.setCelLevels(2);
-                    const cel2 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
-                    r.setCelLevels(6);
-                    const cel6 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
-                    out.celSliderWorks = cel2 === 2 && cel6 === 6;
-                    r.setCelLevels(4);
-                    // setFogDistance ändert fog.near/far. playerEyesUnderwater
-                    // erzwingt sonst fog.near=4 (Tauch-Tint) — der überschreibt
-                    // den fogDistance-Effekt; hier deterministisch ausnullen.
-                    r.state.playerEyesUnderwater = false;
-                    r.setFogDistance(0.5);
-                    r._applyDayNightToScene();
-                    const fogNear05 = r.state.fog ? r.state.fog.near : -1;
-                    r.setFogDistance(2.0);
-                    r._applyDayNightToScene();
-                    const fogNear20 = r.state.fog ? r.state.fog.near : -1;
-                    out.fogSliderWorks = fogNear20 > fogNear05;
-                    r.setFogDistance(1.0);
-
-                    // --- Phase D: Wind + Wolken + Wasser ---
-                    // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
-                    out.windMatExists = typeof r._grassInstanceMat === "function";
-                    const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-                    const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-                    out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
-                    out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
-                    // Skybox-Shader hat cloudCover-Uniform
-                    out.skyboxHasClouds = !!(
-                        r.state.skybox &&
-                        r.state.skybox.material &&
-                        r.state.skybox.material.uniforms &&
-                        r.state.skybox.material.uniforms.cloudCover
-                    );
-                    // Wolken-Cover folgt weather
-                    r.state.weather = "rainy";
-                    r._applyDayNightToScene();
-                    const cloudRainy = r.state.skybox.material.uniforms.cloudCover.value;
-                    r.state.weather = "sunny";
-                    r._applyDayNightToScene();
-                    const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
-                    out.cloudsFollowWeather = cloudRainy > cloudSunny;
-                    // Welt-Wasser — V9.50: das Wasser sind per-Chunk-Flächen
-                    // (`voxelChunkWater`-Map), kein eigenes Mesh mehr; die
-                    // Vertex-Höhe + die Uferlinie prüft der V9.50-b-Block.
-                    out.waterSystemOk = r.state.voxelChunkWater instanceof Map;
-
-                    // --- Atmosphäre-Persistenz ---
-                    r.setCelLevels(7);
-                    r.setFogDistance(1.5);
-                    const snap = r.buildStateSnapshot();
-                    out.atmospherePersisted = !!(
-                        snap &&
-                        snap.atmosphere &&
-                        snap.atmosphere.celLevels === 7 &&
-                        Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01
-                    );
-                    r.setCelLevels(4);
-                    r.setFogDistance(1.0);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v828Results && !v828Results.error) {
-                check("V8.28 A: state.starField ist THREE.Points", v828Results.starFieldIsPoints);
-                check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
-                check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
-                check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
-                // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Shader-spezifischen
-                // Checks (`tm.vertexShader contains aField`, `chunkHasField-
-                // Attribute` via ensureChunkAt, `terrainHasCelUniform`,
-                // `celSliderWorks` via tm.uniforms.celLevels) sind tot. Die
-                // Vision-Anker (Welt-Affinität pro Vertex, Cel-Shading-Stufen)
-                // leben im Voxel-Mesh + toonGradientMap weiter (V9.10
-                // `_attachVoxelFieldColors`, V8.42 LinearFilter-Gradient).
-                check(
-                    "V8.28 C: _refreshToonGradient + setCelLevels + setFogDistance existieren",
-                    v828Results.celMethodsExist
-                );
-                check("V8.28 C: state.toonGradientMap existiert (Cel-gradientMap)", v828Results.toonGradientExists);
-                check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
-                check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
-                check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
-                check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
-                check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
-                check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
-                check("V9.50: das Chunk-Wasser-System ist verdrahtet (voxelChunkWater-Map)", v828Results.waterSystemOk);
-                check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
-            } else {
-                check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
-            }
-
-            // ### V8.29 — Die lebendige Welt (Instanced-Gras, Avatar-Hide,
-            // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
-            const v829Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- Avatar-Hide im 1st-Person ---
-                    out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
-                    // V8.29.1 — Render-Loop hält player.visible=true,
-                    // versteckt nur den KOPF im 1st-Person (headPart.visible
-                    // = cameraMode==="third"). Via Source-Pattern geprüft.
-                    {
-                        let found = false;
-                        const proto = Object.getPrototypeOf(r);
-                        for (const name of Object.getOwnPropertyNames(proto)) {
-                            try {
-                                const fn = proto[name];
-                                if (typeof fn !== "function") continue;
-                                if (/headPart\.visible\s*=\s*this\.state\.cameraMode/.test(fn.toString())) found = true;
-                            } catch {
-                                /* skip */
-                            }
-                        }
-                        out.avatarHideInLoop = found;
-                    }
-
-                    // --- Instanced-Gras (V9.39: Voxel-Gras-Pendant) ---
-                    // V9.39 — der V8.29-Heightfield-Gras-Lifecycle
-                    // (`_buildChunkGrass`/`_disposeChunkGrass`/`state.chunkGrass`)
-                    // ist tot. Die Vision-Schicht („Welt grünt, Instanced-
-                    // Gras pro Chunk") lebt im Voxel-Pendant
-                    // `_buildVoxelChunkGrass` / `state.voxelChunkGrass`
-                    // (V9.22-Verdrahtung). Das `_grassInstanceMat` (Wind-
-                    // Material) wird von beiden geteilt — es lebt weiter.
-                    out.grassMethodsExist =
-                        typeof r._buildVoxelChunkGrass === "function" &&
-                        typeof r._disposeVoxelChunkGrass === "function" &&
-                        typeof r._grassInstanceMat === "function";
-                    out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
-                    let grassInstances = 0;
-                    if (r.state.voxelChunkGrass) {
-                        for (const v of r.state.voxelChunkGrass.values()) {
-                            if (v && v.isInstancedMesh) grassInstances++;
-                        }
-                    }
-                    out.hasGrassInstances = grassInstances > 0;
-                    out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
-
-                    // --- Genesis-Plattform ---
-                    out.genesisMethodExists = typeof r._ensureGenesisPlatform === "function";
-                    out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
-                    // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
-                    out.genesisArchExists = !!(
-                        r.state.architectures && r.state.architectures.some((a) => a && a.type === "start_plattform")
-                    );
-                    // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
-                    const before = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
-                    r._ensureGenesisPlatform();
-                    const after = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
-                    out.genesisIdempotent = before === after;
-
-                    // --- Adaptives Wasser ---
-                    out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
-
-                    // --- Cel-gradientMap 32 px ---
-                    out.gradientMap32 = !!(
-                        r.state.toonGradientMap &&
-                        r.state.toonGradientMap.image &&
-                        r.state.toonGradientMap.image.width === 32
-                    );
-                    // celLevels 2 vs 8 → unterschiedliche Gradient-Daten
-                    r.setCelLevels(2);
-                    const g2 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
-                    r.setCelLevels(8);
-                    const g8 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
-                    out.celGradientChanges = JSON.stringify(g2) !== JSON.stringify(g8);
-                    r.setCelLevels(8);
-
-                    // --- Stern-Mindestgröße (kein Flacker-Aliasing) ---
-                    const sf = r.state.starField;
-                    let minSize = 999;
-                    if (sf && sf.geometry && sf.geometry.getAttribute("aSize")) {
-                        const sizes = sf.geometry.getAttribute("aSize").array;
-                        for (let i = 0; i < sizes.length; i++) if (sizes[i] < minSize) minSize = sizes[i];
-                    }
-                    out.starMinSize3 = minSize >= 3;
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v829Results && !v829Results.error) {
-                check(
-                    "V8.29.1: nur der Kopf wird im 1st-Person versteckt (Avatar bleibt sichtbar)",
-                    v829Results.avatarHideInLoop
-                );
-                check(
-                    "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
-                    v829Results.grassMethodsExist
-                );
-                check("V8.29 (V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
-                check(
-                    "V8.29 (V9.39): mindestens ein Voxel-Chunk hat ein Gras-InstancedMesh",
-                    v829Results.hasGrassInstances
-                );
-                check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-                check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
-                check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
-                check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
-                check(
-                    "V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)",
-                    v829Results.genesisIdempotent
-                );
-                check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-                check("V8.29: Cel-gradientMap ist 32 px breit (Smooth-Modus möglich)", v829Results.gradientMap32);
-                check("V8.29: setCelLevels 2↔8 ändert die gradientMap-Daten", v829Results.celGradientChanges);
-                check("V8.29: Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
-            } else {
-                check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
-            }
-
-            // ### V8.30 — Schnittstellen-Politur (Sterne-Tiefe, Avatar,
-            // Wasser-Wellen, Wasser-Physik) ###
-            const v830Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Sterne testen gegen den Tiefenpuffer (kein Overlay mehr)
-                    out.starsDepthTest = !!(
-                        r.state.starField &&
-                        r.state.starField.material &&
-                        r.state.starField.material.depthTest === true
-                    );
-
-                    // Wasser-Shader: diagonale Wellen (wave-Funktion mit
-                    // Richtungs-Vektoren) + Sonnen-Glitzern (Spekular).
-                    let waterDiagonal = false;
-                    let waterSpecular = false;
-                    const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-                    if (wMat) {
-                        const vs = wMat.vertexShader || "";
-                        const fs = wMat.fragmentShader || "";
-                        waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
-                        waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
-                    }
-                    out.waterDiagonalWaves = waterDiagonal;
-                    out.waterSunGlitter = waterSpecular;
-                    // Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)
-                    out.waterHasSunUniform = !!(wMat && wMat.uniforms && wMat.uniforms.uSunDir);
-
-                    // Wasser-Physik: state.playerUnderwater existiert als Flag
-                    out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
-                    // Render-Loop hat Auftriebs- + Speed-Logik (Source-Pattern)
-                    {
-                        let buoy = false;
-                        let speedCut = false;
-                        const proto = Object.getPrototypeOf(r);
-                        for (const name of Object.getOwnPropertyNames(proto)) {
-                            try {
-                                const fn = proto[name];
-                                if (typeof fn !== "function") continue;
-                                const src = fn.toString();
-                                if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
-                                if (/playerUnderwater\)\s*currentSpeed\s*\*=/.test(src)) speedCut = true;
-                            } catch {
-                                /* skip */
-                            }
-                        }
-                        out.waterBuoyancy = buoy;
-                        out.waterSpeedCut = speedCut;
-                    }
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v830Results && !v830Results.error) {
-                check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
-                check(
-                    "V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)",
-                    v830Results.waterDiagonalWaves
-                );
-                check("V8.30: Wasser-Shader hat Sonnen-Glitzern (Spekular)", v830Results.waterSunGlitter);
-                check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
-                check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
-                check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
-                check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
-            } else {
-                check(
-                    "V8.30: Schnittstellen-Politur Tests laufen",
-                    false,
-                    v830Results ? v830Results.error : "no result"
-                );
-            }
-
-            // ### V8.31 — Fog an die Custom-Shader + heterogenere Wasser-Wellen ###
-            const v831Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Terrain-Custom-Shader hat jetzt Fog-Uniforms + fog-mix.
-                    if (r.state.terrainMaterial) {
-                        const tm = r.state.terrainMaterial;
-                        out.terrainFogUniforms = !!(
-                            tm.uniforms &&
-                            tm.uniforms.fogColor &&
-                            tm.uniforms.fogNear &&
-                            tm.uniforms.fogFar
-                        );
-                        out.terrainFogInShader =
-                            /vFogDepth/.test(tm.vertexShader || "") &&
-                            /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
-                    }
-                    // Wasser-Custom-Shader hat Fog + Domain-Warp.
-                    const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-                    if (wm) {
-                        out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
-                        out.waterDomainWarp =
-                            /waveDisplace/.test(wm.vertexShader || "") && /warp/.test(wm.vertexShader || "");
-                        out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
-                    }
-                    // Fog-Slider propagiert in die Custom-Shader-Uniforms.
-                    // playerEyesUnderwater deterministisch ausnullen (sonst
-                    // erzwingt der Tauch-Tint fog.near=4 unabhängig vom Slider).
-                    r.state.playerEyesUnderwater = false;
-                    r.setFogDistance(0.4);
-                    r._applyDayNightToScene();
-                    const tnNear =
-                        r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
-                            ? r.state.terrainMaterial.uniforms.fogFar.value
-                            : -1;
-                    r.setFogDistance(1.8);
-                    r._applyDayNightToScene();
-                    const tnFar =
-                        r.state.terrainMaterial && r.state.terrainMaterial.uniforms.fogFar
-                            ? r.state.terrainMaterial.uniforms.fogFar.value
-                            : -1;
-                    out.fogSliderReachesTerrain = tnFar > tnNear;
-                    r.setFogDistance(1.0);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v831Results && !v831Results.error) {
-                // V9.39 Phase 5c.2.c.3.b.iii — die Terrain-Shader-Fog-Checks
-                // (terrainFogUniforms, terrainFogInShader, fogSliderReachesTerrain)
-                // sind tot — `state.terrainMaterial` existiert nicht mehr,
-                // das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-Fog.
-                // Die Wasser-Shader-Checks leben — `_buildWaterPlane` läuft
-                // weiter (voxel-aware seit V9.39).
-                check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
-                check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
-                check("V8.31: Wasser-Wellen nutzen Domain-Warp (heterogener)", v831Results.waterDomainWarp);
-            } else {
-                check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
-            }
-
-            // ### V8.32 — Tauch-Tint nur bei Augen-unter-Wasser + Wasser-Fresnel ###
-            const v832Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Getrennte Flags: playerUnderwater (Körper) vs.
-                    // playerEyesUnderwater (Augen/Tauchen).
-                    out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
-                    // Physik-Loop berechnet playerEyesUnderwater aus scaledY+1.6.
-                    {
-                        let found = false;
-                        const proto = Object.getPrototypeOf(r);
-                        for (const name of Object.getOwnPropertyNames(proto)) {
-                            try {
-                                const fn = proto[name];
-                                if (typeof fn !== "function") continue;
-                                if (/playerEyesUnderwater\s*=\s*scaledY \+ 1\.6/.test(fn.toString())) found = true;
-                            } catch {
-                                /* skip */
-                            }
-                        }
-                        out.eyesFlagComputed = found;
-                    }
-                    // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
-                    // mehr playerUnderwater (Source-Pattern in _applyDayNightToScene).
-                    {
-                        const src = r._applyDayNightToScene.toString();
-                        out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
-                    }
-
-                    // Wasser-Shader hat Fresnel-Opazität.
-                    const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-                    if (wFresMat) {
-                        const fs = wFresMat.fragmentShader || "";
-                        out.waterFresnel = /fres/.test(fs) && /pow\(1\.0 - max\(dot\(viewDir, n\)/.test(fs);
-                    }
-
-                    // Fog-Slider erlaubt bis 300 %.
-                    const fs = document.getElementById("slider-fog");
-                    out.fogSliderTo300 = !!(fs && parseInt(fs.max, 10) === 300);
-                    // setFogDistance akzeptiert 3.0.
-                    r.setFogDistance(3.0);
-                    out.fogDistanceTo3 = Math.abs(r.state.atmosphere.fogDistance - 3.0) < 0.01;
-                    r.setFogDistance(1.0);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v832Results && !v832Results.error) {
-                check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
-                check(
-                    "V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)",
-                    v832Results.eyesFlagComputed
-                );
-                check(
-                    "V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)",
-                    v832Results.tintUsesEyesFlag
-                );
-                check(
-                    "V8.32: Wasser-Shader hat Fresnel-Opazität (Sterne nicht durchs Wasser)",
-                    v832Results.waterFresnel
-                );
-                check("V8.32: Fog-Slider geht bis 300 %", v832Results.fogSliderTo300);
-                check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
-            } else {
-                check("V8.32: Wasser-Politur Tests laufen", false, v832Results ? v832Results.error : "no result");
-            }
-
-            // ### V8.33 — Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
-            const v833Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- Tauchen: _swimVerticalVelocity (reine Funktion) ---
-                    out.swimFnExists = typeof r._swimVerticalVelocity === "function";
-                    if (out.swimFnExists) {
-                        const dive = r._swimVerticalVelocity(0, 4, true, false);
-                        const rise = r._swimVerticalVelocity(0, 4, false, true);
-                        const neutral = r._swimVerticalVelocity(0, 4, false, false);
-                        out.diveSinks = dive < 0;
-                        out.riseLifts = rise > 0;
-                        out.neutralFloats = neutral > 0 && neutral <= 2.5;
-                        out.diveBelowNeutral = dive < neutral;
-                        out.riseAboveNeutral = rise > neutral;
-                        out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
-                    }
-                    // Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space,
-                    // Shift ist unter Wasser KEIN Sprint mehr (Source-Pattern).
-                    {
-                        let usesFn = false;
-                        let shiftNotSprint = false;
-                        const proto = Object.getPrototypeOf(r);
-                        for (const name of Object.getOwnPropertyNames(proto)) {
-                            try {
-                                const fn = proto[name];
-                                if (typeof fn !== "function") continue;
-                                const src = fn.toString();
-                                if (
-                                    /_swimVerticalVelocity\(/.test(src) &&
-                                    /keys\["shift"\]/.test(src) &&
-                                    /keys\[" "\]/.test(src)
-                                )
-                                    usesFn = true;
-                                if (/keys\["shift"\]\s*&&\s*!this\.state\.playerUnderwater/.test(src))
-                                    shiftNotSprint = true;
-                            } catch {
-                                /* skip */
-                            }
-                        }
-                        out.physicsUsesSwimFn = usesFn;
-                        out.shiftNotSprintUnderwater = shiftNotSprint;
-                    }
-
-                    // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
-                    {
-                        const src = r.animatePlayerSoul.toString();
-                        out.animPassesUnderwater =
-                            /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater\)/.test(src);
-                    }
-                    {
-                        const gh = r._buildHumanGroup();
-                        out.humanYXZ = gh.rotation.order === "YXZ";
-                        r._animateHuman(gh, 1.0, 0, false, true);
-                        out.humanSwimLean = Math.abs(gh.rotation.x) > 0.05;
-                        r._animateHuman(gh, 1.0, 0, false, false);
-                        out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
-                        r._disposeSoulGroup(gh);
-
-                        const gp = r._buildPhoenixGroup();
-                        r._animatePhoenix(gp, 1.0, 0, true, true);
-                        out.phoenixSwimLean = Math.abs(gp.rotation.x) > 0.05;
-                        r._disposeSoulGroup(gp);
-
-                        const gd = r._buildDragonGroup();
-                        r._animateDragon(gd, 1.0, 0, true, true);
-                        out.dragonSwimLean = Math.abs(gd.rotation.x) > 0.05;
-                        r._disposeSoulGroup(gd);
-                    }
-
-                    // --- Gerstner-Wellen im Wasser-Shader ---
-                    const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-                    if (wGerstMat) {
-                        const vs = wGerstMat.vertexShader || "";
-                        out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
-                        out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
-                        out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);
-                        out.gerstnerCrossNormal = /cross\(/.test(vs);
-                        out.gerstnerKeepsWarp = /warp/.test(vs);
-                    }
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v833Results && !v833Results.error) {
-                check("V8.33: _swimVerticalVelocity existiert (reine Funktion)", v833Results.swimFnExists);
-                check("V8.33: Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
-                check("V8.33: Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
-                check("V8.33: Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
-                check("V8.33: Tauchen sinkt unter den Neutral-Auftrieb (Diskrimination)", v833Results.diveBelowNeutral);
-                check(
-                    "V8.33: Auftauchen hebt über den Neutral-Auftrieb (Diskrimination)",
-                    v833Results.riseAboveNeutral
-                );
-                check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
-                check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
-                check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
-                check("V8.33: animatePlayerSoul reicht den underwater-Flag durch", v833Results.animPassesUnderwater);
-                check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
-                check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
-                check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
-                check("V8.33: Phönix neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
-                check("V8.33: Drache neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
-                check("V8.33: Wasser-Shader hat gerstnerWave-Funktion (vec3)", v833Results.gerstnerFn);
-                check("V8.33: Wasser-Shader hat waveDisplace (vec3-Verschiebung)", v833Results.waveDisplaceVec3);
-                check("V8.33: Gerstner-Wellen verschieben horizontal (spitze Kämme)", v833Results.gerstnerHorizontal);
-                check("V8.33: Wasser-Normale aus Kreuzprodukt der Tangenten", v833Results.gerstnerCrossNormal);
-                check("V8.33: Gerstner-Wellen behalten den Domain-Warp (V8.31-Erbe)", v833Results.gerstnerKeepsWarp);
-            } else {
-                check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
-            }
-
-            // ### V8.34 — Ring 11 V3: Soul-Sync (Peer-Avatar = echte Seele) ###
-            const v834Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const p2p = r.state.p2p;
-                    p2p.peerId = "self-v834";
-                    p2p.enabled = false;
-
-                    out.methodsExist =
-                        typeof r._p2pBuildPlaceholderMesh === "function" &&
-                        typeof r._p2pApplyPeerSoul === "function" &&
-                        typeof r._p2pBuildNameLabel === "function" &&
-                        typeof r._p2pUpdatePeer === "function" &&
-                        typeof r._p2pEnsurePeerAura === "function" &&
-                        typeof r._p2pBroadcastSoul === "function" &&
-                        typeof r._p2pBroadcastAura === "function";
-
-                    // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
-                    r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
-                    const pv1 = p2p.peers.get("pv1");
-                    out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
-                    out.placeholderMesh = !!(pv1 && pv1.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
-                    out.entryHasV3Fields =
-                        !!pv1 && "soulName" in pv1 && "auraHue" in pv1 && "walkPhase" in pv1 && "nameLabel" in pv1;
-
-                    // soul-Nachricht (Built-in Phönix) → echte Seele + Name-Schild.
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "soul", peerId: "pv1", soulName: "phoenix", name: "Aria" })
-                    );
-                    const pv1b = p2p.peers.get("pv1");
-                    out.builtinSoulName = !!pv1b && pv1b.soulName === "phoenix";
-                    out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul";
-                    out.builtinHasParts = !!(
-                        pv1b &&
-                        pv1b.mesh &&
-                        pv1b.mesh.userData &&
-                        pv1b.mesh.userData.parts &&
-                        pv1b.mesh.userData.parts.leftWing
-                    );
-                    out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
-
-                    // Soul-Wechsel phoenix → dragon → Mesh wird neu gebaut.
-                    r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "dragon" }));
-                    const pv1c = p2p.peers.get("pv1");
-                    out.soulChangeRebuilt =
-                        !!pv1c &&
-                        pv1c.soulName === "dragon" &&
-                        pv1c.mesh.userData.parts &&
-                        !!pv1c.mesh.userData.parts.tailJoint;
-
-                    // soul-Nachricht (Custom-Seele via bodyParts).
-                    r.p2pHandleMessage(
-                        JSON.stringify({
-                            type: "soul",
-                            peerId: "pv2",
-                            soulName: "custom-test-soul",
-                            bodyParts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
-                        })
-                    );
-                    const pv2 = p2p.peers.get("pv2");
-                    out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
-                    out.customMeshBuilt = !!(pv2 && pv2.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
-
-                    // aura-Nachricht.
-                    r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "pv1", hue: 270, intensity: 0.8 }));
-                    const pv1d = p2p.peers.get("pv1");
-                    out.auraReceived =
-                        !!pv1d && pv1d.auraHue === 270 && Math.abs((pv1d.auraIntensity || 0) - 0.8) < 0.001;
-
-                    // _p2pUpdatePeer erzeugt den Aura-Sprite + animiert.
-                    r._p2pUpdatePeer(pv1d, 1.0, 0.016);
-                    out.auraSpriteCreated = !!pv1d.auraGlow;
-
-                    // _p2pBroadcastSoul-Payload (p2pSend gemockt).
-                    p2p.enabled = true;
-                    let captured = null;
-                    const origSend = r.p2pSend;
-                    r.p2pSend = (obj) => {
-                        captured = obj;
-                        return true;
-                    };
-                    r._p2pBroadcastSoul();
-                    r.p2pSend = origSend;
-                    p2p.enabled = false;
-                    out.broadcastSoulPayload =
-                        !!captured &&
-                        captured.type === "soul" &&
-                        captured.soulName === r.state.player.soul &&
-                        typeof captured.name === "string";
-
-                    // tickPlayerAura cached die Aura-Werte für den Sync.
-                    r.tickPlayerAura();
-                    out.auraOutCached =
-                        typeof r.state.player._auraHueOut === "number" &&
-                        typeof r.state.player._auraIntensityOut === "number";
-
-                    // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
-                    // den dedizierten `soul`-Kanal, NICHT über die DSL.
-                    out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
-
-                    // _p2pRemovePeer räumt Peer + Mesh + Aura + Name-Schild.
-                    r._p2pRemovePeer("pv1");
-                    r._p2pRemovePeer("pv2");
-                    out.peersRemoved = !p2p.peers.has("pv1") && !p2p.peers.has("pv2");
-
-                    p2p.enabled = false;
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v834Results && !v834Results.error) {
-                check("V8.34: Soul-Sync-Methoden existieren (7)", v834Results.methodsExist);
-                check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
-                check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
-                check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
-                check("V8.34: soul-Nachricht setzt soulName (Built-in)", v834Results.builtinSoulName);
-                check("V8.34: Built-in-Seele → meshKind 'soul'", v834Results.builtinMeshKind);
-                check("V8.34: Peer-Phönix hat animierbare Parts (Flügel)", v834Results.builtinHasParts);
-                check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
-                check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Drache)", v834Results.soulChangeRebuilt);
-                check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
-                check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
-                check("V8.34: aura-Nachricht setzt Hue + Intensität", v834Results.auraReceived);
-                check("V8.34: _p2pUpdatePeer erzeugt den Peer-Aura-Sprite", v834Results.auraSpriteCreated);
-                check("V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
-                check("V8.34: tickPlayerAura cached Hue+Intensität für den Sync", v834Results.auraOutCached);
-                check(
-                    "V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)",
-                    v834Results.playerSoulStillLocal
-                );
-                check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Aura + Schild", v834Results.peersRemoved);
-            } else {
-                check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
-            }
-
-            // ### V8.35 — Welle 11 ext.: Substanz-Rolle (Rolle aus der Substanz) ###
-            const v835Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const part = (mat, x, y, z) => ({
-                        shape: "box",
-                        material: mat,
-                        size: { x: 1, y: 1, z: 1 },
-                        position: { x, y, z },
-                    });
-
-                    out.methodsExist =
-                        typeof r._compoundSymmetry === "function" &&
-                        typeof r._isBodyShaped === "function" &&
-                        typeof r._isFoodLike === "function";
-
-                    // --- Körper-Form → Seele: Torso+Kopf auf der Achse,
-                    //     Glieder als Spiegel-Paar ---
-                    // Wesen: Torso+Kopf auf der Achse (vertikal gestreckt),
-                    // Arme als Off-Achsen-Spiegel-Paar.
-                    const bodyBp = {
-                        name: "_t835_body",
-                        parts: [
-                            part("fleisch", 0, 1, 0),
-                            part("knochen", 0, 3, 0),
-                            part("fleisch", -1, 2, 0),
-                            part("fleisch", 1, 2, 0),
-                        ],
-                    };
-                    out.bodyIsShaped = r._isBodyShaped(bodyBp) === true;
-                    out.bodyRoleSoul = r.computeBlueprintRole(bodyBp) === "soul";
-
-                    // --- Turm: 3 Boxen gestapelt auf der Achse — symmetrisch,
-                    //     aber KEINE Glieder → kein Körper ---
-                    const towerBp = {
-                        name: "_t835_tower",
-                        parts: [part("stein", 0, 0, 0), part("stein", 0, 1, 0), part("stein", 0, 2, 0)],
-                    };
-                    out.towerNotBody = r._isBodyShaped(towerBp) === false;
-                    out.towerRoleArchitecture = r.computeBlueprintRole(towerBp) === "architecture";
-
-                    // --- Asymmetrisch: kein Spiegel → kein Körper ---
-                    const asymBp = {
-                        name: "_t835_asym",
-                        parts: [part("stein", 0, 0, 0), part("stein", 2, 1, 0), part("stein", 5, 2, 1)],
-                    };
-                    out.asymNotBody = r._isBodyShaped(asymBp) === false;
-
-                    // --- lebendig+weich → Nahrung ---
-                    const foodBp = {
-                        name: "_t835_food",
-                        parts: [
-                            {
-                                shape: "sphere",
-                                material: "fleisch",
-                                size: { x: 1, y: 1, z: 1 },
-                                position: { x: 0, y: 0, z: 0 },
-                            },
-                        ],
-                    };
-                    out.foodIsFoodLike = r._isFoodLike(foodBp) === true;
-                    out.foodRoleConsumable = r.computeBlueprintRole(foodBp) === "consumable";
-
-                    const stoneBp = { name: "_t835_stone", parts: [part("stein", 0, 0, 0)] };
-                    out.stoneNotFood = r._isFoodLike(stoneBp) === false;
-                    out.stoneRoleArchitecture = r.computeBlueprintRole(stoneBp) === "architecture";
-
-                    // --- Priorität: ein Körper aus lebendigem Material ist eine
-                    //     SEELE (Körper-Form schlägt Nahrung) ---
-                    out.priorityBodyBeatsFood = r.computeBlueprintRole(bodyBp) === "soul";
-
-                    // --- _refreshBlueprintRoleEmergent: registrierter Körper-
-                    //     Bauplan emergiert OHNE Werkzeug-Op als "soul" ---
-                    r.state.blueprints["_t835_body_reg"] = {
-                        name: "_t835_body_reg",
-                        label: "Test-Körper",
-                        builtIn: false,
-                        parts: JSON.parse(JSON.stringify(bodyBp.parts)),
-                    };
-                    r._refreshBlueprintRoleEmergent("_t835_body_reg");
-                    out.refreshEmergesSoul = r.state.blueprints["_t835_body_reg"].role === "soul";
-
-                    // registrierte Nahrung emergiert als "consumable"
-                    r.state.blueprints["_t835_food_reg"] = {
-                        name: "_t835_food_reg",
-                        label: "Test-Frucht",
-                        builtIn: false,
-                        parts: JSON.parse(JSON.stringify(foodBp.parts)),
-                    };
-                    r._refreshBlueprintRoleEmergent("_t835_food_reg");
-                    out.refreshEmergesFood = r.state.blueprints["_t835_food_reg"].role === "consumable";
-
-                    // --- Manueller Override schlägt die Emergenz weiterhin ---
-                    r.state.blueprints["_t835_manual"] = {
-                        name: "_t835_manual",
-                        label: "Test-Manuell",
-                        builtIn: false,
-                        roleManual: true,
-                        role: "architecture",
-                        parts: JSON.parse(JSON.stringify(bodyBp.parts)),
-                    };
-                    r._refreshBlueprintRoleEmergent("_t835_manual");
-                    out.roleManualStillWins = r.state.blueprints["_t835_manual"].role === "architecture";
-
-                    // --- activateConsumable funktioniert OHNE consumableMeta
-                    //     (emergente Nahrung ist essbar) ---
-                    r.state.blueprints["_t835_food_reg"].role = "consumable";
-                    const before = (r.state.player.boosts || []).length;
-                    const eatRes = r.activateConsumable("_t835_food_reg");
-                    out.metaLessConsumableWorks =
-                        !!(eatRes && eatRes.ok) && (r.state.player.boosts || []).length > before;
-
-                    // Aufräumen
-                    if (r.state.player.boosts) {
-                        r.state.player.boosts = r.state.player.boosts.filter(
-                            (b) => b.source !== "consume:_t835_food_reg"
-                        );
-                        if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
-                    }
-                    delete r.state.blueprints["_t835_body_reg"];
-                    delete r.state.blueprints["_t835_food_reg"];
-                    delete r.state.blueprints["_t835_manual"];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v835Results && !v835Results.error) {
-                check(
-                    "V8.35: Substanz-Helfer existieren (_compoundSymmetry/_isBodyShaped/_isFoodLike)",
-                    v835Results.methodsExist
-                );
-                check("V8.35: bilateral-symmetrisches Glieder-Compound ist body-shaped", v835Results.bodyIsShaped);
-                check("V8.35: Körper-Form emergiert als Rolle 'soul'", v835Results.bodyRoleSoul);
-                check("V8.35: gestapelter Turm (symmetrisch, keine Glieder) ist KEIN Körper", v835Results.towerNotBody);
-                check("V8.35: Turm emergiert als 'architecture' (Default)", v835Results.towerRoleArchitecture);
-                check("V8.35: asymmetrisches Compound ist KEIN Körper", v835Results.asymNotBody);
-                check("V8.35: lebendig+weiche Substanz ist food-like", v835Results.foodIsFoodLike);
-                check("V8.35: lebendige Substanz emergiert als Rolle 'consumable'", v835Results.foodRoleConsumable);
-                check("V8.35: Stein-Substanz ist KEINE Nahrung", v835Results.stoneNotFood);
-                check("V8.35: Stein-Block emergiert als 'architecture'", v835Results.stoneRoleArchitecture);
-                check(
-                    "V8.35: Priorität — Körper aus lebendigem Material ist Seele, nicht Nahrung",
-                    v835Results.priorityBodyBeatsFood
-                );
-                check(
-                    "V8.35: _refreshBlueprintRoleEmergent — Körper-Bauplan → 'soul' (ohne Op)",
-                    v835Results.refreshEmergesSoul
-                );
-                check(
-                    "V8.35: _refreshBlueprintRoleEmergent — Nahrungs-Bauplan → 'consumable' (ohne Op)",
-                    v835Results.refreshEmergesFood
-                );
-                check(
-                    "V8.35: manueller Rollen-Override schlägt die Emergenz weiterhin",
-                    v835Results.roleManualStillWins
-                );
-                check(
-                    "V8.35: activateConsumable funktioniert ohne consumableMeta (emergente Nahrung essbar)",
-                    v835Results.metaLessConsumableWorks
-                );
-            } else {
-                check("V8.35: Substanz-Rolle Tests laufen", false, v835Results ? v835Results.error : "no result");
-            }
-
-            // ### V8.36 — Browser-Test-Bug-Fixes (Wurzel-Fixes) ###
-            const v836Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const proto = Object.getPrototypeOf(r);
-                    const allSrc = [];
-                    for (const name of Object.getOwnPropertyNames(proto)) {
-                        try {
-                            const fn = proto[name];
-                            if (typeof fn === "function") allSrc.push({ name, src: fn.toString() });
-                        } catch {
-                            /* skip */
-                        }
-                    }
-                    const anySrc = (re) => allSrc.some((m) => re.test(m.src));
-                    const srcOf = (name) => {
-                        const m = allSrc.find((x) => x.name === name);
-                        return m ? m.src : "";
-                    };
-
-                    // 1. Jump — Player-Body schläft nie (DISABLE_DEACTIVATION=4);
-                    //    der forceActivationState(1) im Geh-Block ist entfernt.
-                    out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
-                    out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
-
-                    // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
-                    //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
-                    {
-                        const src = srcOf("_loopCamera");
-                        out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
-                    }
-
-                    // 3. Loch-Durchfall — V9.36 Phase 5c.2.c.3.a: der V8.36-
-                    // Heightfield-Höhen-Clamp im `_applyModifyOpToChunk` ist
-                    // mit der Lösch der ganzen modify_terrain-Schicht weg;
-                    // die V9.36-`carveVoxelSphere`-Geste hat keinen Höhen-
-                    // Clamp-Bedarf (das 3D-Voxel-Feld kennt keine Höhen-
-                    // Säulen-Akkumulation). Der V8.36-Radius-Marker lebt
-                    // weiter, jetzt als `carveRadius = 3.5` (im Voxel-Feld
-                    // grösser als die alte 3.0-Heightfield-Mulde — eine
-                    // Voxel-Kugel mit 3.5 m Radius spannt ~140 Zellen).
-                    out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
-                    out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
-
-                    // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
-                    //    V9.44-f — die Physik-Phase lebt in _loopPhysicsSync.
-                    {
-                        const src = srcOf("_loopPhysicsSync");
-                        out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
-                    }
-
-                    // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
-                    out.logCssRule = [...document.querySelectorAll("style")].some((s) =>
-                        s.textContent.includes("console-log-section:has")
-                    );
-
-                    // 6. Neue Werkstatt-Parts landen im Ursprung (0,0,0).
-                    {
-                        if (r.state.blueprints["_t836"]) delete r.state.blueprints["_t836"];
-                        r.createBlueprint("_t836", "T836");
-                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t836");
-                        const before = (r.state.blueprints["_t836"].parts || []).length;
-                        r._workshopHandleShapeDrop("box");
-                        const parts = r.state.blueprints["_t836"].parts || [];
-                        const np = parts[parts.length - 1];
-                        out.partAtOrigin =
-                            parts.length === before + 1 &&
-                            !!np &&
-                            !!np.position &&
-                            np.position.x === 0 &&
-                            np.position.y === 0 &&
-                            np.position.z === 0;
-                        delete r.state.blueprints["_t836"];
-                    }
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v836Results && !v836Results.error) {
-                check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
-                check(
-                    "V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)",
-                    v836Results.jumpNoActivate1
-                );
-                check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
-                check(
-                    "V8.36 + V9.36: Grabe-Radius 3.5 im Voxel-Feld (Mulde statt Nadel, V9.36 ersetzt 3.0-Heightfield-Marker)",
-                    v836Results.digRadiusVoxel
-                );
-                check(
-                    "V9.36: _applyModifyOpToChunk ist gelöscht (Heightfield-Höhen-Clamp obsolet — Voxel-Feld braucht keinen)",
-                    v836Results.digHeightClampObsolete
-                );
-                check("V8.36: Auftrieb-Gate via getTerrainHeightAt (Killplane greift wieder)", v836Results.waterGate);
-                check("V8.36: Logbuch-CSS teilt die Konsole 50/50 (verdeckt den Chat nicht)", v836Results.logCssRule);
-                check("V8.36: neue Werkstatt-Parts landen im Ursprung (0,0,0)", v836Results.partAtOrigin);
-            } else {
-                check("V8.36: Browser-Test-Bug-Fix Tests laufen", false, v836Results ? v836Results.error : "no result");
-            }
-
-            // ### V8.37 — Werkstatt-Lesbarkeit + Einstellungen-Faltung ###
-            const v837Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // A — Bau-Kosten sichtbar im Werkstatt-Stats-Panel.
-                    {
-                        if (r.state.blueprints["_t837a"]) delete r.state.blueprints["_t837a"];
-                        r.createBlueprint("_t837a", "T837A");
-                        r.state.blueprints["_t837a"].parts = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0, z: 0 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                                color: 0x888888,
-                            },
-                        ];
-                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t837a");
-                        r._workshopRenderStatsPanel();
-                        const panel = document.getElementById("workshop-stats-panel");
-                        const txt = panel ? panel.textContent : "";
-                        const cost = r.computeBuildCost("_t837a");
-                        out.costPanelShown = /Bau-Kosten/.test(txt);
-                        out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× stein`);
-                        delete r.state.blueprints["_t837a"];
-                    }
-
-                    // B — 3D-Raster + Achsenkreuz im Werkstatt-Preview.
-                    {
-                        r._workshopEnsurePreview();
-                        const pre = r.state.workshop && r.state.workshop.preview;
-                        out.gridInScene = !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
-                        out.axesInScene = !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
-                        // raycast der Helfer ist als eigene no-op-Property
-                        // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
-                        out.helperRaycastNoop =
-                            !!pre &&
-                            Object.prototype.hasOwnProperty.call(pre.gridHelper, "raycast") &&
-                            Object.prototype.hasOwnProperty.call(pre.axesHelper, "raycast");
-                    }
-
-                    // C — Einstellungen-Sektionen faltbar.
-                    {
-                        r._initCollapsibleSettings(); // idempotent
-                        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
-                        const headers = drawer ? drawer.querySelectorAll("h3.collapsible-header") : [];
-                        out.collapsibleHeaders = headers.length >= 12;
-                        if (headers.length > 0) {
-                            const sec = headers[0].closest("section");
-                            const before = sec.classList.contains("collapsed");
-                            headers[0].click();
-                            const after = sec.classList.contains("collapsed");
-                            out.collapseToggles = before !== after;
-                            headers[0].click(); // Ausgangszustand wiederherstellen
-                        } else {
-                            out.collapseToggles = false;
-                        }
-                    }
-
-                    // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
-                    {
-                        const src = r._workshopInstallShapeDragDrop.toString();
-                        // Delegation: EIN Listener am bleibenden Container, NICHT
-                        // pro Karte (Karten verschwinden beim Re-Render).
-                        out.dragDelegated =
-                            /container\.addEventListener\("dragstart"/.test(src) && !/cards\.forEach/.test(src);
-                        out.dragSetData = /\.dataTransfer\.setData/.test(src);
-                        // Re-Render der Tool-Palette: frische Karten bleiben draggable.
-                        r._workshopRenderToolPalette();
-                        const palette = document.getElementById("workshop-tool-palette");
-                        const card = palette ? palette.querySelector(".workshop-tool-card") : null;
-                        out.toolCardDraggable = !!card && card.getAttribute("draggable") === "true";
-                        // Domänen-Farbpunkt bekommt einen erklärenden Tooltip.
-                        out.dotHasTitle = /dot\.title\s*=/.test(r._workshopRenderToolPalette.toString());
-                    }
-
-                    // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
-                    {
-                        r.state._fpsFrames = 0;
-                        r.state._fpsElapsed = 0;
-                        r.state.fps = 0;
-                        for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
-                        out.fpsRollingAvg = r.state.fps === 60;
-                        out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(r.updateFps.toString());
-                        r.state._fpsFrames = 5;
-                        r.state._fpsElapsed = 0.3;
-                        r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
-                        out.fpsResetsOnStall = r.state._fpsFrames === 0 && r.state._fpsElapsed === 0;
-                    }
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v837Results && !v837Results.error) {
-                check("V8.37: Bau-Kosten-Sektion im Werkstatt-Panel sichtbar", v837Results.costPanelShown);
-                check("V8.37: Bau-Kosten zeigt den computeBuildCost-Wert pro Material", v837Results.costPanelValue);
-                check("V8.37: Werkstatt-Preview hat ein Maß-Raster (GridHelper)", v837Results.gridInScene);
-                check("V8.37: Werkstatt-Preview hat ein Achsenkreuz (AxesHelper)", v837Results.axesInScene);
-                check(
-                    "V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)",
-                    v837Results.helperRaycastNoop
-                );
-                check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥12)", v837Results.collapsibleHeaders);
-                check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
-                check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
-                check("V8.37: Werkzeug-Drag überträgt weiterhin Daten (setData)", v837Results.dragSetData);
-                check("V8.37: neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
-                check("V8.37: Domänen-Farbpunkt trägt einen erklärenden Tooltip", v837Results.dotHasTitle);
-                check("V8.37: FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
-                check("V8.37: FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
-                check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
-            } else {
-                check("V8.37: Werkstatt-Lesbarkeit Tests laufen", false, v837Results ? v837Results.error : "no result");
-            }
-
-            // ### V8.38 — Werkstatt-UX: Hover-Kosten + sichtbare Verbindungen + Preview-Höhe ###
-            const v838Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // C — Hover-Material-Info auf Bauplan-Slots.
-                    {
-                        if (r.state.blueprints["_t838c"]) delete r.state.blueprints["_t838c"];
-                        r.createBlueprint("_t838c", "T838C");
-                        r.state.blueprints["_t838c"].parts = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0, z: 0 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                                color: 0x888888,
-                            },
-                        ];
-                        out.costTooltipMethod = typeof r._blueprintCostTooltip === "function";
-                        const tip = r._blueprintCostTooltip("_t838c");
-                        out.costTooltipText = /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
-                        const origHotbar0 = r.state.hotbar[0];
-                        r.state.hotbar[0] = "_t838c";
-                        r._renderHotbarDOM();
-                        const hslot = document.querySelector('#hotbar .hotbar-slot[data-slot="0"]');
-                        out.hotbarSlotTitle = !!hslot && /Bau-Kosten/.test(hslot.title || "");
-                        r.state.hotbar[0] = origHotbar0;
-                        r._renderHotbarDOM();
-                        const origInv0 = r.state.player.inventory[0];
-                        r.state.player.inventory[0] = { kind: "blueprint", blueprintName: "_t838c", count: 1 };
-                        r.renderInventoryUI();
-                        const islot = document.querySelector('#inventory-grid .inventory-slot[data-inv-slot="0"]');
-                        out.invSlotTitle = !!islot && /Bau-Kosten/.test(islot.title || "");
-                        r.state.player.inventory[0] = origInv0;
-                        r.renderInventoryUI();
-                        delete r.state.blueprints["_t838c"];
-                    }
-
-                    // D — Verbindungen im 3D-Preview sichtbar.
-                    {
-                        const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
-                        if (r.state.blueprints["_t838d"]) delete r.state.blueprints["_t838d"];
-                        r.createBlueprint("_t838d", "T838D");
-                        const bp = r.state.blueprints["_t838d"];
-                        bp.parts = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: -1, y: 0, z: 0 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                color: 0x888888,
-                            },
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 1, y: 0, z: 0 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                color: 0x888888,
-                            },
-                        ];
-                        r.addConnectionToBlueprint("_t838d", { type: "masonry", partA: 0, partB: 1 });
-                        const group = r._buildFromBlueprint(bp);
-                        const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
-                        out.connHasLine = conn.some((c) => c.isLine);
-                        out.connHasMarker = conn.some((c) => c.isMesh);
-                        out.connDepthTestOff =
-                            conn.length > 0 && conn.every((c) => c.material && c.material.depthTest === false);
-                        // _workshopRebuildPreviewMesh zählt Verbindungen NICHT als Part.
-                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t838d");
-                        r._workshopEnsurePreview();
-                        r._workshopRebuildPreviewMesh();
-                        const pre = r.state.workshop && r.state.workshop.preview;
-                        out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
-                        r._renderWorkshopDOM();
-                        const connSection = document.querySelector(".workshop-connections");
-                        out.connHintShown = !!connSection && /Sollbruchstelle/.test(connSection.textContent || "");
-                        delete r.state.blueprints["_t838d"];
-                        // Auswahl wiederherstellen — kein hängender Verweis auf
-                        // den gelöschten Test-Bauplan für nachfolgende Tests.
-                        if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
-                            r.selectBlueprintForEdit(origSel);
-                        }
-                    }
-
-                    // F — 3D-Preview-Höhe.
-                    {
-                        out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
-                            /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
-                        );
-                        out.cameraAspectSync = /camera\.aspect = w \/ h/.test(r._workshopSyncCanvasSize.toString());
-                    }
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v838Results && !v838Results.error) {
-                check("V8.38: _blueprintCostTooltip-Methode existiert", v838Results.costTooltipMethod);
-                check("V8.38: Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
-                check("V8.38: gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
-                check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
-                check("V8.38: Verbindung rendert eine Linie im 3D-Preview", v838Results.connHasLine);
-                check("V8.38: Verbindung rendert einen Mittelpunkt-Marker", v838Results.connHasMarker);
-                check(
-                    "V8.38: Verbindungs-Linie + Marker sind depthTest-frei (immer sichtbar)",
-                    v838Results.connDepthTestOff
-                );
-                check(
-                    "V8.38: Verbindungen werden NICHT als Part gezählt (partMeshes korrekt)",
-                    v838Results.connNotCountedAsPart
-                );
-                check("V8.38: Werkstatt-Panel erklärt, was eine Verbindung tut", v838Results.connHintShown);
-                check(
-                    "V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)",
-                    v838Results.previewAspect
-                );
-                check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
-            } else {
-                check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
-            }
-
-            // ### V8.39 — Werkzeug-Klassen + Präzision→Qualität ###
-            const v839Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Farb-Sprache: Rollen-Farben-Konstante.
-                    const rc = r.constructor && r.constructor.BLUEPRINT_ROLE_COLORS;
-                    out.roleColorsExist =
-                        !!rc &&
-                        typeof rc.armor === "string" &&
-                        typeof rc.tool === "string" &&
-                        typeof rc.soul === "string" &&
-                        typeof rc.architecture === "string";
-
-                    // computeBlueprintQuality.
-                    out.qualityMethod = typeof r.computeBlueprintQuality === "function";
-                    out.qualityUnworked =
-                        r.computeBlueprintQuality({
-                            parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
-                        }) === 1.0;
-                    const qWorked = r.computeBlueprintQuality({
-                        parts: [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                size: { x: 1, y: 1, z: 1 },
-                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                            },
-                        ],
-                    });
-                    out.qualityWorked = qWorked > 0.3 && qWorked < 0.6;
-
-                    // Aufwand: Stamina skaliert mit Werkzeug-cap (pfad-Modus).
-                    {
-                        const prevMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
-                        r.setGameMode("pfad");
-                        if (r.state.blueprints["_t839s"]) delete r.state.blueprints["_t839s"];
-                        r.createBlueprint("_t839s", "T839S");
-                        r.state.blueprints["_t839s"].parts = [
-                            {
-                                shape: "box",
-                                material: "eisen",
-                                position: { x: 0, y: 0, z: 0 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                color: 0x888888,
-                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                            },
-                        ];
-                        r.state.player.stamina = 500;
-                        const b1 = r.state.player.stamina;
-                        const res1 = r.applyOpToPart("_t839s", 0, "hände");
-                        const costLow = b1 - r.state.player.stamina;
-                        const b2 = r.state.player.stamina;
-                        const res2 = r.applyOpToPart("_t839s", 0, "polierscheibe");
-                        const costHigh = b2 - r.state.player.stamina;
-                        out.staminaScales =
-                            !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
-                        r.setGameMode(prevMode);
-                        delete r.state.blueprints["_t839s"];
-                    }
-
-                    // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
-                    out.creatureStatsQuality = /computeBlueprintQuality/.test(r.computeCreatureStats.toString());
-                    out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
-
-                    // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
-                    {
-                        const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
-                        if (r.state.blueprints["_t839c"]) delete r.state.blueprints["_t839c"];
-                        r.createBlueprint("_t839c", "T839C");
-                        r.state.blueprints["_t839c"].parts = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0, z: 0 },
-                                rotation: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                color: 0x888888,
-                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                            },
-                        ];
-                        if (typeof r.selectBlueprintForEdit === "function") r.selectBlueprintForEdit("_t839c");
-                        r._workshopRenderStatsPanel();
-                        const panel = document.getElementById("workshop-stats-panel");
-                        const chip = panel ? panel.querySelector(".role-chip") : null;
-                        out.roleChipGlow = !!chip && !!chip.style.boxShadow && chip.style.boxShadow.length > 0;
-                        out.qualityRow = !!panel && /Qualität/.test(panel.textContent || "");
-                        r._renderWorkshopDOM();
-                        const lrow = document.querySelector("#workshop-list .workshop-list-row");
-                        out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
-                        delete r.state.blueprints["_t839c"];
-                        if (origSel && r.state.blueprints[origSel] && typeof r.selectBlueprintForEdit === "function") {
-                            r.selectBlueprintForEdit(origSel);
-                        }
-                    }
-
-                    // Equip-Hinweis im Spieler-Drawer.
-                    r.renderPlayerEquipUI();
-                    const eq = document.getElementById("player-equip");
-                    out.equipHint = !!eq && /Rüstung anziehen/.test(eq.textContent || "");
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v839Results && !v839Results.error) {
-                check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
-                check("V8.39: computeBlueprintQuality-Methode existiert", v839Results.qualityMethod);
-                check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
-                check(
-                    "V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität",
-                    v839Results.qualityWorked
-                );
-                check(
-                    "V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)",
-                    v839Results.staminaScales
-                );
-                check("V8.39: computeCreatureStats skaliert Equip mit Qualität", v839Results.creatureStatsQuality);
-                check("V8.39: activateConsumable skaliert Trank-Stärke mit Qualität", v839Results.consumableQuality);
-                check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
-                check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
-                check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
-                check("V8.39: Spieler-Drawer zeigt den Rüstung-Equip-Hinweis", v839Results.equipHint);
-            } else {
-                check("V8.39: Werkzeug-Klassen Tests laufen", false, v839Results ? v839Results.error : "no result");
-            }
-
-            // ### W12 Phase 1 Commit 1 — Welt-Portal: Rolle + Built-in welt_portal ###
-            const w12c1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const C = r.constructor;
-
-                    // Rolle "portal" in Label- + Farb-Konstanten.
-                    out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
-                    out.roleColor =
-                        !!C && !!C.BLUEPRINT_ROLE_COLORS && typeof C.BLUEPRINT_ROLE_COLORS.portal === "string";
-
-                    // PORTAL_SKELETON_WORLD-Konstante zeigt auf einen worlds/-Pfad.
-                    out.skeletonConst =
-                        typeof C.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(C.PORTAL_SKELETON_WORLD);
-
-                    // Built-in welt_portal-Bauplan.
-                    const wp = r.state.blueprints && r.state.blueprints.welt_portal;
-                    out.builtinExists = !!wp && wp.builtIn === true;
-                    out.builtinRole = !!wp && wp.role === "portal" && wp.roleManual === true;
-                    out.builtinMeta =
-                        !!wp &&
-                        !!wp.portalMeta &&
-                        typeof wp.portalMeta.world === "string" &&
-                        typeof wp.portalMeta.label === "string";
-                    out.builtinHasParts = !!wp && Array.isArray(wp.parts) && wp.parts.length >= 2;
-
-                    // setBlueprintAsPortal — Marker-Methode.
-                    out.markMethod = typeof r.setBlueprintAsPortal === "function";
-                    if (r.state.blueprints["_w12p"]) delete r.state.blueprints["_w12p"];
-                    r.createBlueprint("_w12p", "W12P");
-                    const markRes = r.setBlueprintAsPortal("_w12p");
-                    const marked = r.state.blueprints["_w12p"];
-                    out.markOk =
-                        !!markRes &&
-                        markRes.ok === true &&
-                        !!marked &&
-                        marked.role === "portal" &&
-                        marked.roleManual === true &&
-                        !!marked.portalMeta &&
-                        typeof marked.portalMeta.world === "string";
-
-                    // Manueller Override bleibt nach _refreshBlueprintRoleEmergent.
-                    r._refreshBlueprintRoleEmergent("_w12p");
-                    out.manualSticks = r.state.blueprints["_w12p"].role === "portal";
-
-                    // Built-in-Schutz + Unknown-Reject.
-                    const builtinRej = r.setBlueprintAsPortal("village");
-                    out.rejectBuiltin =
-                        !!builtinRej && builtinRej.ok === false && builtinRej.reason === "cannot_modify_builtin";
-                    const unknownRej = r.setBlueprintAsPortal("_does_not_exist_xyz");
-                    out.rejectUnknown =
-                        !!unknownRej && unknownRej.ok === false && unknownRej.reason === "blueprint_unknown";
-
-                    // _sanitizePortalMeta — fremdes Origin + Pfad-Traversal werden verworfen.
-                    const sanForeign = r._sanitizePortalMeta({ world: "https://evil.example/x" }, "fb");
-                    out.sanitizeForeign = sanForeign.world === C.PORTAL_SKELETON_WORLD;
-                    const sanTraversal = r._sanitizePortalMeta({ world: "worlds/../secret" }, "fb");
-                    out.sanitizeTraversal = sanTraversal.world === C.PORTAL_SKELETON_WORLD;
-                    const sanValid = r._sanitizePortalMeta(
-                        { world: "worlds/skeleton/index.html", label: "Test-Welt" },
-                        "fb"
-                    );
-                    out.sanitizeValid =
-                        sanValid.world === "worlds/skeleton/index.html" && sanValid.label === "Test-Welt";
-
-                    // W12-Korrektur — die Portal-NATUR emergiert aus der Substanz:
-                    // ein magie-leitender Ring wird zum Tor (das Ziel bleibt autoriert).
-                    out.portalShapedMethod = typeof r._isPortalShaped === "function";
-
-                    // Magie-Ring (Quarz-Torus, begehbar groß) → Portal.
-                    const magicRing = {
-                        parts: [
-                            {
-                                shape: "torus",
-                                material: "quarz",
-                                size: { x: 3.4, y: 3.4, z: 3.4 },
-                                position: { x: 0, y: 0, z: 0 },
-                            },
-                        ],
-                    };
-                    out.magicRingIsPortalShaped = r._isPortalShaped(magicRing) === true;
-                    out.magicRingRolePortal = r.computeBlueprintRole(magicRing) === "portal";
-
-                    // Stein-Ring (kein Magie-Material) → KEIN Portal. Die
-                    // "aus-Magie"-Diskrimination: ein schlichter Ring bleibt Bauwerk.
-                    const stoneRing = {
-                        parts: [
-                            {
-                                shape: "torus",
-                                material: "stein",
-                                size: { x: 3.4, y: 3.4, z: 3.4 },
-                                position: { x: 0, y: 0, z: 0 },
-                            },
-                        ],
-                    };
-                    out.stoneRingNotPortal =
-                        r._isPortalShaped(stoneRing) === false && r.computeBlueprintRole(stoneRing) !== "portal";
-
-                    // Winziger Deko-Torus aus Quarz → KEIN Portal (nicht begehbar groß).
-                    const tinyRing = {
-                        parts: [
-                            {
-                                shape: "torus",
-                                material: "quarz",
-                                size: { x: 0.8, y: 0.8, z: 0.8 },
-                                position: { x: 0, y: 0, z: 0 },
-                            },
-                        ],
-                    };
-                    out.tinyRingNotPortal = r._isPortalShaped(tinyRing) === false;
-
-                    // kristall_geode (magisch, aber massiv, kein Ring) → KEIN Portal.
-                    const geode = r.state.blueprints && r.state.blueprints.kristall_geode;
-                    out.geodeNotPortal = !!geode && r._isPortalShaped(geode) === false;
-
-                    // Built-in welt_portal erfüllt selbst die emergente Regel.
-                    out.builtinSatisfiesRule = !!wp && r._isPortalShaped(wp) === true;
-
-                    // Emergenter Pfad: ein eigener Bauplan mit Magie-Ring wird via
-                    // _refreshBlueprintRoleEmergent zum Portal — OHNE setBlueprintAsPortal.
-                    if (r.state.blueprints["_w12e"]) delete r.state.blueprints["_w12e"];
-                    r.createBlueprint("_w12e", "W12E");
-                    r.state.blueprints["_w12e"].parts = [
-                        {
-                            shape: "torus",
-                            material: "quarz",
-                            size: { x: 3.4, y: 3.4, z: 3.4 },
-                            position: { x: 0, y: 0, z: 0 },
-                        },
-                    ];
-                    r._refreshBlueprintRoleEmergent("_w12e");
-                    out.emergentRefreshPortal = r.state.blueprints["_w12e"].role === "portal";
-                    delete r.state.blueprints["_w12e"];
-
-                    delete r.state.blueprints["_w12p"];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12c1Results && !w12c1Results.error) {
-                check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_LABELS", w12c1Results.roleLabel);
-                check("W12 P1: Rolle 'portal' in BLUEPRINT_ROLE_COLORS", w12c1Results.roleColor);
-                check("W12 P1: PORTAL_SKELETON_WORLD zeigt auf worlds/-Pfad", w12c1Results.skeletonConst);
-                check("W12 P1: Built-in welt_portal-Bauplan existiert", w12c1Results.builtinExists);
-                check("W12 P1: welt_portal hat role:'portal' + roleManual", w12c1Results.builtinRole);
-                check("W12 P1: welt_portal trägt portalMeta (world + label)", w12c1Results.builtinMeta);
-                check("W12 P1: welt_portal hat min. 2 Parts (Ring + Membran)", w12c1Results.builtinHasParts);
-                check("W12 P1: setBlueprintAsPortal-Methode existiert", w12c1Results.markMethod);
-                check("W12 P1: setBlueprintAsPortal markiert eigenen Bauplan", w12c1Results.markOk);
-                check(
-                    "W12 P1: manuelle Portal-Rolle überlebt _refreshBlueprintRoleEmergent",
-                    w12c1Results.manualSticks
-                );
-                check("W12 P1: setBlueprintAsPortal lehnt Built-in ab", w12c1Results.rejectBuiltin);
-                check("W12 P1: setBlueprintAsPortal lehnt unbekannten Bauplan ab", w12c1Results.rejectUnknown);
-                check("W12 P1: _sanitizePortalMeta verwirft fremdes Origin", w12c1Results.sanitizeForeign);
-                check("W12 P1: _sanitizePortalMeta verwirft Pfad-Traversal", w12c1Results.sanitizeTraversal);
-                check("W12 P1: _sanitizePortalMeta behält gültigen worlds/-Pfad", w12c1Results.sanitizeValid);
-                check("W12 P1: _isPortalShaped-Methode existiert", w12c1Results.portalShapedMethod);
-                check("W12 P1: Magie-Ring (Quarz-Torus) ist _isPortalShaped", w12c1Results.magicRingIsPortalShaped);
-                check(
-                    "W12 P1: Magie-Ring emergiert als Rolle 'portal' (computeBlueprintRole)",
-                    w12c1Results.magicRingRolePortal
-                );
-                check(
-                    "W12 P1: Stein-Ring ohne Magie wird NICHT Portal (aus-Magie-Diskrimination)",
-                    w12c1Results.stoneRingNotPortal
-                );
-                check("W12 P1: winziger Deko-Torus wird NICHT Portal (Begehbarkeit)", w12c1Results.tinyRingNotPortal);
-                check(
-                    "W12 P1: kristall_geode (magisch, massiv) wird NICHT Portal (kein Ring)",
-                    w12c1Results.geodeNotPortal
-                );
-                check("W12 P1: Built-in welt_portal erfüllt _isPortalShaped selbst", w12c1Results.builtinSatisfiesRule);
-                check(
-                    "W12 P1: Magie-Ring emergiert via _refreshBlueprintRoleEmergent zu 'portal'",
-                    w12c1Results.emergentRefreshPortal
-                );
-            } else {
-                check(
-                    "W12 P1: Welt-Portal Commit 1 Tests laufen",
-                    false,
-                    w12c1Results ? w12c1Results.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 1 Commit 2 — Skelett-Welt + iframe-Overlay + CSP ###
-            const w12c2Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // CSP: frame-src 'self' (nur same-origin iframes erlaubt).
-                    const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-                    const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
-                    out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
-
-                    // Skelett-Welt-Seite + Skript werden ausgeliefert.
-                    try {
-                        const htmlRes = await fetch("worlds/skeleton/index.html");
-                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-                        out.skeletonHtmlServed =
-                            htmlRes.ok &&
-                            /SKELETT-WELT/.test(htmlBody) &&
-                            /id="avatar-name"/.test(htmlBody) &&
-                            /skeleton\.js/.test(htmlBody);
-                        const jsRes = await fetch("worlds/skeleton/skeleton.js");
-                        const jsBody = jsRes.ok ? await jsRes.text() : "";
-                        out.skeletonJsServed =
-                            jsRes.ok &&
-                            /addEventListener\("message"/.test(jsBody) &&
-                            /"ready"/.test(jsBody) &&
-                            /"enter"/.test(jsBody);
-                    } catch (e) {
-                        out.skeletonHtmlServed = false;
-                        out.skeletonJsServed = false;
-                    }
-
-                    // Overlay-Methoden.
-                    out.buildMethod = typeof r._buildPortalOverlay === "function";
-                    out.disposeMethod = typeof r._disposePortalOverlay === "function";
-                    out.sendEnterMethod = typeof r._portalSendEnter === "function";
-
-                    // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Test" });
-                    const overlay = document.getElementById("portal-overlay");
-                    const iframe = overlay ? overlay.querySelector("iframe.portal-frame") : null;
-                    out.overlayBuilt = !!overlay && !!iframe;
-                    out.iframeSandboxed = !!iframe && (iframe.getAttribute("sandbox") || "").includes("allow-scripts");
-                    out.iframeSrcSkeleton = !!iframe && iframe.src.includes("worlds/skeleton/index.html");
-                    out.overlayRefSet = !!r._portalOverlay;
-
-                    // _disposePortalOverlay räumt Overlay + Ref.
-                    r._disposePortalOverlay();
-                    out.overlayDisposed = !document.getElementById("portal-overlay") && !r._portalOverlay;
-
-                    // Defense-in-Depth: ein fremdes Origin im world-Feld wird auch im
-                    // Overlay-Builder gesäubert (kein evil.example im iframe-src).
-                    r._buildPortalOverlay({ world: "https://evil.example/pwn" });
-                    const evilFrame = document.querySelector("#portal-overlay iframe.portal-frame");
-                    out.overlaySanitizesForeign =
-                        !!evilFrame &&
-                        !evilFrame.src.includes("evil.example") &&
-                        evilFrame.src.includes("worlds/skeleton");
-                    r._disposePortalOverlay();
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12c2Results && !w12c2Results.error) {
-                check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
-                check("W12 P1 C2: Skelett-Welt-Seite wird ausgeliefert", w12c2Results.skeletonHtmlServed);
-                check("W12 P1 C2: skeleton.js mit Handshake wird ausgeliefert", w12c2Results.skeletonJsServed);
-                check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
-                check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
-                check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
-                check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
-                check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
-                check("W12 P1 C2: iframe-src zeigt auf die Skelett-Welt", w12c2Results.iframeSrcSkeleton);
-                check("W12 P1 C2: _portalOverlay-Ref nach Build gesetzt", w12c2Results.overlayRefSet);
-                check("W12 P1 C2: _disposePortalOverlay räumt Overlay + Ref", w12c2Results.overlayDisposed);
-                check(
-                    "W12 P1 C2: Overlay-Builder säubert fremdes Origin (Defense-in-Depth)",
-                    w12c2Results.overlaySanitizesForeign
-                );
-            } else {
-                check(
-                    "W12 P1 C2: Skelett-Welt Commit 2 Tests laufen",
-                    false,
-                    w12c2Results ? w12c2Results.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 1 Commit 3 — Betreten / Pause / Rückkehr ###
-            const w12c3Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Portal-Affordance: welt_portal trägt AUSSCHLIESSLICH isPortal
-                    // (kein moveable/magnifying/focusing — ein Tor ist kein Fahrzeug).
-                    const wpAff = r.computeBlueprintAffordances(r.state.blueprints.welt_portal);
-                    out.affPortal = wpAff.isPortal === true;
-                    out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
-                    out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.village).isPortal;
-
-                    out.methods =
-                        typeof r.enterPortal === "function" &&
-                        typeof r.exitPortal === "function" &&
-                        typeof r._tickPortalAffordance === "function" &&
-                        typeof r._tryEnterPortalAtPlayer === "function";
-
-                    // spawnArchitecture eines Portals → Entry trägt affordances.isPortal.
-                    const pm = r.state.playerMesh.position;
-                    r.spawnArchitecture("welt_portal", { x: pm.x, y: pm.y, z: pm.z });
-                    const portalEntry = (r.state.architectures || []).find((e) => e.type === "welt_portal");
-                    out.spawnedHasAffordance =
-                        !!portalEntry && !!portalEntry.affordances && portalEntry.affordances.isPortal === true;
-
-                    // enterPortal baut das Overlay.
-                    const enterRes = portalEntry ? r.enterPortal(portalEntry) : { ok: false };
-                    out.enterBuildsOverlay =
-                        !!enterRes.ok && !!document.getElementById("portal-overlay") && !!r._portalOverlay;
-                    // Doppel-Eintritt wird abgelehnt.
-                    const doubleRes = r.enterPortal(portalEntry);
-                    out.rejectsDoubleEnter = !doubleRes.ok && doubleRes.reason === "already_in_portal";
-
-                    // Loop friert die Heimat-Welt ein, solange das Portal offen ist.
-                    const framesBefore = r.state._fpsFrames;
-                    r._gameLoopTick(performance.now());
-                    const framesInPortal = r.state._fpsFrames;
-                    out.loopFreezesInPortal = framesInPortal === framesBefore;
-
-                    // exitPortal räumt Overlay + Tasten-Zustand.
-                    r.state.keys.w = true;
-                    const exitRes = r.exitPortal();
-                    out.exitDisposesOverlay =
-                        !!exitRes.ok && !document.getElementById("portal-overlay") && !r._portalOverlay;
-                    out.exitClearsKeys = !r.state.keys.w;
-
-                    // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
-                    r._gameLoopTick(performance.now());
-                    out.loopResumesAfterPortal = r.state._fpsFrames !== framesInPortal;
-
-                    // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.
-                    const exitAgain = r.exitPortal();
-                    out.rejectsExitWhenIdle = !exitAgain.ok && exitAgain.reason === "not_in_portal";
-                    const badEnter = r.enterPortal({ type: "village", affordances: {} });
-                    out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
-
-                    // Loop-Guard ist verdrahtet.
-                    out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
-
-                    // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
-                    r._tickPortalAffordance();
-                    const promptEl = document.getElementById("portal-prompt");
-                    out.promptShownNearPortal =
-                        !!promptEl && !promptEl.hidden && /Portal betreten/.test(promptEl.textContent || "");
-
-                    // _tryEnterPortalAtPlayer betritt das nahe Portal.
-                    out.tryEnterWorks = r._tryEnterPortalAtPlayer() === true && !!r._portalOverlay;
-                    r.exitPortal();
-
-                    // Portal entfernen → Prompt verschwindet, _tryEnter scheitert.
-                    if (portalEntry) r.removeArchitecture(portalEntry);
-                    r._tickPortalAffordance();
-                    out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
-                    out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
-
-                    // skeleton.js meldet Esc als {type:"exit"} an die Heimat-Welt.
-                    try {
-                        const jsRes = await fetch("worlds/skeleton/skeleton.js");
-                        const jsBody = jsRes.ok ? await jsRes.text() : "";
-                        out.skeletonForwardsEsc = /Escape/.test(jsBody) && /"exit"/.test(jsBody);
-                    } catch (e) {
-                        out.skeletonForwardsEsc = false;
-                    }
-                    // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
-                    out.overlayHandlesExit = /"exit"/.test(r._buildPortalOverlay.toString());
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12c3Results && !w12c3Results.error) {
-                check("W12 P1 C3: welt_portal trägt die isPortal-Affordance", w12c3Results.affPortal);
-                check(
-                    "W12 P1 C3: ein Portal ist kein Fahrzeug/keine Linse (nur isPortal)",
-                    w12c3Results.affPortalExclusive
-                );
-                check("W12 P1 C3: ein Dorf trägt KEINE isPortal-Affordance", w12c3Results.affNonPortal);
-                check("W12 P1 C3: enterPortal/exitPortal/_tick/_tryEnter existieren", w12c3Results.methods);
-                check("W12 P1 C3: gespawntes Portal trägt affordances.isPortal", w12c3Results.spawnedHasAffordance);
-                check("W12 P1 C3: enterPortal baut das iframe-Overlay", w12c3Results.enterBuildsOverlay);
-                check("W12 P1 C3: enterPortal lehnt Doppel-Eintritt ab", w12c3Results.rejectsDoubleEnter);
-                check("W12 P1 C3: Loop friert die Heimat-Welt ein (Portal offen)", w12c3Results.loopFreezesInPortal);
-                check("W12 P1 C3: exitPortal räumt Overlay + Ref", w12c3Results.exitDisposesOverlay);
-                check("W12 P1 C3: exitPortal verwirft stale Tasten-Zustände", w12c3Results.exitClearsKeys);
-                check(
-                    "W12 P1 C3: Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf",
-                    w12c3Results.loopResumesAfterPortal
-                );
-                check("W12 P1 C3: exitPortal ohne offenes Portal wird abgelehnt", w12c3Results.rejectsExitWhenIdle);
-                check("W12 P1 C3: enterPortal lehnt eine Nicht-Portal-Architektur ab", w12c3Results.rejectsNonPortal);
-                check("W12 P1 C3: Game-Loop hat den Portal-Guard verdrahtet", w12c3Results.loopGuard);
-                check(
-                    "W12 P1 C3: _tickPortalAffordance zeigt den Prompt am Portal",
-                    w12c3Results.promptShownNearPortal
-                );
-                check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
-                check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
-                check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
-                check(
-                    "W12 P1 C3: skeleton.js meldet Esc als exit an die Heimat-Welt",
-                    w12c3Results.skeletonForwardsEsc
-                );
-                check("W12 P1 C3: _buildPortalOverlay behandelt die exit-Nachricht", w12c3Results.overlayHandlesExit);
-            } else {
-                check(
-                    "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
-                    false,
-                    w12c3Results ? w12c3Results.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 2 Commit 1 — Strom-Welt (three-fluid-fx) ###
-            const w12p2Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Fluid-Welt-Seite + Skript + vendored Engine werden ausgeliefert.
-                    try {
-                        const htmlRes = await fetch("worlds/fluid/index.html");
-                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-                        out.fluidHtmlServed =
-                            htmlRes.ok &&
-                            /Strom-Welt/.test(htmlBody) &&
-                            /id="avatar-name"/.test(htmlBody) &&
-                            /type="module"/.test(htmlBody) &&
-                            /fluid\.js/.test(htmlBody);
-                        const jsRes = await fetch("worlds/fluid/fluid.js");
-                        const jsBody = jsRes.ok ? await jsRes.text() : "";
-                        out.fluidJsServed =
-                            jsRes.ok &&
-                            /FluidSimulation/.test(jsBody) &&
-                            /"ready"/.test(jsBody) &&
-                            /"enter"/.test(jsBody) &&
-                            /"exit"/.test(jsBody) &&
-                            jsBody.includes("./lib/");
-                        const coreRes = await fetch("worlds/fluid/lib/three.core.min.js");
-                        const modRes = await fetch("worlds/fluid/lib/three.module.min.js");
-                        const fxRes = await fetch("worlds/fluid/lib/three-fluid-fx.es.js");
-                        out.engineVendored = coreRes.ok && modRes.ok && fxRes.ok;
-                        const fxBody = fxRes.ok ? await fxRes.text() : "";
-                        // three-fluid-fx ist gepatcht: kein bare "three"-Import mehr.
-                        out.fxPatched =
-                            fxBody.includes('from "./three.module.min.js"') && !fxBody.includes('from "three"');
-                    } catch (e) {
-                        out.fluidHtmlServed = false;
-                        out.fluidJsServed = false;
-                        out.engineVendored = false;
-                        out.fxPatched = false;
-                    }
-
-                    // Built-in welt_strom-Portal.
-                    const ws = r.state.blueprints && r.state.blueprints.welt_strom;
-                    out.stromExists = !!ws && ws.builtIn === true;
-                    out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
-                    out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
-
-                    // welt_strom trägt exklusiv die isPortal-Affordance + ist _isPortalShaped.
-                    const wsAff = r.computeBlueprintAffordances(ws);
-                    out.stromAffordance =
-                        wsAff.isPortal === true && !wsAff.moveable && !wsAff.magnifying && !wsAff.focusing;
-                    out.stromPortalShaped = r._isPortalShaped(ws) === true;
-
-                    // _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad.
-                    out.sanitizeFluidWorld =
-                        r._sanitizePortalMeta({ world: "worlds/fluid/index.html" }, "fb").world ===
-                        "worlds/fluid/index.html";
-
-                    // enterPortal(welt_strom) → Overlay-iframe zeigt auf die Fluid-Welt.
-                    const pm = r.state.playerMesh.position;
-                    r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
-                    const stromEntry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
-                    const enterRes = stromEntry ? r.enterPortal(stromEntry) : { ok: false };
-                    const frame = document.querySelector("#portal-overlay iframe.portal-frame");
-                    out.enterFluidWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/fluid/index.html");
-                    r.exitPortal();
-                    if (stromEntry) r.removeArchitecture(stromEntry);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12p2Results && !w12p2Results.error) {
-                check("W12 P2 C1: Fluid-Welt-Seite wird ausgeliefert", w12p2Results.fluidHtmlServed);
-                check(
-                    "W12 P2 C1: fluid.js (FluidSimulation + Handshake) wird ausgeliefert",
-                    w12p2Results.fluidJsServed
-                );
-                check("W12 P2 C1: Engine vendored (three.core/module + three-fluid-fx)", w12p2Results.engineVendored);
-                check("W12 P2 C1: three-fluid-fx three-Import auf lib gepatcht", w12p2Results.fxPatched);
-                check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
-                check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
-                check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
-                check("W12 P2 C1: welt_strom trägt exklusiv die isPortal-Affordance", w12p2Results.stromAffordance);
-                check(
-                    "W12 P2 C1: welt_strom ist _isPortalShaped (Quarz-Ring emergiert)",
-                    w12p2Results.stromPortalShaped
-                );
-                check("W12 P2 C1: _sanitizePortalMeta akzeptiert den Fluid-Welt-Pfad", w12p2Results.sanitizeFluidWorld);
-                check(
-                    "W12 P2 C1: enterPortal(welt_strom) lädt die Fluid-Welt ins iframe",
-                    w12p2Results.enterFluidWorld
-                );
-            } else {
-                check("W12 P2 C1: Strom-Welt Tests laufen", false, w12p2Results ? w12p2Results.error : "no result");
-            }
-
-            // ### W12 Phase 2 Commit 2 — DSL-Brücke (das Protokoll) ###
-            const w12bridgeResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // _sanitizePortalMeta säubert das dsl-Manifest.
-                    const sanA = r._sanitizePortalMeta({
-                        world: "worlds/fluid/index.html",
-                        dsl: ["weather", "BAD OP", 7, "set_turbulence"],
-                    });
-                    out.sanitizeDsl =
-                        Array.isArray(sanA.dsl) &&
-                        sanA.dsl.length === 2 &&
-                        sanA.dsl.includes("weather") &&
-                        sanA.dsl.includes("set_turbulence");
-                    out.sanitizeNoDsl = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }).dsl === null;
-
-                    // Built-in-Manifeste.
-                    const ws = r.state.blueprints.welt_strom;
-                    const wp = r.state.blueprints.welt_portal;
-                    out.stromManifest =
-                        !!ws.portalMeta.dsl &&
-                        ws.portalMeta.dsl.includes("weather") &&
-                        ws.portalMeta.dsl.includes("sturm") &&
-                        ws.portalMeta.dsl.includes("set_turbulence");
-                    out.skeletonManifest = !!wp.portalMeta.dsl && wp.portalMeta.dsl.includes("skybox_color");
-
-                    // _portalProgramOps — chain ist Rahmen, kein Wort.
-                    out.opsSingle = JSON.stringify(r._portalProgramOps(["weather", "rainy"])) === '["weather"]';
-                    out.opsChain =
-                        JSON.stringify(r._portalProgramOps(["chain", ["weather", "sunny"], ["sturm"]])) ===
-                        '["weather","sturm"]';
-
-                    // enterPortal(welt_strom) → Overlay trägt das Manifest + body.in-portal.
-                    const pm = r.state.playerMesh.position;
-                    r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
-                    const entry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
-                    r.enterPortal(entry);
-                    out.overlayCarriesManifest =
-                        !!r._portalOverlay &&
-                        Array.isArray(r._portalOverlay.dsl) &&
-                        r._portalOverlay.dsl.includes("sturm");
-                    out.bodyInPortal = document.body.classList.contains("in-portal");
-
-                    // _portalParseWorldCommand — welt-eigene Wörter.
-                    const wc = r._portalParseWorldCommand("set_turbulence 0.8");
-                    out.parseWorldWord = Array.isArray(wc) && wc[0] === "set_turbulence" && wc[1] === 0.8;
-                    out.parseWorldRejects = r._portalParseWorldCommand("flieg hoch") === null;
-
-                    // _portalRouteDsl — Subset-Op weitergereicht, unbekanntes verworfen.
-                    const rt1 = r._portalRouteDsl(["weather", "rainy"], "Wetter", null);
-                    out.routeForward = rt1.forwarded === true && rt1.reason === "sent";
-                    const rt2 = r._portalRouteDsl(["spawn_creature", 3], "x", null);
-                    out.routeUnknown = rt2.forwarded === false && rt2.reason === "unknown_op";
-                    // Stufe 0 — ausgestellte Welt (kein Manifest).
-                    r._portalOverlay.dsl = null;
-                    const rt3 = r._portalRouteDsl(["weather", "rainy"], "x", null);
-                    out.routeExhibited = rt3.forwarded === false && rt3.reason === "exhibited";
-
-                    // Intercept: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt.
-                    r._portalOverlay.dsl = ["weather"];
-                    r.state.weather = "sunny";
-                    r.processChatCommand("setze wetter rainy");
-                    out.homeWeatherUntouched = r.state.weather === "sunny";
-
-                    r.exitPortal();
-                    out.bodyClassCleared = !document.body.classList.contains("in-portal");
-                    if (entry) r.removeArchitecture(entry);
-
-                    // Sub-Welt-Adapter werden ausgeliefert.
-                    try {
-                        const fxBody = await (await fetch("worlds/fluid/fluid.js")).text();
-                        out.fluidAdapter =
-                            /function applyDsl/.test(fxBody) &&
-                            /"dsl"/.test(fxBody) &&
-                            /function setEnergy/.test(fxBody);
-                        // Render-Fix: das Dichtefeld (densityTexture) + Auto-Splats.
-                        out.fluidRenders =
-                            /densityTexture/.test(fxBody) && /addSplat/.test(fxBody) && /uBackdrop/.test(fxBody);
-                        const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
-                        out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
-                    } catch (e) {
-                        out.fluidAdapter = false;
-                        out.fluidRenders = false;
-                        out.skeletonAdapter = false;
-                    }
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12bridgeResults && !w12bridgeResults.error) {
-                check("W12 P2 C2: _sanitizePortalMeta säubert das dsl-Manifest", w12bridgeResults.sanitizeDsl);
-                check("W12 P2 C2: _sanitizePortalMeta — kein dsl → null (Stufe 0)", w12bridgeResults.sanitizeNoDsl);
-                check("W12 P2 C2: welt_strom trägt ein DSL-Manifest", w12bridgeResults.stromManifest);
-                check("W12 P2 C2: welt_portal (Skelett) trägt ein DSL-Manifest", w12bridgeResults.skeletonManifest);
-                check("W12 P2 C2: _portalProgramOps liest ein einzelnes Op", w12bridgeResults.opsSingle);
-                check("W12 P2 C2: _portalProgramOps liest eine chain (ohne 'chain')", w12bridgeResults.opsChain);
-                check("W12 P2 C2: das Portal-Overlay trägt das Manifest", w12bridgeResults.overlayCarriesManifest);
-                check("W12 P2 C2: body.in-portal hebt die Konsole im Portal", w12bridgeResults.bodyInPortal);
-                check("W12 P2 C2: _portalParseWorldCommand parst welt-eigene Wörter", w12bridgeResults.parseWorldWord);
-                check(
-                    "W12 P2 C2: _portalParseWorldCommand verwirft Nicht-Manifest-Wörter",
-                    w12bridgeResults.parseWorldRejects
-                );
-                check("W12 P2 C2: _portalRouteDsl reicht ein Subset-Op weiter", w12bridgeResults.routeForward);
-                check("W12 P2 C2: _portalRouteDsl verwirft ein unbekanntes Op", w12bridgeResults.routeUnknown);
-                check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
-                check(
-                    "W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt",
-                    w12bridgeResults.homeWeatherUntouched
-                );
-                check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
-                check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
-                check("W12 P2 C2: Strom-Welt rendert Dichtefeld + Auto-Splats", w12bridgeResults.fluidRenders);
-                check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
-            } else {
-                check(
-                    "W12 P2 C2: DSL-Brücke Tests laufen",
-                    false,
-                    w12bridgeResults ? w12bridgeResults.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 2 — zweite fremde Welt: Terrain-Welt ###
-            const w12terrainResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Terrain-Welt-Dateien + vendored Engine werden ausgeliefert.
-                    try {
-                        const htmlRes = await fetch("worlds/terrain/index.html");
-                        const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-                        out.terrainHtmlServed =
-                            htmlRes.ok &&
-                            /Terrain-Welt/.test(htmlBody) &&
-                            /id="avatar-name"/.test(htmlBody) &&
-                            /THREE\.Terrain\.min\.js/.test(htmlBody) &&
-                            /terrain\.js/.test(htmlBody);
-                        const jsRes = await fetch("worlds/terrain/terrain.js");
-                        const jsBody = jsRes.ok ? await jsRes.text() : "";
-                        out.terrainJsServed =
-                            jsRes.ok &&
-                            /THREE\.Terrain/.test(jsBody) &&
-                            /function applyDsl/.test(jsBody) &&
-                            /"ready"/.test(jsBody) &&
-                            /"enter"/.test(jsBody) &&
-                            /"exit"/.test(jsBody);
-                        const threeRes = await fetch("worlds/terrain/lib/three.min.js");
-                        const terrRes = await fetch("worlds/terrain/lib/THREE.Terrain.min.js");
-                        out.terrainEngineVendored = threeRes.ok && terrRes.ok;
-                    } catch (e) {
-                        out.terrainHtmlServed = false;
-                        out.terrainJsServed = false;
-                        out.terrainEngineVendored = false;
-                    }
-
-                    // Built-in welt_terrain-Portal + Manifest.
-                    const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
-                    out.terrainExists = !!wt && wt.builtIn === true;
-                    out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
-                    out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
-                    out.terrainManifest =
-                        !!wt &&
-                        !!wt.portalMeta.dsl &&
-                        wt.portalMeta.dsl.includes("gebirge") &&
-                        wt.portalMeta.dsl.includes("ebene") &&
-                        wt.portalMeta.dsl.includes("neu");
-
-                    const wtAff = r.computeBlueprintAffordances(wt);
-                    out.terrainAffordance = wtAff.isPortal === true && !wtAff.moveable;
-                    out.terrainPortalShaped = r._isPortalShaped(wt) === true;
-
-                    // enterPortal(welt_terrain) → iframe + Brücke trägt einen Manifest-Op.
-                    const pm = r.state.playerMesh.position;
-                    r.spawnArchitecture("welt_terrain", { x: pm.x, y: pm.y, z: pm.z });
-                    const entry = (r.state.architectures || []).find((e) => e.type === "welt_terrain");
-                    const enterRes = entry ? r.enterPortal(entry) : { ok: false };
-                    const frame = document.querySelector("#portal-overlay iframe.portal-frame");
-                    out.enterTerrainWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/terrain/index.html");
-                    const rt = r._portalRouteDsl(["gebirge"], "Gebirge", null);
-                    out.terrainBridge = rt.forwarded === true;
-                    r.exitPortal();
-                    if (entry) r.removeArchitecture(entry);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12terrainResults && !w12terrainResults.error) {
-                check("W12 P2: Terrain-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
-                check(
-                    "W12 P2: terrain.js (THREE.Terrain + Handshake) wird ausgeliefert",
-                    w12terrainResults.terrainJsServed
-                );
-                check(
-                    "W12 P2: Terrain-Engine vendored (three + THREE.Terrain)",
-                    w12terrainResults.terrainEngineVendored
-                );
-                check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
-                check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
-                check("W12 P2: welt_terrain portalMeta zeigt auf die Terrain-Welt", w12terrainResults.terrainMeta);
-                check(
-                    "W12 P2: welt_terrain trägt ein DSL-Manifest (gebirge/ebene/neu)",
-                    w12terrainResults.terrainManifest
-                );
-                check("W12 P2: welt_terrain trägt die isPortal-Affordance", w12terrainResults.terrainAffordance);
-                check("W12 P2: welt_terrain ist _isPortalShaped", w12terrainResults.terrainPortalShaped);
-                check("W12 P2: enterPortal(welt_terrain) lädt die Terrain-Welt", w12terrainResults.enterTerrainWorld);
-                check("W12 P2: die Brücke trägt einen Terrain-Manifest-Op", w12terrainResults.terrainBridge);
-            } else {
-                check(
-                    "W12 P2: Terrain-Welt Tests laufen",
-                    false,
-                    w12terrainResults ? w12terrainResults.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
-            const w12registryResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const REG = r.constructor.WORLD_REGISTRY;
-
-                    // Welt-Registry — eine Quelle, drei Welten je mit Pfad + Manifest.
-                    out.registryExists = !!REG && !!REG.skeleton && !!REG.fluid && !!REG.terrain;
-                    out.registryShape =
-                        !!REG &&
-                        REG.fluid.world === "worlds/fluid/index.html" &&
-                        Array.isArray(REG.fluid.dsl) &&
-                        REG.fluid.dsl.includes("sturm");
-
-                    // Die 3 Built-in-Portale beziehen ihr portalMeta aus der Registry.
-                    const ws = r.state.blueprints.welt_strom;
-                    const wt = r.state.blueprints.welt_terrain;
-                    const wp = r.state.blueprints.welt_portal;
-                    out.builtinsFromRegistry =
-                        ws.portalMeta.world === REG.fluid.world &&
-                        wt.portalMeta.world === REG.terrain.world &&
-                        wp.portalMeta.world === REG.skeleton.world &&
-                        ws.portalMeta.dsl.includes("sturm") &&
-                        wt.portalMeta.dsl.includes("gebirge");
-
-                    out.aimExists = typeof r.aimBlueprintAtWorld === "function";
-
-                    // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
-                    r.state.blueprints.test_portal_ring = {
-                        name: "test_portal_ring",
-                        label: "Test-Ring",
-                        builtIn: false,
-                        parts: [],
-                    };
-
-                    // UI: die Markier-Reihe trägt eine Portal-Welt-Auswahl.
-                    r.renderPlayerEquipUI();
-                    out.uiPortalSelect = !!document.querySelector(".equip-portal-select");
-
-                    // aimBlueprintAtWorld per id.
-                    const aimId = r.aimBlueprintAtWorld("test_portal_ring", "fluid");
-                    out.aimById =
-                        aimId.ok === true &&
-                        r.state.blueprints.test_portal_ring.role === "portal" &&
-                        r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
-
-                    // aimBlueprintAtWorld per Label (case-insensitive).
-                    const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Terrain-Welt");
-                    out.aimByLabel =
-                        aimLabel.ok === true &&
-                        r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
-
-                    // Unbekannte Welt + Built-in werden abgelehnt.
-                    out.aimUnknownRejected = r.aimBlueprintAtWorld("test_portal_ring", "nirgendwo").ok === false;
-                    out.aimBuiltinRejected = r.aimBlueprintAtWorld("welt_portal", "fluid").ok === false;
-
-                    // DSL-Op set_portal.
-                    r.dslRun(["set_portal", "test_portal_ring", "skeleton"]);
-                    out.dslSetPortal = r.state.blueprints.test_portal_ring.portalMeta.world === REG.skeleton.world;
-
-                    // Chat-Pattern „richte portal X auf Y".
-                    const parsed = r.parseChatToDsl("richte portal test_portal_ring auf fluid");
-                    out.chatPattern =
-                        !!parsed && JSON.stringify(parsed.program) === '["set_portal","test_portal_ring","fluid"]';
-
-                    delete r.state.blueprints.test_portal_ring;
-                    r.renderPlayerEquipUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12registryResults && !w12registryResults.error) {
-                check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
-                check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
-                check(
-                    "W12 P2: Built-in-Portale beziehen portalMeta aus der Registry",
-                    w12registryResults.builtinsFromRegistry
-                );
-                check("W12 P2: aimBlueprintAtWorld existiert", w12registryResults.aimExists);
-                check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);
-                check("W12 P2: aimBlueprintAtWorld richtet per Welt-id", w12registryResults.aimById);
-                check("W12 P2: aimBlueprintAtWorld richtet per Welt-Label", w12registryResults.aimByLabel);
-                check("W12 P2: aimBlueprintAtWorld verwirft unbekannte Welt", w12registryResults.aimUnknownRejected);
-                check("W12 P2: aimBlueprintAtWorld verwirft Built-in-Bauplan", w12registryResults.aimBuiltinRejected);
-                check("W12 P2: DSL-Op set_portal richtet den Bauplan", w12registryResults.dslSetPortal);
-                check("W12 P2: Chat-Pattern 'richte portal X auf Y'", w12registryResults.chatPattern);
-            } else {
-                check(
-                    "W12 P2: Welt-Registry Tests laufen",
-                    false,
-                    w12registryResults ? w12registryResults.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 2 — Portal-Größe emergiert aus der Avatar-Größe ###
-            const w12portalSizeResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.passageExists = typeof r._avatarPassageSize === "function";
-                    const passage = r._avatarPassageSize();
-                    out.passageSane = typeof passage === "number" && passage > 0.5 && passage < 30;
-                    const torusBp = (sizeX, material) => ({
-                        name: "t_test",
-                        parts: [
-                            {
-                                shape: "torus",
-                                material: material,
-                                size: { x: sizeX, y: 1, z: 1 },
-                                position: { x: 0, y: 0, z: 0 },
-                            },
-                        ],
-                    });
-                    // Ein magieleitender Torus deutlich größer als der Reisende → Tor-Form.
-                    out.bigIsPortalShaped = r._isPortalShaped(torusBp(passage * 2.5, "quarz")) === true;
-                    // Derselbe Ring deutlich kleiner als der Reisende → kein Tor.
-                    out.smallNotPortalShaped = r._isPortalShaped(torusBp(passage * 0.3, "quarz")) === false;
-                    // Magieleitung bleibt nötig: ein großer Eisen-Ring ist kein Tor.
-                    out.ironStillNotPortal = r._isPortalShaped(torusBp(passage * 2.5, "eisen")) === false;
-                    // Built-in-Portale bleiben Tore (Ring 3.4/3.6 > Avatar).
-                    out.builtinsStayPortal =
-                        r._isPortalShaped(r.state.blueprints.welt_strom) === true &&
-                        r._isPortalShaped(r.state.blueprints.welt_terrain) === true;
-                    // minRingSize ist als feste Zahl entfernt.
-                    out.noFixedThreshold = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.portal.minRingSize === undefined;
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12portalSizeResults && !w12portalSizeResults.error) {
-                check("W12 P2: _avatarPassageSize existiert", w12portalSizeResults.passageExists);
-                check("W12 P2: Avatar-Durchgangsgröße ist plausibel", w12portalSizeResults.passageSane);
-                check("W12 P2: großer Magie-Ring ist Tor-förmig", w12portalSizeResults.bigIsPortalShaped);
-                check("W12 P2: zu kleiner Ring (< Avatar) ist kein Tor", w12portalSizeResults.smallNotPortalShaped);
-                check(
-                    "W12 P2: großer Eisen-Ring bleibt kein Tor (Magie nötig)",
-                    w12portalSizeResults.ironStillNotPortal
-                );
-                check("W12 P2: Built-in-Portale bleiben Tor-förmig", w12portalSizeResults.builtinsStayPortal);
-                check("W12 P2: feste minRingSize-Zahl ist entfernt", w12portalSizeResults.noFixedThreshold);
-            } else {
-                check(
-                    "W12 P2: Portal-Größe Tests laufen",
-                    false,
-                    w12portalSizeResults ? w12portalSizeResults.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 2 — Markier-Sektion: Portal-Knopf erreichbar + umwidmbar ###
-            const w12markResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    r.state.blueprints.test_mark_ring = {
-                        name: "test_mark_ring",
-                        label: "TestMarkRing",
-                        builtIn: false,
-                        parts: [],
-                    };
-                    r.renderPlayerEquipUI();
-                    const rowsBefore = document.querySelectorAll(".equip-mark-row").length;
-                    out.markRowRendered = rowsBefore > 0 && !!document.querySelector(".equip-portal-select");
-                    // markieren → roleManual gesetzt
-                    r.aimBlueprintAtWorld("test_mark_ring", "fluid");
-                    r.renderPlayerEquipUI();
-                    const rowsAfter = document.querySelectorAll(".equip-mark-row").length;
-                    // Trap-Fix: ein markierter Bauplan bleibt re-markierbar in der Sektion.
-                    out.markPersistsAfterRole = rowsAfter === rowsBefore;
-                    // Die Reihe nennt die aktuelle Rolle.
-                    out.rowShowsRole = Array.from(document.querySelectorAll(".equip-mark-label")).some(
-                        (el) => /TestMarkRing/.test(el.textContent) && /portal/i.test(el.textContent)
-                    );
-                    delete r.state.blueprints.test_mark_ring;
-                    r.renderPlayerEquipUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12markResults && !w12markResults.error) {
-                check("W12 P2: Markier-Reihe + Portal-Auswahl gerendert", w12markResults.markRowRendered);
-                check(
-                    "W12 P2: markierter Bauplan bleibt umwidmbar (kein Sackgassen-Zustand)",
-                    w12markResults.markPersistsAfterRole
-                );
-                check("W12 P2: Markier-Reihe nennt die aktuelle Rolle", w12markResults.rowShowsRole);
-            } else {
-                check(
-                    "W12 P2: Markier-Sektion Tests laufen",
-                    false,
-                    w12markResults ? w12markResults.error : "no result"
-                );
-            }
-
-            // ### W12 Phase 3 — Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
-            const w12p3aResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const journal = () => r.state.worldJournal.entries;
-                    const lastEntry = () => journal()[journal().length - 1];
-                    out.methodExists = typeof r._portalReceiveEvent === "function";
-                    // Stub-Overlay: _portalReceiveEvent braucht nur _portalOverlay-Truthiness.
-                    r._portalOverlay = { label: "Test-Welt", world: "worlds/skeleton/index.html", dsl: null };
-                    const ok = r._portalReceiveEvent({ type: "event", text: "Ein Sturm zog auf." });
-                    const ev = lastEntry();
-                    out.eventJournaled = ok === true && !!ev && ev.text === "Ein Sturm zog auf.";
-                    out.eventTypeIsPortal = !!ev && ev.type === "portal";
-                    out.eventCtxWorld = !!ev && !!ev.ctx && ev.ctx.world === "Test-Welt";
-                    // Leeres/garbage Ereignis wird verworfen — der letzte Eintrag bleibt.
-                    const guard = lastEntry();
-                    r._portalReceiveEvent({ type: "event", text: "   " });
-                    r._portalReceiveEvent({ type: "event" });
-                    out.garbageIgnored = lastEntry() === guard;
-                    // Text wird auf 160 gedeckelt — eine fremde Welt sprengt keine Zeile.
-                    r._portalReceiveEvent({ type: "event", text: "x".repeat(400) });
-                    out.textCapped = lastEntry().text.length <= 160;
-                    // SICHERHEIT: ein Ereignis mit program-Feld führt NICHTS aus.
-                    const weatherBefore = r.state.weather;
-                    r._portalReceiveEvent({ type: "event", text: "harmlos", program: ["weather", "rainy"] });
-                    out.eventNeverExecutes = r.state.weather === weatherBefore && lastEntry().text === "harmlos";
-                    // Außerhalb eines Portals ist _portalReceiveEvent ein No-op.
-                    r._portalOverlay = null;
-                    out.noopOutsidePortal = r._portalReceiveEvent({ type: "event", text: "z" }) === false;
-                    // Der onMessage-Dispatch leitet {type:"event"} an _portalReceiveEvent.
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Dispatch-Welt", dsl: null });
-                    const po = r._portalOverlay;
-                    po.onMessage({
-                        source: po.iframe.contentWindow,
-                        data: { type: "event", text: "Dispatch-Probe." },
-                    });
-                    out.onMessageDispatches = lastEntry().text === "Dispatch-Probe.";
-                    r._disposePortalOverlay();
-                    // W12 P3-Härtung — der Rückkanal-Rate-Limit deckelt eine
-                    // flutende fremde Welt: nach PORTAL_EVENT_RATE_MAX je
-                    // Fenster wird verworfen, das Journal nicht überrannt.
-                    r._portalOverlay = { label: "Flut-Welt", world: "worlds/skeleton/index.html", dsl: null };
-                    let floodAccepted = 0;
-                    for (let i = 0; i < 20; i++) {
-                        if (r._portalReceiveEvent({ type: "event", text: "Flut " + i }) === true) floodAccepted++;
-                    }
-                    out.rateLimitCapsBurst = floodAccepted === AnazhRealm.PORTAL_EVENT_RATE_MAX;
-                    // Flaky-Heilung (V8.96-Klasse): NICHT die journal().length-
-                    // Differenz messen — am 200-FIFO-Cap verdrängt jedes Anhängen
-                    // einen alten Eintrag, die Längen-Differenz wäre dann 0 statt
-                    // PORTAL_EVENT_RATE_MAX. Stattdessen die Flut-Einträge selbst
-                    // zählen: genau RATE_MAX tragen den "Flut "-Text (die zuletzt
-                    // angehängten — nie von ihren eigenen Geschwistern evictet).
-                    out.rateLimitNoJournalOverflow =
-                        journal().filter((e) => e && typeof e.text === "string" && e.text.startsWith("Flut "))
-                            .length === AnazhRealm.PORTAL_EVENT_RATE_MAX;
-                    r._portalOverlay = null;
-                    // Das Overlay aus _buildPortalOverlay trägt das Rate-Limit-Fenster.
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Fenster-Welt", dsl: null });
-                    out.overlayHasEventWindow =
-                        typeof r._portalOverlay.eventWindowStart === "number" &&
-                        typeof r._portalOverlay.eventWindowCount === "number";
-                    r._disposePortalOverlay();
-                    // enterPortal schreibt den Erst-Besuch (journalAppendOnce).
-                    // Der seen-Schlüssel wird vorab geleert — ein früherer
-                    // Portal-Test könnte die Skelett-Welt schon betreten haben.
-                    r.state.blueprints.test_p3_ring = {
-                        name: "test_p3_ring",
-                        label: "Test-P3-Ring",
-                        builtIn: false,
-                        parts: [],
-                        portalMeta: { world: "worlds/skeleton/index.html", label: "P3-Tor", dsl: null },
-                    };
-                    const visitKey = "portalVisit:worlds/skeleton/index.html";
-                    if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
-                    r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
-                    const visit = lastEntry();
-                    out.entryJournaled = !!visit && visit.type === "portal" && /P3-Tor/.test(visit.text);
-                    r.exitPortal();
-                    // Zweites Betreten flutet das Journal NICHT (journalAppendOnce).
-                    const reGuard = lastEntry();
-                    r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
-                    out.entryOncePerWorld = lastEntry() === reGuard;
-                    r.exitPortal();
-                    if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
-                    delete r.state.blueprints.test_p3_ring;
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12p3aResults && !w12p3aResults.error) {
-                check("W12 P3a: _portalReceiveEvent existiert", w12p3aResults.methodExists);
-                check("W12 P3a: Welt-Ereignis wird ins Journal geschrieben", w12p3aResults.eventJournaled);
-                check("W12 P3a: Journal-Eintrag trägt den Typ 'portal'", w12p3aResults.eventTypeIsPortal);
-                check("W12 P3a: Eintrag merkt sich die Welt (ctx.world)", w12p3aResults.eventCtxWorld);
-                check("W12 P3a: leeres/garbage Ereignis wird verworfen", w12p3aResults.garbageIgnored);
-                check("W12 P3a: Ereignis-Text wird auf 160 Zeichen gedeckelt", w12p3aResults.textCapped);
-                check("W12 P3a: SICHERHEIT — ein Ereignis führt NIE DSL aus", w12p3aResults.eventNeverExecutes);
-                check("W12 P3a: außerhalb eines Portals ist es ein No-op", w12p3aResults.noopOutsidePortal);
-                check("W12 P3a: onMessage-Dispatch leitet {type:event} weiter", w12p3aResults.onMessageDispatches);
-                check("W12 P3a: enterPortal schreibt den Erst-Besuch ins Journal", w12p3aResults.entryJournaled);
-                check("W12 P3a: wiederholtes Betreten flutet das Journal nicht", w12p3aResults.entryOncePerWorld);
-                check("W12 P3-Härtung: Rückkanal-Rate-Limit deckelt einen Burst", w12p3aResults.rateLimitCapsBurst);
-                check(
-                    "W12 P3-Härtung: das Journal wird nicht über den Deckel hinaus geflutet",
-                    w12p3aResults.rateLimitNoJournalOverflow
-                );
-                check(
-                    "W12 P3-Härtung: das Portal-Overlay trägt das Rate-Limit-Fenster",
-                    w12p3aResults.overlayHasEventWindow
-                );
-            } else {
-                check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
-            }
-
-            // W12 P3a — die drei Welt-Adapter melden Ereignisse zurück (Quell-Check).
-            try {
-                for (const [w, file] of [
-                    ["Skelett", "skeleton/skeleton.js"],
-                    ["Strom", "fluid/fluid.js"],
-                    ["Terrain", "terrain/terrain.js"],
-                ]) {
-                    const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
-                    check(
-                        `W12 P3a: ${w}-Welt-Adapter meldet Ereignisse zurück`,
-                        /function sendEvent/.test(src) && /type:\s*"event"/.test(src) && /sendEvent\("/.test(src)
-                    );
-                }
-            } catch (err) {
-                check("W12 P3a: Welt-Adapter-Quell-Check läuft", false, err && err.message);
-            }
-
-            // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
-            const w12p3bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    // _sanitizeDslSubset — der gemeinsame Manifest-Sanitizer.
-                    out.sanitizeExists = typeof r._sanitizeDslSubset === "function";
-                    out.sanitizeFilters =
-                        JSON.stringify(r._sanitizeDslSubset(["ok_op", "Bad Op", 5, "auch_gut", null])) ===
-                        JSON.stringify(["ok_op", "auch_gut"]);
-                    out.sanitizeNullOnEmpty =
-                        r._sanitizeDslSubset([]) === null && r._sanitizeDslSubset("nope") === null;
-                    out.sanitizeCaps = r._sanitizeDslSubset(new Array(80).fill("op")).length === 64;
-                    // _portalReceiveManifest — die Welt beschreibt sich selbst.
-                    out.receiveExists = typeof r._portalReceiveManifest === "function";
-                    r._portalOverlay = {
-                        label: "Alt-Label",
-                        world: "worlds/fluid/index.html",
-                        dsl: ["skybox_color"],
-                        manifestStage: "übersetzt",
-                        hintEl: null,
-                    };
-                    const ok = r._portalReceiveManifest({
-                        type: "ready",
-                        dsl: ["skybox_color", "flut"],
-                        label: "Strom-Welt",
-                    });
-                    out.nativeOverrides =
-                        ok === true &&
-                        r._portalOverlay.dsl.includes("flut") &&
-                        r._portalOverlay.manifestStage === "nativ";
-                    out.nativeLabel = r._portalOverlay.label === "Strom-Welt";
-                    // Angekündigtes dsl wird gesäubert — kein garbage-Op.
-                    r._portalOverlay.dsl = null;
-                    r._portalReceiveManifest({ dsl: ["gut_op", "BÖSE OP", 42] });
-                    out.nativeSanitized = JSON.stringify(r._portalOverlay.dsl) === JSON.stringify(["gut_op"]);
-                    // Kein dsl → false, das vorhandene Manifest bleibt (Fallback).
-                    r._portalOverlay.dsl = ["original"];
-                    r._portalOverlay.manifestStage = "übersetzt";
-                    out.noDslKeepsFallback =
-                        r._portalReceiveManifest({ type: "ready" }) === false &&
-                        r._portalOverlay.dsl[0] === "original" &&
-                        r._portalOverlay.manifestStage === "übersetzt";
-                    r._portalOverlay = null;
-                    // _buildPortalOverlay setzt die Drei-Stufen-Marke + hintEl.
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: ["skybox_color"] });
-                    out.stageUebersetzt = r._portalOverlay.manifestStage === "übersetzt" && !!r._portalOverlay.hintEl;
-                    r._disposePortalOverlay();
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
-                    out.stageAusgestellt = r._portalOverlay.manifestStage === "ausgestellt";
-                    r._disposePortalOverlay();
-                    // Der ready-Handler wendet das native Manifest an.
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
-                    const po = r._portalOverlay;
-                    po.onMessage({
-                        source: po.iframe.contentWindow,
-                        data: { type: "ready", dsl: ["skybox_color", "selbst_op"], label: "Selbst-Welt" },
-                    });
-                    out.readyAppliesManifest =
-                        !!po.dsl &&
-                        po.dsl.includes("selbst_op") &&
-                        po.manifestStage === "nativ" &&
-                        po.label === "Selbst-Welt";
-                    r._disposePortalOverlay();
-                    // Das Registry-Literal kennt „flut" NICHT — der Beweis,
-                    // dass die native Stufe mehr trägt als die übersetzte.
-                    out.registryLacksFlut = !r.constructor.WORLD_REGISTRY.fluid.dsl.includes("flut");
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w12p3bResults && !w12p3bResults.error) {
-                check("W12 P3b: _sanitizeDslSubset existiert", w12p3bResults.sanitizeExists);
-                check("W12 P3b: Sanitizer filtert Nicht-Ops raus", w12p3bResults.sanitizeFilters);
-                check("W12 P3b: Sanitizer liefert null bei leer/Nicht-Array", w12p3bResults.sanitizeNullOnEmpty);
-                check("W12 P3b: Sanitizer deckelt auf 64 Ops", w12p3bResults.sanitizeCaps);
-                check("W12 P3b: _portalReceiveManifest existiert", w12p3bResults.receiveExists);
-                check(
-                    "W12 P3b: natives Manifest überschreibt po.dsl + setzt Stufe 'nativ'",
-                    w12p3bResults.nativeOverrides
-                );
-                check("W12 P3b: natives Manifest übernimmt das Welt-Label", w12p3bResults.nativeLabel);
-                check("W12 P3b: angekündigtes dsl wird gesäubert (kein garbage-Op)", w12p3bResults.nativeSanitized);
-                check("W12 P3b: ready ohne dsl → Fallback aufs portalMeta-Manifest", w12p3bResults.noDslKeepsFallback);
-                check(
-                    "W12 P3b: _buildPortalOverlay markiert Stufe 'übersetzt' + hintEl",
-                    w12p3bResults.stageUebersetzt
-                );
-                check(
-                    "W12 P3b: ohne Manifest markiert _buildPortalOverlay Stufe 'ausgestellt'",
-                    w12p3bResults.stageAusgestellt
-                );
-                check("W12 P3b: der ready-Handler wendet das native Manifest an", w12p3bResults.readyAppliesManifest);
-                check("W12 P3b: das Registry-Literal kennt 'flut' nicht", w12p3bResults.registryLacksFlut);
-            } else {
-                check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
-            }
-
-            // W12 P3b — die manifest.json-Dateien + die Adapter-Verdrahtung (Quell-Check).
-            try {
-                let fluidManifestHasFlut = false;
-                for (const [w, id, file] of [
-                    ["Skelett", "skeleton", "skeleton/manifest.json"],
-                    ["Strom", "fluid", "fluid/manifest.json"],
-                    ["Terrain", "terrain", "terrain/manifest.json"],
-                ]) {
-                    const m = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8"));
-                    check(
-                        `W12 P3b: ${w}-Welt hat ein valides manifest.json`,
-                        m &&
-                            m.schemaVersion === "1.0" &&
-                            m.id === id &&
-                            typeof m.label === "string" &&
-                            Array.isArray(m.dsl) &&
-                            m.dsl.length > 0 &&
-                            m.dsl.every((op) => typeof op === "string")
-                    );
-                    if (id === "fluid") fluidManifestHasFlut = m.dsl.includes("flut");
-                }
-                check(
-                    "W12 P3b: das fluid-Manifest deklariert 'flut' (jenseits des Registry-Literals)",
-                    fluidManifestHasFlut
-                );
-                for (const [w, file] of [
-                    ["Skelett", "skeleton/skeleton.js"],
-                    ["Strom", "fluid/fluid.js"],
-                    ["Terrain", "terrain/terrain.js"],
-                ]) {
-                    const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
-                    check(
-                        `W12 P3b: ${w}-Welt-Adapter lädt manifest.json + meldet es im ready`,
-                        /fetch\(\s*["']\.\/manifest\.json["']\s*\)/.test(src) && /announceReady/.test(src)
-                    );
-                }
-                const fluidSrc = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");
-                check('W12 P3b: der fluid-Adapter behandelt das native Wort "flut"', /op === "flut"/.test(fluidSrc));
-            } catch (err) {
-                check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
-            }
-
-            // ### W13 Phase 1 — Vibe-Pass: die souveräne Avatar-Identität ###
-            const w13p1Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    // Methoden-Existenz.
-                    out.methods =
-                        typeof r._ensureVibePass === "function" &&
-                        typeof r._vibeSign === "function" &&
-                        typeof r._vibeVerify === "function" &&
-                        typeof r.vibePassId === "function";
-                    // Identität ist nach init bereit.
-                    const vp = r.state.vibePass;
-                    out.ready = !!vp && vp.ready === true;
-                    // vibePassId — kanonisches ed25519:<64hex>-Format.
-                    const id = r.vibePassId();
-                    out.idFormat = typeof id === "string" && /^ed25519:[0-9a-f]{64}$/.test(id);
-                    // localStorage trägt den privaten Schlüssel als JWK.
-                    let stored = null;
-                    try {
-                        stored = JSON.parse(localStorage.getItem("anazh.vibePass"));
-                    } catch {
-                        stored = null;
-                    }
-                    out.persisted =
-                        !!stored &&
-                        stored.schemaVersion === "vibepass-1" &&
-                        !!stored.privateKeyJwk &&
-                        stored.privateKeyJwk.kty === "OKP" &&
-                        stored.privateKeyJwk.crv === "Ed25519" &&
-                        typeof stored.privateKeyJwk.d === "string" &&
-                        typeof stored.privateKeyJwk.x === "string";
-                    // Erneutes _ensureVibePass lädt denselben Schlüssel (kein Neu-Erzeugen).
-                    const idBefore = r.vibePassId();
-                    await r._ensureVibePass();
-                    out.idStable = r.vibePassId() === idBefore;
-                    // Fingerprint — Kurzform aus den ersten 16 Hex-Zeichen.
-                    out.fingerprint =
-                        typeof vp.fingerprint === "string" && vp.fingerprint.replace(/ /g, "").length === 16;
-                    // Signieren liefert eine 64-Byte-Signatur (128 Hex).
-                    const sig = await r._vibeSign("anazh-vibe-pass-test");
-                    out.signHex = typeof sig === "string" && /^[0-9a-f]{128}$/.test(sig);
-                    // Verifizieren: gültige Signatur → true.
-                    out.verifyValid = (await r._vibeVerify("anazh-vibe-pass-test", sig, vp.publicKeyHex)) === true;
-                    // Manipulierte Nachricht → false.
-                    out.verifyTampered =
-                        (await r._vibeVerify("anazh-vibe-pass-TAMPERED", sig, vp.publicKeyHex)) === false;
-                    // Falscher öffentlicher Schlüssel → false.
-                    out.verifyWrongKey = (await r._vibeVerify("anazh-vibe-pass-test", sig, "0".repeat(64))) === false;
-                    // Defensiv: Müll-Eingabe wirft nicht, liefert false.
-                    out.verifyDefensive =
-                        (await r._vibeVerify("x", null, null)) === false &&
-                        (await r._vibeVerify("x", "zzz", "kurz")) === false;
-                    // Genesis-Erinnerung im Journal (Typ "ritual"). Flaky-
-                    // Heilung (V8.96-Klasse): der Vibe-Pass-Genesis-Eintrag wird
-                    // früh geschrieben; nach einem langen Lauf kann der 200-FIFO-
-                    // Cap ihn evicten. _ensureVibePass nutzt journalAppendOnce(
-                    // "vibepass:genesis", …) — der seen-Schlüssel ist cap-
-                    // unabhängig (seen wird nie FIFO-gedeckelt) und beweist, dass
-                    // der Genesis-Eintrag geschrieben WURDE; der entries-Scan
-                    // bleibt als Fallback, falls er noch im Fenster liegt.
-                    const wj = r.state.worldJournal || {};
-                    const entries = wj.entries || [];
-                    out.journalGenesis =
-                        !!(wj.seen && wj.seen["vibepass:genesis"] === true) ||
-                        entries.some((e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || ""));
-                    // Sicherheit: der private Schlüssel darf NIE im Welt-Save landen.
-                    const snapJson = JSON.stringify(r.buildStateSnapshot());
-                    out.snapshotClean =
-                        snapJson.indexOf(vp._privateKeyJwk.d) === -1 && snapJson.indexOf('"vibePass"') === -1;
-                    // Export → Import-Rundlauf bewahrt die Identität.
-                    const exported = r.exportVibePass();
-                    out.exportShape = !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
-                    const imp = await r.importVibePass(exported, { skipConfirm: true });
-                    out.importRoundTrip = !!imp && imp.ok === true && r.vibePassId() === idBefore;
-                    const impBad = await r.importVibePass({ nonsense: true }, { skipConfirm: true });
-                    out.importRejectsGarbage = !!impBad && impBad.ok === false;
-                    // UI.
-                    out.uiSection = !!document.getElementById("vibe-pass-section");
-                    const body = document.getElementById("vibe-pass-body");
-                    out.uiBody = !!body && body.textContent.indexOf(vp.fingerprint) !== -1;
-                    out.uiButtons =
-                        !!document.getElementById("vibe-pass-export") &&
-                        !!document.getElementById("vibe-pass-import") &&
-                        !!document.getElementById("vibe-pass-file-input");
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w13p1Results && !w13p1Results.error) {
-                check("W13 P1: _ensureVibePass/_vibeSign/_vibeVerify/vibePassId existieren", w13p1Results.methods);
-                check("W13 P1: Vibe-Pass ist nach init bereit", w13p1Results.ready);
-                check("W13 P1: vibePassId liefert ed25519:<64hex>", w13p1Results.idFormat);
-                check("W13 P1: privater Schlüssel als JWK in localStorage persistiert", w13p1Results.persisted);
-                check("W13 P1: erneutes _ensureVibePass lädt denselben Schlüssel", w13p1Results.idStable);
-                check("W13 P1: Fingerprint = 16 Hex-Zeichen in Vierergruppen", w13p1Results.fingerprint);
-                check("W13 P1: _vibeSign liefert eine 64-Byte-Signatur (128 Hex)", w13p1Results.signHex);
-                check("W13 P1: _vibeVerify akzeptiert eine gültige Signatur", w13p1Results.verifyValid);
-                check("W13 P1: _vibeVerify weist eine manipulierte Nachricht ab", w13p1Results.verifyTampered);
-                check("W13 P1: _vibeVerify weist einen falschen Schlüssel ab", w13p1Results.verifyWrongKey);
-                check("W13 P1: _vibeVerify ist defensiv gegen Müll-Eingabe", w13p1Results.verifyDefensive);
-                check("W13 P1: Genesis-Erinnerung (ritual) im Journal", w13p1Results.journalGenesis);
-                check("W13 P1: privater Schlüssel leckt NICHT in den Welt-Save", w13p1Results.snapshotClean);
-                check("W13 P1: exportVibePass liefert ein gültiges Sicherungs-Objekt", w13p1Results.exportShape);
-                check("W13 P1: Export→Import-Rundlauf bewahrt die Identität", w13p1Results.importRoundTrip);
-                check("W13 P1: importVibePass weist ungültige Daten ab", w13p1Results.importRejectsGarbage);
-                check("W13 P1: Vibe-Pass-Sektion im DOM", w13p1Results.uiSection);
-                check("W13 P1: Vibe-Pass-Body zeigt den Fingerprint", w13p1Results.uiBody);
-                check("W13 P1: Sichern/Wiederherstellen-Knöpfe + File-Input im DOM", w13p1Results.uiButtons);
-            } else {
-                check("W13 P1: Vibe-Pass-Tests laufen", false, w13p1Results ? w13p1Results.error : "no result");
-            }
-
-            // ### W13 Phase 2 — Bauplan-Signaturen ###
-            const w13p2Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.methods =
-                        typeof r.signBlueprint === "function" &&
-                        typeof r.verifyBlueprintSignature === "function" &&
-                        typeof r._canonicalBlueprint === "function" &&
-                        typeof r._fastHash === "function";
-                    // Einen eigenen Bauplan mit einem Part anlegen.
-                    if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
-                    r.createBlueprint("_w13p2", "W13P2-Werk");
-                    r.addPartToBlueprint("_w13p2", { shape: "box", material: "stein" });
-                    const bp = r.state.blueprints["_w13p2"];
-                    // _canonicalBlueprint ist deterministisch.
-                    out.canonDeterministic = r._canonicalBlueprint(bp) === r._canonicalBlueprint(bp);
-                    // Das Label ist NICHT Teil der signierten Substanz.
-                    const canonA = r._canonicalBlueprint(bp);
-                    bp.label = "Ein anderer Name";
-                    out.canonIgnoresLabel = r._canonicalBlueprint(bp) === canonA;
-                    bp.label = "W13P2-Werk";
-                    // Vor dem Signieren: Status "unsigned".
-                    out.statusUnsigned = (await r.verifyBlueprintSignature(bp)) === "unsigned";
-                    // Signieren.
-                    const signRes = await r.signBlueprint("_w13p2");
-                    out.signOk = !!signRes && signRes.ok === true;
-                    out.signFields =
-                        typeof bp.signature === "string" &&
-                        /^[0-9a-f]{128}$/.test(bp.signature) &&
-                        bp.authorPubKey === r.state.vibePass.publicKeyHex &&
-                        typeof bp.signedHash === "string" &&
-                        typeof bp.signedAt === "number";
-                    out.statusValid = (await r.verifyBlueprintSignature(bp)) === "valid";
-                    // Built-in lässt sich nicht signieren.
-                    const builtinRes = await r.signBlueprint("village");
-                    out.rejectBuiltin = !!builtinRes && builtinRes.ok === false && builtinRes.reason === "builtin";
-                    const unknownRes = await r.signBlueprint("_does_not_exist_w13");
-                    out.rejectUnknown = !!unknownRes && unknownRes.ok === false && unknownRes.reason === "unknown";
-                    // Substanz ändern → "modified".
-                    bp.parts[0].material = "eisen";
-                    out.statusModified = (await r.verifyBlueprintSignature(bp)) === "modified";
-                    // Neu signieren heilt es.
-                    await r.signBlueprint("_w13p2");
-                    out.resignValid = (await r.verifyBlueprintSignature(bp)) === "valid";
-                    // Signatur fälschen (ein Hex-Zeichen kippen, Substanz unverändert) → "forged".
-                    const goodSig = bp.signature;
-                    bp.signature = (goodSig[0] === "a" ? "b" : "a") + goodSig.slice(1);
-                    out.statusForged = (await r.verifyBlueprintSignature(bp)) === "forged";
-                    bp.signature = goodSig;
-                    // Die Signatur reist mit dem Bauplan durch den Snapshot.
-                    const snap = r.buildStateSnapshot();
-                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "_w13p2");
-                    out.snapshotKeepsSig =
-                        !!snapBp && snapBp.signature === bp.signature && snapBp.authorPubKey === bp.authorPubKey;
-                    // Cross-Autor: ein mit FREMDEM Schlüssel signierter Bauplan
-                    // verifiziert ebenso (das Fundament für W13 Phase 3).
-                    const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreignPair.privateKey);
-                    const foreignCanon = r._canonicalBlueprint(bp);
-                    const foreignSig = await crypto.subtle.sign(
-                        { name: "Ed25519" },
-                        foreignPair.privateKey,
-                        new TextEncoder().encode(foreignCanon)
-                    );
-                    bp.signature = r._vibeBytesToHex(new Uint8Array(foreignSig));
-                    bp.authorPubKey = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
-                    bp.signedHash = r._fastHash(foreignCanon);
-                    out.crossAuthorValid = (await r.verifyBlueprintSignature(bp)) === "valid";
-                    out.crossAuthorForeign = bp.authorPubKey !== r.state.vibePass.publicKeyHex;
-                    // Ein Klon eines signierten Bauplans ist unsigniert (neues Werk).
-                    if (r.state.blueprints["_w13p2clone"]) delete r.state.blueprints["_w13p2clone"];
-                    r.cloneBlueprint("_w13p2", "_w13p2clone");
-                    const clone = r.state.blueprints["_w13p2clone"];
-                    out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
-                    // verifyBlueprintSignature ist defensiv.
-                    out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
-                    // UI: Signatur-Sektion im Werkstatt-Panel.
-                    r.selectBlueprintForEdit("_w13p2");
-                    const panel = document.getElementById("workshop-stats-panel");
-                    out.uiSigRow = !!panel && !!panel.querySelector(".workshop-sig-row");
-                    out.uiSigBtn = !!panel && !!panel.querySelector(".workshop-sig-btn");
-                    delete r.state.blueprints["_w13p2"];
-                    delete r.state.blueprints["_w13p2clone"];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w13p2Results && !w13p2Results.error) {
-                check(
-                    "W13 P2: signBlueprint/verifyBlueprintSignature/_canonicalBlueprint/_fastHash existieren",
-                    w13p2Results.methods
-                );
-                check("W13 P2: _canonicalBlueprint ist deterministisch", w13p2Results.canonDeterministic);
-                check(
-                    "W13 P2: _canonicalBlueprint ignoriert das Label (signiert die Substanz)",
-                    w13p2Results.canonIgnoresLabel
-                );
-                check("W13 P2: unsignierter Bauplan → Status 'unsigned'", w13p2Results.statusUnsigned);
-                check("W13 P2: signBlueprint signiert einen eigenen Bauplan", w13p2Results.signOk);
-                check(
-                    "W13 P2: Signatur-Felder gesetzt (signature/authorPubKey/signedHash/signedAt)",
-                    w13p2Results.signFields
-                );
-                check("W13 P2: signierter Bauplan → Status 'valid'", w13p2Results.statusValid);
-                check("W13 P2: Built-in lässt sich nicht signieren", w13p2Results.rejectBuiltin);
-                check("W13 P2: unbekannter Bauplan-Name wird abgewiesen", w13p2Results.rejectUnknown);
-                check("W13 P2: geänderte Substanz → Status 'modified'", w13p2Results.statusModified);
-                check("W13 P2: neu signieren heilt 'modified' → 'valid'", w13p2Results.resignValid);
-                check("W13 P2: gefälschte Signatur → Status 'forged'", w13p2Results.statusForged);
-                check("W13 P2: Signatur überlebt den Snapshot-Rundlauf", w13p2Results.snapshotKeepsSig);
-                check("W13 P2: fremd-signierter Bauplan verifiziert (Cross-Autor)", w13p2Results.crossAuthorValid);
-                check("W13 P2: der Cross-Autor-Schlüssel ist nicht der eigene", w13p2Results.crossAuthorForeign);
-                check("W13 P2: Klon eines signierten Bauplans ist unsigniert", w13p2Results.cloneUnsigned);
-                check(
-                    "W13 P2: verifyBlueprintSignature ist defensiv (null → 'unsigned')",
-                    w13p2Results.verifyDefensive
-                );
-                check("W13 P2: Signatur-Sektion im Werkstatt-Panel", w13p2Results.uiSigRow);
-                check("W13 P2: Signier-Knopf im Werkstatt-Panel", w13p2Results.uiSigBtn);
-            } else {
-                check("W13 P2: Bauplan-Signatur-Tests laufen", false, w13p2Results ? w13p2Results.error : "no result");
-            }
-
-            // ### W13 Phase 3 — Vibe-Pass-Identität im Multi-User ###
-            const w13p3Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const p2p = r.state.p2p;
-                    out.methods =
-                        typeof r._p2pBroadcastVibe === "function" &&
-                        typeof r._p2pBuildNameLabel === "function" &&
-                        typeof r._p2pRefreshPeerNameLabel === "function";
-                    // Peer-Entry trägt die Vibe-Pass-Felder.
-                    const probe = r._p2pEnsurePeerEntry("_w13p3probe");
-                    out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
-                    r._p2pRemovePeer("_w13p3probe");
-                    // --- _p2pBroadcastVibe: Payload + Beweis ---
-                    const origSend = r.p2pSend;
-                    const origEnabled = p2p.enabled;
-                    const origPeerId = p2p.peerId;
-                    let captured = null;
-                    r.p2pSend = (m) => {
-                        captured = m;
-                    };
-                    p2p.enabled = true;
-                    p2p.peerId = "_w13p3self";
-                    await r._p2pBroadcastVibe();
-                    out.broadcastShape =
-                        !!captured &&
-                        captured.type === "vibe" &&
-                        captured.vibePassId === r.vibePassId() &&
-                        typeof captured.proof === "string";
-                    out.broadcastProofVerifies =
-                        !!captured &&
-                        (await r._vibeVerify("_w13p3self", captured.proof, r.state.vibePass.publicKeyHex)) === true;
-                    // Bei deaktiviertem P2P sendet _p2pBroadcastVibe nichts.
-                    captured = null;
-                    p2p.enabled = false;
-                    await r._p2pBroadcastVibe();
-                    out.broadcastSkipsDisabled = captured === null;
-                    p2p.enabled = true;
-                    r.p2pSend = origSend;
-                    // --- vibe-Empfang: ein fremder Peer, drei Beweis-Fälle ---
-                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
-                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
-                    const foreignId = "ed25519:" + foreignPubHex;
-                    const sign = async (text) =>
-                        r._vibeBytesToHex(
-                            new Uint8Array(
-                                await crypto.subtle.sign(
-                                    { name: "Ed25519" },
-                                    foreign.privateKey,
-                                    new TextEncoder().encode(text)
-                                )
-                            )
-                        );
-                    // (a) gültiger Beweis (signiert die eigene peerId).
-                    const proofA = await sign("_w13p3peerA");
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerA", vibePassId: foreignId, proof: proofA })
-                    );
-                    // (b) manipulierter Beweis (ein Hex-Zeichen gekippt).
-                    const proofB = await sign("_w13p3peerB");
-                    const proofBad = (proofB[0] === "a" ? "b" : "a") + proofB.slice(1);
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerB", vibePassId: foreignId, proof: proofBad })
-                    );
-                    // (c) Beweis über eine FREMDE peerId — die Bindung greift.
-                    const proofWrong = await sign("_w13p3WRONG");
-                    r.p2pHandleMessage(
-                        JSON.stringify({
-                            type: "vibe",
-                            peerId: "_w13p3peerC",
-                            vibePassId: foreignId,
-                            proof: proofWrong,
-                        })
-                    );
-                    // (d) ohne Beweis — vibePassId notiert, aber nicht verifiziert.
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "vibe", peerId: "_w13p3peerD", vibePassId: foreignId, proof: "" })
-                    );
-                    // (e) eigene peerId — wird ignoriert.
-                    r.p2pHandleMessage(
-                        JSON.stringify({ type: "vibe", peerId: "_w13p3self", vibePassId: foreignId, proof: proofA })
-                    );
-                    await new Promise((res) => setTimeout(res, 140));
-                    const peerA = p2p.peers.get("_w13p3peerA");
-                    const peerB = p2p.peers.get("_w13p3peerB");
-                    const peerC = p2p.peers.get("_w13p3peerC");
-                    const peerD = p2p.peers.get("_w13p3peerD");
-                    out.recvRecordsId = !!peerA && peerA.vibePassId === foreignId;
-                    out.recvValidVerifies = !!peerA && peerA.vibeVerified === true;
-                    out.recvTamperedRejected = !!peerB && peerB.vibeVerified === false;
-                    out.recvWrongBindingRejected = !!peerC && peerC.vibeVerified === false;
-                    out.recvNoProofUnverified =
-                        !!peerD && peerD.vibePassId === foreignId && peerD.vibeVerified === false;
-                    out.recvIgnoresSelf = !p2p.peers.has("_w13p3self");
-                    // Verifizierter Peer bekommt ein Name-Schild mit Fingerprint (zweizeilig).
-                    out.verifiedPeerLabel =
-                        !!peerA && !!peerA.nameLabel && Math.abs(peerA.nameLabel.scale.y - 0.98) < 0.05;
-                    // --- Name-Schild ein- vs. zweizeilig ---
-                    const oneLine = r._p2pBuildNameLabel("Reisender");
-                    const twoLine = r._p2pBuildNameLabel("Reisender", "a1b2 c3d4");
-                    out.labelOneLine = !!oneLine && Math.abs(oneLine.scale.y - 0.65) < 0.01;
-                    out.labelTwoLine = !!twoLine && Math.abs(twoLine.scale.y - 0.98) < 0.01;
-                    // Aufräumen.
-                    for (const id of ["_w13p3peerA", "_w13p3peerB", "_w13p3peerC", "_w13p3peerD"]) {
-                        r._p2pRemovePeer(id);
-                    }
-                    p2p.enabled = origEnabled;
-                    p2p.peerId = origPeerId;
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w13p3Results && !w13p3Results.error) {
-                check(
-                    "W13 P3: _p2pBroadcastVibe/_p2pBuildNameLabel/_p2pRefreshPeerNameLabel existieren",
-                    w13p3Results.methods
-                );
-                check("W13 P3: Peer-Entry trägt vibePassId + vibeVerified", w13p3Results.peerFields);
-                check("W13 P3: _p2pBroadcastVibe sendet {type:vibe, vibePassId, proof}", w13p3Results.broadcastShape);
-                check(
-                    "W13 P3: der gesendete Beweis verifiziert gegen den eigenen Schlüssel",
-                    w13p3Results.broadcastProofVerifies
-                );
-                check(
-                    "W13 P3: _p2pBroadcastVibe sendet nichts bei deaktiviertem P2P",
-                    w13p3Results.broadcastSkipsDisabled
-                );
-                check("W13 P3: vibe-Empfang notiert die vibePassId des Peers", w13p3Results.recvRecordsId);
-                check("W13 P3: gültiger Beweis → der Peer ist verifiziert", w13p3Results.recvValidVerifies);
-                check("W13 P3: manipulierter Beweis → nicht verifiziert", w13p3Results.recvTamperedRejected);
-                check(
-                    "W13 P3: Beweis über fremde peerId → nicht verifiziert (Bindung greift)",
-                    w13p3Results.recvWrongBindingRejected
-                );
-                check(
-                    "W13 P3: vibe ohne Beweis → vibePassId notiert, aber nicht verifiziert",
-                    w13p3Results.recvNoProofUnverified
-                );
-                check("W13 P3: vibe mit eigener peerId wird ignoriert", w13p3Results.recvIgnoresSelf);
-                check(
-                    "W13 P3: verifizierter Peer trägt ein Name-Schild mit Fingerprint",
-                    w13p3Results.verifiedPeerLabel
-                );
-                check("W13 P3: Name-Schild ohne Fingerprint bleibt einzeilig", w13p3Results.labelOneLine);
-                check("W13 P3: Name-Schild mit Fingerprint wird zweizeilig", w13p3Results.labelTwoLine);
-            } else {
-                check(
-                    "W13 P3: Vibe-Pass-Multi-User-Tests laufen",
-                    false,
-                    w13p3Results ? w13p3Results.error : "no result"
-                );
-            }
-
-            // W13 P3 — der signaling-server hat einen vibe-Handler (Quell-Check).
-            try {
-                const srvSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
-                check(
-                    "W13 P3: signaling-server relayt den vibe-Nachrichtentyp mit peerId-Stempel",
-                    /msg\.type === "vibe"/.test(srvSrc) &&
-                        /broadcastToRoom\([^)]*type: "vibe", peerId: ws\.anazh\.peerId/.test(srvSrc)
-                );
-            } catch (err) {
-                check("W13 P3: signaling-server-Quell-Check läuft", false, err && err.message);
-            }
-
-            // ### W14 Phase 1 — Bibliothek: browsbare Welt-Registry ###
-            const w14Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const REG = r.constructor.WORLD_REGISTRY;
-                    out.methods =
-                        typeof r.renderLibraryUI === "function" &&
-                        typeof r.obtainPortalForWorld === "function" &&
-                        typeof r.libraryInitDOM === "function";
-                    // Jeder Registry-Eintrag trägt jetzt eine Beschreibung (W14).
-                    out.registryHasDesc = Object.values(REG).every(
-                        (w) => typeof w.desc === "string" && w.desc.length > 0
-                    );
-                    // Tab + Drawer im DOM.
-                    out.tabInDom = !!document.querySelector('#topbar .tab[data-tab="bibliothek"]');
-                    out.drawerInDom = !!document.querySelector('.drawer[data-drawer="bibliothek"]');
-                    // renderLibraryUI baut eine Karte pro Registry-Welt.
-                    r.renderLibraryUI();
-                    const cards = document.querySelectorAll("#library-list .library-card");
-                    out.cardPerWorld = cards.length === Object.keys(REG).length;
-                    // Eine Karte zeigt Label + DSL-Wörter + Stufen-Marke.
-                    const fluidCard = Array.from(cards).find((c) => /Strom-Welt/.test(c.textContent));
-                    out.cardShowsDsl =
-                        !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
-                    // obtainPortalForWorld: klont welt_portal, richtet, legt ins Inventar.
-                    const res1 = r.obtainPortalForWorld("fluid");
-                    out.obtainOk = res1.ok === true && res1.blueprint === "portal_fluid";
-                    const bp = r.state.blueprints.portal_fluid;
-                    out.bpIsPortal = !!bp && bp.role === "portal" && bp.builtIn !== true;
-                    out.bpAimedAtFluid = !!bp && !!bp.portalMeta && bp.portalMeta.world === REG.fluid.world;
-                    // Der geholte Bauplan ist betretbar (Affordance isPortal).
-                    out.bpEnterable = !!bp && r.computeBlueprintAffordances(bp).isPortal === true;
-                    // Im Inventar gelandet.
-                    const slot1 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
-                    out.inInventory = !!slot1 && slot1.count >= 1;
-                    // Zweites Holen stackt — kein zweiter Bauplan.
-                    const bpCountBefore = Object.keys(r.state.blueprints).length;
-                    const res2 = r.obtainPortalForWorld("fluid");
-                    const bpCountAfter = Object.keys(r.state.blueprints).length;
-                    const slot2 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
-                    out.secondStacks =
-                        res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
-                    // Unbekannte Welt → abgelehnt.
-                    out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
-                    // V8.59 — portalMeta + role:portal überleben den Save.
-                    // buildStateSnapshot muss sie schreiben, loadState sie
-                    // wiederherstellen — sonst verlöre ein geholtes Portal beim
-                    // Reload seine Ausrichtung (und träfe wieder _isMoveable).
-                    const snap = r.buildStateSnapshot();
-                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_fluid");
-                    out.snapPersistsPortal =
-                        !!snapBp &&
-                        snapBp.role === "portal" &&
-                        !!snapBp.portalMeta &&
-                        snapBp.portalMeta.world === REG.fluid.world;
-                    // Read-Seite: den Snapshot-Eintrag durch loadState zurückspielen.
-                    delete r.state.blueprints.portal_fluid;
-                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
-                    const reBp = r.state.blueprints.portal_fluid;
-                    out.loadRestoresPortal =
-                        !!reBp &&
-                        reBp.role === "portal" &&
-                        !!reBp.portalMeta &&
-                        reBp.portalMeta.world === REG.fluid.world;
-                    out.loadKeepsEnterable = !!reBp && r.computeBlueprintAffordances(reBp).isPortal === true;
-                    // obtainPortalForWorld richtet bei jedem Aufruf neu aus —
-                    // heilt ein Portal, dem (etwa aus einem alten Save) die
-                    // Ausrichtung fehlt.
-                    if (reBp) {
-                        delete reBp.portalMeta;
-                        reBp.role = "architecture";
-                    }
-                    r.obtainPortalForWorld("fluid");
-                    const healedBp = r.state.blueprints.portal_fluid;
-                    out.reaimHeals =
-                        !!healedBp &&
-                        healedBp.role === "portal" &&
-                        !!healedBp.portalMeta &&
-                        healedBp.portalMeta.world === REG.fluid.world;
-                    // Aufräumen, damit spätere Blöcke einen sauberen Stand sehen.
-                    delete r.state.blueprints.portal_fluid;
-                    for (let i = 0; i < r.state.player.inventory.length; i++) {
-                        const s = r.state.player.inventory[i];
-                        if (s && s.blueprintName === "portal_fluid") r.state.player.inventory[i] = null;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w14Results && !w14Results.error) {
-                check("W14 P1: renderLibraryUI/obtainPortalForWorld/libraryInitDOM existieren", w14Results.methods);
-                check("W14 P1: jeder WORLD_REGISTRY-Eintrag trägt eine Beschreibung", w14Results.registryHasDesc);
-                check("W14 P1: Bibliothek-Tab im Topbar", w14Results.tabInDom);
-                check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
-                check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
-                check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
-                check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
-                check(
-                    "W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)",
-                    w14Results.bpIsPortal
-                );
-                check("W14 P1: der geholte Bauplan ist auf die Strom-Welt gerichtet", w14Results.bpAimedAtFluid);
-                check("W14 P1: der geholte Portal-Bauplan ist betretbar (Affordance isPortal)", w14Results.bpEnterable);
-                check("W14 P1: das Portal liegt im Inventar", w14Results.inInventory);
-                check("W14 P1: zweites Holen stackt im Inventar (kein zweiter Bauplan)", w14Results.secondStacks);
-                check("W14 P1: obtainPortalForWorld verwirft eine unbekannte Welt", w14Results.unknownRejected);
-                check("W14 P1: buildStateSnapshot persistiert role:portal + portalMeta", w14Results.snapPersistsPortal);
-                check("W14 P1: loadState stellt role:portal + portalMeta wieder her", w14Results.loadRestoresPortal);
-                check("W14 P1: der wiederhergestellte Portal-Bauplan bleibt betretbar", w14Results.loadKeepsEnterable);
-                check(
-                    "W14 P1: obtainPortalForWorld richtet neu aus + heilt verlorenes portalMeta",
-                    w14Results.reaimHeals
-                );
-            } else {
-                check("W14 P1: Bibliothek-Tests laufen", false, w14Results ? w14Results.error : "no result");
-            }
-
-            // ### W14 Phase 2 Teil A — Welt-Manifest-Signatur ###
-            const w14p2Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const REG = r.constructor.WORLD_REGISTRY;
-                    out.methods =
-                        typeof r._canonicalManifest === "function" &&
-                        typeof r.signWorld === "function" &&
-                        typeof r.verifyWorldSignature === "function" &&
-                        typeof r._loadSignedWorlds === "function" &&
-                        typeof r._portalShowSignature === "function";
-                    // _canonicalManifest deterministisch + ignoriert world/desc.
-                    const c1 = r._canonicalManifest(REG.fluid);
-                    const c2 = r._canonicalManifest({
-                        id: "fluid",
-                        label: "Strom-Welt",
-                        dsl: REG.fluid.dsl,
-                        world: "anderer/pfad",
-                        desc: "andere beschreibung",
-                    });
-                    out.canonDeterministic = c1 === c2 && c1.length > 0;
-                    out.canonIgnoresPath = !c1.includes("worlds/");
-                    // Vorzustand säubern.
-                    delete r.state.signedWorlds.fluid;
-                    delete r.state.signedWorlds.terrain;
-                    // Unsigniert → "unsigned".
-                    out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
-                    // signWorld signiert + persistiert.
-                    const signRes = await r.signWorld("fluid");
-                    out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
-                    out.signStored =
-                        !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
-                    out.signValid = (await r.verifyWorldSignature("fluid")) === "valid";
-                    // signWorld verwirft eine unbekannte Welt.
-                    out.signUnknownRejected = (await r.signWorld("nirgendwo")).ok === false;
-                    // localStorage-Persistenz: _loadSignedWorlds liest die Signatur zurück.
-                    const reloaded = r._loadSignedWorlds();
-                    out.persistRoundtrip =
-                        !!reloaded.fluid && reloaded.fluid.signature === r.state.signedWorlds.fluid.signature;
-                    // "modified" — der Manifest-Hash passt nicht mehr.
-                    const realHash = r.state.signedWorlds.fluid.signedHash;
-                    r.state.signedWorlds.fluid.signedHash = "deadbeef";
-                    out.modifiedState = (await r.verifyWorldSignature("fluid")) === "modified";
-                    r.state.signedWorlds.fluid.signedHash = realHash;
-                    // "forged" — die Signatur passt nicht zum Autor.
-                    const realSig = r.state.signedWorlds.fluid.signature;
-                    r.state.signedWorlds.fluid.signature = (realSig[0] === "a" ? "b" : "a") + realSig.slice(1);
-                    out.forgedState = (await r.verifyWorldSignature("fluid")) === "forged";
-                    r.state.signedWorlds.fluid.signature = realSig;
-                    // Cross-Autor: ein mit FREMDEM Schlüssel signiertes Manifest verifiziert.
-                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
-                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
-                    const canonTerrain = r._canonicalManifest(REG.terrain);
-                    const foreignSig = r._vibeBytesToHex(
-                        new Uint8Array(
-                            await crypto.subtle.sign(
-                                { name: "Ed25519" },
-                                foreign.privateKey,
-                                new TextEncoder().encode(canonTerrain)
-                            )
-                        )
-                    );
-                    r.state.signedWorlds.terrain = {
-                        authorPubKey: foreignPubHex,
-                        signature: foreignSig,
-                        signedHash: r._fastHash(canonTerrain),
-                        signedAt: Date.now(),
-                    };
-                    out.crossAuthorValid = (await r.verifyWorldSignature("terrain")) === "valid";
-                    // _loadSignedWorlds defensiv gegen korruptes localStorage.
-                    const savedRaw = localStorage.getItem("anazh.signedWorlds");
-                    localStorage.setItem("anazh.signedWorlds", "{kaputt");
-                    out.loadDefensive = JSON.stringify(r._loadSignedWorlds()) === "{}";
-                    if (savedRaw !== null) localStorage.setItem("anazh.signedWorlds", savedRaw);
-                    // UI: Bibliothek-Karte trägt eine Signatur-Zeile + einen Knopf.
-                    r.renderLibraryUI();
-                    out.uiSigRow = !!document.querySelector("#library-list .library-sig-row");
-                    out.uiSigBtn = !!document.querySelector("#library-list .library-sig-btn");
-                    // Portal-Overlay: das Betreten einer signierten Welt zeigt
-                    // „signiert von <Autor>".
-                    r._buildPortalOverlay({ world: REG.fluid.world, label: "Strom-Welt", dsl: REG.fluid.dsl });
-                    out.overlayHasSigEl = !!(r._portalOverlay && r._portalOverlay.sigEl);
-                    out.overlaySigInDom = !!document.querySelector("#portal-overlay .portal-sig");
-                    await new Promise((res) => setTimeout(res, 180));
-                    const sigEl = r._portalOverlay && r._portalOverlay.sigEl;
-                    out.overlayShowsSigned =
-                        !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
-                    r._disposePortalOverlay();
-                    // Aufräumen.
-                    delete r.state.signedWorlds.fluid;
-                    delete r.state.signedWorlds.terrain;
-                    r._saveSignedWorlds();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w14p2Results && !w14p2Results.error) {
-                check(
-                    "W14 P2: _canonicalManifest/signWorld/verifyWorldSignature/_loadSignedWorlds/_portalShowSignature existieren",
-                    w14p2Results.methods
-                );
-                check("W14 P2: _canonicalManifest ist deterministisch", w14p2Results.canonDeterministic);
-                check(
-                    "W14 P2: _canonicalManifest ignoriert world-Pfad + desc (signiert die Substanz)",
-                    w14p2Results.canonIgnoresPath
-                );
-                check("W14 P2: unsignierte Welt → Status 'unsigned'", w14p2Results.unsignedState);
-                check("W14 P2: signWorld signiert eine registrierte Welt", w14p2Results.signOk);
-                check("W14 P2: Signatur in state.signedWorlds gespeichert", w14p2Results.signStored);
-                check("W14 P2: signierte Welt → Status 'valid'", w14p2Results.signValid);
-                check("W14 P2: signWorld verwirft eine unbekannte Welt", w14p2Results.signUnknownRejected);
-                check(
-                    "W14 P2: Signatur überlebt den localStorage-Rundlauf (_loadSignedWorlds)",
-                    w14p2Results.persistRoundtrip
-                );
-                check("W14 P2: geändertes Manifest → Status 'modified'", w14p2Results.modifiedState);
-                check("W14 P2: gefälschte Signatur → Status 'forged'", w14p2Results.forgedState);
-                check("W14 P2: fremd-signiertes Manifest verifiziert (Cross-Autor)", w14p2Results.crossAuthorValid);
-                check(
-                    "W14 P2: _loadSignedWorlds ist defensiv gegen korruptes localStorage",
-                    w14p2Results.loadDefensive
-                );
-                check(
-                    "W14 P2: Bibliothek-Karte trägt eine Signatur-Zeile + Knopf",
-                    w14p2Results.uiSigRow && w14p2Results.uiSigBtn
-                );
-                check(
-                    "W14 P2: Portal-Overlay legt eine .portal-sig-Zeile an",
-                    w14p2Results.overlayHasSigEl && w14p2Results.overlaySigInDom
-                );
-                check(
-                    "W14 P2: Betreten einer signierten Welt zeigt 'signiert von <Autor>'",
-                    w14p2Results.overlayShowsSigned
-                );
-            } else {
-                check("W14 P2: Manifest-Signatur-Tests laufen", false, w14p2Results ? w14p2Results.error : "no result");
-            }
-
-            // ### W14 Phase 2 Teil B — W13 V2: das Schaffen reist mit ###
-            const w13v2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.payloadMethods =
-                        typeof r._portalEnterPayload === "function" && typeof r._portalSendEnter === "function";
-                    const baseP = r._portalEnterPayload();
-                    out.payloadName = typeof baseP.name === "string" && baseP.name.length > 0;
-                    out.payloadVibeId =
-                        typeof baseP.vibePassId === "string" && /^ed25519:[0-9a-f]{64}$/i.test(baseP.vibePassId);
-                    out.payloadFingerprint = typeof baseP.fingerprint === "string" && baseP.fingerprint.length > 0;
-                    out.payloadSoul =
-                        !!baseP.soul && typeof baseP.soul.name === "string" && typeof baseP.soul.label === "string";
-                    // Eigene Materialien/Werkzeuge reisen mit — Built-ins NICHT.
-                    // Plus: der 16er-Deckel hält den postMessage-Payload klein.
-                    for (let i = 0; i < 20; i++) {
-                        r.state.materials["_w14m" + i] = {
-                            builtIn: false,
-                            color: 0x44cc88,
-                            label: "M" + i,
-                            tags: {},
-                        };
-                    }
-                    r.state.tools._w14tool = {
-                        builtIn: false,
-                        label: "Testfeile",
-                        opName: "test_op",
-                        opClass: "subtractive",
-                    };
-                    const ownP = r._portalEnterPayload();
-                    out.payloadOwnMaterials =
-                        ownP.materials.some((m) => m.name === "_w14m0") &&
-                        !ownP.materials.some((m) => m.name === "stein");
-                    out.payloadMaterialCap = ownP.materials.length <= 16;
-                    out.payloadOwnTools =
-                        ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "hammer");
-                    for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
-                    delete r.state.tools._w14tool;
-                    out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w13v2Results && !w13v2Results.error) {
-                check("W13 V2: _portalEnterPayload + _portalSendEnter existieren", w13v2Results.payloadMethods);
-                check("W13 V2: der enter-Payload trägt den Avatar-Namen", w13v2Results.payloadName);
-                check("W13 V2: der enter-Payload trägt die vibePassId (ed25519)", w13v2Results.payloadVibeId);
-                check("W13 V2: der enter-Payload trägt den Vibe-Pass-Fingerprint", w13v2Results.payloadFingerprint);
-                check("W13 V2: der enter-Payload trägt die aktive Seele (name + label)", w13v2Results.payloadSoul);
-                check(
-                    "W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)",
-                    w13v2Results.payloadOwnMaterials
-                );
-                check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
-                check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
-                check("W13 V2: _portalSendEnter sendet den _portalEnterPayload", w13v2Results.sendUsesPayload);
-            } else {
-                check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
-            }
-            // W13 V2 — die Sub-Welten empfangen + zeigen das Schaffen (Quell-Check).
-            try {
-                const skJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "skeleton.js"), "utf8");
-                check(
-                    "W13 V2: skeleton.js hat renderBrought + liest soul/materials/tools",
-                    /function renderBrought/.test(skJs) &&
-                        /avatar\.soul/.test(skJs) &&
-                        /avatar\.materials/.test(skJs) &&
-                        /avatar\.tools/.test(skJs)
-                );
-                check(
-                    "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
-                    /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
-                );
-                const skHtml = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "index.html"), "utf8");
-                check(
-                    "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
-                    /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
-                );
-                const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
-                const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "terrain.js"), "utf8");
-                check(
-                    "W13 V2: fluid + terrain zeigen den Vibe-Pass-Fingerprint des Reisenden",
-                    /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
-                );
-            } catch (err) {
-                check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
-            }
-
-            // ### W14 Phase 3 — fremde Welten empfangen ###
-            const w14p3Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const REG = r.constructor.WORLD_REGISTRY;
-                    out.methods =
-                        typeof r._worldEntry === "function" &&
-                        typeof r._libraryWorlds === "function" &&
-                        typeof r._loadCustomWorlds === "function" &&
-                        typeof r._sanitizeImportedManifest === "function" &&
-                        typeof r.exportWorldManifest === "function" &&
-                        typeof r.importWorldManifest === "function";
-                    // Vorzustand säubern.
-                    r.state.customWorlds = {};
-                    r.state.signedWorlds = r.state.signedWorlds || {};
-                    delete r.state.signedWorlds.fluid;
-                    // _worldEntry: Built-in auflösbar.
-                    out.worldEntryBuiltin = r._worldEntry("fluid") === REG.fluid;
-                    // _sanitizeImportedManifest: Built-in-id + Müll-id abgelehnt.
-                    out.sanitizeRejectsBuiltin =
-                        r._sanitizeImportedManifest({
-                            id: "fluid",
-                            label: "X",
-                            world: "worlds/skeleton/index.html",
-                            dsl: [],
-                        }) === null;
-                    out.sanitizeRejectsBadId =
-                        r._sanitizeImportedManifest({
-                            id: "BÖSE id!",
-                            label: "X",
-                            world: "worlds/skeleton/index.html",
-                        }) === null;
-                    // exportWorldManifest: unsigniert → not_signed.
-                    out.exportUnsignedRejected = r.exportWorldManifest("fluid").reason === "not_signed";
-                    // fluid signieren, dann exportieren.
-                    await r.signWorld("fluid");
-                    const exp = r.exportWorldManifest("fluid");
-                    out.exportOk =
-                        exp.ok === true &&
-                        !!exp.manifest &&
-                        exp.manifest.id === "fluid" &&
-                        exp.manifest.schemaVersion === "1.0" &&
-                        /^[0-9a-f]{64}$/i.test(exp.manifest.authorPubKey || "");
-                    // importWorldManifest: Built-in-id-Kollision + Müll.
-                    const clash = await r.importWorldManifest({
-                        schemaVersion: "1.0",
-                        id: "terrain",
-                        label: "X",
-                        world: "worlds/skeleton/index.html",
-                        dsl: [],
-                    });
-                    out.importBuiltinRejected = clash.ok === false && clash.reason === "id_is_builtin";
-                    const garbage = await r.importWorldManifest({ nonsense: true });
-                    out.importGarbageRejected = garbage.ok === false;
-                    // Cross-Autor: ein fremd-signiertes Manifest (neue id, erreichbarer Pfad).
-                    const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-                    const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
-                    const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
-                    const fm = {
-                        schemaVersion: "1.0",
-                        id: "void-zwei",
-                        label: "Void Zwei",
-                        desc: "Eine fremde Leere.",
-                        world: "worlds/skeleton/index.html",
-                        dsl: ["skybox_color"],
-                    };
-                    const fmCanon = r._canonicalManifest(fm);
-                    const sign = async (canon) =>
-                        r._vibeBytesToHex(
-                            new Uint8Array(
-                                await crypto.subtle.sign(
-                                    { name: "Ed25519" },
-                                    foreign.privateKey,
-                                    new TextEncoder().encode(canon)
-                                )
-                            )
-                        );
-                    const fmSig = await sign(fmCanon);
-                    const importValid = await r.importWorldManifest(
-                        Object.assign({}, fm, {
-                            authorPubKey: foreignPubHex,
-                            signature: fmSig,
-                            signedHash: r._fastHash(fmCanon),
-                        })
-                    );
-                    out.importCrossAuthorValid =
-                        importValid.ok === true &&
-                        importValid.signatureStatus === "valid" &&
-                        importValid.reachable === true;
-                    out.customWorldStored = !!(r.state.customWorlds && r.state.customWorlds["void-zwei"]);
-                    out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
-                    out.worldEntryCustom = !!r._worldEntry("void-zwei");
-                    out.libraryWorldsMerged =
-                        r._libraryWorlds().some((w) => w.id === "void-zwei") &&
-                        r._libraryWorlds().length > Object.keys(REG).length;
-                    // Gefälschte Signatur → forged.
-                    const fmFalsch = Object.assign({}, fm, { id: "void-falsch" });
-                    const importForged = await r.importWorldManifest(
-                        Object.assign({}, fmFalsch, {
-                            authorPubKey: foreignPubHex,
-                            signature: (fmSig[0] === "a" ? "b" : "a") + fmSig.slice(1),
-                            signedHash: r._fastHash(r._canonicalManifest(fmFalsch)),
-                        })
-                    );
-                    out.importForged = importForged.ok === true && importForged.signatureStatus === "forged";
-                    // Unerreichbare Welt: die fetch-Probe schlägt fehl.
-                    const importUnreach = await r.importWorldManifest({
-                        schemaVersion: "1.0",
-                        id: "void-fern",
-                        label: "Ferne Welt",
-                        world: "worlds/erfundene-welt/index.html",
-                        dsl: [],
-                    });
-                    out.importUnreachable = importUnreach.ok === true && importUnreach.reachable === false;
-                    // obtainPortalForWorld: erreichbare custom-Welt ok, unerreichbare abgelehnt.
-                    out.obtainCustomReachable = r.obtainPortalForWorld("void-zwei").ok === true;
-                    const obUn = r.obtainPortalForWorld("void-fern");
-                    out.obtainCustomUnreachable = obUn.ok === false && obUn.reason === "world_unreachable";
-                    // V8.61-Härtung — _runRaycast verzweigt defensiv bei
-                    // null-physicsWorld (sonst flakte ein rayTest-on-null im
-                    // rAF-Loop während eines Welt-Regens).
-                    const savedPW = r.state.physicsWorld;
-                    r.state.physicsWorld = null;
-                    try {
-                        out.raycastNullSafe = r._runRaycast(null, null, (_cb, hit) => hit) === false;
-                    } catch (e) {
-                        out.raycastNullSafe = false;
-                    }
-                    r.state.physicsWorld = savedPW;
-                    // localStorage-Rundlauf.
-                    const reloaded = r._loadCustomWorlds();
-                    out.customWorldsRoundtrip =
-                        !!reloaded["void-zwei"] &&
-                        reloaded["void-zwei"].signature === r.state.customWorlds["void-zwei"].signature;
-                    // UI: renderLibraryUI rendert eine importierte Karte + Import-Knopf im DOM.
-                    r.renderLibraryUI();
-                    out.uiImportedCard =
-                        !!document.querySelector("#library-list .library-card-imported") &&
-                        !!document.querySelector("#library-list .library-imported-mark");
-                    out.uiImportButton =
-                        !!document.getElementById("library-import") &&
-                        !!document.getElementById("library-import-input");
-                    // Aufräumen.
-                    r.state.customWorlds = {};
-                    r._saveCustomWorlds();
-                    delete r.state.signedWorlds.fluid;
-                    r._saveSignedWorlds();
-                    delete r.state.blueprints["portal_void-zwei"];
-                    for (let i = 0; i < r.state.player.inventory.length; i++) {
-                        const s = r.state.player.inventory[i];
-                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_void") === 0) {
-                            r.state.player.inventory[i] = null;
-                        }
-                    }
-                    r.renderLibraryUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (w14p3Results && !w14p3Results.error) {
-                check(
-                    "W14 P3: _worldEntry/_libraryWorlds/_loadCustomWorlds/_sanitizeImportedManifest/export+importWorldManifest existieren",
-                    w14p3Results.methods
-                );
-                check("W14 P3: _worldEntry löst eine Built-in-Welt auf", w14p3Results.worldEntryBuiltin);
-                check(
-                    "W14 P3: _sanitizeImportedManifest lehnt eine Built-in-id ab (kein Override)",
-                    w14p3Results.sanitizeRejectsBuiltin
-                );
-                check(
-                    "W14 P3: _sanitizeImportedManifest lehnt eine ungültige id ab",
-                    w14p3Results.sanitizeRejectsBadId
-                );
-                check("W14 P3: exportWorldManifest verlangt eine signierte Welt", w14p3Results.exportUnsignedRejected);
-                check("W14 P3: exportWorldManifest liefert das signierte §3.3-Manifest", w14p3Results.exportOk);
-                check(
-                    "W14 P3: importWorldManifest verwirft eine Built-in-id-Kollision",
-                    w14p3Results.importBuiltinRejected
-                );
-                check("W14 P3: importWorldManifest verwirft ein Müll-Manifest", w14p3Results.importGarbageRejected);
-                check(
-                    "W14 P3: ein fremd-signiertes Manifest importiert + verifiziert (Cross-Autor)",
-                    w14p3Results.importCrossAuthorValid
-                );
-                check("W14 P3: die importierte Welt landet in state.customWorlds", w14p3Results.customWorldStored);
-                check(
-                    "W14 P3: verifyWorldSignature liest die manifest-getragene Signatur (valid)",
-                    w14p3Results.verifyCustomValid
-                );
-                check(
-                    "W14 P3: _worldEntry + _libraryWorlds umfassen die importierte Welt",
-                    w14p3Results.worldEntryCustom && w14p3Results.libraryWorldsMerged
-                );
-                check("W14 P3: ein manipuliertes Manifest → Signatur 'forged'", w14p3Results.importForged);
-                check(
-                    "W14 P3: eine Welt ohne erreichbare Dateien wird reachable:false markiert",
-                    w14p3Results.importUnreachable
-                );
-                check(
-                    "W14 P3: obtainPortalForWorld holt eine erreichbare importierte Welt",
-                    w14p3Results.obtainCustomReachable
-                );
-                check(
-                    "W14 P3: obtainPortalForWorld verweigert eine unerreichbare Welt (kein totes Portal)",
-                    w14p3Results.obtainCustomUnreachable
-                );
-                check(
-                    "W14 P3: importierte Welten überleben den localStorage-Rundlauf",
-                    w14p3Results.customWorldsRoundtrip
-                );
-                check(
-                    "W14 P3: Bibliothek rendert eine 'empfangen'-Karte für die importierte Welt",
-                    w14p3Results.uiImportedCard
-                );
-                check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
-                check(
-                    "W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)",
-                    w14p3Results.raycastNullSafe
-                );
-            } else {
-                check("W14 P3: Welt-Import-Tests laufen", false, w14p3Results ? w14p3Results.error : "no result");
-            }
-
-            // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
-            const translatorResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.methods =
-                        typeof r._buildTranslatorPrompt === "function" &&
-                        typeof r._parseManifestResponse === "function" &&
-                        typeof r.translateWorldManifest === "function" &&
-                        typeof r.acceptTranslatedManifest === "function" &&
-                        typeof r.translatorInitDOM === "function";
-                    r.state.customWorlds = {};
-                    // _buildTranslatorPrompt nennt das Manifest-Schema.
-                    const prompt = r._buildTranslatorPrompt();
-                    out.promptNamesSchema =
-                        typeof prompt === "string" &&
-                        prompt.includes('"id"') &&
-                        prompt.includes('"label"') &&
-                        prompt.includes('"dsl"');
-                    // _parseManifestResponse — REIN DATEN, kein LLM nötig.
-                    const p1 = r._parseManifestResponse('{"id":"voxelwelt","label":"Voxel","dsl":["place_block"]}');
-                    out.parseClean = !!p1 && p1.id === "voxelwelt";
-                    const p2 = r._parseManifestResponse('```json\n{"id":"x","label":"X"}\n```');
-                    out.parseFenced = !!p2 && p2.id === "x";
-                    const p3 = r._parseManifestResponse('<think>ich überlege ...</think>{"id":"y","label":"Y"}');
-                    out.parseThink = !!p3 && p3.id === "y";
-                    out.parseGarbage = r._parseManifestResponse("ich bin kein json") === null;
-                    out.parseArray = r._parseManifestResponse("[1,2,3]") === null;
-                    // translateWorldManifest — llmCall stubben (kein API-Key im Headless).
-                    const origLlm = r.llmCall;
-                    try {
-                        r.llmCall = async () => ({
-                            say: "",
-                            program: null,
-                            raw: JSON.stringify({
-                                id: "voxel-traum",
-                                label: "Voxel-Traum",
-                                desc: "Eine Voxel-Sandbox mit Wetter.",
-                                dsl: ["place_block", "set_weather"],
-                            }),
-                        });
-                        // Zu kurze Beschreibung → vor dem LLM abgelehnt.
-                        const tooShort = await r.translateWorldManifest("kurz");
-                        out.rejectsTooShort = tooShort.ok === false && tooShort.reason === "description_too_short";
-                        // Gültige Übersetzung → sanitiertes Vorschau-Manifest.
-                        const tr = await r.translateWorldManifest("Eine Voxel-Sandbox mit Wetter und Block-Bauen.");
-                        out.translateOk =
-                            tr.ok === true &&
-                            !!tr.manifest &&
-                            tr.manifest.id === "voxel-traum" &&
-                            /^worlds\//.test(tr.manifest.world || "");
-                        // Übersetzer-UI-Pfad: _runTranslator füllt #translator-review.
-                        const inp = document.getElementById("translator-input");
-                        if (inp) inp.value = "Eine Voxel-Sandbox mit Wetter und Block-Bauen.";
-                        await r._runTranslator();
-                        const review = document.getElementById("translator-review");
-                        out.runTranslatorRendersReview =
-                            !!review && review.hidden === false && !!review.querySelector(".translator-review-title");
-                        // Übersetztes Manifest, das eine Built-in-id wählt → abgelehnt.
-                        r.llmCall = async () => ({ raw: JSON.stringify({ id: "fluid", label: "X" }) });
-                        const builtinId = await r.translateWorldManifest("Eine Welt namens fluid.");
-                        out.rejectsBuiltinId = builtinId.ok === false && builtinId.reason === "id_is_builtin";
-                        // LLM-Antwort ohne Manifest → no_manifest_in_response.
-                        r.llmCall = async () => ({ raw: "Tut mir leid, ich weiss es nicht." });
-                        const noManifest = await r.translateWorldManifest("Eine vage Welt ohne Form.");
-                        out.rejectsNoManifest =
-                            noManifest.ok === false && noManifest.reason === "no_manifest_in_response";
-                    } finally {
-                        r.llmCall = origLlm;
-                    }
-                    // acceptTranslatedManifest — committet in customWorlds.
-                    const acc = r.acceptTranslatedManifest({
-                        id: "voxel-traum",
-                        label: "Voxel-Traum",
-                        desc: "Eine Voxel-Sandbox.",
-                        dsl: ["place_block"],
-                    });
-                    const stored = r.state.customWorlds && r.state.customWorlds["voxel-traum"];
-                    out.acceptCommits =
-                        acc.ok === true &&
-                        acc.id === "voxel-traum" &&
-                        !!stored &&
-                        stored.translated === true &&
-                        stored.reachable === false;
-                    // _sanitizeImportedManifest bewahrt das translated-Feld.
-                    const reSan = r._sanitizeImportedManifest(stored);
-                    out.sanitizePreservesTranslated = !!reSan && reSan.translated === true;
-                    // localStorage-Rundlauf — die übersetzte Welt überlebt.
-                    const reloaded = r._loadCustomWorlds();
-                    out.roundtripKeepsTranslated =
-                        !!reloaded["voxel-traum"] && reloaded["voxel-traum"].translated === true;
-                    // _worldEntry + _libraryWorlds umfassen die übersetzte Welt.
-                    out.worldEntryMerged =
-                        !!r._worldEntry("voxel-traum") && r._libraryWorlds().some((w) => w.id === "voxel-traum");
-                    // obtainPortalForWorld verweigert die übersetzte Welt (kein totes Portal).
-                    const ob = r.obtainPortalForWorld("voxel-traum");
-                    out.obtainRefusesTranslated = ob.ok === false && ob.reason === "world_unreachable";
-                    // renderLibraryUI rendert eine „KI-übersetzt"-Karte.
-                    r.renderLibraryUI();
-                    out.uiTranslatedCard =
-                        !!document.querySelector("#library-list .library-card-translated") &&
-                        !!document.querySelector("#library-list .library-translated-mark");
-                    // UI: Übersetzer-Sektion im DOM.
-                    out.uiTranslatorSection =
-                        !!document.getElementById("translator-input") &&
-                        !!document.getElementById("translator-run") &&
-                        !!document.getElementById("translator-review");
-                    // Aufräumen.
-                    r.state.customWorlds = {};
-                    r._saveCustomWorlds();
-                    const cleanReview = document.getElementById("translator-review");
-                    if (cleanReview) {
-                        cleanReview.hidden = true;
-                        cleanReview.innerHTML = "";
-                    }
-                    const cleanInput = document.getElementById("translator-input");
-                    if (cleanInput) cleanInput.value = "";
-                    r.renderLibraryUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (translatorResults && !translatorResults.error) {
-                check(
-                    "KI-Übersetzer: _buildTranslatorPrompt/_parseManifestResponse/translateWorldManifest/acceptTranslatedManifest/translatorInitDOM existieren",
-                    translatorResults.methods
-                );
-                check(
-                    "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
-                    translatorResults.promptNamesSchema
-                );
-                check("KI-Übersetzer: _parseManifestResponse liest sauberes JSON", translatorResults.parseClean);
-                check(
-                    "KI-Übersetzer: _parseManifestResponse liest JSON aus einem Markdown-Fence",
-                    translatorResults.parseFenced
-                );
-                check(
-                    "KI-Übersetzer: _parseManifestResponse strippt <think>-Reasoning + liest das JSON danach",
-                    translatorResults.parseThink
-                );
-                check(
-                    "KI-Übersetzer: _parseManifestResponse liefert null bei Müll (kein JSON)",
-                    translatorResults.parseGarbage
-                );
-                check(
-                    "KI-Übersetzer: _parseManifestResponse liefert null bei einem JSON-Array (kein Objekt)",
-                    translatorResults.parseArray
-                );
-                check(
-                    "KI-Übersetzer: translateWorldManifest lehnt eine zu kurze Beschreibung ab",
-                    translatorResults.rejectsTooShort
-                );
-                check(
-                    "KI-Übersetzer: translateWorldManifest liefert ein sanitiertes Vorschau-Manifest",
-                    translatorResults.translateOk
-                );
-                check(
-                    "KI-Übersetzer: _runTranslator rendert den KI-Vorschlag im Review-Bereich",
-                    translatorResults.runTranslatorRendersReview
-                );
-                check(
-                    "KI-Übersetzer: translateWorldManifest lehnt eine Built-in-id ab",
-                    translatorResults.rejectsBuiltinId
-                );
-                check(
-                    "KI-Übersetzer: translateWorldManifest meldet no_manifest_in_response bei einer LLM-Antwort ohne Manifest",
-                    translatorResults.rejectsNoManifest
-                );
-                check(
-                    "KI-Übersetzer: acceptTranslatedManifest committet in customWorlds (translated:true, reachable:false)",
-                    translatorResults.acceptCommits
-                );
-                check(
-                    "KI-Übersetzer: _sanitizeImportedManifest bewahrt das translated-Feld",
-                    translatorResults.sanitizePreservesTranslated
-                );
-                check(
-                    "KI-Übersetzer: eine übersetzte Welt überlebt den localStorage-Rundlauf",
-                    translatorResults.roundtripKeepsTranslated
-                );
-                check(
-                    "KI-Übersetzer: _worldEntry + _libraryWorlds umfassen die übersetzte Welt",
-                    translatorResults.worldEntryMerged
-                );
-                check(
-                    "KI-Übersetzer: obtainPortalForWorld verweigert eine übersetzte Welt (kein totes Portal)",
-                    translatorResults.obtainRefusesTranslated
-                );
-                check(
-                    "KI-Übersetzer: renderLibraryUI rendert eine 'KI-übersetzt'-Karte",
-                    translatorResults.uiTranslatedCard
-                );
-                check(
-                    "KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM",
-                    translatorResults.uiTranslatorSection
-                );
-            } else {
-                check(
-                    "KI-Übersetzer: Phase-1-Tests laufen",
-                    false,
-                    translatorResults ? translatorResults.error : "no result"
-                );
-            }
-
-            // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
-            const transl2Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.methods =
-                        typeof r._sanitizeWorldScene === "function" &&
-                        typeof r._buildSceneTranslatorPrompt === "function" &&
-                        typeof r.translateWorldScene === "function" &&
-                        typeof r.buildTranslatedWorld === "function" &&
-                        typeof r._runWorldBuild === "function";
-                    out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
-                    r.state.customWorlds = {};
-                    // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
-                    const prompt = r._buildSceneTranslatorPrompt();
-                    out.promptNamesSchema =
-                        typeof prompt === "string" &&
-                        prompt.includes('"sky"') &&
-                        prompt.includes('"ground"') &&
-                        prompt.includes('"objects"') &&
-                        prompt.includes('"dslEffects"');
-                    // _sanitizeWorldScene — IMMER eine gültige Szene, REIN DATEN.
-                    const empty = r._sanitizeWorldScene({});
-                    out.sanitizeDefault =
-                        !!empty &&
-                        /^#[0-9a-f]{6}$/.test(empty.sky.top) &&
-                        ["flat", "hills", "water", "void"].indexOf(empty.ground.style) >= 0 &&
-                        Array.isArray(empty.objects);
-                    out.sanitizeGarbage = !!r._sanitizeWorldScene("kaputt") && !!r._sanitizeWorldScene(null);
-                    // Clamps: schlechte Farbe → Default-Hex, Objekte gedeckelt, Licht geklemmt.
-                    const big = [];
-                    for (let i = 0; i < 100; i++) big.push({ shape: "box", color: "#112233" });
-                    const clamped = r._sanitizeWorldScene({
-                        sky: { top: "keinhex", bottom: "#ff0000" },
-                        light: { intensity: 99 },
-                        objects: big,
-                    });
-                    out.sanitizeClamps =
-                        clamped.sky.top === "#2a3a6a" &&
-                        clamped.sky.bottom === "#ff0000" &&
-                        clamped.light.intensity === 2 &&
-                        clamped.objects.length === 14;
-                    // dslEffects: op-förmige Schlüssel bleiben, Müll-Schlüssel fallen.
-                    const eff = r._sanitizeWorldScene({
-                        dslEffects: { good_op: { burst: 5 }, "BAD OP": { burst: 5 } },
-                    });
-                    out.sanitizeDslEffects = !!eff.dslEffects.good_op && eff.dslEffects["BAD OP"] === undefined;
-                    // translateWorldScene — llmCall stubben.
-                    const origLlm = r.llmCall;
-                    try {
-                        r.llmCall = async () => ({
-                            raw: JSON.stringify({
-                                sky: { top: "#102040", bottom: "#88aacc" },
-                                fog: "#aabbcc",
-                                ground: { color: "#3a7a3a", style: "hills" },
-                                light: { color: "#ffffff", intensity: 1.2 },
-                                objects: [{ shape: "box", color: "#8a6a3a", count: 30, area: 50, size: 3, spin: true }],
-                                ambient: { kind: "motes", color: "#ffffff" },
-                                dslEffects: { set_weather: { sky: "#222244", fogShift: 0.4, burst: 10 } },
-                            }),
-                        });
-                        const ts = await r.translateWorldScene({
-                            id: "x",
-                            label: "Voxel-Bau",
-                            desc: "Eine Voxel-Welt.",
-                            dsl: ["set_weather"],
-                        });
-                        out.translateSceneOk = ts.ok === true && !!ts.scene && ts.scene.ground.style === "hills";
-                        // buildTranslatedWorld — eine übersetzte Welt aufbauen.
-                        r.acceptTranslatedManifest({
-                            id: "voxel-bau",
-                            label: "Voxel-Bau",
-                            desc: "Eine Voxel-Welt mit Wetter.",
-                            dsl: ["set_weather", "place_block"],
-                        });
-                        out.beforeBuildNotReachable = r.state.customWorlds["voxel-bau"].reachable === false;
-                        const bw = await r.buildTranslatedWorld("voxel-bau");
-                        const built = r.state.customWorlds["voxel-bau"];
-                        out.buildAttachesScene =
-                            bw.ok === true &&
-                            !!built.scene &&
-                            built.reachable === true &&
-                            built.world === "worlds/translated/index.html";
-                        out.buildUnknownRejected =
-                            (await r.buildTranslatedWorld("nirgendwo")).reason === "world_unknown";
-                        // Eine nicht-übersetzte Welt lässt sich nicht aufbauen.
-                        r.state.customWorlds["plain-w"] = {
-                            id: "plain-w",
-                            label: "Plain",
-                            world: "worlds/skeleton/index.html",
-                            dsl: [],
-                            reachable: true,
-                        };
-                        out.buildNonTranslatedRejected =
-                            (await r.buildTranslatedWorld("plain-w")).reason === "not_translated";
-                        delete r.state.customWorlds["plain-w"];
-                        // translateWorldScene → no_scene_in_response bei Müll.
-                        r.llmCall = async () => ({ raw: "ich weiss es nicht" });
-                        out.translateSceneNoScene =
-                            (await r.translateWorldScene({ id: "x", label: "X", desc: "egal egal" })).reason ===
-                            "no_scene_in_response";
-                    } finally {
-                        r.llmCall = origLlm;
-                    }
-                    // _sanitizeImportedManifest bewahrt die Szene.
-                    const reSan = r._sanitizeImportedManifest(r.state.customWorlds["voxel-bau"]);
-                    out.sanitizeKeepsScene = !!reSan && !!reSan.scene && reSan.scene.ground.style === "hills";
-                    // localStorage-Rundlauf — die aufgebaute Welt überlebt.
-                    const reloaded = r._loadCustomWorlds();
-                    out.roundtripKeepsScene =
-                        !!reloaded["voxel-bau"] &&
-                        !!reloaded["voxel-bau"].scene &&
-                        reloaded["voxel-bau"].reachable === true;
-                    // obtainPortalForWorld holt jetzt die AUFGEBAUTE übersetzte Welt.
-                    const ob = r.obtainPortalForWorld("voxel-bau");
-                    const portalBp = r.state.blueprints["portal_voxel-bau"];
-                    out.obtainBuilt =
-                        ob.ok === true &&
-                        !!portalBp &&
-                        !!portalBp.portalMeta &&
-                        portalBp.portalMeta.world === "worlds/translated/index.html" &&
-                        portalBp.portalMeta.translatedWorldId === "voxel-bau";
-                    // _sanitizePortalMeta bewahrt translatedWorldId.
-                    const sm = r._sanitizePortalMeta(
-                        { world: "worlds/translated/index.html", label: "X", translatedWorldId: "voxel-bau" },
-                        "X"
-                    );
-                    out.portalMetaKeepsId = sm.translatedWorldId === "voxel-bau";
-                    // buildStateSnapshot/loadState — translatedWorldId überlebt.
-                    const snap = r.buildStateSnapshot();
-                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_voxel-bau");
-                    out.snapKeepsId =
-                        !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.translatedWorldId === "voxel-bau";
-                    delete r.state.blueprints["portal_voxel-bau"];
-                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
-                    const reBp = r.state.blueprints["portal_voxel-bau"];
-                    out.loadKeepsId = !!reBp && !!reBp.portalMeta && reBp.portalMeta.translatedWorldId === "voxel-bau";
-                    // _portalSendEnter trägt die Szene mit (Fake-Overlay).
-                    const savedPo = r._portalOverlay;
-                    let captured = null;
-                    r._portalOverlay = {
-                        translatedWorldId: "voxel-bau",
-                        iframe: { contentWindow: { postMessage: (m) => (captured = m) } },
-                    };
-                    r._portalSendEnter();
-                    r._portalOverlay = savedPo;
-                    out.enterCarriesScene =
-                        !!captured && captured.type === "enter" && !!captured.scene && !!captured.scene.ground;
-                    // renderLibraryUI: aufgebaute Welt → aktiver „Portal holen" + „neu aufbauen".
-                    r.renderLibraryUI();
-                    const builtCard = Array.from(document.querySelectorAll("#library-list .library-card")).find((c) =>
-                        /Voxel-Bau/.test(c.textContent)
-                    );
-                    out.uiBuiltCard =
-                        !!builtCard &&
-                        !!builtCard.querySelector(".library-rebuild") &&
-                        !builtCard.querySelector(".library-get[disabled]") &&
-                        !builtCard.querySelector(".library-build");
-                    // Eine NOCH NICHT aufgebaute übersetzte Welt → „Welt aufbauen".
-                    r.acceptTranslatedManifest({ id: "voxel-roh", label: "Voxel-Roh", desc: "Roh.", dsl: [] });
-                    r.renderLibraryUI();
-                    const rohCard = Array.from(document.querySelectorAll("#library-list .library-card")).find((c) =>
-                        /Voxel-Roh/.test(c.textContent)
-                    );
-                    out.uiBuildButton = !!rohCard && !!rohCard.querySelector(".library-build");
-                    // Aufräumen.
-                    r.state.customWorlds = {};
-                    r._saveCustomWorlds();
-                    delete r.state.blueprints["portal_voxel-bau"];
-                    for (let i = 0; i < r.state.player.inventory.length; i++) {
-                        const s = r.state.player.inventory[i];
-                        if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_voxel") === 0) {
-                            r.state.player.inventory[i] = null;
-                        }
-                    }
-                    r.renderLibraryUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (transl2Results && !transl2Results.error) {
-                check(
-                    "KI-Übersetzer P2: _sanitizeWorldScene/_buildSceneTranslatorPrompt/translateWorldScene/buildTranslatedWorld/_runWorldBuild existieren",
-                    transl2Results.methods
-                );
-                check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
-                check(
-                    "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",
-                    transl2Results.promptNamesSchema
-                );
-                check(
-                    "KI-Übersetzer P2: _sanitizeWorldScene liefert aus {} eine gültige Szene",
-                    transl2Results.sanitizeDefault
-                );
-                check(
-                    "KI-Übersetzer P2: _sanitizeWorldScene ist crash-frei bei Müll/null",
-                    transl2Results.sanitizeGarbage
-                );
-                check(
-                    "KI-Übersetzer P2: _sanitizeWorldScene clampt Farbe + Objekt-Zahl + Licht",
-                    transl2Results.sanitizeClamps
-                );
-                check(
-                    "KI-Übersetzer P2: _sanitizeWorldScene filtert dslEffects-Schlüssel",
-                    transl2Results.sanitizeDslEffects
-                );
-                check(
-                    "KI-Übersetzer P2: translateWorldScene liefert eine sanitierte Szene",
-                    transl2Results.translateSceneOk
-                );
-                check(
-                    "KI-Übersetzer P2: translateWorldScene meldet no_scene_in_response bei Müll",
-                    transl2Results.translateSceneNoScene
-                );
-                check(
-                    "KI-Übersetzer P2: eine übersetzte Welt ist vor dem Aufbau nicht erreichbar",
-                    transl2Results.beforeBuildNotReachable
-                );
-                check(
-                    "KI-Übersetzer P2: buildTranslatedWorld heftet die Szene an + macht die Welt betretbar",
-                    transl2Results.buildAttachesScene
-                );
-                check(
-                    "KI-Übersetzer P2: buildTranslatedWorld lehnt eine unbekannte Welt ab",
-                    transl2Results.buildUnknownRejected
-                );
-                check(
-                    "KI-Übersetzer P2: buildTranslatedWorld lehnt eine nicht-übersetzte Welt ab",
-                    transl2Results.buildNonTranslatedRejected
-                );
-                check(
-                    "KI-Übersetzer P2: _sanitizeImportedManifest bewahrt die Szene",
-                    transl2Results.sanitizeKeepsScene
-                );
-                check(
-                    "KI-Übersetzer P2: eine aufgebaute Welt überlebt den localStorage-Rundlauf",
-                    transl2Results.roundtripKeepsScene
-                );
-                check(
-                    "KI-Übersetzer P2: obtainPortalForWorld holt eine aufgebaute übersetzte Welt (Portal mit translatedWorldId)",
-                    transl2Results.obtainBuilt
-                );
-                check(
-                    "KI-Übersetzer P2: _sanitizePortalMeta bewahrt translatedWorldId",
-                    transl2Results.portalMetaKeepsId
-                );
-                check(
-                    "KI-Übersetzer P2: translatedWorldId überlebt den buildStateSnapshot/loadState-Rundlauf",
-                    transl2Results.snapKeepsId && transl2Results.loadKeepsId
-                );
-                check(
-                    "KI-Übersetzer P2: _portalSendEnter trägt die deklarative Szene in die Sub-Welt",
-                    transl2Results.enterCarriesScene
-                );
-                check(
-                    "KI-Übersetzer P2: renderLibraryUI rendert 'Welt aufbauen' bzw. nach dem Aufbau 'Portal holen' + 'neu aufbauen'",
-                    transl2Results.uiBuildButton && transl2Results.uiBuiltCard
-                );
-            } else {
-                check(
-                    "KI-Übersetzer P2: Phase-2-Tests laufen",
-                    false,
-                    transl2Results ? transl2Results.error : "no result"
-                );
-            }
-
-            // ### V8.70 — Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
-            const sandboxResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const REG = r.constructor.WORLD_REGISTRY;
-                    // schwarm in der Registry, als sandboxed markiert.
-                    out.registryEntry =
-                        !!REG.schwarm &&
-                        REG.schwarm.trust === "sandboxed" &&
-                        typeof REG.schwarm.desc === "string" &&
-                        Array.isArray(REG.schwarm.dsl) &&
-                        REG.schwarm.dsl.length > 0;
-                    // Built-in-Welten bleiben trusted (kein sandboxed).
-                    out.builtinsTrusted =
-                        REG.skeleton.trust !== "sandboxed" &&
-                        REG.fluid.trust !== "sandboxed" &&
-                        REG.terrain.trust !== "sandboxed";
-                    // _sanitizePortalMeta: default trusted, bewahrt sandboxed, Müll → trusted.
-                    out.sanitizeTrust =
-                        r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "X").trust === "trusted" &&
-                        r._sanitizePortalMeta({ world: "worlds/schwarm/index.html", trust: "sandboxed" }, "X").trust ===
-                            "sandboxed" &&
-                        r._sanitizePortalMeta({ world: "worlds/skeleton/index.html", trust: "BÖSE" }, "X").trust ===
-                            "trusted";
-                    // aimBlueprintAtWorld trägt die Vertrauensstufe in den Bauplan.
-                    r.cloneBlueprint("welt_portal", "_t_sb");
-                    r.aimBlueprintAtWorld("_t_sb", "schwarm");
-                    r.cloneBlueprint("welt_portal", "_t_tr");
-                    r.aimBlueprintAtWorld("_t_tr", "terrain");
-                    out.aimCarriesTrust =
-                        r.state.blueprints["_t_sb"].portalMeta.trust === "sandboxed" &&
-                        r.state.blueprints["_t_tr"].portalMeta.trust === "trusted";
-                    delete r.state.blueprints["_t_sb"];
-                    delete r.state.blueprints["_t_tr"];
-                    // obtainPortalForWorld holt die Schwarm-Welt.
-                    const ob = r.obtainPortalForWorld("schwarm");
-                    const pbp = r.state.blueprints["portal_schwarm"];
-                    out.obtainSchwarm =
-                        ob.ok === true &&
-                        !!pbp &&
-                        pbp.portalMeta.world === "worlds/schwarm/index.html" &&
-                        pbp.portalMeta.trust === "sandboxed";
-                    // _buildPortalOverlay: sandboxed → allow-scripts ALLEIN.
-                    r._buildPortalOverlay({
-                        world: "worlds/schwarm/index.html",
-                        label: "S",
-                        dsl: ["sturm"],
-                        trust: "sandboxed",
-                    });
-                    out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
-                    out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
-                    r._disposePortalOverlay();
-                    // trusted → mit allow-same-origin.
-                    r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
-                    out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
-                    r._disposePortalOverlay();
-                    // _portalSendEnter / _portalForwardDsl: targetOrigin "*" für null-origin.
-                    const savedPo = r._portalOverlay;
-                    let capEnter = null;
-                    let capDsl = null;
-                    r._portalOverlay = {
-                        trust: "sandboxed",
-                        iframe: { contentWindow: { postMessage: (m, o) => (capEnter = { m: m, o: o }) } },
-                    };
-                    r._portalSendEnter();
-                    r._portalOverlay.iframe.contentWindow.postMessage = (m, o) => (capDsl = { m: m, o: o });
-                    r._portalForwardDsl(["sturm"]);
-                    out.starForSandbox =
-                        !!capEnter && capEnter.o === "*" && capEnter.m.type === "enter" && !!capDsl && capDsl.o === "*";
-                    let capTrusted = null;
-                    r._portalOverlay = {
-                        trust: "trusted",
-                        iframe: { contentWindow: { postMessage: (m, o) => (capTrusted = { m: m, o: o }) } },
-                    };
-                    r._portalSendEnter();
-                    out.originForTrusted = !!capTrusted && capTrusted.o === window.location.origin;
-                    r._portalOverlay = savedPo;
-                    // buildStateSnapshot/loadState — trust überlebt den Rundlauf.
-                    const snap = r.buildStateSnapshot();
-                    const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_schwarm");
-                    delete r.state.blueprints["portal_schwarm"];
-                    r.loadState({ blueprints: snapBp ? [snapBp] : [] });
-                    const reBp = r.state.blueprints["portal_schwarm"];
-                    out.trustRoundtrip =
-                        !!snapBp &&
-                        snapBp.portalMeta &&
-                        snapBp.portalMeta.trust === "sandboxed" &&
-                        !!reBp &&
-                        reBp.portalMeta &&
-                        reBp.portalMeta.trust === "sandboxed";
-                    // renderLibraryUI rendert eine Schwarm-Welt-Karte.
-                    r.renderLibraryUI();
-                    out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
-                        /Schwarm-Welt/.test(c.textContent)
-                    );
-                    // worlds/schwarm/index.html ist erreichbar (echte Datei).
-                    out.worldReachable = await fetch("worlds/schwarm/index.html")
-                        .then((res) => res.ok)
-                        .catch(() => false);
-                    // Aufräumen.
-                    delete r.state.blueprints["portal_schwarm"];
-                    for (let i = 0; i < r.state.player.inventory.length; i++) {
-                        const s = r.state.player.inventory[i];
-                        if (
-                            s &&
-                            typeof s.blueprintName === "string" &&
-                            s.blueprintName.indexOf("portal_schwarm") === 0
-                        ) {
-                            r.state.player.inventory[i] = null;
-                        }
-                    }
-                    r.renderLibraryUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (sandboxResults && !sandboxResults.error) {
-                check(
-                    "Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl",
-                    sandboxResults.registryEntry
-                );
-                check(
-                    "Untrusted-Tor: Built-in-Welten (skeleton/fluid/terrain) bleiben trusted",
-                    sandboxResults.builtinsTrusted
-                );
-                check(
-                    "Untrusted-Tor: _sanitizePortalMeta — default trusted, bewahrt sandboxed, Müll-trust → trusted",
-                    sandboxResults.sanitizeTrust
-                );
-                check(
-                    "Untrusted-Tor: aimBlueprintAtWorld trägt die Vertrauensstufe (schwarm→sandboxed, terrain→trusted)",
-                    sandboxResults.aimCarriesTrust
-                );
-                check(
-                    "Untrusted-Tor: obtainPortalForWorld holt die Schwarm-Welt (Portal trägt trust:sandboxed)",
-                    sandboxResults.obtainSchwarm
-                );
-                check(
-                    "Untrusted-Tor: _buildPortalOverlay — sandboxed → iframe-sandbox ist 'allow-scripts' ALLEIN",
-                    sandboxResults.overlaySandboxAttr
-                );
-                check(
-                    "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin",
-                    sandboxResults.overlayTrustedAttr
-                );
-                check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);
-                check(
-                    "Untrusted-Tor: _portalSendEnter + _portalForwardDsl posten mit '*' an eine null-origin-Welt",
-                    sandboxResults.starForSandbox
-                );
-                check(
-                    "Untrusted-Tor: _portalSendEnter postet mit dem Seiten-Origin an eine trusted Welt",
-                    sandboxResults.originForTrusted
-                );
-                check(
-                    "Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf",
-                    sandboxResults.trustRoundtrip
-                );
-                check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
-                check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
-            } else {
-                check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
-            }
-
-            // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
-            // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
-            // der echte save-server-Round-Trip lebt in smoke-vendor.cjs.
-            const vendorResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.methods =
-                        typeof r.vendorWorldBundle === "function" &&
-                        typeof r._vendorSanitizeBundle === "function" &&
-                        typeof r._vendorPostBundle === "function" &&
-                        typeof r._runVendorDock === "function" &&
-                        typeof r.vendorInitDOM === "function";
-                    r.state.customWorlds = {};
-                    const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
-                    // _vendorSanitizeBundle — REIN, kein Netz.
-                    const s1 = r._vendorSanitizeBundle("voxel-fremd", okBundle);
-                    out.sanitizeOk = s1.ok === true && s1.worldId === "voxel-fremd" && s1.files.length === 1;
-                    out.rejectsBadId = r._vendorSanitizeBundle("Bad ID!", okBundle).reason === "invalid_world_id";
-                    out.rejectsReservedId = r._vendorSanitizeBundle("fluid", okBundle).reason === "reserved_world_id";
-                    out.rejectsTranslatedId =
-                        r._vendorSanitizeBundle("translated", okBundle).reason === "reserved_world_id";
-                    out.rejectsTraversal =
-                        r._vendorSanitizeBundle("w", [{ path: "../evil.js", content: "x" }].concat(okBundle)).reason ===
-                        "bad_file_path";
-                    out.rejectsBackslash =
-                        r._vendorSanitizeBundle("w", [{ path: "lib\\x.js", content: "x" }].concat(okBundle)).reason ===
-                        "bad_file_path";
-                    out.rejectsBadExt =
-                        r._vendorSanitizeBundle("w", [{ path: "evil.sh", content: "x" }].concat(okBundle)).reason ===
-                        "bad_file_ext";
-                    out.rejectsNoIndex =
-                        r._vendorSanitizeBundle("w", [{ path: "main.js", content: "x" }]).reason === "no_index_html";
-                    out.rejectsNoFiles = r._vendorSanitizeBundle("w", []).reason === "no_files";
-                    out.rejectsFileTooLarge =
-                        r._vendorSanitizeBundle("w", [{ path: "index.html", content: "x".repeat(5 * 1024 * 1024) }])
-                            .reason === "file_too_large";
-                    // vendorWorldBundle — _vendorPostBundle stubben (kein echter Schreib).
-                    const origPost = r._vendorPostBundle;
-                    try {
-                        r._vendorPostBundle = async () => ({ ok: true, fileCount: 1, totalBytes: 31 });
-                        const v = await r.vendorWorldBundle({
-                            worldId: "vendor-test",
-                            label: "Vendor-Test",
-                            desc: "Eine angedockte Test-Welt.",
-                            dsl: ["sturm"],
-                            files: okBundle,
-                        });
-                        const stored = r.state.customWorlds && r.state.customWorlds["vendor-test"];
-                        out.vendorRegisters =
-                            v.ok === true &&
-                            !!stored &&
-                            stored.vendored === true &&
-                            stored.trust === "sandboxed" &&
-                            stored.reachable === true &&
-                            stored.world === "worlds/vendor-test/index.html";
-                        // Sanitize-Fehler durchgereicht (Bad id → nicht registriert).
-                        const vBad = await r.vendorWorldBundle({ worldId: "Bad ID!", files: okBundle });
-                        out.vendorPropagatesSanitizeFail = vBad.ok === false && vBad.reason === "invalid_world_id";
-                        // Post-Fehler durchgereicht (save-server weg → nicht registriert).
-                        r._vendorPostBundle = async () => ({ ok: false, reason: "save_server_unreachable" });
-                        const vUnreach = await r.vendorWorldBundle({
-                            worldId: "vendor-test-2",
-                            label: "X",
-                            files: okBundle,
-                        });
-                        out.vendorPropagatesPostFail =
-                            vUnreach.ok === false &&
-                            vUnreach.reason === "save_server_unreachable" &&
-                            !(r.state.customWorlds && r.state.customWorlds["vendor-test-2"]);
-                    } finally {
-                        r._vendorPostBundle = origPost;
-                    }
-                    // _sanitizeImportedManifest bewahrt trust + vendored.
-                    const reSan = r._sanitizeImportedManifest(r.state.customWorlds["vendor-test"]);
-                    out.sanitizeKeepsTrustVendored = !!reSan && reSan.trust === "sandboxed" && reSan.vendored === true;
-                    // vendored erzwingt trust:"sandboxed", auch bei trust:"trusted".
-                    const forced = r._sanitizeImportedManifest({
-                        id: "forced-test",
-                        label: "X",
-                        world: "worlds/forced-test/index.html",
-                        vendored: true,
-                        trust: "trusted",
-                    });
-                    out.vendoredForcesSandbox = !!forced && forced.trust === "sandboxed";
-                    // localStorage-Rundlauf — trust + vendored überleben.
-                    const reloaded = r._loadCustomWorlds();
-                    out.roundtripKeepsTrust =
-                        !!reloaded["vendor-test"] &&
-                        reloaded["vendor-test"].trust === "sandboxed" &&
-                        reloaded["vendor-test"].vendored === true;
-                    // obtainPortalForWorld — der Portal-Bauplan trägt trust:"sandboxed".
-                    const ob = r.obtainPortalForWorld("vendor-test");
-                    const portalBp = r.state.blueprints && r.state.blueprints["portal_vendor-test"];
-                    out.portalCarriesSandbox =
-                        ob.ok === true &&
-                        !!portalBp &&
-                        !!portalBp.portalMeta &&
-                        portalBp.portalMeta.trust === "sandboxed";
-                    // renderLibraryUI rendert eine „angedockt"-Karte.
-                    r.renderLibraryUI();
-                    out.uiVendoredCard =
-                        !!document.querySelector("#library-list .library-card-vendored") &&
-                        !!document.querySelector("#library-list .library-vendored-mark");
-                    // UI: Andocken-Sektion im DOM.
-                    out.uiVendorSection =
-                        !!document.getElementById("vendor-id") &&
-                        !!document.getElementById("vendor-files") &&
-                        !!document.getElementById("vendor-dock");
-                    // Aufräumen.
-                    if (r.state.blueprints) delete r.state.blueprints["portal_vendor-test"];
-                    if (r.state.player && Array.isArray(r.state.player.inventory)) {
-                        r.state.player.inventory.forEach((sl, i) => {
-                            if (sl && sl.blueprintName === "portal_vendor-test") r.state.player.inventory[i] = null;
-                        });
-                    }
-                    r.state.customWorlds = {};
-                    r._saveCustomWorlds();
-                    r.saveState();
-                    r.renderLibraryUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (vendorResults && !vendorResults.error) {
-                check(
-                    "W15 Auto-Vendor: vendorWorldBundle/_vendorSanitizeBundle/_vendorPostBundle/_runVendorDock/vendorInitDOM existieren",
-                    vendorResults.methods
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel",
-                    vendorResults.sanitizeOk
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab",
-                    vendorResults.rejectsBadId
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine Built-in-id (fluid) ab",
-                    vendorResults.rejectsReservedId
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt die translated-id ab",
-                    vendorResults.rejectsTranslatedId
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Pfad-Ausbruch (../) ab",
-                    vendorResults.rejectsTraversal
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt einen Backslash-Pfad ab",
-                    vendorResults.rejectsBackslash
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine verbotene Datei-Endung (.sh) ab",
-                    vendorResults.rejectsBadExt
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein Bündel ohne index.html ab",
-                    vendorResults.rejectsNoIndex
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt ein leeres Bündel ab",
-                    vendorResults.rejectsNoFiles
-                );
-                check(
-                    "W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine zu große Datei ab",
-                    vendorResults.rejectsFileTooLarge
-                );
-                check(
-                    "W15 Auto-Vendor: vendorWorldBundle registriert einen customWorlds-Eintrag (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
-                    vendorResults.vendorRegisters
-                );
-                check(
-                    "W15 Auto-Vendor: vendorWorldBundle reicht einen Sanitize-Fehler durch (id → nicht registriert)",
-                    vendorResults.vendorPropagatesSanitizeFail
-                );
-                check(
-                    "W15 Auto-Vendor: vendorWorldBundle reicht einen Post-Fehler durch (save_server_unreachable → nicht registriert)",
-                    vendorResults.vendorPropagatesPostFail
-                );
-                check(
-                    "W15 Auto-Vendor: _sanitizeImportedManifest bewahrt trust + vendored",
-                    vendorResults.sanitizeKeepsTrustVendored
-                );
-                check(
-                    "W15 Auto-Vendor: vendored erzwingt trust:sandboxed (auch bei trust:trusted)",
-                    vendorResults.vendoredForcesSandbox
-                );
-                check(
-                    "W15 Auto-Vendor: trust + vendored überleben den localStorage-Rundlauf",
-                    vendorResults.roundtripKeepsTrust
-                );
-                check(
-                    "W15 Auto-Vendor: obtainPortalForWorld holt ein Portal — es trägt trust:sandboxed",
-                    vendorResults.portalCarriesSandbox
-                );
-                check("W15 Auto-Vendor: renderLibraryUI rendert eine 'angedockt'-Karte", vendorResults.uiVendoredCard);
-                check(
-                    "W15 Auto-Vendor: die 'Welt andocken'-Sektion (id + Ordner-Picker + Knopf) im DOM",
-                    vendorResults.uiVendorSection
-                );
-            } else {
-                check(
-                    "W15 Auto-Vendor: Phase-1-Tests laufen",
-                    false,
-                    vendorResults ? vendorResults.error : "no result"
-                );
-            }
-
-            // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
-            // _vendorPostRepo (der Netz-Schritt) wird gestubbt — der echte
-            // GitHub-Round-Trip lebt in smoke-vendor.cjs (gegen ein lokales
-            // Fake-GitHub, damit der Test offline + deterministisch bleibt).
-            const vendor2Results = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.methods =
-                        typeof r.vendorWorldFromRepo === "function" &&
-                        typeof r._vendorPostRepo === "function" &&
-                        typeof r._vendorPostJson === "function" &&
-                        typeof r._vendorRegisterWorld === "function" &&
-                        typeof r._runVendorRepoDock === "function";
-                    r.state.customWorlds = {};
-                    const origRepo = r._vendorPostRepo;
-                    const origBundle = r._vendorPostBundle;
-                    try {
-                        // Eingangs-Prüfungen — vor dem Netz-Schritt.
-                        const badId = await r.vendorWorldFromRepo({
-                            worldId: "Bad ID!",
-                            repoUrl: "https://github.com/a/b",
-                        });
-                        out.rejectsBadId = badId.ok === false && badId.reason === "invalid_world_id";
-                        const reservedId = await r.vendorWorldFromRepo({
-                            worldId: "fluid",
-                            repoUrl: "https://github.com/a/b",
-                        });
-                        out.rejectsReservedId = reservedId.ok === false && reservedId.reason === "reserved_world_id";
-                        const nonGh = await r.vendorWorldFromRepo({
-                            worldId: "gh-test",
-                            repoUrl: "https://evil.example.com/a/b",
-                        });
-                        out.rejectsNonGithub = nonGh.ok === false && nonGh.reason === "not_a_github_url";
-                        const emptyUrl = await r.vendorWorldFromRepo({ worldId: "gh-test", repoUrl: "" });
-                        out.rejectsEmptyUrl = emptyUrl.ok === false && emptyUrl.reason === "not_a_github_url";
-                        // Mit gestubbtem _vendorPostRepo → registriert die Welt.
-                        r._vendorPostRepo = async () => ({ ok: true, fileCount: 5, branch: "main" });
-                        const v = await r.vendorWorldFromRepo({
-                            worldId: "gh-test",
-                            repoUrl: "https://github.com/owner/repo",
-                            label: "GitHub-Test",
-                            desc: "Aus einem Repo geholt.",
-                            dsl: ["sturm"],
-                        });
-                        const stored = r.state.customWorlds && r.state.customWorlds["gh-test"];
-                        out.registersOnSuccess =
-                            v.ok === true &&
-                            v.fileCount === 5 &&
-                            v.branch === "main" &&
-                            !!stored &&
-                            stored.vendored === true &&
-                            stored.trust === "sandboxed" &&
-                            stored.reachable === true &&
-                            stored.world === "worlds/gh-test/index.html";
-                        // Eine /tree/<branch>-URL besteht die Client-URL-Prüfung.
-                        const treeUrl = await r.vendorWorldFromRepo({
-                            worldId: "gh-tree",
-                            repoUrl: "https://github.com/owner/repo/tree/dev",
-                            label: "Tree",
-                        });
-                        out.acceptsTreeUrl = treeUrl.ok === true;
-                        // Post-Fehler (GitHub 404 o.ä.) wird durchgereicht.
-                        r._vendorPostRepo = async () => ({ ok: false, reason: "GitHub fetch failed: HTTP 404" });
-                        const vFail = await r.vendorWorldFromRepo({
-                            worldId: "gh-missing",
-                            repoUrl: "https://github.com/owner/nope",
-                        });
-                        out.propagatesPostFail =
-                            vFail.ok === false &&
-                            /404/.test(vFail.reason) &&
-                            !(r.state.customWorlds && r.state.customWorlds["gh-missing"]);
-                        // _vendorRegisterWorld direkt — sandgesichert + vendored.
-                        const reg = r._vendorRegisterWorld("reg-test", { label: "Reg" });
-                        const regStored = r.state.customWorlds && r.state.customWorlds["reg-test"];
-                        out.registerWorldDirect =
-                            reg.ok === true &&
-                            !!regStored &&
-                            regStored.trust === "sandboxed" &&
-                            regStored.vendored === true &&
-                            regStored.world === "worlds/reg-test/index.html";
-                        // Regression: der Bündel-Pfad (Phase 1) läuft nach dem Refactor.
-                        r._vendorPostBundle = async () => ({ ok: true, fileCount: 1 });
-                        const vb = await r.vendorWorldBundle({
-                            worldId: "bundle-regress",
-                            label: "B",
-                            files: [{ path: "index.html", content: "<!doctype html><title>x</title>" }],
-                        });
-                        out.bundlePathStillWorks =
-                            vb.ok === true &&
-                            !!(r.state.customWorlds && r.state.customWorlds["bundle-regress"]) &&
-                            r.state.customWorlds["bundle-regress"].trust === "sandboxed";
-                    } finally {
-                        r._vendorPostRepo = origRepo;
-                        r._vendorPostBundle = origBundle;
-                    }
-                    // localStorage-Rundlauf — die repo-vendorte Welt überlebt.
-                    const reloaded = r._loadCustomWorlds();
-                    out.roundtripKeepsTrust =
-                        !!reloaded["gh-test"] &&
-                        reloaded["gh-test"].trust === "sandboxed" &&
-                        reloaded["gh-test"].vendored === true;
-                    // UI: die GitHub-Holen-Sektion im DOM.
-                    out.uiRepoSection =
-                        !!document.getElementById("vendor-repo") && !!document.getElementById("vendor-repo-dock");
-                    // Aufräumen.
-                    r.state.customWorlds = {};
-                    r._saveCustomWorlds();
-                    r.saveState();
-                    r.renderLibraryUI();
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (vendor2Results && !vendor2Results.error) {
-                check(
-                    "W15 GitHub-Fetch: vendorWorldFromRepo/_vendorPostRepo/_vendorPostJson/_vendorRegisterWorld/_runVendorRepoDock existieren",
-                    vendor2Results.methods
-                );
-                check(
-                    "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab",
-                    vendor2Results.rejectsBadId
-                );
-                check(
-                    "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab",
-                    vendor2Results.rejectsReservedId
-                );
-                check(
-                    "W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Nicht-github.com-URL ab",
-                    vendor2Results.rejectsNonGithub
-                );
-                check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine leere URL ab", vendor2Results.rejectsEmptyUrl);
-                check(
-                    "W15 GitHub-Fetch: vendorWorldFromRepo registriert die Welt (trust:sandboxed, vendored, reachable, worlds/<id>/index.html)",
-                    vendor2Results.registersOnSuccess
-                );
-                check(
-                    "W15 GitHub-Fetch: eine /tree/<branch>-URL besteht die Client-URL-Prüfung",
-                    vendor2Results.acceptsTreeUrl
-                );
-                check(
-                    "W15 GitHub-Fetch: vendorWorldFromRepo reicht einen Fetch-Fehler durch (404 → nicht registriert)",
-                    vendor2Results.propagatesPostFail
-                );
-                check(
-                    "W15 GitHub-Fetch: _vendorRegisterWorld registriert sandgesichert + vendored",
-                    vendor2Results.registerWorldDirect
-                );
-                check(
-                    "W15 GitHub-Fetch: der Bündel-Pfad (Phase 1) läuft nach dem Refactor weiter",
-                    vendor2Results.bundlePathStillWorks
-                );
-                check(
-                    "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
-                    vendor2Results.roundtripKeepsTrust
-                );
-                check(
-                    "W15 GitHub-Fetch: die GitHub-Holen-Sektion (URL-Feld + Knopf) im DOM",
-                    vendor2Results.uiRepoSection
-                );
-            } else {
-                check(
-                    "W15 GitHub-Fetch: Phase-2-Tests laufen",
-                    false,
-                    vendor2Results ? vendor2Results.error : "no result"
-                );
-            }
-
-            // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
-            const v840Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const ring = document.getElementById("slider-ring");
-                    out.ringSliderRange = !!ring && ring.max === "8" && ring.value === "4";
-                    const cel = document.getElementById("slider-cel");
-                    // V8.41 — Cel-Regler auf 2–8 zurückgenommen (Reserve verworfen).
-                    out.celSliderRange = !!cel && cel.max === "8" && cel.value === "8";
-
-                    // Cel-Stufen 2–8: 8 = smooth, höhere Werte clampen auf 8.
-                    const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
-                    out.celClampsAt8 = r.setCelLevels(8) === 8 && r.setCelLevels(20) === 8;
-                    out.celSmoothThreshold = /n >= 8 \? W/.test(r._refreshToonGradient.toString());
-                    // V8.42 — Gradient-Textur mit LinearFilter (crawl-frei).
-                    out.celGradientLinear =
-                        !!r.state.toonGradientMap &&
-                        r.state.toonGradientMap.magFilter === (window.THREE && window.THREE.LinearFilter);
-                    // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
-                    out.terrainJitterPerVertex =
-                        !!r.state.terrainMaterial &&
-                        /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
-                        /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
-                        !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
-                    // V8.44 — Terrain-vNormal in Welt-Raum (kamera-unabhängiger
-                    // Diffuse): mat3(modelMatrix), nicht normalMatrix.
-                    out.terrainNormalWorldSpace =
-                        !!r.state.terrainMaterial &&
-                        /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
-                        !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
-                    // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
-                    // nicht View-Space-Z. Regex prüft die echte Zuweisung
-                    // (nicht den erklärenden Kommentar-Text).
-                    out.terrainFogRadial =
-                        !!r.state.terrainMaterial &&
-                        /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
-                        !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
-                    r.setCelLevels(origCel);
-
-                    // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
-                    const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
-                    out.fogTripleRange =
-                        r.setFogDistance(9.0) === 9.0 && r.setFogDistance(0.5) === 0.9 && r.setFogDistance(3.0) === 3.0;
-                    out.fogDefault3 = r.setFogDistance() === 3.0;
-                    r.setFogDistance(origFog);
-                    out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(r.slidersInitDOM.toString());
-
-                    // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
-                    const appScript = [...document.querySelectorAll("script")].find((s) =>
-                        (s.getAttribute("src") || "").includes("anazhRealm.js")
-                    );
-                    out.cacheBust = !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v840Results && !v840Results.error) {
-                check("V8.40: Sicht-Ring-Regler 1–8, Default 4 (9×9)", v840Results.ringSliderRange);
-                check("V8.41: Cel-Stufen-Regler 2–8, Default 8 (Reserve verworfen)", v840Results.celSliderRange);
-                check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
-                check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
-                check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
-                // V9.39 Phase 5c.2.c.3.b.iii — V8.43/V8.44/V8.45 prüften den
-                // Heightfield-Terrain-Shader (per-Vertex-Noise, Welt-Raum-Normal,
-                // radiale Fog-Distanz). `state.terrainMaterial` existiert nicht
-                // mehr; das Voxel-Mesh nutzt `MeshToonMaterial` mit Three.js-
-                // eingebauten Lichtquellen + Fog (anders gerechnet). Tests
-                // gestrichen.
-                check("V8.40: Fog-Effekt-Bereich verdreifacht (0.9 .. 9.0)", v840Results.fogTripleRange);
-                check("V8.40: Fog-Default ist 3.0 (= heutiger 300%-Effekt)", v840Results.fogDefault3);
-                check("V8.40: Fog-Regler-Eingabe wird verdreifacht (pct/100 × 3)", v840Results.fogHandlerTriples);
-                check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
-            } else {
-                check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
-            }
-
-            // ### V8.46 — Sanfte Wetter-Übergänge ###
-            const v846Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    out.helperExists = typeof r._weatherBlendedValue === "function";
-                    const origWeather = r.state.weather;
-                    const origTrans = r.state.weatherTransition;
-                    // Ohne Transition: sunny → sunnyVal, rainy → rainyVal.
-                    r.state.weatherTransition = null;
-                    r.state.weather = "sunny";
-                    out.blendSunny = r._weatherBlendedValue(0, 1) === 0;
-                    r.state.weather = "rainy";
-                    out.blendRainy = r._weatherBlendedValue(0, 1) === 1;
-                    // Mitten in der Transition: progress 0.5 → halber Weg.
-                    r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
-                    out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
-                    r.state.weatherTransition = origTrans;
-                    r.state.weather = origWeather;
-                    // weatherEffect + cloudCover faden jetzt über den Helper.
-                    const src = r._applyDayNightToScene.toString();
-                    out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(src);
-                    out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
-                    // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
-                    const sh = r.state.directionalLight && r.state.directionalLight.shadow;
-                    out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v846Results && !v846Results.error) {
-                check("V8.46: _weatherBlendedValue-Helper existiert", v846Results.helperExists);
-                check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
-                check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
-                check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
-                check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
-                check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
-                check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
-            } else {
-                check("V8.46: Wetter-Übergangs-Tests laufen", false, v846Results ? v846Results.error : "no result");
-            }
-
-            // ### V8.48 — Terrain-Schatten + Tag-Nacht-Glättung ###
-            const v848Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const tm = r.state.terrainMaterial;
-                    out.terrainIsShader = !!tm && tm.type === "ShaderMaterial";
-                    if (out.terrainIsShader) {
-                        out.vertexHasShadowChunks =
-                            /shadowmap_pars_vertex/.test(tm.vertexShader) && /shadowmap_vertex/.test(tm.vertexShader);
-                        out.fragmentHasShadowChunks =
-                            /shadowmap_pars_fragment/.test(tm.fragmentShader) &&
-                            /getShadow\(/.test(tm.fragmentShader) &&
-                            /vDirectionalShadowCoord/.test(tm.fragmentShader);
-                        out.fragmentHighp = /precision highp float/.test(tm.fragmentShader);
-                        out.terrainLightsTrue = tm.lights === true;
-                        out.terrainHasShadowUniform = !!tm.uniforms && !!tm.uniforms.directionalShadowMap;
-                    }
-                    // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
-                    out.targetInScene =
-                        !!r.state.directionalLight &&
-                        !!r.state.directionalLight.target &&
-                        r.state.directionalLight.target.parent === r.state.scene;
-                    const pm = r.state.playerMesh;
-                    if (pm) {
-                        const ox = pm.position.x;
-                        const oz = pm.position.z;
-                        pm.position.x = 123.5;
-                        pm.position.z = -77.25;
-                        r._applyDayNightToScene();
-                        const tgt = r.state.directionalLight.target.position;
-                        out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
-                        pm.position.x = ox;
-                        pm.position.z = oz;
-                        r._applyDayNightToScene();
-                    }
-                    // _applyDayNightToScene leitet die Terrain-lightDirection aus
-                    // der reinen Sonnen-Richtung sunDir ab (nicht position.normalize()).
-                    const adnSrc = r._applyDayNightToScene.toString();
-                    out.usesSunDir = /const lightDir = sunDir/.test(adnSrc);
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v848Results && !v848Results.error) {
-                // V9.39 Phase 5c.2.c.3.b.iii — die V8.48-Terrain-Shader-
-                // Schatten-Tests sind tot — `state.terrainMaterial` existiert
-                // nicht mehr. Die V8.48-Vision (Schatten aufs Terrain) lebt
-                // im Voxel-Mesh weiter (`MeshToonMaterial` mit `receiveShadow`,
-                // die DirectionalLight-Shadow-Map). Die Schatten-Frustum-folgt-
-                // Spieler-Mechanik lebt; die `usesSunDir`-Probe in
-                // `_applyDayNightToScene` lebt auch.
-                check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
-                check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)", v848Results.shadowFollowsPlayer);
-                check("V8.48: _applyDayNightToScene leitet lightDir aus sunDir ab", v848Results.usesSunDir);
-            } else {
-                check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
-            }
-
-            // ### V8.49 — updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
-            const v849Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    const src = r.updateCreatures.toString();
-                    // Strukturell: Kohäsion nutzt distanceToSquared (kein sqrt),
-                    // der Raycast ist distanz-/sicht-gegated, Scratch gepoolt.
-                    out.usesDistanceSquared = /distanceToSquared/.test(src);
-                    out.raycastGated = /OBSTACLE_RAYCAST_MAX_DIST_SQ/.test(src) && /inFrustum/.test(src);
-                    out.scratchPooled = /_creatureScratchDir/.test(src);
-                    // Funktional: viele Kreaturen, mehrere Ticks → kein Crash,
-                    // Bewegung erhalten, alle Positionen endlich.
-                    while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function") {
-                        const p = r.state.playerMesh.position;
-                        r.spawnCreatureAt(
-                            p.x + (Math.random() - 0.5) * 50,
-                            p.y,
-                            p.z + (Math.random() - 0.5) * 50,
-                            "happy"
-                        );
-                    }
-                    const before = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
-                    let crashed = false;
-                    try {
-                        for (let k = 0; k < 8; k++) r.updateCreatures(0.05);
-                    } catch (e) {
-                        crashed = true;
-                        out.err = String(e && e.message);
-                    }
-                    out.noCrash = !crashed;
-                    const after = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
-                    let moved = 0;
-                    for (let k = 0; k < before.length; k++) {
-                        if (Math.abs(before[k] - after[k]) > 0.001) moved++;
-                    }
-                    out.creaturesMoved = before.length > 0 && moved > before.length * 0.5;
-                    out.allFinite = r.state.creatures.every(
-                        (c) =>
-                            Number.isFinite(c.position.x) &&
-                            Number.isFinite(c.position.y) &&
-                            Number.isFinite(c.position.z)
-                    );
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (v849Results && !v849Results.error) {
-                check(
-                    "V8.49: Kohäsion nutzt distanceToSquared (kein sqrt, O(N²) entschärft)",
-                    v849Results.usesDistanceSquared
-                );
-                check("V8.49: Hindernis-Raycast ist off-screen-/distanz-gegated", v849Results.raycastGated);
-                check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
-                check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
-                check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
-                check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
-            } else {
-                check(
-                    "V8.49: updateCreatures-Politur-Tests laufen",
-                    false,
-                    v849Results ? v849Results.error : "no result"
-                );
-            }
-
-            // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider (Audit 17.05.2026) ###
-            const wave6x4bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // --- B3: Stats-HUD DOM-Existenz
-                    out.statsHudExists = !!document.getElementById("stats-hud");
-                    out.statsHudHpFillExists = !!document.getElementById("stats-hud-hp-fill");
-                    out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
-                    out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
-                    out.tickStatsHudMethodExists = typeof r.tickStatsHud === "function";
-
-                    // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
-                    // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
-                    r.state.player.hp = 50;
-                    r.state.player.hpMax = 100;
-                    r.state.player.stamina = 75;
-                    r.state.player.staminaMax = 100;
-                    // Force-Update durch Reset des Throttles
-                    delete r.state._statsHudLastTick;
-                    delete r.state._statsHudTooltipLastTick;
-                    r.tickStatsHud(performance.now() / 1000);
-                    const hpText = document.getElementById("stats-hud-hp-text");
-                    out.hpTextShowsRatio = !!hpText && /50\/100/.test(hpText.textContent);
-                    const stamText = document.getElementById("stats-hud-stam-text");
-                    out.stamTextShowsRatio = !!stamText && /75\/100/.test(stamText.textContent);
-                    const hpFill = document.getElementById("stats-hud-hp-fill");
-                    // V8.14: Bar-Breite ist jetzt 166 (von 158) — 50% → 83px
-                    out.hpFillProportional = !!hpFill && Math.abs(parseFloat(hpFill.getAttribute("width")) - 83) < 1;
-
-                    // --- B3: Tooltip enthält slow stats nach Hover
-                    r.tickStatsHud(performance.now() / 1000 + 2); // +2s damit Tooltip-Throttle nicht greift
-                    const tooltip = document.getElementById("stats-hud-tooltip");
-                    out.tooltipHasDamage = !!tooltip && /Schaden/.test(tooltip.innerHTML);
-                    out.tooltipHasSpeed = !!tooltip && /Geschwindigk/.test(tooltip.innerHTML);
-                    out.tooltipHasPrecision = !!tooltip && /Präzision/.test(tooltip.innerHTML);
-
-                    // --- D2: state-Felder + UI-Slider existieren
-                    out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
-                    out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
-                    out.ringRadiusDefault = r.state.chunkRingRadius === 4;
-                    out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
-                    out.slidersSectionExists = !!document.getElementById("sliders-section");
-                    out.masterSliderExists = !!document.getElementById("slider-master");
-                    out.pingsSliderExists = !!document.getElementById("slider-pings");
-                    out.ringSliderExists = !!document.getElementById("slider-ring");
-
-                    // --- D2: Master-Slider ändert state + Persistenz
-                    const ms = document.getElementById("slider-master");
-                    if (ms) {
-                        ms.value = "50";
-                        ms.dispatchEvent(new Event("input"));
-                        out.masterSliderUpdates = Math.abs(r.state.symphony.masterVolume - 0.5) < 0.01;
-                        out.masterSliderPersists =
-                            typeof localStorage !== "undefined" &&
-                            Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
-                        // Reset auf default
-                        ms.value = "100";
-                        ms.dispatchEvent(new Event("input"));
-                    }
-
-                    // --- D2: Pings-Slider beeinflusst playCreaturePing-Peak
-                    const ps = document.getElementById("slider-pings");
-                    if (ps) {
-                        ps.value = "0";
-                        ps.dispatchEvent(new Event("input"));
-                        out.pingsSliderUpdates = r.state.symphony.creaturePingVolume === 0;
-                        ps.value = "100";
-                        ps.dispatchEvent(new Event("input"));
-                    }
-
-                    // --- D2: Ring-Slider ändert chunkRingRadius
-                    const rs = document.getElementById("slider-ring");
-                    if (rs) {
-                        rs.value = "3";
-                        rs.dispatchEvent(new Event("input"));
-                        out.ringSliderUpdates = r.state.chunkRingRadius === 3;
-                        const rsv = document.getElementById("slider-ring-val");
-                        out.ringValueDisplaysCorrectly = !!rsv && rsv.textContent === "7×7";
-                        rs.value = "2";
-                        rs.dispatchEvent(new Event("input"));
-                    }
-
-                    // --- D2: playCreaturePing-Source enthält creaturePingVolume
-                    const pcpSrc = r.playCreaturePing.toString();
-                    out.pingsSourceUsesVolume = /creaturePingVolume/.test(pcpSrc);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            // ### Welle 6.X.4 V8.16 Punkt 18 — Rolle-Synergie + Wachstumskonzept ###
-            const wave6x4cResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
-                    out.domainCountsMethodExists = typeof r.computeBlueprintDomainCounts === "function";
-
-                    // Test: Bauplan ohne opChain → leere counts
-                    const tn = "audit_v816_test";
-                    if (r.state.blueprints[tn]) delete r.state.blueprints[tn];
-                    r.createBlueprint(tn, "V816-Test");
-                    r.addPartToBlueprint(tn, {
-                        shape: "sphere",
-                        material: "stein",
-                        size: { x: 0.5, y: 0.5, z: 0.5 },
-                    });
-                    const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
-                    out.emptyChainNoDomain = Object.keys(c0).length === 0;
-
-                    // Wende einen Schmiede-Hammer (forging-domain) an → counts.forging = 1
-                    // Hammer (Starter) hat domain:null; nur schmiede-hammer hat
-                    // domain:"forging". Welle 9a-Architektur.
-                    // schmiede-hammer ist nicht Starter — zum Besitz hinzufügen
-                    // (frieden-Modus überspringt Stamina-Cost). Plus: opChain-
-                    // Material-Compat — schmiede-hammer.opClass=plastic ist mit
-                    // stein NICHT kompatibel (MATERIAL_OP_COMPATIBILITY). Eisen
-                    // passt → wir wechseln das Test-Material auf eisen.
-                    r.state.player.tools = Array.isArray(r.state.player.tools) ? r.state.player.tools : [];
-                    if (!r.state.player.tools.includes("schmiede-hammer")) {
-                        r.state.player.tools.push("schmiede-hammer");
-                    }
-                    r.state.blueprints[tn].parts[0].material = "eisen";
-                    r.applyOpToPart(tn, 0, "schmiede-hammer");
-                    const c1 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
-                    out.afterForgingHasDomain = (c1.forging || 0) === 1;
-
-                    // Cleanup
-                    delete r.state.blueprints[tn];
-
-                    // UI-Rendering: Stats-Panel hat workshop-domain-row +
-                    // workshop-synergy-row + workshop-growth-row Elemente nach
-                    // Render eines eigenen Bauplans.
-                    const tn2 = "audit_v816_render";
-                    r.createBlueprint(tn2, "V816-Render");
-                    r.addPartToBlueprint(tn2, {
-                        shape: "sphere",
-                        material: "eisen", // schmiede-hammer braucht plastic-kompatibles Material
-                        size: { x: 0.5, y: 0.5, z: 0.5 },
-                    });
-                    r.selectBlueprintForEdit && r.selectBlueprintForEdit(tn2);
-                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-                    const panel = document.getElementById("workshop-stats-panel");
-                    out.synergyRowRendered = !!(panel && panel.querySelector(".workshop-synergy-row"));
-                    out.growthRowRendered = !!(panel && panel.querySelector(".workshop-growth-row"));
-                    // Bei 0 opChain steht „Noch keine Werkzeug-Anwendung" im growth-text
-                    const growthText = panel && panel.querySelector(".workshop-growth-text");
-                    out.growthShowsEmptyHint =
-                        !!growthText && /Noch keine Werkzeug-Anwendung/.test(growthText.textContent);
-                    // Nach Schmiede-Hammer-Anwendung erscheint die Domain-Bar
-                    r.applyOpToPart(tn2, 0, "schmiede-hammer");
-                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-                    out.domainBarsAppearAfterOp = !!(panel && panel.querySelector(".workshop-domain-bar.dominant"));
-
-                    // Cleanup
-                    delete r.state.blueprints[tn2];
-                    r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6x4cResults && !wave6x4cResults.error) {
-                check(
-                    "Welle 6.X.4 V8.16 Punkt 18: computeBlueprintDomainCounts existiert",
-                    wave6x4cResults.domainCountsMethodExists
-                );
-                check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
-                check(
-                    "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
-                    wave6x4cResults.afterForgingHasDomain
-                );
-                check(
-                    "Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-synergy-row",
-                    wave6x4cResults.synergyRowRendered
-                );
-                check("Welle 6.X.4 V8.16: Werkstatt-Stats hat .workshop-growth-row", wave6x4cResults.growthRowRendered);
-                check(
-                    "Welle 6.X.4 V8.16: Growth-Text bei 0 Ops zeigt Wachstums-Hinweis",
-                    wave6x4cResults.growthShowsEmptyHint
-                );
-                check(
-                    "Welle 6.X.4 V8.16: Domain-Bar.dominant erscheint nach Schmiede-Hammer-Op",
-                    wave6x4cResults.domainBarsAppearAfterOp
-                );
-            } else {
-                check(
-                    "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
-                    false,
-                    wave6x4cResults ? wave6x4cResults.error : "no result"
-                );
-            }
-
-            if (wave6x4bResults && !wave6x4bResults.error) {
-                check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
-                check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
-                check(
-                    "Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert",
-                    wave6x4bResults.statsHudStamFillExists
-                );
-                check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
-                check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
-                check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
-                check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
-                check(
-                    "Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)",
-                    wave6x4bResults.hpFillProportional
-                );
-                check("Welle 6.X.4 B3: Tooltip enthält Schaden", wave6x4bResults.tooltipHasDamage);
-                check("Welle 6.X.4 B3: Tooltip enthält Geschwindigkeit", wave6x4bResults.tooltipHasSpeed);
-                check("Welle 6.X.4 B3: Tooltip enthält Präzision", wave6x4bResults.tooltipHasPrecision);
-                check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
-                check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
-                check(
-                    "Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)",
-                    wave6x4bResults.ringRadiusDefault
-                );
-                check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
-                check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
-                check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
-                check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
-                check("Welle 6.X.4 D2: #slider-ring im DOM", wave6x4bResults.ringSliderExists);
-                check(
-                    "Welle 6.X.4 D2: Master-Slider ändert state.symphony.masterVolume",
-                    wave6x4bResults.masterSliderUpdates
-                );
-                check(
-                    "Welle 6.X.4 D2: Master-Slider persistiert in localStorage",
-                    wave6x4bResults.masterSliderPersists
-                );
-                check(
-                    "Welle 6.X.4 D2: Pings-Slider ändert state.symphony.creaturePingVolume",
-                    wave6x4bResults.pingsSliderUpdates
-                );
-                check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
-                check(
-                    "Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3",
-                    wave6x4bResults.ringValueDisplaysCorrectly
-                );
-                check(
-                    "Welle 6.X.4 D2: playCreaturePing-Source nutzt creaturePingVolume",
-                    wave6x4bResults.pingsSourceUsesVolume
-                );
-            } else {
-                check(
-                    "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
-                    false,
-                    wave6x4bResults ? wave6x4bResults.error : "no result"
-                );
-            }
+            // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
+            // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
+            // V8.70-72 Untrusted-Tor/Vendor + späte 6.X.4-Fixes) als 8 Band-
+            // Funktionen, je 498-1190 Z.
+            await checkBandWelle6XAudit(ctx);
+            await checkBandWelle6G3Lebendigkeit(ctx);
+            await checkBandWelle6G4Atmosphere(ctx);
+            await checkBandV8SoulRoleAndWorkshop(ctx);
+            await checkBandW12WorldPortal(ctx);
+            await checkBandW13W14VibePassLibrary(ctx);
+            await checkBandTranslatorAndUntrusted(ctx);
+            await checkBandV8LatePolishAnd6XContinued(ctx);
+
+            // --- Ab hier weiter inline (Sub-Welle e zieht die End-Sektionen nach: 6.H 2B.2+, V8.00-V8.07 CAD, Welle 9/10, V7.x LLM, Ring 3-6, UI V1/V2) ---
 
             // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
             //
