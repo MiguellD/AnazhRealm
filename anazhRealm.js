@@ -21047,240 +21047,247 @@ class AnazhRealm {
         if (!list) return;
         list.innerHTML = "";
         for (const w of this._libraryWorlds()) {
-            const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
-            // KI-Übersetzer Phase 1 — eine übersetzte Welt ist ein customWorld
-            // mit translated-Marke; sie bekommt eine eigene Karten-Färbung.
-            const isTranslated = isImported && w.translated === true;
-            // W15 Phase 1 — eine vendorte Welt ist ein customWorld, dessen
-            // Bündel der Auto-Vendor nach worlds/<id>/ schrieb (sandgesichert).
-            const isVendored = isImported && w.vendored === true;
-            const card = document.createElement("div");
-            card.className =
-                "library-card" +
-                (isVendored
-                    ? " library-card-vendored"
-                    : isTranslated
-                      ? " library-card-translated"
-                      : isImported
-                        ? " library-card-imported"
-                        : "");
-
-            const head = document.createElement("div");
-            head.className = "library-card-head";
-            const name = document.createElement("span");
-            name.className = "library-card-name";
-            name.textContent = w.label;
-            head.appendChild(name);
-            // Stufen-Marke: ein Registry-Eintrag mit DSL-Vokabular ist
-            // mindestens „übersetzt"; ohne wäre die Welt „ausgestellt"
-            // (spielbar, aber stumm gegenüber der DSL). Die Stufe „nativ"
-            // emergiert erst beim Betreten (W12 P3, _portalReceiveManifest).
-            const hasDsl = Array.isArray(w.dsl) && w.dsl.length > 0;
-            const stage = document.createElement("span");
-            stage.className = "library-stage" + (hasDsl ? "" : " stage-ausgestellt");
-            stage.textContent = hasDsl ? "übersetzt" : "ausgestellt";
-            stage.title = hasDsl
-                ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
-                : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
-            head.appendChild(stage);
-            // W14 Phase 3 — eine importierte Welt trägt eine „empfangen"-Marke;
-            // eine KI-übersetzte (KI-Übersetzer Phase 1) eine „KI-übersetzt"-Marke;
-            // eine vendorte (W15 Phase 1) eine „angedockt"-Marke.
-            if (isVendored) {
-                const vm = document.createElement("span");
-                vm.className = "library-vendored-mark";
-                vm.textContent = "angedockt";
-                vm.title =
-                    "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
-                head.appendChild(vm);
-            } else if (isTranslated) {
-                const tr = document.createElement("span");
-                tr.className = "library-translated-mark";
-                tr.textContent = "KI-übersetzt";
-                tr.title =
-                    "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
-                head.appendChild(tr);
-            } else if (isImported) {
-                const imp = document.createElement("span");
-                imp.className = "library-imported-mark";
-                imp.textContent = "empfangen";
-                imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
-                head.appendChild(imp);
-            }
-            // W17 — eine Multiplayer-Welt: eine Gruppe kann gemeinsam durch
-            // ihr Tor eintreten (Gruppen-Portal). Browsbar sichtbar gemacht.
-            // W17 P-Vendor — eine js-compute-Welt zusätzlich kenntlich machen.
-            if (w.multiplayer === true) {
-                const mp = document.createElement("span");
-                mp.className = "library-mp-mark";
-                const jsCompute = w.serverMode === "js-compute";
-                mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
-                mp.title = jsCompute
-                    ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
-                    : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
-                head.appendChild(mp);
-            }
-            card.appendChild(head);
-
-            const desc = document.createElement("div");
-            desc.className = "library-desc";
-            desc.textContent = w.desc || "";
-            card.appendChild(desc);
-
-            const dslWrap = document.createElement("div");
-            dslWrap.className = "library-dsl";
-            if (hasDsl) {
-                for (const op of w.dsl) {
-                    const chip = document.createElement("span");
-                    chip.className = "library-dsl-word";
-                    chip.textContent = op;
-                    dslWrap.appendChild(chip);
-                }
-            } else {
-                const none = document.createElement("span");
-                none.className = "library-dsl-empty";
-                none.textContent = "kein DSL-Vokabular";
-                dslWrap.appendChild(none);
-            }
-            card.appendChild(dslWrap);
-
-            const worldId = w.id;
-            // KI-Übersetzer Phase 2 — drei Zustände einer Bibliothek-Karte:
-            // eine übersetzte Welt OHNE Szene braucht „Welt aufbauen"; mit
-            // Szene ist sie betretbar (+ „neu aufbauen"); eine empfangene
-            // Welt ohne erreichbare Dateien bleibt browsbar, nicht betretbar.
-            const needsScene = isTranslated && !w.scene;
-            const isTranslatedWithScene = isTranslated && !!w.scene;
-            const unreachable = isImported && w.reachable === false;
-            const status = document.createElement("span");
-            status.className = "library-status";
-            if (needsScene) {
-                const buildBtn = document.createElement("button");
-                buildBtn.type = "button";
-                buildBtn.className = "library-get library-build";
-                buildBtn.textContent = "Welt aufbauen";
-                buildBtn.title =
-                    "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.";
-                buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
-                card.appendChild(buildBtn);
-            } else if (unreachable) {
-                const getBtn = document.createElement("button");
-                getBtn.type = "button";
-                getBtn.className = "library-get";
-                getBtn.textContent = "Portal holen";
-                getBtn.disabled = true;
-                getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
-                status.textContent = "Welt-Dateien nicht verfügbar";
-                status.className = "library-status library-unreachable";
-                card.appendChild(getBtn);
-            } else {
-                const getBtn = document.createElement("button");
-                getBtn.type = "button";
-                getBtn.className = "library-get";
-                getBtn.textContent = "Portal holen";
-                getBtn.addEventListener("click", () => {
-                    const res = this.obtainPortalForWorld(worldId);
-                    if (res.ok) {
-                        status.textContent = `✓ „${res.label}" liegt im Inventar`;
-                        this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
-                    } else {
-                        status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
-                        this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
-                    }
-                });
-                card.appendChild(getBtn);
-                // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden —
-                // eine frische Szene zur selben Identität.
-                if (isTranslatedWithScene) {
-                    const rebuildBtn = document.createElement("button");
-                    rebuildBtn.type = "button";
-                    rebuildBtn.className = "library-sig-btn library-rebuild";
-                    rebuildBtn.textContent = "neu aufbauen";
-                    rebuildBtn.title = "Die KI baut eine neue Szene für diese Welt.";
-                    rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
-                    card.appendChild(rebuildBtn);
-                }
-            }
-            card.appendChild(status);
-
-            // W14 Phase 2/3 — Signatur-Zeile. Built-in-Welten signiert der
-            // Spieler selbst (signWorld); importierte tragen die Signatur
-            // ihres Autors schon. „Teilen" exportiert das signierte Manifest
-            // — so reist die Provenienz zwischen Spielern (W14 Phase 3).
-            const sigRow = document.createElement("div");
-            sigRow.className = "library-sig-row";
-            const sigStatus = document.createElement("span");
-            sigStatus.className = "library-sig-status";
-            sigStatus.textContent = "prüfe …";
-            sigRow.appendChild(sigStatus);
-            const sigBtn = document.createElement("button");
-            sigBtn.type = "button";
-            sigBtn.className = "library-sig-btn";
-            sigBtn.textContent = "Signieren";
-            sigBtn.disabled = true;
-            const exportBtn = document.createElement("button");
-            exportBtn.type = "button";
-            exportBtn.className = "library-sig-btn library-export-btn";
-            exportBtn.textContent = "Teilen…";
-            exportBtn.disabled = true;
-            const refreshSig = () => {
-                const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
-                this.verifyWorldSignature(worldId).then((st) => {
-                    const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
-                    const custom = this.state.customWorlds && this.state.customWorlds[worldId];
-                    const sig =
-                        custom && custom.signature
-                            ? custom
-                            : this.state.signedWorlds && this.state.signedWorlds[worldId];
-                    if (st === "valid") {
-                        const who =
-                            sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
-                        sigStatus.textContent = `✓ signiert von ${who}`;
-                        sigStatus.className = "library-sig-status sig-valid";
-                        if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
-                        sigBtn.textContent = "Neu signieren";
-                    } else if (st === "modified") {
-                        sigStatus.textContent = "geändert — neu signieren";
-                        sigStatus.className = "library-sig-status sig-modified";
-                        sigBtn.textContent = "Neu signieren";
-                    } else if (st === "forged") {
-                        sigStatus.textContent = "⚠ Signatur ungültig";
-                        sigStatus.className = "library-sig-status sig-forged";
-                        sigBtn.textContent = "Neu signieren";
-                    } else {
-                        sigStatus.textContent = "nicht signiert";
-                        sigStatus.className = "library-sig-status sig-unsigned";
-                        sigBtn.textContent = "Signieren";
-                    }
-                    // Eine signierte Welt lässt sich teilen (Manifest exportieren).
-                    exportBtn.disabled = st === "unsigned";
-                    // Built-in-Welten signiert der Spieler; importierte sind es schon.
-                    sigBtn.disabled = isImported || !vpReady;
-                    if (!isImported && !vpReady) {
-                        sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
-                    }
-                });
-            };
-            sigBtn.addEventListener("click", async () => {
-                sigBtn.disabled = true;
-                const res = await this.signWorld(worldId);
-                if (res.ok) this.log(`Bibliothek: ${w.label} mit dem Vibe-Pass signiert.`, "INFO");
-                else this.log(`signWorld: ${res.reason}`, "ERROR");
-                refreshSig();
-            });
-            exportBtn.addEventListener("click", () => {
-                const res = this.exportWorldManifest(worldId);
-                if (res.ok) this.log(`Bibliothek: Manifest der ${w.label} exportiert.`, "INFO");
-                else this.log(`exportWorldManifest: ${res.reason}`, "ERROR");
-            });
-            // Importierte Welten: kein „Signieren" (schon vom Autor signiert).
-            if (!isImported) sigRow.appendChild(sigBtn);
-            sigRow.appendChild(exportBtn);
-            card.appendChild(sigRow);
-            refreshSig();
-
-            list.appendChild(card);
+            list.appendChild(this._libraryBuildCard(w));
         }
+    }
+
+    // Eine Bibliothek-Karte: Head · Desc · DSL · Actions+Status · Sig-Row.
+    // KI-Übersetzer P1 — eine übersetzte Welt ist ein customWorld mit
+    // translated-Marke; W15 P1 — eine vendorte Welt ist ein customWorld,
+    // dessen Bündel der Auto-Vendor nach worlds/<id>/ schrieb.
+    _libraryBuildCard(w) {
+        const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
+        const isTranslated = isImported && w.translated === true;
+        const isVendored = isImported && w.vendored === true;
+        const hasDsl = Array.isArray(w.dsl) && w.dsl.length > 0;
+        const card = document.createElement("div");
+        card.className =
+            "library-card" +
+            (isVendored
+                ? " library-card-vendored"
+                : isTranslated
+                  ? " library-card-translated"
+                  : isImported
+                    ? " library-card-imported"
+                    : "");
+        card.appendChild(this._libraryBuildCardHead(w, isImported, isTranslated, isVendored, hasDsl));
+        const desc = document.createElement("div");
+        desc.className = "library-desc";
+        desc.textContent = w.desc || "";
+        card.appendChild(desc);
+        card.appendChild(this._libraryBuildDslWrap(w, hasDsl));
+        this._libraryAppendActionsAndStatus(card, w, isTranslated, isImported);
+        this._libraryAppendSigRow(card, w, isImported);
+        return card;
+    }
+
+    // Karten-Kopf: Name + Stufen-Marke (übersetzt/ausgestellt — die Stufe
+    // „nativ" emergiert erst beim Betreten, W12 P3) + Herkunfts-Marke
+    // (angedockt/KI-übersetzt/empfangen) + Multiplayer-Marke (W17, ggf.
+    // JS-Compute-Variante aus W17 B-JS-Compute).
+    _libraryBuildCardHead(w, isImported, isTranslated, isVendored, hasDsl) {
+        const head = document.createElement("div");
+        head.className = "library-card-head";
+        const name = document.createElement("span");
+        name.className = "library-card-name";
+        name.textContent = w.label;
+        head.appendChild(name);
+        const stage = document.createElement("span");
+        stage.className = "library-stage" + (hasDsl ? "" : " stage-ausgestellt");
+        stage.textContent = hasDsl ? "übersetzt" : "ausgestellt";
+        stage.title = hasDsl
+            ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
+            : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
+        head.appendChild(stage);
+        if (isVendored) {
+            const vm = document.createElement("span");
+            vm.className = "library-vendored-mark";
+            vm.textContent = "angedockt";
+            vm.title =
+                "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
+            head.appendChild(vm);
+        } else if (isTranslated) {
+            const tr = document.createElement("span");
+            tr.className = "library-translated-mark";
+            tr.textContent = "KI-übersetzt";
+            tr.title =
+                "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
+            head.appendChild(tr);
+        } else if (isImported) {
+            const imp = document.createElement("span");
+            imp.className = "library-imported-mark";
+            imp.textContent = "empfangen";
+            imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
+            head.appendChild(imp);
+        }
+        if (w.multiplayer === true) {
+            const mp = document.createElement("span");
+            mp.className = "library-mp-mark";
+            const jsCompute = w.serverMode === "js-compute";
+            mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
+            mp.title = jsCompute
+                ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
+                : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
+            head.appendChild(mp);
+        }
+        return head;
+    }
+
+    _libraryBuildDslWrap(w, hasDsl) {
+        const dslWrap = document.createElement("div");
+        dslWrap.className = "library-dsl";
+        if (hasDsl) {
+            for (const op of w.dsl) {
+                const chip = document.createElement("span");
+                chip.className = "library-dsl-word";
+                chip.textContent = op;
+                dslWrap.appendChild(chip);
+            }
+        } else {
+            const none = document.createElement("span");
+            none.className = "library-dsl-empty";
+            none.textContent = "kein DSL-Vokabular";
+            dslWrap.appendChild(none);
+        }
+        return dslWrap;
+    }
+
+    // KI-Übersetzer P2 — drei Zustände: eine übersetzte Welt OHNE Szene
+    // braucht „Welt aufbauen"; mit Szene ist sie betretbar (+ „neu aufbauen");
+    // eine empfangene Welt ohne erreichbare Dateien bleibt browsbar, nicht
+    // betretbar. `status` ist ein Span, den die Button-Handler beschreiben —
+    // er wird am Ende an die Karte angehängt.
+    _libraryAppendActionsAndStatus(card, w, isTranslated, isImported) {
+        const worldId = w.id;
+        const needsScene = isTranslated && !w.scene;
+        const isTranslatedWithScene = isTranslated && !!w.scene;
+        const unreachable = isImported && w.reachable === false;
+        const status = document.createElement("span");
+        status.className = "library-status";
+        if (needsScene) {
+            const buildBtn = document.createElement("button");
+            buildBtn.type = "button";
+            buildBtn.className = "library-get library-build";
+            buildBtn.textContent = "Welt aufbauen";
+            buildBtn.title =
+                "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.";
+            buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
+            card.appendChild(buildBtn);
+        } else if (unreachable) {
+            const getBtn = document.createElement("button");
+            getBtn.type = "button";
+            getBtn.className = "library-get";
+            getBtn.textContent = "Portal holen";
+            getBtn.disabled = true;
+            getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
+            status.textContent = "Welt-Dateien nicht verfügbar";
+            status.className = "library-status library-unreachable";
+            card.appendChild(getBtn);
+        } else {
+            const getBtn = document.createElement("button");
+            getBtn.type = "button";
+            getBtn.className = "library-get";
+            getBtn.textContent = "Portal holen";
+            getBtn.addEventListener("click", () => {
+                const res = this.obtainPortalForWorld(worldId);
+                if (res.ok) {
+                    status.textContent = `✓ „${res.label}" liegt im Inventar`;
+                    this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
+                } else {
+                    status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
+                    this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
+                }
+            });
+            card.appendChild(getBtn);
+            // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden —
+            // eine frische Szene zur selben Identität.
+            if (isTranslatedWithScene) {
+                const rebuildBtn = document.createElement("button");
+                rebuildBtn.type = "button";
+                rebuildBtn.className = "library-sig-btn library-rebuild";
+                rebuildBtn.textContent = "neu aufbauen";
+                rebuildBtn.title = "Die KI baut eine neue Szene für diese Welt.";
+                rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
+                card.appendChild(rebuildBtn);
+            }
+        }
+        card.appendChild(status);
+    }
+
+    // W14 P2/P3 — Signatur-Zeile. Built-in-Welten signiert der Spieler
+    // selbst (signWorld); importierte tragen die Signatur ihres Autors
+    // schon. „Teilen" exportiert das signierte Manifest — so reist die
+    // Provenienz zwischen Spielern (W14 P3). Die `refreshSig`-Closure
+    // läuft async (verifyWorldSignature ist eine Promise) und wird auch
+    // nach jedem Sign-Klick wieder gerufen.
+    _libraryAppendSigRow(card, w, isImported) {
+        const worldId = w.id;
+        const sigRow = document.createElement("div");
+        sigRow.className = "library-sig-row";
+        const sigStatus = document.createElement("span");
+        sigStatus.className = "library-sig-status";
+        sigStatus.textContent = "prüfe …";
+        sigRow.appendChild(sigStatus);
+        const sigBtn = document.createElement("button");
+        sigBtn.type = "button";
+        sigBtn.className = "library-sig-btn";
+        sigBtn.textContent = "Signieren";
+        sigBtn.disabled = true;
+        const exportBtn = document.createElement("button");
+        exportBtn.type = "button";
+        exportBtn.className = "library-sig-btn library-export-btn";
+        exportBtn.textContent = "Teilen…";
+        exportBtn.disabled = true;
+        const refreshSig = () => {
+            const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+            this.verifyWorldSignature(worldId).then((st) => {
+                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+                const custom = this.state.customWorlds && this.state.customWorlds[worldId];
+                const sig =
+                    custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[worldId];
+                if (st === "valid") {
+                    const who =
+                        sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
+                    sigStatus.textContent = `✓ signiert von ${who}`;
+                    sigStatus.className = "library-sig-status sig-valid";
+                    if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
+                    sigBtn.textContent = "Neu signieren";
+                } else if (st === "modified") {
+                    sigStatus.textContent = "geändert — neu signieren";
+                    sigStatus.className = "library-sig-status sig-modified";
+                    sigBtn.textContent = "Neu signieren";
+                } else if (st === "forged") {
+                    sigStatus.textContent = "⚠ Signatur ungültig";
+                    sigStatus.className = "library-sig-status sig-forged";
+                    sigBtn.textContent = "Neu signieren";
+                } else {
+                    sigStatus.textContent = "nicht signiert";
+                    sigStatus.className = "library-sig-status sig-unsigned";
+                    sigBtn.textContent = "Signieren";
+                }
+                exportBtn.disabled = st === "unsigned";
+                sigBtn.disabled = isImported || !vpReady;
+                if (!isImported && !vpReady) {
+                    sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+                }
+            });
+        };
+        sigBtn.addEventListener("click", async () => {
+            sigBtn.disabled = true;
+            const res = await this.signWorld(worldId);
+            if (res.ok) this.log(`Bibliothek: ${w.label} mit dem Vibe-Pass signiert.`, "INFO");
+            else this.log(`signWorld: ${res.reason}`, "ERROR");
+            refreshSig();
+        });
+        exportBtn.addEventListener("click", () => {
+            const res = this.exportWorldManifest(worldId);
+            if (res.ok) this.log(`Bibliothek: Manifest der ${w.label} exportiert.`, "INFO");
+            else this.log(`exportWorldManifest: ${res.reason}`, "ERROR");
+        });
+        if (!isImported) sigRow.appendChild(sigBtn);
+        sigRow.appendChild(exportBtn);
+        card.appendChild(sigRow);
+        refreshSig();
     }
 
     // W14 Phase 1 — Bibliothek-Drawer aufsetzen. Phase 3: der „Welt
