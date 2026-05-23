@@ -12762,108 +12762,132 @@ class AnazhRealm {
             chatOutput.scrollTop = chatOutput.scrollHeight;
         };
         appendChatOutput(`> ${command}`);
-        this.addKnowledge("chat", command);
-        // Ring 3: jeder Chat-Input füttert die Emotionen. Sentiment-Erkennung
-        // läuft auf dem Originaltext (inkl. Casing), nicht auf `parts`, damit
-        // ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
-        this.collectPlayerEmotions(command);
+        this._chatRecordInputForLearning(command);
+        // Voxel-Debug bricht früh ab OHNE chatInput-Cleanup (Original-Verhalten).
+        if (this._chatTryVoxelDebugCommand(command)) return;
+        // Portal-Route + DSL-Parse räumen chatInput selbst auf.
+        if (this._chatTryPortalRoute(command, chatInput, appendChatOutput)) return;
+        if (this._chatTryDslParse(command, chatInput, appendChatOutput)) return;
+        // Legacy-Themen-Dispatch + Cleanup am Ende (Original-Fall-Through).
+        this._chatDispatchLegacyCommand(command, parts, appendChatOutput);
+        chatInput.value = "";
+    }
 
-        // Schicht 1: Stichwörter ins Pattern-Memory-Fenster legen + Activity
-        // zählen. Nexus-Programme, die in den nächsten 20 s laufen, werden
-        // (sofern high-fitness) gegen diese Keywords verknüpft.
+    // Schicht 1 — jeder Chat-Input füttert Knowledge/Emotion/Pattern-Memory/
+    // Activity-Zähler. Ring 3 sentimentet auf dem Originaltext (inkl. Casing),
+    // damit ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
+    // Proaktive Vorschläge alle 10 Chat-Befehle.
+    _chatRecordInputForLearning(command) {
+        this.addKnowledge("chat", command);
+        this.collectPlayerEmotions(command);
         const nowSec = performance.now() / 1000;
         this.rememberChatKeywords(command, nowSec);
         if (this.state.player && this.state.player.recentActivity) {
             this.state.player.recentActivity.chats++;
         }
-
-        // Proaktive Vorschläge (alle 10 Chat-Befehle)
         if (this.state.knowledgeBase.filter((k) => k.type === "chat").length % 10 === 0) {
             this.proactiveSuggestions();
         }
+    }
 
-        // Voxel-Terrain-Bogen Phase 1 — `voxel test` mesht einen Voxel-
-        // Chunk neben dem Spieler (Beweis, kein Eingriff ins Heightfield).
-        if (command.toLowerCase().trim() === "voxel test") {
+    // Voxel-Terrain-Bogen Phase 1/3 — `voxel test` mesht einen Test-Chunk,
+    // `voxel carve`/`voxel fill` schnitzt eine Mulde / schüttet einen Hügel.
+    // V9.35 Phase 5c.2.c.2: der voxel-Terrain-Toggle ist tot; Voxel ist
+    // permanent. Original-Verhalten: KEIN chatInput-Cleanup (führt zu
+    // weiteren Wiederholungen via Enter).
+    _chatTryVoxelDebugCommand(command) {
+        const vc = command.toLowerCase().trim();
+        if (vc === "voxel test") {
             this._spawnVoxelTestChunk();
-            return;
+            return true;
         }
-        // Voxel-Terrain-Bogen Phase 3 — `voxel carve` schnitzt eine Mulde,
-        // `voxel fill` schüttet einen Hügel unter dem Spieler auf. V9.35
-        // Phase 5c.2.c.2: der `voxel terrain on/off`-Toggle ist tot; Voxel
-        // ist permanent (`voxelTerrainActive === true` immer), kein Pre-
-        // Gate mehr nötig.
-        {
-            const vc = command.toLowerCase().trim();
-            if (vc === "voxel carve" || vc === "voxel fill") {
-                const pm = this.state.playerMesh;
-                if (pm) {
-                    if (vc === "voxel fill") {
-                        // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
-                        const matGate = this._voxelFillGate();
-                        if (!matGate.ok) {
-                            this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
-                            return;
-                        }
-                        this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
-                        this.log(
-                            matGate.free
-                                ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
-                                : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
-                            "INFO"
-                        );
-                    } else {
-                        this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
-                        this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+        if (vc === "voxel carve" || vc === "voxel fill") {
+            const pm = this.state.playerMesh;
+            if (pm) {
+                if (vc === "voxel fill") {
+                    // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
+                    const matGate = this._voxelFillGate();
+                    if (!matGate.ok) {
+                        this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                        return true;
                     }
+                    this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    this.log(
+                        matGate.free
+                            ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
+                            : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
+                        "INFO"
+                    );
+                } else {
+                    this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
                 }
-                return;
             }
+            return true;
         }
+        return false;
+    }
 
-        // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
-        // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
-        // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
-        // die noch kein DSL-Äquivalent haben (System-IO, Toggles, Phase-5-Themen).
-        // W12 Phase 2 — im Portal: ein Chat-Befehl wandert in die Sub-Welt
-        // statt auf der eingefrorenen Heimat-Welt zu laufen. Der Welt-
-        // Manifest entscheidet — _portalRouteDsl trägt die Drei-Stufen-Logik.
-        if (this._portalOverlay) {
-            const inWorld = this.parseChatToDsl(command);
-            const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);
-            if (program) {
-                this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
-            } else {
-                appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
-            }
-            chatInput.value = "";
-            return;
+    // W12 Phase 2 — im Portal: Chat-Befehl wandert in die Sub-Welt statt auf
+    // der eingefrorenen Heimat-Welt zu laufen. Das Welt-Manifest entscheidet
+    // (_portalRouteDsl trägt die Drei-Stufen-Logik).
+    _chatTryPortalRoute(command, chatInput, appendChatOutput) {
+        if (!this._portalOverlay) return false;
+        const inWorld = this.parseChatToDsl(command);
+        const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);
+        if (program) {
+            this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
+        } else {
+            appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
         }
+        chatInput.value = "";
+        return true;
+    }
 
+    // Ring 2 Phase 3 — DSL-First. Wenn der Befehl in DSL übersetzbar ist,
+    // läuft er durch denselben Interpreter wie der Nexus (Budgets/Outcome/
+    // Persistenz inklusive). Legacy-Pfad bleibt als Fallback für System-IO,
+    // Toggles, Phase-5-Themen.
+    _chatTryDslParse(command, chatInput, appendChatOutput) {
         const parsed = this.parseChatToDsl(command);
-        if (parsed) {
-            const result = this.dslRun(parsed.program, { source: "human" });
-            this.state.dsl.lastUserProgram = parsed.program;
-            this.state.dsl.lastUserOutcome = result.outcome;
-            this.state.dsl.lastUserAt = performance.now() / 1000;
-            if (result.ok) {
-                appendChatOutput(parsed.describe);
-            } else {
-                const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
-                appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
-            }
-            chatInput.value = "";
-            return;
+        if (!parsed) return false;
+        const result = this.dslRun(parsed.program, { source: "human" });
+        this.state.dsl.lastUserProgram = parsed.program;
+        this.state.dsl.lastUserOutcome = result.outcome;
+        this.state.dsl.lastUserAt = performance.now() / 1000;
+        if (result.ok) {
+            appendChatOutput(parsed.describe);
+        } else {
+            const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
+            appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
         }
+        chatInput.value = "";
+        return true;
+    }
 
-        // Dynamische Befehlsverarbeitung
+    // Legacy-if-else-Kette als Themen-Dispatcher. Jeder Themen-Helfer prüft
+    // sein Pattern + handhabt es + returns true; sonst fällt's zum nächsten.
+    // Der letzte Helfer (Conversational+Fallback) handhabt alles, was übrig
+    // bleibt (Kreatur/LLM/P2P/Hilfetext).
+    _chatDispatchLegacyCommand(command, parts, appendChatOutput) {
+        if (this._chatTryAbilityCommand(parts, command, appendChatOutput)) return;
+        if (this._chatTryPersistenceCommand(parts, appendChatOutput)) return;
+        if (this._chatTryWorldCommand(parts, command, appendChatOutput)) return;
+        if (this._chatTrySystemCommand(parts, appendChatOutput)) return;
+        this._chatHandleConversationalFallback(command, appendChatOutput);
+    }
+
+    // Fähigkeiten: lerne/führe Fähigkeit aus.
+    _chatTryAbilityCommand(parts, command, appendChatOutput) {
         if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
             const abilityName = parts[2];
             const startIdx = parts[3] ? command.toLowerCase().indexOf(parts[3]) : -1;
             const abilityDesc = startIdx >= 0 ? command.slice(startIdx).trim() : "";
             this.learnAbility(abilityName, abilityDesc);
             appendChatOutput(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
-        } else if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
+            return true;
+        }
+        if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
             const abilityName = parts[3];
             if (this.state.abilities[abilityName]) {
                 this.state.abilities[abilityName](this, this.state);
@@ -12873,7 +12897,14 @@ class AnazhRealm {
                     `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
                 );
             }
-        } else if (parts[0] === "speichere" && parts[1] === "zustand") {
+            return true;
+        }
+        return false;
+    }
+
+    // Persistenz: speichere/lade Zustand, Datei-Picker.
+    _chatTryPersistenceCommand(parts, appendChatOutput) {
+        if (parts[0] === "speichere" && parts[1] === "zustand") {
             this.saveState();
             this.saveToProjectFolder().then((result) => {
                 if (result === "server") {
@@ -12884,16 +12915,29 @@ class AnazhRealm {
                     appendChatOutput("Zustand gespeichert (nur localStorage)");
                 }
             });
-        } else if (parts[0] === "lade" && parts[1] === "zustand") {
+            return true;
+        }
+        if (parts[0] === "lade" && parts[1] === "zustand") {
             this.loadState();
             appendChatOutput("Zustand aus localStorage geladen");
-        } else if (parts[0] === "lade" && parts[1] === "datei") {
+            return true;
+        }
+        if (parts[0] === "lade" && parts[1] === "datei") {
             this.openStateFilePicker();
             appendChatOutput("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
-        } else if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
+            return true;
+        }
+        return false;
+    }
+
+    // Welt-Verwaltung (Ring 8): spawne/erschaffe/wechsle/lösche/liste Welten.
+    _chatTryWorldCommand(parts, command, appendChatOutput) {
+        if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
             this.generateNewWorld();
             appendChatOutput("Neue Welt generiert");
-        } else if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
+            return true;
+        }
+        if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
             // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
             // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
             // Slug ist alles zwischen dem Verb-Paar und einem optionalen Trailer.
@@ -12911,10 +12955,12 @@ class AnazhRealm {
             } else {
                 appendChatOutput("Neue Welt konnte nicht erschaffen werden — siehe Log.");
             }
-        } else if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
-            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir
-            // suchen den Index, finden den passenden Eintrag (genauer Match
-            // oder Präfix), und triggern den Reload.
+            return true;
+        }
+        if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
+            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir suchen
+            // den Index, finden den passenden Eintrag (genauer Match oder
+            // Präfix), und triggern den Reload.
             const targetSlug = parts
                 .slice(parts[2] === "welt" ? 3 : 2)
                 .join(" ")
@@ -12929,7 +12975,9 @@ class AnazhRealm {
                 if (ok) appendChatOutput(`Wechsle zu ${prefix.slug}…`);
                 else appendChatOutput("Welt-Wechsel verweigert (siehe Log).");
             }
-        } else if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
+            return true;
+        }
+        if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
             const targetSlug = parts.slice(2).join(" ").trim();
             const idx = this.worldsIndexLoad();
             const entry = idx.find((e) => e.slug === targetSlug);
@@ -12942,7 +12990,9 @@ class AnazhRealm {
                 appendChatOutput(`Welt „${entry.slug}" gelöscht.`);
                 this.updateWorldInfo();
             }
-        } else if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
+            return true;
+        }
+        if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
             const idx = this.worldsIndexLoad();
             if (idx.length === 0) {
                 appendChatOutput("Nur diese eine Welt im Speicher.");
@@ -12958,13 +13008,25 @@ class AnazhRealm {
                 appendChatOutput(`Welten im Speicher (${idx.length}):`);
                 for (const l of lines) appendChatOutput(l);
             }
-        } else if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
+            return true;
+        }
+        return false;
+    }
+
+    // System-Befehle: Physik-Tuning, Version-Aktivierung, Boden-Re-Gen,
+    // Symphonie-V1-Platzhalter, Debug-Log-Toggle.
+    _chatTrySystemCommand(parts, appendChatOutput) {
+        if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
             this.optimizeCollisions();
             appendChatOutput("Physik-Tunneling behoben: CCD angepasst");
-        } else if (parts[0] === "optimiere" && parts[1] === "physik") {
+            return true;
+        }
+        if (parts[0] === "optimiere" && parts[1] === "physik") {
             this.optimizePhysics();
             appendChatOutput("Physik optimiert");
-        } else if (parts[0] === "aktiviere" && parts[1] === "version") {
+            return true;
+        }
+        if (parts[0] === "aktiviere" && parts[1] === "version") {
             const version = parts[2];
             if (this.state.versionHistory.includes(version)) {
                 this.loadVersion(version);
@@ -12972,7 +13034,9 @@ class AnazhRealm {
             } else {
                 appendChatOutput(`Version ${version} nicht gefunden`);
             }
-        } else if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
+            return true;
+        }
+        if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
             if (
                 !this.state.groundChunks ||
                 this.state.groundChunks.length === 0 ||
@@ -12984,7 +13048,9 @@ class AnazhRealm {
             } else {
                 appendChatOutput("Boden ist bereits sichtbar");
             }
-        } else if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
+            return true;
+        }
+        if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
             // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
             // belebt die Kreaturen sichtbar (happy + schneller) statt eines
             // JS-Closures, der per Sinus animiert. Ehrlicher als der alte
@@ -12996,45 +13062,55 @@ class AnazhRealm {
             );
             this.state.abilities["anazhSymphony"]();
             appendChatOutput("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
-        } else if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
+            return true;
+        }
+        if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = true;
             appendChatOutput("Debug-Logs aktiviert");
-        } else if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
+            return true;
+        }
+        if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
-        } else if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
-            // Welle 6.H Phase 2E V1 — Kreatur-Konversation. Wenn das Pattern
-            // „Name, text" oder „Name: text" matched, geht der Text an die
-            // Kreatur (nicht an Grok). Reicht der Name nicht? → maybeAnswerCreature
-            // gibt höfliche Antwort. LLM-Inactive? → Hinweis. Beide Pfade
-            // schließen den Befehl ab (return true).
+            return true;
+        }
+        return false;
+    }
+
+    // Conversational-Fallback: Kreatur-Konversation (Welle 6.H Phase 2E V1),
+    // LLM-Fallback (Schicht 2 — Claude/Gemini/OpenRouter), P2P-Voice-Pool
+    // (W7 Phase 3), sonst chatSuggest + Hilfetext.
+    _chatHandleConversationalFallback(command, appendChatOutput) {
+        if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
+            // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
                 appendChatOutput(`(Kreatur-Fehler: ${err.message || err})`);
             });
-        } else if (this.state.llm && this.state.llm.enabled) {
-            // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der
-            // Text an Claude; Antwort kommt narrativ + optional als DSL-
-            // Programm, das durch dieselbe Sandbox wie alle anderen Programme
-            // läuft.
+            return;
+        }
+        if (this.state.llm && this.state.llm.enabled) {
+            // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der Text
+            // an Claude; Antwort kommt narrativ + optional als DSL-Programm.
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
                 appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
             });
-        } else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable()) {
-            // W7 Phase 3 — LLM-Pool. Ich habe kein eigenes LLM, aber ein
-            // Mitspieler teilt seine Stimme: die Anfrage läuft über ihn,
-            // das DSL-Programm der Antwort durch meine eigene Sandbox.
-            this._p2pRequestSharedVoice(command, appendChatOutput);
-        } else {
-            const suggestion = this.chatSuggest(command);
-            if (suggestion) {
-                appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
-            } else {
-                appendChatOutput(
-                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
-                );
-            }
+            return;
         }
-        chatInput.value = "";
+        if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable()) {
+            // W7 Phase 3 — LLM-Pool. Kein eigenes LLM, aber ein Mitspieler teilt
+            // seine Stimme: die Anfrage läuft über ihn, das DSL-Programm der
+            // Antwort durch meine eigene Sandbox.
+            this._p2pRequestSharedVoice(command, appendChatOutput);
+            return;
+        }
+        const suggestion = this.chatSuggest(command);
+        if (suggestion) {
+            appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
+        } else {
+            appendChatOutput(
+                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
+            );
+        }
     }
 
     // Beschreibung → DSL-Programm. Vier bekannte Pattern + Catch-All als
