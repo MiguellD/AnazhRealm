@@ -12026,13 +12026,13 @@ async function checkBandHydrosphere(ctx) {
         r._buildHydrosphereMeshes();
         const meshes = r.state.hydrosphereMeshes;
         out.meshesArray = Array.isArray(meshes);
-        // V9.60-d + V9.61 (kombiniert) — pro Wasserfall gibt es VIER Meshes:
-        //   (1) hydroKind="waterfall" = vertikale Plane (wfMat + PlaneGeometry, V9.61-a Trapez)
-        //   (2) hydroKind="waterfall_lip" = Top-Lip-Foam (hydroSurfaceMat + PlaneGeometry horizontal)
+        // V9.62 — pro Wasserfall gibt es VIER Meshes (Top-Lip entfernt,
+        // dafür Cross-Plane für 3D-Volume):
+        //   (1) hydroKind="waterfall" = vertikale Hauptplane (wfMat + PlaneGeometry, V9.61-a Trapez)
+        //   (2) hydroKind="waterfall_cross" = perpendikulare Plane (wfMat + PlaneGeometry, X-Form)
         //   (3) hydroKind="waterfall_spray" = Volumetric Mist (hydroSurfaceMat + SphereGeometry, V9.61-b)
         //   (4) hydroKind="waterfall_pool" = Aufprall-Pool (hydroSurfaceMat + CircleGeometry)
-        // Alle vier gehören zur Wasserfall-Struktur, alle in hydrosphereMeshes.
-        const WF_KINDS = ["waterfall", "waterfall_lip", "waterfall_spray", "waterfall_pool"];
+        const WF_KINDS = ["waterfall", "waterfall_cross", "waterfall_spray", "waterfall_pool"];
         out.onlyWaterfalls =
             out.meshesArray && meshes.every((m) => m.userData && WF_KINDS.indexOf(m.userData.hydroKind) >= 0);
         out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length * 4;
@@ -12048,13 +12048,6 @@ async function checkBandHydrosphere(ctx) {
                             m.geometry.type === "CircleGeometry"
                         );
                     }
-                    if (k === "waterfall_lip") {
-                        return (
-                            m.material === r.state.hydroSurfaceMaterial &&
-                            m.geometry &&
-                            m.geometry.type === "PlaneGeometry"
-                        );
-                    }
                     if (k === "waterfall_spray") {
                         return (
                             m.material === r.state.hydroSurfaceMaterial &&
@@ -12062,6 +12055,7 @@ async function checkBandHydrosphere(ctx) {
                             m.geometry.type === "SphereGeometry"
                         );
                     }
+                    // "waterfall" + "waterfall_cross" beide nutzen wfMat + PlaneGeometry
                     return m.material === r.state.waterfallMaterial && m.geometry && m.geometry.type === "PlaneGeometry";
                 }));
         out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
@@ -12151,11 +12145,11 @@ async function checkBandHydrosphere(ctx) {
             );
             check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
             check(
-                `Voxel V9.61: hydrosphereMeshes trägt Plane + Top-Lip + Spray + Pool pro Wasserfall (== hydro.waterfalls × 4: ${hc.fallCountMatches})`,
+                `Voxel V9.62: hydrosphereMeshes trägt Plane + Cross + Spray + Pool pro Wasserfall (== hydro.waterfalls × 4: ${hc.fallCountMatches})`,
                 hc.onlyWaterfalls && hc.fallCountMatches
             );
             check(
-                "Voxel V9.61: Plane (wfMat+Plane), Top-Lip+Pool (hydroSurfaceMat+Plane/Circle), Spray (hydroSurfaceMat+Sphere)",
+                "Voxel V9.62: Plane+Cross (wfMat+Plane × 2), Spray (hydroSurfaceMat+Sphere), Pool (hydroSurfaceMat+Circle)",
                 hc.fallsUseWaterfallMat
             );
             check("Voxel V9.50-b: state.voxelChunkWater ist eine Map", hc.waterMapIsMap);

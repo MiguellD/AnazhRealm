@@ -15946,26 +15946,28 @@ class AnazhRealm {
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
-                // V9.60-d + V9.61 (kombiniert) — vier Meshes pro Wasserfall:
-                //   (1) vertikale Plane = der fallende Strahl (V9.61-a:
-                //       Trapez-Form, unten breiter — Genshin-Lehre Volume)
-                //   (2) Top-Lip-Foam = Foam-Bahn an der See-Kante (V9.60-d.2,
-                //       Genshin / BOTW)
+                // V9.62 (kombiniert) — vier Meshes pro Wasserfall, Top-Lip
+                // entfernt nach Schöpfer-Befund "ebene Fläche darüber":
+                //   (1) Hauptplane = vertikaler Strahl (V9.61-a Trapez-Form)
+                //   (2) Cross-Plane = perpendikulare zweite Plane (V9.62-b,
+                //       X-Form → 3D-Volume statt 2D-Folie)
                 //   (3) Spray-Halbsphere = Volumetric Mist am Aufprall
                 //       (V9.61-b, Genshin volumetric ohne Partikel-System)
                 //   (4) Foam-Pool unten = Aufprall-Foam + Erosion-Topf
                 //       (V9.60-d.1 + V9.60-d.4)
-                // Alle vier nutzen geteilte Materialien — Vision §1.3
-                // fraktal, eine Wasser-Sprache.
-                const m = this._buildHydroWaterfall(wf, wfMat);
+                // Top-Lip-Foam (V9.60-d.2) entfernt — der Schöpfer hat sie
+                // als "ebene Fläche darüber" als Relikt benannt; die Cross-
+                // Plane reicht jetzt bis zum See-Spiegel hoch (V9.60-d.3
+                // Verbindung), die separate Lip-Plane ist überflüssig.
+                const m = this._buildHydroWaterfall(wf, wfMat, 0);
                 if (m) {
                     this.state.scene.add(m);
                     meshes.push(m);
                 }
-                const lip = this._buildHydroWaterfallTopFoam(wf);
-                if (lip) {
-                    this.state.scene.add(lip);
-                    meshes.push(lip);
+                const mCross = this._buildHydroWaterfall(wf, wfMat, Math.PI / 2);
+                if (mCross) {
+                    this.state.scene.add(mCross);
+                    meshes.push(mCross);
                 }
                 const spray = this._buildHydroWaterfallSpray(wf);
                 if (spray) {
@@ -16063,13 +16065,18 @@ class AnazhRealm {
     // jetzt das Drainage-Netz (`hydro.waterfalls`) statt per-Chunk-Zufall.
     // Vertikale Plane an der Fluss-Klippen-Kreuzung, gedreht so dass die
     // Normale (+z) den Sturz hinab zeigt (die Gefälle-Tangente).
-    _buildHydroWaterfall(wf, mat) {
+    _buildHydroWaterfall(wf, mat, rotOffset = 0) {
         // V9.60-d.3 — See-Spiegel-Verbindung: wenn der See-Spiegel an der
         // Wasserfall-Stelle höher liegt als wf.topY (das Voxel-Bett), reicht
         // die Plane bis zum See-Spiegel hoch. Heilt den Riss zwischen See-
         // Wasserfläche und Wasserfall-Plane-Top, den der Schöpfer als
         // "Verbindung zwischen Seen noch unsauber" markiert hat. Witcher 3 +
         // NMS machen das genauso — Wasser muss optisch verbunden sein.
+        // V9.62-b — Cross-Geometry: wenn `rotOffset = π/2`, ist diese Plane
+        // 90° rotiert (perpendikular zur Hauptplane). Beide zusammen ergeben
+        // eine X-Form → 3D-Volume statt 2D-Folie. Schöpfer-Befund "vertikale
+        // wassersheet ist ein altes relikt" → mehr Sichtbarkeit aus allen
+        // Winkeln. Genshin/BotW nutzen dasselbe Cross-Pattern für Wasserfälle.
         const waterHere = typeof this._waterLevelAt === "function" ? this._waterLevelAt(wf.x, wf.z) : wf.topY;
         const topY = Math.max(wf.topY, waterHere);
         const dropH = Math.min(Math.max(topY - wf.bottomY, 2), 60);
@@ -16097,10 +16104,10 @@ class AnazhRealm {
         let dx = wf.flowX || 0;
         let dz = wf.flowZ || 0;
         if (dx === 0 && dz === 0) dz = 1;
-        mesh.rotation.y = Math.atan2(dx, dz);
+        mesh.rotation.y = Math.atan2(dx, dz) + rotOffset;
         mesh.renderOrder = 1;
         mesh.frustumCulled = false;
-        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall" };
+        mesh.userData = { isHydrosphere: true, hydroKind: rotOffset === 0 ? "waterfall" : "waterfall_cross" };
         return mesh;
     }
 
@@ -16787,9 +16794,15 @@ class AnazhRealm {
                     // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
                     float fogF = smoothstep(fogNear, fogFar, vFogDepth);
                     col = mix(col, fogColor, fogF);
-                    // Alpha: dichter Körper, weiche Seiten-Ränder.
-                    float edgeX = smoothstep(0.0, 0.10, vUv.x) * smoothstep(1.0, 0.90, vUv.x);
-                    float alpha = (0.62 + 0.33 * foam) * edgeX;
+                    // V9.62-c — Alpha reduziert (Schöpfer "altes relikt,
+                    // sieht wie Folie aus"): Basis 0.62 -> 0.38, foam-Beitrag
+                    // 0.33 -> 0.45 (Foam-Stellen heller, Wasser-Körper transp.).
+                    // Plus vertikaler Gradient: oben weicher (mehr Mist), unten
+                    // dichter (mehr Wasser). Macht den Strahl substanzieller
+                    // statt eines opaken Vorhangs.
+                    float edgeX = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
+                    float edgeY = smoothstep(1.0, 0.78, vUv.y);
+                    float alpha = (0.38 + 0.45 * foam) * edgeX * (0.62 + 0.38 * (1.0 - edgeY));
                     gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
                 }
             `,
