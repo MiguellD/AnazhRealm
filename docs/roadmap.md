@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — der Plan
 
-Stand: V9.52-f (23.05.2026). Diese Doc trägt den **Plan vorwärts** — die Ring-Übersicht 0-17, was offen ist, die Meilenstein- und Risiko-Sicht. Die anderen Zeit-Ebenen: der aktuelle Stand + die Gotchas in `CLAUDE.md`, die volle Wellen-Chronik in `docs/handover.md`, die Vision in `docs/state-of-realm.md`.
+Stand: V9.53 (23.05.2026). Diese Doc trägt den **Plan vorwärts** — die Ring-Übersicht 0-17, was offen ist, die Meilenstein- und Risiko-Sicht. Die anderen Zeit-Ebenen: der aktuelle Stand + die Gotchas in `CLAUDE.md`, die volle Wellen-Chronik in `docs/handover.md`, die Vision in `docs/state-of-realm.md`.
 
 Aufwandsschätzungen in §3 sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase (linear, ohne Puffer). Diese Roadmap ist ein lebendes Dokument — nach jedem Ring-Abschluss aktualisiert; Pfeile zwischen Ringen sind weiche Abhängigkeiten.
 

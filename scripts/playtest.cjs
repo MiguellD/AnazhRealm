@@ -9921,8 +9921,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
         check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
         check(
-            `Welle 6.G P1.5: Worldgen-Bäume (n=${wave6gResults.worldgenTreesInArchitectures}) sind in state.architectures`,
-            wave6gResults.worldgenTreesInArchitectures > 0
+            "Welle 6.G P1.5: Worldgen-Bäume sind in state.architectures",
+            wave6gResults.worldgenTreesInArchitectures > 0,
+            `n=${wave6gResults.worldgenTreesInArchitectures}`
         );
         check(
             "Welle 6.G P1.5: mind. ein Worldgen-Baum hat Compound-Box-Kollision",
@@ -9933,9 +9934,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.noTreesInVegetation
         );
         check(
-            `Welle 6.G P1.5: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
+            "Welle 6.G P1.5: initiale Welt-Inseln haben Kollision",
             wave6gResults.initIslandsCount > 0 &&
-                wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount
+                wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount,
+            `n=${wave6gResults.initIslandsCount}, mitKollision=${wave6gResults.initIslandsWithCollision}`
         );
         check(
             "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
@@ -10179,13 +10181,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
             );
         }
         check(
-            `Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt (n=${wave6gP2Results.archCount})`,
-            wave6gP2Results.archCount > 0
+            "Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt",
+            wave6gP2Results.archCount > 0,
+            `n=${wave6gP2Results.archCount}`
         );
         check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
         check(
-            `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
-            wave6gP2Results.populatedChunksSize >= 1
+            "Welle 6.G P2: populatedChunks-Cache befüllt",
+            wave6gP2Results.populatedChunksSize >= 1,
+            `size=${wave6gP2Results.populatedChunksSize}`
         );
         check(
             "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
@@ -10350,12 +10354,14 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gP3Results.felsbogenSpawned && wave6gP3Results.felsbogenHasMesh
         );
         check(
-            `W6.G P3: der Felsbogen rendert stein-grau, nicht weiss (V9.06-Fix, hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)})`,
-            wave6gP3Results.felsbogenNotWhite && wave6gP3Results.felsbogenStoneGrey
+            "W6.G P3: der Felsbogen rendert stein-grau, nicht weiss (V9.06-Fix)",
+            wave6gP3Results.felsbogenNotWhite && wave6gP3Results.felsbogenStoneGrey,
+            `hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)}`
         );
         check(
-            `W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene (n=${wave6gP3Results.felsbogenCompoundChildren})`,
-            wave6gP3Results.felsbogenWalkThroughCollision
+            "W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene",
+            wave6gP3Results.felsbogenWalkThroughCollision,
+            `n=${wave6gP3Results.felsbogenCompoundChildren}`
         );
         check(
             "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + Kollision",
@@ -11745,8 +11751,9 @@ async function checkBandHydrosphere(ctx) {
                 ev.deltaZeroOutside && ev.deltaFiniteInside
             );
             check(
-                `Voxel V9.47: _computeErosion im Perf-Budget (${Math.round(ev.recomputeMs || 0)} ms < 600)`,
-                ev.perfOk
+                "Voxel V9.47: _computeErosion im Perf-Budget (< 600 ms)",
+                ev.perfOk,
+                `recomputeMs=${Math.round(ev.recomputeMs || 0)} ms`
             );
         }
     } else {
@@ -11949,8 +11956,9 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
         check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
         check(
-            `Voxel V9.43-b: Berechnung im Perf-Budget (${Math.round(hb.perfMs || 0)} ms < 500 ms)`,
-            typeof hb.perfMs === "number" && hb.perfMs < 500
+            "Voxel V9.43-b: Berechnung im Perf-Budget (< 500 ms)",
+            typeof hb.perfMs === "number" && hb.perfMs < 500,
+            `perfMs=${Math.round(hb.perfMs || 0)} ms`
         );
         check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
         check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
@@ -11968,7 +11976,7 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
         check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
         check("Voxel V9.51: `_hydroSeedTarns` existiert (der Tarn-Pass)", hb.hasTarnPass);
-        check(`Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden (${hb.tarnCount} Tarns)`, hb.tarnCount >= 1);
+        check("Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden", hb.tarnCount >= 1, `tarnCount=${hb.tarnCount}`);
         check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
         check(
             `Voxel V9.51: jede Tarn-Mulde wurde zu einem See (${hb.tarnsBecameLakes}/${hb.tarnCount})`,
@@ -12461,8 +12469,9 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
         check("Voxel V9.50-b: das Chunk-Wasser fragt das Wasser-Level-Feld (`_waterLevelAt`)", d.unifiedQueriesRivers);
         check(
-            `Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe in ${Math.round(d.carvePerfMs || 0)} ms < 300 ms)`,
-            typeof d.carvePerfMs === "number" && d.carvePerfMs < 300
+            "Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe < 300 ms)",
+            typeof d.carvePerfMs === "number" && d.carvePerfMs < 300,
+            `carvePerfMs=${Math.round(d.carvePerfMs || 0)} ms`
         );
     }
 
