@@ -14060,25 +14060,34 @@ class AnazhRealm {
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
         const withoutTarn = base + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
-        // V9.60-c — Submarine-Detail unter Wasser. Schöpfer-Befund nach
-        // V9.60-b.1: "wassergrund ist jetzt etwas flach, uninteressant, aber
-        // um welten besser als zuvor". Zwei Sub-Octaven mit gemeinsamer
-        // Tiefen-Maske (smoothstep über 1.5..5.5 m unter Wasser), damit die
-        // Uferlinie SAUBER bleibt (keine Mini-Inseln im Hafenbecken):
-        //   - subA λ~330m, ±3 m: Hügel + flache Becken am Wasser-Boden
-        //   - subB λ~100m, ±1 m: Sediment-Variation, fein-skalig
-        // Riesen-Lehre (Minecraft Aquifer-System + No-Man's-Sky-Underwater):
-        // der Wassergrund braucht eigene Variation, nicht nur die geglättete
-        // Land-Topologie unter Wasser. Tarns sind im Hochland → kein
-        // Konflikt mit dem Tarn-System.
+        // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
+        // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
+        // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
+        // war zu zaghaft (max ±4 m Variation in 40 m Tiefe = 10%). Lehren
+        // aus Riesen: Real-World-Ozeanografie kennt vier Schichten — (1)
+        // Continental Shelf (sanft), (2) Continental Slope (DRAMATISCH ab),
+        // (3) Abyssal Plain (tief flach mit Hügeln), (4) Mid-Ocean Ridge
+        // (Bergketten + Trenches dazwischen). Subnautica skaliert Drama
+        // mit Tiefe — Subtilität nahe Strand, dramatic in der Tiefsee.
+        // Mechanik: subMask 3..9 m fades-in (Shelf bleibt unberührt);
+        // slopeDrop linear ab 4 m Tiefe (-0.6 m pro m → bei 20 m Tiefe
+        // zusätzliche -10 m Continental Drop); drei Variations-Octaven
+        // mit tiefen-skalierter Amplitude (subA Hügel, subRidge Bergketten
+        // & Trenches, subC Sediment-Feindetail). Sicherheits-Math: bei
+        // subMask=1 + maxNoise garantiert surface < waterRef (keine
+        // Phantom-Inseln im Hafenbecken).
         const waterRefSub = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
         const depthBelow = waterRefSub - withoutTarn;
         let withoutTarnFinal = withoutTarn;
         if (depthBelow > 1.5) {
-            const subMask = Math.min(1, (depthBelow - 1.5) / 4);
-            const subA = n.noise2D(x * 0.019, z * 0.019 + 31) * 3;
-            const subB = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
-            withoutTarnFinal += (subA + subB) * subMask;
+            const subMask = Math.min(1, Math.max(0, (depthBelow - 3) / 6));
+            const slope = Math.max(0, depthBelow - 4);
+            const slopeDrop = -slope * 0.6;
+            const subA = n.noise2D(x * 0.019, z * 0.019 + 31) * (3 + slope * 0.3);
+            const rBN = n.noise2D(x * 0.026 + 17, z * 0.026 + 9);
+            const subRidge = ((1 - Math.abs(rBN)) * (1 - Math.abs(rBN)) - 0.3) * (3 + slope * 0.25);
+            const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
+            withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
         }
         // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
         // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
