@@ -12735,6 +12735,37 @@ function startSaveServer() {
                             }
                         }
                     }
+                    // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden.
+                    out.hasTarnPass = typeof r._hydroSeedTarns === "function";
+                    out.tarnCount = Array.isArray(r.state.tarns) ? r.state.tarns.length : -1;
+                    out.tarnsHighAltitude = true;
+                    out.tarnsBecameLakes = 0;
+                    if (Array.isArray(r.state.tarns) && r.state.tarns.length && h1.lakes) {
+                        const base = r.state.terrainBaseHeight || 0;
+                        const minRel = 11; // TARN.minReliefAbs minus Float-Marge
+                        for (const t of r.state.tarns) {
+                            if (!(t.surf - base >= minRel)) out.tarnsHighAltitude = false;
+                            // Zähle Wasser-Zellen (kind=2) im Tarn-Fussabdruck
+                            // — der Beweis, dass die Mulde zu einem See wurde.
+                            let lakeCells = 0;
+                            if (h1.water) {
+                                const hi = Math.floor((t.x - h1.originX) / h1.cell);
+                                const hj = Math.floor((t.z - h1.originZ) / h1.cell);
+                                const rng = Math.ceil(t.r / h1.cell);
+                                for (let dj = -rng; dj <= rng; dj++) {
+                                    for (let di = -rng; di <= rng; di++) {
+                                        const ci = hi + di;
+                                        const cj = hj + dj;
+                                        if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
+                                        if (h1.water.waterKind[ci + cj * h1.dim] === 2) lakeCells++;
+                                    }
+                                }
+                            }
+                            // ein Tarn gilt als See, wenn ≥ minLakeCells (6)
+                            // See-Zellen in seinem Fussabdruck liegen.
+                            if (lakeCells >= 6) out.tarnsBecameLakes++;
+                        }
+                    }
                     return out;
                 })
                 .catch((e) => ({ error: String(e) }));
@@ -12788,6 +12819,16 @@ function startSaveServer() {
                 check(
                     "Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)",
                     hb.waterLevelLakeOk
+                );
+                check("Voxel V9.51: `_hydroSeedTarns` existiert (der Tarn-Pass)", hb.hasTarnPass);
+                check(
+                    `Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden (${hb.tarnCount} Tarns)`,
+                    hb.tarnCount >= 1
+                );
+                check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
+                check(
+                    `Voxel V9.51: jede Tarn-Mulde wurde zu einem See (${hb.tarnsBecameLakes}/${hb.tarnCount})`,
+                    hb.tarnCount >= 1 && hb.tarnsBecameLakes === hb.tarnCount
                 );
             }
 

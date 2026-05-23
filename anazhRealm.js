@@ -11064,6 +11064,27 @@ class AnazhRealm {
         });
     }
 
+    // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden. Die Stream-
+    // Power-Erosion (V9.47) entwässert jedes Hochbecken → ohne diesen Pass
+    // gibt es keine Bergseen. `_hydroSeedTarns` setzt sie bewusst.
+    static get TARN() {
+        return Object.freeze({
+            spacing: 200, // m — Kantenlänge einer Kandidaten-Zelle (jittered grid)
+            reliefPercentile: 0.58, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
+            // ~42 % des Relief DIESER Welt (findet das Hochland auch in einer
+            // flachen Welt; ein fixer Wert verfehlte mal alles, mal zu viel).
+            minReliefAbs: 14, // m — absoluter Boden über terrainBaseHeight
+            maxSlope: 0.25, // Hang-Grenze — verwirft nur Cliffs. Die Mulden-Tiefe
+            // skaliert ADAPTIV mit dem Hang (siehe `_hydroSeedTarns`) → das
+            // Becken schliesst sicher mit ~8 m Wasser-Tiefe, egal wie steil.
+            placeThreshold: 0.05, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
+            radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
+            radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
+            depthMin: 22, // m — Mulden-Tiefe (UNTERgrenze für sanfte Spots).
+            depthMax: 42, // m — OBERgrenze (steile Spots brauchen tiefere Mulden).
+        });
+    }
+
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
     }
@@ -13282,6 +13303,11 @@ class AnazhRealm {
         try {
             this.state.erosion = this._computeErosion();
             this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
+            // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden ins
+            // Erosions-Delta (das Priority-Flood entdeckt sie danach + füllt
+            // sie zu Seen — `docs/hydrosphere.md` §15).
+            const tarns = this._hydroSeedTarns();
+            this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
         } catch (e) {
             this.state.erosion = null;
             this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
@@ -13576,6 +13602,12 @@ class AnazhRealm {
         // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
         // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
         this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
+        // V9.51 — `_terrainMacroSurfaceY` addiert sonst die Tarn-Mulden; die
+        // Erosion läuft VOR `_hydroSeedTarns` (tarn-frei) und muss bei einem
+        // Re-Run (Determinismus-Test) ebenfalls tarn-frei sampeln, sonst
+        // unterscheiden sich die beiden Läufe. Saved + restored im finally.
+        const savedTarns = this.state.tarns;
+        this.state.tarns = null;
         const h = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
@@ -13614,6 +13646,7 @@ class AnazhRealm {
                 delta[idx] = dv;
             }
         }
+        this.state.tarns = savedTarns; // V9.51 — Tarns wiederhergestellt
         return { delta, dim, cell: E.cell, originX, originZ, regionSize: E.regionSize };
     }
 
@@ -13785,6 +13818,125 @@ class AnazhRealm {
         return (d[a] * (1 - tx) + d[a + 1] * tx) * (1 - tz) + (d[a + dim] * (1 - tx) + d[a + dim + 1] * tx) * tz;
     }
 
+    // V9.51 — der Tarn-Pass. Setzt Bergseen als additive Hochmulden: an hohen,
+    // sanft geneigten Stellen wird eine Gauss-Mulde vom Erosions-Delta
+    // abgezogen. Läuft NACH `_computeErosion`, VOR `_computeHydrosphere` → das
+    // Priority-Flood entdeckt die geschlossene Mulde danach + füllt sie zum
+    // See, die bestehende Wasser-Maschinerie (See-Topf-Carve, Chunk-Wasser)
+    // rendert ihn — keine neue Wasser-Logik. Deterministisch (seed-Noise).
+    // Legt `state.tarns` ab. ACHTUNG: wer `_computeErosion` neu rechnet, MUSS
+    // diesen Pass danach erneut rufen (Erosion nullt das Delta). §15.
+    _hydroSeedTarns() {
+        this.state.tarns = [];
+        const T = AnazhRealm.TARN;
+        const base = this.state.terrainBaseHeight || 0;
+        const region = AnazhRealm.EROSION.regionSize;
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const n = this._voxelNoise;
+        const half = region / 2;
+        const cols = Math.max(3, Math.round(region / T.spacing));
+        const cellW = region / cols;
+        // --- die Kandidaten-Punkte (jittered grid) + ihre Makro-Höhen ---
+        const pts = [];
+        for (let cj = 0; cj < cols; cj++) {
+            for (let ci = 0; ci < cols; ci++) {
+                const jx = n.noise2D(ci * 7.13 + 1.7, cj * 7.13 + 9.2) * cellW * 0.34;
+                const jz = n.noise2D(ci * 4.41 + 50.3, cj * 4.41 + 31.8) * cellW * 0.34;
+                const x = -half + (ci + 0.5) * cellW + jx;
+                const z = -half + (cj + 0.5) * cellW + jz;
+                pts.push({ ci, cj, x, z, surf: this._terrainMacroSurfaceY(x, z, false) });
+            }
+        }
+        // ADAPTIVE Höhen-Schwelle — die Tarns sitzen im oberen Relief-Anteil
+        // DIESER Welt. So findet der Pass auch in einer flachen Welt das
+        // Hochland (ein fixer Wert verfehlte mal alles, mal zu viel).
+        const sorted = pts
+            .map((p) => p.surf)
+            .filter((s) => Number.isFinite(s))
+            .sort((a, b) => a - b);
+        if (sorted.length < 4) return [];
+        const reliefThr = Math.max(base + T.minReliefAbs, sorted[Math.floor(sorted.length * T.reliefPercentile)]);
+        // --- Kandidaten gaten + akzeptieren ---
+        const tarns = [];
+        const d = AnazhRealm.EROSION.cell;
+        const minSep = T.radiusMax;
+        for (const p of pts) {
+            if (!Number.isFinite(p.surf) || p.surf < reliefThr) continue;
+            // Platzierungs-Noise (tief-frequent) — hält die Tarns sparsam.
+            if (n.noise2D(p.x * 0.0021 + 17, p.z * 0.0021 - 8) < T.placeThreshold) continue;
+            // Hang messen — ein Tarn sitzt in einer sanften Hochmulde; sanft
+            // genug, dass die grosse, tiefe Gauss-Mulde ein geschlossenes
+            // Becken formt (`depthMin` > 0.83·maxSlope·radiusMax).
+            const gx =
+                (this._terrainMacroSurfaceY(p.x + d, p.z, false) - this._terrainMacroSurfaceY(p.x - d, p.z, false)) /
+                (2 * d);
+            const gz =
+                (this._terrainMacroSurfaceY(p.x, p.z + d, false) - this._terrainMacroSurfaceY(p.x, p.z - d, false)) /
+                (2 * d);
+            const slope = Math.hypot(gx, gz);
+            if (slope > T.maxSlope) continue;
+            let tooClose = false;
+            for (const tn of tarns) {
+                if (Math.hypot(tn.x - p.x, tn.z - p.z) < minSep) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+            const rr = n.noise2D(p.ci * 2.7 - 12, p.cj * 2.7 + 4) * 0.5 + 0.5;
+            const r = T.radiusMin + rr * (T.radiusMax - T.radiusMin);
+            const sigma = r * 0.5;
+            // adaptive Tiefe: skaliert mit `slope·r` (dem Hang-Abfall über
+            // den Radius) plus eine garantierte Wasser-Tiefe von ~8 m. Sanfte
+            // Spots → flachere Mulde, steile → tiefere; das Becken schliesst
+            // immer mit derselben Wasser-Tiefe (~8 m). Geklemmt auf [min,max].
+            let depth = Math.max(T.depthMin, Math.min(T.depthMax, 0.996 * slope * r + 8));
+            // KRITISCH: der Mulden-Boden muss ÜBER dem Meeresspiegel bleiben.
+            // Sonst kriecht der Border-Ozean-Flood durch die sub-Wasser-Zellen
+            // des Bowls hinein, markiert den Tarn als Ozean → keine See-
+            // Extraktion. Wir klemmen die Tiefe so, dass der Boden ≥ waterRef+1
+            // liegt; passt der Boden nicht mehr ≥ depthMin → der Spot ist zu
+            // niedrig für einen echten Bergsee, verwerfen.
+            const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
+            const maxAllowed = p.surf - waterRef - 1;
+            if (maxAllowed < T.depthMin) continue; // zu niedrig — kein Bergsee
+            if (depth > maxAllowed) depth = maxAllowed;
+            tarns.push({
+                x: p.x,
+                z: p.z,
+                surf: p.surf,
+                r,
+                d: depth,
+                reach2: r * 2.2 * (r * 2.2),
+                twoSig2: 2 * sigma * sigma,
+            });
+        }
+        this.state.tarns = tarns;
+        return tarns;
+    }
+
+    // V9.51 — die Tarn-Mulden-Senkung an einer xz-Welt-Position (≤ 0 — eine
+    // Gauss-Mulde je Tarn). `_terrainMacroSurfaceY` addiert es → Hydrosphäre +
+    // Voxel-Mesher sehen die Bergsee-Becken, das Priority-Flood füllt sie.
+    // Per-Tarn-Reichweiten-Early-Out → eine tarn-lose Welt 0 Ops.
+    _tarnDeltaAt(x, z) {
+        const tarns = this.state.tarns;
+        if (!tarns || !tarns.length) return 0;
+        let delta = 0;
+        for (let i = 0; i < tarns.length; i++) {
+            const t = tarns[i];
+            const dx = x - t.x;
+            const dz = z - t.z;
+            const d2 = dx * dx + dz * dz;
+            if (d2 > t.reach2) continue;
+            delta -= t.d * Math.exp(-d2 / t.twoSig2);
+        }
+        return delta;
+    }
+
     // V9.45-a — Grösse, Hierarchie + REGIONALE Vielfalt. Der V9.20-Aufbau
     // (drei feste Oktaven) liess alle Berge ähnlich hoch wirken: die
     // kontinentale Oktave variierte über ~1500 m kaum innerhalb einer Welt,
@@ -13839,7 +13991,18 @@ class AnazhRealm {
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        return base + cont + ranges + detail + this._erosionDeltaAt(x, z);
+        const withoutTarn = base + cont + ranges + detail + this._erosionDeltaAt(x, z);
+        // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
+        // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
+        // KRITISCH: der Bowl-Boden wird auf waterLevel+1 geklemmt, sonst
+        // pusht der Bowl Nachbar-Zellen unter waterLevel → der Border-Ozean-
+        // Flood erreicht den Tarn durch sub-Wasser-Pfade → er wird als Ozean
+        // markiert, nicht als See. Der Klemm-Boden ist der See-Boden — der
+        // Priority-Flood füllt das Becken von dort auf den natürlichen Rand.
+        const tarnDelta = this._tarnDeltaAt(x, z);
+        if (tarnDelta === 0) return withoutTarn;
+        const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
+        return Math.max(withoutTarn + tarnDelta, waterRef + 1);
     }
 
     _terrainDensityAt(x, y, z) {

@@ -1031,3 +1031,75 @@ Verengungs-Naht — sie sind nicht mehr möglich, nicht poliert. Playtest-grün 
 der Gate). Der Schöpfer-Browser-Audit steht aus (wie bei jeder Wasser-Welle). §14.5
 (Weg B) ist 1:1 gebaut. Der Tarn-Pass (§13.6, Bergseen) bleibt der offene additive
 Schritt danach.
+
+---
+
+## 15. Der Tarn-Pass (V9.51) — Bergseen als additive Hochmulden
+
+**Stand**: gebaut 22.05.2026, playtest-grün. Schliesst den ersten Schöpfer-Befund aus
+diesem Bogen — „es entstehen Flüsse, aber keine Bergseen".
+
+### 15.1 Der Befund
+
+Die Stream-Power-Erosion (V9.47) perfektioniert die Drainage: sie senkt Kanäle, füllt
+aber nie Becken. Über 36 Iterationen entwässert sie jedes Hochbecken → kein Bergsee
+überlebt. Echte Tarns (Kar-Seen, Moränen-/Bergsturz-Stauungen) kommen nicht aus
+Erosion — sie kommen aus **Stör-Ereignissen**, die geschlossene Hochmulden
+hinterlassen. Der Tarn-Pass ist die procedurale Entsprechung: er setzt diese Mulden
+nach der Erosion, das bestehende Priority-Flood entdeckt + füllt sie.
+
+### 15.2 Der Verfahrens-Kern — eine ADDITIVE Mulde, kein Konflikt mit der Erosion
+
+`_hydroSeedTarns` läuft NACH `_computeErosion`, VOR `_computeHydrosphere`. Sein
+Beitrag fliesst NICHT ins Erosions-Delta (das würde den Erosions-Determinismus
+brechen), sondern als eigener Term `_tarnDeltaAt(x,z)` in `_terrainMacroSurfaceY`.
+Das Erosions-Delta bleibt unangetastet — die Erosion ist auf einem Re-Run
+byte-identisch (Determinismus-Invariante grün). `_computeErosion` saved + nullt
+`state.tarns` für seinen eigenen Re-Sample (sonst sähe die zweite Erosion die Mulden,
+die erste nicht).
+
+### 15.3 Die Mulde — GROSS, TIEF, adaptiv
+
+Das 16-m-Hydrosphären-Raster + sein 3×3-Blur glättet kleine Features weg → die
+Mulde muss GROSS sein (`radiusMin 85m`, `radiusMax 120m` ≥ 5 Zellen). Auf einem
+Hang muss die Mulde TIEF sein, sonst schliesst das Becken nicht (`d > 0.83·s·r`).
+Tiefe ist daher ADAPTIV: `d = clamp([22, 42], 0.996·slope·r + 8)` — sanfte Spots
+flacher, steile tiefer, immer ~8 m Wasser-Tiefe nach dem Schliessen.
+
+### 15.4 Das Wasser-Klemme — die Mulde berührt den Ozean nicht
+
+**Der kritische Schliff**: ohne Klemme pusht der Bowl Nachbar-Zellen unter den
+Meeresspiegel; der Border-Ozean-Flood (`_hydroMarkOcean`) findet einen Pfad sub-
+Wasser-Zellen vom Rand ins Tarn-Innere und markiert es als Ozean — keine
+See-Extraktion. Heilung: `_terrainMacroSurfaceY` klemmt das Tarn-Resultat auf
+`waterRef + 1` (1 m über Meeresspiegel) — der Mulden-Boden bleibt zuverlässig
+über dem Ozean-Flood. Das Priority-Flood füllt dann das Becken vom geklemmten
+Boden bis zum natürlichen Rand → ein See an der Höhe des Rands.
+
+### 15.5 Der ADAPTIVE Höhen-Gate
+
+Statt eines fixen `minRelief` liest der Pass das **62. Perzentil des Macro-Reliefs**
+über alle Kandidaten — der Gate skaliert mit der Welt. In einer flachen Welt findet
+er das relative Hochland, in einer Gebirgs-Welt die Gipfel-Region. Plus ein
+absoluter Boden (`minReliefAbs 14m`). Plus die Klemme rejected Spots, deren
+`surf < waterRef + depthMin + 1` (zu niedrig für eine echte Mulde).
+
+### 15.6 Vision-Pfeiler-Check
+
+- **§3 Welt-Atmen**: die Welt hat jetzt Bergseen — ein eigenes hydrologisches
+  Habitat zwischen Fluss-System (V9.46) und Ozean (V9.50). Real-geomorphologisch
+  entsprechen sie Karen / Moränen-Becken.
+- **Heilige Lektion**: ein additiver Pass, keine neue Maschinerie — die
+  bestehende Hydrosphäre (Priority-Flood, See-Topf, Chunk-Wasser-Render) macht
+  alles Weitere. Wachstumsring, keine Re-Komplexifizierung.
+- **V9.47-Lehre**: nicht gegen die Erosion arbeiten (sie würde Hochbecken
+  entwässern) — additiv DARÜBER setzen.
+
+### 15.7 Geliefert
+
+`AnazhRealm.TARN` (8 Konstanten), `_hydroSeedTarns` (~80 Zeilen — Kandidaten-Grid,
+adaptive Höhen-Schwelle, Hang-Gate, dedup, adaptive Tiefe), `_tarnDeltaAt`
+(O(Tarn-Zahl) mit Reichweiten-Early-Out), `_terrainMacroSurfaceY` mit Klemme,
+`_computeErosion` mit Tarn-Suppression. +4 Playtest-Invarianten (`_hydroSeedTarns`
+existiert; ≥1 Tarn gesetzt; jeder Tarn im Hochland; jeder Tarn wurde zu einem See
+— `lakeCells ≥ minLakeCells` im Fussabdruck). Browser-Audit steht aus.
