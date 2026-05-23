@@ -14060,6 +14060,26 @@ class AnazhRealm {
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
         const withoutTarn = base + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // V9.60-c — Submarine-Detail unter Wasser. Schöpfer-Befund nach
+        // V9.60-b.1: "wassergrund ist jetzt etwas flach, uninteressant, aber
+        // um welten besser als zuvor". Zwei Sub-Octaven mit gemeinsamer
+        // Tiefen-Maske (smoothstep über 1.5..5.5 m unter Wasser), damit die
+        // Uferlinie SAUBER bleibt (keine Mini-Inseln im Hafenbecken):
+        //   - subA λ~330m, ±3 m: Hügel + flache Becken am Wasser-Boden
+        //   - subB λ~100m, ±1 m: Sediment-Variation, fein-skalig
+        // Riesen-Lehre (Minecraft Aquifer-System + No-Man's-Sky-Underwater):
+        // der Wassergrund braucht eigene Variation, nicht nur die geglättete
+        // Land-Topologie unter Wasser. Tarns sind im Hochland → kein
+        // Konflikt mit dem Tarn-System.
+        const waterRefSub = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
+        const depthBelow = waterRefSub - withoutTarn;
+        let withoutTarnFinal = withoutTarn;
+        if (depthBelow > 1.5) {
+            const subMask = Math.min(1, (depthBelow - 1.5) / 4);
+            const subA = n.noise2D(x * 0.019, z * 0.019 + 31) * 3;
+            const subB = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
+            withoutTarnFinal += (subA + subB) * subMask;
+        }
         // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
         // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
         // KRITISCH: der Bowl-Boden wird auf waterLevel+1 geklemmt, sonst
@@ -14068,9 +14088,9 @@ class AnazhRealm {
         // markiert, nicht als See. Der Klemm-Boden ist der See-Boden — der
         // Priority-Flood füllt das Becken von dort auf den natürlichen Rand.
         const tarnDelta = this._tarnDeltaAt(x, z);
-        if (tarnDelta === 0) return withoutTarn;
+        if (tarnDelta === 0) return withoutTarnFinal;
         const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
-        return Math.max(withoutTarn + tarnDelta, waterRef + 1);
+        return Math.max(withoutTarnFinal + tarnDelta, waterRef + 1);
     }
 
     _terrainDensityAt(x, y, z) {
