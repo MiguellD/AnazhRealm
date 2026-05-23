@@ -12843,6 +12843,122 @@ async function checkBandWelleA3EffectiveSurface(ctx) {
     check("Welle A.3 V9.66: _hydroInit ruft _effectiveSurfaceY", res.hydroInitUsesEffective);
 }
 
+// V9.67 (Welle A.4) — reaktive Hydrosphäre mit Debounce. `_markHydroDirty`,
+// `_recomputeHydrosphere`, `_tickHydroRecompute` als Trio; Trigger in
+// spawnArchitecture (solid + nicht-silent), removeArchitecture (solid),
+// _addVoxelEdit. Verifiziert: das Trio existiert; ein nicht-silent Damm-
+// Spawn setzt hydroDirty; ein silent Spawn nicht; ein Voxel-Edit setzt
+// dirty; Direct-Recompute löscht das Flag + setzt hydroLastRecomputeMs;
+// Tick VOR Debounce-Fenster räumt nicht; Tick NACH Debounce-Fenster räumt;
+// Source-Probe der Trigger-Stellen.
+async function checkBandWelleA4Recompute(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.scene) return { error: "no realm" };
+        const out = {};
+        // 1) das Trio existiert
+        out.hasMarkDirty = typeof r._markHydroDirty === "function";
+        out.hasRecompute = typeof r._recomputeHydrosphere === "function";
+        out.hasTick = typeof r._tickHydroRecompute === "function";
+        // 2) Konstante korrekt
+        out.debounceMs = r.constructor.HYDRO_RECOMPUTE_DEBOUNCE_MS;
+        out.debounceIs300 = out.debounceMs === 300;
+        // 3) Hydrosphäre muss ready sein, sonst kein Trigger-Effekt
+        out.hydroReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
+        // 4) initial: Flag false
+        r.state.hydroDirty = false;
+        r.state.hydroDirtyAt = 0;
+        // 5) silent-Spawn an einer Test-Position triggert NICHT
+        const silentEntry = r.spawnArchitecture(
+            "damm",
+            { x: 600, y: 5, z: 600 },
+            { silent: true }
+        );
+        out.silentSpawnNoDirty = r.state.hydroDirty === false;
+        if (silentEntry) r.removeArchitecture(silentEntry);
+        r.state.hydroDirty = false;
+        // 6) NICHT-silent solider Spawn triggert
+        const damEntry = r.spawnArchitecture("damm", { x: 610, y: 5, z: 610 });
+        out.solidSpawnSetsDirty = r.state.hydroDirty === true;
+        out.solidSpawnAtPositive = r.state.hydroDirtyAt > 0;
+        // 7) Tick VOR Debounce-Fenster räumt nicht
+        const dirtyAt = r.state.hydroDirtyAt;
+        r._tickHydroRecompute(dirtyAt + 100); // erst 100 ms, < 300
+        out.tickEarlyKeepsDirty = r.state.hydroDirty === true;
+        // 8) Tick NACH Debounce-Fenster räumt + führt Recompute aus
+        const before = r.state.hydrosphere;
+        r._tickHydroRecompute(dirtyAt + 400); // > 300
+        out.tickLateClearsDirty = r.state.hydroDirty === false;
+        out.recomputeRan = r.state.hydroLastRecomputeMs > 0;
+        out.recomputeMsValue = r.state.hydroLastRecomputeMs;
+        out.hydroStillReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
+        out.hydroIsNewObject = r.state.hydrosphere !== before;
+        // 9) Remove eines Blocker-Eintrags markiert dirty
+        r.state.hydroDirty = false;
+        r.removeArchitecture(damEntry);
+        out.removeSetsDirty = r.state.hydroDirty === true;
+        // 10) Voxel-Edit markiert dirty (direkt _addVoxelEdit rufen)
+        r.state.hydroDirty = false;
+        const editOk = r._addVoxelEdit(700, 5, 700, 3, "carve");
+        out.editAccepted = editOk === true;
+        out.editSetsDirty = r.state.hydroDirty === true;
+        // Cleanup: den Test-Edit am Ende der Liste entfernen
+        if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits)) {
+            const last = r.state.worldMeta.voxelEdits[r.state.worldMeta.voxelEdits.length - 1];
+            if (last && last.x === 700 && last.z === 700) {
+                r.state.worldMeta.voxelEdits.pop();
+            }
+        }
+        // 11) Source-Probes: spawnArchitecture + removeArchitecture +
+        //     _addVoxelEdit rufen _markHydroDirty (mit-wanderndes Pattern)
+        out.spawnUsesMarkDirty = /this\._markHydroDirty\(\)/.test(r.spawnArchitecture.toString());
+        out.removeUsesMarkDirty = /this\._markHydroDirty\(\)/.test(r.removeArchitecture.toString());
+        out.editUsesMarkDirty = /this\._markHydroDirty\(\)/.test(r._addVoxelEdit.toString());
+        // 12) Loop-Phase ruft _tickHydroRecompute (mit-wanderndes Pattern)
+        out.loopCallsTick = /_tickHydroRecompute\(/.test(r.startEternalLoop.toString());
+        // 13) Performance-Beobachtung: Recompute war messbar (>0).
+        //     Headless ist signifikant langsamer als der Browser (GC + ohne
+        //     warm-jitted V8); Schwelle 5000 ms ist ein Headless-Floor, nicht
+        //     das Vision-Budget (< 300 ms im echten Browser, V9.43-b-Baseline).
+        out.recomputeUnderBudget = r.state.hydroLastRecomputeMs > 0 && r.state.hydroLastRecomputeMs < 5000;
+        return out;
+    });
+    if (res.error) {
+        check("Welle A.4 V9.67: Recompute-Band-Test (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle A.4 V9.67: _markHydroDirty existiert", res.hasMarkDirty);
+    check("Welle A.4 V9.67: _recomputeHydrosphere existiert", res.hasRecompute);
+    check("Welle A.4 V9.67: _tickHydroRecompute existiert", res.hasTick);
+    check("Welle A.4 V9.67: HYDRO_RECOMPUTE_DEBOUNCE_MS = 300", res.debounceIs300, `ms=${res.debounceMs}`);
+    check("Welle A.4 V9.67: state.hydrosphere ist ready (Vorbedingung)", res.hydroReady);
+    check("Welle A.4 V9.67: silent Spawn markiert NICHT dirty", res.silentSpawnNoDirty);
+    check("Welle A.4 V9.67: nicht-silent solider Spawn markiert dirty", res.solidSpawnSetsDirty);
+    check("Welle A.4 V9.67: hydroDirtyAt-Zeitstempel gesetzt", res.solidSpawnAtPositive);
+    check("Welle A.4 V9.67: Tick VOR Debounce-Fenster (100ms) behält dirty", res.tickEarlyKeepsDirty);
+    check("Welle A.4 V9.67: Tick NACH Debounce-Fenster (400ms) räumt dirty", res.tickLateClearsDirty);
+    check(
+        "Welle A.4 V9.67: Recompute hat hydroLastRecomputeMs gesetzt",
+        res.recomputeRan,
+        `ms=${res.recomputeMsValue}`
+    );
+    check("Welle A.4 V9.67: Hydrosphäre nach Recompute weiterhin ready", res.hydroStillReady);
+    check("Welle A.4 V9.67: Recompute erzeugt ein neues Hydrosphäre-Objekt", res.hydroIsNewObject);
+    check("Welle A.4 V9.67: removeArchitecture eines Blockers markiert dirty", res.removeSetsDirty);
+    check("Welle A.4 V9.67: _addVoxelEdit akzeptiert den Test-Edit", res.editAccepted);
+    check("Welle A.4 V9.67: _addVoxelEdit markiert dirty", res.editSetsDirty);
+    check("Welle A.4 V9.67: spawnArchitecture ruft _markHydroDirty", res.spawnUsesMarkDirty);
+    check("Welle A.4 V9.67: removeArchitecture ruft _markHydroDirty", res.removeUsesMarkDirty);
+    check("Welle A.4 V9.67: _addVoxelEdit ruft _markHydroDirty", res.editUsesMarkDirty);
+    check("Welle A.4 V9.67: startEternalLoop ruft _tickHydroRecompute", res.loopCallsTick);
+    check(
+        "Welle A.4 V9.67: Recompute-Dauer im Headless-Floor (< 5000 ms)",
+        res.recomputeUnderBudget,
+        `ms=${res.recomputeMsValue} (Browser-Budget < 300 ms)`
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -29730,6 +29846,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelle6HCreatures(ctx);
             await checkBandWelleA2Blocker(ctx);
             await checkBandWelleA3EffectiveSurface(ctx);
+            await checkBandWelleA4Recompute(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

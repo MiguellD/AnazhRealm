@@ -81,6 +81,16 @@ class AnazhRealm {
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
             // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
             hydrosphere: null,
+            // V9.67 (Welle A.4) — reaktive Hydrosphäre. `hydroDirty` markiert
+            // dass eine Welt-Mutation (solid Architektur, Voxel-Edit) das
+            // Drainage-Netz beeinflussen könnte. `hydroDirtyAt` ist der
+            // Zeitstempel — `_tickHydroRecompute` wartet ~300 ms (Debounce-
+            // Fenster: mehrere Edits in Folge führen zu EINEM Recompute).
+            // Beides Laufzeit-State, nicht im Save.
+            hydroDirty: false,
+            hydroDirtyAt: 0,
+            // Dauer (ms) des letzten Recompute-Passes — Tests + Diagnose.
+            hydroLastRecomputeMs: 0,
             // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
             // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
             // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
@@ -13570,6 +13580,78 @@ class AnazhRealm {
         }
     }
 
+    // V9.67 (Welle A.4) — Debounce-Hebel für die reaktive Hydrosphäre.
+    // Eine Welt-Mutation (solid Architektur gespawnt/entfernt, Voxel-Edit)
+    // markiert das Drainage-Netz als dirty. Der `_tickHydroRecompute`-Tick
+    // wartet ein Fenster (HYDRO_RECOMPUTE_DEBOUNCE_MS), bis mehrere Edits in
+    // Folge zu EINEM Recompute verschmelzen (sonst würde jeder Maus-Carve
+    // einen vollständigen Drainage-Pass triggern → unspielbar). Idempotent:
+    // mehrfaches Markieren resetet das Fenster (jüngster Edit gilt).
+    static get HYDRO_RECOMPUTE_DEBOUNCE_MS() {
+        return 300;
+    }
+
+    _markHydroDirty() {
+        // Während des Worldgens (Hydrosphäre noch nicht ready) oder vor dem
+        // ersten Compute: still ignorieren — der erste `_computeHydrosphere`
+        // baut das Netz frisch.
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return;
+        this.state.hydroDirty = true;
+        this.state.hydroDirtyAt = performance.now();
+    }
+
+    // V9.67 (Welle A.4) — der reaktive Recompute. Ruft `_computeHydrosphere`
+    // (das Drainage-Netz aus der aktuellen Effective-Surface neu) +
+    // `_buildHydrosphereMeshes` (Wasserfall-Meshes + Voxel-Chunk-Wasser-
+    // Layer). **Erosion + Tarns laufen NICHT neu** — die sind Welt-
+    // Geomorphologie aus dem Seed, frozen für die Welt-Identität. Nur das
+    // Drainage-Netz reagiert auf Spieler-Wille. Performance: < 300 ms ist
+    // das Budget (V9.43-b-Baseline beim ersten Compute). Sync — der Pfad
+    // ist nicht async (ein await würde Race-Conditions mit weiteren Edits
+    // erzeugen); die Debounce-Logik vermeidet die meisten Recomputes ohnehin.
+    _recomputeHydrosphere() {
+        const t0 = performance.now();
+        try {
+            const hydro = this._computeHydrosphere();
+            this.state.hydrosphere = hydro;
+        } catch (e) {
+            this.state.hydrosphere = null;
+            this.log(`A.4 Hydrosphäre-Recompute (compute) fehlgeschlagen: ${e.message}`, "ERROR");
+            return;
+        }
+        try {
+            this._buildHydrosphereMeshes();
+        } catch (e) {
+            this.log(`A.4 Hydrosphäre-Recompute (render) fehlgeschlagen: ${e.message}`, "ERROR");
+            return;
+        }
+        const dt = performance.now() - t0;
+        this.state.hydroDirty = false;
+        this.state.hydroLastRecomputeMs = dt;
+        // Welt-Effekt-Ping: das Wasser sucht einen neuen Weg. Welt-Journal-
+        // Eintrag (Vision §3 — die Welt erinnert sich an Spieler-Gesten).
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("water", `Das Wasser sucht einen neuen Weg (Δ ${dt.toFixed(0)} ms).`, {
+                durationMs: dt,
+                rivers:
+                    this.state.hydrosphere && this.state.hydrosphere.rivers ? this.state.hydrosphere.rivers.length : 0,
+                lakes: this.state.hydrosphere && this.state.hydrosphere.lakes ? this.state.hydrosphere.lakes.length : 0,
+            });
+        }
+        this.log(`A.4 Hydrosphäre-Recompute: ${dt.toFixed(0)} ms`, "INFO");
+    }
+
+    // V9.67 (Welle A.4) — der Debounce-Tick. Läuft pro Frame, prüft ob ein
+    // Recompute ansteht (Flag gesetzt + Fenster abgelaufen). Sehr billig im
+    // Idle-Fall (zwei Feld-Checks). Aufruf aus dem Game-Loop.
+    _tickHydroRecompute(currentTime) {
+        if (!this.state.hydroDirty) return;
+        const elapsed = currentTime - this.state.hydroDirtyAt;
+        if (elapsed < AnazhRealm.HYDRO_RECOMPUTE_DEBOUNCE_MS) return;
+        this._recomputeHydrosphere();
+    }
+
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
     // wenn noch keine start_plattform-Architektur existiert (z. B. nach
     // Reload aus dem Save ist sie schon da). Der Spieler wird oben drauf
@@ -16979,6 +17061,10 @@ class AnazhRealm {
         const CAP = 256;
         while (edits.length > CAP) edits.shift();
         this._remeshVoxelChunksAround(x, z, radius);
+        // V9.67 (Welle A.4) — Voxel-Edit kann den Fluss-Pfad verändern: ein
+        // Carve im Trockenland erzeugt eine Mulde (Wasser sammelt sich), ein
+        // Fill im Fluss-Bett blockiert die Drainage. Recompute via Debounce.
+        this._markHydroDirty();
         if (typeof this.saveState === "function") this.saveState();
         return true;
     }
@@ -27330,6 +27416,12 @@ class AnazhRealm {
         // ohne solide Parts (z.B. reine Glut/Laub-Compounds) werden früh
         // verworfen und kosten keinen Index-Slot.
         this._blockerIndexAdd(entry);
+        // V9.67 (Welle A.4) — reaktive Hydrosphäre. Eine neu gespawnte solide
+        // Architektur kann den Fluss umlenken oder eine Senke öffnen. Nur
+        // wenn der Spawn KEIN Worldgen-Setup ist (silent=true für Genesis-
+        // Plattform / Vegetation) und der Blocker-Index tatsächlich gefüllt
+        // wurde (entry.blockerAABBs ≠ null), markieren wir dirty.
+        if (!opts.silent && entry.blockerAABBs) this._markHydroDirty();
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
         // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
@@ -28318,7 +28410,12 @@ class AnazhRealm {
         if (idx < 0) return false;
         // V9.65 (Welle A.2) — Blocker-Index pflegen beim Remove (frühe Out
         // für Einträge ohne solide Parts via entry.blockerAABBs-Sentinel).
+        // V9.67 (Welle A.4) — vor dem Index-Cleanup merken, ob diese
+        // Architektur ein Blocker war; nach dem Cleanup markieren wir dirty
+        // (das Wasser bekommt seinen Pfad zurück).
+        const wasBlocker = !!entry.blockerAABBs;
         this._blockerIndexRemove(entry);
+        if (wasBlocker) this._markHydroDirty();
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
         // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.
@@ -35753,6 +35850,10 @@ class AnazhRealm {
             // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
             // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
             this.tickAffordances(delta);
+
+            // V9.67 (Welle A.4) — reaktive Hydrosphäre: dirty-Flag + Debounce
+            // (~300 ms) → ein Recompute pro Edit-Burst, nicht pro Frame.
+            this._tickHydroRecompute(currentTime);
 
             // ### Rendering ### (V9.44-f → _loopRender)
             this._loopRender(currentTime);
