@@ -18877,69 +18877,91 @@ class AnazhRealm {
     // (`_tickVoxelChunkStreaming` + `_pruneDistantVoxelChunks`).
 
     loadState(externalState = null) {
-        // Drei Quellen werden unterstützt: localStorage (Default), externes
-        // Objekt (z. B. aus File-Upload), oder gar nichts (frühes init()).
-        // Ring 8: localStorage-Pfad geht über die aktive worldId, fällt
-        // notfalls auf den Legacy-Single-Key zurück (Migration ist beim
-        // Pre-Load passiert, aber Defensive bleibt drin).
         let state = externalState;
         if (!state) {
-            const activeId = this.activeWorldGet();
-            let savedState = null;
-            if (activeId) {
-                savedState = localStorage.getItem(this.worldStorageKey(activeId));
-            }
-            if (!savedState) {
-                savedState = localStorage.getItem("anazhRealmState");
-            }
-            if (!savedState) return false;
-            try {
-                state = JSON.parse(savedState);
-            } catch (error) {
-                this.log(`Speicherstand ist ungültiges JSON: ${error.message}`, "ERROR");
-                return false;
-            }
+            state = this._loadStateLoadFromStorage();
+            if (!state) return false;
         }
+        this._loadStateRestorePlayerPosition(state);
+        this._loadStateRestoreBasicState(state);
+        this._loadStateRestoreWorldMeta(state);
+        this._loadStateRestoreSoulAndAtmosphere(state);
+        this._loadStateRestoreConsumablesAndEquipped(state);
+        this._loadStateRestoreCraftingInventory(state);
+        this._loadStateRestoreArchitectures(state);
+        this._loadStateRestoreHotbarAndInventory(state);
+        this._loadStateRestoreEmotionsAndDsl(state);
+        this._loadStateRestoreMiscState(state);
+        if (externalState) this._loadStatePersistExternalImport(externalState);
+        this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
+        if (!externalState) this._loadStateRestoreVersionHistory();
+        return true;
+    }
 
+    // Drei Quellen werden unterstützt: localStorage (Default), externes Objekt
+    // (z.B. aus File-Upload), oder gar nichts (frühes init()). Ring 8: Per-
+    // Welt-Key über die aktive worldId, mit Legacy-Single-Key-Fallback (Migration
+    // ist beim Pre-Load passiert, aber Defensive bleibt drin). Liefert null bei
+    // fehlendem oder ungültigem Save.
+    _loadStateLoadFromStorage() {
+        const activeId = this.activeWorldGet();
+        let savedState = null;
+        if (activeId) {
+            savedState = localStorage.getItem(this.worldStorageKey(activeId));
+        }
+        if (!savedState) {
+            savedState = localStorage.getItem("anazhRealmState");
+        }
+        if (!savedState) return null;
+        try {
+            return JSON.parse(savedState);
+        } catch (error) {
+            this.log(`Speicherstand ist ungültiges JSON: ${error.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Ring 8.2 — loadState markiert die Welt als „bereits einmal generiert"
+    // (terrainEverGenerated=true), damit das auf init() folgende generateNewWorld()
+    // den Spieler nicht auf (0, 50, 0) teleportiert. Brand-neue Welten (loadState
+    // findet nichts) lassen das Flag auf false → erster generateNewWorld setzt
+    // den Spieler wie bisher auf den Default-Spawn.
+    _loadStateRestorePlayerPosition(state) {
         const playerPosition = state.playerPosition || { x: 0, y: 5, z: 0 };
         const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
         const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
         const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
-        // Ring 8.2: loadState markiert die Welt als „bereits einmal generiert",
-        // damit das auf init() folgende generateNewWorld() den Spieler nicht
-        // auf (0, 50, 0) teleportiert. Die geladene Position bleibt damit
-        // intakt. Brand-neue Welten (loadState findet nichts) lassen das Flag
-        // auf false, und der erste generateNewWorld-Lauf setzt den Spieler
-        // wie bisher auf den Default-Spawn.
         this.state.terrainEverGenerated = true;
-        if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(safeX, safeY, safeZ);
-            this.state.playerMesh.visible = true;
-            if (this.state.playerBody && this.state.tmpTransform && this.state.tmpVec1) {
-                const t = this.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        safeX / this.state.scaleFactor,
-                        safeY / this.state.scaleFactor,
-                        safeZ / this.state.scaleFactor
-                    )
-                );
-                this.state.playerBody.setWorldTransform(t);
-                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-            }
-            this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
+        if (!this.state.playerMesh) return;
+        this.state.playerMesh.position.set(safeX, safeY, safeZ);
+        this.state.playerMesh.visible = true;
+        if (this.state.playerBody && this.state.tmpTransform && this.state.tmpVec1) {
+            const t = this.state.tmpTransform;
+            t.setIdentity();
+            t.setOrigin(
+                this.setVec(
+                    this.state.tmpVec1,
+                    safeX / this.state.scaleFactor,
+                    safeY / this.state.scaleFactor,
+                    safeZ / this.state.scaleFactor
+                )
+            );
+            this.state.playerBody.setWorldTransform(t);
+            this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
         }
+        this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
+    }
+
+    // knowledgeBase, selfAwareness, creatureEmotions, Kreaturen-Snapshot-Stash,
+    // Terrain-Parameter, Wetter + sofortige Skybox-Update. Welle 6.H Phase 2D.1
+    // — `_pendingCreatureSnapshots` stashed das Save-Schema (full snapshots mit
+    // soul+name) und wird von `spawnCreatures()` im generateNewWorld-Pfad
+    // konsumiert. Legacy-Saves (vor V7.86, nur {position}) fallen auf Default-
+    // Spawn zurück (hasName+hasSoul-Heuristik).
+    _loadStateRestoreBasicState(state) {
         this.state.knowledgeBase = state.knowledgeBase || [];
         this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
         this.state.creatureEmotions = state.creatureEmotions || [];
-        // Welle 6.H Phase 2D.1 — Kreaturen-Snapshots stashen. spawnCreatures()
-        // im generateNewWorld-Pfad checkt _pendingCreatureSnapshots zuerst
-        // und restored statt zufällig zu spawnen. Legacy-Saves (vor V7.86,
-        // nur {position} pro Eintrag) werden NICHT als persistente Snapshots
-        // betrachtet — sie fallen auf Default-Spawn zurück. Heuristik:
-        // hasName+hasSoul zeigt das neue Schema an.
         const incoming = Array.isArray(state.creatures) ? state.creatures : [];
         const looksLikeFullSnapshots =
             incoming.length > 0 &&
@@ -18951,27 +18973,27 @@ class AnazhRealm {
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";
         if (this.state.skybox) this.updateSkyboxWeather();
-        // Ring 2 / Ring 8+ Felder. Best-Effort-Migration: alte Saves haben
-        // weder worldMeta noch dslAbilities — wir füllen mit Defaults + Log.
+    }
+
+    // Ring 2 / Ring 8+ — Best-Effort-Migration. Alte Saves haben kein worldMeta,
+    // wir füllen mit Defaults + Log. V9.36 Phase 5c.2.c.3.a: der Ring-10.5-
+    // `chunkDeltas`-Sanitizer ist entfernt (Welt-Mod-Schicht im Voxel-Feld);
+    // alte Saves mit `worldMeta.chunkDeltas` werden still ignoriert.
+    _loadStateRestoreWorldMeta(state) {
         if (state.worldMeta && typeof state.worldMeta === "object") {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
-        // V9.36 Phase 5c.2.c.3.a: der Ring-10.5-`chunkDeltas`-Sanitizer ist
-        // entfernt — die Welt-Mod-Schicht wirkt im 3D-Voxel-Feld (V9.14/V9.15)
-        // statt im Heightfield. Alte Saves mit `worldMeta.chunkDeltas` werden
-        // beim Laden still ignoriert (das Feld ist ein toter Datenpfad).
-        // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
-        // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
-        // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
-        // existiert (loadState wird auch nach Init aufgerufen, z. B. via
-        // "Lade Zustand"), wenden wir die Seele sofort an. Vor dem Mesh-Bau
-        // merkt sich applyPlayerSoul den Namen und der Init-Pfad wendet ihn
-        // nach Mesh-Erstellung an.
-        // Welle 6.D Etappe 1.6 — Custom-Seelen aus dem Save rekonstruieren
-        // BEVOR applyPlayerSoul aufgerufen wird; sonst würde eine gespeicherte
-        // Custom-Seele als „unbekannt" abgelehnt.
+    }
+
+    // Spieler-Seele (Ring 5) + Custom-Seelen (Welle 6.D Etappe 1.6) + Tag-Nacht-
+    // Zustand (Welle 6.G3) + Atmosphäre-Slider (V8.28 6.G4.b). REIHENFOLGE:
+    // Custom-Seelen ZUERST (sonst würde applyPlayerSoul eine gespeicherte
+    // Custom-Seele als „unbekannt" ablehnen); dann playerSoul; dann timeOfDay/
+    // dayLength/atmosphere; dann _applyDayNightToScene um Lights+Skybox sofort
+    // aus dem restaurierten timeOfDay neu zu setzen.
+    _loadStateRestoreSoulAndAtmosphere(state) {
         if (state.customSouls && typeof state.customSouls === "object") {
             const restored = {};
             for (const key of Object.keys(state.customSouls)) {
@@ -18995,9 +19017,6 @@ class AnazhRealm {
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
             if (known) this.applyPlayerSoul(state.playerSoul);
         }
-        // Welle 6.G3 — Tag-Nacht-Zustand wiederherstellen. Defensive:
-        // timeOfDay muss 0..1 sein, dayLengthMinutes muss in [min, max]-
-        // Range liegen. Bei ungültigen Werten: Defaults (0.5 / 8 min).
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this.state.timeOfDay = state.timeOfDay;
         }
@@ -19008,7 +19027,6 @@ class AnazhRealm {
                 this.state.dayLengthMinutes = state.dayLengthMinutes;
             }
         }
-        // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
             const cl = Number(state.atmosphere.celLevels);
@@ -19016,12 +19034,15 @@ class AnazhRealm {
             const fd = Number(state.atmosphere.fogDistance);
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
         }
-        // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
         }
-        // Welle 6.D Etappe 3a — Konsumables aus Save rekonstruieren (defensiv
-        // über createOrUpdateConsumable, das die tagBonus + duration prüft).
+    }
+
+    // Welle 6.D Etappe 3a/3b — Konsumables defensiv über createOrUpdateConsumable
+    // (das tagBonus + duration prüft); Equipped-Slots defensiv über equipTool/
+    // equipArmor (falls Tool/Armor weg ist, still fehlschlagen — Slot leer).
+    _loadStateRestoreConsumablesAndEquipped(state) {
         if (state.consumables && typeof state.consumables === "object") {
             this.state.consumables = {};
             for (const key of Object.keys(state.consumables)) {
@@ -19030,18 +19051,19 @@ class AnazhRealm {
                 this.createOrUpdateConsumable(key, c.tagBonus, c.durationSeconds, c.label);
             }
         }
-        // Welle 6.D Etappe 3b — Equipped-Slots aus Save (defensiv via equipTool/
-        // equipArmor; falls Tool/Armor inzwischen weg ist, schlägt es still
-        // fehl und der Slot bleibt leer).
         if (state.playerEquipped && typeof state.playerEquipped === "object") {
             if (state.playerEquipped.tool) this.equipTool(state.playerEquipped.tool);
             if (state.playerEquipped.armor) this.equipArmor(state.playerEquipped.armor);
         }
-        // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
-        // tief disposed, dann jede aus {type, position, seed} neu gebaut.
-        // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
-        // Welle 4 Phase 1 — Materialien VOR Bauplänen restaurieren, damit
-        // Part-Material-Referenzen während validateBlueprintParts auflösen.
+    }
+
+    // Crafting-Inventar — REIHENFOLGE: Materialien ZUERST (Welle 4 P1: damit
+    // Part-Material-Referenzen während validateBlueprintParts auflösen), dann
+    // Baupläne (Ring 6.4: Architekturen brauchen sie als Builder), dann Tools
+    // (Welle 5 C: sourceBlueprint braucht den Bauplan). V9.44-a — der Bauplan-
+    // Restore-Feld-Satz lebt in `_deserializeBlueprint` (Part-Migration,
+    // Connection-Sanitizing, portalMeta, Signatur).
+    _loadStateRestoreCraftingInventory(state) {
         if (Array.isArray(state.materials)) {
             let restoredMats = 0;
             for (const m of state.materials) {
@@ -19052,14 +19074,7 @@ class AnazhRealm {
             }
             this.log(`Materialien geladen: ${restoredMats} eigene`);
         }
-        // Ring 6.4 — eigene Baupläne ZUERST registrieren, danach die
-        // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
-        // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
         if (Array.isArray(state.blueprints)) {
-            // V9.44-a — der Restore-Feld-Satz (Part-Migration, Connection-
-            // Sanitizing, portalMeta-Sanitizer, Signatur-Prüfung) lebt in
-            // _deserializeBlueprint. Hier bleibt nur die Registrierungs-
-            // Politik: einen Built-in-Namen NICHT überschreiben.
             for (const bp of state.blueprints) {
                 if (!bp || typeof bp.name !== "string") continue;
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
@@ -19068,10 +19083,6 @@ class AnazhRealm {
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
         }
-        // Welle 5 C — eigene Werkzeuge wiederherstellen. Validiert opClass +
-        // opName + Schutz vor Override existierender Starter. precisionCap
-        // wird ge-clampt 0..1. Aufruf NACH Bauplänen, damit sourceBlueprint
-        // optional schon existiert.
         if (Array.isArray(state.tools)) {
             let restoredTools = 0;
             for (const t of state.tools) {
@@ -19095,21 +19106,30 @@ class AnazhRealm {
             }
             if (restoredTools > 0) this.log(`Eigene Werkzeuge geladen: ${restoredTools}`);
         }
-        if (Array.isArray(state.architectures) && this.state.scene) {
-            for (const old of this.state.architectures) {
-                if (old.mesh) {
-                    this._cullArchitectureMesh(old);
-                }
+    }
+
+    // Ring 6 — Bau-Werke wiederherstellen. Bestehende Strukturen werden tief
+    // disposed, dann jede aus {type, position, seed} neu gebaut. Idempotent:
+    // mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+    _loadStateRestoreArchitectures(state) {
+        if (!Array.isArray(state.architectures) || !this.state.scene) return;
+        for (const old of this.state.architectures) {
+            if (old.mesh) {
+                this._cullArchitectureMesh(old);
             }
-            this.state.architectures = [];
-            for (const a of state.architectures) {
-                if (!a || typeof a.type !== "string" || !a.position) continue;
-                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
-            }
-            this.log(`Architekturen geladen: ${state.architectures.length}`);
         }
-        // Ring 6.5 — Hotbar wiederherstellen. Nur 9 Slots, ungültige Einträge
-        // (Bauplan nicht registriert) auf null fallen lassen.
+        this.state.architectures = [];
+        for (const a of state.architectures) {
+            if (!a || typeof a.type !== "string" || !a.position) continue;
+            this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
+        }
+        this.log(`Architekturen geladen: ${state.architectures.length}`);
+    }
+
+    // Ring 6.5 Hotbar (9 Slots, ungültige Bauplan-Refs → null), Welle 6.C1
+    // Inventar (27 Slots, count clampt [1, 999]), Welle 4 P3 Werkzeug-Besitz
+    // (Starter bleiben, eigene zugefügt via Set-Union).
+    _loadStateRestoreHotbarAndInventory(state) {
         if (Array.isArray(state.hotbar)) {
             const restored = [];
             for (let i = 0; i < 9; i++) {
@@ -19123,8 +19143,6 @@ class AnazhRealm {
             this.state.hotbar = restored;
             this._renderHotbarDOM();
         }
-        // Welle 6.C1 — Inventar wiederherstellen. 27 Slots, ungültige
-        // Bauplan-Referenzen → null. count clampt [1, 999].
         if (Array.isArray(state.playerInventory)) {
             const inv = new Array(27).fill(null);
             for (let i = 0; i < Math.min(27, state.playerInventory.length); i++) {
@@ -19137,13 +19155,17 @@ class AnazhRealm {
             if (this.state.player) this.state.player.inventory = inv;
             this.log(`Inventar geladen: ${inv.filter(Boolean).length} Slots belegt`);
         }
-        // Welle 4 Phase 3 — Werkzeug-Besitz wiederherstellen. Starter bleiben
-        // immer drin (sie kommen aus _defaultTools), eigene werden zugefügt.
         if (Array.isArray(state.playerTools)) {
             const valid = state.playerTools.filter((n) => typeof n === "string" && this.state.tools[n]);
             const set = new Set([...(this.state.player.tools || []), ...valid]);
             this.state.player.tools = Array.from(set);
         }
+    }
+
+    // Ring 3 Emotionen (nur bekannte Achsen, [0,1]-Clamp), Phase 4 DSL-Abilities
+    // (Programm + Wrapper für „Führe Fähigkeit aus"), DSL-History (-historyCap),
+    // Schicht 1 Pattern-Memory (per-Keyword Cap 8).
+    _loadStateRestoreEmotionsAndDsl(state) {
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
                 const v = Number(state.playerEmotions[axis]);
@@ -19153,10 +19175,6 @@ class AnazhRealm {
             }
         }
         if (Array.isArray(state.dslAbilities)) {
-            // Phase 4: dslAbilities ist die Quelle der Wahrheit. Wir
-            // rehydrieren das Array und legen die zugehörigen Wrapper in
-            // state.abilities ab, damit „Führe Fähigkeit aus" + Keyboard-
-            // Loop funktionieren. Idempotent: Dubletten überschreiben sich.
             this.state.dsl.abilities = state.dslAbilities;
             for (const a of state.dslAbilities) {
                 if (a && typeof a.name === "string" && Array.isArray(a.program)) {
@@ -19168,8 +19186,6 @@ class AnazhRealm {
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
         }
-        // Schicht 1 — Pattern-Memory rehydrieren. Alte Saves (vor 7.72) haben
-        // das Feld nicht; dann starten wir mit leerem Memory, der Loop füllt es.
         if (state.dslPatternMemory && typeof state.dslPatternMemory === "object") {
             this.state.dsl.patternMemory = {};
             for (const [kw, list] of Object.entries(state.dslPatternMemory)) {
@@ -19179,8 +19195,13 @@ class AnazhRealm {
                     .slice(0, this.state.dsl.patternMemoryCapPerKey || 8);
             }
         }
-        // Pfad-Buckets rehydrieren. Defensive Merge — fremde Keys werden
-        // ignoriert, fehlende Keys auf 0 gesetzt.
+    }
+
+    // Pfad-Buckets (defensiver Merge — fremde Keys ignoriert), Welt-Journal
+    // (Welle 1 D, entries + seen mit entryCap), Legacy-Fähigkeiten-Migration
+    // (Phase 4 — Namensliste statt DSL-Programme, restoreAbility mappt drei
+    // historische Nexus-Namen auf ihre DSL-Äquivalente).
+    _loadStateRestoreMiscState(state) {
         if (state.playerPathBuckets && typeof state.playerPathBuckets === "object") {
             const target = this.state.player.pathBuckets;
             for (const group of Object.keys(target)) {
@@ -19191,9 +19212,6 @@ class AnazhRealm {
                 }
             }
         }
-        // Welle 1 D — Welt-Journal. Alte Saves (<7.73) haben das Feld nicht;
-        // dann startet das Journal leer und ensureWorldMeta schreibt die
-        // Genesis-Erinnerung beim ersten Tick.
         if (state.worldJournal && typeof state.worldJournal === "object") {
             const j = state.worldJournal;
             if (Array.isArray(j.entries)) {
@@ -19206,11 +19224,6 @@ class AnazhRealm {
             }
         }
         if (Array.isArray(state.abilities)) {
-            // Legacy-Save (vor Phase 4): Namensliste statt DSL-Programme.
-            // `restoreAbility` mappt drei historische Nexus-Namen direkt auf
-            // ihre DSL-Äquivalente; unbekannte Namen werden geloggt und
-            // verworfen — die alten JS-Bodies sind im Save eh nicht
-            // enthalten gewesen.
             let restored = 0;
             state.abilities.forEach((name) => {
                 if (this.state.abilities[name]) return;
@@ -19218,43 +19231,44 @@ class AnazhRealm {
             });
             if (restored > 0) this.log(`Legacy-Fähigkeiten migriert: ${restored}`);
         }
-        // Bei externer Quelle: in localStorage spiegeln, damit ein Reload
-        // den importierten Stand behält. Ring 8: Per-Welt-Key + Index, sonst
-        // Legacy-Fallback. Externe Quelle kann eine fremde worldId tragen —
-        // wir nehmen sie an, registrieren sie und setzen sie als aktiv.
-        if (externalState) {
-            try {
-                const m = externalState.worldMeta;
-                const targetId =
-                    (m && typeof m.worldId === "string" && m.worldId) ||
-                    (this.state.worldMeta && this.state.worldMeta.worldId) ||
-                    null;
-                if (targetId) {
-                    localStorage.setItem(this.worldStorageKey(targetId), JSON.stringify(externalState));
-                    this.worldsIndexUpsert({
-                        worldId: targetId,
-                        slug: (m && m.slug) || (this.state.worldMeta && this.state.worldMeta.slug) || "",
-                        bornAt: (m && m.bornAt) || Date.now(),
-                        lastPlayed: Date.now(),
-                    });
-                    this.activeWorldSet(targetId);
-                } else {
-                    // Fallback nur, wenn weder externe noch aktive worldId existiert.
-                    localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
-                }
-            } catch (e) {
-                this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
-            }
-        }
-        this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
+    }
 
-        if (!externalState) {
-            const savedVersions = localStorage.getItem("anazhRealmVersions");
-            if (savedVersions) {
-                this.state.versionHistory = JSON.parse(savedVersions);
+    // Bei externer Quelle: in localStorage spiegeln, damit ein Reload den
+    // importierten Stand behält. Ring 8 — Per-Welt-Key + Index, sonst Legacy-
+    // Fallback. Externe Quelle kann eine fremde worldId tragen — wir nehmen
+    // sie an, registrieren sie und setzen sie als aktiv.
+    _loadStatePersistExternalImport(externalState) {
+        try {
+            const m = externalState.worldMeta;
+            const targetId =
+                (m && typeof m.worldId === "string" && m.worldId) ||
+                (this.state.worldMeta && this.state.worldMeta.worldId) ||
+                null;
+            if (targetId) {
+                localStorage.setItem(this.worldStorageKey(targetId), JSON.stringify(externalState));
+                this.worldsIndexUpsert({
+                    worldId: targetId,
+                    slug: (m && m.slug) || (this.state.worldMeta && this.state.worldMeta.slug) || "",
+                    bornAt: (m && m.bornAt) || Date.now(),
+                    lastPlayed: Date.now(),
+                });
+                this.activeWorldSet(targetId);
+            } else {
+                localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
             }
+        } catch (e) {
+            this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
         }
-        return true;
+    }
+
+    // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
+    // per-Welt). Wird nur bei localStorage-Load gerufen, nicht bei externem
+    // Import.
+    _loadStateRestoreVersionHistory() {
+        const savedVersions = localStorage.getItem("anazhRealmVersions");
+        if (savedVersions) {
+            this.state.versionHistory = JSON.parse(savedVersions);
+        }
     }
 
     openStateFilePicker() {

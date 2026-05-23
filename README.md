@@ -2,7 +2,9 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V9.56-j (23.05.2026) — **Kontrollfluss-Etappe Sub-Welle j**. `generateTerrainWithParameters` 346 → 73 Zeilen Orchestrator + sechs Worldgen-Phasen-Helfer: `_worldgenCleanupOldObjects` 77 Z. (7 Sub-Cleanups), `_worldgenInitPlayerPosition` 20 Z., `_worldgenComputeErosionAndTarns` 11 Z. (V9.47/V9.51), `_worldgenSpawnFloatingIslands` 33 Z. (3 Inseln + UFOs), `_worldgenBuildVoxelChunkCache` 18 Z., `_worldgenComputeAndBuildHydrosphere` 18 Z. Median 19 Z. Math.random-Reihenfolge bit-identisch (Welt-Seed-Determinismus erhalten). V9.34/V9.38-Lösch-Beweis-Tests grün ohne Mit-Wandern (negative Pattern-Tests sind robust beim Helfer-Split). **Datei −54 Z. netto-negativ!** durch Kommentar-Konsolidierung. Verhaltensneutral, Playtest grün vor + nach.
+**Stand**: V9.56-k (23.05.2026) — **der zweite Code-Hygiene-Bogen ist GESCHLOSSEN**. `loadState` 380 → 21 Zeilen Orchestrator + 13 thematische Restore-Helfer (Source-Resolution, Player-Position, Basic-State, WorldMeta, Soul+Atmosphere, Consumables+Equipped, Crafting-Inventar, Architekturen, Hotbar+Inventory, Emotionen+DSL, Misc, External-Persistence, Version-History). Median ~21 Z., max 45. V8.59-Bug-Klassen-Quelle strukturell entschärft — jeder Helfer hat EINE thematische Verantwortung, Ordnungs-Abhängigkeiten leben sichtbar im Orchestrator-Aufruf. Verhaltensneutral (alle `loadState(snap)`-Verhaltens-Tests grün). Datei +14 Z. **BOGEN-ABSCHLUSS**: 11 Sub-Wellen (a..k), 15 Funktionen geschnitten, 75 neue benannte Helfer, Datei netto +95 Z. (37 031 → 37 126). Vier netto-negative Sub-Wellen (d −2, i −30, j −54).
+
+**Davor — V9.56-j**: `generateTerrainWithParameters` 346 → 73 Z. + 6 Worldgen-Phasen-Helfer. Datei −54 Z. netto-negativ.
 
 **Davor — V9.56-i**: `_applyDayNightToScene` 305 → 16 Z. + 9 Helfer (Tint-Akkumulation + Fanout-Apply). Datei −30 Z. netto-negativ. Strukturelle Test-Invarianten an die neuen Helfer angepasst.
 
