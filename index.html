@@ -112,6 +112,16 @@
                 --chaos: #e94c89;
                 /* Schatten */
                 --shadow-deep: 0 24px 60px rgba(20, 8, 0, 0.55), 0 6px 14px rgba(20, 8, 0, 0.4);
+                /* Semantische Aliase — resolvern am Use-Site, atmen mit Tag/Nacht
+                   weil die Wurzel-Vars (--parch-1, --parch-edge, --wood-2, --brass-2)
+                   im [data-theme="nacht"]-Block überschrieben werden. */
+                --parch-bg: var(--parch-1);
+                --parch-line: var(--parch-edge);
+                --parch-mid: var(--wood-2);
+                --brass-mid: var(--brass-2);
+                /* Welt-Overlay-Backdrop — Theme-unabhängig (semi-transparent,
+                   damit die 3D-Szene durchschimmert). */
+                --overlay-bg: rgba(38, 26, 14, 0.95);
             }
             [data-theme="nacht"] {
                 --parch-1: #c8b794;
@@ -579,7 +589,7 @@
                 left: 50%;
                 transform: translate(-50%, -50%);
                 z-index: 30;
-                background: var(--parch-bg, rgba(38, 26, 14, 0.95));
+                background: var(--overlay-bg);
                 border: 2px solid var(--brass-2);
                 border-radius: 10px;
                 padding: 18px 22px 14px;
