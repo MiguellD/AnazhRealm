@@ -21704,6 +21704,8229 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     }
 }
 
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2B.2 + 2D + 2D.1 — Kreatur baut für Spieler + Spezialisierung aus Memory + Persistenz-Snapshot).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6HBuildAndPersist(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
+    //
+    // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur
+    // ist Schöpfungs-Hand. Drei Phasen: take (zum Spieler) → walk
+    // (weg vom Spieler) → spawn (Architektur am Kreatur-Ort). Modus-
+    // symmetrisch über _buildMaterialGate (eine Funktion teilen sich
+    // Spieler-confirmBuild + Kreatur-build-take-Phase).
+    const wave6hP2b2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+
+            // 1. Konstanten
+            const Tasks = r.constructor.CREATURE_TASKS;
+            const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
+            const Freqs = r.constructor.CREATURE_TASK_PING_FREQ;
+            out.tasksHasBuild = Tasks.includes("build");
+            out.auraHueBuild = Hues.build === 280;
+            out.pingFreqBuild = Freqs.build === 587;
+            out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
+            out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
+
+            // 2. Args-Mapping
+            const a1 = r._buildCreatureTaskArgs("build", "stein_block");
+            out.argsBuildString = a1.blueprint === "stein_block";
+            const a2 = r._buildCreatureTaskArgs("build", 5);
+            out.argsBuildNumberDropped = !a2.blueprint;
+            const a3 = r._buildCreatureTaskArgs("build", "");
+            out.argsBuildEmptyDropped = !a3.blueprint;
+
+            // 3. Describe
+            const desc = r._describeCreatureTaskArg("build", "stein_block");
+            out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
+
+            // 4. Tick: kein blueprint → null + falls auf wander
+            const c0 = r.spawnCreatureAt(
+                r.state.playerMesh.position.x + 50,
+                r.state.playerMesh.position.y,
+                r.state.playerMesh.position.z + 50,
+                "happy",
+                "wesen"
+            );
+            r.assignCreatureTask(c0, "build", {});
+            const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
+
+            // 5. Tick: unknown blueprint → memory + journal + wander
+            r.assignCreatureTask(c0, "build", { blueprint: "fictional_bp_xyz" });
+            const dirUnk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.unknownBpFallsToWander = dirUnk === null && r._getCreatureTask(c0).name === "wander";
+            const memHasUnk = (c0.userData.memory || []).some((m) => m.type === "no_blueprint");
+            out.memHasNoBlueprint = memHasUnk;
+
+            // 6. Take-Phase: Distanz zum Spieler → Vektor zu Spieler hin, Geschwindigkeit BUILD_SPEED
+            const player = r.state.playerMesh.position;
+            c0.position.set(player.x + 10, player.y, player.z);
+            c0.userData.carrying = null;
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+            const dirTake = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.takePhaseTowardsPlayer = dirTake && dirTake.x < 0; // sollte negativ sein (Richtung -x = zum Spieler)
+            const sp = Math.hypot(dirTake.x, dirTake.z);
+            // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
+            // damit Body-Faktor je Soul den Test nicht bricht — wir prüfen Bereich
+            // [BUILD_SPEED*0.5, BUILD_SPEED*2.0] statt Gleichheit.
+            out.takePhaseSpeed =
+                sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+
+            // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
+            const origMode = r.getGameMode();
+            r.setGameMode("pfad");
+            r.state.player.inventory = new Array(27).fill(null);
+            c0.position.set(player.x + 1.0, player.y, player.z); // innerhalb handover (2.0)
+            c0.userData.carrying = null;
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+            const dirNoMat = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.takeNoMatRejects = dirNoMat === null && r._getCreatureTask(c0).name === "wander";
+            const memHasNoInv = (c0.userData.memory || []).some((m) => m.type === "no_inventory_for_build");
+            out.memHasNoInv = memHasNoInv;
+
+            // 8. Take-Phase at handover, pfad mit Material → carrying gesetzt + Material verbraucht
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("stein", 200);
+            const stoneBefore = r.state.player.inventory[0].count;
+            c0.position.set(player.x + 1.0, player.y, player.z);
+            c0.userData.carrying = null;
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+            r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.takeSetsCarrying = !!c0.userData.carrying && c0.userData.carrying.kind === "build";
+            out.takeCarryingHasBp = c0.userData.carrying && c0.userData.carrying.blueprint === "stein_block";
+            const stoneAfter = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+            out.takeConsumesPfad = stoneAfter < stoneBefore;
+            const memHasTook = (c0.userData.memory || []).some((m) => m.type === "took_materials");
+            out.memHasTook = memHasTook;
+
+            // 9. Schöpfer/frieden: carrying wird mit symbolic cost gesetzt, Inventar bleibt leer
+            r.setGameMode("schöpfer");
+            r.state.player.inventory = new Array(27).fill(null);
+            c0.position.set(player.x + 1.0, player.y, player.z);
+            c0.userData.carrying = null;
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+            r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.schoepferCarrying = !!c0.userData.carrying;
+            out.schoepferCarryingHasMaterials =
+                c0.userData.carrying && c0.userData.carrying.materials && c0.userData.carrying.materials.stein > 0;
+            out.schoepferCarryingFree = c0.userData.carrying && c0.userData.carrying.free === true;
+            out.schoepferInventoryUntouched = r.state.player.inventory.every((s) => !s);
+
+            // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
+            r.setGameMode("schöpfer");
+            c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
+            c0.userData.carrying = {
+                kind: "build",
+                materials: { stein: 8 },
+                blueprint: "stein_block",
+                since: 0,
+            };
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+            const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
+            const ws = Math.hypot(dirWalk.x, dirWalk.z);
+            // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
+            out.walkPhaseSpeed =
+                ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
+
+            // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
+            c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
+            c0.userData.carrying = {
+                kind: "build",
+                materials: { stein: 8 },
+                blueprint: "stein_block",
+                since: 0,
+            };
+            r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
+            const archBefore = r.state.architectures.length;
+            r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
+            out.spawnPhaseGrowsWorld = r.state.architectures.length > archBefore;
+            out.spawnPhaseClearsCarrying = c0.userData.carrying === null;
+            out.spawnPhaseFallsToWander = r._getCreatureTask(c0).name === "wander";
+            const memHasBuilt = (c0.userData.memory || []).some((m) => m.type === "built");
+            out.memHasBuilt = memHasBuilt;
+            const journalHasBuilt = (r.state.worldJournal.entries || []).some(
+                (e) => e.type === "growth" && /erschuf/.test(e.text)
+            );
+            out.journalHasBuilt = journalHasBuilt;
+
+            // 12. DSL-Op routing
+            r.dslRun(["creature_task_nearest", "build", "stein_block"], { source: "test" });
+            // Finde irgendeine Kreatur mit build-Task
+            const anyBuilding = r.state.creatures.some(
+                (c) => r._getCreatureTask(c) && r._getCreatureTask(c).name === "build"
+            );
+            out.dslNearestSetsBuild = anyBuilding;
+
+            // 13. NON_BROADCASTABLE_OPS — creature_task* sind schon drin (Phase 1).
+            // Build wird über dieselben Ops gerufen, also automatisch privat.
+            out.opsAreNonBroadcast =
+                r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_nearest") &&
+                r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_all") &&
+                r.constructor.NON_BROADCASTABLE_OPS.has("creature_task");
+
+            // 14. Chat-Patterns
+            const p1 = r.parseChatToDsl("baue stein_block");
+            out.chatBauePattern =
+                p1 &&
+                Array.isArray(p1.program) &&
+                p1.program[0] === "creature_task_nearest" &&
+                p1.program[1] === "build" &&
+                p1.program[2] === "stein_block";
+            const p2 = r.parseChatToDsl("alle bauen stein_block");
+            out.chatAlleBauenPattern =
+                p2 &&
+                Array.isArray(p2.program) &&
+                p2.program[0] === "creature_task_all" &&
+                p2.program[1] === "build" &&
+                p2.program[2] === "stein_block";
+
+            // 15. describeProgram
+            const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
+            out.describeProgramShowsBp = /Bauplan/.test(desc1) && /stein_block/.test(desc1);
+
+            // 16. Status-Bar zeigt 'N bauen'
+            // Setze mehrere Kreaturen auf build (alle existierenden)
+            for (const c of r.state.creatures) {
+                r.assignCreatureTask(c, "build", { blueprint: "stein_block" }, { silent: true });
+            }
+            if (typeof r._renderTaskStatusUI === "function") r._renderTaskStatusUI();
+            const statusEl = document.getElementById("status-tasks");
+            out.statusShowsBauen = statusEl && /bauen/.test(statusEl.textContent);
+
+            // 17. Liste zeigt 'baut stein_block' + .build CSS-Class
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            const listEl = document.getElementById("creature-list");
+            const buildRow = listEl && listEl.querySelector(".creature-task.build");
+            out.listHasBuildClass = !!buildRow;
+            out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
+
+            // 18. UI: Dropdown + 2 Buttons im DOM
+            const buildSelect = document.getElementById("creature-build-select");
+            out.uiBuildSelectExists = !!buildSelect;
+            out.uiBuildSelectHasOptions = buildSelect && buildSelect.options.length >= 3;
+            const buildBtns = document.querySelectorAll("[data-creature-build]");
+            out.uiBuildButtonsCount = buildBtns.length === 2;
+
+            // 19. Journal-Label "wird zur Schöpferin" beim build-Wechsel
+            // (assignCreatureTask hat schon ein Journal geschrieben in #16, prüfen)
+            const journalHasRel = (r.state.worldJournal.entries || []).some(
+                (e) => e.type === "relationship" && /Schöpferin/.test(e.text)
+            );
+            out.journalHasSchoepferin = journalHasRel;
+
+            // 20. Symbolic cost: free build hat trotzdem materials map (für Journal/Visual)
+            r.setGameMode("schöpfer");
+            r.state.player.inventory = new Array(27).fill(null);
+            const cFree = r.spawnCreatureAt(player.x + 30, player.y, player.z + 30, "happy", "wesen");
+            cFree.position.set(player.x + 1.0, player.y, player.z);
+            cFree.userData.carrying = null;
+            r.assignCreatureTask(cFree, "build", { blueprint: "baum_eiche" }, { silent: true });
+            r._tickCreatureTaskDirection(cFree, cFree.userData.task, "happy");
+            out.symbolicCostHasMultiple =
+                cFree.userData.carrying && Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
+
+            // Cleanup für nachfolgende Tests
+            r.setGameMode(origMode || "frieden");
+            for (const c of r.state.creatures) {
+                r.assignCreatureTask(c, "wander", {}, { silent: true });
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2b2Results && !wave6hP2b2Results.error) {
+        check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
+        check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
+        check("Welle 6.H P2B.2: PING_FREQ.build === 587 (D5)", wave6hP2b2Results.pingFreqBuild);
+        check(
+            "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
+            wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
+        );
+        check(
+            "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, string) → {blueprint}",
+            wave6hP2b2Results.argsBuildString
+        );
+        check(
+            "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, number) droppt arg",
+            wave6hP2b2Results.argsBuildNumberDropped
+        );
+        check("Welle 6.H P2B.2: _buildCreatureTaskArgs(build, '') droppt arg", wave6hP2b2Results.argsBuildEmptyDropped);
+        check(
+            "Welle 6.H P2B.2: _describeCreatureTaskArg(build, X) zeigt 'Bauplan X'",
+            wave6hP2b2Results.descBuildShowsBlueprint
+        );
+        check(
+            "Welle 6.H P2B.2: build ohne blueprint → null + Task fällt auf wander",
+            wave6hP2b2Results.buildEmptyFallsToWander
+        );
+        check(
+            "Welle 6.H P2B.2: build mit unbekanntem Bauplan → wander + 'no_blueprint'-Erinnerung",
+            wave6hP2b2Results.unknownBpFallsToWander && wave6hP2b2Results.memHasNoBlueprint
+        );
+        check(
+            "Welle 6.H P2B.2: take-Phase weit weg → Vektor zum Spieler hin",
+            wave6hP2b2Results.takePhaseTowardsPlayer
+        );
+        check(
+            "Welle 6.H P2B.2: take-Phase Geschwindigkeit ~ CREATURE_BUILD_SPEED (body-moduliert P2F.1)",
+            wave6hP2b2Results.takePhaseSpeed
+        );
+        check(
+            "Welle 6.H P2B.2: pfad ohne Material → take lehnt ab + 'no_inventory_for_build'-Memory",
+            wave6hP2b2Results.takeNoMatRejects && wave6hP2b2Results.memHasNoInv
+        );
+        check(
+            "Welle 6.H P2B.2: pfad mit Material → carrying.kind='build' + blueprint gesetzt",
+            wave6hP2b2Results.takeSetsCarrying && wave6hP2b2Results.takeCarryingHasBp
+        );
+        check(
+            "Welle 6.H P2B.2: pfad: Material wird aus Spieler-Inventar konsumiert",
+            wave6hP2b2Results.takeConsumesPfad
+        );
+        check("Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert", wave6hP2b2Results.memHasTook);
+        check(
+            "Welle 6.H P2B.2: schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
+            wave6hP2b2Results.schoepferCarrying &&
+                wave6hP2b2Results.schoepferCarryingHasMaterials &&
+                wave6hP2b2Results.schoepferCarryingFree
+        );
+        check(
+            "Welle 6.H P2B.2: schöpfer: Inventar bleibt unangetastet (kostenlos)",
+            wave6hP2b2Results.schoepferInventoryUntouched
+        );
+        check(
+            "Welle 6.H P2B.2: walk-Phase mit carrying → Vektor WEG vom Spieler ~ BUILD_SPEED (body-moduliert P2F.1)",
+            wave6hP2b2Results.walkPhaseAwayFromPlayer && wave6hP2b2Results.walkPhaseSpeed
+        );
+        check(
+            "Welle 6.H P2B.2: spawn-Phase bei placement_dist → Architektur entsteht",
+            wave6hP2b2Results.spawnPhaseGrowsWorld
+        );
+        check(
+            "Welle 6.H P2B.2: spawn-Phase clearet carrying + fällt auf wander zurück",
+            wave6hP2b2Results.spawnPhaseClearsCarrying && wave6hP2b2Results.spawnPhaseFallsToWander
+        );
+        check(
+            "Welle 6.H P2B.2: 'built'-Memory + 'growth'-Journal-Eintrag (erschuf ...)",
+            wave6hP2b2Results.memHasBuilt && wave6hP2b2Results.journalHasBuilt
+        );
+        check("Welle 6.H P2B.2: DSL creature_task_nearest('build', bp) wirkt", wave6hP2b2Results.dslNearestSetsBuild);
+        check(
+            "Welle 6.H P2B.2: build-Ops bleiben in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+            wave6hP2b2Results.opsAreNonBroadcast
+        );
+        check("Welle 6.H P2B.2: Chat 'baue X' → creature_task_nearest build X", wave6hP2b2Results.chatBauePattern);
+        check(
+            "Welle 6.H P2B.2: Chat 'alle bauen X' → creature_task_all build X",
+            wave6hP2b2Results.chatAlleBauenPattern
+        );
+        check("Welle 6.H P2B.2: describeProgram zeigt 'Bauplan' + name", wave6hP2b2Results.describeProgramShowsBp);
+        check("Welle 6.H P2B.2: Status-Bar zeigt 'N bauen' bei build-Tasks", wave6hP2b2Results.statusShowsBauen);
+        check(
+            "Welle 6.H P2B.2: Liste zeigt .build-Class + 'baut <bp>'",
+            wave6hP2b2Results.listHasBuildClass && wave6hP2b2Results.listShowsBaut
+        );
+        check(
+            "Welle 6.H P2B.2: UI #creature-build-select Dropdown + ≥3 Optionen + 2 Buttons",
+            wave6hP2b2Results.uiBuildSelectExists &&
+                wave6hP2b2Results.uiBuildSelectHasOptions &&
+                wave6hP2b2Results.uiBuildButtonsCount
+        );
+        check(
+            "Welle 6.H P2B.2: Journal-Label (wird zur Schoepferin) beim build-Wechsel",
+            wave6hP2b2Results.journalHasSchoepferin
+        );
+        check(
+            "Welle 6.H P2B.2: free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
+            wave6hP2b2Results.symbolicCostHasMultiple
+        );
+    } else if (wave6hP2b2Results && wave6hP2b2Results.error) {
+        check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
+    //
+    // Vision §1.1: Co-Schöpfer-Beziehung wächst durch Geschichte.
+    // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material,
+    // build:blueprint), Speed-Bonus pro Level, Audio + Journal bei Level-Up,
+    // UI-Pills in Kreatur-Liste. KEINE Persistenz (Vision-konsequent).
+    const wave6hP2dResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+            const Class = r.constructor;
+
+            // 1. Konstanten
+            out.threshold3 = Class.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD === 3;
+            out.maxLevel5 = Class.CREATURE_SPECIALIZATION_MAX_LEVEL === 5;
+            out.speedBonus15 = Class.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL === 0.15;
+            out.pingFreq880 = Class.CREATURE_SPECIALIZATION_PING_FREQ === 880;
+
+            // 2. Methoden existieren
+            out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
+            out.hasLevelMethod = typeof r._creatureSpecializationLevel === "function";
+            out.hasTopMethod = typeof r._creatureTopSpecializations === "function";
+            out.hasSpeedMul = typeof r._creatureTaskSpeedMultiplier === "function";
+            out.hasLevelUp = typeof r._onCreatureLevelUp === "function";
+            out.hasSkillKey = typeof r._creatureSkillKeyForMemory === "function";
+
+            // 3. _creatureSkillKeyForMemory mappt korrekt
+            const sk1 = r._creatureSkillKeyForMemory("gathered", { material: "holz" });
+            out.skillKeyGather = sk1 && sk1.kind === "gather" && sk1.key === "holz";
+            const sk2 = r._creatureSkillKeyForMemory("built", { blueprint: "stein_block" });
+            out.skillKeyBuild = sk2 && sk2.kind === "build" && sk2.key === "stein_block";
+            const sk3 = r._creatureSkillKeyForMemory("no_material", { material: "holz" });
+            out.skillKeyFailureNull = sk3 === null;
+            const sk4 = r._creatureSkillKeyForMemory("delivered", { material: "holz" });
+            out.skillKeyDeliveredNull = sk4 === null;
+
+            // 4. Frische Kreatur → leere Specs
+            const player = r.state.playerMesh.position;
+            const c = r.spawnCreatureAt(player.x + 80, player.y, player.z + 80, "happy", "wesen");
+            c.userData.memory = []; // sicherstellen
+            const s0 = r._computeCreatureSpecializations(c);
+            out.emptyMemoryEmptySpecs = s0 && Object.keys(s0.gather).length === 0 && Object.keys(s0.build).length === 0;
+
+            // 5. _computeCreatureSpecializations zählt korrekt aus memory
+            c.userData.memory = [
+                { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 1 },
+                { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 2 },
+                { type: "gathered", content: { material: "stein", blueprint: "stein_block" }, at: 3 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                { type: "no_material", content: { material: "holz" }, at: 5 },
+                { type: "no_blueprint", content: { blueprint: "fictional" }, at: 6 },
+            ];
+            const sCounted = r._computeCreatureSpecializations(c);
+            out.countsHolz = sCounted.gather.holz === 2;
+            out.countsStein = sCounted.gather.stein === 1;
+            out.countsBuiltSteinBlock = sCounted.build.stein_block === 1;
+            out.failuresIgnored = !sCounted.gather.fictional && !sCounted.build.fictional;
+
+            // 6. _creatureSpecializationLevel
+            out.level0Empty = r._creatureSpecializationLevel(c, "gather", "lederX") === 0;
+            out.level0Sub = r._creatureSpecializationLevel(c, "gather", "holz") === 0; // 2 < 3
+
+            // Push einen dritten gather-holz, sollte L1 erreichen
+            c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 7 });
+            out.level1At3 = r._creatureSpecializationLevel(c, "gather", "holz") === 1;
+            // Auf 6 — L2
+            for (let i = 0; i < 3; i++)
+                c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 8 + i });
+            out.level2At6 = r._creatureSpecializationLevel(c, "gather", "holz") === 2;
+            // Auf 100 — gedeckelt bei L5
+            for (let i = 0; i < 100; i++)
+                c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 100 + i });
+            out.levelCappedAt5 = r._creatureSpecializationLevel(c, "gather", "holz") === 5;
+
+            // 7. _creatureTopSpecializations
+            const c2 = r.spawnCreatureAt(player.x + 90, player.y, player.z + 90, "happy", "wesen");
+            c2.userData.memory = [
+                { type: "gathered", content: { material: "holz" }, at: 1 },
+                { type: "gathered", content: { material: "holz" }, at: 2 },
+                { type: "gathered", content: { material: "holz" }, at: 3 }, // L1 holz
+                { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 5 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 6 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 7 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 8 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 9 }, // L2 stein_block
+            ];
+            const top = r._creatureTopSpecializations(c2, 2);
+            out.topReturnsArray = Array.isArray(top) && top.length === 2;
+            out.topSortedByLevel = top[0].level >= top[1].level;
+            out.topHasBuildAtTop = top[0].kind === "build" && top[0].level === 2;
+            out.topHasGatherSecond = top[1].kind === "gather" && top[1].level === 1;
+            const topLimit1 = r._creatureTopSpecializations(c2, 1);
+            out.topLimit1 = topLimit1.length === 1;
+
+            // Keine Skills → leeres Array
+            const cFresh = r.spawnCreatureAt(player.x + 95, player.y, player.z + 95, "happy", "wesen");
+            cFresh.userData.memory = [];
+            out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
+
+            // 8. Speed-Multiplikator
+            out.mulL0 = Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
+            // c hat L5 für gather:holz
+            const mulL5 = r._creatureTaskSpeedMultiplier(c, "gather", { material: "holz" });
+            out.mulL5 = Math.abs(mulL5 - 1.75) < 0.001;
+            // build mit L0
+            out.mulBuildL0 =
+                Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
+            // Unbekannter Task → 1
+            out.mulUnknownTask = r._creatureTaskSpeedMultiplier(c, "wander", {}) === 1;
+            // Null-Args → 1
+            out.mulNullArgs = r._creatureTaskSpeedMultiplier(c, "gather", null) === 1;
+
+            // 9. Level-Up triggert über _creatureRemember
+            const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
+            cFollow.userData.memory = [];
+            // V8.96 — Wurzelheilung des flaky 6.H-P2D-Level-Up-Tests:
+            // journalGrew prüfte „entries.length > lenBefore". Aber
+            // worldJournal.entries ist FIFO-gedeckelt (200) — stand der
+            // Journal-Stand nach dem 20-25-s-Autonom-Lauf schon am Cap,
+            // verdrängte das Anhängen einen alten Eintrag → die Länge
+            // blieb 200 → der Test kippte. Auch journalAppends id
+            // (`entries.length + 1`) ist nach dem Cap nicht eindeutig.
+            // Fix: die EINTRAGS-IDENTITÄT messen — ein growth-Eintrag,
+            // der als Objekt nicht im Vorher-Set steht, beweist das
+            // Anhängen cap- + id-unabhängig (V8.57/V8.83-Disziplin:
+            // den Mess-Punkt an die Mechanik legen, nicht an einen
+            // volatilen Proxy).
+            const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
+            // 3 gathered → L1, sollte LevelUp triggern
+            r._creatureRemember(cFollow, "gathered", { material: "quarz" });
+            r._creatureRemember(cFollow, "gathered", { material: "quarz" });
+            r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
+            const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
+            out.rememberTriggersLevel = lvlAfter === 1;
+            // Ein NEUER growth-Eintrag (Objekt nicht im Vorher-Set) mit
+            // Sammler / „quarz" / „Stufe 1" beweist sowohl, DASS der
+            // Level-Up einen Journal-Eintrag schrieb, als auch dass
+            // GENAU DIESER Test ihn auslöste (kein Autonom-Lauf-Echo).
+            const journalAfter = r.state.worldJournal.entries || [];
+            const newLvlUpEntry = journalAfter.some(
+                (e) =>
+                    e &&
+                    !journalEntriesBefore.has(e) &&
+                    e.type === "growth" &&
+                    /Sammler/.test(e.text) &&
+                    /quarz/.test(e.text) &&
+                    /Stufe 1/.test(e.text)
+            );
+            out.journalHasLvlUp = newLvlUpEntry;
+            out.journalGrew = newLvlUpEntry;
+
+            // 10. Bei Failure-Push KEIN LevelUp
+            const cFailure = r.spawnCreatureAt(player.x + 110, player.y, player.z + 110, "happy", "wesen");
+            cFailure.userData.memory = [];
+            const beforeFailureJournal = (r.state.worldJournal.entries || []).length;
+            r._creatureRemember(cFailure, "no_material", { material: "holz" });
+            r._creatureRemember(cFailure, "no_material", { material: "holz" });
+            r._creatureRemember(cFailure, "no_material", { material: "holz" });
+            out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
+            // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
+            const failureJournalDiff = (r.state.worldJournal.entries || []).length - beforeFailureJournal;
+            out.failureJournalUntouched = failureJournalDiff === 0;
+
+            // 11. UI: .creature-specs span existiert nach Render
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            const listEl = document.getElementById("creature-list");
+            const specsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
+            out.uiSpecsSpansExist = specsSpans.length > 0;
+
+            // Pills sollten Klassen .creature-spec.creature-spec-gather oder -build haben
+            const gatherPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-gather") : [];
+            const buildPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-build") : [];
+            out.uiHasGatherPills = gatherPills.length > 0;
+            out.uiHasBuildPills = buildPills.length > 0;
+
+            // 12. Pills zeigen "Sammler·material·L1" oder „Bauer·blueprint·L2"
+            const samplePill = gatherPills[0];
+            out.uiPillTextOk =
+                samplePill && /Sammler/.test(samplePill.textContent) && /L\d/.test(samplePill.textContent);
+            const buildPill = buildPills[0];
+            out.uiBuildPillTextOk =
+                buildPill && /Bauer/.test(buildPill.textContent) && /L\d/.test(buildPill.textContent);
+
+            // 13. Fresh creature OHNE specs hat KEINE .creature-specs span in ihrer Row
+            const cNoSpecsList = r.spawnCreatureAt(player.x + 120, player.y, player.z + 120, "happy", "wesen");
+            cNoSpecsList.userData.memory = []; // explizit leer
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
+            const allRows = listEl ? listEl.querySelectorAll(".creature-row") : [];
+            let creaturesWithSpecs = 0;
+            for (const cc of r.state.creatures) {
+                if (r._creatureTopSpecializations(cc, 2).length > 0) creaturesWithSpecs++;
+            }
+            const allSpecsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
+            out.uiSpansMatchSpecCount = allSpecsSpans.length === creaturesWithSpecs;
+
+            // 14. Persistenz NICHT — buildStateSnapshot speichert keine specializations
+            // (memory ist sowieso nicht persistiert; specs sind live computed daraus)
+            const snap = r.buildStateSnapshot();
+            out.snapshotHasNoSpecs = !snap.creatureSpecializations && !snap.specializations;
+
+            // 15. NICHT in NON_BROADCASTABLE_OPS (es gibt keine specialization-DSL-Op)
+            out.noSpecDslOp = !Class.NON_BROADCASTABLE_OPS.has("specialization");
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2dResults && !wave6hP2dResults.error) {
+        check("Welle 6.H P2D: LEVEL_THRESHOLD === 3", wave6hP2dResults.threshold3);
+        check("Welle 6.H P2D: MAX_LEVEL === 5", wave6hP2dResults.maxLevel5);
+        check("Welle 6.H P2D: SPEED_BONUS_PER_LEVEL === 0.15", wave6hP2dResults.speedBonus15);
+        check("Welle 6.H P2D: PING_FREQ === 880 (A5)", wave6hP2dResults.pingFreq880);
+        check(
+            "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
+            wave6hP2dResults.hasComputeSpecs &&
+                wave6hP2dResults.hasLevelMethod &&
+                wave6hP2dResults.hasTopMethod &&
+                wave6hP2dResults.hasSpeedMul &&
+                wave6hP2dResults.hasLevelUp &&
+                wave6hP2dResults.hasSkillKey
+        );
+        check("Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
+        check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
+        check(
+            "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
+            wave6hP2dResults.skillKeyFailureNull && wave6hP2dResults.skillKeyDeliveredNull
+        );
+        check("Welle 6.H P2D: leere memory → leere specializations", wave6hP2dResults.emptyMemoryEmptySpecs);
+        check(
+            "Welle 6.H P2D: computeSpecs zählt gathered nach material (holz=2, stein=1)",
+            wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
+        );
+        check("Welle 6.H P2D: computeSpecs zählt built nach blueprint", wave6hP2dResults.countsBuiltSteinBlock);
+        check(
+            "Welle 6.H P2D: failures (no_material, no_blueprint) zählen NICHT in specs",
+            wave6hP2dResults.failuresIgnored
+        );
+        check(
+            "Welle 6.H P2D: Level 0 für leeren Skill + Sub-Threshold (2<3)",
+            wave6hP2dResults.level0Empty && wave6hP2dResults.level0Sub
+        );
+        check("Welle 6.H P2D: 3 Erfolge → Level 1", wave6hP2dResults.level1At3);
+        check("Welle 6.H P2D: 6 Erfolge → Level 2", wave6hP2dResults.level2At6);
+        check("Welle 6.H P2D: 100 Erfolge → Level 5 (Cap)", wave6hP2dResults.levelCappedAt5);
+        check(
+            "Welle 6.H P2D: topSpecializations sortiert nach Level + limit",
+            wave6hP2dResults.topReturnsArray &&
+                wave6hP2dResults.topSortedByLevel &&
+                wave6hP2dResults.topHasBuildAtTop &&
+                wave6hP2dResults.topHasGatherSecond &&
+                wave6hP2dResults.topLimit1
+        );
+        check("Welle 6.H P2D: keine Skills → topSpecializations liefert leeres Array", wave6hP2dResults.topEmpty);
+        check("Welle 6.H P2D: speedMultiplier L0 → 1.0", wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0);
+        check("Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)", wave6hP2dResults.mulL5);
+        check(
+            "Welle 6.H P2D: speedMultiplier wander/null-args → 1.0",
+            wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
+        );
+        check(
+            "Welle 6.H P2D: 3. erfolgreicher gather → Level-Up im _creatureRemember",
+            wave6hP2dResults.rememberTriggersLevel
+        );
+        check(
+            "Welle 6.H P2D: Level-Up schreibt growth-Journal-Eintrag mit Sammler/key/Stufe",
+            wave6hP2dResults.journalHasLvlUp && wave6hP2dResults.journalGrew
+        );
+        check(
+            "Welle 6.H P2D: Failure-Memory triggert KEIN Level + KEIN Journal",
+            wave6hP2dResults.failureNoLevel && wave6hP2dResults.failureJournalUntouched
+        );
+        check(
+            "Welle 6.H P2D: UI .creature-specs Spans existieren bei Kreaturen mit Specs",
+            wave6hP2dResults.uiSpecsSpansExist
+        );
+        check(
+            "Welle 6.H P2D: UI .creature-spec.creature-spec-gather + .creature-spec-build Pills",
+            wave6hP2dResults.uiHasGatherPills && wave6hP2dResults.uiHasBuildPills
+        );
+        check(
+            "Welle 6.H P2D: Pills zeigen Sammler/Bauer + Level (L1..L5)",
+            wave6hP2dResults.uiPillTextOk && wave6hP2dResults.uiBuildPillTextOk
+        );
+        check(
+            "Welle 6.H P2D: Anzahl .creature-specs Spans = Anzahl Kreaturen mit Specs",
+            wave6hP2dResults.uiSpansMatchSpecCount
+        );
+        check(
+            "Welle 6.H P2D: KEINE Persistenz im buildStateSnapshot (Vision §1.1)",
+            wave6hP2dResults.snapshotHasNoSpecs
+        );
+        check(
+            "Welle 6.H P2D: KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
+            wave6hP2dResults.noSpecDslOp
+        );
+    } else if (wave6hP2dResults && wave6hP2dResults.error) {
+        check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
+    //
+    // Vision §1.1-Erweiterung: Kreaturen-Identitäten überleben Reload.
+    // Save trägt {name, soul, memory, position, bornAt} pro Kreatur,
+    // ~1 KB pro Stück. Memory-Cap 200. Tote Kreaturen (removeCreature)
+    // werden aus dem Save entfernt.
+    const wave6hP2d1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+
+            // 1. Memory-Cap auf 200 gebumpt
+            out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
+
+            // 2. Methoden existieren
+            out.hasSerialize = typeof r._serializeCreature === "function";
+            out.hasRestore = typeof r._restoreCreatureFromSnapshot === "function";
+
+            // 3. Neu gespawnte Kreatur bekommt bornAt
+            const player = r.state.playerMesh.position;
+            const c = r.spawnCreatureAt(player.x + 130, player.y, player.z + 130, "happy", "wesen");
+            if (!c) {
+                out.spawnFailed = true;
+                return out;
+            }
+            out.bornAtSet = Number.isFinite(c.userData.bornAt) && c.userData.bornAt > 0;
+
+            // 4. _serializeCreature liefert vollständigen Snapshot
+            c.userData.memory = [
+                { type: "gathered", content: { material: "holz" }, at: 1 },
+                { type: "gathered", content: { material: "holz" }, at: 2 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 3 },
+            ];
+            const snap = r._serializeCreature(c);
+            out.snapHasName = typeof snap.name === "string" && snap.name.length > 0;
+            out.snapHasSoul = snap.soul === "wesen";
+            out.snapHasMemory = Array.isArray(snap.memory) && snap.memory.length === 3;
+            out.snapHasPosition = snap.position && Number.isFinite(snap.position.x);
+            out.snapHasBornAt = Number.isFinite(snap.bornAt);
+
+            // 5. _restoreCreatureFromSnapshot baut Kreatur aus Snapshot
+            const beforeCount = r.state.creatures.length;
+            const restored = r._restoreCreatureFromSnapshot(snap, "happy");
+            out.restoreReturnsCreature = !!restored;
+            out.restoreGrowsList = r.state.creatures.length === beforeCount + 1;
+            out.restoreNameOk = restored && restored.userData.name === snap.name;
+            out.restoreSoulOk = restored && restored.userData.soul === "wesen";
+            out.restoreMemoryOk =
+                restored && Array.isArray(restored.userData.memory) && restored.userData.memory.length === 3;
+            out.restorePositionOk =
+                restored &&
+                Math.abs(restored.position.x - snap.position.x) < 0.001 &&
+                Math.abs(restored.position.z - snap.position.z) < 0.001;
+            out.restoreBornAtOk = restored && restored.userData.bornAt === snap.bornAt;
+
+            // 6. Specs werden aus restoriertem memory korrekt re-derived
+            const specs = r._computeCreatureSpecializations(restored);
+            out.specsReDerived =
+                specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
+
+            // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
+            // Setze die aktuelle Welt auf einen bekannten Stand
+            const beforeRoundTripCount = r.state.creatures.length;
+            const beforeNames = r.state.creatures.map((cr) => cr.userData.name).sort();
+            const fullSnap = r.buildStateSnapshot();
+            out.snapshotHasFullCreatures =
+                Array.isArray(fullSnap.creatures) &&
+                fullSnap.creatures.length === beforeRoundTripCount &&
+                fullSnap.creatures.every((c) => c && typeof c.name === "string" && typeof c.soul === "string");
+
+            // 8. Tote Kreatur ist NICHT im Snapshot. Wir markieren den
+            // konkreten Victim eindeutig mit einem Unique-Name damit
+            // Name-Kollisionen im Pool nicht den Test verfälschen.
+            const beforeAlive = r.state.creatures.length;
+            const victim = r.state.creatures[0];
+            const victimMark = `Victim_${Math.random().toString(36).slice(2, 10)}`;
+            victim.userData.name = victimMark;
+            r.removeCreature(victim);
+            const afterSnap = r.buildStateSnapshot();
+            const stillHasVictim = afterSnap.creatures.some((s) => s.name === victimMark);
+            out.victimRemovedFromSnap = !stillHasVictim;
+            out.aliveDecreasedBy1 = afterSnap.creatures.length === beforeAlive - 1;
+            out._beforeAlive = beforeAlive;
+            out._afterCount = afterSnap.creatures.length;
+            out._stateCreaturesAfter = r.state.creatures.length;
+
+            // 9. Loop: nach loadState mit den Snapshots → Kreaturen sind da
+            // (Wir können nicht echt loadState ausführen ohne Reload, aber wir
+            // können prüfen dass _pendingCreatureSnapshots-Pfad funktioniert.)
+            const persisted = [
+                {
+                    name: "TestSammler",
+                    soul: "wesen",
+                    memory: [{ type: "gathered", content: { material: "holz" }, at: 1 }],
+                    position: { x: player.x + 50, y: player.y, z: player.z + 50 },
+                    bornAt: Date.now() - 60000,
+                },
+                {
+                    name: "TestBauer",
+                    soul: "sprite",
+                    memory: [],
+                    position: { x: player.x + 60, y: player.y, z: player.z + 60 },
+                    bornAt: Date.now() - 30000,
+                },
+            ];
+            // Simuliere loadState-stash + spawnCreatures-Pfad
+            r.state._pendingCreatureSnapshots = persisted;
+            r.state.creatureEmotions = ["happy", "happy"];
+            r.spawnCreatures(10); // Sollte 2 restored ergeben statt 10 random
+            out.restoredCount = r.state.creatures.length === 2;
+            const restoredNames = r.state.creatures.map((cr) => cr.userData.name).sort();
+            out.restoredNamesMatch = restoredNames[0] === "TestBauer" && restoredNames[1] === "TestSammler";
+            out.pendingClearedAfterRestore = r.state._pendingCreatureSnapshots === null;
+            // Specs aus 1 gathered holz → L0
+            const sammler = r.state.creatures.find((cr) => cr.userData.name === "TestSammler");
+            out.restoredCreatureHasMemory =
+                sammler && Array.isArray(sammler.userData.memory) && sammler.userData.memory.length === 1;
+
+            // 10. Legacy-Save (nur position) fällt auf Default-Spawn zurück
+            r.state._pendingCreatureSnapshots = null;
+            r.state.creatureEmotions = [];
+            // Stub loadState: simuliere legacy save format
+            const legacyState = {
+                creatures: [{ position: { x: 0, y: 5, z: 0 } }, { position: { x: 1, y: 5, z: 1 } }],
+            };
+            const looksFullLegacy =
+                Array.isArray(legacyState.creatures) &&
+                legacyState.creatures.length > 0 &&
+                legacyState.creatures[0] &&
+                typeof legacyState.creatures[0].soul === "string";
+            out.legacyDetectedAsLegacy = !looksFullLegacy;
+
+            // 11. Memory-Cap 200 enforced
+            const cCap = r.spawnCreatureAt(player.x + 140, player.y, player.z + 140, "happy", "wesen");
+            cCap.userData.memory = [];
+            for (let i = 0; i < 250; i++) r._creatureRemember(cCap, "noise", { i });
+            out.cap200Enforced = cCap.userData.memory.length === 200;
+
+            // 12. Restore mit übergroßem memory in Snapshot wird auf 200 gekappt
+            const oversizedMem = [];
+            for (let i = 0; i < 300; i++) oversizedMem.push({ type: "noise", content: { i }, at: i });
+            const oversizedSnap = {
+                name: "Oversize",
+                soul: "wesen",
+                memory: oversizedMem,
+                position: { x: player.x + 150, y: player.y, z: player.z + 150 },
+                bornAt: Date.now(),
+            };
+            const oversized = r._restoreCreatureFromSnapshot(oversizedSnap, "happy");
+            out.oversizedRestoredCappedAt200 = oversized && oversized.userData.memory.length === 200;
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2d1Results && !wave6hP2d1Results.error) {
+        check("Welle 6.H P2D.1: CREATURE_MEMORY_CAP === 200", wave6hP2d1Results.memCap200);
+        check(
+            "Welle 6.H P2D.1: _serializeCreature + _restoreCreatureFromSnapshot existieren",
+            wave6hP2d1Results.hasSerialize && wave6hP2d1Results.hasRestore
+        );
+        check("Welle 6.H P2D.1: spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
+        check(
+            "Welle 6.H P2D.1: Snapshot enthält name + soul + memory + position + bornAt",
+            wave6hP2d1Results.snapHasName &&
+                wave6hP2d1Results.snapHasSoul &&
+                wave6hP2d1Results.snapHasMemory &&
+                wave6hP2d1Results.snapHasPosition &&
+                wave6hP2d1Results.snapHasBornAt
+        );
+        check(
+            "Welle 6.H P2D.1: _restoreCreatureFromSnapshot rekonstruiert Kreatur + wächst Liste",
+            wave6hP2d1Results.restoreReturnsCreature && wave6hP2d1Results.restoreGrowsList
+        );
+        check(
+            "Welle 6.H P2D.1: Restore übernimmt Name + Soul",
+            wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
+        );
+        check("Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)", wave6hP2d1Results.restoreMemoryOk);
+        check("Welle 6.H P2D.1: Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
+        check("Welle 6.H P2D.1: Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
+        check("Welle 6.H P2D.1: Specs aus restoriertem Memory korrekt re-derived", wave6hP2d1Results.specsReDerived);
+        check(
+            "Welle 6.H P2D.1: buildStateSnapshot trägt volles Kreatur-Schema",
+            wave6hP2d1Results.snapshotHasFullCreatures
+        );
+        check(
+            "Welle 6.H P2D.1: removeCreature entfernt aus state.creatures + Snapshot",
+            wave6hP2d1Results.victimRemovedFromSnap &&
+                wave6hP2d1Results.aliveDecreasedBy1 &&
+                wave6hP2d1Results._stateCreaturesAfter === wave6hP2d1Results._beforeAlive - 1
+        );
+        check(
+            "Welle 6.H P2D.1: _pendingCreatureSnapshots-Pfad restored statt random-spawnen",
+            wave6hP2d1Results.restoredCount &&
+                wave6hP2d1Results.restoredNamesMatch &&
+                wave6hP2d1Results.pendingClearedAfterRestore &&
+                wave6hP2d1Results.restoredCreatureHasMemory
+        );
+        check(
+            "Welle 6.H P2D.1: Legacy-Save (nur position) wird als Legacy erkannt",
+            wave6hP2d1Results.legacyDetectedAsLegacy
+        );
+        check(
+            "Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)",
+            wave6hP2d1Results.cap200Enforced
+        );
+        check(
+            "Welle 6.H P2D.1: Restore mit übergroßem memory wird auf 200 gekappt",
+            wave6hP2d1Results.oversizedRestoredCappedAt200
+        );
+    } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
+        check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2F.1 + 2F.2 + 2F.3 — Kreatur-Stats + Equipped + Boosts via Konsumables).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6HCreatureStats(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
+    //
+    // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur
+    // sind alle Compound aus parts × Material × Form. Stats emergieren
+    // aus der gleichen STAT_FROM_TAGS-Pipeline (kein paralleler Code).
+    // Body-Speed-Modulator (stats.speed/7) wirkt im Tick neben Spec-Mul.
+    const wave6hP2f1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+
+            // 1. Methoden existieren
+            out.hasComputeStats = typeof r.computeCreatureStats === "function";
+            out.hasBodySpeedMul = typeof r._creatureBodySpeedMultiplier === "function";
+            out.hasRefreshCache = typeof r._refreshCreatureStatsCache === "function";
+
+            // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
+            const player = r.state.playerMesh.position;
+            const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen");
+            const csW = r.computeCreatureStats(cw);
+            out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
+            out.statsHasAll8 =
+                csW.stats &&
+                Number.isFinite(csW.stats.hpMax) &&
+                Number.isFinite(csW.stats.damage) &&
+                Number.isFinite(csW.stats.speed) &&
+                Number.isFinite(csW.stats.jumpPower) &&
+                Number.isFinite(csW.stats.staminaMax) &&
+                Number.isFinite(csW.stats.precision) &&
+                Number.isFinite(csW.stats.magicResist) &&
+                Number.isFinite(csW.stats.heatResist);
+
+            // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
+            const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "sprite");
+            const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "geist");
+            const sW = csW.stats;
+            const sS = r.computeCreatureStats(cs).stats;
+            const sG = r.computeCreatureStats(cg).stats;
+            out.spriteFasterThanWesen = sS.speed > sW.speed;
+            // Mindestens 1 Stat unterscheidet sich zwischen Wesen und Sprite
+            // signifikant — emergent aus unterschiedlicher Material-Komposition.
+            out.wesenSpriteDiscriminated =
+                Math.abs(sW.hpMax - sS.hpMax) > 5 ||
+                Math.abs(sW.damage - sS.damage) > 2 ||
+                Math.abs(sW.speed - sS.speed) > 0.5;
+            out.geistHasMagicResist = sG.magicResist > 0;
+            out._statsW = sW;
+            out._statsS = sS;
+
+            // 4. Tags geclamp auf [0, 1] für die Pipe
+            const cTagsClamped = Object.values(csW.tags).every((v) => v >= 0 && v <= 2); // toleriere spec-bonus bis ~2
+            out.tagsInBounds = cTagsClamped;
+
+            // 5. _refreshCreatureStatsCache schreibt userData.stats
+            r._refreshCreatureStatsCache(cw);
+            out.cacheWritesStats = cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
+
+            // 6. Body-Speed-Multiplier ist > 0
+            const mulW = r._creatureBodySpeedMultiplier(cw);
+            const mulS = r._creatureBodySpeedMultiplier(cs);
+            out.bodyMulPositive = mulW > 0 && mulS > 0;
+            out.spriteBodyMulHigher = mulS > mulW;
+
+            // 7. Speed im Tick: gather mit sprite ist schneller als gather mit wesen
+            // (selbe Spec-Level, nur body-mul unterscheidet)
+            r.assignCreatureTask(cw, "gather", { material: "holz" }, { silent: true });
+            r.assignCreatureTask(cs, "gather", { material: "holz" }, { silent: true });
+            // _target = null zwingt zur Such-Phase (wo speed wirkt)
+            cw.userData.task.args._target = null;
+            cs.userData.task.args._target = null;
+            // Stelle sicher: in der Such-Phase brauchen wir eine Target-Distanz > halt.
+            // Wir setzen position weit weg von allem damit kein early-return greift
+            // (gather-task → kein Target gefunden → wander-fallback, ein anderer Pfad).
+            // Stattdessen: nutzen build-task (laufen zum Spieler) für fairen Vergleich.
+            r.assignCreatureTask(cw, "build", { blueprint: "stein_block" }, { silent: true });
+            r.assignCreatureTask(cs, "build", { blueprint: "stein_block" }, { silent: true });
+            cw.userData.carrying = null;
+            cs.userData.carrying = null;
+            cw.position.set(player.x + 50, player.y, player.z);
+            cs.position.set(player.x + 50, player.y, player.z);
+            const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
+            const dirS = r._tickCreatureTaskDirection(cs, cs.userData.task, "happy");
+            const spW = Math.hypot(dirW.x, dirW.z);
+            const spS = Math.hypot(dirS.x, dirS.z);
+            out.tickSpriteFaster = spS > spW;
+            out.tickWesenAtBase = Math.abs(spW - r.constructor.CREATURE_BUILD_SPEED) < 1.0;
+
+            // 8. Spec-Bonus auf magieleitung emergiert in stats
+            // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
+            const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen");
+            cFresh.userData.memory = [];
+            const baseTags = r.computeCreatureStats(cFresh).tags;
+            cFresh.userData.memory = [
+                { type: "gathered", content: { material: "holz" }, at: 1 },
+                { type: "gathered", content: { material: "holz" }, at: 2 },
+                { type: "gathered", content: { material: "holz" }, at: 3 },
+            ];
+            const grownTags = r.computeCreatureStats(cFresh).tags;
+            // L1 Sammler = +0.01 magieleitung; minimal aber positiv
+            out.specBonusMagieleitung = grownTags.magieleitung > baseTags.magieleitung;
+
+            // 9. UI: creature-row hat title-Attribut mit Stats
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            const listEl = document.getElementById("creature-list");
+            const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
+            let rowsWithTitle = 0;
+            for (const row of rows) {
+                if (row.title && /HP\s+\d/.test(row.title) && /SPD\s+\d/.test(row.title) && /DMG\s+\d/.test(row.title))
+                    rowsWithTitle++;
+            }
+            out.uiRowsHaveStatsTitle = rowsWithTitle === rows.length && rows.length > 0;
+
+            // 10. STAT_FROM_TAGS aus Class — Symmetrie zum Spieler
+            const playerStatKeys = Object.keys(r.constructor.STAT_FROM_TAGS);
+            const creatureStatKeys = Object.keys(csW.stats);
+            out.sameStatKeysAsPlayer =
+                playerStatKeys.length === creatureStatKeys.length &&
+                playerStatKeys.every((k) => creatureStatKeys.includes(k));
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2f1Results && !wave6hP2f1Results.error) {
+        check(
+            "Welle 6.H P2F.1: alle 3 Methoden existieren (computeCreatureStats + _creatureBodySpeedMultiplier + _refreshCreatureStatsCache)",
+            wave6hP2f1Results.hasComputeStats && wave6hP2f1Results.hasBodySpeedMul && wave6hP2f1Results.hasRefreshCache
+        );
+        check(
+            "Welle 6.H P2F.1: computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
+            wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
+        );
+        check(
+            "Welle 6.H P2F.1: Soul-Diskrimination — Sprite schneller als Wesen",
+            wave6hP2f1Results.spriteFasterThanWesen
+        );
+        check(
+            "Welle 6.H P2F.1: Soul-Diskrimination — Wesen ≠ Sprite in mind. 1 Stat (emergent)",
+            wave6hP2f1Results.wesenSpriteDiscriminated
+        );
+        check("Welle 6.H P2F.1: Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
+        check("Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)", wave6hP2f1Results.tagsInBounds);
+        check(
+            "Welle 6.H P2F.1: _refreshCreatureStatsCache schreibt userData.stats",
+            wave6hP2f1Results.cacheWritesStats
+        );
+        check("Welle 6.H P2F.1: _creatureBodySpeedMultiplier > 0 für alle Seelen", wave6hP2f1Results.bodyMulPositive);
+        check(
+            "Welle 6.H P2F.1: Sprite-bodyMul > Wesen-bodyMul (Vision: leichte Form schneller)",
+            wave6hP2f1Results.spriteBodyMulHigher
+        );
+        check(
+            "Welle 6.H P2F.1: Tick — Sprite läuft schneller als Wesen (selbe Task, body-mul wirkt)",
+            wave6hP2f1Results.tickSpriteFaster
+        );
+        check("Welle 6.H P2F.1: Tick — Wesen bei ~BUILD_SPEED (bodyMul ≈ 1)", wave6hP2f1Results.tickWesenAtBase);
+        check(
+            "Welle 6.H P2F.1: Spec-Bonus emergiert in stats.magieleitung (Wissen leitet)",
+            wave6hP2f1Results.specBonusMagieleitung
+        );
+        check(
+            "Welle 6.H P2F.1: UI — alle creature-rows haben title-Tooltip mit Stats",
+            wave6hP2f1Results.uiRowsHaveStatsTitle
+        );
+        check(
+            "Welle 6.H P2F.1: Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
+            wave6hP2f1Results.sameStatKeysAsPlayer
+        );
+    } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
+        check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
+    //
+    // Vision §1.3 fraktal weiter: Kreaturen tragen Werkzeug + Rüstung wie
+    // der Spieler. computeCreatureStats stackt equipped Compound-Tags
+    // mit TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT (dieselben Konstanten wie
+    // Player). Persistenz via _serializeCreature → snap.equipped.
+    const wave6hP2f2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+            const Class = r.constructor;
+
+            // 1. Methoden existieren
+            out.hasEquipTool = typeof r.equipCreatureTool === "function";
+            out.hasEquipArmor = typeof r.equipCreatureArmor === "function";
+            out.hasUnequip = typeof r.unequipCreatureSlot === "function";
+            out.hasAfterChange = typeof r._afterCreatureEquipChange === "function";
+
+            // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
+            const player = r.state.playerMesh.position;
+            const c = r.spawnCreatureAt(player.x + 300, player.y, player.z + 300, "happy", "wesen");
+            out.initialToolNull = c.userData.equipped && c.userData.equipped.tool === null;
+            out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
+
+            // 3. equipCreatureTool mit existing Starter-Tool (hammer)
+            const eqTool = r.equipCreatureTool(c, "hammer");
+            out.equipToolOk = eqTool.ok === true;
+            out.toolSet = c.userData.equipped.tool === "hammer";
+
+            // 4. equipCreatureTool mit unbekanntem Tool → reject
+            const eqUnknown = r.equipCreatureTool(c, "fictional_tool_xyz");
+            out.unknownToolRejected = eqUnknown.ok === false && eqUnknown.reason === "tool_unknown";
+            out.toolUnchangedAfterReject = c.userData.equipped.tool === "hammer";
+
+            // 5. equipCreatureArmor — erst Bauplan markieren, dann ausrüsten.
+            // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
+            // → bool, dann setBlueprintAsArmor(name).
+            const armorName = "test_armor_p2f2";
+            if (typeof r.cloneBlueprint === "function" && r.cloneBlueprint("stein_block", armorName)) {
+                r.setBlueprintAsArmor(armorName);
+                const eqArmor = r.equipCreatureArmor(c, armorName);
+                out.equipArmorOk = eqArmor.ok === true;
+                out.armorSet = c.userData.equipped.armor === armorName;
+                // Equipped mit nicht-armor-Bauplan (kristall_geode hat keine role:armor)
+                const eqWrong = r.equipCreatureArmor(c, "kristall_geode");
+                out.wrongArmorRejected = eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
+            }
+
+            // 6. unequipCreatureSlot
+            const unEqTool = r.unequipCreatureSlot(c, "tool");
+            out.unequipToolOk = unEqTool.ok === true && c.userData.equipped.tool === null;
+            const unEqArmor = r.unequipCreatureSlot(c, "armor");
+            out.unequipArmorOk = unEqArmor.ok === true && c.userData.equipped.armor === null;
+            const unEqInvalid = r.unequipCreatureSlot(c, "boots");
+            out.unequipInvalidSlotRejected = unEqInvalid.ok === false;
+
+            // 7. Stats-Stacking via equipped — Tool/Armor mit Compound-Tags
+            // beeinflussen computeCreatureStats über existing pipeline.
+            // Wir erstellen einen eigenen „magie-leitenden" Werkzeug-Bauplan
+            // und vergleichen Stats VOR/NACH equip.
+            if (typeof r.cloneBlueprint === "function") {
+                const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
+                const baseStats = r.computeCreatureStats(c2).stats;
+                // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
+                // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
+                const toolBp = "test_tool_bp_p2f2";
+                if (r.cloneBlueprint("stein_block", toolBp)) {
+                    const meta =
+                        typeof r.setBlueprintToolMeta === "function"
+                            ? r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive")
+                            : null;
+                    const reg =
+                        meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
+                            ? r.registerBlueprintAsTool(toolBp)
+                            : null;
+                    if (reg && reg.ok) {
+                        // toolName === toolBp (Bauplan-Name)
+                        r.equipCreatureTool(c2, toolBp);
+                        const equipStats = r.computeCreatureStats(c2).stats;
+                        out.toolStatsChanged =
+                            Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
+                            Math.abs(equipStats.damage - baseStats.damage) > 0.1;
+                        out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
+                    }
+                }
+                // Armor: stein_block-Clone + setBlueprintAsArmor
+                const armorBp = "test_armor_bp_p2f2";
+                if (r.cloneBlueprint("stein_block", armorBp)) {
+                    r.setBlueprintAsArmor(armorBp);
+                    // unequip first so stat-delta is clean
+                    r.unequipCreatureSlot(c2, "armor");
+                    const beforeArmorStats = r.computeCreatureStats(c2).stats;
+                    r.equipCreatureArmor(c2, armorBp);
+                    const armorStats = r.computeCreatureStats(c2).stats;
+                    out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
+                    out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
+                }
+            }
+
+            // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
+            const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
+            const idx = r.state.creatures.indexOf(cDsl);
+            r.dslRun(["creature_equip_tool", idx, "hammer"], { source: "test" });
+            out.dslEquipToolOk = cDsl.userData.equipped.tool === "hammer";
+            r.dslRun(["creature_unequip", idx, "tool"], { source: "test" });
+            out.dslUnequipOk = cDsl.userData.equipped.tool === null;
+
+            // 9. NON_BROADCASTABLE_OPS-Mitgliedschaft
+            out.opsNonBroadcast =
+                Class.NON_BROADCASTABLE_OPS.has("creature_equip_tool") &&
+                Class.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
+                Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
+
+            // 10. describeProgram-Einträge
+            const d1 = r.describeProgram(["creature_equip_tool", 0, "hammer"]);
+            out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
+            const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
+            out.descEquipArmor = /Rüstung/.test(d2);
+            const d3 = r.describeProgram(["creature_unequip", 0, "tool"]);
+            out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
+
+            // 11. Snapshot persistiert equipped (Round-Trip)
+            r.equipCreatureTool(cDsl, "hammer");
+            const snap = r._serializeCreature(cDsl);
+            out.snapHasEquipped = snap.equipped && snap.equipped.tool === "hammer";
+            // Restore validiert tool-Existenz
+            const restored = r._restoreCreatureFromSnapshot(snap, "happy");
+            out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "hammer";
+            // Restore mit unbekanntem Tool → null statt crash
+            const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
+            const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
+            out.restoreSilentDropsUnknown = restoredBad && restoredBad.userData.equipped.tool === null;
+
+            // 12. UI: equipped-Pills in creature-row erscheinen
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            const listEl = document.getElementById("creature-list");
+            const equippedWraps = listEl ? listEl.querySelectorAll(".creature-equipped") : [];
+            out.uiEquippedWrapsExist = equippedWraps.length > 0;
+            const toolPills = listEl ? listEl.querySelectorAll(".creature-equip.creature-equip-tool") : [];
+            out.uiToolPillsExist = toolPills.length > 0;
+
+            // Cleanup: Test-Baupläne löschen damit Ring 6.6-Liste-Zähler stimmt.
+            // Plus workshop-DOM neu rendern (deleteBlueprint triggert das nicht
+            // automatisch — Ring 6.6 prüft DOM-Liste vs. state.blueprints).
+            if (typeof r.deleteBlueprint === "function") {
+                r.deleteBlueprint("test_armor_p2f2");
+                r.deleteBlueprint("test_tool_bp_p2f2");
+                r.deleteBlueprint("test_armor_bp_p2f2");
+            }
+            if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2f2Results && !wave6hP2f2Results.error) {
+        check(
+            "Welle 6.H P2F.2: alle 4 Methoden existieren (equipCreatureTool/Armor + unequipCreatureSlot + _afterCreatureEquipChange)",
+            wave6hP2f2Results.hasEquipTool &&
+                wave6hP2f2Results.hasEquipArmor &&
+                wave6hP2f2Results.hasUnequip &&
+                wave6hP2f2Results.hasAfterChange
+        );
+        check(
+            "Welle 6.H P2F.2: spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
+            wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
+        );
+        check(
+            "Welle 6.H P2F.2: equipCreatureTool akzeptiert Built-in-Tool (hammer)",
+            wave6hP2f2Results.equipToolOk && wave6hP2f2Results.toolSet
+        );
+        check(
+            "Welle 6.H P2F.2: equipCreatureTool lehnt unbekanntes Tool ab (tool_unknown)",
+            wave6hP2f2Results.unknownToolRejected && wave6hP2f2Results.toolUnchangedAfterReject
+        );
+        check(
+            "Welle 6.H P2F.2: equipCreatureArmor akzeptiert Bauplan mit role:armor",
+            wave6hP2f2Results.equipArmorOk && wave6hP2f2Results.armorSet
+        );
+        check(
+            "Welle 6.H P2F.2: equipCreatureArmor lehnt nicht-Armor-Bauplan ab (not_marked_as_armor)",
+            wave6hP2f2Results.wrongArmorRejected
+        );
+        check(
+            "Welle 6.H P2F.2: unequipCreatureSlot räumt tool + armor + lehnt invalid slot ab",
+            wave6hP2f2Results.unequipToolOk &&
+                wave6hP2f2Results.unequipArmorOk &&
+                wave6hP2f2Results.unequipInvalidSlotRejected
+        );
+        check(
+            "Welle 6.H P2F.2: Tool-Equipped ändert computeCreatureStats (Stats-Stacking)",
+            wave6hP2f2Results.toolStatsChanged
+        );
+        check("Welle 6.H P2F.2: Tool mit stein-Tag erhöht HP-Stat (dichte-Bonus)", wave6hP2f2Results.toolHpHigher);
+        check(
+            "Welle 6.H P2F.2: Armor-Equipped ändert computeCreatureStats",
+            wave6hP2f2Results.armorStatsChanged && wave6hP2f2Results.armorHpHigher
+        );
+        check(
+            "Welle 6.H P2F.2: DSL creature_equip_tool + creature_unequip wirken",
+            wave6hP2f2Results.dslEquipToolOk && wave6hP2f2Results.dslUnequipOk
+        );
+        check(
+            "Welle 6.H P2F.2: alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+            wave6hP2f2Results.opsNonBroadcast
+        );
+        check(
+            "Welle 6.H P2F.2: describeProgram zeigt Werkzeug/Rüstung/Slot",
+            wave6hP2f2Results.descEquipTool && wave6hP2f2Results.descEquipArmor && wave6hP2f2Results.descUnequip
+        );
+        check(
+            "Welle 6.H P2F.2: _serializeCreature schreibt equipped + Restore übernimmt es",
+            wave6hP2f2Results.snapHasEquipped && wave6hP2f2Results.restoreKeepsEquippedTool
+        );
+        check(
+            "Welle 6.H P2F.2: Restore lässt unbekanntes Tool silent fallen (defensive)",
+            wave6hP2f2Results.restoreSilentDropsUnknown
+        );
+        check(
+            "Welle 6.H P2F.2: UI — .creature-equipped Wraps + .creature-equip-tool Pills",
+            wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
+        );
+    } else if (wave6hP2f2Results && wave6hP2f2Results.error) {
+        check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
+    //
+    // Vision §1.3 fraktal weiter: Boost emergiert aus
+    // `computeCompoundTags(consumableBp) × scale` — KEIN Hardcode,
+    // KEINE Tabelle. Bauplan mit role:"consumable" UND
+    // consumableMeta. RMB+Hotbar-Konsumable+Raycast-Kreatur = Übergabe.
+    const wave6hP2f3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+            const Class = r.constructor;
+
+            // 1. Methoden existieren
+            out.hasApplyBoost = typeof r.applyCreatureBoost === "function";
+            out.hasTickBoosts = typeof r.tickCreatureBoosts === "function";
+            out.hasActivate = typeof r.activateCreatureConsumable === "function";
+            out.hasPickCreature = typeof r._pickCreatureAtCrosshair === "function";
+            out.hasConsumeInv = typeof r._consumeBlueprintFromInventory === "function";
+            out.hasInvGate = typeof r._consumableInventoryGate === "function";
+
+            // 2. Neu gespawnte Kreatur hat boosts = []
+            const player = r.state.playerMesh.position;
+            const c = r.spawnCreatureAt(player.x + 400, player.y, player.z + 400, "happy", "wesen");
+            out.initialBoostsEmpty = Array.isArray(c.userData.boosts) && c.userData.boosts.length === 0;
+
+            // 3. applyCreatureBoost mit gültigem tagDelta
+            const okApply = r.applyCreatureBoost(c, {
+                source: "test:manual",
+                tagDelta: { magieleitung: 0.3, dichte: 0.2 },
+                durationSeconds: 60,
+                label: "Test-Boost",
+            });
+            out.applyOk = okApply === true;
+            out.boostsListed = c.userData.boosts.length === 1;
+            out.boostHasSource = c.userData.boosts[0].source === "test:manual";
+
+            // 4. applyCreatureBoost mit leerem tagDelta → lehnt ab
+            const noBoost = r.applyCreatureBoost(c, { source: "empty", tagDelta: {} });
+            out.emptyBoostRejected = noBoost === false;
+
+            // 5. Selbe source nochmal → verlängert statt zweiter Eintrag
+            r.applyCreatureBoost(c, {
+                source: "test:manual",
+                tagDelta: { magieleitung: 0.5 },
+                durationSeconds: 30,
+                label: "Test-Boost-2",
+            });
+            out.dedupeBySource = c.userData.boosts.length === 1;
+            out.deltaUpdated = c.userData.boosts[0].tagDelta.magieleitung === 0.5;
+
+            // 6. Stats-Stacking: Boost erhöht computeCreatureStats
+            const c2 = r.spawnCreatureAt(player.x + 410, player.y, player.z + 410, "happy", "wesen");
+            const baseStats = r.computeCreatureStats(c2).stats;
+            r.applyCreatureBoost(c2, {
+                source: "test:hp",
+                tagDelta: { dichte: 0.5, härte: 0.5 },
+                durationSeconds: 60,
+                label: "HP-Boost",
+            });
+            const boostedStats = r.computeCreatureStats(c2).stats;
+            out.hpBoosted = boostedStats.hpMax > baseStats.hpMax + 10;
+
+            // 7. HYLOMORPHISMUS-EMERGENZ: Konsumable-Bauplan-Tags wirken als Boost
+            // Wir erstellen einen Trank aus stein_block (hoch dichte+härte) und
+            // prüfen dass die Compound-Tags SICH ALS BOOST MANIFESTIEREN.
+            const tonicName = "test_tonic_p2f3";
+            if (r.cloneBlueprint("stein_block", tonicName)) {
+                const meta =
+                    typeof r.setBlueprintAsConsumable === "function"
+                        ? r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2)
+                        : null;
+                out.consumableMarkOk = !!(meta && meta.ok);
+                // Trank-Compound-Tags lesen (kontrolle)
+                const tonicTags = r.computeCompoundTags(r.state.blueprints[tonicName]);
+                out.tonicHasDichte = (tonicTags.dichte || 0) > 0.1;
+
+                // Frische Kreatur, base stats messen, dann Trank aktivieren
+                const c3 = r.spawnCreatureAt(player.x + 420, player.y, player.z + 420, "happy", "wesen");
+                const before = r.computeCreatureStats(c3).stats;
+                const result = r.activateCreatureConsumable(c3, tonicName);
+                out.activateOk = result.ok === true;
+                // tagBonus emergiert aus den Tags (kein Hardcode!)
+                out.tagBonusEmerged = result.tagBonus && Object.keys(result.tagBonus).length > 0;
+                out.tagBonusHasDichte = result.tagBonus && result.tagBonus.dichte > 0;
+                // Boost ist auf der Kreatur
+                out.boostOnCreature =
+                    Array.isArray(c3.userData.boosts) &&
+                    c3.userData.boosts.some((b) => b.source === `consume:${tonicName}`);
+                // Stats sind erhöht (dichte-Boost → HP+)
+                const after = r.computeCreatureStats(c3).stats;
+                out.consumableLiftsStats = after.hpMax > before.hpMax + 5;
+            }
+
+            // 8. nicht-consumable Bauplan → activate lehnt ab
+            const notConsumable = r.activateCreatureConsumable(c, "stein_block");
+            out.nonConsumableRejected =
+                notConsumable.ok === false && notConsumable.reason === "not_marked_as_consumable";
+
+            // 9. tickCreatureBoosts entfernt abgelaufene Boosts
+            const c4 = r.spawnCreatureAt(player.x + 430, player.y, player.z + 430, "happy", "wesen");
+            // Manuell abgelaufenen Boost setzen (expiresAt in der Vergangenheit)
+            c4.userData.boosts = [
+                {
+                    source: "test:expired",
+                    tagDelta: { dichte: 0.3 },
+                    expiresAt: performance.now() / 1000 - 10,
+                    label: "Expired",
+                },
+            ];
+            c4.userData.boostLastTick = -Infinity;
+            r.tickCreatureBoosts(performance.now() / 1000);
+            out.expiredCleaned = c4.userData.boosts.length === 0;
+
+            // 10. DSL-Op creature_apply_boost
+            const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
+            const dslIdx = r.state.creatures.indexOf(cDsl);
+            r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
+            out.dslAppliedBoost = Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
+
+            // 11. NON_BROADCASTABLE-Mitgliedschaft
+            out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
+
+            // 12. describeProgram
+            const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
+            out.descShowsBp = /Trank/.test(desc) && desc.includes(tonicName);
+
+            // 13. Inventar-Konsum: _consumeBlueprintFromInventory
+            if (Array.isArray(r.state.player.inventory)) {
+                r.state.player.inventory[0] = {
+                    kind: "blueprint",
+                    blueprintName: tonicName,
+                    count: 3,
+                };
+                const consumed = r._consumeBlueprintFromInventory(tonicName);
+                out.consumeReducesCount = consumed === true && r.state.player.inventory[0].count === 2;
+                // Bei count=0 → null
+                r.state.player.inventory[0].count = 1;
+                r._consumeBlueprintFromInventory(tonicName);
+                out.consumeNullsSlotAt0 = r.state.player.inventory[0] === null;
+                // Wenn nicht im Inventar → false
+                const noStock = r._consumeBlueprintFromInventory(tonicName);
+                out.noStockReturnsFalse = noStock === false;
+            }
+
+            // 14. Modus-Gate: pfad konsumiert Inventar, schöpfer/frieden kostenlos
+            const origMode = r.getGameMode();
+            r.setGameMode("schöpfer");
+            const freeGate = r._consumableInventoryGate(tonicName);
+            out.schoepferFree = freeGate.ok === true && freeGate.free === true;
+            r.setGameMode("pfad");
+            // Inventar leer → pfad lehnt ab
+            r.state.player.inventory = new Array(27).fill(null);
+            const pfadEmpty = r._consumableInventoryGate(tonicName);
+            out.pfadRejectsWithoutPotion = pfadEmpty.ok === false;
+            // Inventar gefüllt → pfad konsumiert
+            r.state.player.inventory[0] = {
+                kind: "blueprint",
+                blueprintName: tonicName,
+                count: 1,
+            };
+            const pfadOk = r._consumableInventoryGate(tonicName);
+            out.pfadConsumes = pfadOk.ok === true && r.state.player.inventory[0] === null;
+            r.setGameMode(origMode || "frieden");
+
+            // 15. UI: .creature-boost Pills bei Kreatur mit aktivem Boost
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            const listEl = document.getElementById("creature-list");
+            const boostPills = listEl ? listEl.querySelectorAll(".creature-boost") : [];
+            out.uiHasBoostPills = boostPills.length > 0;
+
+            // Cleanup
+            if (typeof r.deleteBlueprint === "function") r.deleteBlueprint(tonicName);
+            if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2f3Results && !wave6hP2f3Results.error) {
+        check(
+            "Welle 6.H P2F.3: alle 6 Methoden existieren (applyCreatureBoost + tickCreatureBoosts + activateCreatureConsumable + _pickCreatureAtCrosshair + _consumeBlueprintFromInventory + _consumableInventoryGate)",
+            wave6hP2f3Results.hasApplyBoost &&
+                wave6hP2f3Results.hasTickBoosts &&
+                wave6hP2f3Results.hasActivate &&
+                wave6hP2f3Results.hasPickCreature &&
+                wave6hP2f3Results.hasConsumeInv &&
+                wave6hP2f3Results.hasInvGate
+        );
+        check("Welle 6.H P2F.3: spawnCreatureAt initialisiert boosts = []", wave6hP2f3Results.initialBoostsEmpty);
+        check(
+            "Welle 6.H P2F.3: applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
+            wave6hP2f3Results.applyOk && wave6hP2f3Results.boostsListed && wave6hP2f3Results.boostHasSource
+        );
+        check(
+            "Welle 6.H P2F.3: applyCreatureBoost mit leerem tagDelta → lehnt ab",
+            wave6hP2f3Results.emptyBoostRejected
+        );
+        check(
+            "Welle 6.H P2F.3: Selbe source dedupliziert (verlängert + tagDelta-Update)",
+            wave6hP2f3Results.dedupeBySource && wave6hP2f3Results.deltaUpdated
+        );
+        check("Welle 6.H P2F.3: Boost-tagDelta fließt in computeCreatureStats (HP+)", wave6hP2f3Results.hpBoosted);
+        check("Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan", wave6hP2f3Results.consumableMarkOk);
+        check(
+            "Welle 6.H P2F.3: HYLOMORPHISMUS — Konsumable-Compound-Tags emergieren als Boost",
+            wave6hP2f3Results.tagBonusEmerged && wave6hP2f3Results.tagBonusHasDichte
+        );
+        check(
+            "Welle 6.H P2F.3: activateCreatureConsumable wendet emergenten Boost auf Kreatur an",
+            wave6hP2f3Results.activateOk && wave6hP2f3Results.boostOnCreature
+        );
+        check(
+            "Welle 6.H P2F.3: Konsumable hebt Kreatur-Stats sichtbar (HP+ via dichte-Boost)",
+            wave6hP2f3Results.consumableLiftsStats
+        );
+        check(
+            "Welle 6.H P2F.3: nicht-consumable Bauplan → activate lehnt ab (not_marked_as_consumable)",
+            wave6hP2f3Results.nonConsumableRejected
+        );
+        check("Welle 6.H P2F.3: tickCreatureBoosts entfernt abgelaufene Boosts", wave6hP2f3Results.expiredCleaned);
+        check("Welle 6.H P2F.3: DSL creature_apply_boost wendet Konsumable an", wave6hP2f3Results.dslAppliedBoost);
+        check(
+            "Welle 6.H P2F.3: creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
+            wave6hP2f3Results.opNonBroadcast
+        );
+        check("Welle 6.H P2F.3: describeProgram zeigt Trank-Namen", wave6hP2f3Results.descShowsBp);
+        check(
+            "Welle 6.H P2F.3: _consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
+            wave6hP2f3Results.consumeReducesCount &&
+                wave6hP2f3Results.consumeNullsSlotAt0 &&
+                wave6hP2f3Results.noStockReturnsFalse
+        );
+        check(
+            "Welle 6.H P2F.3: Modus-Gate — schöpfer kostenlos, pfad konsumiert Inventar oder lehnt ab",
+            wave6hP2f3Results.schoepferFree &&
+                wave6hP2f3Results.pfadRejectsWithoutPotion &&
+                wave6hP2f3Results.pfadConsumes
+        );
+        check(
+            "Welle 6.H P2F.3: UI — .creature-boost Pills in der Liste bei aktiven Boosts",
+            wave6hP2f3Results.uiHasBoostPills
+        );
+    } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
+        check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.H Phase 2E V1 + V1.1 + V2 + V3 — Kreatur-LLM-Persona + @-Adressen + Proaktive Sprache + Welt-Aktion-Vorschläge).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6HCreatureLlm(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
+    //
+    // Vision §1.5 — Spieler spricht mit EINER Kreatur, sie antwortet
+    // aus ihrer Sicht. Persona-Prompt versammelt VOLLE Identität
+    // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). KEIN echter
+    // LLM-Call im Test (kein API-Key) — wir prüfen Builder + Routing.
+    const wave6hP2eV1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+
+            // 1. Methoden existieren
+            out.hasBuildPersona = typeof r._buildCreaturePersonaPrompt === "function";
+            out.hasFindByName = typeof r._findCreatureByName === "function";
+            out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
+            out.hasParseAddress = typeof r._parseCreatureAddress === "function";
+            out.hasMaybeAnswerCreature = typeof r.maybeAnswerCreature === "function";
+
+            // 2. _findCreatureByName findet die Kreatur (case-insensitive)
+            const player = r.state.playerMesh.position;
+            const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
+            c.userData.name = "TestNira";
+            out.findExact = r._findCreatureByName("TestNira") === c;
+            out.findCaseInsensitive = r._findCreatureByName("testnira") === c;
+            out.findUnknown = r._findCreatureByName("FictionalXYZ") === null;
+
+            // 3. _parseCreatureAddress erkennt verschiedene Trennzeichen
+            const p1 = r._parseCreatureAddress("TestNira, hallo");
+            out.parseComma = p1 && p1.name === "TestNira" && p1.message === "hallo";
+            const p2 = r._parseCreatureAddress("TestNira: was hast du gesehen?");
+            out.parseColon = p2 && p2.name === "TestNira" && p2.message === "was hast du gesehen?";
+            const p3 = r._parseCreatureAddress("setze wetter sunny");
+            out.parseRejectsNonAddress = p3 === null; // kein „Name, text"-Pattern
+            const p4 = r._parseCreatureAddress("Anna_B-2: hallo");
+            out.parseAllowsHyphensUnderscores = p4 && p4.name === "Anna_B-2";
+
+            // 4. _buildCreaturePersonaPrompt enthält alle 4 Stat-Schichten + Welt
+            // Vorher: voll-ausgestattete Kreatur (Specs + Equipped + Boost + Memory)
+            c.userData.memory = [
+                { type: "gathered", content: { material: "holz" }, at: 1 },
+                { type: "gathered", content: { material: "holz" }, at: 2 },
+                { type: "gathered", content: { material: "holz" }, at: 3 },
+                { type: "built", content: { blueprint: "stein_block" }, at: 4 },
+            ];
+            r.equipCreatureTool(c, "hammer");
+            r.applyCreatureBoost(c, {
+                source: "test:tonic",
+                tagDelta: { dichte: 0.3 },
+                durationSeconds: 60,
+                label: "Test-Tonic",
+            });
+            const prompt = r._buildCreaturePersonaPrompt(c);
+            out.promptIsString = typeof prompt === "string" && prompt.length > 0;
+            out.promptHasName = /TestNira/.test(prompt);
+            out.promptHasSoulLabel = /Wesen/.test(prompt);
+            out.promptHasStats = /HP\s+\d/.test(prompt) && /SPD\s+\d/.test(prompt);
+            out.promptHasSpecs = /Sammler/.test(prompt) && /holz/.test(prompt);
+            out.promptHasEquipped = /hammer/.test(prompt);
+            out.promptHasBoost = /Test-Tonic/.test(prompt);
+            out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
+            out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
+            out.promptInstructsJson = /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
+            // V3 (V7.93): Prompt erlaubt jetzt program + nennt
+            // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
+            // wir prüfen, dass Whitelist + Anweisung enthalten sind.
+            out.promptForbidsProgram = /Welt-Aktion ist erlaubt/.test(prompt) && /Erlaubte Ops/.test(prompt);
+            out.promptHasAge = /Sekunden|Minuten|Stunden|Tage/.test(prompt);
+
+            // 5. llmCallCreature ohne LLM-aktiv → error-Object
+            const wasEnabled = r.state.llm && r.state.llm.enabled;
+            if (r.state.llm) r.state.llm.enabled = false;
+            // (kann nicht await in evaluate ohne async — wir testen sync Behauptung)
+            out.llmCreatureNeedsLlm = typeof r.llmCallCreature === "function"; // Existenz reicht
+
+            // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
+            let chatLines = [];
+            const append = (text) => chatLines.push(text);
+            // synchron prüfen wir nur das Parse + LLM-Off-Branch
+            // (await funktioniert in evaluate via async-IIFE — vereinfacht)
+            return Promise.resolve()
+                .then(async () => {
+                    await r.maybeAnswerCreature("TestNira, hallo", append);
+                    out.llmOffPolite = chatLines.some((l) => /hört dich/.test(l));
+                    out.llmOffNoCall = !r.state.llm.inFlight;
+                    // Unbekannter Name → höfliche Ablehnung
+                    chatLines.length = 0;
+                    await r.maybeAnswerCreature("UnbekannterXYZ, hallo", append);
+                    out.unknownPolite = chatLines.some((l) => /Niemand|hört zu/.test(l));
+                    if (r.state.llm) r.state.llm.enabled = wasEnabled || false;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
+        check(
+            "Welle 6.H P2E V1: alle 5 Methoden existieren (_buildCreaturePersonaPrompt + _findCreatureByName + llmCallCreature + _parseCreatureAddress + maybeAnswerCreature)",
+            wave6hP2eV1Results.hasBuildPersona &&
+                wave6hP2eV1Results.hasFindByName &&
+                wave6hP2eV1Results.hasLlmCallCreature &&
+                wave6hP2eV1Results.hasParseAddress &&
+                wave6hP2eV1Results.hasMaybeAnswerCreature
+        );
+        check(
+            "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
+            wave6hP2eV1Results.findExact && wave6hP2eV1Results.findCaseInsensitive && wave6hP2eV1Results.findUnknown
+        );
+        check(
+            "Welle 6.H P2E V1: _parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab",
+            wave6hP2eV1Results.parseComma &&
+                wave6hP2eV1Results.parseColon &&
+                wave6hP2eV1Results.parseRejectsNonAddress &&
+                wave6hP2eV1Results.parseAllowsHyphensUnderscores
+        );
+        check(
+            "Welle 6.H P2E V1: Persona-Prompt enthält Name + Soul-Label + Alter",
+            wave6hP2eV1Results.promptHasName && wave6hP2eV1Results.promptHasSoulLabel && wave6hP2eV1Results.promptHasAge
+        );
+        check("Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)", wave6hP2eV1Results.promptHasStats);
+        check(
+            "Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)",
+            wave6hP2eV1Results.promptHasSpecs
+        );
+        check(
+            "Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)",
+            wave6hP2eV1Results.promptHasEquipped
+        );
+        check("Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)", wave6hP2eV1Results.promptHasBoost);
+        check("Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug", wave6hP2eV1Results.promptHasMemory);
+        check("Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)", wave6hP2eV1Results.promptHasWeather);
+        check(
+            "Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)",
+            wave6hP2eV1Results.promptInstructsJson
+        );
+        check(
+            "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
+            wave6hP2eV1Results.promptForbidsProgram
+        );
+        check(
+            "Welle 6.H P2E V1: maybeAnswerCreature ohne aktive LLM → höflicher Hinweis (kein API-Call)",
+            wave6hP2eV1Results.llmOffPolite && wave6hP2eV1Results.llmOffNoCall
+        );
+        check(
+            "Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
+            wave6hP2eV1Results.unknownPolite
+        );
+    } else if (wave6hP2eV1Results && wave6hP2eV1Results.error) {
+        check(`Welle 6.H P2E V1: evaluate-Fehler — ${wave6hP2eV1Results.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
+    //
+    // Schöpfer-Feedback nach Browser-Test V7.90: "Bran wie gehts"
+    // wurde nicht als Kreatur-Adresse erkannt (kein Trenner) → fiel
+    // zur Welt-Grok zurück, die als Welt antwortete aber Bran als
+    // Zuhörer adressierte (verwirrend). V1.1: @-Pattern als primäre
+    // Geste (Discord/Slack/Twitter-Konvention) + Soul-Farben für
+    // Identität (Sprite=cyan/Wesen=brass/Geist=grün).
+    const wave6hP2eV11Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+
+            // 1. @Name text → erkannt als explizite Adresse
+            const p1 = r._parseCreatureAddress("@Bran wie gehts");
+            out.atPatternMatches = p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
+            // 2. @Name, text → @ + Komma zusammen erlaubt
+            const p2 = r._parseCreatureAddress("@Bran, was hast du gesehen?");
+            out.atPatternWithComma = p2 && p2.name === "Bran" && p2.message === "was hast du gesehen?";
+            // 3. @Name: text → @ + Doppelpunkt zusammen erlaubt
+            const p3 = r._parseCreatureAddress("@Bran: hallo");
+            out.atPatternWithColon = p3 && p3.name === "Bran" && p3.message === "hallo";
+            // 4. Name, text → bleibt rückwärts-kompatibel, explicit=false
+            const p4 = r._parseCreatureAddress("Bran, hallo");
+            out.fallbackComma = p4 && p4.name === "Bran" && p4.message === "hallo" && p4.explicit === false;
+            // 5. "Bran wie gehts" (ohne Trenner, ohne @) → NICHT geparst
+            //    (das war der Bug: Welt-Grok antwortete, wir wollen das nicht)
+            const p5 = r._parseCreatureAddress("Bran wie gehts");
+            out.noTrennerRejected = p5 === null;
+            // 6. "@ " ohne Name → nicht geparst
+            const p6 = r._parseCreatureAddress("@ hallo");
+            out.atWithoutNameRejected = p6 === null;
+
+            // 7. Liste rendert Soul-Klassen auf creature-name
+            const player = r.state.playerMesh.position;
+            const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "sprite");
+            cSprite.userData.name = "TestSpriteV11";
+            const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
+            cWesen.userData.name = "TestWesenV11";
+            const cGeist = r.spawnCreatureAt(player.x + 620, player.y, player.z + 620, "happy", "geist");
+            cGeist.userData.name = "TestGeistV11";
+            if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
+            const listEl = document.getElementById("creature-list");
+            out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-sprite"));
+            out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
+            out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-geist"));
+
+            // 8. Chat-Output: erfolgreicher LLM-Pfad würde Soul-Span erzeugen
+            //    Wir testen den DOM-Pfad ohne echten API-Call durch
+            //    Stubbing von llmCallCreature. Das mockt die Antwort
+            //    und verifiziert, dass die DOM-Soul-Klassen gerendert
+            //    werden — der wichtige UX-Pfad für die Lesbarkeit.
+            const wasLlmEnabled = r.state.llm && r.state.llm.enabled;
+            if (r.state.llm) r.state.llm.enabled = true;
+            const origCall = r.llmCallCreature;
+            r.llmCallCreature = async () => ({ say: "Ich höre dich, Schöpfer." });
+            const chatOutput = document.getElementById("chat-output");
+            const beforeLines = chatOutput ? chatOutput.children.length : 0;
+            let chatLines = [];
+            return Promise.resolve()
+                .then(async () => {
+                    await r.maybeAnswerCreature("@TestSpriteV11 hallo", (t) => chatLines.push(t));
+                    const afterLines = chatOutput ? chatOutput.children.length : 0;
+                    out.chatLineAdded = afterLines > beforeLines;
+                    // Suche das Span mit chat-creature-name.soul-sprite
+                    const spans = chatOutput ? chatOutput.querySelectorAll(".chat-creature-name.soul-sprite") : [];
+                    out.chatHasSoulSpan = spans.length > 0;
+                    // Plain-Text-Antwort enthält den Namen
+                    const lastLine = chatOutput ? chatOutput.lastElementChild : null;
+                    out.chatLineHasName = lastLine && /TestSpriteV11/.test(lastLine.textContent);
+                    // Cleanup
+                    r.llmCallCreature = origCall;
+                    if (r.state.llm) r.state.llm.enabled = wasLlmEnabled || false;
+                    return out;
+                })
+                .catch((e) => ({ error: String(e) }));
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
+        check(
+            "Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)",
+            wave6hP2eV11Results.atPatternMatches
+        );
+        check(
+            "Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt",
+            wave6hP2eV11Results.atPatternWithComma && wave6hP2eV11Results.atPatternWithColon
+        );
+        check(
+            "Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)",
+            wave6hP2eV11Results.fallbackComma
+        );
+        check(
+            "Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)",
+            wave6hP2eV11Results.noTrennerRejected
+        );
+        check("Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt", wave6hP2eV11Results.atWithoutNameRejected);
+        check(
+            "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-sprite/.soul-wesen/.soul-geist auf creature-name",
+            wave6hP2eV11Results.spriteHasSoulClass &&
+                wave6hP2eV11Results.wesenHasSoulClass &&
+                wave6hP2eV11Results.geistHasSoulClass
+        );
+        check(
+            "Welle 6.H P2E V1.1: Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>",
+            wave6hP2eV11Results.chatLineAdded &&
+                wave6hP2eV11Results.chatHasSoulSpan &&
+                wave6hP2eV11Results.chatLineHasName
+        );
+    } else if (wave6hP2eV11Results && wave6hP2eV11Results.error) {
+        check(`Welle 6.H P2E V1.1: evaluate-Fehler — ${wave6hP2eV11Results.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
+    //
+    // Kreatur initiiert Chat-Output bei Events (Level-Up, Boost,
+    // Material-Mangel). Pre-baked phrase-pool, soul-aware, throttled.
+    // 4 Hook-Stellen: _onCreatureLevelUp, applyCreatureBoost,
+    // no_material_found (gather-tick), no_inventory_for_build (build-tick).
+    const wave6hP2eV2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+            const Class = r.constructor;
+
+            // 1. Konstanten + Methode existieren
+            out.hasPhrases = typeof Class.CREATURE_PROACTIVE_PHRASES === "object";
+            out.gapPerCreature = Class.CREATURE_PROACTIVE_GAP_PER_CREATURE === 60;
+            out.gapGlobal = Class.CREATURE_PROACTIVE_GAP_GLOBAL === 8;
+            out.hasMethod = typeof r._creatureSpeakProactive === "function";
+            out.toggleInState = typeof r.state.creatureProactiveSpeechEnabled === "boolean";
+
+            // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
+            const pool = Class.CREATURE_PROACTIVE_PHRASES;
+            const events = [
+                "level_up_gather",
+                "level_up_build",
+                "boost_received",
+                "no_material_found",
+                "no_inventory_for_build",
+            ];
+            out.allEventsPresent = events.every((e) => pool[e]);
+            out.hasSpriteVariants = pool.level_up_gather.sprite && pool.level_up_gather.sprite.length >= 2;
+            out.hasWesenVariants = pool.level_up_gather.wesen && pool.level_up_gather.wesen.length >= 2;
+            out.hasGeistVariants = pool.level_up_gather.geist && pool.level_up_gather.geist.length >= 2;
+            out.hasDefaultFallback = !!pool.level_up_gather.default;
+
+            // 3. Test-Setup: drei Soul-Kreaturen, frische Throttle, Toggle ON
+            r.state.creatureProactiveSpeechEnabled = true;
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            const player = r.state.playerMesh.position;
+            const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "sprite");
+            cSprite.userData.name = "ProacSprite";
+            cSprite.userData.lastProactiveSpeech = -Infinity;
+            const cWesen = r.spawnCreatureAt(player.x + 710, player.y, player.z + 710, "happy", "wesen");
+            cWesen.userData.name = "ProacWesen";
+            cWesen.userData.lastProactiveSpeech = -Infinity;
+            const cGeist = r.spawnCreatureAt(player.x + 720, player.y, player.z + 720, "happy", "geist");
+            cGeist.userData.name = "ProacGeist";
+            cGeist.userData.lastProactiveSpeech = -Infinity;
+
+            // 4. Erste Aussage funktioniert
+            const chatOutput = document.getElementById("chat-output");
+            const before = chatOutput ? chatOutput.children.length : 0;
+            const ok1 = r._creatureSpeakProactive(cSprite, "level_up_gather", { material: "holz", level: 2 });
+            out.firstSpeechOk = ok1 === true;
+            const after1 = chatOutput ? chatOutput.children.length : 0;
+            out.chatLineAdded = after1 > before;
+            // Soul-Span im DOM rendert mit sprite-Klasse
+            const lastLine = chatOutput ? chatOutput.lastElementChild : null;
+            out.lineHasSpriteSoul = !!(lastLine && lastLine.querySelector(".chat-creature-name.soul-sprite"));
+            out.lineHasName = lastLine && /ProacSprite/.test(lastLine.textContent);
+            out.templateReplaced = lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
+
+            // 5. Per-Kreatur-Throttle: SOFORT nochmal sprechen lehnt ab
+            const ok2 = r._creatureSpeakProactive(cSprite, "boost_received", { label: "Tonic" });
+            out.perCreatureThrottle = ok2 === false;
+
+            // 6. Global-Throttle: andere Kreatur SOFORT nach erster sprechen lehnt auch ab
+            const ok3 = r._creatureSpeakProactive(cWesen, "boost_received", { label: "Tonic" });
+            out.globalThrottle = ok3 === false;
+
+            // 7. Bei deaktiviertem Toggle → kein Output
+            r.state.creatureProactiveSpeechEnabled = false;
+            cGeist.userData.lastProactiveSpeech = -Infinity;
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            const ok4 = r._creatureSpeakProactive(cGeist, "boost_received", { label: "Tonic" });
+            out.toggleOffSilent = ok4 === false;
+
+            // 8. Unbekannter Event-Typ lehnt ab
+            r.state.creatureProactiveSpeechEnabled = true;
+            cGeist.userData.lastProactiveSpeech = -Infinity;
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            const ok5 = r._creatureSpeakProactive(cGeist, "unknown_event", {});
+            out.unknownEventRejected = ok5 === false;
+
+            // 9. Soul-spezifischer Pool wird gewählt (Geist-Phrase enthält
+            //    typische Geist-Wörter — wir prüfen, dass sie aus dem
+            //    geist-Pool stammt indem wir die rendered Zeile mit dem
+            //    Pool vergleichen).
+            cGeist.userData.lastProactiveSpeech = -Infinity;
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            r._creatureSpeakProactive(cGeist, "level_up_gather", { material: "laub", level: 1 });
+            const geistLine = chatOutput ? chatOutput.lastElementChild : null;
+            const geistText = geistLine ? geistLine.textContent : "";
+            out.geistUsedGeistPool = pool.level_up_gather.geist.some((tpl) => {
+                const filled = tpl.replace(/\$\{(\w+)\}/g, (m, k) =>
+                    k === "material" ? "laub" : k === "level" ? "1" : m
+                );
+                return geistText.includes(filled);
+            });
+
+            // 10. Hook _onCreatureLevelUp triggert proaktive Sprache
+            //     (Memory pushen, dann _creatureRemember triggert
+            //     _onCreatureLevelUp wenn Threshold erreicht).
+            const cLU = r.spawnCreatureAt(player.x + 730, player.y, player.z + 730, "happy", "wesen");
+            cLU.userData.name = "LevelUpTest";
+            cLU.userData.lastProactiveSpeech = -Infinity;
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            const beforeLU = chatOutput ? chatOutput.children.length : 0;
+            // 3 gathered-Memorys → Level 1 trigger
+            for (let i = 0; i < 3; i++) {
+                r._creatureRemember(cLU, "gathered", { material: "stein" });
+            }
+            const afterLU = chatOutput ? chatOutput.children.length : 0;
+            out.levelUpHookFired = afterLU > beforeLU;
+
+            // 11. Hook applyCreatureBoost triggert (NEUE Quelle)
+            const cBoost = r.spawnCreatureAt(player.x + 740, player.y, player.z + 740, "happy", "sprite");
+            cBoost.userData.name = "BoostTest";
+            cBoost.userData.lastProactiveSpeech = -Infinity;
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            const beforeB = chatOutput ? chatOutput.children.length : 0;
+            r.applyCreatureBoost(cBoost, {
+                source: "test:proactive",
+                tagDelta: { dichte: 0.3 },
+                durationSeconds: 30,
+                label: "TestTrank",
+            });
+            const afterB = chatOutput ? chatOutput.children.length : 0;
+            out.boostHookFired = afterB > beforeB;
+
+            // 12. Hook applyCreatureBoost: SELBE Quelle nochmal → NICHT erneut sprechen
+            //     (würde sonst bei jeder Boost-Verlängerung loslabern)
+            cBoost.userData.lastProactiveSpeech = -Infinity; // throttle reset
+            r.state.lastCreatureProactiveSpeech = -Infinity;
+            const beforeB2 = chatOutput ? chatOutput.children.length : 0;
+            r.applyCreatureBoost(cBoost, {
+                source: "test:proactive", // SELBE source
+                tagDelta: { dichte: 0.5 },
+                durationSeconds: 30,
+                label: "TestTrank",
+            });
+            const afterB2 = chatOutput ? chatOutput.children.length : 0;
+            out.boostRefreshSilent = afterB2 === beforeB2;
+
+            // 13. UI-Toggle existiert im DOM
+            const toggleEl = document.getElementById("creature-speech-toggle");
+            out.toggleExists = !!toggleEl;
+            out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
+        check(
+            "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + _creatureSpeakProactive existieren",
+            wave6hP2eV2Results.hasPhrases &&
+                wave6hP2eV2Results.gapPerCreature &&
+                wave6hP2eV2Results.gapGlobal &&
+                wave6hP2eV2Results.hasMethod &&
+                wave6hP2eV2Results.toggleInState
+        );
+        check(
+            "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
+            wave6hP2eV2Results.allEventsPresent
+        );
+        check(
+            "Welle 6.H P2E V2: Pro Event drei Soul-Varianten (sprite/wesen/geist) + default-Fallback",
+            wave6hP2eV2Results.hasSpriteVariants &&
+                wave6hP2eV2Results.hasWesenVariants &&
+                wave6hP2eV2Results.hasGeistVariants &&
+                wave6hP2eV2Results.hasDefaultFallback
+        );
+        check(
+            "Welle 6.H P2E V2: Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement",
+            wave6hP2eV2Results.firstSpeechOk &&
+                wave6hP2eV2Results.chatLineAdded &&
+                wave6hP2eV2Results.lineHasSpriteSoul &&
+                wave6hP2eV2Results.lineHasName &&
+                wave6hP2eV2Results.templateReplaced
+        );
+        check(
+            "Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab",
+            wave6hP2eV2Results.perCreatureThrottle
+        );
+        check(
+            "Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab",
+            wave6hP2eV2Results.globalThrottle
+        );
+        check(
+            "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
+            wave6hP2eV2Results.toggleOffSilent
+        );
+        check("Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
+        check(
+            "Welle 6.H P2E V2: Soul-spezifischer Pool (Geist-Phrase aus geist-Pool gerendert)",
+            wave6hP2eV2Results.geistUsedGeistPool
+        );
+        check(
+            "Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache",
+            wave6hP2eV2Results.levelUpHookFired
+        );
+        check("Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost", wave6hP2eV2Results.boostHookFired);
+        check(
+            "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
+            wave6hP2eV2Results.boostRefreshSilent
+        );
+        check(
+            "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
+            wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
+        );
+    } else if (wave6hP2eV2Results && wave6hP2eV2Results.error) {
+        check(`Welle 6.H P2E V2: evaluate-Fehler — ${wave6hP2eV2Results.error}`, false);
+    }
+
+    // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
+    //
+    // Schöpfer-Wahl V7.93 + V9.36-Reroute: atmosphärisch + Terrain
+    // (voxel_carve/voxel_fill erlaubt, modify_terrain entfernt),
+    // modus-abhängig (schöpfer auto-execute / pfad+frieden
+    // inline-Buttons), LLM-Augmentation bei seltenen Events (L5,
+    // neue Spec) mit eigenem 10-Min-Throttle. Tests prüfen:
+    // Whitelist-Validation, Modus-Diskrimination, Memory-Einträge,
+    // Sandbox-Defense.
+    const wave6hP2eV3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+            const Class = r.constructor;
+
+            // 1. Konstanten + Methoden existieren
+            out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
+            out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
+            out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
+            out.voxelCarveAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_carve");
+            out.voxelFillAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_fill");
+            out.spawnBlueprintAllowed = Class.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
+            out.chainAllowed = Class.CREATURE_PROPOSED_OPS.has("chain");
+            // Forbidden: player_*, define_*, delete_*, set_mode
+            out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
+            out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
+            out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
+            out.hasValidator = typeof r._isCreatureProposalAllowed === "function";
+            out.hasHandler = typeof r._handleCreatureProposedProgram === "function";
+            out.hasExecutor = typeof r._executeCreatureProgram === "function";
+            out.hasButtonRenderer = typeof r._renderCreatureProposalButtons === "function";
+            out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
+            out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
+
+            // 2. Validator: erlaubtes Programm
+            const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);
+            out.allowsWeather = okWeather.ok === true;
+            const okChain = r._isCreatureProposalAllowed(["chain", ["weather", "sunny"], ["skybox_color", "#ffd9a3"]]);
+            out.allowsChain = okChain.ok === true;
+            const okTerrain = r._isCreatureProposalAllowed(["voxel_carve", 0, 50, 0, 3]);
+            out.allowsTerrain = okTerrain.ok === true;
+
+            // 3. Validator: verbotene Programme
+            const noPlayerSpeed = r._isCreatureProposalAllowed(["player_speed", 20]);
+            out.rejectsPlayerSpeed = noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
+            const noDefine = r._isCreatureProposalAllowed(["define_blueprint", "evil", [{ shape: "box" }]]);
+            out.rejectsDefine = noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
+            // Verbotene Op TIEF im Chain wird auch erkannt
+            const nestedBad = r._isCreatureProposalAllowed([
+                "chain",
+                ["weather", "sunny"],
+                ["player_speed", 50], // verboten, tief
+            ]);
+            out.rejectsNestedForbidden = nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
+
+            // 4. Persona-Prompt erlaubt program (V3-Update)
+            const player = r.state.playerMesh.position;
+            const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
+            c.userData.name = "TestProgramKreatur";
+            const prompt = r._buildCreaturePersonaPrompt(c);
+            out.promptMentionsProgram = /Welt-Aktion ist erlaubt/.test(prompt);
+            out.promptListsOps = /Erlaubte Ops/.test(prompt) && /weather/.test(prompt);
+            out.promptMentionsModus = /schöpfer-Modus/.test(prompt);
+
+            // 5. Modus-abhängiger Pfad: schöpfer = auto-execute,
+            //    pfad = inline-Buttons
+            const origMode = r.getGameMode();
+            const chatOutput = document.getElementById("chat-output");
+
+            // Test schöpfer-Auto: der Wetter ändert sich tatsächlich
+            r.setGameMode("schöpfer");
+            const beforeWeather = r.state.weather;
+            const targetWeather = beforeWeather === "rainy" ? "sunny" : "rainy";
+            const beforeAuto = chatOutput ? chatOutput.children.length : 0;
+            r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather]);
+            out.autoExecutedInSchöpfer = r.state.weather === targetWeather;
+            const afterAuto = chatOutput ? chatOutput.children.length : 0;
+            out.autoChatLineAdded = afterAuto > beforeAuto;
+            // Memory-Eintrag: auto_executed_action
+            const memTypes = (c.userData.memory || []).map((m) => m.type);
+            out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
+
+            // Test pfad: Buttons werden gerendert (kein automatischer
+            // Wetter-Wechsel)
+            r.setGameMode("pfad");
+            const beforePending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
+            const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
+            r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
+            out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
+            const afterPending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
+            out.pfadRendersButtons = afterPending > beforePending;
+            // Memory: proposed_action vorhanden, aber NICHT yet accepted
+            const memTypes2 = (c.userData.memory || []).map((m) => m.type);
+            out.memoryHasProposed = memTypes2.includes("proposed_action");
+
+            // 6. Sandbox-Defense: verbotenes Programm wird auch in
+            //    schöpfer-Modus blockiert (defense in depth)
+            r.setGameMode("schöpfer");
+            const memCountBefore = (c.userData.memory || []).length;
+            const blockedResult = r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["player_speed", 99]);
+            out.forbiddenBlockedEvenInSchöpfer = blockedResult === false;
+            const memTypes3 = (c.userData.memory || []).map((m) => m.type);
+            out.memoryHasBlocked = memTypes3.includes("proposal_blocked");
+            out.memoryGrew = (c.userData.memory || []).length > memCountBefore;
+
+            r.setGameMode(origMode || "frieden");
+
+            // 7. Inline-Buttons: Click führt aus. Wir nehmen den LATEST
+            //    accept-Button (Test 5 hat schon einen dagelassen).
+            r.setGameMode("pfad");
+            const c2 = r.spawnCreatureAt(player.x + 810, player.y, player.z + 810, "happy", "sprite");
+            c2.userData.name = "ClickTestKreatur";
+            const targetW3 = r.state.weather === "rainy" ? "sunny" : "rainy";
+            r._renderCreatureProposalButtons(c2, "ClickTestKreatur", ["weather", targetW3]);
+            const acceptBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.accept") : [];
+            const acceptBtn = acceptBtns[acceptBtns.length - 1] || null;
+            out.acceptButtonExists = !!acceptBtn;
+            if (acceptBtn) {
+                acceptBtn.click();
+                out.acceptClickExecutes = r.state.weather === targetW3;
+                const memTypes4 = (c2.userData.memory || []).map((m) => m.type);
+                out.memoryHasAccepted = memTypes4.includes("accepted_action");
+            }
+
+            // 8. Reject-Button: Memory-Eintrag rejected_action
+            const c3 = r.spawnCreatureAt(player.x + 820, player.y, player.z + 820, "happy", "geist");
+            c3.userData.name = "RejectTestKreatur";
+            r._renderCreatureProposalButtons(c3, "RejectTestKreatur", ["weather", "rainy"]);
+            const rejectBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.reject") : [];
+            const rejectBtn = rejectBtns[rejectBtns.length - 1] || null;
+            out.rejectButtonExists = !!rejectBtn;
+            if (rejectBtn) {
+                rejectBtn.click();
+                const memTypes5 = (c3.userData.memory || []).map((m) => m.type);
+                out.memoryHasRejected = memTypes5.includes("rejected_action");
+            }
+
+            r.setGameMode(origMode || "frieden");
+            return out;
+        })
+        .catch((e) => ({ error: String(e), stack: e.stack }));
+
+    if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
+        check(
+            "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set + Validator + Handler + Executor + ButtonRenderer + RareEvent-Trigger existieren",
+            wave6hP2eV3Results.hasWhitelist &&
+                wave6hP2eV3Results.whitelistSize &&
+                wave6hP2eV3Results.hasValidator &&
+                wave6hP2eV3Results.hasHandler &&
+                wave6hP2eV3Results.hasExecutor &&
+                wave6hP2eV3Results.hasButtonRenderer &&
+                wave6hP2eV3Results.hasRareEventTrigger &&
+                wave6hP2eV3Results.rareEventGap
+        );
+        check(
+            "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
+            wave6hP2eV3Results.weatherAllowed &&
+                wave6hP2eV3Results.voxelCarveAllowed &&
+                wave6hP2eV3Results.voxelFillAllowed &&
+                wave6hP2eV3Results.spawnBlueprintAllowed &&
+                wave6hP2eV3Results.chainAllowed
+        );
+        check(
+            "Welle 6.H P2E V3: Whitelist verbietet player_speed + define_blueprint + set_mode (Spieler-/Welt-Wissen-Eingriff blockiert)",
+            wave6hP2eV3Results.playerSpeedForbidden &&
+                wave6hP2eV3Results.defineBlueprintForbidden &&
+                wave6hP2eV3Results.setModeForbidden
+        );
+        check(
+            "Welle 6.H P2E V3 + V9.36: Validator akzeptiert erlaubte Programme (weather, chain, voxel_carve)",
+            wave6hP2eV3Results.allowsWeather && wave6hP2eV3Results.allowsChain && wave6hP2eV3Results.allowsTerrain
+        );
+        check(
+            "Welle 6.H P2E V3: Validator lehnt verbotene Ops ab + nennt forbiddenOp",
+            wave6hP2eV3Results.rejectsPlayerSpeed && wave6hP2eV3Results.rejectsDefine
+        );
+        check(
+            "Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)",
+            wave6hP2eV3Results.rejectsNestedForbidden
+        );
+        check(
+            "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
+            wave6hP2eV3Results.promptMentionsProgram &&
+                wave6hP2eV3Results.promptListsOps &&
+                wave6hP2eV3Results.promptMentionsModus
+        );
+        check(
+            "Welle 6.H P2E V3: schöpfer-Modus → auto-execute (Wetter ändert sich tatsächlich) + chat-Hinweis-Zeile + Memory auto_executed_action",
+            wave6hP2eV3Results.autoExecutedInSchöpfer &&
+                wave6hP2eV3Results.autoChatLineAdded &&
+                wave6hP2eV3Results.memoryHasAutoExecuted
+        );
+        check(
+            "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",
+            wave6hP2eV3Results.pfadDoesNotAutoExecute &&
+                wave6hP2eV3Results.pfadRendersButtons &&
+                wave6hP2eV3Results.memoryHasProposed
+        );
+        check(
+            "Welle 6.H P2E V3: Defense-in-Depth — verbotenes Programm wird AUCH im schöpfer-Modus blockiert + proposal_blocked-Memory",
+            wave6hP2eV3Results.forbiddenBlockedEvenInSchöpfer &&
+                wave6hP2eV3Results.memoryHasBlocked &&
+                wave6hP2eV3Results.memoryGrew
+        );
+        check(
+            "Welle 6.H P2E V3: Accept-Button-Click führt Programm aus + accepted_action-Memory",
+            wave6hP2eV3Results.acceptButtonExists &&
+                wave6hP2eV3Results.acceptClickExecutes &&
+                wave6hP2eV3Results.memoryHasAccepted
+        );
+        check(
+            "Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)",
+            wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
+        );
+    } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
+        check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 6.B Phase 1+2 (CAD-Werkstatt 3D-Preview + Gizmo) + V8.00 Resize-Handles + V8.01 Drawer-Scroll + V8.02 Drag-Drop/Connection + V8.03 Camera-CAD).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandCadWorkshop(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
+    const wave6bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                // --- Phase 1: State-Schema ---
+                const ws = r._ensureWorkshopState();
+                out.hasSelectedPartIdxField = "selectedPartIdx" in ws;
+                out.hasPreviewField = "preview" in ws;
+                out.hasManipulatorModeField = typeof ws.manipulatorMode === "string";
+                out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
+                out.defaultManipulatorMode = ws.manipulatorMode;
+                out.defaultSnapEnabled = ws.snapEnabled;
+
+                // --- Phase 1: DOM-Elemente ---
+                out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
+                out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
+
+                // --- Phase 2: Konstanten ---
+                const AR = r.constructor;
+                out.gizmoColorsFrozen =
+                    !!AR.WORKSHOP_GIZMO_COLORS &&
+                    Object.isFrozen(AR.WORKSHOP_GIZMO_COLORS) &&
+                    typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
+                    typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
+                    typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
+                out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
+                out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
+                out.snapScale = AR.WORKSHOP_SNAP_SCALE;
+                out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
+
+                // --- Phase 2: Public API ---
+                out.modeSetTranslate = r.setWorkshopManipulatorMode("translate");
+                out.modeAfterTranslate = ws.manipulatorMode === "translate";
+                out.modeSetRotate = r.setWorkshopManipulatorMode("rotate");
+                out.modeAfterRotate = ws.manipulatorMode === "rotate";
+                out.modeSetScale = r.setWorkshopManipulatorMode("scale");
+                out.modeAfterScale = ws.manipulatorMode === "scale";
+                out.modeRejectInvalid = r.setWorkshopManipulatorMode("nonsense") === false;
+                r.setWorkshopManipulatorMode("translate"); // reset
+
+                const snapBefore = ws.snapEnabled;
+                const snapAfter1 = r.toggleWorkshopSnap();
+                out.snapTogglesOff = snapBefore === true && snapAfter1 === false;
+                const snapAfter2 = r.toggleWorkshopSnap();
+                out.snapTogglesBack = snapAfter2 === true;
+                // Explizites Argument: true setzt + liefert true, false setzt + liefert false
+                out.snapExplicitTrue = r.toggleWorkshopSnap(true) === true;
+                out.snapExplicitFalseReturns = r.toggleWorkshopSnap(false) === false;
+                r.toggleWorkshopSnap(true); // reset
+
+                // --- Phase 2: Snap-Helper ---
+                ws.snapEnabled = true;
+                out.snapTranslateRound = r._workshopApplySnap(1.7, "translate") === 1.5;
+                out.snapTranslateRoundUp = r._workshopApplySnap(1.8, "translate") === 2.0;
+                out.snapScaleRound = Math.abs(r._workshopApplySnap(1.23, "scale") - 1.2) < 0.0001;
+                ws.snapEnabled = false;
+                out.snapInactivePassthrough = r._workshopApplySnap(1.7, "translate") === 1.7;
+                ws.snapEnabled = true;
+
+                // --- Phase 2: Helper-Methoden ---
+                const vx = r._workshopAxisToVec3("x");
+                out.axisToVecX = vx && vx.x === 1 && vx.y === 0 && vx.z === 0;
+                const vy = r._workshopAxisToVec3("y");
+                out.axisToVecY = vy && vy.x === 0 && vy.y === 1 && vy.z === 0;
+                const vz = r._workshopAxisToVec3("z");
+                out.axisToVecZ = vz && vz.x === 0 && vz.y === 0 && vz.z === 1;
+                const perpY = r._workshopAxisPerpendicular(vy);
+                out.axisPerpDot = perpY && Math.abs(perpY.dot(vy)) < 0.001;
+
+                // --- Phase 1: Selection-Pfad (ohne Preview, headless-safe) ---
+                // Bauplan auswählen: braucht selectBlueprintForEdit auf existing built-in
+                r.selectBlueprintForEdit("village");
+                out.selectedSetToVillage = ws.selectedBlueprint === "village";
+                // selectedPartIdx wurde zurückgesetzt
+                out.selectionResetOnBlueprintSwitch = ws.selectedPartIdx === null;
+                // Manuelle Selection setzen (ohne Klick)
+                r._workshopSetSelection(0);
+                out.selectionSetTo0 = ws.selectedPartIdx === 0;
+                // Out-of-range wird abgelehnt
+                r._workshopSetSelection(9999);
+                out.selectionRejectsOOB = ws.selectedPartIdx === null;
+                r._workshopSetSelection(null); // reset
+
+                // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
+                // village ist built-in → kein Drag
+                out.builtInRejected = true;
+                try {
+                    r._workshopSetSelection(0);
+                    // Wir können _workshopBeginManipulation aufrufen, aber es sollte
+                    // intern wegen builtIn früh aussteigen (kein dragManipulator gesetzt).
+                    // Wir können das nur prüfen wenn preview existiert.
+                    r._workshopEnsurePreview();
+                    const pre = r.state.workshop.preview;
+                    if (pre) {
+                        r._workshopBeginManipulation("translate", "x", 100, 100);
+                        out.builtInRejected = pre.dragManipulator === null;
+                    }
+                } catch {
+                    out.builtInRejected = false;
+                }
+
+                // --- Phase 2: Manipulator auf eigenem Bauplan ---
+                // Klone village zu test_wave6b
+                const cloneOk = r.cloneBlueprint("village", "test_wave6b");
+                out.cloneOk = cloneOk;
+                if (cloneOk) {
+                    r.selectBlueprintForEdit("test_wave6b");
+                    r._workshopSetSelection(0);
+                    const partBefore = JSON.parse(JSON.stringify(r.state.blueprints.test_wave6b.parts[0]));
+                    out.posBefore = partBefore.position.x;
+                    // Drag begin auf eigenem Bauplan
+                    r._workshopEnsurePreview();
+                    const pre = r.state.workshop.preview;
+                    if (pre) {
+                        r._workshopBeginManipulation("translate", "x", 100, 100);
+                        out.dragManipulatorSet = pre.dragManipulator !== null;
+                        if (pre.dragManipulator) {
+                            out.dragModeIsTranslate = pre.dragManipulator.mode === "translate";
+                            out.dragAxisIsX = pre.dragManipulator.axis === "x";
+                        }
+                        // End-Pfad räumt auf
+                        r._workshopEndManipulation();
+                        out.dragManipulatorCleared = pre.dragManipulator === null;
+                    }
+                    // Aufräumen: deleteBlueprint allein refreshed nicht die
+                    // Workshop-DOM-Liste — wir müssen das explizit nachziehen,
+                    // sonst sieht der nachfolgende Ring-6.6-Test eine Liste,
+                    // die 1 Eintrag länger ist als state.blueprints.
+                    r.deleteBlueprint("test_wave6b");
+                    r.selectBlueprintForEdit("village");
+                    r._renderWorkshopDOM();
+                }
+
+                // --- Phase 2: UI-Elemente ---
+                out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
+                const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
+                // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
+                out.fourModeButtons = modeBtns.length === 4;
+                out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
+
+                // --- Phase 2: Gizmo-Aufbau ---
+                r._workshopEnsurePreview();
+                const pre = r.state.workshop.preview;
+                if (pre && pre.gizmo) {
+                    out.gizmoBuilt = true;
+                    out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
+                    // Pro Modus ein paar Mesh-Einträge in gizmoMeshes
+                    let tCount = 0,
+                        rCount = 0,
+                        sCount = 0;
+                    for (const info of pre.gizmoMeshes.values()) {
+                        if (info.mode === "translate") tCount++;
+                        else if (info.mode === "rotate") rCount++;
+                        else if (info.mode === "scale") sCount++;
+                    }
+                    out.gizmoHasTranslateMeshes = tCount >= 3;
+                    out.gizmoHasRotateMeshes = rCount >= 3;
+                    out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
+                    // V7.99 Bug-Fix: Picker-Meshes erhöhen die Mesh-
+                    // Anzahl pro Modus (visual + picker pro Handle).
+                    // translate: 3 × (shaft + tip + picker) = 9
+                    // rotate: 3 × (ring + picker) = 6
+                    // scale: 3 × (cube + shaft + picker) + 2 × (center + picker) = 11
+                    out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
+
+                    // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
+                    // Bauplan ist aktuell village (Built-in). Sync rufen
+                    // und prüfen dass Gizmo versteckt ist.
+                    r.selectBlueprintForEdit("village");
+                    r._workshopSetSelection(0);
+                    r._workshopSyncGizmo();
+                    out.gizmoHiddenOnBuiltIn = pre.gizmo.visible === false;
+                    // Banner sichtbar?
+                    const banner = document.getElementById("workshop-readonly-banner");
+                    out.readonlyBannerVisibleOnBuiltIn = banner && banner.hidden === false;
+                    // Mode-Bar disabled?
+                    const firstModeBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode]");
+                    out.modeBarDisabledOnBuiltIn = firstModeBtn && firstModeBtn.disabled === true;
+                    // Jetzt mit eigenem Bauplan: Klone + Selection + Sync
+                    r.cloneBlueprint("village", "test_visibility");
+                    r.selectBlueprintForEdit("test_visibility");
+                    r._workshopSetSelection(0);
+                    r._workshopSyncGizmo();
+                    out.gizmoVisibleOnCustom = pre.gizmo.visible === true;
+                    out.readonlyBannerHiddenOnCustom = banner && banner.hidden === true;
+                    out.modeBarEnabledOnCustom = firstModeBtn && firstModeBtn.disabled === false;
+                    r.deleteBlueprint("test_visibility");
+                    r.selectBlueprintForEdit("village");
+                    r._renderWorkshopDOM();
+                }
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave6bResults && !wave6bResults.error) {
+        check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
+        check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
+        check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
+        check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
+        check("Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint", wave6bResults.selectedSetToVillage);
+        check(
+            "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
+            wave6bResults.selectionResetOnBlueprintSwitch
+        );
+        check("Welle 6.B P1: _workshopSetSelection(0) setzt selectedPartIdx", wave6bResults.selectionSetTo0);
+        check(
+            "Welle 6.B P1: _workshopSetSelection lehnt out-of-range (idx=null bei OOB)",
+            wave6bResults.selectionRejectsOOB
+        );
+        check(
+            "Welle 6.B P2: manipulatorMode-Feld + Default 'translate'",
+            wave6bResults.hasManipulatorModeField && wave6bResults.defaultManipulatorMode === "translate"
+        );
+        check(
+            "Welle 6.B P2: snapEnabled-Feld + Default true",
+            wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
+        );
+        check("Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)", wave6bResults.gizmoColorsFrozen);
+        check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
+        check(
+            "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
+            Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
+        );
+        check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
+        check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
+        check(
+            "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",
+            wave6bResults.modeSetTranslate &&
+                wave6bResults.modeAfterTranslate &&
+                wave6bResults.modeSetRotate &&
+                wave6bResults.modeAfterRotate &&
+                wave6bResults.modeSetScale &&
+                wave6bResults.modeAfterScale
+        );
+        check("Welle 6.B P2: setWorkshopManipulatorMode lehnt ungültige Modi ab", wave6bResults.modeRejectInvalid);
+        check(
+            "Welle 6.B P2: toggleWorkshopSnap toggelt true→false→true",
+            wave6bResults.snapTogglesOff && wave6bResults.snapTogglesBack
+        );
+        check(
+            "Welle 6.B P2: toggleWorkshopSnap akzeptiert explizites Argument (true/false)",
+            wave6bResults.snapExplicitTrue && wave6bResults.snapExplicitFalseReturns
+        );
+        check(
+            "Welle 6.B P2: _workshopApplySnap aktiv rundet 1.7 → 1.5 (translate-step 0.5)",
+            wave6bResults.snapTranslateRound
+        );
+        check("Welle 6.B P2: _workshopApplySnap aktiv rundet 1.8 → 2.0", wave6bResults.snapTranslateRoundUp);
+        check("Welle 6.B P2: _workshopApplySnap scale 1.23 → 1.2 (step 0.1)", wave6bResults.snapScaleRound);
+        check("Welle 6.B P2: _workshopApplySnap inaktiv → Wert unverändert", wave6bResults.snapInactivePassthrough);
+        check(
+            "Welle 6.B P2: _workshopAxisToVec3 liefert korrekte Welt-Achsen (X/Y/Z)",
+            wave6bResults.axisToVecX && wave6bResults.axisToVecY && wave6bResults.axisToVecZ
+        );
+        check("Welle 6.B P2: _workshopAxisPerpendicular liefert senkrechte Achse (dot ≈ 0)", wave6bResults.axisPerpDot);
+        check(
+            "Welle 6.B P2: _workshopBeginManipulation auf Built-in setzt KEINEN dragManipulator (read-only-Schutz)",
+            wave6bResults.builtInRejected
+        );
+        check("Welle 6.B P2: cloneBlueprint(village → test_wave6b) erfolgreich", wave6bResults.cloneOk);
+        check(
+            "Welle 6.B P2: _workshopBeginManipulation auf eigenem Bauplan setzt dragManipulator",
+            wave6bResults.dragManipulatorSet
+        );
+        check(
+            "Welle 6.B P2: dragManipulator trägt korrekte mode+axis (translate/x)",
+            wave6bResults.dragModeIsTranslate && wave6bResults.dragAxisIsX
+        );
+        check("Welle 6.B P2: _workshopEndManipulation räumt dragManipulator auf", wave6bResults.dragManipulatorCleared);
+        check("Welle 6.B P2: #workshop-mode-bar im DOM", wave6bResults.modeBarInDom);
+        check("Welle 6.B P2+3: 4 Mode-Buttons (translate/rotate/scale/connect) im DOM", wave6bResults.fourModeButtons);
+        check("Welle 6.B P2: #workshop-snap-toggle im DOM", wave6bResults.snapToggleInDom);
+        check("Welle 6.B P2: Gizmo-Group gebaut (preview.gizmo nicht null)", wave6bResults.gizmoBuilt);
+        check("Welle 6.B P2: Gizmo hat 3 Sub-Groups (translate/rotate/scale)", wave6bResults.gizmoChildren);
+        check("Welle 6.B P2: Translate-Gizmo hat ≥3 Handle-Meshes (Pfeile)", wave6bResults.gizmoHasTranslateMeshes);
+        check("Welle 6.B P2: Rotate-Gizmo hat ≥3 Handle-Meshes (Ringe)", wave6bResults.gizmoHasRotateMeshes);
+        check(
+            "Welle 6.B P2: Scale-Gizmo hat ≥4 Handle-Meshes (3 Achsen + 1 uniform-Center)",
+            wave6bResults.gizmoHasScaleMeshes
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Picker-Meshes pro Mode (translate≥9, rotate≥6, scale≥8 — Klick-Toleranz)",
+            wave6bResults.gizmoHasPickers
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Gizmo VERSTECKT bei Built-in (verhindert Geist-Drag-Bug)",
+            wave6bResults.gizmoHiddenOnBuiltIn
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Read-only-Banner sichtbar bei Built-in",
+            wave6bResults.readonlyBannerVisibleOnBuiltIn
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons disabled bei Built-in",
+            wave6bResults.modeBarDisabledOnBuiltIn
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Gizmo SICHTBAR bei eigenem Bauplan + Selection",
+            wave6bResults.gizmoVisibleOnCustom
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Banner versteckt bei eigenem Bauplan",
+            wave6bResults.readonlyBannerHiddenOnCustom
+        );
+        check(
+            "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons enabled bei eigenem Bauplan",
+            wave6bResults.modeBarEnabledOnCustom
+        );
+    } else if (wave6bResults && wave6bResults.error) {
+        check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
+    }
+
+    // ### V8.00 — Resize-Handles (Konsole + Drawer) + Background-Fix ###
+    const resizeResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                out.hasInstallMethod = typeof r.installResizeHandles === "function";
+                out.hasInternalMethod = typeof r._installResizeHandle === "function";
+                // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
+                // top-right statt bottom-right (unten verdeckt von
+                // Hotbar + Stats-HUD).
+                const consoleEl = document.getElementById("console");
+                out.consoleHasHandle = !!(consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br"));
+                // Jeder Drawer: bl-handle existiert
+                const drawers = document.querySelectorAll(".drawer[data-drawer]");
+                let allDrawersHaveHandle = drawers.length > 0;
+                let drawerCount = 0;
+                drawers.forEach((d) => {
+                    drawerCount++;
+                    if (!d.querySelector(":scope > .resize-handle.resize-bl")) {
+                        allDrawersHaveHandle = false;
+                    }
+                });
+                out.allDrawersHaveHandle = allDrawersHaveHandle;
+                out.drawerCount = drawerCount;
+                // Idempotenz: zweiter installResizeHandles-Call erzeugt keine Duplikate
+                r.installResizeHandles();
+                const handlesAfterSecond = document.querySelectorAll("#console > .resize-handle").length;
+                out.consoleHandleNotDuplicated = handlesAfterSecond === 1;
+                // localStorage-Persistence: simulate drag end
+                const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+                if (werkstatt) {
+                    werkstatt.style.width = "400px";
+                    werkstatt.style.height = "500px";
+                    // simulate save (mouseup handler logic)
+                    localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 400, height: 500 }));
+                    const raw = localStorage.getItem("anazh.resize.werkstatt");
+                    out.persistenceWorks = raw && JSON.parse(raw).width === 400 && JSON.parse(raw).height === 500;
+                    // cleanup
+                    werkstatt.style.width = "";
+                    werkstatt.style.height = "";
+                    localStorage.removeItem("anazh.resize.werkstatt");
+                }
+                // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
+                // Wir prüfen das via computed style — background sollte 'none' nicht sein.
+                const w = document.querySelector('[data-drawer="welt"]');
+                if (w) {
+                    const cs = getComputedStyle(w);
+                    out.drawerHasDirectBackground = cs.backgroundImage && cs.backgroundImage !== "none";
+                    out.drawerHasInsetShadow = cs.boxShadow && cs.boxShadow.includes("inset");
+                }
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (resizeResults && !resizeResults.error) {
+        check(
+            "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
+            resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
+        );
+        check(
+            "V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)",
+            resizeResults.consoleHasHandle
+        );
+        check(
+            `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
+            resizeResults.allDrawersHaveHandle
+        );
+        check(
+            "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
+            resizeResults.consoleHandleNotDuplicated
+        );
+        check("V8.00 Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
+        check(
+            "V8.00 BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
+            resizeResults.drawerHasDirectBackground
+        );
+        check(
+            "V8.00 BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
+            resizeResults.drawerHasInsetShadow
+        );
+    } else if (resizeResults && resizeResults.error) {
+        check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
+    }
+
+    // ### V8.01 — Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
+    const v801Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                // _wrapDrawerScroll + _workshopSyncCanvasSize existieren
+                out.hasWrapMethod = typeof r._wrapDrawerScroll === "function";
+                out.hasSyncMethod = typeof r._workshopSyncCanvasSize === "function";
+                // Jeder Drawer hat .drawer-scroll-Wrapper als direktes child
+                const drawers = document.querySelectorAll(".drawer[data-drawer]");
+                let allWrapped = drawers.length > 0;
+                drawers.forEach((d) => {
+                    if (!d.querySelector(":scope > .drawer-scroll")) allWrapped = false;
+                });
+                out.allDrawersWrapped = allWrapped;
+                out.drawerCount = drawers.length;
+                // Resize-Handle ist outside des scroll-Wrappers (sonst würde
+                // er weg-scrollen wie bei v8.00).
+                const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
+                if (werkstatt) {
+                    const handleOutside = !!werkstatt.querySelector(":scope > .resize-handle");
+                    const handleInsideWrap = !!werkstatt.querySelector(":scope > .drawer-scroll > .resize-handle");
+                    out.handleOutsideScroll = handleOutside && !handleInsideWrap;
+                }
+                // h2 ist ebenfalls direktes child (bleibt oben fest)
+                const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
+                out.h2DirectChildOfDrawer = !!w2;
+                // Drawer hat overflow:hidden + display:flex. Beide nur
+                // prüfbar wenn Drawer SICHTBAR (.drawer[hidden] hat
+                // display:block!important via CSS-Override).
+                // Öffne den Werkstatt-Tab kurz für den Test, später
+                // alles zurück.
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (tab) tab.click();
+                if (werkstatt) {
+                    const cs = getComputedStyle(werkstatt);
+                    out.drawerOverflowHidden = cs.overflow === "hidden" || cs.overflowY === "hidden";
+                    out.drawerDisplayFlex = cs.display === "flex";
+                }
+                // drawer-scroll hat overflow-y:auto
+                const scroll = werkstatt && werkstatt.querySelector(":scope > .drawer-scroll");
+                if (scroll) {
+                    const cs = getComputedStyle(scroll);
+                    out.scrollOverflowYAuto = cs.overflowY === "auto";
+                }
+                // Canvas-Sync: setze Drawer auf 600px, prüfe dass renderer.setSize gerufen wurde
+                const canvas = document.getElementById("workshop-preview-canvas");
+                if (canvas && werkstatt) {
+                    werkstatt.style.width = "600px";
+                    // Force eine Sync via _workshopSyncCanvasSize
+                    r._workshopSyncCanvasSize();
+                    const rect = canvas.getBoundingClientRect();
+                    const w = Math.max(64, Math.floor(rect.width));
+                    // canvas.width sollte jetzt der CSS-Größe entsprechen
+                    out.canvasSyncWorks = canvas.width === w;
+                    // cleanup
+                    werkstatt.style.width = "";
+                }
+                // CRITICAL Cleanup: zurück zum Welt-Tab + Yaw zurück auf 0,
+                // sonst stört der Test nachgelagerte Welt-Drawer- und
+                // Ring-5-V2-Prep-Tests.
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (v801Results && !v801Results.error) {
+        check(
+            "V8.01: _wrapDrawerScroll + _workshopSyncCanvasSize existieren",
+            v801Results.hasWrapMethod && v801Results.hasSyncMethod
+        );
+        check(
+            `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
+            v801Results.allDrawersWrapped
+        );
+        check(
+            "V8.01: h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
+            v801Results.h2DirectChildOfDrawer
+        );
+        check(
+            "V8.01: Resize-Handle ist außerhalb des Scroll-Wrappers — bleibt fest in der Ecke",
+            v801Results.handleOutsideScroll
+        );
+        check("V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)", v801Results.drawerOverflowHidden);
+        check("V8.01: .drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
+        check("V8.01: .drawer-scroll hat overflow-y:auto (scroller im Wrapper)", v801Results.scrollOverflowYAuto);
+        check(
+            "V8.01: _workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
+            v801Results.canvasSyncWorks
+        );
+    } else if (v801Results && v801Results.error) {
+        check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
+    }
+
+    // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
+    const v802Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                // Methoden existieren
+                out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
+                out.hasShapeDropHandler = typeof r._workshopHandleShapeDrop === "function";
+                out.hasConnectClick = typeof r._workshopHandleConnectClick === "function";
+                out.hasOpenPopover = typeof r._workshopOpenConnectPopover === "function";
+                out.hasClosePopover = typeof r._workshopCloseConnectPopover === "function";
+                out.hasApplyConn = typeof r._workshopApplyConnection === "function";
+
+                // Shape-Palette: 9 Cards im DOM
+                const palette = document.getElementById("workshop-shape-palette");
+                out.paletteInDom = !!palette;
+                if (palette) {
+                    const cards = palette.querySelectorAll(".workshop-shape-card");
+                    out.nineCards = cards.length === 9;
+                    // Alle 9 expected shapes
+                    const shapes = new Set();
+                    cards.forEach((c) => shapes.add(c.getAttribute("data-shape")));
+                    out.allNineShapesPresent = [
+                        "box",
+                        "sphere",
+                        "cylinder",
+                        "cone",
+                        "pyramid",
+                        "octahedron",
+                        "plane",
+                        "torus",
+                        "helix",
+                    ].every((s) => shapes.has(s));
+                    // Default: draggable=true (eigener Bauplan)
+                    // Aber bei Built-in (initial village) sollten sie draggable=false sein
+                }
+
+                // Drop-Handler-Test: auf Built-in muss er ablehnen
+                r.selectBlueprintForEdit("village");
+                const partsBeforeBuiltIn = r.state.blueprints.village.parts.length;
+                r._workshopHandleShapeDrop("box", 100, 100);
+                const partsAfterBuiltIn = r.state.blueprints.village.parts.length;
+                out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
+
+                // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
+                if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
+                r.cloneBlueprint("village", "test_phase3");
+                r.selectBlueprintForEdit("test_phase3");
+                r._workshopEnsurePreview();
+                const partsBefore = r.state.blueprints.test_phase3.parts.length;
+                r._workshopHandleShapeDrop("sphere", 100, 100);
+                const partsAfter = r.state.blueprints.test_phase3.parts.length;
+                out.dropOnCustomAddsPart = partsAfter === partsBefore + 1;
+                const newPart = r.state.blueprints.test_phase3.parts[partsAfter - 1];
+                out.newPartIsSphere = newPart && newPart.shape === "sphere";
+                out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
+
+                // Connect-Modus: setWorkshopManipulatorMode akzeptiert "connect"
+                out.connectModeAccepted = r.setWorkshopManipulatorMode("connect") === true;
+                out.modeIsConnect = r.state.workshop.manipulatorMode === "connect";
+
+                // Klick auf Part 0 im Connect-Mode → connectFirstPartIdx wird Source
+                r._workshopHandleConnectClick(0);
+                out.connectFirstSetTo0 = r.state.workshop.connectFirstPartIdx === 0;
+                // Klick auf Part 1 → öffnet Popover
+                r._workshopHandleConnectClick(1);
+                const popover = document.getElementById("workshop-connect-overlay");
+                out.popoverOpened = !!popover;
+                // Popover hat 8 Type-Buttons + 1 Cancel
+                if (popover) {
+                    const buttons = popover.querySelectorAll("button");
+                    out.popoverHasButtons = buttons.length === 9; // 8 types + cancel
+                }
+
+                // Apply Connection
+                r._workshopApplyConnection(0, 1, "lashing");
+                const conns = r.state.blueprints.test_phase3.connections || [];
+                out.connectionAdded = conns.some((c) => c.partA === 0 && c.partB === 1 && c.type === "lashing");
+                // Popover wurde geschlossen
+                out.popoverClosedAfterApply = !document.getElementById("workshop-connect-overlay");
+                // Connect-State zurückgesetzt
+                out.connectStateReset = r.state.workshop.connectFirstPartIdx === null;
+
+                // Duplikat-Schutz: gleiche Connection zweimal → bleibt 1
+                r._workshopApplyConnection(0, 1, "lashing");
+                const connsAfterDup = r.state.blueprints.test_phase3.connections || [];
+                const lashingCount = connsAfterDup.filter(
+                    (c) => c.type === "lashing" && c.partA === 0 && c.partB === 1
+                ).length;
+                out.dupRejected = lashingCount === 1;
+
+                // Apply lehnt unbekannten Type ab
+                const beforeBogus = (r.state.blueprints.test_phase3.connections || []).length;
+                r._workshopApplyConnection(0, 1, "nonsense_type");
+                const afterBogus = (r.state.blueprints.test_phase3.connections || []).length;
+                out.bogusTypeRejected = afterBogus === beforeBogus;
+
+                // ESC im Connect-Mode mit pending Source → cancelt nur Connect, nicht Drawer
+                r._workshopHandleConnectClick(0); // Source = 0
+                r.state.uiActiveDrawer = "werkstatt";
+                r.closeAllDrawers();
+                out.escCancelsConnectOnly = r.state.workshop.connectFirstPartIdx === null;
+                // Drawer sollte noch aktiv sein, weil ESC nur Connect canceled
+                out.drawerStillActiveAfterEsc = r.state.uiActiveDrawer === "werkstatt";
+
+                // Cleanup
+                r.setWorkshopManipulatorMode("translate");
+                r.deleteBlueprint("test_phase3");
+                r.selectBlueprintForEdit("village");
+                r._renderWorkshopDOM();
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (v802Results && !v802Results.error) {
+        check(
+            "V8.02 Phase 3: alle 6 Methoden existieren (DragDrop-Install + Drop-Handler + Connect-Click/Open/Close/Apply)",
+            v802Results.hasShapeDnDInstall &&
+                v802Results.hasShapeDropHandler &&
+                v802Results.hasConnectClick &&
+                v802Results.hasOpenPopover &&
+                v802Results.hasClosePopover &&
+                v802Results.hasApplyConn
+        );
+        check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
+        check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
+        check(
+            "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
+            v802Results.allNineShapesPresent
+        );
+        check(
+            "V8.02 Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
+            v802Results.dropOnBuiltInRejected
+        );
+        check(
+            "V8.02 Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
+            v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
+        );
+        check("V8.02 Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)", v802Results.newPartSelected);
+        check(
+            "V8.02 Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
+            v802Results.connectModeAccepted && v802Results.modeIsConnect
+        );
+        check(
+            "V8.02 Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
+            v802Results.connectFirstSetTo0
+        );
+        check("V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay", v802Results.popoverOpened);
+        check(
+            "V8.02 Phase 3b: Popover hat 8 Type-Buttons + 1 Cancel-Button (= 9 total)",
+            v802Results.popoverHasButtons
+        );
+        check(
+            "V8.02 Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
+            v802Results.connectionAdded
+        );
+        check("V8.02 Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
+        check("V8.02 Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
+        check("V8.02 Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
+        check("V8.02 Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
+        check(
+            "V8.02 Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
+            v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
+        );
+    } else if (v802Results && v802Results.error) {
+        check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
+    }
+
+    // ### V8.03 — Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
+    //             seitliche Material/Color-Palette
+    const v803Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                // Helper-Methoden existieren
+                out.hasWorldPoint = typeof r._workshopWorldPointAtCursor === "function";
+                out.hasRaycastPartIdx = typeof r._workshopRaycastPartIdxAt === "function";
+                out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
+                out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
+                out.hasMaterialDrop = typeof r._workshopHandleMaterialDrop === "function";
+                out.hasColorDrop = typeof r._workshopHandleColorDrop === "function";
+
+                // Tab → Werkstatt + eigenen Bauplan vorbereiten
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
+                r.cloneBlueprint("village", "test_v803");
+                r.selectBlueprintForEdit("test_v803");
+                r._workshopEnsurePreview();
+                const pre = r.state.workshop.preview;
+
+                // Layout-Struktur
+                out.previewRowInDom = !!document.getElementById("workshop-preview-row");
+                out.sidePaletteInDom = !!document.getElementById("workshop-side-palette");
+                out.shapePaletteInDom = !!document.getElementById("workshop-shape-palette");
+                out.matPaletteInDom = !!document.getElementById("workshop-material-palette");
+                out.colorPaletteInDom = !!document.getElementById("workshop-color-palette");
+                // Side-Palette steht VOR der Preview im DOM (flex-row macht
+                // dann visuell „links neben")
+                const row = document.getElementById("workshop-preview-row");
+                if (row) {
+                    const children = Array.from(row.children);
+                    out.paletteBeforePreview =
+                        children[0] &&
+                        children[0].id === "workshop-side-palette" &&
+                        children[1] &&
+                        children[1].id === "workshop-preview-wrapper";
+                }
+                // Material-Palette: eine Card pro Material in state.materials
+                const matCards = document.querySelectorAll(".workshop-material-card");
+                out.matCardsCount = matCards.length;
+                out.matCardsMatchState = matCards.length === Object.keys(r.state.materials).length;
+                // Color-Palette: 12 Swatches
+                const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
+                out.twelveColorSwatches = colorSwatches.length === 12;
+
+                // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
+                if (pre) {
+                    // Wir prüfen via Source-Inspection (statt dispatchEvent,
+                    // weil Puppeteer-MouseEvent-Constructor manchmal
+                    // Modifier-Keys nicht zuverlässig propagiert).
+                    const src = r._workshopInstallPreviewListeners.toString();
+                    out.shiftLeftStartsPan = src.includes("shiftKey") && src.includes("event.button === 1");
+                    out.middleMouseStartsPan = src.includes("event.button === 1");
+                    // Listener wurden tatsächlich installed (listenersInstalled-Flag)
+                    out.previewListenersInstalled = pre.listenersInstalled === true;
+
+                    // --- Wheel + Zoom-to-Cursor: target verschiebt sich ---
+                    const oldTarget = pre.orbit.target.clone();
+                    const oldDist = pre.orbit.dist;
+                    // Wheel mit deltaY > 0 = zoom-out (factor 1.12)
+                    const wheelEv = new WheelEvent("wheel", {
+                        clientX: 100,
+                        clientY: 100,
+                        deltaY: 100,
+                        bubbles: true,
+                        cancelable: true,
+                    });
+                    pre.canvas.dispatchEvent(wheelEv);
+                    // dist hat sich geändert
+                    out.distChangedOnWheel = pre.orbit.dist !== oldDist;
+                    // target wurde leicht verschoben (zoom-to-cursor) — nur wenn
+                    // der Cursor-Ray die Ebene trifft. Wenn nicht, ist target identisch.
+                    // Wir können nur prüfen dass die Methode RUNS ohne Crash.
+                    out.zoomToCursorTargetMaybeMoved =
+                        !oldTarget.equals(pre.orbit.target) || pre.orbit.target.equals(oldTarget);
+                    // wheel preventDefault: das Event wurde aufgenommen — wir prüfen
+                    // dass defaultPrevented true ist.
+                    out.wheelPreventDefault = wheelEv.defaultPrevented;
+                }
+
+                // --- Material-Drop auf Part-Idx 0 ---
+                // wir simulieren _workshopHandleMaterialDrop direkt
+                r._workshopSetSelection(0);
+                const part0Before = r.state.blueprints.test_v803.parts[0].material;
+                // Use clientX/Y in der Mitte des Canvas (sollte Part 0 treffen
+                // wenn er da ist — Selection wurde gerade gesetzt)
+                const canvas = document.getElementById("workshop-preview-canvas");
+                const rect = canvas.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                // Test: direkte Methode mit gültigem Material
+                // (raycast hit hängt von Camera-Position ab, also gibt's
+                // möglicherweise keinen Treffer — pragmatischer: prüfen
+                // dass die Methode existiert + nicht crashed)
+                r._workshopHandleMaterialDrop("holz", cx, cy);
+                out.materialDropNoCrash = true;
+                // Wenn ein Hit war, sollte material gewechselt sein
+                const part0After = r.state.blueprints.test_v803.parts[0].material;
+                out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
+
+                // Bogus material wird abgelehnt
+                r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
+                out.bogusMaterialNoCrash = true;
+
+                // --- Color-Drop ---
+                r._workshopHandleColorDrop("ff5500", cx, cy);
+                out.colorDropNoCrash = true;
+
+                // --- CSS overscroll-behavior auf .drawer-scroll ---
+                const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
+                if (werkstattScroll) {
+                    const cs = getComputedStyle(werkstattScroll);
+                    out.overscrollContain = cs.overscrollBehavior.includes("contain");
+                }
+
+                // Cleanup
+                r.state.workshop.selectedPartIdx = null;
+                r.deleteBlueprint("test_v803");
+                r.selectBlueprintForEdit("village");
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (v803Results && !v803Results.error) {
+        check(
+            "V8.03: 6 neue Helper-Methoden existieren (WorldPoint/PartIdxAt + Render×2 + Drop×2)",
+            v803Results.hasWorldPoint &&
+                v803Results.hasRaycastPartIdx &&
+                v803Results.hasMaterialRender &&
+                v803Results.hasColorRender &&
+                v803Results.hasMaterialDrop &&
+                v803Results.hasColorDrop
+        );
+        check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
+        check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
+        check(
+            "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
+            v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
+        );
+        check(
+            "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
+            v803Results.paletteBeforePreview
+        );
+        check(
+            `V8.03: Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
+            v803Results.matCardsMatchState
+        );
+        check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
+        check(
+            "V8.03 Camera: Listener enthält Shift+Links + Mittelmaus → Pan-Modus",
+            v803Results.shiftLeftStartsPan && v803Results.middleMouseStartsPan
+        );
+        check(
+            "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
+            v803Results.previewListenersInstalled
+        );
+        check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
+        check("V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
+        check(
+            "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
+            v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
+        );
+        check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
+        check(
+            "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
+            v803Results.overscrollContain
+        );
+    } else if (v803Results && v803Results.error) {
+        check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 9a-d — Werkzeug-Domains + emergente Bauplan-Rolle + Welt-Werkstatt + Maschinen-Bonus — + Welle 10a Präzision-Stat-Multiplikator).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWaves9And10a(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
+    const wave9aResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const AR = r.constructor;
+            const out = {};
+            try {
+                // Konstanten
+                out.toolDomainsFrozen =
+                    Array.isArray(AR.TOOL_DOMAINS) && Object.isFrozen(AR.TOOL_DOMAINS) && AR.TOOL_DOMAINS.length === 6;
+                out.toolDomainsContent = [
+                    "construction",
+                    "forging",
+                    "alchemy",
+                    "textile",
+                    "soulwork",
+                    "mechanism",
+                ].every((d) => AR.TOOL_DOMAINS.includes(d));
+                out.domainToRoleFrozen = !!AR.DOMAIN_TO_ROLE && Object.isFrozen(AR.DOMAIN_TO_ROLE);
+                out.alchemyMapsToConsumable = AR.DOMAIN_TO_ROLE.alchemy === "consumable";
+                out.textileMapsToArmor = AR.DOMAIN_TO_ROLE.textile === "armor";
+                out.soulworkMapsToSoul = AR.DOMAIN_TO_ROLE.soulwork === "soul";
+                out.mechanismMapsToMachine = AR.DOMAIN_TO_ROLE.mechanism === "machine";
+                out.constructionMapsToArchitecture = AR.DOMAIN_TO_ROLE.construction === "architecture";
+                out.forgingIsSplit = AR.DOMAIN_TO_ROLE.forging === "forging-split";
+                out.forgingToolTags = Array.isArray(AR.FORGING_TOOL_TAGS) && AR.FORGING_TOOL_TAGS.includes("härte");
+                out.forgingArmorTags = Array.isArray(AR.FORGING_ARMOR_TAGS) && AR.FORGING_ARMOR_TAGS.includes("dichte");
+                out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
+
+                // Methoden existieren
+                out.hasComputeDomain = typeof r.computeBlueprintDomain === "function";
+                out.hasComputeRole = typeof r.computeBlueprintRole === "function";
+                out.hasComputeForgingRole = typeof r._computeForgingRole === "function";
+                out.hasRefresh = typeof r._refreshBlueprintRoleEmergent === "function";
+
+                // Default-Tools sind alle generic (domain=null)
+                const tools = r.state.tools || {};
+                // Welle 9b — die 5 ORIGINAL-Built-ins (hand/feuer/hammer/
+                // feile/polier) sind generic. Die 5 NEUEN Domain-Tools
+                // tragen jeweils eine domain ∈ TOOL_DOMAINS.
+                const originalGenericNames = ["hände", "feuerstein-knapper", "hammer", "feile", "polierscheibe"];
+                out.originalToolsGeneric = originalGenericNames.every((n) => tools[n] && tools[n].domain === null);
+                out.domainToolsHaveDomain = Object.values(tools)
+                    .filter((t) => t.builtIn && t.domain)
+                    .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
+
+                // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
+                if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
+                r.cloneBlueprint("village", "test_9a_empty");
+                // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
+                r.applyOpToPart("test_9a_empty", 0, "hände");
+                out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
+                out.emptyRoleArchitecture = r.computeBlueprintRole(r.state.blueprints.test_9a_empty) === "architecture";
+
+                // Simuliere ein Domain-tragendes Werkzeug (manuell hinzufügen für Test)
+                r.state.tools["test_forge_hammer"] = {
+                    name: "test_forge_hammer",
+                    label: "Schmiede-Hammer (Test)",
+                    opClass: "plastic",
+                    opName: "forge",
+                    precisionCap: 0.7,
+                    isStarter: false,
+                    builtIn: false,
+                    domain: "forging",
+                };
+                if (!r.state.player.tools.includes("test_forge_hammer")) {
+                    r.state.player.tools.push("test_forge_hammer");
+                }
+                if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
+                r.cloneBlueprint("village", "test_9a_forging");
+                // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
+                // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
+                r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
+                r.applyOpToPart("test_9a_forging", 0, "test_forge_hammer");
+                out.forgingDomainDetected = r.computeBlueprintDomain(r.state.blueprints.test_9a_forging) === "forging";
+
+                // Forging-Split via Compound-Tags
+                const forgingRole = r.computeBlueprintRole(r.state.blueprints.test_9a_forging);
+                out.forgingResolvedTo = forgingRole;
+                out.forgingIsToolOrArmor = forgingRole === "tool" || forgingRole === "armor";
+
+                // Alchemy-Domain → consumable
+                r.state.tools["test_alchemy_mortar"] = {
+                    name: "test_alchemy_mortar",
+                    label: "Mörser (Test)",
+                    opClass: "additive",
+                    opName: "brew",
+                    precisionCap: 0.7,
+                    isStarter: false,
+                    builtIn: false,
+                    domain: "alchemy",
+                };
+                if (!r.state.player.tools.includes("test_alchemy_mortar")) {
+                    r.state.player.tools.push("test_alchemy_mortar");
+                }
+                if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
+                r.cloneBlueprint("village", "test_9a_alchemy");
+                r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
+                r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
+                out.alchemyRoleIsConsumable =
+                    r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
+
+                // Mechanism-Domain → machine
+                r.state.tools["test_lathe"] = {
+                    name: "test_lathe",
+                    label: "Drehbank (Test)",
+                    opClass: "subtractive",
+                    opName: "turn",
+                    precisionCap: 0.9,
+                    isStarter: false,
+                    builtIn: false,
+                    domain: "mechanism",
+                };
+                if (!r.state.player.tools.includes("test_lathe")) {
+                    r.state.player.tools.push("test_lathe");
+                }
+                if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
+                r.cloneBlueprint("village", "test_9a_mech");
+                r.applyOpToPart("test_9a_mech", 0, "test_lathe");
+                out.mechanismRoleIsMachine = r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
+
+                // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
+                if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
+                r.cloneBlueprint("village", "test_9a_emergent");
+                r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
+                out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
+
+                // Manueller Override: setBlueprintAsArmor sperrt emergenten Pfad
+                r.setBlueprintAsArmor("test_9a_emergent");
+                out.manualOverrideSetsRole = r.state.blueprints.test_9a_emergent.role === "armor";
+                out.manualOverrideMarksFlag = r.state.blueprints.test_9a_emergent.roleManual === true;
+                // Nochmal applyOpToPart — role bleibt manual=armor (kein emergent override)
+                r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
+                out.manualOverrideStaysAfterApply = r.state.blueprints.test_9a_emergent.role === "armor";
+
+                // Cleanup
+                for (const n of [
+                    "test_9a_empty",
+                    "test_9a_forging",
+                    "test_9a_alchemy",
+                    "test_9a_mech",
+                    "test_9a_emergent",
+                ]) {
+                    if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                }
+                for (const t of ["test_forge_hammer", "test_alchemy_mortar", "test_lathe"]) {
+                    delete r.state.tools[t];
+                    r.state.player.tools = r.state.player.tools.filter((x) => x !== t);
+                }
+                r._renderWorkshopDOM();
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave9aResults && !wave9aResults.error) {
+        check(
+            "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
+            wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
+        );
+        check(
+            "Welle 9a: DOMAIN_TO_ROLE-Map frozen mit korrektem Mapping (alchemy→consumable, textile→armor, soulwork→soul, mechanism→machine, construction→architecture, forging→forging-split)",
+            wave9aResults.domainToRoleFrozen &&
+                wave9aResults.alchemyMapsToConsumable &&
+                wave9aResults.textileMapsToArmor &&
+                wave9aResults.soulworkMapsToSoul &&
+                wave9aResults.mechanismMapsToMachine &&
+                wave9aResults.constructionMapsToArchitecture &&
+                wave9aResults.forgingIsSplit
+        );
+        check(
+            "Welle 9a: FORGING_TOOL_TAGS enthält härte + FORGING_ARMOR_TAGS enthält dichte",
+            wave9aResults.forgingToolTags && wave9aResults.forgingArmorTags
+        );
+        check("Welle 9a: DEFAULT_BLUEPRINT_ROLE === 'architecture'", wave9aResults.defaultRole);
+        check(
+            "Welle 9a: alle 4 Methoden existieren (computeBlueprintDomain/Role + _computeForgingRole + _refreshBlueprintRoleEmergent)",
+            wave9aResults.hasComputeDomain &&
+                wave9aResults.hasComputeRole &&
+                wave9aResults.hasComputeForgingRole &&
+                wave9aResults.hasRefresh
+        );
+        check(
+            "Welle 9a: Original-Built-ins (hände/feuerstein/hammer/feile/polierscheibe) sind generic (domain=null)",
+            wave9aResults.originalToolsGeneric
+        );
+        check(
+            "Welle 9b: Domain-Built-ins haben jeweils eine gültige Domain ∈ TOOL_DOMAINS",
+            wave9aResults.domainToolsHaveDomain
+        );
+        check("Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → computeDomain=null", wave9aResults.emptyDomainNull);
+        check(
+            "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → role=architecture (Default)",
+            wave9aResults.emptyRoleArchitecture
+        );
+        check(
+            "Welle 9a: Domain-Werkzeug (forging) angewandt → computeDomain='forging'",
+            wave9aResults.forgingDomainDetected
+        );
+        check(
+            `Welle 9a: Forging-Split via Compound-Tags → resolveTo='${wave9aResults.forgingResolvedTo}' (tool oder armor)`,
+            wave9aResults.forgingIsToolOrArmor
+        );
+        check("Welle 9a: Alchemy-Werkzeug → role='consumable'", wave9aResults.alchemyRoleIsConsumable);
+        check("Welle 9a: Mechanism-Werkzeug → role='machine'", wave9aResults.mechanismRoleIsMachine);
+        check(
+            "Welle 9a: applyOpToPart triggert _refreshBlueprintRoleEmergent → bp.role wird emergent gesetzt",
+            wave9aResults.emergentRoleSetOnApply
+        );
+        check(
+            "Welle 9a: Manueller Override (setBlueprintAsArmor) setzt bp.role + roleManual=true",
+            wave9aResults.manualOverrideSetsRole && wave9aResults.manualOverrideMarksFlag
+        );
+        check(
+            "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
+            wave9aResults.manualOverrideStaysAfterApply
+        );
+    } else if (wave9aResults && wave9aResults.error) {
+        check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
+    }
+
+    // ### Welle 9b — Domain-Werkzeuge + UI-Anzeige der Rolle ###
+    const wave9bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const AR = r.constructor;
+            const out = {};
+            try {
+                // 5 neue Domain-Werkzeuge in state.tools
+                const domainToolNames = [
+                    "schmiede-hammer",
+                    "mörser",
+                    "webstuhl-schiffchen",
+                    "ritueller-stab",
+                    "drehbank-meißel",
+                ];
+                out.allDomainToolsExist = domainToolNames.every((n) => !!r.state.tools[n]);
+
+                // Korrektes domain-Mapping pro Tool
+                out.schmiedeHammerForging =
+                    r.state.tools["schmiede-hammer"] && r.state.tools["schmiede-hammer"].domain === "forging";
+                out.morserAlchemy = r.state.tools["mörser"] && r.state.tools["mörser"].domain === "alchemy";
+                out.webstuhlTextile =
+                    r.state.tools["webstuhl-schiffchen"] && r.state.tools["webstuhl-schiffchen"].domain === "textile";
+                out.stabSoulwork =
+                    r.state.tools["ritueller-stab"] && r.state.tools["ritueller-stab"].domain === "soulwork";
+                out.drehbankMechanism =
+                    r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
+
+                // Alle 5 Domain-Werkzeuge sind isStarter → im Spieler-Inventar
+                const playerTools = r.state.player.tools || [];
+                out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
+
+                // Insgesamt 10 Built-in-Werkzeuge (5 generic + 5 domain)
+                const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
+                out.tenBuiltInTools = builtIns.length === 10;
+
+                // Konstanten für UI: Labels + Farben
+                out.roleLabelsFrozen =
+                    !!AR.BLUEPRINT_ROLE_LABELS &&
+                    Object.isFrozen(AR.BLUEPRINT_ROLE_LABELS) &&
+                    AR.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
+                    AR.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
+                    AR.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
+                out.domainLabelsFrozen =
+                    !!AR.TOOL_DOMAIN_LABELS &&
+                    Object.isFrozen(AR.TOOL_DOMAIN_LABELS) &&
+                    AR.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
+                    AR.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
+                out.domainColorsFrozen =
+                    !!AR.TOOL_DOMAIN_COLORS &&
+                    Object.isFrozen(AR.TOOL_DOMAIN_COLORS) &&
+                    typeof AR.TOOL_DOMAIN_COLORS.forging === "string";
+
+                // UI: Werkstatt-Status zeigt Rolle live nach Edit
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+                r.cloneBlueprint("village", "test_9b");
+                r.selectBlueprintForEdit("test_9b");
+                // Frisch geklont: Rolle ist architecture (emergent default)
+                // Status sollte das anzeigen
+                const status = document.querySelector("#workshop-editor .workshop-status");
+                out.statusShowsBauwerk =
+                    !!status && status.textContent.includes("Bauwerk") && status.textContent.includes("emergent");
+                // Apply schmiede-hammer auf eisen-Part
+                r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
+                r.applyOpToPart("test_9b", 0, "schmiede-hammer");
+                r._renderWorkshopDOM();
+                const statusAfter = document.querySelector("#workshop-editor .workshop-status");
+                // Rolle sollte jetzt Werkzeug oder Rüstung sein (forging-split)
+                out.statusShowsForgingRole =
+                    !!statusAfter &&
+                    (statusAfter.textContent.includes("Werkzeug") || statusAfter.textContent.includes("Rüstung")) &&
+                    statusAfter.textContent.includes("emergent");
+
+                // Tool-Chip: Domain-Dot ist im DOM für Domain-Werkzeug
+                const chips = document.querySelectorAll(".workshop-tool-chip");
+                let hasDomainDot = false;
+                chips.forEach((chip) => {
+                    if (chip.querySelector(".workshop-tool-domain-dot")) hasDomainDot = true;
+                });
+                out.toolChipHasDomainDot = hasDomainDot;
+
+                // Cleanup
+                if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+                r.selectBlueprintForEdit("village");
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave9bResults && !wave9bResults.error) {
+        check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
+        check(
+            "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
+            wave9bResults.schmiedeHammerForging &&
+                wave9bResults.morserAlchemy &&
+                wave9bResults.webstuhlTextile &&
+                wave9bResults.stabSoulwork &&
+                wave9bResults.drehbankMechanism
+        );
+        check(
+            "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
+            wave9bResults.allDomainToolsInInventory
+        );
+        check("Welle 9b: 10 Built-in-Werkzeuge insgesamt (5 generic + 5 domain)", wave9bResults.tenBuiltInTools);
+        check(
+            "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
+            wave9bResults.roleLabelsFrozen
+        );
+        check(
+            "Welle 9b: TOOL_DOMAIN_LABELS frozen + deutsche Bezeichnungen (Schmiede/Alchemie/…)",
+            wave9bResults.domainLabelsFrozen
+        );
+        check("Welle 9b: TOOL_DOMAIN_COLORS frozen mit Hex-Strings pro Domain", wave9bResults.domainColorsFrozen);
+        check(
+            "Welle 9b UI: Werkstatt-Status zeigt 'Rolle: Bauwerk (emergent)' nach Klone",
+            wave9bResults.statusShowsBauwerk
+        );
+        check(
+            "Welle 9b UI: Status wechselt nach forging-Op auf Werkzeug/Rüstung (emergent)",
+            wave9bResults.statusShowsForgingRole
+        );
+        check(
+            "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
+            wave9bResults.toolChipHasDomainDot
+        );
+    } else if (wave9bResults && wave9bResults.error) {
+        check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
+    }
+
+    // ### Welle 9c — Welt-Werkstatt-Architekturen + Distance-Gate ###
+    const wave9cResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const AR = r.constructor;
+            const out = {};
+            try {
+                const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
+                out.allStationsExist = stationNames.every((n) => !!r.state.blueprints[n]);
+                out.allHaveRole = stationNames.every(
+                    (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
+                );
+                out.esseForging = r.state.blueprints.esse.workshopDomain === "forging";
+                out.brennkolbenAlchemy = r.state.blueprints.brennkolben.workshopDomain === "alchemy";
+                out.webstuhlTextile = r.state.blueprints.webstuhl.workshopDomain === "textile";
+                out.altarSoulwork = r.state.blueprints.seelenstein_altar.workshopDomain === "soulwork";
+                out.drehbankMechanism = r.state.blueprints.drehbank.workshopDomain === "mechanism";
+                out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
+                out.gateMethodExists = typeof r._workshopStationGate === "function";
+
+                // Modus auf pfad für strikten Test
+                r.setGameMode("pfad");
+
+                // Forging-Bauplan vorbereiten
+                if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+                r.cloneBlueprint("village", "test_9c_forging");
+                r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
+                r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
+
+                const farPos = { x: 1000, y: 1000, z: 1000 };
+                const nearPos = { x: 5, y: 0, z: 5 };
+
+                // Esse nah spawnen
+                r.spawnArchitecture("esse", nearPos, { silent: true });
+
+                const gateFar = r._workshopStationGate("test_9c_forging", farPos);
+                out.pfadFarFails = gateFar && gateFar.ok === false;
+                out.pfadFarReportsDomain = gateFar && gateFar.neededDomain === "forging";
+
+                const gateNear = r._workshopStationGate("test_9c_forging", nearPos);
+                out.pfadNearPasses = gateNear && gateNear.ok === true;
+                out.pfadNearReportsFound = gateNear && gateNear.found === "esse";
+
+                r.setGameMode("frieden");
+                const gateFrieden = r._workshopStationGate("test_9c_forging", farPos);
+                out.friedenFreeAccess = gateFrieden && gateFrieden.ok === true && gateFrieden.free === true;
+
+                r.setGameMode("schöpfer");
+                const gateSchopfer = r._workshopStationGate("test_9c_forging", farPos);
+                out.schopferFreeAccess = gateSchopfer && gateSchopfer.ok === true && gateSchopfer.free === true;
+
+                r.setGameMode("pfad");
+                const gateBootstrap = r._workshopStationGate("esse", farPos);
+                out.bootstrapOk = gateBootstrap && gateBootstrap.ok === true && gateBootstrap.bootstrap === true;
+
+                const gateArch = r._workshopStationGate("village", farPos);
+                out.archNoCheck = gateArch && gateArch.ok === true;
+
+                // Cleanup
+                if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+                r.setGameMode("frieden");
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave9cResults && !wave9cResults.error) {
+        check(
+            "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
+            wave9cResults.allStationsExist
+        );
+        check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
+        check(
+            "Welle 9c: workshopDomain-Mapping korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism)",
+            wave9cResults.esseForging &&
+                wave9cResults.brennkolbenAlchemy &&
+                wave9cResults.webstuhlTextile &&
+                wave9cResults.altarSoulwork &&
+                wave9cResults.drehbankMechanism
+        );
+        check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
+        check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
+        check(
+            "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
+            wave9cResults.pfadFarFails && wave9cResults.pfadFarReportsDomain
+        );
+        check(
+            "Welle 9c: pfad mit Werkstatt in WORKSHOP_PROXIMITY_M → Gate passt + nennt found-Architektur",
+            wave9cResults.pfadNearPasses && wave9cResults.pfadNearReportsFound
+        );
+        check("Welle 9c: frieden-Modus überspringt Werkstatt-Gate (free=true)", wave9cResults.friedenFreeAccess);
+        check("Welle 9c: schöpfer-Modus überspringt Werkstatt-Gate (free=true)", wave9cResults.schopferFreeAccess);
+        check(
+            "Welle 9c: Workshop-Station selbst (Esse) braucht keine Werkstatt (Bootstrap-Pfad)",
+            wave9cResults.bootstrapOk
+        );
+        check(
+            "Welle 9c: architecture-Bauplan (village) überspringt Werkstatt-Check (keine Domain → kein Gate)",
+            wave9cResults.archNoCheck
+        );
+    } else if (wave9cResults && wave9cResults.error) {
+        check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
+    }
+
+    // ### Welle 9d — Maschinen-Bonus + Seelen-Bauplane ###
+    const wave9dResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const AR = r.constructor;
+            const out = {};
+            try {
+                out.machineBonus = AR.MACHINE_PRECISION_BONUS === 0.05;
+                out.hasSoulFromBp = typeof r.applyPlayerSoulFromBlueprint === "function";
+
+                // Maschinen-Bonus
+                if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
+                r.cloneBlueprint("village", "test_9d_machine");
+                r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
+                // setBlueprintToolMeta setzt role=tool; force machine:
+                r.state.blueprints.test_9d_machine.role = "machine";
+                r.state.blueprints.test_9d_machine.roleManual = true;
+                const minP = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_machine);
+                const reg = r.registerBlueprintAsTool("test_9d_machine");
+                out.regOk = reg && reg.ok === true;
+                if (reg && reg.ok) {
+                    const tool = r.state.tools["test_9d_machine"];
+                    const expected = Math.min(1.0, minP + 0.05);
+                    out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;
+                    out.toolMarkedMachine = tool.isMachine === true;
+                }
+
+                // Ohne machine: kein Bonus
+                if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
+                r.cloneBlueprint("village", "test_9d_normaltool");
+                r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
+                const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
+                r.registerBlueprintAsTool("test_9d_normaltool");
+                const toolNoBonus = r.state.tools["test_9d_normaltool"];
+                out.normalToolNoBonus = toolNoBonus && Math.abs(toolNoBonus.precisionCap - minP2) < 0.001;
+                out.normalToolNotMachine = toolNoBonus && toolNoBonus.isMachine === false;
+
+                // Seelen-Bauplan
+                if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
+                r.cloneBlueprint("village", "test_9d_soul");
+                r.state.blueprints.test_9d_soul.role = "soul";
+                r.state.blueprints.test_9d_soul.roleManual = true;
+                const soulBefore = r.state.player.soul;
+                const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
+                out.soulApplyOk = soulRes && soulRes.ok === true;
+                out.soulApplyChangedSoul = r.state.player.soul !== soulBefore;
+                out.customSoulRegistered = !!(r.state.customSouls && r.state.customSouls["bp_test_9d_soul"]);
+
+                const archRes = r.applyPlayerSoulFromBlueprint("village");
+                out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
+                const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
+                out.unknownReject = unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
+
+                // UI-Button
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                r.selectBlueprintForEdit("test_9d_soul");
+                const soulBtn = document.querySelector(".workshop-soul-activate");
+                out.soulButtonRendered = !!soulBtn;
+
+                if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
+                r.cloneBlueprint("village", "test_9d_arch");
+                r.selectBlueprintForEdit("test_9d_arch");
+                const soulBtnArch = document.querySelector(".workshop-soul-activate");
+                out.archHasNoSoulButton = !soulBtnArch;
+
+                // Cleanup
+                r.applyPlayerSoul("human");
+                for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul", "test_9d_arch"]) {
+                    if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                }
+                if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
+                r.selectBlueprintForEdit("village");
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave9dResults && !wave9dResults.error) {
+        check("Welle 9d: MACHINE_PRECISION_BONUS === 0.05", wave9dResults.machineBonus);
+        check("Welle 9d: applyPlayerSoulFromBlueprint-Methode existiert", wave9dResults.hasSoulFromBp);
+        check(
+            "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
+            wave9dResults.regOk && wave9dResults.toolHasBonus
+        );
+        check("Welle 9d: Registriertes Maschinen-Tool trägt isMachine=true", wave9dResults.toolMarkedMachine);
+        check(
+            "Welle 9d: registerBlueprintAsTool ohne machine-Rolle vergibt KEINEN Bonus + isMachine=false",
+            wave9dResults.normalToolNoBonus && wave9dResults.normalToolNotMachine
+        );
+        check(
+            "Welle 9d: applyPlayerSoulFromBlueprint mit role=soul wechselt Spieler-Seele",
+            wave9dResults.soulApplyOk && wave9dResults.soulApplyChangedSoul
+        );
+        check(
+            "Welle 9d: soul-Bauplan wird als customSoul mit 'bp_'-Prefix registriert",
+            wave9dResults.customSoulRegistered
+        );
+        check(
+            "Welle 9d: applyPlayerSoulFromBlueprint auf nicht-soul-Bauplan → reject 'blueprint_not_soul'",
+            wave9dResults.nonSoulReject
+        );
+        check(
+            "Welle 9d: applyPlayerSoulFromBlueprint auf unbekannten Bauplan → reject 'blueprint_unknown'",
+            wave9dResults.unknownReject
+        );
+        check(
+            "Welle 9d UI: 'Als Seele tragen'-Button bei role=soul gerendert (.workshop-soul-activate)",
+            wave9dResults.soulButtonRendered
+        );
+        check("Welle 9d UI: KEIN Soul-Button bei role=architecture (Default)", wave9dResults.archHasNoSoulButton);
+    } else if (wave9dResults && wave9dResults.error) {
+        check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
+    }
+
+    // ### Welle 10a — Präzision als Stat-Multiplikator ###
+    const wave10aResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                // Helper-Methode existiert
+                out.hasHelper = typeof r._compoundAvgPrecisionFromParts === "function";
+
+                // Leeres Array → 1.0
+                out.emptyIs1 = r._compoundAvgPrecisionFromParts([]) === 1.0;
+                // Null → 1.0
+                out.nullIs1 = r._compoundAvgPrecisionFromParts(null) === 1.0;
+
+                // Parts ohne opChain → 1.0 ("geboren")
+                const partsBornless = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                    {
+                        shape: "sphere",
+                        material: "knochen",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                ];
+                out.partsNoChainIs1 = r._compoundAvgPrecisionFromParts(partsBornless) === 1.0;
+
+                // Parts mit Hand-opChain (cap 0.4) → 0.4
+                const partsHand = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }],
+                    },
+                ];
+                out.partsHandIs04 = Math.abs(r._compoundAvgPrecisionFromParts(partsHand) - 0.4) < 0.001;
+
+                // computePlayerStats für Built-in mensch: soulMul = 1.0 (kein Effekt)
+                r.applyPlayerSoul("human");
+                const statsHuman = r.computePlayerStats();
+                out.humanStatsBaseline = statsHuman && typeof statsHuman.stats.hpMax === "number";
+
+                // Custom-Soul mit opChain auf bodyParts → Stats * soulMul
+                // Synthese: Soul-Bauplan + opChain
+                if (r.state.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
+                r.cloneBlueprint("village", "test_10a_soul");
+                // Setze role:soul + opChain auf alle parts (simuliert "roh gebauter Soul")
+                const bp = r.state.blueprints.test_10a_soul;
+                bp.role = "soul";
+                bp.roleManual = true;
+                for (const p of bp.parts) {
+                    p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+                }
+                const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
+                out.soulApplyOk = soulRes && soulRes.ok === true;
+                const statsRough = r.computePlayerStats();
+                // Soul-tags wurden mit (0.5 + 0.5*0.4 = 0.7) multipliziert
+                // hpMax sollte messbar niedriger sein als Mensch — aber abhängig von
+                // Compound-Tags. Wir prüfen pragmatisch: hpMax bei roh ≤ hpMax Mensch
+                out.roughLessHp = statsRough && statsHuman && statsRough.stats.hpMax <= statsHuman.stats.hpMax + 0.001;
+
+                // Zurück zur Mensch-Seele
+                r.applyPlayerSoul("human");
+
+                // Tool-Precision-Multiplier in computePlayerStats
+                // Wir registrieren einen eigenen Bauplan als Tool und prüfen ob die
+                // Tool-Tags mit Präzision multipliziert werden.
+                if (r.state.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
+                r.cloneBlueprint("village", "test_10a_tool");
+                const toolBp = r.state.blueprints.test_10a_tool;
+                for (const p of toolBp.parts) {
+                    p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
+                }
+                r.setBlueprintToolMeta("test_10a_tool", "test_op", "subtractive");
+                toolBp.role = "tool";
+                r.registerBlueprintAsTool("test_10a_tool");
+                // Mensch-Seele tragen + tool equippen
+                r.applyPlayerSoul("human");
+                r.equipTool("test_10a_tool");
+                const statsRoughTool = r.computePlayerStats();
+                // Jetzt: tool-tags × (0.5 + 0.5×0.4 = 0.7)
+                // Vergleich: r.state.tools["test_10a_tool"] hat die Tag-Beträge
+                // Wir prüfen pragmatisch: Stats sollten sich gegenüber blanker Mensch verändern
+                out.toolPrecModulates =
+                    statsRoughTool &&
+                    statsHuman &&
+                    (statsRoughTool.stats.hpMax !== statsHuman.stats.hpMax ||
+                        statsRoughTool.stats.damage !== statsHuman.stats.damage);
+
+                // Cleanup
+                r.equipTool(null);
+                for (const n of ["test_10a_soul", "test_10a_tool"]) {
+                    if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                }
+                delete r.state.tools["test_10a_tool"];
+                r.state.player.tools = r.state.player.tools.filter((t) => t !== "test_10a_tool");
+                if (r.state.customSouls) delete r.state.customSouls["bp_test_10a_soul"];
+                r._renderWorkshopDOM();
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave10aResults && !wave10aResults.error) {
+        check("Welle 10a: _compoundAvgPrecisionFromParts-Methode existiert", wave10aResults.hasHelper);
+        check(
+            "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
+            wave10aResults.emptyIs1 && wave10aResults.nullIs1
+        );
+        check("Welle 10a: Parts ohne opChain → 1.0 (Built-in-Soulen unverändert)", wave10aResults.partsNoChainIs1);
+        check("Welle 10a: Parts mit Hand-opChain (cap 0.4) → Präzision 0.4", wave10aResults.partsHandIs04);
+        check(
+            "Welle 10a: computePlayerStats für Built-in-Mensch baseline (hpMax existiert)",
+            wave10aResults.humanStatsBaseline
+        );
+        check(
+            "Welle 10a: Roh geschmiedeter Soul (opChain Hand 0.4) → reduzierte hpMax (Sorgfalt belohnt)",
+            wave10aResults.soulApplyOk && wave10aResults.roughLessHp
+        );
+        check(
+            "Welle 10a: Tool-Präzision moduliert seinen Stat-Beitrag in computePlayerStats",
+            wave10aResults.toolPrecModulates
+        );
+    } else if (wave10aResults && wave10aResults.error) {
+        check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Welle 10b.1 + 10b.3 — Compound-Tag-Affordances + Welt-Reaktionen (mount + zoom + focusing-Ignite)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWave10b(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 10b.1 — Compound-Tag-Affordances (Erkennung + UI) ###
+    const wave10bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const AR = r.constructor;
+            const out = {};
+            try {
+                out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
+                // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
+                // wurden ENTFERNT — Affordances emergieren räumlich + tag-basiert,
+                // nicht aus shape-Listen.
+                out.noShapeWhitelists =
+                    typeof AR.WHEEL_SHAPES === "undefined" &&
+                    typeof AR.LENS_SHAPES === "undefined" &&
+                    typeof AR.AXIS_SHAPES === "undefined";
+                out.thresholdsAreSpatial =
+                    AR.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
+                    AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
+                    AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
+                    AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
+                out.affordanceLabelsExist = !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
+                out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
+                out.hasMoveable = typeof r._isMoveable === "function";
+                out.hasMagnifying = typeof r._isMagnifying === "function";
+                out.hasFocusing = typeof r._isFocusing === "function";
+                // 10b.2 — neue räumliche Helper
+                out.hasBbox = typeof r._compoundBBox === "function";
+                out.hasBelowMid = typeof r._partsBelowMidline === "function";
+                out.hasAxialAlignment = typeof r._axialAlignment === "function";
+
+                out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
+                out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
+                out.villageNoAffordances =
+                    Object.keys(r.computeBlueprintAffordances(r.state.blueprints.village)).length === 0;
+
+                // moveable
+                if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
+                r.cloneBlueprint("village", "test_10b_car");
+                r.state.blueprints.test_10b_car.parts = [
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: -1, y: 0.3, z: 0 },
+                        size: { x: 0.6, y: 0.4, z: 0.6 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 1, y: 0.3, z: 0 },
+                        size: { x: 0.6, y: 0.4, z: 0.6 },
+                    },
+                    {
+                        shape: "box",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 1.2, y: 0.8, z: 0.6 },
+                    },
+                ];
+                out.carIsMoveable = r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
+
+                // VISION-TEST: Box-Stützen (KEINE Cylinder/Torus) + Antrieb → moveable
+                // Beweis dass die Form-Whitelist wirklich raus ist und räumliche
+                // Konfiguration entscheidet.
+                if (r.state.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
+                r.cloneBlueprint("village", "test_10b_sled");
+                r.state.blueprints.test_10b_sled.parts = [
+                    // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: -1, y: 0.2, z: 0 },
+                        size: { x: 0.5, y: 0.4, z: 0.5 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 1, y: 0.2, z: 0 },
+                        size: { x: 0.5, y: 0.4, z: 0.5 },
+                    },
+                    // Quarz-Antrieb oben
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 0, y: 1.2, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                ];
+                out.boxSledIsMoveable =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10b_sled).moveable === true;
+
+                // ohne Antrieb → nicht moveable
+                if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
+                r.cloneBlueprint("village", "test_10b_carless");
+                r.state.blueprints.test_10b_carless.parts = [
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: -1, y: 0.3, z: 0 },
+                        size: { x: 0.6, y: 0.4, z: 0.6 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: 1, y: 0.3, z: 0 },
+                        size: { x: 0.6, y: 0.4, z: 0.6 },
+                    },
+                ];
+                out.carlessNotMoveable = !r.computeBlueprintAffordances(r.state.blueprints.test_10b_carless).moveable;
+
+                // magnifying
+                if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
+                r.cloneBlueprint("village", "test_10b_scope");
+                r.state.blueprints.test_10b_scope.parts = [
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: 1, z: -0.6 },
+                        size: { x: 0.4, y: 1.2, z: 0.4 },
+                    },
+                ];
+                out.scopeIsMagnifying =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
+
+                // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
+                out.hasRadiating = typeof r._isRadiating === "function";
+                out.hasTickRadiating = typeof r._tickRadiatingAffordances === "function";
+                out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
+                out.radiatingThresholds =
+                    !!AR.AFFORDANCE_THRESHOLDS.radiating &&
+                    AR.AFFORDANCE_THRESHOLDS.radiating.minParts === 3 &&
+                    AR.AFFORDANCE_THRESHOLDS.radiating.resoniertMin === 1.5;
+                // Ein radialer Quarz-Cluster (≥3 Parts, um einen Kern
+                // gespreizt, NICHT auf einer Achse) strahlt.
+                if (r.state.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
+                r.cloneBlueprint("village", "test_10ext_radiator");
+                r.state.blueprints.test_10ext_radiator.parts = [
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 1.2, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: -1.2, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 0, y: 0.5, z: 1.2 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 0, y: 0.5, z: -1.2 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                ];
+                out.radiatorIsRadiating =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).radiating === true;
+                // Ein Quarz-Mast (≥3 Parts, alle auf der y-Achse) strahlt
+                // NICHT radial — die räumliche Gate greift trotz hohem
+                // resoniert (Vision-Beweis: kein Form-Whitelist, die
+                // Konfiguration entscheidet).
+                if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
+                r.cloneBlueprint("village", "test_10ext_mast");
+                r.state.blueprints.test_10ext_mast.parts = [
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "octahedron",
+                        material: "quarz",
+                        position: { x: 0, y: 2, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                ];
+                out.mastNotRadiating =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).radiating !== true;
+                // Welt-Reaktion: nahe einem Strahler steigen awe + peace.
+                const emoR = r.state.player.emotions;
+                const aweBefore0 = emoR.awe;
+                const peaceBefore0 = emoR.peace;
+                const chaosBefore0 = emoR.chaos;
+                const radEntry = r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
+                out.radEntryAffordance = !!(
+                    radEntry &&
+                    radEntry.affordances &&
+                    radEntry.affordances.radiating === true
+                );
+                const pmR = r.state.playerMesh && r.state.playerMesh.position;
+                const pmBefore = pmR ? { x: pmR.x, y: pmR.y, z: pmR.z } : null;
+                if (pmR) {
+                    pmR.x = 60;
+                    pmR.y = 0;
+                    pmR.z = 62;
+                }
+                emoR.awe = 0.1;
+                emoR.peace = 0.1;
+                for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
+                out.radNearRaisesEmotion = emoR.awe > 0.1 && emoR.peace > 0.1;
+                // Weit weg → keine Änderung.
+                if (pmR) pmR.z = 400;
+                const aweFar = emoR.awe;
+                for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
+                out.radFarNoChange = Math.abs(emoR.awe - aweFar) < 0.0001;
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+
+                // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
+                out.hasBroadcasting = typeof r._isBroadcasting === "function";
+                out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
+                out.broadcastingThresholds =
+                    !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
+                    AR.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
+                    AR.AFFORDANCE_THRESHOLDS.broadcasting.leitfaehigMin === 0.4;
+                // Der Quarz-Mast (aufrecht, axial, leitfähig) → broadcasting.
+                out.mastIsBroadcasting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).broadcasting === true;
+                // Der radiale Cluster ist KEIN Mast → NICHT broadcasting.
+                out.radiatorNotBroadcasting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).broadcasting !== true;
+                // Eine waagrechte Eisen-Linie (leitfähig, aber Achse x,
+                // nicht y) → NICHT broadcasting (ein Mast steht aufrecht).
+                if (r.state.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
+                r.cloneBlueprint("village", "test_10ext_bcline");
+                r.state.blueprints.test_10ext_bcline.parts = [
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: -1.5, y: 0, z: 0 },
+                        size: { x: 0.4, y: 0.4, z: 0.4 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 0.4, y: 0.4, z: 0.4 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 1.5, y: 0, z: 0 },
+                        size: { x: 0.4, y: 0.4, z: 0.4 },
+                    },
+                ];
+                out.horizLineNotBroadcasting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
+                // Welt-Reaktion-Relais: ein broadcasting-Mast nahe einem
+                // Strahler verstärkt dessen Reichweite. Spieler 22 m vom
+                // Strahler — ausserhalb der Basis-Reichweite (14 m),
+                // innerhalb der verstärkten (28 m).
+                // V9.33 Phase 5c.2.b — Welt-Reaktions-Affordances filtern
+                // nach Distanz UND prüfen alle nahen Architekturen mit
+                // der Affordance. In der Voxel-Eingangs-Welt platziert
+                // `_populateVoxelChunkVegetation` natürliche Strahler
+                // (kristall_geode) in magie-Regionen. Wir entfernen
+                // ALLE radiating-Architekturen ringsum (vor dem Test-
+                // Setup), damit die Probe ehrlich ist.
+                if (pmR) {
+                    pmR.x = 60;
+                    pmR.y = 0;
+                    pmR.z = 82;
+                }
+                // Cleanup natürlicher Strahler im Test-Bereich.
+                r.state.architectures = r.state.architectures.filter((e) => {
+                    if (!e || !e.position || !e.affordances) return true;
+                    if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
+                    const dx = e.position.x - 60;
+                    const dz = e.position.z - 82;
+                    // Sicherheits-Distanz > BROADCAST_RELAY_RANGE_M + RADIATING_RANGE_M.
+                    return dx * dx + dz * dz > 100 * 100;
+                });
+                const radE = r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
+                emoR.awe = 0.1;
+                emoR.peace = 0.1;
+                for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                out.relayOhneMastKeinEffekt = Math.abs(emoR.awe - 0.1) < 0.0001;
+                // Jetzt einen broadcasting-Mast nahe den Strahler stellen.
+                const mastE = r.spawnArchitecture("test_10ext_mast", { x: 65, y: 0, z: 60 }, { silent: true });
+                out.relayMastAffordance = !!(mastE && mastE.affordances && mastE.affordances.broadcasting === true);
+                for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                out.relayMitMastReicheWeiter = emoR.awe > 0.1;
+                r.state.architectures = r.state.architectures.filter(
+                    (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
+                );
+                void radE;
+
+                // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
+                out.hasAffordanceStrength = typeof r.computeAffordanceStrength === "function";
+                out.strengthEmptyForNone =
+                    Object.keys(r.computeAffordanceStrength(r.state.blueprints.village)).length === 0;
+                // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
+                // als der Quarz-Octahedron-Strahler (resoniert 1.8) —
+                // dieselbe Substanz, andere Form, messbar bessere Antenne.
+                if (r.state.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
+                r.cloneBlueprint("village", "test_10ext_radstrong");
+                r.state.blueprints.test_10ext_radstrong.parts = [
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: 1.2, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: -1.2, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: 0, y: 0.5, z: 1.2 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: 0, y: 0.5, z: -1.2 },
+                        size: { x: 0.6, y: 0.6, z: 0.6 },
+                    },
+                ];
+                const radWeakStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_radiator).radiating;
+                const radStrongStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_radstrong).radiating;
+                out.radStrengthScales =
+                    typeof radWeakStr === "number" && radStrongStr > radWeakStr && radStrongStr <= 1;
+                // Ein Quarz-Mast ist eine STÄRKERE Antenne als ein Holz-Mast.
+                if (r.state.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
+                r.cloneBlueprint("village", "test_10ext_mastweak");
+                r.state.blueprints.test_10ext_mastweak.parts = [
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 0.5, y: 1, z: 0.5 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.5, y: 1, z: 0.5 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: 2, z: 0 },
+                        size: { x: 0.5, y: 1, z: 0.5 },
+                    },
+                ];
+                const mastWeakStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_mastweak).broadcasting;
+                const mastStrongStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_mast).broadcasting;
+                out.mastWeakIsBroadcasting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mastweak).broadcasting === true;
+                out.broadcastStrengthScales = typeof mastWeakStr === "number" && mastStrongStr > mastWeakStr;
+                // spawnArchitecture friert die Stärke ein.
+                const radSnap = r.spawnArchitecture("test_10ext_radiator", { x: 70, y: 0, z: 70 }, { silent: true });
+                out.spawnFreezesStrength = !!(
+                    radSnap &&
+                    radSnap.affordanceStrength &&
+                    typeof radSnap.affordanceStrength.radiating === "number"
+                );
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+                // Welt-Reaktion: ein STARKER Mast relais-verstärkt weiter
+                // als ein SCHWACHER. Spieler 23 m vom Strahler — der
+                // schwache Holz-Mast erreicht ihn nicht, der starke schon.
+                // V9.33-Disziplin: natürliche Strahler/Sender im 100-m-
+                // Radius entfernen, sonst kontaminieren sie die Probe.
+                if (pmR) {
+                    pmR.x = 60;
+                    pmR.y = 0;
+                    pmR.z = 83;
+                }
+                r.state.architectures = r.state.architectures.filter((e) => {
+                    if (!e || !e.position || !e.affordances) return true;
+                    if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
+                    const dx = e.position.x - 60;
+                    const dz = e.position.z - 83;
+                    return dx * dx + dz * dz > 100 * 100;
+                });
+                r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
+                r.spawnArchitecture("test_10ext_mastweak", { x: 66, y: 0, z: 60 }, { silent: true });
+                emoR.awe = 0.1;
+                emoR.peace = 0.1;
+                for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                out.weakMastTooWeak = Math.abs(emoR.awe - 0.1) < 0.0001;
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_mastweak");
+                r.spawnArchitecture("test_10ext_mast", { x: 66, y: 0, z: 60 }, { silent: true });
+                for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
+                out.strongMastReachesFarther = emoR.awe > 0.1;
+                r.state.architectures = r.state.architectures.filter(
+                    (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
+                );
+
+                // ── W10 ext. Welle 3/4 — balancing (gründende Form) ──
+                out.hasBalancing = typeof r._isBalancing === "function";
+                out.hasTickBalancing = typeof r._tickBalancingAffordances === "function";
+                out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
+                out.balancingThresholds =
+                    !!AR.AFFORDANCE_THRESHOLDS.balancing &&
+                    AR.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
+                    AR.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
+                // Eine breite, flache, schwere Stein-Box-Plattform gründet.
+                if (r.state.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
+                r.cloneBlueprint("village", "test_10ext_platform");
+                r.state.blueprints.test_10ext_platform.parts = [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 1.5, y: 0.2, z: 0 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: -1.5, y: 0.2, z: 0 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.2, z: 1.5 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.2, z: -1.5 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                ];
+                out.platformIsBalancing =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).balancing === true;
+                // Ein aufrechter Mast ist hoch, nicht breit → NICHT balancing.
+                out.mastNotBalancing =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).balancing !== true;
+                // Der Quarz-Cluster ist breit + flach + bodenlastig, aber
+                // zu LEICHT (dichte 1.3 < 1.5) → NICHT balancing (der
+                // dichte-Gate beweist: nur genuin Schweres gründet).
+                out.lightClusterNotBalancing =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).balancing !== true;
+                // Stärke skaliert: eine Stein-Box-Plattform (dichte 2.55)
+                // gründet stärker als eine Stein-Cylinder-Plattform (1.7).
+                if (r.state.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
+                r.cloneBlueprint("village", "test_10ext_platweak");
+                r.state.blueprints.test_10ext_platweak.parts = [
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: 1.5, y: 0.2, z: 0 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: -1.5, y: 0.2, z: 0 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: 0, y: 0.2, z: 1.5 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: 0, y: 0.2, z: -1.5 },
+                        size: { x: 1, y: 0.4, z: 1 },
+                    },
+                ];
+                const balStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platform).balancing;
+                const balWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platweak).balancing;
+                out.balancingStrengthScales = typeof balWeak === "number" && balStrong > balWeak && balStrong <= 1;
+                // Welt-Reaktion: nahe einer gründenden Form sinkt chaos.
+                const balE = r.spawnArchitecture("test_10ext_platform", { x: 70, y: 0, z: 70 }, { silent: true });
+                out.balEntryAffordance = !!(balE && balE.affordances && balE.affordances.balancing === true);
+                out.balEntryStrength = !!(
+                    balE &&
+                    balE.affordanceStrength &&
+                    typeof balE.affordanceStrength.balancing === "number"
+                );
+                if (pmR) {
+                    pmR.x = 70;
+                    pmR.y = 0;
+                    pmR.z = 72;
+                }
+                emoR.chaos = 0.6;
+                for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
+                out.balNearDrainsChaos = emoR.chaos < 0.6;
+                // Weit weg → kein chaos-Abbau.
+                if (pmR) pmR.z = 400;
+                const chaosFar = emoR.chaos;
+                for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
+                out.balFarNoChange = Math.abs(emoR.chaos - chaosFar) < 0.0001;
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_platform");
+                emoR.chaos = chaosBefore0;
+
+                // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
+                out.hasLifting = typeof r._isLifting === "function";
+                out.hasTickLifting = typeof r._tickLiftingAffordances === "function";
+                out.hasLiftVy = typeof r._liftVerticalVelocity === "function";
+                out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
+                out.liftingThresholds =
+                    !!AR.AFFORDANCE_THRESHOLDS.lifting &&
+                    AR.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&
+                    AR.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
+                // Ein Quarz-Cone-Cluster (magie 1.7, dichte 0.65) hebt.
+                if (r.state.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
+                r.cloneBlueprint("village", "test_10ext_lifter");
+                r.state.blueprints.test_10ext_lifter.parts = [
+                    {
+                        shape: "cone",
+                        material: "quarz",
+                        position: { x: 1, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 0.8, z: 0.6 },
+                    },
+                    {
+                        shape: "cone",
+                        material: "quarz",
+                        position: { x: -1, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 0.8, z: 0.6 },
+                    },
+                    {
+                        shape: "cone",
+                        material: "quarz",
+                        position: { x: 0, y: 0.5, z: 1 },
+                        size: { x: 0.6, y: 0.8, z: 0.6 },
+                    },
+                ];
+                out.lifterIsLifting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_lifter).lifting === true;
+                // Eine schwere Stein-Plattform → NICHT lifting (magie zu tief).
+                out.platformNotLifting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).lifting !== true;
+                // Der Quarz-Octahedron-Cluster ist magie-geladen, aber zu
+                // DICHT (dichte 1.3 > 1.0) → NICHT lifting (der dichte-
+                // Deckel beweist: Magie hebt kein Gewicht).
+                out.denseClusterNotLifting =
+                    r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).lifting !== true;
+                // _liftVerticalVelocity: dämpft den Fall + hebt sanft.
+                out.liftCushionsFall = r._liftVerticalVelocity(-10, 1) > -10;
+                out.liftDriftsUp = r._liftVerticalVelocity(0, 1) > 0;
+                out.liftNoFieldNoEffect = r._liftVerticalVelocity(-10, 0) === -10;
+                // Stärke skaliert: ein Quarz-Helix-Heber (magie 2.55) hebt
+                // stärker als der Quarz-Cone-Heber (magie 1.7).
+                if (r.state.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
+                r.cloneBlueprint("village", "test_10ext_lifterstrong");
+                r.state.blueprints.test_10ext_lifterstrong.parts = [
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: 1, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 1, z: 2 },
+                    },
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: -1, y: 0.5, z: 0 },
+                        size: { x: 0.6, y: 1, z: 2 },
+                    },
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: 0, y: 0.5, z: 1 },
+                        size: { x: 0.6, y: 1, z: 2 },
+                    },
+                ];
+                const liftWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifter).lifting;
+                const liftStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifterstrong).lifting;
+                out.liftStrengthScales = typeof liftWeak === "number" && liftStrong > liftWeak && liftStrong <= 1;
+                // Welt-Reaktion: _tickLiftingAffordances setzt das Feld-Flag.
+                const liftE = r.spawnArchitecture("test_10ext_lifter", { x: 80, y: 0, z: 80 }, { silent: true });
+                out.liftEntryAffordance = !!(
+                    liftE &&
+                    liftE.affordances &&
+                    liftE.affordances.lifting === true &&
+                    liftE.affordanceStrength &&
+                    typeof liftE.affordanceStrength.lifting === "number"
+                );
+                if (pmR) {
+                    pmR.x = 80;
+                    pmR.y = 0;
+                    pmR.z = 82;
+                }
+                r._tickLiftingAffordances();
+                out.liftFieldActiveNear = !!(r.state.player.liftingField && r.state.player.liftingField.active);
+                if (pmR) pmR.z = 400;
+                r._tickLiftingAffordances();
+                out.liftFieldInactiveFar = !(r.state.player.liftingField && r.state.player.liftingField.active);
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_lifter");
+
+                emoR.awe = aweBefore0;
+                emoR.peace = peaceBefore0;
+                // Spieler-Position wiederherstellen — nachfolgende Tests
+                // erwarten ihn dort, wo der Autonom-Lauf ihn liess.
+                if (pmR && pmBefore) {
+                    pmR.x = pmBefore.x;
+                    pmR.y = pmBefore.y;
+                    pmR.z = pmBefore.z;
+                }
+
+                // spawnArchitecture speichert affordances
+                const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
+                out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
+
+                // Cleanup spawned entry
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b_car");
+
+                // UI: Werkstatt-Status zeigt "fahrbar"
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                r.selectBlueprintForEdit("test_10b_car");
+                r._renderWorkshopDOM();
+                const statusEl = document.querySelector(".workshop-status");
+                out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
+
+                // Cleanup
+                for (const n of [
+                    "test_10b_car",
+                    "test_10b_carless",
+                    "test_10b_scope",
+                    "test_10b_sled",
+                    "test_10ext_radiator",
+                    "test_10ext_mast",
+                    "test_10ext_bcline",
+                    "test_10ext_radstrong",
+                    "test_10ext_mastweak",
+                    "test_10ext_platform",
+                    "test_10ext_platweak",
+                    "test_10ext_lifter",
+                    "test_10ext_lifterstrong",
+                ]) {
+                    if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                }
+                r.selectBlueprintForEdit("village");
+                r._renderWorkshopDOM();
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave10bResults && !wave10bResults.error) {
+        check(
+            "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
+            wave10bResults.thresholdsFrozen && wave10bResults.noShapeWhitelists && wave10bResults.affordanceLabelsExist
+        );
+        check(
+            "Welle 10b.2: Schwellen sind räumlich + tag-basiert (minSupportParts=2, midlineFactor=0.5, dichteMin=0.3, axialAlignmentMin=0.6)",
+            wave10bResults.thresholdsAreSpatial
+        );
+        check(
+            "Welle 10b.1: 4 Affordance-Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
+            wave10bResults.hasComputeAffordances &&
+                wave10bResults.hasMoveable &&
+                wave10bResults.hasMagnifying &&
+                wave10bResults.hasFocusing
+        );
+        check(
+            "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
+            wave10bResults.hasBbox && wave10bResults.hasBelowMid && wave10bResults.hasAxialAlignment
+        );
+        check(
+            "Welle 10b.1: leerer/null Bauplan → leere Affordances",
+            wave10bResults.emptyBpEmpty && wave10bResults.bpNoParts
+        );
+        check(
+            "Welle 10b.1: Default-Built-in (village) erkennt keine Affordances — ehrlich",
+            wave10bResults.villageNoAffordances
+        );
+        check(
+            "Welle 10b.1: Fahrzeug-Compound (2 Cylinder-Stützen + quarz-Antrieb) → moveable=true",
+            wave10bResults.carIsMoveable
+        );
+        check(
+            "Welle 10b.2 VISION-TEST: Box-Stützen + Octahedron-Quarz-Antrieb → moveable=true (KEINE Form-Whitelist mehr)",
+            wave10bResults.boxSledIsMoveable
+        );
+        check(
+            "Welle 10b.1: Stützen OHNE Antriebs-Tag (nur stein) → NICHT moveable (Diskrimination)",
+            wave10bResults.carlessNotMoveable
+        );
+        check(
+            "Welle 10b.1: Teleskop-Compound (Quarz-Linse + Cylinder-Tubus) → magnifying=true",
+            wave10bResults.scopeIsMagnifying
+        );
+        check(
+            "Welle 10b.1: spawnArchitecture speichert affordances am entry-Objekt",
+            wave10bResults.entryHasAffordances
+        );
+        check(
+            "Welle 10b.1 UI: Werkstatt-Status zeigt erkannte Affordance ('fahrbar') beim Bauplan",
+            wave10bResults.statusShowsAffordance
+        );
+        // ── W10 ext. — radiating ──
+        check(
+            "W10 ext.: _isRadiating + _tickRadiatingAffordances existieren, Label + Schwellen definiert",
+            wave10bResults.hasRadiating &&
+                wave10bResults.hasTickRadiating &&
+                wave10bResults.radiatingLabel &&
+                wave10bResults.radiatingThresholds
+        );
+        check(
+            "W10 ext.: ein radialer Quarz-Cluster (≥3 Parts, gespreizt) → radiating=true",
+            wave10bResults.radiatorIsRadiating
+        );
+        check(
+            "W10 ext.: ein Quarz-Mast (alle Parts auf einer Achse) → NICHT radiating (räumliche Gate, kein Form-Whitelist)",
+            wave10bResults.mastNotRadiating
+        );
+        check(
+            "W10 ext.: spawnArchitecture speichert die radiating-Affordance am entry",
+            wave10bResults.radEntryAffordance
+        );
+        check("W10 ext.: nahe einem Strahler steigen awe + peace (Welt-Reaktion)", wave10bResults.radNearRaisesEmotion);
+        check(
+            "W10 ext.: weit weg vom Strahler keine Emotion-Änderung (Reichweite-Gate)",
+            wave10bResults.radFarNoChange
+        );
+        // ── W10 ext. Welle 2/4 — broadcasting ──
+        check(
+            "W10 ext.: _isBroadcasting existiert, Label 'sendend' + Schwellen definiert",
+            wave10bResults.hasBroadcasting && wave10bResults.broadcastingLabel && wave10bResults.broadcastingThresholds
+        );
+        check("W10 ext.: ein aufrechter leitfähiger Quarz-Mast → broadcasting=true", wave10bResults.mastIsBroadcasting);
+        check(
+            "W10 ext.: ein radialer Cluster ist kein Mast → NICHT broadcasting (komplementär zu radiating)",
+            wave10bResults.radiatorNotBroadcasting
+        );
+        check(
+            "W10 ext.: eine waagrechte leitfähige Linie (Achse x, nicht y) → NICHT broadcasting",
+            wave10bResults.horizLineNotBroadcasting
+        );
+        check(
+            "W10 ext.: spawnArchitecture speichert die broadcasting-Affordance am entry",
+            wave10bResults.relayMastAffordance
+        );
+        check(
+            "W10 ext.: ohne Mast erreicht der Strahler den fernen Spieler NICHT (Basis-Reichweite)",
+            wave10bResults.relayOhneMastKeinEffekt
+        );
+        check(
+            "W10 ext.: ein broadcasting-Mast verstärkt als Relais die Strahler-Reichweite (Affordances komponieren)",
+            wave10bResults.relayMitMastReicheWeiter
+        );
+        // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
+        check(
+            "W10 ext. Politur: computeAffordanceStrength existiert, leer für ein Compound ohne Affordance",
+            wave10bResults.hasAffordanceStrength && wave10bResults.strengthEmptyForNone
+        );
+        check(
+            "W10 ext. Politur: ein resonanter Quarz-Sphären-Strahler ist STÄRKER als der Octahedron-Strahler",
+            wave10bResults.radStrengthScales
+        );
+        check(
+            "W10 ext. Politur: ein Holz-Mast ist broadcasting, aber SCHWÄCHER als ein Quarz-Mast",
+            wave10bResults.mastWeakIsBroadcasting && wave10bResults.broadcastStrengthScales
+        );
+        check(
+            "W10 ext. Politur: spawnArchitecture friert affordanceStrength am entry ein",
+            wave10bResults.spawnFreezesStrength
+        );
+        check(
+            "W10 ext. Politur: ein schwacher Mast relais-verstärkt NICHT bis zum 23-m-Spieler",
+            wave10bResults.weakMastTooWeak
+        );
+        check(
+            "W10 ext. Politur: ein starker Mast relais-verstärkt WEITER — er erreicht ihn (eine bessere Antenne)",
+            wave10bResults.strongMastReachesFarther
+        );
+        // ── W10 ext. Welle 3/4 — balancing ──
+        check(
+            "W10 ext.: _isBalancing + _tickBalancingAffordances existieren, Label 'gründend' + Schwellen",
+            wave10bResults.hasBalancing &&
+                wave10bResults.hasTickBalancing &&
+                wave10bResults.balancingLabel &&
+                wave10bResults.balancingThresholds
+        );
+        check(
+            "W10 ext.: eine breite flache schwere Stein-Plattform → balancing=true",
+            wave10bResults.platformIsBalancing
+        );
+        check("W10 ext.: ein aufrechter Mast (hoch, nicht breit) → NICHT balancing", wave10bResults.mastNotBalancing);
+        check(
+            "W10 ext.: ein breiter flacher aber LEICHTER Quarz-Cluster → NICHT balancing (dichte-Gate)",
+            wave10bResults.lightClusterNotBalancing
+        );
+        check(
+            "W10 ext.: eine dichtere Plattform gründet stärker (Stärke skaliert)",
+            wave10bResults.balancingStrengthScales
+        );
+        check(
+            "W10 ext.: spawnArchitecture speichert balancing-Affordance + Stärke am entry",
+            wave10bResults.balEntryAffordance && wave10bResults.balEntryStrength
+        );
+        check("W10 ext.: nahe einer gründenden Form sinkt chaos (Welt-Reaktion)", wave10bResults.balNearDrainsChaos);
+        check(
+            "W10 ext.: weit weg von der gründenden Form kein chaos-Abbau (Reichweite-Gate)",
+            wave10bResults.balFarNoChange
+        );
+        // ── W10 ext. Welle 4/4 — lifting ──
+        check(
+            "W10 ext.: _isLifting + _tickLiftingAffordances + _liftVerticalVelocity existieren, Label 'hebend' + Schwellen",
+            wave10bResults.hasLifting &&
+                wave10bResults.hasTickLifting &&
+                wave10bResults.hasLiftVy &&
+                wave10bResults.liftingLabel &&
+                wave10bResults.liftingThresholds
+        );
+        check(
+            "W10 ext.: ein magie-geladener leichter Quarz-Cone-Cluster → lifting=true",
+            wave10bResults.lifterIsLifting
+        );
+        check(
+            "W10 ext.: eine schwere Stein-Plattform → NICHT lifting (magie zu tief)",
+            wave10bResults.platformNotLifting
+        );
+        check(
+            "W10 ext.: ein magie-geladener aber zu DICHTER Quarz-Cluster → NICHT lifting (dichte-Deckel)",
+            wave10bResults.denseClusterNotLifting
+        );
+        check(
+            "W10 ext.: _liftVerticalVelocity dämpft den Fall + hebt sanft, ohne Feld kein Effekt",
+            wave10bResults.liftCushionsFall && wave10bResults.liftDriftsUp && wave10bResults.liftNoFieldNoEffect
+        );
+        check(
+            "W10 ext.: ein Quarz-Helix-Heber hebt stärker als ein Cone-Heber (Stärke skaliert)",
+            wave10bResults.liftStrengthScales
+        );
+        check(
+            "W10 ext.: spawnArchitecture speichert lifting-Affordance + Stärke am entry",
+            wave10bResults.liftEntryAffordance
+        );
+        check(
+            "W10 ext.: _tickLiftingAffordances setzt das Auftriebs-Feld nahe einem Heber, löscht es fern (Reichweite-Gate)",
+            wave10bResults.liftFieldActiveNear && wave10bResults.liftFieldInactiveFar
+        );
+    } else if (wave10bResults && wave10bResults.error) {
+        check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
+    }
+
+    // ### Welle 10b.3 — Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
+    const wave10b3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const AR = r.constructor;
+            const out = {};
+            try {
+                out.constantsExist =
+                    AR.MOUNT_RANGE_M === 3 &&
+                    AR.ZOOM_FOV_DEG === 25 &&
+                    AR.FOCUSING_HEAT_RANGE_M === 4 &&
+                    AR.FOCUSING_IGNITE_THRESHOLD === 1.0;
+                out.hasMount = typeof r.mountArchitecture === "function";
+                out.hasDismount = typeof r.dismountArchitecture === "function";
+                out.hasToggleMount = typeof r.toggleMountAtPlayer === "function";
+                out.hasSetZoom = typeof r.setZoomActive === "function";
+                out.hasFocusingTick = typeof r._tickFocusingAffordances === "function";
+                out.hasTickAffordances = typeof r.tickAffordances === "function";
+                out.initialMountNull = r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
+
+                // Mount-Test
+                if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
+                r.cloneBlueprint("village", "test_10b3_car");
+                r.state.blueprints.test_10b3_car.parts = [
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: -1, y: 0.3, z: 0 },
+                        size: { x: 0.6, y: 0.4, z: 0.6 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 1, y: 0.3, z: 0 },
+                        size: { x: 0.6, y: 0.4, z: 0.6 },
+                    },
+                    {
+                        shape: "box",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 1.2, y: 0.8, z: 0.6 },
+                    },
+                ];
+                const ppos = r.state.playerMesh.position;
+                const entry = r.spawnArchitecture(
+                    "test_10b3_car",
+                    { x: ppos.x, y: ppos.y, z: ppos.z },
+                    { silent: true }
+                );
+                out.entryHasMoveable = !!(entry && entry.affordances && entry.affordances.moveable);
+                const mountRes = r.toggleMountAtPlayer();
+                out.mountSucceeds = mountRes && mountRes.ok === true;
+                out.playerMountedTo = r.state.player.mountedArch === entry.id;
+                const dismountRes = r.toggleMountAtPlayer();
+                out.dismountSucceeds = dismountRes && dismountRes.ok === true;
+                out.playerDismounted = r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
+                const dummy = { affordances: { moveable: false } };
+                const failRes = r.mountArchitecture(dummy);
+                out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
+
+                // Mount-Range
+                r.state.player.mountedArch = null;
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_car");
+                if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
+                r.cloneBlueprint("test_10b3_car", "test_10b3_far");
+                r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
+                const farMountRes = r.toggleMountAtPlayer();
+                out.farMountRejected =
+                    farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
+                r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
+
+                // Zoom-Test — deterministisch. _hasMagnifyingInSight
+                // raycastet gegen ALLE Architekturen mit magnifying-
+                // Affordance; eine autonom gespawnte transparent-
+                // axiale Geode kann zufällig im Kamera-Strahl liegen
+                // und die „kein Target"-Prüfung kippen. Für diese
+                // Prüfung die Architektur-Liste kurz leeren + danach
+                // wiederherstellen (V8.57-Lehre: ein Test ist erst
+                // deterministisch, wenn ALLE seine Eingaben es sind).
+                const initialFov = r.state.camera.fov;
+                out.zoomInactiveInitial = !r.state._zoomActive;
+                const zoomArchBackup = r.state.architectures;
+                r.state.architectures = [];
+                const noTargetRes = r.setZoomActive(true);
+                r.state.architectures = zoomArchBackup;
+                out.zoomFailsWithoutTarget =
+                    noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
+
+                // Focusing-Test
+                if (r.state.blueprints["test_10b3_lens"]) r.deleteBlueprint("test_10b3_lens");
+                r.cloneBlueprint("village", "test_10b3_lens");
+                r.state.blueprints.test_10b3_lens.parts = [
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.8, y: 0.8, z: 0.8 },
+                    },
+                    {
+                        shape: "torus",
+                        material: "bronze",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.9, y: 0.15, z: 0.9 },
+                    },
+                ];
+                const focBp = r.state.blueprints.test_10b3_lens;
+                out.lensIsFocusing = r.computeBlueprintAffordances(focBp).focusing === true;
+                r.spawnArchitecture("test_10b3_lens", { x: 0, y: 0, z: 0 }, { silent: true });
+                const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
+                const beforeWeather = r.state.weather;
+                r.state.weather = "sunny";
+                const beforeArchCount = r.state.architectures.length;
+                r._tickFocusingAffordances(25);
+                const afterArchCount = r.state.architectures.length;
+                out.focusingIgnitesTarget = afterArchCount < beforeArchCount;
+                out.targetGone = !r.state.architectures.find((e) => e.id === targetEntry.id);
+
+                r.state.weather = "rainy";
+                if (r.state.blueprints["test_10b3_target2"]) r.deleteBlueprint("test_10b3_target2");
+                r.cloneBlueprint("baum_eiche", "test_10b3_target2");
+                const target2 = r.spawnArchitecture("test_10b3_target2", { x: 1, y: 0, z: 0 }, { silent: true });
+                r._tickFocusingAffordances(25);
+                out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
+
+                r.state.weather = beforeWeather;
+                r.state.architectures = r.state.architectures.filter(
+                    (e) =>
+                        e.type !== "test_10b3_car" &&
+                        e.type !== "test_10b3_far" &&
+                        e.type !== "test_10b3_lens" &&
+                        e.type !== "test_10b3_target2" &&
+                        e.type !== "baum_eiche"
+                );
+                for (const n of ["test_10b3_car", "test_10b3_far", "test_10b3_lens", "test_10b3_target2"]) {
+                    if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                }
+                r._renderWorkshopDOM();
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (wave10b3Results && !wave10b3Results.error) {
+        check(
+            "Welle 10b.3: Konstanten (MOUNT_RANGE_M, ZOOM_FOV_DEG, FOCUSING_*) korrekt",
+            wave10b3Results.constantsExist
+        );
+        check(
+            "Welle 10b.3: alle 6 Methoden existieren (mount/dismount/toggleMount/setZoom/focusingTick/tickAffordances)",
+            wave10b3Results.hasMount &&
+                wave10b3Results.hasDismount &&
+                wave10b3Results.hasToggleMount &&
+                wave10b3Results.hasSetZoom &&
+                wave10b3Results.hasFocusingTick &&
+                wave10b3Results.hasTickAffordances
+        );
+        check("Welle 10b.3: state.player.mountedArch initial null", wave10b3Results.initialMountNull);
+        check(
+            "Welle 10b.3: spawnArchitecture speichert moveable-Affordance am entry",
+            wave10b3Results.entryHasMoveable
+        );
+        check(
+            "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
+            wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo
+        );
+        check(
+            "Welle 10b.3: toggleMountAtPlayer nochmal → dismount + mountedArch null",
+            wave10b3Results.dismountSucceeds && wave10b3Results.playerDismounted
+        );
+        check(
+            "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
+            wave10b3Results.nonMoveableRejected
+        );
+        check(
+            "Welle 10b.3: Mount-Geste auf entfernte Architektur lehnt ab (none_in_range)",
+            wave10b3Results.farMountRejected
+        );
+        check("Welle 10b.3 Zoom: initial inaktiv (kein _zoomActive)", wave10b3Results.zoomInactiveInitial);
+        check(
+            "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
+            wave10b3Results.zoomFailsWithoutTarget
+        );
+        check("Welle 10b.3 Focusing: Lens-Bauplan (Quarz + Bronze) → focusing=true", wave10b3Results.lensIsFocusing);
+        check(
+            "Welle 10b.3 Focusing: sunny + brennbarer Baum in Range → Tick entzündet (Architektur entfernt)",
+            wave10b3Results.focusingIgnitesTarget && wave10b3Results.targetGone
+        );
+        check("Welle 10b.3 Focusing: rainy-Wetter → KEIN Ignite (Diskrimination)", wave10b3Results.rainyNoIgnite);
+    } else if (wave10b3Results && wave10b3Results.error) {
+        check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (V8.05+06+07 Werkstatt-UX-Polish + Schicht 2 Multi-Provider-LLM-Sandbox + V7.94-V7.98 Ollama-API-Key/Cloud/Proxy/UX/Parser-Robustheit).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWorkshopPolishAndLlm(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
+    const v805Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                // Werkstatt-Tab öffnen
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                // Methoden
+                out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
+                out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
+                out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
+                out.hasInstallEditorToggle = typeof r._workshopInstallEditorToggle === "function";
+                out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
+
+                // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
+                const wrapper = document.getElementById("workshop-preview-wrapper");
+                const modeBar = document.getElementById("workshop-mode-bar");
+                const canvas = document.getElementById("workshop-preview-canvas");
+                if (wrapper && modeBar && canvas) {
+                    out.modeBarInWrapper = modeBar.parentElement === wrapper;
+                    // Mode-Bar steht vor Canvas
+                    const wrapperChildren = Array.from(wrapper.children);
+                    const mbIdx = wrapperChildren.indexOf(modeBar);
+                    const cIdx = wrapperChildren.indexOf(canvas);
+                    out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
+                }
+
+                // Stats-Panel im DOM + NACH Canvas
+                const stats = document.getElementById("workshop-stats-panel");
+                out.statsInDom = !!stats;
+                if (wrapper && stats && canvas) {
+                    const wrapperChildren = Array.from(wrapper.children);
+                    const sIdx = wrapperChildren.indexOf(stats);
+                    const cIdx = wrapperChildren.indexOf(canvas);
+                    out.statsAfterCanvas = sIdx > cIdx;
+                }
+
+                // Werkzeug-Palette im DOM
+                const toolPalette = document.getElementById("workshop-tool-palette");
+                out.toolPaletteInDom = !!toolPalette;
+                // Wenn Spieler Werkzeuge hat, sind Cards drin
+                const playerTools = (r.state.player && r.state.player.tools) || [];
+                out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
+                out.toolPaletteHasCards = out.toolCardsCount > 0 && out.toolCardsCount <= playerTools.length;
+
+                // Editor-Toggle
+                const editorToggle = document.getElementById("workshop-editor-toggle");
+                const editor = document.getElementById("workshop-editor");
+                out.toggleInDom = !!editorToggle;
+                if (editorToggle && editor) {
+                    // Default: zugeklappt (hidden=true)
+                    out.editorInitiallyHidden = editor.hidden === true;
+                    // Click → ausklappen
+                    editorToggle.click();
+                    out.editorVisibleAfterClick = editor.hidden === false;
+                    out.toggleAriaExpanded = editorToggle.getAttribute("aria-expanded") === "true";
+                    // Nochmal Click → wieder zu
+                    editorToggle.click();
+                    out.editorHiddenAfterSecondClick = editor.hidden === true;
+                }
+
+                // Del-Button
+                const delBtn = document.getElementById("workshop-delete-selected-part");
+                out.delBtnInDom = !!delBtn;
+                // Default: disabled (kein Part selektiert)
+                if (delBtn) out.delBtnInitiallyDisabled = delBtn.disabled === true;
+
+                // Klone eigenen Bauplan + Part selektieren → Del-Btn enabled
+                if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+                r.cloneBlueprint("village", "test_v805");
+                r.selectBlueprintForEdit("test_v805");
+                r._workshopSetSelection(0);
+                out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
+                // Del-Btn-Click entfernt Part
+                const partsBefore = r.state.blueprints.test_v805.parts.length;
+                if (delBtn) delBtn.click();
+                const partsAfter = r.state.blueprints.test_v805.parts.length;
+                out.delBtnRemovesPart = partsAfter === partsBefore - 1;
+
+                // Stats-Panel zeigt Rolle-Chip
+                const roleChip = stats && stats.querySelector(".role-chip");
+                out.statsHasRoleChip = !!roleChip;
+
+                // Cleanup
+                if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+                r.selectBlueprintForEdit("village");
+                r._renderWorkshopDOM();
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (v805Results && !v805Results.error) {
+        check(
+            "V8.05: 5 neue Methoden existieren (Tool-Render/Drop + Stats + Editor-Toggle + Del-Btn)",
+            v805Results.hasRenderTools &&
+                v805Results.hasHandleToolDrop &&
+                v805Results.hasRenderStats &&
+                v805Results.hasInstallEditorToggle &&
+                v805Results.hasInstallDelBtn
+        );
+        check(
+            "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
+            v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
+        );
+        check(
+            "V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)",
+            v805Results.statsInDom && v805Results.statsAfterCanvas
+        );
+        check(
+            "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
+            v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
+        );
+        check(
+            "V8.05: Editor-Toggle im DOM + initial zugeklappt (Details-Tabelle versteckt)",
+            v805Results.toggleInDom && v805Results.editorInitiallyHidden
+        );
+        check(
+            "V8.05: Editor-Toggle-Click ein- + ausklappen + aria-expanded sync",
+            v805Results.editorVisibleAfterClick &&
+                v805Results.toggleAriaExpanded &&
+                v805Results.editorHiddenAfterSecondClick
+        );
+        check(
+            "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
+            v805Results.delBtnInDom && v805Results.delBtnInitiallyDisabled
+        );
+        check(
+            "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
+            v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
+        );
+        check("V8.05 Stats: Rolle-Chip im Stats-Panel sichtbar", v805Results.statsHasRoleChip);
+    } else if (v805Results && v805Results.error) {
+        check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
+    }
+
+    // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
+    const v806Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                // Klone + Neu-Buttons in Mode-Bar
+                const modeBar = document.getElementById("workshop-mode-bar");
+                out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
+                out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
+                out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
+                // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
+                const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
+                // V8.14: Reset-Button (Zentrieren) hinzugefügt → 8 Buttons.
+                out.sevenButtonsInBar = allBtns === 8;
+
+                // Methode existiert
+                out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
+                out.hasDefaultSize = typeof r._workshopApplyDefaultSizeOnce === "function";
+
+                // Rechte Spalte ist breiter (≥132px)
+                const rightPalette = document.getElementById("workshop-side-palette-right");
+                if (rightPalette) {
+                    const rect = rightPalette.getBoundingClientRect();
+                    out.rightPaletteWidth = rect.width;
+                    out.rightPaletteWider = rect.width >= 128;
+                }
+
+                // Mode-Bar hat Kontrast-Hintergrund (rgba mit ausreichend Alpha)
+                const modeBarStyle = modeBar ? getComputedStyle(modeBar) : null;
+                out.modeBarHasBg =
+                    modeBarStyle &&
+                    modeBarStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+                    modeBarStyle.backgroundColor !== "transparent";
+
+                // Stats-Panel hat dunklen Hintergrund (rgba(20,12,4) area)
+                const statsPanel = document.getElementById("workshop-stats-panel");
+                const statsStyle = statsPanel ? getComputedStyle(statsPanel) : null;
+                out.statsHasDarkBg =
+                    statsStyle &&
+                    statsStyle.backgroundColor &&
+                    /rgba?\((\d+),\s*(\d+),\s*(\d+)/.test(statsStyle.backgroundColor);
+
+                // Default-Size-Apply-Funktion ist sauber idempotent —
+                // wir setzen Flag, dann ist die Funktion no-op
+                try {
+                    localStorage.setItem("anazh.workshop.defaultApplied", "1");
+                    r._workshopApplyDefaultSizeOnce();
+                    // Nichts sollte passiert sein (flag schützt)
+                    out.idempotentRespected = true;
+                } catch {
+                    out.idempotentRespected = false;
+                }
+
+                // Cleanup
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (v806Results && !v806Results.error) {
+        check(
+            "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
+            v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
+        );
+        check(
+            "V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)",
+            v806Results.sevenButtonsInBar
+        );
+        check(
+            "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
+            v806Results.hasActionInstall && v806Results.hasDefaultSize
+        );
+        check(
+            `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
+            v806Results.rightPaletteWider
+        );
+        check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
+        check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
+        check(
+            "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
+            v806Results.idempotentRespected
+        );
+    } else if (v806Results && v806Results.error) {
+        check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
+    }
+
+    // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
+    const v807Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            try {
+                const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
+                if (tab) tab.click();
+                // Klone + Neu sind IMMER enabled — auch bei built-in Bauplan
+                r.selectBlueprintForEdit("village"); // built-in
+                const cloneBtn = document.getElementById("workshop-clone-btn");
+                const newBtn = document.getElementById("workshop-new-btn");
+                out.cloneBtnAlwaysEnabled = cloneBtn && cloneBtn.disabled === false;
+                out.newBtnAlwaysEnabled = newBtn && newBtn.disabled === false;
+                // Mode-Buttons sind disabled bei built-in (kein Edit-Modus)
+                const moveBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode='translate']");
+                out.modeBtnDisabledOnBuiltIn = moveBtn && moveBtn.disabled === true;
+                // Bei eigenem Bauplan: alle wieder enabled
+                if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+                r.cloneBlueprint("village", "test_v807");
+                r.selectBlueprintForEdit("test_v807");
+                out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
+
+                // Stats-Panel: Tag-Chips haben Stern-Levels
+                const statsPanel = document.getElementById("workshop-stats-panel");
+                const tagChips = statsPanel ? statsPanel.querySelectorAll(".tag-chip") : [];
+                out.tagChipsCount = tagChips.length;
+                let anyHasStars = false;
+                let anyHasLevelClass = false;
+                tagChips.forEach((c) => {
+                    if (c.querySelector(".tag-stars")) anyHasStars = true;
+                    if (
+                        c.classList.contains("lvl-1") ||
+                        c.classList.contains("lvl-2") ||
+                        c.classList.contains("lvl-3") ||
+                        c.classList.contains("lvl-0")
+                    )
+                        anyHasLevelClass = true;
+                });
+                out.tagChipsHaveStars = anyHasStars;
+                out.tagChipsHaveLevelClass = anyHasLevelClass;
+                // Stern-Inhalt: enthält Stern-Glyphen
+                let starsContent = "";
+                if (tagChips.length > 0) {
+                    const firstStarEl = tagChips[0].querySelector(".tag-stars");
+                    if (firstStarEl) starsContent = firstStarEl.textContent;
+                }
+                out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
+
+                // Default-Size-Override: setze Flag zurück + ruf default —
+                // sollte jetzt eine grosse Größe anwenden
+                localStorage.removeItem("anazh.workshop.defaultApplied");
+                localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 300, height: 300 }));
+                r._workshopApplyDefaultSizeOnce();
+                const saved = JSON.parse(localStorage.getItem("anazh.resize.werkstatt") || "{}");
+                out.defaultOverridesStale = saved.width > 600;
+                // Idempotenz: zweiter Call überschreibt nicht
+                r._workshopApplyDefaultSizeOnce();
+                out.idempotentAfterApply = localStorage.getItem("anazh.workshop.defaultApplied") === "1";
+
+                // Cleanup
+                if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+                r.selectBlueprintForEdit("village");
+                r._renderWorkshopDOM();
+                const weltTab = document.querySelector('#topbar [data-tab="welt"]');
+                if (weltTab) weltTab.click();
+                r.state.yaw = 0;
+                if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            } catch (err) {
+                out.error = err && err.message;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (v807Results && !v807Results.error) {
+        check("V8.07: Klone-Button IMMER enabled (auch bei built-in)", v807Results.cloneBtnAlwaysEnabled);
+        check("V8.07: Neu-Button IMMER enabled (auch bei built-in)", v807Results.newBtnAlwaysEnabled);
+        check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
+        check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
+        check(
+            `V8.07 Stats: ${v807Results.tagChipsCount} Tag-Chips mit Stern-Element + Level-Klasse`,
+            v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
+        );
+        check("V8.07 Stats: Stern-Glyphen sind ★/☆ (3 Zeichen)", v807Results.starsAreGlyphs);
+        check(
+            "V8.07: _workshopApplyDefaultSizeOnce überschreibt stale localStorage (alte 300px → groß)",
+            v807Results.defaultOverridesStale
+        );
+        check("V8.07: idempotent — zweiter Apply respektiert das Flag", v807Results.idempotentAfterApply);
+    } else if (v807Results && v807Results.error) {
+        check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
+    }
+
+    // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
+    const llmResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasLlmState = r.state.llm && typeof r.state.llm.enabled === "boolean";
+            out.hasProviderConfig =
+                !!r.state.llm.providerConfig &&
+                !!r.state.llm.providerConfig.anthropic &&
+                !!r.state.llm.providerConfig.google &&
+                !!r.state.llm.providerConfig.openrouter &&
+                !!r.state.llm.providerConfig.ollama;
+            const defs = r.llmProviderDefs();
+            out.fourProviders = Object.keys(defs).length === 4;
+            out.providerHasBuildBody =
+                typeof defs.anthropic.buildBody === "function" &&
+                typeof defs.google.buildBody === "function" &&
+                typeof defs.openrouter.buildBody === "function" &&
+                typeof defs.ollama.buildBody === "function";
+
+            // Endpoint je Provider liefert die erwartete URL.
+            out.anthropicEndpoint = defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
+            out.googleEndpointGenerateContent =
+                /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
+                    defs.google.endpoint("gemini-2.0-flash", "KEY")
+                );
+            out.googleHeaderHasApiKey = defs.google.buildHeaders("KEY")["x-goog-api-key"] === "KEY";
+            out.openrouterEndpoint =
+                defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
+            out.ollamaEndpoint =
+                defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) ===
+                "http://localhost:11434/api/chat";
+            out.ollamaNoKeyRequired = defs.ollama.requiresKey === false;
+
+            // Body-Format pro Provider
+            const sys = "SYS";
+            const usr = "USR";
+            const anthBody = defs.anthropic.buildBody("m", sys, usr);
+            out.anthropicBodyShape = anthBody.system === sys && Array.isArray(anthBody.messages);
+            const geminiBody = defs.google.buildBody("m", sys, usr);
+            out.geminiBodyShape = !!geminiBody.systemInstruction && Array.isArray(geminiBody.contents);
+            const orBody = defs.openrouter.buildBody("m", sys, usr);
+            out.openrouterBodyShape =
+                Array.isArray(orBody.messages) &&
+                orBody.messages[0].role === "system" &&
+                orBody.messages[1].role === "user";
+            const olBody = defs.ollama.buildBody("m", sys, usr);
+            out.ollamaBodyShape = olBody.stream === false && Array.isArray(olBody.messages);
+
+            // Response-Parser pro Provider
+            out.anthropicExtract = defs.anthropic.extractText({ content: [{ type: "text", text: "hi" }] }) === "hi";
+            out.geminiExtract =
+                defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
+            out.openrouterExtract = defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
+            out.ollamaExtract = defs.ollama.extractText({ message: { content: "hi" } }) === "hi";
+
+            // UI: Provider-Selektor + Schlüsselzeile + Endpoint-Zeile (für Ollama)
+            out.llmUiProvider = !!document.getElementById("llm-provider");
+            out.llmUiKey = !!document.getElementById("llm-key");
+            out.llmUiEndpoint = !!document.getElementById("llm-endpoint");
+            out.llmUiModel = !!document.getElementById("llm-model");
+            out.llmUiToggle = !!document.getElementById("llm-toggle");
+
+            // Default-Provider ist anthropic; Provider-Selector trägt alle vier
+            const sel = document.getElementById("llm-provider");
+            out.providerSelectorPopulated = sel && sel.options.length === 4;
+
+            // System-Prompt enthält die DSL-Vertrag-Anweisungen
+            const sp = r.llmBuildSystemPrompt();
+            out.systemPromptHasJson = /JSON/i.test(sp) && /say/.test(sp) && /program/.test(sp);
+
+            // Parser robust gegen Markdown / kaputtes JSON
+            const ok = r.llmParseResponse('{"say":"Hallo","program":["weather","sunny"]}');
+            out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
+            const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
+            out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
+            // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
+            // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
+            // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
+            const broken = r.llmParseResponse("nicht json");
+            out.parserDetectsError = broken.say === "nicht json" && broken.fallbackUsed === "plain-text";
+
+            // Disabled-LLM blockt Call ohne Netzwerk-Versuch
+            r.state.llm.enabled = false;
+            return new Promise((resolve) => {
+                r.llmCall("test").then((rep) => {
+                    out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
+                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                    const csp = meta ? meta.getAttribute("content") : "";
+                    out.cspAnthropic = /api\.anthropic\.com/.test(csp);
+                    out.cspGoogle = /generativelanguage\.googleapis\.com/.test(csp);
+                    out.cspOpenRouter = /openrouter\.ai/.test(csp);
+                    out.cspOllama = /localhost:11434/.test(csp);
+                    resolve(out);
+                });
+            });
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (!llmResults || llmResults.error) {
+        check(
+            "Schicht 2: LLM-Snapshot erreichbar",
+            false,
+            (llmResults && llmResults.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Schicht 2: state.llm + providerConfig komplett", llmResults.hasLlmState && llmResults.hasProviderConfig);
+        check("Schicht 2: vier Provider definiert", llmResults.fourProviders);
+        check("Schicht 2: jeder Provider hat buildBody-Fn", llmResults.providerHasBuildBody);
+        check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
+        check("Schicht 2: Gemini-Endpoint auf :generateContent", llmResults.googleEndpointGenerateContent);
+        check("Schicht 2: Gemini-Header trägt x-goog-api-key", llmResults.googleHeaderHasApiKey);
+        check("Schicht 2: OpenRouter-Endpoint korrekt", llmResults.openrouterEndpoint);
+        check("Schicht 2: Ollama-Endpoint nutzt /api/chat", llmResults.ollamaEndpoint);
+        check("Schicht 2: Ollama braucht keinen Key", llmResults.ollamaNoKeyRequired);
+        check("Schicht 2: Anthropic-Body trägt system + messages", llmResults.anthropicBodyShape);
+        check("Schicht 2: Gemini-Body trägt systemInstruction + contents", llmResults.geminiBodyShape);
+        check("Schicht 2: OpenRouter-Body OpenAI-kompatibel", llmResults.openrouterBodyShape);
+        check("Schicht 2: Ollama-Body trägt stream=false + messages", llmResults.ollamaBodyShape);
+        check("Schicht 2: Anthropic-Response extrahiert text-Block", llmResults.anthropicExtract);
+        check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
+        check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
+        check("Schicht 2: Ollama-Response extrahiert message.content", llmResults.ollamaExtract);
+        check(
+            "Schicht 2: UI-Felder (Provider/Key/Endpoint/Model/Toggle)",
+            llmResults.llmUiProvider &&
+                llmResults.llmUiKey &&
+                llmResults.llmUiEndpoint &&
+                llmResults.llmUiModel &&
+                llmResults.llmUiToggle
+        );
+        check("Schicht 2: Provider-Selektor mit 4 Optionen befüllt", llmResults.providerSelectorPopulated);
+        check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
+        check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
+        check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
+        check(
+            "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)",
+            llmResults.parserDetectsError
+        );
+        check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
+        check(
+            "Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
+            llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama
+        );
+    }
+
+    // ### Welle 6.H V7.94 — Ollama-API-Key (gehosteter Setup) ###
+    //
+    // Lokales Ollama braucht keinen Key. Gehostete Setups (ollama.com
+    // Turbo, Reverse-Proxy mit Auth, Cloud-Hoster) kommen mit Bearer-
+    // Token. buildHeaders schickt Authorization-Header NUR wenn Key
+    // gesetzt — Backward-Compat für lokale Spieler.
+    const ollamaKeyResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            const defs = r.llmProviderDefs();
+            const ol = defs.ollama;
+            out.providerExists = !!ol;
+            out.requiresKeyFalse = ol && ol.requiresKey === false; // weiterhin OPTIONAL
+            out.labelMentionsHosted = ol && /gehostet|Hosted/i.test(ol.label || "");
+            out.hintMentionsBearer = ol && /Bearer|Token/i.test(ol.hint || "");
+
+            // buildHeaders ohne Key → kein authorization-Header (lokal)
+            const headersNoKey = ol.buildHeaders("", { apiKey: "" });
+            out.noAuthWithoutKey = !headersNoKey.authorization && !headersNoKey.Authorization;
+            out.contentTypePresent = headersNoKey["content-type"] === "application/json";
+
+            // buildHeaders MIT Key → Bearer-Token
+            const headersWithKey = ol.buildHeaders("sk-test-1234", { apiKey: "sk-test-1234" });
+            out.bearerWithKey =
+                headersWithKey.authorization === "Bearer sk-test-1234" ||
+                headersWithKey.Authorization === "Bearer sk-test-1234";
+
+            // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
+            const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
+            out.endpointRespectsCustom = customEp === "https://my-ollama.cloud:8443/api/chat";
+
+            // CSP: connect-src enthält https: Wildcard für Cloud-Endpoints
+            const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+            const csp = meta ? meta.getAttribute("content") : "";
+            // Match 'https:' als standalone Wert in connect-src (nicht
+            // nur die spezifischen 'https://api.X.com'-Einträge).
+            out.cspHasHttpsWildcard = /connect-src[^;]*\bhttps:\s/.test(csp);
+
+            // UI: Key-Row ist auch für ollama sichtbar (V7.94)
+            if (r.state.llm) r.state.llm.provider = "ollama";
+            if (typeof r.llmRefreshProviderUI === "function") {
+                r.llmRefreshProviderUI();
+            }
+            const keyRow = document.getElementById("llm-key-row");
+            out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
+            const keyInput = document.getElementById("llm-key");
+            out.placeholderMentionsOptional = !!(keyInput && /optional|gehostet/i.test(keyInput.placeholder || ""));
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (ollamaKeyResults && !ollamaKeyResults.error) {
+        check(
+            "V7.94 Ollama-Key: Provider-Label nennt 'gehostet' + Hint nennt Bearer/Token",
+            ollamaKeyResults.providerExists &&
+                ollamaKeyResults.labelMentionsHosted &&
+                ollamaKeyResults.hintMentionsBearer
+        );
+        check(
+            "V7.94 Ollama-Key: requiresKey bleibt false (lokal weiterhin ohne Key)",
+            ollamaKeyResults.requiresKeyFalse
+        );
+        check(
+            "V7.94 Ollama-Key: buildHeaders OHNE Key → kein Authorization (Backward-Compat lokal)",
+            ollamaKeyResults.noAuthWithoutKey && ollamaKeyResults.contentTypePresent
+        );
+        check("V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>", ollamaKeyResults.bearerWithKey);
+        check(
+            "V7.94 Ollama-Key: endpoint respektiert cfg.endpoint (Custom-URL möglich, z.B. https://my-ollama.cloud)",
+            ollamaKeyResults.endpointRespectsCustom
+        );
+        check(
+            "V7.94 Ollama-Key: CSP connect-src enthält https: Wildcard (für gehostete Endpoints)",
+            ollamaKeyResults.cspHasHttpsWildcard
+        );
+        check(
+            "V7.94 Ollama-Key: UI Key-Row ist für ollama sichtbar (optional, mit Hinweis-Placeholder)",
+            ollamaKeyResults.keyRowVisibleForOllama && ollamaKeyResults.placeholderMentionsOptional
+        );
+    } else if (ollamaKeyResults && ollamaKeyResults.error) {
+        check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
+    }
+
+    // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
+    //
+    // Schöpfer-Browser-Test V7.94: Ollama-Cloud-Setup scheiterte still.
+    // Drei Bug-Quellen entdeckt: (1) /api/chat wurde immer angehängt
+    // auch wenn URL schon Pfad hatte; (2) extractText las nur Ollama-
+    // native Format, OpenAI-kompat lieferte null; (3) options.num_predict
+    // ist Ollama-spezifisch, OpenAI lehnt unbekannte Felder ab.
+    const v795Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            const defs = r.llmProviderDefs();
+            const ol = defs.ollama;
+
+            // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt
+            out.epAppendsForBase =
+                ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) === "http://localhost:11434/api/chat";
+            out.epAppendsForCloud =
+                ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) === "https://ollama.com/api/chat";
+
+            // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
+            out.epRespectsApiPath =
+                ol.endpoint("m", "k", {
+                    endpoint: "https://ollama.com/api/chat",
+                }) === "https://ollama.com/api/chat";
+
+            // 3. Endpoint smart-detect — URL mit /v1/chat/completions → DIREKT (OpenAI-kompat)
+            out.epRespectsV1Path =
+                ol.endpoint("m", "k", {
+                    endpoint: "https://provider.cloud/v1/chat/completions",
+                }) === "https://provider.cloud/v1/chat/completions";
+
+            // 4. Endpoint trim — Trailing-Slash entfernt
+            out.epTrimsTrailingSlash =
+                ol.endpoint("m", "k", {
+                    endpoint: "https://ollama.com/",
+                }) === "https://ollama.com/api/chat";
+
+            // 5. extractText — Ollama-native Format
+            out.extractsOllamaNative = ol.extractText({ message: { content: "Hallo Welt" } }) === "Hallo Welt";
+
+            // 6. extractText — OpenAI-kompat Format
+            out.extractsOpenAi =
+                ol.extractText({
+                    choices: [{ message: { content: "OpenAI-Antwort" } }],
+                }) === "OpenAI-Antwort";
+
+            // 7. extractText — Ollama-generate-Pfad (älter)
+            out.extractsOllamaGenerate = ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
+
+            // 8. extractText — leerer/null Input → leerer String
+            out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
+
+            // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
+            // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
+            const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
+                endpoint: "http://localhost:11434",
+            });
+            out.bodyNativeHasOptions = bodyNative.options && bodyNative.options.num_predict === 800;
+            out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
+
+            // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
+            // V7.98: 400→800
+            const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
+                endpoint: "https://provider/v1/chat/completions",
+            });
+            out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 800;
+            out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
+
+            // 11. buildBody — beide haben model + messages + stream:false
+            out.bodyHasCommon =
+                bodyNative.model === "llama3.1" &&
+                Array.isArray(bodyNative.messages) &&
+                bodyNative.stream === false &&
+                bodyOpenAi.messages.length === 2;
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (v795Results && !v795Results.error) {
+        check(
+            "V7.95 Ollama-Cloud: Endpoint hängt /api/chat an wenn Basis-URL ohne Pfad (localhost + ollama.com)",
+            v795Results.epAppendsForBase && v795Results.epAppendsForCloud
+        );
+        check(
+            "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)",
+            v795Results.epRespectsApiPath
+        );
+        check(
+            "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
+            v795Results.epRespectsV1Path
+        );
+        check("V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber", v795Results.epTrimsTrailingSlash);
+        check(
+            "V7.95 Ollama-Cloud: extractText liest Ollama-native Format (json.message.content)",
+            v795Results.extractsOllamaNative
+        );
+        check(
+            "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)",
+            v795Results.extractsOpenAi
+        );
+        check(
+            "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)",
+            v795Results.extractsOllamaGenerate
+        );
+        check(
+            "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)",
+            v795Results.extractsEmpty
+        );
+        check(
+            "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)",
+            v795Results.bodyNativeHasOptions && v795Results.bodyNativeNoMaxTokens
+        );
+        check(
+            "V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800 (KEIN options-Feld)",
+            v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
+        );
+        check(
+            "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:false",
+            v795Results.bodyHasCommon
+        );
+    } else if (v795Results && v795Results.error) {
+        check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
+    }
+
+    // ### V7.96 — Cloud-LLM-Proxy via save-server (CORS-Lösung) ###
+    //
+    // Cloud-Provider wie ollama.com senden keine CORS-Header → Browser
+    // blockt Direct-Calls. Save-server steht als loyaler Vermittler:
+    // localhost:4312/api/proxy/llm + Auth-Header durchgereicht.
+    // Tests prüfen: useProxy-Flag in Config, UI-Toggle sichtbar/wired,
+    // llmCall routet zum Proxy bei aktivem Flag, CORS-Error-Hint hilfreich.
+    const v796Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.llm) return null;
+            const out = {};
+
+            // 1. useProxy-Flag im Ollama-Provider-Config initialisiert
+            const cfg = r.state.llm.providerConfig.ollama;
+            out.useProxyExists = cfg && typeof cfg.useProxy === "boolean";
+            out.useProxyDefault = cfg && cfg.useProxy === false;
+
+            // 2. UI: Proxy-Row + Hint sind im DOM
+            const proxyRow = document.getElementById("llm-proxy-row");
+            const proxyHint = document.getElementById("llm-proxy-hint");
+            const proxyCheckbox = document.getElementById("llm-use-proxy");
+            out.proxyRowExists = !!proxyRow;
+            out.proxyHintExists = !!proxyHint;
+            out.proxyCheckboxIsCheckbox = !!(proxyCheckbox && proxyCheckbox.type === "checkbox");
+
+            // 3. UI: Proxy-Row sichtbar bei Ollama, versteckt bei anderem Provider
+            r.state.llm.provider = "ollama";
+            if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+            out.proxyVisibleForOllama = !!(proxyRow && !proxyRow.hidden);
+            out.proxyHiddenAttrOllama = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
+            r.state.llm.provider = "google";
+            if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+            out.proxyHiddenForOther = !!(proxyRow && proxyRow.hidden);
+            out.proxyHiddenAttrOther = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
+            r.state.llm.provider = "ollama";
+            if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
+
+            // 4. Provider-Hint enthält CORS-freundliche Provider-Liste
+            if (proxyHint) {
+                out.hintMentionsGroq = /Groq/i.test(proxyHint.textContent || "");
+                out.hintMentionsTogether = /Together/i.test(proxyHint.textContent || "");
+                out.hintMentionsCerebras = /Cerebras/i.test(proxyHint.textContent || "");
+                out.hintMentionsProxyUrl = /4312/.test(proxyHint.textContent || "");
+            }
+
+            // 5. Click auf Checkbox setzt useProxy + persistiert
+            if (proxyCheckbox && cfg) {
+                proxyCheckbox.checked = true;
+                proxyCheckbox.dispatchEvent(new Event("change"));
+                out.toggleSetsUseProxy = cfg.useProxy === true;
+                if (typeof localStorage !== "undefined") {
+                    out.persistedToLocalStorage = localStorage.getItem("anazh.llm.ollama.useProxy") === "1";
+                }
+                // Reset für nächste Tests
+                proxyCheckbox.checked = false;
+                proxyCheckbox.dispatchEvent(new Event("change"));
+            }
+
+            // 6. CSP allowed localhost:4312 für den Proxy
+            const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+            const csp = meta ? meta.getAttribute("content") : "";
+            out.cspAllowsProxyHost = /localhost:4312/.test(csp);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (v796Results && !v796Results.error) {
+        check(
+            "V7.96 Proxy: useProxy-Flag im Ollama-Config (default false, Backward-Compat)",
+            v796Results.useProxyExists && v796Results.useProxyDefault
+        );
+        check(
+            "V7.96 Proxy: UI-Elemente im DOM (proxy-row + proxy-hint + checkbox)",
+            v796Results.proxyRowExists && v796Results.proxyHintExists && v796Results.proxyCheckboxIsCheckbox
+        );
+        check("V7.96 Proxy: UI-Toggle sichtbar bei Ollama (proxy-row.hidden=false)", v796Results.proxyVisibleForOllama);
+        check(
+            "V7.96 Proxy: UI-Toggle versteckt bei nicht-Ollama-Provider (proxy-row.hidden=true für Google/Anthropic/OpenRouter)",
+            v796Results.proxyHiddenForOther
+        );
+        check(
+            "V7.96 Proxy: Hint nennt CORS-freundliche Provider (Groq + Together + Cerebras) + Proxy-URL (4312)",
+            v796Results.hintMentionsGroq &&
+                v796Results.hintMentionsTogether &&
+                v796Results.hintMentionsCerebras &&
+                v796Results.hintMentionsProxyUrl
+        );
+        check(
+            "V7.96 Proxy: Click-Toggle setzt useProxy + persistiert in localStorage",
+            v796Results.toggleSetsUseProxy && v796Results.persistedToLocalStorage
+        );
+        check("V7.96 Proxy: CSP erlaubt localhost:4312 (save-server) für Proxy-Calls", v796Results.cspAllowsProxyHost);
+    } else if (v796Results && v796Results.error) {
+        check(`V7.96 Proxy: evaluate-Fehler — ${v796Results.error}`, false);
+    }
+
+    // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
+    //
+    // Schöpfer-Browser-Test V7.96 zeigte drei reale Stolpersteine:
+    // (1) Proxy-Toggle aktiv + localhost-URL → 400 Fehler (Proxy https-only);
+    // (2) Dropdown-Modelle veraltet — User hat qwen3.5:cloud etc.;
+    // (3) 404 ohne Anleitung was zu tun ist.
+    const v797Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+
+            // 1. Modell-Input ist Free-Text (input mit datalist)
+            const modelInput = document.getElementById("llm-model");
+            const dataList = document.getElementById("llm-model-suggestions");
+            out.modelIsInput = !!(modelInput && modelInput.tagName === "INPUT");
+            out.modelHasList = !!(modelInput && modelInput.getAttribute("list") === "llm-model-suggestions");
+            out.dataListExists = !!dataList;
+
+            // 2. Datalist hat aktualisierte Vorschläge (llama3.2, qwen3, gpt-oss:20b)
+            const defs = r.llmProviderDefs();
+            const ollamaModels = (defs.ollama && defs.ollama.models) || [];
+            const modelIds = ollamaModels.map((m) => m.id);
+            out.hasLlama32 = modelIds.includes("llama3.2");
+            out.hasQwen3 = modelIds.includes("qwen3");
+            out.hasGptOss = modelIds.includes("gpt-oss:20b");
+            out.hasGemma2 = modelIds.includes("gemma2");
+
+            // 3. User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud)
+            if (modelInput && r.state.llm) {
+                r.state.llm.provider = "ollama";
+                const cfg = r.state.llm.providerConfig.ollama;
+                modelInput.value = "qwen3.5:cloud";
+                modelInput.dispatchEvent(new Event("change"));
+                out.customModelAccepted = cfg.model === "qwen3.5:cloud";
+            }
+
+            // 4. Default-Modell ist jetzt llama3.2 (moderner)
+            out.defaultModelModern = true; // wir bauen das später
+            // Heuristik: state-Default ist nicht garantiert beim Test-Lauf,
+            // weil localStorage greift. Wir prüfen den class-Default.
+            // (Skip this strict check.)
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    // Auto-Bypass-Test als separater evaluate damit fetch-Pfad testbar ist
+    const v797AutoResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.llm) return null;
+            const out = {};
+
+            // 5. Auto-Bypass: useProxy + localhost-URL → kein Proxy-Weg
+            // (wir stubben fetch um die URL abzufangen und reverten danach)
+            const origFetch = window.fetch;
+            let capturedUrl = null;
+            window.fetch = async (u) => {
+                capturedUrl = String(u);
+                // Liefere einen leeren-aber-validen Response zurück
+                return {
+                    ok: false,
+                    status: 404,
+                    text: async () => '{"error":"stub"}',
+                    json: async () => ({ error: "stub" }),
+                };
+            };
+            try {
+                // Setup: localhost-Endpoint + useProxy=true
+                r.state.llm.provider = "ollama";
+                r.state.llm.enabled = true;
+                const cfg = r.state.llm.providerConfig.ollama;
+                cfg.endpoint = "http://localhost:11434";
+                cfg.useProxy = true;
+                cfg.model = "llama3.2";
+                r.state.llm.inFlight = false;
+                r.state.llm.lastResponseAt = -Infinity;
+                await r.llmCall("test");
+                // Erwartung: fetch-URL ist die direkte ollama-URL,
+                // NICHT die proxy-URL — Auto-Bypass greift weil localhost
+                out.bypassedForLocalhost = capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
+                // Reset
+                capturedUrl = null;
+                cfg.endpoint = "https://ollama.com/api/chat";
+                r.state.llm.inFlight = false;
+                r.state.llm.lastResponseAt = -Infinity;
+                await r.llmCall("test");
+                // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
+                out.proxyUsedForCloud = capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
+            } finally {
+                window.fetch = origFetch;
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    // 404-Hint-Test
+    const v797ErrorResults = await page
+        .evaluate(async () => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.llm) return null;
+            const out = {};
+            const origFetch = window.fetch;
+            window.fetch = async () => ({
+                ok: false,
+                status: 404,
+                text: async () => '{"error":"model \\"foo-not-real\\" not found"}',
+                json: async () => ({ error: "stub" }),
+            });
+            try {
+                r.state.llm.provider = "ollama";
+                r.state.llm.enabled = true;
+                const cfg = r.state.llm.providerConfig.ollama;
+                cfg.endpoint = "http://localhost:11434";
+                cfg.useProxy = false;
+                cfg.model = "foo-not-real";
+                r.state.llm.inFlight = false;
+                r.state.llm.lastResponseAt = -Infinity;
+                const reply = await r.llmCall("test");
+                out.errorMentionsModel = /Modell.*nicht gefunden/.test(reply.error || "");
+                out.errorMentionsOllamaList = /ollama list/.test(reply.error || "");
+                out.errorMentionsModelName = /foo-not-real/.test(reply.error || "");
+            } finally {
+                window.fetch = origFetch;
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (v797Results && !v797Results.error) {
+        check(
+            "V7.97 UX: Modell-Input ist Free-Text mit datalist (Spieler tippt eigene Modelle)",
+            v797Results.modelIsInput && v797Results.modelHasList && v797Results.dataListExists
+        );
+        check(
+            "V7.97 UX: Default-Modell-Vorschläge enthalten aktuelle Namen (llama3.2, qwen3, gpt-oss:20b, gemma2)",
+            v797Results.hasLlama32 && v797Results.hasQwen3 && v797Results.hasGptOss && v797Results.hasGemma2
+        );
+        check(
+            "V7.97 UX: User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud) — Free-Text gespeichert",
+            v797Results.customModelAccepted
+        );
+    } else if (v797Results && v797Results.error) {
+        check(`V7.97 UX: evaluate-Fehler — ${v797Results.error}`, false);
+    }
+    if (v797AutoResults && !v797AutoResults.error) {
+        check(
+            "V7.97 Auto-Bypass: localhost-URL + useProxy=true → Proxy WIRD BYPASSED (direkter Call)",
+            v797AutoResults.bypassedForLocalhost
+        );
+        check(
+            "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)",
+            v797AutoResults.proxyUsedForCloud
+        );
+    } else if (v797AutoResults && v797AutoResults.error) {
+        check(`V7.97 Auto-Bypass: evaluate-Fehler — ${v797AutoResults.error}`, false);
+    }
+    if (v797ErrorResults && !v797ErrorResults.error) {
+        check(
+            "V7.97 Error-Hint: HTTP 404 'model not found' → klarer Hinweis mit Modell-Namen + 'ollama list'",
+            v797ErrorResults.errorMentionsModel &&
+                v797ErrorResults.errorMentionsOllamaList &&
+                v797ErrorResults.errorMentionsModelName
+        );
+    } else if (v797ErrorResults && v797ErrorResults.error) {
+        check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
+    }
+
+    // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
+    //
+    // Schöpfer-Browser-Test V7.97: Ollama lokales qwen3.6 antwortet,
+    // aber Chat zeigt "Leere Antwort". Drei Ursachen:
+    // (1) Reasoning-Models wrappen Output in <think>...</think>;
+    // (2) lokale 7B-Modelle ignorieren oft den JSON-Vertrag;
+    // (3) num_predict=400 reicht nicht für think-Block + Antwort.
+    const v798Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+
+            // 1. <think>-Block wird gestrippt, JSON dahinter wird geparst
+            const thinkResp = r.llmParseResponse(
+                '<think>Lass mich überlegen…</think>{"say":"Hallo Welt","program":null}'
+            );
+            out.thinkStripped = thinkResp.say === "Hallo Welt" && thinkResp.program === null;
+
+            // 2. <thinking>-Variante wird auch erkannt
+            const thinkingResp = r.llmParseResponse('<thinking>foo bar</thinking>\n{"say":"Klar"}');
+            out.thinkingStripped = thinkingResp.say === "Klar";
+
+            // 3. Plain-Text ohne JSON → Plain-Text-Fallback
+            const plainResp = r.llmParseResponse("Mir geht es gut, danke der Nachfrage.");
+            out.plainTextFallback =
+                plainResp.say === "Mir geht es gut, danke der Nachfrage." && plainResp.fallbackUsed === "plain-text";
+
+            // 4. <think>-Block + Plain-Text → think gestrippt, Rest als say
+            const thinkPlainResp = r.llmParseResponse("<think>denke nach</think>Hallo Schöpfer, ich höre dich.");
+            out.thinkPlusPlain = /Hallo Schöpfer/.test(thinkPlainResp.say || "");
+
+            // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
+            const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
+            out.strictJsonStillWorks =
+                strictResp.say === "Test" && Array.isArray(strictResp.program) && !strictResp.fallbackUsed;
+
+            // 6. Markdown-Fence + JSON → fence wird gestripped
+            const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
+            out.fenceStripped = fenceResp.say === "Fenced";
+
+            // 7. Komplett leerer Input → klarer Error mit raw-Hinweis
+            const emptyResp = r.llmParseResponse("");
+            out.emptyHasError = typeof emptyResp.error === "string" && /raw=0/.test(emptyResp.error);
+
+            // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
+            const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');
+            out.emptyJsonFallsBackToText =
+                emptyJsonResp.say && emptyJsonResp.say.length > 0 && emptyJsonResp.fallbackUsed === "json-empty";
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (v798Results && !v798Results.error) {
+        check(
+            "V7.98 Parser: <think>...</think>-Block wird gestripped, dahinter liegendes JSON sauber geparst",
+            v798Results.thinkStripped
+        );
+        check("V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)", v798Results.thinkingStripped);
+        check(
+            "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')",
+            v798Results.plainTextFallback
+        );
+        check(
+            "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
+            v798Results.thinkPlusPlain
+        );
+        check(
+            "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
+            v798Results.strictJsonStillWorks
+        );
+        check("V7.98 Parser: Markdown-Fence (```json …```) wird gestripped", v798Results.fenceStripped);
+        check("V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis", v798Results.emptyHasError);
+        check(
+            "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
+            v798Results.emptyJsonFallsBackToText
+        );
+    } else if (v798Results && v798Results.error) {
+        check(`V7.98 Parser: evaluate-Fehler — ${v798Results.error}`, false);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Ring 3 + Ring 3 V2 — Spieler-Emotionen → Welt — + Ring 4 anazhSymphony V1 + UI V1/V2 (Topbar/Status-Bar/Drawer/Quick-Buttons/Abilities/Live-Tuning/Identity/Konsole)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandEarlyRingsAndUi(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Ring 3 – Player-Emotionen → Welt ###
+    const ring3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.player) return null;
+            const out = {};
+
+            // Reset: für deterministische Tests alle Werte + Cooldowns löschen.
+            for (const k of Object.keys(r.state.player.emotions)) {
+                r.state.player.emotions[k] = 0;
+            }
+            r.state.player.emotionLastApply.joy = -Infinity;
+            r.state.player.emotionLastApply.sorrow = -Infinity;
+            r.state.player.emotionLastApply.chaos = -Infinity;
+            r.state.player.emotionLastTick = -Infinity;
+
+            // (a) collectPlayerEmotions reagiert auf deutsche Stichwörter
+            r.collectPlayerEmotions("Was für ein schöner und magischer Moment");
+            out.joyAfterCollect = r.state.player.emotions.joy;
+            out.aweAfterCollect = r.state.player.emotions.awe;
+            out.collectJoyOk = out.joyAfterCollect >= 0.1 - 1e-9;
+            out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
+
+            // (b) Decay reduziert über simulierten Zeitfortschritt
+            r.state.player.emotions.joy = 0.5;
+            r.state.player.emotionLastTick = 100;
+            r.updatePlayerEmotions(110); // 10s vergangen
+            out.joyAfterDecay = r.state.player.emotions.joy;
+            out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
+
+            // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy".
+            // lastTick nahe an currentTime, damit der Decay-Schritt
+            // sorrow nicht unter die Schwelle drückt bevor der Trigger
+            // schaut.
+            r.state.weather = "sunny";
+            r.state.player.emotions.sorrow = 0.9;
+            r.state.player.emotionLastApply.sorrow = -Infinity;
+            r.state.player.emotionLastTick = 199;
+            r.updatePlayerEmotions(200);
+            out.sorrowAfterTick = r.state.player.emotions.sorrow;
+            out.sorrowTriggersRain = r.state.weather === "rainy";
+
+            // (d) Trigger respektiert Cooldown — zweiter Tick 5s später
+            //     darf nicht wieder feuern.
+            r.state.weather = "sunny";
+            r.state.player.emotionLastTick = 204;
+            r.updatePlayerEmotions(205);
+            out.cooldownRespected = r.state.weather === "sunny";
+
+            // (e) DSL-Condition emotion_above
+            r.state.player.emotions.joy = 0.9;
+            const condTrue = r.dslEvalCond(["emotion_above", "joy", 0.5], {
+                state: r.state,
+                rng: Math.random,
+                log: [],
+            });
+            r.state.player.emotions.joy = 0.2;
+            const condFalse = r.dslEvalCond(["emotion_above", "joy", 0.5], {
+                state: r.state,
+                rng: Math.random,
+                log: [],
+            });
+            out.dslConditionJoyAbove = condTrue === true && condFalse === false;
+
+            // (f) Save-Roundtrip
+            r.state.player.emotions.joy = 0.42;
+            r.state.player.emotions.chaos = 0.13;
+            r.saveState();
+            const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+            let parsed = null;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                void e;
+            }
+            out.savedEmotions =
+                !!parsed &&
+                parsed.playerEmotions &&
+                Math.abs(parsed.playerEmotions.joy - 0.42) < 1e-6 &&
+                Math.abs(parsed.playerEmotions.chaos - 0.13) < 1e-6;
+
+            return out;
+        })
+        .catch(() => null);
+
+    if (!ring3Results) {
+        check("Ring 3: player.emotions erreichbar", false, "page.evaluate fehlgeschlagen");
+    } else {
+        check(
+            "Ring 3: collectPlayerEmotions erkennt 'schön' (joy +0.1)",
+            ring3Results.collectJoyOk,
+            `joy=${ring3Results.joyAfterCollect.toFixed(3)}`
+        );
+        check(
+            "Ring 3: collectPlayerEmotions erkennt 'magisch' (awe +0.1)",
+            ring3Results.collectAweOk,
+            `awe=${ring3Results.aweAfterCollect.toFixed(3)}`
+        );
+        check(
+            "Ring 3: Decay reduziert Emotion über Zeit",
+            ring3Results.decayLowered,
+            `joy 0.5 → ${ring3Results.joyAfterDecay.toFixed(3)} nach 10s`
+        );
+        check("Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'", ring3Results.sorrowTriggersRain);
+        check("Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)", ring3Results.cooldownRespected);
+        check("Ring 3: DSL-Condition emotion_above evaluiert korrekt", ring3Results.dslConditionJoyAbove);
+        check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
+    }
+
+    // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
+    const ring3v2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.player) return null;
+            const out = {};
+            const p = r.state.player;
+
+            const makeRng = (seed) => {
+                let s = seed >>> 0 || 1;
+                return () => {
+                    s = (s * 1664525 + 1013904223) >>> 0;
+                    return s / 4294967296;
+                };
+            };
+
+            // (a) awe > 0.7 → skybox-Farbe wird gesetzt
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+            for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+            p.emotionLastTick = -Infinity;
+            p.emotions.awe = 0.9;
+            p.emotionLastTick = 299;
+            const readSkyHex = () =>
+                r.state.skybox && r.state.skybox.material.uniforms.nebulaColor
+                    ? r.state.skybox.material.uniforms.nebulaColor.value.getHex()
+                    : -1;
+            const skyBefore = readSkyHex();
+            r.updatePlayerEmotions(300);
+            const skyAfter = readSkyHex();
+            out.aweTriggersSkybox = skyAfter !== skyBefore && skyBefore !== -1;
+
+            // (b) hope > 0.7 → wetter sunny + kreaturen happy
+            for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+            p.emotions.hope = 0.9;
+            r.state.weather = "rainy";
+            r.state.creatureEmotions = r.state.creatures.map(() => "sad");
+            p.emotionLastTick = 399;
+            r.updatePlayerEmotions(400);
+            const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
+            out.hopeTriggersSunnyHappy = r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
+
+            // (c) peace > 0.7 → creatures_speed_mul = 0.7 (also speedMul wird kleiner)
+            for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
+            p.emotions.peace = 0.9;
+            // speedMul zurücksetzen, damit der Vergleich verlässlich ist
+            for (const cr of r.state.creatures) {
+                if (cr.userData) cr.userData.speedMul = 1;
+            }
+            p.emotionLastTick = 499;
+            r.updatePlayerEmotions(500);
+            const allSlowed =
+                r.state.creatures.length > 0 &&
+                r.state.creatures.every((cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6);
+            out.peaceTriggersSlowdown = allSlowed;
+
+            // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+            p.emotions.joy = 1.0;
+            const rngJoy = makeRng(123);
+            let sunny = 0;
+            let rainy = 0;
+            for (let i = 0; i < 1000; i++) {
+                const atom = r.dslComposeAtomic(rngJoy);
+                if (Array.isArray(atom) && atom[0] === "weather") {
+                    if (atom[1] === "sunny") sunny++;
+                    else if (atom[1] === "rainy") rainy++;
+                }
+            }
+            out.joySunnyOverRainy = sunny;
+            out.joyRainyCount = rainy;
+            out.joyBiasWorks = sunny > rainy * 2;
+
+            // (e) Hoher sorrow → mehr "rainy" als "sunny"
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+            p.emotions.sorrow = 1.0;
+            const rngSorrow = makeRng(456);
+            let sunny2 = 0;
+            let rainy2 = 0;
+            for (let i = 0; i < 1000; i++) {
+                const atom = r.dslComposeAtomic(rngSorrow);
+                if (Array.isArray(atom) && atom[0] === "weather") {
+                    if (atom[1] === "sunny") sunny2++;
+                    else if (atom[1] === "rainy") rainy2++;
+                }
+            }
+            out.sorrowRainyOverSunny = rainy2;
+            out.sorrowSunnyCount = sunny2;
+            out.sorrowBiasWorks = rainy2 > sunny2 * 2;
+
+            // Cleanup: alles zurück auf neutral
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
+
+            return out;
+        })
+        .catch(() => null);
+
+    if (!ring3v2Results) {
+        check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
+    } else {
+        check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
+        check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
+        check("Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (speedMul=0.7)", ring3v2Results.peaceTriggersSlowdown);
+        check(
+            "Ring 3 V2: Generator-Bias — joy=1.0 → sunny dominiert (>2× rainy)",
+            ring3v2Results.joyBiasWorks,
+            `sunny=${ring3v2Results.joySunnyOverRainy}, rainy=${ring3v2Results.joyRainyCount}`
+        );
+        check(
+            "Ring 3 V2: Generator-Bias — sorrow=1.0 → rainy dominiert (>2× sunny)",
+            ring3v2Results.sorrowBiasWorks,
+            `rainy=${ring3v2Results.sorrowRainyOverSunny}, sunny=${ring3v2Results.sorrowSunnyCount}`
+        );
+    }
+
+    // ### Ring 4 — anazhSymphony V1 ###
+    const ring4Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.symphony) return null;
+            const out = {};
+
+            // (a) initSymphony erfolgreich
+            const initOk = r.initSymphony();
+            const s = r.state.symphony;
+            out.initOk = initOk === true && s.enabled === true && !!s.ctx;
+            out.hasAmbient =
+                !!s.ambient && !!s.ambient.osc1 && !!s.ambient.osc2 && !!s.ambient.lfo && !!s.ambient.filter;
+            // V8.86 — der Drone ist eine leise Grundierung: weiches
+            // Dreieck (kein buzzig-intensiver Sägezahn), Gain ≤ 0.1.
+            out.droneIsSoft =
+                !!s.ambient &&
+                s.ambient.osc1.type === "triangle" &&
+                s.ambient.osc2.type === "triangle" &&
+                // V8.88 — Drone −80%: kaum hörbare Grundierung (≤ 0.02).
+                s.ambient.ambientGain.gain.value <= 0.02 &&
+                // V8.87 — sanfte Schwebung: < 1 Hz Verstimmung (kein
+                // extremer 1.5-Hz-Amplituden-Puls mehr).
+                Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
+            out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
+            // V8.88 — die Wetter-Noise (Regen) hängt am Umgebungs-
+            // Regler (creaturePingVolume) + ist ~80 % leiser (0.014).
+            const wReal = r.state.weather;
+            r.state.weather = "rainy";
+            s.creaturePingVolume = 1;
+            const wFull = r._symphonyWeatherTarget();
+            s.creaturePingVolume = 0.5;
+            const wHalf = r._symphonyWeatherTarget();
+            r.state.weather = "sunny";
+            const wDry = r._symphonyWeatherTarget();
+            s.creaturePingVolume = 1;
+            r.state.weather = wReal;
+            out.weatherOnPingSlider = Math.abs(wFull - 0.014) < 0.001 && Math.abs(wHalf - 0.007) < 0.001 && wDry === 0;
+
+            // (b) Wetter-Layer-Gain folgt state.weather
+            r.state.weather = "sunny";
+            r.symphonyTick();
+            // Direkter Wert kann durch laufende Rampe in Bewegung sein;
+            // wir prüfen das _Ziel_ via lastWeather + dass der Tick
+            // beim erneuten Aufruf mit gleichem Wetter nichts mehr
+            // tut (idempotent).
+            const lastBefore = s.lastWeather;
+            r.symphonyTick(); // idempotent
+            out.weatherTickIdempotent = s.lastWeather === lastBefore;
+
+            // Setzt rainy → Tick muss umschalten und lastWeather mit ziehen
+            r.state.weather = "rainy";
+            r.symphonyTick();
+            out.weatherSwitchedToRainy = s.lastWeather === "rainy";
+
+            // (c) Creature-Ping-Zähler steigt mit jedem Spawn
+            const pingBefore = s.creaturePingCount;
+            // Direkter Aufruf des Hooks — entkoppelt von THREE-Setup,
+            // verifiziert nur die Audio-Spur
+            r.playCreaturePing("happy");
+            r.playCreaturePing("sad");
+            out.pingCounterRose = s.creaturePingCount === pingBefore + 2;
+
+            // (d) Audio-Graph: masterGain ist mit destination verbunden
+            //     (kann nicht direkt verifiziert werden, aber wir
+            //     prüfen dass gain.value im erwarteten Bereich liegt)
+            out.masterGainSane =
+                !!s.masterGain &&
+                typeof s.masterGain.gain.value === "number" &&
+                s.masterGain.gain.value > 0 &&
+                s.masterGain.gain.value <= 1;
+
+            // (e) disposeSymphony räumt auf
+            r.disposeSymphony();
+            out.disposeClears = s.enabled === false && s.ctx === null && s.ambient === null;
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring4Results || ring4Results.error) {
+        check(
+            "Ring 4: Symphonie-Snapshot erreichbar",
+            false,
+            ring4Results && ring4Results.error ? ring4Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
+        check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
+        check("V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)", ring4Results.droneIsSoft);
+        check(
+            "V8.89: Regen-Noise hängt am Umgebungs-Regler + ist ~80% leiser (0.014)",
+            ring4Results.weatherOnPingSlider
+        );
+        check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
+        check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
+        check("Ring 4: symphonyTick schaltet Wetter-Layer um (sunny→rainy)", ring4Results.weatherSwitchedToRainy);
+        check("Ring 4: playCreaturePing erhöht Zähler", ring4Results.pingCounterRose);
+        check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
+        check("Ring 4: disposeSymphony räumt Audio-Graph komplett auf", ring4Results.disposeClears);
+    }
+
+    // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
+    const uiResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            const topbar = document.getElementById("topbar");
+            const statusbar = document.getElementById("statusbar");
+            const spielerDrawer = document.querySelector('.drawer[data-drawer="spieler"]');
+            out.topbarInDom = !!topbar;
+            out.statusbarInDom = !!statusbar;
+            out.spielerDrawerInDom = !!spielerDrawer;
+
+            // Emotion-Rows leben jetzt im Spieler-Drawer
+            const rows = spielerDrawer ? spielerDrawer.querySelectorAll("#status-emotions .emotion") : [];
+            out.emotionRowCount = rows.length;
+            out.allSixAxes = rows.length === 6;
+
+            // Werte aktualisieren mit kontrollierten Emotionen
+            for (const k of Object.keys(r.state.player.emotions)) {
+                r.state.player.emotions[k] = 0;
+            }
+            r.state.player.emotions.joy = 0.5;
+            r.state.player.emotions.chaos = 0.8;
+            if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
+            r.updateStatusPanel(1000);
+
+            const joyFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
+            const chaosFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.chaos .bar > div") : null;
+            out.joyBarWidth = joyFill ? joyFill.style.width : "";
+            out.chaosBarWidth = chaosFill ? chaosFill.style.width : "";
+            out.barReflectsValue = out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
+
+            // Status-Bar (jetzt #statusbar oben) zeigt Welt-Daten
+            const weatherEl = document.getElementById("status-weather");
+            const slugEl = document.getElementById("status-slug");
+            const creaturesEl = document.getElementById("status-creatures");
+            out.weatherText = weatherEl ? weatherEl.textContent : "";
+            out.slugText = slugEl ? slugEl.textContent : "";
+            out.creaturesText = creaturesEl ? creaturesEl.textContent : "";
+            out.statusValuesPopulated =
+                out.weatherText !== "—" &&
+                out.weatherText.length > 0 &&
+                out.slugText !== "—" &&
+                out.slugText.length > 0;
+
+            // Throttle: zweiter Aufruf direkt danach ändert nichts
+            r.state.player.emotions.joy = 0.9;
+            r.updateStatusPanel(1000.1);
+            const joyFill2 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
+            out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
+
+            // Nach 0.4s wieder durchlassend
+            r.updateStatusPanel(1000.5);
+            const joyFill3 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
+            out.throttleReleases = joyFill3 ? joyFill3.style.width === "90%" : false;
+
+            // Tab-System
+            const tabs = document.querySelectorAll("#topbar .tab");
+            out.tabCount = tabs.length;
+            // W14 — der Bibliothek-Tab ist der 8.
+            out.allTabsPresent = tabs.length === 8;
+            const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
+            out.weltTabActive = weltTab && weltTab.classList.contains("active");
+            const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
+            out.weltDrawerOpenInitially = weltDrawer && !weltDrawer.hidden;
+
+            // Cleanup
+            for (const k of Object.keys(r.state.player.emotions)) {
+                r.state.player.emotions[k] = 0;
+            }
+            if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
+            r.updateStatusPanel(2000);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!uiResults || uiResults.error) {
+        check(
+            "UI: Drawer-Snapshot erreichbar",
+            false,
+            uiResults && uiResults.error ? uiResults.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("UI V2: #topbar im DOM", uiResults.topbarInDom);
+        check("UI V2: #statusbar im DOM", uiResults.statusbarInDom);
+        check("UI V2: Spieler-Drawer im DOM", uiResults.spielerDrawerInDom);
+        check(
+            "UI V2: alle sechs Emotion-Rows im Spieler-Drawer",
+            uiResults.allSixAxes,
+            `rows=${uiResults.emotionRowCount}`
+        );
+        check(
+            "UI V2: Balken-Breite spiegelt Emotion-Wert (joy 0.5 → 50%, chaos 0.8 → 80%)",
+            uiResults.barReflectsValue,
+            `joy=${uiResults.joyBarWidth}, chaos=${uiResults.chaosBarWidth}`
+        );
+        check(
+            "UI V2: Status-Bar zeigt Wetter + Slug + Kreaturen",
+            uiResults.statusValuesPopulated,
+            `weather=${uiResults.weatherText}, slug=${uiResults.slugText}, creatures=${uiResults.creaturesText}`
+        );
+        check("UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)", uiResults.throttleHolds);
+        check("UI V2: updateStatusPanel lässt nach 0.4s wieder durch", uiResults.throttleReleases);
+        check(
+            "UI V2: sieben Tabs im Topbar (inkl. Werkstatt)",
+            uiResults.allTabsPresent,
+            `count=${uiResults.tabCount}`
+        );
+        check("UI V2: Welt-Tab ist initial aktiv", uiResults.weltTabActive);
+        check("UI V2: Welt-Drawer ist initial offen", uiResults.weltDrawerOpenInitially);
+    }
+
+    // ### UI V2 — Quick-Buttons + Hilfe-Drawer (Tab-System) ###
+    const uiActionsResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+
+            // (a) Quick-Buttons existieren (im Welt-Drawer)
+            const qa = document.getElementById("quick-actions");
+            const qaButtons = qa ? qa.querySelectorAll("button[data-cmd]") : [];
+            out.quickButtonCount = qaButtons.length;
+            out.quickButtonsPresent = qaButtons.length >= 5;
+
+            // (b) Klick auf einen Quick-Button feuert processChatCommand
+            r.state.weather = "sunny";
+            const rainyBtn = qa ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]') : null;
+            if (rainyBtn) rainyBtn.click();
+            out.quickButtonRoutesToChat = r.state.weather === "rainy";
+
+            // (c) Hilfe-Drawer ist initial versteckt (Welt ist Default-Tab)
+            const hilfeDrawer = document.querySelector('.drawer[data-drawer="hilfe"]');
+            out.hilfeDrawerInitiallyHidden = hilfeDrawer && hilfeDrawer.hidden === true;
+
+            // (d) Klick auf Hilfe-Tab öffnet Hilfe-Drawer
+            const hilfeTab = document.querySelector('#topbar .tab[data-tab="hilfe"]');
+            if (hilfeTab) hilfeTab.click();
+            out.hilfeDrawerOpensOnTab = hilfeDrawer && hilfeDrawer.hidden === false;
+
+            // Welt-Drawer ist jetzt versteckt (nur ein Tab aktiv)
+            const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
+            out.otherDrawersHidden = weltDrawer && weltDrawer.hidden === true;
+
+            // (e) Drawer enthält Befehl-Buttons
+            const helpButtons = document.querySelectorAll("#help-list button.cmd");
+            out.helpButtonCount = helpButtons.length;
+            out.helpHasButtons = helpButtons.length >= 10;
+
+            // (f) Klick auf Help-Eintrag schließt Drawer + führt aus.
+            r.state.weather = "sunny";
+            const rainyHelp = Array.from(helpButtons).find((b) => b.getAttribute("data-cmd") === "setze wetter rainy");
+            if (rainyHelp) rainyHelp.click();
+            out.helpClickExecutes = r.state.weather === "rainy";
+            out.helpClickClosesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
+
+            // (g) Drawer wieder öffnen, dann Close-Button schließt
+            if (hilfeTab) hilfeTab.click();
+            const closeBtn = hilfeDrawer ? hilfeDrawer.querySelector("[data-drawer-close]") : null;
+            if (closeBtn) closeBtn.click();
+            out.closeButtonHidesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
+
+            // Cleanup: Welt-Tab wieder aktivieren
+            const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
+            if (weltTab) weltTab.click();
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!uiActionsResults || uiActionsResults.error) {
+        check(
+            "UI V2: Quick/Help-Snapshot erreichbar",
+            false,
+            uiActionsResults && uiActionsResults.error ? uiActionsResults.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check(
+            "UI V2: Quick-Action-Buttons im Welt-Drawer (≥5)",
+            uiActionsResults.quickButtonsPresent,
+            `count=${uiActionsResults.quickButtonCount}`
+        );
+        check("UI V2: Quick-Button-Klick routet durch processChatCommand", uiActionsResults.quickButtonRoutesToChat);
+        check("UI V2: Hilfe-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
+        check("UI V2: Tab-Klick auf Hilfe öffnet Hilfe-Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
+        check("UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv", uiActionsResults.otherDrawersHidden);
+        check(
+            "UI V2: Hilfe-Drawer enthält Befehl-Buttons (≥10)",
+            uiActionsResults.helpHasButtons,
+            `count=${uiActionsResults.helpButtonCount}`
+        );
+        check("UI V2: Klick auf Befehl im Drawer führt aus", uiActionsResults.helpClickExecutes);
+        check("UI V2: Klick auf Befehl schließt Drawer automatisch", uiActionsResults.helpClickClosesDrawer);
+        check("UI V2: Drawer-Close-Button schließt Drawer", uiActionsResults.closeButtonHidesDrawer);
+    }
+
+    // ### UI V1 — Abilities-Liste + Save/Load ###
+    const uiAbilitiesResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            const container = document.getElementById("status-abilities");
+            out.containerInDom = !!container;
+
+            // (a) Initial: leere Meldung oder bestehende Fähigkeiten —
+            //     je nach Test-Vorlauf. Wir setzen erst eine bekannte
+            //     Ability, dann erzwingen das Rendering.
+            r.state.dsl.abilities = [];
+            if (r._statusRefs) {
+                r._statusRefs.abilitiesSignature = "";
+                r._statusRefs.lastTick = -Infinity;
+            }
+            r.updateStatusPanel(3000);
+            out.emptyStateShown = container && container.querySelector(".ability-empty") !== null;
+
+            // (b) Eine Ability hinzufügen → Row erscheint
+            r.addNewAbility("uiAbilityTest", ["creatures_color", "blue"], "human");
+            if (r._statusRefs) {
+                r._statusRefs.abilitiesSignature = "";
+                r._statusRefs.lastTick = -Infinity;
+            }
+            r.updateStatusPanel(3001);
+            const rows = container ? container.querySelectorAll(".ability-row") : [];
+            out.rowCountAfterAdd = rows.length;
+            out.rowAppears = rows.length === 1;
+            out.rowHasName = rows[0] && rows[0].querySelector(".name").textContent === "uiAbilityTest";
+            out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
+
+            // (c) Run-Button klicken → ability läuft, Welt-Effekt
+            // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
+            // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
+            if (r.state.creatures[0]) {
+                const cR = r.state.creatures[0];
+                if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
+                else if (typeof cR.traverse === "function") {
+                    cR.traverse((n) => {
+                        if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
+                    });
+                }
+            }
+            const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
+            if (runBtn) runBtn.click();
+            // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
+            const cFirst = r.state.creatures[0];
+            let colorAfter = 0;
+            if (cFirst) {
+                if (cFirst.material && cFirst.material.color) {
+                    colorAfter = cFirst.material.color.getHex();
+                } else if (typeof cFirst.traverse === "function") {
+                    cFirst.traverse((n) => {
+                        if (!colorAfter && n.isMesh && n.material && n.material.color) {
+                            colorAfter = n.material.color.getHex();
+                        }
+                    });
+                }
+            }
+            out.runButtonExecutes = colorAfter === 0x0000ff;
+
+            // (d) Signature-Cache: zweiter updateStatusPanel ohne
+            //     Änderung darf das DOM nicht neu bauen — wir markieren
+            //     einen unsichtbaren Wert und prüfen Persistenz.
+            rows[0].setAttribute("data-test-marker", "preserved");
+            if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
+            r.updateStatusPanel(3002);
+            const rowAgain = container ? container.querySelector(".ability-row") : null;
+            out.signatureCachePreserves = rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
+
+            // (e) Export-Button löst Download aus → wir prüfen, dass
+            //     ein <a>-Element mit JSON-Data-URL angelegt UND wieder
+            //     entfernt wird. triggerStateDownload macht das
+            //     synchron, wir patchen click() um die Daten-URL zu
+            //     fangen.
+            let capturedHref = "";
+            const origCreate = document.createElement.bind(document);
+            document.createElement = function (tag) {
+                const el = origCreate(tag);
+                if (tag === "a") {
+                    const origClick = el.click.bind(el);
+                    el.click = function () {
+                        capturedHref = el.getAttribute("href") || "";
+                        origClick();
+                    };
+                }
+                return el;
+            };
+            const exportBtn = document.getElementById("action-export-state");
+            if (exportBtn) exportBtn.click();
+            document.createElement = origCreate;
+            out.exportHrefStarts = capturedHref.startsWith("data:application/json");
+            out.exportContainsPlayerEmotions = capturedHref.includes("playerEmotions");
+
+            // Cleanup: Test-Ability wieder rausnehmen, damit andere
+            //         Snapshots sauber sind.
+            r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "uiAbilityTest");
+            delete r.state.abilities.uiAbilityTest;
+            if (r._statusRefs) {
+                r._statusRefs.abilitiesSignature = "";
+                r._statusRefs.lastTick = -Infinity;
+            }
+            r.updateStatusPanel(3003);
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!uiAbilitiesResults || uiAbilitiesResults.error) {
+        check(
+            "UI: Abilities-Snapshot erreichbar",
+            false,
+            uiAbilitiesResults && uiAbilitiesResults.error ? uiAbilitiesResults.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("UI: Abilities-Container ist im DOM", uiAbilitiesResults.containerInDom);
+        check("UI: Leerer State zeigt Hinweis-Text", uiAbilitiesResults.emptyStateShown);
+        check(
+            "UI: Hinzugefügte Ability erscheint als Row",
+            uiAbilitiesResults.rowAppears,
+            `rows=${uiAbilitiesResults.rowCountAfterAdd}`
+        );
+        check(
+            "UI: Ability-Row trägt Name + Source-Klasse",
+            uiAbilitiesResults.rowHasName && uiAbilitiesResults.rowHasSourceClass
+        );
+        check("UI: Run-Button führt Ability aus (DSL-Programm mutiert Welt)", uiAbilitiesResults.runButtonExecutes);
+        check(
+            "UI: Signature-Cache verhindert DOM-Rebuild bei gleichem Stand",
+            uiAbilitiesResults.signatureCachePreserves
+        );
+        check("UI: Export-Button erzeugt JSON-Data-URL", uiAbilitiesResults.exportHrefStarts);
+        check("UI: Export-Payload enthält playerEmotions", uiAbilitiesResults.exportContainsPlayerEmotions);
+    }
+
+    // ### UI V1 — Live-Tuning Slider ###
+    const uiTuningResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            const sliders = {
+                threshold: document.getElementById("tune-threshold"),
+                decay: document.getElementById("tune-decay"),
+                cooldown: document.getElementById("tune-cooldown"),
+            };
+            out.allSlidersPresent = !!(sliders.threshold && sliders.decay && sliders.cooldown);
+
+            // Initiale Slider-Werte spiegeln state.player-Defaults
+            out.initialThreshold = sliders.threshold ? parseFloat(sliders.threshold.value) : -1;
+            out.initialMatchesState = Math.abs(out.initialThreshold - r.state.player.emotionThreshold) < 1e-6;
+
+            // Slider-Bewegung → state.player.emotionThreshold ändert sich
+            if (sliders.threshold) {
+                sliders.threshold.value = "0.5";
+                sliders.threshold.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            out.thresholdAfterMove = r.state.player.emotionThreshold;
+            out.thresholdUpdatesState = Math.abs(out.thresholdAfterMove - 0.5) < 1e-6;
+
+            // Value-Label spiegelt den Wert
+            const tv = document.getElementById("tune-threshold-v");
+            out.thresholdLabelMatches = tv ? tv.textContent === "0.50" : false;
+
+            // Decay-Slider analog
+            if (sliders.decay) {
+                sliders.decay.value = "0.020";
+                sliders.decay.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            out.decayUpdatesState = Math.abs(r.state.player.emotionDecayPerSec - 0.02) < 1e-6;
+
+            // Cooldown-Slider
+            if (sliders.cooldown) {
+                sliders.cooldown.value = "60";
+                sliders.cooldown.dispatchEvent(new Event("input", { bubbles: true }));
+            }
+            out.cooldownUpdatesState = r.state.player.emotionApplyCooldown === 60;
+
+            // Cleanup: defaults wiederherstellen, damit weitere Tests
+            // konsistent sind (falls dieser Test vorgezogen wird).
+            r.state.player.emotionThreshold = 0.7;
+            r.state.player.emotionDecayPerSec = 0.005;
+            r.state.player.emotionApplyCooldown = 30;
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!uiTuningResults || uiTuningResults.error) {
+        check(
+            "UI: Tuning-Snapshot erreichbar",
+            false,
+            uiTuningResults && uiTuningResults.error ? uiTuningResults.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("UI: Alle drei Tuning-Slider sind im DOM", uiTuningResults.allSlidersPresent);
+        check(
+            "UI: Initialer Slider-Wert spiegelt state.player-Default",
+            uiTuningResults.initialMatchesState,
+            `slider=${uiTuningResults.initialThreshold}`
+        );
+        check(
+            "UI: Slider-Bewegung mutiert state.player.emotionThreshold",
+            uiTuningResults.thresholdUpdatesState,
+            `value=${uiTuningResults.thresholdAfterMove}`
+        );
+        check("UI: Value-Label spiegelt Slider-Wert ('0.50')", uiTuningResults.thresholdLabelMatches);
+        check("UI: Decay-Slider mutiert emotionDecayPerSec", uiTuningResults.decayUpdatesState);
+        check("UI: Cooldown-Slider mutiert emotionApplyCooldown", uiTuningResults.cooldownUpdatesState);
+    }
+
+    // ### UI V2 — Identity (Tokens + Theme + Fonts) ###
+    const uiV2Results = await page
+        .evaluate(() => {
+            const out = {};
+
+            // (a) Theme-Default ist "tag"
+            out.bodyHasThemeTag = document.body.getAttribute("data-theme") === "tag";
+
+            // (b) Token-Variable kommt durch (Pergament-Farbe)
+            const computed = getComputedStyle(document.body);
+            const parch1 = computed.getPropertyValue("--parch-1").trim();
+            out.parchTokenLoaded = parch1.length > 0;
+
+            // (c) Theme-Toggle wechselt zu "nacht"
+            const toggle = document.getElementById("theme-toggle");
+            if (toggle) toggle.click();
+            out.themeSwitchedToNight = document.body.getAttribute("data-theme") === "nacht";
+            out.toggleArrayAfterSwitch = toggle && toggle.getAttribute("aria-pressed") === "true";
+
+            // (d) Theme-Wechsel ändert Token-Wert
+            const parch1Night = getComputedStyle(document.body).getPropertyValue("--parch-1").trim();
+            out.tokenChangesPerTheme = parch1 !== parch1Night && parch1Night.length > 0;
+
+            // (e) Persistenz: localStorage trägt die Wahl
+            const persisted = localStorage.getItem("anazhRealmTheme");
+            out.themePersisted = persisted === "nacht";
+
+            // (f) Latch-Klasse haftet an allen drei Topbar-Toggles
+            // (Help ist in UI V2 ein Drawer-Tab, kein Latch mehr.)
+            out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle", "theme-toggle"].every((id) => {
+                const el = document.getElementById(id);
+                return el && el.classList.contains("latch");
+            });
+
+            // (g) Cinzel-Font ist registriert (über @font-face)
+            out.fontsRegistered = Array.from(document.fonts).some((f) => f.family === "Cinzel");
+
+            // Cleanup: zurück auf "tag" damit andere Tests konsistent sind
+            if (toggle) toggle.click();
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!uiV2Results || uiV2Results.error) {
+        check(
+            "UI V2: Identity-Snapshot erreichbar",
+            false,
+            uiV2Results && uiV2Results.error ? uiV2Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("UI V2: body[data-theme=tag] initial gesetzt", uiV2Results.bodyHasThemeTag);
+        check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
+        check("UI V2: Theme-Toggle wechselt zu nacht", uiV2Results.themeSwitchedToNight);
+        check("UI V2: Theme-Toggle aria-pressed reflektiert State", uiV2Results.toggleArrayAfterSwitch);
+        check("UI V2: Token-Werte ändern sich pro Theme", uiV2Results.tokenChangesPerTheme);
+        check("UI V2: Theme-Wahl in localStorage persistiert", uiV2Results.themePersisted);
+        check("UI V2: alle Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
+        check("UI V2: Cinzel-Font ist via @font-face registriert", uiV2Results.fontsRegistered);
+    }
+
+    // ### UI V2 — Konsole (fusioniertes Chat + Log) ###
+    const consoleResults = await page
+        .evaluate(() => {
+            const out = {};
+            const panel = document.getElementById("console");
+            out.consoleInDom = !!panel;
+            out.chatOutputInside = panel && panel.querySelector("#chat-output") !== null;
+            out.logInside = panel && panel.querySelector("#log") !== null;
+            out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
+
+            // Collapse-Toggle
+            const toggle = document.getElementById("console-collapse");
+            out.toggleInDom = !!toggle;
+            out.initiallyOpen = panel && !panel.classList.contains("collapsed");
+
+            if (toggle) toggle.click();
+            out.afterFirstClickCollapsed = panel && panel.classList.contains("collapsed");
+            out.toggleLabelChanged = toggle && toggle.textContent === "+";
+
+            if (toggle) toggle.click();
+            out.afterSecondClickOpen = panel && !panel.classList.contains("collapsed");
+
+            // Persistenz: localStorage hat Wahl
+            out.localStorageOpen = localStorage.getItem("anazhRealmConsole") === "open";
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!consoleResults || consoleResults.error) {
+        check(
+            "UI V2: Konsole-Snapshot erreichbar",
+            false,
+            consoleResults && consoleResults.error ? consoleResults.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("UI V2: #console im DOM", consoleResults.consoleInDom);
+        check(
+            "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
+            consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside
+        );
+        check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
+        check("UI V2: Konsole startet aufgeklappt", consoleResults.initiallyOpen);
+        check("UI V2: Erster Klick klappt ein", consoleResults.afterFirstClickCollapsed);
+        check("UI V2: Toggle-Label wechselt zu '+'", consoleResults.toggleLabelChanged);
+        check("UI V2: Zweiter Klick klappt wieder auf", consoleResults.afterSecondClickOpen);
+        check("UI V2: Konsole-Status in localStorage persistiert", consoleResults.localStorageOpen);
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Ring 5 — createPlayerSoul V1 + Ring 5 V2-Vorbereitung Third-Person-Kamera).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandRing5Soul(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Ring 5 — createPlayerSoul V1 ###
+    // Drei Formen (Mensch/Phönix/Drache), rein visuell. Wir prüfen:
+    // Default-Seele ist human, Wechsel ändert geometry+color, Chat-
+    // Pattern routet, Save/Load-Roundtrip persistiert die Seele,
+    // unbekannte Namen werden abgelehnt, Position überlebt den
+    // Wechsel, Drawer + Status-Bar enthalten das UI.
+    const ring5Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
+            const out = {};
+            // V2: state.playerMesh wird bei jedem Soul-Wechsel
+            // ersetzt (neuer Group). Wir lesen jedes Mal frisch
+            // aus state, statt eine Referenz festzuhalten.
+            const currentMesh = () => r.state.playerMesh;
+            const currentMaterial = () => {
+                const m = currentMesh();
+                return m && m.userData && m.userData.material;
+            };
+            const currentParts = () => {
+                const m = currentMesh();
+                return m && m.userData && m.userData.parts;
+            };
+
+            // UI vorhanden?
+            out.drawerSelectInDom = !!document.getElementById("player-soul-select");
+            out.statusBarSoulInDom = !!document.getElementById("status-soul");
+            const select = document.getElementById("player-soul-select");
+            out.dropdownHasThreeOptions = select && select.options.length === 3;
+            out.dropdownOptionCount = select ? select.options.length : -1;
+            out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
+
+            // Cleanup: starte vom Default aus.
+            r.applyPlayerSoul("human");
+            out.defaultIsHuman = r.state.player.soul === "human";
+            // V8.29.1 — Mensch-Avatar ist jetzt MeshToonMaterial mit
+            // gedämpftem Rot (0xc0392b) statt grelles MeshBasic 0xff0000.
+            out.defaultColorRed =
+                currentMaterial() &&
+                currentMaterial().color.getHex() === 0xc0392b &&
+                currentMaterial().isMeshToonMaterial === true;
+            // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
+            // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
+            const humanParts = currentParts();
+            out.humanHasAllParts =
+                humanParts &&
+                !!humanParts.torso &&
+                !!humanParts.head &&
+                !!humanParts.leftArm &&
+                !!humanParts.rightArm &&
+                !!humanParts.leftLeg &&
+                !!humanParts.rightLeg;
+
+            // applyPlayerSoul("phoenix") → Group neu, Farbe + Parts wechseln
+            const posBefore = {
+                x: currentMesh().position.x,
+                y: currentMesh().position.y,
+                z: currentMesh().position.z,
+            };
+            const okPhoenix = r.applyPlayerSoul("phoenix");
+            out.applyReturnsTrue = okPhoenix === true;
+            out.phoenixSoulSet = r.state.player.soul === "phoenix";
+            out.phoenixColor = currentMaterial() && currentMaterial().color.getHex() === 0xff7a1a;
+            const phoenixParts = currentParts();
+            out.phoenixHasWingsAndTail =
+                phoenixParts &&
+                !!phoenixParts.body &&
+                !!phoenixParts.leftWing &&
+                !!phoenixParts.rightWing &&
+                !!phoenixParts.tail;
+            out.positionPreserved =
+                Math.abs(currentMesh().position.x - posBefore.x) < 1e-6 &&
+                Math.abs(currentMesh().position.y - posBefore.y) < 1e-6 &&
+                Math.abs(currentMesh().position.z - posBefore.z) < 1e-6;
+            // Dropdown synchronisiert sich
+            out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
+
+            // Physics-Body bleibt + bezieht sich auf den NEUEN Group
+            out.physicsBodySwitchedToNewGroup = currentMesh().userData && !!currentMesh().userData.physicsBody;
+            out.rigidBodiesArrayUpdated =
+                Array.isArray(r.state.rigidBodies) && r.state.rigidBodies.indexOf(currentMesh()) >= 0;
+
+            // Chat-Pattern: "werde drache"
+            r.processChatCommand("werde drache");
+            out.chatRoutedToDsl =
+                Array.isArray(r.state.dsl.lastUserProgram) &&
+                r.state.dsl.lastUserProgram[0] === "player_soul" &&
+                r.state.dsl.lastUserProgram[1] === "drache";
+            out.dragonSoulSet = r.state.player.soul === "dragon";
+            out.dragonColor = currentMaterial() && currentMaterial().color.getHex() === 0x2d6e3b;
+            const dragonParts = currentParts();
+            out.dragonHasFourLegs =
+                dragonParts &&
+                !!dragonParts.flLeg &&
+                !!dragonParts.frLeg &&
+                !!dragonParts.blLeg &&
+                !!dragonParts.brLeg &&
+                !!dragonParts.tailJoint;
+
+            // Deutsch+Englisch+Phönix-Alias funktionieren
+            r.applyPlayerSoul("phönix");
+            out.umlautAliasWorks = r.state.player.soul === "phoenix";
+            r.applyPlayerSoul("dragon");
+            out.englishAliasWorks = r.state.player.soul === "dragon";
+
+            // Unbekannte Seele wird abgelehnt, alte Seele bleibt
+            const prevSoul = r.state.player.soul;
+            const okBad = r.applyPlayerSoul("riese");
+            out.unknownRejected = okBad === false && r.state.player.soul === prevSoul;
+
+            // DSL-Op direkt aufrufbar
+            const resDsl = r.dslRun(["player_soul", "human"]);
+            out.dslOpWorks = resDsl.ok === true && r.state.player.soul === "human";
+
+            // Seele NICHT im atomic-Pool (Nexus soll Identität nicht überschreiben)
+            const seedRng = (seed) => {
+                let s = seed >>> 0 || 1;
+                return () => {
+                    s = (s * 1664525 + 1013904223) >>> 0;
+                    return s / 4294967296;
+                };
+            };
+            const rng = seedRng(2026);
+            let seenSoulOp = false;
+            for (let i = 0; i < 2000; i++) {
+                const atom = r.dslComposeAtomic(rng);
+                if (Array.isArray(atom) && atom[0] === "player_soul") {
+                    seenSoulOp = true;
+                    break;
+                }
+            }
+            out.soulNotInAtomicPool = !seenSoulOp;
+
+            // Save-Roundtrip
+            r.applyPlayerSoul("phoenix");
+            r.saveState();
+            const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+            let parsed = null;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                void e;
+            }
+            out.savedPlayerSoul = !!parsed && parsed.playerSoul === "phoenix";
+
+            // loadState mit dragon-Seele
+            r.loadState({ ...parsed, playerSoul: "dragon" });
+            out.loadAppliesSoul =
+                r.state.player.soul === "dragon" && currentMaterial() && currentMaterial().color.getHex() === 0x2d6e3b;
+
+            // Status-Bar
+            r.applyPlayerSoul("phoenix");
+            r.updateStatusPanel(1e6);
+            const statusEl = document.getElementById("status-soul");
+            out.statusBarShowsLabel = statusEl && statusEl.textContent === "Phönix";
+
+            // V2-Animation: Beine/Flügel reagieren auf walkPhase + isMoving.
+            // Wir lassen walkPhase manuell vorrücken und prüfen, dass
+            // Mensch-Beine ihre rotation.x ändern.
+            r.applyPlayerSoul("human");
+            const humanGroup = currentMesh();
+            const leftLegRotInitial = humanGroup.userData.parts.leftLeg.rotation.x;
+            // Direkter Aufruf der Animations-Funktion mit isMoving=true
+            // umgeht die isMoving-Detection (player ruht im Test).
+            const def = r.playerSoulDefs.human;
+            def.animate(humanGroup, 0, Math.PI / 2, true);
+            const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
+            out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
+
+            // Phönix-Flügel flattern auch im Idle
+            r.applyPlayerSoul("phoenix");
+            const phGroup = currentMesh();
+            r.playerSoulDefs.phoenix.animate(phGroup, 0.1, 0, false);
+            const wingRotA = phGroup.userData.parts.leftWing.rotation.z;
+            r.playerSoulDefs.phoenix.animate(phGroup, 0.3, 0, false);
+            const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
+            out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
+
+            // Drache-Schweif wellt sich
+            r.applyPlayerSoul("dragon");
+            const drGroup = currentMesh();
+            r.playerSoulDefs.dragon.animate(drGroup, 0.1, 0, false);
+            const tailA = drGroup.userData.parts.tailJoint3.rotation.y;
+            r.playerSoulDefs.dragon.animate(drGroup, 0.5, 0, false);
+            const tailB = drGroup.userData.parts.tailJoint3.rotation.y;
+            out.dragonTailWaves = Math.abs(tailA - tailB) > 0.05;
+
+            // Cleanup
+            r.applyPlayerSoul("human");
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring5Results || ring5Results.error) {
+        check(
+            "Ring 5: Seele-Snapshot erreichbar",
+            false,
+            ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
+        check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
+        check(
+            "Ring 5: Dropdown hat drei Optionen (Built-in-Seelen)",
+            ring5Results.dropdownHasThreeOptions,
+            `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
+        );
+        check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
+        check("Ring 5: Mensch-Avatar ist MeshToonMaterial, gedämpftes Rot (V8.29.1)", ring5Results.defaultColorRed);
+        check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
+        check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
+        check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
+        check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
+        check("Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif", ring5Results.phoenixHasWingsAndTail);
+        check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
+        check(
+            "Ring 5 V2: Physics-Body wandert mit dem neuen Soul-Group mit",
+            ring5Results.physicsBodySwitchedToNewGroup
+        );
+        check(
+            "Ring 5 V2: rigidBodies-Array enthält den neuen Group (nicht den alten)",
+            ring5Results.rigidBodiesArrayUpdated
+        );
+        check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
+        check("Ring 5: Chat 'werde drache' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
+        check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
+        check("Ring 5: Drache-Material-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
+        check("Ring 5 V2: Drache-Group hat 4 Beine + Schweif-Joint", ring5Results.dragonHasFourLegs);
+        check("Ring 5: Umlaut-Alias 'phönix' kanonisiert auf phoenix", ring5Results.umlautAliasWorks);
+        check("Ring 5: Englisches Alias 'dragon' kanonisiert auf dragon", ring5Results.englishAliasWorks);
+        check("Ring 5: Unbekannte Seele wird abgelehnt", ring5Results.unknownRejected);
+        check("Ring 5: DSL-Op player_soul direkt aufrufbar", ring5Results.dslOpWorks);
+        check(
+            "Ring 5: player_soul NICHT im dslComposeAtomic-Pool (Nexus überschreibt Identität nicht)",
+            ring5Results.soulNotInAtomicPool
+        );
+        check("Ring 5: saveState persistiert playerSoul", ring5Results.savedPlayerSoul);
+        check("Ring 5: loadState wendet Seele auf Mesh an", ring5Results.loadAppliesSoul);
+        check("Ring 5: Status-Bar zeigt deutsches Label ('Phönix')", ring5Results.statusBarShowsLabel);
+        check("Ring 5 V2: Mensch-Walk-Animation rotiert Beine bei isMoving=true", ring5Results.humanWalkAnimationMoves);
+        check(
+            "Ring 5 V2: Phönix-Flügel flattern auch im Idle (zwei Frames, unterschiedliche rotation.z)",
+            ring5Results.phoenixWingsFlapInIdle
+        );
+        check(
+            "Ring 5 V2: Drache-Schweif wellt sich (zwei Frames, unterschiedliche tailJoint3.rotation.y)",
+            ring5Results.dragonTailWaves
+        );
+    }
+
+    // ### Ring 5 V2-Vorbereitung — Third-Person-Kamera ###
+    // Toggle wechselt state.cameraMode, persistiert in localStorage,
+    // Kamera positioniert sich tatsächlich orbit-mäßig hinter dem
+    // Spieler. playerMesh dreht sich mit yaw mit (Vorbereitung für
+    // animierte Glieder).
+    const cameraResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh || !r.state.camera) return null;
+            const out = {};
+            const toggle = document.getElementById("camera-mode-toggle");
+            out.toggleInDom = !!toggle;
+            out.initialModeFirst = r.state.cameraMode === "first";
+            out.initialLabelFirst = toggle && toggle.textContent.includes("1st");
+
+            // setCameraMode("third") schaltet um + Label folgt
+            r.setCameraMode("third");
+            out.modeAfterSet = r.state.cameraMode === "third";
+            out.labelAfterSet = toggle && toggle.textContent.includes("3rd");
+            out.ariaPressedAfterSet = toggle && toggle.getAttribute("aria-pressed") === "true";
+            out.persistedThird = localStorage.getItem("anazhRealmCameraMode") === "third";
+
+            // Kamera ist im 3rd-Modus tatsächlich vom Spieler entfernt
+            // (mind. 4 Welt-Einheiten). Wir setzen yaw=0, damit die
+            // Distanz reproduzierbar in -Z-Richtung liegt.
+            r.state.yaw = 0;
+            r.state.pitch = 0;
+            r.state.playerMesh.position.set(0, 20, 0);
+            // Render-Frame triggern: Loop läuft bereits, wir warten auf
+            // den nächsten Tick im Test-Wrapper. Hier prüfen wir die
+            // Math direkt, damit der Test deterministisch ist.
+            const dist = r.state.cameraThirdDistance;
+            const expectedZ = -Math.cos(0) * dist; // = -dist
+            out.expectedDistance = dist;
+            out.expectedZ = expectedZ;
+
+            // playerMesh.rotation.y folgt yaw — setze yaw und renderFrame
+            r.state.yaw = Math.PI / 2;
+            // Den Loop-Tick triggern wir nicht synchron; rotation.y
+            // wird im nächsten Frame gesetzt. Wir prüfen, dass die
+            // Logik existiert (Methode + State) und vertrauen dem
+            // Loop, der durchläuft.
+            out.rotationLogicReady = typeof r.state.yaw === "number" && r.state.playerMesh.rotation !== undefined;
+
+            // setCameraMode("first") zurück
+            r.setCameraMode("first");
+            out.modeBackToFirst = r.state.cameraMode === "first";
+            out.labelBackToFirst = toggle && toggle.textContent.includes("1st");
+            out.persistedFirst = localStorage.getItem("anazhRealmCameraMode") === "first";
+
+            // Unbekannter Modus fällt auf "first" zurück
+            r.setCameraMode("xyz");
+            out.unknownFallsToFirst = r.state.cameraMode === "first";
+
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    // V8.50 — Loop synchron treiben statt auf rAF zu warten. Headless-
+    // Chromium drosselt requestAnimationFrame auf ~1 Hz → ein 300-ms-
+    // Fenster enthielt oft 0 Loop-Ticks → player.rotation.y blieb
+    // stale → flaky CI. _gameLoopTick treibt genau einen Frame.
+    const cameraEffect = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state.camera || !r.state.playerMesh) return null;
+            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            return {
+                playerYaw: r.state.yaw,
+                playerRotationY: r.state.playerMesh.rotation.y,
+                cameraX: r.state.camera.position.x,
+                cameraY: r.state.camera.position.y,
+                cameraZ: r.state.camera.position.z,
+                playerX: r.state.playerMesh.position.x,
+                playerY: r.state.playerMesh.position.y,
+                playerZ: r.state.playerMesh.position.z,
+            };
+        })
+        .catch(() => null);
+
+    // Pitch-Inversion + Boden-Clamp im 3rd-Modus prüfen: Maus hoch
+    // (pitch positiv) muss Kamera SENKEN, nicht heben. Bei extremem
+    // Pitch darf die Kamera nicht unter den Boden tauchen.
+    //
+    // V8.50 — Pitch setzen + Loop SYNCHRON treiben (statt auf das im
+    // Headless ~1 Hz gedrosselte rAF zu warten).
+    //
+    // V8.57 — Wurzel-Heilung des flaky CI-Falls. Gelesen wird jetzt
+    // `_cameraDesiredY` (die pitch-gesteuerte Wunsch-Höhe), NICHT
+    // `camera.position.y`. Grund: die V8.36-Kamera-Kollision zieht die
+    // Kamera per Raycast ein, sobald Terrain/Struktur/Kreatur hinter
+    // dem Spieler steht — und wo der Spieler nach 20 s autonomem Lauf
+    // landet, ist nicht-deterministisch. Die hohe "Maus runter"-Kamera
+    // wurde so vereinzelt unter die Schwelle gezogen → CI-Flake.
+    // `_cameraDesiredY` ist die reine Pitch-Mathematik (inkl.
+    // Boden-Clamp), umgebungs-unabhängig — genau das, was dieser Test
+    // prüfen will. Die Kamera-Kollision ist ein eigenes Feature.
+    const setPitchAndRead = async (pitch) => {
+        return await page.evaluate((p) => {
+            const r = window.anazhRealm;
+            r.setCameraMode("third");
+            r.state.yaw = 0;
+            r.state.pitch = p;
+            // Player-Velocity nullen, damit der Spieler während der
+            // drei Messungen nicht driftet.
+            if (r.state.playerBody && r.state.tmpVec2) {
+                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+            }
+            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+            return r.state._cameraDesiredY - r.state.playerMesh.position.y;
+        }, pitch);
+    };
+    const upDelta = await setPitchAndRead(Math.PI / 6);
+    const clampedDelta = await setPitchAndRead(Math.PI / 2 - 0.1);
+    const downDelta = await setPitchAndRead(-Math.PI / 6);
+    const cameraPitch = { upDelta, clampedDelta, downDelta };
+    await page.evaluate(() => {
+        const r = window.anazhRealm;
+        r.setCameraMode("first");
+        r.state.pitch = 0;
+    });
+
+    if (!cameraResults || cameraResults.error) {
+        check(
+            "Ring 5 V2-Prep: Kamera-Snapshot erreichbar",
+            false,
+            cameraResults && cameraResults.error ? cameraResults.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 5 V2-Prep: #camera-mode-toggle im DOM", cameraResults.toggleInDom);
+        check("Ring 5 V2-Prep: Initial-Modus ist 'first'", cameraResults.initialModeFirst);
+        check("Ring 5 V2-Prep: Initial-Label trägt '1st'", cameraResults.initialLabelFirst);
+        check("Ring 5 V2-Prep: setCameraMode('third') schaltet State", cameraResults.modeAfterSet);
+        check("Ring 5 V2-Prep: Label wechselt zu '3rd'", cameraResults.labelAfterSet);
+        check("Ring 5 V2-Prep: aria-pressed='true' im 3rd-Modus", cameraResults.ariaPressedAfterSet);
+        check("Ring 5 V2-Prep: Modus persistiert in localStorage", cameraResults.persistedThird);
+        check("Ring 5 V2-Prep: Rotation-Logik bereit (yaw + rotation existieren)", cameraResults.rotationLogicReady);
+        check("Ring 5 V2-Prep: setCameraMode('first') zurück", cameraResults.modeBackToFirst);
+        check("Ring 5 V2-Prep: Label zurück auf '1st'", cameraResults.labelBackToFirst);
+        check("Ring 5 V2-Prep: Persistenz aktualisiert sich", cameraResults.persistedFirst);
+        check("Ring 5 V2-Prep: Unbekannter Modus fällt auf 'first' zurück", cameraResults.unknownFallsToFirst);
+    }
+    if (cameraEffect) {
+        // playerMesh.rotation.y sollte yaw entsprechen (per Loop-Tick)
+        check(
+            "Ring 5 V2-Prep: playerMesh.rotation.y folgt yaw",
+            Math.abs(cameraEffect.playerRotationY - cameraEffect.playerYaw) < 0.01,
+            `yaw=${cameraEffect.playerYaw.toFixed(3)}, rot.y=${cameraEffect.playerRotationY.toFixed(3)}`
+        );
+    }
+    if (cameraPitch) {
+        // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
+        // pitch=-30° → cam-player = 2+3 = 5. clamp greift bei -0.2.
+        check(
+            "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
+            cameraPitch.upDelta < 2,
+            `cam-player=${cameraPitch.upDelta.toFixed(2)} (Erwartung < 2)`
+        );
+        check(
+            "Ring 5 V2-Prep: Maus runter hebt Kamera (3rd)",
+            cameraPitch.downDelta > 2,
+            `cam-player=${cameraPitch.downDelta.toFixed(2)} (Erwartung > 2)`
+        );
+        check(
+            "Ring 5 V2-Prep: Boden-Clamp greift bei extremem Pitch",
+            cameraPitch.clampedDelta >= -0.21,
+            `cam-player=${cameraPitch.clampedDelta.toFixed(2)} (≥ -0.2 erwartet)`
+        );
+    }
+}
+
+// V9.52-e Sub-Welle e — Band-Funktion (Ring 6 architectureTemplates V1 + 6.3 Kollisions-Body + 6.4 Bauplan-Datenschicht + 6.5 Hotbar + 6.6 Werkstatt-Tab + 6 V2 Distance-Culling/Fraktal/Counter/Bau-Cursor).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandRing6Workshop(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Ring 6 — architectureTemplates V1 ###
+    // Drei Bau-Primitives (Dorf/Tempel/Wasserfall) als DSL-Ops mit
+    // Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag mit niedriger
+    // Gewichtung. Wasserfälle haben einen Animations-Hook im Tick.
+    const ring6Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+
+            // Cleanup: alle bestehenden Architekturen entfernen.
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+
+            // (a) Direkter Spawn jeder Sorte
+            const v = r.spawnArchitecture("village", { x: 10, y: 5, z: 10 }, { seed: 42 });
+            out.villageBuilt = !!v && v.type === "village" && !!v.mesh;
+            out.villageHasChildren = v && v.mesh && v.mesh.children.length >= 5;
+            out.villageInScene = v && r.state.scene.children.indexOf(v.mesh) >= 0;
+
+            const t = r.spawnArchitecture("temple", { x: 30, y: 5, z: 10 }, { seed: 7 });
+            out.templeBuilt = !!t && t.type === "temple" && !!t.mesh;
+            // 6 Pfeiler + 1 Dach + 1 Altar = mind. 8 children
+            out.templeHasPillars = t && t.mesh && t.mesh.children.length >= 8;
+
+            const w = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 10 }, { seed: 99 });
+            out.waterfallBuilt = !!w && w.type === "waterfall" && !!w.mesh;
+            out.waterfallHasAnimateHook =
+                w && w.mesh && w.mesh.userData && typeof w.mesh.userData.animate === "function";
+
+            // (b) Unbekannter Typ wird abgelehnt
+            const bad = r.spawnArchitecture("schloss", { x: 0, y: 5, z: 0 });
+            out.unknownTypeRejected = bad === null;
+
+            // (c) state.architectures wächst korrekt
+            out.architectureCountAfterThree = r.state.architectures.length === 3;
+            out.idsAreUnique = new Set(r.state.architectures.map((a) => a.id)).size === r.state.architectures.length;
+
+            // (d) DSL-Op: spawn_village wirkt durch Interpreter
+            const beforeCount = r.state.architectures.length;
+            const dslRes = r.dslRun(["spawn_village", ["at_origin"]]);
+            out.dslSpawnVillageOk =
+                dslRes.ok === true &&
+                r.state.architectures.length === beforeCount + 1 &&
+                dslRes.log.some((e) => e.event === "spawned_village");
+
+            // (e) Chat-Pattern routet auf DSL
+            const beforeChat = r.state.architectures.length;
+            r.processChatCommand("Baue Tempel hier");
+            out.chatRoutesToDsl =
+                Array.isArray(r.state.dsl.lastUserProgram) && r.state.dsl.lastUserProgram[0] === "spawn_temple";
+            out.chatActuallySpawned = r.state.architectures.length === beforeChat + 1;
+
+            // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
+            // Datenmäßig unbegrenzt; GPU-Last per Distance-Culling.
+            const beforeMany = r.state.architectures.length;
+            for (let i = 0; i < 50; i++) {
+                r.spawnArchitecture("temple", { x: 500 + i * 2, y: 5, z: 500 }, { seed: i });
+            }
+            out.unboundedSpawn = r.state.architectures.length === beforeMany + 50;
+            // Die weiten (500m) Strukturen müssen ohne Mesh sein
+            // (cold) — Spieler ist nahe (0,0,0).
+            const farEntries = r.state.architectures.filter((a) => a.position.x >= 500);
+            out.farStructuresAreCold = farEntries.length === 50 && farEntries.every((a) => a.mesh === null);
+
+            // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten
+            const seedRng = (s) => {
+                let x = s >>> 0 || 1;
+                return () => {
+                    x = (x * 1664525 + 1013904223) >>> 0;
+                    return x / 4294967296;
+                };
+            };
+            const rng = seedRng(2026);
+            const seenOps = new Set();
+            for (let i = 0; i < 5000; i++) {
+                const atom = r.dslComposeAtomic(rng);
+                if (Array.isArray(atom)) seenOps.add(atom[0]);
+            }
+            out.villageInAtomicPool = seenOps.has("spawn_village");
+            out.templeInAtomicPool = seenOps.has("spawn_temple");
+            out.waterfallInAtomicPool = seenOps.has("spawn_waterfall");
+
+            // (h) Wasserfall-Animation: vor und nach Tick müssen Z-
+            // Werte der Geometrie unterschiedlich sein.
+            // Position muss innerhalb cullingRadius (150) liegen,
+            // sonst ist mesh null (cold) und der Test crasht.
+            const wf = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 50 }, { seed: 1 });
+            const waterMesh = wf.mesh.children.find((c) => c.geometry && c.geometry.type === "PlaneGeometry");
+            if (waterMesh) {
+                const z0 = waterMesh.geometry.attributes.position.getZ(5);
+                r.tickArchitectures(0.5);
+                const z1 = waterMesh.geometry.attributes.position.getZ(5);
+                out.waterfallTickAnimates = Math.abs(z0 - z1) > 0.001 || z1 !== 0;
+            } else {
+                out.waterfallTickAnimates = false;
+            }
+
+            // (i) Save-Roundtrip
+            r.saveState();
+            const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+            let parsed = null;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                void e;
+            }
+            out.saveContainsArchitectures =
+                !!parsed && Array.isArray(parsed.architectures) && parsed.architectures.length > 0;
+            // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
+            out.saveOmitsMesh =
+                !!parsed &&
+                parsed.architectures.every(
+                    (a) => typeof a.type === "string" && a.position && Number.isFinite(a.seed) && !a.mesh
+                );
+
+            // loadState rekonstruiert die Liste deterministisch aus seed
+            const loadInput = {
+                architectures: [
+                    { type: "village", position: { x: 0, y: 5, z: 0 }, seed: 12345 },
+                    { type: "temple", position: { x: 20, y: 5, z: 0 }, seed: 67890 },
+                ],
+            };
+            r.loadState(loadInput);
+            out.loadRebuildsCount = r.state.architectures.length === 2;
+            out.loadRebuildsTypes =
+                r.state.architectures[0].type === "village" && r.state.architectures[1].type === "temple";
+            out.loadRebuildsSeeds = r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
+
+            // Cleanup
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring6Results || ring6Results.error) {
+        check(
+            "Ring 6: Architecture-Snapshot erreichbar",
+            false,
+            ring6Results && ring6Results.error ? ring6Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 6: spawnArchitecture('village') liefert Group", ring6Results.villageBuilt);
+        check("Ring 6: Dorf-Group hat ≥5 children (Hütten + Plaza)", ring6Results.villageHasChildren);
+        check("Ring 6: Dorf wird zur Szene hinzugefügt", ring6Results.villageInScene);
+        check("Ring 6: spawnArchitecture('temple') liefert Group", ring6Results.templeBuilt);
+        check("Ring 6: Tempel-Group hat ≥8 children (6 Pfeiler + Dach + Altar)", ring6Results.templeHasPillars);
+        check("Ring 6: spawnArchitecture('waterfall') liefert Group", ring6Results.waterfallBuilt);
+        check("Ring 6: Wasserfall hat userData.animate Hook", ring6Results.waterfallHasAnimateHook);
+        check("Ring 6: Unbekannter Typ wird abgelehnt (returns null)", ring6Results.unknownTypeRejected);
+        check("Ring 6: state.architectures wächst korrekt nach drei Spawns", ring6Results.architectureCountAfterThree);
+        check("Ring 6: Architecture-IDs sind eindeutig", ring6Results.idsAreUnique);
+        check("Ring 6: DSL-Op spawn_village wirkt + emit spawned_village", ring6Results.dslSpawnVillageOk);
+        check("Ring 6: Chat 'Baue Tempel hier' routet auf DSL spawn_temple", ring6Results.chatRoutesToDsl);
+        check("Ring 6: Chat-Routing spawnt tatsächlich", ring6Results.chatActuallySpawned);
+        check("Ring 6 V2: 50+ Strukturen koexistieren ohne Cap", ring6Results.unboundedSpawn);
+        check(
+            "Ring 6 V2: Weite Strukturen (>cullingRadius) sind 'cold' (mesh=null)",
+            ring6Results.farStructuresAreCold
+        );
+        check("Ring 6: spawn_village ist im dslComposeAtomic-Pool (Nexus baut)", ring6Results.villageInAtomicPool);
+        check("Ring 6: spawn_temple ist im atomic-Pool", ring6Results.templeInAtomicPool);
+        check("Ring 6: spawn_waterfall ist im atomic-Pool", ring6Results.waterfallInAtomicPool);
+        check("Ring 6: tickArchitectures animiert Wasserfall-Vertices", ring6Results.waterfallTickAnimates);
+        check("Ring 6: saveState persistiert architectures", ring6Results.saveContainsArchitectures);
+        check("Ring 6: Save enthält nur {type, position, seed} (kein mesh)", ring6Results.saveOmitsMesh);
+        check("Ring 6: loadState rekonstruiert Anzahl", ring6Results.loadRebuildsCount);
+        check("Ring 6: loadState rekonstruiert Typen", ring6Results.loadRebuildsTypes);
+        check(
+            "Ring 6: loadState rekonstruiert Seeds (deterministische Wiederherstellung)",
+            ring6Results.loadRebuildsSeeds
+        );
+    }
+
+    // ### Ring 6.3 — Kollisions-Body für Strukturen ###
+    // Jede Architektur bekommt einen statischen Ammo-Body. Body wird
+    // beim Cullen freigegeben. Bei Wieder-Aufbau (Spieler kommt
+    // zurück) entsteht ein neuer Body.
+    const ring63Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            // Cleanup
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) {
+                    r._cullArchitectureMesh(a);
+                }
+            }
+            r.state.architectures = [];
+
+            // Struktur nahe spawnen (innerhalb cullingRadius) →
+            // Mesh + Body sollten gleich da sein.
+            const px = r.state.playerMesh.position.x;
+            const pz = r.state.playerMesh.position.z;
+            const entry = r.spawnArchitecture(
+                "temple",
+                { x: px + 8, y: r.state.playerMesh.position.y, z: pz + 4 },
+                { seed: 11 }
+            );
+            out.entryHasMesh = !!entry && !!entry.mesh;
+            out.entryHasCollision = !!entry && !!entry.collision && !!entry.collision.body && !!entry.collision.shape;
+            // Body sollte in der physicsWorld registriert sein —
+            // wir prüfen indirekt: tests later that culling removes it.
+            // Kollisions-Box-Größe indirekt via Three-Bounding-Box
+            // verifizieren (entry.mesh hat die echte Geometrie).
+            if (entry && entry.mesh) {
+                const bbox = new THREE.Box3().setFromObject(entry.mesh);
+                const size = new THREE.Vector3();
+                bbox.getSize(size);
+                out.collisionSizeFromMesh = {
+                    x: size.x,
+                    y: size.y,
+                    z: size.z,
+                };
+                out.collisionSizePlausible =
+                    size.x > 2.0 && size.y > 2.0 && size.z > 2.0 && size.x < 100 && size.y < 100 && size.z < 100;
+            }
+            // Body ist statisch — Body.mass entspricht 0, Body
+            // ist getCollisionFlags & CF_STATIC_OBJECT bit oder einfach
+            // testen via isStaticObject (Ammo Bindings: getCollisionFlags).
+            if (entry && entry.collision && entry.collision.body) {
+                const flags = entry.collision.body.getCollisionFlags();
+                // CF_STATIC_OBJECT = 1 in Bullet, aber: ein Body mit mass=0 ist
+                // automatisch statisch in Bullet — getCollisionFlags & 1 prüft das.
+                out.bodyIsStatic = (flags & 1) === 1 || flags === 0;
+                // Wenn flags=0, ist's kein statisches Flag gesetzt, aber
+                // mass=0 macht's trotzdem effektiv statisch. Wir akzeptieren
+                // beides als pass.
+            }
+
+            // Distanz-Cullen: Spieler weg, Body sollte verschwinden.
+            // Wir schieben entry.position so weit weg, dass es jenseits
+            // des cullingRadius ist (~150). spawnArchitecture-Pfad ist nicht
+            // ideal; einfacher direkter Cull-Test:
+            r._cullArchitectureMesh(entry);
+            out.afterCullMeshNull = entry.mesh === null;
+            out.afterCullCollisionNull = entry.collision === null;
+
+            // Wiederaufbau: rebuild macht Mesh + Body wieder.
+            r._rebuildArchitectureMesh(entry);
+            out.afterRebuildMeshExists = !!entry.mesh;
+            out.afterRebuildCollisionExists = !!entry.collision && !!entry.collision.body;
+
+            // Strukturen ohne Mesh haben kein collision.body (cold)
+            const coldEntry = r.spawnArchitecture("village", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
+            out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
+            out.coldHasNoCollision = coldEntry && !coldEntry.collision;
+
+            // Cleanup
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring63Results || ring63Results.error) {
+        check(
+            "Ring 6.3: Kollisions-Snapshot erreichbar",
+            false,
+            ring63Results && ring63Results.error ? ring63Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
+        check("Ring 6.3: Architektur hat collision-body + shape", ring63Results.entryHasCollision);
+        check(
+            "Ring 6.3: Kollisions-Box-Größe plausibel (Tempel, via Mesh-BBox)",
+            ring63Results.collisionSizePlausible,
+            ring63Results.collisionSizeFromMesh
+                ? `mesh-size=${JSON.stringify({
+                      x: ring63Results.collisionSizeFromMesh.x.toFixed(2),
+                      y: ring63Results.collisionSizeFromMesh.y.toFixed(2),
+                      z: ring63Results.collisionSizeFromMesh.z.toFixed(2),
+                  })}`
+                : ""
+        );
+        check("Ring 6.3: Body ist statisch (mass=0)", ring63Results.bodyIsStatic);
+        check(
+            "Ring 6.3: Cullen entfernt Mesh + Kollisions-Body",
+            ring63Results.afterCullMeshNull && ring63Results.afterCullCollisionNull
+        );
+        check(
+            "Ring 6.3: Wiederaufbau bringt Mesh + Body zurück",
+            ring63Results.afterRebuildMeshExists && ring63Results.afterRebuildCollisionExists
+        );
+        check(
+            "Ring 6.3: Cold-Strukturen (außerhalb Radius) haben weder Mesh noch Kollision",
+            ring63Results.coldHasNoMesh && ring63Results.coldHasNoCollision
+        );
+    }
+
+    // Live-Kollisions-Test: Spieler wird gegen eine Tempel-Säule
+    // geschoben, sollte aufgehalten werden. Wir setzen den Spieler
+    // 4m vor den Tempel-Mittelpunkt und feuern ihm Velocity, dann
+    // lassen wir die Physik 0.5s laufen und prüfen ob er stehen
+    // geblieben oder reflektiert wurde.
+    await page.evaluate(() => {
+        const r = window.anazhRealm;
+        for (const a of r.state.architectures.slice()) {
+            if (a.mesh) r._cullArchitectureMesh(a);
+        }
+        r.state.architectures = [];
+        // Tempel direkt vor Welt-Ursprung platzieren
+        r.spawnArchitecture("temple", { x: 0, y: 5, z: 5 }, { seed: 11 });
+        // Player nach (0, terrainY+2, 0) — Tempel liegt in +Z, Player soll
+        // in +Z auf ihn zu rennen.
+        if (r.state.playerBody && r.state.tmpTransform && r.state.tmpVec1) {
+            const t = r.state.tmpTransform;
+            t.setIdentity();
+            t.setOrigin(r.setVec(r.state.tmpVec1, 0, 5, -2));
+            r.state.playerBody.setWorldTransform(t);
+            r.state.playerBody.activate(true);
+            // Velocity +Z = vorwärts in Richtung Tempel
+            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 6));
+        }
+    });
+    await new Promise((r) => setTimeout(r, 800));
+    const collisionLive = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        return {
+            playerZ: r.state.playerMesh.position.z,
+            playerY: r.state.playerMesh.position.y,
+        };
+    });
+    // Tempel sitzt bei z=5, Pillar-Radius ~3.5, also Pillar-Vorderkante
+    // bei z=1.5. Player startete bei z=-2, hätte ohne Kollision in
+    // 0.8s × 6 m/s = 4.8m gemacht und wäre bei z=2.8. Mit Kollision
+    // sollte er VOR der Pillar-Vorderkante stehen (z < ~2).
+    check(
+        "Ring 6.3: Kollision stoppt Spieler vor dem Tempel",
+        collisionLive.playerZ < 2.0,
+        `playerZ=${collisionLive.playerZ.toFixed(2)} (Erwartung < 2.0)`
+    );
+    // Cleanup
+    await page.evaluate(() => {
+        const r = window.anazhRealm;
+        for (const a of r.state.architectures.slice()) {
+            if (a.mesh) r._cullArchitectureMesh(a);
+        }
+        r.state.architectures = [];
+    });
+
+    // ### Ring 6.4 — Bauplan-Datenschicht ###
+    // state.blueprints enthält Built-in dorf/tempel/wasserfall als
+    // Daten. _buildFromBlueprint rendert sie. 8 Primitive werden
+    // erkannt. User-Baupläne sind hinzufügbar + persistierbar.
+    const ring64Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // Built-ins vorhanden
+            out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.village;
+            out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.temple;
+            out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
+            out.villageBuiltIn = r.state.blueprints.village && r.state.blueprints.village.builtIn === true;
+            out.villagePartsArray = Array.isArray(r.state.blueprints.village.parts);
+            out.villageHasParts = r.state.blueprints.village.parts.length >= 10; // 6 huts × 2 + plaza
+            out.templeHasParts = r.state.blueprints.temple.parts.length >= 9;
+            out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
+
+            // 8 Primitive renderbar — wir bauen einen Test-Bauplan
+            // mit allen 8 Shapes und prüfen, dass jede einen Mesh
+            // produziert.
+            const allShapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"];
+            const testBp = {
+                name: "_test_all_shapes",
+                parts: allShapes.map((s, i) => ({
+                    shape: s,
+                    color: 0xffffff,
+                    position: { x: i, y: 0, z: 0 },
+                    size: { x: 1, y: 1, z: 1 },
+                })),
+            };
+            const testGroup = r._buildFromBlueprint(testBp);
+            out.allShapesRender =
+                testGroup && testGroup.children.length === 8 && testGroup.children.every((c) => !!c.geometry);
+
+            // Erstellung via JSON: User-Bauplan registrieren + spawnen
+            r.state.blueprints["test_hut"] = {
+                name: "test_hut",
+                label: "Test-Hütte",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        color: 0xaa5500,
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                    },
+                    {
+                        shape: "pyramid",
+                        color: 0x882211,
+                        position: { x: 0, y: 2.5, z: 0 },
+                        size: { x: 2.5, y: 1.5, z: 2.5 },
+                    },
+                ],
+            };
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+            const userEntry = r.spawnArchitecture("test_hut", { x: 0, y: 5, z: 5 }, { seed: 1 });
+            out.userBlueprintBuilds = !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
+
+            // DSL-Op spawn_blueprint funktioniert
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+            const dslRes = r.dslRun(["spawn_blueprint", "test_hut", ["at_origin"]]);
+            out.dslSpawnBlueprintOk =
+                dslRes.ok === true &&
+                r.state.architectures.length === 1 &&
+                r.state.architectures[0].type === "test_hut" &&
+                dslRes.log.some((e) => e.event === "spawned_blueprint");
+
+            // Unbekannter Bauplan-Name wird abgelehnt
+            const dslBad = r.dslRun(["spawn_blueprint", "phantom_nonexistent", ["at_origin"]]);
+            out.unknownBlueprintRejected = dslBad.log.some((e) => e.event === "unknown_blueprint");
+
+            // Save-Roundtrip: User-Bauplan überlebt
+            r.saveState();
+            const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+            let parsed = null;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                void e;
+            }
+            out.saveContainsUserBlueprint =
+                !!parsed && Array.isArray(parsed.blueprints) && parsed.blueprints.some((bp) => bp.name === "test_hut");
+            out.saveOmitsBuiltIn =
+                !!parsed && Array.isArray(parsed.blueprints) && !parsed.blueprints.some((bp) => bp.name === "village");
+
+            // loadState mit eigenem Bauplan reaktiviert ihn
+            delete r.state.blueprints["test_hut"];
+            r.loadState({
+                blueprints: [
+                    {
+                        name: "test_hut_2",
+                        label: "Reload-Hütte",
+                        parts: [
+                            {
+                                shape: "sphere",
+                                color: 0x33aa55,
+                                position: { x: 0, y: 1, z: 0 },
+                                size: { x: 2, y: 2, z: 2 },
+                            },
+                        ],
+                    },
+                ],
+            });
+            out.loadRestoresUserBlueprint = !!r.state.blueprints["test_hut_2"];
+
+            // Cleanup
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+            delete r.state.blueprints["test_hut"];
+            delete r.state.blueprints["test_hut_2"];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring64Results || ring64Results.error) {
+        check(
+            "Ring 6.4: Bauplan-Snapshot erreichbar",
+            false,
+            ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 6.4: Built-in Dorf-Bauplan vorhanden", ring64Results.hasVillage);
+        check("Ring 6.4: Built-in Tempel-Bauplan vorhanden", ring64Results.hasTemple);
+        check("Ring 6.4: Built-in Wasserfall-Bauplan vorhanden", ring64Results.hasWaterfall);
+        check("Ring 6.4: Dorf ist als builtIn markiert", ring64Results.villageBuiltIn);
+        check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
+        check("Ring 6.4: Dorf hat ≥10 Parts (6 Hütten + Plaza)", ring64Results.villageHasParts);
+        check("Ring 6.4: Tempel hat ≥9 Parts (6 Pfeiler + Dach + Altar + Spitze)", ring64Results.templeHasParts);
+        check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
+        check(
+            "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
+            ring64Results.allShapesRender
+        );
+        check("Ring 6.4: User-Bauplan als Daten spawnt korrekt Mesh", ring64Results.userBlueprintBuilds);
+        check("Ring 6.4: DSL-Op spawn_blueprint(name, pos) funktioniert", ring64Results.dslSpawnBlueprintOk);
+        check("Ring 6.4: Unbekannter Bauplan-Name wird abgelehnt", ring64Results.unknownBlueprintRejected);
+        check("Ring 6.4: saveState persistiert eigene Baupläne", ring64Results.saveContainsUserBlueprint);
+        check(
+            "Ring 6.4: Save lässt Built-in-Baupläne aus (kommen aus _defaultBlueprints)",
+            ring64Results.saveOmitsBuiltIn
+        );
+        check("Ring 6.4: loadState rekonstruiert eigene Baupläne", ring64Results.loadRestoresUserBlueprint);
+    }
+
+    // ### Ring 6.5 — Hotbar mit 9 Slots ###
+    const ring65Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+            // DOM-Hotbar
+            const bar = document.getElementById("hotbar");
+            out.hotbarInDom = !!bar;
+            out.hotbarHasNineSlots = bar && bar.querySelectorAll(".hotbar-slot").length === 9;
+            out.defaultHotbar =
+                Array.isArray(r.state.hotbar) &&
+                r.state.hotbar.length === 9 &&
+                r.state.hotbar[0] === "village" &&
+                r.state.hotbar[1] === "temple" &&
+                r.state.hotbar[2] === "waterfall" &&
+                r.state.hotbar.slice(3).every((s) => s === null);
+            // Slot-Label folgt aus blueprints.label
+            const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
+            out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Dorf";
+
+            // setHotbarSlot setzt slot 5 auf eigenen Bauplan
+            r.state.blueprints["test_hotbar_bp"] = {
+                name: "test_hotbar_bp",
+                label: "Test-Bp",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        color: 0x44aa44,
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                    },
+                ],
+            };
+            const setOk = r.setHotbarSlot(5, "test_hotbar_bp");
+            out.setHotbarOk = setOk === true && r.state.hotbar[5] === "test_hotbar_bp";
+            // DOM hat label aktualisiert
+            const slot5Label = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
+            out.hotbarDomReflectsSet = slot5Label && slot5Label.textContent === "Test-Bp";
+
+            // Unbekannter Bauplan-Name wird abgelehnt
+            const setBad = r.setHotbarSlot(5, "definitiv_nicht_da");
+            out.setHotbarRejectsUnknown = setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
+
+            // selectHotbarSlot(idx) auf belegten Slot aktiviert Build-Modus
+            r.selectHotbarSlot(5);
+            out.selectActivatesMode =
+                r.state.buildMode.active === true &&
+                r.state.buildMode.blueprintName === "test_hotbar_bp" &&
+                r.state.buildMode.slotIndex === 5;
+            // Highlight im DOM
+            const slot5El = bar.querySelector('.hotbar-slot[data-slot="5"]');
+            out.highlightActiveSlot = slot5El && slot5El.classList.contains("active");
+
+            // selectHotbarSlot(idx) auf leeren Slot deaktiviert Build-Mode
+            r.selectHotbarSlot(8); // leer
+            out.emptySlotDeactivates = r.state.buildMode.active === false;
+
+            // confirmBuild im aktiven Modus spawnt den Bauplan
+            r.selectHotbarSlot(5);
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+            const cb = r.confirmBuild();
+            out.confirmBuildSpawnsCorrectBp =
+                cb === true && r.state.architectures.length === 1 && r.state.architectures[0].type === "test_hotbar_bp";
+
+            // setHotbarSlot(idx, null) leert den Slot
+            r.setHotbarSlot(5, null);
+            out.clearedSlotIsNull = r.state.hotbar[5] === null;
+            const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
+            out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
+
+            // Hotbar-Config-Drawer hat 9 Reihen
+            const config = document.getElementById("hotbar-config");
+            out.hotbarConfigInDom = !!config;
+            out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-config-row").length === 9;
+
+            // Save-Roundtrip
+            r.setHotbarSlot(7, "temple");
+            r.saveState();
+            const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+            let parsed = null;
+            try {
+                parsed = JSON.parse(raw);
+            } catch (e) {
+                void e;
+            }
+            out.saveContainsHotbar =
+                !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "temple";
+
+            // loadState restauriert hotbar
+            r.state.hotbar = [null, null, null, null, null, null, null, null, null];
+            r.loadState({ hotbar: ["temple", null, "village", null, null, null, null, null, null] });
+            out.loadRestoresHotbar = r.state.hotbar[0] === "temple" && r.state.hotbar[2] === "village";
+
+            // Cleanup
+            delete r.state.blueprints["test_hotbar_bp"];
+            r._clearBuildMode();
+            r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+            r._renderHotbarDOM();
+            for (const a of r.state.architectures.slice()) {
+                if (a.mesh) r._cullArchitectureMesh(a);
+            }
+            r.state.architectures = [];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring65Results || ring65Results.error) {
+        check(
+            "Ring 6.5: Hotbar-Snapshot erreichbar",
+            false,
+            ring65Results && ring65Results.error ? ring65Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
+        check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
+        check("Ring 6.5: Default-Hotbar [village, temple, waterfall, ..., null]", ring65Results.defaultHotbar);
+        check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
+        check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
+        check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
+        check("Ring 6.5: setHotbarSlot lehnt unbekannte Baupläne ab", ring65Results.setHotbarRejectsUnknown);
+        check(
+            "Ring 6.5: selectHotbarSlot aktiviert Bau-Modus mit korrektem Bauplan",
+            ring65Results.selectActivatesMode
+        );
+        check("Ring 6.5: aktiver Slot bekommt .active-Class", ring65Results.highlightActiveSlot);
+        check("Ring 6.5: leerer Slot deaktiviert Bau-Modus", ring65Results.emptySlotDeactivates);
+        check(
+            "Ring 6.5: confirmBuild im Hotbar-Modus spawnt richtigen Bauplan",
+            ring65Results.confirmBuildSpawnsCorrectBp
+        );
+        check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
+        check("Ring 6.5: Leerer Slot zeigt — als Label", ring65Results.clearedDomShowsEmpty);
+        check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
+        check("Ring 6.5: Hotbar-Config hat 9 Reihen", ring65Results.hotbarConfigHasNineRows);
+        check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
+        check("Ring 6.5: loadState rekonstruiert Hotbar", ring65Results.loadRestoresHotbar);
+    }
+
+    // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
+    const ring66Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            const out = {};
+
+            // UI vorhanden
+            out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
+            out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
+            out.workshopListInDom = !!document.getElementById("workshop-list");
+            out.workshopEditorInDom = !!document.getElementById("workshop-editor");
+
+            // Liste hat einen Eintrag pro Bauplan
+            const list = document.getElementById("workshop-list");
+            out.listShowsAllBlueprints =
+                list && list.querySelectorAll(".workshop-list-row").length === Object.keys(r.state.blueprints).length;
+
+            // createBlueprint
+            const beforeCount = Object.keys(r.state.blueprints).length;
+            const ok1 = r.createBlueprint("test_hut", "Test-Hütte");
+            out.createBlueprintOk =
+                ok1 === true &&
+                Object.keys(r.state.blueprints).length === beforeCount + 1 &&
+                r.state.blueprints["test_hut"].builtIn === false;
+
+            // createBlueprint mit existierendem Namen wird abgelehnt
+            const okDup = r.createBlueprint("test_hut", "Doppelt");
+            out.duplicateNameRejected = okDup === false;
+
+            // addPartToBlueprint
+            const ok2 = r.addPartToBlueprint("test_hut", {
+                shape: "box",
+                color: 0xff0000,
+                position: { x: 0, y: 1, z: 0 },
+                size: { x: 2, y: 2, z: 2 },
+            });
+            out.addPartOk = ok2 === true && r.state.blueprints["test_hut"].parts.length === 1;
+
+            // Built-in akzeptiert keine addPart
+            const okBuiltIn = r.addPartToBlueprint("village", { shape: "sphere" });
+            out.builtInRejectsAddPart = okBuiltIn === false;
+
+            // updatePartInBlueprint
+            r.updatePartInBlueprint("test_hut", 0, {
+                color: 0x00ff00,
+                position: { y: 2.5 },
+            });
+            const p = r.state.blueprints["test_hut"].parts[0];
+            out.updatePartMerges =
+                p.color === 0x00ff00 && p.position.y === 2.5 && p.position.x === 0 && p.position.z === 0;
+
+            // removePartFromBlueprint
+            r.addPartToBlueprint("test_hut", { shape: "cone" });
+            r.addPartToBlueprint("test_hut", { shape: "sphere" });
+            const beforeRm = r.state.blueprints["test_hut"].parts.length;
+            r.removePartFromBlueprint("test_hut", 1);
+            out.removePartShrinks = r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
+
+            // cloneBlueprint (Built-in → eigen)
+            const okClone = r.cloneBlueprint("temple", "my_temple");
+            out.cloneBlueprintOk =
+                okClone === true &&
+                r.state.blueprints["my_temple"].builtIn === false &&
+                r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length;
+
+            // Klone können editiert werden
+            const okClonePart = r.removePartFromBlueprint("my_temple", 0);
+            out.cloneIsEditable =
+                okClonePart === true &&
+                r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length - 1;
+
+            // deleteBlueprint (eigen)
+            const beforeDel = Object.keys(r.state.blueprints).length;
+            const okDel = r.deleteBlueprint("test_hut");
+            out.deleteBlueprintOk =
+                okDel === true &&
+                Object.keys(r.state.blueprints).length === beforeDel - 1 &&
+                !r.state.blueprints["test_hut"];
+
+            // deleteBlueprint Built-in wird abgelehnt
+            const okDelBuiltIn = r.deleteBlueprint("village");
+            out.builtInProtectedFromDelete = okDelBuiltIn === false && !!r.state.blueprints["village"];
+
+            // delete räumt Hotbar-Slots auf, die diesen Bauplan halten
+            r.state.hotbar[4] = "my_temple";
+            r.deleteBlueprint("my_temple");
+            out.deleteCascadesHotbar = r.state.hotbar[4] === null;
+
+            // selectBlueprintForEdit + DOM update
+            r.createBlueprint("ed_test", "Editier-Test");
+            r.selectBlueprintForEdit("ed_test");
+            out.selectUpdatesWorkshop = r.state.workshop.selectedBlueprint === "ed_test";
+
+            // Editor zeigt Selected-Status
+            const selectedRow = document.querySelector('.workshop-list-row[data-blueprint="ed_test"]');
+            out.selectedRowHasClass = selectedRow && selectedRow.classList.contains("selected");
+
+            // Save-Roundtrip: eigene Baupläne werden serialisiert
+            r.addPartToBlueprint("ed_test", {
+                shape: "sphere",
+                color: 0x553355,
+                position: { x: 0, y: 2, z: 0 },
+                size: { x: 3, y: 3, z: 3 },
+            });
+            r.saveState();
+            const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
+            const parsed = JSON.parse(raw);
+            const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
+            out.saveContainsCustom = !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";
+
+            // Cleanup
+            r.deleteBlueprint("ed_test");
+            r.selectBlueprintForEdit("village");
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring66Results || ring66Results.error) {
+        check(
+            "Ring 6.6: Werkstatt-Snapshot erreichbar",
+            false,
+            ring66Results && ring66Results.error ? ring66Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
+        check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
+        check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
+        check("Ring 6.6: #workshop-editor im DOM", ring66Results.workshopEditorInDom);
+        check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
+        check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
+        check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
+        check("Ring 6.6: addPartToBlueprint hängt Part an", ring66Results.addPartOk);
+        check("Ring 6.6: addPartToBlueprint lehnt Built-in ab", ring66Results.builtInRejectsAddPart);
+        check("Ring 6.6: updatePartInBlueprint merget Patch in Bestand", ring66Results.updatePartMerges);
+        check("Ring 6.6: removePartFromBlueprint verkleinert parts", ring66Results.removePartShrinks);
+        check("Ring 6.6: cloneBlueprint erzeugt eigene Kopie eines Built-in", ring66Results.cloneBlueprintOk);
+        check("Ring 6.6: Klone sind voll editierbar", ring66Results.cloneIsEditable);
+        check("Ring 6.6: deleteBlueprint entfernt eigene Baupläne", ring66Results.deleteBlueprintOk);
+        check("Ring 6.6: Built-in vor Löschung geschützt", ring66Results.builtInProtectedFromDelete);
+        check("Ring 6.6: deleteBlueprint räumt referenzierte Hotbar-Slots auf", ring66Results.deleteCascadesHotbar);
+        check(
+            "Ring 6.6: selectBlueprintForEdit setzt state.workshop.selectedBlueprint",
+            ring66Results.selectUpdatesWorkshop
+        );
+        check("Ring 6.6: Selected-Row trägt .selected-Class im DOM", ring66Results.selectedRowHasClass);
+        check("Ring 6.6: Save persistiert eigene Baupläne inkl. Parts", ring66Results.saveContainsCustom);
+    }
+
+    // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
+    const ring6v2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+
+            // Cleanup
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+            r._clearBuildMode();
+
+            // === A) Distance-Culling ===
+            // Setze Spieler auf (0,0,0), spawne weit + nah.
+            r.state.playerMesh.position.set(0, 20, 0);
+            const near = r.spawnArchitecture("temple", { x: 5, y: 5, z: 5 }, { seed: 1 });
+            const far = r.spawnArchitecture("temple", { x: 400, y: 5, z: 400 }, { seed: 2 });
+            out.nearHasMesh = !!near.mesh;
+            out.farIsCold = far.mesh === null;
+            // Spieler weg vom near → cull-Tick muss near disposen
+            r.state.playerMesh.position.set(400, 20, 400);
+            r.state.architectureCullingLastTick = -Infinity; // erzwingen
+            r.tickArchitectureCulling(1.0);
+            out.nearCulledAfterWalkAway = near.mesh === null;
+            out.farRebuiltAfterApproach = !!far.mesh;
+            // Zurück gehen → near baut sich wieder auf
+            r.state.playerMesh.position.set(0, 20, 0);
+            r.state.architectureCullingLastTick = -Infinity;
+            r.tickArchitectureCulling(2.0);
+            out.nearRebuiltAfterReturn = !!near.mesh;
+
+            // === B) spawn_fractal ===
+            // Cleanup first
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+            const before = r.state.architectures.length;
+            const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
+            // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
+            out.fractalSpawnsExpected = dslRes.ok === true && r.state.architectures.length === before + 43;
+            const eventFound = dslRes.log.find((e) => e.event === "spawned_fractal");
+            out.fractalEventEmitted = !!eventFound && eventFound.count === 43;
+            // Determinismus: gleiche Argumente sollten in dieser Test-
+            // Welt nicht zu identischen Positionen führen, weil
+            // ctx.rng() den Root-Seed bestimmt — ABER die HEXAGONAL-
+            // Anordnung sollte erkennbar sein (6 Children auf einem
+            // Kreis um die Wurzel).
+            // Visit ist depth-first: root, dann visit(child0) inkl.
+            // dessen Grand-Children, dann child1, etc. Direkte
+            // Kinder finden wir über scale (genau 0.5 bei ratio 0.5);
+            // Grandchildren haben 0.25.
+            const rootEntry = r.state.architectures[before];
+            const directChildren = r.state.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.5) < 1e-6);
+            const childRadii = directChildren.map((e) =>
+                Math.hypot(e.position.x - rootEntry.position.x, e.position.z - rootEntry.position.z)
+            );
+            out.fractalChildrenAreHexagonal =
+                childRadii.length === 6 && childRadii.every((rad) => Math.abs(rad - childRadii[0]) < 0.5);
+            // Scale-Hierarchie: Root=1, direkte Kinder=0.5, Grand-Children=0.25
+            const grandChildren = r.state.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.25) < 1e-6);
+            out.fractalScalesShrink =
+                rootEntry.scale === 1 && directChildren.length === 6 && grandChildren.length === 36;
+
+            // Chat-Pattern
+            r.processChatCommand("baue fraktal wasserfall");
+            out.chatFractalRoutes =
+                Array.isArray(r.state.dsl.lastUserProgram) &&
+                r.state.dsl.lastUserProgram[0] === "spawn_fractal" &&
+                r.state.dsl.lastUserProgram[2] === "waterfall";
+
+            // === C) Counter ===
+            // Cleanup, baue 3 nah, 5 weit
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+            r.state.playerMesh.position.set(0, 20, 0);
+            for (let i = 0; i < 3; i++) r.spawnArchitecture("temple", { x: i * 10, y: 5, z: 0 }, { seed: i });
+            for (let i = 0; i < 5; i++) r.spawnArchitecture("village", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
+            const counts = r.countArchitecturesNearPlayer(60);
+            out.counterNear = counts.near === 3;
+            out.counterTotal = counts.total === 8;
+            // Status-Bar-Element existiert + zeigt korrektes Format
+            out.statusBarItemInDom = !!document.getElementById("status-architectures");
+            r.updateStatusPanel(1e7);
+            const statusEl = document.getElementById("status-architectures");
+            out.statusBarShowsCount = statusEl && /^\d+ nah \/ \d+$/.test(statusEl.textContent);
+
+            // === D) Bau-Cursor ===
+            r._clearBuildMode();
+            out.hudInDom = !!document.getElementById("build-mode-hud");
+            out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
+            // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = village.
+            r.selectHotbarSlot(0);
+            out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "village";
+            out.phantomInScene =
+                r.state.buildMode.phantomMesh && r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
+            out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
+            let foundTransparent = false;
+            r.state.buildMode.phantomMesh.traverse((node) => {
+                if (node.material && node.material.transparent && node.material.opacity < 1) {
+                    foundTransparent = true;
+                }
+            });
+            out.phantomIsTransparent = foundTransparent;
+            // Toggle (gleicher Slot nochmal → off)
+            r.selectHotbarSlot(0);
+            out.toggleOffSameForm = r.state.buildMode.active === false;
+            // Slot wechseln (Slot 1 = temple)
+            r.selectHotbarSlot(1);
+            out.switchFormChanges = r.state.buildMode.blueprintName === "temple";
+            // confirmBuild platziert echte Struktur
+            const arBefore = r.state.architectures.length;
+            r.confirmBuild();
+            out.confirmBuildSpawns = r.state.architectures.length === arBefore + 1;
+            out.confirmBuildKeepsMode = r.state.buildMode.active === true;
+            // ESC räumt auf
+            r._clearBuildMode();
+            out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
+
+            // Cleanup
+            for (const a of r.state.architectures) {
+                if (a.mesh) {
+                    r.state.scene.remove(a.mesh);
+                    r._disposeSoulGroup(a.mesh);
+                }
+            }
+            r.state.architectures = [];
+            return out;
+        })
+        .catch((err) => ({ error: err && err.message }));
+
+    if (!ring6v2Results || ring6v2Results.error) {
+        check(
+            "Ring 6 V2: Snapshot erreichbar",
+            false,
+            ring6v2Results && ring6v2Results.error ? ring6v2Results.error : "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        // Culling
+        check("Ring 6 V2: Nahe Struktur hat Mesh", ring6v2Results.nearHasMesh);
+        check("Ring 6 V2: Weite Struktur startet 'cold'", ring6v2Results.farIsCold);
+        check("Ring 6 V2: Culling-Tick disposed Mesh wenn Spieler weggeht", ring6v2Results.nearCulledAfterWalkAway);
+        check("Ring 6 V2: Culling-Tick baut Mesh wenn Spieler hingeht", ring6v2Results.farRebuiltAfterApproach);
+        check("Ring 6 V2: Culling-Tick baut Mesh wieder auf nach Rückkehr", ring6v2Results.nearRebuiltAfterReturn);
+        // Fraktal
+        check(
+            "Ring 6 V2: spawn_fractal(depth=2, ratio=0.5) → 1+6+36 = 43 Strukturen",
+            ring6v2Results.fractalSpawnsExpected
+        );
+        check("Ring 6 V2: spawned_fractal-Event emittiert mit count=43", ring6v2Results.fractalEventEmitted);
+        check("Ring 6 V2: 6 Kinder im Hexagon (gleicher Radius um Root)", ring6v2Results.fractalChildrenAreHexagonal);
+        check("Ring 6 V2: Scale-Hierarchie — Kinder bei ratio (0.5), Root bei 1", ring6v2Results.fractalScalesShrink);
+        check("Ring 6 V2: Chat 'baue fraktal wasserfall' routet korrekt", ring6v2Results.chatFractalRoutes);
+        // Counter
+        check("Ring 6 V2: countArchitecturesNearPlayer nah = 3", ring6v2Results.counterNear);
+        check("Ring 6 V2: countArchitecturesNearPlayer total = 8", ring6v2Results.counterTotal);
+        check("Ring 6 V2: #status-architectures im DOM", ring6v2Results.statusBarItemInDom);
+        check("Ring 6 V2: Status-Bar zeigt 'N nah / M' Format", ring6v2Results.statusBarShowsCount);
+        // Bau-Cursor
+        check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
+        check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
+        check("Ring 6.5: selectHotbarSlot aktiviert Build-Mode", ring6v2Results.modeActiveAfterSet);
+        check("Ring 6.5: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
+        check("Ring 6.5: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
+        check("Ring 6.5: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
+        check("Ring 6.5: Selber Slot nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
+        check("Ring 6.5: Slot-Wechsel ändert aktiven Bauplan", ring6v2Results.switchFormChanges);
+        check("Ring 6 V2: confirmBuild spawnt echte Struktur", ring6v2Results.confirmBuildSpawns);
+        check("Ring 6 V2: confirmBuild lässt Modus aktiv (Mehrfach-Bau)", ring6v2Results.confirmBuildKeepsMode);
+        check("Ring 6 V2: _clearBuildMode beendet Modus + räumt Phantom", ring6v2Results.clearEndsMode);
+    }
+}
+
 (async () => {
     console.log(`Starte Save-Server ...`);
     const server = await startSaveServer();
@@ -21811,8 +30034,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             await checkBandLateMultiUser(ctx);
 
             // V9.52-c: Band 2 (Welle 6.A .. Welle 6.H Phase 2C) als 8 thematische
-            // Band-Funktionen, je 475-1567 Z. Welle 6.X Audit-Fixes und alles weiter
-            // bleibt inline (Sub-Wellen d-e nachziehen).
+            // Band-Funktionen, je 475-1567 Z.
             await checkBandWelle6APolish(ctx);
             await checkBandWelle6DSoul(ctx);
             await checkBandWelle6GHylomorphism(ctx);
@@ -21835,8527 +30057,22 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             await checkBandTranslatorAndUntrusted(ctx);
             await checkBandV8LatePolishAnd6XContinued(ctx);
 
-            // --- Ab hier weiter inline (Sub-Welle e zieht die End-Sektionen nach: 6.H 2B.2+, V8.00-V8.07 CAD, Welle 9/10, V7.x LLM, Ring 3-6, UI V1/V2) ---
-
-            // ### Welle 6.H Phase 2B.2 — Kreatur baut Bauplan für Spieler ###
-            //
-            // Geste-Umkehrung zu gather: Spieler ist Material-Quelle, Kreatur
-            // ist Schöpfungs-Hand. Drei Phasen: take (zum Spieler) → walk
-            // (weg vom Spieler) → spawn (Architektur am Kreatur-Ort). Modus-
-            // symmetrisch über _buildMaterialGate (eine Funktion teilen sich
-            // Spieler-confirmBuild + Kreatur-build-take-Phase).
-            const wave6hP2b2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-
-                    // 1. Konstanten
-                    const Tasks = r.constructor.CREATURE_TASKS;
-                    const Hues = r.constructor.CREATURE_TASK_AURA_HUE;
-                    const Freqs = r.constructor.CREATURE_TASK_PING_FREQ;
-                    out.tasksHasBuild = Tasks.includes("build");
-                    out.auraHueBuild = Hues.build === 280;
-                    out.pingFreqBuild = Freqs.build === 587;
-                    out.buildPlacementDist = r.constructor.CREATURE_BUILD_PLACEMENT_DIST === 4.0;
-                    out.buildSpeed = r.constructor.CREATURE_BUILD_SPEED === 3.0;
-
-                    // 2. Args-Mapping
-                    const a1 = r._buildCreatureTaskArgs("build", "stein_block");
-                    out.argsBuildString = a1.blueprint === "stein_block";
-                    const a2 = r._buildCreatureTaskArgs("build", 5);
-                    out.argsBuildNumberDropped = !a2.blueprint;
-                    const a3 = r._buildCreatureTaskArgs("build", "");
-                    out.argsBuildEmptyDropped = !a3.blueprint;
-
-                    // 3. Describe
-                    const desc = r._describeCreatureTaskArg("build", "stein_block");
-                    out.descBuildShowsBlueprint = /Bauplan/.test(desc) && /stein_block/.test(desc);
-
-                    // 4. Tick: kein blueprint → null + falls auf wander
-                    const c0 = r.spawnCreatureAt(
-                        r.state.playerMesh.position.x + 50,
-                        r.state.playerMesh.position.y,
-                        r.state.playerMesh.position.z + 50,
-                        "happy",
-                        "wesen"
-                    );
-                    r.assignCreatureTask(c0, "build", {});
-                    const dirEmpty = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.buildEmptyFallsToWander = dirEmpty === null && r._getCreatureTask(c0).name === "wander";
-
-                    // 5. Tick: unknown blueprint → memory + journal + wander
-                    r.assignCreatureTask(c0, "build", { blueprint: "fictional_bp_xyz" });
-                    const dirUnk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.unknownBpFallsToWander = dirUnk === null && r._getCreatureTask(c0).name === "wander";
-                    const memHasUnk = (c0.userData.memory || []).some((m) => m.type === "no_blueprint");
-                    out.memHasNoBlueprint = memHasUnk;
-
-                    // 6. Take-Phase: Distanz zum Spieler → Vektor zu Spieler hin, Geschwindigkeit BUILD_SPEED
-                    const player = r.state.playerMesh.position;
-                    c0.position.set(player.x + 10, player.y, player.z);
-                    c0.userData.carrying = null;
-                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-                    const dirTake = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.takePhaseTowardsPlayer = dirTake && dirTake.x < 0; // sollte negativ sein (Richtung -x = zum Spieler)
-                    const sp = Math.hypot(dirTake.x, dirTake.z);
-                    // Phase 2F.1: Speed wird body-moduliert (stats.speed/7). Toleranz weiter
-                    // damit Body-Faktor je Soul den Test nicht bricht — wir prüfen Bereich
-                    // [BUILD_SPEED*0.5, BUILD_SPEED*2.0] statt Gleichheit.
-                    out.takePhaseSpeed =
-                        sp > r.constructor.CREATURE_BUILD_SPEED * 0.5 && sp < r.constructor.CREATURE_BUILD_SPEED * 2.0;
-
-                    // 7. Take-Phase at handover, pfad ohne Material → ablehnt + memory + wander
-                    const origMode = r.getGameMode();
-                    r.setGameMode("pfad");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    c0.position.set(player.x + 1.0, player.y, player.z); // innerhalb handover (2.0)
-                    c0.userData.carrying = null;
-                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-                    const dirNoMat = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.takeNoMatRejects = dirNoMat === null && r._getCreatureTask(c0).name === "wander";
-                    const memHasNoInv = (c0.userData.memory || []).some((m) => m.type === "no_inventory_for_build");
-                    out.memHasNoInv = memHasNoInv;
-
-                    // 8. Take-Phase at handover, pfad mit Material → carrying gesetzt + Material verbraucht
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("stein", 200);
-                    const stoneBefore = r.state.player.inventory[0].count;
-                    c0.position.set(player.x + 1.0, player.y, player.z);
-                    c0.userData.carrying = null;
-                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.takeSetsCarrying = !!c0.userData.carrying && c0.userData.carrying.kind === "build";
-                    out.takeCarryingHasBp = c0.userData.carrying && c0.userData.carrying.blueprint === "stein_block";
-                    const stoneAfter = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-                    out.takeConsumesPfad = stoneAfter < stoneBefore;
-                    const memHasTook = (c0.userData.memory || []).some((m) => m.type === "took_materials");
-                    out.memHasTook = memHasTook;
-
-                    // 9. Schöpfer/frieden: carrying wird mit symbolic cost gesetzt, Inventar bleibt leer
-                    r.setGameMode("schöpfer");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    c0.position.set(player.x + 1.0, player.y, player.z);
-                    c0.userData.carrying = null;
-                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.schoepferCarrying = !!c0.userData.carrying;
-                    out.schoepferCarryingHasMaterials =
-                        c0.userData.carrying &&
-                        c0.userData.carrying.materials &&
-                        c0.userData.carrying.materials.stein > 0;
-                    out.schoepferCarryingFree = c0.userData.carrying && c0.userData.carrying.free === true;
-                    out.schoepferInventoryUntouched = r.state.player.inventory.every((s) => !s);
-
-                    // 10. Walk-Phase: mit carrying, Vektor WEG vom Spieler
-                    r.setGameMode("schöpfer");
-                    c0.position.set(player.x + 2.5, player.y, player.z); // 2.5m, weniger als placement (4.0)
-                    c0.userData.carrying = {
-                        kind: "build",
-                        materials: { stein: 8 },
-                        blueprint: "stein_block",
-                        since: 0,
-                    };
-                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-                    const dirWalk = r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.walkPhaseAwayFromPlayer = dirWalk && dirWalk.x > 0; // weg vom Spieler = +x
-                    const ws = Math.hypot(dirWalk.x, dirWalk.z);
-                    // Phase 2F.1: gleiche Body-Modulation wie take-Phase.
-                    out.walkPhaseSpeed =
-                        ws > r.constructor.CREATURE_BUILD_SPEED * 0.5 && ws < r.constructor.CREATURE_BUILD_SPEED * 2.0;
-
-                    // 11. Spawn-Phase: bei placement_dist → spawnArchitecture + carrying null + memory + wander
-                    c0.position.set(player.x + 5.0, player.y + 1.0, player.z); // > placement (4.0)
-                    c0.userData.carrying = {
-                        kind: "build",
-                        materials: { stein: 8 },
-                        blueprint: "stein_block",
-                        since: 0,
-                    };
-                    r.assignCreatureTask(c0, "build", { blueprint: "stein_block" });
-                    const archBefore = r.state.architectures.length;
-                    r._tickCreatureTaskDirection(c0, c0.userData.task, "happy");
-                    out.spawnPhaseGrowsWorld = r.state.architectures.length > archBefore;
-                    out.spawnPhaseClearsCarrying = c0.userData.carrying === null;
-                    out.spawnPhaseFallsToWander = r._getCreatureTask(c0).name === "wander";
-                    const memHasBuilt = (c0.userData.memory || []).some((m) => m.type === "built");
-                    out.memHasBuilt = memHasBuilt;
-                    const journalHasBuilt = (r.state.worldJournal.entries || []).some(
-                        (e) => e.type === "growth" && /erschuf/.test(e.text)
-                    );
-                    out.journalHasBuilt = journalHasBuilt;
-
-                    // 12. DSL-Op routing
-                    r.dslRun(["creature_task_nearest", "build", "stein_block"], { source: "test" });
-                    // Finde irgendeine Kreatur mit build-Task
-                    const anyBuilding = r.state.creatures.some(
-                        (c) => r._getCreatureTask(c) && r._getCreatureTask(c).name === "build"
-                    );
-                    out.dslNearestSetsBuild = anyBuilding;
-
-                    // 13. NON_BROADCASTABLE_OPS — creature_task* sind schon drin (Phase 1).
-                    // Build wird über dieselben Ops gerufen, also automatisch privat.
-                    out.opsAreNonBroadcast =
-                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_nearest") &&
-                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task_all") &&
-                        r.constructor.NON_BROADCASTABLE_OPS.has("creature_task");
-
-                    // 14. Chat-Patterns
-                    const p1 = r.parseChatToDsl("baue stein_block");
-                    out.chatBauePattern =
-                        p1 &&
-                        Array.isArray(p1.program) &&
-                        p1.program[0] === "creature_task_nearest" &&
-                        p1.program[1] === "build" &&
-                        p1.program[2] === "stein_block";
-                    const p2 = r.parseChatToDsl("alle bauen stein_block");
-                    out.chatAlleBauenPattern =
-                        p2 &&
-                        Array.isArray(p2.program) &&
-                        p2.program[0] === "creature_task_all" &&
-                        p2.program[1] === "build" &&
-                        p2.program[2] === "stein_block";
-
-                    // 15. describeProgram
-                    const desc1 = r.describeProgram(["creature_task_nearest", "build", "stein_block"]);
-                    out.describeProgramShowsBp = /Bauplan/.test(desc1) && /stein_block/.test(desc1);
-
-                    // 16. Status-Bar zeigt 'N bauen'
-                    // Setze mehrere Kreaturen auf build (alle existierenden)
-                    for (const c of r.state.creatures) {
-                        r.assignCreatureTask(c, "build", { blueprint: "stein_block" }, { silent: true });
-                    }
-                    if (typeof r._renderTaskStatusUI === "function") r._renderTaskStatusUI();
-                    const statusEl = document.getElementById("status-tasks");
-                    out.statusShowsBauen = statusEl && /bauen/.test(statusEl.textContent);
-
-                    // 17. Liste zeigt 'baut stein_block' + .build CSS-Class
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    const listEl = document.getElementById("creature-list");
-                    const buildRow = listEl && listEl.querySelector(".creature-task.build");
-                    out.listHasBuildClass = !!buildRow;
-                    out.listShowsBaut = listEl && /baut stein_block/.test(listEl.textContent);
-
-                    // 18. UI: Dropdown + 2 Buttons im DOM
-                    const buildSelect = document.getElementById("creature-build-select");
-                    out.uiBuildSelectExists = !!buildSelect;
-                    out.uiBuildSelectHasOptions = buildSelect && buildSelect.options.length >= 3;
-                    const buildBtns = document.querySelectorAll("[data-creature-build]");
-                    out.uiBuildButtonsCount = buildBtns.length === 2;
-
-                    // 19. Journal-Label "wird zur Schöpferin" beim build-Wechsel
-                    // (assignCreatureTask hat schon ein Journal geschrieben in #16, prüfen)
-                    const journalHasRel = (r.state.worldJournal.entries || []).some(
-                        (e) => e.type === "relationship" && /Schöpferin/.test(e.text)
-                    );
-                    out.journalHasSchoepferin = journalHasRel;
-
-                    // 20. Symbolic cost: free build hat trotzdem materials map (für Journal/Visual)
-                    r.setGameMode("schöpfer");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    const cFree = r.spawnCreatureAt(player.x + 30, player.y, player.z + 30, "happy", "wesen");
-                    cFree.position.set(player.x + 1.0, player.y, player.z);
-                    cFree.userData.carrying = null;
-                    r.assignCreatureTask(cFree, "build", { blueprint: "baum_eiche" }, { silent: true });
-                    r._tickCreatureTaskDirection(cFree, cFree.userData.task, "happy");
-                    out.symbolicCostHasMultiple =
-                        cFree.userData.carrying && Object.keys(cFree.userData.carrying.materials).length >= 2; // baum_eiche = holz + laub
-
-                    // Cleanup für nachfolgende Tests
-                    r.setGameMode(origMode || "frieden");
-                    for (const c of r.state.creatures) {
-                        r.assignCreatureTask(c, "wander", {}, { silent: true });
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2b2Results && !wave6hP2b2Results.error) {
-                check("Welle 6.H P2B.2: CREATURE_TASKS enthält 'build'", wave6hP2b2Results.tasksHasBuild);
-                check("Welle 6.H P2B.2: AURA_HUE.build === 280 (violett)", wave6hP2b2Results.auraHueBuild);
-                check("Welle 6.H P2B.2: PING_FREQ.build === 587 (D5)", wave6hP2b2Results.pingFreqBuild);
-                check(
-                    "Welle 6.H P2B.2: CREATURE_BUILD_PLACEMENT_DIST=4.0 + CREATURE_BUILD_SPEED=3.0",
-                    wave6hP2b2Results.buildPlacementDist && wave6hP2b2Results.buildSpeed
-                );
-                check(
-                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, string) → {blueprint}",
-                    wave6hP2b2Results.argsBuildString
-                );
-                check(
-                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, number) droppt arg",
-                    wave6hP2b2Results.argsBuildNumberDropped
-                );
-                check(
-                    "Welle 6.H P2B.2: _buildCreatureTaskArgs(build, '') droppt arg",
-                    wave6hP2b2Results.argsBuildEmptyDropped
-                );
-                check(
-                    "Welle 6.H P2B.2: _describeCreatureTaskArg(build, X) zeigt 'Bauplan X'",
-                    wave6hP2b2Results.descBuildShowsBlueprint
-                );
-                check(
-                    "Welle 6.H P2B.2: build ohne blueprint → null + Task fällt auf wander",
-                    wave6hP2b2Results.buildEmptyFallsToWander
-                );
-                check(
-                    "Welle 6.H P2B.2: build mit unbekanntem Bauplan → wander + 'no_blueprint'-Erinnerung",
-                    wave6hP2b2Results.unknownBpFallsToWander && wave6hP2b2Results.memHasNoBlueprint
-                );
-                check(
-                    "Welle 6.H P2B.2: take-Phase weit weg → Vektor zum Spieler hin",
-                    wave6hP2b2Results.takePhaseTowardsPlayer
-                );
-                check(
-                    "Welle 6.H P2B.2: take-Phase Geschwindigkeit ~ CREATURE_BUILD_SPEED (body-moduliert P2F.1)",
-                    wave6hP2b2Results.takePhaseSpeed
-                );
-                check(
-                    "Welle 6.H P2B.2: pfad ohne Material → take lehnt ab + 'no_inventory_for_build'-Memory",
-                    wave6hP2b2Results.takeNoMatRejects && wave6hP2b2Results.memHasNoInv
-                );
-                check(
-                    "Welle 6.H P2B.2: pfad mit Material → carrying.kind='build' + blueprint gesetzt",
-                    wave6hP2b2Results.takeSetsCarrying && wave6hP2b2Results.takeCarryingHasBp
-                );
-                check(
-                    "Welle 6.H P2B.2: pfad: Material wird aus Spieler-Inventar konsumiert",
-                    wave6hP2b2Results.takeConsumesPfad
-                );
-                check("Welle 6.H P2B.2: 'took_materials'-Erinnerung gespeichert", wave6hP2b2Results.memHasTook);
-                check(
-                    "Welle 6.H P2B.2: schöpfer setzt carrying mit symbolic cost (für Visual+Journal)",
-                    wave6hP2b2Results.schoepferCarrying &&
-                        wave6hP2b2Results.schoepferCarryingHasMaterials &&
-                        wave6hP2b2Results.schoepferCarryingFree
-                );
-                check(
-                    "Welle 6.H P2B.2: schöpfer: Inventar bleibt unangetastet (kostenlos)",
-                    wave6hP2b2Results.schoepferInventoryUntouched
-                );
-                check(
-                    "Welle 6.H P2B.2: walk-Phase mit carrying → Vektor WEG vom Spieler ~ BUILD_SPEED (body-moduliert P2F.1)",
-                    wave6hP2b2Results.walkPhaseAwayFromPlayer && wave6hP2b2Results.walkPhaseSpeed
-                );
-                check(
-                    "Welle 6.H P2B.2: spawn-Phase bei placement_dist → Architektur entsteht",
-                    wave6hP2b2Results.spawnPhaseGrowsWorld
-                );
-                check(
-                    "Welle 6.H P2B.2: spawn-Phase clearet carrying + fällt auf wander zurück",
-                    wave6hP2b2Results.spawnPhaseClearsCarrying && wave6hP2b2Results.spawnPhaseFallsToWander
-                );
-                check(
-                    "Welle 6.H P2B.2: 'built'-Memory + 'growth'-Journal-Eintrag (erschuf ...)",
-                    wave6hP2b2Results.memHasBuilt && wave6hP2b2Results.journalHasBuilt
-                );
-                check(
-                    "Welle 6.H P2B.2: DSL creature_task_nearest('build', bp) wirkt",
-                    wave6hP2b2Results.dslNearestSetsBuild
-                );
-                check(
-                    "Welle 6.H P2B.2: build-Ops bleiben in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
-                    wave6hP2b2Results.opsAreNonBroadcast
-                );
-                check(
-                    "Welle 6.H P2B.2: Chat 'baue X' → creature_task_nearest build X",
-                    wave6hP2b2Results.chatBauePattern
-                );
-                check(
-                    "Welle 6.H P2B.2: Chat 'alle bauen X' → creature_task_all build X",
-                    wave6hP2b2Results.chatAlleBauenPattern
-                );
-                check(
-                    "Welle 6.H P2B.2: describeProgram zeigt 'Bauplan' + name",
-                    wave6hP2b2Results.describeProgramShowsBp
-                );
-                check(
-                    "Welle 6.H P2B.2: Status-Bar zeigt 'N bauen' bei build-Tasks",
-                    wave6hP2b2Results.statusShowsBauen
-                );
-                check(
-                    "Welle 6.H P2B.2: Liste zeigt .build-Class + 'baut <bp>'",
-                    wave6hP2b2Results.listHasBuildClass && wave6hP2b2Results.listShowsBaut
-                );
-                check(
-                    "Welle 6.H P2B.2: UI #creature-build-select Dropdown + ≥3 Optionen + 2 Buttons",
-                    wave6hP2b2Results.uiBuildSelectExists &&
-                        wave6hP2b2Results.uiBuildSelectHasOptions &&
-                        wave6hP2b2Results.uiBuildButtonsCount
-                );
-                check(
-                    "Welle 6.H P2B.2: Journal-Label (wird zur Schoepferin) beim build-Wechsel",
-                    wave6hP2b2Results.journalHasSchoepferin
-                );
-                check(
-                    "Welle 6.H P2B.2: free-build trägt Multi-Material symbolic cost (baum_eiche=holz+laub)",
-                    wave6hP2b2Results.symbolicCostHasMultiple
-                );
-            } else if (wave6hP2b2Results && wave6hP2b2Results.error) {
-                check(`Welle 6.H P2B.2: evaluate-Fehler — ${wave6hP2b2Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2D — Spezialisierung aus Memory ###
-            //
-            // Vision §1.1: Co-Schöpfer-Beziehung wächst durch Geschichte.
-            // Memory-Erfolge (gathered/built) ergeben Skill-Levels (gather:material,
-            // build:blueprint), Speed-Bonus pro Level, Audio + Journal bei Level-Up,
-            // UI-Pills in Kreatur-Liste. KEINE Persistenz (Vision-konsequent).
-            const wave6hP2dResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-                    const Class = r.constructor;
-
-                    // 1. Konstanten
-                    out.threshold3 = Class.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD === 3;
-                    out.maxLevel5 = Class.CREATURE_SPECIALIZATION_MAX_LEVEL === 5;
-                    out.speedBonus15 = Class.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL === 0.15;
-                    out.pingFreq880 = Class.CREATURE_SPECIALIZATION_PING_FREQ === 880;
-
-                    // 2. Methoden existieren
-                    out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
-                    out.hasLevelMethod = typeof r._creatureSpecializationLevel === "function";
-                    out.hasTopMethod = typeof r._creatureTopSpecializations === "function";
-                    out.hasSpeedMul = typeof r._creatureTaskSpeedMultiplier === "function";
-                    out.hasLevelUp = typeof r._onCreatureLevelUp === "function";
-                    out.hasSkillKey = typeof r._creatureSkillKeyForMemory === "function";
-
-                    // 3. _creatureSkillKeyForMemory mappt korrekt
-                    const sk1 = r._creatureSkillKeyForMemory("gathered", { material: "holz" });
-                    out.skillKeyGather = sk1 && sk1.kind === "gather" && sk1.key === "holz";
-                    const sk2 = r._creatureSkillKeyForMemory("built", { blueprint: "stein_block" });
-                    out.skillKeyBuild = sk2 && sk2.kind === "build" && sk2.key === "stein_block";
-                    const sk3 = r._creatureSkillKeyForMemory("no_material", { material: "holz" });
-                    out.skillKeyFailureNull = sk3 === null;
-                    const sk4 = r._creatureSkillKeyForMemory("delivered", { material: "holz" });
-                    out.skillKeyDeliveredNull = sk4 === null;
-
-                    // 4. Frische Kreatur → leere Specs
-                    const player = r.state.playerMesh.position;
-                    const c = r.spawnCreatureAt(player.x + 80, player.y, player.z + 80, "happy", "wesen");
-                    c.userData.memory = []; // sicherstellen
-                    const s0 = r._computeCreatureSpecializations(c);
-                    out.emptyMemoryEmptySpecs =
-                        s0 && Object.keys(s0.gather).length === 0 && Object.keys(s0.build).length === 0;
-
-                    // 5. _computeCreatureSpecializations zählt korrekt aus memory
-                    c.userData.memory = [
-                        { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 1 },
-                        { type: "gathered", content: { material: "holz", blueprint: "baum_eiche" }, at: 2 },
-                        { type: "gathered", content: { material: "stein", blueprint: "stein_block" }, at: 3 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
-                        { type: "no_material", content: { material: "holz" }, at: 5 },
-                        { type: "no_blueprint", content: { blueprint: "fictional" }, at: 6 },
-                    ];
-                    const sCounted = r._computeCreatureSpecializations(c);
-                    out.countsHolz = sCounted.gather.holz === 2;
-                    out.countsStein = sCounted.gather.stein === 1;
-                    out.countsBuiltSteinBlock = sCounted.build.stein_block === 1;
-                    out.failuresIgnored = !sCounted.gather.fictional && !sCounted.build.fictional;
-
-                    // 6. _creatureSpecializationLevel
-                    out.level0Empty = r._creatureSpecializationLevel(c, "gather", "lederX") === 0;
-                    out.level0Sub = r._creatureSpecializationLevel(c, "gather", "holz") === 0; // 2 < 3
-
-                    // Push einen dritten gather-holz, sollte L1 erreichen
-                    c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 7 });
-                    out.level1At3 = r._creatureSpecializationLevel(c, "gather", "holz") === 1;
-                    // Auf 6 — L2
-                    for (let i = 0; i < 3; i++)
-                        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 8 + i });
-                    out.level2At6 = r._creatureSpecializationLevel(c, "gather", "holz") === 2;
-                    // Auf 100 — gedeckelt bei L5
-                    for (let i = 0; i < 100; i++)
-                        c.userData.memory.push({ type: "gathered", content: { material: "holz" }, at: 100 + i });
-                    out.levelCappedAt5 = r._creatureSpecializationLevel(c, "gather", "holz") === 5;
-
-                    // 7. _creatureTopSpecializations
-                    const c2 = r.spawnCreatureAt(player.x + 90, player.y, player.z + 90, "happy", "wesen");
-                    c2.userData.memory = [
-                        { type: "gathered", content: { material: "holz" }, at: 1 },
-                        { type: "gathered", content: { material: "holz" }, at: 2 },
-                        { type: "gathered", content: { material: "holz" }, at: 3 }, // L1 holz
-                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 5 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 6 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 7 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 8 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 9 }, // L2 stein_block
-                    ];
-                    const top = r._creatureTopSpecializations(c2, 2);
-                    out.topReturnsArray = Array.isArray(top) && top.length === 2;
-                    out.topSortedByLevel = top[0].level >= top[1].level;
-                    out.topHasBuildAtTop = top[0].kind === "build" && top[0].level === 2;
-                    out.topHasGatherSecond = top[1].kind === "gather" && top[1].level === 1;
-                    const topLimit1 = r._creatureTopSpecializations(c2, 1);
-                    out.topLimit1 = topLimit1.length === 1;
-
-                    // Keine Skills → leeres Array
-                    const cFresh = r.spawnCreatureAt(player.x + 95, player.y, player.z + 95, "happy", "wesen");
-                    cFresh.userData.memory = [];
-                    out.topEmpty = r._creatureTopSpecializations(cFresh, 2).length === 0;
-
-                    // 8. Speed-Multiplikator
-                    out.mulL0 =
-                        Math.abs(r._creatureTaskSpeedMultiplier(c, "gather", { material: "lederX" }) - 1.0) < 0.001;
-                    // c hat L5 für gather:holz
-                    const mulL5 = r._creatureTaskSpeedMultiplier(c, "gather", { material: "holz" });
-                    out.mulL5 = Math.abs(mulL5 - 1.75) < 0.001;
-                    // build mit L0
-                    out.mulBuildL0 =
-                        Math.abs(r._creatureTaskSpeedMultiplier(c, "build", { blueprint: "fictional" }) - 1.0) < 0.001;
-                    // Unbekannter Task → 1
-                    out.mulUnknownTask = r._creatureTaskSpeedMultiplier(c, "wander", {}) === 1;
-                    // Null-Args → 1
-                    out.mulNullArgs = r._creatureTaskSpeedMultiplier(c, "gather", null) === 1;
-
-                    // 9. Level-Up triggert über _creatureRemember
-                    const cFollow = r.spawnCreatureAt(player.x + 100, player.y, player.z + 100, "happy", "wesen");
-                    cFollow.userData.memory = [];
-                    // V8.96 — Wurzelheilung des flaky 6.H-P2D-Level-Up-Tests:
-                    // journalGrew prüfte „entries.length > lenBefore". Aber
-                    // worldJournal.entries ist FIFO-gedeckelt (200) — stand der
-                    // Journal-Stand nach dem 20-25-s-Autonom-Lauf schon am Cap,
-                    // verdrängte das Anhängen einen alten Eintrag → die Länge
-                    // blieb 200 → der Test kippte. Auch journalAppends id
-                    // (`entries.length + 1`) ist nach dem Cap nicht eindeutig.
-                    // Fix: die EINTRAGS-IDENTITÄT messen — ein growth-Eintrag,
-                    // der als Objekt nicht im Vorher-Set steht, beweist das
-                    // Anhängen cap- + id-unabhängig (V8.57/V8.83-Disziplin:
-                    // den Mess-Punkt an die Mechanik legen, nicht an einen
-                    // volatilen Proxy).
-                    const journalEntriesBefore = new Set(r.state.worldJournal.entries || []);
-                    // 3 gathered → L1, sollte LevelUp triggern
-                    r._creatureRemember(cFollow, "gathered", { material: "quarz" });
-                    r._creatureRemember(cFollow, "gathered", { material: "quarz" });
-                    r._creatureRemember(cFollow, "gathered", { material: "quarz" }); // Level-Up hier
-                    const lvlAfter = r._creatureSpecializationLevel(cFollow, "gather", "quarz");
-                    out.rememberTriggersLevel = lvlAfter === 1;
-                    // Ein NEUER growth-Eintrag (Objekt nicht im Vorher-Set) mit
-                    // Sammler / „quarz" / „Stufe 1" beweist sowohl, DASS der
-                    // Level-Up einen Journal-Eintrag schrieb, als auch dass
-                    // GENAU DIESER Test ihn auslöste (kein Autonom-Lauf-Echo).
-                    const journalAfter = r.state.worldJournal.entries || [];
-                    const newLvlUpEntry = journalAfter.some(
-                        (e) =>
-                            e &&
-                            !journalEntriesBefore.has(e) &&
-                            e.type === "growth" &&
-                            /Sammler/.test(e.text) &&
-                            /quarz/.test(e.text) &&
-                            /Stufe 1/.test(e.text)
-                    );
-                    out.journalHasLvlUp = newLvlUpEntry;
-                    out.journalGrew = newLvlUpEntry;
-
-                    // 10. Bei Failure-Push KEIN LevelUp
-                    const cFailure = r.spawnCreatureAt(player.x + 110, player.y, player.z + 110, "happy", "wesen");
-                    cFailure.userData.memory = [];
-                    const beforeFailureJournal = (r.state.worldJournal.entries || []).length;
-                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
-                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
-                    r._creatureRemember(cFailure, "no_material", { material: "holz" });
-                    out.failureNoLevel = r._creatureSpecializationLevel(cFailure, "gather", "holz") === 0;
-                    // Journal-Wachstum sollte 0 sein (kein growth-Eintrag durch Failure)
-                    const failureJournalDiff = (r.state.worldJournal.entries || []).length - beforeFailureJournal;
-                    out.failureJournalUntouched = failureJournalDiff === 0;
-
-                    // 11. UI: .creature-specs span existiert nach Render
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    const listEl = document.getElementById("creature-list");
-                    const specsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
-                    out.uiSpecsSpansExist = specsSpans.length > 0;
-
-                    // Pills sollten Klassen .creature-spec.creature-spec-gather oder -build haben
-                    const gatherPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-gather") : [];
-                    const buildPills = listEl ? listEl.querySelectorAll(".creature-spec.creature-spec-build") : [];
-                    out.uiHasGatherPills = gatherPills.length > 0;
-                    out.uiHasBuildPills = buildPills.length > 0;
-
-                    // 12. Pills zeigen "Sammler·material·L1" oder „Bauer·blueprint·L2"
-                    const samplePill = gatherPills[0];
-                    out.uiPillTextOk =
-                        samplePill && /Sammler/.test(samplePill.textContent) && /L\d/.test(samplePill.textContent);
-                    const buildPill = buildPills[0];
-                    out.uiBuildPillTextOk =
-                        buildPill && /Bauer/.test(buildPill.textContent) && /L\d/.test(buildPill.textContent);
-
-                    // 13. Fresh creature OHNE specs hat KEINE .creature-specs span in ihrer Row
-                    const cNoSpecsList = r.spawnCreatureAt(player.x + 120, player.y, player.z + 120, "happy", "wesen");
-                    cNoSpecsList.userData.memory = []; // explizit leer
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
-                    const allRows = listEl ? listEl.querySelectorAll(".creature-row") : [];
-                    let creaturesWithSpecs = 0;
-                    for (const cc of r.state.creatures) {
-                        if (r._creatureTopSpecializations(cc, 2).length > 0) creaturesWithSpecs++;
-                    }
-                    const allSpecsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
-                    out.uiSpansMatchSpecCount = allSpecsSpans.length === creaturesWithSpecs;
-
-                    // 14. Persistenz NICHT — buildStateSnapshot speichert keine specializations
-                    // (memory ist sowieso nicht persistiert; specs sind live computed daraus)
-                    const snap = r.buildStateSnapshot();
-                    out.snapshotHasNoSpecs = !snap.creatureSpecializations && !snap.specializations;
-
-                    // 15. NICHT in NON_BROADCASTABLE_OPS (es gibt keine specialization-DSL-Op)
-                    out.noSpecDslOp = !Class.NON_BROADCASTABLE_OPS.has("specialization");
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2dResults && !wave6hP2dResults.error) {
-                check("Welle 6.H P2D: LEVEL_THRESHOLD === 3", wave6hP2dResults.threshold3);
-                check("Welle 6.H P2D: MAX_LEVEL === 5", wave6hP2dResults.maxLevel5);
-                check("Welle 6.H P2D: SPEED_BONUS_PER_LEVEL === 0.15", wave6hP2dResults.speedBonus15);
-                check("Welle 6.H P2D: PING_FREQ === 880 (A5)", wave6hP2dResults.pingFreq880);
-                check(
-                    "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
-                    wave6hP2dResults.hasComputeSpecs &&
-                        wave6hP2dResults.hasLevelMethod &&
-                        wave6hP2dResults.hasTopMethod &&
-                        wave6hP2dResults.hasSpeedMul &&
-                        wave6hP2dResults.hasLevelUp &&
-                        wave6hP2dResults.hasSkillKey
-                );
-                check(
-                    "Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material",
-                    wave6hP2dResults.skillKeyGather
-                );
-                check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
-                check(
-                    "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
-                    wave6hP2dResults.skillKeyFailureNull && wave6hP2dResults.skillKeyDeliveredNull
-                );
-                check("Welle 6.H P2D: leere memory → leere specializations", wave6hP2dResults.emptyMemoryEmptySpecs);
-                check(
-                    "Welle 6.H P2D: computeSpecs zählt gathered nach material (holz=2, stein=1)",
-                    wave6hP2dResults.countsHolz && wave6hP2dResults.countsStein
-                );
-                check("Welle 6.H P2D: computeSpecs zählt built nach blueprint", wave6hP2dResults.countsBuiltSteinBlock);
-                check(
-                    "Welle 6.H P2D: failures (no_material, no_blueprint) zählen NICHT in specs",
-                    wave6hP2dResults.failuresIgnored
-                );
-                check(
-                    "Welle 6.H P2D: Level 0 für leeren Skill + Sub-Threshold (2<3)",
-                    wave6hP2dResults.level0Empty && wave6hP2dResults.level0Sub
-                );
-                check("Welle 6.H P2D: 3 Erfolge → Level 1", wave6hP2dResults.level1At3);
-                check("Welle 6.H P2D: 6 Erfolge → Level 2", wave6hP2dResults.level2At6);
-                check("Welle 6.H P2D: 100 Erfolge → Level 5 (Cap)", wave6hP2dResults.levelCappedAt5);
-                check(
-                    "Welle 6.H P2D: topSpecializations sortiert nach Level + limit",
-                    wave6hP2dResults.topReturnsArray &&
-                        wave6hP2dResults.topSortedByLevel &&
-                        wave6hP2dResults.topHasBuildAtTop &&
-                        wave6hP2dResults.topHasGatherSecond &&
-                        wave6hP2dResults.topLimit1
-                );
-                check(
-                    "Welle 6.H P2D: keine Skills → topSpecializations liefert leeres Array",
-                    wave6hP2dResults.topEmpty
-                );
-                check("Welle 6.H P2D: speedMultiplier L0 → 1.0", wave6hP2dResults.mulL0 && wave6hP2dResults.mulBuildL0);
-                check("Welle 6.H P2D: speedMultiplier L5 → 1.75 (1 + 5*0.15)", wave6hP2dResults.mulL5);
-                check(
-                    "Welle 6.H P2D: speedMultiplier wander/null-args → 1.0",
-                    wave6hP2dResults.mulUnknownTask && wave6hP2dResults.mulNullArgs
-                );
-                check(
-                    "Welle 6.H P2D: 3. erfolgreicher gather → Level-Up im _creatureRemember",
-                    wave6hP2dResults.rememberTriggersLevel
-                );
-                check(
-                    "Welle 6.H P2D: Level-Up schreibt growth-Journal-Eintrag mit Sammler/key/Stufe",
-                    wave6hP2dResults.journalHasLvlUp && wave6hP2dResults.journalGrew
-                );
-                check(
-                    "Welle 6.H P2D: Failure-Memory triggert KEIN Level + KEIN Journal",
-                    wave6hP2dResults.failureNoLevel && wave6hP2dResults.failureJournalUntouched
-                );
-                check(
-                    "Welle 6.H P2D: UI .creature-specs Spans existieren bei Kreaturen mit Specs",
-                    wave6hP2dResults.uiSpecsSpansExist
-                );
-                check(
-                    "Welle 6.H P2D: UI .creature-spec.creature-spec-gather + .creature-spec-build Pills",
-                    wave6hP2dResults.uiHasGatherPills && wave6hP2dResults.uiHasBuildPills
-                );
-                check(
-                    "Welle 6.H P2D: Pills zeigen Sammler/Bauer + Level (L1..L5)",
-                    wave6hP2dResults.uiPillTextOk && wave6hP2dResults.uiBuildPillTextOk
-                );
-                check(
-                    "Welle 6.H P2D: Anzahl .creature-specs Spans = Anzahl Kreaturen mit Specs",
-                    wave6hP2dResults.uiSpansMatchSpecCount
-                );
-                check(
-                    "Welle 6.H P2D: KEINE Persistenz im buildStateSnapshot (Vision §1.1)",
-                    wave6hP2dResults.snapshotHasNoSpecs
-                );
-                check(
-                    "Welle 6.H P2D: KEIN specialization-DSL-Op in NON_BROADCASTABLE_OPS (kein Op nötig)",
-                    wave6hP2dResults.noSpecDslOp
-                );
-            } else if (wave6hP2dResults && wave6hP2dResults.error) {
-                check(`Welle 6.H P2D: evaluate-Fehler — ${wave6hP2dResults.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2D.1 — Kreatur-Persistenz (Komponenten-Snapshot) ###
-            //
-            // Vision §1.1-Erweiterung: Kreaturen-Identitäten überleben Reload.
-            // Save trägt {name, soul, memory, position, bornAt} pro Kreatur,
-            // ~1 KB pro Stück. Memory-Cap 200. Tote Kreaturen (removeCreature)
-            // werden aus dem Save entfernt.
-            const wave6hP2d1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-
-                    // 1. Memory-Cap auf 200 gebumpt
-                    out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
-
-                    // 2. Methoden existieren
-                    out.hasSerialize = typeof r._serializeCreature === "function";
-                    out.hasRestore = typeof r._restoreCreatureFromSnapshot === "function";
-
-                    // 3. Neu gespawnte Kreatur bekommt bornAt
-                    const player = r.state.playerMesh.position;
-                    const c = r.spawnCreatureAt(player.x + 130, player.y, player.z + 130, "happy", "wesen");
-                    if (!c) {
-                        out.spawnFailed = true;
-                        return out;
-                    }
-                    out.bornAtSet = Number.isFinite(c.userData.bornAt) && c.userData.bornAt > 0;
-
-                    // 4. _serializeCreature liefert vollständigen Snapshot
-                    c.userData.memory = [
-                        { type: "gathered", content: { material: "holz" }, at: 1 },
-                        { type: "gathered", content: { material: "holz" }, at: 2 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 3 },
-                    ];
-                    const snap = r._serializeCreature(c);
-                    out.snapHasName = typeof snap.name === "string" && snap.name.length > 0;
-                    out.snapHasSoul = snap.soul === "wesen";
-                    out.snapHasMemory = Array.isArray(snap.memory) && snap.memory.length === 3;
-                    out.snapHasPosition = snap.position && Number.isFinite(snap.position.x);
-                    out.snapHasBornAt = Number.isFinite(snap.bornAt);
-
-                    // 5. _restoreCreatureFromSnapshot baut Kreatur aus Snapshot
-                    const beforeCount = r.state.creatures.length;
-                    const restored = r._restoreCreatureFromSnapshot(snap, "happy");
-                    out.restoreReturnsCreature = !!restored;
-                    out.restoreGrowsList = r.state.creatures.length === beforeCount + 1;
-                    out.restoreNameOk = restored && restored.userData.name === snap.name;
-                    out.restoreSoulOk = restored && restored.userData.soul === "wesen";
-                    out.restoreMemoryOk =
-                        restored && Array.isArray(restored.userData.memory) && restored.userData.memory.length === 3;
-                    out.restorePositionOk =
-                        restored &&
-                        Math.abs(restored.position.x - snap.position.x) < 0.001 &&
-                        Math.abs(restored.position.z - snap.position.z) < 0.001;
-                    out.restoreBornAtOk = restored && restored.userData.bornAt === snap.bornAt;
-
-                    // 6. Specs werden aus restoriertem memory korrekt re-derived
-                    const specs = r._computeCreatureSpecializations(restored);
-                    out.specsReDerived =
-                        specs.gather && specs.gather.holz === 2 && specs.build && specs.build.stein_block === 1;
-
-                    // 7. Round-Trip: buildStateSnapshot → loadState → Kreaturen sind da
-                    // Setze die aktuelle Welt auf einen bekannten Stand
-                    const beforeRoundTripCount = r.state.creatures.length;
-                    const beforeNames = r.state.creatures.map((cr) => cr.userData.name).sort();
-                    const fullSnap = r.buildStateSnapshot();
-                    out.snapshotHasFullCreatures =
-                        Array.isArray(fullSnap.creatures) &&
-                        fullSnap.creatures.length === beforeRoundTripCount &&
-                        fullSnap.creatures.every((c) => c && typeof c.name === "string" && typeof c.soul === "string");
-
-                    // 8. Tote Kreatur ist NICHT im Snapshot. Wir markieren den
-                    // konkreten Victim eindeutig mit einem Unique-Name damit
-                    // Name-Kollisionen im Pool nicht den Test verfälschen.
-                    const beforeAlive = r.state.creatures.length;
-                    const victim = r.state.creatures[0];
-                    const victimMark = `Victim_${Math.random().toString(36).slice(2, 10)}`;
-                    victim.userData.name = victimMark;
-                    r.removeCreature(victim);
-                    const afterSnap = r.buildStateSnapshot();
-                    const stillHasVictim = afterSnap.creatures.some((s) => s.name === victimMark);
-                    out.victimRemovedFromSnap = !stillHasVictim;
-                    out.aliveDecreasedBy1 = afterSnap.creatures.length === beforeAlive - 1;
-                    out._beforeAlive = beforeAlive;
-                    out._afterCount = afterSnap.creatures.length;
-                    out._stateCreaturesAfter = r.state.creatures.length;
-
-                    // 9. Loop: nach loadState mit den Snapshots → Kreaturen sind da
-                    // (Wir können nicht echt loadState ausführen ohne Reload, aber wir
-                    // können prüfen dass _pendingCreatureSnapshots-Pfad funktioniert.)
-                    const persisted = [
-                        {
-                            name: "TestSammler",
-                            soul: "wesen",
-                            memory: [{ type: "gathered", content: { material: "holz" }, at: 1 }],
-                            position: { x: player.x + 50, y: player.y, z: player.z + 50 },
-                            bornAt: Date.now() - 60000,
-                        },
-                        {
-                            name: "TestBauer",
-                            soul: "sprite",
-                            memory: [],
-                            position: { x: player.x + 60, y: player.y, z: player.z + 60 },
-                            bornAt: Date.now() - 30000,
-                        },
-                    ];
-                    // Simuliere loadState-stash + spawnCreatures-Pfad
-                    r.state._pendingCreatureSnapshots = persisted;
-                    r.state.creatureEmotions = ["happy", "happy"];
-                    r.spawnCreatures(10); // Sollte 2 restored ergeben statt 10 random
-                    out.restoredCount = r.state.creatures.length === 2;
-                    const restoredNames = r.state.creatures.map((cr) => cr.userData.name).sort();
-                    out.restoredNamesMatch = restoredNames[0] === "TestBauer" && restoredNames[1] === "TestSammler";
-                    out.pendingClearedAfterRestore = r.state._pendingCreatureSnapshots === null;
-                    // Specs aus 1 gathered holz → L0
-                    const sammler = r.state.creatures.find((cr) => cr.userData.name === "TestSammler");
-                    out.restoredCreatureHasMemory =
-                        sammler && Array.isArray(sammler.userData.memory) && sammler.userData.memory.length === 1;
-
-                    // 10. Legacy-Save (nur position) fällt auf Default-Spawn zurück
-                    r.state._pendingCreatureSnapshots = null;
-                    r.state.creatureEmotions = [];
-                    // Stub loadState: simuliere legacy save format
-                    const legacyState = {
-                        creatures: [{ position: { x: 0, y: 5, z: 0 } }, { position: { x: 1, y: 5, z: 1 } }],
-                    };
-                    const looksFullLegacy =
-                        Array.isArray(legacyState.creatures) &&
-                        legacyState.creatures.length > 0 &&
-                        legacyState.creatures[0] &&
-                        typeof legacyState.creatures[0].soul === "string";
-                    out.legacyDetectedAsLegacy = !looksFullLegacy;
-
-                    // 11. Memory-Cap 200 enforced
-                    const cCap = r.spawnCreatureAt(player.x + 140, player.y, player.z + 140, "happy", "wesen");
-                    cCap.userData.memory = [];
-                    for (let i = 0; i < 250; i++) r._creatureRemember(cCap, "noise", { i });
-                    out.cap200Enforced = cCap.userData.memory.length === 200;
-
-                    // 12. Restore mit übergroßem memory in Snapshot wird auf 200 gekappt
-                    const oversizedMem = [];
-                    for (let i = 0; i < 300; i++) oversizedMem.push({ type: "noise", content: { i }, at: i });
-                    const oversizedSnap = {
-                        name: "Oversize",
-                        soul: "wesen",
-                        memory: oversizedMem,
-                        position: { x: player.x + 150, y: player.y, z: player.z + 150 },
-                        bornAt: Date.now(),
-                    };
-                    const oversized = r._restoreCreatureFromSnapshot(oversizedSnap, "happy");
-                    out.oversizedRestoredCappedAt200 = oversized && oversized.userData.memory.length === 200;
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2d1Results && !wave6hP2d1Results.error) {
-                check("Welle 6.H P2D.1: CREATURE_MEMORY_CAP === 200", wave6hP2d1Results.memCap200);
-                check(
-                    "Welle 6.H P2D.1: _serializeCreature + _restoreCreatureFromSnapshot existieren",
-                    wave6hP2d1Results.hasSerialize && wave6hP2d1Results.hasRestore
-                );
-                check("Welle 6.H P2D.1: spawnCreatureAt setzt bornAt-Identitäts-Marker", wave6hP2d1Results.bornAtSet);
-                check(
-                    "Welle 6.H P2D.1: Snapshot enthält name + soul + memory + position + bornAt",
-                    wave6hP2d1Results.snapHasName &&
-                        wave6hP2d1Results.snapHasSoul &&
-                        wave6hP2d1Results.snapHasMemory &&
-                        wave6hP2d1Results.snapHasPosition &&
-                        wave6hP2d1Results.snapHasBornAt
-                );
-                check(
-                    "Welle 6.H P2D.1: _restoreCreatureFromSnapshot rekonstruiert Kreatur + wächst Liste",
-                    wave6hP2d1Results.restoreReturnsCreature && wave6hP2d1Results.restoreGrowsList
-                );
-                check(
-                    "Welle 6.H P2D.1: Restore übernimmt Name + Soul",
-                    wave6hP2d1Results.restoreNameOk && wave6hP2d1Results.restoreSoulOk
-                );
-                check("Welle 6.H P2D.1: Restore übernimmt Memory (Länge + Inhalt)", wave6hP2d1Results.restoreMemoryOk);
-                check("Welle 6.H P2D.1: Restore übernimmt Position", wave6hP2d1Results.restorePositionOk);
-                check("Welle 6.H P2D.1: Restore übernimmt bornAt", wave6hP2d1Results.restoreBornAtOk);
-                check(
-                    "Welle 6.H P2D.1: Specs aus restoriertem Memory korrekt re-derived",
-                    wave6hP2d1Results.specsReDerived
-                );
-                check(
-                    "Welle 6.H P2D.1: buildStateSnapshot trägt volles Kreatur-Schema",
-                    wave6hP2d1Results.snapshotHasFullCreatures
-                );
-                check(
-                    "Welle 6.H P2D.1: removeCreature entfernt aus state.creatures + Snapshot",
-                    wave6hP2d1Results.victimRemovedFromSnap &&
-                        wave6hP2d1Results.aliveDecreasedBy1 &&
-                        wave6hP2d1Results._stateCreaturesAfter === wave6hP2d1Results._beforeAlive - 1
-                );
-                check(
-                    "Welle 6.H P2D.1: _pendingCreatureSnapshots-Pfad restored statt random-spawnen",
-                    wave6hP2d1Results.restoredCount &&
-                        wave6hP2d1Results.restoredNamesMatch &&
-                        wave6hP2d1Results.pendingClearedAfterRestore &&
-                        wave6hP2d1Results.restoredCreatureHasMemory
-                );
-                check(
-                    "Welle 6.H P2D.1: Legacy-Save (nur position) wird als Legacy erkannt",
-                    wave6hP2d1Results.legacyDetectedAsLegacy
-                );
-                check(
-                    "Welle 6.H P2D.1: Memory-Cap=200 wird durchgesetzt (FIFO bei 250 push)",
-                    wave6hP2d1Results.cap200Enforced
-                );
-                check(
-                    "Welle 6.H P2D.1: Restore mit übergroßem memory wird auf 200 gekappt",
-                    wave6hP2d1Results.oversizedRestoredCappedAt200
-                );
-            } else if (wave6hP2d1Results && wave6hP2d1Results.error) {
-                check(`Welle 6.H P2D.1: evaluate-Fehler — ${wave6hP2d1Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2F.1 — Kreatur-Stats wie Spieler ###
-            //
-            // Vision §1.3 fraktal vollendet: Kreaturen ≡ Spieler ≡ Architektur
-            // sind alle Compound aus parts × Material × Form. Stats emergieren
-            // aus der gleichen STAT_FROM_TAGS-Pipeline (kein paralleler Code).
-            // Body-Speed-Modulator (stats.speed/7) wirkt im Tick neben Spec-Mul.
-            const wave6hP2f1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-
-                    // 1. Methoden existieren
-                    out.hasComputeStats = typeof r.computeCreatureStats === "function";
-                    out.hasBodySpeedMul = typeof r._creatureBodySpeedMultiplier === "function";
-                    out.hasRefreshCache = typeof r._refreshCreatureStatsCache === "function";
-
-                    // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
-                    const player = r.state.playerMesh.position;
-                    const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen");
-                    const csW = r.computeCreatureStats(cw);
-                    out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
-                    out.statsHasAll8 =
-                        csW.stats &&
-                        Number.isFinite(csW.stats.hpMax) &&
-                        Number.isFinite(csW.stats.damage) &&
-                        Number.isFinite(csW.stats.speed) &&
-                        Number.isFinite(csW.stats.jumpPower) &&
-                        Number.isFinite(csW.stats.staminaMax) &&
-                        Number.isFinite(csW.stats.precision) &&
-                        Number.isFinite(csW.stats.magicResist) &&
-                        Number.isFinite(csW.stats.heatResist);
-
-                    // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
-                    const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "sprite");
-                    const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "geist");
-                    const sW = csW.stats;
-                    const sS = r.computeCreatureStats(cs).stats;
-                    const sG = r.computeCreatureStats(cg).stats;
-                    out.spriteFasterThanWesen = sS.speed > sW.speed;
-                    // Mindestens 1 Stat unterscheidet sich zwischen Wesen und Sprite
-                    // signifikant — emergent aus unterschiedlicher Material-Komposition.
-                    out.wesenSpriteDiscriminated =
-                        Math.abs(sW.hpMax - sS.hpMax) > 5 ||
-                        Math.abs(sW.damage - sS.damage) > 2 ||
-                        Math.abs(sW.speed - sS.speed) > 0.5;
-                    out.geistHasMagicResist = sG.magicResist > 0;
-                    out._statsW = sW;
-                    out._statsS = sS;
-
-                    // 4. Tags geclamp auf [0, 1] für die Pipe
-                    const cTagsClamped = Object.values(csW.tags).every((v) => v >= 0 && v <= 2); // toleriere spec-bonus bis ~2
-                    out.tagsInBounds = cTagsClamped;
-
-                    // 5. _refreshCreatureStatsCache schreibt userData.stats
-                    r._refreshCreatureStatsCache(cw);
-                    out.cacheWritesStats = cw.userData.stats && Number.isFinite(cw.userData.stats.speed);
-
-                    // 6. Body-Speed-Multiplier ist > 0
-                    const mulW = r._creatureBodySpeedMultiplier(cw);
-                    const mulS = r._creatureBodySpeedMultiplier(cs);
-                    out.bodyMulPositive = mulW > 0 && mulS > 0;
-                    out.spriteBodyMulHigher = mulS > mulW;
-
-                    // 7. Speed im Tick: gather mit sprite ist schneller als gather mit wesen
-                    // (selbe Spec-Level, nur body-mul unterscheidet)
-                    r.assignCreatureTask(cw, "gather", { material: "holz" }, { silent: true });
-                    r.assignCreatureTask(cs, "gather", { material: "holz" }, { silent: true });
-                    // _target = null zwingt zur Such-Phase (wo speed wirkt)
-                    cw.userData.task.args._target = null;
-                    cs.userData.task.args._target = null;
-                    // Stelle sicher: in der Such-Phase brauchen wir eine Target-Distanz > halt.
-                    // Wir setzen position weit weg von allem damit kein early-return greift
-                    // (gather-task → kein Target gefunden → wander-fallback, ein anderer Pfad).
-                    // Stattdessen: nutzen build-task (laufen zum Spieler) für fairen Vergleich.
-                    r.assignCreatureTask(cw, "build", { blueprint: "stein_block" }, { silent: true });
-                    r.assignCreatureTask(cs, "build", { blueprint: "stein_block" }, { silent: true });
-                    cw.userData.carrying = null;
-                    cs.userData.carrying = null;
-                    cw.position.set(player.x + 50, player.y, player.z);
-                    cs.position.set(player.x + 50, player.y, player.z);
-                    const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
-                    const dirS = r._tickCreatureTaskDirection(cs, cs.userData.task, "happy");
-                    const spW = Math.hypot(dirW.x, dirW.z);
-                    const spS = Math.hypot(dirS.x, dirS.z);
-                    out.tickSpriteFaster = spS > spW;
-                    out.tickWesenAtBase = Math.abs(spW - r.constructor.CREATURE_BUILD_SPEED) < 1.0;
-
-                    // 8. Spec-Bonus auf magieleitung emergiert in stats
-                    // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
-                    const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen");
-                    cFresh.userData.memory = [];
-                    const baseTags = r.computeCreatureStats(cFresh).tags;
-                    cFresh.userData.memory = [
-                        { type: "gathered", content: { material: "holz" }, at: 1 },
-                        { type: "gathered", content: { material: "holz" }, at: 2 },
-                        { type: "gathered", content: { material: "holz" }, at: 3 },
-                    ];
-                    const grownTags = r.computeCreatureStats(cFresh).tags;
-                    // L1 Sammler = +0.01 magieleitung; minimal aber positiv
-                    out.specBonusMagieleitung = grownTags.magieleitung > baseTags.magieleitung;
-
-                    // 9. UI: creature-row hat title-Attribut mit Stats
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    const listEl = document.getElementById("creature-list");
-                    const rows = listEl ? listEl.querySelectorAll(".creature-row") : [];
-                    let rowsWithTitle = 0;
-                    for (const row of rows) {
-                        if (
-                            row.title &&
-                            /HP\s+\d/.test(row.title) &&
-                            /SPD\s+\d/.test(row.title) &&
-                            /DMG\s+\d/.test(row.title)
-                        )
-                            rowsWithTitle++;
-                    }
-                    out.uiRowsHaveStatsTitle = rowsWithTitle === rows.length && rows.length > 0;
-
-                    // 10. STAT_FROM_TAGS aus Class — Symmetrie zum Spieler
-                    const playerStatKeys = Object.keys(r.constructor.STAT_FROM_TAGS);
-                    const creatureStatKeys = Object.keys(csW.stats);
-                    out.sameStatKeysAsPlayer =
-                        playerStatKeys.length === creatureStatKeys.length &&
-                        playerStatKeys.every((k) => creatureStatKeys.includes(k));
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2f1Results && !wave6hP2f1Results.error) {
-                check(
-                    "Welle 6.H P2F.1: alle 3 Methoden existieren (computeCreatureStats + _creatureBodySpeedMultiplier + _refreshCreatureStatsCache)",
-                    wave6hP2f1Results.hasComputeStats &&
-                        wave6hP2f1Results.hasBodySpeedMul &&
-                        wave6hP2f1Results.hasRefreshCache
-                );
-                check(
-                    "Welle 6.H P2F.1: computeCreatureStats liefert {tags, stats} mit allen 8 Stats",
-                    wave6hP2f1Results.statsHasTags && wave6hP2f1Results.statsHasAll8
-                );
-                check(
-                    "Welle 6.H P2F.1: Soul-Diskrimination — Sprite schneller als Wesen",
-                    wave6hP2f1Results.spriteFasterThanWesen
-                );
-                check(
-                    "Welle 6.H P2F.1: Soul-Diskrimination — Wesen ≠ Sprite in mind. 1 Stat (emergent)",
-                    wave6hP2f1Results.wesenSpriteDiscriminated
-                );
-                check("Welle 6.H P2F.1: Geist hat magicResist > 0", wave6hP2f1Results.geistHasMagicResist);
-                check(
-                    "Welle 6.H P2F.1: Tags in [0, 2] (clamped + Spec-Bonus tolerant)",
-                    wave6hP2f1Results.tagsInBounds
-                );
-                check(
-                    "Welle 6.H P2F.1: _refreshCreatureStatsCache schreibt userData.stats",
-                    wave6hP2f1Results.cacheWritesStats
-                );
-                check(
-                    "Welle 6.H P2F.1: _creatureBodySpeedMultiplier > 0 für alle Seelen",
-                    wave6hP2f1Results.bodyMulPositive
-                );
-                check(
-                    "Welle 6.H P2F.1: Sprite-bodyMul > Wesen-bodyMul (Vision: leichte Form schneller)",
-                    wave6hP2f1Results.spriteBodyMulHigher
-                );
-                check(
-                    "Welle 6.H P2F.1: Tick — Sprite läuft schneller als Wesen (selbe Task, body-mul wirkt)",
-                    wave6hP2f1Results.tickSpriteFaster
-                );
-                check(
-                    "Welle 6.H P2F.1: Tick — Wesen bei ~BUILD_SPEED (bodyMul ≈ 1)",
-                    wave6hP2f1Results.tickWesenAtBase
-                );
-                check(
-                    "Welle 6.H P2F.1: Spec-Bonus emergiert in stats.magieleitung (Wissen leitet)",
-                    wave6hP2f1Results.specBonusMagieleitung
-                );
-                check(
-                    "Welle 6.H P2F.1: UI — alle creature-rows haben title-Tooltip mit Stats",
-                    wave6hP2f1Results.uiRowsHaveStatsTitle
-                );
-                check(
-                    "Welle 6.H P2F.1: Stat-Keys identisch zu Spieler (Vision §1.3 fraktal)",
-                    wave6hP2f1Results.sameStatKeysAsPlayer
-                );
-            } else if (wave6hP2f1Results && wave6hP2f1Results.error) {
-                check(`Welle 6.H P2F.1: evaluate-Fehler — ${wave6hP2f1Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2F.2 — Kreatur-Equipped (Werkzeug + Rüstung) ###
-            //
-            // Vision §1.3 fraktal weiter: Kreaturen tragen Werkzeug + Rüstung wie
-            // der Spieler. computeCreatureStats stackt equipped Compound-Tags
-            // mit TOOL_STAT_WEIGHT / ARMOR_STAT_WEIGHT (dieselben Konstanten wie
-            // Player). Persistenz via _serializeCreature → snap.equipped.
-            const wave6hP2f2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-                    const Class = r.constructor;
-
-                    // 1. Methoden existieren
-                    out.hasEquipTool = typeof r.equipCreatureTool === "function";
-                    out.hasEquipArmor = typeof r.equipCreatureArmor === "function";
-                    out.hasUnequip = typeof r.unequipCreatureSlot === "function";
-                    out.hasAfterChange = typeof r._afterCreatureEquipChange === "function";
-
-                    // 2. Neu gespawnte Kreatur hat equipped-Slots initial null
-                    const player = r.state.playerMesh.position;
-                    const c = r.spawnCreatureAt(player.x + 300, player.y, player.z + 300, "happy", "wesen");
-                    out.initialToolNull = c.userData.equipped && c.userData.equipped.tool === null;
-                    out.initialArmorNull = c.userData.equipped && c.userData.equipped.armor === null;
-
-                    // 3. equipCreatureTool mit existing Starter-Tool (hammer)
-                    const eqTool = r.equipCreatureTool(c, "hammer");
-                    out.equipToolOk = eqTool.ok === true;
-                    out.toolSet = c.userData.equipped.tool === "hammer";
-
-                    // 4. equipCreatureTool mit unbekanntem Tool → reject
-                    const eqUnknown = r.equipCreatureTool(c, "fictional_tool_xyz");
-                    out.unknownToolRejected = eqUnknown.ok === false && eqUnknown.reason === "tool_unknown";
-                    out.toolUnchangedAfterReject = c.userData.equipped.tool === "hammer";
-
-                    // 5. equipCreatureArmor — erst Bauplan markieren, dann ausrüsten.
-                    // Built-ins sind read-only; wir nutzen cloneBlueprint(src, newName)
-                    // → bool, dann setBlueprintAsArmor(name).
-                    const armorName = "test_armor_p2f2";
-                    if (typeof r.cloneBlueprint === "function" && r.cloneBlueprint("stein_block", armorName)) {
-                        r.setBlueprintAsArmor(armorName);
-                        const eqArmor = r.equipCreatureArmor(c, armorName);
-                        out.equipArmorOk = eqArmor.ok === true;
-                        out.armorSet = c.userData.equipped.armor === armorName;
-                        // Equipped mit nicht-armor-Bauplan (kristall_geode hat keine role:armor)
-                        const eqWrong = r.equipCreatureArmor(c, "kristall_geode");
-                        out.wrongArmorRejected = eqWrong.ok === false && eqWrong.reason === "not_marked_as_armor";
-                    }
-
-                    // 6. unequipCreatureSlot
-                    const unEqTool = r.unequipCreatureSlot(c, "tool");
-                    out.unequipToolOk = unEqTool.ok === true && c.userData.equipped.tool === null;
-                    const unEqArmor = r.unequipCreatureSlot(c, "armor");
-                    out.unequipArmorOk = unEqArmor.ok === true && c.userData.equipped.armor === null;
-                    const unEqInvalid = r.unequipCreatureSlot(c, "boots");
-                    out.unequipInvalidSlotRejected = unEqInvalid.ok === false;
-
-                    // 7. Stats-Stacking via equipped — Tool/Armor mit Compound-Tags
-                    // beeinflussen computeCreatureStats über existing pipeline.
-                    // Wir erstellen einen eigenen „magie-leitenden" Werkzeug-Bauplan
-                    // und vergleichen Stats VOR/NACH equip.
-                    if (typeof r.cloneBlueprint === "function") {
-                        const c2 = r.spawnCreatureAt(player.x + 310, player.y, player.z + 310, "happy", "wesen");
-                        const baseStats = r.computeCreatureStats(c2).stats;
-                        // Eigenes Werkzeug: stein_block-Clone via setBlueprintToolMeta +
-                        // registerBlueprintAsTool. Tool-Name === Bauplan-Name.
-                        const toolBp = "test_tool_bp_p2f2";
-                        if (r.cloneBlueprint("stein_block", toolBp)) {
-                            const meta =
-                                typeof r.setBlueprintToolMeta === "function"
-                                    ? r.setBlueprintToolMeta(toolBp, "test_op_p2f2", "subtractive")
-                                    : null;
-                            const reg =
-                                meta && meta.ok && typeof r.registerBlueprintAsTool === "function"
-                                    ? r.registerBlueprintAsTool(toolBp)
-                                    : null;
-                            if (reg && reg.ok) {
-                                // toolName === toolBp (Bauplan-Name)
-                                r.equipCreatureTool(c2, toolBp);
-                                const equipStats = r.computeCreatureStats(c2).stats;
-                                out.toolStatsChanged =
-                                    Math.abs(equipStats.hpMax - baseStats.hpMax) > 0.1 ||
-                                    Math.abs(equipStats.damage - baseStats.damage) > 0.1;
-                                out.toolHpHigher = equipStats.hpMax >= baseStats.hpMax;
-                            }
-                        }
-                        // Armor: stein_block-Clone + setBlueprintAsArmor
-                        const armorBp = "test_armor_bp_p2f2";
-                        if (r.cloneBlueprint("stein_block", armorBp)) {
-                            r.setBlueprintAsArmor(armorBp);
-                            // unequip first so stat-delta is clean
-                            r.unequipCreatureSlot(c2, "armor");
-                            const beforeArmorStats = r.computeCreatureStats(c2).stats;
-                            r.equipCreatureArmor(c2, armorBp);
-                            const armorStats = r.computeCreatureStats(c2).stats;
-                            out.armorStatsChanged = Math.abs(armorStats.hpMax - beforeArmorStats.hpMax) > 0.1;
-                            out.armorHpHigher = armorStats.hpMax > beforeArmorStats.hpMax;
-                        }
-                    }
-
-                    // 8. DSL-Ops creature_equip_tool/armor/unequip wirken
-                    const cDsl = r.spawnCreatureAt(player.x + 320, player.y, player.z + 320, "happy", "wesen");
-                    const idx = r.state.creatures.indexOf(cDsl);
-                    r.dslRun(["creature_equip_tool", idx, "hammer"], { source: "test" });
-                    out.dslEquipToolOk = cDsl.userData.equipped.tool === "hammer";
-                    r.dslRun(["creature_unequip", idx, "tool"], { source: "test" });
-                    out.dslUnequipOk = cDsl.userData.equipped.tool === null;
-
-                    // 9. NON_BROADCASTABLE_OPS-Mitgliedschaft
-                    out.opsNonBroadcast =
-                        Class.NON_BROADCASTABLE_OPS.has("creature_equip_tool") &&
-                        Class.NON_BROADCASTABLE_OPS.has("creature_equip_armor") &&
-                        Class.NON_BROADCASTABLE_OPS.has("creature_unequip");
-
-                    // 10. describeProgram-Einträge
-                    const d1 = r.describeProgram(["creature_equip_tool", 0, "hammer"]);
-                    out.descEquipTool = /Werkzeug/.test(d1) && /hammer/.test(d1);
-                    const d2 = r.describeProgram(["creature_equip_armor", 0, "lederrüstung"]);
-                    out.descEquipArmor = /Rüstung/.test(d2);
-                    const d3 = r.describeProgram(["creature_unequip", 0, "tool"]);
-                    out.descUnequip = /tool/.test(d3) || /Slot/.test(d3);
-
-                    // 11. Snapshot persistiert equipped (Round-Trip)
-                    r.equipCreatureTool(cDsl, "hammer");
-                    const snap = r._serializeCreature(cDsl);
-                    out.snapHasEquipped = snap.equipped && snap.equipped.tool === "hammer";
-                    // Restore validiert tool-Existenz
-                    const restored = r._restoreCreatureFromSnapshot(snap, "happy");
-                    out.restoreKeepsEquippedTool = restored && restored.userData.equipped.tool === "hammer";
-                    // Restore mit unbekanntem Tool → null statt crash
-                    const badSnap = { ...snap, equipped: { tool: "fictional_xyz", armor: null } };
-                    const restoredBad = r._restoreCreatureFromSnapshot(badSnap, "happy");
-                    out.restoreSilentDropsUnknown = restoredBad && restoredBad.userData.equipped.tool === null;
-
-                    // 12. UI: equipped-Pills in creature-row erscheinen
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    const listEl = document.getElementById("creature-list");
-                    const equippedWraps = listEl ? listEl.querySelectorAll(".creature-equipped") : [];
-                    out.uiEquippedWrapsExist = equippedWraps.length > 0;
-                    const toolPills = listEl ? listEl.querySelectorAll(".creature-equip.creature-equip-tool") : [];
-                    out.uiToolPillsExist = toolPills.length > 0;
-
-                    // Cleanup: Test-Baupläne löschen damit Ring 6.6-Liste-Zähler stimmt.
-                    // Plus workshop-DOM neu rendern (deleteBlueprint triggert das nicht
-                    // automatisch — Ring 6.6 prüft DOM-Liste vs. state.blueprints).
-                    if (typeof r.deleteBlueprint === "function") {
-                        r.deleteBlueprint("test_armor_p2f2");
-                        r.deleteBlueprint("test_tool_bp_p2f2");
-                        r.deleteBlueprint("test_armor_bp_p2f2");
-                    }
-                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2f2Results && !wave6hP2f2Results.error) {
-                check(
-                    "Welle 6.H P2F.2: alle 4 Methoden existieren (equipCreatureTool/Armor + unequipCreatureSlot + _afterCreatureEquipChange)",
-                    wave6hP2f2Results.hasEquipTool &&
-                        wave6hP2f2Results.hasEquipArmor &&
-                        wave6hP2f2Results.hasUnequip &&
-                        wave6hP2f2Results.hasAfterChange
-                );
-                check(
-                    "Welle 6.H P2F.2: spawnCreatureAt initialisiert equipped = {tool: null, armor: null}",
-                    wave6hP2f2Results.initialToolNull && wave6hP2f2Results.initialArmorNull
-                );
-                check(
-                    "Welle 6.H P2F.2: equipCreatureTool akzeptiert Built-in-Tool (hammer)",
-                    wave6hP2f2Results.equipToolOk && wave6hP2f2Results.toolSet
-                );
-                check(
-                    "Welle 6.H P2F.2: equipCreatureTool lehnt unbekanntes Tool ab (tool_unknown)",
-                    wave6hP2f2Results.unknownToolRejected && wave6hP2f2Results.toolUnchangedAfterReject
-                );
-                check(
-                    "Welle 6.H P2F.2: equipCreatureArmor akzeptiert Bauplan mit role:armor",
-                    wave6hP2f2Results.equipArmorOk && wave6hP2f2Results.armorSet
-                );
-                check(
-                    "Welle 6.H P2F.2: equipCreatureArmor lehnt nicht-Armor-Bauplan ab (not_marked_as_armor)",
-                    wave6hP2f2Results.wrongArmorRejected
-                );
-                check(
-                    "Welle 6.H P2F.2: unequipCreatureSlot räumt tool + armor + lehnt invalid slot ab",
-                    wave6hP2f2Results.unequipToolOk &&
-                        wave6hP2f2Results.unequipArmorOk &&
-                        wave6hP2f2Results.unequipInvalidSlotRejected
-                );
-                check(
-                    "Welle 6.H P2F.2: Tool-Equipped ändert computeCreatureStats (Stats-Stacking)",
-                    wave6hP2f2Results.toolStatsChanged
-                );
-                check(
-                    "Welle 6.H P2F.2: Tool mit stein-Tag erhöht HP-Stat (dichte-Bonus)",
-                    wave6hP2f2Results.toolHpHigher
-                );
-                check(
-                    "Welle 6.H P2F.2: Armor-Equipped ändert computeCreatureStats",
-                    wave6hP2f2Results.armorStatsChanged && wave6hP2f2Results.armorHpHigher
-                );
-                check(
-                    "Welle 6.H P2F.2: DSL creature_equip_tool + creature_unequip wirken",
-                    wave6hP2f2Results.dslEquipToolOk && wave6hP2f2Results.dslUnequipOk
-                );
-                check(
-                    "Welle 6.H P2F.2: alle 3 Equip-Ops in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
-                    wave6hP2f2Results.opsNonBroadcast
-                );
-                check(
-                    "Welle 6.H P2F.2: describeProgram zeigt Werkzeug/Rüstung/Slot",
-                    wave6hP2f2Results.descEquipTool && wave6hP2f2Results.descEquipArmor && wave6hP2f2Results.descUnequip
-                );
-                check(
-                    "Welle 6.H P2F.2: _serializeCreature schreibt equipped + Restore übernimmt es",
-                    wave6hP2f2Results.snapHasEquipped && wave6hP2f2Results.restoreKeepsEquippedTool
-                );
-                check(
-                    "Welle 6.H P2F.2: Restore lässt unbekanntes Tool silent fallen (defensive)",
-                    wave6hP2f2Results.restoreSilentDropsUnknown
-                );
-                check(
-                    "Welle 6.H P2F.2: UI — .creature-equipped Wraps + .creature-equip-tool Pills",
-                    wave6hP2f2Results.uiEquippedWrapsExist && wave6hP2f2Results.uiToolPillsExist
-                );
-            } else if (wave6hP2f2Results && wave6hP2f2Results.error) {
-                check(`Welle 6.H P2F.2: evaluate-Fehler — ${wave6hP2f2Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2F.3 — Kreatur-Boosts via Konsumables (HYLOMORPHISMUS) ###
-            //
-            // Vision §1.3 fraktal weiter: Boost emergiert aus
-            // `computeCompoundTags(consumableBp) × scale` — KEIN Hardcode,
-            // KEINE Tabelle. Bauplan mit role:"consumable" UND
-            // consumableMeta. RMB+Hotbar-Konsumable+Raycast-Kreatur = Übergabe.
-            const wave6hP2f3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-                    const Class = r.constructor;
-
-                    // 1. Methoden existieren
-                    out.hasApplyBoost = typeof r.applyCreatureBoost === "function";
-                    out.hasTickBoosts = typeof r.tickCreatureBoosts === "function";
-                    out.hasActivate = typeof r.activateCreatureConsumable === "function";
-                    out.hasPickCreature = typeof r._pickCreatureAtCrosshair === "function";
-                    out.hasConsumeInv = typeof r._consumeBlueprintFromInventory === "function";
-                    out.hasInvGate = typeof r._consumableInventoryGate === "function";
-
-                    // 2. Neu gespawnte Kreatur hat boosts = []
-                    const player = r.state.playerMesh.position;
-                    const c = r.spawnCreatureAt(player.x + 400, player.y, player.z + 400, "happy", "wesen");
-                    out.initialBoostsEmpty = Array.isArray(c.userData.boosts) && c.userData.boosts.length === 0;
-
-                    // 3. applyCreatureBoost mit gültigem tagDelta
-                    const okApply = r.applyCreatureBoost(c, {
-                        source: "test:manual",
-                        tagDelta: { magieleitung: 0.3, dichte: 0.2 },
-                        durationSeconds: 60,
-                        label: "Test-Boost",
-                    });
-                    out.applyOk = okApply === true;
-                    out.boostsListed = c.userData.boosts.length === 1;
-                    out.boostHasSource = c.userData.boosts[0].source === "test:manual";
-
-                    // 4. applyCreatureBoost mit leerem tagDelta → lehnt ab
-                    const noBoost = r.applyCreatureBoost(c, { source: "empty", tagDelta: {} });
-                    out.emptyBoostRejected = noBoost === false;
-
-                    // 5. Selbe source nochmal → verlängert statt zweiter Eintrag
-                    r.applyCreatureBoost(c, {
-                        source: "test:manual",
-                        tagDelta: { magieleitung: 0.5 },
-                        durationSeconds: 30,
-                        label: "Test-Boost-2",
-                    });
-                    out.dedupeBySource = c.userData.boosts.length === 1;
-                    out.deltaUpdated = c.userData.boosts[0].tagDelta.magieleitung === 0.5;
-
-                    // 6. Stats-Stacking: Boost erhöht computeCreatureStats
-                    const c2 = r.spawnCreatureAt(player.x + 410, player.y, player.z + 410, "happy", "wesen");
-                    const baseStats = r.computeCreatureStats(c2).stats;
-                    r.applyCreatureBoost(c2, {
-                        source: "test:hp",
-                        tagDelta: { dichte: 0.5, härte: 0.5 },
-                        durationSeconds: 60,
-                        label: "HP-Boost",
-                    });
-                    const boostedStats = r.computeCreatureStats(c2).stats;
-                    out.hpBoosted = boostedStats.hpMax > baseStats.hpMax + 10;
-
-                    // 7. HYLOMORPHISMUS-EMERGENZ: Konsumable-Bauplan-Tags wirken als Boost
-                    // Wir erstellen einen Trank aus stein_block (hoch dichte+härte) und
-                    // prüfen dass die Compound-Tags SICH ALS BOOST MANIFESTIEREN.
-                    const tonicName = "test_tonic_p2f3";
-                    if (r.cloneBlueprint("stein_block", tonicName)) {
-                        const meta =
-                            typeof r.setBlueprintAsConsumable === "function"
-                                ? r.setBlueprintAsConsumable(tonicName, 30, "Stein-Tonic", 0.2)
-                                : null;
-                        out.consumableMarkOk = !!(meta && meta.ok);
-                        // Trank-Compound-Tags lesen (kontrolle)
-                        const tonicTags = r.computeCompoundTags(r.state.blueprints[tonicName]);
-                        out.tonicHasDichte = (tonicTags.dichte || 0) > 0.1;
-
-                        // Frische Kreatur, base stats messen, dann Trank aktivieren
-                        const c3 = r.spawnCreatureAt(player.x + 420, player.y, player.z + 420, "happy", "wesen");
-                        const before = r.computeCreatureStats(c3).stats;
-                        const result = r.activateCreatureConsumable(c3, tonicName);
-                        out.activateOk = result.ok === true;
-                        // tagBonus emergiert aus den Tags (kein Hardcode!)
-                        out.tagBonusEmerged = result.tagBonus && Object.keys(result.tagBonus).length > 0;
-                        out.tagBonusHasDichte = result.tagBonus && result.tagBonus.dichte > 0;
-                        // Boost ist auf der Kreatur
-                        out.boostOnCreature =
-                            Array.isArray(c3.userData.boosts) &&
-                            c3.userData.boosts.some((b) => b.source === `consume:${tonicName}`);
-                        // Stats sind erhöht (dichte-Boost → HP+)
-                        const after = r.computeCreatureStats(c3).stats;
-                        out.consumableLiftsStats = after.hpMax > before.hpMax + 5;
-                    }
-
-                    // 8. nicht-consumable Bauplan → activate lehnt ab
-                    const notConsumable = r.activateCreatureConsumable(c, "stein_block");
-                    out.nonConsumableRejected =
-                        notConsumable.ok === false && notConsumable.reason === "not_marked_as_consumable";
-
-                    // 9. tickCreatureBoosts entfernt abgelaufene Boosts
-                    const c4 = r.spawnCreatureAt(player.x + 430, player.y, player.z + 430, "happy", "wesen");
-                    // Manuell abgelaufenen Boost setzen (expiresAt in der Vergangenheit)
-                    c4.userData.boosts = [
-                        {
-                            source: "test:expired",
-                            tagDelta: { dichte: 0.3 },
-                            expiresAt: performance.now() / 1000 - 10,
-                            label: "Expired",
-                        },
-                    ];
-                    c4.userData.boostLastTick = -Infinity;
-                    r.tickCreatureBoosts(performance.now() / 1000);
-                    out.expiredCleaned = c4.userData.boosts.length === 0;
-
-                    // 10. DSL-Op creature_apply_boost
-                    const cDsl = r.spawnCreatureAt(player.x + 440, player.y, player.z + 440, "happy", "wesen");
-                    const dslIdx = r.state.creatures.indexOf(cDsl);
-                    r.dslRun(["creature_apply_boost", dslIdx, tonicName], { source: "test" });
-                    out.dslAppliedBoost = Array.isArray(cDsl.userData.boosts) && cDsl.userData.boosts.length === 1;
-
-                    // 11. NON_BROADCASTABLE-Mitgliedschaft
-                    out.opNonBroadcast = Class.NON_BROADCASTABLE_OPS.has("creature_apply_boost");
-
-                    // 12. describeProgram
-                    const desc = r.describeProgram(["creature_apply_boost", 0, tonicName]);
-                    out.descShowsBp = /Trank/.test(desc) && desc.includes(tonicName);
-
-                    // 13. Inventar-Konsum: _consumeBlueprintFromInventory
-                    if (Array.isArray(r.state.player.inventory)) {
-                        r.state.player.inventory[0] = {
-                            kind: "blueprint",
-                            blueprintName: tonicName,
-                            count: 3,
-                        };
-                        const consumed = r._consumeBlueprintFromInventory(tonicName);
-                        out.consumeReducesCount = consumed === true && r.state.player.inventory[0].count === 2;
-                        // Bei count=0 → null
-                        r.state.player.inventory[0].count = 1;
-                        r._consumeBlueprintFromInventory(tonicName);
-                        out.consumeNullsSlotAt0 = r.state.player.inventory[0] === null;
-                        // Wenn nicht im Inventar → false
-                        const noStock = r._consumeBlueprintFromInventory(tonicName);
-                        out.noStockReturnsFalse = noStock === false;
-                    }
-
-                    // 14. Modus-Gate: pfad konsumiert Inventar, schöpfer/frieden kostenlos
-                    const origMode = r.getGameMode();
-                    r.setGameMode("schöpfer");
-                    const freeGate = r._consumableInventoryGate(tonicName);
-                    out.schoepferFree = freeGate.ok === true && freeGate.free === true;
-                    r.setGameMode("pfad");
-                    // Inventar leer → pfad lehnt ab
-                    r.state.player.inventory = new Array(27).fill(null);
-                    const pfadEmpty = r._consumableInventoryGate(tonicName);
-                    out.pfadRejectsWithoutPotion = pfadEmpty.ok === false;
-                    // Inventar gefüllt → pfad konsumiert
-                    r.state.player.inventory[0] = {
-                        kind: "blueprint",
-                        blueprintName: tonicName,
-                        count: 1,
-                    };
-                    const pfadOk = r._consumableInventoryGate(tonicName);
-                    out.pfadConsumes = pfadOk.ok === true && r.state.player.inventory[0] === null;
-                    r.setGameMode(origMode || "frieden");
-
-                    // 15. UI: .creature-boost Pills bei Kreatur mit aktivem Boost
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    const listEl = document.getElementById("creature-list");
-                    const boostPills = listEl ? listEl.querySelectorAll(".creature-boost") : [];
-                    out.uiHasBoostPills = boostPills.length > 0;
-
-                    // Cleanup
-                    if (typeof r.deleteBlueprint === "function") r.deleteBlueprint(tonicName);
-                    if (typeof r._renderWorkshopDOM === "function") r._renderWorkshopDOM();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2f3Results && !wave6hP2f3Results.error) {
-                check(
-                    "Welle 6.H P2F.3: alle 6 Methoden existieren (applyCreatureBoost + tickCreatureBoosts + activateCreatureConsumable + _pickCreatureAtCrosshair + _consumeBlueprintFromInventory + _consumableInventoryGate)",
-                    wave6hP2f3Results.hasApplyBoost &&
-                        wave6hP2f3Results.hasTickBoosts &&
-                        wave6hP2f3Results.hasActivate &&
-                        wave6hP2f3Results.hasPickCreature &&
-                        wave6hP2f3Results.hasConsumeInv &&
-                        wave6hP2f3Results.hasInvGate
-                );
-                check(
-                    "Welle 6.H P2F.3: spawnCreatureAt initialisiert boosts = []",
-                    wave6hP2f3Results.initialBoostsEmpty
-                );
-                check(
-                    "Welle 6.H P2F.3: applyCreatureBoost legt Boost mit source + tagDelta + expiresAt an",
-                    wave6hP2f3Results.applyOk && wave6hP2f3Results.boostsListed && wave6hP2f3Results.boostHasSource
-                );
-                check(
-                    "Welle 6.H P2F.3: applyCreatureBoost mit leerem tagDelta → lehnt ab",
-                    wave6hP2f3Results.emptyBoostRejected
-                );
-                check(
-                    "Welle 6.H P2F.3: Selbe source dedupliziert (verlängert + tagDelta-Update)",
-                    wave6hP2f3Results.dedupeBySource && wave6hP2f3Results.deltaUpdated
-                );
-                check(
-                    "Welle 6.H P2F.3: Boost-tagDelta fließt in computeCreatureStats (HP+)",
-                    wave6hP2f3Results.hpBoosted
-                );
-                check("Welle 6.H P2F.3: setBlueprintAsConsumable markiert Bauplan", wave6hP2f3Results.consumableMarkOk);
-                check(
-                    "Welle 6.H P2F.3: HYLOMORPHISMUS — Konsumable-Compound-Tags emergieren als Boost",
-                    wave6hP2f3Results.tagBonusEmerged && wave6hP2f3Results.tagBonusHasDichte
-                );
-                check(
-                    "Welle 6.H P2F.3: activateCreatureConsumable wendet emergenten Boost auf Kreatur an",
-                    wave6hP2f3Results.activateOk && wave6hP2f3Results.boostOnCreature
-                );
-                check(
-                    "Welle 6.H P2F.3: Konsumable hebt Kreatur-Stats sichtbar (HP+ via dichte-Boost)",
-                    wave6hP2f3Results.consumableLiftsStats
-                );
-                check(
-                    "Welle 6.H P2F.3: nicht-consumable Bauplan → activate lehnt ab (not_marked_as_consumable)",
-                    wave6hP2f3Results.nonConsumableRejected
-                );
-                check(
-                    "Welle 6.H P2F.3: tickCreatureBoosts entfernt abgelaufene Boosts",
-                    wave6hP2f3Results.expiredCleaned
-                );
-                check(
-                    "Welle 6.H P2F.3: DSL creature_apply_boost wendet Konsumable an",
-                    wave6hP2f3Results.dslAppliedBoost
-                );
-                check(
-                    "Welle 6.H P2F.3: creature_apply_boost in NON_BROADCASTABLE_OPS (Spieler-private Geste)",
-                    wave6hP2f3Results.opNonBroadcast
-                );
-                check("Welle 6.H P2F.3: describeProgram zeigt Trank-Namen", wave6hP2f3Results.descShowsBp);
-                check(
-                    "Welle 6.H P2F.3: _consumeBlueprintFromInventory zieht 1 ab + nulled Slot bei count=0",
-                    wave6hP2f3Results.consumeReducesCount &&
-                        wave6hP2f3Results.consumeNullsSlotAt0 &&
-                        wave6hP2f3Results.noStockReturnsFalse
-                );
-                check(
-                    "Welle 6.H P2F.3: Modus-Gate — schöpfer kostenlos, pfad konsumiert Inventar oder lehnt ab",
-                    wave6hP2f3Results.schoepferFree &&
-                        wave6hP2f3Results.pfadRejectsWithoutPotion &&
-                        wave6hP2f3Results.pfadConsumes
-                );
-                check(
-                    "Welle 6.H P2F.3: UI — .creature-boost Pills in der Liste bei aktiven Boosts",
-                    wave6hP2f3Results.uiHasBoostPills
-                );
-            } else if (wave6hP2f3Results && wave6hP2f3Results.error) {
-                check(`Welle 6.H P2F.3: evaluate-Fehler — ${wave6hP2f3Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
-            //
-            // Vision §1.5 — Spieler spricht mit EINER Kreatur, sie antwortet
-            // aus ihrer Sicht. Persona-Prompt versammelt VOLLE Identität
-            // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). KEIN echter
-            // LLM-Call im Test (kein API-Key) — wir prüfen Builder + Routing.
-            const wave6hP2eV1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-
-                    // 1. Methoden existieren
-                    out.hasBuildPersona = typeof r._buildCreaturePersonaPrompt === "function";
-                    out.hasFindByName = typeof r._findCreatureByName === "function";
-                    out.hasLlmCallCreature = typeof r.llmCallCreature === "function";
-                    out.hasParseAddress = typeof r._parseCreatureAddress === "function";
-                    out.hasMaybeAnswerCreature = typeof r.maybeAnswerCreature === "function";
-
-                    // 2. _findCreatureByName findet die Kreatur (case-insensitive)
-                    const player = r.state.playerMesh.position;
-                    const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
-                    c.userData.name = "TestNira";
-                    out.findExact = r._findCreatureByName("TestNira") === c;
-                    out.findCaseInsensitive = r._findCreatureByName("testnira") === c;
-                    out.findUnknown = r._findCreatureByName("FictionalXYZ") === null;
-
-                    // 3. _parseCreatureAddress erkennt verschiedene Trennzeichen
-                    const p1 = r._parseCreatureAddress("TestNira, hallo");
-                    out.parseComma = p1 && p1.name === "TestNira" && p1.message === "hallo";
-                    const p2 = r._parseCreatureAddress("TestNira: was hast du gesehen?");
-                    out.parseColon = p2 && p2.name === "TestNira" && p2.message === "was hast du gesehen?";
-                    const p3 = r._parseCreatureAddress("setze wetter sunny");
-                    out.parseRejectsNonAddress = p3 === null; // kein „Name, text"-Pattern
-                    const p4 = r._parseCreatureAddress("Anna_B-2: hallo");
-                    out.parseAllowsHyphensUnderscores = p4 && p4.name === "Anna_B-2";
-
-                    // 4. _buildCreaturePersonaPrompt enthält alle 4 Stat-Schichten + Welt
-                    // Vorher: voll-ausgestattete Kreatur (Specs + Equipped + Boost + Memory)
-                    c.userData.memory = [
-                        { type: "gathered", content: { material: "holz" }, at: 1 },
-                        { type: "gathered", content: { material: "holz" }, at: 2 },
-                        { type: "gathered", content: { material: "holz" }, at: 3 },
-                        { type: "built", content: { blueprint: "stein_block" }, at: 4 },
-                    ];
-                    r.equipCreatureTool(c, "hammer");
-                    r.applyCreatureBoost(c, {
-                        source: "test:tonic",
-                        tagDelta: { dichte: 0.3 },
-                        durationSeconds: 60,
-                        label: "Test-Tonic",
-                    });
-                    const prompt = r._buildCreaturePersonaPrompt(c);
-                    out.promptIsString = typeof prompt === "string" && prompt.length > 0;
-                    out.promptHasName = /TestNira/.test(prompt);
-                    out.promptHasSoulLabel = /Wesen/.test(prompt);
-                    out.promptHasStats = /HP\s+\d/.test(prompt) && /SPD\s+\d/.test(prompt);
-                    out.promptHasSpecs = /Sammler/.test(prompt) && /holz/.test(prompt);
-                    out.promptHasEquipped = /hammer/.test(prompt);
-                    out.promptHasBoost = /Test-Tonic/.test(prompt);
-                    out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
-                    out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
-                    out.promptInstructsJson =
-                        /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
-                    // V3 (V7.93): Prompt erlaubt jetzt program + nennt
-                    // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
-                    // wir prüfen, dass Whitelist + Anweisung enthalten sind.
-                    out.promptForbidsProgram = /Welt-Aktion ist erlaubt/.test(prompt) && /Erlaubte Ops/.test(prompt);
-                    out.promptHasAge = /Sekunden|Minuten|Stunden|Tage/.test(prompt);
-
-                    // 5. llmCallCreature ohne LLM-aktiv → error-Object
-                    const wasEnabled = r.state.llm && r.state.llm.enabled;
-                    if (r.state.llm) r.state.llm.enabled = false;
-                    // (kann nicht await in evaluate ohne async — wir testen sync Behauptung)
-                    out.llmCreatureNeedsLlm = typeof r.llmCallCreature === "function"; // Existenz reicht
-
-                    // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
-                    let chatLines = [];
-                    const append = (text) => chatLines.push(text);
-                    // synchron prüfen wir nur das Parse + LLM-Off-Branch
-                    // (await funktioniert in evaluate via async-IIFE — vereinfacht)
-                    return Promise.resolve()
-                        .then(async () => {
-                            await r.maybeAnswerCreature("TestNira, hallo", append);
-                            out.llmOffPolite = chatLines.some((l) => /hört dich/.test(l));
-                            out.llmOffNoCall = !r.state.llm.inFlight;
-                            // Unbekannter Name → höfliche Ablehnung
-                            chatLines.length = 0;
-                            await r.maybeAnswerCreature("UnbekannterXYZ, hallo", append);
-                            out.unknownPolite = chatLines.some((l) => /Niemand|hört zu/.test(l));
-                            if (r.state.llm) r.state.llm.enabled = wasEnabled || false;
-                            return out;
-                        })
-                        .catch((e) => ({ error: String(e) }));
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
-                check(
-                    "Welle 6.H P2E V1: alle 5 Methoden existieren (_buildCreaturePersonaPrompt + _findCreatureByName + llmCallCreature + _parseCreatureAddress + maybeAnswerCreature)",
-                    wave6hP2eV1Results.hasBuildPersona &&
-                        wave6hP2eV1Results.hasFindByName &&
-                        wave6hP2eV1Results.hasLlmCallCreature &&
-                        wave6hP2eV1Results.hasParseAddress &&
-                        wave6hP2eV1Results.hasMaybeAnswerCreature
-                );
-                check(
-                    "Welle 6.H P2E V1: _findCreatureByName exact + case-insensitive + null bei unknown",
-                    wave6hP2eV1Results.findExact &&
-                        wave6hP2eV1Results.findCaseInsensitive &&
-                        wave6hP2eV1Results.findUnknown
-                );
-                check(
-                    "Welle 6.H P2E V1: _parseCreatureAddress erkennt 'Name, text' + 'Name: text' + lehnt non-address ab",
-                    wave6hP2eV1Results.parseComma &&
-                        wave6hP2eV1Results.parseColon &&
-                        wave6hP2eV1Results.parseRejectsNonAddress &&
-                        wave6hP2eV1Results.parseAllowsHyphensUnderscores
-                );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Name + Soul-Label + Alter",
-                    wave6hP2eV1Results.promptHasName &&
-                        wave6hP2eV1Results.promptHasSoulLabel &&
-                        wave6hP2eV1Results.promptHasAge
-                );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Stats-Schicht (HP/SPD)",
-                    wave6hP2eV1Results.promptHasStats
-                );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Specs-Schicht (Sammler von holz)",
-                    wave6hP2eV1Results.promptHasSpecs
-                );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Equipped-Schicht (hammer)",
-                    wave6hP2eV1Results.promptHasEquipped
-                );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Boost-Schicht (Test-Tonic)",
-                    wave6hP2eV1Results.promptHasBoost
-                );
-                check("Welle 6.H P2E V1: Persona-Prompt enthält Memory-Auszug", wave6hP2eV1Results.promptHasMemory);
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt enthält Welt-Kontext (Wetter)",
-                    wave6hP2eV1Results.promptHasWeather
-                );
-                check(
-                    "Welle 6.H P2E V1: Persona-Prompt instruiert JSON-Format (say + program)",
-                    wave6hP2eV1Results.promptInstructsJson
-                );
-                check(
-                    "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt CREATURE_PROPOSED_OPS-Whitelist",
-                    wave6hP2eV1Results.promptForbidsProgram
-                );
-                check(
-                    "Welle 6.H P2E V1: maybeAnswerCreature ohne aktive LLM → höflicher Hinweis (kein API-Call)",
-                    wave6hP2eV1Results.llmOffPolite && wave6hP2eV1Results.llmOffNoCall
-                );
-                check(
-                    "Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
-                    wave6hP2eV1Results.unknownPolite
-                );
-            } else if (wave6hP2eV1Results && wave6hP2eV1Results.error) {
-                check(`Welle 6.H P2E V1: evaluate-Fehler — ${wave6hP2eV1Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
-            //
-            // Schöpfer-Feedback nach Browser-Test V7.90: "Bran wie gehts"
-            // wurde nicht als Kreatur-Adresse erkannt (kein Trenner) → fiel
-            // zur Welt-Grok zurück, die als Welt antwortete aber Bran als
-            // Zuhörer adressierte (verwirrend). V1.1: @-Pattern als primäre
-            // Geste (Discord/Slack/Twitter-Konvention) + Soul-Farben für
-            // Identität (Sprite=cyan/Wesen=brass/Geist=grün).
-            const wave6hP2eV11Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-
-                    // 1. @Name text → erkannt als explizite Adresse
-                    const p1 = r._parseCreatureAddress("@Bran wie gehts");
-                    out.atPatternMatches =
-                        p1 && p1.name === "Bran" && p1.message === "wie gehts" && p1.explicit === true;
-                    // 2. @Name, text → @ + Komma zusammen erlaubt
-                    const p2 = r._parseCreatureAddress("@Bran, was hast du gesehen?");
-                    out.atPatternWithComma = p2 && p2.name === "Bran" && p2.message === "was hast du gesehen?";
-                    // 3. @Name: text → @ + Doppelpunkt zusammen erlaubt
-                    const p3 = r._parseCreatureAddress("@Bran: hallo");
-                    out.atPatternWithColon = p3 && p3.name === "Bran" && p3.message === "hallo";
-                    // 4. Name, text → bleibt rückwärts-kompatibel, explicit=false
-                    const p4 = r._parseCreatureAddress("Bran, hallo");
-                    out.fallbackComma = p4 && p4.name === "Bran" && p4.message === "hallo" && p4.explicit === false;
-                    // 5. "Bran wie gehts" (ohne Trenner, ohne @) → NICHT geparst
-                    //    (das war der Bug: Welt-Grok antwortete, wir wollen das nicht)
-                    const p5 = r._parseCreatureAddress("Bran wie gehts");
-                    out.noTrennerRejected = p5 === null;
-                    // 6. "@ " ohne Name → nicht geparst
-                    const p6 = r._parseCreatureAddress("@ hallo");
-                    out.atWithoutNameRejected = p6 === null;
-
-                    // 7. Liste rendert Soul-Klassen auf creature-name
-                    const player = r.state.playerMesh.position;
-                    const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "sprite");
-                    cSprite.userData.name = "TestSpriteV11";
-                    const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
-                    cWesen.userData.name = "TestWesenV11";
-                    const cGeist = r.spawnCreatureAt(player.x + 620, player.y, player.z + 620, "happy", "geist");
-                    cGeist.userData.name = "TestGeistV11";
-                    if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
-                    const listEl = document.getElementById("creature-list");
-                    out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-sprite"));
-                    out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
-                    out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-geist"));
-
-                    // 8. Chat-Output: erfolgreicher LLM-Pfad würde Soul-Span erzeugen
-                    //    Wir testen den DOM-Pfad ohne echten API-Call durch
-                    //    Stubbing von llmCallCreature. Das mockt die Antwort
-                    //    und verifiziert, dass die DOM-Soul-Klassen gerendert
-                    //    werden — der wichtige UX-Pfad für die Lesbarkeit.
-                    const wasLlmEnabled = r.state.llm && r.state.llm.enabled;
-                    if (r.state.llm) r.state.llm.enabled = true;
-                    const origCall = r.llmCallCreature;
-                    r.llmCallCreature = async () => ({ say: "Ich höre dich, Schöpfer." });
-                    const chatOutput = document.getElementById("chat-output");
-                    const beforeLines = chatOutput ? chatOutput.children.length : 0;
-                    let chatLines = [];
-                    return Promise.resolve()
-                        .then(async () => {
-                            await r.maybeAnswerCreature("@TestSpriteV11 hallo", (t) => chatLines.push(t));
-                            const afterLines = chatOutput ? chatOutput.children.length : 0;
-                            out.chatLineAdded = afterLines > beforeLines;
-                            // Suche das Span mit chat-creature-name.soul-sprite
-                            const spans = chatOutput
-                                ? chatOutput.querySelectorAll(".chat-creature-name.soul-sprite")
-                                : [];
-                            out.chatHasSoulSpan = spans.length > 0;
-                            // Plain-Text-Antwort enthält den Namen
-                            const lastLine = chatOutput ? chatOutput.lastElementChild : null;
-                            out.chatLineHasName = lastLine && /TestSpriteV11/.test(lastLine.textContent);
-                            // Cleanup
-                            r.llmCallCreature = origCall;
-                            if (r.state.llm) r.state.llm.enabled = wasLlmEnabled || false;
-                            return out;
-                        })
-                        .catch((e) => ({ error: String(e) }));
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
-                check(
-                    "Welle 6.H P2E V1.1: @Name text → erkannt als explizite Adresse (explicit=true)",
-                    wave6hP2eV11Results.atPatternMatches
-                );
-                check(
-                    "Welle 6.H P2E V1.1: @Name, text + @Name: text Varianten unterstützt",
-                    wave6hP2eV11Results.atPatternWithComma && wave6hP2eV11Results.atPatternWithColon
-                );
-                check(
-                    "Welle 6.H P2E V1.1: Name, text bleibt rückwärts-kompatibel (explicit=false)",
-                    wave6hP2eV11Results.fallbackComma
-                );
-                check(
-                    "Welle 6.H P2E V1.1: 'Bran wie gehts' (ohne Trenner) wird NICHT als Adresse missverstanden (Schöpfer-Bug-Fix)",
-                    wave6hP2eV11Results.noTrennerRejected
-                );
-                check(
-                    "Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt",
-                    wave6hP2eV11Results.atWithoutNameRejected
-                );
-                check(
-                    "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-sprite/.soul-wesen/.soul-geist auf creature-name",
-                    wave6hP2eV11Results.spriteHasSoulClass &&
-                        wave6hP2eV11Results.wesenHasSoulClass &&
-                        wave6hP2eV11Results.geistHasSoulClass
-                );
-                check(
-                    "Welle 6.H P2E V1.1: Chat-Output bei Kreatur-Antwort rendert <span class='chat-creature-name soul-X'>",
-                    wave6hP2eV11Results.chatLineAdded &&
-                        wave6hP2eV11Results.chatHasSoulSpan &&
-                        wave6hP2eV11Results.chatLineHasName
-                );
-            } else if (wave6hP2eV11Results && wave6hP2eV11Results.error) {
-                check(`Welle 6.H P2E V1.1: evaluate-Fehler — ${wave6hP2eV11Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
-            //
-            // Kreatur initiiert Chat-Output bei Events (Level-Up, Boost,
-            // Material-Mangel). Pre-baked phrase-pool, soul-aware, throttled.
-            // 4 Hook-Stellen: _onCreatureLevelUp, applyCreatureBoost,
-            // no_material_found (gather-tick), no_inventory_for_build (build-tick).
-            const wave6hP2eV2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-                    const Class = r.constructor;
-
-                    // 1. Konstanten + Methode existieren
-                    out.hasPhrases = typeof Class.CREATURE_PROACTIVE_PHRASES === "object";
-                    out.gapPerCreature = Class.CREATURE_PROACTIVE_GAP_PER_CREATURE === 60;
-                    out.gapGlobal = Class.CREATURE_PROACTIVE_GAP_GLOBAL === 8;
-                    out.hasMethod = typeof r._creatureSpeakProactive === "function";
-                    out.toggleInState = typeof r.state.creatureProactiveSpeechEnabled === "boolean";
-
-                    // 2. Phrase-Pool hat 5 Event-Typen, jede mit 3 Soul-Profile + default
-                    const pool = Class.CREATURE_PROACTIVE_PHRASES;
-                    const events = [
-                        "level_up_gather",
-                        "level_up_build",
-                        "boost_received",
-                        "no_material_found",
-                        "no_inventory_for_build",
-                    ];
-                    out.allEventsPresent = events.every((e) => pool[e]);
-                    out.hasSpriteVariants = pool.level_up_gather.sprite && pool.level_up_gather.sprite.length >= 2;
-                    out.hasWesenVariants = pool.level_up_gather.wesen && pool.level_up_gather.wesen.length >= 2;
-                    out.hasGeistVariants = pool.level_up_gather.geist && pool.level_up_gather.geist.length >= 2;
-                    out.hasDefaultFallback = !!pool.level_up_gather.default;
-
-                    // 3. Test-Setup: drei Soul-Kreaturen, frische Throttle, Toggle ON
-                    r.state.creatureProactiveSpeechEnabled = true;
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    const player = r.state.playerMesh.position;
-                    const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "sprite");
-                    cSprite.userData.name = "ProacSprite";
-                    cSprite.userData.lastProactiveSpeech = -Infinity;
-                    const cWesen = r.spawnCreatureAt(player.x + 710, player.y, player.z + 710, "happy", "wesen");
-                    cWesen.userData.name = "ProacWesen";
-                    cWesen.userData.lastProactiveSpeech = -Infinity;
-                    const cGeist = r.spawnCreatureAt(player.x + 720, player.y, player.z + 720, "happy", "geist");
-                    cGeist.userData.name = "ProacGeist";
-                    cGeist.userData.lastProactiveSpeech = -Infinity;
-
-                    // 4. Erste Aussage funktioniert
-                    const chatOutput = document.getElementById("chat-output");
-                    const before = chatOutput ? chatOutput.children.length : 0;
-                    const ok1 = r._creatureSpeakProactive(cSprite, "level_up_gather", { material: "holz", level: 2 });
-                    out.firstSpeechOk = ok1 === true;
-                    const after1 = chatOutput ? chatOutput.children.length : 0;
-                    out.chatLineAdded = after1 > before;
-                    // Soul-Span im DOM rendert mit sprite-Klasse
-                    const lastLine = chatOutput ? chatOutput.lastElementChild : null;
-                    out.lineHasSpriteSoul = !!(lastLine && lastLine.querySelector(".chat-creature-name.soul-sprite"));
-                    out.lineHasName = lastLine && /ProacSprite/.test(lastLine.textContent);
-                    out.templateReplaced =
-                        lastLine && /holz/.test(lastLine.textContent) && /2/.test(lastLine.textContent);
-
-                    // 5. Per-Kreatur-Throttle: SOFORT nochmal sprechen lehnt ab
-                    const ok2 = r._creatureSpeakProactive(cSprite, "boost_received", { label: "Tonic" });
-                    out.perCreatureThrottle = ok2 === false;
-
-                    // 6. Global-Throttle: andere Kreatur SOFORT nach erster sprechen lehnt auch ab
-                    const ok3 = r._creatureSpeakProactive(cWesen, "boost_received", { label: "Tonic" });
-                    out.globalThrottle = ok3 === false;
-
-                    // 7. Bei deaktiviertem Toggle → kein Output
-                    r.state.creatureProactiveSpeechEnabled = false;
-                    cGeist.userData.lastProactiveSpeech = -Infinity;
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    const ok4 = r._creatureSpeakProactive(cGeist, "boost_received", { label: "Tonic" });
-                    out.toggleOffSilent = ok4 === false;
-
-                    // 8. Unbekannter Event-Typ lehnt ab
-                    r.state.creatureProactiveSpeechEnabled = true;
-                    cGeist.userData.lastProactiveSpeech = -Infinity;
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    const ok5 = r._creatureSpeakProactive(cGeist, "unknown_event", {});
-                    out.unknownEventRejected = ok5 === false;
-
-                    // 9. Soul-spezifischer Pool wird gewählt (Geist-Phrase enthält
-                    //    typische Geist-Wörter — wir prüfen, dass sie aus dem
-                    //    geist-Pool stammt indem wir die rendered Zeile mit dem
-                    //    Pool vergleichen).
-                    cGeist.userData.lastProactiveSpeech = -Infinity;
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    r._creatureSpeakProactive(cGeist, "level_up_gather", { material: "laub", level: 1 });
-                    const geistLine = chatOutput ? chatOutput.lastElementChild : null;
-                    const geistText = geistLine ? geistLine.textContent : "";
-                    out.geistUsedGeistPool = pool.level_up_gather.geist.some((tpl) => {
-                        const filled = tpl.replace(/\$\{(\w+)\}/g, (m, k) =>
-                            k === "material" ? "laub" : k === "level" ? "1" : m
-                        );
-                        return geistText.includes(filled);
-                    });
-
-                    // 10. Hook _onCreatureLevelUp triggert proaktive Sprache
-                    //     (Memory pushen, dann _creatureRemember triggert
-                    //     _onCreatureLevelUp wenn Threshold erreicht).
-                    const cLU = r.spawnCreatureAt(player.x + 730, player.y, player.z + 730, "happy", "wesen");
-                    cLU.userData.name = "LevelUpTest";
-                    cLU.userData.lastProactiveSpeech = -Infinity;
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    const beforeLU = chatOutput ? chatOutput.children.length : 0;
-                    // 3 gathered-Memorys → Level 1 trigger
-                    for (let i = 0; i < 3; i++) {
-                        r._creatureRemember(cLU, "gathered", { material: "stein" });
-                    }
-                    const afterLU = chatOutput ? chatOutput.children.length : 0;
-                    out.levelUpHookFired = afterLU > beforeLU;
-
-                    // 11. Hook applyCreatureBoost triggert (NEUE Quelle)
-                    const cBoost = r.spawnCreatureAt(player.x + 740, player.y, player.z + 740, "happy", "sprite");
-                    cBoost.userData.name = "BoostTest";
-                    cBoost.userData.lastProactiveSpeech = -Infinity;
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    const beforeB = chatOutput ? chatOutput.children.length : 0;
-                    r.applyCreatureBoost(cBoost, {
-                        source: "test:proactive",
-                        tagDelta: { dichte: 0.3 },
-                        durationSeconds: 30,
-                        label: "TestTrank",
-                    });
-                    const afterB = chatOutput ? chatOutput.children.length : 0;
-                    out.boostHookFired = afterB > beforeB;
-
-                    // 12. Hook applyCreatureBoost: SELBE Quelle nochmal → NICHT erneut sprechen
-                    //     (würde sonst bei jeder Boost-Verlängerung loslabern)
-                    cBoost.userData.lastProactiveSpeech = -Infinity; // throttle reset
-                    r.state.lastCreatureProactiveSpeech = -Infinity;
-                    const beforeB2 = chatOutput ? chatOutput.children.length : 0;
-                    r.applyCreatureBoost(cBoost, {
-                        source: "test:proactive", // SELBE source
-                        tagDelta: { dichte: 0.5 },
-                        durationSeconds: 30,
-                        label: "TestTrank",
-                    });
-                    const afterB2 = chatOutput ? chatOutput.children.length : 0;
-                    out.boostRefreshSilent = afterB2 === beforeB2;
-
-                    // 13. UI-Toggle existiert im DOM
-                    const toggleEl = document.getElementById("creature-speech-toggle");
-                    out.toggleExists = !!toggleEl;
-                    out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2eV2Results && !wave6hP2eV2Results.error) {
-                check(
-                    "Welle 6.H P2E V2: CREATURE_PROACTIVE_PHRASES + gap-Konstanten (60s/Kreatur, 8s global) + _creatureSpeakProactive existieren",
-                    wave6hP2eV2Results.hasPhrases &&
-                        wave6hP2eV2Results.gapPerCreature &&
-                        wave6hP2eV2Results.gapGlobal &&
-                        wave6hP2eV2Results.hasMethod &&
-                        wave6hP2eV2Results.toggleInState
-                );
-                check(
-                    "Welle 6.H P2E V2: Phrase-Pool deckt alle 5 Events (level_up_gather/build, boost_received, no_material_found, no_inventory_for_build)",
-                    wave6hP2eV2Results.allEventsPresent
-                );
-                check(
-                    "Welle 6.H P2E V2: Pro Event drei Soul-Varianten (sprite/wesen/geist) + default-Fallback",
-                    wave6hP2eV2Results.hasSpriteVariants &&
-                        wave6hP2eV2Results.hasWesenVariants &&
-                        wave6hP2eV2Results.hasGeistVariants &&
-                        wave6hP2eV2Results.hasDefaultFallback
-                );
-                check(
-                    "Welle 6.H P2E V2: Erste Aussage erfolgreich, Chat-Zeile + Soul-Span + Name + Template-Replacement",
-                    wave6hP2eV2Results.firstSpeechOk &&
-                        wave6hP2eV2Results.chatLineAdded &&
-                        wave6hP2eV2Results.lineHasSpriteSoul &&
-                        wave6hP2eV2Results.lineHasName &&
-                        wave6hP2eV2Results.templateReplaced
-                );
-                check(
-                    "Welle 6.H P2E V2: Per-Kreatur-Throttle (60s) lehnt sofortige Zweit-Aussage ab",
-                    wave6hP2eV2Results.perCreatureThrottle
-                );
-                check(
-                    "Welle 6.H P2E V2: Global-Throttle (8s) lehnt andere Kreatur sofort nach erster Aussage ab",
-                    wave6hP2eV2Results.globalThrottle
-                );
-                check(
-                    "Welle 6.H P2E V2: Toggle OFF → keine proaktive Sprache (silent drop)",
-                    wave6hP2eV2Results.toggleOffSilent
-                );
-                check("Welle 6.H P2E V2: Unbekannter Event-Typ → silent drop", wave6hP2eV2Results.unknownEventRejected);
-                check(
-                    "Welle 6.H P2E V2: Soul-spezifischer Pool (Geist-Phrase aus geist-Pool gerendert)",
-                    wave6hP2eV2Results.geistUsedGeistPool
-                );
-                check(
-                    "Welle 6.H P2E V2: Hook _onCreatureLevelUp triggert proaktive Sprache",
-                    wave6hP2eV2Results.levelUpHookFired
-                );
-                check(
-                    "Welle 6.H P2E V2: Hook applyCreatureBoost triggert bei NEUEM Boost",
-                    wave6hP2eV2Results.boostHookFired
-                );
-                check(
-                    "Welle 6.H P2E V2: applyCreatureBoost mit SELBER Quelle (Verlängerung) → KEINE erneute Sprache (kein Flood)",
-                    wave6hP2eV2Results.boostRefreshSilent
-                );
-                check(
-                    "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
-                    wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
-                );
-            } else if (wave6hP2eV2Results && wave6hP2eV2Results.error) {
-                check(`Welle 6.H P2E V2: evaluate-Fehler — ${wave6hP2eV2Results.error}`, false);
-            }
-
-            // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
-            //
-            // Schöpfer-Wahl V7.93 + V9.36-Reroute: atmosphärisch + Terrain
-            // (voxel_carve/voxel_fill erlaubt, modify_terrain entfernt),
-            // modus-abhängig (schöpfer auto-execute / pfad+frieden
-            // inline-Buttons), LLM-Augmentation bei seltenen Events (L5,
-            // neue Spec) mit eigenem 10-Min-Throttle. Tests prüfen:
-            // Whitelist-Validation, Modus-Diskrimination, Memory-Einträge,
-            // Sandbox-Defense.
-            const wave6hP2eV3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-                    const Class = r.constructor;
-
-                    // 1. Konstanten + Methoden existieren
-                    out.hasWhitelist = Class.CREATURE_PROPOSED_OPS instanceof Set;
-                    out.whitelistSize = Class.CREATURE_PROPOSED_OPS.size >= 10;
-                    out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
-                    out.voxelCarveAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_carve");
-                    out.voxelFillAllowed = Class.CREATURE_PROPOSED_OPS.has("voxel_fill");
-                    out.spawnBlueprintAllowed = Class.CREATURE_PROPOSED_OPS.has("spawn_blueprint");
-                    out.chainAllowed = Class.CREATURE_PROPOSED_OPS.has("chain");
-                    // Forbidden: player_*, define_*, delete_*, set_mode
-                    out.playerSpeedForbidden = !Class.CREATURE_PROPOSED_OPS.has("player_speed");
-                    out.defineBlueprintForbidden = !Class.CREATURE_PROPOSED_OPS.has("define_blueprint");
-                    out.setModeForbidden = !Class.CREATURE_PROPOSED_OPS.has("set_mode");
-                    out.hasValidator = typeof r._isCreatureProposalAllowed === "function";
-                    out.hasHandler = typeof r._handleCreatureProposedProgram === "function";
-                    out.hasExecutor = typeof r._executeCreatureProgram === "function";
-                    out.hasButtonRenderer = typeof r._renderCreatureProposalButtons === "function";
-                    out.hasRareEventTrigger = typeof r._maybeTriggerCreatureRareEventLlm === "function";
-                    out.rareEventGap = Class.CREATURE_LLM_RARE_EVENT_GAP === 600;
-
-                    // 2. Validator: erlaubtes Programm
-                    const okWeather = r._isCreatureProposalAllowed(["weather", "rainy"]);
-                    out.allowsWeather = okWeather.ok === true;
-                    const okChain = r._isCreatureProposalAllowed([
-                        "chain",
-                        ["weather", "sunny"],
-                        ["skybox_color", "#ffd9a3"],
-                    ]);
-                    out.allowsChain = okChain.ok === true;
-                    const okTerrain = r._isCreatureProposalAllowed(["voxel_carve", 0, 50, 0, 3]);
-                    out.allowsTerrain = okTerrain.ok === true;
-
-                    // 3. Validator: verbotene Programme
-                    const noPlayerSpeed = r._isCreatureProposalAllowed(["player_speed", 20]);
-                    out.rejectsPlayerSpeed = noPlayerSpeed.ok === false && noPlayerSpeed.forbiddenOp === "player_speed";
-                    const noDefine = r._isCreatureProposalAllowed(["define_blueprint", "evil", [{ shape: "box" }]]);
-                    out.rejectsDefine = noDefine.ok === false && noDefine.forbiddenOp === "define_blueprint";
-                    // Verbotene Op TIEF im Chain wird auch erkannt
-                    const nestedBad = r._isCreatureProposalAllowed([
-                        "chain",
-                        ["weather", "sunny"],
-                        ["player_speed", 50], // verboten, tief
-                    ]);
-                    out.rejectsNestedForbidden = nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
-
-                    // 4. Persona-Prompt erlaubt program (V3-Update)
-                    const player = r.state.playerMesh.position;
-                    const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
-                    c.userData.name = "TestProgramKreatur";
-                    const prompt = r._buildCreaturePersonaPrompt(c);
-                    out.promptMentionsProgram = /Welt-Aktion ist erlaubt/.test(prompt);
-                    out.promptListsOps = /Erlaubte Ops/.test(prompt) && /weather/.test(prompt);
-                    out.promptMentionsModus = /schöpfer-Modus/.test(prompt);
-
-                    // 5. Modus-abhängiger Pfad: schöpfer = auto-execute,
-                    //    pfad = inline-Buttons
-                    const origMode = r.getGameMode();
-                    const chatOutput = document.getElementById("chat-output");
-
-                    // Test schöpfer-Auto: der Wetter ändert sich tatsächlich
-                    r.setGameMode("schöpfer");
-                    const beforeWeather = r.state.weather;
-                    const targetWeather = beforeWeather === "rainy" ? "sunny" : "rainy";
-                    const beforeAuto = chatOutput ? chatOutput.children.length : 0;
-                    r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather]);
-                    out.autoExecutedInSchöpfer = r.state.weather === targetWeather;
-                    const afterAuto = chatOutput ? chatOutput.children.length : 0;
-                    out.autoChatLineAdded = afterAuto > beforeAuto;
-                    // Memory-Eintrag: auto_executed_action
-                    const memTypes = (c.userData.memory || []).map((m) => m.type);
-                    out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
-
-                    // Test pfad: Buttons werden gerendert (kein automatischer
-                    // Wetter-Wechsel)
-                    r.setGameMode("pfad");
-                    const beforePending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
-                    const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
-                    r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
-                    out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
-                    const afterPending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
-                    out.pfadRendersButtons = afterPending > beforePending;
-                    // Memory: proposed_action vorhanden, aber NICHT yet accepted
-                    const memTypes2 = (c.userData.memory || []).map((m) => m.type);
-                    out.memoryHasProposed = memTypes2.includes("proposed_action");
-
-                    // 6. Sandbox-Defense: verbotenes Programm wird auch in
-                    //    schöpfer-Modus blockiert (defense in depth)
-                    r.setGameMode("schöpfer");
-                    const memCountBefore = (c.userData.memory || []).length;
-                    const blockedResult = r._handleCreatureProposedProgram(c, "TestProgramKreatur", [
-                        "player_speed",
-                        99,
-                    ]);
-                    out.forbiddenBlockedEvenInSchöpfer = blockedResult === false;
-                    const memTypes3 = (c.userData.memory || []).map((m) => m.type);
-                    out.memoryHasBlocked = memTypes3.includes("proposal_blocked");
-                    out.memoryGrew = (c.userData.memory || []).length > memCountBefore;
-
-                    r.setGameMode(origMode || "frieden");
-
-                    // 7. Inline-Buttons: Click führt aus. Wir nehmen den LATEST
-                    //    accept-Button (Test 5 hat schon einen dagelassen).
-                    r.setGameMode("pfad");
-                    const c2 = r.spawnCreatureAt(player.x + 810, player.y, player.z + 810, "happy", "sprite");
-                    c2.userData.name = "ClickTestKreatur";
-                    const targetW3 = r.state.weather === "rainy" ? "sunny" : "rainy";
-                    r._renderCreatureProposalButtons(c2, "ClickTestKreatur", ["weather", targetW3]);
-                    const acceptBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.accept") : [];
-                    const acceptBtn = acceptBtns[acceptBtns.length - 1] || null;
-                    out.acceptButtonExists = !!acceptBtn;
-                    if (acceptBtn) {
-                        acceptBtn.click();
-                        out.acceptClickExecutes = r.state.weather === targetW3;
-                        const memTypes4 = (c2.userData.memory || []).map((m) => m.type);
-                        out.memoryHasAccepted = memTypes4.includes("accepted_action");
-                    }
-
-                    // 8. Reject-Button: Memory-Eintrag rejected_action
-                    const c3 = r.spawnCreatureAt(player.x + 820, player.y, player.z + 820, "happy", "geist");
-                    c3.userData.name = "RejectTestKreatur";
-                    r._renderCreatureProposalButtons(c3, "RejectTestKreatur", ["weather", "rainy"]);
-                    const rejectBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.reject") : [];
-                    const rejectBtn = rejectBtns[rejectBtns.length - 1] || null;
-                    out.rejectButtonExists = !!rejectBtn;
-                    if (rejectBtn) {
-                        rejectBtn.click();
-                        const memTypes5 = (c3.userData.memory || []).map((m) => m.type);
-                        out.memoryHasRejected = memTypes5.includes("rejected_action");
-                    }
-
-                    r.setGameMode(origMode || "frieden");
-                    return out;
-                })
-                .catch((e) => ({ error: String(e), stack: e.stack }));
-
-            if (wave6hP2eV3Results && !wave6hP2eV3Results.error) {
-                check(
-                    "Welle 6.H P2E V3: CREATURE_PROPOSED_OPS Set + Validator + Handler + Executor + ButtonRenderer + RareEvent-Trigger existieren",
-                    wave6hP2eV3Results.hasWhitelist &&
-                        wave6hP2eV3Results.whitelistSize &&
-                        wave6hP2eV3Results.hasValidator &&
-                        wave6hP2eV3Results.hasHandler &&
-                        wave6hP2eV3Results.hasExecutor &&
-                        wave6hP2eV3Results.hasButtonRenderer &&
-                        wave6hP2eV3Results.hasRareEventTrigger &&
-                        wave6hP2eV3Results.rareEventGap
-                );
-                check(
-                    "Welle 6.H P2E V3 + V9.36: Whitelist erlaubt atmosphärische + Voxel-Mod-Ops (weather, voxel_carve, voxel_fill, spawn_blueprint, chain)",
-                    wave6hP2eV3Results.weatherAllowed &&
-                        wave6hP2eV3Results.voxelCarveAllowed &&
-                        wave6hP2eV3Results.voxelFillAllowed &&
-                        wave6hP2eV3Results.spawnBlueprintAllowed &&
-                        wave6hP2eV3Results.chainAllowed
-                );
-                check(
-                    "Welle 6.H P2E V3: Whitelist verbietet player_speed + define_blueprint + set_mode (Spieler-/Welt-Wissen-Eingriff blockiert)",
-                    wave6hP2eV3Results.playerSpeedForbidden &&
-                        wave6hP2eV3Results.defineBlueprintForbidden &&
-                        wave6hP2eV3Results.setModeForbidden
-                );
-                check(
-                    "Welle 6.H P2E V3 + V9.36: Validator akzeptiert erlaubte Programme (weather, chain, voxel_carve)",
-                    wave6hP2eV3Results.allowsWeather &&
-                        wave6hP2eV3Results.allowsChain &&
-                        wave6hP2eV3Results.allowsTerrain
-                );
-                check(
-                    "Welle 6.H P2E V3: Validator lehnt verbotene Ops ab + nennt forbiddenOp",
-                    wave6hP2eV3Results.rejectsPlayerSpeed && wave6hP2eV3Results.rejectsDefine
-                );
-                check(
-                    "Welle 6.H P2E V3: Validator erkennt verbotene Op TIEF im Chain (Defense-Recursion)",
-                    wave6hP2eV3Results.rejectsNestedForbidden
-                );
-                check(
-                    "Welle 6.H P2E V3: Persona-Prompt erlaubt program + nennt Op-Whitelist + erwähnt schöpfer-Modus",
-                    wave6hP2eV3Results.promptMentionsProgram &&
-                        wave6hP2eV3Results.promptListsOps &&
-                        wave6hP2eV3Results.promptMentionsModus
-                );
-                check(
-                    "Welle 6.H P2E V3: schöpfer-Modus → auto-execute (Wetter ändert sich tatsächlich) + chat-Hinweis-Zeile + Memory auto_executed_action",
-                    wave6hP2eV3Results.autoExecutedInSchöpfer &&
-                        wave6hP2eV3Results.autoChatLineAdded &&
-                        wave6hP2eV3Results.memoryHasAutoExecuted
-                );
-                check(
-                    "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",
-                    wave6hP2eV3Results.pfadDoesNotAutoExecute &&
-                        wave6hP2eV3Results.pfadRendersButtons &&
-                        wave6hP2eV3Results.memoryHasProposed
-                );
-                check(
-                    "Welle 6.H P2E V3: Defense-in-Depth — verbotenes Programm wird AUCH im schöpfer-Modus blockiert + proposal_blocked-Memory",
-                    wave6hP2eV3Results.forbiddenBlockedEvenInSchöpfer &&
-                        wave6hP2eV3Results.memoryHasBlocked &&
-                        wave6hP2eV3Results.memoryGrew
-                );
-                check(
-                    "Welle 6.H P2E V3: Accept-Button-Click führt Programm aus + accepted_action-Memory",
-                    wave6hP2eV3Results.acceptButtonExists &&
-                        wave6hP2eV3Results.acceptClickExecutes &&
-                        wave6hP2eV3Results.memoryHasAccepted
-                );
-                check(
-                    "Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)",
-                    wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
-                );
-            } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
-                check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
-            }
-
-            // ### Welle 6.B Phase 1+2 — CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
-            const wave6bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        // --- Phase 1: State-Schema ---
-                        const ws = r._ensureWorkshopState();
-                        out.hasSelectedPartIdxField = "selectedPartIdx" in ws;
-                        out.hasPreviewField = "preview" in ws;
-                        out.hasManipulatorModeField = typeof ws.manipulatorMode === "string";
-                        out.hasSnapEnabledField = typeof ws.snapEnabled === "boolean";
-                        out.defaultManipulatorMode = ws.manipulatorMode;
-                        out.defaultSnapEnabled = ws.snapEnabled;
-
-                        // --- Phase 1: DOM-Elemente ---
-                        out.canvasInDom = !!document.getElementById("workshop-preview-canvas");
-                        out.previewWrapperInDom = !!document.getElementById("workshop-preview-wrapper");
-
-                        // --- Phase 2: Konstanten ---
-                        const AR = r.constructor;
-                        out.gizmoColorsFrozen =
-                            !!AR.WORKSHOP_GIZMO_COLORS &&
-                            Object.isFrozen(AR.WORKSHOP_GIZMO_COLORS) &&
-                            typeof AR.WORKSHOP_GIZMO_COLORS.x === "number" &&
-                            typeof AR.WORKSHOP_GIZMO_COLORS.y === "number" &&
-                            typeof AR.WORKSHOP_GIZMO_COLORS.z === "number";
-                        out.snapTranslate = AR.WORKSHOP_SNAP_TRANSLATE;
-                        out.snapRotate = AR.WORKSHOP_SNAP_ROTATE;
-                        out.snapScale = AR.WORKSHOP_SNAP_SCALE;
-                        out.minPartSize = AR.WORKSHOP_MIN_PART_SIZE;
-
-                        // --- Phase 2: Public API ---
-                        out.modeSetTranslate = r.setWorkshopManipulatorMode("translate");
-                        out.modeAfterTranslate = ws.manipulatorMode === "translate";
-                        out.modeSetRotate = r.setWorkshopManipulatorMode("rotate");
-                        out.modeAfterRotate = ws.manipulatorMode === "rotate";
-                        out.modeSetScale = r.setWorkshopManipulatorMode("scale");
-                        out.modeAfterScale = ws.manipulatorMode === "scale";
-                        out.modeRejectInvalid = r.setWorkshopManipulatorMode("nonsense") === false;
-                        r.setWorkshopManipulatorMode("translate"); // reset
-
-                        const snapBefore = ws.snapEnabled;
-                        const snapAfter1 = r.toggleWorkshopSnap();
-                        out.snapTogglesOff = snapBefore === true && snapAfter1 === false;
-                        const snapAfter2 = r.toggleWorkshopSnap();
-                        out.snapTogglesBack = snapAfter2 === true;
-                        // Explizites Argument: true setzt + liefert true, false setzt + liefert false
-                        out.snapExplicitTrue = r.toggleWorkshopSnap(true) === true;
-                        out.snapExplicitFalseReturns = r.toggleWorkshopSnap(false) === false;
-                        r.toggleWorkshopSnap(true); // reset
-
-                        // --- Phase 2: Snap-Helper ---
-                        ws.snapEnabled = true;
-                        out.snapTranslateRound = r._workshopApplySnap(1.7, "translate") === 1.5;
-                        out.snapTranslateRoundUp = r._workshopApplySnap(1.8, "translate") === 2.0;
-                        out.snapScaleRound = Math.abs(r._workshopApplySnap(1.23, "scale") - 1.2) < 0.0001;
-                        ws.snapEnabled = false;
-                        out.snapInactivePassthrough = r._workshopApplySnap(1.7, "translate") === 1.7;
-                        ws.snapEnabled = true;
-
-                        // --- Phase 2: Helper-Methoden ---
-                        const vx = r._workshopAxisToVec3("x");
-                        out.axisToVecX = vx && vx.x === 1 && vx.y === 0 && vx.z === 0;
-                        const vy = r._workshopAxisToVec3("y");
-                        out.axisToVecY = vy && vy.x === 0 && vy.y === 1 && vy.z === 0;
-                        const vz = r._workshopAxisToVec3("z");
-                        out.axisToVecZ = vz && vz.x === 0 && vz.y === 0 && vz.z === 1;
-                        const perpY = r._workshopAxisPerpendicular(vy);
-                        out.axisPerpDot = perpY && Math.abs(perpY.dot(vy)) < 0.001;
-
-                        // --- Phase 1: Selection-Pfad (ohne Preview, headless-safe) ---
-                        // Bauplan auswählen: braucht selectBlueprintForEdit auf existing built-in
-                        r.selectBlueprintForEdit("village");
-                        out.selectedSetToVillage = ws.selectedBlueprint === "village";
-                        // selectedPartIdx wurde zurückgesetzt
-                        out.selectionResetOnBlueprintSwitch = ws.selectedPartIdx === null;
-                        // Manuelle Selection setzen (ohne Klick)
-                        r._workshopSetSelection(0);
-                        out.selectionSetTo0 = ws.selectedPartIdx === 0;
-                        // Out-of-range wird abgelehnt
-                        r._workshopSetSelection(9999);
-                        out.selectionRejectsOOB = ws.selectedPartIdx === null;
-                        r._workshopSetSelection(null); // reset
-
-                        // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
-                        // village ist built-in → kein Drag
-                        out.builtInRejected = true;
-                        try {
-                            r._workshopSetSelection(0);
-                            // Wir können _workshopBeginManipulation aufrufen, aber es sollte
-                            // intern wegen builtIn früh aussteigen (kein dragManipulator gesetzt).
-                            // Wir können das nur prüfen wenn preview existiert.
-                            r._workshopEnsurePreview();
-                            const pre = r.state.workshop.preview;
-                            if (pre) {
-                                r._workshopBeginManipulation("translate", "x", 100, 100);
-                                out.builtInRejected = pre.dragManipulator === null;
-                            }
-                        } catch {
-                            out.builtInRejected = false;
-                        }
-
-                        // --- Phase 2: Manipulator auf eigenem Bauplan ---
-                        // Klone village zu test_wave6b
-                        const cloneOk = r.cloneBlueprint("village", "test_wave6b");
-                        out.cloneOk = cloneOk;
-                        if (cloneOk) {
-                            r.selectBlueprintForEdit("test_wave6b");
-                            r._workshopSetSelection(0);
-                            const partBefore = JSON.parse(JSON.stringify(r.state.blueprints.test_wave6b.parts[0]));
-                            out.posBefore = partBefore.position.x;
-                            // Drag begin auf eigenem Bauplan
-                            r._workshopEnsurePreview();
-                            const pre = r.state.workshop.preview;
-                            if (pre) {
-                                r._workshopBeginManipulation("translate", "x", 100, 100);
-                                out.dragManipulatorSet = pre.dragManipulator !== null;
-                                if (pre.dragManipulator) {
-                                    out.dragModeIsTranslate = pre.dragManipulator.mode === "translate";
-                                    out.dragAxisIsX = pre.dragManipulator.axis === "x";
-                                }
-                                // End-Pfad räumt auf
-                                r._workshopEndManipulation();
-                                out.dragManipulatorCleared = pre.dragManipulator === null;
-                            }
-                            // Aufräumen: deleteBlueprint allein refreshed nicht die
-                            // Workshop-DOM-Liste — wir müssen das explizit nachziehen,
-                            // sonst sieht der nachfolgende Ring-6.6-Test eine Liste,
-                            // die 1 Eintrag länger ist als state.blueprints.
-                            r.deleteBlueprint("test_wave6b");
-                            r.selectBlueprintForEdit("village");
-                            r._renderWorkshopDOM();
-                        }
-
-                        // --- Phase 2: UI-Elemente ---
-                        out.modeBarInDom = !!document.getElementById("workshop-mode-bar");
-                        const modeBtns = document.querySelectorAll("#workshop-mode-bar [data-workshop-mode]");
-                        // V8.02 Phase 3b: connect ist 4. Modus dazugekommen
-                        out.fourModeButtons = modeBtns.length === 4;
-                        out.snapToggleInDom = !!document.getElementById("workshop-snap-toggle");
-
-                        // --- Phase 2: Gizmo-Aufbau ---
-                        r._workshopEnsurePreview();
-                        const pre = r.state.workshop.preview;
-                        if (pre && pre.gizmo) {
-                            out.gizmoBuilt = true;
-                            out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
-                            // Pro Modus ein paar Mesh-Einträge in gizmoMeshes
-                            let tCount = 0,
-                                rCount = 0,
-                                sCount = 0;
-                            for (const info of pre.gizmoMeshes.values()) {
-                                if (info.mode === "translate") tCount++;
-                                else if (info.mode === "rotate") rCount++;
-                                else if (info.mode === "scale") sCount++;
-                            }
-                            out.gizmoHasTranslateMeshes = tCount >= 3;
-                            out.gizmoHasRotateMeshes = rCount >= 3;
-                            out.gizmoHasScaleMeshes = sCount >= 4; // 3 axes + 1 uniform
-                            // V7.99 Bug-Fix: Picker-Meshes erhöhen die Mesh-
-                            // Anzahl pro Modus (visual + picker pro Handle).
-                            // translate: 3 × (shaft + tip + picker) = 9
-                            // rotate: 3 × (ring + picker) = 6
-                            // scale: 3 × (cube + shaft + picker) + 2 × (center + picker) = 11
-                            out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
-
-                            // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
-                            // Bauplan ist aktuell village (Built-in). Sync rufen
-                            // und prüfen dass Gizmo versteckt ist.
-                            r.selectBlueprintForEdit("village");
-                            r._workshopSetSelection(0);
-                            r._workshopSyncGizmo();
-                            out.gizmoHiddenOnBuiltIn = pre.gizmo.visible === false;
-                            // Banner sichtbar?
-                            const banner = document.getElementById("workshop-readonly-banner");
-                            out.readonlyBannerVisibleOnBuiltIn = banner && banner.hidden === false;
-                            // Mode-Bar disabled?
-                            const firstModeBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode]");
-                            out.modeBarDisabledOnBuiltIn = firstModeBtn && firstModeBtn.disabled === true;
-                            // Jetzt mit eigenem Bauplan: Klone + Selection + Sync
-                            r.cloneBlueprint("village", "test_visibility");
-                            r.selectBlueprintForEdit("test_visibility");
-                            r._workshopSetSelection(0);
-                            r._workshopSyncGizmo();
-                            out.gizmoVisibleOnCustom = pre.gizmo.visible === true;
-                            out.readonlyBannerHiddenOnCustom = banner && banner.hidden === true;
-                            out.modeBarEnabledOnCustom = firstModeBtn && firstModeBtn.disabled === false;
-                            r.deleteBlueprint("test_visibility");
-                            r.selectBlueprintForEdit("village");
-                            r._renderWorkshopDOM();
-                        }
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave6bResults && !wave6bResults.error) {
-                check("Welle 6.B P1: state.workshop hat selectedPartIdx-Feld", wave6bResults.hasSelectedPartIdxField);
-                check("Welle 6.B P1: state.workshop hat preview-Feld (lazy)", wave6bResults.hasPreviewField);
-                check("Welle 6.B P1: #workshop-preview-canvas im DOM", wave6bResults.canvasInDom);
-                check("Welle 6.B P1: #workshop-preview-wrapper im DOM", wave6bResults.previewWrapperInDom);
-                check(
-                    "Welle 6.B P1: selectBlueprintForEdit setzt selectedBlueprint",
-                    wave6bResults.selectedSetToVillage
-                );
-                check(
-                    "Welle 6.B P1: Bauplan-Wechsel resettet selectedPartIdx auf null",
-                    wave6bResults.selectionResetOnBlueprintSwitch
-                );
-                check("Welle 6.B P1: _workshopSetSelection(0) setzt selectedPartIdx", wave6bResults.selectionSetTo0);
-                check(
-                    "Welle 6.B P1: _workshopSetSelection lehnt out-of-range (idx=null bei OOB)",
-                    wave6bResults.selectionRejectsOOB
-                );
-                check(
-                    "Welle 6.B P2: manipulatorMode-Feld + Default 'translate'",
-                    wave6bResults.hasManipulatorModeField && wave6bResults.defaultManipulatorMode === "translate"
-                );
-                check(
-                    "Welle 6.B P2: snapEnabled-Feld + Default true",
-                    wave6bResults.hasSnapEnabledField && wave6bResults.defaultSnapEnabled === true
-                );
-                check(
-                    "Welle 6.B P2: WORKSHOP_GIZMO_COLORS frozen mit x/y/z (uint Farben)",
-                    wave6bResults.gizmoColorsFrozen
-                );
-                check("Welle 6.B P2: WORKSHOP_SNAP_TRANSLATE === 0.5", wave6bResults.snapTranslate === 0.5);
-                check(
-                    "Welle 6.B P2: WORKSHOP_SNAP_ROTATE === π/12 (15°)",
-                    Math.abs(wave6bResults.snapRotate - Math.PI / 12) < 0.0001
-                );
-                check("Welle 6.B P2: WORKSHOP_SNAP_SCALE === 0.1", wave6bResults.snapScale === 0.1);
-                check("Welle 6.B P2: WORKSHOP_MIN_PART_SIZE === 0.05", wave6bResults.minPartSize === 0.05);
-                check(
-                    "Welle 6.B P2: setWorkshopManipulatorMode wechselt durch alle 3 Modi (translate/rotate/scale)",
-                    wave6bResults.modeSetTranslate &&
-                        wave6bResults.modeAfterTranslate &&
-                        wave6bResults.modeSetRotate &&
-                        wave6bResults.modeAfterRotate &&
-                        wave6bResults.modeSetScale &&
-                        wave6bResults.modeAfterScale
-                );
-                check(
-                    "Welle 6.B P2: setWorkshopManipulatorMode lehnt ungültige Modi ab",
-                    wave6bResults.modeRejectInvalid
-                );
-                check(
-                    "Welle 6.B P2: toggleWorkshopSnap toggelt true→false→true",
-                    wave6bResults.snapTogglesOff && wave6bResults.snapTogglesBack
-                );
-                check(
-                    "Welle 6.B P2: toggleWorkshopSnap akzeptiert explizites Argument (true/false)",
-                    wave6bResults.snapExplicitTrue && wave6bResults.snapExplicitFalseReturns
-                );
-                check(
-                    "Welle 6.B P2: _workshopApplySnap aktiv rundet 1.7 → 1.5 (translate-step 0.5)",
-                    wave6bResults.snapTranslateRound
-                );
-                check("Welle 6.B P2: _workshopApplySnap aktiv rundet 1.8 → 2.0", wave6bResults.snapTranslateRoundUp);
-                check("Welle 6.B P2: _workshopApplySnap scale 1.23 → 1.2 (step 0.1)", wave6bResults.snapScaleRound);
-                check(
-                    "Welle 6.B P2: _workshopApplySnap inaktiv → Wert unverändert",
-                    wave6bResults.snapInactivePassthrough
-                );
-                check(
-                    "Welle 6.B P2: _workshopAxisToVec3 liefert korrekte Welt-Achsen (X/Y/Z)",
-                    wave6bResults.axisToVecX && wave6bResults.axisToVecY && wave6bResults.axisToVecZ
-                );
-                check(
-                    "Welle 6.B P2: _workshopAxisPerpendicular liefert senkrechte Achse (dot ≈ 0)",
-                    wave6bResults.axisPerpDot
-                );
-                check(
-                    "Welle 6.B P2: _workshopBeginManipulation auf Built-in setzt KEINEN dragManipulator (read-only-Schutz)",
-                    wave6bResults.builtInRejected
-                );
-                check("Welle 6.B P2: cloneBlueprint(village → test_wave6b) erfolgreich", wave6bResults.cloneOk);
-                check(
-                    "Welle 6.B P2: _workshopBeginManipulation auf eigenem Bauplan setzt dragManipulator",
-                    wave6bResults.dragManipulatorSet
-                );
-                check(
-                    "Welle 6.B P2: dragManipulator trägt korrekte mode+axis (translate/x)",
-                    wave6bResults.dragModeIsTranslate && wave6bResults.dragAxisIsX
-                );
-                check(
-                    "Welle 6.B P2: _workshopEndManipulation räumt dragManipulator auf",
-                    wave6bResults.dragManipulatorCleared
-                );
-                check("Welle 6.B P2: #workshop-mode-bar im DOM", wave6bResults.modeBarInDom);
-                check(
-                    "Welle 6.B P2+3: 4 Mode-Buttons (translate/rotate/scale/connect) im DOM",
-                    wave6bResults.fourModeButtons
-                );
-                check("Welle 6.B P2: #workshop-snap-toggle im DOM", wave6bResults.snapToggleInDom);
-                check("Welle 6.B P2: Gizmo-Group gebaut (preview.gizmo nicht null)", wave6bResults.gizmoBuilt);
-                check("Welle 6.B P2: Gizmo hat 3 Sub-Groups (translate/rotate/scale)", wave6bResults.gizmoChildren);
-                check(
-                    "Welle 6.B P2: Translate-Gizmo hat ≥3 Handle-Meshes (Pfeile)",
-                    wave6bResults.gizmoHasTranslateMeshes
-                );
-                check("Welle 6.B P2: Rotate-Gizmo hat ≥3 Handle-Meshes (Ringe)", wave6bResults.gizmoHasRotateMeshes);
-                check(
-                    "Welle 6.B P2: Scale-Gizmo hat ≥4 Handle-Meshes (3 Achsen + 1 uniform-Center)",
-                    wave6bResults.gizmoHasScaleMeshes
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Picker-Meshes pro Mode (translate≥9, rotate≥6, scale≥8 — Klick-Toleranz)",
-                    wave6bResults.gizmoHasPickers
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Gizmo VERSTECKT bei Built-in (verhindert Geist-Drag-Bug)",
-                    wave6bResults.gizmoHiddenOnBuiltIn
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Read-only-Banner sichtbar bei Built-in",
-                    wave6bResults.readonlyBannerVisibleOnBuiltIn
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons disabled bei Built-in",
-                    wave6bResults.modeBarDisabledOnBuiltIn
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Gizmo SICHTBAR bei eigenem Bauplan + Selection",
-                    wave6bResults.gizmoVisibleOnCustom
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Banner versteckt bei eigenem Bauplan",
-                    wave6bResults.readonlyBannerHiddenOnCustom
-                );
-                check(
-                    "Welle 6.B P2 Bug-Fix V7.99: Mode-Bar Buttons enabled bei eigenem Bauplan",
-                    wave6bResults.modeBarEnabledOnCustom
-                );
-            } else if (wave6bResults && wave6bResults.error) {
-                check(`Welle 6.B: evaluate-Fehler — ${wave6bResults.error}`, false);
-            }
-
-            // ### V8.00 — Resize-Handles (Konsole + Drawer) + Background-Fix ###
-            const resizeResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        out.hasInstallMethod = typeof r.installResizeHandles === "function";
-                        out.hasInternalMethod = typeof r._installResizeHandle === "function";
-                        // Welle 6.X.2 V8.15 — Konsole-Handle ist jetzt
-                        // top-right statt bottom-right (unten verdeckt von
-                        // Hotbar + Stats-HUD).
-                        const consoleEl = document.getElementById("console");
-                        out.consoleHasHandle = !!(
-                            consoleEl && consoleEl.querySelector(":scope > .resize-handle.resize-br")
-                        );
-                        // Jeder Drawer: bl-handle existiert
-                        const drawers = document.querySelectorAll(".drawer[data-drawer]");
-                        let allDrawersHaveHandle = drawers.length > 0;
-                        let drawerCount = 0;
-                        drawers.forEach((d) => {
-                            drawerCount++;
-                            if (!d.querySelector(":scope > .resize-handle.resize-bl")) {
-                                allDrawersHaveHandle = false;
-                            }
-                        });
-                        out.allDrawersHaveHandle = allDrawersHaveHandle;
-                        out.drawerCount = drawerCount;
-                        // Idempotenz: zweiter installResizeHandles-Call erzeugt keine Duplikate
-                        r.installResizeHandles();
-                        const handlesAfterSecond = document.querySelectorAll("#console > .resize-handle").length;
-                        out.consoleHandleNotDuplicated = handlesAfterSecond === 1;
-                        // localStorage-Persistence: simulate drag end
-                        const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
-                        if (werkstatt) {
-                            werkstatt.style.width = "400px";
-                            werkstatt.style.height = "500px";
-                            // simulate save (mouseup handler logic)
-                            localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 400, height: 500 }));
-                            const raw = localStorage.getItem("anazh.resize.werkstatt");
-                            out.persistenceWorks =
-                                raw && JSON.parse(raw).width === 400 && JSON.parse(raw).height === 500;
-                            // cleanup
-                            werkstatt.style.width = "";
-                            werkstatt.style.height = "";
-                            localStorage.removeItem("anazh.resize.werkstatt");
-                        }
-                        // Background-Fix: .drawer hat jetzt direkt ein background statt nur ::before.
-                        // Wir prüfen das via computed style — background sollte 'none' nicht sein.
-                        const w = document.querySelector('[data-drawer="welt"]');
-                        if (w) {
-                            const cs = getComputedStyle(w);
-                            out.drawerHasDirectBackground = cs.backgroundImage && cs.backgroundImage !== "none";
-                            out.drawerHasInsetShadow = cs.boxShadow && cs.boxShadow.includes("inset");
-                        }
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (resizeResults && !resizeResults.error) {
-                check(
-                    "V8.00 Resize: installResizeHandles + _installResizeHandle existieren",
-                    resizeResults.hasInstallMethod && resizeResults.hasInternalMethod
-                );
-                check(
-                    "V8.00/V8.17 Resize: Konsole hat .resize-br Handle (unten-rechts, Schöpfer-Korrektur)",
-                    resizeResults.consoleHasHandle
-                );
-                check(
-                    `V8.00 Resize: Alle ${resizeResults.drawerCount} Drawer haben .resize-bl Handle (unten-links)`,
-                    resizeResults.allDrawersHaveHandle
-                );
-                check(
-                    "V8.00 Resize: installResizeHandles ist idempotent (kein Duplikat)",
-                    resizeResults.consoleHandleNotDuplicated
-                );
-                check("V8.00 Resize: localStorage-Persistence schreibt + liest", resizeResults.persistenceWorks);
-                check(
-                    "V8.00 BG-Fix: .drawer hat direktes background-image (statt nur via ::before)",
-                    resizeResults.drawerHasDirectBackground
-                );
-                check(
-                    "V8.00 BG-Fix: .drawer hat inset box-shadow für Border-Ringe (statt nur via ::after)",
-                    resizeResults.drawerHasInsetShadow
-                );
-            } else if (resizeResults && resizeResults.error) {
-                check(`V8.00 Resize: evaluate-Fehler — ${resizeResults.error}`, false);
-            }
-
-            // ### V8.01 — Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
-            const v801Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        // _wrapDrawerScroll + _workshopSyncCanvasSize existieren
-                        out.hasWrapMethod = typeof r._wrapDrawerScroll === "function";
-                        out.hasSyncMethod = typeof r._workshopSyncCanvasSize === "function";
-                        // Jeder Drawer hat .drawer-scroll-Wrapper als direktes child
-                        const drawers = document.querySelectorAll(".drawer[data-drawer]");
-                        let allWrapped = drawers.length > 0;
-                        drawers.forEach((d) => {
-                            if (!d.querySelector(":scope > .drawer-scroll")) allWrapped = false;
-                        });
-                        out.allDrawersWrapped = allWrapped;
-                        out.drawerCount = drawers.length;
-                        // Resize-Handle ist outside des scroll-Wrappers (sonst würde
-                        // er weg-scrollen wie bei v8.00).
-                        const werkstatt = document.querySelector('[data-drawer="werkstatt"]');
-                        if (werkstatt) {
-                            const handleOutside = !!werkstatt.querySelector(":scope > .resize-handle");
-                            const handleInsideWrap = !!werkstatt.querySelector(
-                                ":scope > .drawer-scroll > .resize-handle"
-                            );
-                            out.handleOutsideScroll = handleOutside && !handleInsideWrap;
-                        }
-                        // h2 ist ebenfalls direktes child (bleibt oben fest)
-                        const w2 = document.querySelector('[data-drawer="werkstatt"] > h2');
-                        out.h2DirectChildOfDrawer = !!w2;
-                        // Drawer hat overflow:hidden + display:flex. Beide nur
-                        // prüfbar wenn Drawer SICHTBAR (.drawer[hidden] hat
-                        // display:block!important via CSS-Override).
-                        // Öffne den Werkstatt-Tab kurz für den Test, später
-                        // alles zurück.
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (tab) tab.click();
-                        if (werkstatt) {
-                            const cs = getComputedStyle(werkstatt);
-                            out.drawerOverflowHidden = cs.overflow === "hidden" || cs.overflowY === "hidden";
-                            out.drawerDisplayFlex = cs.display === "flex";
-                        }
-                        // drawer-scroll hat overflow-y:auto
-                        const scroll = werkstatt && werkstatt.querySelector(":scope > .drawer-scroll");
-                        if (scroll) {
-                            const cs = getComputedStyle(scroll);
-                            out.scrollOverflowYAuto = cs.overflowY === "auto";
-                        }
-                        // Canvas-Sync: setze Drawer auf 600px, prüfe dass renderer.setSize gerufen wurde
-                        const canvas = document.getElementById("workshop-preview-canvas");
-                        if (canvas && werkstatt) {
-                            werkstatt.style.width = "600px";
-                            // Force eine Sync via _workshopSyncCanvasSize
-                            r._workshopSyncCanvasSize();
-                            const rect = canvas.getBoundingClientRect();
-                            const w = Math.max(64, Math.floor(rect.width));
-                            // canvas.width sollte jetzt der CSS-Größe entsprechen
-                            out.canvasSyncWorks = canvas.width === w;
-                            // cleanup
-                            werkstatt.style.width = "";
-                        }
-                        // CRITICAL Cleanup: zurück zum Welt-Tab + Yaw zurück auf 0,
-                        // sonst stört der Test nachgelagerte Welt-Drawer- und
-                        // Ring-5-V2-Prep-Tests.
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (v801Results && !v801Results.error) {
-                check(
-                    "V8.01: _wrapDrawerScroll + _workshopSyncCanvasSize existieren",
-                    v801Results.hasWrapMethod && v801Results.hasSyncMethod
-                );
-                check(
-                    `V8.01: Alle ${v801Results.drawerCount} Drawer haben .drawer-scroll-Wrapper (Inhalt scrollt, Rahmen bleibt fest)`,
-                    v801Results.allDrawersWrapped
-                );
-                check(
-                    "V8.01: h2 (Drawer-Titel) ist direktes child des Drawers — bleibt oben fest beim Scroll",
-                    v801Results.h2DirectChildOfDrawer
-                );
-                check(
-                    "V8.01: Resize-Handle ist außerhalb des Scroll-Wrappers — bleibt fest in der Ecke",
-                    v801Results.handleOutsideScroll
-                );
-                check(
-                    "V8.01: .drawer hat overflow:hidden (CSS-Wechsel von overflow-y:auto)",
-                    v801Results.drawerOverflowHidden
-                );
-                check("V8.01: .drawer hat display:flex für column-Layout", v801Results.drawerDisplayFlex);
-                check(
-                    "V8.01: .drawer-scroll hat overflow-y:auto (scroller im Wrapper)",
-                    v801Results.scrollOverflowYAuto
-                );
-                check(
-                    "V8.01: _workshopSyncCanvasSize zieht canvas.width an CSS-rect.width nach (Drawer-Resize → Render-Pixel mitwachsen)",
-                    v801Results.canvasSyncWorks
-                );
-            } else if (v801Results && v801Results.error) {
-                check(`V8.01: evaluate-Fehler — ${v801Results.error}`, false);
-            }
-
-            // ### V8.02 Phase 3 — Shape-Drag-Drop + Klick-Klick-Connection ###
-            const v802Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        // Methoden existieren
-                        out.hasShapeDnDInstall = typeof r._workshopInstallShapeDragDrop === "function";
-                        out.hasShapeDropHandler = typeof r._workshopHandleShapeDrop === "function";
-                        out.hasConnectClick = typeof r._workshopHandleConnectClick === "function";
-                        out.hasOpenPopover = typeof r._workshopOpenConnectPopover === "function";
-                        out.hasClosePopover = typeof r._workshopCloseConnectPopover === "function";
-                        out.hasApplyConn = typeof r._workshopApplyConnection === "function";
-
-                        // Shape-Palette: 9 Cards im DOM
-                        const palette = document.getElementById("workshop-shape-palette");
-                        out.paletteInDom = !!palette;
-                        if (palette) {
-                            const cards = palette.querySelectorAll(".workshop-shape-card");
-                            out.nineCards = cards.length === 9;
-                            // Alle 9 expected shapes
-                            const shapes = new Set();
-                            cards.forEach((c) => shapes.add(c.getAttribute("data-shape")));
-                            out.allNineShapesPresent = [
-                                "box",
-                                "sphere",
-                                "cylinder",
-                                "cone",
-                                "pyramid",
-                                "octahedron",
-                                "plane",
-                                "torus",
-                                "helix",
-                            ].every((s) => shapes.has(s));
-                            // Default: draggable=true (eigener Bauplan)
-                            // Aber bei Built-in (initial village) sollten sie draggable=false sein
-                        }
-
-                        // Drop-Handler-Test: auf Built-in muss er ablehnen
-                        r.selectBlueprintForEdit("village");
-                        const partsBeforeBuiltIn = r.state.blueprints.village.parts.length;
-                        r._workshopHandleShapeDrop("box", 100, 100);
-                        const partsAfterBuiltIn = r.state.blueprints.village.parts.length;
-                        out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
-
-                        // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
-                        if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
-                        r.cloneBlueprint("village", "test_phase3");
-                        r.selectBlueprintForEdit("test_phase3");
-                        r._workshopEnsurePreview();
-                        const partsBefore = r.state.blueprints.test_phase3.parts.length;
-                        r._workshopHandleShapeDrop("sphere", 100, 100);
-                        const partsAfter = r.state.blueprints.test_phase3.parts.length;
-                        out.dropOnCustomAddsPart = partsAfter === partsBefore + 1;
-                        const newPart = r.state.blueprints.test_phase3.parts[partsAfter - 1];
-                        out.newPartIsSphere = newPart && newPart.shape === "sphere";
-                        out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
-
-                        // Connect-Modus: setWorkshopManipulatorMode akzeptiert "connect"
-                        out.connectModeAccepted = r.setWorkshopManipulatorMode("connect") === true;
-                        out.modeIsConnect = r.state.workshop.manipulatorMode === "connect";
-
-                        // Klick auf Part 0 im Connect-Mode → connectFirstPartIdx wird Source
-                        r._workshopHandleConnectClick(0);
-                        out.connectFirstSetTo0 = r.state.workshop.connectFirstPartIdx === 0;
-                        // Klick auf Part 1 → öffnet Popover
-                        r._workshopHandleConnectClick(1);
-                        const popover = document.getElementById("workshop-connect-overlay");
-                        out.popoverOpened = !!popover;
-                        // Popover hat 8 Type-Buttons + 1 Cancel
-                        if (popover) {
-                            const buttons = popover.querySelectorAll("button");
-                            out.popoverHasButtons = buttons.length === 9; // 8 types + cancel
-                        }
-
-                        // Apply Connection
-                        r._workshopApplyConnection(0, 1, "lashing");
-                        const conns = r.state.blueprints.test_phase3.connections || [];
-                        out.connectionAdded = conns.some((c) => c.partA === 0 && c.partB === 1 && c.type === "lashing");
-                        // Popover wurde geschlossen
-                        out.popoverClosedAfterApply = !document.getElementById("workshop-connect-overlay");
-                        // Connect-State zurückgesetzt
-                        out.connectStateReset = r.state.workshop.connectFirstPartIdx === null;
-
-                        // Duplikat-Schutz: gleiche Connection zweimal → bleibt 1
-                        r._workshopApplyConnection(0, 1, "lashing");
-                        const connsAfterDup = r.state.blueprints.test_phase3.connections || [];
-                        const lashingCount = connsAfterDup.filter(
-                            (c) => c.type === "lashing" && c.partA === 0 && c.partB === 1
-                        ).length;
-                        out.dupRejected = lashingCount === 1;
-
-                        // Apply lehnt unbekannten Type ab
-                        const beforeBogus = (r.state.blueprints.test_phase3.connections || []).length;
-                        r._workshopApplyConnection(0, 1, "nonsense_type");
-                        const afterBogus = (r.state.blueprints.test_phase3.connections || []).length;
-                        out.bogusTypeRejected = afterBogus === beforeBogus;
-
-                        // ESC im Connect-Mode mit pending Source → cancelt nur Connect, nicht Drawer
-                        r._workshopHandleConnectClick(0); // Source = 0
-                        r.state.uiActiveDrawer = "werkstatt";
-                        r.closeAllDrawers();
-                        out.escCancelsConnectOnly = r.state.workshop.connectFirstPartIdx === null;
-                        // Drawer sollte noch aktiv sein, weil ESC nur Connect canceled
-                        out.drawerStillActiveAfterEsc = r.state.uiActiveDrawer === "werkstatt";
-
-                        // Cleanup
-                        r.setWorkshopManipulatorMode("translate");
-                        r.deleteBlueprint("test_phase3");
-                        r.selectBlueprintForEdit("village");
-                        r._renderWorkshopDOM();
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (v802Results && !v802Results.error) {
-                check(
-                    "V8.02 Phase 3: alle 6 Methoden existieren (DragDrop-Install + Drop-Handler + Connect-Click/Open/Close/Apply)",
-                    v802Results.hasShapeDnDInstall &&
-                        v802Results.hasShapeDropHandler &&
-                        v802Results.hasConnectClick &&
-                        v802Results.hasOpenPopover &&
-                        v802Results.hasClosePopover &&
-                        v802Results.hasApplyConn
-                );
-                check("V8.02 Phase 3a: #workshop-shape-palette im DOM", v802Results.paletteInDom);
-                check("V8.02 Phase 3a: 9 Shape-Cards in der Palette", v802Results.nineCards);
-                check(
-                    "V8.02 Phase 3a: alle 9 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus/helix)",
-                    v802Results.allNineShapesPresent
-                );
-                check(
-                    "V8.02 Phase 3a: Drop auf Built-in-Bauplan abgelehnt (read-only-Schutz)",
-                    v802Results.dropOnBuiltInRejected
-                );
-                check(
-                    "V8.02 Phase 3a: Drop auf eigenem Bauplan fügt einen Part hinzu",
-                    v802Results.dropOnCustomAddsPart && v802Results.newPartIsSphere
-                );
-                check(
-                    "V8.02 Phase 3a: Neuer Part wird automatisch selektiert (Gizmo bereit)",
-                    v802Results.newPartSelected
-                );
-                check(
-                    "V8.02 Phase 3b: setWorkshopManipulatorMode('connect') akzeptiert + setzt State",
-                    v802Results.connectModeAccepted && v802Results.modeIsConnect
-                );
-                check(
-                    "V8.02 Phase 3b: Erster Connect-Klick setzt connectFirstPartIdx auf Source",
-                    v802Results.connectFirstSetTo0
-                );
-                check(
-                    "V8.02 Phase 3b: Zweiter Connect-Klick öffnet #workshop-connect-overlay",
-                    v802Results.popoverOpened
-                );
-                check(
-                    "V8.02 Phase 3b: Popover hat 8 Type-Buttons + 1 Cancel-Button (= 9 total)",
-                    v802Results.popoverHasButtons
-                );
-                check(
-                    "V8.02 Phase 3b: _workshopApplyConnection schreibt {type, partA, partB} ins bp.connections",
-                    v802Results.connectionAdded
-                );
-                check("V8.02 Phase 3b: Popover schließt nach Apply", v802Results.popoverClosedAfterApply);
-                check("V8.02 Phase 3b: connectFirstPartIdx zurückgesetzt nach Apply", v802Results.connectStateReset);
-                check("V8.02 Phase 3b: Duplikat-Schutz — selbe Connection zweimal → bleibt 1", v802Results.dupRejected);
-                check("V8.02 Phase 3b: Unbekannter Connection-Type wird abgelehnt", v802Results.bogusTypeRejected);
-                check(
-                    "V8.02 Phase 3b: ESC im Connect-Mode mit pending Source → cancelt nur Connect (nicht Drawer)",
-                    v802Results.escCancelsConnectOnly && v802Results.drawerStillActiveAfterEsc
-                );
-            } else if (v802Results && v802Results.error) {
-                check(`V8.02 Phase 3: evaluate-Fehler — ${v802Results.error}`, false);
-            }
-
-            // ### V8.03 — Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
-            //             seitliche Material/Color-Palette
-            const v803Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        // Helper-Methoden existieren
-                        out.hasWorldPoint = typeof r._workshopWorldPointAtCursor === "function";
-                        out.hasRaycastPartIdx = typeof r._workshopRaycastPartIdxAt === "function";
-                        out.hasMaterialRender = typeof r._workshopRenderMaterialPalette === "function";
-                        out.hasColorRender = typeof r._workshopRenderColorPalette === "function";
-                        out.hasMaterialDrop = typeof r._workshopHandleMaterialDrop === "function";
-                        out.hasColorDrop = typeof r._workshopHandleColorDrop === "function";
-
-                        // Tab → Werkstatt + eigenen Bauplan vorbereiten
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
-                        r.cloneBlueprint("village", "test_v803");
-                        r.selectBlueprintForEdit("test_v803");
-                        r._workshopEnsurePreview();
-                        const pre = r.state.workshop.preview;
-
-                        // Layout-Struktur
-                        out.previewRowInDom = !!document.getElementById("workshop-preview-row");
-                        out.sidePaletteInDom = !!document.getElementById("workshop-side-palette");
-                        out.shapePaletteInDom = !!document.getElementById("workshop-shape-palette");
-                        out.matPaletteInDom = !!document.getElementById("workshop-material-palette");
-                        out.colorPaletteInDom = !!document.getElementById("workshop-color-palette");
-                        // Side-Palette steht VOR der Preview im DOM (flex-row macht
-                        // dann visuell „links neben")
-                        const row = document.getElementById("workshop-preview-row");
-                        if (row) {
-                            const children = Array.from(row.children);
-                            out.paletteBeforePreview =
-                                children[0] &&
-                                children[0].id === "workshop-side-palette" &&
-                                children[1] &&
-                                children[1].id === "workshop-preview-wrapper";
-                        }
-                        // Material-Palette: eine Card pro Material in state.materials
-                        const matCards = document.querySelectorAll(".workshop-material-card");
-                        out.matCardsCount = matCards.length;
-                        out.matCardsMatchState = matCards.length === Object.keys(r.state.materials).length;
-                        // Color-Palette: 12 Swatches
-                        const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
-                        out.twelveColorSwatches = colorSwatches.length === 12;
-
-                        // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
-                        if (pre) {
-                            // Wir prüfen via Source-Inspection (statt dispatchEvent,
-                            // weil Puppeteer-MouseEvent-Constructor manchmal
-                            // Modifier-Keys nicht zuverlässig propagiert).
-                            const src = r._workshopInstallPreviewListeners.toString();
-                            out.shiftLeftStartsPan = src.includes("shiftKey") && src.includes("event.button === 1");
-                            out.middleMouseStartsPan = src.includes("event.button === 1");
-                            // Listener wurden tatsächlich installed (listenersInstalled-Flag)
-                            out.previewListenersInstalled = pre.listenersInstalled === true;
-
-                            // --- Wheel + Zoom-to-Cursor: target verschiebt sich ---
-                            const oldTarget = pre.orbit.target.clone();
-                            const oldDist = pre.orbit.dist;
-                            // Wheel mit deltaY > 0 = zoom-out (factor 1.12)
-                            const wheelEv = new WheelEvent("wheel", {
-                                clientX: 100,
-                                clientY: 100,
-                                deltaY: 100,
-                                bubbles: true,
-                                cancelable: true,
-                            });
-                            pre.canvas.dispatchEvent(wheelEv);
-                            // dist hat sich geändert
-                            out.distChangedOnWheel = pre.orbit.dist !== oldDist;
-                            // target wurde leicht verschoben (zoom-to-cursor) — nur wenn
-                            // der Cursor-Ray die Ebene trifft. Wenn nicht, ist target identisch.
-                            // Wir können nur prüfen dass die Methode RUNS ohne Crash.
-                            out.zoomToCursorTargetMaybeMoved =
-                                !oldTarget.equals(pre.orbit.target) || pre.orbit.target.equals(oldTarget);
-                            // wheel preventDefault: das Event wurde aufgenommen — wir prüfen
-                            // dass defaultPrevented true ist.
-                            out.wheelPreventDefault = wheelEv.defaultPrevented;
-                        }
-
-                        // --- Material-Drop auf Part-Idx 0 ---
-                        // wir simulieren _workshopHandleMaterialDrop direkt
-                        r._workshopSetSelection(0);
-                        const part0Before = r.state.blueprints.test_v803.parts[0].material;
-                        // Use clientX/Y in der Mitte des Canvas (sollte Part 0 treffen
-                        // wenn er da ist — Selection wurde gerade gesetzt)
-                        const canvas = document.getElementById("workshop-preview-canvas");
-                        const rect = canvas.getBoundingClientRect();
-                        const cx = rect.left + rect.width / 2;
-                        const cy = rect.top + rect.height / 2;
-                        // Test: direkte Methode mit gültigem Material
-                        // (raycast hit hängt von Camera-Position ab, also gibt's
-                        // möglicherweise keinen Treffer — pragmatischer: prüfen
-                        // dass die Methode existiert + nicht crashed)
-                        r._workshopHandleMaterialDrop("holz", cx, cy);
-                        out.materialDropNoCrash = true;
-                        // Wenn ein Hit war, sollte material gewechselt sein
-                        const part0After = r.state.blueprints.test_v803.parts[0].material;
-                        out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
-
-                        // Bogus material wird abgelehnt
-                        r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
-                        out.bogusMaterialNoCrash = true;
-
-                        // --- Color-Drop ---
-                        r._workshopHandleColorDrop("ff5500", cx, cy);
-                        out.colorDropNoCrash = true;
-
-                        // --- CSS overscroll-behavior auf .drawer-scroll ---
-                        const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
-                        if (werkstattScroll) {
-                            const cs = getComputedStyle(werkstattScroll);
-                            out.overscrollContain = cs.overscrollBehavior.includes("contain");
-                        }
-
-                        // Cleanup
-                        r.state.workshop.selectedPartIdx = null;
-                        r.deleteBlueprint("test_v803");
-                        r.selectBlueprintForEdit("village");
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (v803Results && !v803Results.error) {
-                check(
-                    "V8.03: 6 neue Helper-Methoden existieren (WorldPoint/PartIdxAt + Render×2 + Drop×2)",
-                    v803Results.hasWorldPoint &&
-                        v803Results.hasRaycastPartIdx &&
-                        v803Results.hasMaterialRender &&
-                        v803Results.hasColorRender &&
-                        v803Results.hasMaterialDrop &&
-                        v803Results.hasColorDrop
-                );
-                check("V8.03: #workshop-preview-row im DOM (Layout-Container)", v803Results.previewRowInDom);
-                check("V8.03: #workshop-side-palette im DOM (seitliche Drag-Sources)", v803Results.sidePaletteInDom);
-                check(
-                    "V8.03: Alle 3 Sub-Paletten im DOM (shape/material/color)",
-                    v803Results.shapePaletteInDom && v803Results.matPaletteInDom && v803Results.colorPaletteInDom
-                );
-                check(
-                    "V8.03: Side-Palette steht VOR Preview im DOM (flex-row → visuell links)",
-                    v803Results.paletteBeforePreview
-                );
-                check(
-                    `V8.03: Material-Palette hat ${v803Results.matCardsCount} Cards (= alle state.materials)`,
-                    v803Results.matCardsMatchState
-                );
-                check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
-                check(
-                    "V8.03 Camera: Listener enthält Shift+Links + Mittelmaus → Pan-Modus",
-                    v803Results.shiftLeftStartsPan && v803Results.middleMouseStartsPan
-                );
-                check(
-                    "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
-                    v803Results.previewListenersInstalled
-                );
-                check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
-                check(
-                    "V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed",
-                    v803Results.wheelPreventDefault
-                );
-                check(
-                    "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
-                    v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
-                );
-                check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
-                check(
-                    "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
-                    v803Results.overscrollContain
-                );
-            } else if (v803Results && v803Results.error) {
-                check(`V8.03: evaluate-Fehler — ${v803Results.error}`, false);
-            }
-
-            // ### Welle 9a — Werkzeug-Domains + emergente Bauplan-Rolle ###
-            const wave9aResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const AR = r.constructor;
-                    const out = {};
-                    try {
-                        // Konstanten
-                        out.toolDomainsFrozen =
-                            Array.isArray(AR.TOOL_DOMAINS) &&
-                            Object.isFrozen(AR.TOOL_DOMAINS) &&
-                            AR.TOOL_DOMAINS.length === 6;
-                        out.toolDomainsContent = [
-                            "construction",
-                            "forging",
-                            "alchemy",
-                            "textile",
-                            "soulwork",
-                            "mechanism",
-                        ].every((d) => AR.TOOL_DOMAINS.includes(d));
-                        out.domainToRoleFrozen = !!AR.DOMAIN_TO_ROLE && Object.isFrozen(AR.DOMAIN_TO_ROLE);
-                        out.alchemyMapsToConsumable = AR.DOMAIN_TO_ROLE.alchemy === "consumable";
-                        out.textileMapsToArmor = AR.DOMAIN_TO_ROLE.textile === "armor";
-                        out.soulworkMapsToSoul = AR.DOMAIN_TO_ROLE.soulwork === "soul";
-                        out.mechanismMapsToMachine = AR.DOMAIN_TO_ROLE.mechanism === "machine";
-                        out.constructionMapsToArchitecture = AR.DOMAIN_TO_ROLE.construction === "architecture";
-                        out.forgingIsSplit = AR.DOMAIN_TO_ROLE.forging === "forging-split";
-                        out.forgingToolTags =
-                            Array.isArray(AR.FORGING_TOOL_TAGS) && AR.FORGING_TOOL_TAGS.includes("härte");
-                        out.forgingArmorTags =
-                            Array.isArray(AR.FORGING_ARMOR_TAGS) && AR.FORGING_ARMOR_TAGS.includes("dichte");
-                        out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
-
-                        // Methoden existieren
-                        out.hasComputeDomain = typeof r.computeBlueprintDomain === "function";
-                        out.hasComputeRole = typeof r.computeBlueprintRole === "function";
-                        out.hasComputeForgingRole = typeof r._computeForgingRole === "function";
-                        out.hasRefresh = typeof r._refreshBlueprintRoleEmergent === "function";
-
-                        // Default-Tools sind alle generic (domain=null)
-                        const tools = r.state.tools || {};
-                        // Welle 9b — die 5 ORIGINAL-Built-ins (hand/feuer/hammer/
-                        // feile/polier) sind generic. Die 5 NEUEN Domain-Tools
-                        // tragen jeweils eine domain ∈ TOOL_DOMAINS.
-                        const originalGenericNames = [
-                            "hände",
-                            "feuerstein-knapper",
-                            "hammer",
-                            "feile",
-                            "polierscheibe",
-                        ];
-                        out.originalToolsGeneric = originalGenericNames.every(
-                            (n) => tools[n] && tools[n].domain === null
-                        );
-                        out.domainToolsHaveDomain = Object.values(tools)
-                            .filter((t) => t.builtIn && t.domain)
-                            .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
-
-                        // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
-                        if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
-                        r.cloneBlueprint("village", "test_9a_empty");
-                        // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
-                        r.applyOpToPart("test_9a_empty", 0, "hände");
-                        out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
-                        out.emptyRoleArchitecture =
-                            r.computeBlueprintRole(r.state.blueprints.test_9a_empty) === "architecture";
-
-                        // Simuliere ein Domain-tragendes Werkzeug (manuell hinzufügen für Test)
-                        r.state.tools["test_forge_hammer"] = {
-                            name: "test_forge_hammer",
-                            label: "Schmiede-Hammer (Test)",
-                            opClass: "plastic",
-                            opName: "forge",
-                            precisionCap: 0.7,
-                            isStarter: false,
-                            builtIn: false,
-                            domain: "forging",
-                        };
-                        if (!r.state.player.tools.includes("test_forge_hammer")) {
-                            r.state.player.tools.push("test_forge_hammer");
-                        }
-                        if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
-                        r.cloneBlueprint("village", "test_9a_forging");
-                        // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
-                        // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
-                        r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
-                        r.applyOpToPart("test_9a_forging", 0, "test_forge_hammer");
-                        out.forgingDomainDetected =
-                            r.computeBlueprintDomain(r.state.blueprints.test_9a_forging) === "forging";
-
-                        // Forging-Split via Compound-Tags
-                        const forgingRole = r.computeBlueprintRole(r.state.blueprints.test_9a_forging);
-                        out.forgingResolvedTo = forgingRole;
-                        out.forgingIsToolOrArmor = forgingRole === "tool" || forgingRole === "armor";
-
-                        // Alchemy-Domain → consumable
-                        r.state.tools["test_alchemy_mortar"] = {
-                            name: "test_alchemy_mortar",
-                            label: "Mörser (Test)",
-                            opClass: "additive",
-                            opName: "brew",
-                            precisionCap: 0.7,
-                            isStarter: false,
-                            builtIn: false,
-                            domain: "alchemy",
-                        };
-                        if (!r.state.player.tools.includes("test_alchemy_mortar")) {
-                            r.state.player.tools.push("test_alchemy_mortar");
-                        }
-                        if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
-                        r.cloneBlueprint("village", "test_9a_alchemy");
-                        r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
-                        r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
-                        out.alchemyRoleIsConsumable =
-                            r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
-
-                        // Mechanism-Domain → machine
-                        r.state.tools["test_lathe"] = {
-                            name: "test_lathe",
-                            label: "Drehbank (Test)",
-                            opClass: "subtractive",
-                            opName: "turn",
-                            precisionCap: 0.9,
-                            isStarter: false,
-                            builtIn: false,
-                            domain: "mechanism",
-                        };
-                        if (!r.state.player.tools.includes("test_lathe")) {
-                            r.state.player.tools.push("test_lathe");
-                        }
-                        if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
-                        r.cloneBlueprint("village", "test_9a_mech");
-                        r.applyOpToPart("test_9a_mech", 0, "test_lathe");
-                        out.mechanismRoleIsMachine =
-                            r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
-
-                        // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
-                        if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
-                        r.cloneBlueprint("village", "test_9a_emergent");
-                        r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
-                        out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
-
-                        // Manueller Override: setBlueprintAsArmor sperrt emergenten Pfad
-                        r.setBlueprintAsArmor("test_9a_emergent");
-                        out.manualOverrideSetsRole = r.state.blueprints.test_9a_emergent.role === "armor";
-                        out.manualOverrideMarksFlag = r.state.blueprints.test_9a_emergent.roleManual === true;
-                        // Nochmal applyOpToPart — role bleibt manual=armor (kein emergent override)
-                        r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
-                        out.manualOverrideStaysAfterApply = r.state.blueprints.test_9a_emergent.role === "armor";
-
-                        // Cleanup
-                        for (const n of [
-                            "test_9a_empty",
-                            "test_9a_forging",
-                            "test_9a_alchemy",
-                            "test_9a_mech",
-                            "test_9a_emergent",
-                        ]) {
-                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
-                        }
-                        for (const t of ["test_forge_hammer", "test_alchemy_mortar", "test_lathe"]) {
-                            delete r.state.tools[t];
-                            r.state.player.tools = r.state.player.tools.filter((x) => x !== t);
-                        }
-                        r._renderWorkshopDOM();
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave9aResults && !wave9aResults.error) {
-                check(
-                    "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
-                    wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
-                );
-                check(
-                    "Welle 9a: DOMAIN_TO_ROLE-Map frozen mit korrektem Mapping (alchemy→consumable, textile→armor, soulwork→soul, mechanism→machine, construction→architecture, forging→forging-split)",
-                    wave9aResults.domainToRoleFrozen &&
-                        wave9aResults.alchemyMapsToConsumable &&
-                        wave9aResults.textileMapsToArmor &&
-                        wave9aResults.soulworkMapsToSoul &&
-                        wave9aResults.mechanismMapsToMachine &&
-                        wave9aResults.constructionMapsToArchitecture &&
-                        wave9aResults.forgingIsSplit
-                );
-                check(
-                    "Welle 9a: FORGING_TOOL_TAGS enthält härte + FORGING_ARMOR_TAGS enthält dichte",
-                    wave9aResults.forgingToolTags && wave9aResults.forgingArmorTags
-                );
-                check("Welle 9a: DEFAULT_BLUEPRINT_ROLE === 'architecture'", wave9aResults.defaultRole);
-                check(
-                    "Welle 9a: alle 4 Methoden existieren (computeBlueprintDomain/Role + _computeForgingRole + _refreshBlueprintRoleEmergent)",
-                    wave9aResults.hasComputeDomain &&
-                        wave9aResults.hasComputeRole &&
-                        wave9aResults.hasComputeForgingRole &&
-                        wave9aResults.hasRefresh
-                );
-                check(
-                    "Welle 9a: Original-Built-ins (hände/feuerstein/hammer/feile/polierscheibe) sind generic (domain=null)",
-                    wave9aResults.originalToolsGeneric
-                );
-                check(
-                    "Welle 9b: Domain-Built-ins haben jeweils eine gültige Domain ∈ TOOL_DOMAINS",
-                    wave9aResults.domainToolsHaveDomain
-                );
-                check(
-                    "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → computeDomain=null",
-                    wave9aResults.emptyDomainNull
-                );
-                check(
-                    "Welle 9a: Leerer Bauplan + nur generic-Werkzeuge → role=architecture (Default)",
-                    wave9aResults.emptyRoleArchitecture
-                );
-                check(
-                    "Welle 9a: Domain-Werkzeug (forging) angewandt → computeDomain='forging'",
-                    wave9aResults.forgingDomainDetected
-                );
-                check(
-                    `Welle 9a: Forging-Split via Compound-Tags → resolveTo='${wave9aResults.forgingResolvedTo}' (tool oder armor)`,
-                    wave9aResults.forgingIsToolOrArmor
-                );
-                check("Welle 9a: Alchemy-Werkzeug → role='consumable'", wave9aResults.alchemyRoleIsConsumable);
-                check("Welle 9a: Mechanism-Werkzeug → role='machine'", wave9aResults.mechanismRoleIsMachine);
-                check(
-                    "Welle 9a: applyOpToPart triggert _refreshBlueprintRoleEmergent → bp.role wird emergent gesetzt",
-                    wave9aResults.emergentRoleSetOnApply
-                );
-                check(
-                    "Welle 9a: Manueller Override (setBlueprintAsArmor) setzt bp.role + roleManual=true",
-                    wave9aResults.manualOverrideSetsRole && wave9aResults.manualOverrideMarksFlag
-                );
-                check(
-                    "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
-                    wave9aResults.manualOverrideStaysAfterApply
-                );
-            } else if (wave9aResults && wave9aResults.error) {
-                check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
-            }
-
-            // ### Welle 9b — Domain-Werkzeuge + UI-Anzeige der Rolle ###
-            const wave9bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const AR = r.constructor;
-                    const out = {};
-                    try {
-                        // 5 neue Domain-Werkzeuge in state.tools
-                        const domainToolNames = [
-                            "schmiede-hammer",
-                            "mörser",
-                            "webstuhl-schiffchen",
-                            "ritueller-stab",
-                            "drehbank-meißel",
-                        ];
-                        out.allDomainToolsExist = domainToolNames.every((n) => !!r.state.tools[n]);
-
-                        // Korrektes domain-Mapping pro Tool
-                        out.schmiedeHammerForging =
-                            r.state.tools["schmiede-hammer"] && r.state.tools["schmiede-hammer"].domain === "forging";
-                        out.morserAlchemy = r.state.tools["mörser"] && r.state.tools["mörser"].domain === "alchemy";
-                        out.webstuhlTextile =
-                            r.state.tools["webstuhl-schiffchen"] &&
-                            r.state.tools["webstuhl-schiffchen"].domain === "textile";
-                        out.stabSoulwork =
-                            r.state.tools["ritueller-stab"] && r.state.tools["ritueller-stab"].domain === "soulwork";
-                        out.drehbankMechanism =
-                            r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
-
-                        // Alle 5 Domain-Werkzeuge sind isStarter → im Spieler-Inventar
-                        const playerTools = r.state.player.tools || [];
-                        out.allDomainToolsInInventory = domainToolNames.every((n) => playerTools.includes(n));
-
-                        // Insgesamt 10 Built-in-Werkzeuge (5 generic + 5 domain)
-                        const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
-                        out.tenBuiltInTools = builtIns.length === 10;
-
-                        // Konstanten für UI: Labels + Farben
-                        out.roleLabelsFrozen =
-                            !!AR.BLUEPRINT_ROLE_LABELS &&
-                            Object.isFrozen(AR.BLUEPRINT_ROLE_LABELS) &&
-                            AR.BLUEPRINT_ROLE_LABELS.architecture === "Bauwerk" &&
-                            AR.BLUEPRINT_ROLE_LABELS.tool === "Werkzeug" &&
-                            AR.BLUEPRINT_ROLE_LABELS.machine === "Maschine";
-                        out.domainLabelsFrozen =
-                            !!AR.TOOL_DOMAIN_LABELS &&
-                            Object.isFrozen(AR.TOOL_DOMAIN_LABELS) &&
-                            AR.TOOL_DOMAIN_LABELS.forging === "Schmiede" &&
-                            AR.TOOL_DOMAIN_LABELS.alchemy === "Alchemie";
-                        out.domainColorsFrozen =
-                            !!AR.TOOL_DOMAIN_COLORS &&
-                            Object.isFrozen(AR.TOOL_DOMAIN_COLORS) &&
-                            typeof AR.TOOL_DOMAIN_COLORS.forging === "string";
-
-                        // UI: Werkstatt-Status zeigt Rolle live nach Edit
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
-                        r.cloneBlueprint("village", "test_9b");
-                        r.selectBlueprintForEdit("test_9b");
-                        // Frisch geklont: Rolle ist architecture (emergent default)
-                        // Status sollte das anzeigen
-                        const status = document.querySelector("#workshop-editor .workshop-status");
-                        out.statusShowsBauwerk =
-                            !!status &&
-                            status.textContent.includes("Bauwerk") &&
-                            status.textContent.includes("emergent");
-                        // Apply schmiede-hammer auf eisen-Part
-                        r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
-                        r.applyOpToPart("test_9b", 0, "schmiede-hammer");
-                        r._renderWorkshopDOM();
-                        const statusAfter = document.querySelector("#workshop-editor .workshop-status");
-                        // Rolle sollte jetzt Werkzeug oder Rüstung sein (forging-split)
-                        out.statusShowsForgingRole =
-                            !!statusAfter &&
-                            (statusAfter.textContent.includes("Werkzeug") ||
-                                statusAfter.textContent.includes("Rüstung")) &&
-                            statusAfter.textContent.includes("emergent");
-
-                        // Tool-Chip: Domain-Dot ist im DOM für Domain-Werkzeug
-                        const chips = document.querySelectorAll(".workshop-tool-chip");
-                        let hasDomainDot = false;
-                        chips.forEach((chip) => {
-                            if (chip.querySelector(".workshop-tool-domain-dot")) hasDomainDot = true;
-                        });
-                        out.toolChipHasDomainDot = hasDomainDot;
-
-                        // Cleanup
-                        if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
-                        r.selectBlueprintForEdit("village");
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave9bResults && !wave9bResults.error) {
-                check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
-                check(
-                    "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
-                    wave9bResults.schmiedeHammerForging &&
-                        wave9bResults.morserAlchemy &&
-                        wave9bResults.webstuhlTextile &&
-                        wave9bResults.stabSoulwork &&
-                        wave9bResults.drehbankMechanism
-                );
-                check(
-                    "Welle 9b: alle 5 Domain-Werkzeuge sind isStarter + im Spieler-Inventar",
-                    wave9bResults.allDomainToolsInInventory
-                );
-                check(
-                    "Welle 9b: 10 Built-in-Werkzeuge insgesamt (5 generic + 5 domain)",
-                    wave9bResults.tenBuiltInTools
-                );
-                check(
-                    "Welle 9b: BLUEPRINT_ROLE_LABELS frozen + deutsche Bezeichnungen (Bauwerk/Werkzeug/Maschine)",
-                    wave9bResults.roleLabelsFrozen
-                );
-                check(
-                    "Welle 9b: TOOL_DOMAIN_LABELS frozen + deutsche Bezeichnungen (Schmiede/Alchemie/…)",
-                    wave9bResults.domainLabelsFrozen
-                );
-                check(
-                    "Welle 9b: TOOL_DOMAIN_COLORS frozen mit Hex-Strings pro Domain",
-                    wave9bResults.domainColorsFrozen
-                );
-                check(
-                    "Welle 9b UI: Werkstatt-Status zeigt 'Rolle: Bauwerk (emergent)' nach Klone",
-                    wave9bResults.statusShowsBauwerk
-                );
-                check(
-                    "Welle 9b UI: Status wechselt nach forging-Op auf Werkzeug/Rüstung (emergent)",
-                    wave9bResults.statusShowsForgingRole
-                );
-                check(
-                    "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
-                    wave9bResults.toolChipHasDomainDot
-                );
-            } else if (wave9bResults && wave9bResults.error) {
-                check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
-            }
-
-            // ### Welle 9c — Welt-Werkstatt-Architekturen + Distance-Gate ###
-            const wave9cResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const AR = r.constructor;
-                    const out = {};
-                    try {
-                        const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
-                        out.allStationsExist = stationNames.every((n) => !!r.state.blueprints[n]);
-                        out.allHaveRole = stationNames.every(
-                            (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
-                        );
-                        out.esseForging = r.state.blueprints.esse.workshopDomain === "forging";
-                        out.brennkolbenAlchemy = r.state.blueprints.brennkolben.workshopDomain === "alchemy";
-                        out.webstuhlTextile = r.state.blueprints.webstuhl.workshopDomain === "textile";
-                        out.altarSoulwork = r.state.blueprints.seelenstein_altar.workshopDomain === "soulwork";
-                        out.drehbankMechanism = r.state.blueprints.drehbank.workshopDomain === "mechanism";
-                        out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 10;
-                        out.gateMethodExists = typeof r._workshopStationGate === "function";
-
-                        // Modus auf pfad für strikten Test
-                        r.setGameMode("pfad");
-
-                        // Forging-Bauplan vorbereiten
-                        if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
-                        r.cloneBlueprint("village", "test_9c_forging");
-                        r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
-                        r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
-
-                        const farPos = { x: 1000, y: 1000, z: 1000 };
-                        const nearPos = { x: 5, y: 0, z: 5 };
-
-                        // Esse nah spawnen
-                        r.spawnArchitecture("esse", nearPos, { silent: true });
-
-                        const gateFar = r._workshopStationGate("test_9c_forging", farPos);
-                        out.pfadFarFails = gateFar && gateFar.ok === false;
-                        out.pfadFarReportsDomain = gateFar && gateFar.neededDomain === "forging";
-
-                        const gateNear = r._workshopStationGate("test_9c_forging", nearPos);
-                        out.pfadNearPasses = gateNear && gateNear.ok === true;
-                        out.pfadNearReportsFound = gateNear && gateNear.found === "esse";
-
-                        r.setGameMode("frieden");
-                        const gateFrieden = r._workshopStationGate("test_9c_forging", farPos);
-                        out.friedenFreeAccess = gateFrieden && gateFrieden.ok === true && gateFrieden.free === true;
-
-                        r.setGameMode("schöpfer");
-                        const gateSchopfer = r._workshopStationGate("test_9c_forging", farPos);
-                        out.schopferFreeAccess = gateSchopfer && gateSchopfer.ok === true && gateSchopfer.free === true;
-
-                        r.setGameMode("pfad");
-                        const gateBootstrap = r._workshopStationGate("esse", farPos);
-                        out.bootstrapOk =
-                            gateBootstrap && gateBootstrap.ok === true && gateBootstrap.bootstrap === true;
-
-                        const gateArch = r._workshopStationGate("village", farPos);
-                        out.archNoCheck = gateArch && gateArch.ok === true;
-
-                        // Cleanup
-                        if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
-                        r.setGameMode("frieden");
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave9cResults && !wave9cResults.error) {
-                check(
-                    "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
-                    wave9cResults.allStationsExist
-                );
-                check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
-                check(
-                    "Welle 9c: workshopDomain-Mapping korrekt (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism)",
-                    wave9cResults.esseForging &&
-                        wave9cResults.brennkolbenAlchemy &&
-                        wave9cResults.webstuhlTextile &&
-                        wave9cResults.altarSoulwork &&
-                        wave9cResults.drehbankMechanism
-                );
-                check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 10", wave9cResults.proximityConst);
-                check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
-                check(
-                    "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
-                    wave9cResults.pfadFarFails && wave9cResults.pfadFarReportsDomain
-                );
-                check(
-                    "Welle 9c: pfad mit Werkstatt in WORKSHOP_PROXIMITY_M → Gate passt + nennt found-Architektur",
-                    wave9cResults.pfadNearPasses && wave9cResults.pfadNearReportsFound
-                );
-                check(
-                    "Welle 9c: frieden-Modus überspringt Werkstatt-Gate (free=true)",
-                    wave9cResults.friedenFreeAccess
-                );
-                check(
-                    "Welle 9c: schöpfer-Modus überspringt Werkstatt-Gate (free=true)",
-                    wave9cResults.schopferFreeAccess
-                );
-                check(
-                    "Welle 9c: Workshop-Station selbst (Esse) braucht keine Werkstatt (Bootstrap-Pfad)",
-                    wave9cResults.bootstrapOk
-                );
-                check(
-                    "Welle 9c: architecture-Bauplan (village) überspringt Werkstatt-Check (keine Domain → kein Gate)",
-                    wave9cResults.archNoCheck
-                );
-            } else if (wave9cResults && wave9cResults.error) {
-                check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
-            }
-
-            // ### Welle 9d — Maschinen-Bonus + Seelen-Bauplane ###
-            const wave9dResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const AR = r.constructor;
-                    const out = {};
-                    try {
-                        out.machineBonus = AR.MACHINE_PRECISION_BONUS === 0.05;
-                        out.hasSoulFromBp = typeof r.applyPlayerSoulFromBlueprint === "function";
-
-                        // Maschinen-Bonus
-                        if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
-                        r.cloneBlueprint("village", "test_9d_machine");
-                        r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
-                        // setBlueprintToolMeta setzt role=tool; force machine:
-                        r.state.blueprints.test_9d_machine.role = "machine";
-                        r.state.blueprints.test_9d_machine.roleManual = true;
-                        const minP = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_machine);
-                        const reg = r.registerBlueprintAsTool("test_9d_machine");
-                        out.regOk = reg && reg.ok === true;
-                        if (reg && reg.ok) {
-                            const tool = r.state.tools["test_9d_machine"];
-                            const expected = Math.min(1.0, minP + 0.05);
-                            out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;
-                            out.toolMarkedMachine = tool.isMachine === true;
-                        }
-
-                        // Ohne machine: kein Bonus
-                        if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
-                        r.cloneBlueprint("village", "test_9d_normaltool");
-                        r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
-                        const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
-                        r.registerBlueprintAsTool("test_9d_normaltool");
-                        const toolNoBonus = r.state.tools["test_9d_normaltool"];
-                        out.normalToolNoBonus = toolNoBonus && Math.abs(toolNoBonus.precisionCap - minP2) < 0.001;
-                        out.normalToolNotMachine = toolNoBonus && toolNoBonus.isMachine === false;
-
-                        // Seelen-Bauplan
-                        if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
-                        r.cloneBlueprint("village", "test_9d_soul");
-                        r.state.blueprints.test_9d_soul.role = "soul";
-                        r.state.blueprints.test_9d_soul.roleManual = true;
-                        const soulBefore = r.state.player.soul;
-                        const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
-                        out.soulApplyOk = soulRes && soulRes.ok === true;
-                        out.soulApplyChangedSoul = r.state.player.soul !== soulBefore;
-                        out.customSoulRegistered = !!(r.state.customSouls && r.state.customSouls["bp_test_9d_soul"]);
-
-                        const archRes = r.applyPlayerSoulFromBlueprint("village");
-                        out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
-                        const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
-                        out.unknownReject =
-                            unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
-
-                        // UI-Button
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        r.selectBlueprintForEdit("test_9d_soul");
-                        const soulBtn = document.querySelector(".workshop-soul-activate");
-                        out.soulButtonRendered = !!soulBtn;
-
-                        if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
-                        r.cloneBlueprint("village", "test_9d_arch");
-                        r.selectBlueprintForEdit("test_9d_arch");
-                        const soulBtnArch = document.querySelector(".workshop-soul-activate");
-                        out.archHasNoSoulButton = !soulBtnArch;
-
-                        // Cleanup
-                        r.applyPlayerSoul("human");
-                        for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul", "test_9d_arch"]) {
-                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
-                        }
-                        if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
-                        r.selectBlueprintForEdit("village");
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave9dResults && !wave9dResults.error) {
-                check("Welle 9d: MACHINE_PRECISION_BONUS === 0.05", wave9dResults.machineBonus);
-                check("Welle 9d: applyPlayerSoulFromBlueprint-Methode existiert", wave9dResults.hasSoulFromBp);
-                check(
-                    "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
-                    wave9dResults.regOk && wave9dResults.toolHasBonus
-                );
-                check("Welle 9d: Registriertes Maschinen-Tool trägt isMachine=true", wave9dResults.toolMarkedMachine);
-                check(
-                    "Welle 9d: registerBlueprintAsTool ohne machine-Rolle vergibt KEINEN Bonus + isMachine=false",
-                    wave9dResults.normalToolNoBonus && wave9dResults.normalToolNotMachine
-                );
-                check(
-                    "Welle 9d: applyPlayerSoulFromBlueprint mit role=soul wechselt Spieler-Seele",
-                    wave9dResults.soulApplyOk && wave9dResults.soulApplyChangedSoul
-                );
-                check(
-                    "Welle 9d: soul-Bauplan wird als customSoul mit 'bp_'-Prefix registriert",
-                    wave9dResults.customSoulRegistered
-                );
-                check(
-                    "Welle 9d: applyPlayerSoulFromBlueprint auf nicht-soul-Bauplan → reject 'blueprint_not_soul'",
-                    wave9dResults.nonSoulReject
-                );
-                check(
-                    "Welle 9d: applyPlayerSoulFromBlueprint auf unbekannten Bauplan → reject 'blueprint_unknown'",
-                    wave9dResults.unknownReject
-                );
-                check(
-                    "Welle 9d UI: 'Als Seele tragen'-Button bei role=soul gerendert (.workshop-soul-activate)",
-                    wave9dResults.soulButtonRendered
-                );
-                check(
-                    "Welle 9d UI: KEIN Soul-Button bei role=architecture (Default)",
-                    wave9dResults.archHasNoSoulButton
-                );
-            } else if (wave9dResults && wave9dResults.error) {
-                check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
-            }
-
-            // ### Welle 10a — Präzision als Stat-Multiplikator ###
-            const wave10aResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        // Helper-Methode existiert
-                        out.hasHelper = typeof r._compoundAvgPrecisionFromParts === "function";
-
-                        // Leeres Array → 1.0
-                        out.emptyIs1 = r._compoundAvgPrecisionFromParts([]) === 1.0;
-                        // Null → 1.0
-                        out.nullIs1 = r._compoundAvgPrecisionFromParts(null) === 1.0;
-
-                        // Parts ohne opChain → 1.0 ("geboren")
-                        const partsBornless = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                            {
-                                shape: "sphere",
-                                material: "knochen",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                        ];
-                        out.partsNoChainIs1 = r._compoundAvgPrecisionFromParts(partsBornless) === 1.0;
-
-                        // Parts mit Hand-opChain (cap 0.4) → 0.4
-                        const partsHand = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4 }],
-                            },
-                        ];
-                        out.partsHandIs04 = Math.abs(r._compoundAvgPrecisionFromParts(partsHand) - 0.4) < 0.001;
-
-                        // computePlayerStats für Built-in mensch: soulMul = 1.0 (kein Effekt)
-                        r.applyPlayerSoul("human");
-                        const statsHuman = r.computePlayerStats();
-                        out.humanStatsBaseline = statsHuman && typeof statsHuman.stats.hpMax === "number";
-
-                        // Custom-Soul mit opChain auf bodyParts → Stats * soulMul
-                        // Synthese: Soul-Bauplan + opChain
-                        if (r.state.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
-                        r.cloneBlueprint("village", "test_10a_soul");
-                        // Setze role:soul + opChain auf alle parts (simuliert "roh gebauter Soul")
-                        const bp = r.state.blueprints.test_10a_soul;
-                        bp.role = "soul";
-                        bp.roleManual = true;
-                        for (const p of bp.parts) {
-                            p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
-                        }
-                        const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
-                        out.soulApplyOk = soulRes && soulRes.ok === true;
-                        const statsRough = r.computePlayerStats();
-                        // Soul-tags wurden mit (0.5 + 0.5*0.4 = 0.7) multipliziert
-                        // hpMax sollte messbar niedriger sein als Mensch — aber abhängig von
-                        // Compound-Tags. Wir prüfen pragmatisch: hpMax bei roh ≤ hpMax Mensch
-                        out.roughLessHp =
-                            statsRough && statsHuman && statsRough.stats.hpMax <= statsHuman.stats.hpMax + 0.001;
-
-                        // Zurück zur Mensch-Seele
-                        r.applyPlayerSoul("human");
-
-                        // Tool-Precision-Multiplier in computePlayerStats
-                        // Wir registrieren einen eigenen Bauplan als Tool und prüfen ob die
-                        // Tool-Tags mit Präzision multipliziert werden.
-                        if (r.state.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
-                        r.cloneBlueprint("village", "test_10a_tool");
-                        const toolBp = r.state.blueprints.test_10a_tool;
-                        for (const p of toolBp.parts) {
-                            p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
-                        }
-                        r.setBlueprintToolMeta("test_10a_tool", "test_op", "subtractive");
-                        toolBp.role = "tool";
-                        r.registerBlueprintAsTool("test_10a_tool");
-                        // Mensch-Seele tragen + tool equippen
-                        r.applyPlayerSoul("human");
-                        r.equipTool("test_10a_tool");
-                        const statsRoughTool = r.computePlayerStats();
-                        // Jetzt: tool-tags × (0.5 + 0.5×0.4 = 0.7)
-                        // Vergleich: r.state.tools["test_10a_tool"] hat die Tag-Beträge
-                        // Wir prüfen pragmatisch: Stats sollten sich gegenüber blanker Mensch verändern
-                        out.toolPrecModulates =
-                            statsRoughTool &&
-                            statsHuman &&
-                            (statsRoughTool.stats.hpMax !== statsHuman.stats.hpMax ||
-                                statsRoughTool.stats.damage !== statsHuman.stats.damage);
-
-                        // Cleanup
-                        r.equipTool(null);
-                        for (const n of ["test_10a_soul", "test_10a_tool"]) {
-                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
-                        }
-                        delete r.state.tools["test_10a_tool"];
-                        r.state.player.tools = r.state.player.tools.filter((t) => t !== "test_10a_tool");
-                        if (r.state.customSouls) delete r.state.customSouls["bp_test_10a_soul"];
-                        r._renderWorkshopDOM();
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave10aResults && !wave10aResults.error) {
-                check("Welle 10a: _compoundAvgPrecisionFromParts-Methode existiert", wave10aResults.hasHelper);
-                check(
-                    "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
-                    wave10aResults.emptyIs1 && wave10aResults.nullIs1
-                );
-                check(
-                    "Welle 10a: Parts ohne opChain → 1.0 (Built-in-Soulen unverändert)",
-                    wave10aResults.partsNoChainIs1
-                );
-                check("Welle 10a: Parts mit Hand-opChain (cap 0.4) → Präzision 0.4", wave10aResults.partsHandIs04);
-                check(
-                    "Welle 10a: computePlayerStats für Built-in-Mensch baseline (hpMax existiert)",
-                    wave10aResults.humanStatsBaseline
-                );
-                check(
-                    "Welle 10a: Roh geschmiedeter Soul (opChain Hand 0.4) → reduzierte hpMax (Sorgfalt belohnt)",
-                    wave10aResults.soulApplyOk && wave10aResults.roughLessHp
-                );
-                check(
-                    "Welle 10a: Tool-Präzision moduliert seinen Stat-Beitrag in computePlayerStats",
-                    wave10aResults.toolPrecModulates
-                );
-            } else if (wave10aResults && wave10aResults.error) {
-                check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
-            }
-
-            // ### Welle 10b.1 — Compound-Tag-Affordances (Erkennung + UI) ###
-            const wave10bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const AR = r.constructor;
-                    const out = {};
-                    try {
-                        out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
-                        // Vision-Korrektur 10b.2: Form-Whitelists (WHEEL/LENS/AXIS_SHAPES)
-                        // wurden ENTFERNT — Affordances emergieren räumlich + tag-basiert,
-                        // nicht aus shape-Listen.
-                        out.noShapeWhitelists =
-                            typeof AR.WHEEL_SHAPES === "undefined" &&
-                            typeof AR.LENS_SHAPES === "undefined" &&
-                            typeof AR.AXIS_SHAPES === "undefined";
-                        out.thresholdsAreSpatial =
-                            AR.AFFORDANCE_THRESHOLDS.moveable.minSupportParts === 2 &&
-                            AR.AFFORDANCE_THRESHOLDS.moveable.midlineFactor === 0.5 &&
-                            AR.AFFORDANCE_THRESHOLDS.moveable.dichteMin === 0.3 &&
-                            AR.AFFORDANCE_THRESHOLDS.magnifying.axialAlignmentMin === 0.6;
-                        out.affordanceLabelsExist =
-                            !!AR.AFFORDANCE_LABELS && AR.AFFORDANCE_LABELS.moveable === "fahrbar";
-                        out.hasComputeAffordances = typeof r.computeBlueprintAffordances === "function";
-                        out.hasMoveable = typeof r._isMoveable === "function";
-                        out.hasMagnifying = typeof r._isMagnifying === "function";
-                        out.hasFocusing = typeof r._isFocusing === "function";
-                        // 10b.2 — neue räumliche Helper
-                        out.hasBbox = typeof r._compoundBBox === "function";
-                        out.hasBelowMid = typeof r._partsBelowMidline === "function";
-                        out.hasAxialAlignment = typeof r._axialAlignment === "function";
-
-                        out.emptyBpEmpty = Object.keys(r.computeBlueprintAffordances(null)).length === 0;
-                        out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
-                        out.villageNoAffordances =
-                            Object.keys(r.computeBlueprintAffordances(r.state.blueprints.village)).length === 0;
-
-                        // moveable
-                        if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
-                        r.cloneBlueprint("village", "test_10b_car");
-                        r.state.blueprints.test_10b_car.parts = [
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: -1, y: 0.3, z: 0 },
-                                size: { x: 0.6, y: 0.4, z: 0.6 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: 1, y: 0.3, z: 0 },
-                                size: { x: 0.6, y: 0.4, z: 0.6 },
-                            },
-                            {
-                                shape: "box",
-                                material: "quarz",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 1.2, y: 0.8, z: 0.6 },
-                            },
-                        ];
-                        out.carIsMoveable =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
-
-                        // VISION-TEST: Box-Stützen (KEINE Cylinder/Torus) + Antrieb → moveable
-                        // Beweis dass die Form-Whitelist wirklich raus ist und räumliche
-                        // Konfiguration entscheidet.
-                        if (r.state.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
-                        r.cloneBlueprint("village", "test_10b_sled");
-                        r.state.blueprints.test_10b_sled.parts = [
-                            // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
-                            {
-                                shape: "box",
-                                material: "eisen",
-                                position: { x: -1, y: 0.2, z: 0 },
-                                size: { x: 0.5, y: 0.4, z: 0.5 },
-                            },
-                            {
-                                shape: "box",
-                                material: "eisen",
-                                position: { x: 1, y: 0.2, z: 0 },
-                                size: { x: 0.5, y: 0.4, z: 0.5 },
-                            },
-                            // Quarz-Antrieb oben
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 0, y: 1.2, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                        ];
-                        out.boxSledIsMoveable =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_sled).moveable === true;
-
-                        // ohne Antrieb → nicht moveable
-                        if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
-                        r.cloneBlueprint("village", "test_10b_carless");
-                        r.state.blueprints.test_10b_carless.parts = [
-                            {
-                                shape: "cylinder",
-                                material: "stein",
-                                position: { x: -1, y: 0.3, z: 0 },
-                                size: { x: 0.6, y: 0.4, z: 0.6 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "stein",
-                                position: { x: 1, y: 0.3, z: 0 },
-                                size: { x: 0.6, y: 0.4, z: 0.6 },
-                            },
-                        ];
-                        out.carlessNotMoveable = !r.computeBlueprintAffordances(r.state.blueprints.test_10b_carless)
-                            .moveable;
-
-                        // magnifying
-                        if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
-                        r.cloneBlueprint("village", "test_10b_scope");
-                        r.state.blueprints.test_10b_scope.parts = [
-                            {
-                                shape: "sphere",
-                                material: "quarz",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 0.5, y: 0.5, z: 0.5 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "holz",
-                                position: { x: 0, y: 1, z: -0.6 },
-                                size: { x: 0.4, y: 1.2, z: 0.4 },
-                            },
-                        ];
-                        out.scopeIsMagnifying =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
-
-                        // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
-                        out.hasRadiating = typeof r._isRadiating === "function";
-                        out.hasTickRadiating = typeof r._tickRadiatingAffordances === "function";
-                        out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
-                        out.radiatingThresholds =
-                            !!AR.AFFORDANCE_THRESHOLDS.radiating &&
-                            AR.AFFORDANCE_THRESHOLDS.radiating.minParts === 3 &&
-                            AR.AFFORDANCE_THRESHOLDS.radiating.resoniertMin === 1.5;
-                        // Ein radialer Quarz-Cluster (≥3 Parts, um einen Kern
-                        // gespreizt, NICHT auf einer Achse) strahlt.
-                        if (r.state.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
-                        r.cloneBlueprint("village", "test_10ext_radiator");
-                        r.state.blueprints.test_10ext_radiator.parts = [
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 1.2, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: -1.2, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 0, y: 0.5, z: 1.2 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 0, y: 0.5, z: -1.2 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                        ];
-                        out.radiatorIsRadiating =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).radiating === true;
-                        // Ein Quarz-Mast (≥3 Parts, alle auf der y-Achse) strahlt
-                        // NICHT radial — die räumliche Gate greift trotz hohem
-                        // resoniert (Vision-Beweis: kein Form-Whitelist, die
-                        // Konfiguration entscheidet).
-                        if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
-                        r.cloneBlueprint("village", "test_10ext_mast");
-                        r.state.blueprints.test_10ext_mast.parts = [
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "octahedron",
-                                material: "quarz",
-                                position: { x: 0, y: 2, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                        ];
-                        out.mastNotRadiating =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).radiating !== true;
-                        // Welt-Reaktion: nahe einem Strahler steigen awe + peace.
-                        const emoR = r.state.player.emotions;
-                        const aweBefore0 = emoR.awe;
-                        const peaceBefore0 = emoR.peace;
-                        const chaosBefore0 = emoR.chaos;
-                        const radEntry = r.spawnArchitecture(
-                            "test_10ext_radiator",
-                            { x: 60, y: 0, z: 60 },
-                            { silent: true }
-                        );
-                        out.radEntryAffordance = !!(
-                            radEntry &&
-                            radEntry.affordances &&
-                            radEntry.affordances.radiating === true
-                        );
-                        const pmR = r.state.playerMesh && r.state.playerMesh.position;
-                        const pmBefore = pmR ? { x: pmR.x, y: pmR.y, z: pmR.z } : null;
-                        if (pmR) {
-                            pmR.x = 60;
-                            pmR.y = 0;
-                            pmR.z = 62;
-                        }
-                        emoR.awe = 0.1;
-                        emoR.peace = 0.1;
-                        for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
-                        out.radNearRaisesEmotion = emoR.awe > 0.1 && emoR.peace > 0.1;
-                        // Weit weg → keine Änderung.
-                        if (pmR) pmR.z = 400;
-                        const aweFar = emoR.awe;
-                        for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
-                        out.radFarNoChange = Math.abs(emoR.awe - aweFar) < 0.0001;
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
-
-                        // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
-                        out.hasBroadcasting = typeof r._isBroadcasting === "function";
-                        out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
-                        out.broadcastingThresholds =
-                            !!AR.AFFORDANCE_THRESHOLDS.broadcasting &&
-                            AR.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
-                            AR.AFFORDANCE_THRESHOLDS.broadcasting.leitfaehigMin === 0.4;
-                        // Der Quarz-Mast (aufrecht, axial, leitfähig) → broadcasting.
-                        out.mastIsBroadcasting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).broadcasting === true;
-                        // Der radiale Cluster ist KEIN Mast → NICHT broadcasting.
-                        out.radiatorNotBroadcasting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).broadcasting !== true;
-                        // Eine waagrechte Eisen-Linie (leitfähig, aber Achse x,
-                        // nicht y) → NICHT broadcasting (ein Mast steht aufrecht).
-                        if (r.state.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
-                        r.cloneBlueprint("village", "test_10ext_bcline");
-                        r.state.blueprints.test_10ext_bcline.parts = [
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: -1.5, y: 0, z: 0 },
-                                size: { x: 0.4, y: 0.4, z: 0.4 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 0.4, y: 0.4, z: 0.4 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: 1.5, y: 0, z: 0 },
-                                size: { x: 0.4, y: 0.4, z: 0.4 },
-                            },
-                        ];
-                        out.horizLineNotBroadcasting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
-                        // Welt-Reaktion-Relais: ein broadcasting-Mast nahe einem
-                        // Strahler verstärkt dessen Reichweite. Spieler 22 m vom
-                        // Strahler — ausserhalb der Basis-Reichweite (14 m),
-                        // innerhalb der verstärkten (28 m).
-                        // V9.33 Phase 5c.2.b — Welt-Reaktions-Affordances filtern
-                        // nach Distanz UND prüfen alle nahen Architekturen mit
-                        // der Affordance. In der Voxel-Eingangs-Welt platziert
-                        // `_populateVoxelChunkVegetation` natürliche Strahler
-                        // (kristall_geode) in magie-Regionen. Wir entfernen
-                        // ALLE radiating-Architekturen ringsum (vor dem Test-
-                        // Setup), damit die Probe ehrlich ist.
-                        if (pmR) {
-                            pmR.x = 60;
-                            pmR.y = 0;
-                            pmR.z = 82;
-                        }
-                        // Cleanup natürlicher Strahler im Test-Bereich.
-                        r.state.architectures = r.state.architectures.filter((e) => {
-                            if (!e || !e.position || !e.affordances) return true;
-                            if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
-                            const dx = e.position.x - 60;
-                            const dz = e.position.z - 82;
-                            // Sicherheits-Distanz > BROADCAST_RELAY_RANGE_M + RADIATING_RANGE_M.
-                            return dx * dx + dz * dz > 100 * 100;
-                        });
-                        const radE = r.spawnArchitecture(
-                            "test_10ext_radiator",
-                            { x: 60, y: 0, z: 60 },
-                            { silent: true }
-                        );
-                        emoR.awe = 0.1;
-                        emoR.peace = 0.1;
-                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
-                        out.relayOhneMastKeinEffekt = Math.abs(emoR.awe - 0.1) < 0.0001;
-                        // Jetzt einen broadcasting-Mast nahe den Strahler stellen.
-                        const mastE = r.spawnArchitecture("test_10ext_mast", { x: 65, y: 0, z: 60 }, { silent: true });
-                        out.relayMastAffordance = !!(
-                            mastE &&
-                            mastE.affordances &&
-                            mastE.affordances.broadcasting === true
-                        );
-                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
-                        out.relayMitMastReicheWeiter = emoR.awe > 0.1;
-                        r.state.architectures = r.state.architectures.filter(
-                            (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
-                        );
-                        void radE;
-
-                        // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
-                        out.hasAffordanceStrength = typeof r.computeAffordanceStrength === "function";
-                        out.strengthEmptyForNone =
-                            Object.keys(r.computeAffordanceStrength(r.state.blueprints.village)).length === 0;
-                        // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
-                        // als der Quarz-Octahedron-Strahler (resoniert 1.8) —
-                        // dieselbe Substanz, andere Form, messbar bessere Antenne.
-                        if (r.state.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
-                        r.cloneBlueprint("village", "test_10ext_radstrong");
-                        r.state.blueprints.test_10ext_radstrong.parts = [
-                            {
-                                shape: "sphere",
-                                material: "quarz",
-                                position: { x: 1.2, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "sphere",
-                                material: "quarz",
-                                position: { x: -1.2, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "sphere",
-                                material: "quarz",
-                                position: { x: 0, y: 0.5, z: 1.2 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                            {
-                                shape: "sphere",
-                                material: "quarz",
-                                position: { x: 0, y: 0.5, z: -1.2 },
-                                size: { x: 0.6, y: 0.6, z: 0.6 },
-                            },
-                        ];
-                        const radWeakStr = r.computeAffordanceStrength(
-                            r.state.blueprints.test_10ext_radiator
-                        ).radiating;
-                        const radStrongStr = r.computeAffordanceStrength(
-                            r.state.blueprints.test_10ext_radstrong
-                        ).radiating;
-                        out.radStrengthScales =
-                            typeof radWeakStr === "number" && radStrongStr > radWeakStr && radStrongStr <= 1;
-                        // Ein Quarz-Mast ist eine STÄRKERE Antenne als ein Holz-Mast.
-                        if (r.state.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
-                        r.cloneBlueprint("village", "test_10ext_mastweak");
-                        r.state.blueprints.test_10ext_mastweak.parts = [
-                            {
-                                shape: "cylinder",
-                                material: "holz",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 0.5, y: 1, z: 0.5 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "holz",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 0.5, y: 1, z: 0.5 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "holz",
-                                position: { x: 0, y: 2, z: 0 },
-                                size: { x: 0.5, y: 1, z: 0.5 },
-                            },
-                        ];
-                        const mastWeakStr = r.computeAffordanceStrength(
-                            r.state.blueprints.test_10ext_mastweak
-                        ).broadcasting;
-                        const mastStrongStr = r.computeAffordanceStrength(
-                            r.state.blueprints.test_10ext_mast
-                        ).broadcasting;
-                        out.mastWeakIsBroadcasting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mastweak).broadcasting === true;
-                        out.broadcastStrengthScales = typeof mastWeakStr === "number" && mastStrongStr > mastWeakStr;
-                        // spawnArchitecture friert die Stärke ein.
-                        const radSnap = r.spawnArchitecture(
-                            "test_10ext_radiator",
-                            { x: 70, y: 0, z: 70 },
-                            { silent: true }
-                        );
-                        out.spawnFreezesStrength = !!(
-                            radSnap &&
-                            radSnap.affordanceStrength &&
-                            typeof radSnap.affordanceStrength.radiating === "number"
-                        );
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
-                        // Welt-Reaktion: ein STARKER Mast relais-verstärkt weiter
-                        // als ein SCHWACHER. Spieler 23 m vom Strahler — der
-                        // schwache Holz-Mast erreicht ihn nicht, der starke schon.
-                        // V9.33-Disziplin: natürliche Strahler/Sender im 100-m-
-                        // Radius entfernen, sonst kontaminieren sie die Probe.
-                        if (pmR) {
-                            pmR.x = 60;
-                            pmR.y = 0;
-                            pmR.z = 83;
-                        }
-                        r.state.architectures = r.state.architectures.filter((e) => {
-                            if (!e || !e.position || !e.affordances) return true;
-                            if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
-                            const dx = e.position.x - 60;
-                            const dz = e.position.z - 83;
-                            return dx * dx + dz * dz > 100 * 100;
-                        });
-                        r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
-                        r.spawnArchitecture("test_10ext_mastweak", { x: 66, y: 0, z: 60 }, { silent: true });
-                        emoR.awe = 0.1;
-                        emoR.peace = 0.1;
-                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
-                        out.weakMastTooWeak = Math.abs(emoR.awe - 0.1) < 0.0001;
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_mastweak");
-                        r.spawnArchitecture("test_10ext_mast", { x: 66, y: 0, z: 60 }, { silent: true });
-                        for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
-                        out.strongMastReachesFarther = emoR.awe > 0.1;
-                        r.state.architectures = r.state.architectures.filter(
-                            (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
-                        );
-
-                        // ── W10 ext. Welle 3/4 — balancing (gründende Form) ──
-                        out.hasBalancing = typeof r._isBalancing === "function";
-                        out.hasTickBalancing = typeof r._tickBalancingAffordances === "function";
-                        out.balancingLabel = AR.AFFORDANCE_LABELS.balancing === "gründend";
-                        out.balancingThresholds =
-                            !!AR.AFFORDANCE_THRESHOLDS.balancing &&
-                            AR.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
-                            AR.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
-                        // Eine breite, flache, schwere Stein-Box-Plattform gründet.
-                        if (r.state.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
-                        r.cloneBlueprint("village", "test_10ext_platform");
-                        r.state.blueprints.test_10ext_platform.parts = [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 1.5, y: 0.2, z: 0 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: -1.5, y: 0.2, z: 0 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0.2, z: 1.5 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0.2, z: -1.5 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                        ];
-                        out.platformIsBalancing =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).balancing === true;
-                        // Ein aufrechter Mast ist hoch, nicht breit → NICHT balancing.
-                        out.mastNotBalancing =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).balancing !== true;
-                        // Der Quarz-Cluster ist breit + flach + bodenlastig, aber
-                        // zu LEICHT (dichte 1.3 < 1.5) → NICHT balancing (der
-                        // dichte-Gate beweist: nur genuin Schweres gründet).
-                        out.lightClusterNotBalancing =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).balancing !== true;
-                        // Stärke skaliert: eine Stein-Box-Plattform (dichte 2.55)
-                        // gründet stärker als eine Stein-Cylinder-Plattform (1.7).
-                        if (r.state.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
-                        r.cloneBlueprint("village", "test_10ext_platweak");
-                        r.state.blueprints.test_10ext_platweak.parts = [
-                            {
-                                shape: "cylinder",
-                                material: "stein",
-                                position: { x: 1.5, y: 0.2, z: 0 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "stein",
-                                position: { x: -1.5, y: 0.2, z: 0 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "stein",
-                                position: { x: 0, y: 0.2, z: 1.5 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "stein",
-                                position: { x: 0, y: 0.2, z: -1.5 },
-                                size: { x: 1, y: 0.4, z: 1 },
-                            },
-                        ];
-                        const balStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platform).balancing;
-                        const balWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platweak).balancing;
-                        out.balancingStrengthScales =
-                            typeof balWeak === "number" && balStrong > balWeak && balStrong <= 1;
-                        // Welt-Reaktion: nahe einer gründenden Form sinkt chaos.
-                        const balE = r.spawnArchitecture(
-                            "test_10ext_platform",
-                            { x: 70, y: 0, z: 70 },
-                            { silent: true }
-                        );
-                        out.balEntryAffordance = !!(balE && balE.affordances && balE.affordances.balancing === true);
-                        out.balEntryStrength = !!(
-                            balE &&
-                            balE.affordanceStrength &&
-                            typeof balE.affordanceStrength.balancing === "number"
-                        );
-                        if (pmR) {
-                            pmR.x = 70;
-                            pmR.y = 0;
-                            pmR.z = 72;
-                        }
-                        emoR.chaos = 0.6;
-                        for (let i = 0; i < 30; i++) r.tickAffordances(0.1);
-                        out.balNearDrainsChaos = emoR.chaos < 0.6;
-                        // Weit weg → kein chaos-Abbau.
-                        if (pmR) pmR.z = 400;
-                        const chaosFar = emoR.chaos;
-                        for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
-                        out.balFarNoChange = Math.abs(emoR.chaos - chaosFar) < 0.0001;
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_platform");
-                        emoR.chaos = chaosBefore0;
-
-                        // ── W10 ext. Welle 4/4 — lifting (Auftriebs-Feld) ──
-                        out.hasLifting = typeof r._isLifting === "function";
-                        out.hasTickLifting = typeof r._tickLiftingAffordances === "function";
-                        out.hasLiftVy = typeof r._liftVerticalVelocity === "function";
-                        out.liftingLabel = AR.AFFORDANCE_LABELS.lifting === "hebend";
-                        out.liftingThresholds =
-                            !!AR.AFFORDANCE_THRESHOLDS.lifting &&
-                            AR.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&
-                            AR.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
-                        // Ein Quarz-Cone-Cluster (magie 1.7, dichte 0.65) hebt.
-                        if (r.state.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
-                        r.cloneBlueprint("village", "test_10ext_lifter");
-                        r.state.blueprints.test_10ext_lifter.parts = [
-                            {
-                                shape: "cone",
-                                material: "quarz",
-                                position: { x: 1, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 0.8, z: 0.6 },
-                            },
-                            {
-                                shape: "cone",
-                                material: "quarz",
-                                position: { x: -1, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 0.8, z: 0.6 },
-                            },
-                            {
-                                shape: "cone",
-                                material: "quarz",
-                                position: { x: 0, y: 0.5, z: 1 },
-                                size: { x: 0.6, y: 0.8, z: 0.6 },
-                            },
-                        ];
-                        out.lifterIsLifting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_lifter).lifting === true;
-                        // Eine schwere Stein-Plattform → NICHT lifting (magie zu tief).
-                        out.platformNotLifting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).lifting !== true;
-                        // Der Quarz-Octahedron-Cluster ist magie-geladen, aber zu
-                        // DICHT (dichte 1.3 > 1.0) → NICHT lifting (der dichte-
-                        // Deckel beweist: Magie hebt kein Gewicht).
-                        out.denseClusterNotLifting =
-                            r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).lifting !== true;
-                        // _liftVerticalVelocity: dämpft den Fall + hebt sanft.
-                        out.liftCushionsFall = r._liftVerticalVelocity(-10, 1) > -10;
-                        out.liftDriftsUp = r._liftVerticalVelocity(0, 1) > 0;
-                        out.liftNoFieldNoEffect = r._liftVerticalVelocity(-10, 0) === -10;
-                        // Stärke skaliert: ein Quarz-Helix-Heber (magie 2.55) hebt
-                        // stärker als der Quarz-Cone-Heber (magie 1.7).
-                        if (r.state.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
-                        r.cloneBlueprint("village", "test_10ext_lifterstrong");
-                        r.state.blueprints.test_10ext_lifterstrong.parts = [
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: 1, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 1, z: 2 },
-                            },
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: -1, y: 0.5, z: 0 },
-                                size: { x: 0.6, y: 1, z: 2 },
-                            },
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: 0, y: 0.5, z: 1 },
-                                size: { x: 0.6, y: 1, z: 2 },
-                            },
-                        ];
-                        const liftWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifter).lifting;
-                        const liftStrong = r.computeAffordanceStrength(
-                            r.state.blueprints.test_10ext_lifterstrong
-                        ).lifting;
-                        out.liftStrengthScales =
-                            typeof liftWeak === "number" && liftStrong > liftWeak && liftStrong <= 1;
-                        // Welt-Reaktion: _tickLiftingAffordances setzt das Feld-Flag.
-                        const liftE = r.spawnArchitecture(
-                            "test_10ext_lifter",
-                            { x: 80, y: 0, z: 80 },
-                            { silent: true }
-                        );
-                        out.liftEntryAffordance = !!(
-                            liftE &&
-                            liftE.affordances &&
-                            liftE.affordances.lifting === true &&
-                            liftE.affordanceStrength &&
-                            typeof liftE.affordanceStrength.lifting === "number"
-                        );
-                        if (pmR) {
-                            pmR.x = 80;
-                            pmR.y = 0;
-                            pmR.z = 82;
-                        }
-                        r._tickLiftingAffordances();
-                        out.liftFieldActiveNear = !!(r.state.player.liftingField && r.state.player.liftingField.active);
-                        if (pmR) pmR.z = 400;
-                        r._tickLiftingAffordances();
-                        out.liftFieldInactiveFar = !(r.state.player.liftingField && r.state.player.liftingField.active);
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_lifter");
-
-                        emoR.awe = aweBefore0;
-                        emoR.peace = peaceBefore0;
-                        // Spieler-Position wiederherstellen — nachfolgende Tests
-                        // erwarten ihn dort, wo der Autonom-Lauf ihn liess.
-                        if (pmR && pmBefore) {
-                            pmR.x = pmBefore.x;
-                            pmR.y = pmBefore.y;
-                            pmR.z = pmBefore.z;
-                        }
-
-                        // spawnArchitecture speichert affordances
-                        const entry = r.spawnArchitecture("test_10b_car", { x: 50, y: 0, z: 50 }, { silent: true });
-                        out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
-
-                        // Cleanup spawned entry
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b_car");
-
-                        // UI: Werkstatt-Status zeigt "fahrbar"
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        r.selectBlueprintForEdit("test_10b_car");
-                        r._renderWorkshopDOM();
-                        const statusEl = document.querySelector(".workshop-status");
-                        out.statusShowsAffordance = !!statusEl && statusEl.textContent.includes("fahrbar");
-
-                        // Cleanup
-                        for (const n of [
-                            "test_10b_car",
-                            "test_10b_carless",
-                            "test_10b_scope",
-                            "test_10b_sled",
-                            "test_10ext_radiator",
-                            "test_10ext_mast",
-                            "test_10ext_bcline",
-                            "test_10ext_radstrong",
-                            "test_10ext_mastweak",
-                            "test_10ext_platform",
-                            "test_10ext_platweak",
-                            "test_10ext_lifter",
-                            "test_10ext_lifterstrong",
-                        ]) {
-                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
-                        }
-                        r.selectBlueprintForEdit("village");
-                        r._renderWorkshopDOM();
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave10bResults && !wave10bResults.error) {
-                check(
-                    "Welle 10b.2: AFFORDANCE_THRESHOLDS + LABELS frozen, KEINE Form-Whitelists mehr (Vision-Korrektur)",
-                    wave10bResults.thresholdsFrozen &&
-                        wave10bResults.noShapeWhitelists &&
-                        wave10bResults.affordanceLabelsExist
-                );
-                check(
-                    "Welle 10b.2: Schwellen sind räumlich + tag-basiert (minSupportParts=2, midlineFactor=0.5, dichteMin=0.3, axialAlignmentMin=0.6)",
-                    wave10bResults.thresholdsAreSpatial
-                );
-                check(
-                    "Welle 10b.1: 4 Affordance-Methoden existieren (computeAffordances + _isMoveable/_isMagnifying/_isFocusing)",
-                    wave10bResults.hasComputeAffordances &&
-                        wave10bResults.hasMoveable &&
-                        wave10bResults.hasMagnifying &&
-                        wave10bResults.hasFocusing
-                );
-                check(
-                    "Welle 10b.2: 3 räumliche Helper existieren (_compoundBBox + _partsBelowMidline + _axialAlignment)",
-                    wave10bResults.hasBbox && wave10bResults.hasBelowMid && wave10bResults.hasAxialAlignment
-                );
-                check(
-                    "Welle 10b.1: leerer/null Bauplan → leere Affordances",
-                    wave10bResults.emptyBpEmpty && wave10bResults.bpNoParts
-                );
-                check(
-                    "Welle 10b.1: Default-Built-in (village) erkennt keine Affordances — ehrlich",
-                    wave10bResults.villageNoAffordances
-                );
-                check(
-                    "Welle 10b.1: Fahrzeug-Compound (2 Cylinder-Stützen + quarz-Antrieb) → moveable=true",
-                    wave10bResults.carIsMoveable
-                );
-                check(
-                    "Welle 10b.2 VISION-TEST: Box-Stützen + Octahedron-Quarz-Antrieb → moveable=true (KEINE Form-Whitelist mehr)",
-                    wave10bResults.boxSledIsMoveable
-                );
-                check(
-                    "Welle 10b.1: Stützen OHNE Antriebs-Tag (nur stein) → NICHT moveable (Diskrimination)",
-                    wave10bResults.carlessNotMoveable
-                );
-                check(
-                    "Welle 10b.1: Teleskop-Compound (Quarz-Linse + Cylinder-Tubus) → magnifying=true",
-                    wave10bResults.scopeIsMagnifying
-                );
-                check(
-                    "Welle 10b.1: spawnArchitecture speichert affordances am entry-Objekt",
-                    wave10bResults.entryHasAffordances
-                );
-                check(
-                    "Welle 10b.1 UI: Werkstatt-Status zeigt erkannte Affordance ('fahrbar') beim Bauplan",
-                    wave10bResults.statusShowsAffordance
-                );
-                // ── W10 ext. — radiating ──
-                check(
-                    "W10 ext.: _isRadiating + _tickRadiatingAffordances existieren, Label + Schwellen definiert",
-                    wave10bResults.hasRadiating &&
-                        wave10bResults.hasTickRadiating &&
-                        wave10bResults.radiatingLabel &&
-                        wave10bResults.radiatingThresholds
-                );
-                check(
-                    "W10 ext.: ein radialer Quarz-Cluster (≥3 Parts, gespreizt) → radiating=true",
-                    wave10bResults.radiatorIsRadiating
-                );
-                check(
-                    "W10 ext.: ein Quarz-Mast (alle Parts auf einer Achse) → NICHT radiating (räumliche Gate, kein Form-Whitelist)",
-                    wave10bResults.mastNotRadiating
-                );
-                check(
-                    "W10 ext.: spawnArchitecture speichert die radiating-Affordance am entry",
-                    wave10bResults.radEntryAffordance
-                );
-                check(
-                    "W10 ext.: nahe einem Strahler steigen awe + peace (Welt-Reaktion)",
-                    wave10bResults.radNearRaisesEmotion
-                );
-                check(
-                    "W10 ext.: weit weg vom Strahler keine Emotion-Änderung (Reichweite-Gate)",
-                    wave10bResults.radFarNoChange
-                );
-                // ── W10 ext. Welle 2/4 — broadcasting ──
-                check(
-                    "W10 ext.: _isBroadcasting existiert, Label 'sendend' + Schwellen definiert",
-                    wave10bResults.hasBroadcasting &&
-                        wave10bResults.broadcastingLabel &&
-                        wave10bResults.broadcastingThresholds
-                );
-                check(
-                    "W10 ext.: ein aufrechter leitfähiger Quarz-Mast → broadcasting=true",
-                    wave10bResults.mastIsBroadcasting
-                );
-                check(
-                    "W10 ext.: ein radialer Cluster ist kein Mast → NICHT broadcasting (komplementär zu radiating)",
-                    wave10bResults.radiatorNotBroadcasting
-                );
-                check(
-                    "W10 ext.: eine waagrechte leitfähige Linie (Achse x, nicht y) → NICHT broadcasting",
-                    wave10bResults.horizLineNotBroadcasting
-                );
-                check(
-                    "W10 ext.: spawnArchitecture speichert die broadcasting-Affordance am entry",
-                    wave10bResults.relayMastAffordance
-                );
-                check(
-                    "W10 ext.: ohne Mast erreicht der Strahler den fernen Spieler NICHT (Basis-Reichweite)",
-                    wave10bResults.relayOhneMastKeinEffekt
-                );
-                check(
-                    "W10 ext.: ein broadcasting-Mast verstärkt als Relais die Strahler-Reichweite (Affordances komponieren)",
-                    wave10bResults.relayMitMastReicheWeiter
-                );
-                // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
-                check(
-                    "W10 ext. Politur: computeAffordanceStrength existiert, leer für ein Compound ohne Affordance",
-                    wave10bResults.hasAffordanceStrength && wave10bResults.strengthEmptyForNone
-                );
-                check(
-                    "W10 ext. Politur: ein resonanter Quarz-Sphären-Strahler ist STÄRKER als der Octahedron-Strahler",
-                    wave10bResults.radStrengthScales
-                );
-                check(
-                    "W10 ext. Politur: ein Holz-Mast ist broadcasting, aber SCHWÄCHER als ein Quarz-Mast",
-                    wave10bResults.mastWeakIsBroadcasting && wave10bResults.broadcastStrengthScales
-                );
-                check(
-                    "W10 ext. Politur: spawnArchitecture friert affordanceStrength am entry ein",
-                    wave10bResults.spawnFreezesStrength
-                );
-                check(
-                    "W10 ext. Politur: ein schwacher Mast relais-verstärkt NICHT bis zum 23-m-Spieler",
-                    wave10bResults.weakMastTooWeak
-                );
-                check(
-                    "W10 ext. Politur: ein starker Mast relais-verstärkt WEITER — er erreicht ihn (eine bessere Antenne)",
-                    wave10bResults.strongMastReachesFarther
-                );
-                // ── W10 ext. Welle 3/4 — balancing ──
-                check(
-                    "W10 ext.: _isBalancing + _tickBalancingAffordances existieren, Label 'gründend' + Schwellen",
-                    wave10bResults.hasBalancing &&
-                        wave10bResults.hasTickBalancing &&
-                        wave10bResults.balancingLabel &&
-                        wave10bResults.balancingThresholds
-                );
-                check(
-                    "W10 ext.: eine breite flache schwere Stein-Plattform → balancing=true",
-                    wave10bResults.platformIsBalancing
-                );
-                check(
-                    "W10 ext.: ein aufrechter Mast (hoch, nicht breit) → NICHT balancing",
-                    wave10bResults.mastNotBalancing
-                );
-                check(
-                    "W10 ext.: ein breiter flacher aber LEICHTER Quarz-Cluster → NICHT balancing (dichte-Gate)",
-                    wave10bResults.lightClusterNotBalancing
-                );
-                check(
-                    "W10 ext.: eine dichtere Plattform gründet stärker (Stärke skaliert)",
-                    wave10bResults.balancingStrengthScales
-                );
-                check(
-                    "W10 ext.: spawnArchitecture speichert balancing-Affordance + Stärke am entry",
-                    wave10bResults.balEntryAffordance && wave10bResults.balEntryStrength
-                );
-                check(
-                    "W10 ext.: nahe einer gründenden Form sinkt chaos (Welt-Reaktion)",
-                    wave10bResults.balNearDrainsChaos
-                );
-                check(
-                    "W10 ext.: weit weg von der gründenden Form kein chaos-Abbau (Reichweite-Gate)",
-                    wave10bResults.balFarNoChange
-                );
-                // ── W10 ext. Welle 4/4 — lifting ──
-                check(
-                    "W10 ext.: _isLifting + _tickLiftingAffordances + _liftVerticalVelocity existieren, Label 'hebend' + Schwellen",
-                    wave10bResults.hasLifting &&
-                        wave10bResults.hasTickLifting &&
-                        wave10bResults.hasLiftVy &&
-                        wave10bResults.liftingLabel &&
-                        wave10bResults.liftingThresholds
-                );
-                check(
-                    "W10 ext.: ein magie-geladener leichter Quarz-Cone-Cluster → lifting=true",
-                    wave10bResults.lifterIsLifting
-                );
-                check(
-                    "W10 ext.: eine schwere Stein-Plattform → NICHT lifting (magie zu tief)",
-                    wave10bResults.platformNotLifting
-                );
-                check(
-                    "W10 ext.: ein magie-geladener aber zu DICHTER Quarz-Cluster → NICHT lifting (dichte-Deckel)",
-                    wave10bResults.denseClusterNotLifting
-                );
-                check(
-                    "W10 ext.: _liftVerticalVelocity dämpft den Fall + hebt sanft, ohne Feld kein Effekt",
-                    wave10bResults.liftCushionsFall && wave10bResults.liftDriftsUp && wave10bResults.liftNoFieldNoEffect
-                );
-                check(
-                    "W10 ext.: ein Quarz-Helix-Heber hebt stärker als ein Cone-Heber (Stärke skaliert)",
-                    wave10bResults.liftStrengthScales
-                );
-                check(
-                    "W10 ext.: spawnArchitecture speichert lifting-Affordance + Stärke am entry",
-                    wave10bResults.liftEntryAffordance
-                );
-                check(
-                    "W10 ext.: _tickLiftingAffordances setzt das Auftriebs-Feld nahe einem Heber, löscht es fern (Reichweite-Gate)",
-                    wave10bResults.liftFieldActiveNear && wave10bResults.liftFieldInactiveFar
-                );
-            } else if (wave10bResults && wave10bResults.error) {
-                check(`Welle 10b.1: evaluate-Fehler — ${wave10bResults.error}`, false);
-            }
-
-            // ### Welle 10b.3 — Welt-Reaktionen (mount + zoom + focusing-Ignite) ###
-            const wave10b3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const AR = r.constructor;
-                    const out = {};
-                    try {
-                        out.constantsExist =
-                            AR.MOUNT_RANGE_M === 3 &&
-                            AR.ZOOM_FOV_DEG === 25 &&
-                            AR.FOCUSING_HEAT_RANGE_M === 4 &&
-                            AR.FOCUSING_IGNITE_THRESHOLD === 1.0;
-                        out.hasMount = typeof r.mountArchitecture === "function";
-                        out.hasDismount = typeof r.dismountArchitecture === "function";
-                        out.hasToggleMount = typeof r.toggleMountAtPlayer === "function";
-                        out.hasSetZoom = typeof r.setZoomActive === "function";
-                        out.hasFocusingTick = typeof r._tickFocusingAffordances === "function";
-                        out.hasTickAffordances = typeof r.tickAffordances === "function";
-                        out.initialMountNull =
-                            r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
-
-                        // Mount-Test
-                        if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
-                        r.cloneBlueprint("village", "test_10b3_car");
-                        r.state.blueprints.test_10b3_car.parts = [
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: -1, y: 0.3, z: 0 },
-                                size: { x: 0.6, y: 0.4, z: 0.6 },
-                            },
-                            {
-                                shape: "cylinder",
-                                material: "eisen",
-                                position: { x: 1, y: 0.3, z: 0 },
-                                size: { x: 0.6, y: 0.4, z: 0.6 },
-                            },
-                            {
-                                shape: "box",
-                                material: "quarz",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 1.2, y: 0.8, z: 0.6 },
-                            },
-                        ];
-                        const ppos = r.state.playerMesh.position;
-                        const entry = r.spawnArchitecture(
-                            "test_10b3_car",
-                            { x: ppos.x, y: ppos.y, z: ppos.z },
-                            { silent: true }
-                        );
-                        out.entryHasMoveable = !!(entry && entry.affordances && entry.affordances.moveable);
-                        const mountRes = r.toggleMountAtPlayer();
-                        out.mountSucceeds = mountRes && mountRes.ok === true;
-                        out.playerMountedTo = r.state.player.mountedArch === entry.id;
-                        const dismountRes = r.toggleMountAtPlayer();
-                        out.dismountSucceeds = dismountRes && dismountRes.ok === true;
-                        out.playerDismounted =
-                            r.state.player.mountedArch === null || r.state.player.mountedArch === undefined;
-                        const dummy = { affordances: { moveable: false } };
-                        const failRes = r.mountArchitecture(dummy);
-                        out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
-
-                        // Mount-Range
-                        r.state.player.mountedArch = null;
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_car");
-                        if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
-                        r.cloneBlueprint("test_10b3_car", "test_10b3_far");
-                        r.spawnArchitecture(
-                            "test_10b3_far",
-                            { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 },
-                            { silent: true }
-                        );
-                        const farMountRes = r.toggleMountAtPlayer();
-                        out.farMountRejected =
-                            farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
-                        r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
-
-                        // Zoom-Test — deterministisch. _hasMagnifyingInSight
-                        // raycastet gegen ALLE Architekturen mit magnifying-
-                        // Affordance; eine autonom gespawnte transparent-
-                        // axiale Geode kann zufällig im Kamera-Strahl liegen
-                        // und die „kein Target"-Prüfung kippen. Für diese
-                        // Prüfung die Architektur-Liste kurz leeren + danach
-                        // wiederherstellen (V8.57-Lehre: ein Test ist erst
-                        // deterministisch, wenn ALLE seine Eingaben es sind).
-                        const initialFov = r.state.camera.fov;
-                        out.zoomInactiveInitial = !r.state._zoomActive;
-                        const zoomArchBackup = r.state.architectures;
-                        r.state.architectures = [];
-                        const noTargetRes = r.setZoomActive(true);
-                        r.state.architectures = zoomArchBackup;
-                        out.zoomFailsWithoutTarget =
-                            noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
-
-                        // Focusing-Test
-                        if (r.state.blueprints["test_10b3_lens"]) r.deleteBlueprint("test_10b3_lens");
-                        r.cloneBlueprint("village", "test_10b3_lens");
-                        r.state.blueprints.test_10b3_lens.parts = [
-                            {
-                                shape: "sphere",
-                                material: "quarz",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 0.8, y: 0.8, z: 0.8 },
-                            },
-                            {
-                                shape: "torus",
-                                material: "bronze",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 0.9, y: 0.15, z: 0.9 },
-                            },
-                        ];
-                        const focBp = r.state.blueprints.test_10b3_lens;
-                        out.lensIsFocusing = r.computeBlueprintAffordances(focBp).focusing === true;
-                        r.spawnArchitecture("test_10b3_lens", { x: 0, y: 0, z: 0 }, { silent: true });
-                        const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
-                        const beforeWeather = r.state.weather;
-                        r.state.weather = "sunny";
-                        const beforeArchCount = r.state.architectures.length;
-                        r._tickFocusingAffordances(25);
-                        const afterArchCount = r.state.architectures.length;
-                        out.focusingIgnitesTarget = afterArchCount < beforeArchCount;
-                        out.targetGone = !r.state.architectures.find((e) => e.id === targetEntry.id);
-
-                        r.state.weather = "rainy";
-                        if (r.state.blueprints["test_10b3_target2"]) r.deleteBlueprint("test_10b3_target2");
-                        r.cloneBlueprint("baum_eiche", "test_10b3_target2");
-                        const target2 = r.spawnArchitecture(
-                            "test_10b3_target2",
-                            { x: 1, y: 0, z: 0 },
-                            { silent: true }
-                        );
-                        r._tickFocusingAffordances(25);
-                        out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
-
-                        r.state.weather = beforeWeather;
-                        r.state.architectures = r.state.architectures.filter(
-                            (e) =>
-                                e.type !== "test_10b3_car" &&
-                                e.type !== "test_10b3_far" &&
-                                e.type !== "test_10b3_lens" &&
-                                e.type !== "test_10b3_target2" &&
-                                e.type !== "baum_eiche"
-                        );
-                        for (const n of ["test_10b3_car", "test_10b3_far", "test_10b3_lens", "test_10b3_target2"]) {
-                            if (r.state.blueprints[n]) r.deleteBlueprint(n);
-                        }
-                        r._renderWorkshopDOM();
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (wave10b3Results && !wave10b3Results.error) {
-                check(
-                    "Welle 10b.3: Konstanten (MOUNT_RANGE_M, ZOOM_FOV_DEG, FOCUSING_*) korrekt",
-                    wave10b3Results.constantsExist
-                );
-                check(
-                    "Welle 10b.3: alle 6 Methoden existieren (mount/dismount/toggleMount/setZoom/focusingTick/tickAffordances)",
-                    wave10b3Results.hasMount &&
-                        wave10b3Results.hasDismount &&
-                        wave10b3Results.hasToggleMount &&
-                        wave10b3Results.hasSetZoom &&
-                        wave10b3Results.hasFocusingTick &&
-                        wave10b3Results.hasTickAffordances
-                );
-                check("Welle 10b.3: state.player.mountedArch initial null", wave10b3Results.initialMountNull);
-                check(
-                    "Welle 10b.3: spawnArchitecture speichert moveable-Affordance am entry",
-                    wave10b3Results.entryHasMoveable
-                );
-                check(
-                    "Welle 10b.3: toggleMountAtPlayer → mount erfolgreich + mountedArch = entry.id",
-                    wave10b3Results.mountSucceeds && wave10b3Results.playerMountedTo
-                );
-                check(
-                    "Welle 10b.3: toggleMountAtPlayer nochmal → dismount + mountedArch null",
-                    wave10b3Results.dismountSucceeds && wave10b3Results.playerDismounted
-                );
-                check(
-                    "Welle 10b.3: mountArchitecture auf nicht-moveable lehnt ab (not_moveable)",
-                    wave10b3Results.nonMoveableRejected
-                );
-                check(
-                    "Welle 10b.3: Mount-Geste auf entfernte Architektur lehnt ab (none_in_range)",
-                    wave10b3Results.farMountRejected
-                );
-                check("Welle 10b.3 Zoom: initial inaktiv (kein _zoomActive)", wave10b3Results.zoomInactiveInitial);
-                check(
-                    "Welle 10b.3 Zoom: setZoomActive(true) ohne magnifying-Target → false-Return + FOV unverändert",
-                    wave10b3Results.zoomFailsWithoutTarget
-                );
-                check(
-                    "Welle 10b.3 Focusing: Lens-Bauplan (Quarz + Bronze) → focusing=true",
-                    wave10b3Results.lensIsFocusing
-                );
-                check(
-                    "Welle 10b.3 Focusing: sunny + brennbarer Baum in Range → Tick entzündet (Architektur entfernt)",
-                    wave10b3Results.focusingIgnitesTarget && wave10b3Results.targetGone
-                );
-                check(
-                    "Welle 10b.3 Focusing: rainy-Wetter → KEIN Ignite (Diskrimination)",
-                    wave10b3Results.rainyNoIgnite
-                );
-            } else if (wave10b3Results && wave10b3Results.error) {
-                check(`Welle 10b.3: evaluate-Fehler — ${wave10b3Results.error}`, false);
-            }
-
-            // ### V8.05 — Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
-            const v805Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        // Werkstatt-Tab öffnen
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        // Methoden
-                        out.hasRenderTools = typeof r._workshopRenderToolPalette === "function";
-                        out.hasHandleToolDrop = typeof r._workshopHandleToolDrop === "function";
-                        out.hasRenderStats = typeof r._workshopRenderStatsPanel === "function";
-                        out.hasInstallEditorToggle = typeof r._workshopInstallEditorToggle === "function";
-                        out.hasInstallDelBtn = typeof r._workshopInstallDeleteButton === "function";
-
-                        // Mode-Bar IM Wrapper UND VOR Canvas (DOM-Reihenfolge)
-                        const wrapper = document.getElementById("workshop-preview-wrapper");
-                        const modeBar = document.getElementById("workshop-mode-bar");
-                        const canvas = document.getElementById("workshop-preview-canvas");
-                        if (wrapper && modeBar && canvas) {
-                            out.modeBarInWrapper = modeBar.parentElement === wrapper;
-                            // Mode-Bar steht vor Canvas
-                            const wrapperChildren = Array.from(wrapper.children);
-                            const mbIdx = wrapperChildren.indexOf(modeBar);
-                            const cIdx = wrapperChildren.indexOf(canvas);
-                            out.modeBarBeforeCanvas = mbIdx >= 0 && cIdx > mbIdx;
-                        }
-
-                        // Stats-Panel im DOM + NACH Canvas
-                        const stats = document.getElementById("workshop-stats-panel");
-                        out.statsInDom = !!stats;
-                        if (wrapper && stats && canvas) {
-                            const wrapperChildren = Array.from(wrapper.children);
-                            const sIdx = wrapperChildren.indexOf(stats);
-                            const cIdx = wrapperChildren.indexOf(canvas);
-                            out.statsAfterCanvas = sIdx > cIdx;
-                        }
-
-                        // Werkzeug-Palette im DOM
-                        const toolPalette = document.getElementById("workshop-tool-palette");
-                        out.toolPaletteInDom = !!toolPalette;
-                        // Wenn Spieler Werkzeuge hat, sind Cards drin
-                        const playerTools = (r.state.player && r.state.player.tools) || [];
-                        out.toolCardsCount = toolPalette
-                            ? toolPalette.querySelectorAll(".workshop-tool-card").length
-                            : 0;
-                        out.toolPaletteHasCards = out.toolCardsCount > 0 && out.toolCardsCount <= playerTools.length;
-
-                        // Editor-Toggle
-                        const editorToggle = document.getElementById("workshop-editor-toggle");
-                        const editor = document.getElementById("workshop-editor");
-                        out.toggleInDom = !!editorToggle;
-                        if (editorToggle && editor) {
-                            // Default: zugeklappt (hidden=true)
-                            out.editorInitiallyHidden = editor.hidden === true;
-                            // Click → ausklappen
-                            editorToggle.click();
-                            out.editorVisibleAfterClick = editor.hidden === false;
-                            out.toggleAriaExpanded = editorToggle.getAttribute("aria-expanded") === "true";
-                            // Nochmal Click → wieder zu
-                            editorToggle.click();
-                            out.editorHiddenAfterSecondClick = editor.hidden === true;
-                        }
-
-                        // Del-Button
-                        const delBtn = document.getElementById("workshop-delete-selected-part");
-                        out.delBtnInDom = !!delBtn;
-                        // Default: disabled (kein Part selektiert)
-                        if (delBtn) out.delBtnInitiallyDisabled = delBtn.disabled === true;
-
-                        // Klone eigenen Bauplan + Part selektieren → Del-Btn enabled
-                        if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
-                        r.cloneBlueprint("village", "test_v805");
-                        r.selectBlueprintForEdit("test_v805");
-                        r._workshopSetSelection(0);
-                        out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
-                        // Del-Btn-Click entfernt Part
-                        const partsBefore = r.state.blueprints.test_v805.parts.length;
-                        if (delBtn) delBtn.click();
-                        const partsAfter = r.state.blueprints.test_v805.parts.length;
-                        out.delBtnRemovesPart = partsAfter === partsBefore - 1;
-
-                        // Stats-Panel zeigt Rolle-Chip
-                        const roleChip = stats && stats.querySelector(".role-chip");
-                        out.statsHasRoleChip = !!roleChip;
-
-                        // Cleanup
-                        if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
-                        r.selectBlueprintForEdit("village");
-                        r._renderWorkshopDOM();
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (v805Results && !v805Results.error) {
-                check(
-                    "V8.05: 5 neue Methoden existieren (Tool-Render/Drop + Stats + Editor-Toggle + Del-Btn)",
-                    v805Results.hasRenderTools &&
-                        v805Results.hasHandleToolDrop &&
-                        v805Results.hasRenderStats &&
-                        v805Results.hasInstallEditorToggle &&
-                        v805Results.hasInstallDelBtn
-                );
-                check(
-                    "V8.05: Mode-Bar steht IM Preview-Wrapper + VOR Canvas (Workflow von oben nach unten)",
-                    v805Results.modeBarInWrapper && v805Results.modeBarBeforeCanvas
-                );
-                check(
-                    "V8.05: Stats-Panel im DOM + NACH Canvas (schnelle Sicht auf emergente Werte)",
-                    v805Results.statsInDom && v805Results.statsAfterCanvas
-                );
-                check(
-                    "V8.05: Werkzeug-Palette im DOM mit Cards für Spieler-Werkzeuge",
-                    v805Results.toolPaletteInDom && v805Results.toolPaletteHasCards
-                );
-                check(
-                    "V8.05: Editor-Toggle im DOM + initial zugeklappt (Details-Tabelle versteckt)",
-                    v805Results.toggleInDom && v805Results.editorInitiallyHidden
-                );
-                check(
-                    "V8.05: Editor-Toggle-Click ein- + ausklappen + aria-expanded sync",
-                    v805Results.editorVisibleAfterClick &&
-                        v805Results.toggleAriaExpanded &&
-                        v805Results.editorHiddenAfterSecondClick
-                );
-                check(
-                    "V8.05: Del-Button im DOM + initial disabled (keine Selection)",
-                    v805Results.delBtnInDom && v805Results.delBtnInitiallyDisabled
-                );
-                check(
-                    "V8.05: Del-Button enabled bei Part-Selection + Click entfernt Part",
-                    v805Results.delBtnEnabledOnSelect && v805Results.delBtnRemovesPart
-                );
-                check("V8.05 Stats: Rolle-Chip im Stats-Panel sichtbar", v805Results.statsHasRoleChip);
-            } else if (v805Results && v805Results.error) {
-                check(`V8.05: evaluate-Fehler — ${v805Results.error}`, false);
-            }
-
-            // ### V8.06 — Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
-            const v806Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        // Klone + Neu-Buttons in Mode-Bar
-                        const modeBar = document.getElementById("workshop-mode-bar");
-                        out.cloneBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-clone-btn"));
-                        out.newBtnInModeBar = !!(modeBar && modeBar.querySelector("#workshop-new-btn"));
-                        out.dividerInModeBar = !!(modeBar && modeBar.querySelector(".workshop-mode-divider"));
-                        // Mode-Bar hat 5 Mode-Buttons + 2 Action-Buttons = 7
-                        const allBtns = modeBar ? modeBar.querySelectorAll("button").length : 0;
-                        // V8.14: Reset-Button (Zentrieren) hinzugefügt → 8 Buttons.
-                        out.sevenButtonsInBar = allBtns === 8;
-
-                        // Methode existiert
-                        out.hasActionInstall = typeof r._workshopInstallActionButtons === "function";
-                        out.hasDefaultSize = typeof r._workshopApplyDefaultSizeOnce === "function";
-
-                        // Rechte Spalte ist breiter (≥132px)
-                        const rightPalette = document.getElementById("workshop-side-palette-right");
-                        if (rightPalette) {
-                            const rect = rightPalette.getBoundingClientRect();
-                            out.rightPaletteWidth = rect.width;
-                            out.rightPaletteWider = rect.width >= 128;
-                        }
-
-                        // Mode-Bar hat Kontrast-Hintergrund (rgba mit ausreichend Alpha)
-                        const modeBarStyle = modeBar ? getComputedStyle(modeBar) : null;
-                        out.modeBarHasBg =
-                            modeBarStyle &&
-                            modeBarStyle.backgroundColor !== "rgba(0, 0, 0, 0)" &&
-                            modeBarStyle.backgroundColor !== "transparent";
-
-                        // Stats-Panel hat dunklen Hintergrund (rgba(20,12,4) area)
-                        const statsPanel = document.getElementById("workshop-stats-panel");
-                        const statsStyle = statsPanel ? getComputedStyle(statsPanel) : null;
-                        out.statsHasDarkBg =
-                            statsStyle &&
-                            statsStyle.backgroundColor &&
-                            /rgba?\((\d+),\s*(\d+),\s*(\d+)/.test(statsStyle.backgroundColor);
-
-                        // Default-Size-Apply-Funktion ist sauber idempotent —
-                        // wir setzen Flag, dann ist die Funktion no-op
-                        try {
-                            localStorage.setItem("anazh.workshop.defaultApplied", "1");
-                            r._workshopApplyDefaultSizeOnce();
-                            // Nichts sollte passiert sein (flag schützt)
-                            out.idempotentRespected = true;
-                        } catch {
-                            out.idempotentRespected = false;
-                        }
-
-                        // Cleanup
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (v806Results && !v806Results.error) {
-                check(
-                    "V8.06: Klonen + Neu-Buttons direkt in der Mode-Bar (mit Divider)",
-                    v806Results.cloneBtnInModeBar && v806Results.newBtnInModeBar && v806Results.dividerInModeBar
-                );
-                check(
-                    "V8.06/V8.14: Mode-Bar hat 8 Buttons (5 Modi + Snap + Klone + Neu + Zentrieren)",
-                    v806Results.sevenButtonsInBar
-                );
-                check(
-                    "V8.06: _workshopInstallActionButtons + _workshopApplyDefaultSizeOnce existieren",
-                    v806Results.hasActionInstall && v806Results.hasDefaultSize
-                );
-                check(
-                    `V8.06: rechte Palette breiter (≥128px, gemessen: ${v806Results.rightPaletteWidth || 0}px)`,
-                    v806Results.rightPaletteWider
-                );
-                check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
-                check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
-                check(
-                    "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
-                    v806Results.idempotentRespected
-                );
-            } else if (v806Results && v806Results.error) {
-                check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
-            }
-
-            // ### V8.07 — Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
-            const v807Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    try {
-                        const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
-                        if (tab) tab.click();
-                        // Klone + Neu sind IMMER enabled — auch bei built-in Bauplan
-                        r.selectBlueprintForEdit("village"); // built-in
-                        const cloneBtn = document.getElementById("workshop-clone-btn");
-                        const newBtn = document.getElementById("workshop-new-btn");
-                        out.cloneBtnAlwaysEnabled = cloneBtn && cloneBtn.disabled === false;
-                        out.newBtnAlwaysEnabled = newBtn && newBtn.disabled === false;
-                        // Mode-Buttons sind disabled bei built-in (kein Edit-Modus)
-                        const moveBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode='translate']");
-                        out.modeBtnDisabledOnBuiltIn = moveBtn && moveBtn.disabled === true;
-                        // Bei eigenem Bauplan: alle wieder enabled
-                        if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
-                        r.cloneBlueprint("village", "test_v807");
-                        r.selectBlueprintForEdit("test_v807");
-                        out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
-
-                        // Stats-Panel: Tag-Chips haben Stern-Levels
-                        const statsPanel = document.getElementById("workshop-stats-panel");
-                        const tagChips = statsPanel ? statsPanel.querySelectorAll(".tag-chip") : [];
-                        out.tagChipsCount = tagChips.length;
-                        let anyHasStars = false;
-                        let anyHasLevelClass = false;
-                        tagChips.forEach((c) => {
-                            if (c.querySelector(".tag-stars")) anyHasStars = true;
-                            if (
-                                c.classList.contains("lvl-1") ||
-                                c.classList.contains("lvl-2") ||
-                                c.classList.contains("lvl-3") ||
-                                c.classList.contains("lvl-0")
-                            )
-                                anyHasLevelClass = true;
-                        });
-                        out.tagChipsHaveStars = anyHasStars;
-                        out.tagChipsHaveLevelClass = anyHasLevelClass;
-                        // Stern-Inhalt: enthält Stern-Glyphen
-                        let starsContent = "";
-                        if (tagChips.length > 0) {
-                            const firstStarEl = tagChips[0].querySelector(".tag-stars");
-                            if (firstStarEl) starsContent = firstStarEl.textContent;
-                        }
-                        out.starsAreGlyphs = /[★☆]/.test(starsContent) && starsContent.length === 3;
-
-                        // Default-Size-Override: setze Flag zurück + ruf default —
-                        // sollte jetzt eine grosse Größe anwenden
-                        localStorage.removeItem("anazh.workshop.defaultApplied");
-                        localStorage.setItem("anazh.resize.werkstatt", JSON.stringify({ width: 300, height: 300 }));
-                        r._workshopApplyDefaultSizeOnce();
-                        const saved = JSON.parse(localStorage.getItem("anazh.resize.werkstatt") || "{}");
-                        out.defaultOverridesStale = saved.width > 600;
-                        // Idempotenz: zweiter Call überschreibt nicht
-                        r._workshopApplyDefaultSizeOnce();
-                        out.idempotentAfterApply = localStorage.getItem("anazh.workshop.defaultApplied") === "1";
-
-                        // Cleanup
-                        if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
-                        r.selectBlueprintForEdit("village");
-                        r._renderWorkshopDOM();
-                        const weltTab = document.querySelector('#topbar [data-tab="welt"]');
-                        if (weltTab) weltTab.click();
-                        r.state.yaw = 0;
-                        if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
-                    } catch (err) {
-                        out.error = err && err.message;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (v807Results && !v807Results.error) {
-                check("V8.07: Klone-Button IMMER enabled (auch bei built-in)", v807Results.cloneBtnAlwaysEnabled);
-                check("V8.07: Neu-Button IMMER enabled (auch bei built-in)", v807Results.newBtnAlwaysEnabled);
-                check("V8.07: Mode-Buttons (Move/...) disabled bei built-in", v807Results.modeBtnDisabledOnBuiltIn);
-                check("V8.07: Mode-Buttons enabled bei eigenem Bauplan", v807Results.modeBtnEnabledOnCustom);
-                check(
-                    `V8.07 Stats: ${v807Results.tagChipsCount} Tag-Chips mit Stern-Element + Level-Klasse`,
-                    v807Results.tagChipsHaveStars && v807Results.tagChipsHaveLevelClass
-                );
-                check("V8.07 Stats: Stern-Glyphen sind ★/☆ (3 Zeichen)", v807Results.starsAreGlyphs);
-                check(
-                    "V8.07: _workshopApplyDefaultSizeOnce überschreibt stale localStorage (alte 300px → groß)",
-                    v807Results.defaultOverridesStale
-                );
-                check("V8.07: idempotent — zweiter Apply respektiert das Flag", v807Results.idempotentAfterApply);
-            } else if (v807Results && v807Results.error) {
-                check(`V8.07: evaluate-Fehler — ${v807Results.error}`, false);
-            }
-
-            // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
-            const llmResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasLlmState = r.state.llm && typeof r.state.llm.enabled === "boolean";
-                    out.hasProviderConfig =
-                        !!r.state.llm.providerConfig &&
-                        !!r.state.llm.providerConfig.anthropic &&
-                        !!r.state.llm.providerConfig.google &&
-                        !!r.state.llm.providerConfig.openrouter &&
-                        !!r.state.llm.providerConfig.ollama;
-                    const defs = r.llmProviderDefs();
-                    out.fourProviders = Object.keys(defs).length === 4;
-                    out.providerHasBuildBody =
-                        typeof defs.anthropic.buildBody === "function" &&
-                        typeof defs.google.buildBody === "function" &&
-                        typeof defs.openrouter.buildBody === "function" &&
-                        typeof defs.ollama.buildBody === "function";
-
-                    // Endpoint je Provider liefert die erwartete URL.
-                    out.anthropicEndpoint =
-                        defs.anthropic.endpoint("m", "k") === "https://api.anthropic.com/v1/messages";
-                    out.googleEndpointGenerateContent =
-                        /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.0-flash:generateContent$/.test(
-                            defs.google.endpoint("gemini-2.0-flash", "KEY")
-                        );
-                    out.googleHeaderHasApiKey = defs.google.buildHeaders("KEY")["x-goog-api-key"] === "KEY";
-                    out.openrouterEndpoint =
-                        defs.openrouter.endpoint("m", "k") === "https://openrouter.ai/api/v1/chat/completions";
-                    out.ollamaEndpoint =
-                        defs.ollama.endpoint("m", "", { endpoint: "http://localhost:11434" }) ===
-                        "http://localhost:11434/api/chat";
-                    out.ollamaNoKeyRequired = defs.ollama.requiresKey === false;
-
-                    // Body-Format pro Provider
-                    const sys = "SYS";
-                    const usr = "USR";
-                    const anthBody = defs.anthropic.buildBody("m", sys, usr);
-                    out.anthropicBodyShape = anthBody.system === sys && Array.isArray(anthBody.messages);
-                    const geminiBody = defs.google.buildBody("m", sys, usr);
-                    out.geminiBodyShape = !!geminiBody.systemInstruction && Array.isArray(geminiBody.contents);
-                    const orBody = defs.openrouter.buildBody("m", sys, usr);
-                    out.openrouterBodyShape =
-                        Array.isArray(orBody.messages) &&
-                        orBody.messages[0].role === "system" &&
-                        orBody.messages[1].role === "user";
-                    const olBody = defs.ollama.buildBody("m", sys, usr);
-                    out.ollamaBodyShape = olBody.stream === false && Array.isArray(olBody.messages);
-
-                    // Response-Parser pro Provider
-                    out.anthropicExtract =
-                        defs.anthropic.extractText({ content: [{ type: "text", text: "hi" }] }) === "hi";
-                    out.geminiExtract =
-                        defs.google.extractText({ candidates: [{ content: { parts: [{ text: "hi" }] } }] }) === "hi";
-                    out.openrouterExtract =
-                        defs.openrouter.extractText({ choices: [{ message: { content: "hi" } }] }) === "hi";
-                    out.ollamaExtract = defs.ollama.extractText({ message: { content: "hi" } }) === "hi";
-
-                    // UI: Provider-Selektor + Schlüsselzeile + Endpoint-Zeile (für Ollama)
-                    out.llmUiProvider = !!document.getElementById("llm-provider");
-                    out.llmUiKey = !!document.getElementById("llm-key");
-                    out.llmUiEndpoint = !!document.getElementById("llm-endpoint");
-                    out.llmUiModel = !!document.getElementById("llm-model");
-                    out.llmUiToggle = !!document.getElementById("llm-toggle");
-
-                    // Default-Provider ist anthropic; Provider-Selector trägt alle vier
-                    const sel = document.getElementById("llm-provider");
-                    out.providerSelectorPopulated = sel && sel.options.length === 4;
-
-                    // System-Prompt enthält die DSL-Vertrag-Anweisungen
-                    const sp = r.llmBuildSystemPrompt();
-                    out.systemPromptHasJson = /JSON/i.test(sp) && /say/.test(sp) && /program/.test(sp);
-
-                    // Parser robust gegen Markdown / kaputtes JSON
-                    const ok = r.llmParseResponse('{"say":"Hallo","program":["weather","sunny"]}');
-                    out.parserParsesValidJson = ok.say === "Hallo" && Array.isArray(ok.program);
-                    const fenced = r.llmParseResponse('```json\n{"say":"hi","program":null}\n```');
-                    out.parserStripsFence = fenced.say === "hi" && fenced.program === null;
-                    // V7.98: Parser nutzt Plain-Text-Fallback statt strict-error.
-                    // Lokale Modelle ignorieren oft den JSON-Vertrag — wir nehmen
-                    // ihren Plain-Text als `say` damit der Spieler trotzdem etwas sieht.
-                    const broken = r.llmParseResponse("nicht json");
-                    out.parserDetectsError = broken.say === "nicht json" && broken.fallbackUsed === "plain-text";
-
-                    // Disabled-LLM blockt Call ohne Netzwerk-Versuch
-                    r.state.llm.enabled = false;
-                    return new Promise((resolve) => {
-                        r.llmCall("test").then((rep) => {
-                            out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
-                            const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-                            const csp = meta ? meta.getAttribute("content") : "";
-                            out.cspAnthropic = /api\.anthropic\.com/.test(csp);
-                            out.cspGoogle = /generativelanguage\.googleapis\.com/.test(csp);
-                            out.cspOpenRouter = /openrouter\.ai/.test(csp);
-                            out.cspOllama = /localhost:11434/.test(csp);
-                            resolve(out);
-                        });
-                    });
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (!llmResults || llmResults.error) {
-                check(
-                    "Schicht 2: LLM-Snapshot erreichbar",
-                    false,
-                    (llmResults && llmResults.error) || "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check(
-                    "Schicht 2: state.llm + providerConfig komplett",
-                    llmResults.hasLlmState && llmResults.hasProviderConfig
-                );
-                check("Schicht 2: vier Provider definiert", llmResults.fourProviders);
-                check("Schicht 2: jeder Provider hat buildBody-Fn", llmResults.providerHasBuildBody);
-                check("Schicht 2: Anthropic-Endpoint korrekt", llmResults.anthropicEndpoint);
-                check("Schicht 2: Gemini-Endpoint auf :generateContent", llmResults.googleEndpointGenerateContent);
-                check("Schicht 2: Gemini-Header trägt x-goog-api-key", llmResults.googleHeaderHasApiKey);
-                check("Schicht 2: OpenRouter-Endpoint korrekt", llmResults.openrouterEndpoint);
-                check("Schicht 2: Ollama-Endpoint nutzt /api/chat", llmResults.ollamaEndpoint);
-                check("Schicht 2: Ollama braucht keinen Key", llmResults.ollamaNoKeyRequired);
-                check("Schicht 2: Anthropic-Body trägt system + messages", llmResults.anthropicBodyShape);
-                check("Schicht 2: Gemini-Body trägt systemInstruction + contents", llmResults.geminiBodyShape);
-                check("Schicht 2: OpenRouter-Body OpenAI-kompatibel", llmResults.openrouterBodyShape);
-                check("Schicht 2: Ollama-Body trägt stream=false + messages", llmResults.ollamaBodyShape);
-                check("Schicht 2: Anthropic-Response extrahiert text-Block", llmResults.anthropicExtract);
-                check("Schicht 2: Gemini-Response extrahiert candidates[0].parts", llmResults.geminiExtract);
-                check("Schicht 2: OpenRouter-Response extrahiert choices[0].message", llmResults.openrouterExtract);
-                check("Schicht 2: Ollama-Response extrahiert message.content", llmResults.ollamaExtract);
-                check(
-                    "Schicht 2: UI-Felder (Provider/Key/Endpoint/Model/Toggle)",
-                    llmResults.llmUiProvider &&
-                        llmResults.llmUiKey &&
-                        llmResults.llmUiEndpoint &&
-                        llmResults.llmUiModel &&
-                        llmResults.llmUiToggle
-                );
-                check("Schicht 2: Provider-Selektor mit 4 Optionen befüllt", llmResults.providerSelectorPopulated);
-                check("Schicht 2: System-Prompt trägt DSL-JSON-Vertrag", llmResults.systemPromptHasJson);
-                check("Schicht 2: Parser akzeptiert gültiges JSON", llmResults.parserParsesValidJson);
-                check("Schicht 2: Parser entfernt Markdown-Fences", llmResults.parserStripsFence);
-                check(
-                    "Schicht 2: Parser nutzt Plain-Text-Fallback bei Nicht-JSON (V7.98 — User sieht Antwort statt Error)",
-                    llmResults.parserDetectsError
-                );
-                check("Schicht 2: Disabled-LLM blockt Call sauber", llmResults.callBlockedWhenDisabled);
-                check(
-                    "Schicht 2: CSP erlaubt alle vier Provider-Endpoints",
-                    llmResults.cspAnthropic && llmResults.cspGoogle && llmResults.cspOpenRouter && llmResults.cspOllama
-                );
-            }
-
-            // ### Welle 6.H V7.94 — Ollama-API-Key (gehosteter Setup) ###
-            //
-            // Lokales Ollama braucht keinen Key. Gehostete Setups (ollama.com
-            // Turbo, Reverse-Proxy mit Auth, Cloud-Hoster) kommen mit Bearer-
-            // Token. buildHeaders schickt Authorization-Header NUR wenn Key
-            // gesetzt — Backward-Compat für lokale Spieler.
-            const ollamaKeyResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    const defs = r.llmProviderDefs();
-                    const ol = defs.ollama;
-                    out.providerExists = !!ol;
-                    out.requiresKeyFalse = ol && ol.requiresKey === false; // weiterhin OPTIONAL
-                    out.labelMentionsHosted = ol && /gehostet|Hosted/i.test(ol.label || "");
-                    out.hintMentionsBearer = ol && /Bearer|Token/i.test(ol.hint || "");
-
-                    // buildHeaders ohne Key → kein authorization-Header (lokal)
-                    const headersNoKey = ol.buildHeaders("", { apiKey: "" });
-                    out.noAuthWithoutKey = !headersNoKey.authorization && !headersNoKey.Authorization;
-                    out.contentTypePresent = headersNoKey["content-type"] === "application/json";
-
-                    // buildHeaders MIT Key → Bearer-Token
-                    const headersWithKey = ol.buildHeaders("sk-test-1234", { apiKey: "sk-test-1234" });
-                    out.bearerWithKey =
-                        headersWithKey.authorization === "Bearer sk-test-1234" ||
-                        headersWithKey.Authorization === "Bearer sk-test-1234";
-
-                    // Endpoint folgt cfg.endpoint (nicht hartkodiert localhost)
-                    const customEp = ol.endpoint("llama3.1", "key", { endpoint: "https://my-ollama.cloud:8443" });
-                    out.endpointRespectsCustom = customEp === "https://my-ollama.cloud:8443/api/chat";
-
-                    // CSP: connect-src enthält https: Wildcard für Cloud-Endpoints
-                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-                    const csp = meta ? meta.getAttribute("content") : "";
-                    // Match 'https:' als standalone Wert in connect-src (nicht
-                    // nur die spezifischen 'https://api.X.com'-Einträge).
-                    out.cspHasHttpsWildcard = /connect-src[^;]*\bhttps:\s/.test(csp);
-
-                    // UI: Key-Row ist auch für ollama sichtbar (V7.94)
-                    if (r.state.llm) r.state.llm.provider = "ollama";
-                    if (typeof r.llmRefreshProviderUI === "function") {
-                        r.llmRefreshProviderUI();
-                    }
-                    const keyRow = document.getElementById("llm-key-row");
-                    out.keyRowVisibleForOllama = !!(keyRow && !keyRow.hidden);
-                    const keyInput = document.getElementById("llm-key");
-                    out.placeholderMentionsOptional = !!(
-                        keyInput && /optional|gehostet/i.test(keyInput.placeholder || "")
-                    );
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (ollamaKeyResults && !ollamaKeyResults.error) {
-                check(
-                    "V7.94 Ollama-Key: Provider-Label nennt 'gehostet' + Hint nennt Bearer/Token",
-                    ollamaKeyResults.providerExists &&
-                        ollamaKeyResults.labelMentionsHosted &&
-                        ollamaKeyResults.hintMentionsBearer
-                );
-                check(
-                    "V7.94 Ollama-Key: requiresKey bleibt false (lokal weiterhin ohne Key)",
-                    ollamaKeyResults.requiresKeyFalse
-                );
-                check(
-                    "V7.94 Ollama-Key: buildHeaders OHNE Key → kein Authorization (Backward-Compat lokal)",
-                    ollamaKeyResults.noAuthWithoutKey && ollamaKeyResults.contentTypePresent
-                );
-                check(
-                    "V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>",
-                    ollamaKeyResults.bearerWithKey
-                );
-                check(
-                    "V7.94 Ollama-Key: endpoint respektiert cfg.endpoint (Custom-URL möglich, z.B. https://my-ollama.cloud)",
-                    ollamaKeyResults.endpointRespectsCustom
-                );
-                check(
-                    "V7.94 Ollama-Key: CSP connect-src enthält https: Wildcard (für gehostete Endpoints)",
-                    ollamaKeyResults.cspHasHttpsWildcard
-                );
-                check(
-                    "V7.94 Ollama-Key: UI Key-Row ist für ollama sichtbar (optional, mit Hinweis-Placeholder)",
-                    ollamaKeyResults.keyRowVisibleForOllama && ollamaKeyResults.placeholderMentionsOptional
-                );
-            } else if (ollamaKeyResults && ollamaKeyResults.error) {
-                check(`V7.94 Ollama-Key: evaluate-Fehler — ${ollamaKeyResults.error}`, false);
-            }
-
-            // ### V7.95 — Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
-            //
-            // Schöpfer-Browser-Test V7.94: Ollama-Cloud-Setup scheiterte still.
-            // Drei Bug-Quellen entdeckt: (1) /api/chat wurde immer angehängt
-            // auch wenn URL schon Pfad hatte; (2) extractText las nur Ollama-
-            // native Format, OpenAI-kompat lieferte null; (3) options.num_predict
-            // ist Ollama-spezifisch, OpenAI lehnt unbekannte Felder ab.
-            const v795Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    const defs = r.llmProviderDefs();
-                    const ol = defs.ollama;
-
-                    // 1. Endpoint smart-detect — Basis-URL ohne Pfad → /api/chat angehängt
-                    out.epAppendsForBase =
-                        ol.endpoint("m", "k", { endpoint: "http://localhost:11434" }) ===
-                        "http://localhost:11434/api/chat";
-                    out.epAppendsForCloud =
-                        ol.endpoint("m", "k", { endpoint: "https://ollama.com" }) === "https://ollama.com/api/chat";
-
-                    // 2. Endpoint smart-detect — URL mit /api/chat → DIREKT verwendet (kein /api/chat/api/chat)
-                    out.epRespectsApiPath =
-                        ol.endpoint("m", "k", {
-                            endpoint: "https://ollama.com/api/chat",
-                        }) === "https://ollama.com/api/chat";
-
-                    // 3. Endpoint smart-detect — URL mit /v1/chat/completions → DIREKT (OpenAI-kompat)
-                    out.epRespectsV1Path =
-                        ol.endpoint("m", "k", {
-                            endpoint: "https://provider.cloud/v1/chat/completions",
-                        }) === "https://provider.cloud/v1/chat/completions";
-
-                    // 4. Endpoint trim — Trailing-Slash entfernt
-                    out.epTrimsTrailingSlash =
-                        ol.endpoint("m", "k", {
-                            endpoint: "https://ollama.com/",
-                        }) === "https://ollama.com/api/chat";
-
-                    // 5. extractText — Ollama-native Format
-                    out.extractsOllamaNative = ol.extractText({ message: { content: "Hallo Welt" } }) === "Hallo Welt";
-
-                    // 6. extractText — OpenAI-kompat Format
-                    out.extractsOpenAi =
-                        ol.extractText({
-                            choices: [{ message: { content: "OpenAI-Antwort" } }],
-                        }) === "OpenAI-Antwort";
-
-                    // 7. extractText — Ollama-generate-Pfad (älter)
-                    out.extractsOllamaGenerate =
-                        ol.extractText({ response: "Generate-Antwort" }) === "Generate-Antwort";
-
-                    // 8. extractText — leerer/null Input → leerer String
-                    out.extractsEmpty = ol.extractText(null) === "" && ol.extractText({}) === "";
-
-                    // 9. buildBody — Ollama-Native (Basis-URL): hat options.num_predict
-                    // V7.98: 400→800 für Reasoning-Models (think-Block + Antwort)
-                    const bodyNative = ol.buildBody("llama3.1", "sys", "user", {
-                        endpoint: "http://localhost:11434",
-                    });
-                    out.bodyNativeHasOptions = bodyNative.options && bodyNative.options.num_predict === 800;
-                    out.bodyNativeNoMaxTokens = bodyNative.max_tokens === undefined;
-
-                    // 10. buildBody — OpenAI-kompat (/v1/): hat max_tokens, KEIN options
-                    // V7.98: 400→800
-                    const bodyOpenAi = ol.buildBody("gpt-oss", "sys", "user", {
-                        endpoint: "https://provider/v1/chat/completions",
-                    });
-                    out.bodyOpenAiHasMaxTokens = bodyOpenAi.max_tokens === 800;
-                    out.bodyOpenAiNoOptions = bodyOpenAi.options === undefined;
-
-                    // 11. buildBody — beide haben model + messages + stream:false
-                    out.bodyHasCommon =
-                        bodyNative.model === "llama3.1" &&
-                        Array.isArray(bodyNative.messages) &&
-                        bodyNative.stream === false &&
-                        bodyOpenAi.messages.length === 2;
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (v795Results && !v795Results.error) {
-                check(
-                    "V7.95 Ollama-Cloud: Endpoint hängt /api/chat an wenn Basis-URL ohne Pfad (localhost + ollama.com)",
-                    v795Results.epAppendsForBase && v795Results.epAppendsForCloud
-                );
-                check(
-                    "V7.95 Ollama-Cloud: Endpoint respektiert volle URL mit /api/chat (kein doppeltes /api/chat/api/chat)",
-                    v795Results.epRespectsApiPath
-                );
-                check(
-                    "V7.95 Ollama-Cloud: Endpoint respektiert OpenAI-kompat-URL mit /v1/chat/completions",
-                    v795Results.epRespectsV1Path
-                );
-                check("V7.95 Ollama-Cloud: Endpoint trimt trailing-slash sauber", v795Results.epTrimsTrailingSlash);
-                check(
-                    "V7.95 Ollama-Cloud: extractText liest Ollama-native Format (json.message.content)",
-                    v795Results.extractsOllamaNative
-                );
-                check(
-                    "V7.95 Ollama-Cloud: extractText liest OpenAI-kompat Format (json.choices[0].message.content)",
-                    v795Results.extractsOpenAi
-                );
-                check(
-                    "V7.95 Ollama-Cloud: extractText liest älteres Ollama-generate Format (json.response)",
-                    v795Results.extractsOllamaGenerate
-                );
-                check(
-                    "V7.95 Ollama-Cloud: extractText defensive bei null/leeren Input → '' (kein Crash)",
-                    v795Results.extractsEmpty
-                );
-                check(
-                    "V7.95+V7.98 Ollama: buildBody Ollama-Native hat options.num_predict=800 (kein max_tokens)",
-                    v795Results.bodyNativeHasOptions && v795Results.bodyNativeNoMaxTokens
-                );
-                check(
-                    "V7.95+V7.98 Ollama: buildBody OpenAI-kompat hat max_tokens=800 (KEIN options-Feld)",
-                    v795Results.bodyOpenAiHasMaxTokens && v795Results.bodyOpenAiNoOptions
-                );
-                check(
-                    "V7.95 Ollama-Cloud: buildBody beide Formate haben model + messages + stream:false",
-                    v795Results.bodyHasCommon
-                );
-            } else if (v795Results && v795Results.error) {
-                check(`V7.95 Ollama-Cloud: evaluate-Fehler — ${v795Results.error}`, false);
-            }
-
-            // ### V7.96 — Cloud-LLM-Proxy via save-server (CORS-Lösung) ###
-            //
-            // Cloud-Provider wie ollama.com senden keine CORS-Header → Browser
-            // blockt Direct-Calls. Save-server steht als loyaler Vermittler:
-            // localhost:4312/api/proxy/llm + Auth-Header durchgereicht.
-            // Tests prüfen: useProxy-Flag in Config, UI-Toggle sichtbar/wired,
-            // llmCall routet zum Proxy bei aktivem Flag, CORS-Error-Hint hilfreich.
-            const v796Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.llm) return null;
-                    const out = {};
-
-                    // 1. useProxy-Flag im Ollama-Provider-Config initialisiert
-                    const cfg = r.state.llm.providerConfig.ollama;
-                    out.useProxyExists = cfg && typeof cfg.useProxy === "boolean";
-                    out.useProxyDefault = cfg && cfg.useProxy === false;
-
-                    // 2. UI: Proxy-Row + Hint sind im DOM
-                    const proxyRow = document.getElementById("llm-proxy-row");
-                    const proxyHint = document.getElementById("llm-proxy-hint");
-                    const proxyCheckbox = document.getElementById("llm-use-proxy");
-                    out.proxyRowExists = !!proxyRow;
-                    out.proxyHintExists = !!proxyHint;
-                    out.proxyCheckboxIsCheckbox = !!(proxyCheckbox && proxyCheckbox.type === "checkbox");
-
-                    // 3. UI: Proxy-Row sichtbar bei Ollama, versteckt bei anderem Provider
-                    r.state.llm.provider = "ollama";
-                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
-                    out.proxyVisibleForOllama = !!(proxyRow && !proxyRow.hidden);
-                    out.proxyHiddenAttrOllama = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
-                    r.state.llm.provider = "google";
-                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
-                    out.proxyHiddenForOther = !!(proxyRow && proxyRow.hidden);
-                    out.proxyHiddenAttrOther = proxyRow ? proxyRow.getAttribute("hidden") : "no-row";
-                    r.state.llm.provider = "ollama";
-                    if (typeof r.llmRefreshProviderUI === "function") r.llmRefreshProviderUI();
-
-                    // 4. Provider-Hint enthält CORS-freundliche Provider-Liste
-                    if (proxyHint) {
-                        out.hintMentionsGroq = /Groq/i.test(proxyHint.textContent || "");
-                        out.hintMentionsTogether = /Together/i.test(proxyHint.textContent || "");
-                        out.hintMentionsCerebras = /Cerebras/i.test(proxyHint.textContent || "");
-                        out.hintMentionsProxyUrl = /4312/.test(proxyHint.textContent || "");
-                    }
-
-                    // 5. Click auf Checkbox setzt useProxy + persistiert
-                    if (proxyCheckbox && cfg) {
-                        proxyCheckbox.checked = true;
-                        proxyCheckbox.dispatchEvent(new Event("change"));
-                        out.toggleSetsUseProxy = cfg.useProxy === true;
-                        if (typeof localStorage !== "undefined") {
-                            out.persistedToLocalStorage = localStorage.getItem("anazh.llm.ollama.useProxy") === "1";
-                        }
-                        // Reset für nächste Tests
-                        proxyCheckbox.checked = false;
-                        proxyCheckbox.dispatchEvent(new Event("change"));
-                    }
-
-                    // 6. CSP allowed localhost:4312 für den Proxy
-                    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-                    const csp = meta ? meta.getAttribute("content") : "";
-                    out.cspAllowsProxyHost = /localhost:4312/.test(csp);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (v796Results && !v796Results.error) {
-                check(
-                    "V7.96 Proxy: useProxy-Flag im Ollama-Config (default false, Backward-Compat)",
-                    v796Results.useProxyExists && v796Results.useProxyDefault
-                );
-                check(
-                    "V7.96 Proxy: UI-Elemente im DOM (proxy-row + proxy-hint + checkbox)",
-                    v796Results.proxyRowExists && v796Results.proxyHintExists && v796Results.proxyCheckboxIsCheckbox
-                );
-                check(
-                    "V7.96 Proxy: UI-Toggle sichtbar bei Ollama (proxy-row.hidden=false)",
-                    v796Results.proxyVisibleForOllama
-                );
-                check(
-                    "V7.96 Proxy: UI-Toggle versteckt bei nicht-Ollama-Provider (proxy-row.hidden=true für Google/Anthropic/OpenRouter)",
-                    v796Results.proxyHiddenForOther
-                );
-                check(
-                    "V7.96 Proxy: Hint nennt CORS-freundliche Provider (Groq + Together + Cerebras) + Proxy-URL (4312)",
-                    v796Results.hintMentionsGroq &&
-                        v796Results.hintMentionsTogether &&
-                        v796Results.hintMentionsCerebras &&
-                        v796Results.hintMentionsProxyUrl
-                );
-                check(
-                    "V7.96 Proxy: Click-Toggle setzt useProxy + persistiert in localStorage",
-                    v796Results.toggleSetsUseProxy && v796Results.persistedToLocalStorage
-                );
-                check(
-                    "V7.96 Proxy: CSP erlaubt localhost:4312 (save-server) für Proxy-Calls",
-                    v796Results.cspAllowsProxyHost
-                );
-            } else if (v796Results && v796Results.error) {
-                check(`V7.96 Proxy: evaluate-Fehler — ${v796Results.error}`, false);
-            }
-
-            // ### V7.97 — Ollama UX-Politur (Auto-Bypass + Free-Text-Modell + 404-Hint) ###
-            //
-            // Schöpfer-Browser-Test V7.96 zeigte drei reale Stolpersteine:
-            // (1) Proxy-Toggle aktiv + localhost-URL → 400 Fehler (Proxy https-only);
-            // (2) Dropdown-Modelle veraltet — User hat qwen3.5:cloud etc.;
-            // (3) 404 ohne Anleitung was zu tun ist.
-            const v797Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-
-                    // 1. Modell-Input ist Free-Text (input mit datalist)
-                    const modelInput = document.getElementById("llm-model");
-                    const dataList = document.getElementById("llm-model-suggestions");
-                    out.modelIsInput = !!(modelInput && modelInput.tagName === "INPUT");
-                    out.modelHasList = !!(modelInput && modelInput.getAttribute("list") === "llm-model-suggestions");
-                    out.dataListExists = !!dataList;
-
-                    // 2. Datalist hat aktualisierte Vorschläge (llama3.2, qwen3, gpt-oss:20b)
-                    const defs = r.llmProviderDefs();
-                    const ollamaModels = (defs.ollama && defs.ollama.models) || [];
-                    const modelIds = ollamaModels.map((m) => m.id);
-                    out.hasLlama32 = modelIds.includes("llama3.2");
-                    out.hasQwen3 = modelIds.includes("qwen3");
-                    out.hasGptOss = modelIds.includes("gpt-oss:20b");
-                    out.hasGemma2 = modelIds.includes("gemma2");
-
-                    // 3. User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud)
-                    if (modelInput && r.state.llm) {
-                        r.state.llm.provider = "ollama";
-                        const cfg = r.state.llm.providerConfig.ollama;
-                        modelInput.value = "qwen3.5:cloud";
-                        modelInput.dispatchEvent(new Event("change"));
-                        out.customModelAccepted = cfg.model === "qwen3.5:cloud";
-                    }
-
-                    // 4. Default-Modell ist jetzt llama3.2 (moderner)
-                    out.defaultModelModern = true; // wir bauen das später
-                    // Heuristik: state-Default ist nicht garantiert beim Test-Lauf,
-                    // weil localStorage greift. Wir prüfen den class-Default.
-                    // (Skip this strict check.)
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            // Auto-Bypass-Test als separater evaluate damit fetch-Pfad testbar ist
-            const v797AutoResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.llm) return null;
-                    const out = {};
-
-                    // 5. Auto-Bypass: useProxy + localhost-URL → kein Proxy-Weg
-                    // (wir stubben fetch um die URL abzufangen und reverten danach)
-                    const origFetch = window.fetch;
-                    let capturedUrl = null;
-                    window.fetch = async (u) => {
-                        capturedUrl = String(u);
-                        // Liefere einen leeren-aber-validen Response zurück
-                        return {
-                            ok: false,
-                            status: 404,
-                            text: async () => '{"error":"stub"}',
-                            json: async () => ({ error: "stub" }),
-                        };
-                    };
-                    try {
-                        // Setup: localhost-Endpoint + useProxy=true
-                        r.state.llm.provider = "ollama";
-                        r.state.llm.enabled = true;
-                        const cfg = r.state.llm.providerConfig.ollama;
-                        cfg.endpoint = "http://localhost:11434";
-                        cfg.useProxy = true;
-                        cfg.model = "llama3.2";
-                        r.state.llm.inFlight = false;
-                        r.state.llm.lastResponseAt = -Infinity;
-                        await r.llmCall("test");
-                        // Erwartung: fetch-URL ist die direkte ollama-URL,
-                        // NICHT die proxy-URL — Auto-Bypass greift weil localhost
-                        out.bypassedForLocalhost = capturedUrl !== null && !/\/proxy\/llm/.test(capturedUrl);
-                        // Reset
-                        capturedUrl = null;
-                        cfg.endpoint = "https://ollama.com/api/chat";
-                        r.state.llm.inFlight = false;
-                        r.state.llm.lastResponseAt = -Infinity;
-                        await r.llmCall("test");
-                        // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
-                        out.proxyUsedForCloud = capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
-                    } finally {
-                        window.fetch = origFetch;
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            // 404-Hint-Test
-            const v797ErrorResults = await page
-                .evaluate(async () => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.llm) return null;
-                    const out = {};
-                    const origFetch = window.fetch;
-                    window.fetch = async () => ({
-                        ok: false,
-                        status: 404,
-                        text: async () => '{"error":"model \\"foo-not-real\\" not found"}',
-                        json: async () => ({ error: "stub" }),
-                    });
-                    try {
-                        r.state.llm.provider = "ollama";
-                        r.state.llm.enabled = true;
-                        const cfg = r.state.llm.providerConfig.ollama;
-                        cfg.endpoint = "http://localhost:11434";
-                        cfg.useProxy = false;
-                        cfg.model = "foo-not-real";
-                        r.state.llm.inFlight = false;
-                        r.state.llm.lastResponseAt = -Infinity;
-                        const reply = await r.llmCall("test");
-                        out.errorMentionsModel = /Modell.*nicht gefunden/.test(reply.error || "");
-                        out.errorMentionsOllamaList = /ollama list/.test(reply.error || "");
-                        out.errorMentionsModelName = /foo-not-real/.test(reply.error || "");
-                    } finally {
-                        window.fetch = origFetch;
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (v797Results && !v797Results.error) {
-                check(
-                    "V7.97 UX: Modell-Input ist Free-Text mit datalist (Spieler tippt eigene Modelle)",
-                    v797Results.modelIsInput && v797Results.modelHasList && v797Results.dataListExists
-                );
-                check(
-                    "V7.97 UX: Default-Modell-Vorschläge enthalten aktuelle Namen (llama3.2, qwen3, gpt-oss:20b, gemma2)",
-                    v797Results.hasLlama32 && v797Results.hasQwen3 && v797Results.hasGptOss && v797Results.hasGemma2
-                );
-                check(
-                    "V7.97 UX: User kann eigenen Modell-Namen eintragen (z.B. qwen3.5:cloud) — Free-Text gespeichert",
-                    v797Results.customModelAccepted
-                );
-            } else if (v797Results && v797Results.error) {
-                check(`V7.97 UX: evaluate-Fehler — ${v797Results.error}`, false);
-            }
-            if (v797AutoResults && !v797AutoResults.error) {
-                check(
-                    "V7.97 Auto-Bypass: localhost-URL + useProxy=true → Proxy WIRD BYPASSED (direkter Call)",
-                    v797AutoResults.bypassedForLocalhost
-                );
-                check(
-                    "V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)",
-                    v797AutoResults.proxyUsedForCloud
-                );
-            } else if (v797AutoResults && v797AutoResults.error) {
-                check(`V7.97 Auto-Bypass: evaluate-Fehler — ${v797AutoResults.error}`, false);
-            }
-            if (v797ErrorResults && !v797ErrorResults.error) {
-                check(
-                    "V7.97 Error-Hint: HTTP 404 'model not found' → klarer Hinweis mit Modell-Namen + 'ollama list'",
-                    v797ErrorResults.errorMentionsModel &&
-                        v797ErrorResults.errorMentionsOllamaList &&
-                        v797ErrorResults.errorMentionsModelName
-                );
-            } else if (v797ErrorResults && v797ErrorResults.error) {
-                check(`V7.97 Error-Hint: evaluate-Fehler — ${v797ErrorResults.error}`, false);
-            }
-
-            // ### V7.98 — Parser-Robustheit für lokale Reasoning-Models ###
-            //
-            // Schöpfer-Browser-Test V7.97: Ollama lokales qwen3.6 antwortet,
-            // aber Chat zeigt "Leere Antwort". Drei Ursachen:
-            // (1) Reasoning-Models wrappen Output in <think>...</think>;
-            // (2) lokale 7B-Modelle ignorieren oft den JSON-Vertrag;
-            // (3) num_predict=400 reicht nicht für think-Block + Antwort.
-            const v798Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-
-                    // 1. <think>-Block wird gestrippt, JSON dahinter wird geparst
-                    const thinkResp = r.llmParseResponse(
-                        '<think>Lass mich überlegen…</think>{"say":"Hallo Welt","program":null}'
-                    );
-                    out.thinkStripped = thinkResp.say === "Hallo Welt" && thinkResp.program === null;
-
-                    // 2. <thinking>-Variante wird auch erkannt
-                    const thinkingResp = r.llmParseResponse('<thinking>foo bar</thinking>\n{"say":"Klar"}');
-                    out.thinkingStripped = thinkingResp.say === "Klar";
-
-                    // 3. Plain-Text ohne JSON → Plain-Text-Fallback
-                    const plainResp = r.llmParseResponse("Mir geht es gut, danke der Nachfrage.");
-                    out.plainTextFallback =
-                        plainResp.say === "Mir geht es gut, danke der Nachfrage." &&
-                        plainResp.fallbackUsed === "plain-text";
-
-                    // 4. <think>-Block + Plain-Text → think gestrippt, Rest als say
-                    const thinkPlainResp = r.llmParseResponse(
-                        "<think>denke nach</think>Hallo Schöpfer, ich höre dich."
-                    );
-                    out.thinkPlusPlain = /Hallo Schöpfer/.test(thinkPlainResp.say || "");
-
-                    // 5. Striktes JSON ohne fallback (Anthropic/Gemini-Pfad)
-                    const strictResp = r.llmParseResponse('{"say":"Test","program":["weather","sunny"]}');
-                    out.strictJsonStillWorks =
-                        strictResp.say === "Test" && Array.isArray(strictResp.program) && !strictResp.fallbackUsed;
-
-                    // 6. Markdown-Fence + JSON → fence wird gestripped
-                    const fenceResp = r.llmParseResponse('```json\n{"say":"Fenced"}\n```');
-                    out.fenceStripped = fenceResp.say === "Fenced";
-
-                    // 7. Komplett leerer Input → klarer Error mit raw-Hinweis
-                    const emptyResp = r.llmParseResponse("");
-                    out.emptyHasError = typeof emptyResp.error === "string" && /raw=0/.test(emptyResp.error);
-
-                    // 8. JSON mit leerem say UND text drumherum → Plain-Text-Fallback nimmt drumherum
-                    const emptyJsonResp = r.llmParseResponse('Vorab-Text {"say":""} Nach-Text');
-                    out.emptyJsonFallsBackToText =
-                        emptyJsonResp.say &&
-                        emptyJsonResp.say.length > 0 &&
-                        emptyJsonResp.fallbackUsed === "json-empty";
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (v798Results && !v798Results.error) {
-                check(
-                    "V7.98 Parser: <think>...</think>-Block wird gestripped, dahinter liegendes JSON sauber geparst",
-                    v798Results.thinkStripped
-                );
-                check(
-                    "V7.98 Parser: <thinking>-Variante wird auch erkannt (case-insensitive)",
-                    v798Results.thinkingStripped
-                );
-                check(
-                    "V7.98 Parser: Plain-Text ohne JSON → Plain-Text-Fallback (User sieht Antwort statt 'Leere Antwort')",
-                    v798Results.plainTextFallback
-                );
-                check(
-                    "V7.98 Parser: <think>-Block + Plain-Text danach → think gestrippt, Rest als say genutzt",
-                    v798Results.thinkPlusPlain
-                );
-                check(
-                    "V7.98 Parser: Striktes JSON ohne think bleibt unverändert (Anthropic/Gemini-Pfad)",
-                    v798Results.strictJsonStillWorks
-                );
-                check("V7.98 Parser: Markdown-Fence (```json …```) wird gestripped", v798Results.fenceStripped);
-                check("V7.98 Parser: Leerer Input → klarer Error mit 'raw=0'-Hinweis", v798Results.emptyHasError);
-                check(
-                    "V7.98 Parser: JSON mit say='' aber Text drumherum → Plain-Text-Fallback (json-empty marker)",
-                    v798Results.emptyJsonFallsBackToText
-                );
-            } else if (v798Results && v798Results.error) {
-                check(`V7.98 Parser: evaluate-Fehler — ${v798Results.error}`, false);
-            }
-
-            // ### Ring 3 – Player-Emotionen → Welt ###
-            const ring3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.player) return null;
-                    const out = {};
-
-                    // Reset: für deterministische Tests alle Werte + Cooldowns löschen.
-                    for (const k of Object.keys(r.state.player.emotions)) {
-                        r.state.player.emotions[k] = 0;
-                    }
-                    r.state.player.emotionLastApply.joy = -Infinity;
-                    r.state.player.emotionLastApply.sorrow = -Infinity;
-                    r.state.player.emotionLastApply.chaos = -Infinity;
-                    r.state.player.emotionLastTick = -Infinity;
-
-                    // (a) collectPlayerEmotions reagiert auf deutsche Stichwörter
-                    r.collectPlayerEmotions("Was für ein schöner und magischer Moment");
-                    out.joyAfterCollect = r.state.player.emotions.joy;
-                    out.aweAfterCollect = r.state.player.emotions.awe;
-                    out.collectJoyOk = out.joyAfterCollect >= 0.1 - 1e-9;
-                    out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
-
-                    // (b) Decay reduziert über simulierten Zeitfortschritt
-                    r.state.player.emotions.joy = 0.5;
-                    r.state.player.emotionLastTick = 100;
-                    r.updatePlayerEmotions(110); // 10s vergangen
-                    out.joyAfterDecay = r.state.player.emotions.joy;
-                    out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
-
-                    // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy".
-                    // lastTick nahe an currentTime, damit der Decay-Schritt
-                    // sorrow nicht unter die Schwelle drückt bevor der Trigger
-                    // schaut.
-                    r.state.weather = "sunny";
-                    r.state.player.emotions.sorrow = 0.9;
-                    r.state.player.emotionLastApply.sorrow = -Infinity;
-                    r.state.player.emotionLastTick = 199;
-                    r.updatePlayerEmotions(200);
-                    out.sorrowAfterTick = r.state.player.emotions.sorrow;
-                    out.sorrowTriggersRain = r.state.weather === "rainy";
-
-                    // (d) Trigger respektiert Cooldown — zweiter Tick 5s später
-                    //     darf nicht wieder feuern.
-                    r.state.weather = "sunny";
-                    r.state.player.emotionLastTick = 204;
-                    r.updatePlayerEmotions(205);
-                    out.cooldownRespected = r.state.weather === "sunny";
-
-                    // (e) DSL-Condition emotion_above
-                    r.state.player.emotions.joy = 0.9;
-                    const condTrue = r.dslEvalCond(["emotion_above", "joy", 0.5], {
-                        state: r.state,
-                        rng: Math.random,
-                        log: [],
-                    });
-                    r.state.player.emotions.joy = 0.2;
-                    const condFalse = r.dslEvalCond(["emotion_above", "joy", 0.5], {
-                        state: r.state,
-                        rng: Math.random,
-                        log: [],
-                    });
-                    out.dslConditionJoyAbove = condTrue === true && condFalse === false;
-
-                    // (f) Save-Roundtrip
-                    r.state.player.emotions.joy = 0.42;
-                    r.state.player.emotions.chaos = 0.13;
-                    r.saveState();
-                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-                    let parsed = null;
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch (e) {
-                        void e;
-                    }
-                    out.savedEmotions =
-                        !!parsed &&
-                        parsed.playerEmotions &&
-                        Math.abs(parsed.playerEmotions.joy - 0.42) < 1e-6 &&
-                        Math.abs(parsed.playerEmotions.chaos - 0.13) < 1e-6;
-
-                    return out;
-                })
-                .catch(() => null);
-
-            if (!ring3Results) {
-                check("Ring 3: player.emotions erreichbar", false, "page.evaluate fehlgeschlagen");
-            } else {
-                check(
-                    "Ring 3: collectPlayerEmotions erkennt 'schön' (joy +0.1)",
-                    ring3Results.collectJoyOk,
-                    `joy=${ring3Results.joyAfterCollect.toFixed(3)}`
-                );
-                check(
-                    "Ring 3: collectPlayerEmotions erkennt 'magisch' (awe +0.1)",
-                    ring3Results.collectAweOk,
-                    `awe=${ring3Results.aweAfterCollect.toFixed(3)}`
-                );
-                check(
-                    "Ring 3: Decay reduziert Emotion über Zeit",
-                    ring3Results.decayLowered,
-                    `joy 0.5 → ${ring3Results.joyAfterDecay.toFixed(3)} nach 10s`
-                );
-                check("Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'", ring3Results.sorrowTriggersRain);
-                check("Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)", ring3Results.cooldownRespected);
-                check("Ring 3: DSL-Condition emotion_above evaluiert korrekt", ring3Results.dslConditionJoyAbove);
-                check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
-            }
-
-            // ### Ring 3 V2 — Achsen-Vollabdeckung + Generator-Modulation ###
-            const ring3v2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.player) return null;
-                    const out = {};
-                    const p = r.state.player;
-
-                    const makeRng = (seed) => {
-                        let s = seed >>> 0 || 1;
-                        return () => {
-                            s = (s * 1664525 + 1013904223) >>> 0;
-                            return s / 4294967296;
-                        };
-                    };
-
-                    // (a) awe > 0.7 → skybox-Farbe wird gesetzt
-                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
-                    for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
-                    p.emotionLastTick = -Infinity;
-                    p.emotions.awe = 0.9;
-                    p.emotionLastTick = 299;
-                    const readSkyHex = () =>
-                        r.state.skybox && r.state.skybox.material.uniforms.nebulaColor
-                            ? r.state.skybox.material.uniforms.nebulaColor.value.getHex()
-                            : -1;
-                    const skyBefore = readSkyHex();
-                    r.updatePlayerEmotions(300);
-                    const skyAfter = readSkyHex();
-                    out.aweTriggersSkybox = skyAfter !== skyBefore && skyBefore !== -1;
-
-                    // (b) hope > 0.7 → wetter sunny + kreaturen happy
-                    for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
-                    p.emotions.hope = 0.9;
-                    r.state.weather = "rainy";
-                    r.state.creatureEmotions = r.state.creatures.map(() => "sad");
-                    p.emotionLastTick = 399;
-                    r.updatePlayerEmotions(400);
-                    const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
-                    out.hopeTriggersSunnyHappy =
-                        r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
-
-                    // (c) peace > 0.7 → creatures_speed_mul = 0.7 (also speedMul wird kleiner)
-                    for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
-                    p.emotions.peace = 0.9;
-                    // speedMul zurücksetzen, damit der Vergleich verlässlich ist
-                    for (const cr of r.state.creatures) {
-                        if (cr.userData) cr.userData.speedMul = 1;
-                    }
-                    p.emotionLastTick = 499;
-                    r.updatePlayerEmotions(500);
-                    const allSlowed =
-                        r.state.creatures.length > 0 &&
-                        r.state.creatures.every((cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6);
-                    out.peaceTriggersSlowdown = allSlowed;
-
-                    // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
-                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
-                    p.emotions.joy = 1.0;
-                    const rngJoy = makeRng(123);
-                    let sunny = 0;
-                    let rainy = 0;
-                    for (let i = 0; i < 1000; i++) {
-                        const atom = r.dslComposeAtomic(rngJoy);
-                        if (Array.isArray(atom) && atom[0] === "weather") {
-                            if (atom[1] === "sunny") sunny++;
-                            else if (atom[1] === "rainy") rainy++;
-                        }
-                    }
-                    out.joySunnyOverRainy = sunny;
-                    out.joyRainyCount = rainy;
-                    out.joyBiasWorks = sunny > rainy * 2;
-
-                    // (e) Hoher sorrow → mehr "rainy" als "sunny"
-                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
-                    p.emotions.sorrow = 1.0;
-                    const rngSorrow = makeRng(456);
-                    let sunny2 = 0;
-                    let rainy2 = 0;
-                    for (let i = 0; i < 1000; i++) {
-                        const atom = r.dslComposeAtomic(rngSorrow);
-                        if (Array.isArray(atom) && atom[0] === "weather") {
-                            if (atom[1] === "sunny") sunny2++;
-                            else if (atom[1] === "rainy") rainy2++;
-                        }
-                    }
-                    out.sorrowRainyOverSunny = rainy2;
-                    out.sorrowSunnyCount = sunny2;
-                    out.sorrowBiasWorks = rainy2 > sunny2 * 2;
-
-                    // Cleanup: alles zurück auf neutral
-                    for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
-
-                    return out;
-                })
-                .catch(() => null);
-
-            if (!ring3v2Results) {
-                check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
-            } else {
-                check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
-                check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
-                check(
-                    "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (speedMul=0.7)",
-                    ring3v2Results.peaceTriggersSlowdown
-                );
-                check(
-                    "Ring 3 V2: Generator-Bias — joy=1.0 → sunny dominiert (>2× rainy)",
-                    ring3v2Results.joyBiasWorks,
-                    `sunny=${ring3v2Results.joySunnyOverRainy}, rainy=${ring3v2Results.joyRainyCount}`
-                );
-                check(
-                    "Ring 3 V2: Generator-Bias — sorrow=1.0 → rainy dominiert (>2× sunny)",
-                    ring3v2Results.sorrowBiasWorks,
-                    `rainy=${ring3v2Results.sorrowRainyOverSunny}, sunny=${ring3v2Results.sorrowSunnyCount}`
-                );
-            }
-
-            // ### Ring 4 — anazhSymphony V1 ###
-            const ring4Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.symphony) return null;
-                    const out = {};
-
-                    // (a) initSymphony erfolgreich
-                    const initOk = r.initSymphony();
-                    const s = r.state.symphony;
-                    out.initOk = initOk === true && s.enabled === true && !!s.ctx;
-                    out.hasAmbient =
-                        !!s.ambient && !!s.ambient.osc1 && !!s.ambient.osc2 && !!s.ambient.lfo && !!s.ambient.filter;
-                    // V8.86 — der Drone ist eine leise Grundierung: weiches
-                    // Dreieck (kein buzzig-intensiver Sägezahn), Gain ≤ 0.1.
-                    out.droneIsSoft =
-                        !!s.ambient &&
-                        s.ambient.osc1.type === "triangle" &&
-                        s.ambient.osc2.type === "triangle" &&
-                        // V8.88 — Drone −80%: kaum hörbare Grundierung (≤ 0.02).
-                        s.ambient.ambientGain.gain.value <= 0.02 &&
-                        // V8.87 — sanfte Schwebung: < 1 Hz Verstimmung (kein
-                        // extremer 1.5-Hz-Amplituden-Puls mehr).
-                        Math.abs(s.ambient.osc2.frequency.value - s.ambient.osc1.frequency.value) < 1;
-                    out.hasWeather = !!s.weather && !!s.weather.noise && !!s.weather.gain;
-                    // V8.88 — die Wetter-Noise (Regen) hängt am Umgebungs-
-                    // Regler (creaturePingVolume) + ist ~80 % leiser (0.014).
-                    const wReal = r.state.weather;
-                    r.state.weather = "rainy";
-                    s.creaturePingVolume = 1;
-                    const wFull = r._symphonyWeatherTarget();
-                    s.creaturePingVolume = 0.5;
-                    const wHalf = r._symphonyWeatherTarget();
-                    r.state.weather = "sunny";
-                    const wDry = r._symphonyWeatherTarget();
-                    s.creaturePingVolume = 1;
-                    r.state.weather = wReal;
-                    out.weatherOnPingSlider =
-                        Math.abs(wFull - 0.014) < 0.001 && Math.abs(wHalf - 0.007) < 0.001 && wDry === 0;
-
-                    // (b) Wetter-Layer-Gain folgt state.weather
-                    r.state.weather = "sunny";
-                    r.symphonyTick();
-                    // Direkter Wert kann durch laufende Rampe in Bewegung sein;
-                    // wir prüfen das _Ziel_ via lastWeather + dass der Tick
-                    // beim erneuten Aufruf mit gleichem Wetter nichts mehr
-                    // tut (idempotent).
-                    const lastBefore = s.lastWeather;
-                    r.symphonyTick(); // idempotent
-                    out.weatherTickIdempotent = s.lastWeather === lastBefore;
-
-                    // Setzt rainy → Tick muss umschalten und lastWeather mit ziehen
-                    r.state.weather = "rainy";
-                    r.symphonyTick();
-                    out.weatherSwitchedToRainy = s.lastWeather === "rainy";
-
-                    // (c) Creature-Ping-Zähler steigt mit jedem Spawn
-                    const pingBefore = s.creaturePingCount;
-                    // Direkter Aufruf des Hooks — entkoppelt von THREE-Setup,
-                    // verifiziert nur die Audio-Spur
-                    r.playCreaturePing("happy");
-                    r.playCreaturePing("sad");
-                    out.pingCounterRose = s.creaturePingCount === pingBefore + 2;
-
-                    // (d) Audio-Graph: masterGain ist mit destination verbunden
-                    //     (kann nicht direkt verifiziert werden, aber wir
-                    //     prüfen dass gain.value im erwarteten Bereich liegt)
-                    out.masterGainSane =
-                        !!s.masterGain &&
-                        typeof s.masterGain.gain.value === "number" &&
-                        s.masterGain.gain.value > 0 &&
-                        s.masterGain.gain.value <= 1;
-
-                    // (e) disposeSymphony räumt auf
-                    r.disposeSymphony();
-                    out.disposeClears = s.enabled === false && s.ctx === null && s.ambient === null;
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring4Results || ring4Results.error) {
-                check(
-                    "Ring 4: Symphonie-Snapshot erreichbar",
-                    false,
-                    ring4Results && ring4Results.error ? ring4Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 4: initSymphony aktiviert Audio-Pipeline", ring4Results.initOk);
-                check("Ring 4: Ambient-Layer hat alle Nodes (osc1+osc2+lfo+filter)", ring4Results.hasAmbient);
-                check(
-                    "V8.88: Ambient-Drone ist kaum hörbare Grundierung (Dreieck, Gain ≤ 0.02)",
-                    ring4Results.droneIsSoft
-                );
-                check(
-                    "V8.89: Regen-Noise hängt am Umgebungs-Regler + ist ~80% leiser (0.014)",
-                    ring4Results.weatherOnPingSlider
-                );
-                check("Ring 4: Wetter-Layer hat Noise-Source + Gain", ring4Results.hasWeather);
-                check("Ring 4: symphonyTick ist idempotent bei gleichem Wetter", ring4Results.weatherTickIdempotent);
-                check(
-                    "Ring 4: symphonyTick schaltet Wetter-Layer um (sunny→rainy)",
-                    ring4Results.weatherSwitchedToRainy
-                );
-                check("Ring 4: playCreaturePing erhöht Zähler", ring4Results.pingCounterRose);
-                check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
-                check("Ring 4: disposeSymphony räumt Audio-Graph komplett auf", ring4Results.disposeClears);
-            }
-
-            // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
-            const uiResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    const topbar = document.getElementById("topbar");
-                    const statusbar = document.getElementById("statusbar");
-                    const spielerDrawer = document.querySelector('.drawer[data-drawer="spieler"]');
-                    out.topbarInDom = !!topbar;
-                    out.statusbarInDom = !!statusbar;
-                    out.spielerDrawerInDom = !!spielerDrawer;
-
-                    // Emotion-Rows leben jetzt im Spieler-Drawer
-                    const rows = spielerDrawer ? spielerDrawer.querySelectorAll("#status-emotions .emotion") : [];
-                    out.emotionRowCount = rows.length;
-                    out.allSixAxes = rows.length === 6;
-
-                    // Werte aktualisieren mit kontrollierten Emotionen
-                    for (const k of Object.keys(r.state.player.emotions)) {
-                        r.state.player.emotions[k] = 0;
-                    }
-                    r.state.player.emotions.joy = 0.5;
-                    r.state.player.emotions.chaos = 0.8;
-                    if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
-                    r.updateStatusPanel(1000);
-
-                    const joyFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
-                    const chaosFill = spielerDrawer ? spielerDrawer.querySelector(".emotion.chaos .bar > div") : null;
-                    out.joyBarWidth = joyFill ? joyFill.style.width : "";
-                    out.chaosBarWidth = chaosFill ? chaosFill.style.width : "";
-                    out.barReflectsValue = out.joyBarWidth === "50%" && out.chaosBarWidth === "80%";
-
-                    // Status-Bar (jetzt #statusbar oben) zeigt Welt-Daten
-                    const weatherEl = document.getElementById("status-weather");
-                    const slugEl = document.getElementById("status-slug");
-                    const creaturesEl = document.getElementById("status-creatures");
-                    out.weatherText = weatherEl ? weatherEl.textContent : "";
-                    out.slugText = slugEl ? slugEl.textContent : "";
-                    out.creaturesText = creaturesEl ? creaturesEl.textContent : "";
-                    out.statusValuesPopulated =
-                        out.weatherText !== "—" &&
-                        out.weatherText.length > 0 &&
-                        out.slugText !== "—" &&
-                        out.slugText.length > 0;
-
-                    // Throttle: zweiter Aufruf direkt danach ändert nichts
-                    r.state.player.emotions.joy = 0.9;
-                    r.updateStatusPanel(1000.1);
-                    const joyFill2 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
-                    out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
-
-                    // Nach 0.4s wieder durchlassend
-                    r.updateStatusPanel(1000.5);
-                    const joyFill3 = spielerDrawer ? spielerDrawer.querySelector(".emotion.joy .bar > div") : null;
-                    out.throttleReleases = joyFill3 ? joyFill3.style.width === "90%" : false;
-
-                    // Tab-System
-                    const tabs = document.querySelectorAll("#topbar .tab");
-                    out.tabCount = tabs.length;
-                    // W14 — der Bibliothek-Tab ist der 8.
-                    out.allTabsPresent = tabs.length === 8;
-                    const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
-                    out.weltTabActive = weltTab && weltTab.classList.contains("active");
-                    const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
-                    out.weltDrawerOpenInitially = weltDrawer && !weltDrawer.hidden;
-
-                    // Cleanup
-                    for (const k of Object.keys(r.state.player.emotions)) {
-                        r.state.player.emotions[k] = 0;
-                    }
-                    if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
-                    r.updateStatusPanel(2000);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!uiResults || uiResults.error) {
-                check(
-                    "UI: Drawer-Snapshot erreichbar",
-                    false,
-                    uiResults && uiResults.error ? uiResults.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("UI V2: #topbar im DOM", uiResults.topbarInDom);
-                check("UI V2: #statusbar im DOM", uiResults.statusbarInDom);
-                check("UI V2: Spieler-Drawer im DOM", uiResults.spielerDrawerInDom);
-                check(
-                    "UI V2: alle sechs Emotion-Rows im Spieler-Drawer",
-                    uiResults.allSixAxes,
-                    `rows=${uiResults.emotionRowCount}`
-                );
-                check(
-                    "UI V2: Balken-Breite spiegelt Emotion-Wert (joy 0.5 → 50%, chaos 0.8 → 80%)",
-                    uiResults.barReflectsValue,
-                    `joy=${uiResults.joyBarWidth}, chaos=${uiResults.chaosBarWidth}`
-                );
-                check(
-                    "UI V2: Status-Bar zeigt Wetter + Slug + Kreaturen",
-                    uiResults.statusValuesPopulated,
-                    `weather=${uiResults.weatherText}, slug=${uiResults.slugText}, creatures=${uiResults.creaturesText}`
-                );
-                check("UI V2: updateStatusPanel ist throttled (Aufruf <0.4s ignoriert)", uiResults.throttleHolds);
-                check("UI V2: updateStatusPanel lässt nach 0.4s wieder durch", uiResults.throttleReleases);
-                check(
-                    "UI V2: sieben Tabs im Topbar (inkl. Werkstatt)",
-                    uiResults.allTabsPresent,
-                    `count=${uiResults.tabCount}`
-                );
-                check("UI V2: Welt-Tab ist initial aktiv", uiResults.weltTabActive);
-                check("UI V2: Welt-Drawer ist initial offen", uiResults.weltDrawerOpenInitially);
-            }
-
-            // ### UI V2 — Quick-Buttons + Hilfe-Drawer (Tab-System) ###
-            const uiActionsResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-
-                    // (a) Quick-Buttons existieren (im Welt-Drawer)
-                    const qa = document.getElementById("quick-actions");
-                    const qaButtons = qa ? qa.querySelectorAll("button[data-cmd]") : [];
-                    out.quickButtonCount = qaButtons.length;
-                    out.quickButtonsPresent = qaButtons.length >= 5;
-
-                    // (b) Klick auf einen Quick-Button feuert processChatCommand
-                    r.state.weather = "sunny";
-                    const rainyBtn = qa ? qa.querySelector('button[data-cmd="Setze Wetter rainy"]') : null;
-                    if (rainyBtn) rainyBtn.click();
-                    out.quickButtonRoutesToChat = r.state.weather === "rainy";
-
-                    // (c) Hilfe-Drawer ist initial versteckt (Welt ist Default-Tab)
-                    const hilfeDrawer = document.querySelector('.drawer[data-drawer="hilfe"]');
-                    out.hilfeDrawerInitiallyHidden = hilfeDrawer && hilfeDrawer.hidden === true;
-
-                    // (d) Klick auf Hilfe-Tab öffnet Hilfe-Drawer
-                    const hilfeTab = document.querySelector('#topbar .tab[data-tab="hilfe"]');
-                    if (hilfeTab) hilfeTab.click();
-                    out.hilfeDrawerOpensOnTab = hilfeDrawer && hilfeDrawer.hidden === false;
-
-                    // Welt-Drawer ist jetzt versteckt (nur ein Tab aktiv)
-                    const weltDrawer = document.querySelector('.drawer[data-drawer="welt"]');
-                    out.otherDrawersHidden = weltDrawer && weltDrawer.hidden === true;
-
-                    // (e) Drawer enthält Befehl-Buttons
-                    const helpButtons = document.querySelectorAll("#help-list button.cmd");
-                    out.helpButtonCount = helpButtons.length;
-                    out.helpHasButtons = helpButtons.length >= 10;
-
-                    // (f) Klick auf Help-Eintrag schließt Drawer + führt aus.
-                    r.state.weather = "sunny";
-                    const rainyHelp = Array.from(helpButtons).find(
-                        (b) => b.getAttribute("data-cmd") === "setze wetter rainy"
-                    );
-                    if (rainyHelp) rainyHelp.click();
-                    out.helpClickExecutes = r.state.weather === "rainy";
-                    out.helpClickClosesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
-
-                    // (g) Drawer wieder öffnen, dann Close-Button schließt
-                    if (hilfeTab) hilfeTab.click();
-                    const closeBtn = hilfeDrawer ? hilfeDrawer.querySelector("[data-drawer-close]") : null;
-                    if (closeBtn) closeBtn.click();
-                    out.closeButtonHidesDrawer = hilfeDrawer && hilfeDrawer.hidden === true;
-
-                    // Cleanup: Welt-Tab wieder aktivieren
-                    const weltTab = document.querySelector('#topbar .tab[data-tab="welt"]');
-                    if (weltTab) weltTab.click();
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!uiActionsResults || uiActionsResults.error) {
-                check(
-                    "UI V2: Quick/Help-Snapshot erreichbar",
-                    false,
-                    uiActionsResults && uiActionsResults.error ? uiActionsResults.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check(
-                    "UI V2: Quick-Action-Buttons im Welt-Drawer (≥5)",
-                    uiActionsResults.quickButtonsPresent,
-                    `count=${uiActionsResults.quickButtonCount}`
-                );
-                check(
-                    "UI V2: Quick-Button-Klick routet durch processChatCommand",
-                    uiActionsResults.quickButtonRoutesToChat
-                );
-                check("UI V2: Hilfe-Drawer initial versteckt", uiActionsResults.hilfeDrawerInitiallyHidden);
-                check("UI V2: Tab-Klick auf Hilfe öffnet Hilfe-Drawer", uiActionsResults.hilfeDrawerOpensOnTab);
-                check(
-                    "UI V2: andere Drawer werden versteckt wenn neuer Tab aktiv",
-                    uiActionsResults.otherDrawersHidden
-                );
-                check(
-                    "UI V2: Hilfe-Drawer enthält Befehl-Buttons (≥10)",
-                    uiActionsResults.helpHasButtons,
-                    `count=${uiActionsResults.helpButtonCount}`
-                );
-                check("UI V2: Klick auf Befehl im Drawer führt aus", uiActionsResults.helpClickExecutes);
-                check("UI V2: Klick auf Befehl schließt Drawer automatisch", uiActionsResults.helpClickClosesDrawer);
-                check("UI V2: Drawer-Close-Button schließt Drawer", uiActionsResults.closeButtonHidesDrawer);
-            }
-
-            // ### UI V1 — Abilities-Liste + Save/Load ###
-            const uiAbilitiesResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    const container = document.getElementById("status-abilities");
-                    out.containerInDom = !!container;
-
-                    // (a) Initial: leere Meldung oder bestehende Fähigkeiten —
-                    //     je nach Test-Vorlauf. Wir setzen erst eine bekannte
-                    //     Ability, dann erzwingen das Rendering.
-                    r.state.dsl.abilities = [];
-                    if (r._statusRefs) {
-                        r._statusRefs.abilitiesSignature = "";
-                        r._statusRefs.lastTick = -Infinity;
-                    }
-                    r.updateStatusPanel(3000);
-                    out.emptyStateShown = container && container.querySelector(".ability-empty") !== null;
-
-                    // (b) Eine Ability hinzufügen → Row erscheint
-                    r.addNewAbility("uiAbilityTest", ["creatures_color", "blue"], "human");
-                    if (r._statusRefs) {
-                        r._statusRefs.abilitiesSignature = "";
-                        r._statusRefs.lastTick = -Infinity;
-                    }
-                    r.updateStatusPanel(3001);
-                    const rows = container ? container.querySelectorAll(".ability-row") : [];
-                    out.rowCountAfterAdd = rows.length;
-                    out.rowAppears = rows.length === 1;
-                    out.rowHasName = rows[0] && rows[0].querySelector(".name").textContent === "uiAbilityTest";
-                    out.rowHasSourceClass = rows[0] && rows[0].classList.contains("source-human");
-
-                    // (c) Run-Button klicken → ability läuft, Welt-Effekt
-                    // Welle 6.H P2A — Kreatur ist Group; rote Vor-Color auf
-                    // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
-                    if (r.state.creatures[0]) {
-                        const cR = r.state.creatures[0];
-                        if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
-                        else if (typeof cR.traverse === "function") {
-                            cR.traverse((n) => {
-                                if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
-                            });
-                        }
-                    }
-                    const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
-                    if (runBtn) runBtn.click();
-                    // Welle 6.H P2A — Kreatur ist Group; Color über Sub-Meshes lesen.
-                    const cFirst = r.state.creatures[0];
-                    let colorAfter = 0;
-                    if (cFirst) {
-                        if (cFirst.material && cFirst.material.color) {
-                            colorAfter = cFirst.material.color.getHex();
-                        } else if (typeof cFirst.traverse === "function") {
-                            cFirst.traverse((n) => {
-                                if (!colorAfter && n.isMesh && n.material && n.material.color) {
-                                    colorAfter = n.material.color.getHex();
-                                }
-                            });
-                        }
-                    }
-                    out.runButtonExecutes = colorAfter === 0x0000ff;
-
-                    // (d) Signature-Cache: zweiter updateStatusPanel ohne
-                    //     Änderung darf das DOM nicht neu bauen — wir markieren
-                    //     einen unsichtbaren Wert und prüfen Persistenz.
-                    rows[0].setAttribute("data-test-marker", "preserved");
-                    if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
-                    r.updateStatusPanel(3002);
-                    const rowAgain = container ? container.querySelector(".ability-row") : null;
-                    out.signatureCachePreserves = rowAgain && rowAgain.getAttribute("data-test-marker") === "preserved";
-
-                    // (e) Export-Button löst Download aus → wir prüfen, dass
-                    //     ein <a>-Element mit JSON-Data-URL angelegt UND wieder
-                    //     entfernt wird. triggerStateDownload macht das
-                    //     synchron, wir patchen click() um die Daten-URL zu
-                    //     fangen.
-                    let capturedHref = "";
-                    const origCreate = document.createElement.bind(document);
-                    document.createElement = function (tag) {
-                        const el = origCreate(tag);
-                        if (tag === "a") {
-                            const origClick = el.click.bind(el);
-                            el.click = function () {
-                                capturedHref = el.getAttribute("href") || "";
-                                origClick();
-                            };
-                        }
-                        return el;
-                    };
-                    const exportBtn = document.getElementById("action-export-state");
-                    if (exportBtn) exportBtn.click();
-                    document.createElement = origCreate;
-                    out.exportHrefStarts = capturedHref.startsWith("data:application/json");
-                    out.exportContainsPlayerEmotions = capturedHref.includes("playerEmotions");
-
-                    // Cleanup: Test-Ability wieder rausnehmen, damit andere
-                    //         Snapshots sauber sind.
-                    r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "uiAbilityTest");
-                    delete r.state.abilities.uiAbilityTest;
-                    if (r._statusRefs) {
-                        r._statusRefs.abilitiesSignature = "";
-                        r._statusRefs.lastTick = -Infinity;
-                    }
-                    r.updateStatusPanel(3003);
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!uiAbilitiesResults || uiAbilitiesResults.error) {
-                check(
-                    "UI: Abilities-Snapshot erreichbar",
-                    false,
-                    uiAbilitiesResults && uiAbilitiesResults.error
-                        ? uiAbilitiesResults.error
-                        : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("UI: Abilities-Container ist im DOM", uiAbilitiesResults.containerInDom);
-                check("UI: Leerer State zeigt Hinweis-Text", uiAbilitiesResults.emptyStateShown);
-                check(
-                    "UI: Hinzugefügte Ability erscheint als Row",
-                    uiAbilitiesResults.rowAppears,
-                    `rows=${uiAbilitiesResults.rowCountAfterAdd}`
-                );
-                check(
-                    "UI: Ability-Row trägt Name + Source-Klasse",
-                    uiAbilitiesResults.rowHasName && uiAbilitiesResults.rowHasSourceClass
-                );
-                check(
-                    "UI: Run-Button führt Ability aus (DSL-Programm mutiert Welt)",
-                    uiAbilitiesResults.runButtonExecutes
-                );
-                check(
-                    "UI: Signature-Cache verhindert DOM-Rebuild bei gleichem Stand",
-                    uiAbilitiesResults.signatureCachePreserves
-                );
-                check("UI: Export-Button erzeugt JSON-Data-URL", uiAbilitiesResults.exportHrefStarts);
-                check("UI: Export-Payload enthält playerEmotions", uiAbilitiesResults.exportContainsPlayerEmotions);
-            }
-
-            // ### UI V1 — Live-Tuning Slider ###
-            const uiTuningResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    const sliders = {
-                        threshold: document.getElementById("tune-threshold"),
-                        decay: document.getElementById("tune-decay"),
-                        cooldown: document.getElementById("tune-cooldown"),
-                    };
-                    out.allSlidersPresent = !!(sliders.threshold && sliders.decay && sliders.cooldown);
-
-                    // Initiale Slider-Werte spiegeln state.player-Defaults
-                    out.initialThreshold = sliders.threshold ? parseFloat(sliders.threshold.value) : -1;
-                    out.initialMatchesState = Math.abs(out.initialThreshold - r.state.player.emotionThreshold) < 1e-6;
-
-                    // Slider-Bewegung → state.player.emotionThreshold ändert sich
-                    if (sliders.threshold) {
-                        sliders.threshold.value = "0.5";
-                        sliders.threshold.dispatchEvent(new Event("input", { bubbles: true }));
-                    }
-                    out.thresholdAfterMove = r.state.player.emotionThreshold;
-                    out.thresholdUpdatesState = Math.abs(out.thresholdAfterMove - 0.5) < 1e-6;
-
-                    // Value-Label spiegelt den Wert
-                    const tv = document.getElementById("tune-threshold-v");
-                    out.thresholdLabelMatches = tv ? tv.textContent === "0.50" : false;
-
-                    // Decay-Slider analog
-                    if (sliders.decay) {
-                        sliders.decay.value = "0.020";
-                        sliders.decay.dispatchEvent(new Event("input", { bubbles: true }));
-                    }
-                    out.decayUpdatesState = Math.abs(r.state.player.emotionDecayPerSec - 0.02) < 1e-6;
-
-                    // Cooldown-Slider
-                    if (sliders.cooldown) {
-                        sliders.cooldown.value = "60";
-                        sliders.cooldown.dispatchEvent(new Event("input", { bubbles: true }));
-                    }
-                    out.cooldownUpdatesState = r.state.player.emotionApplyCooldown === 60;
-
-                    // Cleanup: defaults wiederherstellen, damit weitere Tests
-                    // konsistent sind (falls dieser Test vorgezogen wird).
-                    r.state.player.emotionThreshold = 0.7;
-                    r.state.player.emotionDecayPerSec = 0.005;
-                    r.state.player.emotionApplyCooldown = 30;
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!uiTuningResults || uiTuningResults.error) {
-                check(
-                    "UI: Tuning-Snapshot erreichbar",
-                    false,
-                    uiTuningResults && uiTuningResults.error ? uiTuningResults.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("UI: Alle drei Tuning-Slider sind im DOM", uiTuningResults.allSlidersPresent);
-                check(
-                    "UI: Initialer Slider-Wert spiegelt state.player-Default",
-                    uiTuningResults.initialMatchesState,
-                    `slider=${uiTuningResults.initialThreshold}`
-                );
-                check(
-                    "UI: Slider-Bewegung mutiert state.player.emotionThreshold",
-                    uiTuningResults.thresholdUpdatesState,
-                    `value=${uiTuningResults.thresholdAfterMove}`
-                );
-                check("UI: Value-Label spiegelt Slider-Wert ('0.50')", uiTuningResults.thresholdLabelMatches);
-                check("UI: Decay-Slider mutiert emotionDecayPerSec", uiTuningResults.decayUpdatesState);
-                check("UI: Cooldown-Slider mutiert emotionApplyCooldown", uiTuningResults.cooldownUpdatesState);
-            }
-
-            // ### UI V2 — Identity (Tokens + Theme + Fonts) ###
-            const uiV2Results = await page
-                .evaluate(() => {
-                    const out = {};
-
-                    // (a) Theme-Default ist "tag"
-                    out.bodyHasThemeTag = document.body.getAttribute("data-theme") === "tag";
-
-                    // (b) Token-Variable kommt durch (Pergament-Farbe)
-                    const computed = getComputedStyle(document.body);
-                    const parch1 = computed.getPropertyValue("--parch-1").trim();
-                    out.parchTokenLoaded = parch1.length > 0;
-
-                    // (c) Theme-Toggle wechselt zu "nacht"
-                    const toggle = document.getElementById("theme-toggle");
-                    if (toggle) toggle.click();
-                    out.themeSwitchedToNight = document.body.getAttribute("data-theme") === "nacht";
-                    out.toggleArrayAfterSwitch = toggle && toggle.getAttribute("aria-pressed") === "true";
-
-                    // (d) Theme-Wechsel ändert Token-Wert
-                    const parch1Night = getComputedStyle(document.body).getPropertyValue("--parch-1").trim();
-                    out.tokenChangesPerTheme = parch1 !== parch1Night && parch1Night.length > 0;
-
-                    // (e) Persistenz: localStorage trägt die Wahl
-                    const persisted = localStorage.getItem("anazhRealmTheme");
-                    out.themePersisted = persisted === "nacht";
-
-                    // (f) Latch-Klasse haftet an allen drei Topbar-Toggles
-                    // (Help ist in UI V2 ein Drawer-Tab, kein Latch mehr.)
-                    out.allTogglesLatched = ["grok-voice-toggle", "anazh-symphony-toggle", "theme-toggle"].every(
-                        (id) => {
-                            const el = document.getElementById(id);
-                            return el && el.classList.contains("latch");
-                        }
-                    );
-
-                    // (g) Cinzel-Font ist registriert (über @font-face)
-                    out.fontsRegistered = Array.from(document.fonts).some((f) => f.family === "Cinzel");
-
-                    // Cleanup: zurück auf "tag" damit andere Tests konsistent sind
-                    if (toggle) toggle.click();
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!uiV2Results || uiV2Results.error) {
-                check(
-                    "UI V2: Identity-Snapshot erreichbar",
-                    false,
-                    uiV2Results && uiV2Results.error ? uiV2Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("UI V2: body[data-theme=tag] initial gesetzt", uiV2Results.bodyHasThemeTag);
-                check("UI V2: Pergament-Tokens geladen (--parch-1)", uiV2Results.parchTokenLoaded);
-                check("UI V2: Theme-Toggle wechselt zu nacht", uiV2Results.themeSwitchedToNight);
-                check("UI V2: Theme-Toggle aria-pressed reflektiert State", uiV2Results.toggleArrayAfterSwitch);
-                check("UI V2: Token-Werte ändern sich pro Theme", uiV2Results.tokenChangesPerTheme);
-                check("UI V2: Theme-Wahl in localStorage persistiert", uiV2Results.themePersisted);
-                check("UI V2: alle Toggle-Buttons tragen .latch-Klasse", uiV2Results.allTogglesLatched);
-                check("UI V2: Cinzel-Font ist via @font-face registriert", uiV2Results.fontsRegistered);
-            }
-
-            // ### UI V2 — Konsole (fusioniertes Chat + Log) ###
-            const consoleResults = await page
-                .evaluate(() => {
-                    const out = {};
-                    const panel = document.getElementById("console");
-                    out.consoleInDom = !!panel;
-                    out.chatOutputInside = panel && panel.querySelector("#chat-output") !== null;
-                    out.logInside = panel && panel.querySelector("#log") !== null;
-                    out.chatInputInside = panel && panel.querySelector("#chat-input") !== null;
-
-                    // Collapse-Toggle
-                    const toggle = document.getElementById("console-collapse");
-                    out.toggleInDom = !!toggle;
-                    out.initiallyOpen = panel && !panel.classList.contains("collapsed");
-
-                    if (toggle) toggle.click();
-                    out.afterFirstClickCollapsed = panel && panel.classList.contains("collapsed");
-                    out.toggleLabelChanged = toggle && toggle.textContent === "+";
-
-                    if (toggle) toggle.click();
-                    out.afterSecondClickOpen = panel && !panel.classList.contains("collapsed");
-
-                    // Persistenz: localStorage hat Wahl
-                    out.localStorageOpen = localStorage.getItem("anazhRealmConsole") === "open";
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!consoleResults || consoleResults.error) {
-                check(
-                    "UI V2: Konsole-Snapshot erreichbar",
-                    false,
-                    consoleResults && consoleResults.error ? consoleResults.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("UI V2: #console im DOM", consoleResults.consoleInDom);
-                check(
-                    "UI V2: #chat-output, #log, #chat-input leben in der Konsole",
-                    consoleResults.chatOutputInside && consoleResults.logInside && consoleResults.chatInputInside
-                );
-                check("UI V2: Collapse-Toggle vorhanden", consoleResults.toggleInDom);
-                check("UI V2: Konsole startet aufgeklappt", consoleResults.initiallyOpen);
-                check("UI V2: Erster Klick klappt ein", consoleResults.afterFirstClickCollapsed);
-                check("UI V2: Toggle-Label wechselt zu '+'", consoleResults.toggleLabelChanged);
-                check("UI V2: Zweiter Klick klappt wieder auf", consoleResults.afterSecondClickOpen);
-                check("UI V2: Konsole-Status in localStorage persistiert", consoleResults.localStorageOpen);
-            }
-
-            // ### Ring 5 — createPlayerSoul V1 ###
-            // Drei Formen (Mensch/Phönix/Drache), rein visuell. Wir prüfen:
-            // Default-Seele ist human, Wechsel ändert geometry+color, Chat-
-            // Pattern routet, Save/Load-Roundtrip persistiert die Seele,
-            // unbekannte Namen werden abgelehnt, Position überlebt den
-            // Wechsel, Drawer + Status-Bar enthalten das UI.
-            const ring5Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
-                    const out = {};
-                    // V2: state.playerMesh wird bei jedem Soul-Wechsel
-                    // ersetzt (neuer Group). Wir lesen jedes Mal frisch
-                    // aus state, statt eine Referenz festzuhalten.
-                    const currentMesh = () => r.state.playerMesh;
-                    const currentMaterial = () => {
-                        const m = currentMesh();
-                        return m && m.userData && m.userData.material;
-                    };
-                    const currentParts = () => {
-                        const m = currentMesh();
-                        return m && m.userData && m.userData.parts;
-                    };
-
-                    // UI vorhanden?
-                    out.drawerSelectInDom = !!document.getElementById("player-soul-select");
-                    out.statusBarSoulInDom = !!document.getElementById("status-soul");
-                    const select = document.getElementById("player-soul-select");
-                    out.dropdownHasThreeOptions = select && select.options.length === 3;
-                    out.dropdownOptionCount = select ? select.options.length : -1;
-                    out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
-
-                    // Cleanup: starte vom Default aus.
-                    r.applyPlayerSoul("human");
-                    out.defaultIsHuman = r.state.player.soul === "human";
-                    // V8.29.1 — Mensch-Avatar ist jetzt MeshToonMaterial mit
-                    // gedämpftem Rot (0xc0392b) statt grelles MeshBasic 0xff0000.
-                    out.defaultColorRed =
-                        currentMaterial() &&
-                        currentMaterial().color.getHex() === 0xc0392b &&
-                        currentMaterial().isMeshToonMaterial === true;
-                    // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
-                    // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
-                    const humanParts = currentParts();
-                    out.humanHasAllParts =
-                        humanParts &&
-                        !!humanParts.torso &&
-                        !!humanParts.head &&
-                        !!humanParts.leftArm &&
-                        !!humanParts.rightArm &&
-                        !!humanParts.leftLeg &&
-                        !!humanParts.rightLeg;
-
-                    // applyPlayerSoul("phoenix") → Group neu, Farbe + Parts wechseln
-                    const posBefore = {
-                        x: currentMesh().position.x,
-                        y: currentMesh().position.y,
-                        z: currentMesh().position.z,
-                    };
-                    const okPhoenix = r.applyPlayerSoul("phoenix");
-                    out.applyReturnsTrue = okPhoenix === true;
-                    out.phoenixSoulSet = r.state.player.soul === "phoenix";
-                    out.phoenixColor = currentMaterial() && currentMaterial().color.getHex() === 0xff7a1a;
-                    const phoenixParts = currentParts();
-                    out.phoenixHasWingsAndTail =
-                        phoenixParts &&
-                        !!phoenixParts.body &&
-                        !!phoenixParts.leftWing &&
-                        !!phoenixParts.rightWing &&
-                        !!phoenixParts.tail;
-                    out.positionPreserved =
-                        Math.abs(currentMesh().position.x - posBefore.x) < 1e-6 &&
-                        Math.abs(currentMesh().position.y - posBefore.y) < 1e-6 &&
-                        Math.abs(currentMesh().position.z - posBefore.z) < 1e-6;
-                    // Dropdown synchronisiert sich
-                    out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
-
-                    // Physics-Body bleibt + bezieht sich auf den NEUEN Group
-                    out.physicsBodySwitchedToNewGroup = currentMesh().userData && !!currentMesh().userData.physicsBody;
-                    out.rigidBodiesArrayUpdated =
-                        Array.isArray(r.state.rigidBodies) && r.state.rigidBodies.indexOf(currentMesh()) >= 0;
-
-                    // Chat-Pattern: "werde drache"
-                    r.processChatCommand("werde drache");
-                    out.chatRoutedToDsl =
-                        Array.isArray(r.state.dsl.lastUserProgram) &&
-                        r.state.dsl.lastUserProgram[0] === "player_soul" &&
-                        r.state.dsl.lastUserProgram[1] === "drache";
-                    out.dragonSoulSet = r.state.player.soul === "dragon";
-                    out.dragonColor = currentMaterial() && currentMaterial().color.getHex() === 0x2d6e3b;
-                    const dragonParts = currentParts();
-                    out.dragonHasFourLegs =
-                        dragonParts &&
-                        !!dragonParts.flLeg &&
-                        !!dragonParts.frLeg &&
-                        !!dragonParts.blLeg &&
-                        !!dragonParts.brLeg &&
-                        !!dragonParts.tailJoint;
-
-                    // Deutsch+Englisch+Phönix-Alias funktionieren
-                    r.applyPlayerSoul("phönix");
-                    out.umlautAliasWorks = r.state.player.soul === "phoenix";
-                    r.applyPlayerSoul("dragon");
-                    out.englishAliasWorks = r.state.player.soul === "dragon";
-
-                    // Unbekannte Seele wird abgelehnt, alte Seele bleibt
-                    const prevSoul = r.state.player.soul;
-                    const okBad = r.applyPlayerSoul("riese");
-                    out.unknownRejected = okBad === false && r.state.player.soul === prevSoul;
-
-                    // DSL-Op direkt aufrufbar
-                    const resDsl = r.dslRun(["player_soul", "human"]);
-                    out.dslOpWorks = resDsl.ok === true && r.state.player.soul === "human";
-
-                    // Seele NICHT im atomic-Pool (Nexus soll Identität nicht überschreiben)
-                    const seedRng = (seed) => {
-                        let s = seed >>> 0 || 1;
-                        return () => {
-                            s = (s * 1664525 + 1013904223) >>> 0;
-                            return s / 4294967296;
-                        };
-                    };
-                    const rng = seedRng(2026);
-                    let seenSoulOp = false;
-                    for (let i = 0; i < 2000; i++) {
-                        const atom = r.dslComposeAtomic(rng);
-                        if (Array.isArray(atom) && atom[0] === "player_soul") {
-                            seenSoulOp = true;
-                            break;
-                        }
-                    }
-                    out.soulNotInAtomicPool = !seenSoulOp;
-
-                    // Save-Roundtrip
-                    r.applyPlayerSoul("phoenix");
-                    r.saveState();
-                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-                    let parsed = null;
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch (e) {
-                        void e;
-                    }
-                    out.savedPlayerSoul = !!parsed && parsed.playerSoul === "phoenix";
-
-                    // loadState mit dragon-Seele
-                    r.loadState({ ...parsed, playerSoul: "dragon" });
-                    out.loadAppliesSoul =
-                        r.state.player.soul === "dragon" &&
-                        currentMaterial() &&
-                        currentMaterial().color.getHex() === 0x2d6e3b;
-
-                    // Status-Bar
-                    r.applyPlayerSoul("phoenix");
-                    r.updateStatusPanel(1e6);
-                    const statusEl = document.getElementById("status-soul");
-                    out.statusBarShowsLabel = statusEl && statusEl.textContent === "Phönix";
-
-                    // V2-Animation: Beine/Flügel reagieren auf walkPhase + isMoving.
-                    // Wir lassen walkPhase manuell vorrücken und prüfen, dass
-                    // Mensch-Beine ihre rotation.x ändern.
-                    r.applyPlayerSoul("human");
-                    const humanGroup = currentMesh();
-                    const leftLegRotInitial = humanGroup.userData.parts.leftLeg.rotation.x;
-                    // Direkter Aufruf der Animations-Funktion mit isMoving=true
-                    // umgeht die isMoving-Detection (player ruht im Test).
-                    const def = r.playerSoulDefs.human;
-                    def.animate(humanGroup, 0, Math.PI / 2, true);
-                    const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
-                    out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
-
-                    // Phönix-Flügel flattern auch im Idle
-                    r.applyPlayerSoul("phoenix");
-                    const phGroup = currentMesh();
-                    r.playerSoulDefs.phoenix.animate(phGroup, 0.1, 0, false);
-                    const wingRotA = phGroup.userData.parts.leftWing.rotation.z;
-                    r.playerSoulDefs.phoenix.animate(phGroup, 0.3, 0, false);
-                    const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
-                    out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
-
-                    // Drache-Schweif wellt sich
-                    r.applyPlayerSoul("dragon");
-                    const drGroup = currentMesh();
-                    r.playerSoulDefs.dragon.animate(drGroup, 0.1, 0, false);
-                    const tailA = drGroup.userData.parts.tailJoint3.rotation.y;
-                    r.playerSoulDefs.dragon.animate(drGroup, 0.5, 0, false);
-                    const tailB = drGroup.userData.parts.tailJoint3.rotation.y;
-                    out.dragonTailWaves = Math.abs(tailA - tailB) > 0.05;
-
-                    // Cleanup
-                    r.applyPlayerSoul("human");
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring5Results || ring5Results.error) {
-                check(
-                    "Ring 5: Seele-Snapshot erreichbar",
-                    false,
-                    ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
-                check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
-                check(
-                    "Ring 5: Dropdown hat drei Optionen (Built-in-Seelen)",
-                    ring5Results.dropdownHasThreeOptions,
-                    `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
-                );
-                check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
-                check(
-                    "Ring 5: Mensch-Avatar ist MeshToonMaterial, gedämpftes Rot (V8.29.1)",
-                    ring5Results.defaultColorRed
-                );
-                check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
-                check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
-                check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
-                check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
-                check("Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif", ring5Results.phoenixHasWingsAndTail);
-                check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
-                check(
-                    "Ring 5 V2: Physics-Body wandert mit dem neuen Soul-Group mit",
-                    ring5Results.physicsBodySwitchedToNewGroup
-                );
-                check(
-                    "Ring 5 V2: rigidBodies-Array enthält den neuen Group (nicht den alten)",
-                    ring5Results.rigidBodiesArrayUpdated
-                );
-                check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
-                check("Ring 5: Chat 'werde drache' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
-                check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
-                check("Ring 5: Drache-Material-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
-                check("Ring 5 V2: Drache-Group hat 4 Beine + Schweif-Joint", ring5Results.dragonHasFourLegs);
-                check("Ring 5: Umlaut-Alias 'phönix' kanonisiert auf phoenix", ring5Results.umlautAliasWorks);
-                check("Ring 5: Englisches Alias 'dragon' kanonisiert auf dragon", ring5Results.englishAliasWorks);
-                check("Ring 5: Unbekannte Seele wird abgelehnt", ring5Results.unknownRejected);
-                check("Ring 5: DSL-Op player_soul direkt aufrufbar", ring5Results.dslOpWorks);
-                check(
-                    "Ring 5: player_soul NICHT im dslComposeAtomic-Pool (Nexus überschreibt Identität nicht)",
-                    ring5Results.soulNotInAtomicPool
-                );
-                check("Ring 5: saveState persistiert playerSoul", ring5Results.savedPlayerSoul);
-                check("Ring 5: loadState wendet Seele auf Mesh an", ring5Results.loadAppliesSoul);
-                check("Ring 5: Status-Bar zeigt deutsches Label ('Phönix')", ring5Results.statusBarShowsLabel);
-                check(
-                    "Ring 5 V2: Mensch-Walk-Animation rotiert Beine bei isMoving=true",
-                    ring5Results.humanWalkAnimationMoves
-                );
-                check(
-                    "Ring 5 V2: Phönix-Flügel flattern auch im Idle (zwei Frames, unterschiedliche rotation.z)",
-                    ring5Results.phoenixWingsFlapInIdle
-                );
-                check(
-                    "Ring 5 V2: Drache-Schweif wellt sich (zwei Frames, unterschiedliche tailJoint3.rotation.y)",
-                    ring5Results.dragonTailWaves
-                );
-            }
-
-            // ### Ring 5 V2-Vorbereitung — Third-Person-Kamera ###
-            // Toggle wechselt state.cameraMode, persistiert in localStorage,
-            // Kamera positioniert sich tatsächlich orbit-mäßig hinter dem
-            // Spieler. playerMesh dreht sich mit yaw mit (Vorbereitung für
-            // animierte Glieder).
-            const cameraResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh || !r.state.camera) return null;
-                    const out = {};
-                    const toggle = document.getElementById("camera-mode-toggle");
-                    out.toggleInDom = !!toggle;
-                    out.initialModeFirst = r.state.cameraMode === "first";
-                    out.initialLabelFirst = toggle && toggle.textContent.includes("1st");
-
-                    // setCameraMode("third") schaltet um + Label folgt
-                    r.setCameraMode("third");
-                    out.modeAfterSet = r.state.cameraMode === "third";
-                    out.labelAfterSet = toggle && toggle.textContent.includes("3rd");
-                    out.ariaPressedAfterSet = toggle && toggle.getAttribute("aria-pressed") === "true";
-                    out.persistedThird = localStorage.getItem("anazhRealmCameraMode") === "third";
-
-                    // Kamera ist im 3rd-Modus tatsächlich vom Spieler entfernt
-                    // (mind. 4 Welt-Einheiten). Wir setzen yaw=0, damit die
-                    // Distanz reproduzierbar in -Z-Richtung liegt.
-                    r.state.yaw = 0;
-                    r.state.pitch = 0;
-                    r.state.playerMesh.position.set(0, 20, 0);
-                    // Render-Frame triggern: Loop läuft bereits, wir warten auf
-                    // den nächsten Tick im Test-Wrapper. Hier prüfen wir die
-                    // Math direkt, damit der Test deterministisch ist.
-                    const dist = r.state.cameraThirdDistance;
-                    const expectedZ = -Math.cos(0) * dist; // = -dist
-                    out.expectedDistance = dist;
-                    out.expectedZ = expectedZ;
-
-                    // playerMesh.rotation.y folgt yaw — setze yaw und renderFrame
-                    r.state.yaw = Math.PI / 2;
-                    // Den Loop-Tick triggern wir nicht synchron; rotation.y
-                    // wird im nächsten Frame gesetzt. Wir prüfen, dass die
-                    // Logik existiert (Methode + State) und vertrauen dem
-                    // Loop, der durchläuft.
-                    out.rotationLogicReady =
-                        typeof r.state.yaw === "number" && r.state.playerMesh.rotation !== undefined;
-
-                    // setCameraMode("first") zurück
-                    r.setCameraMode("first");
-                    out.modeBackToFirst = r.state.cameraMode === "first";
-                    out.labelBackToFirst = toggle && toggle.textContent.includes("1st");
-                    out.persistedFirst = localStorage.getItem("anazhRealmCameraMode") === "first";
-
-                    // Unbekannter Modus fällt auf "first" zurück
-                    r.setCameraMode("xyz");
-                    out.unknownFallsToFirst = r.state.cameraMode === "first";
-
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            // V8.50 — Loop synchron treiben statt auf rAF zu warten. Headless-
-            // Chromium drosselt requestAnimationFrame auf ~1 Hz → ein 300-ms-
-            // Fenster enthielt oft 0 Loop-Ticks → player.rotation.y blieb
-            // stale → flaky CI. _gameLoopTick treibt genau einen Frame.
-            const cameraEffect = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state.camera || !r.state.playerMesh) return null;
-                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-                    return {
-                        playerYaw: r.state.yaw,
-                        playerRotationY: r.state.playerMesh.rotation.y,
-                        cameraX: r.state.camera.position.x,
-                        cameraY: r.state.camera.position.y,
-                        cameraZ: r.state.camera.position.z,
-                        playerX: r.state.playerMesh.position.x,
-                        playerY: r.state.playerMesh.position.y,
-                        playerZ: r.state.playerMesh.position.z,
-                    };
-                })
-                .catch(() => null);
-
-            // Pitch-Inversion + Boden-Clamp im 3rd-Modus prüfen: Maus hoch
-            // (pitch positiv) muss Kamera SENKEN, nicht heben. Bei extremem
-            // Pitch darf die Kamera nicht unter den Boden tauchen.
-            //
-            // V8.50 — Pitch setzen + Loop SYNCHRON treiben (statt auf das im
-            // Headless ~1 Hz gedrosselte rAF zu warten).
-            //
-            // V8.57 — Wurzel-Heilung des flaky CI-Falls. Gelesen wird jetzt
-            // `_cameraDesiredY` (die pitch-gesteuerte Wunsch-Höhe), NICHT
-            // `camera.position.y`. Grund: die V8.36-Kamera-Kollision zieht die
-            // Kamera per Raycast ein, sobald Terrain/Struktur/Kreatur hinter
-            // dem Spieler steht — und wo der Spieler nach 20 s autonomem Lauf
-            // landet, ist nicht-deterministisch. Die hohe "Maus runter"-Kamera
-            // wurde so vereinzelt unter die Schwelle gezogen → CI-Flake.
-            // `_cameraDesiredY` ist die reine Pitch-Mathematik (inkl.
-            // Boden-Clamp), umgebungs-unabhängig — genau das, was dieser Test
-            // prüfen will. Die Kamera-Kollision ist ein eigenes Feature.
-            const setPitchAndRead = async (pitch) => {
-                return await page.evaluate((p) => {
-                    const r = window.anazhRealm;
-                    r.setCameraMode("third");
-                    r.state.yaw = 0;
-                    r.state.pitch = p;
-                    // Player-Velocity nullen, damit der Spieler während der
-                    // drei Messungen nicht driftet.
-                    if (r.state.playerBody && r.state.tmpVec2) {
-                        r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
-                    }
-                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-                    return r.state._cameraDesiredY - r.state.playerMesh.position.y;
-                }, pitch);
-            };
-            const upDelta = await setPitchAndRead(Math.PI / 6);
-            const clampedDelta = await setPitchAndRead(Math.PI / 2 - 0.1);
-            const downDelta = await setPitchAndRead(-Math.PI / 6);
-            const cameraPitch = { upDelta, clampedDelta, downDelta };
-            await page.evaluate(() => {
-                const r = window.anazhRealm;
-                r.setCameraMode("first");
-                r.state.pitch = 0;
-            });
-
-            if (!cameraResults || cameraResults.error) {
-                check(
-                    "Ring 5 V2-Prep: Kamera-Snapshot erreichbar",
-                    false,
-                    cameraResults && cameraResults.error ? cameraResults.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 5 V2-Prep: #camera-mode-toggle im DOM", cameraResults.toggleInDom);
-                check("Ring 5 V2-Prep: Initial-Modus ist 'first'", cameraResults.initialModeFirst);
-                check("Ring 5 V2-Prep: Initial-Label trägt '1st'", cameraResults.initialLabelFirst);
-                check("Ring 5 V2-Prep: setCameraMode('third') schaltet State", cameraResults.modeAfterSet);
-                check("Ring 5 V2-Prep: Label wechselt zu '3rd'", cameraResults.labelAfterSet);
-                check("Ring 5 V2-Prep: aria-pressed='true' im 3rd-Modus", cameraResults.ariaPressedAfterSet);
-                check("Ring 5 V2-Prep: Modus persistiert in localStorage", cameraResults.persistedThird);
-                check(
-                    "Ring 5 V2-Prep: Rotation-Logik bereit (yaw + rotation existieren)",
-                    cameraResults.rotationLogicReady
-                );
-                check("Ring 5 V2-Prep: setCameraMode('first') zurück", cameraResults.modeBackToFirst);
-                check("Ring 5 V2-Prep: Label zurück auf '1st'", cameraResults.labelBackToFirst);
-                check("Ring 5 V2-Prep: Persistenz aktualisiert sich", cameraResults.persistedFirst);
-                check("Ring 5 V2-Prep: Unbekannter Modus fällt auf 'first' zurück", cameraResults.unknownFallsToFirst);
-            }
-            if (cameraEffect) {
-                // playerMesh.rotation.y sollte yaw entsprechen (per Loop-Tick)
-                check(
-                    "Ring 5 V2-Prep: playerMesh.rotation.y folgt yaw",
-                    Math.abs(cameraEffect.playerRotationY - cameraEffect.playerYaw) < 0.01,
-                    `yaw=${cameraEffect.playerYaw.toFixed(3)}, rot.y=${cameraEffect.playerRotationY.toFixed(3)}`
-                );
-            }
-            if (cameraPitch) {
-                // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
-                // pitch=-30° → cam-player = 2+3 = 5. clamp greift bei -0.2.
-                check(
-                    "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
-                    cameraPitch.upDelta < 2,
-                    `cam-player=${cameraPitch.upDelta.toFixed(2)} (Erwartung < 2)`
-                );
-                check(
-                    "Ring 5 V2-Prep: Maus runter hebt Kamera (3rd)",
-                    cameraPitch.downDelta > 2,
-                    `cam-player=${cameraPitch.downDelta.toFixed(2)} (Erwartung > 2)`
-                );
-                check(
-                    "Ring 5 V2-Prep: Boden-Clamp greift bei extremem Pitch",
-                    cameraPitch.clampedDelta >= -0.21,
-                    `cam-player=${cameraPitch.clampedDelta.toFixed(2)} (≥ -0.2 erwartet)`
-                );
-            }
-
-            // ### Ring 6 — architectureTemplates V1 ###
-            // Drei Bau-Primitives (Dorf/Tempel/Wasserfall) als DSL-Ops mit
-            // Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag mit niedriger
-            // Gewichtung. Wasserfälle haben einen Animations-Hook im Tick.
-            const ring6Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-
-                    // Cleanup: alle bestehenden Architekturen entfernen.
-                    for (const a of r.state.architectures) {
-                        if (a.mesh) {
-                            r.state.scene.remove(a.mesh);
-                            r._disposeSoulGroup(a.mesh);
-                        }
-                    }
-                    r.state.architectures = [];
-
-                    // (a) Direkter Spawn jeder Sorte
-                    const v = r.spawnArchitecture("village", { x: 10, y: 5, z: 10 }, { seed: 42 });
-                    out.villageBuilt = !!v && v.type === "village" && !!v.mesh;
-                    out.villageHasChildren = v && v.mesh && v.mesh.children.length >= 5;
-                    out.villageInScene = v && r.state.scene.children.indexOf(v.mesh) >= 0;
-
-                    const t = r.spawnArchitecture("temple", { x: 30, y: 5, z: 10 }, { seed: 7 });
-                    out.templeBuilt = !!t && t.type === "temple" && !!t.mesh;
-                    // 6 Pfeiler + 1 Dach + 1 Altar = mind. 8 children
-                    out.templeHasPillars = t && t.mesh && t.mesh.children.length >= 8;
-
-                    const w = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 10 }, { seed: 99 });
-                    out.waterfallBuilt = !!w && w.type === "waterfall" && !!w.mesh;
-                    out.waterfallHasAnimateHook =
-                        w && w.mesh && w.mesh.userData && typeof w.mesh.userData.animate === "function";
-
-                    // (b) Unbekannter Typ wird abgelehnt
-                    const bad = r.spawnArchitecture("schloss", { x: 0, y: 5, z: 0 });
-                    out.unknownTypeRejected = bad === null;
-
-                    // (c) state.architectures wächst korrekt
-                    out.architectureCountAfterThree = r.state.architectures.length === 3;
-                    out.idsAreUnique =
-                        new Set(r.state.architectures.map((a) => a.id)).size === r.state.architectures.length;
-
-                    // (d) DSL-Op: spawn_village wirkt durch Interpreter
-                    const beforeCount = r.state.architectures.length;
-                    const dslRes = r.dslRun(["spawn_village", ["at_origin"]]);
-                    out.dslSpawnVillageOk =
-                        dslRes.ok === true &&
-                        r.state.architectures.length === beforeCount + 1 &&
-                        dslRes.log.some((e) => e.event === "spawned_village");
-
-                    // (e) Chat-Pattern routet auf DSL
-                    const beforeChat = r.state.architectures.length;
-                    r.processChatCommand("Baue Tempel hier");
-                    out.chatRoutesToDsl =
-                        Array.isArray(r.state.dsl.lastUserProgram) && r.state.dsl.lastUserProgram[0] === "spawn_temple";
-                    out.chatActuallySpawned = r.state.architectures.length === beforeChat + 1;
-
-                    // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
-                    // Datenmäßig unbegrenzt; GPU-Last per Distance-Culling.
-                    const beforeMany = r.state.architectures.length;
-                    for (let i = 0; i < 50; i++) {
-                        r.spawnArchitecture("temple", { x: 500 + i * 2, y: 5, z: 500 }, { seed: i });
-                    }
-                    out.unboundedSpawn = r.state.architectures.length === beforeMany + 50;
-                    // Die weiten (500m) Strukturen müssen ohne Mesh sein
-                    // (cold) — Spieler ist nahe (0,0,0).
-                    const farEntries = r.state.architectures.filter((a) => a.position.x >= 500);
-                    out.farStructuresAreCold = farEntries.length === 50 && farEntries.every((a) => a.mesh === null);
-
-                    // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten
-                    const seedRng = (s) => {
-                        let x = s >>> 0 || 1;
-                        return () => {
-                            x = (x * 1664525 + 1013904223) >>> 0;
-                            return x / 4294967296;
-                        };
-                    };
-                    const rng = seedRng(2026);
-                    const seenOps = new Set();
-                    for (let i = 0; i < 5000; i++) {
-                        const atom = r.dslComposeAtomic(rng);
-                        if (Array.isArray(atom)) seenOps.add(atom[0]);
-                    }
-                    out.villageInAtomicPool = seenOps.has("spawn_village");
-                    out.templeInAtomicPool = seenOps.has("spawn_temple");
-                    out.waterfallInAtomicPool = seenOps.has("spawn_waterfall");
-
-                    // (h) Wasserfall-Animation: vor und nach Tick müssen Z-
-                    // Werte der Geometrie unterschiedlich sein.
-                    // Position muss innerhalb cullingRadius (150) liegen,
-                    // sonst ist mesh null (cold) und der Test crasht.
-                    const wf = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 50 }, { seed: 1 });
-                    const waterMesh = wf.mesh.children.find((c) => c.geometry && c.geometry.type === "PlaneGeometry");
-                    if (waterMesh) {
-                        const z0 = waterMesh.geometry.attributes.position.getZ(5);
-                        r.tickArchitectures(0.5);
-                        const z1 = waterMesh.geometry.attributes.position.getZ(5);
-                        out.waterfallTickAnimates = Math.abs(z0 - z1) > 0.001 || z1 !== 0;
-                    } else {
-                        out.waterfallTickAnimates = false;
-                    }
-
-                    // (i) Save-Roundtrip
-                    r.saveState();
-                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-                    let parsed = null;
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch (e) {
-                        void e;
-                    }
-                    out.saveContainsArchitectures =
-                        !!parsed && Array.isArray(parsed.architectures) && parsed.architectures.length > 0;
-                    // Gespeicherte Einträge haben nur {type, position, seed}, kein mesh
-                    out.saveOmitsMesh =
-                        !!parsed &&
-                        parsed.architectures.every(
-                            (a) => typeof a.type === "string" && a.position && Number.isFinite(a.seed) && !a.mesh
-                        );
-
-                    // loadState rekonstruiert die Liste deterministisch aus seed
-                    const loadInput = {
-                        architectures: [
-                            { type: "village", position: { x: 0, y: 5, z: 0 }, seed: 12345 },
-                            { type: "temple", position: { x: 20, y: 5, z: 0 }, seed: 67890 },
-                        ],
-                    };
-                    r.loadState(loadInput);
-                    out.loadRebuildsCount = r.state.architectures.length === 2;
-                    out.loadRebuildsTypes =
-                        r.state.architectures[0].type === "village" && r.state.architectures[1].type === "temple";
-                    out.loadRebuildsSeeds =
-                        r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
-
-                    // Cleanup
-                    for (const a of r.state.architectures) {
-                        if (a.mesh) {
-                            r.state.scene.remove(a.mesh);
-                            r._disposeSoulGroup(a.mesh);
-                        }
-                    }
-                    r.state.architectures = [];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring6Results || ring6Results.error) {
-                check(
-                    "Ring 6: Architecture-Snapshot erreichbar",
-                    false,
-                    ring6Results && ring6Results.error ? ring6Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 6: spawnArchitecture('village') liefert Group", ring6Results.villageBuilt);
-                check("Ring 6: Dorf-Group hat ≥5 children (Hütten + Plaza)", ring6Results.villageHasChildren);
-                check("Ring 6: Dorf wird zur Szene hinzugefügt", ring6Results.villageInScene);
-                check("Ring 6: spawnArchitecture('temple') liefert Group", ring6Results.templeBuilt);
-                check("Ring 6: Tempel-Group hat ≥8 children (6 Pfeiler + Dach + Altar)", ring6Results.templeHasPillars);
-                check("Ring 6: spawnArchitecture('waterfall') liefert Group", ring6Results.waterfallBuilt);
-                check("Ring 6: Wasserfall hat userData.animate Hook", ring6Results.waterfallHasAnimateHook);
-                check("Ring 6: Unbekannter Typ wird abgelehnt (returns null)", ring6Results.unknownTypeRejected);
-                check(
-                    "Ring 6: state.architectures wächst korrekt nach drei Spawns",
-                    ring6Results.architectureCountAfterThree
-                );
-                check("Ring 6: Architecture-IDs sind eindeutig", ring6Results.idsAreUnique);
-                check("Ring 6: DSL-Op spawn_village wirkt + emit spawned_village", ring6Results.dslSpawnVillageOk);
-                check("Ring 6: Chat 'Baue Tempel hier' routet auf DSL spawn_temple", ring6Results.chatRoutesToDsl);
-                check("Ring 6: Chat-Routing spawnt tatsächlich", ring6Results.chatActuallySpawned);
-                check("Ring 6 V2: 50+ Strukturen koexistieren ohne Cap", ring6Results.unboundedSpawn);
-                check(
-                    "Ring 6 V2: Weite Strukturen (>cullingRadius) sind 'cold' (mesh=null)",
-                    ring6Results.farStructuresAreCold
-                );
-                check(
-                    "Ring 6: spawn_village ist im dslComposeAtomic-Pool (Nexus baut)",
-                    ring6Results.villageInAtomicPool
-                );
-                check("Ring 6: spawn_temple ist im atomic-Pool", ring6Results.templeInAtomicPool);
-                check("Ring 6: spawn_waterfall ist im atomic-Pool", ring6Results.waterfallInAtomicPool);
-                check("Ring 6: tickArchitectures animiert Wasserfall-Vertices", ring6Results.waterfallTickAnimates);
-                check("Ring 6: saveState persistiert architectures", ring6Results.saveContainsArchitectures);
-                check("Ring 6: Save enthält nur {type, position, seed} (kein mesh)", ring6Results.saveOmitsMesh);
-                check("Ring 6: loadState rekonstruiert Anzahl", ring6Results.loadRebuildsCount);
-                check("Ring 6: loadState rekonstruiert Typen", ring6Results.loadRebuildsTypes);
-                check(
-                    "Ring 6: loadState rekonstruiert Seeds (deterministische Wiederherstellung)",
-                    ring6Results.loadRebuildsSeeds
-                );
-            }
-
-            // ### Ring 6.3 — Kollisions-Body für Strukturen ###
-            // Jede Architektur bekommt einen statischen Ammo-Body. Body wird
-            // beim Cullen freigegeben. Bei Wieder-Aufbau (Spieler kommt
-            // zurück) entsteht ein neuer Body.
-            const ring63Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    // Cleanup
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) {
-                            r._cullArchitectureMesh(a);
-                        }
-                    }
-                    r.state.architectures = [];
-
-                    // Struktur nahe spawnen (innerhalb cullingRadius) →
-                    // Mesh + Body sollten gleich da sein.
-                    const px = r.state.playerMesh.position.x;
-                    const pz = r.state.playerMesh.position.z;
-                    const entry = r.spawnArchitecture(
-                        "temple",
-                        { x: px + 8, y: r.state.playerMesh.position.y, z: pz + 4 },
-                        { seed: 11 }
-                    );
-                    out.entryHasMesh = !!entry && !!entry.mesh;
-                    out.entryHasCollision =
-                        !!entry && !!entry.collision && !!entry.collision.body && !!entry.collision.shape;
-                    // Body sollte in der physicsWorld registriert sein —
-                    // wir prüfen indirekt: tests later that culling removes it.
-                    // Kollisions-Box-Größe indirekt via Three-Bounding-Box
-                    // verifizieren (entry.mesh hat die echte Geometrie).
-                    if (entry && entry.mesh) {
-                        const bbox = new THREE.Box3().setFromObject(entry.mesh);
-                        const size = new THREE.Vector3();
-                        bbox.getSize(size);
-                        out.collisionSizeFromMesh = {
-                            x: size.x,
-                            y: size.y,
-                            z: size.z,
-                        };
-                        out.collisionSizePlausible =
-                            size.x > 2.0 &&
-                            size.y > 2.0 &&
-                            size.z > 2.0 &&
-                            size.x < 100 &&
-                            size.y < 100 &&
-                            size.z < 100;
-                    }
-                    // Body ist statisch — Body.mass entspricht 0, Body
-                    // ist getCollisionFlags & CF_STATIC_OBJECT bit oder einfach
-                    // testen via isStaticObject (Ammo Bindings: getCollisionFlags).
-                    if (entry && entry.collision && entry.collision.body) {
-                        const flags = entry.collision.body.getCollisionFlags();
-                        // CF_STATIC_OBJECT = 1 in Bullet, aber: ein Body mit mass=0 ist
-                        // automatisch statisch in Bullet — getCollisionFlags & 1 prüft das.
-                        out.bodyIsStatic = (flags & 1) === 1 || flags === 0;
-                        // Wenn flags=0, ist's kein statisches Flag gesetzt, aber
-                        // mass=0 macht's trotzdem effektiv statisch. Wir akzeptieren
-                        // beides als pass.
-                    }
-
-                    // Distanz-Cullen: Spieler weg, Body sollte verschwinden.
-                    // Wir schieben entry.position so weit weg, dass es jenseits
-                    // des cullingRadius ist (~150). spawnArchitecture-Pfad ist nicht
-                    // ideal; einfacher direkter Cull-Test:
-                    r._cullArchitectureMesh(entry);
-                    out.afterCullMeshNull = entry.mesh === null;
-                    out.afterCullCollisionNull = entry.collision === null;
-
-                    // Wiederaufbau: rebuild macht Mesh + Body wieder.
-                    r._rebuildArchitectureMesh(entry);
-                    out.afterRebuildMeshExists = !!entry.mesh;
-                    out.afterRebuildCollisionExists = !!entry.collision && !!entry.collision.body;
-
-                    // Strukturen ohne Mesh haben kein collision.body (cold)
-                    const coldEntry = r.spawnArchitecture("village", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
-                    out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
-                    out.coldHasNoCollision = coldEntry && !coldEntry.collision;
-
-                    // Cleanup
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) r._cullArchitectureMesh(a);
-                    }
-                    r.state.architectures = [];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring63Results || ring63Results.error) {
-                check(
-                    "Ring 6.3: Kollisions-Snapshot erreichbar",
-                    false,
-                    ring63Results && ring63Results.error ? ring63Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
-                check("Ring 6.3: Architektur hat collision-body + shape", ring63Results.entryHasCollision);
-                check(
-                    "Ring 6.3: Kollisions-Box-Größe plausibel (Tempel, via Mesh-BBox)",
-                    ring63Results.collisionSizePlausible,
-                    ring63Results.collisionSizeFromMesh
-                        ? `mesh-size=${JSON.stringify({
-                              x: ring63Results.collisionSizeFromMesh.x.toFixed(2),
-                              y: ring63Results.collisionSizeFromMesh.y.toFixed(2),
-                              z: ring63Results.collisionSizeFromMesh.z.toFixed(2),
-                          })}`
-                        : ""
-                );
-                check("Ring 6.3: Body ist statisch (mass=0)", ring63Results.bodyIsStatic);
-                check(
-                    "Ring 6.3: Cullen entfernt Mesh + Kollisions-Body",
-                    ring63Results.afterCullMeshNull && ring63Results.afterCullCollisionNull
-                );
-                check(
-                    "Ring 6.3: Wiederaufbau bringt Mesh + Body zurück",
-                    ring63Results.afterRebuildMeshExists && ring63Results.afterRebuildCollisionExists
-                );
-                check(
-                    "Ring 6.3: Cold-Strukturen (außerhalb Radius) haben weder Mesh noch Kollision",
-                    ring63Results.coldHasNoMesh && ring63Results.coldHasNoCollision
-                );
-            }
-
-            // Live-Kollisions-Test: Spieler wird gegen eine Tempel-Säule
-            // geschoben, sollte aufgehalten werden. Wir setzen den Spieler
-            // 4m vor den Tempel-Mittelpunkt und feuern ihm Velocity, dann
-            // lassen wir die Physik 0.5s laufen und prüfen ob er stehen
-            // geblieben oder reflektiert wurde.
-            await page.evaluate(() => {
-                const r = window.anazhRealm;
-                for (const a of r.state.architectures.slice()) {
-                    if (a.mesh) r._cullArchitectureMesh(a);
-                }
-                r.state.architectures = [];
-                // Tempel direkt vor Welt-Ursprung platzieren
-                r.spawnArchitecture("temple", { x: 0, y: 5, z: 5 }, { seed: 11 });
-                // Player nach (0, terrainY+2, 0) — Tempel liegt in +Z, Player soll
-                // in +Z auf ihn zu rennen.
-                if (r.state.playerBody && r.state.tmpTransform && r.state.tmpVec1) {
-                    const t = r.state.tmpTransform;
-                    t.setIdentity();
-                    t.setOrigin(r.setVec(r.state.tmpVec1, 0, 5, -2));
-                    r.state.playerBody.setWorldTransform(t);
-                    r.state.playerBody.activate(true);
-                    // Velocity +Z = vorwärts in Richtung Tempel
-                    r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 6));
-                }
-            });
-            await new Promise((r) => setTimeout(r, 800));
-            const collisionLive = await page.evaluate(() => {
-                const r = window.anazhRealm;
-                return {
-                    playerZ: r.state.playerMesh.position.z,
-                    playerY: r.state.playerMesh.position.y,
-                };
-            });
-            // Tempel sitzt bei z=5, Pillar-Radius ~3.5, also Pillar-Vorderkante
-            // bei z=1.5. Player startete bei z=-2, hätte ohne Kollision in
-            // 0.8s × 6 m/s = 4.8m gemacht und wäre bei z=2.8. Mit Kollision
-            // sollte er VOR der Pillar-Vorderkante stehen (z < ~2).
-            check(
-                "Ring 6.3: Kollision stoppt Spieler vor dem Tempel",
-                collisionLive.playerZ < 2.0,
-                `playerZ=${collisionLive.playerZ.toFixed(2)} (Erwartung < 2.0)`
-            );
-            // Cleanup
-            await page.evaluate(() => {
-                const r = window.anazhRealm;
-                for (const a of r.state.architectures.slice()) {
-                    if (a.mesh) r._cullArchitectureMesh(a);
-                }
-                r.state.architectures = [];
-            });
-
-            // ### Ring 6.4 — Bauplan-Datenschicht ###
-            // state.blueprints enthält Built-in dorf/tempel/wasserfall als
-            // Daten. _buildFromBlueprint rendert sie. 8 Primitive werden
-            // erkannt. User-Baupläne sind hinzufügbar + persistierbar.
-            const ring64Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // Built-ins vorhanden
-                    out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.village;
-                    out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.temple;
-                    out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
-                    out.villageBuiltIn = r.state.blueprints.village && r.state.blueprints.village.builtIn === true;
-                    out.villagePartsArray = Array.isArray(r.state.blueprints.village.parts);
-                    out.villageHasParts = r.state.blueprints.village.parts.length >= 10; // 6 huts × 2 + plaza
-                    out.templeHasParts = r.state.blueprints.temple.parts.length >= 9;
-                    out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
-
-                    // 8 Primitive renderbar — wir bauen einen Test-Bauplan
-                    // mit allen 8 Shapes und prüfen, dass jede einen Mesh
-                    // produziert.
-                    const allShapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus"];
-                    const testBp = {
-                        name: "_test_all_shapes",
-                        parts: allShapes.map((s, i) => ({
-                            shape: s,
-                            color: 0xffffff,
-                            position: { x: i, y: 0, z: 0 },
-                            size: { x: 1, y: 1, z: 1 },
-                        })),
-                    };
-                    const testGroup = r._buildFromBlueprint(testBp);
-                    out.allShapesRender =
-                        testGroup && testGroup.children.length === 8 && testGroup.children.every((c) => !!c.geometry);
-
-                    // Erstellung via JSON: User-Bauplan registrieren + spawnen
-                    r.state.blueprints["test_hut"] = {
-                        name: "test_hut",
-                        label: "Test-Hütte",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                color: 0xaa5500,
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                            },
-                            {
-                                shape: "pyramid",
-                                color: 0x882211,
-                                position: { x: 0, y: 2.5, z: 0 },
-                                size: { x: 2.5, y: 1.5, z: 2.5 },
-                            },
-                        ],
-                    };
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) r._cullArchitectureMesh(a);
-                    }
-                    r.state.architectures = [];
-                    const userEntry = r.spawnArchitecture("test_hut", { x: 0, y: 5, z: 5 }, { seed: 1 });
-                    out.userBlueprintBuilds = !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
-
-                    // DSL-Op spawn_blueprint funktioniert
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) r._cullArchitectureMesh(a);
-                    }
-                    r.state.architectures = [];
-                    const dslRes = r.dslRun(["spawn_blueprint", "test_hut", ["at_origin"]]);
-                    out.dslSpawnBlueprintOk =
-                        dslRes.ok === true &&
-                        r.state.architectures.length === 1 &&
-                        r.state.architectures[0].type === "test_hut" &&
-                        dslRes.log.some((e) => e.event === "spawned_blueprint");
-
-                    // Unbekannter Bauplan-Name wird abgelehnt
-                    const dslBad = r.dslRun(["spawn_blueprint", "phantom_nonexistent", ["at_origin"]]);
-                    out.unknownBlueprintRejected = dslBad.log.some((e) => e.event === "unknown_blueprint");
-
-                    // Save-Roundtrip: User-Bauplan überlebt
-                    r.saveState();
-                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-                    let parsed = null;
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch (e) {
-                        void e;
-                    }
-                    out.saveContainsUserBlueprint =
-                        !!parsed &&
-                        Array.isArray(parsed.blueprints) &&
-                        parsed.blueprints.some((bp) => bp.name === "test_hut");
-                    out.saveOmitsBuiltIn =
-                        !!parsed &&
-                        Array.isArray(parsed.blueprints) &&
-                        !parsed.blueprints.some((bp) => bp.name === "village");
-
-                    // loadState mit eigenem Bauplan reaktiviert ihn
-                    delete r.state.blueprints["test_hut"];
-                    r.loadState({
-                        blueprints: [
-                            {
-                                name: "test_hut_2",
-                                label: "Reload-Hütte",
-                                parts: [
-                                    {
-                                        shape: "sphere",
-                                        color: 0x33aa55,
-                                        position: { x: 0, y: 1, z: 0 },
-                                        size: { x: 2, y: 2, z: 2 },
-                                    },
-                                ],
-                            },
-                        ],
-                    });
-                    out.loadRestoresUserBlueprint = !!r.state.blueprints["test_hut_2"];
-
-                    // Cleanup
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) r._cullArchitectureMesh(a);
-                    }
-                    r.state.architectures = [];
-                    delete r.state.blueprints["test_hut"];
-                    delete r.state.blueprints["test_hut_2"];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring64Results || ring64Results.error) {
-                check(
-                    "Ring 6.4: Bauplan-Snapshot erreichbar",
-                    false,
-                    ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 6.4: Built-in Dorf-Bauplan vorhanden", ring64Results.hasVillage);
-                check("Ring 6.4: Built-in Tempel-Bauplan vorhanden", ring64Results.hasTemple);
-                check("Ring 6.4: Built-in Wasserfall-Bauplan vorhanden", ring64Results.hasWaterfall);
-                check("Ring 6.4: Dorf ist als builtIn markiert", ring64Results.villageBuiltIn);
-                check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
-                check("Ring 6.4: Dorf hat ≥10 Parts (6 Hütten + Plaza)", ring64Results.villageHasParts);
-                check(
-                    "Ring 6.4: Tempel hat ≥9 Parts (6 Pfeiler + Dach + Altar + Spitze)",
-                    ring64Results.templeHasParts
-                );
-                check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
-                check(
-                    "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
-                    ring64Results.allShapesRender
-                );
-                check("Ring 6.4: User-Bauplan als Daten spawnt korrekt Mesh", ring64Results.userBlueprintBuilds);
-                check("Ring 6.4: DSL-Op spawn_blueprint(name, pos) funktioniert", ring64Results.dslSpawnBlueprintOk);
-                check("Ring 6.4: Unbekannter Bauplan-Name wird abgelehnt", ring64Results.unknownBlueprintRejected);
-                check("Ring 6.4: saveState persistiert eigene Baupläne", ring64Results.saveContainsUserBlueprint);
-                check(
-                    "Ring 6.4: Save lässt Built-in-Baupläne aus (kommen aus _defaultBlueprints)",
-                    ring64Results.saveOmitsBuiltIn
-                );
-                check("Ring 6.4: loadState rekonstruiert eigene Baupläne", ring64Results.loadRestoresUserBlueprint);
-            }
-
-            // ### Ring 6.5 — Hotbar mit 9 Slots ###
-            const ring65Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-                    // DOM-Hotbar
-                    const bar = document.getElementById("hotbar");
-                    out.hotbarInDom = !!bar;
-                    out.hotbarHasNineSlots = bar && bar.querySelectorAll(".hotbar-slot").length === 9;
-                    out.defaultHotbar =
-                        Array.isArray(r.state.hotbar) &&
-                        r.state.hotbar.length === 9 &&
-                        r.state.hotbar[0] === "village" &&
-                        r.state.hotbar[1] === "temple" &&
-                        r.state.hotbar[2] === "waterfall" &&
-                        r.state.hotbar.slice(3).every((s) => s === null);
-                    // Slot-Label folgt aus blueprints.label
-                    const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
-                    out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Dorf";
-
-                    // setHotbarSlot setzt slot 5 auf eigenen Bauplan
-                    r.state.blueprints["test_hotbar_bp"] = {
-                        name: "test_hotbar_bp",
-                        label: "Test-Bp",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                color: 0x44aa44,
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                            },
-                        ],
-                    };
-                    const setOk = r.setHotbarSlot(5, "test_hotbar_bp");
-                    out.setHotbarOk = setOk === true && r.state.hotbar[5] === "test_hotbar_bp";
-                    // DOM hat label aktualisiert
-                    const slot5Label = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
-                    out.hotbarDomReflectsSet = slot5Label && slot5Label.textContent === "Test-Bp";
-
-                    // Unbekannter Bauplan-Name wird abgelehnt
-                    const setBad = r.setHotbarSlot(5, "definitiv_nicht_da");
-                    out.setHotbarRejectsUnknown = setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
-
-                    // selectHotbarSlot(idx) auf belegten Slot aktiviert Build-Modus
-                    r.selectHotbarSlot(5);
-                    out.selectActivatesMode =
-                        r.state.buildMode.active === true &&
-                        r.state.buildMode.blueprintName === "test_hotbar_bp" &&
-                        r.state.buildMode.slotIndex === 5;
-                    // Highlight im DOM
-                    const slot5El = bar.querySelector('.hotbar-slot[data-slot="5"]');
-                    out.highlightActiveSlot = slot5El && slot5El.classList.contains("active");
-
-                    // selectHotbarSlot(idx) auf leeren Slot deaktiviert Build-Mode
-                    r.selectHotbarSlot(8); // leer
-                    out.emptySlotDeactivates = r.state.buildMode.active === false;
-
-                    // confirmBuild im aktiven Modus spawnt den Bauplan
-                    r.selectHotbarSlot(5);
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) r._cullArchitectureMesh(a);
-                    }
-                    r.state.architectures = [];
-                    const cb = r.confirmBuild();
-                    out.confirmBuildSpawnsCorrectBp =
-                        cb === true &&
-                        r.state.architectures.length === 1 &&
-                        r.state.architectures[0].type === "test_hotbar_bp";
-
-                    // setHotbarSlot(idx, null) leert den Slot
-                    r.setHotbarSlot(5, null);
-                    out.clearedSlotIsNull = r.state.hotbar[5] === null;
-                    const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
-                    out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
-
-                    // Hotbar-Config-Drawer hat 9 Reihen
-                    const config = document.getElementById("hotbar-config");
-                    out.hotbarConfigInDom = !!config;
-                    out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-config-row").length === 9;
-
-                    // Save-Roundtrip
-                    r.setHotbarSlot(7, "temple");
-                    r.saveState();
-                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-                    let parsed = null;
-                    try {
-                        parsed = JSON.parse(raw);
-                    } catch (e) {
-                        void e;
-                    }
-                    out.saveContainsHotbar =
-                        !!parsed &&
-                        Array.isArray(parsed.hotbar) &&
-                        parsed.hotbar.length === 9 &&
-                        parsed.hotbar[7] === "temple";
-
-                    // loadState restauriert hotbar
-                    r.state.hotbar = [null, null, null, null, null, null, null, null, null];
-                    r.loadState({ hotbar: ["temple", null, "village", null, null, null, null, null, null] });
-                    out.loadRestoresHotbar = r.state.hotbar[0] === "temple" && r.state.hotbar[2] === "village";
-
-                    // Cleanup
-                    delete r.state.blueprints["test_hotbar_bp"];
-                    r._clearBuildMode();
-                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
-                    r._renderHotbarDOM();
-                    for (const a of r.state.architectures.slice()) {
-                        if (a.mesh) r._cullArchitectureMesh(a);
-                    }
-                    r.state.architectures = [];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring65Results || ring65Results.error) {
-                check(
-                    "Ring 6.5: Hotbar-Snapshot erreichbar",
-                    false,
-                    ring65Results && ring65Results.error ? ring65Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
-                check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
-                check("Ring 6.5: Default-Hotbar [village, temple, waterfall, ..., null]", ring65Results.defaultHotbar);
-                check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
-                check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
-                check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
-                check("Ring 6.5: setHotbarSlot lehnt unbekannte Baupläne ab", ring65Results.setHotbarRejectsUnknown);
-                check(
-                    "Ring 6.5: selectHotbarSlot aktiviert Bau-Modus mit korrektem Bauplan",
-                    ring65Results.selectActivatesMode
-                );
-                check("Ring 6.5: aktiver Slot bekommt .active-Class", ring65Results.highlightActiveSlot);
-                check("Ring 6.5: leerer Slot deaktiviert Bau-Modus", ring65Results.emptySlotDeactivates);
-                check(
-                    "Ring 6.5: confirmBuild im Hotbar-Modus spawnt richtigen Bauplan",
-                    ring65Results.confirmBuildSpawnsCorrectBp
-                );
-                check("Ring 6.5: setHotbarSlot(idx, null) leert den Slot", ring65Results.clearedSlotIsNull);
-                check("Ring 6.5: Leerer Slot zeigt — als Label", ring65Results.clearedDomShowsEmpty);
-                check("Ring 6.5: #hotbar-config-Container im Spieler-Drawer", ring65Results.hotbarConfigInDom);
-                check("Ring 6.5: Hotbar-Config hat 9 Reihen", ring65Results.hotbarConfigHasNineRows);
-                check("Ring 6.5: saveState persistiert Hotbar", ring65Results.saveContainsHotbar);
-                check("Ring 6.5: loadState rekonstruiert Hotbar", ring65Results.loadRestoresHotbar);
-            }
-
-            // ### Ring 6.6 — Werkstatt-Tab + Part-Editor ###
-            const ring66Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = {};
-
-                    // UI vorhanden
-                    out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
-                    out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
-                    out.workshopListInDom = !!document.getElementById("workshop-list");
-                    out.workshopEditorInDom = !!document.getElementById("workshop-editor");
-
-                    // Liste hat einen Eintrag pro Bauplan
-                    const list = document.getElementById("workshop-list");
-                    out.listShowsAllBlueprints =
-                        list &&
-                        list.querySelectorAll(".workshop-list-row").length === Object.keys(r.state.blueprints).length;
-
-                    // createBlueprint
-                    const beforeCount = Object.keys(r.state.blueprints).length;
-                    const ok1 = r.createBlueprint("test_hut", "Test-Hütte");
-                    out.createBlueprintOk =
-                        ok1 === true &&
-                        Object.keys(r.state.blueprints).length === beforeCount + 1 &&
-                        r.state.blueprints["test_hut"].builtIn === false;
-
-                    // createBlueprint mit existierendem Namen wird abgelehnt
-                    const okDup = r.createBlueprint("test_hut", "Doppelt");
-                    out.duplicateNameRejected = okDup === false;
-
-                    // addPartToBlueprint
-                    const ok2 = r.addPartToBlueprint("test_hut", {
-                        shape: "box",
-                        color: 0xff0000,
-                        position: { x: 0, y: 1, z: 0 },
-                        size: { x: 2, y: 2, z: 2 },
-                    });
-                    out.addPartOk = ok2 === true && r.state.blueprints["test_hut"].parts.length === 1;
-
-                    // Built-in akzeptiert keine addPart
-                    const okBuiltIn = r.addPartToBlueprint("village", { shape: "sphere" });
-                    out.builtInRejectsAddPart = okBuiltIn === false;
-
-                    // updatePartInBlueprint
-                    r.updatePartInBlueprint("test_hut", 0, {
-                        color: 0x00ff00,
-                        position: { y: 2.5 },
-                    });
-                    const p = r.state.blueprints["test_hut"].parts[0];
-                    out.updatePartMerges =
-                        p.color === 0x00ff00 && p.position.y === 2.5 && p.position.x === 0 && p.position.z === 0;
-
-                    // removePartFromBlueprint
-                    r.addPartToBlueprint("test_hut", { shape: "cone" });
-                    r.addPartToBlueprint("test_hut", { shape: "sphere" });
-                    const beforeRm = r.state.blueprints["test_hut"].parts.length;
-                    r.removePartFromBlueprint("test_hut", 1);
-                    out.removePartShrinks = r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
-
-                    // cloneBlueprint (Built-in → eigen)
-                    const okClone = r.cloneBlueprint("temple", "my_temple");
-                    out.cloneBlueprintOk =
-                        okClone === true &&
-                        r.state.blueprints["my_temple"].builtIn === false &&
-                        r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length;
-
-                    // Klone können editiert werden
-                    const okClonePart = r.removePartFromBlueprint("my_temple", 0);
-                    out.cloneIsEditable =
-                        okClonePart === true &&
-                        r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length - 1;
-
-                    // deleteBlueprint (eigen)
-                    const beforeDel = Object.keys(r.state.blueprints).length;
-                    const okDel = r.deleteBlueprint("test_hut");
-                    out.deleteBlueprintOk =
-                        okDel === true &&
-                        Object.keys(r.state.blueprints).length === beforeDel - 1 &&
-                        !r.state.blueprints["test_hut"];
-
-                    // deleteBlueprint Built-in wird abgelehnt
-                    const okDelBuiltIn = r.deleteBlueprint("village");
-                    out.builtInProtectedFromDelete = okDelBuiltIn === false && !!r.state.blueprints["village"];
-
-                    // delete räumt Hotbar-Slots auf, die diesen Bauplan halten
-                    r.state.hotbar[4] = "my_temple";
-                    r.deleteBlueprint("my_temple");
-                    out.deleteCascadesHotbar = r.state.hotbar[4] === null;
-
-                    // selectBlueprintForEdit + DOM update
-                    r.createBlueprint("ed_test", "Editier-Test");
-                    r.selectBlueprintForEdit("ed_test");
-                    out.selectUpdatesWorkshop = r.state.workshop.selectedBlueprint === "ed_test";
-
-                    // Editor zeigt Selected-Status
-                    const selectedRow = document.querySelector('.workshop-list-row[data-blueprint="ed_test"]');
-                    out.selectedRowHasClass = selectedRow && selectedRow.classList.contains("selected");
-
-                    // Save-Roundtrip: eigene Baupläne werden serialisiert
-                    r.addPartToBlueprint("ed_test", {
-                        shape: "sphere",
-                        color: 0x553355,
-                        position: { x: 0, y: 2, z: 0 },
-                        size: { x: 3, y: 3, z: 3 },
-                    });
-                    r.saveState();
-                    const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
-                    const parsed = JSON.parse(raw);
-                    const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
-                    out.saveContainsCustom =
-                        !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";
-
-                    // Cleanup
-                    r.deleteBlueprint("ed_test");
-                    r.selectBlueprintForEdit("village");
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring66Results || ring66Results.error) {
-                check(
-                    "Ring 6.6: Werkstatt-Snapshot erreichbar",
-                    false,
-                    ring66Results && ring66Results.error ? ring66Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
-                check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
-                check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
-                check("Ring 6.6: #workshop-editor im DOM", ring66Results.workshopEditorInDom);
-                check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
-                check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
-                check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
-                check("Ring 6.6: addPartToBlueprint hängt Part an", ring66Results.addPartOk);
-                check("Ring 6.6: addPartToBlueprint lehnt Built-in ab", ring66Results.builtInRejectsAddPart);
-                check("Ring 6.6: updatePartInBlueprint merget Patch in Bestand", ring66Results.updatePartMerges);
-                check("Ring 6.6: removePartFromBlueprint verkleinert parts", ring66Results.removePartShrinks);
-                check("Ring 6.6: cloneBlueprint erzeugt eigene Kopie eines Built-in", ring66Results.cloneBlueprintOk);
-                check("Ring 6.6: Klone sind voll editierbar", ring66Results.cloneIsEditable);
-                check("Ring 6.6: deleteBlueprint entfernt eigene Baupläne", ring66Results.deleteBlueprintOk);
-                check("Ring 6.6: Built-in vor Löschung geschützt", ring66Results.builtInProtectedFromDelete);
-                check(
-                    "Ring 6.6: deleteBlueprint räumt referenzierte Hotbar-Slots auf",
-                    ring66Results.deleteCascadesHotbar
-                );
-                check(
-                    "Ring 6.6: selectBlueprintForEdit setzt state.workshop.selectedBlueprint",
-                    ring66Results.selectUpdatesWorkshop
-                );
-                check("Ring 6.6: Selected-Row trägt .selected-Class im DOM", ring66Results.selectedRowHasClass);
-                check("Ring 6.6: Save persistiert eigene Baupläne inkl. Parts", ring66Results.saveContainsCustom);
-            }
-
-            // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
-            const ring6v2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-
-                    // Cleanup
-                    for (const a of r.state.architectures) {
-                        if (a.mesh) {
-                            r.state.scene.remove(a.mesh);
-                            r._disposeSoulGroup(a.mesh);
-                        }
-                    }
-                    r.state.architectures = [];
-                    r._clearBuildMode();
-
-                    // === A) Distance-Culling ===
-                    // Setze Spieler auf (0,0,0), spawne weit + nah.
-                    r.state.playerMesh.position.set(0, 20, 0);
-                    const near = r.spawnArchitecture("temple", { x: 5, y: 5, z: 5 }, { seed: 1 });
-                    const far = r.spawnArchitecture("temple", { x: 400, y: 5, z: 400 }, { seed: 2 });
-                    out.nearHasMesh = !!near.mesh;
-                    out.farIsCold = far.mesh === null;
-                    // Spieler weg vom near → cull-Tick muss near disposen
-                    r.state.playerMesh.position.set(400, 20, 400);
-                    r.state.architectureCullingLastTick = -Infinity; // erzwingen
-                    r.tickArchitectureCulling(1.0);
-                    out.nearCulledAfterWalkAway = near.mesh === null;
-                    out.farRebuiltAfterApproach = !!far.mesh;
-                    // Zurück gehen → near baut sich wieder auf
-                    r.state.playerMesh.position.set(0, 20, 0);
-                    r.state.architectureCullingLastTick = -Infinity;
-                    r.tickArchitectureCulling(2.0);
-                    out.nearRebuiltAfterReturn = !!near.mesh;
-
-                    // === B) spawn_fractal ===
-                    // Cleanup first
-                    for (const a of r.state.architectures) {
-                        if (a.mesh) {
-                            r.state.scene.remove(a.mesh);
-                            r._disposeSoulGroup(a.mesh);
-                        }
-                    }
-                    r.state.architectures = [];
-                    const before = r.state.architectures.length;
-                    const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
-                    // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
-                    out.fractalSpawnsExpected = dslRes.ok === true && r.state.architectures.length === before + 43;
-                    const eventFound = dslRes.log.find((e) => e.event === "spawned_fractal");
-                    out.fractalEventEmitted = !!eventFound && eventFound.count === 43;
-                    // Determinismus: gleiche Argumente sollten in dieser Test-
-                    // Welt nicht zu identischen Positionen führen, weil
-                    // ctx.rng() den Root-Seed bestimmt — ABER die HEXAGONAL-
-                    // Anordnung sollte erkennbar sein (6 Children auf einem
-                    // Kreis um die Wurzel).
-                    // Visit ist depth-first: root, dann visit(child0) inkl.
-                    // dessen Grand-Children, dann child1, etc. Direkte
-                    // Kinder finden wir über scale (genau 0.5 bei ratio 0.5);
-                    // Grandchildren haben 0.25.
-                    const rootEntry = r.state.architectures[before];
-                    const directChildren = r.state.architectures
-                        .slice(before)
-                        .filter((e) => Math.abs(e.scale - 0.5) < 1e-6);
-                    const childRadii = directChildren.map((e) =>
-                        Math.hypot(e.position.x - rootEntry.position.x, e.position.z - rootEntry.position.z)
-                    );
-                    out.fractalChildrenAreHexagonal =
-                        childRadii.length === 6 && childRadii.every((rad) => Math.abs(rad - childRadii[0]) < 0.5);
-                    // Scale-Hierarchie: Root=1, direkte Kinder=0.5, Grand-Children=0.25
-                    const grandChildren = r.state.architectures
-                        .slice(before)
-                        .filter((e) => Math.abs(e.scale - 0.25) < 1e-6);
-                    out.fractalScalesShrink =
-                        rootEntry.scale === 1 && directChildren.length === 6 && grandChildren.length === 36;
-
-                    // Chat-Pattern
-                    r.processChatCommand("baue fraktal wasserfall");
-                    out.chatFractalRoutes =
-                        Array.isArray(r.state.dsl.lastUserProgram) &&
-                        r.state.dsl.lastUserProgram[0] === "spawn_fractal" &&
-                        r.state.dsl.lastUserProgram[2] === "waterfall";
-
-                    // === C) Counter ===
-                    // Cleanup, baue 3 nah, 5 weit
-                    for (const a of r.state.architectures) {
-                        if (a.mesh) {
-                            r.state.scene.remove(a.mesh);
-                            r._disposeSoulGroup(a.mesh);
-                        }
-                    }
-                    r.state.architectures = [];
-                    r.state.playerMesh.position.set(0, 20, 0);
-                    for (let i = 0; i < 3; i++) r.spawnArchitecture("temple", { x: i * 10, y: 5, z: 0 }, { seed: i });
-                    for (let i = 0; i < 5; i++)
-                        r.spawnArchitecture("village", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
-                    const counts = r.countArchitecturesNearPlayer(60);
-                    out.counterNear = counts.near === 3;
-                    out.counterTotal = counts.total === 8;
-                    // Status-Bar-Element existiert + zeigt korrektes Format
-                    out.statusBarItemInDom = !!document.getElementById("status-architectures");
-                    r.updateStatusPanel(1e7);
-                    const statusEl = document.getElementById("status-architectures");
-                    out.statusBarShowsCount = statusEl && /^\d+ nah \/ \d+$/.test(statusEl.textContent);
-
-                    // === D) Bau-Cursor ===
-                    r._clearBuildMode();
-                    out.hudInDom = !!document.getElementById("build-mode-hud");
-                    out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
-                    // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = village.
-                    r.selectHotbarSlot(0);
-                    out.modeActiveAfterSet =
-                        r.state.buildMode.active === true && r.state.buildMode.blueprintName === "village";
-                    out.phantomInScene =
-                        r.state.buildMode.phantomMesh &&
-                        r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
-                    out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
-                    let foundTransparent = false;
-                    r.state.buildMode.phantomMesh.traverse((node) => {
-                        if (node.material && node.material.transparent && node.material.opacity < 1) {
-                            foundTransparent = true;
-                        }
-                    });
-                    out.phantomIsTransparent = foundTransparent;
-                    // Toggle (gleicher Slot nochmal → off)
-                    r.selectHotbarSlot(0);
-                    out.toggleOffSameForm = r.state.buildMode.active === false;
-                    // Slot wechseln (Slot 1 = temple)
-                    r.selectHotbarSlot(1);
-                    out.switchFormChanges = r.state.buildMode.blueprintName === "temple";
-                    // confirmBuild platziert echte Struktur
-                    const arBefore = r.state.architectures.length;
-                    r.confirmBuild();
-                    out.confirmBuildSpawns = r.state.architectures.length === arBefore + 1;
-                    out.confirmBuildKeepsMode = r.state.buildMode.active === true;
-                    // ESC räumt auf
-                    r._clearBuildMode();
-                    out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
-
-                    // Cleanup
-                    for (const a of r.state.architectures) {
-                        if (a.mesh) {
-                            r.state.scene.remove(a.mesh);
-                            r._disposeSoulGroup(a.mesh);
-                        }
-                    }
-                    r.state.architectures = [];
-                    return out;
-                })
-                .catch((err) => ({ error: err && err.message }));
-
-            if (!ring6v2Results || ring6v2Results.error) {
-                check(
-                    "Ring 6 V2: Snapshot erreichbar",
-                    false,
-                    ring6v2Results && ring6v2Results.error ? ring6v2Results.error : "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                // Culling
-                check("Ring 6 V2: Nahe Struktur hat Mesh", ring6v2Results.nearHasMesh);
-                check("Ring 6 V2: Weite Struktur startet 'cold'", ring6v2Results.farIsCold);
-                check(
-                    "Ring 6 V2: Culling-Tick disposed Mesh wenn Spieler weggeht",
-                    ring6v2Results.nearCulledAfterWalkAway
-                );
-                check("Ring 6 V2: Culling-Tick baut Mesh wenn Spieler hingeht", ring6v2Results.farRebuiltAfterApproach);
-                check(
-                    "Ring 6 V2: Culling-Tick baut Mesh wieder auf nach Rückkehr",
-                    ring6v2Results.nearRebuiltAfterReturn
-                );
-                // Fraktal
-                check(
-                    "Ring 6 V2: spawn_fractal(depth=2, ratio=0.5) → 1+6+36 = 43 Strukturen",
-                    ring6v2Results.fractalSpawnsExpected
-                );
-                check("Ring 6 V2: spawned_fractal-Event emittiert mit count=43", ring6v2Results.fractalEventEmitted);
-                check(
-                    "Ring 6 V2: 6 Kinder im Hexagon (gleicher Radius um Root)",
-                    ring6v2Results.fractalChildrenAreHexagonal
-                );
-                check(
-                    "Ring 6 V2: Scale-Hierarchie — Kinder bei ratio (0.5), Root bei 1",
-                    ring6v2Results.fractalScalesShrink
-                );
-                check("Ring 6 V2: Chat 'baue fraktal wasserfall' routet korrekt", ring6v2Results.chatFractalRoutes);
-                // Counter
-                check("Ring 6 V2: countArchitecturesNearPlayer nah = 3", ring6v2Results.counterNear);
-                check("Ring 6 V2: countArchitecturesNearPlayer total = 8", ring6v2Results.counterTotal);
-                check("Ring 6 V2: #status-architectures im DOM", ring6v2Results.statusBarItemInDom);
-                check("Ring 6 V2: Status-Bar zeigt 'N nah / M' Format", ring6v2Results.statusBarShowsCount);
-                // Bau-Cursor
-                check("Ring 6 V2: #build-mode-hud im DOM", ring6v2Results.hudInDom);
-                check("Ring 6 V2: HUD initial versteckt", ring6v2Results.hudInitiallyHidden);
-                check("Ring 6.5: selectHotbarSlot aktiviert Build-Mode", ring6v2Results.modeActiveAfterSet);
-                check("Ring 6.5: Phantom-Mesh in der Szene", ring6v2Results.phantomInScene);
-                check("Ring 6.5: HUD sichtbar im aktiven Bau-Modus", ring6v2Results.hudShownWhenActive);
-                check("Ring 6.5: Phantom-Material ist transparent", ring6v2Results.phantomIsTransparent);
-                check("Ring 6.5: Selber Slot nochmal → Toggle off", ring6v2Results.toggleOffSameForm);
-                check("Ring 6.5: Slot-Wechsel ändert aktiven Bauplan", ring6v2Results.switchFormChanges);
-                check("Ring 6 V2: confirmBuild spawnt echte Struktur", ring6v2Results.confirmBuildSpawns);
-                check("Ring 6 V2: confirmBuild lässt Modus aktiv (Mehrfach-Bau)", ring6v2Results.confirmBuildKeepsMode);
-                check("Ring 6 V2: _clearBuildMode beendet Modus + räumt Phantom", ring6v2Results.clearEndsMode);
-            }
+            // V9.52-e: Band 4 (die End-Sektionen — Welle 6.H 2B.2/2D/2E/2F + Welle 6.B
+            // CAD + V8.00-V8.07 + Welle 9/10 + V7.x LLM + Ring 3-6 + UI V1/V2) als 10
+            // Band-Funktionen, je 432-1131 Z. Der else-Block ist mit V9.52-e
+            // GANZ als Band-Liste erschöpft — keine Inline-Sektionen mehr.
+            // Sub-Welle f folgt nur noch für den Helfer-Durchzug (safeEvaluate-Roll-out
+            // INNERHALB der Band-Funktionen).
+            await checkBandWelle6HBuildAndPersist(ctx);
+            await checkBandWelle6HCreatureStats(ctx);
+            await checkBandWelle6HCreatureLlm(ctx);
+            await checkBandCadWorkshop(ctx);
+            await checkBandWaves9And10a(ctx);
+            await checkBandWave10b(ctx);
+            await checkBandWorkshopPolishAndLlm(ctx);
+            await checkBandEarlyRingsAndUi(ctx);
+            await checkBandRing5Soul(ctx);
+            await checkBandRing6Workshop(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
