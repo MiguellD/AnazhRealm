@@ -39,6 +39,36 @@ Die §3-Detailsektionen unten sind die Plan-Referenz pro Ring/Bogen — abgeschl
 
 ---
 
+## 1.1 Sequenz-Plan vorwärts (V9.57+)
+
+Diese Sektion ordnet die §1-Offenen-Punkte in eine **arbeitbare Reihenfolge** mit Vorbedingungen, Sub-Wellen und Akzeptanz-Kriterien. Die Logik: harte Vorbedingungen zuerst (Browser-Audit als Eingangs-Schloss), danach Schöpfer-Wertigkeit (V9.51-Befund), danach Daten-Wurzel-Abhängigkeit (Welle E braucht Welle C als Wurzel). Disziplin pro Welle nach V9.56-Bogen-Lehre: kleine fokussierte Sub-Wellen × ~1 Session, jede playtest-grün, Side-Effect-Reihenfolge bit-identisch, Browser-Audit als Phasen-Schluss.
+
+| Phase | Welle | Vorbed. | Sub-Wellen | Akzeptanz |
+|---|---|---|---|---|
+| **0** | **Browser-Audit V9.50 + V9.51** (Schöpfer-driven) | – | (a) V9.50 Voxel-Chunk-Wasser visuell konvergent; (b) V9.51 Tarn-Becken in Hochlands-Mulden sichtbar | Wasser-Mesh schließt optisch; keine V9.49-d/e/f-Klassen-Risse |
+| **A** | **Wasser ↔ Spieler-Wille** (semantisch reichster Faden, V9.51-Schöpfer-Befund) | Phase 0 ✅ | A1 `_hydroRecomputeLocal(bbox)` — lokaler Re-Compute (priority-flood auf einer Sub-Region, Boundary-Heights an die Nachbarn klemmen) · A2 `voxel_carve`/`voxel_fill`-Trigger: ein Edit im Fluss-Bereich ruft A1 mit Edit-bbox + Margin · A3 Chunk-Wasser-Rebuild der betroffenen Voxel-Chunks (`_buildVoxelChunkWater` rerun) + Carve-Polylinie aktualisieren · A4 Schöpfer-Browser-Audit | Damm-Bau (3-4 Voxel-Fills am Bach) staut den Fluss in unter 2 s sichtbar; der Wasser-Stand steigt am Damm; ein See-Stück entsteht |
+| **B** | **Wasser ↔ Kreaturen** (klein additiv, derselbe Hydro-Layer) | – (`_hydroWaterLevelAt` existiert) | B1 `_tickCreatureTaskDirection` erkennt Wasser-Nähe via Hydro-Layer · B2 Neuer Task „trinken am Ufer" (3 Phasen: gehe-zum-Ufer → halt → trink-Animation, ~3 s Cooldown pro Kreatur) · B3 Scheu-Verhalten: Pfad-Suche meidet Zellen mit `_waterLevelAt − _voxelSurfaceY > 2 m` · B4 Schwimm-Animation aus Player-Soul re-use (Stroke-Pattern) | Eine Kreatur findet ohne Skript-Hilfe Wasser, trinkt sichtbar, schwimmt durch flaches Wasser, scheut tiefes |
+| **C** | **Emotion ↔ lokale Welt** (öffnet den Daten-Pfad für Welle E) | – | C1 `_localEmotionPulseAt(x,z)` — die Daten-Funktion: Spieler-Emotion mit räumlichem Falloff (Gauss, Radius ~30 m), in `state.emotion.localField` · C2 Hydro-Material bekommt neues `aLocalEmotion`-Uniform — Wasser-Schaum-Tempo + Tint modulieren · C3 Symphonie-Ambient (Filter-Cutoff + Gain) lokal moduliert · C4 Schöpfer-Audit | Bei `awe`-Spike pulsiert das Wasser im 30-m-Umkreis sichtbar; Ambient verändert sich; Effekt klingt mit Distanz ab |
+| **D** | **Hylomorphismus-Cluster-Resonanz** (unabhängig, Bau-Sprache vertiefen) | – | D1 `_compoundClusterAt(x,z, tag)` — Tag-Cluster-Erkennung (`lebendig`/`magie-geladen`/`weich` etc. in Distanz N) · D2 Aura-Schicht: ein Cluster ≥ 3 Bauten desselben Tags erzeugt einen Pulse-Mesh (semi-transparenter Ring) · D3 Welt-Reaktion: `lebendig`-Cluster lockt Fauna; `magie-geladen`-Cluster modifiziert lokale Tag-Wirkungen · D4 Schöpfer-Audit | Drei `lebendig`-Bauten beieinander erzeugen eine sichtbare Aura; eine Kreatur wandert in den Cluster hinein |
+| **E** | **Multi-Spieler-Vibe-Verstärkung** (braucht C als Wurzel) | Welle C ✅ | E1 `_localEmotionPulseAt` über P2P broadcasten (`vibe-local`-Nachricht, ~1 Hz, peer-id + Position + Emotion) · E2 Empfänger akkumuliert in `state.p2p.peerEmotions` · E3 Aura-Verstärkungs-Pass: zwei Peers mit ähnlicher Emotion am selben Ort → 1.5× Aura-Intensität · E4 Zwei-Browser-Audit (smoke-webrtc erweitern) | Zwei Browser, beide Spieler in 20 m mit `peace`: die Aura ist sichtbar stärker als ein Spieler allein |
+| **Backlog** | **Polish-Pool** (kein Sequenz-Zwang) | – | (a) Code-Hygiene-Folge: `_buildWaterPlane`-Rename, 27 `typeof this._render…`-Guards aufräumen, 6 interne Methoden ohne `_`-Prefix · (b) UX: Bauplan-Signatur-Auffindbarkeit (V8.56-Schöpfer-Befund) · (c) Crafting-Tiefe — eigene Welle 6.F3 (Maschinen-Antrieb) + 6.F5 (echte Ammo-Constraints), falls je gewünscht · (d) B-WASM (per-Projekt) · (e) Vision-Matrix-Reste: `evolveCommunity`, VR, IndexedDB | – |
+
+**Pro Welle, vor dem Beginn (V9.56-Bogen-Disziplin):**
+
+1. **Block-Grenzen-Inspektion** zuerst — welche existierenden Funktionen werden berührt, welche shared State gibt es, wo sind die Side-Effect-Streams?
+2. **`grep -n '<funktionsname>\.toString' scripts/playtest.cjs`** — strukturelle Invarianten identifizieren, die mit-wandern müssen (V9.56-i-Lehre).
+3. **Playtest-Invariante VOR dem Schnitt schreiben** — die Akzeptanz wird der Test, nicht die Demo.
+4. **Sub-Welle = ein git-Commit** + ein Chronik-Eintrag oben in `handover.md` (Doku-Disziplin).
+5. **Browser-Audit am Phasen-Schluss**, nicht in der Mitte — eine Welle ist erst „fertig" wenn der Schöpfer es sieht.
+
+**Bewusst nicht einsequenziert:**
+
+- **Welle B vs. A**: B ist vorbedingungsfrei (`_hydroWaterLevelAt` existiert), könnte VOR A laufen — aber A ist der Schöpfer-Prioritäts-Faden (V9.51-Befund). A zuerst.
+- **Welle D vor C**: D ist unabhängig — aber C öffnet den Daten-Pfad für E. C zuerst, damit E unmittelbar folgen kann (zwei verwandte Wellen am Stück).
+- **Crafting-Tiefe (6.F3/6.F5)** bleibt im Backlog statt sequenziert — V9.51-Schöpfer-Befund priorisiert System-Kopplungen über Crafting-Erweiterungen. Eigene Welle bei explizitem Wunsch.
+
+---
+
 ## 2. Pfad-D Übersicht (Ringe 0-11+)
 
 | Ring | Pfeiler | Status | Aufwand | Vorbed. |
