@@ -7,11 +7,13 @@ jetzt flach gesculptete, wasserdichte Töpfe (`_hydrosphereLakeAt` statt des V9.
 `lakeCutCell`-Schnitts; siehe §8). **V9.46** heilte die kurzen Flüsse — sie fliessen jetzt
 durch Seen HINDURCH (§10a; längster Fluss 45 m → 1361 m). **V9.47** formt das Gelände
 via fluviale Stream-Power-Erosion um — dendritische Täler, halbierte See-Fläche, die
-Gipfel erhalten (§10b). Schöpfer-Wahl war: **volles
+Gipfel erhalten (§10b). **V9.48** schloss die zwei kosmetischen Politur-Reste —
+See-Ufer-Schaum + Flow-Speed nach Gefälle (§9). Schöpfer-Wahl war: **volles
 Drainage-Netz mit echten Fluss-Betten**. Dieses Dokument ist die ausführliche Planung des
-Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. Offen: zwei kosmetische
-Politur-Reste (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9 V9.43-e) + die tiefere
-Netz-CHARAKTERISTIK-Frage (die Welt ist see-dominant — §10b). Die kanonische Versions-
+Wasser-Systems — der Profi-Weg, ehrlich in Phasen geschnitten. **V9.49 ist gebaut**:
+das vereinte Wasser-System (Architektur-Bogen) — Wasser wurde ein Feld statt N Körper;
+voller Entwurf, die Lernschlüsse + das Geliefert-Protokoll in **§12**. Offen davor blieb die tiefere Netz-
+CHARAKTERISTIK-Frage (die Welt ist see-dominant — §10b). Die kanonische Versions-
 Chronik lebt in `docs/handover.md`; der Wellen-Plan im Überblick in `docs/roadmap.md` §3.
 Dieses Doc ist die *Tiefe* — Algorithmus, Datenstrukturen, Risiken.
 
@@ -392,8 +394,34 @@ Time` ≈ 0; im echten Spiel harmlos, aber der Test fing es). Fix: `-Infinity` a
 
 **Ehrliche Rest-Naht** (kosmetisch, kein eigener Bogen): die Fluss-Mündung blendet seit
 V9.43-c.2 schon sichtbar ins Meer; See-Ufer-Schaum + eine Flow-Speed-Feinabstimmung nach
-Gefälle bleiben als optionale visuelle Mikro-Politur offen — die Hydrosphäre ist
-funktional + sensorisch vollständig.
+Gefälle blieben als optionale visuelle Mikro-Politur offen — ✅ **V9.48 geschlossen**
+(siehe unten). Die Hydrosphäre ist funktional + sensorisch vollständig.
+
+### V9.48 — kosmetische Politur ✅ (22.05.2026)
+Die zwei seit V9.43-e benannten Mikro-Politur-Reste, geschlossen — kein eigener Bogen,
+eine Nicety.
+
+**(1) See-Ufer-Schaum.** `_lakeShoreFoamField` baut per Multi-Source-BFS ein Zell-
+Distanz-Feld: die Ring-Zellen (gedeckt, aber keine echte See-Zelle — sie liegen unter
+dem ansteigenden Ufer) sind die Distanz-0-Quellen, die Distanz wächst ins Becken hinein,
+ein Schaum-Wert ∈ [0,1] fällt mit der Distanz (`1.3 − d·0.5`, geclamped). `_buildLakeMesh`
+mittelt das Zell-Feld auf die Quad-Ecken (jede Ecke teilt bis zu 4 Zellen → ein weiches
+Band statt einer Zell-Treppe) und schreibt es ins neue `aShore`-Vertex-Attribut. Der
+Shader rendert in seinem Stilles-Wasser-Zweig ein wellen-pulsierendes Schaum-Band:
+animiertes Welt-Raum-Noise × einem langsamen `sin`-Lap-Puls, auf das `aShore`-Band
+(`smoothstep`) geclamped.
+
+**(2) Flow-Speed nach Gefälle.** `_buildRiverRibbon` rechnet je Fluss-Punkt das mittlere
+Gefälle (aus dem geglätteten strikt-fallenden `ry` und der kumulativen Horizontaldistanz
+`cum`) in einen Speed-Faktor ∈ [0.55, 2.2] (`0.55 + slope·3.2`, geclamped). Der Faktor
+reist im **Betrag** des `aFlow`-Vektors — kein neues Attribut nötig: der Shader liest
+`length(aFlow)` als Speed (`scroll = uTime · uFlowSpeed · fmag`), `aFlow/length` als
+Richtung. Ein steiles Segment scrollt den Schaum sichtbar schneller als ein flacher Lauf.
+
+**Geteilte-Material-Disziplin**: `_ensureHydroSurfaceMaterial` speist See-Plane UND
+Fluss-Ribbon. Das `aShore`-Attribut sitzt auf beiden — am Ribbon explizit 0 (Ufer-Schaum
+nur am See) — sonst läse der ShaderMaterial bei der einen Geometrie Müll. 9 Invarianten
+grün, Audit-Strict 0 Failures.
 
 ---
 
@@ -416,8 +444,8 @@ funktional + sensorisch vollständig.
   Worldgen. Der Carve-Term in `_terrainDensityAt` MUSS O(1) sein (Bucket-Index) — wird
   millionenfach gerufen. Perf-Invariante in V9.43-b + V9.43-d.
 - **Naht zum Meer.** Fluss-Mündungen blenden seit V9.43-c.2 sichtbar auf `waterLevel`
-  (bzw. den Ziel-See-Level) aus — der Fluss erreicht sein Wasser. Feinpolitur (Ufer-
-  Schaum an der Mündung, Flow-Speed-Übergang) bleibt V9.43-e.
+  (bzw. den Ziel-See-Level) aus — der Fluss erreicht sein Wasser. Die Feinpolitur
+  (See-Ufer-Schaum, Flow-Speed nach Gefälle) ist mit V9.48 geschlossen — siehe §9.
 - **V9.43-a-Ablösung.** Der per-Chunk-Wasserfall-Spawner ist mit V9.43-c abgelöst
   (`_buildVoxelChunkWaterfalls`/`_disposeVoxelChunkWaterfalls` gelöscht). Das ist kein
   Wegwerfen — das Material + die Plane-Geometrie bleiben (von `_buildHydroWaterfall`
@@ -463,5 +491,615 @@ funktional + sensorisch vollständig.
 
 **Stand**: V9.43-b/c/c.2/d/e sind gebaut — der Hydrosphären-Bogen (Atlas → Rendering →
 Synergie → Carven → Klang) ist abgeschlossen, das Wasser-Ultiversum V9.43 vollständig.
-Offen nur die kosmetische Rest-Naht (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9
-V9.43-e) + die Netz-Qualitäts-Frage (kurze, see-zerstückelte Flüsse — §10) als eigene Welle.
+V9.46 heilte die Netz-VERBINDUNG (§10a), V9.47 die Netz-CHARAKTERISTIK (§10b), V9.48
+schloss die kosmetische Rest-Naht (See-Ufer-Schaum, Flow-Speed nach Gefälle — §9). Der
+Wasser-Bogen ist damit funktional + sensorisch + kosmetisch vollständig; offen die in
+§10b benannte Becken-Restleerung als optionaler Schritt — und, als der nächste echte
+Schnitt, die **Render-Architektur**: vier getrennte Wasser-Meshes werden ein Feld
+(§12, V9.49).
+
+---
+
+## 12. Das vereinte Wasser-System (V9.49) — Wasser ist ein Feld, kein Körper
+
+**Stand**: gebaut V9.49-a/b/c (22.05.2026), playtest-grün. Die Audit-Folgen V9.49-d/e/f
+schlossen danach die Terrain-Naht (§13); V9.50 schneidet die Wurzel (§14). Schöpfer-Browser-Befund nach V9.48: das Wasser
+„schliesst nicht" — Meer, Seen, Flüsse, Wasserfälle wirken als gestapelte, durchscheinende
+Sheets, nicht als *ein* Wasserkörper. V9.48 hat Schaum + Flow poliert; die Wurzel liegt
+tiefer. Schöpfer-Wort: *„was wird mit Begeisterung betrachtet, welches ist weitsichtig
+die bessere, sauberere Lösung, was erfüllt die Vision?"* Das Geliefert-Protokoll +
+die ehrliche Plan-Abweichung stehen unten in §12.10.
+
+### 12.1 Der Befund — die alte Architektur
+
+Heute sind es vier getrennte Render-Schichten:
+
+- die globale 900×900-Gerstner-Meeres-Plane (V8.30), die der Kamera folgt;
+- N See-Planes (`_buildLakeMesh`, eine je See);
+- N Fluss-Ribbons (`_buildRiverRibbon`, dünne Quad-Streifen je Polylinie);
+- N Wasserfall-Planes (V9.43-a, vertikal).
+
+Alle transparent mit `depthWrite:false` → sie scheinen durcheinander. Sie dürfen sich per
+Vertrag nicht überlappen (`bedY ≥ waterLevel`, §8) — ein Vertrag IST eine Naht, die reissen
+kann. Folge-Bugs ehrlich benannt: ein absorbierter See > ~450 m vom Ursprung rendert
+trocken (die Meeres-Plane folgt der Kamera nur 900 m weit, ein ferner See hat keine eigene
+Plane mehr). Das ist „globale Platte + Ausnahmen".
+
+Eine Naht-Politur (depthWrite an, Y-Abgleich an den Mündungen) wäre Symptom-Heilung —
+Roadmap-Lehre 1 (V9.40): „eine Symptom-Heilung wird in einer späteren Welle Schuld."
+Und V9.47-Lehre: „wenn ein Verfahren einen harten Zielkonflikt hat, ist das *Verfahren*
+falsch, nicht die Parameter." Der Zielkonflikt „N durchscheinende Sheets schliessen nie
+sauber" ist das falsche Verfahren — Wasser als Körper.
+
+### 12.2 Die Wurzel-Einsicht — `filled` IST schon das eine Feld
+
+Die Hydrosphäre rechnet im Priority-Flood (§5 Phase 2) ein `filled`-Feld: die Flut-
+Oberfläche je Zelle. Das ist **per Konstruktion EINE kontinuierliche Höhen-Funktion** über
+die ganze Region — sie fällt sanft entlang eines Flusses, ist flach über einem See, liegt
+bei `waterLevel` im Ozean. Priority-Flood erzeugt eine *zusammenhängende* Flut-Fläche; ein
+Fluss, der in einen See mündet, hat dort `filled` = See-Level (er flutet hinein), am
+Auslass fällt `filled` weiter. Fluss, See, Meer sind nicht drei Geometrien — sie sind
+*dieses eine Feld an drei Punkten des Gefälles*. Das ist §1.1 wörtlich.
+
+Heute wirft `_computeHydrosphere` das `filled`-Feld nach der Netz-Extraktion weg. V9.49
+hebt es: Wasser wird als **ein Feld** modelliert, nicht als N Körper.
+
+### 12.3 Das vereinte Wasser-Mesh
+
+Ein einziges, spieler-folgendes Höhenfeld-Mesh ersetzt die Meeres-Plane + alle See-Planes
++ alle Fluss-Ribbons:
+
+- **Geometrie**: ein Raster (~384 m Kantenlänge, ~3 m Zelle → ~128²), das der Kamera
+  folgt — auf das Zell-Raster gesnappt (sonst kriechen die Sample-Punkte → Flimmern). Das
+  Meeres-Plane-Muster (folgt schon der Kamera) ist erprobt. `fogFar` ist 150 m, die halbe
+  Mesh-Kante ~192 m → der Mesh-Rand liegt im Voll-Nebel, unsichtbar. Darum genügt ein
+  spieler-folgendes Mesh — kein 2-km-Region-Mesh (das wäre bei flussfähiger ~2-3-m-
+  Auflösung Millionen Vertices).
+- **Je Vertex zwei Abfragen**: die Flut-Höhe `Wy = bilinear(filled, x, z)` und das
+  gecarvte Gelände `Ty(x,z)`. Nass ⟺ `Wy − Ty > ε`. Nasse Zellen emittieren ein Quad auf
+  `Wy`, trockene werden ausgelassen → das Mesh trägt nur Wasser. Beide Abfragen sind
+  billig (O(1)-Bilinear + Makro-Surface ein paar Noise-Calls) → der Rebuild bei jeder
+  Zell-Kreuzung des Spielers kostet nichts. **Kein** `_voxelSurfaceY`-Vollscan.
+- **Der Fluss folgt seinem Bett**: die Fluss-Zellen kommen aus dem `riverBuckets`-
+  Polylinien-Index (fein, mäandernd — Distanz ≤ halbe Fluss-Breite). Die Oberfläche eines
+  Fluss-Vertex ist `terrainY` (das Makro-Gelände), NICHT `filled` — fliessendes Wasser
+  hugt den Hang, sonst schwebt es an steilen Stellen (der Priority-Flood hält `filled`
+  fast flach, V9.49-d). Der V9.43-d-Carve hat die echte Rinne in hydraulischer √A-Breite
+  gegraben; das Wasser bei `terrainY` füllt sie. Kein 16-m-Klotz-Fluss, keine Ribbon-Naht.
+- **Keine Nähte mehr**: ein Höhenfeld kann sich nicht selbst überlappen. Das „Sheets
+  übereinander" ist *strukturell* weg — nicht mit depthWrite überdeckt.
+- **Der ferne See rendert**: das Mesh ist feld-getrieben und folgt dem Spieler — wo immer
+  er steht, deckt es das Wasser im Sicht-Radius. Der absorbierter-See-Bug ist behoben.
+
+### 12.4 Ein Shader
+
+Der vereinte Wasser-Shader trägt alle Skalen, pro-Vertex moduliert über Attribute —
+§1.3 fraktal, wörtlich:
+
+- **Gerstner-Wellen** (Ozean) — die V8.30-Wellen wandern in diesen Shader. Ein `aWave`-
+  Attribut (1 auf offenem Ozean, weich auf 0 am Ufer/See) verhindert einen Riss an der
+  Küste, wo ein wellender Ozean-Vertex an einen ruhigen See-Vertex grenzt.
+- **Still-Schimmer** (See) — `aWave ≈ 0`, der bestehende Stilles-Wasser-Zweig.
+- **Flow-Schaum** (Kanal) — das `aFlow`-Attribut (V9.43-c) trägt die Gefälle-Tangente,
+  V9.48 ihren Speed im Betrag; unverändert übernommen.
+- **Ufer-Schaum** — im Feld ist „Ufer" einfach `Wassertiefe ≈ 0` (`Wy − Ty` klein). Der
+  V9.48-`_lakeShoreFoamField`-BFS wird damit überflüssig: der Schaum wird *tiefen-
+  getrieben*, je Vertex, glatt. Das ist kein verlorenes V9.48 — die Architektur leistet
+  jetzt gratis, was die Politur von Hand tat. Genau das ist der Lernschluss: die V9.48-
+  Politur war richtig, sie hat nur die kaputte Architektur sichtbar gemacht.
+
+### 12.5 Die eine ehrliche Ausnahme — der Wasserfall
+
+Ein Höhenfeld kann nichts Vertikales darstellen. Der Wasserfall bleibt eine vertikale
+Plane (V9.43-a) — das ist kein Schummeln: ein Wasserfall ist Wasser im *freien Fall*, ein
+anderer Zustand der Bewegung, keine Pfütze. Er bekommt `depthWrite:true` + sauberen
+Anschluss ans Feld oben (Kanal-Kante) und unten (Becken-Oberfläche). Er ist nicht eine
+„Ausnahme" im Sinne von „globale Platte + Ausnahmen" — er ist der eine Punkt des
+Gefälles, an dem das Wasser die Fläche verlässt; das ist §1.1, nicht ein Bruch davon.
+
+### 12.6 Was die Physik NICHT anfasst
+
+`state.waterLevel` (Skalar) + `_hydroWaterLevelAt` (Auftrieb, §V9.43-c.2) lesen Daten,
+kein Mesh. Schwimmen/Tauchen bleiben unverändert. Der Blast-Radius ist Rendering + die
+`_applyDayNightToScene`-Wasser-Uniforms (auf das vereinte Material umgehängt) + ~4
+Playtest-Invarianten (`_buildWaterPlane`-Existenz/-Höhe). Bewusst eng.
+
+### 12.7 Datenstruktur — das Feld auf `state.hydrosphere`
+
+`_computeHydrosphere` legt nach der Netz-Extraktion zusätzlich ab:
+
+```
+state.hydrosphere.water = {
+  waterY:    Float32Array(dim*dim),  // flacher Spiegel je Wasser-Körper (Ozean/See)
+  waterKind: Uint8Array(dim*dim),    // 0 Land · 1 Ozean · 2 See
+}
+```
+
+Aus `ctx` der bestehenden Berechnung: `waterKind` aus `isOcean`/`lakeOf`, `waterY` als
+flacher Spiegel je Körper (Ozean → `waterLevel`, See → `lake.level`; eine trockene Zelle
+trägt den Meeresspiegel-Default). Rein deterministisch, headless-prüfbar — wie das ganze
+restliche Hydrosphären-Feld nicht im Save persistiert. **V9.49-d hatte hier zusätzlich
+ein `terrainY`-Feld** (Makro-Gelände, für die Fluss-Vertices); V9.49-e hat es wieder
+entfernt — der Fluss liest sein Bett live aus `_terrainMacroSurfaceY` minus der
+Carve-Tiefe, das Feld trägt nur noch `waterY` + `waterKind` (§13.10).
+
+### 12.8 Die Wellen-Schneidung
+
+| Sub-Welle | Inhalt |
+|---|---|
+| **V9.49-a** | Das Wasser-Feld (`state.hydrosphere.water`) — reine Daten, headless-prüfbar. |
+| **V9.49-b** | `_buildUnifiedWaterMesh` — das spieler-folgende Höhenfeld-Mesh; ersetzt `_buildLakeMesh` + `_buildRiverRibbon` + die Gerstner-Meeres-Plane (`_buildWaterPlane` bleibt der Einstieg: setzt `waterLevel`, baut dann das vereinte Mesh). `depthWrite:true`. |
+| **V9.49-c** | Der vereinte Shader (Gerstner/Schimmer/Flow/Ufer-Schaum) + Wasserfall-Anschluss. |
+
+### 12.9 Vision-Pfeiler-Check
+
+- **§1.1 / §1.3 fraktal** — der Fluss IST das Feld, das in einen Kanal taucht; „dieselbe
+  Materie an verschiedenen Punkten des Gefälles" wird in der Geometrie wörtlich. Ein
+  Mesh, ein Shader, ein Feld — über alle Wasser-Skalen.
+- **Heilige Lektion** — drei Bau-Funktionen werden EINE; kein neues Modul, keine neue
+  Abstraktion. Konsolidierung, nicht Re-Komplexifizierung. Weniger Stamm.
+- **Roadmap-Lehre 3 (V9.43)** — „Vereinheitlichung ist Vision-Arbeit, nicht Cosmetik."
+  V9.49 ist genau das: ein Browser-Audit fand, was 3000 headless-Invarianten nie fingen.
+- **Roadmap-Lehre 1 + V9.47-Lehre** — nicht die Naht polieren (Symptom), das Verfahren
+  wechseln (Wurzel). Das Feld IST der Verfahrens-Wechsel.
+
+### 12.10 Geliefert (V9.49-a/b/c) — und die ehrliche Plan-Abweichung
+
+Gebaut in drei playtest-grünen Sub-Wellen, netto **−117 Zeilen** (vier Bau-Pfade →
+einer — Konsolidierung, nicht Re-Komplexifizierung):
+
+- **V9.49-a** — `_hydroBuildWaterField` legt `state.hydrosphere.water = {waterY,
+  waterKind}` ab. +4 Invarianten; das Feld deckt sich EXAKT mit den Netz-Extraktions-
+  Zählern (5403 Ozean + 1489 See).
+- **V9.49-b** — `_buildUnifiedWaterMesh` / `_buildUnifiedWaterGeometry` /
+  `_tickUnifiedWater` / `_unifiedNearestRiverSeg`; `_buildLakeMesh`, `_buildRiverRibbon`,
+  `_lakeShoreFoamField` + der alte Gerstner-Plane-Block gelöscht.
+- **V9.49-c** — `_ensureHydroSurfaceMaterial` mit Gerstner + `aWave`/`aShore`,
+  `depthWrite:true`.
+
+**Die ehrliche Plan-Abweichung** (V9.43-Disziplin — „an der echten Messung erzwungen"):
+§12.3 entwarf das Nass-Kriterium als `bilinear(filled) > Ty` mit `Ty` = gecarvtes
+Gelände. Die Implementierung nutzt KEINEN `Ty`-Vergleich — Ozean/See kommen aus
+`waterKind`, die Fluss-Zellen aus dem `riverBuckets`-Polylinien-Index (`_unifiedNearest-
+RiverSeg`, Distanz ≤ halbe Fluss-Breite). **Grund**: eine billige, exakte „gecarvtes
+Gelände"-Funktion existiert nicht — der Carve ist eine Dichte-Modulation in
+`_terrainDensityAt`, und `_voxelSurfaceY` für ~16 000 Vertices je Mesh-Rebuild (alle
+3 m Spieler-Bewegung) wäre Sekunden statt Millisekunden. Das Ergebnis ist gleichwertig:
+die Fluss-Breite kommt aus derselben Polylinie, die auch der Carve nutzt; die Wasser-
+Oberfläche aus dem Feld (`waterY` = `filled`). Ein Mesh, ein Shader, kein Stapeln —
+das Vision-Ziel ist erreicht, nur der Weg zur Fluss-Maske ist ein anderer als skizziert.
+
+**V9.49-d — erster Browser-Audit (Schöpfer, 22.05.2026).** Befund: „deutlich besser",
+aber an steilen Stellen schwebt die Fluss-Oberfläche/-kante in der Luft statt am Terrain.
+Wurzel: ein Fluss-Vertex sass auf `waterY` (= `filled`, der fast flachen Flut-Oberfläche
+— der Priority-Flood erlaubt nur ε-Gefälle je Zelle). An einem steilen Hang fällt das
+Gelände schnell, `filled` nicht → die Wasserfläche schwebt. Fix: `_hydroBuildWaterField`
+hebt zusätzlich `terrainY` (das Makro-Gelände); `_buildUnifiedWaterGeometry` setzt
+See/Ozean-Vertices auf `waterY` (flach gepoolt), Fluss-Vertices + den trockenen
+Dilatations-Ring auf `terrainY` → der Fluss folgt dem Hang, die Ufer-Kante taucht ins
+Terrain. +1 Invariante (`waterY ≥ terrainY`). Das ist exakt, was das alte Fluss-Ribbon
+mit `_voxelSurfaceY` tat — nur feld-getrieben + billig. Ein zweiter Audit-Befund → V9.49-e.
+
+---
+
+## 13. V9.49-e — die Naht schliessen: das Wasser taucht, das Land schneidet
+
+**Stand**: geplant (22.05.2026), noch kein Code. Auslösung ist der zweite Schöpfer-
+Browser-Audit — „das Wasser, das Ufer, der Flusslauf teils in der Luft und
+unnatürlich; ein Flickenteppich?". Dieser Abschnitt ist die Wurzel-Antwort — und der
+bewusste Verzicht auf eine fünfte Naht-Politur.
+
+### 13.1 Der Befund — zwei Gelände-Wahrheiten, die sich nie versöhnen
+
+V9.49 hat die vier Wasser-Schichten zu einem Feld vereint — die richtige, vision-treue
+Idee. Der Rest-Fehler ist NICHT das Feld, sondern seine Datenquelle. Der Stamm trägt
+zwei Gelände-Wahrheiten:
+
+- **das gerenderte Voxel-Gelände** (`_voxelSurfaceY` / `_terrainDensityAt`): Makro-
+  Surface + zwei 3D-Roughness-Bänder (`noise3D·7 + noise3D·5`, zusammen ±12 m Crags) +
+  der Fluss-Carve + der See-Topf-Blend + Spieler-Edits;
+- **das Hydrosphären-Raster** (`_hydroInit`): 128² Zellen à 16 m, gesampelt aus
+  `_terrainMacroSurfaceY` OHNE Detail-Oktave und OHNE die 3D-Roughness, dann 3×3 verwischt.
+
+Das vereinte Mesh interpoliert das 16-m-Raster bilinear auf sein 3-m-Gitter — es trägt
+3-m-Auflösung, aber 16-m-Daten, und diese Daten beschreiben ein glatteres, ANDERES
+Gelände als das gemeshte. V9.49-d versuchte, die trockenen Ufer-/Fluss-Vertices auf
+dieses Makro-Gelände (`terrainY`) zu legen, damit sie das Terrain „küssen". Diese
+Koinzidenz KANN nicht halten — die zwei Wahrheiten driften per Konstruktion um bis zu
+±12 m. Das IST die Naht; jedes „in der Luft" ist sie. V9.43-d (Carve), V9.45-b (See-
+Topf), V9.49-d (`terrainY`-Sprung), der Dilatations-Ring — vier Anläufe an DERSELBEN
+Naht. Roadmap-Lehre 1 + V9.47-Lehre: hat ein Verfahren einen harten Konflikt, ist das
+*Verfahren* falsch, nicht der Parameter. Das Verfahren „die Wasser-Kante soll die
+Terrain-Kante treffen" IST der Konflikt.
+
+### 13.2 Wie es die Vorbilder tun — das Wasser berührt die Uferlinie nie
+
+Die professionelle Wasser-Darstellung (Sea of Thieves, Witcher 3, jede gute Engine-
+Wasser-Pipeline) löst die Uferlinie NICHT, indem das Wasser-Mesh an genau der richtigen
+Stelle endet. Sie lösen es umgekehrt:
+
+> Das Wasser ist eine simple Fläche, die UNTER das opake Gelände taucht. Das Gelände
+> wird zuerst gezeichnet und schreibt Tiefe; das Wasser (transparent, danach
+> gezeichnet) wird per Tiefen-Test überall dort verdeckt, wo Land davor liegt. Die
+> Uferlinie ist damit der **emergente Schnitt** von Wasser-Spiegel und Gelände —
+> pixelgenau, gratis, und so fein wie das Gelände-Mesh (das feine Voxel-Mesh).
+
+Man AUTORISIERT die Wasser-Kante nie. Man lässt das Land sie schneiden. Der Ufer-Schaum
+entsteht im Shader aus der Tiefen-Differenz (Wassertiefe ≈ 0 am Ufer) — V9.48 hat den
+Schaum schon tiefen-getrieben pro Vertex gemacht, das passt exakt dazu.
+
+Die Vorbedingung steht schon: `depthWrite:true` (V9.49-c) + das Wasser nach den opaken
+Objekten gezeichnet (`renderOrder 1`). Es fehlt nur der eine Schritt: **aufhören, den
+Rand-Vertex anzuheben.** Er bleibt auf dem Wasser-Spiegel und taucht unter das
+ansteigende Land — `terrainY` für stehendes Wasser wird damit überflüssig.
+
+### 13.3 Stehendes Wasser — die flache Platte taucht unter
+
+Jede Ozean-/See-Zelle emittiert ein Quad auf dem flachen Spiegel ihres Wasser-Körpers
+(`waterLevel` bzw. `lake.level`). Die nasse Maske wird um ~2 Zellen ins Land dilatiert;
+ALLE diese Vertices — nass UND der Dilatations-Skirt — sitzen auf dem flachen Spiegel.
+Das ansteigende opake Terrain verdeckt den Skirt; die Uferlinie emergiert dort, wo das
+Voxel-Gelände den Spiegel kreuzt. Gelöscht: die `terrSurf`-Platzierung der trockenen
+Ringe, das `terrainY`-Feld (für stehendes Wasser), die Ecken-Höhen-Logik. Netto weniger
+Code — Konsolidierung, Heilige Lektion.
+
+### 13.4 Fliessendes Wasser — das Ribbon liegt im gecarvten Trog
+
+Ein Fluss ist nicht flach — er folgt dem Gefälle. Sein Wasser gehört in den Trog, den
+`_hydrosphereCarveAt` schon gräbt (Flachboden-Profil, Tiefe `D = 1.4 + 0.16·Breite`,
+je Segment in `dA`/`dB` abgelegt). Die Fluss-Vertices sitzen darum auf
+`_terrainMacroSurfaceY(x,z) − D + flacheTiefe`: die Makro-Surface ist billig, `D` kommt
+aus dem nächsten Fluss-Segment — `_unifiedNearestRiverSeg` liefert schon `t` + die
+Breite, es bekommt zusätzlich `D`. Das Ribbon ist etwas breiter als der Kanal; die
+un-gecarvten Crag-Ufer verdecken den Überstand. Der Fluss folgt so dem Bett-Gefälle und
+liegt IN seiner Rinne — kein flacher Flut-Spiegel (V9.49-b), keine un-gecarvte
+Makro-Oberkante (V9.49-d).
+
+### 13.5 Warum die 16-m-Grobheit aufhört zu zählen
+
+Sobald die Uferlinie der Terrain-Schnitt ist, braucht das 16-m-Feld nur noch zweierlei:
+(a) die nasse MASKE — welcher Wasser-Körper deckt eine Zelle (grob genügt: der Skirt +
+die Terrain-Verdeckung schlucken die 16-m-Zacken); (b) den SPIEGEL je Körper — ein
+flacher Skalar, dessen 16-m-Abtastung exakt ist. Die Verfeinerung — die „lokale
+Annäherung", die der Schöpfer benannte — leistet das feine Voxel-Gelände, indem es
+schneidet. Gratis. Kein feineres Wasser-Feld nötig, kein `_voxelSurfaceY`-Vollscan
+(der §12.10-Einwand entfällt — man braucht die echte Surface gar nicht, man braucht das
+Land, das verdeckt).
+
+### 13.6 Bergseen — der additive Tarn-Pass (eigene Mini-Welle)
+
+„Flüsse ja, Bergseen nein" hat einen eigenen Grund: die Stream-Power-Erosion (V9.47)
+ist ein drainage-PERFEKTIONIERENDES Verfahren — sie senkt Kanäle, füllt nie Becken,
+entwässert über 36 Iterationen jedes Hochbecken. Echte Bergseen (Kar-Seen, Moränen-/
+Bergsturz-Stauungen, Krater) kommen aus STÖR-Ereignissen, die geschlossene Hochmulden
+hinterlassen — kein Erosions-Nebenprodukt. Man bekämpft die Erosion nicht, man ADDIERT:
+ein `_hydroSeedTarns`-Pass setzt nach der Erosion ein paar kleine Gauss-Mulden an
+hohen, sanft geneigten Stellen (Tief-Frequenz-Noise-Gate + Höhen-Gate + Hang-Gate). Die
+Mulde fliesst als Term ins erodierte Makro-Feld → das bestehende Priority-Flood
+ENTDECKT das geschlossene Becken und füllt es zum See, durch die schon gebaute
+Maschinerie. Eine Wasser-Sprache: eine Mulde wird zum See, gratis. Das ist eine eigene
+kleine Welle (V9.49-g), NICHT Teil der Naht-Heilung — ehrlich getrennt.
+
+### 13.7 Die Wellen-Schneidung
+
+| Sub-Welle | Inhalt |
+|---|---|
+| **V9.49-e** | Die tauchende Platte. `_buildUnifiedWaterGeometry`: der Dilatations-Skirt bleibt auf dem Wasser-Spiegel (kein `terrainY`-Sprung mehr); das Fluss-Ribbon auf `Makro − D`; `_unifiedNearestRiverSeg` um `D` erweitert. `terrainY` aus dem Wasser-Feld entfernt. depthWrite ist schon true (V9.49-c). |
+| **V9.49-f** | ✅ Die Wasser-Fläche an die Terrain-Wahrheit klemmen (§13.11) — die nasse Maske liest `_terrainMacroSurfaceY`, kein Grat-Bleed mehr; `polygonOffset`. |
+| **V9.49-g** | Der Tarn-Pass — Bergseen als additive Hochmulden (separat, optional). |
+
+*Test-Invarianten V9.49-e*: kein See-/Ozean-Vertex liegt über seinem Spiegel; ein
+Fluss-Vertex liegt unter der un-gecarvten Makro-Surface an seiner xz-Position; das Mesh
+bleibt ein geschweisstes Höhenfeld; eine Welt ohne Hydrosphäre ist bit-identisch zu
+heute; der Rebuild bleibt im Perf-Budget (kein Vollscan dazugekommen).
+
+### 13.8 Risiken, ehrlich benannt
+
+- **Z-Fighting an der Schnitt-Linie.** Wo Wasser-Spiegel und Terrain tiefen-gleich
+  liegen, kann die Uferlinie flimmern. Üblich; ein kleiner `polygonOffset` / eine
+  Tiefen-Bias am Wasser-Material heilt es — beim Browser-Audit prüfen.
+- **Fluss-Crag-Leck.** Die ±12-m-Roughness kann ein Ufer lokal unter `Makro − D`
+  drücken → das Ribbon quillt seitlich heraus. Die Carve-Bank-Rampe dämpft es; eine
+  optionale Roughness-Dämpfung im Kanal-Band (wie der See-Topf) bleibt als Reserve.
+- **Ultra-flaches Ufer.** Steigt das Terrain über den 2-Zell-Skirt nicht über den
+  Spiegel, bleibt ein schmaler Wasser-Saum sichtbar — das ist echtes Flachwasser,
+  korrekt, kein Bug.
+- **Der Wasserfall** bleibt die vertikale Ausnahme (§12.5), unverändert.
+
+### 13.9 Vision-Pfeiler-Check
+
+- **§1.1 / §1.3 fraktal** — das Feld hat keine Kanten; das LAND hat Kanten. Die
+  Uferlinie ist emergent, nicht autorisiert. „Wasser ist ein Feld" wird wörtlich: ein
+  Feld endet nicht, es taucht.
+- **Heilige Lektion** — V9.49-e LÖSCHT Code (`terrainY`-Feld, die Ecken-Höhen-Logik).
+  Konsolidierung, keine Re-Komplexifizierung.
+- **Roadmap-Lehre 1 + V9.47-Lehre** — nicht die Naht polieren (das wäre der fünfte
+  Anlauf), das Verfahren wechseln: die Wasser-Kante wird nicht mehr autorisiert.
+
+### 13.10 Geliefert (V9.49-e) — und die ehrliche Plan-Abweichung
+
+Gebaut 22.05.2026, playtest-grün („Alle Invarianten OK"); der Schöpfer-Browser-Audit
+steht aus (wie bei jeder Wasser-Welle). Vier Code-Stellen, netto schlanker:
+
+- **`_hydroBuildWaterField`** legt nur noch `{waterY, waterKind}` ab — `terrainY` ist
+  entfallen. `waterY` trägt den flachen Spiegel je Wasser-Körper (Ozean → `waterLevel`,
+  See → `lake.level`), eine trockene Zelle den Meeresspiegel-Default.
+- **`_buildUnifiedWaterGeometry`** — der trockene Rand-Skirt bleibt auf dem Spiegel
+  (kein `terrainY`-Sprung mehr); ein Boundary-Quad fällt zum Meeresspiegel-Default ab
+  und taucht unter das opake Ufer. Fluss-Vertices sitzen auf `_terrainMacroSurfaceY −
+  0.4·D` — im gecarvten Bett, dem Gefälle folgend.
+- **`_unifiedNearestRiverSeg`** liefert zusätzlich die Carve-Tiefe `D` und greift bis
+  zur vollen Carve-Breite (`halfW + bankW`) — das Ribbon deckt den ganzen Kanal, die
+  ansteigende Bank-Rampe verdeckt seinen Rand.
+- **Playtest**: das `waterY ≥ terrainY`-Invariant (V9.49-d) ist entfallen, ersetzt
+  durch „alle Ozean-Zellen teilen EINEN flachen Spiegel" — netto ±0 Invarianten.
+
+**Die ehrliche Plan-Abweichung**: §13.3 entwarf einen ~2-Zell-Skirt, dessen Vertices
+ALLE explizit auf dem Spiegel sitzen. Die Implementierung braucht keinen expliziten
+Skirt-Ring: weil eine trockene Zelle im Feld den Meeresspiegel-Default trägt, fällt
+jedes Boundary-Quad von selbst dorthin ab und taucht unter das ansteigende Ufer. Der
+Skirt ist keine Zähl-Konstante, sondern eine Konsequenz des Defaults — einfacher als
+geplant, dasselbe Ergebnis (das Quad ist verdeckt, ob es bei einem See zum Meeres-
+spiegel kippt oder flach auf dem See-Level läge). Der Tarn-Pass (§13.6, V9.49-g)
+bleibt offen.
+
+### 13.11 Geliefert (V9.49-f) — die Wasser-Fläche an die Terrain-Wahrheit geklemmt
+
+Gebaut 22.05.2026, playtest-grün. **Zweiter Schöpfer-Browser-Audit nach V9.49-e**:
+„direkt auf der anderen Seite eines Hügels, wieder ein Tal — die Wasseroberfläche
+durchschiesst, die andere Seite sieht unsauber aus, es ragt hervor." Befund: die nasse
+Maske kam allein aus der 16-m-`waterKind`-Klassifikation plus einer blinden Dilatation
+(die 4-Ecken-Abtastung weitet die nasse Region ~16 m ins Land). Über einen schmalen
+Grat bleeded die flache Fläche so ins nächste Tal. §13.5 hatte gehofft, die 16-m-Maske
+genüge — der Audit zeigte: die MASKE braucht die Terrain-Wahrheit (nur die HÖHE bleibt
+flach).
+
+Der Profi-Weg: **das Wasser an das submerse Gelände klemmen.** `_buildUnifiedWater-
+Geometry` fragt je Vertex `_terrainMacroSurfaceY` (billig — ein paar Noise-Calls, NICHT
+der `_voxelSurfaceY`-Säulen-March) und ist nass nur, wo `macroY < waterSpiegel +
+RIDGE_MARGIN` (12 m, die 3D-Roughness-Amplitude — so deckt das Wasser die ganze
+mögliche Ufer-Bandbreite, klemmt aber jeden Grat darüber ab). Das gilt auch fürs
+Fallback-Meer ausserhalb der Region (sonst läge dort eine Platte auf trockenem
+Hochland — exakt der Bug, den die neue Invariante beim ersten Wurf fing). Plus
+`polygonOffset` am Wasser-Material: an einer streifenden Schnitt-Linie gewinnt jetzt
+verlässlich das opake Terrain den Tiefen-Test → keine flimmernden Splitter mehr.
+
+Ein neues Geometrie-Attribut `aWet` (1 nass, 0 trockener Skirt) — der Shader nutzt es
+nicht, aber der Playtest trennt damit nasse Vertices vom Skirt (der bewusst abtaucht):
++1 Invariante (kein nasser Vertex liegt > RIDGE_MARGIN unter dem Makro-Gelände).
+
+**Plan-Korrektur zu §13.5**: „die 16-m-Grobheit hört auf zu zählen" galt für die HÖHE
+(die bleibt der flache Spiegel) — nicht für die MASKE. Eine flache Fläche, deren Rand
+allein eine 16-m-Klassifikation + blinde Dilatation bestimmt, ragt über schmale Grate.
+Die Maske braucht je Vertex `macroY` — das ist die „lokale Verfeinerung", die der
+Schöpfer von Anfang an benannte, jetzt am rechten Ort: an der Maske, nicht der Höhe.
+
+---
+
+## 14. Wasser aus der Terrain-Wahrheit (V9.50) — der letzte Ring
+
+**Stand**: geplant (22.05.2026), noch kein Code — Plan zur Durchsicht. Auslöser: der
+Schöpfer-Befund nach V9.49-f — „bei Verengungen, in Bereichen die kleiner und dann
+wieder grösser werden, gibt es noch Probleme … wir bewegen uns im Kreis." Der Befund
+ist richtig. Dieser Abschnitt ist die Antwort — das Ende einer Bug-Klasse, nicht ihr
+nächster Patch.
+
+### 14.1 Warum V9.49-d/e/f kreiste — ehrlich
+
+V9.49-d (Fluss schwebt), -e (Ufer schwebt), -f (Bleed über den Grat), die Verengungen —
+das sind nicht vier Bugs. Es ist EIN Bug, vier Mal, auf vier Auflösungs-Ebenen: **das
+Wasser wird auf einem Modell gerechnet** (16-m-Raster, Makro-Surface — glatt, grob),
+**das gerenderte Terrain ist ein anderes** (Voxel, ±12-m-Crags, gecarvt). Zwei
+Gelände-Wahrheiten; sie decken sich nie — an einer Verengung, wo die Voxel-Wände am
+schärfsten sind, am wenigsten.
+
+§13.1 hat genau das diagnostiziert — „zwei Gelände-Wahrheiten, die sich nie versöhnen".
+Und dann hielten -e und -f BEIDE Wahrheiten. V9.49-e war als „Verfahrenswechsel"
+benannt, wechselte aber nur den Render-Trick (das Wasser taucht unter); das VERFAHREN —
+Wasser als getrenntes Modell — blieb. -e und -f waren Naht-Politur des neuen Verfahrens,
+genau was die V9.47-Lehre verbietet. Der Kreis war: eine korrekt benannte Wurzel nicht
+bis zum Schluss zu denken.
+
+### 14.2 Das Prinzip — das Projekt kennt die Lösung schon
+
+`CLAUDE.md`-Gesetz: **„Visual = Collision per Konstruktion — jeder Chunk hat ein
+Collision-Shape aus EXAKT denselben Triangle-Indices wie seine Geometrie."** Das Terrain
+hat sein Visual-vs-Collision-Problem nicht poliert — es hat beide zu DERSELBEN Geometrie
+gemacht. Deckungsgleich per Konstruktion.
+
+Das Wasser hat ein Visual-vs-Terrain-Problem. Dieselbe Kur: **das Wasser aus DERSELBEN
+Quelle meshen wie das Terrain** — der Voxel-Oberfläche `_voxelSurfaceY`. Dann ist die
+Uferlinie der exakte Schnitt auf der Zell-Ebene des Terrains. Schweben, Bleed,
+Schnitt-Splitter, Verengungs-Bugs sind dann nicht geheilt — sie sind strukturell
+unmöglich.
+
+### 14.3 Was bleibt — bewusst eng
+
+- **Die Hydrosphäre** (`_computeHydrosphere` — Drainage-Netz, Seen, Flüsse, Ozean-Maske,
+  Carve, Erosion). Sie ist das **Wasser-Level-Feld**: WO Wasser ist + auf welcher Höhe.
+  Reine Daten, deterministisch. Unangetastet.
+- **Der Wasser-Shader** (`_ensureHydroSurfaceMaterial` — Gerstner/Flow/Schaum,
+  welt-verankert). Je Chunk-Wasser-Mesh wiederverwendet.
+- **Der Wasserfall** — die vertikale Ausnahme. Unverändert.
+- **Die Auftrieb-Physik** (`_hydroWaterLevelAt`, `state.waterLevel`). Liest Daten, kein
+  Mesh. Unangetastet.
+
+V9.50 fasst NUR das Wasser-Oberflächen-MESH an.
+
+### 14.4 Das Wasser-Level-Feld — `_waterLevelAt(x, z)`
+
+Eine Funktion bündelt „welches Wasser deckt (x,z), auf welcher Höhe": Ozean →
+`waterLevel`; See → `lake.level`; Fluss → das Fluss-Oberflächen-Profil (Bett + flache
+Tiefe, entlang der Polylinie interpoliert); sonst → trocken. Ein dünner Leser über
+`hydrosphere.water` + `riverBuckets`. Deterministisch, headless-prüfbar.
+
+### 14.5 Weg B (empfohlen) — Wasser im Voxel-Chunk-Pipeline
+
+Beim Chunk-Bau (`_ensureVoxelChunkAt`) entsteht — geschwisterlich zu
+`_buildVoxelChunkGrass` — ein Wasser-Mesh DES Chunks: je Chunk-Zelle, wo
+`_voxelSurfaceY(zelle) < _waterLevelAt(zelle)`, ein Quad auf `_waterLevelAt`. Die
+Geometrie kommt aus DERSELBEN Voxel-Oberfläche, die der Chunk gerade gemesht hat. Das
+Wasser-Mesh lebt im Chunk-`entry` (`entry.waterMesh`), `_disposeVoxelChunk` räumt es
+mit. Geteiltes Shader-Material. Die Spieler-Folge fällt gratis aus dem bestehenden
+Chunk-Streaming.
+
+- **Exakt**: Wasser + Terrain teilen das Zell-Raster → die Uferlinie ist der echte
+  Schnitt. Kein Schweben, kein Bleed, keine Splitter, kein Verengungs-Bug — strukturell.
+- **Kein zweites Modell**: kein 16-m-Raster fürs Mesh, kein spieler-folgendes 384-m-
+  Mesh, keine Dilatation, kein Clip, kein `polygonOffset`-Hack, kein `aWet`, kein
+  Makro-Proxy.
+- **Kosten**: ein per-Zelle-`_voxelSurfaceY`-Scan je wasser-berührtem Chunk — genau das
+  Muster, das `_buildVoxelChunkGrass` schon fährt, einmal je Chunk-Leben amortisiert.
+  Über die Hydrosphäre gegatet: ein Chunk ohne Ozean/See/Fluss im Fussabdruck baut KEIN
+  Wasser.
+
+### 14.6 Weg C (verworfen) — der geteilte Echt-Oberflächen-Cache
+
+Das vereinte Mesh (V9.49) bliebe, läse aber statt Makro einen `_voxelSurfaceY`-Cache,
+den die Chunk-Builds füllen. **Verworfen**: C tut dieselbe Oberflächen-Scan-Arbeit wie B
+(den Cache füllen = derselbe per-Zelle-Scan), BEHÄLT aber das vereinte Mesh als
+jetzt-redundante Schicht UND fügt Cache-Buchhaltung dazu — mehr Maschinerie für dieselbe
+Wahrheit. Der scheinbare Vorteil „weniger invasiv, das Mesh bleibt" ist Schein: die
+Clip/Dilatations/`polygonOffset`-Workarounds des Meshes waren NUR da, weil ihm die
+Wahrheit fehlte — mit der Wahrheit gehören sie ohnehin gelöscht. C ist fast so viel
+Änderung wie B, mit einem redundanten Mesh obendrauf. **B löscht, C behält.**
+
+### 14.7 Was gelöscht wird
+
+`_buildUnifiedWaterMesh`, `_buildUnifiedWaterGeometry`, `_tickUnifiedWater`,
+`_unifiedNearestRiverSeg`, `state.waterPlane`, das `RIDGE_MARGIN`-Clip, das
+`aWet`-Attribut, der `polygonOffset`-Hack, der 16-m-`waterY`-Mesh-Pfad. Netto deutlich
+weniger Stamm. 4 Meshes (V9.43) → 1 (V9.49) → 0 getrennte Wasser-Modelle (V9.50) —
+derselbe Konsolidierungs-Pfeil, ein Ring weiter.
+
+### 14.8 Die Wellen-Schneidung
+
+| Sub-Welle | Inhalt |
+|---|---|
+| **V9.50-a** | `_waterLevelAt(x,z)` — das Wasser-Level-Feld als eine Funktion. Reine Daten, headless-prüfbar. |
+| **V9.50-b** | `_buildVoxelChunkWater` — das per-Chunk-Wasser-Mesh aus `_voxelSurfaceY` vs `_waterLevelAt`; in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` eingehängt, über die Hydrosphäre gegatet. |
+| **V9.50-c** | Das V9.49-Vereinte-Mesh + seine Workarounds löschen; die V9.49-b/e/f-Playtest-Invarianten durch Chunk-Wasser-Invarianten ersetzen. |
+
+### 14.9 Risiken, ehrlich
+
+- **Chunk-Bau wird schwerer.** Ein per-Zelle-Scan je Wasser-Chunk. Gemildert: nur
+  wasser-berührte Chunks, amortisiert über das Chunk-Leben (wie das Gras). Im Playtest
+  am Perf-Budget messen.
+- **Hydrosphäre-Rebuild.** Wird die Hydrosphäre neu gerechnet (neue Welt), brauchen die
+  schon gestreamten Chunks ein Wasser-Rebuild — `_buildHydrosphereMeshes` triggert es
+  über die `voxelChunks`-Map.
+- **Fluss über Chunk-Grenzen.** Jeder Chunk mesht seinen Anteil; `_waterLevelAt` ist
+  welt-stetig, der Shader welt-verankert → die Nähte sind nahtlos (wie die
+  Terrain-Chunk-Nähte). Kein Sonder-Code.
+- **Wellen-Animation.** Der Shader ist welt-verankert (`position` trägt Welt-xz) →
+  per-Chunk-Meshes wogen deckungsgleich. Erprobt — heute schon so.
+- **Der Wasserfall** bleibt die vertikale Ausnahme.
+
+### 14.10 Vision-Pfeiler-Check
+
+- **§1.1 — Wasser ist ein Feld**: das Feld endet nicht; das Land schneidet es — jetzt
+  aus EINER Geometrie-Wahrheit, exakt.
+- **„Visual = Collision per Konstruktion"**: das Projekt-Gesetz, aufs Wasser angewandt —
+  kein Abgleich, Deckung per Konstruktion.
+- **Heilige Lektion**: V9.50 LÖSCHT (das getrennte Wasser-Modell). Konsolidierung,
+  4 → 1 → 0.
+- **V9.47-Lehre, endlich zu Ende gedacht**: nicht die Naht polieren — das Verfahren
+  wechseln. Diesmal das echte Verfahren: das Wasser hört auf, ein eigenes Modell zu sein.
+
+### 14.11 Geliefert (V9.50)
+
+Gebaut 22.05.2026 in drei playtest-grünen Sub-Wellen, netto **−102 Zeilen** (das
+getrennte Wasser-Modell ist gelöscht — Konsolidierung):
+
+- **V9.50-a** — `_waterLevelAt(x,z)` (Ozean-Default `waterLevel`, lokal von See/Fluss
+  per MAX überschrieben) + `_hydroRiverAt` (nächstes Fluss-Segment, Flow, Bett-Profil).
+  Reine Daten, +3 Invarianten.
+- **V9.50-b/c** — `_buildVoxelChunkWater` baut je Voxel-Chunk eine Wasser-Fläche, nass
+  je Zelle wo `_voxelSurfaceY < _waterLevelAt`. Geschwisterlich zu `_buildVoxelChunk-
+  Grass`, in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` eingehängt, über
+  `_voxelChunkTouchesWater` gegatet (trockenes Hochland baut kein Wasser). Der
+  Wasser-Spiegel kommt aus `_waterLevelAt`, die Wet-Maske aus dem ECHTEN
+  `_voxelSurfaceY`. Gelöscht: das V9.49-Vereinte-Mesh + alle Workarounds
+  (`_buildUnifiedWaterMesh/-Geometry`, `_tickUnifiedWater`, `_unifiedNearestRiverSeg`,
+  `state.waterPlane`, das `RIDGE_MARGIN`-Clip, `aWet`, `unifiedExt/-Cell`).
+  `_applyDayNightToScene` synct jetzt direkt `state.hydroSurfaceMaterial`.
+
+**Die Bug-Klasse ist strukturell beendet**: Wasser + Terrain teilen dieselbe Geometrie-
+Quelle (`_voxelSurfaceY`) → kein 16-m-Modell, kein Bleed, kein Schweben, keine
+Verengungs-Naht — sie sind nicht mehr möglich, nicht poliert. Playtest-grün (das
+`_waterLevelAt`-Feld, das Chunk-Wasser-Mesh, jeder Vertex exakt auf `_waterLevelAt`,
+der Gate). Der Schöpfer-Browser-Audit steht aus (wie bei jeder Wasser-Welle). §14.5
+(Weg B) ist 1:1 gebaut. Der Tarn-Pass (§13.6, Bergseen) bleibt der offene additive
+Schritt danach.
+
+---
+
+## 15. Der Tarn-Pass (V9.51) — Bergseen als additive Hochmulden
+
+**Stand**: gebaut 22.05.2026, playtest-grün. Schliesst den ersten Schöpfer-Befund aus
+diesem Bogen — „es entstehen Flüsse, aber keine Bergseen".
+
+### 15.1 Der Befund
+
+Die Stream-Power-Erosion (V9.47) perfektioniert die Drainage: sie senkt Kanäle, füllt
+aber nie Becken. Über 36 Iterationen entwässert sie jedes Hochbecken → kein Bergsee
+überlebt. Echte Tarns (Kar-Seen, Moränen-/Bergsturz-Stauungen) kommen nicht aus
+Erosion — sie kommen aus **Stör-Ereignissen**, die geschlossene Hochmulden
+hinterlassen. Der Tarn-Pass ist die procedurale Entsprechung: er setzt diese Mulden
+nach der Erosion, das bestehende Priority-Flood entdeckt + füllt sie.
+
+### 15.2 Der Verfahrens-Kern — eine ADDITIVE Mulde, kein Konflikt mit der Erosion
+
+`_hydroSeedTarns` läuft NACH `_computeErosion`, VOR `_computeHydrosphere`. Sein
+Beitrag fliesst NICHT ins Erosions-Delta (das würde den Erosions-Determinismus
+brechen), sondern als eigener Term `_tarnDeltaAt(x,z)` in `_terrainMacroSurfaceY`.
+Das Erosions-Delta bleibt unangetastet — die Erosion ist auf einem Re-Run
+byte-identisch (Determinismus-Invariante grün). `_computeErosion` saved + nullt
+`state.tarns` für seinen eigenen Re-Sample (sonst sähe die zweite Erosion die Mulden,
+die erste nicht).
+
+### 15.3 Die Mulde — GROSS, TIEF, adaptiv
+
+Das 16-m-Hydrosphären-Raster + sein 3×3-Blur glättet kleine Features weg → die
+Mulde muss GROSS sein (`radiusMin 85m`, `radiusMax 120m` ≥ 5 Zellen). Auf einem
+Hang muss die Mulde TIEF sein, sonst schliesst das Becken nicht (`d > 0.83·s·r`).
+Tiefe ist daher ADAPTIV: `d = clamp([22, 42], 0.996·slope·r + 8)` — sanfte Spots
+flacher, steile tiefer, immer ~8 m Wasser-Tiefe nach dem Schliessen.
+
+### 15.4 Das Wasser-Klemme — die Mulde berührt den Ozean nicht
+
+**Der kritische Schliff**: ohne Klemme pusht der Bowl Nachbar-Zellen unter den
+Meeresspiegel; der Border-Ozean-Flood (`_hydroMarkOcean`) findet einen Pfad sub-
+Wasser-Zellen vom Rand ins Tarn-Innere und markiert es als Ozean — keine
+See-Extraktion. Heilung: `_terrainMacroSurfaceY` klemmt das Tarn-Resultat auf
+`waterRef + 1` (1 m über Meeresspiegel) — der Mulden-Boden bleibt zuverlässig
+über dem Ozean-Flood. Das Priority-Flood füllt dann das Becken vom geklemmten
+Boden bis zum natürlichen Rand → ein See an der Höhe des Rands.
+
+### 15.5 Der ADAPTIVE Höhen-Gate
+
+Statt eines fixen `minRelief` liest der Pass das **62. Perzentil des Macro-Reliefs**
+über alle Kandidaten — der Gate skaliert mit der Welt. In einer flachen Welt findet
+er das relative Hochland, in einer Gebirgs-Welt die Gipfel-Region. Plus ein
+absoluter Boden (`minReliefAbs 14m`). Plus die Klemme rejected Spots, deren
+`surf < waterRef + depthMin + 1` (zu niedrig für eine echte Mulde).
+
+### 15.6 Vision-Pfeiler-Check
+
+- **§3 Welt-Atmen**: die Welt hat jetzt Bergseen — ein eigenes hydrologisches
+  Habitat zwischen Fluss-System (V9.46) und Ozean (V9.50). Real-geomorphologisch
+  entsprechen sie Karen / Moränen-Becken.
+- **Heilige Lektion**: ein additiver Pass, keine neue Maschinerie — die
+  bestehende Hydrosphäre (Priority-Flood, See-Topf, Chunk-Wasser-Render) macht
+  alles Weitere. Wachstumsring, keine Re-Komplexifizierung.
+- **V9.47-Lehre**: nicht gegen die Erosion arbeiten (sie würde Hochbecken
+  entwässern) — additiv DARÜBER setzen.
+
+### 15.7 Geliefert
+
+`AnazhRealm.TARN` (8 Konstanten), `_hydroSeedTarns` (~80 Zeilen — Kandidaten-Grid,
+adaptive Höhen-Schwelle, Hang-Gate, dedup, adaptive Tiefe), `_tarnDeltaAt`
+(O(Tarn-Zahl) mit Reichweiten-Early-Out), `_terrainMacroSurfaceY` mit Klemme,
+`_computeErosion` mit Tarn-Suppression. +4 Playtest-Invarianten (`_hydroSeedTarns`
+existiert; ≥1 Tarn gesetzt; jeder Tarn im Hochland; jeder Tarn wurde zu einem See
+— `lakeCells ≥ minLakeCells` im Fussabdruck). Browser-Audit steht aus.
