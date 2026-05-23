@@ -12612,58 +12612,122 @@ async function checkBandHydrosphere(ctx) {
     }
 }
 
-// V9.64 (Welle A.1) — Damm-Bauplan + Architektur-Index. Verifiziert die
-// Vision-Pfeiler-Vorbereitung: Damm-Bauplan existiert, Spawn pflegt den
-// Index, _damTopAt liefert die richtige Höhe an der Damm-Position.
-async function checkBandWelleA1Damm(ctx) {
+// V9.65 (Welle A.2) — Generischer Blocker-Index + Damm als Anwendungsfall.
+// Verifiziert die Vision-Klärung „jede solide Geometrie blockt, nicht nur
+// Dämme": Damm-Bauplan existiert weiter, Spawn pflegt den Blocker-Index für
+// ALLE Architekturen mit soliden Parts (dichte ≥ 0.3), `_blockerTopAt`
+// liefert die richtige Höhe — und pro-Part: ein Baum-Stamm (Holz) blockt,
+// die Krone (Laub, dichte 0.1) NICHT.
+async function checkBandWelleA2Blocker(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.scene) return { error: "no realm" };
         const out = {};
-        // 1) Damm-Bauplan existiert als built-in
+        // 1) Damm-Bauplan bleibt als built-in (V9.64-Invariante)
         out.hasDammBlueprint =
             !!(r.state.blueprints && r.state.blueprints.damm && r.state.blueprints.damm.parts);
-        // 2) Damm-Index-Methoden existieren
-        out.hasIndexMethods =
-            typeof r._damIndexAdd === "function" &&
-            typeof r._damIndexRemove === "function" &&
-            typeof r._damTopAt === "function";
-        // 3) Spawn an einer Test-Position, prüfe damIndex + _damTopAt
-        const testPos = { x: 300, y: 5, z: 300 };
-        const entry = r.spawnArchitecture("damm", testPos, { silent: true });
-        out.spawnSucceeded = !!entry;
-        if (entry) {
-            out.indexHasEntry = !!(r.state.damIndex && r.state.damIndex.size > 0);
-            // _damTopAt am Damm-Zentrum sollte > 0 sein (Damm-Top)
-            const top = r._damTopAt(testPos.x, testPos.z);
+        // 2) Generische Blocker-Methoden existieren (die V9.64-Dam-Helfer
+        // wurden weggeräumt — Vision-rein, kein Type-Whitelist).
+        out.hasGenericMethods =
+            typeof r._blockerIndexAdd === "function" &&
+            typeof r._blockerIndexRemove === "function" &&
+            typeof r._blockerTopAt === "function" &&
+            typeof r._isPartSolid === "function";
+        out.legacyDamHelpersGone =
+            typeof r._damIndexAdd === "undefined" &&
+            typeof r._damTopAt === "undefined";
+        // 3) _isPartSolid klassifiziert nach Substanz
+        out.steinSolid = r._isPartSolid({ material: "stein" }) === true;
+        out.holzSolid = r._isPartSolid({ material: "holz" }) === true;
+        out.laubBlocksNot = r._isPartSolid({ material: "laub" }) === false;
+        out.federnBlocksNot = r._isPartSolid({ material: "federn" }) === false;
+        out.glutBlocksNot = r._isPartSolid({ material: "glut" }) === false;
+        out.missingMaterialNotSolid = r._isPartSolid({ material: "nicht-existent" }) === false;
+        // 4) Damm: Spawn → Index + _blockerTopAt
+        const damPos = { x: 300, y: 5, z: 300 };
+        const damEntry = r.spawnArchitecture("damm", damPos, { silent: true });
+        out.damSpawnSucceeded = !!damEntry;
+        if (damEntry) {
+            out.indexHasEntry = !!(r.state.blockerIndex && r.state.blockerIndex.size > 0);
+            const top = r._blockerTopAt(damPos.x, damPos.z);
             out.damTopReturnsHeight = Number.isFinite(top) && top > 0;
             out.damTopValue = top;
-            // _damTopAt 50m weg sollte -Infinity (kein Damm dort)
-            const offTop = r._damTopAt(testPos.x + 50, testPos.z + 50);
+            const offTop = r._blockerTopAt(damPos.x + 50, damPos.z + 50);
             out.damTopOffReturnsNone = offTop === -Infinity;
-            // 4) Remove pflegt den Index
-            r.removeArchitecture(entry);
-            const topAfter = r._damTopAt(testPos.x, testPos.z);
+            r.removeArchitecture(damEntry);
+            const topAfter = r._blockerTopAt(damPos.x, damPos.z);
             out.indexClearedAfterRemove = topAfter === -Infinity;
+        }
+        // 5) Stein-Block: derselbe Pfad indexiert auch ihn (kein Damm-Privileg)
+        const blockPos = { x: 360, y: 5, z: 360 };
+        const blockEntry = r.spawnArchitecture("stein_block", blockPos, { silent: true });
+        out.blockSpawnSucceeded = !!blockEntry;
+        if (blockEntry) {
+            const top = r._blockerTopAt(blockPos.x, blockPos.z);
+            out.blockTopReturnsHeight = Number.isFinite(top) && top > 0;
+            r.removeArchitecture(blockEntry);
+        }
+        // 6) Baum-Eiche pro-Part: Stamm (holz, sx=0.8) blockt am Zentrum,
+        // aber außerhalb der Stamm-Hülle ist die Krone (laub) transparent.
+        // Stamm-AABB-Halbradius = max(0.8, 0.8) * 0.5 = 0.4 m;
+        // Krone-AABB-Halbradius wäre 1.2 m, wird aber NICHT indexiert.
+        const treePos = { x: 420, y: 5, z: 420 };
+        const treeEntry = r.spawnArchitecture("baum_eiche", treePos, { silent: true });
+        out.treeSpawnSucceeded = !!treeEntry;
+        if (treeEntry) {
+            // Genau am Zentrum: im Stamm-AABB → blockt
+            const trunkTop = r._blockerTopAt(treePos.x, treePos.z);
+            out.trunkBlocks = Number.isFinite(trunkTop) && trunkTop > 0;
+            // 0.8 m versetzt: außerhalb Stamm (0.4 m), innerhalb Krone (1.2 m) → frei
+            const crownOnly = r._blockerTopAt(treePos.x + 0.8, treePos.z);
+            out.crownDoesNotBlock = crownOnly === -Infinity;
+            // entry.blockerAABBs hat exakt einen Eintrag (Stamm), nicht zwei
+            out.treeIndexedOneAABB =
+                Array.isArray(treeEntry.blockerAABBs) && treeEntry.blockerAABBs.length === 1;
+            r.removeArchitecture(treeEntry);
         }
         return out;
     });
     if (res.error) {
-        check("Welle A.1 V9.64: Damm-Band-Test (realm verfügbar)", false, res.error);
+        check("Welle A.2 V9.65: Blocker-Band-Test (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle A.1 V9.64: Damm-Bauplan als built-in", res.hasDammBlueprint);
-    check("Welle A.1 V9.64: _damIndexAdd / _damIndexRemove / _damTopAt existieren", res.hasIndexMethods);
-    check("Welle A.1 V9.64: spawnArchitecture('damm') liefert einen Eintrag", res.spawnSucceeded);
-    check("Welle A.1 V9.64: state.damIndex hat nach Spawn einen Eintrag", res.indexHasEntry);
+    check("Welle A.2 V9.65: Damm-Bauplan als built-in", res.hasDammBlueprint);
     check(
-        "Welle A.1 V9.64: _damTopAt liefert die Damm-Top-Höhe am Damm-Zentrum",
+        "Welle A.2 V9.65: _blockerIndexAdd / _blockerIndexRemove / _blockerTopAt / _isPartSolid existieren",
+        res.hasGenericMethods
+    );
+    check("Welle A.2 V9.65: Legacy-Damm-Helfer (V9.64) sind weg", res.legacyDamHelpersGone);
+    check("Welle A.2 V9.65: _isPartSolid: Stein ist solide", res.steinSolid);
+    check("Welle A.2 V9.65: _isPartSolid: Holz ist solide (dichte 0.4 ≥ 0.3)", res.holzSolid);
+    check("Welle A.2 V9.65: _isPartSolid: Laub ist NICHT solide (dichte 0.1)", res.laubBlocksNot);
+    check("Welle A.2 V9.65: _isPartSolid: Federn sind NICHT solide", res.federnBlocksNot);
+    check("Welle A.2 V9.65: _isPartSolid: Glut ist NICHT solide", res.glutBlocksNot);
+    check("Welle A.2 V9.65: _isPartSolid: fehlendes Material ist NICHT solide", res.missingMaterialNotSolid);
+    check("Welle A.2 V9.65: spawnArchitecture('damm') liefert einen Eintrag", res.damSpawnSucceeded);
+    check("Welle A.2 V9.65: state.blockerIndex hat nach Damm-Spawn einen Eintrag", res.indexHasEntry);
+    check(
+        "Welle A.2 V9.65: _blockerTopAt liefert die Damm-Top-Höhe am Damm-Zentrum",
         res.damTopReturnsHeight,
         `top=${res.damTopValue}`
     );
-    check("Welle A.1 V9.64: _damTopAt liefert -Infinity ausserhalb des Damm-AABB", res.damTopOffReturnsNone);
-    check("Welle A.1 V9.64: removeArchitecture cleared den Index-Eintrag", res.indexClearedAfterRemove);
+    check(
+        "Welle A.2 V9.65: _blockerTopAt liefert -Infinity ausserhalb des Damm-AABB",
+        res.damTopOffReturnsNone
+    );
+    check("Welle A.2 V9.65: removeArchitecture cleared den Damm-Index-Eintrag", res.indexClearedAfterRemove);
+    check(
+        "Welle A.2 V9.65: spawnArchitecture('stein_block') wird auch indexiert (generisch)",
+        res.blockSpawnSucceeded && res.blockTopReturnsHeight
+    );
+    check("Welle A.2 V9.65: spawnArchitecture('baum_eiche') liefert einen Eintrag", res.treeSpawnSucceeded);
+    check("Welle A.2 V9.65: Baum-Stamm (Holz) blockiert am Zentrum", res.trunkBlocks);
+    check("Welle A.2 V9.65: Baum-Krone (Laub) blockiert NICHT", res.crownDoesNotBlock);
+    check(
+        "Welle A.2 V9.65: Baum-Eintrag hat nur EINEN AABB (Stamm, nicht Krone)",
+        res.treeIndexedOneAABB
+    );
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
@@ -29551,7 +29615,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandVoxelP3AndInventory(ctx);
             await checkBandWelle6Keybindings(ctx);
             await checkBandWelle6HCreatures(ctx);
-            await checkBandWelleA1Damm(ctx);
+            await checkBandWelleA2Blocker(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

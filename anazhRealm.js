@@ -31,9 +31,11 @@ class AnazhRealm {
             voxelChunkGrass: null,
             voxelChunkWater: null,
             voxelPopulatedChunks: null,
-            // V9.64 (Welle A.1) — Damm-Architektur-Bucket-Index (16-m-Zellen).
-            // O(1)-Lookup via `_damTopAt(x, z)` für Terrain-Sampling (V9.65).
-            damIndex: null,
+            // V9.65 (Welle A.2) — Generischer Blocker-Index (16-m-Bucket-Grid).
+            // Alle soliden Architektur-Parts (dichte ≥ 0.3) werden hier
+            // pro-Part indexiert. O(1)-Lookup via `_blockerTopAt(x, z)` für
+            // Terrain-Sampling (V9.66). Ersetzt den V9.64-Damm-Spezial-Index.
+            blockerIndex: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
@@ -15206,93 +15208,129 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
-    // V9.64 (Welle A.1) — Damm-Index: ein 2D-Bucket-Grid (16-m-Zellen) für
-    // O(1)-Lookup im Terrain-Sampling. Jeder Damm-Architektur-Eintrag wird in
-    // alle Buckets eingetragen, die seine Bounding-Box berührt (eine Damm-
-    // Plane überspannt mehrere Buckets). `_isDamAt` liest einen einzigen
-    // Bucket + prüft AABB pro Eintrag. Vision-Pfeiler "Wasser ↔ Spieler-
-    // Wille" — der Spieler baut Damm, das Terrain liest ihn, der Fluss
-    // weicht ihm aus (V9.65 + V9.66).
-    static get DAM_BUCKET_SIZE() {
+    // V9.65 (Welle A.2) — Generischer Blocker-Index. Ersetzt den V9.64-
+    // Damm-Spezial-Index nach Vision-Klärung „das wasser weiss nicht was es
+    // ist, was es bedeutet zu fliessen": die Regel ist UNIVERSELL — jede
+    // solide Geometrie blockiert Wasser, der `damm`-Bauplan ist eine
+    // ANWENDUNG, kein Spezialfall. Ein 2D-Bucket-Grid (16-m-Zellen) für
+    // O(1)-Lookup im Terrain-Sampling, **pro-Part** indexiert: ein Baum
+    // wird über seinen Holz-Stamm zum Blocker, die Laub-Krone bleibt
+    // transparent (Hylomorphismus-rein — die Substanz entscheidet, nicht
+    // der Name). Solidität aus `dichte ≥ 0.3` — schließt Laub (0.1),
+    // Federn (0.1), Glut (0.25) aus; lässt Holz (0.4), Stein, Metall,
+    // Kristall, Knochen, Schuppen, Erde drin. `_blockerTopAt(x, z)` liest
+    // den höchsten Block-Top an (x,z) für `_terrainMacroSurfaceY` (V9.66).
+    static get BLOCKER_BUCKET_SIZE() {
         return 16;
     }
 
-    _damBucketKey(bi, bj) {
+    static get BLOCKER_DENSITY_MIN() {
+        return 0.3;
+    }
+
+    _blockerBucketKey(bi, bj) {
         return `${bi},${bj}`;
     }
 
-    _damArchAABB(entry) {
-        // Damm-Bounding-Box im Welt-Raum aus parts[0].size (V9.64-Damm hat
-        // ein box-Part). Position-Rotation wird hier ignoriert — die Damm-
-        // Box-Form ist orientation-frei via max(x,z)-Halbradius (sichere
-        // Überdeckung bei jeder Rotation).
-        const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        if (!bp || !bp.parts || !bp.parts[0]) return null;
-        const part = bp.parts[0];
+    // Ist diese Part-Substanz fest genug, um Wasser zu blockieren? Eine
+    // Quelle der Wahrheit für alle Welt-Bauwerke (V9.65). Defensiv: ohne
+    // Material-Eintrag gilt der Part als NICHT solide (statt versehentlich
+    // alles zu blockieren — fail-open für die Welt-Reaktion).
+    _isPartSolid(part) {
+        if (!part || typeof part.material !== "string") return false;
+        const mat = this.state.materials && this.state.materials[part.material];
+        if (!mat || !mat.tags) return false;
+        const dichte = mat.tags.dichte;
+        return Number.isFinite(dichte) && dichte >= AnazhRealm.BLOCKER_DENSITY_MIN;
+    }
+
+    // Welt-Raum-AABB eines einzelnen Parts (vor Rotation). Wir nutzen
+    // max(sx, sz)·0.5 als Halbradius — orientation-frei sicher bei jeder
+    // Part-Rotation (kleine Überdeckung, aber kein Loch). topY = entry-Boden
+    // (Position.y − 0.5 = Boden-Heuristik aus `spawnArchitecture`) + lokale
+    // Part-Position.y + halbe Part-Höhe. Die `damm`-Topologie aus V9.64 ist
+    // ein Spezialfall davon (ein Part mit Material `stein`).
+    _blockerComputePartAABB(entry, part) {
+        if (!part || !part.size || !part.position) return null;
         const sx = part.size.x || 1;
         const sz = part.size.z || 1;
         const halfMax = Math.max(sx, sz) * 0.5;
-        const cx = entry.position.x;
-        const cz = entry.position.z;
+        const cx = entry.position.x + (part.position.x || 0);
+        const cz = entry.position.z + (part.position.z || 0);
         const topY = entry.position.y - 0.5 + (part.position.y || 0) + (part.size.y || 1) * 0.5;
         return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY };
     }
 
-    _damIndexAdd(entry) {
-        if (!this.state.damIndex) this.state.damIndex = new Map();
-        const aabb = this._damArchAABB(entry);
-        if (!aabb) return;
-        entry.damAABB = aabb;
-        const bs = AnazhRealm.DAM_BUCKET_SIZE;
-        const i0 = Math.floor(aabb.minX / bs);
-        const i1 = Math.floor(aabb.maxX / bs);
-        const j0 = Math.floor(aabb.minZ / bs);
-        const j1 = Math.floor(aabb.maxZ / bs);
-        for (let j = j0; j <= j1; j++) {
-            for (let i = i0; i <= i1; i++) {
-                const key = this._damBucketKey(i, j);
-                let bucket = this.state.damIndex.get(key);
-                if (!bucket) {
-                    bucket = new Set();
-                    this.state.damIndex.set(key, bucket);
+    _blockerIndexAdd(entry) {
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
+        const solidAABBs = [];
+        for (const part of bp.parts) {
+            if (!this._isPartSolid(part)) continue;
+            const aabb = this._blockerComputePartAABB(entry, part);
+            if (aabb) solidAABBs.push(aabb);
+        }
+        if (solidAABBs.length === 0) return;
+        if (!this.state.blockerIndex) this.state.blockerIndex = new Map();
+        entry.blockerAABBs = solidAABBs;
+        const bs = AnazhRealm.BLOCKER_BUCKET_SIZE;
+        for (const aabb of solidAABBs) {
+            const i0 = Math.floor(aabb.minX / bs);
+            const i1 = Math.floor(aabb.maxX / bs);
+            const j0 = Math.floor(aabb.minZ / bs);
+            const j1 = Math.floor(aabb.maxZ / bs);
+            for (let j = j0; j <= j1; j++) {
+                for (let i = i0; i <= i1; i++) {
+                    const key = this._blockerBucketKey(i, j);
+                    let bucket = this.state.blockerIndex.get(key);
+                    if (!bucket) {
+                        bucket = new Set();
+                        this.state.blockerIndex.set(key, bucket);
+                    }
+                    bucket.add(entry);
                 }
-                bucket.add(entry);
             }
         }
     }
 
-    _damIndexRemove(entry) {
-        if (!this.state.damIndex || !entry.damAABB) return;
-        const bs = AnazhRealm.DAM_BUCKET_SIZE;
-        const a = entry.damAABB;
-        const i0 = Math.floor(a.minX / bs);
-        const i1 = Math.floor(a.maxX / bs);
-        const j0 = Math.floor(a.minZ / bs);
-        const j1 = Math.floor(a.maxZ / bs);
-        for (let j = j0; j <= j1; j++) {
-            for (let i = i0; i <= i1; i++) {
-                const bucket = this.state.damIndex.get(this._damBucketKey(i, j));
-                if (bucket) bucket.delete(entry);
+    _blockerIndexRemove(entry) {
+        if (!this.state.blockerIndex || !entry.blockerAABBs) return;
+        const bs = AnazhRealm.BLOCKER_BUCKET_SIZE;
+        for (const a of entry.blockerAABBs) {
+            const i0 = Math.floor(a.minX / bs);
+            const i1 = Math.floor(a.maxX / bs);
+            const j0 = Math.floor(a.minZ / bs);
+            const j1 = Math.floor(a.maxZ / bs);
+            for (let j = j0; j <= j1; j++) {
+                for (let i = i0; i <= i1; i++) {
+                    const bucket = this.state.blockerIndex.get(this._blockerBucketKey(i, j));
+                    if (bucket) bucket.delete(entry);
+                }
             }
         }
-        entry.damAABB = null;
+        entry.blockerAABBs = null;
     }
 
-    // V9.64 (Welle A.1) — Damm-Höhe an (x,z): liefert die Welt-Y-Koordinate
-    // der Damm-Oberkante, wenn (x,z) im AABB eines Damms liegt; sonst -Infinity.
-    // O(1) Bucket-Lookup + linearer Scan der Bucket-Einträge (typisch ≤2-3
-    // Dämme pro Bucket). Nutzt entry.damAABB-Cache (statt jeden Frame neu).
-    _damTopAt(x, z) {
-        if (!this.state.damIndex) return -Infinity;
-        const bs = AnazhRealm.DAM_BUCKET_SIZE;
-        const bucket = this.state.damIndex.get(this._damBucketKey(Math.floor(x / bs), Math.floor(z / bs)));
+    // V9.65 (Welle A.2) — Blocker-Höhe an (x,z): die Welt-Y-Koordinate des
+    // höchsten soliden Parts, der (x,z) überdeckt; -Infinity wenn frei.
+    // O(1) Bucket-Lookup + linearer Scan (typisch ≤3-5 AABBs pro Bucket).
+    // Nutzt entry.blockerAABBs-Cache. Ersetzt das V9.64-`_damTopAt` (die
+    // Damm-Variante ist jetzt ein Aufruf-Fall — gleicher Pfad wie Felsblock,
+    // Felsturm, Baum-Stamm). Genutzt von `_terrainMacroSurfaceY` (V9.66) +
+    // Hydrosphäre-Sample-Pfaden (A.3).
+    _blockerTopAt(x, z) {
+        if (!this.state.blockerIndex) return -Infinity;
+        const bs = AnazhRealm.BLOCKER_BUCKET_SIZE;
+        const bucket = this.state.blockerIndex.get(this._blockerBucketKey(Math.floor(x / bs), Math.floor(z / bs)));
         if (!bucket) return -Infinity;
         let top = -Infinity;
         for (const entry of bucket) {
-            const a = entry.damAABB;
-            if (!a) continue;
-            if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) {
-                if (a.topY > top) top = a.topY;
+            const aabbs = entry.blockerAABBs;
+            if (!aabbs) continue;
+            for (const a of aabbs) {
+                if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) {
+                    if (a.topY > top) top = a.topY;
+                }
             }
         }
         return top;
@@ -19420,9 +19458,9 @@ class AnazhRealm {
             }
         }
         this.state.architectures = [];
-        // V9.64 — Damm-Index muss beim Restore neu aufgebaut werden
-        // (spawnArchitecture pflegt ihn automatisch).
-        this.state.damIndex = new Map();
+        // V9.65 — Blocker-Index muss beim Restore neu aufgebaut werden
+        // (spawnArchitecture pflegt ihn automatisch für alle soliden Parts).
+        this.state.blockerIndex = new Map();
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
             this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
@@ -27218,10 +27256,13 @@ class AnazhRealm {
             entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
-        // V9.64 (Welle A.1) — Damm-Index pflegen: ein 2D-Grid für O(1)-Lookup
-        // im Terrain-Sampling (V9.65). Nur Damm-Architekturen werden indexiert
-        // (kein Index-Wachstum für Bäume/Tempel/etc.).
-        if (type === "damm") this._damIndexAdd(entry);
+        // V9.65 (Welle A.2) — Blocker-Index pflegen: jede Architektur mit
+        // soliden Parts (dichte ≥ 0.3) wird pro-Part im 2D-Grid registriert.
+        // Vision-rein: kein Type-Whitelist, die Substanz entscheidet — ein
+        // Baum-Stamm (Holz) blockt, die Krone (Laub) nicht. Architekturen
+        // ohne solide Parts (z.B. reine Glut/Laub-Compounds) werden früh
+        // verworfen und kosten keinen Index-Slot.
+        this._blockerIndexAdd(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
         // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
@@ -28208,8 +28249,9 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
-        // V9.64 (Welle A.1) — Damm-Index pflegen beim Remove.
-        if (entry.type === "damm") this._damIndexRemove(entry);
+        // V9.65 (Welle A.2) — Blocker-Index pflegen beim Remove (frühe Out
+        // für Einträge ohne solide Parts via entry.blockerAABBs-Sentinel).
+        this._blockerIndexRemove(entry);
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
         // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.
