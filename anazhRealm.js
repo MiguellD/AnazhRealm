@@ -14545,6 +14545,14 @@ class AnazhRealm {
     _attachVoxelFieldColors(geom) {
         const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
         if (!pos || typeof this.worldFieldAt !== "function") return;
+        // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
+        // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
+        // Strand-Breite + Intensität regional variabel statt überall gleich.
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const sandNoise = this._voxelNoise;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
         const ss = (e0, e1, x) => {
@@ -14587,12 +14595,32 @@ class AnazhRealm {
             // Strand: Glocken-Profil über dem Wasser. `_waterLevelAt` ist
             // O(1) für Ozean (häufig); seetiefe Vertices haben den See-
             // Spiegel als waterY und kriegen denselben Strand am Ufer.
+            // V9.60-b.2 — variable Strand-Breite + Intensität via Noise:
+            // Schöpfer-Befund "verschmilzt zu wenig mit Umgebung, überall
+            // exakt die selbe Breite". Drei Schichten Modulation:
+            //   (a) Profile-Breite via λ~570m-Noise → kleine Buchten/Strände
+            //       wechseln mit weiten Sand-Flächen.
+            //   (b) Glocken-Höhe (Intensität) via λ~290m-Noise → manche
+            //       Strände kräftig beige, andere transparent durchschauend.
+            //   (c) Karge Patches (Fels-Stellen) wenn Noise < Schwelle →
+            //       Sand-Beitrag ganz weg, Felsen-Stone-Farbe gewinnt.
+            // Riesen-Lehre (Far Cry/Witcher Beach-Texturing): Variation
+            // entsteht durch Noise-Modulation mehrerer Parameter, nicht durch
+            // eine einzige Schwellwert-Schicht.
             const waterY = this._waterLevelAt(x, z);
             const aboveWater = y - waterY;
             if (aboveWater > -1.5 && aboveWater < 2.0) {
-                // Peak bei +0.6 m, breit ~1.2 m. Unter Wasser sanft fallend.
-                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / 1.2);
-                mix(sand, shoreBlend * 0.85);
+                const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
+                const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
+                if (widthNoise > 0.18) {
+                    const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
+                    const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
+                    const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                    mix(sand, shoreBlend * intensity);
+                }
+                // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
+                // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
+                // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
             }
             colors[i * 3] = c[0];
             colors[i * 3 + 1] = c[1];
