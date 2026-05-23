@@ -19922,8 +19922,7 @@ class AnazhRealm {
         if (!idA || !idB || idA === idB) {
             return { ok: false, reason: "zwei verschiedene Eltern-IDs nötig" };
         }
-        const validStrategy = AnazhRealm.FUSION_STRATEGIES.includes(strategy);
-        if (!validStrategy) {
+        if (!AnazhRealm.FUSION_STRATEGIES.includes(strategy)) {
             return { ok: false, reason: `unbekannte Strategie: ${strategy}` };
         }
         const rawA = localStorage.getItem(this.worldStorageKey(idA));
@@ -19939,132 +19938,14 @@ class AnazhRealm {
             return { ok: false, reason: `Parent-Save ungültig: ${err.message}` };
         }
 
-        // Neue Identität
-        let newWorldId;
-        try {
-            newWorldId =
-                typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        } catch {
-            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
-        }
-        const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
-        const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
-        const finalSlug = this._generateFusionSlug(slugA, slugB, slug);
-        const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
-        const bornAt = Date.now();
-
-        // Inventar-Union — gleicher Algo für alle Strategien. Wir tracken
-        // Bauplan-Umbenennungen, damit Querverweise (Werkzeug.sourceBlueprint,
-        // fraktaler-Bauplan.part.refName) anschließend rewired werden können.
-        // Tiefe Kopie via JSON, damit eine spätere Mutation in der Fusions-
-        // Welt nicht in die Eltern-Saves zurückblutet.
-        const blueprintsCloneA = saveA.blueprints ? JSON.parse(JSON.stringify(saveA.blueprints)) : [];
-        const blueprintsCloneB = saveB.blueprints ? JSON.parse(JSON.stringify(saveB.blueprints)) : [];
-        const materialsCloneA = saveA.materials ? JSON.parse(JSON.stringify(saveA.materials)) : [];
-        const materialsCloneB = saveB.materials ? JSON.parse(JSON.stringify(saveB.materials)) : [];
-        const toolsCloneA = saveA.tools ? JSON.parse(JSON.stringify(saveA.tools)) : [];
-        const toolsCloneB = saveB.tools ? JSON.parse(JSON.stringify(saveB.tools)) : [];
-        const bpRenameMap = {};
-        const mergedBlueprints = this._mergeOwnNamedItems(blueprintsCloneA, blueprintsCloneB, bpRenameMap);
-        const mergedMaterials = this._mergeOwnNamedItems(materialsCloneA, materialsCloneB);
-        const mergedTools = this._mergeOwnNamedItems(toolsCloneA, toolsCloneB);
-        // Querverweise rewiren: Werkzeuge die B-Baupläne referenzieren, und
-        // fraktale Baupläne mit refName auf andere B-Baupläne, müssen den
-        // umbenannten Bauplan-Namen mitbekommen.
-        this._rewireBlueprintRefs(mergedBlueprints, mergedTools, bpRenameMap);
-
-        // Player-Werkzeug-Liste: Union der besessenen Namen (Starter sind
-        // sowieso wieder beim Init verfügbar; nur eigene tragen Namen).
-        const playerToolsUnion = Array.from(
-            new Set([
-                ...((Array.isArray(saveA.playerTools) && saveA.playerTools) || []),
-                ...((Array.isArray(saveB.playerTools) && saveB.playerTools) || []),
-            ])
-        );
-
-        // Strategie-abhängige Felder.
-        const emotKeys = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
-        const emotA = (saveA.playerEmotions && typeof saveA.playerEmotions === "object" && saveA.playerEmotions) || {};
-        const emotB = (saveB.playerEmotions && typeof saveB.playerEmotions === "object" && saveB.playerEmotions) || {};
-        const mergedEmotions = {};
-        for (const k of emotKeys) {
-            const va = Number.isFinite(emotA[k]) ? emotA[k] : 0;
-            const vb = Number.isFinite(emotB[k]) ? emotB[k] : 0;
-            if (strategy === "tag-merge") mergedEmotions[k] = Math.max(va, vb);
-            else if (strategy === "random-mix") mergedEmotions[k] = (va + vb) / 2;
-            else mergedEmotions[k] = va; // sequence: aktive Welt
-        }
-
-        // DSL-History: pro Strategie eine andere Komposition.
-        const histA = Array.isArray(saveA.dslHistory) ? saveA.dslHistory : [];
-        const histB = Array.isArray(saveB.dslHistory) ? saveB.dslHistory : [];
-        let mergedHistory;
-        if (strategy === "random-mix") {
-            // Interleaved + Cap 500. Wir nehmen je 250 jüngste, mischen.
-            const aSlice = histA.slice(-250);
-            const bSlice = histB.slice(-250);
-            const combined = [];
-            const max = Math.max(aSlice.length, bSlice.length);
-            for (let i = 0; i < max; i++) {
-                // Zwei Münzwurf-Verzweigungen: zuerst A oder B?
-                if (Math.random() < 0.5) {
-                    if (i < aSlice.length) combined.push(aSlice[i]);
-                    if (i < bSlice.length) combined.push(bSlice[i]);
-                } else {
-                    if (i < bSlice.length) combined.push(bSlice[i]);
-                    if (i < aSlice.length) combined.push(aSlice[i]);
-                }
-            }
-            mergedHistory = combined.slice(-500);
-        } else {
-            mergedHistory = [...histA.slice(-250), ...histB.slice(-250)];
-        }
-
-        // Pattern-Memory: pro Keyword Listen verschmelzen, cap pro Keyword bei 8.
-        const pmA =
-            (saveA.dslPatternMemory && typeof saveA.dslPatternMemory === "object" && saveA.dslPatternMemory) || {};
-        const pmB =
-            (saveB.dslPatternMemory && typeof saveB.dslPatternMemory === "object" && saveB.dslPatternMemory) || {};
-        const mergedPatternMemory = {};
-        const pmKeys = new Set([...Object.keys(pmA), ...Object.keys(pmB)]);
-        for (const k of pmKeys) {
-            const merged = [...(pmA[k] || []), ...(pmB[k] || [])];
-            // Höchste Fitness zuerst, Cap 8.
-            merged.sort((x, y) => (y.fitness || 0) - (x.fitness || 0));
-            mergedPatternMemory[k] = merged.slice(0, 8);
-        }
-
-        // DSL-Abilities: Union per Name (A gewinnt bei Kollision).
-        const abilA = Array.isArray(saveA.dslAbilities) ? saveA.dslAbilities : [];
-        const abilB = Array.isArray(saveB.dslAbilities) ? saveB.dslAbilities : [];
-        const seenAbilNames = new Set();
-        const mergedAbilities = [];
-        for (const list of [abilA, abilB]) {
-            for (const a of list) {
-                if (!a || typeof a.name !== "string") continue;
-                if (seenAbilNames.has(a.name)) continue;
-                seenAbilNames.add(a.name);
-                mergedAbilities.push(a);
-            }
-        }
-
-        // Pfad-Buckets: Mittelung pro Achse (oder A's wenn B nichts hat).
-        let mergedPathBuckets = null;
-        if (saveA.playerPathBuckets || saveB.playerPathBuckets) {
-            const pbA = saveA.playerPathBuckets || {};
-            const pbB = saveB.playerPathBuckets || {};
-            const allKeys = new Set([...Object.keys(pbA), ...Object.keys(pbB)]);
-            mergedPathBuckets = {};
-            for (const k of allKeys) {
-                const a = pbA[k];
-                const b = pbB[k];
-                if (typeof a === "number" && typeof b === "number") mergedPathBuckets[k] = (a + b) / 2;
-                else if (typeof a === "number") mergedPathBuckets[k] = a;
-                else if (typeof b === "number") mergedPathBuckets[k] = b;
-            }
-        }
+        const identity = this._fusionGenerateIdentity(saveA, saveB, slug);
+        const inventory = this._fusionMergeInventory(saveA, saveB);
+        const mergedEmotions = this._fusionMergeEmotions(saveA, saveB, strategy);
+        const mergedHistory = this._fusionMergeDslHistory(saveA, saveB, strategy);
+        const mergedPatternMemory = this._fusionMergePatternMemory(saveA, saveB);
+        const mergedAbilities = this._fusionMergeAbilities(saveA, saveB);
+        const mergedPathBuckets = this._fusionMergePathBuckets(saveA, saveB);
+        const fusedEntries = this._fusionBuildJournalEntries(saveA, saveB, idA, idB, identity, strategy);
 
         // Terrain-Parameter mitteln, Wetter aus A.
         const steepness =
@@ -20076,25 +19957,6 @@ class AnazhRealm {
                 (Number.isFinite(saveB.terrainBaseHeight) ? saveB.terrainBaseHeight : 0.0)) /
             2;
         const weather = saveA.weather || saveB.weather || "sunny";
-
-        // Genesis-Eintrag + top-Erinnerungen je Elternteil.
-        const genesisEntry = {
-            id: 1,
-            at: bornAt,
-            tick: 0,
-            type: "genesis",
-            text: `Ich erwache aus „${slugA}" und „${slugB}".`,
-            ctx: {
-                worldId: newWorldId,
-                seed: newSeed,
-                parentA: idA,
-                parentB: idB,
-                strategy,
-            },
-        };
-        const journalA = this._selectFusionJournalEntries(saveA.worldJournal, idA, 4);
-        const journalB = this._selectFusionJournalEntries(saveB.worldJournal, idB, 4);
-        const fusedEntries = [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
 
         const snap = {
             playerPosition: this._defaultSpawnPos(),
@@ -20110,13 +19972,13 @@ class AnazhRealm {
             terrainBaseHeight: baseHeight,
             weather,
             worldMeta: {
-                worldId: newWorldId,
-                slug: finalSlug,
+                worldId: identity.newWorldId,
+                slug: identity.finalSlug,
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [idA, idB],
-                bornAt,
-                seed: newSeed,
+                bornAt: identity.bornAt,
+                seed: identity.newSeed,
                 fusionStrategy: strategy,
                 schemaVersion: "10.0-fusion-v1",
             },
@@ -20127,22 +19989,27 @@ class AnazhRealm {
             worldJournal: { entries: fusedEntries, seen: { genesis: true } },
             playerEmotions: mergedEmotions,
             playerSoul: saveA.playerSoul || "human",
-            playerTools: playerToolsUnion,
+            playerTools: inventory.playerToolsUnion,
             architectures: [],
-            blueprints: mergedBlueprints,
-            tools: mergedTools,
-            materials: mergedMaterials,
+            blueprints: inventory.mergedBlueprints,
+            tools: inventory.mergedTools,
+            materials: inventory.mergedMaterials,
             hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
         };
 
         try {
-            localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(snap));
+            localStorage.setItem(this.worldStorageKey(identity.newWorldId), JSON.stringify(snap));
         } catch (err) {
             return { ok: false, reason: `Speicher voll: ${err.message}` };
         }
-        this.worldsIndexUpsert({ worldId: newWorldId, slug: finalSlug, bornAt, lastPlayed: Date.now() });
+        this.worldsIndexUpsert({
+            worldId: identity.newWorldId,
+            slug: identity.finalSlug,
+            bornAt: identity.bornAt,
+            lastPlayed: Date.now(),
+        });
         this.log(
-            `Welt-Fusion: ${slugA} ⊕ ${slugB} → ${finalSlug} (Strategie ${strategy}, ID ${newWorldId.slice(0, 8)}…)`,
+            `Welt-Fusion: ${identity.slugA} ⊕ ${identity.slugB} → ${identity.finalSlug} (Strategie ${strategy}, ID ${identity.newWorldId.slice(0, 8)}…)`,
             "INFO"
         );
 
@@ -20152,10 +20019,180 @@ class AnazhRealm {
             window.location &&
             typeof window.location.reload === "function"
         ) {
-            this.activeWorldSet(newWorldId);
+            this.activeWorldSet(identity.newWorldId);
             window.location.reload();
         }
-        return { ok: true, worldId: newWorldId, slug: finalSlug, parentWorlds: [idA, idB], strategy };
+        return {
+            ok: true,
+            worldId: identity.newWorldId,
+            slug: identity.finalSlug,
+            parentWorlds: [idA, idB],
+            strategy,
+        };
+    }
+
+    // Neue Identität: UUID + Slugs + Seed + Geburts-Timestamp. crypto.randomUUID
+    // ist die bevorzugte Quelle (echter Zufall); Fallback ist Math.random.
+    _fusionGenerateIdentity(saveA, saveB, slugHint) {
+        let newWorldId;
+        try {
+            newWorldId =
+                typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        } catch {
+            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
+        }
+        const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
+        const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
+        const finalSlug = this._generateFusionSlug(slugA, slugB, slugHint);
+        const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+        const bornAt = Date.now();
+        return { newWorldId, slugA, slugB, finalSlug, newSeed, bornAt };
+    }
+
+    // Inventar-Union — gleicher Algo für alle Strategien. Tiefe Kopie via JSON
+    // (eine spätere Mutation der Fusions-Welt darf nicht in die Eltern-Saves
+    // zurückbluten). Bauplan-Umbenennungen tracken (`bpRenameMap`), damit
+    // Querverweise (Werkzeug.sourceBlueprint, fraktaler-Bauplan.part.refName)
+    // anschließend rewired werden — sonst zeigen sie auf alte B-Namen.
+    _fusionMergeInventory(saveA, saveB) {
+        const blueprintsCloneA = saveA.blueprints ? JSON.parse(JSON.stringify(saveA.blueprints)) : [];
+        const blueprintsCloneB = saveB.blueprints ? JSON.parse(JSON.stringify(saveB.blueprints)) : [];
+        const materialsCloneA = saveA.materials ? JSON.parse(JSON.stringify(saveA.materials)) : [];
+        const materialsCloneB = saveB.materials ? JSON.parse(JSON.stringify(saveB.materials)) : [];
+        const toolsCloneA = saveA.tools ? JSON.parse(JSON.stringify(saveA.tools)) : [];
+        const toolsCloneB = saveB.tools ? JSON.parse(JSON.stringify(saveB.tools)) : [];
+        const bpRenameMap = {};
+        const mergedBlueprints = this._mergeOwnNamedItems(blueprintsCloneA, blueprintsCloneB, bpRenameMap);
+        const mergedMaterials = this._mergeOwnNamedItems(materialsCloneA, materialsCloneB);
+        const mergedTools = this._mergeOwnNamedItems(toolsCloneA, toolsCloneB);
+        this._rewireBlueprintRefs(mergedBlueprints, mergedTools, bpRenameMap);
+        // Player-Werkzeug-Liste: Union der besessenen Namen (Starter sind
+        // sowieso wieder beim Init verfügbar; nur eigene tragen Namen).
+        const playerToolsUnion = Array.from(
+            new Set([
+                ...((Array.isArray(saveA.playerTools) && saveA.playerTools) || []),
+                ...((Array.isArray(saveB.playerTools) && saveB.playerTools) || []),
+            ])
+        );
+        return { mergedBlueprints, mergedMaterials, mergedTools, playerToolsUnion };
+    }
+
+    // Emotionen — strategie-abhängig: tag-merge nimmt max, random-mix mittelt,
+    // sequence behält A's (die aktive Welt).
+    _fusionMergeEmotions(saveA, saveB, strategy) {
+        const emotKeys = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
+        const emotA = (saveA.playerEmotions && typeof saveA.playerEmotions === "object" && saveA.playerEmotions) || {};
+        const emotB = (saveB.playerEmotions && typeof saveB.playerEmotions === "object" && saveB.playerEmotions) || {};
+        const mergedEmotions = {};
+        for (const k of emotKeys) {
+            const va = Number.isFinite(emotA[k]) ? emotA[k] : 0;
+            const vb = Number.isFinite(emotB[k]) ? emotB[k] : 0;
+            if (strategy === "tag-merge") mergedEmotions[k] = Math.max(va, vb);
+            else if (strategy === "random-mix") mergedEmotions[k] = (va + vb) / 2;
+            else mergedEmotions[k] = va;
+        }
+        return mergedEmotions;
+    }
+
+    // DSL-History — pro Strategie eine andere Komposition. random-mix
+    // interleaved (Münzwurf pro Iteration) + Cap 500; sonst je 250 jüngste
+    // konkateniert.
+    _fusionMergeDslHistory(saveA, saveB, strategy) {
+        const histA = Array.isArray(saveA.dslHistory) ? saveA.dslHistory : [];
+        const histB = Array.isArray(saveB.dslHistory) ? saveB.dslHistory : [];
+        if (strategy === "random-mix") {
+            const aSlice = histA.slice(-250);
+            const bSlice = histB.slice(-250);
+            const combined = [];
+            const max = Math.max(aSlice.length, bSlice.length);
+            for (let i = 0; i < max; i++) {
+                if (Math.random() < 0.5) {
+                    if (i < aSlice.length) combined.push(aSlice[i]);
+                    if (i < bSlice.length) combined.push(bSlice[i]);
+                } else {
+                    if (i < bSlice.length) combined.push(bSlice[i]);
+                    if (i < aSlice.length) combined.push(aSlice[i]);
+                }
+            }
+            return combined.slice(-500);
+        }
+        return [...histA.slice(-250), ...histB.slice(-250)];
+    }
+
+    // Pattern-Memory — pro Keyword Listen verschmelzen, höchste Fitness zuerst,
+    // Cap pro Keyword bei 8.
+    _fusionMergePatternMemory(saveA, saveB) {
+        const pmA =
+            (saveA.dslPatternMemory && typeof saveA.dslPatternMemory === "object" && saveA.dslPatternMemory) || {};
+        const pmB =
+            (saveB.dslPatternMemory && typeof saveB.dslPatternMemory === "object" && saveB.dslPatternMemory) || {};
+        const mergedPatternMemory = {};
+        const pmKeys = new Set([...Object.keys(pmA), ...Object.keys(pmB)]);
+        for (const k of pmKeys) {
+            const merged = [...(pmA[k] || []), ...(pmB[k] || [])];
+            merged.sort((x, y) => (y.fitness || 0) - (x.fitness || 0));
+            mergedPatternMemory[k] = merged.slice(0, 8);
+        }
+        return mergedPatternMemory;
+    }
+
+    // DSL-Abilities — Union per Name (A gewinnt bei Kollision).
+    _fusionMergeAbilities(saveA, saveB) {
+        const abilA = Array.isArray(saveA.dslAbilities) ? saveA.dslAbilities : [];
+        const abilB = Array.isArray(saveB.dslAbilities) ? saveB.dslAbilities : [];
+        const seen = new Set();
+        const mergedAbilities = [];
+        for (const list of [abilA, abilB]) {
+            for (const a of list) {
+                if (!a || typeof a.name !== "string") continue;
+                if (seen.has(a.name)) continue;
+                seen.add(a.name);
+                mergedAbilities.push(a);
+            }
+        }
+        return mergedAbilities;
+    }
+
+    // Pfad-Buckets — Mittelung pro Achse (oder einseitiger Wert wenn nur eine
+    // Welt etwas hat). Gibt `null` zurück, wenn keine Welt Buckets hat.
+    _fusionMergePathBuckets(saveA, saveB) {
+        if (!saveA.playerPathBuckets && !saveB.playerPathBuckets) return null;
+        const pbA = saveA.playerPathBuckets || {};
+        const pbB = saveB.playerPathBuckets || {};
+        const allKeys = new Set([...Object.keys(pbA), ...Object.keys(pbB)]);
+        const mergedPathBuckets = {};
+        for (const k of allKeys) {
+            const a = pbA[k];
+            const b = pbB[k];
+            if (typeof a === "number" && typeof b === "number") mergedPathBuckets[k] = (a + b) / 2;
+            else if (typeof a === "number") mergedPathBuckets[k] = a;
+            else if (typeof b === "number") mergedPathBuckets[k] = b;
+        }
+        return mergedPathBuckets;
+    }
+
+    // Genesis-Eintrag (id=1) + top-Erinnerungen je Elternteil (je 4). IDs
+    // werden am Ende neu durchnumeriert.
+    _fusionBuildJournalEntries(saveA, saveB, idA, idB, identity, strategy) {
+        const genesisEntry = {
+            id: 1,
+            at: identity.bornAt,
+            tick: 0,
+            type: "genesis",
+            text: `Ich erwache aus „${identity.slugA}" und „${identity.slugB}".`,
+            ctx: {
+                worldId: identity.newWorldId,
+                seed: identity.newSeed,
+                parentA: idA,
+                parentB: idB,
+                strategy,
+            },
+        };
+        const journalA = this._selectFusionJournalEntries(saveA.worldJournal, idA, 4);
+        const journalB = this._selectFusionJournalEntries(saveB.worldJournal, idB, 4);
+        return [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
     }
 
     loadVersion(version) {
