@@ -9955,8 +9955,24 @@ class AnazhRealm {
                     }
                 }
                 if (heights.length > 0) {
-                    heights.sort((a, b) => a - b);
-                    this.state.waterLevel = heights[Math.floor(heights.length * 0.35)];
+                    // V9.60-b.1 — waterLevel ABSOLUT statt 35-Perzentil.
+                    // Wurzel-Erkenntnis: die Sample-Region (340×340 m) ist
+                    // viel kleiner als die Tektonik-Wellenlänge (7150 m),
+                    // sodass die 169 Samples ALLE denselben tect-Wert sehen.
+                    // Das 35-Perzentil bedeutet "35% der LOKALEN Welt unter
+                    // Wasser" — aber lokal IST die Welt halb-halb verteilt,
+                    // also landet waterLevel mitten am Median (V9.59-Diagnose:
+                    // Land-Marge +0.8 m). Heilung von Riesen-Spielen (Minecraft
+                    // 1.18+ Sea Level): waterLevel ist eine ABSOLUTE Konstante,
+                    // nicht adaptiv. Wir setzen sie auf `terrainBaseHeight − 3`
+                    // (existierender Fallback) — Median Surface ~+20 m liegt
+                    // dann klar über Wasser, 35%-Annahme entfällt. Tarn-
+                    // `maxAllowed = surf − waterRef − 1` wird grösser (mehr
+                    // Spots passieren), Hochsee-Sichtbarkeit verstärkt.
+                    // V9.60-b.2 wird ggf. cont/ranges nach unten erweitern,
+                    // wenn die jetzige Welt zu landig ohne Tiefen wirkt.
+                    heights.sort((a, b) => a - b); // sortiert für Diagnose-Logs
+                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
                 } else {
                     this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
                 }
