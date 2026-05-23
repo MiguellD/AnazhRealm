@@ -159,6 +159,38 @@ function histogram(values, bucketSize) {
                 } : null,
             }));
 
+            // (V9.59) Welt-Awareness: zählt Architekturen + Gras-Instanzen,
+            // die UNTER Wasser stehen (Sünde-Counter). Vor V9.59 hatte die
+            // Welt keine Wasser-Awareness; nach V9.59 sollte der Counter ~0
+            // sein. Architekturen aus state.architectures (Position), Gras
+            // aus state.voxelChunkGrass (InstancedMesh.matrices).
+            let archTotal = 0;
+            let archInWater = 0;
+            for (const a of s.architectures || []) {
+                if (!a || !a.position) continue;
+                archTotal++;
+                const waterY = r._waterLevelAt(a.position.x, a.position.z);
+                const surfY = r._voxelSurfaceY(a.position.x, a.position.z);
+                if (surfY !== null && surfY < waterY) archInWater++;
+            }
+            let grassTotal = 0;
+            let grassInWater = 0;
+            if (s.voxelChunkGrass) {
+                const tmpMatrix = new (window.THREE || {}).Matrix4 ? new window.THREE.Matrix4() : null;
+                const tmpPos = (window.THREE || {}).Vector3 ? new window.THREE.Vector3() : null;
+                for (const inst of s.voxelChunkGrass.values()) {
+                    if (!inst || !inst.count || !tmpMatrix) continue;
+                    for (let i = 0; i < inst.count; i++) {
+                        inst.getMatrixAt(i, tmpMatrix);
+                        tmpPos.setFromMatrixPosition(tmpMatrix);
+                        grassTotal++;
+                        const wY = r._waterLevelAt(tmpPos.x, tmpPos.z);
+                        if (tmpPos.y < wY) grassInWater++;
+                    }
+                }
+            }
+            const awareness = { archTotal, archInWater, grassTotal, grassInWater };
+
             // (e) Welt-Meta
             const meta = {
                 seed: s.worldMeta && s.worldMeta.seed,
@@ -178,6 +210,7 @@ function histogram(values, bucketSize) {
                 stats,
                 tarns,
                 lakes,
+                awareness,
                 macroY: Array.from(macroY),
                 voxelY: Array.from(voxelY),
                 chunkCfg: { dimY: cfg.dimY, step: cfg.step, floorDrop: cfg.floorDrop, ceiling },
@@ -295,6 +328,14 @@ function histogram(values, bucketSize) {
         if (ceiling - surfMax < 8) {
             console.log("  ⚠  WARNUNG: Decken-Marge knapp — eine Berg-Vertiefung BRAUCHT eine Decken-Erhöhung");
         }
+        console.log("");
+
+        console.log("=== WELT-AWARENESS (V9.59 — kennt die Welt ihr Wasser?) ===");
+        const aw = data.awareness;
+        console.log(`  Architekturen total:        ${aw.archTotal}`);
+        console.log(`  Architekturen unter Wasser: ${aw.archInWater} ${aw.archInWater === 0 ? "✓" : "⚠"}`);
+        console.log(`  Gras-Halme total:           ${aw.grassTotal}`);
+        console.log(`  Gras-Halme unter Wasser:    ${aw.grassInWater} ${aw.grassInWater === 0 ? "✓" : "⚠"}`);
         console.log("");
 
         console.log("=== ARTEFAKTE ===");

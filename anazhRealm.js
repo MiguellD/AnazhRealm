@@ -15092,6 +15092,24 @@ class AnazhRealm {
         return level;
     }
 
+    // V9.59-a — semantische Wurzel der Welt-Awareness: "ist diese Position
+    // trockenes Land?". Vergleicht die Voxel-Surface mit dem Wasser-Spiegel,
+    // liefert true wenn der Boden mindestens `marge` Meter über dem Wasser
+    // liegt. EINE Quelle für alle Welt-Schichten, die wissen müssen wo
+    // Wasser ist (Vegetation, Welt-Bauwerke, Küsten-Biom, später Kreaturen-
+    // Pfadsuche). Vor V9.59 hatte jede Schicht IGNORIERT, dass Wasser
+    // existiert — Gras wuchs im Meer, Bäume standen im See; der Schöpfer-
+    // Befund nach V9.58 war: "die umgebung selbst scheint nicht zu verstehen
+    // wo das wasser platziert wurde". `surfaceY = null` (Höhle/Loch) zählt
+    // als nicht-Land. Performance: O(_waterLevelAt) — Ozean O(1), See O(9),
+    // Fluss O(bucket).
+    _isAboveWaterAt(x, z, marge = 0) {
+        const surfaceY = this._voxelSurfaceY(x, z);
+        if (surfaceY === null || !Number.isFinite(surfaceY)) return false;
+        const waterY = this._waterLevelAt(x, z);
+        return surfaceY > waterY + marge;
+    }
+
     // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
     // Kanal liegt (Distanz ≤ halbe Fluss-Breite + Bank-Rampe — die volle
     // Carve-Breite). Liefert die normierte Flow-Richtung, die Carve-Tiefe
@@ -16176,6 +16194,13 @@ class AnazhRealm {
                 if (lebendig < 0.22) continue;
                 const surfY = this._voxelSurfaceY(baseX, baseZ);
                 if (surfY === null) continue;
+                // V9.59-c — Gras-Halme wachsen NICHT unter Wasser. 0.1 m
+                // Marge: Gras DARF an der Uferlinie wachsen (saftiges Ufer),
+                // aber nicht im See-Becken. `_waterLevelAt` ist O(1)+ für
+                // Ozean, leicht teurer für See/Fluss → einmal pro Sample-
+                // Zelle, nicht pro Blade (16×16=256 Samples pro Chunk).
+                const waterY = this._waterLevelAt(baseX, baseZ);
+                if (surfY < waterY + 0.1) continue;
                 const count = Math.floor(lebendig * 14 + rnd() * 2);
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
@@ -27209,6 +27234,14 @@ class AnazhRealm {
     // sonst 0. baseY-Kompensation: `spawnArchitecture` zieht 0.5 ab (kalibriert
     // für at_player), `+0.5` setzt die Struktur exakt auf den Boden.
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
+        // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
+        // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
+        // im flachen Ufer steht. Schöpfer-Befund nach V9.58: "die umgebung
+        // selbst scheint nicht zu verstehen wo das wasser platziert wurde".
+        // Eine Quelle: `_isAboveWaterAt` (V9.59-a) — alle Welt-Schichten,
+        // die Wasser respektieren müssen, lesen denselben Helfer.
+        if (!this._isAboveWaterAt(sampleX, sampleZ, 0.4)) return 0;
+
         // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf. Eine
         // Felsformation spawnt nur, wenn die Region sie trägt (felsbogen/
         // felsturm sind dichte-getrieben → die max-Affinität passiert den Floor
