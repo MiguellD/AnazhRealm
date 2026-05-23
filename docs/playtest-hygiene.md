@@ -108,7 +108,7 @@ Reihenfolge-Prinzip wie V9.44: vom Gerüst zum Detail, jede Sub-Welle ein Commit
 | # | Welle | Was | Aufwand | Risiko | Status |
 |---|---|---|---|---|---|
 | a | **Gerüst + Beweis-Schnitt** | `ctx`-Objekt + `safeEvaluate`-Helfer; die ersten drei extrahierbaren Sektionen (Initial-State-Basis, Ring 1 Grok, Ring 2 DSL+Terrain-Erweiterung) als benannte Module-Scope-Funktionen, vom Orchestrator `await`-et. Etabliert Muster + Beweis-Methode. | ~1 Session | niedrig | ✅ V9.52-a (23.05.2026, vier Baseline-Läufe bit-identisch; nur pre-existing Drift-Bänder verbleiben) |
-| b | **Band 1 — Ringe + frühe Hylomorphismus-Wellen** | Welle 1-5, Ring 8-11.5 (~50 Sektionen) | ~1-1.5 Sessions | niedrig | offen |
+| b | **Band 1 — Ringe + frühe Hylomorphismus-Wellen** | Welle 1-5, Ring 8-11.5 (41 Sektionen) als 11 Band-Funktionen | ~1-1.5 Sessions | niedrig | ✅ V9.52-b (23.05.2026, 11 Band-Funktionen je 265-1260 Z., sechs Baseline-Läufe bit-identisch; mechanisches Skript `/tmp/extract-band1-grouped.cjs`) |
 | c | **Band 2 — Welle 6 + Voxel-Bogen** | 6.A-6.X, Voxel-Terrain-Phasen, Hydrosphäre (~55 Sektionen) | ~1.5 Sessions | niedrig | offen |
 | d | **Band 3 — Atmosphäre + Fremd-Engine-Bogen** | 6.G3/G4, V8.24-V8.93, W12-W17 (~55 Sektionen) | ~1.5 Sessions | niedrig | offen |
 | e | **Band 4 — Rest + Schluss** | die übrigen Sektionen, der Report-Block, `finally`/Exit | ~1 Session | niedrig | offen |
