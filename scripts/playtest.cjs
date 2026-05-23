@@ -12959,6 +12959,233 @@ async function checkBandWelleA4Recompute(ctx) {
     );
 }
 
+// V9.68 (Welle A.5) — der Vision-Beweis: das Wasser kennt die Welt. Spawnt
+// einen Damm direkt auf einem Fluss-Segment, lässt die Hydrosphäre neu
+// rechnen, prüft empirisch dass das Drainage-Netz sich verändert hat —
+// und kehrt zum Original zurück, sobald der Damm entfernt wird.
+// Vier Vision-Beweis-Invarianten (Roadmap §Welle A.5):
+//   (i) Damm im Fluss → Drainage-Netz verändert
+//   (ii) Stein-Block im Fluss → dieselbe Reaktion (kein Damm-Privileg)
+//   (iii) Carve im Trockenland senkt die effektive Surface unter waterLevel
+//   (iv) Architektur-Remove → Drainage-Netz kehrt zum Original-Pfad zurück
+// Plus: Symphonie-Ping-Methode existiert + Recompute schreibt Journal.
+async function checkBandWelleA5VisionProof(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.hydrosphere || !r.state.hydrosphere.ready) {
+            return { error: "hydrosphere not ready" };
+        }
+        const out = {};
+        out.hasPingMethod = typeof r._playHydroRecomputePing === "function";
+        // Fingerprint-Funktion: ein kompakter Sentinel des Drainage-Netzes.
+        // Verändert sich zusammen mit der Topologie (Fluss-Anzahl, See-
+        // Anzahl, Mündungs-Positionen, totaler Fluss-Punkt-Count).
+        const fingerprint = () => {
+            const h = r.state.hydrosphere;
+            if (!h || !h.ready) return null;
+            let mouthSum = 0;
+            let pointCount = 0;
+            let pointHash = 0;
+            for (const riv of h.rivers) {
+                pointCount += riv.points.length;
+                const last = riv.points[riv.points.length - 1];
+                if (last) mouthSum += last.x + last.z;
+                // Stabiler XOR-Hash über alle Punkt-Koordinaten — detektiert
+                // auch eine 1-Zellen-Pfad-Verschiebung, die `mouthSum` allein
+                // verpassen würde.
+                for (const p of riv.points) {
+                    pointHash = (pointHash * 31 + ((p.x | 0) ^ (p.z | 0))) | 0;
+                }
+            }
+            const stats = h.stats || {};
+            return {
+                riverCount: h.rivers.length,
+                lakeCount: h.lakes.length,
+                waterfallCount: h.waterfalls.length,
+                pointCount,
+                mouthSum: Math.round(mouthSum * 100) / 100,
+                pointHash,
+                surfMax: stats.surfMax,
+                maxAccum: stats.maxAccum,
+                lakeCells: stats.lakeCells,
+            };
+        };
+        const eq = (a, b) =>
+            a.riverCount === b.riverCount &&
+            a.lakeCount === b.lakeCount &&
+            a.waterfallCount === b.waterfallCount &&
+            a.pointCount === b.pointCount &&
+            Math.abs(a.mouthSum - b.mouthSum) < 0.5 &&
+            a.pointHash === b.pointHash &&
+            a.surfMax === b.surfMax &&
+            a.maxAccum === b.maxAccum &&
+            a.lakeCells === b.lakeCells;
+        // Baseline-Fingerprint
+        const baseFp = fingerprint();
+        out.baseFp = baseFp;
+        out.hasRivers = baseFp.riverCount > 0;
+        // Determinismus-Check: ein No-Op-Recompute (ohne Mutation) muss
+        // bit-identischen Fingerprint liefern — andernfalls sind unsere
+        // Veränderungs-Tests unten unfair (würden auch ohne Damm rot).
+        r._recomputeHydrosphere();
+        const noopFp = fingerprint();
+        out.noopFp = noopFp;
+        out.noopDeterministic = eq(noopFp, baseFp);
+        if (!baseFp.riverCount) {
+            out.skippedRiverTests = "no rivers in worldgen (seed-abhängig)";
+            return out;
+        }
+        // Längsten Fluss finden, einen Mittelpunkt picken
+        let longest = r.state.hydrosphere.rivers[0];
+        for (const riv of r.state.hydrosphere.rivers) {
+            if (riv.points.length > longest.points.length) longest = riv;
+        }
+        const mid = longest.points[Math.floor(longest.points.length / 2)];
+        out.midpoint = { x: mid.x, z: mid.z, y: mid.y, flowX: mid.flowX, flowZ: mid.flowZ };
+        // Hilfs-Funktion: ein 3×3-Architektur-Plug grid-aligned auf den Hydro-
+        // Sample-Positionen (16-m-Grid). Drei Disziplinen für sichtbaren Effekt:
+        // 1. **Grid-aligned**: Hydro samplet bei `originX + (i+0.5)*cell`. Eine
+        //    Architektur mit AABB-halfRadius 4m bedeckt nur ihre EIGENE Sample-
+        //    Zelle; jede diagonale Versatz-Position verfehlt die Sample-Grid.
+        //    Daher di/dj als ganze Cell-Schritte (16m), egal welche Flow-Richtung.
+        // 2. Spawn-Y aus der lokalen MACRO-Surface — `mid.y` ist die Wasser-Y
+        //    (priority-flood-filled), nicht der Bett-Macro.
+        // 3. Hoch genug bauen, dass der 3×3-Blur (_hydroBlur) die Hebung nicht
+        //    zur ε-Erhebung dämpft — `dyAboveMacro=15` ergibt nach Blur ~5m Boost,
+        //    genug zum Re-Routen einer Fluss-Zelle.
+        const buildPlug = (cx, cz, type, dyAboveMacro) => {
+            const entries = [];
+            for (let di = -1; di <= 1; di++) {
+                for (let dj = -1; dj <= 1; dj++) {
+                    const x = cx + di * 16;
+                    const z = cz + dj * 16;
+                    const macroHere = r._terrainMacroSurfaceY(x, z, false);
+                    if (!Number.isFinite(macroHere)) continue;
+                    const e = r.spawnArchitecture(type, { x, y: macroHere + dyAboveMacro, z });
+                    if (e) entries.push(e);
+                }
+            }
+            return entries;
+        };
+        // (i) Damm-Plug im Fluss → Drainage-Netz verändert
+        const damPlug = buildPlug(mid.x, mid.z, "damm", 15);
+        out.damPlugSize = damPlug.length;
+        r._recomputeHydrosphere();
+        const damFp = fingerprint();
+        out.damFp = damFp;
+        out.damChanged = !eq(damFp, baseFp);
+        // (iv) Damm-Remove → Netz kehrt zurück
+        for (const e of damPlug) r.removeArchitecture(e);
+        r._recomputeHydrosphere();
+        const restoredFp = fingerprint();
+        out.restoredFp = restoredFp;
+        out.removeRestores = eq(restoredFp, baseFp);
+        // (ii) Stein-Block-Plug im Fluss → dieselbe Reaktion (kein Damm-Privileg)
+        const blockPlug = buildPlug(mid.x, mid.z, "stein_block", 15);
+        r._recomputeHydrosphere();
+        const blockFp = fingerprint();
+        out.blockFp = blockFp;
+        out.blockChanged = !eq(blockFp, baseFp);
+        for (const e of blockPlug) r.removeArchitecture(e);
+        r._recomputeHydrosphere();
+        // (iii) Carve im Trockenland senkt effective unter waterLevel.
+        // Wir brauchen einen Spot, der nicht zu hoch über waterLevel liegt,
+        // weil _addVoxelEdit den Radius auf max 12 m klemmt → maximaler
+        // Surface-Drop ist ~12 m (bei r=12, carveY=macro-6 → eff=macro-18).
+        const wl = r.state.waterLevel;
+        let dryX = 0;
+        let dryZ = 0;
+        let macroAt = -Infinity;
+        const cands = [];
+        for (let cx = -400; cx <= 400; cx += 80) {
+            for (let cz = -400; cz <= 400; cz += 80) {
+                cands.push({ x: cx, z: cz });
+            }
+        }
+        for (const cand of cands) {
+            const m = r._terrainMacroSurfaceY(cand.x, cand.z);
+            // Sweet spot: 4..14 m über waterLevel — hoch genug für „Trockenland",
+            // niedrig genug dass der r=12-Carve unter den waterLevel reicht.
+            if (Number.isFinite(m) && m > wl + 4 && m < wl + 14 && m > macroAt) {
+                macroAt = m;
+                dryX = cand.x;
+                dryZ = cand.z;
+            }
+        }
+        out.drySpot = { x: dryX, z: dryZ, macroY: macroAt, waterLevel: wl };
+        out.foundDrySpot = macroAt > wl + 4 && macroAt < wl + 14;
+        if (out.foundDrySpot) {
+            // r=12, carveY so dass das Carve-Volumen die Surface UMSCHLIESST:
+            // top = carveY + r > macroAt (cuts) und bot = carveY - r < waterLevel.
+            const carveR = 12;
+            const carveY = macroAt - carveR * 0.5;
+            const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
+            const carveOk = r._addVoxelEdit(dryX, carveY, dryZ, carveR, "carve");
+            out.carveOk = carveOk === true;
+            const effAfter = r._effectiveSurfaceY(dryX, dryZ);
+            out.effAfterCarve = effAfter;
+            out.carveLowersBelowWater = effAfter < wl;
+            // Cleanup
+            if (r.state.worldMeta.voxelEdits.length > editsBefore) {
+                r.state.worldMeta.voxelEdits.length = editsBefore;
+            }
+        }
+        // (v) Welt-Feedback: Recompute schreibt Journal-Eintrag type=water
+        const journal = r.state.worldJournal && r.state.worldJournal.entries;
+        out.hasWaterJournal = Array.isArray(journal) && journal.some((e) => e.type === "water");
+        return out;
+    });
+    if (res.error) {
+        check("Welle A.5 V9.68: Vision-Proof-Band (Vorbedingung)", false, res.error);
+        return;
+    }
+    check("Welle A.5 V9.68: _playHydroRecomputePing existiert", res.hasPingMethod);
+    check(
+        "Welle A.5 V9.68: No-Op-Recompute ist deterministisch (Fingerprint bit-identisch)",
+        res.noopDeterministic,
+        `base=${JSON.stringify(res.baseFp)}, noop=${JSON.stringify(res.noopFp)}`
+    );
+    check(
+        "Welle A.5 V9.68: Welt hat initiale Flüsse (Vorbedingung)",
+        res.hasRivers,
+        `rivers=${res.baseFp.riverCount}, lakes=${res.baseFp.lakeCount}, falls=${res.baseFp.waterfallCount}`
+    );
+    if (!res.hasRivers) {
+        check("Welle A.5 V9.68: Vision-Beweis (Damm/Block/Carve)", false, "keine Flüsse — Welt zu trocken");
+        return;
+    }
+    check(
+        "Welle A.5 V9.68: (i) Damm im Fluss verändert Drainage-Netz",
+        res.damChanged,
+        `base.pointCount=${res.baseFp.pointCount}, mit Damm.pointCount=${res.damFp.pointCount}, plug=${res.damPlugSize}`
+    );
+    check(
+        "Welle A.5 V9.68: (iv) Damm-Remove stellt Drainage-Netz wieder her",
+        res.removeRestores,
+        `restored=${JSON.stringify(res.restoredFp)}`
+    );
+    check(
+        "Welle A.5 V9.68: (ii) Stein-Block verändert Drainage-Netz (kein Damm-Privileg)",
+        res.blockChanged,
+        `mit Stein-Block=${JSON.stringify(res.blockFp)}`
+    );
+    check(
+        "Welle A.5 V9.68: Trocken-Spot oberhalb Wasser gefunden (Vorbedingung)",
+        res.foundDrySpot,
+        `(${res.drySpot.x}, ${res.drySpot.z}) macroY=${res.drySpot.macroY}`
+    );
+    if (res.foundDrySpot) {
+        check("Welle A.5 V9.68: _addVoxelEdit Trockenland-Carve akzeptiert", res.carveOk);
+        check(
+            "Welle A.5 V9.68: (iii) Carve im Trockenland senkt effective unter waterLevel",
+            res.carveLowersBelowWater,
+            `eff=${res.effAfterCarve}`
+        );
+    }
+    check("Welle A.5 V9.68: Recompute schreibt Journal-Eintrag type=water", res.hasWaterJournal);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -16288,14 +16515,22 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
         out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
 
-        // _findOldestCreature liefert die älteste (kleinster bornAt)
+        // _findOldestCreature liefert die älteste (kleinster bornAt). Test-
+        // Isolation: ALLE Kreaturen auf `now` setzen (jung), dann c0+c1
+        // gezielt älter. Sonst ist der Test fragil gegen die Welt-Lifetime
+        // (Worldgen-Kreaturen mit bornAt = WorldgenZeitpunkt werden mit
+        // jedem Playtest-Sekunde älter relativ zu c1, ab > 10s Test-Laufzeit
+        // sind sie ÄLTER als c1).
         if (r.state.creatures.length >= 2) {
+            const now = Date.now();
+            for (const c of r.state.creatures) {
+                if (!c.userData) c.userData = {};
+                c.userData.bornAt = now;
+            }
             const c0 = r.state.creatures[0];
             const c1 = r.state.creatures[1];
-            if (!c0.userData) c0.userData = {};
-            if (!c1.userData) c1.userData = {};
-            c0.userData.bornAt = Date.now() - 5000;
-            c1.userData.bornAt = Date.now() - 10000;
+            c0.userData.bornAt = now - 5000;
+            c1.userData.bornAt = now - 10000;
             const oldest = r._findOldestCreature();
             out.oldestIsOlder = oldest === c1;
         } else {
@@ -29847,6 +30082,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleA2Blocker(ctx);
             await checkBandWelleA3EffectiveSurface(ctx);
             await checkBandWelleA4Recompute(ctx);
+            await checkBandWelleA5VisionProof(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

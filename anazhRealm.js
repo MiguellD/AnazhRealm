@@ -13639,7 +13639,50 @@ class AnazhRealm {
                 lakes: this.state.hydrosphere && this.state.hydrosphere.lakes ? this.state.hydrosphere.lakes.length : 0,
             });
         }
+        // V9.68 (Welle A.5) — multisensorische Spur (§1.4): ein kurzer Wasser-
+        // Ping. Distinkt vom Architektur-Farewell (Sinus-Glissando) durch
+        // gefiltertes Noise + fallendes Lowpass-Cutoff (Wasser-Strömung statt
+        // Glocken-Ton). Welt-stabil idempotent über _playHydroRecomputePing.
+        this._playHydroRecomputePing();
         this.log(`A.4 Hydrosphäre-Recompute: ${dt.toFixed(0)} ms`, "INFO");
+    }
+
+    // V9.68 (Welle A.5) — multisensorischer Ping beim reaktiven Recompute.
+    // Vision §1.4: Multisensorik. Kein lautes Donnern — ein 0.6-s-Strömungs-
+    // hauch (Bandpass-gefiltertes Noise, Cutoff sinkt von 700→200 Hz, Gain
+    // schwillt + verklingt). Stumm wenn keine Symphonie aktiv ist (Headless,
+    // Audio-Toggle off, kein User-Gesture). Defensive try/catch — der
+    // Recompute darf nie an einem Audio-Fehler scheitern.
+    _playHydroRecomputePing() {
+        const sym = this.state.symphony;
+        if (!sym || !sym.enabled || !sym.ctx) return;
+        try {
+            const ctx = sym.ctx;
+            const now = ctx.currentTime;
+            const dur = 0.6;
+            // Kurzes Noise-Sample (0.6 s, ~26500 Samples bei 44.1 kHz).
+            const sampleRate = ctx.sampleRate || 44100;
+            const buf = ctx.createBuffer(1, Math.floor(sampleRate * dur), sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            const filter = ctx.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.Q.value = 1.6;
+            filter.frequency.setValueAtTime(700, now);
+            filter.frequency.exponentialRampToValueAtTime(200, now + dur);
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.06, now + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.0005, now + dur);
+            const dest = sym.masterGain || ctx.destination;
+            noise.connect(filter).connect(gain).connect(dest);
+            noise.start(now);
+            noise.stop(now + dur + 0.05);
+        } catch {
+            /* Audio-Fehler nicht hart — die Welt soll auch ohne Klang reagieren */
+        }
     }
 
     // V9.67 (Welle A.4) — der Debounce-Tick. Läuft pro Frame, prüft ob ein
