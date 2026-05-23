@@ -31,6 +31,9 @@ class AnazhRealm {
             voxelChunkGrass: null,
             voxelChunkWater: null,
             voxelPopulatedChunks: null,
+            // V9.64 (Welle A.1) — Damm-Architektur-Bucket-Index (16-m-Zellen).
+            // O(1)-Lookup via `_damTopAt(x, z)` für Terrain-Sampling (V9.65).
+            damIndex: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
@@ -9955,8 +9958,24 @@ class AnazhRealm {
                     }
                 }
                 if (heights.length > 0) {
-                    heights.sort((a, b) => a - b);
-                    this.state.waterLevel = heights[Math.floor(heights.length * 0.35)];
+                    // V9.60-b.1 — waterLevel ABSOLUT statt 35-Perzentil.
+                    // Wurzel-Erkenntnis: die Sample-Region (340×340 m) ist
+                    // viel kleiner als die Tektonik-Wellenlänge (7150 m),
+                    // sodass die 169 Samples ALLE denselben tect-Wert sehen.
+                    // Das 35-Perzentil bedeutet "35% der LOKALEN Welt unter
+                    // Wasser" — aber lokal IST die Welt halb-halb verteilt,
+                    // also landet waterLevel mitten am Median (V9.59-Diagnose:
+                    // Land-Marge +0.8 m). Heilung von Riesen-Spielen (Minecraft
+                    // 1.18+ Sea Level): waterLevel ist eine ABSOLUTE Konstante,
+                    // nicht adaptiv. Wir setzen sie auf `terrainBaseHeight − 3`
+                    // (existierender Fallback) — Median Surface ~+20 m liegt
+                    // dann klar über Wasser, 35%-Annahme entfällt. Tarn-
+                    // `maxAllowed = surf − waterRef − 1` wird grösser (mehr
+                    // Spots passieren), Hochsee-Sichtbarkeit verstärkt.
+                    // V9.60-b.2 wird ggf. cont/ranges nach unten erweitern,
+                    // wenn die jetzige Welt zu landig ohne Tiefen wirkt.
+                    heights.sort((a, b) => a - b); // sortiert für Diagnose-Logs
+                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
                 } else {
                     this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
                 }
@@ -11070,18 +11089,29 @@ class AnazhRealm {
     static get TARN() {
         return Object.freeze({
             spacing: 200, // m — Kantenlänge einer Kandidaten-Zelle (jittered grid)
-            reliefPercentile: 0.58, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
-            // ~42 % des Relief DIESER Welt (findet das Hochland auch in einer
-            // flachen Welt; ein fixer Wert verfehlte mal alles, mal zu viel).
-            minReliefAbs: 14, // m — absoluter Boden über terrainBaseHeight
-            maxSlope: 0.25, // Hang-Grenze — verwirft nur Cliffs. Die Mulden-Tiefe
-            // skaliert ADAPTIV mit dem Hang (siehe `_hydroSeedTarns`) → das
-            // Becken schliesst sicher mit ~8 m Wasser-Tiefe, egal wie steil.
-            placeThreshold: 0.05, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
+            reliefPercentile: 0.55, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
+            // ~45 % des Relief DIESER Welt (V9.58-c von 0.58 gesenkt, weil die
+            // Tektonik die Hochlands-Verteilung verbreitete — die alte 42%-
+            // Grenze schloss jetzt zu viele echte Hochlands-Spots aus).
+            minReliefAbs: 30, // m — absoluter Boden über terrainBaseHeight (V9.58-c
+            // von 14 auf 30 angehoben: in der V9.58-b-Welt mit max ~120 m sind
+            // 14 m kein Hochland mehr, sondern Mittelland).
+            maxSlope: 0.35, // Hang-Grenze (V9.58-c von 0.25 auf 0.35 erweitert,
+            // weil die V9.58-b-Berge steiler sind; die Mulden-Tiefe skaliert
+            // adaptiv mit dem Hang, das Becken schliesst trotzdem sicher).
+            placeThreshold: -0.1, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
+            // (V9.58-c von 0.05 auf −0.1 gesenkt — die alte Schwelle nahm nur
+            // ~47 % der Spots an, in einer Welt mit weiteren Hochlandsregionen
+            // wollen wir grosszügiger sein; ~60 % der Spots passen).
             radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
             radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
-            depthMin: 22, // m — Mulden-Tiefe (UNTERgrenze für sanfte Spots).
-            depthMax: 42, // m — OBERgrenze (steile Spots brauchen tiefere Mulden).
+            depthMin: 28, // m — Mulden-Tiefe (V9.58-c von 22 auf 28 angehoben:
+            // tiefere Mulden für die V9.58-b-Welt, wo das Hochland 60-120 m
+            // hoch sitzt → Wasser-Spiegel klar weit über dem Meeresspiegel.
+            // Nicht weiter erhöht, sonst klemmt `maxAllowed = surf − waterRef
+            // − 1` zu viele Hochlands-Spots unter surf=33 m raus — V9.58-c-
+            // Diagnose-Lehre: aggressiver depthMin frisst Tarns auf).
+            depthMax: 55, // m — OBERgrenze (V9.58-c von 42 auf 55 entsprechend).
         });
     }
 
@@ -13997,26 +14027,71 @@ class AnazhRealm {
         const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
         const wx = x + warpX;
         const wz = z + warpZ;
+        // (0) tektonische Oktave — die SEHR niederfrequente Grossstruktur
+        // (V9.58-a). λ~7150 m, ±35 m. Hebt ganze Regionen (mehrere km breit)
+        // zu Hochland, in denen die ridged-Oktave dann ihre Gipfel setzt.
+        // Heilt den V9.57-Diagnose-Befund: Gebirge waren bisher räumlich
+        // punktuell, nicht "über weite phasen aufbauend".
+        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
         // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
         // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
         const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
-        // (b) Erosions-Feld [0,1] — regional (λ~1850 m); `mtn` ist die
-        // Gebirgs-Neigung (1 = alpin), quadriert → Tiefland ist der Normal-
-        // fall, Hochgebirge die Ausnahme. Es moduliert die ridged-Amplitude.
-        const ero = n.noise2D(x * 0.0034, z * 0.0034) * 0.5 + 0.5;
+        // (b) Erosions-Feld [0,1] — REGIONAL (V9.58-a: λ von ~1850 m auf
+        // ~4500 m gestreckt → ganze Berg-Regionen statt einzelner Spots);
+        // `mtn` ist die Gebirgs-Neigung (1 = alpin), quadriert → Tiefland
+        // ist der Normalfall, Hochgebirge die Ausnahme. Es moduliert die
+        // ridged-Amplitude.
+        const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        const ridgeAmp = 9 + 33 * mtn;
-        // (2) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
+        // (V9.58-b) Berg-Amplituden vergrössert: 9+33 → 12+55. Erst durch die
+        // V9.58-a-Tektonik + die λ~4500-m-mtn-Streckung sitzen mtn≈1-Spots in
+        // weiten Bergregionen — daher lohnt sich die höhere Amplitude.
+        const ridgeAmp = 12 + 55 * mtn;
+        // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
         const rN = n.noise2D(wx * 0.013, wz * 0.013);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
+        // (2b) zweite ridged-Oktave (V9.58-b) — λ/2, ½ Amplitude. Multifraktal-
+        // Selbstähnlichkeit echter Gebirge: grosse Kämme tragen kleinere
+        // Sekundär-Kämme, die das Profil körniger machen.
+        const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
+        const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        const withoutTarn = base + cont + ranges + detail + this._erosionDeltaAt(x, z);
+        const withoutTarn = base + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
+        // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
+        // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
+        // war zu zaghaft (max ±4 m Variation in 40 m Tiefe = 10%). Lehren
+        // aus Riesen: Real-World-Ozeanografie kennt vier Schichten — (1)
+        // Continental Shelf (sanft), (2) Continental Slope (DRAMATISCH ab),
+        // (3) Abyssal Plain (tief flach mit Hügeln), (4) Mid-Ocean Ridge
+        // (Bergketten + Trenches dazwischen). Subnautica skaliert Drama
+        // mit Tiefe — Subtilität nahe Strand, dramatic in der Tiefsee.
+        // Mechanik: subMask 3..9 m fades-in (Shelf bleibt unberührt);
+        // slopeDrop linear ab 4 m Tiefe (-0.6 m pro m → bei 20 m Tiefe
+        // zusätzliche -10 m Continental Drop); drei Variations-Octaven
+        // mit tiefen-skalierter Amplitude (subA Hügel, subRidge Bergketten
+        // & Trenches, subC Sediment-Feindetail). Sicherheits-Math: bei
+        // subMask=1 + maxNoise garantiert surface < waterRef (keine
+        // Phantom-Inseln im Hafenbecken).
+        const waterRefSub = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
+        const depthBelow = waterRefSub - withoutTarn;
+        let withoutTarnFinal = withoutTarn;
+        if (depthBelow > 1.5) {
+            const subMask = Math.min(1, Math.max(0, (depthBelow - 3) / 6));
+            const slope = Math.max(0, depthBelow - 4);
+            const slopeDrop = -slope * 0.6;
+            const subA = n.noise2D(x * 0.019, z * 0.019 + 31) * (3 + slope * 0.3);
+            const rBN = n.noise2D(x * 0.026 + 17, z * 0.026 + 9);
+            const subRidge = ((1 - Math.abs(rBN)) * (1 - Math.abs(rBN)) - 0.3) * (3 + slope * 0.25);
+            const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
+            withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
+        }
         // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
         // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
         // KRITISCH: der Bowl-Boden wird auf waterLevel+1 geklemmt, sonst
@@ -14025,9 +14100,9 @@ class AnazhRealm {
         // markiert, nicht als See. Der Klemm-Boden ist der See-Boden — der
         // Priority-Flood füllt das Becken von dort auf den natürlichen Rand.
         const tarnDelta = this._tarnDeltaAt(x, z);
-        if (tarnDelta === 0) return withoutTarn;
+        if (tarnDelta === 0) return withoutTarnFinal;
         const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
-        return Math.max(withoutTarn + tarnDelta, waterRef + 1);
+        return Math.max(withoutTarnFinal + tarnDelta, waterRef + 1);
     }
 
     _terrainDensityAt(x, y, z) {
@@ -14502,6 +14577,14 @@ class AnazhRealm {
     _attachVoxelFieldColors(geom) {
         const pos = geom && geom.getAttribute ? geom.getAttribute("position") : null;
         if (!pos || typeof this.worldFieldAt !== "function") return;
+        // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
+        // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
+        // Strand-Breite + Intensität regional variabel statt überall gleich.
+        if (!this._voxelNoise) {
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            this._voxelNoise = new SimplexNoise(seed + ":voxel");
+        }
+        const sandNoise = this._voxelNoise;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
         const ss = (e0, e1, x) => {
@@ -14515,6 +14598,16 @@ class AnazhRealm {
         const violet = [0.55, 0.36, 0.86];
         const snow = [0.92, 0.93, 1.0];
         const sed = [0.78, 0.72, 0.52];
+        // V9.59-d.1 — Sand-Tint am Ufer. Vertices, deren Höhe knapp über
+        // dem Wasser-Spiegel liegt, bekommen einen warmen Beige-Anteil.
+        // Glocken-Profil (Peak bei +0.6 m über Wasser, abklingend zu 0 bei
+        // +2 m und unter Wasser): "die Welt versteht, wo Strand ist". Plus
+        // Submarine-Sand-Anteil (-1.5..0 m): der See-Boden bekommt einen
+        // weichen Sediment-Sand-Ton statt Stone, sodass der durchsichtige
+        // Wasser-Shader nicht auf grauen Fels zeigt. Diese Schicht macht
+        // die Uferlinie zu einer emergenten Beige-Linie — der Schöpfer-
+        // Befund "küste versteht das sie küste ist".
+        const sand = [0.87, 0.78, 0.55];
         for (let i = 0; i < n; i++) {
             const x = pos.getX(i);
             const y = pos.getY(i);
@@ -14531,6 +14624,36 @@ class AnazhRealm {
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
             mix(snow, ss(12, 42, y));
             mix(sed, ss(-2, -14, y));
+            // Strand: Glocken-Profil über dem Wasser. `_waterLevelAt` ist
+            // O(1) für Ozean (häufig); seetiefe Vertices haben den See-
+            // Spiegel als waterY und kriegen denselben Strand am Ufer.
+            // V9.60-b.2 — variable Strand-Breite + Intensität via Noise:
+            // Schöpfer-Befund "verschmilzt zu wenig mit Umgebung, überall
+            // exakt die selbe Breite". Drei Schichten Modulation:
+            //   (a) Profile-Breite via λ~570m-Noise → kleine Buchten/Strände
+            //       wechseln mit weiten Sand-Flächen.
+            //   (b) Glocken-Höhe (Intensität) via λ~290m-Noise → manche
+            //       Strände kräftig beige, andere transparent durchschauend.
+            //   (c) Karge Patches (Fels-Stellen) wenn Noise < Schwelle →
+            //       Sand-Beitrag ganz weg, Felsen-Stone-Farbe gewinnt.
+            // Riesen-Lehre (Far Cry/Witcher Beach-Texturing): Variation
+            // entsteht durch Noise-Modulation mehrerer Parameter, nicht durch
+            // eine einzige Schwellwert-Schicht.
+            const waterY = this._waterLevelAt(x, z);
+            const aboveWater = y - waterY;
+            if (aboveWater > -1.5 && aboveWater < 2.0) {
+                const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
+                const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
+                if (widthNoise > 0.18) {
+                    const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
+                    const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
+                    const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                    mix(sand, shoreBlend * intensity);
+                }
+                // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
+                // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
+                // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
+            }
             colors[i * 3] = c[0];
             colors[i * 3 + 1] = c[1];
             colors[i * 3 + 2] = c[2];
@@ -14607,6 +14730,9 @@ class AnazhRealm {
         // Makro-Oberfläche bis ~base+80). V9.47: die hydraulische Erosion
         // carvt Täler bis ~16 m tiefer (`EROSION.maxDelta`) → dimY 96 → 100,
         // `floorDrop` 66 → 74 → Band base-74..base+106, Marge unten + oben ~14.
+        // V9.58-b: Tektonik + 2. ridged-Oktave heben Surface-Max auf ~base+120,
+        // Tektonik senkt das Tiefland auf ~base-55 → dimY 100 → 124, floorDrop
+        // 74 → 90 → Band base-90..base+133, Marge oben ~13 / unten ~10.
         // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
         // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
         // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
@@ -14615,7 +14741,7 @@ class AnazhRealm {
         // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
         // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 100, floorDrop: 74 };
+        return { dim, step, span: dim * step, ringRadius, dimY: 124, floorDrop: 90 };
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
@@ -15060,6 +15186,116 @@ class AnazhRealm {
         const river = this._hydroRiverAt(x, z);
         if (river && river.surfaceY > level) level = river.surfaceY;
         return level;
+    }
+
+    // V9.59-a — semantische Wurzel der Welt-Awareness: "ist diese Position
+    // trockenes Land?". Vergleicht die Voxel-Surface mit dem Wasser-Spiegel,
+    // liefert true wenn der Boden mindestens `marge` Meter über dem Wasser
+    // liegt. EINE Quelle für alle Welt-Schichten, die wissen müssen wo
+    // Wasser ist (Vegetation, Welt-Bauwerke, Küsten-Biom, später Kreaturen-
+    // Pfadsuche). Vor V9.59 hatte jede Schicht IGNORIERT, dass Wasser
+    // existiert — Gras wuchs im Meer, Bäume standen im See; der Schöpfer-
+    // Befund nach V9.58 war: "die umgebung selbst scheint nicht zu verstehen
+    // wo das wasser platziert wurde". `surfaceY = null` (Höhle/Loch) zählt
+    // als nicht-Land. Performance: O(_waterLevelAt) — Ozean O(1), See O(9),
+    // Fluss O(bucket).
+    _isAboveWaterAt(x, z, marge = 0) {
+        const surfaceY = this._voxelSurfaceY(x, z);
+        if (surfaceY === null || !Number.isFinite(surfaceY)) return false;
+        const waterY = this._waterLevelAt(x, z);
+        return surfaceY > waterY + marge;
+    }
+
+    // V9.64 (Welle A.1) — Damm-Index: ein 2D-Bucket-Grid (16-m-Zellen) für
+    // O(1)-Lookup im Terrain-Sampling. Jeder Damm-Architektur-Eintrag wird in
+    // alle Buckets eingetragen, die seine Bounding-Box berührt (eine Damm-
+    // Plane überspannt mehrere Buckets). `_isDamAt` liest einen einzigen
+    // Bucket + prüft AABB pro Eintrag. Vision-Pfeiler "Wasser ↔ Spieler-
+    // Wille" — der Spieler baut Damm, das Terrain liest ihn, der Fluss
+    // weicht ihm aus (V9.65 + V9.66).
+    static get DAM_BUCKET_SIZE() {
+        return 16;
+    }
+
+    _damBucketKey(bi, bj) {
+        return `${bi},${bj}`;
+    }
+
+    _damArchAABB(entry) {
+        // Damm-Bounding-Box im Welt-Raum aus parts[0].size (V9.64-Damm hat
+        // ein box-Part). Position-Rotation wird hier ignoriert — die Damm-
+        // Box-Form ist orientation-frei via max(x,z)-Halbradius (sichere
+        // Überdeckung bei jeder Rotation).
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp || !bp.parts || !bp.parts[0]) return null;
+        const part = bp.parts[0];
+        const sx = part.size.x || 1;
+        const sz = part.size.z || 1;
+        const halfMax = Math.max(sx, sz) * 0.5;
+        const cx = entry.position.x;
+        const cz = entry.position.z;
+        const topY = entry.position.y - 0.5 + (part.position.y || 0) + (part.size.y || 1) * 0.5;
+        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY };
+    }
+
+    _damIndexAdd(entry) {
+        if (!this.state.damIndex) this.state.damIndex = new Map();
+        const aabb = this._damArchAABB(entry);
+        if (!aabb) return;
+        entry.damAABB = aabb;
+        const bs = AnazhRealm.DAM_BUCKET_SIZE;
+        const i0 = Math.floor(aabb.minX / bs);
+        const i1 = Math.floor(aabb.maxX / bs);
+        const j0 = Math.floor(aabb.minZ / bs);
+        const j1 = Math.floor(aabb.maxZ / bs);
+        for (let j = j0; j <= j1; j++) {
+            for (let i = i0; i <= i1; i++) {
+                const key = this._damBucketKey(i, j);
+                let bucket = this.state.damIndex.get(key);
+                if (!bucket) {
+                    bucket = new Set();
+                    this.state.damIndex.set(key, bucket);
+                }
+                bucket.add(entry);
+            }
+        }
+    }
+
+    _damIndexRemove(entry) {
+        if (!this.state.damIndex || !entry.damAABB) return;
+        const bs = AnazhRealm.DAM_BUCKET_SIZE;
+        const a = entry.damAABB;
+        const i0 = Math.floor(a.minX / bs);
+        const i1 = Math.floor(a.maxX / bs);
+        const j0 = Math.floor(a.minZ / bs);
+        const j1 = Math.floor(a.maxZ / bs);
+        for (let j = j0; j <= j1; j++) {
+            for (let i = i0; i <= i1; i++) {
+                const bucket = this.state.damIndex.get(this._damBucketKey(i, j));
+                if (bucket) bucket.delete(entry);
+            }
+        }
+        entry.damAABB = null;
+    }
+
+    // V9.64 (Welle A.1) — Damm-Höhe an (x,z): liefert die Welt-Y-Koordinate
+    // der Damm-Oberkante, wenn (x,z) im AABB eines Damms liegt; sonst -Infinity.
+    // O(1) Bucket-Lookup + linearer Scan der Bucket-Einträge (typisch ≤2-3
+    // Dämme pro Bucket). Nutzt entry.damAABB-Cache (statt jeden Frame neu).
+    _damTopAt(x, z) {
+        if (!this.state.damIndex) return -Infinity;
+        const bs = AnazhRealm.DAM_BUCKET_SIZE;
+        const bucket = this.state.damIndex.get(this._damBucketKey(Math.floor(x / bs), Math.floor(z / bs)));
+        if (!bucket) return -Infinity;
+        let top = -Infinity;
+        for (const entry of bucket) {
+            const a = entry.damAABB;
+            if (!a) continue;
+            if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) {
+                if (a.topY > top) top = a.topY;
+            }
+        }
+        return top;
     }
 
     // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
@@ -15805,10 +16041,23 @@ class AnazhRealm {
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
+                // V9.63 (Cleanup für Welle A): zurück auf zwei Meshes pro
+                // Wasserfall — die Render-Schicht ist sekundär, Welle A
+                // (Wasser ↔ Spieler-Wille) bringt das echte Wasser-Verstehen.
+                //   (1) Plane = vertikaler Strahl (V9.60-d.3 mit See-Spiegel-
+                //       Verbindung)
+                //   (2) Pool = Aufprall-Foam + Erosion-Topf (V9.60-d.1+d.4)
+                // V9.61 (Trapez+Spray+Billow) + V9.62 (Cross+Alpha) +
+                // V9.60-d.2 (Lip) entfernt — alles war Symptom-Polieren.
                 const m = this._buildHydroWaterfall(wf, wfMat);
                 if (m) {
                     this.state.scene.add(m);
                     meshes.push(m);
+                }
+                const pool = this._buildHydroWaterfallPool(wf);
+                if (pool) {
+                    this.state.scene.add(pool);
+                    meshes.push(pool);
                 }
             }
         }
@@ -15897,13 +16146,20 @@ class AnazhRealm {
     // Vertikale Plane an der Fluss-Klippen-Kreuzung, gedreht so dass die
     // Normale (+z) den Sturz hinab zeigt (die Gefälle-Tangente).
     _buildHydroWaterfall(wf, mat) {
-        const dropH = Math.min(Math.max(wf.topY - wf.bottomY, 2), 60);
+        // V9.60-d.3 — See-Spiegel-Verbindung: wenn der See-Spiegel an der
+        // Wasserfall-Stelle höher liegt als wf.topY (das Voxel-Bett), reicht
+        // die Plane bis zum See-Spiegel hoch. Heilt den Riss zwischen See-
+        // Wasserfläche und Wasserfall-Plane-Top. Witcher 3 + NMS machen das
+        // genauso — Wasser muss optisch verbunden sein.
+        const waterHere = typeof this._waterLevelAt === "function" ? this._waterLevelAt(wf.x, wf.z) : wf.topY;
+        const topY = Math.max(wf.topY, waterHere);
+        const dropH = Math.min(Math.max(topY - wf.bottomY, 2), 60);
         const width = Math.max(3, wf.width || 3);
         const planeH = dropH + 2;
         const segH = Math.max(6, Math.round(planeH / 2.5));
         const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(wf.x, (wf.topY + wf.bottomY) / 2, wf.z);
+        mesh.position.set(wf.x, (topY + wf.bottomY) / 2, wf.z);
         let dx = wf.flowX || 0;
         let dz = wf.flowZ || 0;
         if (dx === 0 && dz === 0) dz = 1;
@@ -15911,6 +16167,44 @@ class AnazhRealm {
         mesh.renderOrder = 1;
         mesh.frustumCulled = false;
         mesh.userData = { isHydrosphere: true, hydroKind: "waterfall" };
+        return mesh;
+    }
+
+    // V9.60-d.1 — Foam-Pool am Wasserfall-Aufprall. Horizontale
+    // CircleGeometry auf `wf.bottomY + 0.15` (knapp über dem Wasser, damit
+    // sie nicht im Bett-Carve verschwindet). Radius skaliert mit Drop-Höhe:
+    // ein 50-m-Sturz spritzt mehr als ein 5-m-Lauf. Material ist das
+    // geteilte `hydroSurfaceMaterial`; aShore=1 + aFlow=0 + aWave=0 pro
+    // Vertex → der Shader rendert volles Foam-Band, sanfte Pool-Ruhe. Ein
+    // zweites Mesh pro Wasserfall, kein neuer Shader nötig.
+    // V9.60-d.4 — Erosion-Topf (Real-World-Lehre): der Pool sitzt in einer
+    // leichten Bett-Senke unter dem normalen Fluss-Bett. Wir simulieren das
+    // visuell via leicht TIEFEREM Pool-Y (`bottomY - 0.4`) und etwas
+    // grösserem Radius — der Wasserfall "frisst" eine Mulde in den Boden,
+    // genau wie ein echter Wasserfall am Aufprall sediment-erodiert.
+    // Witcher 3 / Real-World macht das genauso.
+    _buildHydroWaterfallPool(wf) {
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) return null;
+        const dropH = Math.max(wf.topY - wf.bottomY, 2);
+        const width = Math.max(3, wf.width || 3);
+        const radius = Math.max(width * 1.5, 3.5 + dropH * 0.18);
+        const geo = new THREE.CircleGeometry(radius, 22);
+        geo.rotateX(-Math.PI / 2);
+        const vCount = geo.attributes.position.count;
+        const aShoreArr = new Float32Array(vCount);
+        const aFlowArr = new Float32Array(vCount * 2);
+        const aWaveArr = new Float32Array(vCount);
+        for (let i = 0; i < vCount; i++) aShoreArr[i] = 1.0;
+        geo.setAttribute("aShore", new THREE.BufferAttribute(aShoreArr, 1));
+        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
+        geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
+        const mesh = new THREE.Mesh(geo, mat);
+        // V9.60-d.4: Pool sitzt leicht in einer Erosion-Senke (Real-World)
+        mesh.position.set(wf.x, wf.bottomY - 0.25, wf.z);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall_pool" };
         return mesh;
     }
 
@@ -16146,6 +16440,13 @@ class AnazhRealm {
                 if (lebendig < 0.22) continue;
                 const surfY = this._voxelSurfaceY(baseX, baseZ);
                 if (surfY === null) continue;
+                // V9.59-c — Gras-Halme wachsen NICHT unter Wasser. 0.1 m
+                // Marge: Gras DARF an der Uferlinie wachsen (saftiges Ufer),
+                // aber nicht im See-Becken. `_waterLevelAt` ist O(1)+ für
+                // Ozean, leicht teurer für See/Fluss → einmal pro Sample-
+                // Zelle, nicht pro Blade (16×16=256 Samples pro Chunk).
+                const waterY = this._waterLevelAt(baseX, baseZ);
+                if (surfY < waterY + 0.1) continue;
                 const count = Math.floor(lebendig * 14 + rnd() * 2);
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
@@ -19119,6 +19420,9 @@ class AnazhRealm {
             }
         }
         this.state.architectures = [];
+        // V9.64 — Damm-Index muss beim Restore neu aufgebaut werden
+        // (spawnArchitecture pflegt ihn automatisch).
+        this.state.damIndex = new Map();
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
             this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
@@ -24814,6 +25118,20 @@ class AnazhRealm {
                 size: { x: 2.4, y: 2.4, z: 2.4 },
             },
         ];
+        // V9.64 (Welle A.1) — Damm-Bauplan: ein Stein-Wall, der das Wasser
+        // physisch blockiert. Lang quer zum Fluss (~8m), schmal in Fluss-
+        // richtung (~1.2m), hoch genug um den See-Spiegel aufzustauen (~3m).
+        // Die Damm-Architektur wird in `_terrainMacroSurfaceY` als zusätzliche
+        // Surface-Höhe gelesen (V9.65) → die Hydrosphäre sieht den Damm als
+        // Land. Vision-Pfeiler "Wasser ↔ Spieler-Wille" der Welle A.
+        const dammParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 8.0, y: 3.0, z: 1.2 },
+            },
+        ];
         // V8.29 — Genesis-Plattform. Wird beim Erschaffen einer neuen Welt
         // am Welt-Zentrum gespawnt, der Spieler startet darauf. So fällt er
         // nicht blind in ein Tal — er sieht von erhöhter Warte die Welt,
@@ -25181,6 +25499,8 @@ class AnazhRealm {
             baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
             baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
+            damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
             start_plattform: {
                 name: "start_plattform",
                 label: "Genesis-Plattform",
@@ -26898,6 +27218,10 @@ class AnazhRealm {
             entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
+        // V9.64 (Welle A.1) — Damm-Index pflegen: ein 2D-Grid für O(1)-Lookup
+        // im Terrain-Sampling (V9.65). Nur Damm-Architekturen werden indexiert
+        // (kein Index-Wachstum für Bäume/Tempel/etc.).
+        if (type === "damm") this._damIndexAdd(entry);
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
         // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
@@ -27179,6 +27503,14 @@ class AnazhRealm {
     // sonst 0. baseY-Kompensation: `spawnArchitecture` zieht 0.5 ab (kalibriert
     // für at_player), `+0.5` setzt die Struktur exakt auf den Boden.
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
+        // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
+        // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
+        // im flachen Ufer steht. Schöpfer-Befund nach V9.58: "die umgebung
+        // selbst scheint nicht zu verstehen wo das wasser platziert wurde".
+        // Eine Quelle: `_isAboveWaterAt` (V9.59-a) — alle Welt-Schichten,
+        // die Wasser respektieren müssen, lesen denselben Helfer.
+        if (!this._isAboveWaterAt(sampleX, sampleZ, 0.4)) return 0;
+
         // W6.G P3 — Landmark-Pass: ein seltener, UNIFORMER Hash-Wurf. Eine
         // Felsformation spawnt nur, wenn die Region sie trägt (felsbogen/
         // felsturm sind dichte-getrieben → die max-Affinität passiert den Floor
@@ -27876,6 +28208,8 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
+        // V9.64 (Welle A.1) — Damm-Index pflegen beim Remove.
+        if (entry.type === "damm") this._damIndexRemove(entry);
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
         // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.
