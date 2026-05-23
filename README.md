@@ -2,11 +2,33 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V9.55 (23.05.2026) — **der V9.52-Reflexions-Bogen ist geschlossen**, der vierte Pfad "Batch-Evaluate (50-70% Wall-Clock)" wurde DATEN-getötet vor dem Refactor. Messung: 0,78 ms/IPC × 199 calls = 155 ms = 0,13% des 121-s-Wall-Clocks. Die Zeit lebt in browser-seitiger Compute-Arbeit (Voxel-Carve, processChatCommand, buildStateSnapshot, Physik), nicht im IPC. Die Lehre permanent im Gotcha-Block verdrahtet ("ZUERST profilieren, DANN optimieren"). Der Vision-Pfad (Wasser ↔ Spieler-Wille, Crafting-Tiefe) ist jetzt frei.
+**Stand**: V9.56-k (23.05.2026) — **der zweite Code-Hygiene-Bogen ist GESCHLOSSEN**. `loadState` 380 → 21 Zeilen Orchestrator + 13 thematische Restore-Helfer (Source-Resolution, Player-Position, Basic-State, WorldMeta, Soul+Atmosphere, Consumables+Equipped, Crafting-Inventar, Architekturen, Hotbar+Inventory, Emotionen+DSL, Misc, External-Persistence, Version-History). Median ~21 Z., max 45. V8.59-Bug-Klassen-Quelle strukturell entschärft — jeder Helfer hat EINE thematische Verantwortung, Ordnungs-Abhängigkeiten leben sichtbar im Orchestrator-Aufruf. Verhaltensneutral (alle `loadState(snap)`-Verhaltens-Tests grün). Datei +14 Z. **BOGEN-ABSCHLUSS**: 11 Sub-Wellen (a..k), 11 Funktionen geschnitten (1 pro Sub-Welle), 77 neue benannte Helfer, Datei netto +95 Z. (37 031 → 37 126). Vier netto-negative Sub-Wellen (d −2, i −30, j −54).
+
+**Davor — V9.56-j**: `generateTerrainWithParameters` 346 → 73 Z. + 6 Worldgen-Phasen-Helfer. Datei −54 Z. netto-negativ.
+
+**Davor — V9.56-i**: `_applyDayNightToScene` 305 → 16 Z. + 9 Helfer (Tint-Akkumulation + Fanout-Apply). Datei −30 Z. netto-negativ. Strukturelle Test-Invarianten an die neuen Helfer angepasst.
+
+**Davor — V9.56-h**: `processChatCommand` 285 → 21 Z. + 9 Themen-Helfer (median ~26, max 81). Try-Pattern-Konvention für 17-Branch-Dispatcher. Cleanup-Asymmetrie bit-identisch preserviert.
+
+**Davor — V9.56-g**: `_voxelChunkGeometry` 269 → 25 Z. (Surface-Nets-Pipeline) + 6 Pass-Helfer. Pipeline-Kopplung einseitig → saubere Helfer-Sequenz.
+
+**Davor — V9.56-f**: `_tickCreatureTaskDirection` 267 → 8 Z. (Task-Dispatcher) + 3 Helfer (Follow 17, Gather 107, Build 125). Block-Grenzen sind eine HIERARCHIE: Task-Branch hat ZERO shared State, Phasen-Ebene teilt Validation+Speed.
+
+**Davor — V9.56-e die Kontrollfluss-Etappe ERÖFFNET**: `fuseWorlds` 239 → 114 Z. + 8 Helfer (median ~16). Pure Sequenz mit Snap-Object inline, Math.random-Reihenfolge bit-identisch.
+
+**Davor — V9.56-d schliesst die UI-Builder-Etappe**: vier UI-Builder geschnitten (renderPlayerEquipUI/SoulEditorUI/LibraryUI/_workshopRenderStatsPanel), 1005 Zeilen → 56 Orchestrator-Summe, 21 neue Helfer, Datei netto +37 Z. (37 031 → 37 068).
+
+**Davor — V9.56-c**: `renderLibraryUI` 241 → 9 Z. + `_libraryBuildCard` 25 Z. (zweistufige Komposition für eine Schleife) + 4 Sub-Helfer.
+
+**Davor — V9.56-b**: `renderSoulEditorUI` 232 → 13 Z. + vier Helfer entlang der drei Docstring-Sektionen + per-Part-Zeile; median 48 Z.
+
+**Davor — V9.56-a der erste Schnitt im Hygiene-Bogen 2**. `renderPlayerEquipUI` 213 → 19 Zeilen Orchestrator + sieben benannte Helfer; max 59 Z., median 31 Z. Schöpfer-Wahl nach V9.55: die vertagte Struktur-Schuld wird thematisch eröffnet (V9.40-Lehre, nicht ewig vertagen).
+
+**Davor — V9.55 die Batch-Evaluate-Hypothese DATEN-getötet**. Der vierte Pfad aus der V9.52-f-Reflexion war "Batch-Evaluate (50-70% Wall-Clock)" — Messung VOR Refactor: 0,78 ms/IPC × 199 calls = 155 ms = 0,13% des 121-s-Wall-Clocks. Die Zeit lebt in browser-seitiger Compute-Arbeit, nicht im IPC. KEIN Refactor; die Lehre permanent im Gotcha-Block verdrahtet ("ZUERST profilieren, DANN optimieren"). Der V9.52-Reflexions-Bogen ist damit geschlossen.
 
 **Davor — V9.54 Kreatur-Sync-Flake strukturell geheilt**. Der seit V9.53 als „potentiell flaky" markierte `Kreatur-Sync: _p2pBroadcastCreatures` war kein Timing-Race, sondern eine Capacity-Race: `_p2pBroadcastCreatures` cap't bei 40 Einträgen, `state.creatures.length` schwankte 13-36 je Worldgen-Seed. Bei ≥ 40 hätte der Cap die Test-Kreatur stillschweigend ausgeschlossen. Der Test isoliert jetzt `state.creatures` für den Broadcast-Aufruf. Synthetisches Stress-Experiment (50 Dummies vor testC) bewies: alt = rot, neu = grün. Drei Bestätigungs-Läufe bit-identisch (V9.53-Determinismus erhalten).
 
-**Davor — V9.53 Drift-Heilung im Playtest** (Test-Namen deterministisch) · **V9.52-a..f Playtest-Pflege-Bogen** (Strukturreform). `scripts/playtest.cjs` war eine 31 574-Zeilen-async-IIFE mit Median-Einrückung 20 (~3000 Invarianten in einem Topf, die zweitgrößte Reibung des Projekts); ist jetzt 29 554 Zeilen mit Median-Einrückung 8, schlanker Orchestrator (207 Z.), 41 benannten Band-Funktionen je 432-1396 Z. + 5 Helfer (`safeEvaluate`, `gatherInitialFinalState`, `checkInitialState`, `checkRing1Grok`, `checkRing2Dsl`). Sechs Sub-Wellen a-f: a (Gerüst + 4 erste Funktionen) → b (11 Band-Funktionen Band 1) → c (8 Band-Funktionen Band 2) → d (8 Band-Funktionen Band 3) → e (10 Band-Funktionen Band 4 — der `else`-Block erschöpft) → f (Helfer-Durchzug: 196 inline `page.evaluate().catch()`-Boilerplate-Stellen durch `safeEvaluate(page, ...)` ersetzt). Plan-§6-Akzeptanz erfüllt. Verhaltens-identisch über 11 Baseline-Läufe (3060-Invarianten-Satz bit-identisch). Datei netto −2020 Zeilen (−6.4%). Voller Bogen-Bericht: `docs/playtest-hygiene.md` (jetzt mit §7 — Akzeptanz nach f).
+**Davor — V9.53 Drift-Heilung im Playtest** (Test-Namen deterministisch) · **V9.52-a..f Playtest-Pflege-Bogen** (Strukturreform). `scripts/playtest.cjs` war eine 31 574-Zeilen-async-IIFE mit Median-Einrückung 20 (~3000 Invarianten in einem Topf, die zweitgrößte Reibung des Projekts); ist jetzt 29 554 Zeilen mit Median-Einrückung 8, schlanker Orchestrator (207 Z.), 41 benannten Band-Funktionen je 432-1396 Z. + 5 Helfer (`safeEvaluate`, `gatherInitialFinalState`, `checkInitialState`, `checkRing1Grok`, `checkRing2Dsl`). Sechs Sub-Wellen a-f: a (Gerüst + 4 erste Funktionen) → b (11 Band-Funktionen Band 1) → c (8 Band-Funktionen Band 2) → d (8 Band-Funktionen Band 3) → e (10 Band-Funktionen Band 4 — der `else`-Block erschöpft) → f (Helfer-Durchzug: 196 inline `page.evaluate().catch()`-Boilerplate-Stellen durch `safeEvaluate(page, ...)` ersetzt). Plan-§6-Akzeptanz erfüllt. Verhaltens-identisch über 11 Baseline-Läufe (3060-Invarianten-Satz bit-identisch). Datei netto −2020 Zeilen (−6.4%). Voller Bogen-Bericht: `docs/archiv/playtest-hygiene.md` (jetzt mit §7 — Akzeptanz nach f).
 
 **Davor — Hydrosphäre-/Wasser-Bogen V9.43–V9.51**: der Tarn-Pass Bergseen (V9.51, `_hydroSeedTarns` setzt nach der Erosion Gauss-Mulden an hohen, sanften Spots, das bestehende Priority-Flood füllt sie zum See), das Chunk-Wasser-Mesh aus derselben Quelle wie das Terrain (V9.50, Uferlinie exakt per Konstruktion), das vereinte Wasser-System (V9.49), Hydrosphäre-Politur (V9.48). Design + Lernschlüsse: `docs/hydrosphere.md` §12–§15.
 

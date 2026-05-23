@@ -11446,269 +11446,276 @@ class AnazhRealm {
     _tickCreatureTaskDirection(creature, task, emotion) {
         if (!task || task.name === "wander") return null;
         if (task.name === "wait") return new THREE.Vector3(0, 0, 0);
-        if (task.name === "follow_player") {
+        if (task.name === "follow_player") return this._tickCreatureFollowPlayer(creature, task, emotion);
+        if (task.name === "gather") return this._tickCreatureGather(creature, task);
+        if (task.name === "build") return this._tickCreatureBuild(creature, task);
+        return null;
+    }
+
+    // Welle 6.H — folgt dem Spieler bis CREATURE_FOLLOW_DISTANCE (oder task-
+    // spezifischer Halt-Distanz). Happy-Emotion läuft volle Speed, sonst 70%.
+    _tickCreatureFollowPlayer(creature, task, emotion) {
+        const player = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!player) return new THREE.Vector3(0, 0, 0);
+        const haltDist =
+            Number.isFinite(task.args?.distance) && task.args.distance > 0
+                ? Math.min(20, Math.max(0.5, task.args.distance))
+                : AnazhRealm.CREATURE_FOLLOW_DISTANCE;
+        const dx = player.x - creature.position.x;
+        const dz = player.z - creature.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= haltDist) return new THREE.Vector3(0, 0, 0);
+        const speed =
+            emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
+        const nx = dx / dist;
+        const nz = dz / dist;
+        return new THREE.Vector3(nx * speed, 0, nz * speed);
+    }
+
+    // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
+    // Phase 1 = sucht Material + erntet (cyan-Aura); Phase 2 = trägt Ernte zum
+    // Spieler + übergibt (purple-Aura via _refreshCreatureCarryingVisual).
+    _tickCreatureGather(creature, task) {
+        const material = task.args && task.args.material;
+        if (typeof material !== "string" || material.length === 0) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
+        const carrying = creature.userData && creature.userData.carrying;
+        if (carrying) {
+            // BRING-PHASE: zurück zum Spieler, dann übergeben.
             const player = this.state.playerMesh ? this.state.playerMesh.position : null;
             if (!player) return new THREE.Vector3(0, 0, 0);
-            const haltDist =
-                Number.isFinite(task.args?.distance) && task.args.distance > 0
-                    ? Math.min(20, Math.max(0.5, task.args.distance))
-                    : AnazhRealm.CREATURE_FOLLOW_DISTANCE;
-            const dx = player.x - creature.position.x;
-            const dz = player.z - creature.position.z;
-            const dist = Math.hypot(dx, dz);
-            if (dist <= haltDist) return new THREE.Vector3(0, 0, 0);
-            const speed =
-                emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
-            const nx = dx / dist;
-            const nz = dz / dist;
-            return new THREE.Vector3(nx * speed, 0, nz * speed);
-        }
-        if (task.name === "gather") {
-            // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1
-            // Beziehungs-Geste): Phase 1 = sucht Material + erntet (cyan-Aura);
-            // Phase 2 = trägt Ernte zum Spieler + übergibt (purple-Aura via
-            // _refreshCreatureCarryingVisual).
-            const material = task.args && task.args.material;
-            if (typeof material !== "string" || material.length === 0) {
-                this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                return null;
-            }
-            const carrying = creature.userData && creature.userData.carrying;
-            if (carrying) {
-                // BRING-PHASE: zurück zum Spieler, dann übergeben.
-                const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-                if (!player) return new THREE.Vector3(0, 0, 0);
-                const dxp = player.x - creature.position.x;
-                const dzp = player.z - creature.position.z;
-                const distp = Math.hypot(dxp, dzp);
-                const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
-                if (distp <= handover) {
-                    // Übergabe: jedes Material aus carrying ins Spieler-Inventar.
-                    const summary = [];
-                    for (const [mat, n] of Object.entries(carrying.materials || {})) {
-                        if (this.addMaterialToInventory(mat, n)) {
-                            summary.push(`${n}× ${mat}`);
-                        }
+            const dxp = player.x - creature.position.x;
+            const dzp = player.z - creature.position.z;
+            const distp = Math.hypot(dxp, dzp);
+            const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+            if (distp <= handover) {
+                // Übergabe: jedes Material aus carrying ins Spieler-Inventar.
+                const summary = [];
+                for (const [mat, n] of Object.entries(carrying.materials || {})) {
+                    if (this.addMaterialToInventory(mat, n)) {
+                        summary.push(`${n}× ${mat}`);
                     }
-                    this._creatureRemember(creature, "delivered", {
+                }
+                this._creatureRemember(creature, "delivered", {
+                    materials: carrying.materials,
+                    blueprint: carrying.blueprint,
+                });
+                if (typeof this.journalAppend === "function" && summary.length > 0) {
+                    this.journalAppend("growth", `Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`, {
                         materials: carrying.materials,
                         blueprint: carrying.blueprint,
                     });
-                    if (typeof this.journalAppend === "function" && summary.length > 0) {
-                        this.journalAppend("growth", `Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`, {
-                            materials: carrying.materials,
-                            blueprint: carrying.blueprint,
-                        });
-                    }
-                    creature.userData.carrying = null;
-                    if (typeof this._refreshCreatureCarryingVisual === "function") {
-                        this._refreshCreatureCarryingVisual(creature);
-                    }
-                    if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                    return new THREE.Vector3(0, 0, 0);
                 }
-                // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
-                const speed =
-                    AnazhRealm.CREATURE_GATHER_SPEED *
-                    this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
-                    this._creatureBodySpeedMultiplier(creature);
-                return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
-            }
-            // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
-            let target = task.args._target;
-            const targetGone = !target || !this.state.architectures.includes(target) || !target.mesh;
-            if (targetGone) {
-                target = this._findNearestArchitectureWithMaterial(creature.position, material);
-                if (!target) {
-                    this._creatureRemember(creature, "no_material", { material });
-                    // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel.
-                    if (typeof this._creatureSpeakProactive === "function") {
-                        this._creatureSpeakProactive(creature, "no_material_found", { material });
-                    }
-                    if (typeof this.journalAppend === "function") {
-                        this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
-                            material,
-                            creatures_total: this.state.creatures.length,
-                        });
-                    }
-                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                    return null;
-                }
-                task.args._target = target;
-            }
-            const dx = target.position.x - creature.position.x;
-            const dz = target.position.z - creature.position.z;
-            const dist = Math.hypot(dx, dz);
-            if (dist <= AnazhRealm.CREATURE_GATHER_HALT_DIST) {
-                // Angekommen — ernten via harvestArchitecture (EINE Funktion,
-                // Spieler-LMB nutzt dieselbe). Materialien gehen in carrying,
-                // nicht direkt ins Spieler-Inventar — Bring-Phase folgt.
-                const harvesterName = (creature.userData && creature.userData.name) || "Kreatur";
-                const harvest = this.harvestArchitecture(target, `creature:${harvesterName}`);
-                task.args._target = null;
-                if (harvest && harvest.materials && Object.keys(harvest.materials).length > 0) {
-                    creature.userData = creature.userData || {};
-                    creature.userData.carrying = {
-                        materials: { ...harvest.materials },
-                        blueprint: harvest.blueprint,
-                        since: performance.now() / 1000,
-                    };
-                    if (typeof this._refreshCreatureCarryingVisual === "function") {
-                        this._refreshCreatureCarryingVisual(creature);
-                    }
-                    this._creatureRemember(creature, "gathered", {
-                        material,
-                        blueprint: harvest.blueprint,
-                        materials: harvest.materials,
-                    });
+                creature.userData.carrying = null;
+                if (typeof this._refreshCreatureCarryingVisual === "function") {
+                    this._refreshCreatureCarryingVisual(creature);
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
+                return new THREE.Vector3(0, 0, 0);
             }
-            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
+            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
             const speed =
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            const nx = dx / dist;
-            const nz = dz / dist;
-            return new THREE.Vector3(nx * speed, 0, nz * speed);
+            return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
         }
-        if (task.name === "build") {
-            // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
-            // Material-Quelle, Welt ist Bauplan-Senke. Drei Phasen:
-            //   take: laufe zum Spieler, nimm Material aus Inventar (modus-gated
-            //         via _buildMaterialGate — frieden+schöpfer kostenlos);
-            //   walk: laufe von der Übergabe weg bis CREATURE_BUILD_PLACEMENT_DIST;
-            //   spawn: spawne Architektur am Kreatur-Ort + wander-Fallback.
-            //
-            // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-
-            // Eintrag (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
-            const blueprint = task.args && task.args.blueprint;
-            if (typeof blueprint !== "string" || blueprint.length === 0) {
-                this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                return null;
-            }
-            const bp = this.state.blueprints && this.state.blueprints[blueprint];
-            if (!bp) {
-                this._creatureRemember(creature, "no_blueprint", { blueprint });
+        // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
+        let target = task.args._target;
+        const targetGone = !target || !this.state.architectures.includes(target) || !target.mesh;
+        if (targetGone) {
+            target = this._findNearestArchitectureWithMaterial(creature.position, material);
+            if (!target) {
+                this._creatureRemember(creature, "no_material", { material });
+                // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel.
+                if (typeof this._creatureSpeakProactive === "function") {
+                    this._creatureSpeakProactive(creature, "no_material_found", { material });
+                }
                 if (typeof this.journalAppend === "function") {
-                    this.journalAppend("reach", `Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, { blueprint });
+                    this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
+                        material,
+                        creatures_total: this.state.creatures.length,
+                    });
                 }
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
             }
-            const carrying = creature.userData && creature.userData.carrying;
-            const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-            if (!player) return new THREE.Vector3(0, 0, 0);
-            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
-            const buildSpeed =
-                AnazhRealm.CREATURE_BUILD_SPEED *
-                this._creatureTaskSpeedMultiplier(creature, "build", task.args) *
-                this._creatureBodySpeedMultiplier(creature);
-            if (!carrying) {
-                // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
-                const dxp = player.x - creature.position.x;
-                const dzp = player.z - creature.position.z;
-                const distp = Math.hypot(dxp, dzp);
-                const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
-                if (distp <= handover) {
-                    // Material entnehmen — selber modus-gated Pfad wie Spieler-
-                    // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
-                    const gate = this._buildMaterialGate(blueprint);
-                    if (!gate.ok) {
-                        const missingStr = Object.entries(gate.missing || {})
-                            .map(([m, n]) => `${n}× ${m}`)
-                            .join(", ");
-                        this._creatureRemember(creature, "no_inventory_for_build", {
-                            blueprint,
-                            missing: gate.missing,
-                        });
-                        // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel beim Bauen.
-                        if (typeof this._creatureSpeakProactive === "function") {
-                            this._creatureSpeakProactive(creature, "no_inventory_for_build", { blueprint });
-                        }
-                        if (typeof this.journalAppend === "function") {
-                            this.journalAppend(
-                                "reach",
-                                `Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
-                                { blueprint, missing: gate.missing }
-                            );
-                        }
-                        this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                        return null;
-                    }
-                    // Visual + Journal nutzen die symbolischen Bauplan-Kosten
-                    // (computeBuildCost) — auch in frieden+schöpfer trägt die
-                    // Kreatur sichtbar das Material das die Architektur braucht,
-                    // selbst wenn nichts aus dem Inventar abgezogen wurde.
-                    const symbolicCost = this.computeBuildCost(blueprint);
-                    creature.userData = creature.userData || {};
-                    creature.userData.carrying = {
-                        kind: "build",
-                        materials: symbolicCost,
-                        blueprint,
-                        free: !!gate.free,
-                        since: performance.now() / 1000,
-                    };
-                    if (typeof this._refreshCreatureCarryingVisual === "function") {
-                        this._refreshCreatureCarryingVisual(creature);
-                    }
-                    this._creatureRemember(creature, "took_materials", {
-                        blueprint,
-                        materials: symbolicCost,
-                        free: !!gate.free,
-                    });
-                    if (!gate.free && typeof this.renderInventoryUI === "function") {
-                        this.renderInventoryUI();
-                    }
-                    if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                    return new THREE.Vector3(0, 0, 0);
+            task.args._target = target;
+        }
+        const dx = target.position.x - creature.position.x;
+        const dz = target.position.z - creature.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= AnazhRealm.CREATURE_GATHER_HALT_DIST) {
+            // Angekommen — ernten via harvestArchitecture (EINE Funktion,
+            // Spieler-LMB nutzt dieselbe). Materialien gehen in carrying,
+            // nicht direkt ins Spieler-Inventar — Bring-Phase folgt.
+            const harvesterName = (creature.userData && creature.userData.name) || "Kreatur";
+            const harvest = this.harvestArchitecture(target, `creature:${harvesterName}`);
+            task.args._target = null;
+            if (harvest && harvest.materials && Object.keys(harvest.materials).length > 0) {
+                creature.userData = creature.userData || {};
+                creature.userData.carrying = {
+                    materials: { ...harvest.materials },
+                    blueprint: harvest.blueprint,
+                    since: performance.now() / 1000,
+                };
+                if (typeof this._refreshCreatureCarryingVisual === "function") {
+                    this._refreshCreatureCarryingVisual(creature);
                 }
-                return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
-            }
-            // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
-            const dxp2 = creature.position.x - player.x;
-            const dzp2 = creature.position.z - player.z;
-            const distp2 = Math.hypot(dxp2, dzp2);
-            const placement = AnazhRealm.CREATURE_BUILD_PLACEMENT_DIST;
-            if (distp2 < placement) {
-                // Noch zu nah — laufe in der gegenwärtigen Richtung weg
-                // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
-                if (distp2 < 0.001) {
-                    // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
-                    return new THREE.Vector3(buildSpeed, 0, 0);
-                }
-                return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
-            }
-            // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
-            // (analog confirmBuild, kalibriert auf at_player wo player.y die
-            // Sphäre-Mitte ist). Materialien wurden in TAKE-PHASE konsumiert.
-            const spawnPos = {
-                x: creature.position.x,
-                y: creature.position.y + 0.5,
-                z: creature.position.z,
-            };
-            this.spawnArchitecture(blueprint, spawnPos);
-            this._creatureRemember(creature, "built", {
-                blueprint,
-                materials: carrying.materials,
-                position: spawnPos,
-            });
-            if (typeof this.journalAppend === "function") {
-                this.journalAppend("growth", `Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
-                    blueprint,
-                    materials: carrying.materials,
+                this._creatureRemember(creature, "gathered", {
+                    material,
+                    blueprint: harvest.blueprint,
+                    materials: harvest.materials,
                 });
             }
-            creature.userData.carrying = null;
-            if (typeof this._refreshCreatureCarryingVisual === "function") {
-                this._refreshCreatureCarryingVisual(creature);
+            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+            return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
+        }
+        // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
+        const speed =
+            AnazhRealm.CREATURE_GATHER_SPEED *
+            this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
+            this._creatureBodySpeedMultiplier(creature);
+        const nx = dx / dist;
+        const nz = dz / dist;
+        return new THREE.Vector3(nx * speed, 0, nz * speed);
+    }
+
+    // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
+    // Material-Quelle, Welt ist Bauplan-Senke. Drei Phasen:
+    //   take: laufe zum Spieler, nimm Material aus Inventar (modus-gated via
+    //         _buildMaterialGate — frieden+schöpfer kostenlos);
+    //   walk: laufe von der Übergabe weg bis CREATURE_BUILD_PLACEMENT_DIST;
+    //   spawn: spawne Architektur am Kreatur-Ort + wander-Fallback.
+    //
+    // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-Eintrag
+    // (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
+    _tickCreatureBuild(creature, task) {
+        const blueprint = task.args && task.args.blueprint;
+        if (typeof blueprint !== "string" || blueprint.length === 0) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
+        const bp = this.state.blueprints && this.state.blueprints[blueprint];
+        if (!bp) {
+            this._creatureRemember(creature, "no_blueprint", { blueprint });
+            if (typeof this.journalAppend === "function") {
+                this.journalAppend("reach", `Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, { blueprint });
             }
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
-            return new THREE.Vector3(0, 0, 0);
+            return null;
         }
-        return null;
+        const carrying = creature.userData && creature.userData.carrying;
+        const player = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!player) return new THREE.Vector3(0, 0, 0);
+        // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
+        const buildSpeed =
+            AnazhRealm.CREATURE_BUILD_SPEED *
+            this._creatureTaskSpeedMultiplier(creature, "build", task.args) *
+            this._creatureBodySpeedMultiplier(creature);
+        if (!carrying) {
+            // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
+            const dxp = player.x - creature.position.x;
+            const dzp = player.z - creature.position.z;
+            const distp = Math.hypot(dxp, dzp);
+            const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+            if (distp <= handover) {
+                // Material entnehmen — selber modus-gated Pfad wie Spieler-
+                // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
+                const gate = this._buildMaterialGate(blueprint);
+                if (!gate.ok) {
+                    const missingStr = Object.entries(gate.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this._creatureRemember(creature, "no_inventory_for_build", {
+                        blueprint,
+                        missing: gate.missing,
+                    });
+                    // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel beim Bauen.
+                    if (typeof this._creatureSpeakProactive === "function") {
+                        this._creatureSpeakProactive(creature, "no_inventory_for_build", { blueprint });
+                    }
+                    if (typeof this.journalAppend === "function") {
+                        this.journalAppend(
+                            "reach",
+                            `Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
+                            { blueprint, missing: gate.missing }
+                        );
+                    }
+                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                    return null;
+                }
+                // Visual + Journal nutzen die symbolischen Bauplan-Kosten
+                // (computeBuildCost) — auch in frieden+schöpfer trägt die
+                // Kreatur sichtbar das Material das die Architektur braucht,
+                // selbst wenn nichts aus dem Inventar abgezogen wurde.
+                const symbolicCost = this.computeBuildCost(blueprint);
+                creature.userData = creature.userData || {};
+                creature.userData.carrying = {
+                    kind: "build",
+                    materials: symbolicCost,
+                    blueprint,
+                    free: !!gate.free,
+                    since: performance.now() / 1000,
+                };
+                if (typeof this._refreshCreatureCarryingVisual === "function") {
+                    this._refreshCreatureCarryingVisual(creature);
+                }
+                this._creatureRemember(creature, "took_materials", {
+                    blueprint,
+                    materials: symbolicCost,
+                    free: !!gate.free,
+                });
+                if (!gate.free && typeof this.renderInventoryUI === "function") {
+                    this.renderInventoryUI();
+                }
+                if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+                return new THREE.Vector3(0, 0, 0);
+            }
+            return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
+        }
+        // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
+        const dxp2 = creature.position.x - player.x;
+        const dzp2 = creature.position.z - player.z;
+        const distp2 = Math.hypot(dxp2, dzp2);
+        const placement = AnazhRealm.CREATURE_BUILD_PLACEMENT_DIST;
+        if (distp2 < placement) {
+            // Noch zu nah — laufe in der gegenwärtigen Richtung weg
+            // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
+            if (distp2 < 0.001) {
+                // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
+                return new THREE.Vector3(buildSpeed, 0, 0);
+            }
+            return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
+        }
+        // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
+        // (analog confirmBuild, kalibriert auf at_player wo player.y die
+        // Sphäre-Mitte ist). Materialien wurden in TAKE-PHASE konsumiert.
+        const spawnPos = {
+            x: creature.position.x,
+            y: creature.position.y + 0.5,
+            z: creature.position.z,
+        };
+        this.spawnArchitecture(blueprint, spawnPos);
+        this._creatureRemember(creature, "built", {
+            blueprint,
+            materials: carrying.materials,
+            position: spawnPos,
+        });
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("growth", `Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
+                blueprint,
+                materials: carrying.materials,
+            });
+        }
+        creature.userData.carrying = null;
+        if (typeof this._refreshCreatureCarryingVisual === "function") {
+            this._refreshCreatureCarryingVisual(creature);
+        }
+        this.assignCreatureTask(creature, "wander", {}, { silent: true });
+        return new THREE.Vector3(0, 0, 0);
     }
 
     // Welle 6.H V2 — geteilte Gradient-Textur als Cache (analog 6.D
@@ -12755,108 +12762,132 @@ class AnazhRealm {
             chatOutput.scrollTop = chatOutput.scrollHeight;
         };
         appendChatOutput(`> ${command}`);
-        this.addKnowledge("chat", command);
-        // Ring 3: jeder Chat-Input füttert die Emotionen. Sentiment-Erkennung
-        // läuft auf dem Originaltext (inkl. Casing), nicht auf `parts`, damit
-        // ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
-        this.collectPlayerEmotions(command);
+        this._chatRecordInputForLearning(command);
+        // Voxel-Debug bricht früh ab OHNE chatInput-Cleanup (Original-Verhalten).
+        if (this._chatTryVoxelDebugCommand(command)) return;
+        // Portal-Route + DSL-Parse räumen chatInput selbst auf.
+        if (this._chatTryPortalRoute(command, chatInput, appendChatOutput)) return;
+        if (this._chatTryDslParse(command, chatInput, appendChatOutput)) return;
+        // Legacy-Themen-Dispatch + Cleanup am Ende (Original-Fall-Through).
+        this._chatDispatchLegacyCommand(command, parts, appendChatOutput);
+        chatInput.value = "";
+    }
 
-        // Schicht 1: Stichwörter ins Pattern-Memory-Fenster legen + Activity
-        // zählen. Nexus-Programme, die in den nächsten 20 s laufen, werden
-        // (sofern high-fitness) gegen diese Keywords verknüpft.
+    // Schicht 1 — jeder Chat-Input füttert Knowledge/Emotion/Pattern-Memory/
+    // Activity-Zähler. Ring 3 sentimentet auf dem Originaltext (inkl. Casing),
+    // damit ganze Sätze wie „Erzähle: ein schöner Tag" alle Stichwörter sehen.
+    // Proaktive Vorschläge alle 10 Chat-Befehle.
+    _chatRecordInputForLearning(command) {
+        this.addKnowledge("chat", command);
+        this.collectPlayerEmotions(command);
         const nowSec = performance.now() / 1000;
         this.rememberChatKeywords(command, nowSec);
         if (this.state.player && this.state.player.recentActivity) {
             this.state.player.recentActivity.chats++;
         }
-
-        // Proaktive Vorschläge (alle 10 Chat-Befehle)
         if (this.state.knowledgeBase.filter((k) => k.type === "chat").length % 10 === 0) {
             this.proactiveSuggestions();
         }
+    }
 
-        // Voxel-Terrain-Bogen Phase 1 — `voxel test` mesht einen Voxel-
-        // Chunk neben dem Spieler (Beweis, kein Eingriff ins Heightfield).
-        if (command.toLowerCase().trim() === "voxel test") {
+    // Voxel-Terrain-Bogen Phase 1/3 — `voxel test` mesht einen Test-Chunk,
+    // `voxel carve`/`voxel fill` schnitzt eine Mulde / schüttet einen Hügel.
+    // V9.35 Phase 5c.2.c.2: der voxel-Terrain-Toggle ist tot; Voxel ist
+    // permanent. Original-Verhalten: KEIN chatInput-Cleanup (führt zu
+    // weiteren Wiederholungen via Enter).
+    _chatTryVoxelDebugCommand(command) {
+        const vc = command.toLowerCase().trim();
+        if (vc === "voxel test") {
             this._spawnVoxelTestChunk();
-            return;
+            return true;
         }
-        // Voxel-Terrain-Bogen Phase 3 — `voxel carve` schnitzt eine Mulde,
-        // `voxel fill` schüttet einen Hügel unter dem Spieler auf. V9.35
-        // Phase 5c.2.c.2: der `voxel terrain on/off`-Toggle ist tot; Voxel
-        // ist permanent (`voxelTerrainActive === true` immer), kein Pre-
-        // Gate mehr nötig.
-        {
-            const vc = command.toLowerCase().trim();
-            if (vc === "voxel carve" || vc === "voxel fill") {
-                const pm = this.state.playerMesh;
-                if (pm) {
-                    if (vc === "voxel fill") {
-                        // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
-                        const matGate = this._voxelFillGate();
-                        if (!matGate.ok) {
-                            this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
-                            return;
-                        }
-                        this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
-                        this.log(
-                            matGate.free
-                                ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
-                                : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
-                            "INFO"
-                        );
-                    } else {
-                        this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
-                        this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
+        if (vc === "voxel carve" || vc === "voxel fill") {
+            const pm = this.state.playerMesh;
+            if (pm) {
+                if (vc === "voxel fill") {
+                    // Phase 3c — pfad: kostet Material; frieden/schöpfer frei.
+                    const matGate = this._voxelFillGate();
+                    if (!matGate.ok) {
+                        this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
+                        return true;
                     }
+                    this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    this.log(
+                        matGate.free
+                            ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
+                            : `Voxel-Terrain aufgeschüttet (${matGate.cost}× Material verbraucht).`,
+                        "INFO"
+                    );
+                } else {
+                    this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
                 }
-                return;
             }
+            return true;
         }
+        return false;
+    }
 
-        // Ring 2 Phase 3: DSL-First. Wenn der Befehl in DSL übersetzbar ist,
-        // läuft er durch denselben Interpreter wie der Nexus — Budgets, Outcome,
-        // Persistenz inklusive. Legacy-Pfad bleibt als Fallback für Befehle,
-        // die noch kein DSL-Äquivalent haben (System-IO, Toggles, Phase-5-Themen).
-        // W12 Phase 2 — im Portal: ein Chat-Befehl wandert in die Sub-Welt
-        // statt auf der eingefrorenen Heimat-Welt zu laufen. Der Welt-
-        // Manifest entscheidet — _portalRouteDsl trägt die Drei-Stufen-Logik.
-        if (this._portalOverlay) {
-            const inWorld = this.parseChatToDsl(command);
-            const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);
-            if (program) {
-                this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
-            } else {
-                appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
-            }
-            chatInput.value = "";
-            return;
+    // W12 Phase 2 — im Portal: Chat-Befehl wandert in die Sub-Welt statt auf
+    // der eingefrorenen Heimat-Welt zu laufen. Das Welt-Manifest entscheidet
+    // (_portalRouteDsl trägt die Drei-Stufen-Logik).
+    _chatTryPortalRoute(command, chatInput, appendChatOutput) {
+        if (!this._portalOverlay) return false;
+        const inWorld = this.parseChatToDsl(command);
+        const program = inWorld ? inWorld.program : this._portalParseWorldCommand(command);
+        if (program) {
+            this._portalRouteDsl(program, inWorld ? inWorld.describe : command, appendChatOutput);
+        } else {
+            appendChatOutput(`(Im Portal — „${command}" ist kein DSL-Befehl für diese Welt.)`);
         }
+        chatInput.value = "";
+        return true;
+    }
 
+    // Ring 2 Phase 3 — DSL-First. Wenn der Befehl in DSL übersetzbar ist,
+    // läuft er durch denselben Interpreter wie der Nexus (Budgets/Outcome/
+    // Persistenz inklusive). Legacy-Pfad bleibt als Fallback für System-IO,
+    // Toggles, Phase-5-Themen.
+    _chatTryDslParse(command, chatInput, appendChatOutput) {
         const parsed = this.parseChatToDsl(command);
-        if (parsed) {
-            const result = this.dslRun(parsed.program, { source: "human" });
-            this.state.dsl.lastUserProgram = parsed.program;
-            this.state.dsl.lastUserOutcome = result.outcome;
-            this.state.dsl.lastUserAt = performance.now() / 1000;
-            if (result.ok) {
-                appendChatOutput(parsed.describe);
-            } else {
-                const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
-                appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
-            }
-            chatInput.value = "";
-            return;
+        if (!parsed) return false;
+        const result = this.dslRun(parsed.program, { source: "human" });
+        this.state.dsl.lastUserProgram = parsed.program;
+        this.state.dsl.lastUserOutcome = result.outcome;
+        this.state.dsl.lastUserAt = performance.now() / 1000;
+        if (result.ok) {
+            appendChatOutput(parsed.describe);
+        } else {
+            const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
+            appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
         }
+        chatInput.value = "";
+        return true;
+    }
 
-        // Dynamische Befehlsverarbeitung
+    // Legacy-if-else-Kette als Themen-Dispatcher. Jeder Themen-Helfer prüft
+    // sein Pattern + handhabt es + returns true; sonst fällt's zum nächsten.
+    // Der letzte Helfer (Conversational+Fallback) handhabt alles, was übrig
+    // bleibt (Kreatur/LLM/P2P/Hilfetext).
+    _chatDispatchLegacyCommand(command, parts, appendChatOutput) {
+        if (this._chatTryAbilityCommand(parts, command, appendChatOutput)) return;
+        if (this._chatTryPersistenceCommand(parts, appendChatOutput)) return;
+        if (this._chatTryWorldCommand(parts, command, appendChatOutput)) return;
+        if (this._chatTrySystemCommand(parts, appendChatOutput)) return;
+        this._chatHandleConversationalFallback(command, appendChatOutput);
+    }
+
+    // Fähigkeiten: lerne/führe Fähigkeit aus.
+    _chatTryAbilityCommand(parts, command, appendChatOutput) {
         if (parts[0] === "lerne" && parts[1] === "fähigkeit") {
             const abilityName = parts[2];
             const startIdx = parts[3] ? command.toLowerCase().indexOf(parts[3]) : -1;
             const abilityDesc = startIdx >= 0 ? command.slice(startIdx).trim() : "";
             this.learnAbility(abilityName, abilityDesc);
             appendChatOutput(`Fähigkeit '${abilityName}' gelernt: ${abilityDesc}`);
-        } else if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
+            return true;
+        }
+        if (parts[0] === "führe" && parts[1] === "fähigkeit" && parts[2] === "aus") {
             const abilityName = parts[3];
             if (this.state.abilities[abilityName]) {
                 this.state.abilities[abilityName](this, this.state);
@@ -12866,7 +12897,14 @@ class AnazhRealm {
                     `Fähigkeit '${abilityName}' nicht gefunden. Lerne sie mit 'Lerne Fähigkeit <Name> <Beschreibung>'`
                 );
             }
-        } else if (parts[0] === "speichere" && parts[1] === "zustand") {
+            return true;
+        }
+        return false;
+    }
+
+    // Persistenz: speichere/lade Zustand, Datei-Picker.
+    _chatTryPersistenceCommand(parts, appendChatOutput) {
+        if (parts[0] === "speichere" && parts[1] === "zustand") {
             this.saveState();
             this.saveToProjectFolder().then((result) => {
                 if (result === "server") {
@@ -12877,16 +12915,29 @@ class AnazhRealm {
                     appendChatOutput("Zustand gespeichert (nur localStorage)");
                 }
             });
-        } else if (parts[0] === "lade" && parts[1] === "zustand") {
+            return true;
+        }
+        if (parts[0] === "lade" && parts[1] === "zustand") {
             this.loadState();
             appendChatOutput("Zustand aus localStorage geladen");
-        } else if (parts[0] === "lade" && parts[1] === "datei") {
+            return true;
+        }
+        if (parts[0] === "lade" && parts[1] === "datei") {
             this.openStateFilePicker();
             appendChatOutput("Datei-Picker geöffnet – wähle eine anazhRealmState.json");
-        } else if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
+            return true;
+        }
+        return false;
+    }
+
+    // Welt-Verwaltung (Ring 8): spawne/erschaffe/wechsle/lösche/liste Welten.
+    _chatTryWorldCommand(parts, command, appendChatOutput) {
+        if (parts[0] === "spawne" && parts[1] === "neue" && parts[2] === "welt") {
             this.generateNewWorld();
             appendChatOutput("Neue Welt generiert");
-        } else if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
+            return true;
+        }
+        if ((parts[0] === "erschaffe" && parts[1] === "welt") || (parts[0] === "neue" && parts[1] === "welt")) {
             // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
             // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
             // Slug ist alles zwischen dem Verb-Paar und einem optionalen Trailer.
@@ -12904,10 +12955,12 @@ class AnazhRealm {
             } else {
                 appendChatOutput("Neue Welt konnte nicht erschaffen werden — siehe Log.");
             }
-        } else if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
-            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir
-            // suchen den Index, finden den passenden Eintrag (genauer Match
-            // oder Präfix), und triggern den Reload.
+            return true;
+        }
+        if (parts[0] === "wechsle" && (parts[1] === "zu" || parts[1] === "zur") && parts.length >= 3) {
+            // Ring 8: Wechsel zu einer existierenden Welt via slug. Wir suchen
+            // den Index, finden den passenden Eintrag (genauer Match oder
+            // Präfix), und triggern den Reload.
             const targetSlug = parts
                 .slice(parts[2] === "welt" ? 3 : 2)
                 .join(" ")
@@ -12922,7 +12975,9 @@ class AnazhRealm {
                 if (ok) appendChatOutput(`Wechsle zu ${prefix.slug}…`);
                 else appendChatOutput("Welt-Wechsel verweigert (siehe Log).");
             }
-        } else if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
+            return true;
+        }
+        if (parts[0] === "lösche" && parts[1] === "welt" && parts.length >= 3) {
             const targetSlug = parts.slice(2).join(" ").trim();
             const idx = this.worldsIndexLoad();
             const entry = idx.find((e) => e.slug === targetSlug);
@@ -12935,7 +12990,9 @@ class AnazhRealm {
                 appendChatOutput(`Welt „${entry.slug}" gelöscht.`);
                 this.updateWorldInfo();
             }
-        } else if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
+            return true;
+        }
+        if ((parts[0] === "liste" || parts[0] === "zeige") && parts[1] === "welten") {
             const idx = this.worldsIndexLoad();
             if (idx.length === 0) {
                 appendChatOutput("Nur diese eine Welt im Speicher.");
@@ -12951,13 +13008,25 @@ class AnazhRealm {
                 appendChatOutput(`Welten im Speicher (${idx.length}):`);
                 for (const l of lines) appendChatOutput(l);
             }
-        } else if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
+            return true;
+        }
+        return false;
+    }
+
+    // System-Befehle: Physik-Tuning, Version-Aktivierung, Boden-Re-Gen,
+    // Symphonie-V1-Platzhalter, Debug-Log-Toggle.
+    _chatTrySystemCommand(parts, appendChatOutput) {
+        if (parts[0] === "behebe" && parts[1] === "physik-tunneling") {
             this.optimizeCollisions();
             appendChatOutput("Physik-Tunneling behoben: CCD angepasst");
-        } else if (parts[0] === "optimiere" && parts[1] === "physik") {
+            return true;
+        }
+        if (parts[0] === "optimiere" && parts[1] === "physik") {
             this.optimizePhysics();
             appendChatOutput("Physik optimiert");
-        } else if (parts[0] === "aktiviere" && parts[1] === "version") {
+            return true;
+        }
+        if (parts[0] === "aktiviere" && parts[1] === "version") {
             const version = parts[2];
             if (this.state.versionHistory.includes(version)) {
                 this.loadVersion(version);
@@ -12965,7 +13034,9 @@ class AnazhRealm {
             } else {
                 appendChatOutput(`Version ${version} nicht gefunden`);
             }
-        } else if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
+            return true;
+        }
+        if (parts[0] === "boden" && parts[1] === "nicht" && parts[2] === "sichtbar") {
             if (
                 !this.state.groundChunks ||
                 this.state.groundChunks.length === 0 ||
@@ -12977,7 +13048,9 @@ class AnazhRealm {
             } else {
                 appendChatOutput("Boden ist bereits sichtbar");
             }
-        } else if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
+            return true;
+        }
+        if (parts[0] === "aktiviere" && parts[1] === "anazh-symphonie") {
             // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
             // belebt die Kreaturen sichtbar (happy + schneller) statt eines
             // JS-Closures, der per Sinus animiert. Ehrlicher als der alte
@@ -12989,45 +13062,55 @@ class AnazhRealm {
             );
             this.state.abilities["anazhSymphony"]();
             appendChatOutput("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
-        } else if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
+            return true;
+        }
+        if (parts[0] === "aktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = true;
             appendChatOutput("Debug-Logs aktiviert");
-        } else if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
+            return true;
+        }
+        if (parts[0] === "deaktiviere" && parts[1] === "debug-logs") {
             this.state.debugLogging = false;
             appendChatOutput("Debug-Logs deaktiviert");
-        } else if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
-            // Welle 6.H Phase 2E V1 — Kreatur-Konversation. Wenn das Pattern
-            // „Name, text" oder „Name: text" matched, geht der Text an die
-            // Kreatur (nicht an Grok). Reicht der Name nicht? → maybeAnswerCreature
-            // gibt höfliche Antwort. LLM-Inactive? → Hinweis. Beide Pfade
-            // schließen den Befehl ab (return true).
+            return true;
+        }
+        return false;
+    }
+
+    // Conversational-Fallback: Kreatur-Konversation (Welle 6.H Phase 2E V1),
+    // LLM-Fallback (Schicht 2 — Claude/Gemini/OpenRouter), P2P-Voice-Pool
+    // (W7 Phase 3), sonst chatSuggest + Hilfetext.
+    _chatHandleConversationalFallback(command, appendChatOutput) {
+        if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
+            // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
             this.maybeAnswerCreature(command, appendChatOutput).catch((err) => {
                 appendChatOutput(`(Kreatur-Fehler: ${err.message || err})`);
             });
-        } else if (this.state.llm && this.state.llm.enabled) {
-            // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der
-            // Text an Claude; Antwort kommt narrativ + optional als DSL-
-            // Programm, das durch dieselbe Sandbox wie alle anderen Programme
-            // läuft.
+            return;
+        }
+        if (this.state.llm && this.state.llm.enabled) {
+            // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der Text
+            // an Claude; Antwort kommt narrativ + optional als DSL-Programm.
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
                 appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
             });
-        } else if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable()) {
-            // W7 Phase 3 — LLM-Pool. Ich habe kein eigenes LLM, aber ein
-            // Mitspieler teilt seine Stimme: die Anfrage läuft über ihn,
-            // das DSL-Programm der Antwort durch meine eigene Sandbox.
-            this._p2pRequestSharedVoice(command, appendChatOutput);
-        } else {
-            const suggestion = this.chatSuggest(command);
-            if (suggestion) {
-                appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
-            } else {
-                appendChatOutput(
-                    "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
-                );
-            }
+            return;
         }
-        chatInput.value = "";
+        if (typeof this._p2pVoiceAvailable === "function" && this._p2pVoiceAvailable()) {
+            // W7 Phase 3 — LLM-Pool. Kein eigenes LLM, aber ein Mitspieler teilt
+            // seine Stimme: die Anfrage läuft über ihn, das DSL-Programm der
+            // Antwort durch meine eigene Sandbox.
+            this._p2pRequestSharedVoice(command, appendChatOutput);
+            return;
+        }
+        const suggestion = this.chatSuggest(command);
+        if (suggestion) {
+            appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
+        } else {
+            appendChatOutput(
+                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. Weitere: 'Speichere/Lade Zustand', 'Lade Datei', 'Spawne neue Welt', 'Aktiviere Anazh-Symphonie', 'Aktiviere/Deaktiviere Debug-Logs', 'Behebe Physik-Tunneling', 'Optimiere Physik', 'Lerne Fähigkeit <Name> <Beschreibung>', 'Führe Fähigkeit aus <Name>'."
+            );
+        }
     }
 
     // Beschreibung → DSL-Programm. Vier bekannte Pattern + Catch-All als
@@ -13167,16 +13250,85 @@ class AnazhRealm {
 
     // ### Welten-Generierung ### V7.56
     generateTerrainWithParameters(steepness, baseHeight) {
-        // ### Konstanten ###
         const WIDTH = 256;
         const DEPTH = 256;
         const CHUNK_SIZE = 32;
         const WORLD_SIZE = 300;
-        // V9.37: CHUNKS_X/CHUNKS_Z waren nur für den (jetzt toten) initialen
-        // Heightfield-Chunk-Loop nötig. Die Konstanten leben unten in
-        // chunkSize/chunkWidth/chunkDepth weiter (für `_chunkGeometry`).
 
-        // ### Alte Objekte sicher entfernen ###
+        this._worldgenCleanupOldObjects();
+
+        // Spieler-Position: first-spawn setzt auf (0,50,0), spätere Regen
+        // erhalten die aktuelle Position. wasFirstSpawn wird VOR dem Setzen
+        // von terrainEverGenerated gelesen (sowohl im Helfer als auch hier).
+        const wasFirstSpawn = !this.state.terrainEverGenerated;
+        this._worldgenInitPlayerPosition(wasFirstSpawn);
+        this.state.terrainEverGenerated = true;
+        if (wasFirstSpawn) this.grokMarkFirstSpawn();
+
+        this._worldgenComputeErosionAndTarns();
+
+        // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight bleiben
+        // null/0 in einer Voxel-Welt (voxelTerrain konstant true seit V9.35).
+        // Alle Konsumenten sind voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
+        const heightData = null;
+        const minHeight = 0;
+        const maxHeight = 0;
+
+        // ### Initiale Chunks-Setup ###
+        // V9.30/V9.37/V9.39: die alte initiale Heightfield-Chunk-Generierung +
+        // generateChunk + addTerrainPhysics + globale btHeightfieldTerrainShape
+        // sind als nachweislich tote Pfade entfernt. `chunkMap` bleibt leer
+        // (oder trägt nur Test-Chunks via `ensureChunkAt`).
+        this.state.chunkMap = new Map();
+        this.state.chunkSize = CHUNK_SIZE;
+        this.state.chunkWidth = WIDTH;
+        this.state.chunkDepth = DEPTH;
+        this.state.groundChunks = [];
+        if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
+            this.state.scaleFactor = 1.0;
+            this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
+        }
+
+        this._worldgenSpawnFloatingIslands(WORLD_SIZE);
+
+        // V9.38/V9.43-c — `state.vegetation` bleibt als Sammler-Liste
+        // (Worldgen-Vegetations-Pass + per-Chunk-Wasserfälle sind tot).
+        this.state.vegetation = [];
+
+        // ### Terrain-State ###
+        // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight sind in
+        // einer Voxel-Welt null bzw. 0; die voxel-gated Konsumenten ignorieren
+        // sie. terrainSteepness moduliert die Voxel-Surface, terrainBaseHeight
+        // ist die Voxel-Anker-Höhe (Killplane-base, getTerrainHeightAt-Fallback).
+        this.state.groundHeightField = heightData;
+        this.state.minHeight = minHeight;
+        this.state.maxHeight = maxHeight;
+        this.state.terrainSteepness = steepness;
+        this.state.terrainBaseHeight = baseHeight;
+
+        this._worldgenBuildVoxelChunkCache();
+        this._worldgenComputeAndBuildHydrosphere();
+
+        this.spawnCreatures();
+
+        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
+        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf
+        // (sieht von erhöhter Warte die Welt, fällt nicht blind in ein Tal).
+        if (wasFirstSpawn) {
+            try {
+                this._ensureGenesisPlatform();
+            } catch (e) {
+                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
+            }
+        }
+    }
+
+    // Alle alten Welt-Objekte abräumen: groundMesh + Heightfield-Body,
+    // floatingIslands (Static-Collision), ufos, creatures (Ammo-Bodies +
+    // creatureEmotions), wallBoxes (Geometrie+Material+Shape+MotionState
+    // disposen — V8.26-VRAM/Heap-Leak-Heilung), vegetation (Static-Collision),
+    // Hydrosphären-Meshes (Fluss/See/Wasserfall — V9.43-c).
+    _worldgenCleanupOldObjects() {
         if (this.state.groundMesh) {
             this.state.scene.remove(this.state.groundMesh);
             const body = this.state.groundMesh.userData.physicsBody;
@@ -13189,15 +13341,10 @@ class AnazhRealm {
             this.state.groundHeightField = null;
             this.log("Alter Boden entfernt");
         }
-        // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Chunks-Cleanup
-        // (`groundChunks.forEach _disposeChunkPhysics`, `chunkMap.clear()`)
-        // ist als toter Pfad entfernt. Voxel ist permanent (V9.35), keine
-        // Heightfield-Chunks werden mehr gebaut, beide Sammlungen sind
-        // immer leer beim Welt-Regen. Die State-Felder selbst bleiben als
-        // defensive `new Map()`/`[]`-Init für audit-strict-Konsistenz.
+        // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Chunks-Cleanup ist
+        // entfernt (Voxel ist permanent seit V9.35, beide Sammlungen leer).
         if (this.state.floatingIslands) {
             this.state.floatingIslands.forEach((island) => {
-                // Welle 6.G Phase 1 — neue Kollisions-Schicht abräumen.
                 this._disposeStaticCollision(island);
                 this.state.scene.remove(island);
             });
@@ -13227,8 +13374,7 @@ class AnazhRealm {
             this.state.wallBoxes.forEach((wall) => {
                 this.state.scene.remove(wall);
                 // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
-                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial im
-                // VRAM. Vorher: nur scene.remove + physics-body destroy.
+                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial.
                 if (wall.geometry) wall.geometry.dispose();
                 if (wall.material) {
                     if (Array.isArray(wall.material)) wall.material.forEach((m) => m && m.dispose());
@@ -13240,10 +13386,7 @@ class AnazhRealm {
                     Ammo.destroy(body);
                     this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== wall);
                 }
-                // V8.26 Polish §6.4 — Ammo-Shape + MotionState wurden bei
-                // addWallCollisions in userData gespeichert. Sie sind nach
-                // Body-Destroy unreferenziert und müssen separat aus dem
-                // WASM-Heap geräumt werden, sonst leakt jeder Welt-Regen.
+                // V8.26 Polish §6.4 — Shape + MotionState aus dem WASM-Heap.
                 if (wall.userData.physicsShape) Ammo.destroy(wall.userData.physicsShape);
                 if (wall.userData.physicsMotionState) Ammo.destroy(wall.userData.physicsMotionState);
             });
@@ -13252,132 +13395,72 @@ class AnazhRealm {
         }
         if (this.state.vegetation) {
             this.state.vegetation.forEach((veg) => {
-                // Welle 6.G Phase 1 — Baum-Stamm-Kollision freigeben.
                 this._disposeStaticCollision(veg);
                 this.state.scene.remove(veg);
             });
             this.state.vegetation = [];
             this.log("Alte Vegetation entfernt");
         }
-        // V9.43-c — die gerenderten Hydrosphären-Meshes (Fluss-Ribbons, See-
-        // Planes, Wasserfall-Planes) abräumen. Der V9.43-a-per-Chunk-Wasser-
-        // fall-Spawner ist abgelöst — alle Wasser-Geometrien des Drainage-
-        // Netzes leben jetzt in `state.hydrosphereMeshes`.
+        // V9.43-c — Hydrosphären-Meshes (Fluss-Ribbons, See-Planes, Wasserfall-
+        // Planes) abräumen. Der V9.43-a-per-Chunk-Wasserfall-Spawner ist abgelöst.
         this._disposeHydrosphereMeshes();
+    }
 
-        // ### Spieler-Position ###
-        // Beim allerersten Worldgen wird der Spieler in die Welt-Mitte gesetzt.
-        // Bei späteren Regenerationen (z. B. Nexus terrainFlatten, manuelles
-        // "Spawne neue Welt") bleibt die aktuelle Position erhalten – sonst
-        // würde jede Selbstoptimierung den Spieler aus der Welt teleportieren.
-        // Kill-Plane und findSurfaceAbove fangen ab, falls die neue Topographie
-        // den Spieler unter dem Boden lässt.
-        if (this.state.playerMesh) {
-            this.state.playerMesh.visible = true;
-            if (!this.state.terrainEverGenerated) {
-                this.state.playerMesh.position.set(0, 50, 0);
-                if (this.state.playerBody) {
-                    const t = this.state.tmpTransform;
-                    t.setIdentity();
-                    t.setOrigin(this.setVec(this.state.tmpVec1, 0, 50 / this.state.scaleFactor, 0));
-                    this.state.playerBody.setWorldTransform(t);
-                    this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-                }
-                this.log("Welt erstmals gespawnt: Spieler bei (0, 50, 0)");
-            } else {
-                this.log("Welt regeneriert – Spieler-Position bleibt erhalten", "DEBUG");
-            }
-        } else {
+    // Spieler-Position beim Worldgen. Beim allerersten Spawn auf (0, 50, 0)
+    // setzen (sonst würde der Spieler blind in die Welt fallen); bei späteren
+    // Regen-Aufrufen (z.B. Nexus terrainFlatten, manuelles „Spawne neue Welt")
+    // bleibt die aktuelle Position — sonst würde jede Selbstoptimierung den
+    // Spieler aus der Welt teleportieren. Kill-Plane + findSurfaceAbove fangen
+    // ab, falls die neue Topographie den Spieler unter dem Boden lässt.
+    _worldgenInitPlayerPosition(isFirstSpawn) {
+        if (!this.state.playerMesh) {
             this.log("Warnung: playerMesh nicht initialisiert – sollte in init() initialisiert sein", "ERROR");
+            return;
         }
-        const wasFirstSpawn = !this.state.terrainEverGenerated;
-        this.state.terrainEverGenerated = true;
-        if (wasFirstSpawn) this.grokMarkFirstSpawn();
+        this.state.playerMesh.visible = true;
+        if (isFirstSpawn) {
+            this.state.playerMesh.position.set(0, 50, 0);
+            if (this.state.playerBody) {
+                const t = this.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(this.setVec(this.state.tmpVec1, 0, 50 / this.state.scaleFactor, 0));
+                this.state.playerBody.setWorldTransform(t);
+                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+            }
+            this.log("Welt erstmals gespawnt: Spieler bei (0, 50, 0)");
+        } else {
+            this.log("Welt regeneriert – Spieler-Position bleibt erhalten", "DEBUG");
+        }
+    }
 
-        // ### Hydraulische Erosion ### V9.47
-        // Tröpfchen-Erosion carvt dendritische Täler + füllt Becken mit
-        // Sediment. MUSS hier laufen — VOR allem Surface-abhängigen Worldgen
-        // (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) → alle
-        // sehen das erodierte Gelände. `_terrainMacroSurfaceY` addiert das
-        // Delta. try/catch — ein Erosions-Fehler darf den Worldgen nie brechen.
+    // V9.47 — Hydraulische Tröpfchen-Erosion carvt dendritische Täler + füllt
+    // Becken mit Sediment. MUSS hier laufen — VOR allem Surface-abhängigen
+    // Worldgen (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) →
+    // alle sehen das erodierte Gelände. V9.51 — der Tarn-Pass: Bergseen als
+    // additive Hochmulden ins Erosions-Delta. try/catch — ein Erosions-Fehler
+    // darf den Worldgen nie brechen.
+    _worldgenComputeErosionAndTarns() {
         try {
             this.state.erosion = this._computeErosion();
             this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
-            // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden ins
-            // Erosions-Delta (das Priority-Flood entdeckt sie danach + füllt
-            // sie zu Seen — `docs/hydrosphere.md` §15).
             const tarns = this._hydroSeedTarns();
             this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
         } catch (e) {
             this.state.erosion = null;
             this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
         }
+    }
 
-        // ### Höhendaten ###
-        // V9.38 Phase 5c.2.c.3.b.ii — der heightData-Allokations-`else`-Pfad
-        // ist als toter Pfad entfernt. Vor V9.38: ein `if (isVoxelWorldGen2)`
-        // skippte die 256×256×3-Float32Array-Allokation + die 65k-Noise-
-        // Schleife; der `else`-Zweig baute heightData für eine Heightfield-
-        // Welt. Mit V9.35 (Voxel permanent + Zwangs-Migration) UND V9.37
-        // (Heightfield-Dispatch-Pfade gelöscht) ist `worldMeta.voxelTerrain`
-        // konstant-true → der `else`-Zweig wurde nie betreten. V9.30/V9.37-
-        // Disziplin: das offensichtlich Tote löschen. heightData bleibt null,
-        // minHeight/maxHeight bleiben 0 — alle Konsumenten sind seit V9.25
-        // Phase 5b voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
-        const heightData = null;
-        const minHeight = 0;
-        const maxHeight = 0;
-
-        // ### Initiale Chunks generieren ###
-        // Alle Chunks gehen jetzt durch ensureChunkAt — denselben Pfad wie
-        // spätere Erweiterungen. Damit haben initial UND extension Chunks
-        // exakt dasselbe Welt-Grid (chunkWorldSize=37.5, vertexStep=1.171875)
-        // und die Naht zwischen ihnen ist nicht mehr 0.15 Welt-Einheiten
-        // versetzt. V9.30: die alten generateChunk + addTerrainPhysics +
-        // globale btHeightfieldTerrainShape sind als nachweislich tote
-        // Methoden entfernt (Phase 5c.2.a der Heightfield-Code-Entfernung).
-        this.state.chunkMap = new Map();
-        this.state.chunkSize = CHUNK_SIZE;
-        this.state.chunkWidth = WIDTH;
-        this.state.chunkDepth = DEPTH;
-        // V9.39 — `state.terrainMaterial = material` ist als toter Setzer
-        // entfernt; mit `ensureChunkAt` weg gibt es keinen Heightfield-Mesh
-        // mehr, der das Material trüge. Die zwei Leser (`_refreshToonGradient`
-        // Cel-Slider-Pfad) sind defensiv (`if (terrainMaterial && uniforms)`)
-        // und no-oppen anmutig.
-        this.state.groundChunks = [];
-
-        if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
-            this.state.scaleFactor = 1.0;
-            this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
-        }
-
-        // V9.37 Phase 5c.2.c.3.b.i: die initiale Heightfield-Chunk-
-        // Generierung ist als toter Pfad entfernt — Voxel ist permanent
-        // (V9.35), die V9.27-Skip-Gate hatte den else-Pfad ohnehin nie
-        // mehr betreten. `chunkMap` bleibt leer (oder trägt nur Test-
-        // Chunks, die Playtest-Tests via `ensureChunkAt(40, 40)` direkt
-        // bauen — V9.35/V9.36-Pattern). Das `terrainMaterial`-ShaderMaterial
-        // wird unten noch gebaut + von V8.27 Cel-Stufen-Regler-Tests
-        // gelesen; eine ehrliche Bewertung steht in einer späteren Sub-
-        // Welle (5c.2.c.3.b.ii) an.
-
-        // Globales Heightfield ist nicht mehr nötig: jeder Chunk hat jetzt
-        // sein eigenes btBvhTriangleMeshShape, das die Triangles des Visual-
-        // Meshes 1:1 als Collider nutzt. Nachbarn teilen ihre Naht-Vertices
-        // exakt, daher keine Spalten mehr.
-
-        // ### Fliegende Inseln generieren ###
+    // V9.42-c — Worldgen-Inseln gehen durch die V9.42-a-Pipeline (Surface-Nets
+    // via `spawnIslandAt`, eine Mesh-Sprache, ein Pfad). Spawn-Y aus echter
+    // Voxel-Surface (in Voxel-Welten ist `maxHeight=0`, die alte
+    // `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
+    // Math.random-Reihenfolge: pro Insel 4 Calls (size, height, x, z, baseSurf-
+    // Fallback nicht random, ufoSpeed) — strikt erhalten für Determinismus.
+    _worldgenSpawnFloatingIslands(WORLD_SIZE) {
         this.state.floatingIslands = [];
         this.state.ufos = [];
-        const numIslands = 3; // Reduziere Anzahl für bessere Performance
-        // V9.42-c — Worldgen-Inseln gehen durch die V9.42-a-Pipeline
-        // (Surface-Nets via `spawnIslandAt`). Eine Mesh-Sprache, ein Pfad.
-        // Spawn-Y aus echter Voxel-Surface (in Voxel-Welten ist `maxHeight=0`,
-        // die alte `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
-        // `spawnIslandAt` übernimmt scene.add + floatingIslands.push + Kollision
-        // + Material (MeshToon + vertexColors — kein Terrain-Shader mehr; der
-        // passte nicht zur Surface-Nets-Geometrie und rendete "Löcher").
+        const numIslands = 3;
         for (let i = 0; i < numIslands; i++) {
             const islandSize = 14 + Math.random() * 30; // 14..44 m Durchmesser
             const islandHeight = 6 + Math.random() * 10; // 6..16 m Wölbung
@@ -13396,7 +13479,7 @@ class AnazhRealm {
             this.log(
                 `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
             );
-            // UFO als Begleiter (kosmetisch, kein Compound-Architektur — eigene Welle).
+            // UFO als Begleiter (kosmetisch, kein Compound-Architektur).
             const ufoGeometry = new THREE.ConeGeometry(1, 2, 8);
             const ufoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const ufo = new THREE.Mesh(ufoGeometry, ufoMaterial);
@@ -13406,47 +13489,15 @@ class AnazhRealm {
             this.state.ufos.push(ufo);
             ufo.userData = { baseY: ufoY, speed: Math.random() * 0.5 + 0.5 };
         }
+    }
 
-        // ### Dynamische Vegetation ###
-        // V9.38 Phase 5c.2.c.3.b.ii — der 256×256-Heightfield-Wasserfall-Loop
-        // ist als toter Pfad entfernt. V9.43-c — der V9.32/V9.43-a-per-Chunk-
-        // Wasserfall-Spawner ist abgelöst: Wasser (Meer/See/Fluss/Wasserfall)
-        // kommt jetzt aus dem Hydrosphären-Netz (`_buildHydrosphereMeshes`).
-        // `state.vegetation` bleibt als Sammler-Liste.
-        this.state.vegetation = [];
-
-        // ### Terrain-State setzen ###
-        // V9.38 Phase 5c.2.c.3.b.ii — in einer Voxel-Welt sind heightData/
-        // minHeight/maxHeight per Konstruktion null bzw. 0; die voxel-gated
-        // Konsumenten (Killplane base-88, getTerrainHeightAt → _voxelSurfaceY)
-        // ignorieren sie. Der Heightfield-Log-Gate (`if (!isVoxelWorldGen2)`)
-        // ist mit dem heightData-else-Pfad und dem Wasserfall-Loop weggefallen
-        // — die Heightfield-Meldung würde mit den Zahlen 0..0 keinen Sinn
-        // mehr machen. terrainSteepness/terrainBaseHeight bleiben (steepness
-        // moduliert Voxel-Surface über _terrainHeightAtWorld, terrainBaseHeight
-        // ist die Voxel-Anker-Höhe für getTerrainHeightAt-Fallback + Killplane).
-        this.state.groundHeightField = heightData;
-        this.state.minHeight = minHeight;
-        this.state.maxHeight = maxHeight;
-        this.state.terrainSteepness = steepness;
-        this.state.terrainBaseHeight = baseHeight;
-
-        // V7.75 — Welle 6.G Phase 2: initiales Welt-Vegetation über das
-        // Welt-Affinitäts-Feld. Iteriert ALLE Chunks der initialen Welt
-        // (8×8 = 64 Chunks bei WORLD_SIZE 300, chunkWorldSize 37.5) und
-        // ruft populateChunkVegetation. Dort entscheidet das Tag-Feld
-        // welche Baupläne wo wahrscheinlich sind. Bei jedem späteren
-        // ensureChunkAt-Aufruf (neue Chunks am Spielerrand) wird derselbe
-        // Pfad genommen — alte und neue Bereiche der Welt fühlen sich
-        // konsistent an.
+    // Voxel-Populated-Chunks-Cache aus dem Altbestand der Architekturen
+    // ableiten (Reload → kein Doppel-Spawn). V9.37 — der Heightfield-
+    // Vegetations-Pass (Initial-64-Chunk-Loop) ist tot; Vegetation streamt
+    // jetzt am Voxel-Chunk-Lifecycle (`_populateVoxelChunkVegetation` in
+    // `_ensureVoxelChunkAt`, V9.24-Verdrahtung).
+    _worldgenBuildVoxelChunkCache() {
         try {
-            // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Vegetations-Pass
-            // (Initial-64-Chunk-Loop über `populateChunkVegetation`) ist
-            // als toter Pfad entfernt — Voxel ist permanent (V9.35),
-            // Vegetation streamt am Voxel-Chunk-Lifecycle
-            // (`_populateVoxelChunkVegetation` in `_ensureVoxelChunkAt`,
-            // V9.24-Verdrahtung). Hier nur noch der Idempotenz-Cache aus
-            // dem Altbestand abgeleitet (Reload → kein Doppel-Spawn).
             const vspan = this._voxelChunkConfig().span;
             this.state.voxelPopulatedChunks = new Set();
             for (const a of this.state.architectures || []) {
@@ -13462,14 +13513,13 @@ class AnazhRealm {
         } catch (e) {
             this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
         }
+    }
 
-        // V9.43-b — der Hydrosphären-Atlas. Aus der Voxel-Surface ein
-        // deterministisches Drainage-Netz (Flüsse/Seen/Wasserfälle) ableiten.
-        // Reine Daten — kein Rendering (V9.43-c), kein Carven (V9.43-d). Der
-        // Bau läuft in eine lokale Variable; state.hydrosphere wird erst NACH
-        // vollständigem Bau gesetzt — der V9.43-d-Carve-Term liest dann ein
-        // null-Feld und greift nicht (Zirkel-Freiheit, hydrosphere.md §8).
-        // try/catch: ein Hydrosphären-Fehler darf den Worldgen nie brechen.
+    // V9.43-b/c — Hydrosphären-Atlas (Drainage-Netz aus der Voxel-Surface:
+    // Flüsse/Seen/Wasserfälle) + Render (Ribbons/Planes via V9.43-a-Wasser-
+    // Material-Familie). Atlas läuft VOR Render (Render liest state.hydrosphere).
+    // Zwei try/catch — beide Stufen dürfen den Worldgen nie brechen.
+    _worldgenComputeAndBuildHydrosphere() {
         try {
             const hydro = this._computeHydrosphere();
             this.state.hydrosphere = hydro;
@@ -13481,36 +13531,11 @@ class AnazhRealm {
             this.state.hydrosphere = null;
             this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
         }
-
-        // V9.43-c — die Hydrosphäre wird sichtbar: Fluss-Ribbons + See-Planes
-        // + Wasserfall-Planes, alle aus der V9.43-a-Wasser-Material-Familie.
-        // Läuft NACH `state.hydrosphere` (es liest das Netz). try/catch — ein
-        // Render-Fehler darf den Worldgen nie brechen.
         try {
             this._buildHydrosphereMeshes();
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
-
-        this.spawnCreatures();
-
-        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
-        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf.
-        // So fällt er nicht blind in ein Tal — er sieht von erhöhter
-        // Warte die Welt. Nur first-spawn (wasFirstSpawn), idempotent.
-        if (wasFirstSpawn) {
-            try {
-                this._ensureGenesisPlatform();
-            } catch (e) {
-                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
-            }
-        }
-
-        // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
-
-        // - Weltkoordinaten (x, z) in Noise-Generierung eliminieren Lücken.
-        // - Alle Funktionen (Vegetation, Wasserfälle, Inseln) bleiben erhalten.
-        // - Seed in SimplexNoise sorgt für konsistente Höhen über Chunks hinweg.
     }
 
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
@@ -14193,18 +14218,56 @@ class AnazhRealm {
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
     _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
+        const density = this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        const { positions, vertCells, cellVert } = this._voxelExtractSurfaceVertices(
+            density,
+            ox,
+            oy,
+            oz,
+            dimX,
+            dimY,
+            dimZ,
+            step
+        );
+        if (positions.length === 0) return null;
+        const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
+        this._voxelLaplacianSmoothPositions(positions, indices);
+        this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
+        if (positions.length === 0) return null;
+        const normals = this._voxelGradientNormals(positions, sample, step);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        if (indices.length > 0) geom.setIndex(indices);
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        return geom;
+    }
+
+    // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
+    // Indizierung gi = i + j*Nx + k*Nx*Ny.
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
         const density = new Float32Array(Nx * Ny * Nz);
-        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
         for (let k = 0; k < Nz; k++) {
             for (let j = 0; j < Ny; j++) {
                 for (let i = 0; i < Nx; i++) {
-                    density[gi(i, j, k)] = sample(ox + i * step, oy + j * step, oz + k * step);
+                    density[i + j * Nx + k * Nx * Ny] = sample(ox + i * step, oy + j * step, oz + k * step);
                 }
             }
         }
+        return density;
+    }
+
+    // Pass 1 — Surface-Nets: ein Vertex pro oberflächen-schneidender Zelle.
+    // Liefert positions (x/y/z-Tripel), cellVert (Zell-Index → Vertex-Index,
+    // -1 wenn keine Oberfläche) und vertCells (i/j/k pro Vertex für den
+    // Crop-Pass-Skirt-Filter, V9.42-b).
+    _voxelExtractSurfaceVertices(density, ox, oy, oz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
+        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
         // Die 12 Würfel-Kanten als Eck-Paare (Eck c: bit0=x, bit1=y, bit2=z).
         const EDGES = [
             [0, 1],
@@ -14220,18 +14283,10 @@ class AnazhRealm {
             [5, 7],
             [6, 7],
         ];
-        const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
-        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
-        const positions = [];
-        // V9.42-b — Vertex→Zell-Lookup für die Smooth-Skirt-Disziplin:
-        // Naht-Vertices (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1)
-        // dürfen NICHT vom Laplacian-Smooth verschoben werden, sonst
-        // verlieren benachbarte Chunks die V9.10-Skirt-Übereinstimmung
-        // an der Naht (jeder Chunk zieht den Naht-Vertex zu SEINER inneren
-        // Topologie → Spalt). Vertices in Rand-Zellen bleiben unverschoben.
-        const vertCells = [];
         const solid = (v) => v > 0;
-        // Pass 1 — ein Vertex je oberflächen-schneidender Zelle.
+        const cellVert = new Int32Array(dimX * dimY * dimZ).fill(-1);
+        const positions = [];
+        const vertCells = [];
         for (let k = 0; k < dimZ; k++) {
             for (let j = 0; j < dimY; j++) {
                 for (let i = 0; i < dimX; i++) {
@@ -14274,17 +14329,25 @@ class AnazhRealm {
                 }
             }
         }
-        if (positions.length === 0) return null;
-        // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad.
-        // V9.41: alternierende Diagonale je nach Zell-Parität `(i+j+k) & 1`.
-        // Vor V9.41 trianguliert quad() IMMER mit a→c (`indices.push(a,b,c, a,c,d)`)
-        // — alle Diagonal-Falten zeigen in dieselbe Richtung → sichtbares Streifen-
-        // Muster auf flachen Hügeln (Schöpfer-Browser-Befund 20.05.2026, Punkt 3).
-        // Schach-Brett: gerade Zellen behalten a→c, ungerade nutzen b→d. Beide
-        // Triangulierungen sind CCW-konsistent (das Quad ist ccw a→b→c→d auf-
-        // gebaut, beide Diagonal-Wahlen erhalten das Winding). Geometrie-Kosten:
-        // null (gleich viele Dreiecke, gleicher Vertex-Buffer); Lichtwirkung:
-        // die Falten brechen sich auf statt sich zu Streifen zu addieren.
+        return { positions, vertCells, cellVert };
+    }
+
+    // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad. V9.41
+    // alternierende Diagonale je nach Zell-Parität `(i+j+k) & 1` bricht das
+    // sichtbare Streifen-Muster auf flachen Hügeln (Schöpfer-Browser-Befund
+    // 20.05.2026). cv() ist die Out-of-Range-Wand: OHNE sie aliaste
+    // `ci(dim, j, k)` in einen FREMDEN Zell-Slot → Streck-Dreieck quer durch
+    // den Chunk an JEDER Naht.
+    _voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
+        const ci = (i, j, k) => i + j * dimX + k * dimX * dimY;
+        const solid = (v) => v > 0;
+        const cv = (i, j, k) => {
+            if (i < 0 || j < 0 || k < 0 || i >= dimX || j >= dimY || k >= dimZ) return -1;
+            return cellVert[ci(i, j, k)];
+        };
         const indices = [];
         const quad = (a, b, c, d, parity) => {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
@@ -14294,23 +14357,10 @@ class AnazhRealm {
                 indices.push(a, b, c, a, c, d);
             }
         };
-        // cv() liefert den Zell-Vertex ODER -1 für jeden out-of-range Index.
-        // OHNE diese Wand aliaste `ci(dim, j, k)` (= dim + j*dim + …) in einen
-        // FREMDEN Zell-Slot — `cellVert` dort konnte einen gültigen Vertex
-        // tragen → ein Streck-Dreieck quer durch den Chunk an JEDER i/j/k=dim-
-        // Randebene (= an jeder Chunk-Naht). Das war die „unsaubere Naht".
-        const cv = (i, j, k) => {
-            if (i < 0 || j < 0 || k < 0 || i >= dimX || j >= dimY || k >= dimZ) return -1;
-            return cellVert[ci(i, j, k)];
-        };
         for (let k = 0; k <= dimZ; k++) {
             for (let j = 0; j <= dimY; j++) {
                 for (let i = 0; i <= dimX; i++) {
                     const s0 = solid(density[gi(i, j, k)]);
-                    // V9.41: parity = (i+j+k) & 1 entscheidet die Quad-Diagonale.
-                    // Eine GITTER-KANTE wird von zwei Zellen geteilt (links/rechts
-                    // der Kante); die Parität EINER konsistent gewählten Ecke
-                    // (hier (i,j,k)) gibt jeder Kante eine eindeutige Diagonale.
                     const parity = (i + j + k) & 1;
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
@@ -14327,115 +14377,99 @@ class AnazhRealm {
                 }
             }
         }
-        const geom = new THREE.BufferGeometry();
-        // V9.41.b — Laplacian-Smooth-Pass. Surface-Nets liefert EINEN Vertex
-        // je Zelle (Auflösungs-Grenze); auf einer schrägen flachen Fläche
-        // entstehen sichtbare Treppen, weil benachbarte Zellen denselben
-        // Y-Slot teilen. V9.41-Schach-Brett-Diagonalen haben das STREIFEN-
-        // Muster gebrochen, aber die Treppen-GEOMETRIE blieb (Schöpfer-
-        // Browser-Test: „keine Änderung"). Laplacian-Smooth glättet die
-        // Vertex-Positionen iterativ über ihre topologischen Nachbarn —
-        // die Treppen werden zu sanften Schrägen. Eine Iteration mit
-        // Lambda 0.5 reicht visuell ohne sichtbare Volumen-Schrumpfung;
-        // die Normalen werden danach aus dem Dichte-Gradient an der
-        // NEUEN Vertex-Position gesampelt (V9.16-Pfad bleibt erhalten —
-        // die echte Iso-Fläche ist unverschoben, nur das Mesh-Approx).
-        if (indices.length >= 3) {
-            const vertCount = positions.length / 3;
-            const neighborSets = new Array(vertCount);
-            for (let v = 0; v < vertCount; v++) neighborSets[v] = new Set();
-            for (let t = 0; t + 2 < indices.length; t += 3) {
-                const ia = indices[t];
-                const ib = indices[t + 1];
-                const ic = indices[t + 2];
-                neighborSets[ia].add(ib);
-                neighborSets[ia].add(ic);
-                neighborSets[ib].add(ia);
-                neighborSets[ib].add(ic);
-                neighborSets[ic].add(ia);
-                neighborSets[ic].add(ib);
-            }
-            // V9.42-d — der Smooth läuft über ALLE Vertices, kein Skirt-
-            // Sonderfall. V9.42-b liess Skirt-Vertices ungesmootht (sicht-
-            // barer Treppen-Streifen an jeder Naht); V9.42-c smoothte sie
-            // mit Rand-Ebenen-Nachbarn (NICHT deterministisch — die Ebenen-
-            // Quad-Topologie hängt von Density auf BEIDEN Naht-Seiten ab →
-            // 6.7 % Spalt). Die KORREKTE Lösung ist das pad: der Chunk
-            // mesht `cropMargin` Zellen ÜBER seinen Skirt hinaus, smootht
-            // voll, schneidet den pad-Überhang danach ab. Jeder behaltene
-            // Vertex — auch der Skirt-Naht-Vertex — wurde mit seinen ECHTEN
-            // Welt-Nachbarn gesmootht (die im pad lagen). Der Nachbar-Chunk
-            // hat seinen pad an derselben Welt-Region → identischer Smooth
-            // → nahtlos UND ohne ungesmootht-Streifen.
-            const lambda = 0.5;
-            const smoothed = new Array(positions.length);
-            for (let v = 0; v < vertCount; v++) {
-                const nbrs = neighborSets[v];
-                const cnt = nbrs.size;
-                if (cnt === 0) {
-                    smoothed[v * 3] = positions[v * 3];
-                    smoothed[v * 3 + 1] = positions[v * 3 + 1];
-                    smoothed[v * 3 + 2] = positions[v * 3 + 2];
-                    continue;
-                }
-                let sx = 0;
-                let sy = 0;
-                let sz = 0;
-                for (const n of nbrs) {
-                    sx += positions[n * 3];
-                    sy += positions[n * 3 + 1];
-                    sz += positions[n * 3 + 2];
-                }
-                const ax = sx / cnt;
-                const ay = sy / cnt;
-                const az = sz / cnt;
-                smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
-                smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
-                smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
-            }
-            for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
+        return indices;
+    }
+
+    // V9.41.b/V9.42-d — Laplacian-Smooth (1 Iteration, λ=0.5) MUTIERT positions
+    // in place. Surface-Nets liefert EINEN Vertex pro Zelle → schräge flache
+    // Flächen zeigen Treppen; Smooth glättet zu sanften Schrägen über die
+    // topologischen Nachbarn. Läuft über ALLE Vertices (kein Skirt-Sonderfall;
+    // der pad+Crop-Pass sichert den Naht-Determinismus — jeder Nachbar-Chunk
+    // hat seinen pad an derselben Welt-Region, identischer Smooth → nahtlos).
+    _voxelLaplacianSmoothPositions(positions, indices) {
+        if (indices.length < 3) return;
+        const vertCount = positions.length / 3;
+        const neighborSets = new Array(vertCount);
+        for (let v = 0; v < vertCount; v++) neighborSets[v] = new Set();
+        for (let t = 0; t + 2 < indices.length; t += 3) {
+            const ia = indices[t];
+            const ib = indices[t + 1];
+            const ic = indices[t + 2];
+            neighborSets[ia].add(ib);
+            neighborSets[ia].add(ic);
+            neighborSets[ib].add(ia);
+            neighborSets[ib].add(ic);
+            neighborSets[ic].add(ia);
+            neighborSets[ic].add(ib);
         }
-        // V9.42-d — Crop-Pass: die äussersten `cropMargin` Zell-Ebenen in
-        // X/Z verwerfen. Sie waren nur Smooth-Stützen (pad); der behaltene
-        // Kern + Skirt ist voll-deterministisch gesmootht. Vertices in den
-        // pad-Zellen + Quads, die sie referenzieren, fallen weg; der Rest
-        // wird neu indiziert.
-        if (cropMargin > 0 && positions.length > 0) {
-            const vc = positions.length / 3;
-            const remap = new Int32Array(vc).fill(-1);
-            const keptPos = [];
-            let kept = 0;
-            for (let v = 0; v < vc; v++) {
-                const ciV = vertCells[v * 3];
-                const ckV = vertCells[v * 3 + 2];
-                if (ciV < cropMargin || ciV >= dimX - cropMargin || ckV < cropMargin || ckV >= dimZ - cropMargin) {
-                    continue;
-                }
-                remap[v] = kept++;
-                keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+        const lambda = 0.5;
+        const smoothed = new Array(positions.length);
+        for (let v = 0; v < vertCount; v++) {
+            const nbrs = neighborSets[v];
+            const cnt = nbrs.size;
+            if (cnt === 0) {
+                smoothed[v * 3] = positions[v * 3];
+                smoothed[v * 3 + 1] = positions[v * 3 + 1];
+                smoothed[v * 3 + 2] = positions[v * 3 + 2];
+                continue;
             }
-            const keptIdx = [];
-            for (let t = 0; t + 2 < indices.length; t += 3) {
-                const a = remap[indices[t]];
-                const b = remap[indices[t + 1]];
-                const c = remap[indices[t + 2]];
-                if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+            let sx = 0;
+            let sy = 0;
+            let sz = 0;
+            for (const n of nbrs) {
+                sx += positions[n * 3];
+                sy += positions[n * 3 + 1];
+                sz += positions[n * 3 + 2];
             }
-            positions.length = 0;
-            for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
-            indices.length = 0;
-            for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+            const ax = sx / cnt;
+            const ay = sy / cnt;
+            const az = sz / cnt;
+            smoothed[v * 3] = positions[v * 3] + lambda * (ax - positions[v * 3]);
+            smoothed[v * 3 + 1] = positions[v * 3 + 1] + lambda * (ay - positions[v * 3 + 1]);
+            smoothed[v * 3 + 2] = positions[v * 3 + 2] + lambda * (az - positions[v * 3 + 2]);
         }
-        if (positions.length === 0) return null;
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        if (indices.length > 0) geom.setIndex(indices);
-        // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der
-        // Mesh-Triangulierung. `computeVertexNormals` mittelt die Flächen-
-        // Normalen der triangulierten Quads → es nimmt jede Quad-Diagonal-
-        // Faltung auf → ein hartes Rauten-/Trapez-Facetten-Muster auf der
-        // Oberfläche. Der Gradient `∇d` IST die wahre Iso-Oberflächen-
-        // Normale — glatt, unabhängig von der Facettierung. Die Oberfläche
-        // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
+        for (let i = 0; i < positions.length; i++) positions[i] = smoothed[i];
+    }
+
+    // V9.42-d Crop-Pass — die äussersten `cropMargin` Zell-Ebenen in X/Z
+    // verwerfen. Sie waren nur Smooth-Stützen (pad); der behaltene Kern +
+    // Skirt ist voll-deterministisch gesmootht. MUTIERT positions + indices
+    // in place (.length=0 + push, weil der Aufrufer Referenzen hält).
+    _voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
+        if (cropMargin <= 0 || positions.length === 0) return;
+        const vc = positions.length / 3;
+        const remap = new Int32Array(vc).fill(-1);
+        const keptPos = [];
+        let kept = 0;
+        for (let v = 0; v < vc; v++) {
+            const ciV = vertCells[v * 3];
+            const ckV = vertCells[v * 3 + 2];
+            if (ciV < cropMargin || ciV >= dimX - cropMargin || ckV < cropMargin || ckV >= dimZ - cropMargin) {
+                continue;
+            }
+            remap[v] = kept++;
+            keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
+        }
+        const keptIdx = [];
+        for (let t = 0; t + 2 < indices.length; t += 3) {
+            const a = remap[indices[t]];
+            const b = remap[indices[t + 1]];
+            const c = remap[indices[t + 2]];
+            if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+        }
+        positions.length = 0;
+        for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
+        indices.length = 0;
+        for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+    }
+
+    // V9.16 — Normalen aus dem Dichte-Feld-GRADIENTEN statt aus der Mesh-
+    // Triangulierung. `computeVertexNormals` mittelt die Flächen-Normalen
+    // der triangulierten Quads → nimmt jede Quad-Diagonal-Faltung auf →
+    // hartes Rauten-/Trapez-Facetten-Muster. Der Gradient `∇d` IST die wahre
+    // Iso-Oberflächen-Normale — glatt, facettierungs-unabhängig. Die Oberfläche
+    // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
+    _voxelGradientNormals(positions, sample, step) {
         const normals = new Float32Array(positions.length);
         const eps = step * 0.5;
         for (let v = 0; v < positions.length; v += 3) {
@@ -14457,8 +14491,7 @@ class AnazhRealm {
                 normals[v + 2] = -gz / len;
             }
         }
-        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-        return geom;
+        return normals;
     }
 
     // V9.10 — Welt-Feld-Farbe pro Voxel-Vertex. Mirrort die Farb-Logik des
@@ -18844,69 +18877,91 @@ class AnazhRealm {
     // (`_tickVoxelChunkStreaming` + `_pruneDistantVoxelChunks`).
 
     loadState(externalState = null) {
-        // Drei Quellen werden unterstützt: localStorage (Default), externes
-        // Objekt (z. B. aus File-Upload), oder gar nichts (frühes init()).
-        // Ring 8: localStorage-Pfad geht über die aktive worldId, fällt
-        // notfalls auf den Legacy-Single-Key zurück (Migration ist beim
-        // Pre-Load passiert, aber Defensive bleibt drin).
         let state = externalState;
         if (!state) {
-            const activeId = this.activeWorldGet();
-            let savedState = null;
-            if (activeId) {
-                savedState = localStorage.getItem(this.worldStorageKey(activeId));
-            }
-            if (!savedState) {
-                savedState = localStorage.getItem("anazhRealmState");
-            }
-            if (!savedState) return false;
-            try {
-                state = JSON.parse(savedState);
-            } catch (error) {
-                this.log(`Speicherstand ist ungültiges JSON: ${error.message}`, "ERROR");
-                return false;
-            }
+            state = this._loadStateLoadFromStorage();
+            if (!state) return false;
         }
+        this._loadStateRestorePlayerPosition(state);
+        this._loadStateRestoreBasicState(state);
+        this._loadStateRestoreWorldMeta(state);
+        this._loadStateRestoreSoulAndAtmosphere(state);
+        this._loadStateRestoreConsumablesAndEquipped(state);
+        this._loadStateRestoreCraftingInventory(state);
+        this._loadStateRestoreArchitectures(state);
+        this._loadStateRestoreHotbarAndInventory(state);
+        this._loadStateRestoreEmotionsAndDsl(state);
+        this._loadStateRestoreMiscState(state);
+        if (externalState) this._loadStatePersistExternalImport(externalState);
+        this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
+        if (!externalState) this._loadStateRestoreVersionHistory();
+        return true;
+    }
 
+    // Drei Quellen werden unterstützt: localStorage (Default), externes Objekt
+    // (z.B. aus File-Upload), oder gar nichts (frühes init()). Ring 8: Per-
+    // Welt-Key über die aktive worldId, mit Legacy-Single-Key-Fallback (Migration
+    // ist beim Pre-Load passiert, aber Defensive bleibt drin). Liefert null bei
+    // fehlendem oder ungültigem Save.
+    _loadStateLoadFromStorage() {
+        const activeId = this.activeWorldGet();
+        let savedState = null;
+        if (activeId) {
+            savedState = localStorage.getItem(this.worldStorageKey(activeId));
+        }
+        if (!savedState) {
+            savedState = localStorage.getItem("anazhRealmState");
+        }
+        if (!savedState) return null;
+        try {
+            return JSON.parse(savedState);
+        } catch (error) {
+            this.log(`Speicherstand ist ungültiges JSON: ${error.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Ring 8.2 — loadState markiert die Welt als „bereits einmal generiert"
+    // (terrainEverGenerated=true), damit das auf init() folgende generateNewWorld()
+    // den Spieler nicht auf (0, 50, 0) teleportiert. Brand-neue Welten (loadState
+    // findet nichts) lassen das Flag auf false → erster generateNewWorld setzt
+    // den Spieler wie bisher auf den Default-Spawn.
+    _loadStateRestorePlayerPosition(state) {
         const playerPosition = state.playerPosition || { x: 0, y: 5, z: 0 };
         const safeX = Number.isFinite(playerPosition.x) ? playerPosition.x : 0;
         const safeY = Number.isFinite(playerPosition.y) ? playerPosition.y : 5;
         const safeZ = Number.isFinite(playerPosition.z) ? playerPosition.z : 0;
-        // Ring 8.2: loadState markiert die Welt als „bereits einmal generiert",
-        // damit das auf init() folgende generateNewWorld() den Spieler nicht
-        // auf (0, 50, 0) teleportiert. Die geladene Position bleibt damit
-        // intakt. Brand-neue Welten (loadState findet nichts) lassen das Flag
-        // auf false, und der erste generateNewWorld-Lauf setzt den Spieler
-        // wie bisher auf den Default-Spawn.
         this.state.terrainEverGenerated = true;
-        if (this.state.playerMesh) {
-            this.state.playerMesh.position.set(safeX, safeY, safeZ);
-            this.state.playerMesh.visible = true;
-            if (this.state.playerBody && this.state.tmpTransform && this.state.tmpVec1) {
-                const t = this.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        safeX / this.state.scaleFactor,
-                        safeY / this.state.scaleFactor,
-                        safeZ / this.state.scaleFactor
-                    )
-                );
-                this.state.playerBody.setWorldTransform(t);
-                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-            }
-            this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
+        if (!this.state.playerMesh) return;
+        this.state.playerMesh.position.set(safeX, safeY, safeZ);
+        this.state.playerMesh.visible = true;
+        if (this.state.playerBody && this.state.tmpTransform && this.state.tmpVec1) {
+            const t = this.state.tmpTransform;
+            t.setIdentity();
+            t.setOrigin(
+                this.setVec(
+                    this.state.tmpVec1,
+                    safeX / this.state.scaleFactor,
+                    safeY / this.state.scaleFactor,
+                    safeZ / this.state.scaleFactor
+                )
+            );
+            this.state.playerBody.setWorldTransform(t);
+            this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
         }
+        this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
+    }
+
+    // knowledgeBase, selfAwareness, creatureEmotions, Kreaturen-Snapshot-Stash,
+    // Terrain-Parameter, Wetter + sofortige Skybox-Update. Welle 6.H Phase 2D.1
+    // — `_pendingCreatureSnapshots` stashed das Save-Schema (full snapshots mit
+    // soul+name) und wird von `spawnCreatures()` im generateNewWorld-Pfad
+    // konsumiert. Legacy-Saves (vor V7.86, nur {position}) fallen auf Default-
+    // Spawn zurück (hasName+hasSoul-Heuristik).
+    _loadStateRestoreBasicState(state) {
         this.state.knowledgeBase = state.knowledgeBase || [];
         this.state.selfAwareness = state.selfAwareness || { components: [], weaknesses: [] };
         this.state.creatureEmotions = state.creatureEmotions || [];
-        // Welle 6.H Phase 2D.1 — Kreaturen-Snapshots stashen. spawnCreatures()
-        // im generateNewWorld-Pfad checkt _pendingCreatureSnapshots zuerst
-        // und restored statt zufällig zu spawnen. Legacy-Saves (vor V7.86,
-        // nur {position} pro Eintrag) werden NICHT als persistente Snapshots
-        // betrachtet — sie fallen auf Default-Spawn zurück. Heuristik:
-        // hasName+hasSoul zeigt das neue Schema an.
         const incoming = Array.isArray(state.creatures) ? state.creatures : [];
         const looksLikeFullSnapshots =
             incoming.length > 0 &&
@@ -18918,27 +18973,27 @@ class AnazhRealm {
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";
         if (this.state.skybox) this.updateSkyboxWeather();
-        // Ring 2 / Ring 8+ Felder. Best-Effort-Migration: alte Saves haben
-        // weder worldMeta noch dslAbilities — wir füllen mit Defaults + Log.
+    }
+
+    // Ring 2 / Ring 8+ — Best-Effort-Migration. Alte Saves haben kein worldMeta,
+    // wir füllen mit Defaults + Log. V9.36 Phase 5c.2.c.3.a: der Ring-10.5-
+    // `chunkDeltas`-Sanitizer ist entfernt (Welt-Mod-Schicht im Voxel-Feld);
+    // alte Saves mit `worldMeta.chunkDeltas` werden still ignoriert.
+    _loadStateRestoreWorldMeta(state) {
         if (state.worldMeta && typeof state.worldMeta === "object") {
             this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
-        // V9.36 Phase 5c.2.c.3.a: der Ring-10.5-`chunkDeltas`-Sanitizer ist
-        // entfernt — die Welt-Mod-Schicht wirkt im 3D-Voxel-Feld (V9.14/V9.15)
-        // statt im Heightfield. Alte Saves mit `worldMeta.chunkDeltas` werden
-        // beim Laden still ignoriert (das Feld ist ein toter Datenpfad).
-        // Ring 3: Emotionen wiederherstellen. Nur bekannte Achsen übernehmen,
-        // damit alte Saves mit Tippfehlern keine fremden Keys einschleusen.
-        // Ring 5: Spieler-Seele wiederherstellen. Wenn das Mesh schon
-        // existiert (loadState wird auch nach Init aufgerufen, z. B. via
-        // "Lade Zustand"), wenden wir die Seele sofort an. Vor dem Mesh-Bau
-        // merkt sich applyPlayerSoul den Namen und der Init-Pfad wendet ihn
-        // nach Mesh-Erstellung an.
-        // Welle 6.D Etappe 1.6 — Custom-Seelen aus dem Save rekonstruieren
-        // BEVOR applyPlayerSoul aufgerufen wird; sonst würde eine gespeicherte
-        // Custom-Seele als „unbekannt" abgelehnt.
+    }
+
+    // Spieler-Seele (Ring 5) + Custom-Seelen (Welle 6.D Etappe 1.6) + Tag-Nacht-
+    // Zustand (Welle 6.G3) + Atmosphäre-Slider (V8.28 6.G4.b). REIHENFOLGE:
+    // Custom-Seelen ZUERST (sonst würde applyPlayerSoul eine gespeicherte
+    // Custom-Seele als „unbekannt" ablehnen); dann playerSoul; dann timeOfDay/
+    // dayLength/atmosphere; dann _applyDayNightToScene um Lights+Skybox sofort
+    // aus dem restaurierten timeOfDay neu zu setzen.
+    _loadStateRestoreSoulAndAtmosphere(state) {
         if (state.customSouls && typeof state.customSouls === "object") {
             const restored = {};
             for (const key of Object.keys(state.customSouls)) {
@@ -18962,9 +19017,6 @@ class AnazhRealm {
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
             if (known) this.applyPlayerSoul(state.playerSoul);
         }
-        // Welle 6.G3 — Tag-Nacht-Zustand wiederherstellen. Defensive:
-        // timeOfDay muss 0..1 sein, dayLengthMinutes muss in [min, max]-
-        // Range liegen. Bei ungültigen Werten: Defaults (0.5 / 8 min).
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this.state.timeOfDay = state.timeOfDay;
         }
@@ -18975,7 +19027,6 @@ class AnazhRealm {
                 this.state.dayLengthMinutes = state.dayLengthMinutes;
             }
         }
-        // V8.28 6.G4.b — Atmosphäre-Slider wiederherstellen (defensive Clamps).
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
             const cl = Number(state.atmosphere.celLevels);
@@ -18983,12 +19034,15 @@ class AnazhRealm {
             const fd = Number(state.atmosphere.fogDistance);
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
         }
-        // Lights+Skybox sofort neu aus restauriertem timeOfDay setzen
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
         }
-        // Welle 6.D Etappe 3a — Konsumables aus Save rekonstruieren (defensiv
-        // über createOrUpdateConsumable, das die tagBonus + duration prüft).
+    }
+
+    // Welle 6.D Etappe 3a/3b — Konsumables defensiv über createOrUpdateConsumable
+    // (das tagBonus + duration prüft); Equipped-Slots defensiv über equipTool/
+    // equipArmor (falls Tool/Armor weg ist, still fehlschlagen — Slot leer).
+    _loadStateRestoreConsumablesAndEquipped(state) {
         if (state.consumables && typeof state.consumables === "object") {
             this.state.consumables = {};
             for (const key of Object.keys(state.consumables)) {
@@ -18997,18 +19051,19 @@ class AnazhRealm {
                 this.createOrUpdateConsumable(key, c.tagBonus, c.durationSeconds, c.label);
             }
         }
-        // Welle 6.D Etappe 3b — Equipped-Slots aus Save (defensiv via equipTool/
-        // equipArmor; falls Tool/Armor inzwischen weg ist, schlägt es still
-        // fehl und der Slot bleibt leer).
         if (state.playerEquipped && typeof state.playerEquipped === "object") {
             if (state.playerEquipped.tool) this.equipTool(state.playerEquipped.tool);
             if (state.playerEquipped.armor) this.equipArmor(state.playerEquipped.armor);
         }
-        // Ring 6: Bau-Werke wiederherstellen. Bestehende Strukturen werden
-        // tief disposed, dann jede aus {type, position, seed} neu gebaut.
-        // Idempotent — mehrfaches loadState führt nicht zu Mesh-Verdopplung.
-        // Welle 4 Phase 1 — Materialien VOR Bauplänen restaurieren, damit
-        // Part-Material-Referenzen während validateBlueprintParts auflösen.
+    }
+
+    // Crafting-Inventar — REIHENFOLGE: Materialien ZUERST (Welle 4 P1: damit
+    // Part-Material-Referenzen während validateBlueprintParts auflösen), dann
+    // Baupläne (Ring 6.4: Architekturen brauchen sie als Builder), dann Tools
+    // (Welle 5 C: sourceBlueprint braucht den Bauplan). V9.44-a — der Bauplan-
+    // Restore-Feld-Satz lebt in `_deserializeBlueprint` (Part-Migration,
+    // Connection-Sanitizing, portalMeta, Signatur).
+    _loadStateRestoreCraftingInventory(state) {
         if (Array.isArray(state.materials)) {
             let restoredMats = 0;
             for (const m of state.materials) {
@@ -19019,14 +19074,7 @@ class AnazhRealm {
             }
             this.log(`Materialien geladen: ${restoredMats} eigene`);
         }
-        // Ring 6.4 — eigene Baupläne ZUERST registrieren, danach die
-        // Architekturen rekonstruieren. Sonst wären Strukturen, die einen
-        // User-Bauplan referenzieren, nicht renderbar (Builder fehlt).
         if (Array.isArray(state.blueprints)) {
-            // V9.44-a — der Restore-Feld-Satz (Part-Migration, Connection-
-            // Sanitizing, portalMeta-Sanitizer, Signatur-Prüfung) lebt in
-            // _deserializeBlueprint. Hier bleibt nur die Registrierungs-
-            // Politik: einen Built-in-Namen NICHT überschreiben.
             for (const bp of state.blueprints) {
                 if (!bp || typeof bp.name !== "string") continue;
                 if (this.state.blueprints[bp.name] && this.state.blueprints[bp.name].builtIn) continue;
@@ -19035,10 +19083,6 @@ class AnazhRealm {
             }
             this.log(`Baupläne geladen: ${state.blueprints.length} eigene`);
         }
-        // Welle 5 C — eigene Werkzeuge wiederherstellen. Validiert opClass +
-        // opName + Schutz vor Override existierender Starter. precisionCap
-        // wird ge-clampt 0..1. Aufruf NACH Bauplänen, damit sourceBlueprint
-        // optional schon existiert.
         if (Array.isArray(state.tools)) {
             let restoredTools = 0;
             for (const t of state.tools) {
@@ -19062,21 +19106,30 @@ class AnazhRealm {
             }
             if (restoredTools > 0) this.log(`Eigene Werkzeuge geladen: ${restoredTools}`);
         }
-        if (Array.isArray(state.architectures) && this.state.scene) {
-            for (const old of this.state.architectures) {
-                if (old.mesh) {
-                    this._cullArchitectureMesh(old);
-                }
+    }
+
+    // Ring 6 — Bau-Werke wiederherstellen. Bestehende Strukturen werden tief
+    // disposed, dann jede aus {type, position, seed} neu gebaut. Idempotent:
+    // mehrfaches loadState führt nicht zu Mesh-Verdopplung.
+    _loadStateRestoreArchitectures(state) {
+        if (!Array.isArray(state.architectures) || !this.state.scene) return;
+        for (const old of this.state.architectures) {
+            if (old.mesh) {
+                this._cullArchitectureMesh(old);
             }
-            this.state.architectures = [];
-            for (const a of state.architectures) {
-                if (!a || typeof a.type !== "string" || !a.position) continue;
-                this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
-            }
-            this.log(`Architekturen geladen: ${state.architectures.length}`);
         }
-        // Ring 6.5 — Hotbar wiederherstellen. Nur 9 Slots, ungültige Einträge
-        // (Bauplan nicht registriert) auf null fallen lassen.
+        this.state.architectures = [];
+        for (const a of state.architectures) {
+            if (!a || typeof a.type !== "string" || !a.position) continue;
+            this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
+        }
+        this.log(`Architekturen geladen: ${state.architectures.length}`);
+    }
+
+    // Ring 6.5 Hotbar (9 Slots, ungültige Bauplan-Refs → null), Welle 6.C1
+    // Inventar (27 Slots, count clampt [1, 999]), Welle 4 P3 Werkzeug-Besitz
+    // (Starter bleiben, eigene zugefügt via Set-Union).
+    _loadStateRestoreHotbarAndInventory(state) {
         if (Array.isArray(state.hotbar)) {
             const restored = [];
             for (let i = 0; i < 9; i++) {
@@ -19090,8 +19143,6 @@ class AnazhRealm {
             this.state.hotbar = restored;
             this._renderHotbarDOM();
         }
-        // Welle 6.C1 — Inventar wiederherstellen. 27 Slots, ungültige
-        // Bauplan-Referenzen → null. count clampt [1, 999].
         if (Array.isArray(state.playerInventory)) {
             const inv = new Array(27).fill(null);
             for (let i = 0; i < Math.min(27, state.playerInventory.length); i++) {
@@ -19104,13 +19155,17 @@ class AnazhRealm {
             if (this.state.player) this.state.player.inventory = inv;
             this.log(`Inventar geladen: ${inv.filter(Boolean).length} Slots belegt`);
         }
-        // Welle 4 Phase 3 — Werkzeug-Besitz wiederherstellen. Starter bleiben
-        // immer drin (sie kommen aus _defaultTools), eigene werden zugefügt.
         if (Array.isArray(state.playerTools)) {
             const valid = state.playerTools.filter((n) => typeof n === "string" && this.state.tools[n]);
             const set = new Set([...(this.state.player.tools || []), ...valid]);
             this.state.player.tools = Array.from(set);
         }
+    }
+
+    // Ring 3 Emotionen (nur bekannte Achsen, [0,1]-Clamp), Phase 4 DSL-Abilities
+    // (Programm + Wrapper für „Führe Fähigkeit aus"), DSL-History (-historyCap),
+    // Schicht 1 Pattern-Memory (per-Keyword Cap 8).
+    _loadStateRestoreEmotionsAndDsl(state) {
         if (state.playerEmotions && typeof state.playerEmotions === "object") {
             for (const axis of Object.keys(this.state.player.emotions)) {
                 const v = Number(state.playerEmotions[axis]);
@@ -19120,10 +19175,6 @@ class AnazhRealm {
             }
         }
         if (Array.isArray(state.dslAbilities)) {
-            // Phase 4: dslAbilities ist die Quelle der Wahrheit. Wir
-            // rehydrieren das Array und legen die zugehörigen Wrapper in
-            // state.abilities ab, damit „Führe Fähigkeit aus" + Keyboard-
-            // Loop funktionieren. Idempotent: Dubletten überschreiben sich.
             this.state.dsl.abilities = state.dslAbilities;
             for (const a of state.dslAbilities) {
                 if (a && typeof a.name === "string" && Array.isArray(a.program)) {
@@ -19135,8 +19186,6 @@ class AnazhRealm {
         if (Array.isArray(state.dslHistory)) {
             this.state.dsl.history = state.dslHistory.slice(-this.state.dsl.historyCap);
         }
-        // Schicht 1 — Pattern-Memory rehydrieren. Alte Saves (vor 7.72) haben
-        // das Feld nicht; dann starten wir mit leerem Memory, der Loop füllt es.
         if (state.dslPatternMemory && typeof state.dslPatternMemory === "object") {
             this.state.dsl.patternMemory = {};
             for (const [kw, list] of Object.entries(state.dslPatternMemory)) {
@@ -19146,8 +19195,13 @@ class AnazhRealm {
                     .slice(0, this.state.dsl.patternMemoryCapPerKey || 8);
             }
         }
-        // Pfad-Buckets rehydrieren. Defensive Merge — fremde Keys werden
-        // ignoriert, fehlende Keys auf 0 gesetzt.
+    }
+
+    // Pfad-Buckets (defensiver Merge — fremde Keys ignoriert), Welt-Journal
+    // (Welle 1 D, entries + seen mit entryCap), Legacy-Fähigkeiten-Migration
+    // (Phase 4 — Namensliste statt DSL-Programme, restoreAbility mappt drei
+    // historische Nexus-Namen auf ihre DSL-Äquivalente).
+    _loadStateRestoreMiscState(state) {
         if (state.playerPathBuckets && typeof state.playerPathBuckets === "object") {
             const target = this.state.player.pathBuckets;
             for (const group of Object.keys(target)) {
@@ -19158,9 +19212,6 @@ class AnazhRealm {
                 }
             }
         }
-        // Welle 1 D — Welt-Journal. Alte Saves (<7.73) haben das Feld nicht;
-        // dann startet das Journal leer und ensureWorldMeta schreibt die
-        // Genesis-Erinnerung beim ersten Tick.
         if (state.worldJournal && typeof state.worldJournal === "object") {
             const j = state.worldJournal;
             if (Array.isArray(j.entries)) {
@@ -19173,11 +19224,6 @@ class AnazhRealm {
             }
         }
         if (Array.isArray(state.abilities)) {
-            // Legacy-Save (vor Phase 4): Namensliste statt DSL-Programme.
-            // `restoreAbility` mappt drei historische Nexus-Namen direkt auf
-            // ihre DSL-Äquivalente; unbekannte Namen werden geloggt und
-            // verworfen — die alten JS-Bodies sind im Save eh nicht
-            // enthalten gewesen.
             let restored = 0;
             state.abilities.forEach((name) => {
                 if (this.state.abilities[name]) return;
@@ -19185,43 +19231,44 @@ class AnazhRealm {
             });
             if (restored > 0) this.log(`Legacy-Fähigkeiten migriert: ${restored}`);
         }
-        // Bei externer Quelle: in localStorage spiegeln, damit ein Reload
-        // den importierten Stand behält. Ring 8: Per-Welt-Key + Index, sonst
-        // Legacy-Fallback. Externe Quelle kann eine fremde worldId tragen —
-        // wir nehmen sie an, registrieren sie und setzen sie als aktiv.
-        if (externalState) {
-            try {
-                const m = externalState.worldMeta;
-                const targetId =
-                    (m && typeof m.worldId === "string" && m.worldId) ||
-                    (this.state.worldMeta && this.state.worldMeta.worldId) ||
-                    null;
-                if (targetId) {
-                    localStorage.setItem(this.worldStorageKey(targetId), JSON.stringify(externalState));
-                    this.worldsIndexUpsert({
-                        worldId: targetId,
-                        slug: (m && m.slug) || (this.state.worldMeta && this.state.worldMeta.slug) || "",
-                        bornAt: (m && m.bornAt) || Date.now(),
-                        lastPlayed: Date.now(),
-                    });
-                    this.activeWorldSet(targetId);
-                } else {
-                    // Fallback nur, wenn weder externe noch aktive worldId existiert.
-                    localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
-                }
-            } catch (e) {
-                this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
-            }
-        }
-        this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
+    }
 
-        if (!externalState) {
-            const savedVersions = localStorage.getItem("anazhRealmVersions");
-            if (savedVersions) {
-                this.state.versionHistory = JSON.parse(savedVersions);
+    // Bei externer Quelle: in localStorage spiegeln, damit ein Reload den
+    // importierten Stand behält. Ring 8 — Per-Welt-Key + Index, sonst Legacy-
+    // Fallback. Externe Quelle kann eine fremde worldId tragen — wir nehmen
+    // sie an, registrieren sie und setzen sie als aktiv.
+    _loadStatePersistExternalImport(externalState) {
+        try {
+            const m = externalState.worldMeta;
+            const targetId =
+                (m && typeof m.worldId === "string" && m.worldId) ||
+                (this.state.worldMeta && this.state.worldMeta.worldId) ||
+                null;
+            if (targetId) {
+                localStorage.setItem(this.worldStorageKey(targetId), JSON.stringify(externalState));
+                this.worldsIndexUpsert({
+                    worldId: targetId,
+                    slug: (m && m.slug) || (this.state.worldMeta && this.state.worldMeta.slug) || "",
+                    bornAt: (m && m.bornAt) || Date.now(),
+                    lastPlayed: Date.now(),
+                });
+                this.activeWorldSet(targetId);
+            } else {
+                localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
             }
+        } catch (e) {
+            this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
         }
-        return true;
+    }
+
+    // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
+    // per-Welt). Wird nur bei localStorage-Load gerufen, nicht bei externem
+    // Import.
+    _loadStateRestoreVersionHistory() {
+        const savedVersions = localStorage.getItem("anazhRealmVersions");
+        if (savedVersions) {
+            this.state.versionHistory = JSON.parse(savedVersions);
+        }
     }
 
     openStateFilePicker() {
@@ -19922,8 +19969,7 @@ class AnazhRealm {
         if (!idA || !idB || idA === idB) {
             return { ok: false, reason: "zwei verschiedene Eltern-IDs nötig" };
         }
-        const validStrategy = AnazhRealm.FUSION_STRATEGIES.includes(strategy);
-        if (!validStrategy) {
+        if (!AnazhRealm.FUSION_STRATEGIES.includes(strategy)) {
             return { ok: false, reason: `unbekannte Strategie: ${strategy}` };
         }
         const rawA = localStorage.getItem(this.worldStorageKey(idA));
@@ -19939,132 +19985,14 @@ class AnazhRealm {
             return { ok: false, reason: `Parent-Save ungültig: ${err.message}` };
         }
 
-        // Neue Identität
-        let newWorldId;
-        try {
-            newWorldId =
-                typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        } catch {
-            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
-        }
-        const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
-        const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
-        const finalSlug = this._generateFusionSlug(slugA, slugB, slug);
-        const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
-        const bornAt = Date.now();
-
-        // Inventar-Union — gleicher Algo für alle Strategien. Wir tracken
-        // Bauplan-Umbenennungen, damit Querverweise (Werkzeug.sourceBlueprint,
-        // fraktaler-Bauplan.part.refName) anschließend rewired werden können.
-        // Tiefe Kopie via JSON, damit eine spätere Mutation in der Fusions-
-        // Welt nicht in die Eltern-Saves zurückblutet.
-        const blueprintsCloneA = saveA.blueprints ? JSON.parse(JSON.stringify(saveA.blueprints)) : [];
-        const blueprintsCloneB = saveB.blueprints ? JSON.parse(JSON.stringify(saveB.blueprints)) : [];
-        const materialsCloneA = saveA.materials ? JSON.parse(JSON.stringify(saveA.materials)) : [];
-        const materialsCloneB = saveB.materials ? JSON.parse(JSON.stringify(saveB.materials)) : [];
-        const toolsCloneA = saveA.tools ? JSON.parse(JSON.stringify(saveA.tools)) : [];
-        const toolsCloneB = saveB.tools ? JSON.parse(JSON.stringify(saveB.tools)) : [];
-        const bpRenameMap = {};
-        const mergedBlueprints = this._mergeOwnNamedItems(blueprintsCloneA, blueprintsCloneB, bpRenameMap);
-        const mergedMaterials = this._mergeOwnNamedItems(materialsCloneA, materialsCloneB);
-        const mergedTools = this._mergeOwnNamedItems(toolsCloneA, toolsCloneB);
-        // Querverweise rewiren: Werkzeuge die B-Baupläne referenzieren, und
-        // fraktale Baupläne mit refName auf andere B-Baupläne, müssen den
-        // umbenannten Bauplan-Namen mitbekommen.
-        this._rewireBlueprintRefs(mergedBlueprints, mergedTools, bpRenameMap);
-
-        // Player-Werkzeug-Liste: Union der besessenen Namen (Starter sind
-        // sowieso wieder beim Init verfügbar; nur eigene tragen Namen).
-        const playerToolsUnion = Array.from(
-            new Set([
-                ...((Array.isArray(saveA.playerTools) && saveA.playerTools) || []),
-                ...((Array.isArray(saveB.playerTools) && saveB.playerTools) || []),
-            ])
-        );
-
-        // Strategie-abhängige Felder.
-        const emotKeys = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
-        const emotA = (saveA.playerEmotions && typeof saveA.playerEmotions === "object" && saveA.playerEmotions) || {};
-        const emotB = (saveB.playerEmotions && typeof saveB.playerEmotions === "object" && saveB.playerEmotions) || {};
-        const mergedEmotions = {};
-        for (const k of emotKeys) {
-            const va = Number.isFinite(emotA[k]) ? emotA[k] : 0;
-            const vb = Number.isFinite(emotB[k]) ? emotB[k] : 0;
-            if (strategy === "tag-merge") mergedEmotions[k] = Math.max(va, vb);
-            else if (strategy === "random-mix") mergedEmotions[k] = (va + vb) / 2;
-            else mergedEmotions[k] = va; // sequence: aktive Welt
-        }
-
-        // DSL-History: pro Strategie eine andere Komposition.
-        const histA = Array.isArray(saveA.dslHistory) ? saveA.dslHistory : [];
-        const histB = Array.isArray(saveB.dslHistory) ? saveB.dslHistory : [];
-        let mergedHistory;
-        if (strategy === "random-mix") {
-            // Interleaved + Cap 500. Wir nehmen je 250 jüngste, mischen.
-            const aSlice = histA.slice(-250);
-            const bSlice = histB.slice(-250);
-            const combined = [];
-            const max = Math.max(aSlice.length, bSlice.length);
-            for (let i = 0; i < max; i++) {
-                // Zwei Münzwurf-Verzweigungen: zuerst A oder B?
-                if (Math.random() < 0.5) {
-                    if (i < aSlice.length) combined.push(aSlice[i]);
-                    if (i < bSlice.length) combined.push(bSlice[i]);
-                } else {
-                    if (i < bSlice.length) combined.push(bSlice[i]);
-                    if (i < aSlice.length) combined.push(aSlice[i]);
-                }
-            }
-            mergedHistory = combined.slice(-500);
-        } else {
-            mergedHistory = [...histA.slice(-250), ...histB.slice(-250)];
-        }
-
-        // Pattern-Memory: pro Keyword Listen verschmelzen, cap pro Keyword bei 8.
-        const pmA =
-            (saveA.dslPatternMemory && typeof saveA.dslPatternMemory === "object" && saveA.dslPatternMemory) || {};
-        const pmB =
-            (saveB.dslPatternMemory && typeof saveB.dslPatternMemory === "object" && saveB.dslPatternMemory) || {};
-        const mergedPatternMemory = {};
-        const pmKeys = new Set([...Object.keys(pmA), ...Object.keys(pmB)]);
-        for (const k of pmKeys) {
-            const merged = [...(pmA[k] || []), ...(pmB[k] || [])];
-            // Höchste Fitness zuerst, Cap 8.
-            merged.sort((x, y) => (y.fitness || 0) - (x.fitness || 0));
-            mergedPatternMemory[k] = merged.slice(0, 8);
-        }
-
-        // DSL-Abilities: Union per Name (A gewinnt bei Kollision).
-        const abilA = Array.isArray(saveA.dslAbilities) ? saveA.dslAbilities : [];
-        const abilB = Array.isArray(saveB.dslAbilities) ? saveB.dslAbilities : [];
-        const seenAbilNames = new Set();
-        const mergedAbilities = [];
-        for (const list of [abilA, abilB]) {
-            for (const a of list) {
-                if (!a || typeof a.name !== "string") continue;
-                if (seenAbilNames.has(a.name)) continue;
-                seenAbilNames.add(a.name);
-                mergedAbilities.push(a);
-            }
-        }
-
-        // Pfad-Buckets: Mittelung pro Achse (oder A's wenn B nichts hat).
-        let mergedPathBuckets = null;
-        if (saveA.playerPathBuckets || saveB.playerPathBuckets) {
-            const pbA = saveA.playerPathBuckets || {};
-            const pbB = saveB.playerPathBuckets || {};
-            const allKeys = new Set([...Object.keys(pbA), ...Object.keys(pbB)]);
-            mergedPathBuckets = {};
-            for (const k of allKeys) {
-                const a = pbA[k];
-                const b = pbB[k];
-                if (typeof a === "number" && typeof b === "number") mergedPathBuckets[k] = (a + b) / 2;
-                else if (typeof a === "number") mergedPathBuckets[k] = a;
-                else if (typeof b === "number") mergedPathBuckets[k] = b;
-            }
-        }
+        const identity = this._fusionGenerateIdentity(saveA, saveB, slug);
+        const inventory = this._fusionMergeInventory(saveA, saveB);
+        const mergedEmotions = this._fusionMergeEmotions(saveA, saveB, strategy);
+        const mergedHistory = this._fusionMergeDslHistory(saveA, saveB, strategy);
+        const mergedPatternMemory = this._fusionMergePatternMemory(saveA, saveB);
+        const mergedAbilities = this._fusionMergeAbilities(saveA, saveB);
+        const mergedPathBuckets = this._fusionMergePathBuckets(saveA, saveB);
+        const fusedEntries = this._fusionBuildJournalEntries(saveA, saveB, idA, idB, identity, strategy);
 
         // Terrain-Parameter mitteln, Wetter aus A.
         const steepness =
@@ -20076,25 +20004,6 @@ class AnazhRealm {
                 (Number.isFinite(saveB.terrainBaseHeight) ? saveB.terrainBaseHeight : 0.0)) /
             2;
         const weather = saveA.weather || saveB.weather || "sunny";
-
-        // Genesis-Eintrag + top-Erinnerungen je Elternteil.
-        const genesisEntry = {
-            id: 1,
-            at: bornAt,
-            tick: 0,
-            type: "genesis",
-            text: `Ich erwache aus „${slugA}" und „${slugB}".`,
-            ctx: {
-                worldId: newWorldId,
-                seed: newSeed,
-                parentA: idA,
-                parentB: idB,
-                strategy,
-            },
-        };
-        const journalA = this._selectFusionJournalEntries(saveA.worldJournal, idA, 4);
-        const journalB = this._selectFusionJournalEntries(saveB.worldJournal, idB, 4);
-        const fusedEntries = [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
 
         const snap = {
             playerPosition: this._defaultSpawnPos(),
@@ -20110,13 +20019,13 @@ class AnazhRealm {
             terrainBaseHeight: baseHeight,
             weather,
             worldMeta: {
-                worldId: newWorldId,
-                slug: finalSlug,
+                worldId: identity.newWorldId,
+                slug: identity.finalSlug,
                 creator: "local",
                 visibility: "private",
                 parentWorlds: [idA, idB],
-                bornAt,
-                seed: newSeed,
+                bornAt: identity.bornAt,
+                seed: identity.newSeed,
                 fusionStrategy: strategy,
                 schemaVersion: "10.0-fusion-v1",
             },
@@ -20127,22 +20036,27 @@ class AnazhRealm {
             worldJournal: { entries: fusedEntries, seen: { genesis: true } },
             playerEmotions: mergedEmotions,
             playerSoul: saveA.playerSoul || "human",
-            playerTools: playerToolsUnion,
+            playerTools: inventory.playerToolsUnion,
             architectures: [],
-            blueprints: mergedBlueprints,
-            tools: mergedTools,
-            materials: mergedMaterials,
+            blueprints: inventory.mergedBlueprints,
+            tools: inventory.mergedTools,
+            materials: inventory.mergedMaterials,
             hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
         };
 
         try {
-            localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(snap));
+            localStorage.setItem(this.worldStorageKey(identity.newWorldId), JSON.stringify(snap));
         } catch (err) {
             return { ok: false, reason: `Speicher voll: ${err.message}` };
         }
-        this.worldsIndexUpsert({ worldId: newWorldId, slug: finalSlug, bornAt, lastPlayed: Date.now() });
+        this.worldsIndexUpsert({
+            worldId: identity.newWorldId,
+            slug: identity.finalSlug,
+            bornAt: identity.bornAt,
+            lastPlayed: Date.now(),
+        });
         this.log(
-            `Welt-Fusion: ${slugA} ⊕ ${slugB} → ${finalSlug} (Strategie ${strategy}, ID ${newWorldId.slice(0, 8)}…)`,
+            `Welt-Fusion: ${identity.slugA} ⊕ ${identity.slugB} → ${identity.finalSlug} (Strategie ${strategy}, ID ${identity.newWorldId.slice(0, 8)}…)`,
             "INFO"
         );
 
@@ -20152,10 +20066,180 @@ class AnazhRealm {
             window.location &&
             typeof window.location.reload === "function"
         ) {
-            this.activeWorldSet(newWorldId);
+            this.activeWorldSet(identity.newWorldId);
             window.location.reload();
         }
-        return { ok: true, worldId: newWorldId, slug: finalSlug, parentWorlds: [idA, idB], strategy };
+        return {
+            ok: true,
+            worldId: identity.newWorldId,
+            slug: identity.finalSlug,
+            parentWorlds: [idA, idB],
+            strategy,
+        };
+    }
+
+    // Neue Identität: UUID + Slugs + Seed + Geburts-Timestamp. crypto.randomUUID
+    // ist die bevorzugte Quelle (echter Zufall); Fallback ist Math.random.
+    _fusionGenerateIdentity(saveA, saveB, slugHint) {
+        let newWorldId;
+        try {
+            newWorldId =
+                typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        } catch {
+            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
+        }
+        const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
+        const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
+        const finalSlug = this._generateFusionSlug(slugA, slugB, slugHint);
+        const newSeed = `w-fusion-${newWorldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+        const bornAt = Date.now();
+        return { newWorldId, slugA, slugB, finalSlug, newSeed, bornAt };
+    }
+
+    // Inventar-Union — gleicher Algo für alle Strategien. Tiefe Kopie via JSON
+    // (eine spätere Mutation der Fusions-Welt darf nicht in die Eltern-Saves
+    // zurückbluten). Bauplan-Umbenennungen tracken (`bpRenameMap`), damit
+    // Querverweise (Werkzeug.sourceBlueprint, fraktaler-Bauplan.part.refName)
+    // anschließend rewired werden — sonst zeigen sie auf alte B-Namen.
+    _fusionMergeInventory(saveA, saveB) {
+        const blueprintsCloneA = saveA.blueprints ? JSON.parse(JSON.stringify(saveA.blueprints)) : [];
+        const blueprintsCloneB = saveB.blueprints ? JSON.parse(JSON.stringify(saveB.blueprints)) : [];
+        const materialsCloneA = saveA.materials ? JSON.parse(JSON.stringify(saveA.materials)) : [];
+        const materialsCloneB = saveB.materials ? JSON.parse(JSON.stringify(saveB.materials)) : [];
+        const toolsCloneA = saveA.tools ? JSON.parse(JSON.stringify(saveA.tools)) : [];
+        const toolsCloneB = saveB.tools ? JSON.parse(JSON.stringify(saveB.tools)) : [];
+        const bpRenameMap = {};
+        const mergedBlueprints = this._mergeOwnNamedItems(blueprintsCloneA, blueprintsCloneB, bpRenameMap);
+        const mergedMaterials = this._mergeOwnNamedItems(materialsCloneA, materialsCloneB);
+        const mergedTools = this._mergeOwnNamedItems(toolsCloneA, toolsCloneB);
+        this._rewireBlueprintRefs(mergedBlueprints, mergedTools, bpRenameMap);
+        // Player-Werkzeug-Liste: Union der besessenen Namen (Starter sind
+        // sowieso wieder beim Init verfügbar; nur eigene tragen Namen).
+        const playerToolsUnion = Array.from(
+            new Set([
+                ...((Array.isArray(saveA.playerTools) && saveA.playerTools) || []),
+                ...((Array.isArray(saveB.playerTools) && saveB.playerTools) || []),
+            ])
+        );
+        return { mergedBlueprints, mergedMaterials, mergedTools, playerToolsUnion };
+    }
+
+    // Emotionen — strategie-abhängig: tag-merge nimmt max, random-mix mittelt,
+    // sequence behält A's (die aktive Welt).
+    _fusionMergeEmotions(saveA, saveB, strategy) {
+        const emotKeys = ["joy", "awe", "sorrow", "hope", "peace", "chaos"];
+        const emotA = (saveA.playerEmotions && typeof saveA.playerEmotions === "object" && saveA.playerEmotions) || {};
+        const emotB = (saveB.playerEmotions && typeof saveB.playerEmotions === "object" && saveB.playerEmotions) || {};
+        const mergedEmotions = {};
+        for (const k of emotKeys) {
+            const va = Number.isFinite(emotA[k]) ? emotA[k] : 0;
+            const vb = Number.isFinite(emotB[k]) ? emotB[k] : 0;
+            if (strategy === "tag-merge") mergedEmotions[k] = Math.max(va, vb);
+            else if (strategy === "random-mix") mergedEmotions[k] = (va + vb) / 2;
+            else mergedEmotions[k] = va;
+        }
+        return mergedEmotions;
+    }
+
+    // DSL-History — pro Strategie eine andere Komposition. random-mix
+    // interleaved (Münzwurf pro Iteration) + Cap 500; sonst je 250 jüngste
+    // konkateniert.
+    _fusionMergeDslHistory(saveA, saveB, strategy) {
+        const histA = Array.isArray(saveA.dslHistory) ? saveA.dslHistory : [];
+        const histB = Array.isArray(saveB.dslHistory) ? saveB.dslHistory : [];
+        if (strategy === "random-mix") {
+            const aSlice = histA.slice(-250);
+            const bSlice = histB.slice(-250);
+            const combined = [];
+            const max = Math.max(aSlice.length, bSlice.length);
+            for (let i = 0; i < max; i++) {
+                if (Math.random() < 0.5) {
+                    if (i < aSlice.length) combined.push(aSlice[i]);
+                    if (i < bSlice.length) combined.push(bSlice[i]);
+                } else {
+                    if (i < bSlice.length) combined.push(bSlice[i]);
+                    if (i < aSlice.length) combined.push(aSlice[i]);
+                }
+            }
+            return combined.slice(-500);
+        }
+        return [...histA.slice(-250), ...histB.slice(-250)];
+    }
+
+    // Pattern-Memory — pro Keyword Listen verschmelzen, höchste Fitness zuerst,
+    // Cap pro Keyword bei 8.
+    _fusionMergePatternMemory(saveA, saveB) {
+        const pmA =
+            (saveA.dslPatternMemory && typeof saveA.dslPatternMemory === "object" && saveA.dslPatternMemory) || {};
+        const pmB =
+            (saveB.dslPatternMemory && typeof saveB.dslPatternMemory === "object" && saveB.dslPatternMemory) || {};
+        const mergedPatternMemory = {};
+        const pmKeys = new Set([...Object.keys(pmA), ...Object.keys(pmB)]);
+        for (const k of pmKeys) {
+            const merged = [...(pmA[k] || []), ...(pmB[k] || [])];
+            merged.sort((x, y) => (y.fitness || 0) - (x.fitness || 0));
+            mergedPatternMemory[k] = merged.slice(0, 8);
+        }
+        return mergedPatternMemory;
+    }
+
+    // DSL-Abilities — Union per Name (A gewinnt bei Kollision).
+    _fusionMergeAbilities(saveA, saveB) {
+        const abilA = Array.isArray(saveA.dslAbilities) ? saveA.dslAbilities : [];
+        const abilB = Array.isArray(saveB.dslAbilities) ? saveB.dslAbilities : [];
+        const seen = new Set();
+        const mergedAbilities = [];
+        for (const list of [abilA, abilB]) {
+            for (const a of list) {
+                if (!a || typeof a.name !== "string") continue;
+                if (seen.has(a.name)) continue;
+                seen.add(a.name);
+                mergedAbilities.push(a);
+            }
+        }
+        return mergedAbilities;
+    }
+
+    // Pfad-Buckets — Mittelung pro Achse (oder einseitiger Wert wenn nur eine
+    // Welt etwas hat). Gibt `null` zurück, wenn keine Welt Buckets hat.
+    _fusionMergePathBuckets(saveA, saveB) {
+        if (!saveA.playerPathBuckets && !saveB.playerPathBuckets) return null;
+        const pbA = saveA.playerPathBuckets || {};
+        const pbB = saveB.playerPathBuckets || {};
+        const allKeys = new Set([...Object.keys(pbA), ...Object.keys(pbB)]);
+        const mergedPathBuckets = {};
+        for (const k of allKeys) {
+            const a = pbA[k];
+            const b = pbB[k];
+            if (typeof a === "number" && typeof b === "number") mergedPathBuckets[k] = (a + b) / 2;
+            else if (typeof a === "number") mergedPathBuckets[k] = a;
+            else if (typeof b === "number") mergedPathBuckets[k] = b;
+        }
+        return mergedPathBuckets;
+    }
+
+    // Genesis-Eintrag (id=1) + top-Erinnerungen je Elternteil (je 4). IDs
+    // werden am Ende neu durchnumeriert.
+    _fusionBuildJournalEntries(saveA, saveB, idA, idB, identity, strategy) {
+        const genesisEntry = {
+            id: 1,
+            at: identity.bornAt,
+            tick: 0,
+            type: "genesis",
+            text: `Ich erwache aus „${identity.slugA}" und „${identity.slugB}".`,
+            ctx: {
+                worldId: identity.newWorldId,
+                seed: identity.newSeed,
+                parentA: idA,
+                parentB: idB,
+                strategy,
+            },
+        };
+        const journalA = this._selectFusionJournalEntries(saveA.worldJournal, idA, 4);
+        const journalB = this._selectFusionJournalEntries(saveB.worldJournal, idB, 4);
+        return [genesisEntry, ...journalA, ...journalB].map((e, i) => ({ ...e, id: i + 1 }));
     }
 
     loadVersion(version) {
@@ -21047,240 +21131,247 @@ class AnazhRealm {
         if (!list) return;
         list.innerHTML = "";
         for (const w of this._libraryWorlds()) {
-            const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
-            // KI-Übersetzer Phase 1 — eine übersetzte Welt ist ein customWorld
-            // mit translated-Marke; sie bekommt eine eigene Karten-Färbung.
-            const isTranslated = isImported && w.translated === true;
-            // W15 Phase 1 — eine vendorte Welt ist ein customWorld, dessen
-            // Bündel der Auto-Vendor nach worlds/<id>/ schrieb (sandgesichert).
-            const isVendored = isImported && w.vendored === true;
-            const card = document.createElement("div");
-            card.className =
-                "library-card" +
-                (isVendored
-                    ? " library-card-vendored"
-                    : isTranslated
-                      ? " library-card-translated"
-                      : isImported
-                        ? " library-card-imported"
-                        : "");
-
-            const head = document.createElement("div");
-            head.className = "library-card-head";
-            const name = document.createElement("span");
-            name.className = "library-card-name";
-            name.textContent = w.label;
-            head.appendChild(name);
-            // Stufen-Marke: ein Registry-Eintrag mit DSL-Vokabular ist
-            // mindestens „übersetzt"; ohne wäre die Welt „ausgestellt"
-            // (spielbar, aber stumm gegenüber der DSL). Die Stufe „nativ"
-            // emergiert erst beim Betreten (W12 P3, _portalReceiveManifest).
-            const hasDsl = Array.isArray(w.dsl) && w.dsl.length > 0;
-            const stage = document.createElement("span");
-            stage.className = "library-stage" + (hasDsl ? "" : " stage-ausgestellt");
-            stage.textContent = hasDsl ? "übersetzt" : "ausgestellt";
-            stage.title = hasDsl
-                ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
-                : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
-            head.appendChild(stage);
-            // W14 Phase 3 — eine importierte Welt trägt eine „empfangen"-Marke;
-            // eine KI-übersetzte (KI-Übersetzer Phase 1) eine „KI-übersetzt"-Marke;
-            // eine vendorte (W15 Phase 1) eine „angedockt"-Marke.
-            if (isVendored) {
-                const vm = document.createElement("span");
-                vm.className = "library-vendored-mark";
-                vm.textContent = "angedockt";
-                vm.title =
-                    "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
-                head.appendChild(vm);
-            } else if (isTranslated) {
-                const tr = document.createElement("span");
-                tr.className = "library-translated-mark";
-                tr.textContent = "KI-übersetzt";
-                tr.title =
-                    "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
-                head.appendChild(tr);
-            } else if (isImported) {
-                const imp = document.createElement("span");
-                imp.className = "library-imported-mark";
-                imp.textContent = "empfangen";
-                imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
-                head.appendChild(imp);
-            }
-            // W17 — eine Multiplayer-Welt: eine Gruppe kann gemeinsam durch
-            // ihr Tor eintreten (Gruppen-Portal). Browsbar sichtbar gemacht.
-            // W17 P-Vendor — eine js-compute-Welt zusätzlich kenntlich machen.
-            if (w.multiplayer === true) {
-                const mp = document.createElement("span");
-                mp.className = "library-mp-mark";
-                const jsCompute = w.serverMode === "js-compute";
-                mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
-                mp.title = jsCompute
-                    ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
-                    : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
-                head.appendChild(mp);
-            }
-            card.appendChild(head);
-
-            const desc = document.createElement("div");
-            desc.className = "library-desc";
-            desc.textContent = w.desc || "";
-            card.appendChild(desc);
-
-            const dslWrap = document.createElement("div");
-            dslWrap.className = "library-dsl";
-            if (hasDsl) {
-                for (const op of w.dsl) {
-                    const chip = document.createElement("span");
-                    chip.className = "library-dsl-word";
-                    chip.textContent = op;
-                    dslWrap.appendChild(chip);
-                }
-            } else {
-                const none = document.createElement("span");
-                none.className = "library-dsl-empty";
-                none.textContent = "kein DSL-Vokabular";
-                dslWrap.appendChild(none);
-            }
-            card.appendChild(dslWrap);
-
-            const worldId = w.id;
-            // KI-Übersetzer Phase 2 — drei Zustände einer Bibliothek-Karte:
-            // eine übersetzte Welt OHNE Szene braucht „Welt aufbauen"; mit
-            // Szene ist sie betretbar (+ „neu aufbauen"); eine empfangene
-            // Welt ohne erreichbare Dateien bleibt browsbar, nicht betretbar.
-            const needsScene = isTranslated && !w.scene;
-            const isTranslatedWithScene = isTranslated && !!w.scene;
-            const unreachable = isImported && w.reachable === false;
-            const status = document.createElement("span");
-            status.className = "library-status";
-            if (needsScene) {
-                const buildBtn = document.createElement("button");
-                buildBtn.type = "button";
-                buildBtn.className = "library-get library-build";
-                buildBtn.textContent = "Welt aufbauen";
-                buildBtn.title =
-                    "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.";
-                buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
-                card.appendChild(buildBtn);
-            } else if (unreachable) {
-                const getBtn = document.createElement("button");
-                getBtn.type = "button";
-                getBtn.className = "library-get";
-                getBtn.textContent = "Portal holen";
-                getBtn.disabled = true;
-                getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
-                status.textContent = "Welt-Dateien nicht verfügbar";
-                status.className = "library-status library-unreachable";
-                card.appendChild(getBtn);
-            } else {
-                const getBtn = document.createElement("button");
-                getBtn.type = "button";
-                getBtn.className = "library-get";
-                getBtn.textContent = "Portal holen";
-                getBtn.addEventListener("click", () => {
-                    const res = this.obtainPortalForWorld(worldId);
-                    if (res.ok) {
-                        status.textContent = `✓ „${res.label}" liegt im Inventar`;
-                        this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
-                    } else {
-                        status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
-                        this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
-                    }
-                });
-                card.appendChild(getBtn);
-                // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden —
-                // eine frische Szene zur selben Identität.
-                if (isTranslatedWithScene) {
-                    const rebuildBtn = document.createElement("button");
-                    rebuildBtn.type = "button";
-                    rebuildBtn.className = "library-sig-btn library-rebuild";
-                    rebuildBtn.textContent = "neu aufbauen";
-                    rebuildBtn.title = "Die KI baut eine neue Szene für diese Welt.";
-                    rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
-                    card.appendChild(rebuildBtn);
-                }
-            }
-            card.appendChild(status);
-
-            // W14 Phase 2/3 — Signatur-Zeile. Built-in-Welten signiert der
-            // Spieler selbst (signWorld); importierte tragen die Signatur
-            // ihres Autors schon. „Teilen" exportiert das signierte Manifest
-            // — so reist die Provenienz zwischen Spielern (W14 Phase 3).
-            const sigRow = document.createElement("div");
-            sigRow.className = "library-sig-row";
-            const sigStatus = document.createElement("span");
-            sigStatus.className = "library-sig-status";
-            sigStatus.textContent = "prüfe …";
-            sigRow.appendChild(sigStatus);
-            const sigBtn = document.createElement("button");
-            sigBtn.type = "button";
-            sigBtn.className = "library-sig-btn";
-            sigBtn.textContent = "Signieren";
-            sigBtn.disabled = true;
-            const exportBtn = document.createElement("button");
-            exportBtn.type = "button";
-            exportBtn.className = "library-sig-btn library-export-btn";
-            exportBtn.textContent = "Teilen…";
-            exportBtn.disabled = true;
-            const refreshSig = () => {
-                const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
-                this.verifyWorldSignature(worldId).then((st) => {
-                    const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
-                    const custom = this.state.customWorlds && this.state.customWorlds[worldId];
-                    const sig =
-                        custom && custom.signature
-                            ? custom
-                            : this.state.signedWorlds && this.state.signedWorlds[worldId];
-                    if (st === "valid") {
-                        const who =
-                            sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
-                        sigStatus.textContent = `✓ signiert von ${who}`;
-                        sigStatus.className = "library-sig-status sig-valid";
-                        if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
-                        sigBtn.textContent = "Neu signieren";
-                    } else if (st === "modified") {
-                        sigStatus.textContent = "geändert — neu signieren";
-                        sigStatus.className = "library-sig-status sig-modified";
-                        sigBtn.textContent = "Neu signieren";
-                    } else if (st === "forged") {
-                        sigStatus.textContent = "⚠ Signatur ungültig";
-                        sigStatus.className = "library-sig-status sig-forged";
-                        sigBtn.textContent = "Neu signieren";
-                    } else {
-                        sigStatus.textContent = "nicht signiert";
-                        sigStatus.className = "library-sig-status sig-unsigned";
-                        sigBtn.textContent = "Signieren";
-                    }
-                    // Eine signierte Welt lässt sich teilen (Manifest exportieren).
-                    exportBtn.disabled = st === "unsigned";
-                    // Built-in-Welten signiert der Spieler; importierte sind es schon.
-                    sigBtn.disabled = isImported || !vpReady;
-                    if (!isImported && !vpReady) {
-                        sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
-                    }
-                });
-            };
-            sigBtn.addEventListener("click", async () => {
-                sigBtn.disabled = true;
-                const res = await this.signWorld(worldId);
-                if (res.ok) this.log(`Bibliothek: ${w.label} mit dem Vibe-Pass signiert.`, "INFO");
-                else this.log(`signWorld: ${res.reason}`, "ERROR");
-                refreshSig();
-            });
-            exportBtn.addEventListener("click", () => {
-                const res = this.exportWorldManifest(worldId);
-                if (res.ok) this.log(`Bibliothek: Manifest der ${w.label} exportiert.`, "INFO");
-                else this.log(`exportWorldManifest: ${res.reason}`, "ERROR");
-            });
-            // Importierte Welten: kein „Signieren" (schon vom Autor signiert).
-            if (!isImported) sigRow.appendChild(sigBtn);
-            sigRow.appendChild(exportBtn);
-            card.appendChild(sigRow);
-            refreshSig();
-
-            list.appendChild(card);
+            list.appendChild(this._libraryBuildCard(w));
         }
+    }
+
+    // Eine Bibliothek-Karte: Head · Desc · DSL · Actions+Status · Sig-Row.
+    // KI-Übersetzer P1 — eine übersetzte Welt ist ein customWorld mit
+    // translated-Marke; W15 P1 — eine vendorte Welt ist ein customWorld,
+    // dessen Bündel der Auto-Vendor nach worlds/<id>/ schrieb.
+    _libraryBuildCard(w) {
+        const isImported = !!(this.state.customWorlds && this.state.customWorlds[w.id]);
+        const isTranslated = isImported && w.translated === true;
+        const isVendored = isImported && w.vendored === true;
+        const hasDsl = Array.isArray(w.dsl) && w.dsl.length > 0;
+        const card = document.createElement("div");
+        card.className =
+            "library-card" +
+            (isVendored
+                ? " library-card-vendored"
+                : isTranslated
+                  ? " library-card-translated"
+                  : isImported
+                    ? " library-card-imported"
+                    : "");
+        card.appendChild(this._libraryBuildCardHead(w, isImported, isTranslated, isVendored, hasDsl));
+        const desc = document.createElement("div");
+        desc.className = "library-desc";
+        desc.textContent = w.desc || "";
+        card.appendChild(desc);
+        card.appendChild(this._libraryBuildDslWrap(w, hasDsl));
+        this._libraryAppendActionsAndStatus(card, w, isTranslated, isImported);
+        this._libraryAppendSigRow(card, w, isImported);
+        return card;
+    }
+
+    // Karten-Kopf: Name + Stufen-Marke (übersetzt/ausgestellt — die Stufe
+    // „nativ" emergiert erst beim Betreten, W12 P3) + Herkunfts-Marke
+    // (angedockt/KI-übersetzt/empfangen) + Multiplayer-Marke (W17, ggf.
+    // JS-Compute-Variante aus W17 B-JS-Compute).
+    _libraryBuildCardHead(w, isImported, isTranslated, isVendored, hasDsl) {
+        const head = document.createElement("div");
+        head.className = "library-card-head";
+        const name = document.createElement("span");
+        name.className = "library-card-name";
+        name.textContent = w.label;
+        head.appendChild(name);
+        const stage = document.createElement("span");
+        stage.className = "library-stage" + (hasDsl ? "" : " stage-ausgestellt");
+        stage.textContent = hasDsl ? "übersetzt" : "ausgestellt";
+        stage.title = hasDsl
+            ? "Diese Welt versteht ein DSL-Vokabular (Stufe übersetzt). Beim Betreten kann sie es nativ bestätigen."
+            : "Diese Welt ist spielbar, aber stumm gegenüber der DSL.";
+        head.appendChild(stage);
+        if (isVendored) {
+            const vm = document.createElement("span");
+            vm.className = "library-vendored-mark";
+            vm.textContent = "angedockt";
+            vm.title =
+                "Diese Welt dockte über den Auto-Vendor an — ihr Bündel liegt in worlds/, sie läuft sandgesichert (W15 Phase 1).";
+            head.appendChild(vm);
+        } else if (isTranslated) {
+            const tr = document.createElement("span");
+            tr.className = "library-translated-mark";
+            tr.textContent = "KI-übersetzt";
+            tr.title =
+                "Diese Welt übersetzte der KI-Übersetzer aus einer Beschreibung in ein Portal-Manifest (Phase 1).";
+            head.appendChild(tr);
+        } else if (isImported) {
+            const imp = document.createElement("span");
+            imp.className = "library-imported-mark";
+            imp.textContent = "empfangen";
+            imp.title = "Diese Welt kam als signiertes Manifest in deine Bibliothek (W14 Phase 3).";
+            head.appendChild(imp);
+        }
+        if (w.multiplayer === true) {
+            const mp = document.createElement("span");
+            mp.className = "library-mp-mark";
+            const jsCompute = w.serverMode === "js-compute";
+            mp.textContent = jsCompute ? "Multiplayer · JS-Compute" : "Multiplayer";
+            mp.title = jsCompute
+                ? "Eine Gruppe taucht gemeinsam ein; ein Peer wird Compute-Host für die autoritative Server-JS (W17 — B-JS-Compute)."
+                : "Eine Gruppe kann gemeinsam durch das Tor dieser Welt eintreten (W17 — Gruppen-Portal).";
+            head.appendChild(mp);
+        }
+        return head;
+    }
+
+    _libraryBuildDslWrap(w, hasDsl) {
+        const dslWrap = document.createElement("div");
+        dslWrap.className = "library-dsl";
+        if (hasDsl) {
+            for (const op of w.dsl) {
+                const chip = document.createElement("span");
+                chip.className = "library-dsl-word";
+                chip.textContent = op;
+                dslWrap.appendChild(chip);
+            }
+        } else {
+            const none = document.createElement("span");
+            none.className = "library-dsl-empty";
+            none.textContent = "kein DSL-Vokabular";
+            dslWrap.appendChild(none);
+        }
+        return dslWrap;
+    }
+
+    // KI-Übersetzer P2 — drei Zustände: eine übersetzte Welt OHNE Szene
+    // braucht „Welt aufbauen"; mit Szene ist sie betretbar (+ „neu aufbauen");
+    // eine empfangene Welt ohne erreichbare Dateien bleibt browsbar, nicht
+    // betretbar. `status` ist ein Span, den die Button-Handler beschreiben —
+    // er wird am Ende an die Karte angehängt.
+    _libraryAppendActionsAndStatus(card, w, isTranslated, isImported) {
+        const worldId = w.id;
+        const needsScene = isTranslated && !w.scene;
+        const isTranslatedWithScene = isTranslated && !!w.scene;
+        const unreachable = isImported && w.reachable === false;
+        const status = document.createElement("span");
+        status.className = "library-status";
+        if (needsScene) {
+            const buildBtn = document.createElement("button");
+            buildBtn.type = "button";
+            buildBtn.className = "library-get library-build";
+            buildBtn.textContent = "Welt aufbauen";
+            buildBtn.title =
+                "Die KI gibt dieser übersetzten Welt eine deklarative Szene — danach führt ihr Portal hindurch.";
+            buildBtn.addEventListener("click", () => this._runWorldBuild(worldId, buildBtn, status));
+            card.appendChild(buildBtn);
+        } else if (unreachable) {
+            const getBtn = document.createElement("button");
+            getBtn.type = "button";
+            getBtn.className = "library-get";
+            getBtn.textContent = "Portal holen";
+            getBtn.disabled = true;
+            getBtn.title = "Die Welt-Dateien sind nicht verfügbar — nur das Manifest kam an.";
+            status.textContent = "Welt-Dateien nicht verfügbar";
+            status.className = "library-status library-unreachable";
+            card.appendChild(getBtn);
+        } else {
+            const getBtn = document.createElement("button");
+            getBtn.type = "button";
+            getBtn.className = "library-get";
+            getBtn.textContent = "Portal holen";
+            getBtn.addEventListener("click", () => {
+                const res = this.obtainPortalForWorld(worldId);
+                if (res.ok) {
+                    status.textContent = `✓ „${res.label}" liegt im Inventar`;
+                    this.log(`Bibliothek: Portal zur ${res.label} ins Inventar gelegt.`, "INFO");
+                } else {
+                    status.textContent = res.reason === "inventory_full" ? "Inventar voll" : "konnte nicht holen";
+                    this.log(`obtainPortalForWorld: ${res.reason}`, "ERROR");
+                }
+            });
+            card.appendChild(getBtn);
+            // Eine aufgebaute übersetzte Welt darf neu aufgebaut werden —
+            // eine frische Szene zur selben Identität.
+            if (isTranslatedWithScene) {
+                const rebuildBtn = document.createElement("button");
+                rebuildBtn.type = "button";
+                rebuildBtn.className = "library-sig-btn library-rebuild";
+                rebuildBtn.textContent = "neu aufbauen";
+                rebuildBtn.title = "Die KI baut eine neue Szene für diese Welt.";
+                rebuildBtn.addEventListener("click", () => this._runWorldBuild(worldId, rebuildBtn, status));
+                card.appendChild(rebuildBtn);
+            }
+        }
+        card.appendChild(status);
+    }
+
+    // W14 P2/P3 — Signatur-Zeile. Built-in-Welten signiert der Spieler
+    // selbst (signWorld); importierte tragen die Signatur ihres Autors
+    // schon. „Teilen" exportiert das signierte Manifest — so reist die
+    // Provenienz zwischen Spielern (W14 P3). Die `refreshSig`-Closure
+    // läuft async (verifyWorldSignature ist eine Promise) und wird auch
+    // nach jedem Sign-Klick wieder gerufen.
+    _libraryAppendSigRow(card, w, isImported) {
+        const worldId = w.id;
+        const sigRow = document.createElement("div");
+        sigRow.className = "library-sig-row";
+        const sigStatus = document.createElement("span");
+        sigStatus.className = "library-sig-status";
+        sigStatus.textContent = "prüfe …";
+        sigRow.appendChild(sigStatus);
+        const sigBtn = document.createElement("button");
+        sigBtn.type = "button";
+        sigBtn.className = "library-sig-btn";
+        sigBtn.textContent = "Signieren";
+        sigBtn.disabled = true;
+        const exportBtn = document.createElement("button");
+        exportBtn.type = "button";
+        exportBtn.className = "library-sig-btn library-export-btn";
+        exportBtn.textContent = "Teilen…";
+        exportBtn.disabled = true;
+        const refreshSig = () => {
+            const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+            this.verifyWorldSignature(worldId).then((st) => {
+                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+                const custom = this.state.customWorlds && this.state.customWorlds[worldId];
+                const sig =
+                    custom && custom.signature ? custom : this.state.signedWorlds && this.state.signedWorlds[worldId];
+                if (st === "valid") {
+                    const who =
+                        sig && sig.authorPubKey === myKey ? "dir" : this._vibeFingerprint(sig && sig.authorPubKey);
+                    sigStatus.textContent = `✓ signiert von ${who}`;
+                    sigStatus.className = "library-sig-status sig-valid";
+                    if (sig) sigStatus.title = "ed25519:" + sig.authorPubKey;
+                    sigBtn.textContent = "Neu signieren";
+                } else if (st === "modified") {
+                    sigStatus.textContent = "geändert — neu signieren";
+                    sigStatus.className = "library-sig-status sig-modified";
+                    sigBtn.textContent = "Neu signieren";
+                } else if (st === "forged") {
+                    sigStatus.textContent = "⚠ Signatur ungültig";
+                    sigStatus.className = "library-sig-status sig-forged";
+                    sigBtn.textContent = "Neu signieren";
+                } else {
+                    sigStatus.textContent = "nicht signiert";
+                    sigStatus.className = "library-sig-status sig-unsigned";
+                    sigBtn.textContent = "Signieren";
+                }
+                exportBtn.disabled = st === "unsigned";
+                sigBtn.disabled = isImported || !vpReady;
+                if (!isImported && !vpReady) {
+                    sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+                }
+            });
+        };
+        sigBtn.addEventListener("click", async () => {
+            sigBtn.disabled = true;
+            const res = await this.signWorld(worldId);
+            if (res.ok) this.log(`Bibliothek: ${w.label} mit dem Vibe-Pass signiert.`, "INFO");
+            else this.log(`signWorld: ${res.reason}`, "ERROR");
+            refreshSig();
+        });
+        exportBtn.addEventListener("click", () => {
+            const res = this.exportWorldManifest(worldId);
+            if (res.ok) this.log(`Bibliothek: Manifest der ${w.label} exportiert.`, "INFO");
+            else this.log(`exportWorldManifest: ${res.reason}`, "ERROR");
+        });
+        if (!isImported) sigRow.appendChild(sigBtn);
+        sigRow.appendChild(exportBtn);
+        card.appendChild(sigRow);
+        refreshSig();
     }
 
     // W14 Phase 1 — Bibliothek-Drawer aufsetzen. Phase 3: der „Welt
@@ -31152,7 +31243,18 @@ class AnazhRealm {
         const bp = this.state.blueprints[ws.selectedBlueprint];
         panel.innerHTML = "";
         if (!bp) return;
-        // Rolle-Chip — mit emergent-vs-manuell-Indikator + Provenienz
+        this._workshopAppendRoleRow(panel, bp);
+        this._workshopAppendBuildCostRow(panel, bp);
+        if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp);
+        this._workshopAppendTagsRow(panel, bp);
+        this._workshopAppendQualityRow(panel, bp);
+        if (!bp.builtIn) this._workshopAppendSignatureRow(panel, bp, ws);
+    }
+
+    // Rolle-Chip + Affordances. Emergent-vs-manuell-Indikator mit erweiterten
+    // Tooltips (V8.17), Rollen-Farbe als Glow (V8.39), Reset-Button bei
+    // manueller Rolle. Affordances als ✦-Chips.
+    _workshopAppendRoleRow(panel, bp) {
         const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
         const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
@@ -31164,16 +31266,11 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
-        // V8.39 — Farb-Sprache: der Rollen-Chip leuchtet in der Rollen-Farbe.
-        // Ein Blick sagt, was der Bauplan IST.
-        {
-            const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
-            if (roleColor) {
-                roleChip.style.borderColor = roleColor;
-                roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
-            }
+        const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
+        if (roleColor) {
+            roleChip.style.borderColor = roleColor;
+            roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
         }
-        // V8.17 — erweiterte Tooltips erklären emergent vs. manuell.
         if (bp.roleManual) {
             roleChip.classList.add("role-manual");
             roleChip.title =
@@ -31189,7 +31286,6 @@ class AnazhRealm {
                 "3) Material: lebendig+weiche Substanz → Nahrung. Sonst: Bauwerk.";
         }
         roleRow.appendChild(roleChip);
-        // V8.17 — wenn manuell, biete einen Reset-Button auf emergent.
         if (bp.roleManual && !bp.builtIn) {
             const resetBtn = document.createElement("button");
             resetBtn.type = "button";
@@ -31204,7 +31300,6 @@ class AnazhRealm {
             });
             roleRow.appendChild(resetBtn);
         }
-        // Affordances
         const aff = this.computeBlueprintAffordances(bp) || {};
         for (const key of Object.keys(aff)) {
             const chip = document.createElement("span");
@@ -31213,255 +31308,251 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
-        // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel (Schöpfer-Browser-
-        // Test: „Bau-Material nicht sichtbar"). computeBuildCost ist die EINE
-        // Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
-        // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
-        // bleibt aber informativ (sie zeigt, was die Substanz wiegt). Gilt
-        // für alle Baupläne (auch built-in) — die Kosten sind intrinsisch.
+    }
+
+    // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel. computeBuildCost ist
+    // die EINE Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
+    // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
+    // bleibt informativ. Gilt für alle Baupläne (auch built-in).
+    _workshopAppendBuildCostRow(panel, bp) {
         const buildCost = this.computeBuildCost(bp.name);
         const costMats = Object.keys(buildCost);
-        if (costMats.length > 0) {
-            const costRow = document.createElement("div");
-            costRow.className = "stat-row";
-            const costLab = document.createElement("span");
-            costLab.className = "stat-label";
-            costLab.textContent = "Bau-Kosten";
-            costRow.appendChild(costLab);
-            const costText = document.createElement("span");
-            costText.className = "workshop-cost-text";
-            costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
-            costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
-            costRow.appendChild(costText);
-            panel.appendChild(costRow);
-        }
-        // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar:
-        // wie entsteht die Rolle? wie wächst sie? welche Synergie wirkt?
-        //
-        // Drei Schichten:
-        //  (a) Domain-Verteilung als Bar-Diagramm — welche Werkzeug-Domain
-        //      hat wie viele Op-Anwendungen, wer dominiert, wer könnte mit
-        //      weiterer Anwendung übernehmen.
-        //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags
-        //      → Rolle, kompakter Inline-Text damit der Schöpfer den Weg
-        //      vom Bauteil zur Identität sieht.
-        //  (c) Wachstumshinweis — bei leerer Chain: „wende ein Werkzeug an";
-        //      bei aktiver Chain: „nächste Anwendung könnte zu X führen";
-        //      bei bp.roleManual: „Manuell gesetzt, emergent wäre Y".
-        if (!bp.builtIn) {
-            const domCounts = this.computeBlueprintDomainCounts(bp);
-            const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
-            const dominantDomain = this.computeBlueprintDomain(bp);
-            const emergentRole = this.computeBlueprintRole(bp);
-            const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+        if (costMats.length === 0) return;
+        const costRow = document.createElement("div");
+        costRow.className = "stat-row";
+        const costLab = document.createElement("span");
+        costLab.className = "stat-label";
+        costLab.textContent = "Bau-Kosten";
+        costRow.appendChild(costLab);
+        const costText = document.createElement("span");
+        costText.className = "workshop-cost-text";
+        costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
+        costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
+        costRow.appendChild(costText);
+        panel.appendChild(costRow);
+    }
 
-            // (a) Domain-Verteilung
-            if (totalOps > 0) {
-                const domRow = document.createElement("div");
-                domRow.className = "stat-row workshop-domain-row";
-                const domLab = document.createElement("span");
-                domLab.className = "stat-label";
-                domLab.textContent = "Domains";
-                domRow.appendChild(domLab);
-                const domWrap = document.createElement("div");
-                domWrap.className = "workshop-domain-bars";
-                for (const dom of AnazhRealm.TOOL_DOMAINS) {
-                    const c = domCounts[dom] || 0;
-                    if (c === 0) continue;
-                    const ratio = c / totalOps;
-                    const bar = document.createElement("div");
-                    bar.className = "workshop-domain-bar";
-                    if (dom === dominantDomain) bar.classList.add("dominant");
-                    bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
-                    bar.textContent = `${dom} ×${c}`;
-                    bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
-                    domWrap.appendChild(bar);
-                }
-                domRow.appendChild(domWrap);
-                panel.appendChild(domRow);
+    // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar: wie entsteht
+    // die Rolle? wie wächst sie? welche Synergie wirkt? Drei Schichten:
+    //  (a) Domain-Verteilung als Bar-Diagramm — wer dominiert, wer könnte
+    //      mit weiterer Anwendung übernehmen.
+    //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags → Rolle.
+    //  (c) Wachstumshinweis — leere Chain / aktive Chain / bp.roleManual.
+    _workshopAppendDomainAnalysis(panel, bp) {
+        const domCounts = this.computeBlueprintDomainCounts(bp);
+        const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
+        const dominantDomain = this.computeBlueprintDomain(bp);
+        const emergentRole = this.computeBlueprintRole(bp);
+        const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+
+        // (a) Domain-Verteilung
+        if (totalOps > 0) {
+            const domRow = document.createElement("div");
+            domRow.className = "stat-row workshop-domain-row";
+            const domLab = document.createElement("span");
+            domLab.className = "stat-label";
+            domLab.textContent = "Domains";
+            domRow.appendChild(domLab);
+            const domWrap = document.createElement("div");
+            domWrap.className = "workshop-domain-bars";
+            for (const dom of AnazhRealm.TOOL_DOMAINS) {
+                const c = domCounts[dom] || 0;
+                if (c === 0) continue;
+                const ratio = c / totalOps;
+                const bar = document.createElement("div");
+                bar.className = "workshop-domain-bar";
+                if (dom === dominantDomain) bar.classList.add("dominant");
+                bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
+                bar.textContent = `${dom} ×${c}`;
+                bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
+                domWrap.appendChild(bar);
             }
+            domRow.appendChild(domWrap);
+            panel.appendChild(domRow);
+        }
 
-            // (b) Synergie-Pfeil (kompakt)
-            const synRow = document.createElement("div");
-            synRow.className = "stat-row workshop-synergy-row";
-            const synLab = document.createElement("span");
-            synLab.className = "stat-label";
-            synLab.textContent = "Synergie";
-            synRow.appendChild(synLab);
-            const synText = document.createElement("span");
-            synText.className = "workshop-synergy-text";
-            synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
-            synRow.appendChild(synText);
-            panel.appendChild(synRow);
+        // (b) Synergie-Pfeil (kompakt)
+        const synRow = document.createElement("div");
+        synRow.className = "stat-row workshop-synergy-row";
+        const synLab = document.createElement("span");
+        synLab.className = "stat-label";
+        synLab.textContent = "Synergie";
+        synRow.appendChild(synLab);
+        const synText = document.createElement("span");
+        synText.className = "workshop-synergy-text";
+        synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
+        synRow.appendChild(synText);
+        panel.appendChild(synRow);
 
-            // (c) Wachstumshinweis
-            const hintRow = document.createElement("div");
-            hintRow.className = "stat-row workshop-growth-row";
-            const hintLab = document.createElement("span");
-            hintLab.className = "stat-label";
-            hintLab.textContent = "Wachstum";
-            hintRow.appendChild(hintLab);
-            const hintText = document.createElement("span");
-            hintText.className = "workshop-growth-text";
-            if (totalOps === 0) {
-                // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle dennoch
-                // aus der intrinsischen Substanz emergieren (Körper-Form →
-                // Seele, lebendig+weich → Nahrung).
-                if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
-                    hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
-                } else {
-                    hintText.textContent =
-                        "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
-                }
-            } else if (bp.roleManual) {
-                hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
-                hintText.classList.add("manual-override");
+        // (c) Wachstumshinweis
+        const hintRow = document.createElement("div");
+        hintRow.className = "stat-row workshop-growth-row";
+        const hintLab = document.createElement("span");
+        hintLab.className = "stat-label";
+        hintLab.textContent = "Wachstum";
+        hintRow.appendChild(hintLab);
+        const hintText = document.createElement("span");
+        hintText.className = "workshop-growth-text";
+        if (totalOps === 0) {
+            // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle aus der
+            // intrinsischen Substanz emergieren (Körper-Form → Seele,
+            // lebendig+weich → Nahrung).
+            if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
+                hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
             } else {
-                const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
-                    (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
-                )[0];
-                if (nextDom) {
-                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
-                } else {
-                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
-                }
+                hintText.textContent =
+                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
             }
-            hintRow.appendChild(hintText);
-            panel.appendChild(hintRow);
+        } else if (bp.roleManual) {
+            hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
+            hintText.classList.add("manual-override");
+        } else {
+            const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
+                (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
+            )[0];
+            if (nextDom) {
+                hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
+            } else {
+                hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
+            }
         }
-        // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
-        // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
-        // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS (mild/strong/
-        // signature) damit die Sterne mit den existing Welt-Effekt-Gates
-        // konsistent sind.
+        hintRow.appendChild(hintText);
+        panel.appendChild(hintRow);
+    }
+
+    // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
+    // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
+    // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS damit die Sterne
+    // mit den existing Welt-Effekt-Gates konsistent sind.
+    _workshopAppendTagsRow(panel, bp) {
         const tags = this.computeCompoundTags(bp) || {};
         const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
             .filter((e) => e.v > 0.1)
             .sort((a, b) => b.v - a.v)
             .slice(0, 5);
-        if (tagEntries.length > 0) {
-            const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
-            const mild = T.resonance_mild || 0.7;
-            const strong = T.resonance_strong || 1.5;
-            const signature = T.resonance_signature || 2.5;
-            const starsFor = (v) => {
-                if (v >= signature) return "★★★";
-                if (v >= strong) return "★★☆";
-                if (v >= mild) return "★☆☆";
-                return "☆☆☆";
-            };
-            const tagRow = document.createElement("div");
-            tagRow.className = "stat-row";
-            const tagLab = document.createElement("span");
-            tagLab.className = "stat-label";
-            tagLab.textContent = "Tags";
-            tagRow.appendChild(tagLab);
-            for (const e of tagEntries) {
-                const chip = document.createElement("span");
-                chip.className = "tag-chip";
-                // Stern-Klassen für Farbgebung pro Level
-                const stars = starsFor(e.v);
-                let levelClass = "lvl-0";
-                if (e.v >= signature) levelClass = "lvl-3";
-                else if (e.v >= strong) levelClass = "lvl-2";
-                else if (e.v >= mild) levelClass = "lvl-1";
-                chip.classList.add(levelClass);
-                const starEl = document.createElement("span");
-                starEl.className = "tag-stars";
-                starEl.textContent = stars;
-                const nameEl = document.createElement("span");
-                nameEl.className = "tag-name";
-                nameEl.textContent = e.k;
-                const valEl = document.createElement("span");
-                valEl.className = "tag-val";
-                valEl.textContent = e.v.toFixed(2);
-                chip.appendChild(starEl);
-                chip.appendChild(nameEl);
-                chip.appendChild(valEl);
-                tagRow.appendChild(chip);
-            }
-            panel.appendChild(tagRow);
+        if (tagEntries.length === 0) return;
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
+        const mild = T.resonance_mild || 0.7;
+        const strong = T.resonance_strong || 1.5;
+        const signature = T.resonance_signature || 2.5;
+        const starsFor = (v) => {
+            if (v >= signature) return "★★★";
+            if (v >= strong) return "★★☆";
+            if (v >= mild) return "★☆☆";
+            return "☆☆☆";
+        };
+        const tagRow = document.createElement("div");
+        tagRow.className = "stat-row";
+        const tagLab = document.createElement("span");
+        tagLab.className = "stat-label";
+        tagLab.textContent = "Tags";
+        tagRow.appendChild(tagLab);
+        for (const e of tagEntries) {
+            const chip = document.createElement("span");
+            chip.className = "tag-chip";
+            const stars = starsFor(e.v);
+            let levelClass = "lvl-0";
+            if (e.v >= signature) levelClass = "lvl-3";
+            else if (e.v >= strong) levelClass = "lvl-2";
+            else if (e.v >= mild) levelClass = "lvl-1";
+            chip.classList.add(levelClass);
+            const starEl = document.createElement("span");
+            starEl.className = "tag-stars";
+            starEl.textContent = stars;
+            const nameEl = document.createElement("span");
+            nameEl.className = "tag-name";
+            nameEl.textContent = e.k;
+            const valEl = document.createElement("span");
+            valEl.className = "tag-val";
+            valEl.textContent = e.v.toFixed(2);
+            chip.appendChild(starEl);
+            chip.appendChild(nameEl);
+            chip.appendChild(valEl);
+            tagRow.appendChild(chip);
         }
-        // Compound-Präzision (falls Parts opChain haben)
+        panel.appendChild(tagRow);
+    }
+
+    // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name sagt,
+    // was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
+    _workshopAppendQualityRow(panel, bp) {
         const avgPrec = this._compoundAvgPrecision(bp);
-        if (avgPrec > 0) {
-            const precRow = document.createElement("div");
-            precRow.className = "stat-row";
-            const precLab = document.createElement("span");
-            precLab.className = "stat-label";
-            // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name
-            // sagt, was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
-            precLab.textContent = "Qualität";
-            precRow.appendChild(precLab);
-            const precChip = document.createElement("span");
-            precChip.className = "tag-chip";
-            const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
-            precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
-            precChip.title =
-                "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
-                "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
-                "Feineres Werkzeug → höhere Qualität.";
-            precRow.appendChild(precChip);
-            panel.appendChild(precRow);
-        }
-        // ### W13 Phase 2 — Bauplan-Signatur ###
-        // Der Schöpfer versiegelt sein Werk mit dem Vibe-Pass. Built-ins
-        // gehören dem Projekt — sie tragen keine Signatur-Zeile (erst klonen).
-        // Der Status wird async geprüft (ed25519); ein veralteter .then-Lauf
-        // aktualisiert nur abgekoppelte Knoten, der Namens-Wächter fängt ihn.
-        if (!bp.builtIn) {
-            const sigRow = document.createElement("div");
-            sigRow.className = "stat-row workshop-sig-row";
-            const sigLab = document.createElement("span");
-            sigLab.className = "stat-label";
-            sigLab.textContent = "Signatur";
-            sigRow.appendChild(sigLab);
-            const sigStatus = document.createElement("span");
-            sigStatus.className = "workshop-sig-status";
-            sigStatus.textContent = "prüfe …";
-            sigRow.appendChild(sigStatus);
-            const sigBtn = document.createElement("button");
-            sigBtn.type = "button";
-            sigBtn.className = "workshop-sig-btn";
-            sigBtn.textContent = "Signieren";
+        if (avgPrec <= 0) return;
+        const precRow = document.createElement("div");
+        precRow.className = "stat-row";
+        const precLab = document.createElement("span");
+        precLab.className = "stat-label";
+        precLab.textContent = "Qualität";
+        precRow.appendChild(precLab);
+        const precChip = document.createElement("span");
+        precChip.className = "tag-chip";
+        const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
+        precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
+        precChip.title =
+            "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
+            "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
+            "Feineres Werkzeug → höhere Qualität.";
+        precRow.appendChild(precChip);
+        panel.appendChild(precRow);
+    }
+
+    // W13 Phase 2 — Bauplan-Signatur. Der Schöpfer versiegelt sein Werk mit
+    // dem Vibe-Pass. Built-ins gehören dem Projekt — sie tragen keine
+    // Signatur-Zeile (erst klonen). Der Status wird async geprüft (ed25519);
+    // ein veralteter .then-Lauf aktualisiert nur abgekoppelte Knoten, der
+    // Namens-Wächter `ws.selectedBlueprint !== bpName` fängt ihn.
+    _workshopAppendSignatureRow(panel, bp, ws) {
+        const sigRow = document.createElement("div");
+        sigRow.className = "stat-row workshop-sig-row";
+        const sigLab = document.createElement("span");
+        sigLab.className = "stat-label";
+        sigLab.textContent = "Signatur";
+        sigRow.appendChild(sigLab);
+        const sigStatus = document.createElement("span");
+        sigStatus.className = "workshop-sig-status";
+        sigStatus.textContent = "prüfe …";
+        sigRow.appendChild(sigStatus);
+        const sigBtn = document.createElement("button");
+        sigBtn.type = "button";
+        sigBtn.className = "workshop-sig-btn";
+        sigBtn.textContent = "Signieren";
+        sigBtn.disabled = true;
+        sigBtn.addEventListener("click", async () => {
             sigBtn.disabled = true;
-            sigBtn.addEventListener("click", async () => {
-                sigBtn.disabled = true;
-                const res = await this.signBlueprint(bp.name);
-                if (!res.ok) this.log(`Signieren fehlgeschlagen: ${res.reason}`, "ERROR");
-                this._workshopRenderStatsPanel();
-            });
-            sigRow.appendChild(sigBtn);
-            panel.appendChild(sigRow);
-            const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
-            const bpName = bp.name;
-            this.verifyBlueprintSignature(bp).then((status) => {
-                if (ws.selectedBlueprint !== bpName) return;
-                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
-                if (status === "valid") {
-                    const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
-                    sigStatus.textContent = `✓ signiert · ${who}`;
-                    sigStatus.className = "workshop-sig-status sig-valid";
-                    sigStatus.title = "ed25519:" + bp.authorPubKey;
-                    sigBtn.textContent = "Neu signieren";
-                } else if (status === "modified") {
-                    sigStatus.textContent = "geändert seit der Signatur — neu signieren";
-                    sigStatus.className = "workshop-sig-status sig-modified";
-                    sigBtn.textContent = "Neu signieren";
-                } else if (status === "forged") {
-                    sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
-                    sigStatus.className = "workshop-sig-status sig-forged";
-                    sigStatus.title = "ed25519:" + bp.authorPubKey;
-                    sigBtn.textContent = "Neu signieren";
-                } else {
-                    sigStatus.textContent = "nicht signiert";
-                    sigStatus.className = "workshop-sig-status sig-unsigned";
-                    sigBtn.textContent = "Signieren";
-                }
-                sigBtn.disabled = !vpReady;
-                if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
-            });
-        }
+            const res = await this.signBlueprint(bp.name);
+            if (!res.ok) this.log(`Signieren fehlgeschlagen: ${res.reason}`, "ERROR");
+            this._workshopRenderStatsPanel();
+        });
+        sigRow.appendChild(sigBtn);
+        panel.appendChild(sigRow);
+        const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+        const bpName = bp.name;
+        this.verifyBlueprintSignature(bp).then((status) => {
+            if (ws.selectedBlueprint !== bpName) return;
+            const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+            if (status === "valid") {
+                const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
+                sigStatus.textContent = `✓ signiert · ${who}`;
+                sigStatus.className = "workshop-sig-status sig-valid";
+                sigStatus.title = "ed25519:" + bp.authorPubKey;
+                sigBtn.textContent = "Neu signieren";
+            } else if (status === "modified") {
+                sigStatus.textContent = "geändert seit der Signatur — neu signieren";
+                sigStatus.className = "workshop-sig-status sig-modified";
+                sigBtn.textContent = "Neu signieren";
+            } else if (status === "forged") {
+                sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
+                sigStatus.className = "workshop-sig-status sig-forged";
+                sigStatus.title = "ed25519:" + bp.authorPubKey;
+                sigBtn.textContent = "Neu signieren";
+            } else {
+                sigStatus.textContent = "nicht signiert";
+                sigStatus.className = "workshop-sig-status sig-unsigned";
+                sigBtn.textContent = "Signieren";
+            }
+            sigBtn.disabled = !vpReady;
+            if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+        });
     }
 
     // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will
@@ -32539,6 +32630,28 @@ class AnazhRealm {
         if (!this.state.directionalLight) return; // Pre-init safe
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const stop = this._interpolateDayNight(t);
+        const tint = this._dayNightComputeTint(stop);
+        const angle = t * Math.PI * 2 - Math.PI / 2;
+        const sunDir = this._dayNightSunDirection(angle);
+        this._dayNightApplySkybox(tint);
+        this._dayNightApplyStarField(t, tint.skyMul);
+        this._dayNightApplyDirectionalLight(sunDir, tint);
+        this._dayNightApplyAmbient(angle);
+        this._updateCelestialBodies(angle, tint.lightMul);
+        this._dayNightApplyHemiAndFog(angle, tint);
+        this._dayNightApplyTerrainShaderUniforms(sunDir);
+        this._dayNightApplyWaterMaterials(sunDir);
+    }
+
+    // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor /
+    // lightColor / lightIntensity der vorigen):
+    //   1) Wetter-Tint (skyMul/lightMul aus WEATHER_TINTS oder Transition)
+    //   2) Welt-Feld-Tint (magieleitung→violett, glut→rot-orange, lebendig→grün)
+    //   3) Emotion-Tint (joy→gold, sorrow→entsättigt, awe→lila, chaos→Flimmern)
+    // Liefert das Tint-Objekt + die mit skyMul derivierten skyR/G/B (HemiFog
+    // braucht sie). Schichten teilen Variablen → bleiben in EINER Methode
+    // (V9.56-d/f/g-Lehre).
+    _dayNightComputeTint(stop) {
         // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
         const tints = this.constructor.WEATHER_TINTS;
@@ -32554,7 +32667,6 @@ class AnazhRealm {
             skyMul = currentTint.skyMul;
             lightMul = currentTint.lightMul;
         }
-        // Stop-Sky als THREE.Color, davon eine clone-Kopie zum Modulieren
         const skyColor = stop.sky.clone();
         const lightColor = stop.light.clone();
         let lightIntensity = stop.intensity * lightMul;
@@ -32566,23 +32678,20 @@ class AnazhRealm {
                 const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
                 const glut = Math.max(0, Math.min(1, field.glut || 0));
                 const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
-                // magieleitung-Region: Sky leicht ins Violett verschieben
                 if (mag > 0.5) {
-                    const m = (mag - 0.5) * 0.3; // 0..0.15
+                    const m = (mag - 0.5) * 0.3;
                     skyColor.r = Math.min(1, skyColor.r + m * 0.6);
                     skyColor.b = Math.min(1, skyColor.b + m * 1.0);
                     lightColor.b = Math.min(1, lightColor.b + m * 0.4);
                 }
-                // glut-Region: ins Rot-Orange
                 if (glut > 0.5) {
-                    const g = (glut - 0.5) * 0.4; // 0..0.2
+                    const g = (glut - 0.5) * 0.4;
                     skyColor.r = Math.min(1, skyColor.r + g);
                     skyColor.g = Math.max(0, skyColor.g - g * 0.3);
                     lightColor.r = Math.min(1, lightColor.r + g * 0.6);
                 }
-                // lebendig-Region: warm-grünlich
                 if (lebendig > 0.5) {
-                    const l = (lebendig - 0.5) * 0.25; // 0..0.125
+                    const l = (lebendig - 0.5) * 0.25;
                     skyColor.g = Math.min(1, skyColor.g + l);
                     skyColor.r = Math.min(1, skyColor.r + l * 0.3);
                 }
@@ -32594,112 +32703,122 @@ class AnazhRealm {
         const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
         const awe = Math.max(0, Math.min(1, emotions.awe || 0));
         const chaos = Math.max(0, Math.min(1, emotions.chaos || 0));
-        // joy → gold (warm)
         if (joy > 0.2) {
-            const j = (joy - 0.2) * 0.25; // 0..0.2
+            const j = (joy - 0.2) * 0.25;
             skyColor.r = Math.min(1, skyColor.r + j);
             skyColor.g = Math.min(1, skyColor.g + j * 0.7);
             lightColor.r = Math.min(1, lightColor.r + j * 0.5);
             lightIntensity *= 1 + (joy - 0.2) * 0.15;
         }
-        // sorrow → entsättigt + dämpft
         if (sorrow > 0.2) {
-            const s = (sorrow - 0.2) * 0.5; // 0..0.4
+            const s = (sorrow - 0.2) * 0.5;
             const greyR = (skyColor.r + skyColor.g + skyColor.b) / 3;
             skyColor.r = skyColor.r * (1 - s) + greyR * s;
             skyColor.g = skyColor.g * (1 - s) + greyR * s;
             skyColor.b = skyColor.b * (1 - s) + greyR * s;
             lightIntensity *= 1 - (sorrow - 0.2) * 0.2;
         }
-        // awe → magisches Lila im Sky + Light
         if (awe > 0.2) {
-            const a = (awe - 0.2) * 0.35; // 0..0.28
+            const a = (awe - 0.2) * 0.35;
             skyColor.b = Math.min(1, skyColor.b + a);
             skyColor.r = Math.min(1, skyColor.r + a * 0.6);
             lightColor.b = Math.min(1, lightColor.b + a * 0.5);
         }
-        // chaos → leichtes Flimmern (sin über performance.now)
         if (chaos > 0.3) {
-            const c = (chaos - 0.3) * 0.15; // 0..0.105
+            // performance.now() — Side-Effect-Stream-Position: das chaos-Flimmern
+            // liest die Zeit hier (Tint-Phase). V9.56-i bewahrt die Aufruf-
+            // Reihenfolge bit-identisch.
+            const c = (chaos - 0.3) * 0.15;
             const flutter = Math.sin(performance.now() / 180) * c;
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
         }
-        // Schicht 1 final anwenden — skyMul auf den modulierten Sky-Color
-        const skyR = skyColor.r * skyMul;
-        const skyG = skyColor.g * skyMul;
-        const skyB = skyColor.b * skyMul;
-        if (this.state.skybox && this.state.skybox.material && this.state.skybox.material.uniforms) {
-            const u = this.state.skybox.material.uniforms.nebulaColor;
-            if (u && u.value) {
-                u.value.setRGB(skyR, skyG, skyB);
-            }
-            // V8.28 6.G4.b D — Wolken-Deckung aus weather. sunny ~0.22,
-            // rainy ~0.85. V8.46 — über die Wetter-Transition cross-gefadet
-            // (vorher flippte cloudCover sofort → harter Wetter-Sprung,
-            // während Licht/Skybox sanft faden).
-            const cloudU = this.state.skybox.material.uniforms.cloudCover;
-            if (cloudU) {
-                cloudU.value = this._weatherBlendedValue(0.22, 0.85);
-            }
-        }
-        // V8.28 6.G4.b A — Stern-Feld-Opacity. starField statt skybox-uniform
-        // (Sterne sind jetzt diskrete Points). Sterne nur bei Nacht sichtbar:
-        // umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
-        if (this.state.starField && this.state.starField.material) {
-            const sa = t * Math.PI * 2 - Math.PI / 2;
-            const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
-            const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
-            const su = this.state.starField.material.uniforms.uOpacity;
-            if (su) su.value = nightFactor * skyMul;
-        }
-        // Light-Position über Halbkreis (azimut über Tag).
-        const dl = this.state.directionalLight;
-        const angle = t * Math.PI * 2 - Math.PI / 2;
-        const lightDist = 200;
-        // V8.48 — reine Sonnen-RICHTUNG (Einheitsvektor Oberfläche→Sonne),
-        // getrennt von der Licht-POSITION. Vorher waren beide dasselbe
-        // (position.normalize() = Richtung). Jetzt folgt die Position dem
-        // Spieler, damit das Shadow-Frustum um ihn liegt — die Richtung
-        // für Beleuchtung + Shader-Uniforms bleibt das reine sunDir.
+        return {
+            skyColor,
+            lightColor,
+            lightIntensity,
+            skyMul,
+            lightMul,
+            skyR: skyColor.r * skyMul,
+            skyG: skyColor.g * skyMul,
+            skyB: skyColor.b * skyMul,
+        };
+    }
+
+    // Sonnen-Richtung (Einheitsvektor Oberfläche→Sonne) aus dem Tageswinkel.
+    // V8.48 — getrennt von der Licht-POSITION (die folgt dem Spieler für das
+    // Shadow-Frustum); diese reine Richtung füttert Beleuchtung + Shader.
+    _dayNightSunDirection(angle) {
         const sunDirX = Math.cos(angle);
         const sunDirY = Math.sin(angle);
         const sunDirZ = Math.sin(angle * 0.5) * 0.4;
         const sunLen = Math.hypot(sunDirX, sunDirY, sunDirZ) || 1;
-        const sunDir = new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+        return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+    }
+
+    // Skybox-Uniforms: nebulaColor aus skyR/G/B + Wolken-Deckung aus weather
+    // (V8.28 6.G4.b D, V8.46 Cross-Fade über Wetter-Transition).
+    _dayNightApplySkybox(tint) {
+        if (!this.state.skybox || !this.state.skybox.material || !this.state.skybox.material.uniforms) return;
+        const u = this.state.skybox.material.uniforms.nebulaColor;
+        if (u && u.value) u.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+        const cloudU = this.state.skybox.material.uniforms.cloudCover;
+        if (cloudU) cloudU.value = this._weatherBlendedValue(0.22, 0.85);
+    }
+
+    // V8.28 6.G4.b A — Stern-Feld-Opacity. starField (diskrete Points) nur
+    // bei Nacht sichtbar: umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
+    _dayNightApplyStarField(t, skyMul) {
+        if (!this.state.starField || !this.state.starField.material) return;
+        const sa = t * Math.PI * 2 - Math.PI / 2;
+        const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
+        const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
+        const su = this.state.starField.material.uniforms.uOpacity;
+        if (su) su.value = nightFactor * skyMul;
+    }
+
+    // DirectionalLight: Position folgt dem Spieler (V8.48 — Shadow-Frustum
+    // zentriert), Target am Spieler-Boden (y=0), Color = lightColor × lightMul,
+    // Intensity aus akkumuliertem lightIntensity.
+    _dayNightApplyDirectionalLight(sunDir, tint) {
+        const dl = this.state.directionalLight;
+        const pm = this.state.playerMesh;
+        const lightDist = 200;
         const focusX = pm ? pm.position.x : 0;
         const focusZ = pm ? pm.position.z : 0;
         dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
         if (dl.target) {
-            // Schatten-Frustum zentriert auf den Spieler (y=0 als Boden-Saat).
             dl.target.position.set(focusX, 0, focusZ);
             dl.target.updateMatrixWorld();
         }
-        dl.color.setRGB(lightColor.r * lightMul, lightColor.g * lightMul, lightColor.b * lightMul);
-        dl.intensity = lightIntensity;
-        // Ambient: Mitternacht 0.18, Mittag 0.6 + leichte Modulation durch
-        // joy/awe (positive Emotion erhöht ambient leicht — Welt wirkt heller)
+        dl.color.setRGB(
+            tint.lightColor.r * tint.lightMul,
+            tint.lightColor.g * tint.lightMul,
+            tint.lightColor.b * tint.lightMul
+        );
+        dl.intensity = tint.lightIntensity;
+    }
+
+    // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
+    // moduliert (positive Emotion erhöht ambient leicht — Welt wirkt heller).
+    _dayNightApplyAmbient(angle) {
         const al = this.state.ambientLight;
-        if (al) {
-            const sunHeight = Math.max(0, Math.sin(angle));
-            const baseAmb = 0.18 + 0.42 * sunHeight;
-            al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
-        }
-        // V8.25 — Sonne + Mond Position aktualisieren (falls Meshes existieren)
-        this._updateCelestialBodies(angle, lightMul);
-        // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide
-        // emergieren aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler:
-        //   - hemiLight.color (oben) ≈ skyColor (warmer/kühler je Tag-Phase)
-        //   - hemiLight.groundColor (unten) ≈ Welt-Affinität (lebendig→
-        //     erdgrün, glut→rotbraun, dichte→steingrau, magie→violett)
-        //   - hemiLight.intensity moduliert mit sunHeight + lightMul
-        //   - fog.color ≈ lerp(skyColor, groundColor, 0.5) — atmosphärisch
-        //   - fog.near/far moduliert mit Wetter + Welt-Lebendigkeit
+        if (!al) return;
+        const sunHeight = Math.max(0, Math.sin(angle));
+        const baseAmb = 0.18 + 0.42 * sunHeight;
+        al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+    }
+
+    // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
+    // aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler. fog.color ≈ lerp(sky,
+    // ground, 0.15) — V8.28 6.G4.b: Fog ist LUFT, nicht Dreck-Schicht.
+    // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (playerEyesUnderwater).
+    _dayNightApplyHemiAndFog(angle, tint) {
         const hl = this.state.hemiLight;
         const fog = this.state.fog;
+        const pm = this.state.playerMesh;
         if (hl) {
-            hl.color.setRGB(skyR * 1.1, skyG * 1.1, skyB * 1.1); // Sky-Tint, leicht angehellt
-            // Ground-Color aus Welt-Affinität ableiten (mit Saat-Earth-Tone)
+            hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
             if (pm && typeof this.worldFieldAt === "function") {
                 const field = this.worldFieldAt(pm.position.x, pm.position.z);
@@ -32707,138 +32826,84 @@ class AnazhRealm {
                     const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
                     const glut = Math.max(0, Math.min(1, field.glut || 0));
                     const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
-                    // lebendig pushes ground toward warm green
                     earth.r = Math.min(1, earth.r + lebendig * 0.15);
                     earth.g = Math.min(1, earth.g + lebendig * 0.25);
-                    // glut pushes toward red-orange
                     earth.r = Math.min(1, earth.r + glut * 0.35);
                     earth.g = Math.max(0, earth.g + glut * 0.1);
-                    // magieleitung pushes toward violet
                     earth.r = Math.min(1, earth.r + mag * 0.15);
                     earth.b = Math.min(1, earth.b + mag * 0.3);
                 }
             }
             hl.groundColor.copy(earth);
-            // Intensity: bei Tag mehr (0.6), bei Nacht weniger (0.25)
             const sunHeight = Math.max(0, Math.sin(angle));
-            hl.intensity = (0.25 + 0.35 * sunHeight) * lightMul;
+            hl.intensity = (0.25 + 0.35 * sunHeight) * tint.lightMul;
         }
         if (fog) {
-            // V8.28 6.G4.b — Fog ist LUFT, also überwiegend Himmelsfarbe
-            // (nur 15 % Boden-Tint). lerp 0.5 mischte blauen Himmel mit
-            // braunem Boden zu schmutzigem Rosa — der Fog wirkte wie eine
-            // Dreck-Schicht statt wie atmosphärischer Dunst. Mit 0.15
-            // verschmilzt der Fog sauber mit dem Himmel am Horizont.
             const gMix = 0.15;
-            const fogR = skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
-            const fogG = skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
-            const fogB = skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
+            const fogR = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
+            const fogG = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
+            const fogB = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
             fog.color.setRGB(fogR, fogG, fogB);
-            // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy
-            // 22..95. Bei 235 m far griff der Fog in einer Bergwelt nie
-            // (Berge verdeckten vorher). 150 m ist nah genug, dass der
-            // atmosphärische Gradient klar sichtbar ist — die fernen Berge
-            // verschmelzen mit dem Himmel. Slider geht 30..200 % für weniger
-            // (weiter) bis mehr (dichter) Dunst.
+            // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy 22..95.
+            // Slider 30..200 % via state.atmosphere.fogDistance.
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
-            // V8.32 — Unterwasser-Tint NUR beim echten Tauchen (Augen unter
-            // Wasser), nicht schon beim Waten/Schwimmen. Vorher triggerte er
-            // bei playerUnderwater (Körper-Mitte im Wasser) → der blaue Fog
-            // sprang an, sobald das Wasser halbe Körperhöhe erreichte. Jetzt:
-            // playerEyesUnderwater. Der dichte 4..34-Fog ignoriert bewusst
-            // den fogDistance-Slider — Tauch-Trübung ist fest, nicht die
-            // Land-Sicht-Einstellung (Schöpfer-Wunsch V8.32).
             if (this.state.playerEyesUnderwater) {
+                // V8.32 — Tauch-Trübung ist fest, ignoriert fogDistance-Slider.
                 fog.color.setRGB(0.06, 0.19, 0.32);
                 fog.near = 4;
                 fog.far = 34;
             }
         }
-        // V8.27 6.G4.a — Terrain-Shader-Uniforms synchronisieren falls vorhanden.
-        // Der Custom-Shader hat lightDirection + weatherEffect; wir setzen die
-        // lightDirection auf die ECHTE DirectionalLight-Richtung (normalisiert).
-        if (this.state.groundChunks && this.state.directionalLight) {
-            // V8.48 — die reine Sonnen-Richtung (sunDir), NICHT mehr
-            // position.normalize(): die Licht-Position folgt seit V8.48 dem
-            // Spieler, ihre Normalisierung wäre keine Richtung mehr.
-            const lightDir = sunDir;
-            for (const chunk of this.state.groundChunks) {
-                if (chunk.material && chunk.material.uniforms) {
-                    const cu = chunk.material.uniforms;
-                    if (cu.lightDirection) cu.lightDirection.value.copy(lightDir);
-                    if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
-                    if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
-                    // V8.46 — weatherEffect (Terrain-Verdunklung bei Regen)
-                    // pro Frame + über die Transition cross-faden. Vorher nur
-                    // beim Chunk-Bau gesetzt → es flippte hart, und alte Chunks
-                    // behielten ihren Stand (Patchwork). Jetzt sanft + einheitlich.
-                    if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
-                    // V8.31 — Fog an den Terrain-Custom-Shader anschließen.
-                    // Ohne das blieb das Terrain knackscharf, während nur
-                    // das Gras (Lambert) verblasste → der Fog-Slider wirkte
-                    // wie eine Gras-Verfärbung. Jetzt trägt das Terrain den
-                    // Dunst — der Fog wird zur echten atmosphärischen Schicht.
-                    if (fog) {
-                        if (cu.fogColor) cu.fogColor.value.copy(fog.color);
-                        if (cu.fogNear) cu.fogNear.value = fog.near;
-                        if (cu.fogFar) cu.fogFar.value = fog.far;
-                    }
-                }
-            }
-        }
-        // V8.29.1 — Welt-Wasser mit der Sonne synchronisieren: Sonnen-
-        // Richtung für das Glitzern + Licht-Intensität für Tag-Nacht-Tint.
-        // V8.31 — plus Fog-Uniforms (Custom-Shader erbt THREE.Fog nicht).
-        if (this.state.hydroSurfaceMaterial && this.state.directionalLight) {
-            const wu = this.state.hydroSurfaceMaterial.uniforms;
-            if (wu && wu.uSunDir) {
-                // V8.48 — reine Sonnen-Richtung (Licht-Position folgt seit
-                // V8.48 dem Spieler, ihre Normalisierung wäre keine Richtung).
-                wu.uSunDir.value.copy(sunDir);
-            }
-            if (wu && wu.uLight) {
-                wu.uLight.value = Math.max(0.22, dl.intensity);
-            }
-            if (wu && fog) {
-                if (wu.fogColor) wu.fogColor.value.copy(fog.color);
-                if (wu.fogNear) wu.fogNear.value = fog.near;
-                if (wu.fogFar) wu.fogFar.value = fog.far;
-            }
-        }
-        // V9.43-a — das geteilte Wasserfall-Material teilt die Wasser-
-        // Substanz-Uniforms (Sonne, Licht, Fog) mit dem Meer — eine Wasser-
-        // Sprache, von derselben Tag-Nacht-Quelle gespeist.
-        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms && this.state.directionalLight) {
-            const wfu = this.state.waterfallMaterial.uniforms;
-            if (wfu.uSunDir) wfu.uSunDir.value.copy(sunDir);
-            if (wfu.uLight) wfu.uLight.value = Math.max(0.22, dl.intensity);
+    }
+
+    // V8.27 6.G4.a / V8.31 / V8.46 / V8.48 — Terrain-Custom-Shader-Uniforms
+    // synchronisieren: lightDirection (sunDir), lightIntensity, ambientIntensity,
+    // weatherEffect (Cross-Fade), fog (Color/Near/Far).
+    _dayNightApplyTerrainShaderUniforms(sunDir) {
+        if (!this.state.groundChunks || !this.state.directionalLight) return;
+        const dl = this.state.directionalLight;
+        const al = this.state.ambientLight;
+        const fog = this.state.fog;
+        for (const chunk of this.state.groundChunks) {
+            if (!chunk.material || !chunk.material.uniforms) continue;
+            const cu = chunk.material.uniforms;
+            if (cu.lightDirection) cu.lightDirection.value.copy(sunDir);
+            if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
+            if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
+            if (cu.weatherEffect) cu.weatherEffect.value = this._weatherBlendedValue(0.0, 1.0);
             if (fog) {
-                if (wfu.fogColor) wfu.fogColor.value.copy(fog.color);
-                if (wfu.fogNear) wfu.fogNear.value = fog.near;
-                if (wfu.fogFar) wfu.fogFar.value = fog.far;
+                if (cu.fogColor) cu.fogColor.value.copy(fog.color);
+                if (cu.fogNear) cu.fogNear.value = fog.near;
+                if (cu.fogFar) cu.fogFar.value = fog.far;
             }
         }
-        // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
-        // + See-Planes) teilt dieselbe Wasser-Substanz-Sprache: Sonne, Licht,
-        // Fog von derselben Tag-Nacht-Quelle. Eine Wasser-Sprache, vier
-        // Geometrien (Meer, Wasserfall, Fluss, See).
-        if (
-            this.state.hydroSurfaceMaterial &&
-            this.state.hydroSurfaceMaterial.uniforms &&
-            this.state.directionalLight
-        ) {
-            const hsu = this.state.hydroSurfaceMaterial.uniforms;
-            if (hsu.uSunDir) hsu.uSunDir.value.copy(sunDir);
-            if (hsu.uLight) hsu.uLight.value = Math.max(0.22, dl.intensity);
+    }
+
+    // V8.29.1 / V8.31 / V9.43-a/c — Wasser-Materialien (Meer/Fluss/See via
+    // hydroSurfaceMaterial + Wasserfall via waterfallMaterial) teilen DIESELBE
+    // Tag-Nacht-Wasser-Sprache: uSunDir + uLight + fog. Der ursprüngliche
+    // Pfad rief das Hydro-Material zweimal (Duplikat aus V8.29.1 + V9.43-c);
+    // die Writes sind idempotent → eine Anwendung ist verhaltensneutral.
+    _dayNightApplyWaterMaterials(sunDir) {
+        if (!this.state.directionalLight) return;
+        const dl = this.state.directionalLight;
+        const fog = this.state.fog;
+        const applyTo = (material) => {
+            if (!material || !material.uniforms) return;
+            const u = material.uniforms;
+            if (u.uSunDir) u.uSunDir.value.copy(sunDir);
+            if (u.uLight) u.uLight.value = Math.max(0.22, dl.intensity);
             if (fog) {
-                if (hsu.fogColor) hsu.fogColor.value.copy(fog.color);
-                if (hsu.fogNear) hsu.fogNear.value = fog.near;
-                if (hsu.fogFar) hsu.fogFar.value = fog.far;
+                if (u.fogColor) u.fogColor.value.copy(fog.color);
+                if (u.fogNear) u.fogNear.value = fog.near;
+                if (u.fogFar) u.fogFar.value = fog.far;
             }
-        }
+        };
+        applyTo(this.state.hydroSurfaceMaterial);
+        applyTo(this.state.waterfallMaterial);
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
@@ -33804,16 +33869,31 @@ class AnazhRealm {
         const container = document.getElementById("player-equip");
         if (!container) return;
         container.innerHTML = "";
-        // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
-        // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
-        // dann oben im Dropdown wählen.
+        this._equipAppendDrawerHint(container);
+        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
+        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
+        this._equipAppendToolRow(container, equipped, ownedTools);
+        const { armorBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
+        this._equipAppendArmorRow(container, equipped, armorBlueprints);
+        this._equipAppendMarkSection(container, candidateBlueprints);
+        this._equipAppendConsumablesSection(container);
+        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+            this._equipAppendEmptyHint(container);
+        }
+    }
+
+    // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
+    // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
+    // dann oben im Dropdown wählen.
+    _equipAppendDrawerHint(container) {
         const equipHint = document.createElement("div");
         equipHint.className = "drawer-hint";
         equipHint.textContent =
             "Rüstung anziehen: einen eigenen Bauplan unten als Rüstung markieren — dann oben im Dropdown wählen.";
         container.appendChild(equipHint);
-        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
-        // Werkzeug-Slot
+    }
+
+    _equipAppendToolRow(container, equipped, ownedTools) {
         const toolRow = document.createElement("div");
         toolRow.className = "equip-row";
         const toolLabel = document.createElement("span");
@@ -33826,7 +33906,6 @@ class AnazhRealm {
         noneTool.value = "";
         noneTool.textContent = "— keins —";
         toolSel.appendChild(noneTool);
-        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
         for (const name of ownedTools) {
             const t = this.state.tools[name];
             if (!t) continue;
@@ -33845,7 +33924,26 @@ class AnazhRealm {
         });
         toolRow.appendChild(toolSel);
         container.appendChild(toolRow);
-        // Rüstung-Slot
+    }
+
+    // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-Kandidat,
+    // auch ein bereits markierter (roleManual). Sonst verschwindet ein Bauplan
+    // nach dem Markieren aus der Sektion und die Wahl wird zur Sackgasse — ein
+    // versehentlich als Konsumabel markiertes Portal ließ sich nicht mehr
+    // umwidmen. Die Reihe zeigt die aktuelle Rolle; ein erneuter Klick widmet um.
+    _equipPartitionEquipBlueprints() {
+        const armorBlueprints = [];
+        const candidateBlueprints = [];
+        for (const name of Object.keys(this.state.blueprints || {})) {
+            const bp = this.state.blueprints[name];
+            if (!bp || bp.builtIn) continue;
+            if (bp.role === "armor") armorBlueprints.push(name);
+            else candidateBlueprints.push(name);
+        }
+        return { armorBlueprints, candidateBlueprints };
+    }
+
+    _equipAppendArmorRow(container, equipped, armorBlueprints) {
         const armorRow = document.createElement("div");
         armorRow.className = "equip-row";
         const armorLabel = document.createElement("span");
@@ -33858,20 +33956,6 @@ class AnazhRealm {
         noneArmor.value = "";
         noneArmor.textContent = "— keine —";
         armorSel.appendChild(noneArmor);
-        const armorBlueprints = [];
-        const candidateBlueprints = [];
-        for (const name of Object.keys(this.state.blueprints || {})) {
-            const bp = this.state.blueprints[name];
-            if (!bp || bp.builtIn) continue;
-            if (bp.role === "armor") armorBlueprints.push(name);
-            // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-
-            // Kandidat, auch ein bereits markierter (roleManual). Sonst
-            // verschwindet ein Bauplan nach dem Markieren aus der Sektion und
-            // die Wahl wird zur Sackgasse — ein versehentlich als Konsumabel
-            // markiertes Portal ließ sich nicht mehr umwidmen. Die Reihe zeigt
-            // die aktuelle Rolle; ein erneuter Klick widmet um.
-            else candidateBlueprints.push(name);
-        }
         for (const name of armorBlueprints) {
             const bp = this.state.blueprints[name];
             const opt = document.createElement("option");
@@ -33889,128 +33973,132 @@ class AnazhRealm {
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
-        // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
-        // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST
-        // — und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
-        if (candidateBlueprints.length > 0) {
-            const markHeader = document.createElement("div");
-            markHeader.className = "equip-mark-header";
-            markHeader.textContent = "Bauplan als ... markieren:";
-            container.appendChild(markHeader);
-            for (const name of candidateBlueprints) {
-                const bp = this.state.blueprints[name];
-                const row = document.createElement("div");
-                row.className = "equip-mark-row";
-                const label = document.createElement("span");
-                label.className = "equip-mark-label";
-                // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
-                // gerade IST, und kann ihn gezielt umwidmen.
-                const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
-                label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
-                row.appendChild(label);
-                const armorBtn = document.createElement("button");
-                armorBtn.type = "button";
-                armorBtn.textContent = "Rüstung";
-                armorBtn.addEventListener("click", () => {
-                    const result = this.setBlueprintAsArmor(name);
-                    if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
-                    this.renderPlayerEquipUI();
-                });
-                row.appendChild(armorBtn);
-                const consBtn = document.createElement("button");
-                consBtn.type = "button";
-                consBtn.textContent = "Konsumabel";
-                consBtn.addEventListener("click", () => {
-                    const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
-                    if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
-                    this.renderPlayerEquipUI();
-                });
-                row.appendChild(consBtn);
-                // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
-                // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
-                // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
-                const portalSel = document.createElement("select");
-                portalSel.className = "equip-portal-select";
-                for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
-                    const wOpt = document.createElement("option");
-                    wOpt.value = wid;
-                    wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
-                    portalSel.appendChild(wOpt);
-                }
-                row.appendChild(portalSel);
-                const portalBtn = document.createElement("button");
-                portalBtn.type = "button";
-                portalBtn.textContent = "Portal";
-                portalBtn.addEventListener("click", () => {
-                    const result = this.aimBlueprintAtWorld(name, portalSel.value);
-                    if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
-                    this.renderPlayerEquipUI();
-                });
-                row.appendChild(portalBtn);
-                container.appendChild(row);
+    }
+
+    // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
+    // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST —
+    // und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
+    _equipAppendMarkSection(container, candidateBlueprints) {
+        if (candidateBlueprints.length === 0) return;
+        const markHeader = document.createElement("div");
+        markHeader.className = "equip-mark-header";
+        markHeader.textContent = "Bauplan als ... markieren:";
+        container.appendChild(markHeader);
+        for (const name of candidateBlueprints) {
+            const bp = this.state.blueprints[name];
+            const row = document.createElement("div");
+            row.className = "equip-mark-row";
+            const label = document.createElement("span");
+            label.className = "equip-mark-label";
+            // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
+            // gerade IST, und kann ihn gezielt umwidmen.
+            const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
+            label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
+            row.appendChild(label);
+            const armorBtn = document.createElement("button");
+            armorBtn.type = "button";
+            armorBtn.textContent = "Rüstung";
+            armorBtn.addEventListener("click", () => {
+                const result = this.setBlueprintAsArmor(name);
+                if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(armorBtn);
+            const consBtn = document.createElement("button");
+            consBtn.type = "button";
+            consBtn.textContent = "Konsumabel";
+            consBtn.addEventListener("click", () => {
+                const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
+                if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(consBtn);
+            // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
+            // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
+            // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
+            const portalSel = document.createElement("select");
+            portalSel.className = "equip-portal-select";
+            for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
+                const wOpt = document.createElement("option");
+                wOpt.value = wid;
+                wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
+                portalSel.appendChild(wOpt);
             }
+            row.appendChild(portalSel);
+            const portalBtn = document.createElement("button");
+            portalBtn.type = "button";
+            portalBtn.textContent = "Portal";
+            portalBtn.addEventListener("click", () => {
+                const result = this.aimBlueprintAtWorld(name, portalSel.value);
+                if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(portalBtn);
+            container.appendChild(row);
         }
-        // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
-        // role:"consumable" + alle DSL-Tabellen-Konsumables.
+    }
+
+    // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
+    // role:"consumable" + alle DSL-Tabellen-Konsumables.
+    _equipAppendConsumablesSection(container) {
         const consumableBps = [];
         for (const name of Object.keys(this.state.blueprints || {})) {
             const bp = this.state.blueprints[name];
             if (bp && bp.role === "consumable") consumableBps.push(name);
         }
         const tableConsumables = Object.keys(this.state.consumables || {});
-        if (consumableBps.length > 0 || tableConsumables.length > 0) {
-            const consumableHeader = document.createElement("div");
-            consumableHeader.className = "equip-mark-header";
-            consumableHeader.textContent = "Konsumables (trinken):";
-            container.appendChild(consumableHeader);
-            for (const name of consumableBps) {
-                const bp = this.state.blueprints[name];
-                const row = document.createElement("div");
-                row.className = "equip-mark-row";
-                const label = document.createElement("span");
-                label.className = "equip-mark-label";
-                const meta = bp.consumableMeta || {};
-                label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
-                row.appendChild(label);
-                const drinkBtn = document.createElement("button");
-                drinkBtn.type = "button";
-                drinkBtn.textContent = "Trinken";
-                drinkBtn.addEventListener("click", () => {
-                    const result = this.activateConsumable(name);
-                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
-                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
-                });
-                row.appendChild(drinkBtn);
-                container.appendChild(row);
-            }
-            for (const name of tableConsumables) {
-                const c = this.state.consumables[name];
-                const row = document.createElement("div");
-                row.className = "equip-mark-row";
-                const label = document.createElement("span");
-                label.className = "equip-mark-label";
-                label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
-                row.appendChild(label);
-                const drinkBtn = document.createElement("button");
-                drinkBtn.type = "button";
-                drinkBtn.textContent = "Trinken";
-                drinkBtn.addEventListener("click", () => {
-                    const result = this.activateConsumable(name);
-                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
-                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
-                });
-                row.appendChild(drinkBtn);
-                container.appendChild(row);
-            }
+        if (consumableBps.length === 0 && tableConsumables.length === 0) return;
+        const consumableHeader = document.createElement("div");
+        consumableHeader.className = "equip-mark-header";
+        consumableHeader.textContent = "Konsumables (trinken):";
+        container.appendChild(consumableHeader);
+        for (const name of consumableBps) {
+            const bp = this.state.blueprints[name];
+            const row = document.createElement("div");
+            row.className = "equip-mark-row";
+            const label = document.createElement("span");
+            label.className = "equip-mark-label";
+            const meta = bp.consumableMeta || {};
+            label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
+            row.appendChild(label);
+            const drinkBtn = document.createElement("button");
+            drinkBtn.type = "button";
+            drinkBtn.textContent = "Trinken";
+            drinkBtn.addEventListener("click", () => {
+                const result = this.activateConsumable(name);
+                if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+            });
+            row.appendChild(drinkBtn);
+            container.appendChild(row);
         }
-        // Empty-state-Hinweis wenn keine Optionen verfügbar
-        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
-            const hint = document.createElement("div");
-            hint.className = "equip-empty";
-            hint.textContent =
-                "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
-            container.appendChild(hint);
+        for (const name of tableConsumables) {
+            const c = this.state.consumables[name];
+            const row = document.createElement("div");
+            row.className = "equip-mark-row";
+            const label = document.createElement("span");
+            label.className = "equip-mark-label";
+            label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
+            row.appendChild(label);
+            const drinkBtn = document.createElement("button");
+            drinkBtn.type = "button";
+            drinkBtn.textContent = "Trinken";
+            drinkBtn.addEventListener("click", () => {
+                const result = this.activateConsumable(name);
+                if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+            });
+            row.appendChild(drinkBtn);
+            container.appendChild(row);
         }
+    }
+
+    _equipAppendEmptyHint(container) {
+        const hint = document.createElement("div");
+        hint.className = "equip-empty";
+        hint.textContent =
+            "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
+        container.appendChild(hint);
     }
 
     // Welle 6.D Etappe 1.7 — Voller Avatar-Editor im Spieler-Drawer.
@@ -34032,9 +34120,16 @@ class AnazhRealm {
         if (!container) return;
         container.innerHTML = "";
         if (!this.state.soulEditor) this.state.soulEditor = { editingName: null };
-
-        // Section 1 — Liste der eigenen Seelen
         const customs = this.state.customSouls || {};
+        this._soulEditorAppendCustomList(container, customs);
+        this._soulEditorAppendActions(container, customs);
+        const editingName = this.state.soulEditor.editingName;
+        const editing = editingName && customs[editingName];
+        if (editing) this._soulEditorAppendEditorPane(container, editingName, editing);
+    }
+
+    // Section 1 — Liste der eigenen Seelen mit „Werde" + „Bearbeiten" + „Löschen".
+    _soulEditorAppendCustomList(container, customs) {
         const customNames = Object.keys(customs);
         const customList = document.createElement("div");
         customList.className = "soul-editor-list";
@@ -34081,8 +34176,10 @@ class AnazhRealm {
             }
         }
         container.appendChild(customList);
+    }
 
-        // Section 2 — Klone / Neu anlegen
+    // Section 2 — aktuelle Seele klonen oder leere Seele neu anlegen.
+    _soulEditorAppendActions(container, customs) {
         const actions = document.createElement("div");
         actions.className = "soul-editor-actions";
         const cloneBtn = document.createElement("button");
@@ -34107,7 +34204,7 @@ class AnazhRealm {
         newBtn.addEventListener("click", () => {
             const base = `neue_seele_${Object.keys(customs).length + 1}`;
             // Eine Seele braucht mindestens einen Körper-Teil; geben wir ein
-            // sinnvolles Start-Teil aus stein vor (Standard-Default-Material).
+            // sinnvolles Start-Teil aus fleisch vor (Standard-Default-Material).
             const startPart = {
                 shape: "box",
                 material: "fleisch",
@@ -34126,137 +34223,135 @@ class AnazhRealm {
         });
         actions.appendChild(newBtn);
         container.appendChild(actions);
+    }
 
-        // Section 3 — Inline-Editor für die ausgewählte Seele
-        const editingName = this.state.soulEditor.editingName;
-        const editing = editingName && customs[editingName];
-        if (editing) {
-            const editor = document.createElement("div");
-            editor.className = "soul-editor-pane";
-            const head = document.createElement("div");
-            head.className = "soul-editor-pane-head";
-            head.textContent = `Edit: ${editing.label}`;
-            editor.appendChild(head);
-            // Parts
-            const partList = document.createElement("div");
-            partList.className = "soul-part-list";
-            const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
-            const materials = Object.keys(this.state.materials || {});
-            editing.bodyParts.forEach((part, idx) => {
-                const partRow = document.createElement("div");
-                partRow.className = "soul-part-row";
-                const indexLabel = document.createElement("span");
-                indexLabel.className = "soul-part-idx";
-                indexLabel.textContent = `#${idx + 1}`;
-                partRow.appendChild(indexLabel);
-                // Shape-Select
-                const shapeSel = document.createElement("select");
-                shapeSel.title = "Form";
-                for (const s of shapes) {
-                    const opt = document.createElement("option");
-                    opt.value = s;
-                    opt.textContent = s;
-                    if (s === part.shape) opt.selected = true;
-                    shapeSel.appendChild(opt);
-                }
-                shapeSel.addEventListener("change", () => {
-                    this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
-                });
-                partRow.appendChild(shapeSel);
-                // Material-Select
-                const matSel = document.createElement("select");
-                matSel.title = "Material";
-                for (const m of materials) {
-                    const opt = document.createElement("option");
-                    opt.value = m;
-                    opt.textContent = this.state.materials[m].label || m;
-                    if (m === part.material) opt.selected = true;
-                    matSel.appendChild(opt);
-                }
-                matSel.addEventListener("change", () => {
-                    this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
-                });
-                partRow.appendChild(matSel);
-                // Position + Size — kompakte Number-Inputs
-                const makeNumberInput = (val, axis, kind) => {
-                    const inp = document.createElement("input");
-                    inp.type = "number";
-                    inp.step = "0.05";
-                    inp.value = Number(val || 0).toFixed(2);
-                    inp.className = "soul-part-num";
-                    inp.title = `${kind} ${axis}`;
-                    inp.addEventListener("change", () => {
-                        const next = Number(inp.value);
-                        const field = kind === "pos" ? "position" : "size";
-                        const current = part[field] || { x: 0, y: 0, z: 0 };
-                        this.updatePartInCustomSoul(editingName, idx, {
-                            [field]: { ...current, [axis]: next },
-                        });
-                    });
-                    return inp;
-                };
-                const posGrp = document.createElement("span");
-                posGrp.className = "soul-part-group";
-                posGrp.title = "Position x/y/z";
-                posGrp.appendChild(document.createTextNode("Pos"));
-                posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
-                posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
-                posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
-                partRow.appendChild(posGrp);
-                const sizeGrp = document.createElement("span");
-                sizeGrp.className = "soul-part-group";
-                sizeGrp.title = "Größe x/y/z";
-                sizeGrp.appendChild(document.createTextNode("Größe"));
-                sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
-                sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
-                sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
-                partRow.appendChild(sizeGrp);
-                // Remove
-                const rmBtn = document.createElement("button");
-                rmBtn.type = "button";
-                rmBtn.textContent = "✕";
-                rmBtn.className = "soul-editor-danger";
-                rmBtn.title = "Teil entfernen";
-                rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
-                partRow.appendChild(rmBtn);
-                partList.appendChild(partRow);
+    // Section 3 — Inline-Editor: Pane-Head · Parts-Liste · Add-Part · Apply/Close.
+    _soulEditorAppendEditorPane(container, editingName, editing) {
+        const editor = document.createElement("div");
+        editor.className = "soul-editor-pane";
+        const head = document.createElement("div");
+        head.className = "soul-editor-pane-head";
+        head.textContent = `Edit: ${editing.label}`;
+        editor.appendChild(head);
+        const partList = document.createElement("div");
+        partList.className = "soul-part-list";
+        const shapes = ["box", "sphere", "cylinder", "cone", "pyramid", "octahedron", "plane", "torus", "helix"];
+        const materials = Object.keys(this.state.materials || {});
+        editing.bodyParts.forEach((part, idx) => {
+            partList.appendChild(this._soulEditorBuildPartRow(part, idx, editingName, shapes, materials));
+        });
+        editor.appendChild(partList);
+        const addPartBtn = document.createElement("button");
+        addPartBtn.type = "button";
+        addPartBtn.textContent = "+ Teil hinzufügen";
+        addPartBtn.className = "soul-editor-add";
+        addPartBtn.addEventListener("click", () => {
+            this.addPartToCustomSoul(editingName, {
+                shape: "sphere",
+                material: "fleisch",
+                position: { x: 0, y: 0.5, z: 0 },
+                size: { x: 0.3, y: 0.3, z: 0.3 },
+                label: "Neuer Teil",
             });
-            editor.appendChild(partList);
-            // Add-Part-Button
-            const addPartBtn = document.createElement("button");
-            addPartBtn.type = "button";
-            addPartBtn.textContent = "+ Teil hinzufügen";
-            addPartBtn.className = "soul-editor-add";
-            addPartBtn.addEventListener("click", () => {
-                this.addPartToCustomSoul(editingName, {
-                    shape: "sphere",
-                    material: "fleisch",
-                    position: { x: 0, y: 0.5, z: 0 },
-                    size: { x: 0.3, y: 0.3, z: 0.3 },
-                    label: "Neuer Teil",
-                });
-            });
-            editor.appendChild(addPartBtn);
-            // Apply (Become) + Close
-            const applyRow = document.createElement("div");
-            applyRow.className = "soul-editor-apply-row";
-            const becomeNow = document.createElement("button");
-            becomeNow.type = "button";
-            becomeNow.textContent = "Werde diese Seele";
-            becomeNow.className = "soul-editor-primary";
-            becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
-            applyRow.appendChild(becomeNow);
-            const closeEdit = document.createElement("button");
-            closeEdit.type = "button";
-            closeEdit.textContent = "Editor schließen";
-            closeEdit.addEventListener("click", () => {
-                this.state.soulEditor.editingName = null;
-                this.renderSoulEditorUI();
-            });
-            applyRow.appendChild(closeEdit);
-            editor.appendChild(applyRow);
-            container.appendChild(editor);
+        });
+        editor.appendChild(addPartBtn);
+        const applyRow = document.createElement("div");
+        applyRow.className = "soul-editor-apply-row";
+        const becomeNow = document.createElement("button");
+        becomeNow.type = "button";
+        becomeNow.textContent = "Werde diese Seele";
+        becomeNow.className = "soul-editor-primary";
+        becomeNow.addEventListener("click", () => this.applyPlayerSoul(editingName));
+        applyRow.appendChild(becomeNow);
+        const closeEdit = document.createElement("button");
+        closeEdit.type = "button";
+        closeEdit.textContent = "Editor schließen";
+        closeEdit.addEventListener("click", () => {
+            this.state.soulEditor.editingName = null;
+            this.renderSoulEditorUI();
+        });
+        applyRow.appendChild(closeEdit);
+        editor.appendChild(applyRow);
+        container.appendChild(editor);
+    }
+
+    // Eine Part-Zeile im Inline-Editor: Index · Shape · Material · Pos x/y/z ·
+    // Größe x/y/z · ✕. Die makeNumberInput-Closure bleibt lokal — sie capturet
+    // editingName + idx + part + this; sechs Aufrufe pro Zeile.
+    _soulEditorBuildPartRow(part, idx, editingName, shapes, materials) {
+        const partRow = document.createElement("div");
+        partRow.className = "soul-part-row";
+        const indexLabel = document.createElement("span");
+        indexLabel.className = "soul-part-idx";
+        indexLabel.textContent = `#${idx + 1}`;
+        partRow.appendChild(indexLabel);
+        const shapeSel = document.createElement("select");
+        shapeSel.title = "Form";
+        for (const s of shapes) {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s;
+            if (s === part.shape) opt.selected = true;
+            shapeSel.appendChild(opt);
         }
+        shapeSel.addEventListener("change", () => {
+            this.updatePartInCustomSoul(editingName, idx, { shape: shapeSel.value });
+        });
+        partRow.appendChild(shapeSel);
+        const matSel = document.createElement("select");
+        matSel.title = "Material";
+        for (const m of materials) {
+            const opt = document.createElement("option");
+            opt.value = m;
+            opt.textContent = this.state.materials[m].label || m;
+            if (m === part.material) opt.selected = true;
+            matSel.appendChild(opt);
+        }
+        matSel.addEventListener("change", () => {
+            this.updatePartInCustomSoul(editingName, idx, { material: matSel.value });
+        });
+        partRow.appendChild(matSel);
+        const makeNumberInput = (val, axis, kind) => {
+            const inp = document.createElement("input");
+            inp.type = "number";
+            inp.step = "0.05";
+            inp.value = Number(val || 0).toFixed(2);
+            inp.className = "soul-part-num";
+            inp.title = `${kind} ${axis}`;
+            inp.addEventListener("change", () => {
+                const next = Number(inp.value);
+                const field = kind === "pos" ? "position" : "size";
+                const current = part[field] || { x: 0, y: 0, z: 0 };
+                this.updatePartInCustomSoul(editingName, idx, {
+                    [field]: { ...current, [axis]: next },
+                });
+            });
+            return inp;
+        };
+        const posGrp = document.createElement("span");
+        posGrp.className = "soul-part-group";
+        posGrp.title = "Position x/y/z";
+        posGrp.appendChild(document.createTextNode("Pos"));
+        posGrp.appendChild(makeNumberInput(part.position && part.position.x, "x", "pos"));
+        posGrp.appendChild(makeNumberInput(part.position && part.position.y, "y", "pos"));
+        posGrp.appendChild(makeNumberInput(part.position && part.position.z, "z", "pos"));
+        partRow.appendChild(posGrp);
+        const sizeGrp = document.createElement("span");
+        sizeGrp.className = "soul-part-group";
+        sizeGrp.title = "Größe x/y/z";
+        sizeGrp.appendChild(document.createTextNode("Größe"));
+        sizeGrp.appendChild(makeNumberInput(part.size && part.size.x, "x", "size"));
+        sizeGrp.appendChild(makeNumberInput(part.size && part.size.y, "y", "size"));
+        sizeGrp.appendChild(makeNumberInput(part.size && part.size.z, "z", "size"));
+        partRow.appendChild(sizeGrp);
+        const rmBtn = document.createElement("button");
+        rmBtn.type = "button";
+        rmBtn.textContent = "✕";
+        rmBtn.className = "soul-editor-danger";
+        rmBtn.title = "Teil entfernen";
+        rmBtn.addEventListener("click", () => this.removePartFromCustomSoul(editingName, idx));
+        partRow.appendChild(rmBtn);
+        return partRow;
     }
 
     // Welle 6.D Etappe 1.6 — Soul-Select neu befüllen (Built-ins + Custom).

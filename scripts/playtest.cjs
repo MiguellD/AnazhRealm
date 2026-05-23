@@ -17080,9 +17080,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.eyesFlagComputed = found;
         }
         // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
-        // mehr playerUnderwater (Source-Pattern in _applyDayNightToScene).
+        // mehr playerUnderwater. V9.56-i: die Hemi+Fog-Phase lebt jetzt
+        // im _dayNightApplyHemiAndFog-Helfer (Source-Pattern wandert mit).
         {
-            const src = r._applyDayNightToScene.toString();
+            const src = r._dayNightApplyHemiAndFog.toString();
             out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
         }
 
@@ -20927,10 +20928,13 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
         r.state.weatherTransition = origTrans;
         r.state.weather = origWeather;
-        // weatherEffect + cloudCover faden jetzt über den Helper.
-        const src = r._applyDayNightToScene.toString();
-        out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(src);
-        out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(src);
+        // weatherEffect + cloudCover faden jetzt über den Helper. V9.56-i:
+        // Terrain-Shader-Uniforms leben im _dayNightApplyTerrainShaderUniforms-
+        // Helfer, Skybox-Wolken im _dayNightApplySkybox-Helfer.
+        const terrainSrc = r._dayNightApplyTerrainShaderUniforms.toString();
+        out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(terrainSrc);
+        const skyboxSrc = r._dayNightApplySkybox.toString();
+        out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(skyboxSrc);
         // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
         const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
@@ -20986,8 +20990,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         }
         // _applyDayNightToScene leitet die Terrain-lightDirection aus
         // der reinen Sonnen-Richtung sunDir ab (nicht position.normalize()).
-        const adnSrc = r._applyDayNightToScene.toString();
-        out.usesSunDir = /const lightDir = sunDir/.test(adnSrc);
+        // V9.56-i: lebt jetzt im _dayNightApplyTerrainShaderUniforms-Helfer;
+        // copy(sunDir) auf cu.lightDirection ist der Vertrag.
+        const adnSrc = r._dayNightApplyTerrainShaderUniforms.toString();
+        out.usesSunDir = /cu\.lightDirection\) cu\.lightDirection\.value\.copy\(sunDir\)/.test(adnSrc);
         return out;
     });
 
