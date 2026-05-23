@@ -6772,10 +6772,19 @@ async function checkBandLateMultiUser(ctx) {
         out.creatureHasNetId = !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
 
         // _p2pBroadcastCreatures sendet creature-pos mit der Kreatur.
+        // V9.54: state.creatures temporär auf [testC] reduzieren — der Broadcast
+        // hat einen 40er-Cap (`list.length < 40`), und Worldgen-Variance bringt
+        // state.creatures.length auf 13-36 (gemessen) je Lauf. testC landet am
+        // Ende → bei state.creatures.length >= 40 vor dem Push wäre testIdx >= 40
+        // und der Cap würde testC stillschweigend ausschließen → flaky-Test.
+        // Die Isolation misst das Broadcast-Verhalten, nicht das Worldgen-Glück.
         const csent = [];
         const origSend2 = r.p2pSend;
         r.p2pSend = (o) => csent.push(o);
+        const origCreatures = r.state.creatures;
+        r.state.creatures = [testC];
         r._p2pBroadcastCreatures();
+        r.state.creatures = origCreatures;
         const cmsg = csent.find((m) => m.type === "creature-pos");
         out.broadcastSendsCreatures =
             !!cmsg && Array.isArray(cmsg.list) && cmsg.list.some((e) => e.id === testC.userData.netId);
