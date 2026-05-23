@@ -112,7 +112,7 @@ Reihenfolge-Prinzip wie V9.44: vom Gerüst zum Detail, jede Sub-Welle ein Commit
 | c | **Band 2 — Welle 6 + Voxel-Bogen + Hydrosphäre** | Welle 6.A bis 6.H Phase 2C (53 Sektionen) als 8 Band-Funktionen (475-1567 Z.); 6.X Audit-Fixes verschoben nach Band 3 | ~1.5 Sessions | niedrig | ✅ V9.52-c (23.05.2026, 8 Band-Funktionen `checkBandWelle6APolish` .. `checkBandWelle6HCreatures`, sieben Baseline-Läufe bit-identisch; Skript `/tmp/extract-band2-c.cjs`) |
 | d | **Band 3 — Welle 6.X Audit + Atmosphäre + Fremd-Engine-Bogen** | Welle 6.X.1-X.5 + 6.G3/G4 + V8.24-V8.49 + W12-W14 + KI-Übersetzer + V8.70-72 (50 Sektionen) als 8 Band-Funktionen (498-1190 Z.) | ~1.5 Sessions | niedrig | ✅ V9.52-d (23.05.2026, 8 Band-Funktionen `checkBandWelle6XAudit` .. `checkBandV8LatePolishAnd6XContinued`, acht Baseline-Läufe bit-identisch; Skript `/tmp/extract-band3-d.cjs`) |
 | e | **Band 4 — End-Sektionen ab Welle 6.H 2B.2** | Welle 6.H 2B.2/2D/2E/2F + Welle 6.B CAD + V8.00-V8.07 + Welle 9a-d/10a/b + V7.94-V7.98 + Ring 3-6 + UI V1/V2 (48 Sektionen) als 10 Band-Funktionen (432-1131 Z.). Der `else`-Block ist damit erschöpft als 40-Calls-Liste. | ~1 Session | niedrig | ✅ V9.52-e (23.05.2026, 10 Band-Funktionen `checkBandWelle6HBuildAndPersist` .. `checkBandRing6Workshop`, zehn Baseline-Läufe bit-identisch; Skript `/tmp/extract-band4-e.cjs`) |
-| f | **Politur — Helfer-Durchzug** | jede Sektion, die das `evaluate`-Boilerplate noch inline trägt, durch `safeEvaluate` routen; `### `-Header-Stil vereinheitlichen; Orchestrator schlank ziehen; Rest-Grenze dokumentieren | ~1 Session | niedrig | offen |
+| f | **Politur — Helfer-Durchzug** | 196 Inline-`page.evaluate(...).catch(...)`-Stellen durch `safeEvaluate(page, ...)` ersetzen (4 Catch-Varianten + async-Variante unifiziert); Rest-Grenze dokumentieren | ~1 Session | niedrig | ✅ V9.52-f (23.05.2026, `safeEvaluate`-Vertrag: null-on-catch, rückwärts-kompatibel; Skript `/tmp/rollout-safeeval-f.cjs` State-Machine mit Indent-Matching; elf Baseline-Läufe bit-identisch; Datei netto −583 Z. durch f, gesamt −2020 Z. seit V9.51) |
 
 **Sub-Welle a — das Gerüst.** Der Orchestrator wird: Setup (Server-Start, Browser-Launch,
 Log-Sammlung — Zeile 1-114, bleibt unangetastet) → Report → eine geordnete Liste
@@ -175,3 +175,43 @@ Laufzeit, gleiches CI-Verhalten, gleiches `npm run playtest`-Interface.
 Code-Zeile verlangt weiter eine Test-Zeile (der bewusste Preis der Test-Disziplin,
 `code-hygiene` §5). Der Bogen heilt die STRUKTUR der Test-Datei, nicht ihre Größe; sie
 wächst weiter, aber in benannten Funktionen statt in einem Monolithen.
+
+---
+
+## 7. Akzeptanz-Bericht (Stand V9.52-f, 23.05.2026 — Bogen geschlossen)
+
+**Gemessen** (`wc -l` + Median-Indent + Funktions-Grössen):
+
+| Akzeptanz-Kriterium (§6) | Plan-Soll | Ist-Wert | Status |
+|---|---|---|---|
+| Orchestrator-IIFE schlank | 150-250 Z. | 207 Z. | ✅ |
+| Benannte Band-Funktionen | ~25-35 | 41 | ⚠️ leicht drüber |
+| Helfer (`safeEvaluate` + a-Helfer) | 2-3 | 5 (`safeEvaluate` + `gatherInitialFinalState` + `checkInitialState` + `checkRing1Grok` + `checkRing2Dsl`) | ⚠️ leicht drüber |
+| Keine Funktion über 1200 Z. | hart | 40/41 unter 1200; eine darüber: `checkBandWelle6DSoul` 1396 Z. | ⚠️ ein Ausreißer |
+| Median-Einrückung | 4-8 | 8 (von 20) | ✅ |
+| Invarianten bit-identisch | hart | 11 Baseline-Läufe, 3060 Invarianten, gleicher Pass/Fail-Satz | ✅ |
+| Laufzeit + CI + `npm run playtest`-Interface unverändert | hart | unverändert | ✅ |
+
+**Über-Soll-Begründung**: 41 statt 25-35 Band-Funktionen, weil die thematische Kohärenz an manchen Stellen 2-3 kleinere Bänder statt einem grösseren Band-Funktions-Verbund nahelegte (z.B. `checkBandRing5Soul` 432 L für nur 2 Sektionen — Ring 5 + Third-Person sind eine Welt, gehören zusammen, aber 432 L ist zu klein zum Aufkleben woanders). Der eine Ausreißer >1200 Z. (`checkBandWelle6DSoul` 1396 Z.) wurde bewusst NICHT gespalten: die sieben 6.D-Etappen (Etappe 1, 1.6, 1.7, 2, 3a, 3b + Reflexions-Fixes) sind eine eng verwobene Soul/Stats/Equipment/Aura/Boosts/Tod/Konsumables-Familie, das Splitten würde dieselbe Stat-Pipeline über mehrere Funktionen verteilen — Kohärenz-Bruch ohne Komplexitäts-Gewinn (V9.44-Lehre: nicht jeder mittlere Block braucht eigene Funktion).
+
+**Strukturell verbleibender Inline-Code** (in benannten Band-Funktionen, NICHT im else-Block):
+
+- **5 single-line `await page.evaluate(() => {...});`-Sites** ohne Catch (Voxel P1 `r42a/r42bSkirt/r42bIslandAmp/r42bDsl/r42c` und vier weitere Test-Sub-Probes). Intentional loud-failure-Semantik — bei evaluate-Wurf soll der Test crashen, nicht still null returnen. NICHT durch `safeEvaluate` ersetzt.
+- **3 innere Promise-Catches in evaluate-Bodies** (`Promise.resolve().then(...).catch(...)` für async-await innerhalb evaluate, und ein `fetch().catch(() => false)` für eine Ressourcen-Existenz-Prüfung). Legitime innere Logik, nicht das outer evaluate-catch-Boilerplate. NICHT durch `safeEvaluate` ersetzt.
+- **1 `page.$eval(...).catch(() => "?")` für den FPS-Text** (andere puppeteer-API, kein page.evaluate). NICHT durch `safeEvaluate` ersetzt.
+- **1 IIFE-Exit-Catch** `()(...).catch((err) => {...})`. Top-level error-Handler, andere Bedeutung.
+
+Diese ~10 Stellen sind als bewusste Ausnahmen dokumentiert — kein TODO, keine Schuld.
+
+**Was BLEIBT** (Bogen-Scope-Grenze, nicht Bogen-Versäumnis):
+
+- Die `playtest.cjs`↔`anazhRealm.js`-Ko-Evolution: jede neue Feature-Welle bringt weiter neue `checkX(ctx)`-Aufrufe + neue Band-Funktionen. Der Bogen heilte die Struktur, nicht die Wachstums-Geschwindigkeit. Zukünftige Wellen sollten neue Tests in eine PASSENDE bestehende Band-Funktion einreihen, nicht eine neue Band-Funktion pro neue Welle anlegen (sonst wächst das Helfer-Knäuel zur Halde).
+- Die Inhalts-Politur der Tests selbst (flaky Tests heilen, Drift-Bänder reduzieren) ist NICHT Teil des Bogen-Auftrags und steht als separater offener Punkt (1 bekannter flaky `Kreatur-Sync: _p2pBroadcastCreatures`, 3 perf-ms-Drifts in `Voxel V9.47/V9.43-b/V9.43-d`, Worldgen-Counts-Drift in `Welle 6.G P1.5/P2`).
+
+**Bogen-Datei-Bilanz** (gesamt seit V9.51):
+
+- Zeilen: 31 574 → 29 554 (−2020, −6.4%)
+- Median-Einrückung: 20 → 8 (−60% visueller Tax)
+- Funktions-Granularität: 1 → 47 (Orchestrator + safeEvaluate + 4 a-Helfer + 41 Band-Funktionen)
+- Inline-Boilerplate: 196 evaluate-catch-Wiederholungen → 0 (alle durch `safeEvaluate`)
+- Verhalten: 100% bit-identisch (11 Baseline-Läufe, 3060 Invarianten, modulo dokumentierten Drift-Satz)
