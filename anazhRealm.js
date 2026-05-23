@@ -11070,18 +11070,29 @@ class AnazhRealm {
     static get TARN() {
         return Object.freeze({
             spacing: 200, // m — Kantenlänge einer Kandidaten-Zelle (jittered grid)
-            reliefPercentile: 0.58, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
-            // ~42 % des Relief DIESER Welt (findet das Hochland auch in einer
-            // flachen Welt; ein fixer Wert verfehlte mal alles, mal zu viel).
-            minReliefAbs: 14, // m — absoluter Boden über terrainBaseHeight
-            maxSlope: 0.25, // Hang-Grenze — verwirft nur Cliffs. Die Mulden-Tiefe
-            // skaliert ADAPTIV mit dem Hang (siehe `_hydroSeedTarns`) → das
-            // Becken schliesst sicher mit ~8 m Wasser-Tiefe, egal wie steil.
-            placeThreshold: 0.05, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
+            reliefPercentile: 0.55, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
+            // ~45 % des Relief DIESER Welt (V9.58-c von 0.58 gesenkt, weil die
+            // Tektonik die Hochlands-Verteilung verbreitete — die alte 42%-
+            // Grenze schloss jetzt zu viele echte Hochlands-Spots aus).
+            minReliefAbs: 30, // m — absoluter Boden über terrainBaseHeight (V9.58-c
+            // von 14 auf 30 angehoben: in der V9.58-b-Welt mit max ~120 m sind
+            // 14 m kein Hochland mehr, sondern Mittelland).
+            maxSlope: 0.35, // Hang-Grenze (V9.58-c von 0.25 auf 0.35 erweitert,
+            // weil die V9.58-b-Berge steiler sind; die Mulden-Tiefe skaliert
+            // adaptiv mit dem Hang, das Becken schliesst trotzdem sicher).
+            placeThreshold: -0.1, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
+            // (V9.58-c von 0.05 auf −0.1 gesenkt — die alte Schwelle nahm nur
+            // ~47 % der Spots an, in einer Welt mit weiteren Hochlandsregionen
+            // wollen wir grosszügiger sein; ~60 % der Spots passen).
             radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
             radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
-            depthMin: 22, // m — Mulden-Tiefe (UNTERgrenze für sanfte Spots).
-            depthMax: 42, // m — OBERgrenze (steile Spots brauchen tiefere Mulden).
+            depthMin: 28, // m — Mulden-Tiefe (V9.58-c von 22 auf 28 angehoben:
+            // tiefere Mulden für die V9.58-b-Welt, wo das Hochland 60-120 m
+            // hoch sitzt → Wasser-Spiegel klar weit über dem Meeresspiegel.
+            // Nicht weiter erhöht, sonst klemmt `maxAllowed = surf − waterRef
+            // − 1` zu viele Hochlands-Spots unter surf=33 m raus — V9.58-c-
+            // Diagnose-Lehre: aggressiver depthMin frisst Tarns auf).
+            depthMax: 55, // m — OBERgrenze (V9.58-c von 42 auf 55 entsprechend).
         });
     }
 
@@ -13997,26 +14008,42 @@ class AnazhRealm {
         const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
         const wx = x + warpX;
         const wz = z + warpZ;
+        // (0) tektonische Oktave — die SEHR niederfrequente Grossstruktur
+        // (V9.58-a). λ~7150 m, ±35 m. Hebt ganze Regionen (mehrere km breit)
+        // zu Hochland, in denen die ridged-Oktave dann ihre Gipfel setzt.
+        // Heilt den V9.57-Diagnose-Befund: Gebirge waren bisher räumlich
+        // punktuell, nicht "über weite phasen aufbauend".
+        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
         // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
         // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
         const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
-        // (b) Erosions-Feld [0,1] — regional (λ~1850 m); `mtn` ist die
-        // Gebirgs-Neigung (1 = alpin), quadriert → Tiefland ist der Normal-
-        // fall, Hochgebirge die Ausnahme. Es moduliert die ridged-Amplitude.
-        const ero = n.noise2D(x * 0.0034, z * 0.0034) * 0.5 + 0.5;
+        // (b) Erosions-Feld [0,1] — REGIONAL (V9.58-a: λ von ~1850 m auf
+        // ~4500 m gestreckt → ganze Berg-Regionen statt einzelner Spots);
+        // `mtn` ist die Gebirgs-Neigung (1 = alpin), quadriert → Tiefland
+        // ist der Normalfall, Hochgebirge die Ausnahme. Es moduliert die
+        // ridged-Amplitude.
+        const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        const ridgeAmp = 9 + 33 * mtn;
-        // (2) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
+        // (V9.58-b) Berg-Amplituden vergrössert: 9+33 → 12+55. Erst durch die
+        // V9.58-a-Tektonik + die λ~4500-m-mtn-Streckung sitzen mtn≈1-Spots in
+        // weiten Bergregionen — daher lohnt sich die höhere Amplitude.
+        const ridgeAmp = 12 + 55 * mtn;
+        // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
         const rN = n.noise2D(wx * 0.013, wz * 0.013);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
+        // (2b) zweite ridged-Oktave (V9.58-b) — λ/2, ½ Amplitude. Multifraktal-
+        // Selbstähnlichkeit echter Gebirge: grosse Kämme tragen kleinere
+        // Sekundär-Kämme, die das Profil körniger machen.
+        const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
+        const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        const withoutTarn = base + cont + ranges + detail + this._erosionDeltaAt(x, z);
+        const withoutTarn = base + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
         // V9.51 — `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange
         // `state.tarns` leer — `_hydroSeedTarns` sampelt dann tarn-frei).
         // KRITISCH: der Bowl-Boden wird auf waterLevel+1 geklemmt, sonst
@@ -14607,6 +14634,9 @@ class AnazhRealm {
         // Makro-Oberfläche bis ~base+80). V9.47: die hydraulische Erosion
         // carvt Täler bis ~16 m tiefer (`EROSION.maxDelta`) → dimY 96 → 100,
         // `floorDrop` 66 → 74 → Band base-74..base+106, Marge unten + oben ~14.
+        // V9.58-b: Tektonik + 2. ridged-Oktave heben Surface-Max auf ~base+120,
+        // Tektonik senkt das Tiefland auf ~base-55 → dimY 100 → 124, floorDrop
+        // 74 → 90 → Band base-90..base+133, Marge oben ~13 / unten ~10.
         // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
         // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
         // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
@@ -14615,7 +14645,7 @@ class AnazhRealm {
         // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
         // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 100, floorDrop: 74 };
+        return { dim, step, span: dim * step, ringRadius, dimY: 124, floorDrop: 90 };
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
