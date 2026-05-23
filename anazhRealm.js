@@ -31159,7 +31159,18 @@ class AnazhRealm {
         const bp = this.state.blueprints[ws.selectedBlueprint];
         panel.innerHTML = "";
         if (!bp) return;
-        // Rolle-Chip — mit emergent-vs-manuell-Indikator + Provenienz
+        this._workshopAppendRoleRow(panel, bp);
+        this._workshopAppendBuildCostRow(panel, bp);
+        if (!bp.builtIn) this._workshopAppendDomainAnalysis(panel, bp);
+        this._workshopAppendTagsRow(panel, bp);
+        this._workshopAppendQualityRow(panel, bp);
+        if (!bp.builtIn) this._workshopAppendSignatureRow(panel, bp, ws);
+    }
+
+    // Rolle-Chip + Affordances. Emergent-vs-manuell-Indikator mit erweiterten
+    // Tooltips (V8.17), Rollen-Farbe als Glow (V8.39), Reset-Button bei
+    // manueller Rolle. Affordances als ✦-Chips.
+    _workshopAppendRoleRow(panel, bp) {
         const role = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
         const roleLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
         const roleRow = document.createElement("div");
@@ -31171,16 +31182,11 @@ class AnazhRealm {
         const roleChip = document.createElement("span");
         roleChip.className = "role-chip";
         roleChip.textContent = roleLabel;
-        // V8.39 — Farb-Sprache: der Rollen-Chip leuchtet in der Rollen-Farbe.
-        // Ein Blick sagt, was der Bauplan IST.
-        {
-            const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
-            if (roleColor) {
-                roleChip.style.borderColor = roleColor;
-                roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
-            }
+        const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
+        if (roleColor) {
+            roleChip.style.borderColor = roleColor;
+            roleChip.style.boxShadow = `0 0 6px ${roleColor}`;
         }
-        // V8.17 — erweiterte Tooltips erklären emergent vs. manuell.
         if (bp.roleManual) {
             roleChip.classList.add("role-manual");
             roleChip.title =
@@ -31196,7 +31202,6 @@ class AnazhRealm {
                 "3) Material: lebendig+weiche Substanz → Nahrung. Sonst: Bauwerk.";
         }
         roleRow.appendChild(roleChip);
-        // V8.17 — wenn manuell, biete einen Reset-Button auf emergent.
         if (bp.roleManual && !bp.builtIn) {
             const resetBtn = document.createElement("button");
             resetBtn.type = "button";
@@ -31211,7 +31216,6 @@ class AnazhRealm {
             });
             roleRow.appendChild(resetBtn);
         }
-        // Affordances
         const aff = this.computeBlueprintAffordances(bp) || {};
         for (const key of Object.keys(aff)) {
             const chip = document.createElement("span");
@@ -31220,255 +31224,251 @@ class AnazhRealm {
             roleRow.appendChild(chip);
         }
         panel.appendChild(roleRow);
-        // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel (Schöpfer-Browser-
-        // Test: „Bau-Material nicht sichtbar"). computeBuildCost ist die EINE
-        // Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
-        // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
-        // bleibt aber informativ (sie zeigt, was die Substanz wiegt). Gilt
-        // für alle Baupläne (auch built-in) — die Kosten sind intrinsisch.
+    }
+
+    // V8.37 — Bau-Kosten sichtbar im Werkstatt-Panel. computeBuildCost ist
+    // die EINE Quelle — dieselbe Volumen-Formel wie harvestArchitecture. Im
+    // pfad-Modus echte Kosten; frieden/schöpfer bauen frei, die Anzeige
+    // bleibt informativ. Gilt für alle Baupläne (auch built-in).
+    _workshopAppendBuildCostRow(panel, bp) {
         const buildCost = this.computeBuildCost(bp.name);
         const costMats = Object.keys(buildCost);
-        if (costMats.length > 0) {
-            const costRow = document.createElement("div");
-            costRow.className = "stat-row";
-            const costLab = document.createElement("span");
-            costLab.className = "stat-label";
-            costLab.textContent = "Bau-Kosten";
-            costRow.appendChild(costLab);
-            const costText = document.createElement("span");
-            costText.className = "workshop-cost-text";
-            costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
-            costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
-            costRow.appendChild(costText);
-            panel.appendChild(costRow);
-        }
-        // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar:
-        // wie entsteht die Rolle? wie wächst sie? welche Synergie wirkt?
-        //
-        // Drei Schichten:
-        //  (a) Domain-Verteilung als Bar-Diagramm — welche Werkzeug-Domain
-        //      hat wie viele Op-Anwendungen, wer dominiert, wer könnte mit
-        //      weiterer Anwendung übernehmen.
-        //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags
-        //      → Rolle, kompakter Inline-Text damit der Schöpfer den Weg
-        //      vom Bauteil zur Identität sieht.
-        //  (c) Wachstumshinweis — bei leerer Chain: „wende ein Werkzeug an";
-        //      bei aktiver Chain: „nächste Anwendung könnte zu X führen";
-        //      bei bp.roleManual: „Manuell gesetzt, emergent wäre Y".
-        if (!bp.builtIn) {
-            const domCounts = this.computeBlueprintDomainCounts(bp);
-            const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
-            const dominantDomain = this.computeBlueprintDomain(bp);
-            const emergentRole = this.computeBlueprintRole(bp);
-            const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+        if (costMats.length === 0) return;
+        const costRow = document.createElement("div");
+        costRow.className = "stat-row";
+        const costLab = document.createElement("span");
+        costLab.className = "stat-label";
+        costLab.textContent = "Bau-Kosten";
+        costRow.appendChild(costLab);
+        const costText = document.createElement("span");
+        costText.className = "workshop-cost-text";
+        costText.textContent = costMats.map((m) => `${buildCost[m]}× ${m}`).join(" · ");
+        costText.title = "Materialien, die der Bau verbraucht (im pfad-Modus; frieden/schöpfer bauen frei).";
+        costRow.appendChild(costText);
+        panel.appendChild(costRow);
+    }
 
-            // (a) Domain-Verteilung
-            if (totalOps > 0) {
-                const domRow = document.createElement("div");
-                domRow.className = "stat-row workshop-domain-row";
-                const domLab = document.createElement("span");
-                domLab.className = "stat-label";
-                domLab.textContent = "Domains";
-                domRow.appendChild(domLab);
-                const domWrap = document.createElement("div");
-                domWrap.className = "workshop-domain-bars";
-                for (const dom of AnazhRealm.TOOL_DOMAINS) {
-                    const c = domCounts[dom] || 0;
-                    if (c === 0) continue;
-                    const ratio = c / totalOps;
-                    const bar = document.createElement("div");
-                    bar.className = "workshop-domain-bar";
-                    if (dom === dominantDomain) bar.classList.add("dominant");
-                    bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
-                    bar.textContent = `${dom} ×${c}`;
-                    bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
-                    domWrap.appendChild(bar);
-                }
-                domRow.appendChild(domWrap);
-                panel.appendChild(domRow);
+    // Welle 6.X.4 V8.16 Punkt 18 — Wachstumskonzept sichtbar: wie entsteht
+    // die Rolle? wie wächst sie? welche Synergie wirkt? Drei Schichten:
+    //  (a) Domain-Verteilung als Bar-Diagramm — wer dominiert, wer könnte
+    //      mit weiterer Anwendung übernehmen.
+    //  (b) Synergie-Pfeil — Form × Material × Domain → Compound-Tags → Rolle.
+    //  (c) Wachstumshinweis — leere Chain / aktive Chain / bp.roleManual.
+    _workshopAppendDomainAnalysis(panel, bp) {
+        const domCounts = this.computeBlueprintDomainCounts(bp);
+        const totalOps = Object.values(domCounts).reduce((a, b) => a + b, 0);
+        const dominantDomain = this.computeBlueprintDomain(bp);
+        const emergentRole = this.computeBlueprintRole(bp);
+        const emergentLabel = AnazhRealm.BLUEPRINT_ROLE_LABELS[emergentRole] || emergentRole;
+
+        // (a) Domain-Verteilung
+        if (totalOps > 0) {
+            const domRow = document.createElement("div");
+            domRow.className = "stat-row workshop-domain-row";
+            const domLab = document.createElement("span");
+            domLab.className = "stat-label";
+            domLab.textContent = "Domains";
+            domRow.appendChild(domLab);
+            const domWrap = document.createElement("div");
+            domWrap.className = "workshop-domain-bars";
+            for (const dom of AnazhRealm.TOOL_DOMAINS) {
+                const c = domCounts[dom] || 0;
+                if (c === 0) continue;
+                const ratio = c / totalOps;
+                const bar = document.createElement("div");
+                bar.className = "workshop-domain-bar";
+                if (dom === dominantDomain) bar.classList.add("dominant");
+                bar.style.width = `${Math.max(8, Math.round(ratio * 100))}%`;
+                bar.textContent = `${dom} ×${c}`;
+                bar.title = `${dom}: ${c} Ops · ${Math.round(ratio * 100)}%`;
+                domWrap.appendChild(bar);
             }
+            domRow.appendChild(domWrap);
+            panel.appendChild(domRow);
+        }
 
-            // (b) Synergie-Pfeil (kompakt)
-            const synRow = document.createElement("div");
-            synRow.className = "stat-row workshop-synergy-row";
-            const synLab = document.createElement("span");
-            synLab.className = "stat-label";
-            synLab.textContent = "Synergie";
-            synRow.appendChild(synLab);
-            const synText = document.createElement("span");
-            synText.className = "workshop-synergy-text";
-            synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
-            synRow.appendChild(synText);
-            panel.appendChild(synRow);
+        // (b) Synergie-Pfeil (kompakt)
+        const synRow = document.createElement("div");
+        synRow.className = "stat-row workshop-synergy-row";
+        const synLab = document.createElement("span");
+        synLab.className = "stat-label";
+        synLab.textContent = "Synergie";
+        synRow.appendChild(synLab);
+        const synText = document.createElement("span");
+        synText.className = "workshop-synergy-text";
+        synText.textContent = "Körper-Symmetrie · Werkzeug-Domain · lebendige Substanz → Rolle";
+        synRow.appendChild(synText);
+        panel.appendChild(synRow);
 
-            // (c) Wachstumshinweis
-            const hintRow = document.createElement("div");
-            hintRow.className = "stat-row workshop-growth-row";
-            const hintLab = document.createElement("span");
-            hintLab.className = "stat-label";
-            hintLab.textContent = "Wachstum";
-            hintRow.appendChild(hintLab);
-            const hintText = document.createElement("span");
-            hintText.className = "workshop-growth-text";
-            if (totalOps === 0) {
-                // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle dennoch
-                // aus der intrinsischen Substanz emergieren (Körper-Form →
-                // Seele, lebendig+weich → Nahrung).
-                if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
-                    hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
-                } else {
-                    hintText.textContent =
-                        "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
-                }
-            } else if (bp.roleManual) {
-                hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
-                hintText.classList.add("manual-override");
+        // (c) Wachstumshinweis
+        const hintRow = document.createElement("div");
+        hintRow.className = "stat-row workshop-growth-row";
+        const hintLab = document.createElement("span");
+        hintLab.className = "stat-label";
+        hintLab.textContent = "Wachstum";
+        hintRow.appendChild(hintLab);
+        const hintText = document.createElement("span");
+        hintText.className = "workshop-growth-text";
+        if (totalOps === 0) {
+            // Welle 11 ext. — ohne Werkzeug-Ops kann die Rolle aus der
+            // intrinsischen Substanz emergieren (Körper-Form → Seele,
+            // lebendig+weich → Nahrung).
+            if (emergentRole !== AnazhRealm.DEFAULT_BLUEPRINT_ROLE) {
+                hintText.textContent = `Noch keine Werkzeug-Anwendung — die Rolle „${emergentLabel}" emergiert direkt aus der Substanz (Form/Material).`;
             } else {
-                const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
-                    (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
-                )[0];
-                if (nextDom) {
-                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
-                } else {
-                    hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
-                }
+                hintText.textContent =
+                    "Noch keine Werkzeug-Anwendung. Default: Bauwerk. Wende ein Werkzeug an, forme einen symmetrischen Körper, oder nutze lebendige Substanz — die Rolle emergiert.";
             }
-            hintRow.appendChild(hintText);
-            panel.appendChild(hintRow);
+        } else if (bp.roleManual) {
+            hintText.textContent = `Manuell gesetzt. Emergent wäre „${emergentLabel}" aus Domain „${dominantDomain || "—"}".`;
+            hintText.classList.add("manual-override");
+        } else {
+            const nextDom = AnazhRealm.TOOL_DOMAINS.filter(
+                (d) => d !== dominantDomain && (domCounts[d] || 0) >= (domCounts[dominantDomain] || 0) - 1
+            )[0];
+            if (nextDom) {
+                hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit). Eine weitere „${nextDom}"-Anwendung könnte das verschieben.`;
+            } else {
+                hintText.textContent = `Rolle aus „${dominantDomain}" (Mehrheit, stabil). Weitere Anwendungen vertiefen.`;
+            }
         }
-        // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
-        // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
-        // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS (mild/strong/
-        // signature) damit die Sterne mit den existing Welt-Effekt-Gates
-        // konsistent sind.
+        hintRow.appendChild(hintText);
+        panel.appendChild(hintRow);
+    }
+
+    // V8.07 — Top-5 Compound-Tags mit STERN-RATING. Schöpfer-Wunsch:
+    // schnelle Erkennung „wie stark ist das?" über visuelle Sterne statt
+    // raw Zahlen. Schwellen aus WORLD_EFFECT_THRESHOLDS damit die Sterne
+    // mit den existing Welt-Effekt-Gates konsistent sind.
+    _workshopAppendTagsRow(panel, bp) {
         const tags = this.computeCompoundTags(bp) || {};
         const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
             .filter((e) => e.v > 0.1)
             .sort((a, b) => b.v - a.v)
             .slice(0, 5);
-        if (tagEntries.length > 0) {
-            const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
-            const mild = T.resonance_mild || 0.7;
-            const strong = T.resonance_strong || 1.5;
-            const signature = T.resonance_signature || 2.5;
-            const starsFor = (v) => {
-                if (v >= signature) return "★★★";
-                if (v >= strong) return "★★☆";
-                if (v >= mild) return "★☆☆";
-                return "☆☆☆";
-            };
-            const tagRow = document.createElement("div");
-            tagRow.className = "stat-row";
-            const tagLab = document.createElement("span");
-            tagLab.className = "stat-label";
-            tagLab.textContent = "Tags";
-            tagRow.appendChild(tagLab);
-            for (const e of tagEntries) {
-                const chip = document.createElement("span");
-                chip.className = "tag-chip";
-                // Stern-Klassen für Farbgebung pro Level
-                const stars = starsFor(e.v);
-                let levelClass = "lvl-0";
-                if (e.v >= signature) levelClass = "lvl-3";
-                else if (e.v >= strong) levelClass = "lvl-2";
-                else if (e.v >= mild) levelClass = "lvl-1";
-                chip.classList.add(levelClass);
-                const starEl = document.createElement("span");
-                starEl.className = "tag-stars";
-                starEl.textContent = stars;
-                const nameEl = document.createElement("span");
-                nameEl.className = "tag-name";
-                nameEl.textContent = e.k;
-                const valEl = document.createElement("span");
-                valEl.className = "tag-val";
-                valEl.textContent = e.v.toFixed(2);
-                chip.appendChild(starEl);
-                chip.appendChild(nameEl);
-                chip.appendChild(valEl);
-                tagRow.appendChild(chip);
-            }
-            panel.appendChild(tagRow);
+        if (tagEntries.length === 0) return;
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
+        const mild = T.resonance_mild || 0.7;
+        const strong = T.resonance_strong || 1.5;
+        const signature = T.resonance_signature || 2.5;
+        const starsFor = (v) => {
+            if (v >= signature) return "★★★";
+            if (v >= strong) return "★★☆";
+            if (v >= mild) return "★☆☆";
+            return "☆☆☆";
+        };
+        const tagRow = document.createElement("div");
+        tagRow.className = "stat-row";
+        const tagLab = document.createElement("span");
+        tagLab.className = "stat-label";
+        tagLab.textContent = "Tags";
+        tagRow.appendChild(tagLab);
+        for (const e of tagEntries) {
+            const chip = document.createElement("span");
+            chip.className = "tag-chip";
+            const stars = starsFor(e.v);
+            let levelClass = "lvl-0";
+            if (e.v >= signature) levelClass = "lvl-3";
+            else if (e.v >= strong) levelClass = "lvl-2";
+            else if (e.v >= mild) levelClass = "lvl-1";
+            chip.classList.add(levelClass);
+            const starEl = document.createElement("span");
+            starEl.className = "tag-stars";
+            starEl.textContent = stars;
+            const nameEl = document.createElement("span");
+            nameEl.className = "tag-name";
+            nameEl.textContent = e.k;
+            const valEl = document.createElement("span");
+            valEl.className = "tag-val";
+            valEl.textContent = e.v.toFixed(2);
+            chip.appendChild(starEl);
+            chip.appendChild(nameEl);
+            chip.appendChild(valEl);
+            tagRow.appendChild(chip);
         }
-        // Compound-Präzision (falls Parts opChain haben)
+        panel.appendChild(tagRow);
+    }
+
+    // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name sagt,
+    // was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
+    _workshopAppendQualityRow(panel, bp) {
         const avgPrec = this._compoundAvgPrecision(bp);
-        if (avgPrec > 0) {
-            const precRow = document.createElement("div");
-            precRow.className = "stat-row";
-            const precLab = document.createElement("span");
-            precLab.className = "stat-label";
-            // V8.39 — „Präzision" → „Qualität": dieselbe Zahl, aber der Name
-            // sagt, was sie BEDEUTET — sie skaliert die Produkt-Wirkung.
-            precLab.textContent = "Qualität";
-            precRow.appendChild(precLab);
-            const precChip = document.createElement("span");
-            precChip.className = "tag-chip";
-            const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
-            precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
-            precChip.title =
-                "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
-                "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
-                "Feineres Werkzeug → höhere Qualität.";
-            precRow.appendChild(precChip);
-            panel.appendChild(precRow);
-        }
-        // ### W13 Phase 2 — Bauplan-Signatur ###
-        // Der Schöpfer versiegelt sein Werk mit dem Vibe-Pass. Built-ins
-        // gehören dem Projekt — sie tragen keine Signatur-Zeile (erst klonen).
-        // Der Status wird async geprüft (ed25519); ein veralteter .then-Lauf
-        // aktualisiert nur abgekoppelte Knoten, der Namens-Wächter fängt ihn.
-        if (!bp.builtIn) {
-            const sigRow = document.createElement("div");
-            sigRow.className = "stat-row workshop-sig-row";
-            const sigLab = document.createElement("span");
-            sigLab.className = "stat-label";
-            sigLab.textContent = "Signatur";
-            sigRow.appendChild(sigLab);
-            const sigStatus = document.createElement("span");
-            sigStatus.className = "workshop-sig-status";
-            sigStatus.textContent = "prüfe …";
-            sigRow.appendChild(sigStatus);
-            const sigBtn = document.createElement("button");
-            sigBtn.type = "button";
-            sigBtn.className = "workshop-sig-btn";
-            sigBtn.textContent = "Signieren";
+        if (avgPrec <= 0) return;
+        const precRow = document.createElement("div");
+        precRow.className = "stat-row";
+        const precLab = document.createElement("span");
+        precLab.className = "stat-label";
+        precLab.textContent = "Qualität";
+        precRow.appendChild(precLab);
+        const precChip = document.createElement("span");
+        precChip.className = "tag-chip";
+        const q5 = Math.max(0, Math.min(5, Math.round(avgPrec * 5)));
+        precChip.textContent = `${"★".repeat(q5)}${"☆".repeat(5 - q5)} ${avgPrec.toFixed(2)}`;
+        precChip.title =
+            "Qualität = mittlere Part-Präzision. Sie skaliert die Wirkung des Produkts: " +
+            "Rüstung/Trank wirken mit (0.5 + 0.5·Qualität) — grob ≈ halb, fein ≈ voll. " +
+            "Feineres Werkzeug → höhere Qualität.";
+        precRow.appendChild(precChip);
+        panel.appendChild(precRow);
+    }
+
+    // W13 Phase 2 — Bauplan-Signatur. Der Schöpfer versiegelt sein Werk mit
+    // dem Vibe-Pass. Built-ins gehören dem Projekt — sie tragen keine
+    // Signatur-Zeile (erst klonen). Der Status wird async geprüft (ed25519);
+    // ein veralteter .then-Lauf aktualisiert nur abgekoppelte Knoten, der
+    // Namens-Wächter `ws.selectedBlueprint !== bpName` fängt ihn.
+    _workshopAppendSignatureRow(panel, bp, ws) {
+        const sigRow = document.createElement("div");
+        sigRow.className = "stat-row workshop-sig-row";
+        const sigLab = document.createElement("span");
+        sigLab.className = "stat-label";
+        sigLab.textContent = "Signatur";
+        sigRow.appendChild(sigLab);
+        const sigStatus = document.createElement("span");
+        sigStatus.className = "workshop-sig-status";
+        sigStatus.textContent = "prüfe …";
+        sigRow.appendChild(sigStatus);
+        const sigBtn = document.createElement("button");
+        sigBtn.type = "button";
+        sigBtn.className = "workshop-sig-btn";
+        sigBtn.textContent = "Signieren";
+        sigBtn.disabled = true;
+        sigBtn.addEventListener("click", async () => {
             sigBtn.disabled = true;
-            sigBtn.addEventListener("click", async () => {
-                sigBtn.disabled = true;
-                const res = await this.signBlueprint(bp.name);
-                if (!res.ok) this.log(`Signieren fehlgeschlagen: ${res.reason}`, "ERROR");
-                this._workshopRenderStatsPanel();
-            });
-            sigRow.appendChild(sigBtn);
-            panel.appendChild(sigRow);
-            const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
-            const bpName = bp.name;
-            this.verifyBlueprintSignature(bp).then((status) => {
-                if (ws.selectedBlueprint !== bpName) return;
-                const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
-                if (status === "valid") {
-                    const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
-                    sigStatus.textContent = `✓ signiert · ${who}`;
-                    sigStatus.className = "workshop-sig-status sig-valid";
-                    sigStatus.title = "ed25519:" + bp.authorPubKey;
-                    sigBtn.textContent = "Neu signieren";
-                } else if (status === "modified") {
-                    sigStatus.textContent = "geändert seit der Signatur — neu signieren";
-                    sigStatus.className = "workshop-sig-status sig-modified";
-                    sigBtn.textContent = "Neu signieren";
-                } else if (status === "forged") {
-                    sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
-                    sigStatus.className = "workshop-sig-status sig-forged";
-                    sigStatus.title = "ed25519:" + bp.authorPubKey;
-                    sigBtn.textContent = "Neu signieren";
-                } else {
-                    sigStatus.textContent = "nicht signiert";
-                    sigStatus.className = "workshop-sig-status sig-unsigned";
-                    sigBtn.textContent = "Signieren";
-                }
-                sigBtn.disabled = !vpReady;
-                if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
-            });
-        }
+            const res = await this.signBlueprint(bp.name);
+            if (!res.ok) this.log(`Signieren fehlgeschlagen: ${res.reason}`, "ERROR");
+            this._workshopRenderStatsPanel();
+        });
+        sigRow.appendChild(sigBtn);
+        panel.appendChild(sigRow);
+        const vpReady = !!(this.state.vibePass && this.state.vibePass.ready);
+        const bpName = bp.name;
+        this.verifyBlueprintSignature(bp).then((status) => {
+            if (ws.selectedBlueprint !== bpName) return;
+            const myKey = this.state.vibePass && this.state.vibePass.publicKeyHex;
+            if (status === "valid") {
+                const who = bp.authorPubKey === myKey ? "dein Vibe-Pass" : this._vibeFingerprint(bp.authorPubKey);
+                sigStatus.textContent = `✓ signiert · ${who}`;
+                sigStatus.className = "workshop-sig-status sig-valid";
+                sigStatus.title = "ed25519:" + bp.authorPubKey;
+                sigBtn.textContent = "Neu signieren";
+            } else if (status === "modified") {
+                sigStatus.textContent = "geändert seit der Signatur — neu signieren";
+                sigStatus.className = "workshop-sig-status sig-modified";
+                sigBtn.textContent = "Neu signieren";
+            } else if (status === "forged") {
+                sigStatus.textContent = `⚠ ungültig — passt nicht zu ${this._vibeFingerprint(bp.authorPubKey)}`;
+                sigStatus.className = "workshop-sig-status sig-forged";
+                sigStatus.title = "ed25519:" + bp.authorPubKey;
+                sigBtn.textContent = "Neu signieren";
+            } else {
+                sigStatus.textContent = "nicht signiert";
+                sigStatus.className = "workshop-sig-status sig-unsigned";
+                sigBtn.textContent = "Signieren";
+            }
+            sigBtn.disabled = !vpReady;
+            if (!vpReady) sigBtn.title = "Vibe-Pass nicht bereit — siehe Spieler-Drawer.";
+        });
     }
 
     // V8.05 — Editor-Toggle. Persistent in localStorage (Spieler will

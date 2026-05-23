@@ -2,9 +2,11 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V9.56-c (23.05.2026) — **Code-Hygiene-Bogen 2 Sub-Welle c**. `renderLibraryUI` 241 → 9 Zeilen Orchestrator + `_libraryBuildCard` 25 Z. (Karten-Komposition) + 4 Sub-Helfer entlang der visuellen Sektionen: `_libraryBuildCardHead` 47 Z. (Name + Stufen-/Herkunfts-/Multiplayer-Marken), `_libraryBuildDslWrap` 18 Z. (DSL-Chips), `_libraryAppendActionsAndStatus` 56 Z. (drei Zustände: needsScene/unreachable/normal), `_libraryAppendSigRow` 71 Z. (Signatur-Status + Signieren/Teilen, async `refreshSig`-Closure). Median 47 Z. Datei +9 Z. Verhaltensneutral: DOM-Reihenfolge + Async-Reihenfolge bit-identisch, Playtest grün vor + nach. **Was BLEIBT im Bogen**: ein UI-Builder (`_workshopRenderStatsPanel` 319), dann sieben Kontrollfluss-Funktionen.
+**Stand**: V9.56-d (23.05.2026) — **die UI-Builder-Etappe des Hygiene-Bogens 2 ist ABGESCHLOSSEN**. Vier UI-Builder geschnitten: V9.56-a `renderPlayerEquipUI` 213 → 19, V9.56-b `renderSoulEditorUI` 232 → 13, V9.56-c `renderLibraryUI` 241 → 9, V9.56-d `_workshopRenderStatsPanel` 319 → 15. **Bogen-Statistik**: 1005 Zeilen → 56 Orchestrator-Summe, 21 neue benannte Helfer, Datei netto +37 Z. (37 031 → 37 068). V9.56-d zerlegte den letzten + größten UI-Builder in sechs Helfer entlang der visuellen Sektionen (Rolle 55, Bau-Kosten 17, Domain-Analyse 81 mit a/b/c-Sub-Sektionen, Tags 48, Qualität 20, Signatur 53); Datei **−2 Z. netto** durch Kommentar-Konsolidierung. Verhaltensneutral, Playtest grün vor + nach. **Nächste Etappe**: sieben Kontrollfluss-Funktionen (`fuseWorlds`, `_tickCreatureTaskDirection` 267, `_voxelChunkGeometry` 269, `processChatCommand` 285, `_applyDayNightToScene` 305, `generateTerrainWithParameters` 346, `loadState` 380), strukturell anders (Schleifen + State-Mutation + Side-Effects) — die Disziplin verschärft sich.
 
-**Davor — V9.56-b**: `renderSoulEditorUI` 232 → 13 Z. Orchestrator + vier Helfer entlang der drei Docstring-Sektionen + per-Part-Zeile; median 48 Z.
+**Davor — V9.56-c**: `renderLibraryUI` 241 → 9 Z. + `_libraryBuildCard` 25 Z. (zweistufige Komposition für eine Schleife) + 4 Sub-Helfer (Head 47, DSL 18, Actions 56, SigRow 71). Median 47 Z.
+
+**Davor — V9.56-b**: `renderSoulEditorUI` 232 → 13 Z. + vier Helfer entlang der drei Docstring-Sektionen + per-Part-Zeile; median 48 Z.
 
 **Davor — V9.56-a der erste Schnitt im Hygiene-Bogen 2**. `renderPlayerEquipUI` 213 → 19 Zeilen Orchestrator + sieben benannte Helfer; max 59 Z., median 31 Z. Schöpfer-Wahl nach V9.55: die vertagte Struktur-Schuld wird thematisch eröffnet (V9.40-Lehre, nicht ewig vertagen).
 
