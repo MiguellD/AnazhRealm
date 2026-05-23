@@ -13250,16 +13250,85 @@ class AnazhRealm {
 
     // ### Welten-Generierung ### V7.56
     generateTerrainWithParameters(steepness, baseHeight) {
-        // ### Konstanten ###
         const WIDTH = 256;
         const DEPTH = 256;
         const CHUNK_SIZE = 32;
         const WORLD_SIZE = 300;
-        // V9.37: CHUNKS_X/CHUNKS_Z waren nur für den (jetzt toten) initialen
-        // Heightfield-Chunk-Loop nötig. Die Konstanten leben unten in
-        // chunkSize/chunkWidth/chunkDepth weiter (für `_chunkGeometry`).
 
-        // ### Alte Objekte sicher entfernen ###
+        this._worldgenCleanupOldObjects();
+
+        // Spieler-Position: first-spawn setzt auf (0,50,0), spätere Regen
+        // erhalten die aktuelle Position. wasFirstSpawn wird VOR dem Setzen
+        // von terrainEverGenerated gelesen (sowohl im Helfer als auch hier).
+        const wasFirstSpawn = !this.state.terrainEverGenerated;
+        this._worldgenInitPlayerPosition(wasFirstSpawn);
+        this.state.terrainEverGenerated = true;
+        if (wasFirstSpawn) this.grokMarkFirstSpawn();
+
+        this._worldgenComputeErosionAndTarns();
+
+        // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight bleiben
+        // null/0 in einer Voxel-Welt (voxelTerrain konstant true seit V9.35).
+        // Alle Konsumenten sind voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
+        const heightData = null;
+        const minHeight = 0;
+        const maxHeight = 0;
+
+        // ### Initiale Chunks-Setup ###
+        // V9.30/V9.37/V9.39: die alte initiale Heightfield-Chunk-Generierung +
+        // generateChunk + addTerrainPhysics + globale btHeightfieldTerrainShape
+        // sind als nachweislich tote Pfade entfernt. `chunkMap` bleibt leer
+        // (oder trägt nur Test-Chunks via `ensureChunkAt`).
+        this.state.chunkMap = new Map();
+        this.state.chunkSize = CHUNK_SIZE;
+        this.state.chunkWidth = WIDTH;
+        this.state.chunkDepth = DEPTH;
+        this.state.groundChunks = [];
+        if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
+            this.state.scaleFactor = 1.0;
+            this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
+        }
+
+        this._worldgenSpawnFloatingIslands(WORLD_SIZE);
+
+        // V9.38/V9.43-c — `state.vegetation` bleibt als Sammler-Liste
+        // (Worldgen-Vegetations-Pass + per-Chunk-Wasserfälle sind tot).
+        this.state.vegetation = [];
+
+        // ### Terrain-State ###
+        // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight sind in
+        // einer Voxel-Welt null bzw. 0; die voxel-gated Konsumenten ignorieren
+        // sie. terrainSteepness moduliert die Voxel-Surface, terrainBaseHeight
+        // ist die Voxel-Anker-Höhe (Killplane-base, getTerrainHeightAt-Fallback).
+        this.state.groundHeightField = heightData;
+        this.state.minHeight = minHeight;
+        this.state.maxHeight = maxHeight;
+        this.state.terrainSteepness = steepness;
+        this.state.terrainBaseHeight = baseHeight;
+
+        this._worldgenBuildVoxelChunkCache();
+        this._worldgenComputeAndBuildHydrosphere();
+
+        this.spawnCreatures();
+
+        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
+        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf
+        // (sieht von erhöhter Warte die Welt, fällt nicht blind in ein Tal).
+        if (wasFirstSpawn) {
+            try {
+                this._ensureGenesisPlatform();
+            } catch (e) {
+                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
+            }
+        }
+    }
+
+    // Alle alten Welt-Objekte abräumen: groundMesh + Heightfield-Body,
+    // floatingIslands (Static-Collision), ufos, creatures (Ammo-Bodies +
+    // creatureEmotions), wallBoxes (Geometrie+Material+Shape+MotionState
+    // disposen — V8.26-VRAM/Heap-Leak-Heilung), vegetation (Static-Collision),
+    // Hydrosphären-Meshes (Fluss/See/Wasserfall — V9.43-c).
+    _worldgenCleanupOldObjects() {
         if (this.state.groundMesh) {
             this.state.scene.remove(this.state.groundMesh);
             const body = this.state.groundMesh.userData.physicsBody;
@@ -13272,15 +13341,10 @@ class AnazhRealm {
             this.state.groundHeightField = null;
             this.log("Alter Boden entfernt");
         }
-        // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Chunks-Cleanup
-        // (`groundChunks.forEach _disposeChunkPhysics`, `chunkMap.clear()`)
-        // ist als toter Pfad entfernt. Voxel ist permanent (V9.35), keine
-        // Heightfield-Chunks werden mehr gebaut, beide Sammlungen sind
-        // immer leer beim Welt-Regen. Die State-Felder selbst bleiben als
-        // defensive `new Map()`/`[]`-Init für audit-strict-Konsistenz.
+        // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Chunks-Cleanup ist
+        // entfernt (Voxel ist permanent seit V9.35, beide Sammlungen leer).
         if (this.state.floatingIslands) {
             this.state.floatingIslands.forEach((island) => {
-                // Welle 6.G Phase 1 — neue Kollisions-Schicht abräumen.
                 this._disposeStaticCollision(island);
                 this.state.scene.remove(island);
             });
@@ -13310,8 +13374,7 @@ class AnazhRealm {
             this.state.wallBoxes.forEach((wall) => {
                 this.state.scene.remove(wall);
                 // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
-                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial im
-                // VRAM. Vorher: nur scene.remove + physics-body destroy.
+                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial.
                 if (wall.geometry) wall.geometry.dispose();
                 if (wall.material) {
                     if (Array.isArray(wall.material)) wall.material.forEach((m) => m && m.dispose());
@@ -13323,10 +13386,7 @@ class AnazhRealm {
                     Ammo.destroy(body);
                     this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== wall);
                 }
-                // V8.26 Polish §6.4 — Ammo-Shape + MotionState wurden bei
-                // addWallCollisions in userData gespeichert. Sie sind nach
-                // Body-Destroy unreferenziert und müssen separat aus dem
-                // WASM-Heap geräumt werden, sonst leakt jeder Welt-Regen.
+                // V8.26 Polish §6.4 — Shape + MotionState aus dem WASM-Heap.
                 if (wall.userData.physicsShape) Ammo.destroy(wall.userData.physicsShape);
                 if (wall.userData.physicsMotionState) Ammo.destroy(wall.userData.physicsMotionState);
             });
@@ -13335,132 +13395,72 @@ class AnazhRealm {
         }
         if (this.state.vegetation) {
             this.state.vegetation.forEach((veg) => {
-                // Welle 6.G Phase 1 — Baum-Stamm-Kollision freigeben.
                 this._disposeStaticCollision(veg);
                 this.state.scene.remove(veg);
             });
             this.state.vegetation = [];
             this.log("Alte Vegetation entfernt");
         }
-        // V9.43-c — die gerenderten Hydrosphären-Meshes (Fluss-Ribbons, See-
-        // Planes, Wasserfall-Planes) abräumen. Der V9.43-a-per-Chunk-Wasser-
-        // fall-Spawner ist abgelöst — alle Wasser-Geometrien des Drainage-
-        // Netzes leben jetzt in `state.hydrosphereMeshes`.
+        // V9.43-c — Hydrosphären-Meshes (Fluss-Ribbons, See-Planes, Wasserfall-
+        // Planes) abräumen. Der V9.43-a-per-Chunk-Wasserfall-Spawner ist abgelöst.
         this._disposeHydrosphereMeshes();
+    }
 
-        // ### Spieler-Position ###
-        // Beim allerersten Worldgen wird der Spieler in die Welt-Mitte gesetzt.
-        // Bei späteren Regenerationen (z. B. Nexus terrainFlatten, manuelles
-        // "Spawne neue Welt") bleibt die aktuelle Position erhalten – sonst
-        // würde jede Selbstoptimierung den Spieler aus der Welt teleportieren.
-        // Kill-Plane und findSurfaceAbove fangen ab, falls die neue Topographie
-        // den Spieler unter dem Boden lässt.
-        if (this.state.playerMesh) {
-            this.state.playerMesh.visible = true;
-            if (!this.state.terrainEverGenerated) {
-                this.state.playerMesh.position.set(0, 50, 0);
-                if (this.state.playerBody) {
-                    const t = this.state.tmpTransform;
-                    t.setIdentity();
-                    t.setOrigin(this.setVec(this.state.tmpVec1, 0, 50 / this.state.scaleFactor, 0));
-                    this.state.playerBody.setWorldTransform(t);
-                    this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-                }
-                this.log("Welt erstmals gespawnt: Spieler bei (0, 50, 0)");
-            } else {
-                this.log("Welt regeneriert – Spieler-Position bleibt erhalten", "DEBUG");
-            }
-        } else {
+    // Spieler-Position beim Worldgen. Beim allerersten Spawn auf (0, 50, 0)
+    // setzen (sonst würde der Spieler blind in die Welt fallen); bei späteren
+    // Regen-Aufrufen (z.B. Nexus terrainFlatten, manuelles „Spawne neue Welt")
+    // bleibt die aktuelle Position — sonst würde jede Selbstoptimierung den
+    // Spieler aus der Welt teleportieren. Kill-Plane + findSurfaceAbove fangen
+    // ab, falls die neue Topographie den Spieler unter dem Boden lässt.
+    _worldgenInitPlayerPosition(isFirstSpawn) {
+        if (!this.state.playerMesh) {
             this.log("Warnung: playerMesh nicht initialisiert – sollte in init() initialisiert sein", "ERROR");
+            return;
         }
-        const wasFirstSpawn = !this.state.terrainEverGenerated;
-        this.state.terrainEverGenerated = true;
-        if (wasFirstSpawn) this.grokMarkFirstSpawn();
+        this.state.playerMesh.visible = true;
+        if (isFirstSpawn) {
+            this.state.playerMesh.position.set(0, 50, 0);
+            if (this.state.playerBody) {
+                const t = this.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(this.setVec(this.state.tmpVec1, 0, 50 / this.state.scaleFactor, 0));
+                this.state.playerBody.setWorldTransform(t);
+                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+            }
+            this.log("Welt erstmals gespawnt: Spieler bei (0, 50, 0)");
+        } else {
+            this.log("Welt regeneriert – Spieler-Position bleibt erhalten", "DEBUG");
+        }
+    }
 
-        // ### Hydraulische Erosion ### V9.47
-        // Tröpfchen-Erosion carvt dendritische Täler + füllt Becken mit
-        // Sediment. MUSS hier laufen — VOR allem Surface-abhängigen Worldgen
-        // (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) → alle
-        // sehen das erodierte Gelände. `_terrainMacroSurfaceY` addiert das
-        // Delta. try/catch — ein Erosions-Fehler darf den Worldgen nie brechen.
+    // V9.47 — Hydraulische Tröpfchen-Erosion carvt dendritische Täler + füllt
+    // Becken mit Sediment. MUSS hier laufen — VOR allem Surface-abhängigen
+    // Worldgen (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) →
+    // alle sehen das erodierte Gelände. V9.51 — der Tarn-Pass: Bergseen als
+    // additive Hochmulden ins Erosions-Delta. try/catch — ein Erosions-Fehler
+    // darf den Worldgen nie brechen.
+    _worldgenComputeErosionAndTarns() {
         try {
             this.state.erosion = this._computeErosion();
             this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
-            // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden ins
-            // Erosions-Delta (das Priority-Flood entdeckt sie danach + füllt
-            // sie zu Seen — `docs/hydrosphere.md` §15).
             const tarns = this._hydroSeedTarns();
             this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
         } catch (e) {
             this.state.erosion = null;
             this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
         }
+    }
 
-        // ### Höhendaten ###
-        // V9.38 Phase 5c.2.c.3.b.ii — der heightData-Allokations-`else`-Pfad
-        // ist als toter Pfad entfernt. Vor V9.38: ein `if (isVoxelWorldGen2)`
-        // skippte die 256×256×3-Float32Array-Allokation + die 65k-Noise-
-        // Schleife; der `else`-Zweig baute heightData für eine Heightfield-
-        // Welt. Mit V9.35 (Voxel permanent + Zwangs-Migration) UND V9.37
-        // (Heightfield-Dispatch-Pfade gelöscht) ist `worldMeta.voxelTerrain`
-        // konstant-true → der `else`-Zweig wurde nie betreten. V9.30/V9.37-
-        // Disziplin: das offensichtlich Tote löschen. heightData bleibt null,
-        // minHeight/maxHeight bleiben 0 — alle Konsumenten sind seit V9.25
-        // Phase 5b voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
-        const heightData = null;
-        const minHeight = 0;
-        const maxHeight = 0;
-
-        // ### Initiale Chunks generieren ###
-        // Alle Chunks gehen jetzt durch ensureChunkAt — denselben Pfad wie
-        // spätere Erweiterungen. Damit haben initial UND extension Chunks
-        // exakt dasselbe Welt-Grid (chunkWorldSize=37.5, vertexStep=1.171875)
-        // und die Naht zwischen ihnen ist nicht mehr 0.15 Welt-Einheiten
-        // versetzt. V9.30: die alten generateChunk + addTerrainPhysics +
-        // globale btHeightfieldTerrainShape sind als nachweislich tote
-        // Methoden entfernt (Phase 5c.2.a der Heightfield-Code-Entfernung).
-        this.state.chunkMap = new Map();
-        this.state.chunkSize = CHUNK_SIZE;
-        this.state.chunkWidth = WIDTH;
-        this.state.chunkDepth = DEPTH;
-        // V9.39 — `state.terrainMaterial = material` ist als toter Setzer
-        // entfernt; mit `ensureChunkAt` weg gibt es keinen Heightfield-Mesh
-        // mehr, der das Material trüge. Die zwei Leser (`_refreshToonGradient`
-        // Cel-Slider-Pfad) sind defensiv (`if (terrainMaterial && uniforms)`)
-        // und no-oppen anmutig.
-        this.state.groundChunks = [];
-
-        if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
-            this.state.scaleFactor = 1.0;
-            this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
-        }
-
-        // V9.37 Phase 5c.2.c.3.b.i: die initiale Heightfield-Chunk-
-        // Generierung ist als toter Pfad entfernt — Voxel ist permanent
-        // (V9.35), die V9.27-Skip-Gate hatte den else-Pfad ohnehin nie
-        // mehr betreten. `chunkMap` bleibt leer (oder trägt nur Test-
-        // Chunks, die Playtest-Tests via `ensureChunkAt(40, 40)` direkt
-        // bauen — V9.35/V9.36-Pattern). Das `terrainMaterial`-ShaderMaterial
-        // wird unten noch gebaut + von V8.27 Cel-Stufen-Regler-Tests
-        // gelesen; eine ehrliche Bewertung steht in einer späteren Sub-
-        // Welle (5c.2.c.3.b.ii) an.
-
-        // Globales Heightfield ist nicht mehr nötig: jeder Chunk hat jetzt
-        // sein eigenes btBvhTriangleMeshShape, das die Triangles des Visual-
-        // Meshes 1:1 als Collider nutzt. Nachbarn teilen ihre Naht-Vertices
-        // exakt, daher keine Spalten mehr.
-
-        // ### Fliegende Inseln generieren ###
+    // V9.42-c — Worldgen-Inseln gehen durch die V9.42-a-Pipeline (Surface-Nets
+    // via `spawnIslandAt`, eine Mesh-Sprache, ein Pfad). Spawn-Y aus echter
+    // Voxel-Surface (in Voxel-Welten ist `maxHeight=0`, die alte
+    // `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
+    // Math.random-Reihenfolge: pro Insel 4 Calls (size, height, x, z, baseSurf-
+    // Fallback nicht random, ufoSpeed) — strikt erhalten für Determinismus.
+    _worldgenSpawnFloatingIslands(WORLD_SIZE) {
         this.state.floatingIslands = [];
         this.state.ufos = [];
-        const numIslands = 3; // Reduziere Anzahl für bessere Performance
-        // V9.42-c — Worldgen-Inseln gehen durch die V9.42-a-Pipeline
-        // (Surface-Nets via `spawnIslandAt`). Eine Mesh-Sprache, ein Pfad.
-        // Spawn-Y aus echter Voxel-Surface (in Voxel-Welten ist `maxHeight=0`,
-        // die alte `maxHeight + 20`-Formel landete Inseln IM Voxel-Terrain).
-        // `spawnIslandAt` übernimmt scene.add + floatingIslands.push + Kollision
-        // + Material (MeshToon + vertexColors — kein Terrain-Shader mehr; der
-        // passte nicht zur Surface-Nets-Geometrie und rendete "Löcher").
+        const numIslands = 3;
         for (let i = 0; i < numIslands; i++) {
             const islandSize = 14 + Math.random() * 30; // 14..44 m Durchmesser
             const islandHeight = 6 + Math.random() * 10; // 6..16 m Wölbung
@@ -13479,7 +13479,7 @@ class AnazhRealm {
             this.log(
                 `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
             );
-            // UFO als Begleiter (kosmetisch, kein Compound-Architektur — eigene Welle).
+            // UFO als Begleiter (kosmetisch, kein Compound-Architektur).
             const ufoGeometry = new THREE.ConeGeometry(1, 2, 8);
             const ufoMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
             const ufo = new THREE.Mesh(ufoGeometry, ufoMaterial);
@@ -13489,47 +13489,15 @@ class AnazhRealm {
             this.state.ufos.push(ufo);
             ufo.userData = { baseY: ufoY, speed: Math.random() * 0.5 + 0.5 };
         }
+    }
 
-        // ### Dynamische Vegetation ###
-        // V9.38 Phase 5c.2.c.3.b.ii — der 256×256-Heightfield-Wasserfall-Loop
-        // ist als toter Pfad entfernt. V9.43-c — der V9.32/V9.43-a-per-Chunk-
-        // Wasserfall-Spawner ist abgelöst: Wasser (Meer/See/Fluss/Wasserfall)
-        // kommt jetzt aus dem Hydrosphären-Netz (`_buildHydrosphereMeshes`).
-        // `state.vegetation` bleibt als Sammler-Liste.
-        this.state.vegetation = [];
-
-        // ### Terrain-State setzen ###
-        // V9.38 Phase 5c.2.c.3.b.ii — in einer Voxel-Welt sind heightData/
-        // minHeight/maxHeight per Konstruktion null bzw. 0; die voxel-gated
-        // Konsumenten (Killplane base-88, getTerrainHeightAt → _voxelSurfaceY)
-        // ignorieren sie. Der Heightfield-Log-Gate (`if (!isVoxelWorldGen2)`)
-        // ist mit dem heightData-else-Pfad und dem Wasserfall-Loop weggefallen
-        // — die Heightfield-Meldung würde mit den Zahlen 0..0 keinen Sinn
-        // mehr machen. terrainSteepness/terrainBaseHeight bleiben (steepness
-        // moduliert Voxel-Surface über _terrainHeightAtWorld, terrainBaseHeight
-        // ist die Voxel-Anker-Höhe für getTerrainHeightAt-Fallback + Killplane).
-        this.state.groundHeightField = heightData;
-        this.state.minHeight = minHeight;
-        this.state.maxHeight = maxHeight;
-        this.state.terrainSteepness = steepness;
-        this.state.terrainBaseHeight = baseHeight;
-
-        // V7.75 — Welle 6.G Phase 2: initiales Welt-Vegetation über das
-        // Welt-Affinitäts-Feld. Iteriert ALLE Chunks der initialen Welt
-        // (8×8 = 64 Chunks bei WORLD_SIZE 300, chunkWorldSize 37.5) und
-        // ruft populateChunkVegetation. Dort entscheidet das Tag-Feld
-        // welche Baupläne wo wahrscheinlich sind. Bei jedem späteren
-        // ensureChunkAt-Aufruf (neue Chunks am Spielerrand) wird derselbe
-        // Pfad genommen — alte und neue Bereiche der Welt fühlen sich
-        // konsistent an.
+    // Voxel-Populated-Chunks-Cache aus dem Altbestand der Architekturen
+    // ableiten (Reload → kein Doppel-Spawn). V9.37 — der Heightfield-
+    // Vegetations-Pass (Initial-64-Chunk-Loop) ist tot; Vegetation streamt
+    // jetzt am Voxel-Chunk-Lifecycle (`_populateVoxelChunkVegetation` in
+    // `_ensureVoxelChunkAt`, V9.24-Verdrahtung).
+    _worldgenBuildVoxelChunkCache() {
         try {
-            // V9.37 Phase 5c.2.c.3.b.i: der Heightfield-Vegetations-Pass
-            // (Initial-64-Chunk-Loop über `populateChunkVegetation`) ist
-            // als toter Pfad entfernt — Voxel ist permanent (V9.35),
-            // Vegetation streamt am Voxel-Chunk-Lifecycle
-            // (`_populateVoxelChunkVegetation` in `_ensureVoxelChunkAt`,
-            // V9.24-Verdrahtung). Hier nur noch der Idempotenz-Cache aus
-            // dem Altbestand abgeleitet (Reload → kein Doppel-Spawn).
             const vspan = this._voxelChunkConfig().span;
             this.state.voxelPopulatedChunks = new Set();
             for (const a of this.state.architectures || []) {
@@ -13545,14 +13513,13 @@ class AnazhRealm {
         } catch (e) {
             this.log(`populateChunkVegetation initial fehlgeschlagen: ${e.message}`, "ERROR");
         }
+    }
 
-        // V9.43-b — der Hydrosphären-Atlas. Aus der Voxel-Surface ein
-        // deterministisches Drainage-Netz (Flüsse/Seen/Wasserfälle) ableiten.
-        // Reine Daten — kein Rendering (V9.43-c), kein Carven (V9.43-d). Der
-        // Bau läuft in eine lokale Variable; state.hydrosphere wird erst NACH
-        // vollständigem Bau gesetzt — der V9.43-d-Carve-Term liest dann ein
-        // null-Feld und greift nicht (Zirkel-Freiheit, hydrosphere.md §8).
-        // try/catch: ein Hydrosphären-Fehler darf den Worldgen nie brechen.
+    // V9.43-b/c — Hydrosphären-Atlas (Drainage-Netz aus der Voxel-Surface:
+    // Flüsse/Seen/Wasserfälle) + Render (Ribbons/Planes via V9.43-a-Wasser-
+    // Material-Familie). Atlas läuft VOR Render (Render liest state.hydrosphere).
+    // Zwei try/catch — beide Stufen dürfen den Worldgen nie brechen.
+    _worldgenComputeAndBuildHydrosphere() {
         try {
             const hydro = this._computeHydrosphere();
             this.state.hydrosphere = hydro;
@@ -13564,36 +13531,11 @@ class AnazhRealm {
             this.state.hydrosphere = null;
             this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
         }
-
-        // V9.43-c — die Hydrosphäre wird sichtbar: Fluss-Ribbons + See-Planes
-        // + Wasserfall-Planes, alle aus der V9.43-a-Wasser-Material-Familie.
-        // Läuft NACH `state.hydrosphere` (es liest das Netz). try/catch — ein
-        // Render-Fehler darf den Worldgen nie brechen.
         try {
             this._buildHydrosphereMeshes();
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
-
-        this.spawnCreatures();
-
-        // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
-        // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf.
-        // So fällt er nicht blind in ein Tal — er sieht von erhöhter
-        // Warte die Welt. Nur first-spawn (wasFirstSpawn), idempotent.
-        if (wasFirstSpawn) {
-            try {
-                this._ensureGenesisPlatform();
-            } catch (e) {
-                this.log(`Genesis-Plattform fehlgeschlagen: ${e.message}`, "ERROR");
-            }
-        }
-
-        // ### Learnings ### [Stichwortartig optimieren, korrigieren und ergänzen aber nie Wissen löschen! Nie Learnings Entfernen!]
-
-        // - Weltkoordinaten (x, z) in Noise-Generierung eliminieren Lücken.
-        // - Alle Funktionen (Vegetation, Wasserfälle, Inseln) bleiben erhalten.
-        // - Seed in SimplexNoise sorgt für konsistente Höhen über Chunks hinweg.
     }
 
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
