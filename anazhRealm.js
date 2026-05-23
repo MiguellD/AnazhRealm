@@ -11446,269 +11446,276 @@ class AnazhRealm {
     _tickCreatureTaskDirection(creature, task, emotion) {
         if (!task || task.name === "wander") return null;
         if (task.name === "wait") return new THREE.Vector3(0, 0, 0);
-        if (task.name === "follow_player") {
+        if (task.name === "follow_player") return this._tickCreatureFollowPlayer(creature, task, emotion);
+        if (task.name === "gather") return this._tickCreatureGather(creature, task);
+        if (task.name === "build") return this._tickCreatureBuild(creature, task);
+        return null;
+    }
+
+    // Welle 6.H — folgt dem Spieler bis CREATURE_FOLLOW_DISTANCE (oder task-
+    // spezifischer Halt-Distanz). Happy-Emotion läuft volle Speed, sonst 70%.
+    _tickCreatureFollowPlayer(creature, task, emotion) {
+        const player = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!player) return new THREE.Vector3(0, 0, 0);
+        const haltDist =
+            Number.isFinite(task.args?.distance) && task.args.distance > 0
+                ? Math.min(20, Math.max(0.5, task.args.distance))
+                : AnazhRealm.CREATURE_FOLLOW_DISTANCE;
+        const dx = player.x - creature.position.x;
+        const dz = player.z - creature.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= haltDist) return new THREE.Vector3(0, 0, 0);
+        const speed =
+            emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
+        const nx = dx / dist;
+        const nz = dz / dist;
+        return new THREE.Vector3(nx * speed, 0, nz * speed);
+    }
+
+    // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
+    // Phase 1 = sucht Material + erntet (cyan-Aura); Phase 2 = trägt Ernte zum
+    // Spieler + übergibt (purple-Aura via _refreshCreatureCarryingVisual).
+    _tickCreatureGather(creature, task) {
+        const material = task.args && task.args.material;
+        if (typeof material !== "string" || material.length === 0) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
+        const carrying = creature.userData && creature.userData.carrying;
+        if (carrying) {
+            // BRING-PHASE: zurück zum Spieler, dann übergeben.
             const player = this.state.playerMesh ? this.state.playerMesh.position : null;
             if (!player) return new THREE.Vector3(0, 0, 0);
-            const haltDist =
-                Number.isFinite(task.args?.distance) && task.args.distance > 0
-                    ? Math.min(20, Math.max(0.5, task.args.distance))
-                    : AnazhRealm.CREATURE_FOLLOW_DISTANCE;
-            const dx = player.x - creature.position.x;
-            const dz = player.z - creature.position.z;
-            const dist = Math.hypot(dx, dz);
-            if (dist <= haltDist) return new THREE.Vector3(0, 0, 0);
-            const speed =
-                emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
-            const nx = dx / dist;
-            const nz = dz / dist;
-            return new THREE.Vector3(nx * speed, 0, nz * speed);
-        }
-        if (task.name === "gather") {
-            // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1
-            // Beziehungs-Geste): Phase 1 = sucht Material + erntet (cyan-Aura);
-            // Phase 2 = trägt Ernte zum Spieler + übergibt (purple-Aura via
-            // _refreshCreatureCarryingVisual).
-            const material = task.args && task.args.material;
-            if (typeof material !== "string" || material.length === 0) {
-                this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                return null;
-            }
-            const carrying = creature.userData && creature.userData.carrying;
-            if (carrying) {
-                // BRING-PHASE: zurück zum Spieler, dann übergeben.
-                const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-                if (!player) return new THREE.Vector3(0, 0, 0);
-                const dxp = player.x - creature.position.x;
-                const dzp = player.z - creature.position.z;
-                const distp = Math.hypot(dxp, dzp);
-                const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
-                if (distp <= handover) {
-                    // Übergabe: jedes Material aus carrying ins Spieler-Inventar.
-                    const summary = [];
-                    for (const [mat, n] of Object.entries(carrying.materials || {})) {
-                        if (this.addMaterialToInventory(mat, n)) {
-                            summary.push(`${n}× ${mat}`);
-                        }
+            const dxp = player.x - creature.position.x;
+            const dzp = player.z - creature.position.z;
+            const distp = Math.hypot(dxp, dzp);
+            const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+            if (distp <= handover) {
+                // Übergabe: jedes Material aus carrying ins Spieler-Inventar.
+                const summary = [];
+                for (const [mat, n] of Object.entries(carrying.materials || {})) {
+                    if (this.addMaterialToInventory(mat, n)) {
+                        summary.push(`${n}× ${mat}`);
                     }
-                    this._creatureRemember(creature, "delivered", {
+                }
+                this._creatureRemember(creature, "delivered", {
+                    materials: carrying.materials,
+                    blueprint: carrying.blueprint,
+                });
+                if (typeof this.journalAppend === "function" && summary.length > 0) {
+                    this.journalAppend("growth", `Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`, {
                         materials: carrying.materials,
                         blueprint: carrying.blueprint,
                     });
-                    if (typeof this.journalAppend === "function" && summary.length > 0) {
-                        this.journalAppend("growth", `Eine Kreatur übergab dem Schöpfer: ${summary.join(", ")}.`, {
-                            materials: carrying.materials,
-                            blueprint: carrying.blueprint,
-                        });
-                    }
-                    creature.userData.carrying = null;
-                    if (typeof this._refreshCreatureCarryingVisual === "function") {
-                        this._refreshCreatureCarryingVisual(creature);
-                    }
-                    if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                    return new THREE.Vector3(0, 0, 0);
                 }
-                // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
-                const speed =
-                    AnazhRealm.CREATURE_GATHER_SPEED *
-                    this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
-                    this._creatureBodySpeedMultiplier(creature);
-                return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
-            }
-            // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
-            let target = task.args._target;
-            const targetGone = !target || !this.state.architectures.includes(target) || !target.mesh;
-            if (targetGone) {
-                target = this._findNearestArchitectureWithMaterial(creature.position, material);
-                if (!target) {
-                    this._creatureRemember(creature, "no_material", { material });
-                    // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel.
-                    if (typeof this._creatureSpeakProactive === "function") {
-                        this._creatureSpeakProactive(creature, "no_material_found", { material });
-                    }
-                    if (typeof this.journalAppend === "function") {
-                        this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
-                            material,
-                            creatures_total: this.state.creatures.length,
-                        });
-                    }
-                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                    return null;
-                }
-                task.args._target = target;
-            }
-            const dx = target.position.x - creature.position.x;
-            const dz = target.position.z - creature.position.z;
-            const dist = Math.hypot(dx, dz);
-            if (dist <= AnazhRealm.CREATURE_GATHER_HALT_DIST) {
-                // Angekommen — ernten via harvestArchitecture (EINE Funktion,
-                // Spieler-LMB nutzt dieselbe). Materialien gehen in carrying,
-                // nicht direkt ins Spieler-Inventar — Bring-Phase folgt.
-                const harvesterName = (creature.userData && creature.userData.name) || "Kreatur";
-                const harvest = this.harvestArchitecture(target, `creature:${harvesterName}`);
-                task.args._target = null;
-                if (harvest && harvest.materials && Object.keys(harvest.materials).length > 0) {
-                    creature.userData = creature.userData || {};
-                    creature.userData.carrying = {
-                        materials: { ...harvest.materials },
-                        blueprint: harvest.blueprint,
-                        since: performance.now() / 1000,
-                    };
-                    if (typeof this._refreshCreatureCarryingVisual === "function") {
-                        this._refreshCreatureCarryingVisual(creature);
-                    }
-                    this._creatureRemember(creature, "gathered", {
-                        material,
-                        blueprint: harvest.blueprint,
-                        materials: harvest.materials,
-                    });
+                creature.userData.carrying = null;
+                if (typeof this._refreshCreatureCarryingVisual === "function") {
+                    this._refreshCreatureCarryingVisual(creature);
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
+                return new THREE.Vector3(0, 0, 0);
             }
-            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
+            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
             const speed =
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            const nx = dx / dist;
-            const nz = dz / dist;
-            return new THREE.Vector3(nx * speed, 0, nz * speed);
+            return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
         }
-        if (task.name === "build") {
-            // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
-            // Material-Quelle, Welt ist Bauplan-Senke. Drei Phasen:
-            //   take: laufe zum Spieler, nimm Material aus Inventar (modus-gated
-            //         via _buildMaterialGate — frieden+schöpfer kostenlos);
-            //   walk: laufe von der Übergabe weg bis CREATURE_BUILD_PLACEMENT_DIST;
-            //   spawn: spawne Architektur am Kreatur-Ort + wander-Fallback.
-            //
-            // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-
-            // Eintrag (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
-            const blueprint = task.args && task.args.blueprint;
-            if (typeof blueprint !== "string" || blueprint.length === 0) {
-                this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                return null;
-            }
-            const bp = this.state.blueprints && this.state.blueprints[blueprint];
-            if (!bp) {
-                this._creatureRemember(creature, "no_blueprint", { blueprint });
+        // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
+        let target = task.args._target;
+        const targetGone = !target || !this.state.architectures.includes(target) || !target.mesh;
+        if (targetGone) {
+            target = this._findNearestArchitectureWithMaterial(creature.position, material);
+            if (!target) {
+                this._creatureRemember(creature, "no_material", { material });
+                // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel.
+                if (typeof this._creatureSpeakProactive === "function") {
+                    this._creatureSpeakProactive(creature, "no_material_found", { material });
+                }
                 if (typeof this.journalAppend === "function") {
-                    this.journalAppend("reach", `Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, { blueprint });
+                    this.journalAppend("reach", `Eine Kreatur findet kein „${material}" in der Nähe.`, {
+                        material,
+                        creatures_total: this.state.creatures.length,
+                    });
                 }
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
             }
-            const carrying = creature.userData && creature.userData.carrying;
-            const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-            if (!player) return new THREE.Vector3(0, 0, 0);
-            // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
-            const buildSpeed =
-                AnazhRealm.CREATURE_BUILD_SPEED *
-                this._creatureTaskSpeedMultiplier(creature, "build", task.args) *
-                this._creatureBodySpeedMultiplier(creature);
-            if (!carrying) {
-                // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
-                const dxp = player.x - creature.position.x;
-                const dzp = player.z - creature.position.z;
-                const distp = Math.hypot(dxp, dzp);
-                const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
-                if (distp <= handover) {
-                    // Material entnehmen — selber modus-gated Pfad wie Spieler-
-                    // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
-                    const gate = this._buildMaterialGate(blueprint);
-                    if (!gate.ok) {
-                        const missingStr = Object.entries(gate.missing || {})
-                            .map(([m, n]) => `${n}× ${m}`)
-                            .join(", ");
-                        this._creatureRemember(creature, "no_inventory_for_build", {
-                            blueprint,
-                            missing: gate.missing,
-                        });
-                        // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel beim Bauen.
-                        if (typeof this._creatureSpeakProactive === "function") {
-                            this._creatureSpeakProactive(creature, "no_inventory_for_build", { blueprint });
-                        }
-                        if (typeof this.journalAppend === "function") {
-                            this.journalAppend(
-                                "reach",
-                                `Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
-                                { blueprint, missing: gate.missing }
-                            );
-                        }
-                        this.assignCreatureTask(creature, "wander", {}, { silent: true });
-                        return null;
-                    }
-                    // Visual + Journal nutzen die symbolischen Bauplan-Kosten
-                    // (computeBuildCost) — auch in frieden+schöpfer trägt die
-                    // Kreatur sichtbar das Material das die Architektur braucht,
-                    // selbst wenn nichts aus dem Inventar abgezogen wurde.
-                    const symbolicCost = this.computeBuildCost(blueprint);
-                    creature.userData = creature.userData || {};
-                    creature.userData.carrying = {
-                        kind: "build",
-                        materials: symbolicCost,
-                        blueprint,
-                        free: !!gate.free,
-                        since: performance.now() / 1000,
-                    };
-                    if (typeof this._refreshCreatureCarryingVisual === "function") {
-                        this._refreshCreatureCarryingVisual(creature);
-                    }
-                    this._creatureRemember(creature, "took_materials", {
-                        blueprint,
-                        materials: symbolicCost,
-                        free: !!gate.free,
-                    });
-                    if (!gate.free && typeof this.renderInventoryUI === "function") {
-                        this.renderInventoryUI();
-                    }
-                    if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                    return new THREE.Vector3(0, 0, 0);
+            task.args._target = target;
+        }
+        const dx = target.position.x - creature.position.x;
+        const dz = target.position.z - creature.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= AnazhRealm.CREATURE_GATHER_HALT_DIST) {
+            // Angekommen — ernten via harvestArchitecture (EINE Funktion,
+            // Spieler-LMB nutzt dieselbe). Materialien gehen in carrying,
+            // nicht direkt ins Spieler-Inventar — Bring-Phase folgt.
+            const harvesterName = (creature.userData && creature.userData.name) || "Kreatur";
+            const harvest = this.harvestArchitecture(target, `creature:${harvesterName}`);
+            task.args._target = null;
+            if (harvest && harvest.materials && Object.keys(harvest.materials).length > 0) {
+                creature.userData = creature.userData || {};
+                creature.userData.carrying = {
+                    materials: { ...harvest.materials },
+                    blueprint: harvest.blueprint,
+                    since: performance.now() / 1000,
+                };
+                if (typeof this._refreshCreatureCarryingVisual === "function") {
+                    this._refreshCreatureCarryingVisual(creature);
                 }
-                return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
-            }
-            // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
-            const dxp2 = creature.position.x - player.x;
-            const dzp2 = creature.position.z - player.z;
-            const distp2 = Math.hypot(dxp2, dzp2);
-            const placement = AnazhRealm.CREATURE_BUILD_PLACEMENT_DIST;
-            if (distp2 < placement) {
-                // Noch zu nah — laufe in der gegenwärtigen Richtung weg
-                // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
-                if (distp2 < 0.001) {
-                    // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
-                    return new THREE.Vector3(buildSpeed, 0, 0);
-                }
-                return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
-            }
-            // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
-            // (analog confirmBuild, kalibriert auf at_player wo player.y die
-            // Sphäre-Mitte ist). Materialien wurden in TAKE-PHASE konsumiert.
-            const spawnPos = {
-                x: creature.position.x,
-                y: creature.position.y + 0.5,
-                z: creature.position.z,
-            };
-            this.spawnArchitecture(blueprint, spawnPos);
-            this._creatureRemember(creature, "built", {
-                blueprint,
-                materials: carrying.materials,
-                position: spawnPos,
-            });
-            if (typeof this.journalAppend === "function") {
-                this.journalAppend("growth", `Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
-                    blueprint,
-                    materials: carrying.materials,
+                this._creatureRemember(creature, "gathered", {
+                    material,
+                    blueprint: harvest.blueprint,
+                    materials: harvest.materials,
                 });
             }
-            creature.userData.carrying = null;
-            if (typeof this._refreshCreatureCarryingVisual === "function") {
-                this._refreshCreatureCarryingVisual(creature);
+            if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+            return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
+        }
+        // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
+        const speed =
+            AnazhRealm.CREATURE_GATHER_SPEED *
+            this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
+            this._creatureBodySpeedMultiplier(creature);
+        const nx = dx / dist;
+        const nz = dz / dist;
+        return new THREE.Vector3(nx * speed, 0, nz * speed);
+    }
+
+    // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
+    // Material-Quelle, Welt ist Bauplan-Senke. Drei Phasen:
+    //   take: laufe zum Spieler, nimm Material aus Inventar (modus-gated via
+    //         _buildMaterialGate — frieden+schöpfer kostenlos);
+    //   walk: laufe von der Übergabe weg bis CREATURE_BUILD_PLACEMENT_DIST;
+    //   spawn: spawne Architektur am Kreatur-Ort + wander-Fallback.
+    //
+    // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-Eintrag
+    // (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
+    _tickCreatureBuild(creature, task) {
+        const blueprint = task.args && task.args.blueprint;
+        if (typeof blueprint !== "string" || blueprint.length === 0) {
+            this.assignCreatureTask(creature, "wander", {}, { silent: true });
+            return null;
+        }
+        const bp = this.state.blueprints && this.state.blueprints[blueprint];
+        if (!bp) {
+            this._creatureRemember(creature, "no_blueprint", { blueprint });
+            if (typeof this.journalAppend === "function") {
+                this.journalAppend("reach", `Eine Kreatur kennt den Bauplan „${blueprint}" nicht.`, { blueprint });
             }
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
-            return new THREE.Vector3(0, 0, 0);
+            return null;
         }
-        return null;
+        const carrying = creature.userData && creature.userData.carrying;
+        const player = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!player) return new THREE.Vector3(0, 0, 0);
+        // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
+        const buildSpeed =
+            AnazhRealm.CREATURE_BUILD_SPEED *
+            this._creatureTaskSpeedMultiplier(creature, "build", task.args) *
+            this._creatureBodySpeedMultiplier(creature);
+        if (!carrying) {
+            // TAKE-PHASE: zum Spieler laufen, Material entnehmen.
+            const dxp = player.x - creature.position.x;
+            const dzp = player.z - creature.position.z;
+            const distp = Math.hypot(dxp, dzp);
+            const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+            if (distp <= handover) {
+                // Material entnehmen — selber modus-gated Pfad wie Spieler-
+                // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
+                const gate = this._buildMaterialGate(blueprint);
+                if (!gate.ok) {
+                    const missingStr = Object.entries(gate.missing || {})
+                        .map(([m, n]) => `${n}× ${m}`)
+                        .join(", ");
+                    this._creatureRemember(creature, "no_inventory_for_build", {
+                        blueprint,
+                        missing: gate.missing,
+                    });
+                    // Welle 6.H Phase 2E V2 — proaktive Sprache bei Material-Mangel beim Bauen.
+                    if (typeof this._creatureSpeakProactive === "function") {
+                        this._creatureSpeakProactive(creature, "no_inventory_for_build", { blueprint });
+                    }
+                    if (typeof this.journalAppend === "function") {
+                        this.journalAppend(
+                            "reach",
+                            `Der Schöpfer hat kein Material für „${blueprint}" (fehlt: ${missingStr}).`,
+                            { blueprint, missing: gate.missing }
+                        );
+                    }
+                    this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                    return null;
+                }
+                // Visual + Journal nutzen die symbolischen Bauplan-Kosten
+                // (computeBuildCost) — auch in frieden+schöpfer trägt die
+                // Kreatur sichtbar das Material das die Architektur braucht,
+                // selbst wenn nichts aus dem Inventar abgezogen wurde.
+                const symbolicCost = this.computeBuildCost(blueprint);
+                creature.userData = creature.userData || {};
+                creature.userData.carrying = {
+                    kind: "build",
+                    materials: symbolicCost,
+                    blueprint,
+                    free: !!gate.free,
+                    since: performance.now() / 1000,
+                };
+                if (typeof this._refreshCreatureCarryingVisual === "function") {
+                    this._refreshCreatureCarryingVisual(creature);
+                }
+                this._creatureRemember(creature, "took_materials", {
+                    blueprint,
+                    materials: symbolicCost,
+                    free: !!gate.free,
+                });
+                if (!gate.free && typeof this.renderInventoryUI === "function") {
+                    this.renderInventoryUI();
+                }
+                if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+                return new THREE.Vector3(0, 0, 0);
+            }
+            return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
+        }
+        // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
+        const dxp2 = creature.position.x - player.x;
+        const dzp2 = creature.position.z - player.z;
+        const distp2 = Math.hypot(dxp2, dzp2);
+        const placement = AnazhRealm.CREATURE_BUILD_PLACEMENT_DIST;
+        if (distp2 < placement) {
+            // Noch zu nah — laufe in der gegenwärtigen Richtung weg
+            // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
+            if (distp2 < 0.001) {
+                // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
+                return new THREE.Vector3(buildSpeed, 0, 0);
+            }
+            return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
+        }
+        // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
+        // (analog confirmBuild, kalibriert auf at_player wo player.y die
+        // Sphäre-Mitte ist). Materialien wurden in TAKE-PHASE konsumiert.
+        const spawnPos = {
+            x: creature.position.x,
+            y: creature.position.y + 0.5,
+            z: creature.position.z,
+        };
+        this.spawnArchitecture(blueprint, spawnPos);
+        this._creatureRemember(creature, "built", {
+            blueprint,
+            materials: carrying.materials,
+            position: spawnPos,
+        });
+        if (typeof this.journalAppend === "function") {
+            this.journalAppend("growth", `Eine Kreatur erschuf „${blueprint}" für den Schöpfer.`, {
+                blueprint,
+                materials: carrying.materials,
+            });
+        }
+        creature.userData.carrying = null;
+        if (typeof this._refreshCreatureCarryingVisual === "function") {
+            this._refreshCreatureCarryingVisual(creature);
+        }
+        this.assignCreatureTask(creature, "wander", {}, { silent: true });
+        return new THREE.Vector3(0, 0, 0);
     }
 
     // Welle 6.H V2 — geteilte Gradient-Textur als Cache (analog 6.D
