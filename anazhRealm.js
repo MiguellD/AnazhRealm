@@ -15951,6 +15951,19 @@ class AnazhRealm {
                     this.state.scene.add(m);
                     meshes.push(m);
                 }
+                // V9.60-d.1 — Foam-Pool am Aufprall (Riesen-Lehre Genshin /
+                // BOTW / Witcher / NMS: jeder Wasserfall hat unten einen
+                // hellen Foam-Schaum-Pool, wo das Wasser aufschlägt). Eine
+                // horizontale CircleGeometry mit dem Hydro-Surface-Material,
+                // aShore=1 für maximales Foam-Band, aFlow=0 für Ruhe.
+                // Schöpfer-Befund nach V9.60-b.1: "See-zu-See-Verbindung
+                // noch unsauber" — der Wasserfall fiel bisher unsichtbar
+                // in den Boden, kein visueller Aufprall-Akzent.
+                const pool = this._buildHydroWaterfallPool(wf);
+                if (pool) {
+                    this.state.scene.add(pool);
+                    meshes.push(pool);
+                }
             }
         }
         this.state.hydrosphereMeshes = meshes;
@@ -16052,6 +16065,37 @@ class AnazhRealm {
         mesh.renderOrder = 1;
         mesh.frustumCulled = false;
         mesh.userData = { isHydrosphere: true, hydroKind: "waterfall" };
+        return mesh;
+    }
+
+    // V9.60-d.1 — Foam-Pool am Wasserfall-Aufprall. Horizontale
+    // CircleGeometry auf `wf.bottomY + 0.15` (knapp über dem Wasser, damit
+    // sie nicht im Bett-Carve verschwindet). Radius skaliert mit Drop-Höhe:
+    // ein 50-m-Sturz spritzt mehr als ein 5-m-Lauf. Material ist das
+    // geteilte `hydroSurfaceMaterial`; aShore=1 + aFlow=0 + aWave=0 pro
+    // Vertex → der Shader rendert volles Foam-Band, sanfte Pool-Ruhe. Ein
+    // zweites Mesh pro Wasserfall, kein neuer Shader nötig.
+    _buildHydroWaterfallPool(wf) {
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) return null;
+        const dropH = Math.max(wf.topY - wf.bottomY, 2);
+        const width = Math.max(3, wf.width || 3);
+        const radius = Math.max(width * 1.3, 3 + dropH * 0.15);
+        const geo = new THREE.CircleGeometry(radius, 22);
+        geo.rotateX(-Math.PI / 2);
+        const vCount = geo.attributes.position.count;
+        const aShoreArr = new Float32Array(vCount);
+        const aFlowArr = new Float32Array(vCount * 2);
+        const aWaveArr = new Float32Array(vCount);
+        for (let i = 0; i < vCount; i++) aShoreArr[i] = 1.0;
+        geo.setAttribute("aShore", new THREE.BufferAttribute(aShoreArr, 1));
+        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
+        geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(wf.x, wf.bottomY + 0.15, wf.z);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall_pool" };
         return mesh;
     }
 
