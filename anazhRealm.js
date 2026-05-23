@@ -33804,16 +33804,31 @@ class AnazhRealm {
         const container = document.getElementById("player-equip");
         if (!container) return;
         container.innerHTML = "";
-        // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
-        // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
-        // dann oben im Dropdown wählen.
+        this._equipAppendDrawerHint(container);
+        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
+        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
+        this._equipAppendToolRow(container, equipped, ownedTools);
+        const { armorBlueprints, candidateBlueprints } = this._equipPartitionEquipBlueprints();
+        this._equipAppendArmorRow(container, equipped, armorBlueprints);
+        this._equipAppendMarkSection(container, candidateBlueprints);
+        this._equipAppendConsumablesSection(container);
+        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
+            this._equipAppendEmptyHint(container);
+        }
+    }
+
+    // V8.39 — Equip-Hinweis (Schöpfer-Browser-Test „Rüstung anziehen?"):
+    // Rüstung ist 2-stufig — eigenen Bauplan unten als „Rüstung" markieren,
+    // dann oben im Dropdown wählen.
+    _equipAppendDrawerHint(container) {
         const equipHint = document.createElement("div");
         equipHint.className = "drawer-hint";
         equipHint.textContent =
             "Rüstung anziehen: einen eigenen Bauplan unten als Rüstung markieren — dann oben im Dropdown wählen.";
         container.appendChild(equipHint);
-        const equipped = (this.state.player && this.state.player.equipped) || { tool: null, armor: null };
-        // Werkzeug-Slot
+    }
+
+    _equipAppendToolRow(container, equipped, ownedTools) {
         const toolRow = document.createElement("div");
         toolRow.className = "equip-row";
         const toolLabel = document.createElement("span");
@@ -33826,7 +33841,6 @@ class AnazhRealm {
         noneTool.value = "";
         noneTool.textContent = "— keins —";
         toolSel.appendChild(noneTool);
-        const ownedTools = Array.isArray(this.state.player && this.state.player.tools) ? this.state.player.tools : [];
         for (const name of ownedTools) {
             const t = this.state.tools[name];
             if (!t) continue;
@@ -33845,7 +33859,26 @@ class AnazhRealm {
         });
         toolRow.appendChild(toolSel);
         container.appendChild(toolRow);
-        // Rüstung-Slot
+    }
+
+    // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-Kandidat,
+    // auch ein bereits markierter (roleManual). Sonst verschwindet ein Bauplan
+    // nach dem Markieren aus der Sektion und die Wahl wird zur Sackgasse — ein
+    // versehentlich als Konsumabel markiertes Portal ließ sich nicht mehr
+    // umwidmen. Die Reihe zeigt die aktuelle Rolle; ein erneuter Klick widmet um.
+    _equipPartitionEquipBlueprints() {
+        const armorBlueprints = [];
+        const candidateBlueprints = [];
+        for (const name of Object.keys(this.state.blueprints || {})) {
+            const bp = this.state.blueprints[name];
+            if (!bp || bp.builtIn) continue;
+            if (bp.role === "armor") armorBlueprints.push(name);
+            else candidateBlueprints.push(name);
+        }
+        return { armorBlueprints, candidateBlueprints };
+    }
+
+    _equipAppendArmorRow(container, equipped, armorBlueprints) {
         const armorRow = document.createElement("div");
         armorRow.className = "equip-row";
         const armorLabel = document.createElement("span");
@@ -33858,20 +33891,6 @@ class AnazhRealm {
         noneArmor.value = "";
         noneArmor.textContent = "— keine —";
         armorSel.appendChild(noneArmor);
-        const armorBlueprints = [];
-        const candidateBlueprints = [];
-        for (const name of Object.keys(this.state.blueprints || {})) {
-            const bp = this.state.blueprints[name];
-            if (!bp || bp.builtIn) continue;
-            if (bp.role === "armor") armorBlueprints.push(name);
-            // W12 Phase 2 — JEDER eigene Nicht-Rüstung-Bauplan ist Markier-
-            // Kandidat, auch ein bereits markierter (roleManual). Sonst
-            // verschwindet ein Bauplan nach dem Markieren aus der Sektion und
-            // die Wahl wird zur Sackgasse — ein versehentlich als Konsumabel
-            // markiertes Portal ließ sich nicht mehr umwidmen. Die Reihe zeigt
-            // die aktuelle Rolle; ein erneuter Klick widmet um.
-            else candidateBlueprints.push(name);
-        }
         for (const name of armorBlueprints) {
             const bp = this.state.blueprints[name];
             const opt = document.createElement("option");
@@ -33889,128 +33908,132 @@ class AnazhRealm {
         });
         armorRow.appendChild(armorSel);
         container.appendChild(armorRow);
-        // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
-        // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST
-        // — und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
-        if (candidateBlueprints.length > 0) {
-            const markHeader = document.createElement("div");
-            markHeader.className = "equip-mark-header";
-            markHeader.textContent = "Bauplan als ... markieren:";
-            container.appendChild(markHeader);
-            for (const name of candidateBlueprints) {
-                const bp = this.state.blueprints[name];
-                const row = document.createElement("div");
-                row.className = "equip-mark-row";
-                const label = document.createElement("span");
-                label.className = "equip-mark-label";
-                // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
-                // gerade IST, und kann ihn gezielt umwidmen.
-                const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
-                label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
-                row.appendChild(label);
-                const armorBtn = document.createElement("button");
-                armorBtn.type = "button";
-                armorBtn.textContent = "Rüstung";
-                armorBtn.addEventListener("click", () => {
-                    const result = this.setBlueprintAsArmor(name);
-                    if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
-                    this.renderPlayerEquipUI();
-                });
-                row.appendChild(armorBtn);
-                const consBtn = document.createElement("button");
-                consBtn.type = "button";
-                consBtn.textContent = "Konsumabel";
-                consBtn.addEventListener("click", () => {
-                    const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
-                    if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
-                    this.renderPlayerEquipUI();
-                });
-                row.appendChild(consBtn);
-                // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
-                // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
-                // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
-                const portalSel = document.createElement("select");
-                portalSel.className = "equip-portal-select";
-                for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
-                    const wOpt = document.createElement("option");
-                    wOpt.value = wid;
-                    wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
-                    portalSel.appendChild(wOpt);
-                }
-                row.appendChild(portalSel);
-                const portalBtn = document.createElement("button");
-                portalBtn.type = "button";
-                portalBtn.textContent = "Portal";
-                portalBtn.addEventListener("click", () => {
-                    const result = this.aimBlueprintAtWorld(name, portalSel.value);
-                    if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
-                    this.renderPlayerEquipUI();
-                });
-                row.appendChild(portalBtn);
-                container.appendChild(row);
+    }
+
+    // Markier-Sektion: jeder eigene Bauplan bekommt Rüstung-/Konsumabel-/
+    // Portal-Optionen. So entscheidet der Schöpfer pro Bauplan, was es IST —
+    // und kann eine Wahl jederzeit umwidmen (die Reihe nennt die Rolle).
+    _equipAppendMarkSection(container, candidateBlueprints) {
+        if (candidateBlueprints.length === 0) return;
+        const markHeader = document.createElement("div");
+        markHeader.className = "equip-mark-header";
+        markHeader.textContent = "Bauplan als ... markieren:";
+        container.appendChild(markHeader);
+        for (const name of candidateBlueprints) {
+            const bp = this.state.blueprints[name];
+            const row = document.createElement("div");
+            row.className = "equip-mark-row";
+            const label = document.createElement("span");
+            label.className = "equip-mark-label";
+            // aktuelle Rolle anzeigen — der Schöpfer sieht, was der Bauplan
+            // gerade IST, und kann ihn gezielt umwidmen.
+            const roleLabel = bp.role ? AnazhRealm.BLUEPRINT_ROLE_LABELS[bp.role] || bp.role : "";
+            label.textContent = (bp.label || name) + (roleLabel ? ` — ${roleLabel}` : "");
+            row.appendChild(label);
+            const armorBtn = document.createElement("button");
+            armorBtn.type = "button";
+            armorBtn.textContent = "Rüstung";
+            armorBtn.addEventListener("click", () => {
+                const result = this.setBlueprintAsArmor(name);
+                if (!result.ok) this.log(`setBlueprintAsArmor: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(armorBtn);
+            const consBtn = document.createElement("button");
+            consBtn.type = "button";
+            consBtn.textContent = "Konsumabel";
+            consBtn.addEventListener("click", () => {
+                const result = this.setBlueprintAsConsumable(name, 30, bp.label || name, 0.2);
+                if (!result.ok) this.log(`setBlueprintAsConsumable: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(consBtn);
+            // W12 Phase 2 — Portal-Zielen: einen eigenen Bauplan auf eine
+            // registrierte Welt richten (Welt-Auswahl + Knopf). Macht den
+            // systemischen Pfad spieler-erreichbar — kein Built-in nötig.
+            const portalSel = document.createElement("select");
+            portalSel.className = "equip-portal-select";
+            for (const wid of Object.keys(AnazhRealm.WORLD_REGISTRY)) {
+                const wOpt = document.createElement("option");
+                wOpt.value = wid;
+                wOpt.textContent = AnazhRealm.WORLD_REGISTRY[wid].label;
+                portalSel.appendChild(wOpt);
             }
+            row.appendChild(portalSel);
+            const portalBtn = document.createElement("button");
+            portalBtn.type = "button";
+            portalBtn.textContent = "Portal";
+            portalBtn.addEventListener("click", () => {
+                const result = this.aimBlueprintAtWorld(name, portalSel.value);
+                if (!result.ok) this.log(`aimBlueprintAtWorld: ${result.reason}`, "ERROR");
+                this.renderPlayerEquipUI();
+            });
+            row.appendChild(portalBtn);
+            container.appendChild(row);
         }
-        // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
-        // role:"consumable" + alle DSL-Tabellen-Konsumables.
+    }
+
+    // Konsumables-Liste mit „Trinken"-Button — eigene Baupläne mit
+    // role:"consumable" + alle DSL-Tabellen-Konsumables.
+    _equipAppendConsumablesSection(container) {
         const consumableBps = [];
         for (const name of Object.keys(this.state.blueprints || {})) {
             const bp = this.state.blueprints[name];
             if (bp && bp.role === "consumable") consumableBps.push(name);
         }
         const tableConsumables = Object.keys(this.state.consumables || {});
-        if (consumableBps.length > 0 || tableConsumables.length > 0) {
-            const consumableHeader = document.createElement("div");
-            consumableHeader.className = "equip-mark-header";
-            consumableHeader.textContent = "Konsumables (trinken):";
-            container.appendChild(consumableHeader);
-            for (const name of consumableBps) {
-                const bp = this.state.blueprints[name];
-                const row = document.createElement("div");
-                row.className = "equip-mark-row";
-                const label = document.createElement("span");
-                label.className = "equip-mark-label";
-                const meta = bp.consumableMeta || {};
-                label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
-                row.appendChild(label);
-                const drinkBtn = document.createElement("button");
-                drinkBtn.type = "button";
-                drinkBtn.textContent = "Trinken";
-                drinkBtn.addEventListener("click", () => {
-                    const result = this.activateConsumable(name);
-                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
-                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
-                });
-                row.appendChild(drinkBtn);
-                container.appendChild(row);
-            }
-            for (const name of tableConsumables) {
-                const c = this.state.consumables[name];
-                const row = document.createElement("div");
-                row.className = "equip-mark-row";
-                const label = document.createElement("span");
-                label.className = "equip-mark-label";
-                label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
-                row.appendChild(label);
-                const drinkBtn = document.createElement("button");
-                drinkBtn.type = "button";
-                drinkBtn.textContent = "Trinken";
-                drinkBtn.addEventListener("click", () => {
-                    const result = this.activateConsumable(name);
-                    if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
-                    if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
-                });
-                row.appendChild(drinkBtn);
-                container.appendChild(row);
-            }
+        if (consumableBps.length === 0 && tableConsumables.length === 0) return;
+        const consumableHeader = document.createElement("div");
+        consumableHeader.className = "equip-mark-header";
+        consumableHeader.textContent = "Konsumables (trinken):";
+        container.appendChild(consumableHeader);
+        for (const name of consumableBps) {
+            const bp = this.state.blueprints[name];
+            const row = document.createElement("div");
+            row.className = "equip-mark-row";
+            const label = document.createElement("span");
+            label.className = "equip-mark-label";
+            const meta = bp.consumableMeta || {};
+            label.textContent = `${bp.label || name} (${meta.durationSeconds || 30} s, ×${meta.scale || 0.2})`;
+            row.appendChild(label);
+            const drinkBtn = document.createElement("button");
+            drinkBtn.type = "button";
+            drinkBtn.textContent = "Trinken";
+            drinkBtn.addEventListener("click", () => {
+                const result = this.activateConsumable(name);
+                if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+            });
+            row.appendChild(drinkBtn);
+            container.appendChild(row);
         }
-        // Empty-state-Hinweis wenn keine Optionen verfügbar
-        if (ownedTools.length === 0 && armorBlueprints.length === 0 && candidateBlueprints.length === 0) {
-            const hint = document.createElement("div");
-            hint.className = "equip-empty";
-            hint.textContent =
-                "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
-            container.appendChild(hint);
+        for (const name of tableConsumables) {
+            const c = this.state.consumables[name];
+            const row = document.createElement("div");
+            row.className = "equip-mark-row";
+            const label = document.createElement("span");
+            label.className = "equip-mark-label";
+            label.textContent = `${c.label || name} (${c.durationSeconds} s, Tabelle)`;
+            row.appendChild(label);
+            const drinkBtn = document.createElement("button");
+            drinkBtn.type = "button";
+            drinkBtn.textContent = "Trinken";
+            drinkBtn.addEventListener("click", () => {
+                const result = this.activateConsumable(name);
+                if (!result.ok) this.log(`activateConsumable: ${result.reason}`, "ERROR");
+                if (typeof this.renderPlayerStatsUI === "function") this.renderPlayerStatsUI();
+            });
+            row.appendChild(drinkBtn);
+            container.appendChild(row);
         }
+    }
+
+    _equipAppendEmptyHint(container) {
+        const hint = document.createElement("div");
+        hint.className = "equip-empty";
+        hint.textContent =
+            "Noch keine Ausrüstung. Baue einen Bauplan in der Werkstatt und markier ihn dort als Werkzeug, oder hier als Rüstung.";
+        container.appendChild(hint);
     }
 
     // Welle 6.D Etappe 1.7 — Voller Avatar-Editor im Spieler-Drawer.
