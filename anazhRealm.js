@@ -15946,16 +15946,17 @@ class AnazhRealm {
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
-                // V9.60-d (kombiniert) — drei Meshes pro Wasserfall, ent-
-                // sprechend der Riesen-Lehre der echten Spiele-Wasserfälle:
-                //   (1) vertikale Plane = der fallende Strahl (V9.43-a,
-                //       jetzt V9.60-d.3 mit See-Spiegel-Verbindung)
+                // V9.60-d + V9.61 (kombiniert) — vier Meshes pro Wasserfall:
+                //   (1) vertikale Plane = der fallende Strahl (V9.61-a:
+                //       Trapez-Form, unten breiter — Genshin-Lehre Volume)
                 //   (2) Top-Lip-Foam = Foam-Bahn an der See-Kante (V9.60-d.2,
-                //       Riesen-Lehre Genshin / BOTW)
-                //   (3) Foam-Pool unten = Aufprall-Foam + Erosion-Topf
-                //       (V9.60-d.1 + V9.60-d.4, Riesen-Lehre + Real-World)
-                // Alle drei nutzen geteilte Materialien — Vision §1.3
-                // fraktal, eine Wasser-Sprache mit Attribut-Modulation.
+                //       Genshin / BOTW)
+                //   (3) Spray-Halbsphere = Volumetric Mist am Aufprall
+                //       (V9.61-b, Genshin volumetric ohne Partikel-System)
+                //   (4) Foam-Pool unten = Aufprall-Foam + Erosion-Topf
+                //       (V9.60-d.1 + V9.60-d.4)
+                // Alle vier nutzen geteilte Materialien — Vision §1.3
+                // fraktal, eine Wasser-Sprache.
                 const m = this._buildHydroWaterfall(wf, wfMat);
                 if (m) {
                     this.state.scene.add(m);
@@ -15965,6 +15966,11 @@ class AnazhRealm {
                 if (lip) {
                     this.state.scene.add(lip);
                     meshes.push(lip);
+                }
+                const spray = this._buildHydroWaterfallSpray(wf);
+                if (spray) {
+                    this.state.scene.add(spray);
+                    meshes.push(spray);
                 }
                 const pool = this._buildHydroWaterfallPool(wf);
                 if (pool) {
@@ -16070,7 +16076,22 @@ class AnazhRealm {
         const width = Math.max(3, wf.width || 3);
         const planeH = dropH + 2;
         const segH = Math.max(6, Math.round(planeH / 2.5));
-        const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
+        const segW = 6;
+        const geo = new THREE.PlaneGeometry(width, planeH, segW, segH);
+        // V9.61-a — Trapez-Form (Genshin-Lehre): die Plane wird unten breiter
+        // (×1.5), oben schmaler (×0.9). Macht den Fall organisch voluminös
+        // statt flacher Vorhang. Plus leichte sinus-Modulation der Edge,
+        // damit die Form nicht geometrisch wirkt.
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i);
+            const normY = (y + planeH / 2) / planeH; // 0=unten, 1=oben
+            const widthFactor = 0.9 + (1 - normY) * 0.6; // unten 1.5x, oben 0.9x
+            const edgeWobble = Math.sin(normY * 7.3) * 0.15 * Math.sign(x);
+            pos.setX(i, x * widthFactor + edgeWobble);
+        }
+        pos.needsUpdate = true;
         const mesh = new THREE.Mesh(geo, mat);
         mesh.position.set(wf.x, (topY + wf.bottomY) / 2, wf.z);
         let dx = wf.flowX || 0;
@@ -16133,6 +16154,46 @@ class AnazhRealm {
     // grösserem Radius — der Wasserfall "frisst" eine Mulde in den Boden,
     // genau wie ein echter Wasserfall am Aufprall sediment-erodiert.
     // Witcher 3 / Real-World macht das genauso.
+    // V9.61-b — Spray-Halbsphere am Wasserfall-Aufprall (Genshin-Lehre:
+    // volumetric Spray ohne Partikel-System). SphereGeometry-Hemisphäre auf
+    // dem Pool, mit aShore=1 + aShore-Verlauf nach oben dämpfend. Macht das
+    // aufspritzende Wasser als Mist-Wolke sichtbar — der Wasserfall hat
+    // jetzt ein 3D-Spray-Volume statt nur einer flachen Pool-Disc.
+    _buildHydroWaterfallSpray(wf) {
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) return null;
+        const dropH = Math.max(wf.topY - wf.bottomY, 2);
+        const width = Math.max(3, wf.width || 3);
+        const radius = Math.max(width * 1.1, 2.5 + dropH * 0.12);
+        const height = Math.min(Math.max(dropH * 0.18, 1.5), 4);
+        // Hemisphere oben offen (phiStart 0..2π, thetaStart 0..π/2)
+        const geo = new THREE.SphereGeometry(radius, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+        // Skaliere vertikal auf height/radius (flach + breit)
+        const vScale = height / radius;
+        const pos = geo.attributes.position;
+        const vCount = pos.count;
+        const aShoreArr = new Float32Array(vCount);
+        const aFlowArr = new Float32Array(vCount * 2);
+        const aWaveArr = new Float32Array(vCount);
+        for (let i = 0; i < vCount; i++) {
+            const y = pos.getY(i);
+            pos.setY(i, y * vScale);
+            // aShore-Verlauf: voll unten (y=0), dämpfend nach oben
+            const normY = Math.min(1, Math.max(0, y / radius));
+            aShoreArr[i] = 1.0 - normY * 0.55;
+        }
+        pos.needsUpdate = true;
+        geo.setAttribute("aShore", new THREE.BufferAttribute(aShoreArr, 1));
+        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
+        geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(wf.x, wf.bottomY - 0.1, wf.z);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall_spray" };
+        return mesh;
+    }
+
     _buildHydroWaterfallPool(wf) {
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) return null;
@@ -16647,7 +16708,13 @@ class AnazhRealm {
                     // entlang ihrer lokalen Normale (+z). Am Lippen-Rand
                     // (uv.y~1) + Tal-Boden (uv.y~0) gedämpft (dort verankert).
                     float fp = dot(uv, uFlowDir) * 9.0 + uTime * uFlowSpeed * 3.2;
-                    float billow = sin(fp) * 0.20 + sin(fp * 2.4 + uv.x * 15.0) * 0.10;
+                    // V9.61-c — verstärkte Billow (Genshin-Lehre Wave-Displacement):
+                    // amplitudes 0.20+0.10 -> 0.40+0.22, plus cross-wave für
+                    // organische 3D-Bewegung. Macht den Wasserfall-Strahl
+                    // welliger statt flachem Vorhang.
+                    float billow = sin(fp) * 0.40
+                                 + sin(fp * 2.4 + uv.x * 15.0) * 0.22
+                                 + sin(uv.x * 11.0 + uTime * 1.7) * 0.08;
                     float edgeY = smoothstep(0.0, 0.18, uv.y) * smoothstep(1.0, 0.80, uv.y);
                     p.z += billow * edgeY;
                     vec4 wp = modelMatrix * vec4(p, 1.0);
