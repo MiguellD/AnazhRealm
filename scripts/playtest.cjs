@@ -7619,6 +7619,7941 @@ async function checkBandLateMultiUser(ctx) {
     }
 }
 
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A1-A5 + 6.E1/E2 + 6.F1/F2 — Interaktions-Politur + Beschreibung + Verbindungs-Linien).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6APolish(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.A — Interaktion-Polish (Wall-Sliding + Erdung auf Bauwerken) ###
+    //
+    // 6.A1: `playerBody.setFriction(0)` lässt den Spieler entlang Wänden
+    // rutschen statt zu hängen. Setzen passiert beim Body-Spawn UND
+    // `optimizePhysics` darf es nicht überschreiben.
+    //
+    // 6.A2: `isPlayerGrounded`-Raycast trifft Bauwerks-Compound-Bodies
+    // (die sind im physicsWorld, also reicht rayTest). Threshold leicht
+    // entspannt von 0.5 → 0.6, damit der minimale y-Offset eines Sub-
+    // Compounds beim Stehen auf einer Plattform nicht den Sprung
+    // blockiert.
+    const wave6aResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state.playerBody) return null;
+            const out = {};
+
+            // 6.A1 — Spieler-Friction beim Spawn
+            out.playerFriction = r.state.playerBody.getFriction();
+            out.playerFrictionZero = Math.abs(out.playerFriction) < 0.001;
+
+            // 6.A1 — optimizePhysics behält Spieler-Friction 0
+            r.optimizePhysics();
+            out.playerFrictionAfterOptimize = r.state.playerBody.getFriction();
+            out.frictionPreservedAfterOptimize = Math.abs(out.playerFrictionAfterOptimize) < 0.001;
+
+            // 6.A1 — Diskriminations-Test: andere Bodies behalten 0.5
+            let otherBody = null;
+            for (const rb of r.state.rigidBodies) {
+                if (rb !== r.state.playerMesh) {
+                    otherBody = rb.userData.physicsBody;
+                    break;
+                }
+            }
+            out.hasOtherBody = !!otherBody;
+            out.otherFriction = otherBody ? otherBody.getFriction() : null;
+            out.otherFrictionDefault = otherBody ? Math.abs(otherBody.getFriction() - 0.5) < 0.01 : false;
+
+            // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
+            const fnSrc = r.isPlayerGrounded.toString();
+            out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
+            out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
+
+            // 6.A2 — Diskriminations-Test: Spieler an einer kontrollierten Position
+            // (frühere Tests können mesh.position verschoben haben — wir setzen
+            // eine eindeutige Setup-Position, statt uns auf den Live-Zustand
+            // zu verlassen). Über offenes Terrain (in der Luft) → not grounded,
+            // auf gespawntem Bauwerk → grounded.
+            const savedX = r.state.playerMesh.position.x;
+            const savedY = r.state.playerMesh.position.y;
+            const savedZ = r.state.playerMesh.position.z;
+
+            // Spawnen wir einen Tempel an einer eindeutigen, vom Terrain
+            // freien Position (Heightfield hat höchstens ~50m Höhe; wir
+            // wählen y=0 als Spawn-Y damit der Tempel direkt mit dem
+            // Heightfield-Niveau überlappt — typischer In-Spiel-Fall).
+            const archX = savedX + 20;
+            const archZ = savedZ + 20;
+            const beforeArchCount = r.state.architectures.length;
+            const entry = r.spawnArchitecture("temple", { x: archX, y: 0, z: archZ }, { seed: 4242 });
+            out.archEntrySpawned = !!entry;
+            out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
+
+            if (entry && entry.mesh) {
+                const box = new THREE.Box3().setFromObject(entry.mesh);
+                const topY = box.max.y;
+                // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
+                // 2.5 m runter, also trifft das Bauwerk nicht.
+                r.state.playerMesh.position.set(archX, topY + 50, archZ);
+                // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
+                delete r.state._groundedCachedAt;
+                out.isGroundedHighInSky = r.isPlayerGrounded();
+                // Positiv-Test: Spieler in steigenden Höhen über die
+                // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
+                // Collision-Compound (Dekor-Mesh-Spitzen ragen oft über
+                // die strukturellen Sub-Boxes), deshalb gehen wir die
+                // ersten paar Frame-Distanzen durch — sobald für EINE
+                // davon `isGrounded === true` zurückkommt, ist die
+                // Bauwerks-Erdung bewiesen. groundDistance(0.6) ist die
+                // theoretische Obergrenze pro Sample.
+                out.archTopY = topY;
+                let foundGrounded = false;
+                let groundedAtDy = null;
+                for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
+                    r.state.playerMesh.position.set(archX, topY + dy, archZ);
+                    // Welle 6.X.5 — Cache invalidieren vor jeder
+                    // Position-Probe. In echtem Spiel ändert sich die
+                    // Position nur via Physics-Tick zwischen Frames;
+                    // im Test setzen wir manuell, also Cache resetten.
+                    delete r.state._groundedCachedAt;
+                    if (r.isPlayerGrounded()) {
+                        foundGrounded = true;
+                        groundedAtDy = dy;
+                        break;
+                    }
+                }
+                out.isGroundedOnArchitecture = foundGrounded;
+                out.groundedAtDy = groundedAtDy;
+                // Restore
+                r.state.playerMesh.position.set(savedX, savedY, savedZ);
+            } else {
+                out.isGroundedOnArchitecture = false;
+                out.isGroundedHighInSky = false;
+            }
+            // Cleanup: gespawnte Architektur entfernen
+            r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+
+            return out;
+        })
+        .catch(() => null);
+
+    if (wave6aResults) {
+        check("Welle 6.A1: Spieler-Body-Friction ist 0 (Wall-Sliding aktiv)", wave6aResults.playerFrictionZero);
+        check(
+            "Welle 6.A1: optimizePhysics() überschreibt Spieler-Friction nicht",
+            wave6aResults.frictionPreservedAfterOptimize
+        );
+        if (wave6aResults.hasOtherBody) {
+            check(
+                "Welle 6.A1: Diskrimination — andere Bodies behalten Friction 0.5",
+                wave6aResults.otherFrictionDefault
+            );
+        }
+        check(
+            "Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)",
+            wave6aResults.hasGroundDistanceVar
+        );
+        check(
+            "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
+            wave6aResults.groundDistanceIs06
+        );
+        if (wave6aResults.archEntrySpawned) {
+            check("Welle 6.A2: Bauwerk-Spawn liefert Compound-Body", wave6aResults.archHasCollision);
+            check(
+                "Welle 6.A2: Negativ-Kontrolle — hoch im Himmel nicht geerdet",
+                wave6aResults.isGroundedHighInSky === false
+            );
+            check(
+                "Welle 6.A2: Diskrimination — Spieler 0.5 m über Bauwerks-Oberseite ist geerdet",
+                wave6aResults.isGroundedOnArchitecture === true
+            );
+        }
+    }
+
+    // ### Welle 6.A3 — Slope-Steepness (Anti-Wandkleben) ###
+    //
+    // isPlayerGrounded liest pro Hit die Surface-Normal. Das flachste
+    // Normal-Y wird in `state.groundNormalY` gespeichert; wenn keine
+    // begehbare Fläche dabei ist (Normal-Y < maxWalkableSlopeY=0.5,
+    // entspricht >60° Steigung), gilt `state.onSteepSlope = true` und
+    // der Bewegungs-Input wird auf 20 % gedrosselt. Damit klebt der
+    // Spieler nicht mehr an senkrechten Wänden.
+    const wave6a3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            // 6.A3 — state-Felder existieren mit korrekten Defaults
+            out.hasMaxWalkableSlopeY = typeof r.state.maxWalkableSlopeY === "number";
+            out.maxWalkableSlopeYValue = r.state.maxWalkableSlopeY;
+            out.maxWalkableSlopeYIs05 = Math.abs(r.state.maxWalkableSlopeY - 0.5) < 0.001;
+            out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
+            out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
+
+            // 6.A3 — Diskriminations-Test mit zwei kontrollierten Setups:
+            // (a) Spieler hoch in den Himmel → nicht geerdet → onSteepSlope MUSS false sein
+            //     (Logik: onSteepSlope = isGrounded && bestNormalY<0.5).
+            // (b) Spieler auf der Oberseite eines spawnenden Bauwerks (Tempel)
+            //     → geerdet, Normal-Y der Top-Box ist ~1.0 → onSteepSlope MUSS false sein.
+            // Wir reden NICHT über das natürliche Initial-Terrain — das ist
+            // prozedural und kann an einzelnen Stellen steile Hänge haben.
+            const _savedX = r.state.playerMesh.position.x;
+            const _savedY = r.state.playerMesh.position.y;
+            const _savedZ = r.state.playerMesh.position.z;
+
+            // (a) Himmel — Cache invalidieren (V8.X.5 D1 hält das Ergebnis
+            // 33 ms; nach dem 20-s-Lauf hat er einen stale Wert von der
+            // alten Spieler-Position). Vor jedem isPlayerGrounded-Call
+            // den `_groundedCachedAt` nullen.
+            r.state.playerMesh.position.set(0, 5000, 0);
+            r.state._groundedCachedAt = 0;
+            r.isPlayerGrounded();
+            out.skyOnSteepSlope = r.state.onSteepSlope;
+            out.skyGroundNormalY = r.state.groundNormalY;
+
+            // (b) Flacher Bauwerks-Top: separater Tempel-Spawn
+            const _beforeArchA3 = r.state.architectures.length;
+            const _entryA3 = r.spawnArchitecture("temple", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
+            let flatBlueprintNotSteep = false;
+            if (_entryA3 && _entryA3.mesh) {
+                const box = new THREE.Box3().setFromObject(_entryA3.mesh);
+                // Setze Spieler knapp über die Top-Fläche
+                r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
+                r.state._groundedCachedAt = 0;
+                r.isPlayerGrounded();
+                flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
+                out.archTopGroundNormalY = r.state.groundNormalY;
+                out.archTopOnSteepSlope = r.state.onSteepSlope;
+            }
+            out.flatBlueprintNotSteep = flatBlueprintNotSteep;
+            r.state.architectures = r.state.architectures.slice(0, _beforeArchA3);
+            r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
+
+            // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
+            // (sonst wäre das Tracking ein No-op)
+            const fnSrc = r.isPlayerGrounded.toString();
+            out.fnReadsNormal = fnSrc.includes("get_m_hitNormalWorld");
+            out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
+            out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
+
+            // 6.A3 — Diskriminations-Test: Bewegungs-Loop drosselt auf
+            // steilem Hang. Wir prüfen die slopePenalty-Logik im
+            // Quellcode der Bewegungs-Phase (statischer Check, weil
+            // einen echten Slope im Headless zu synthetisieren fragil
+            // ist). V9.44-f — die Bewegung lebt in _loopPlayerMovement.
+            const loopSrc = r._loopPlayerMovement ? r._loopPlayerMovement.toString() : "";
+            out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
+            out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
+            out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
+
+            return out;
+        })
+        .catch(() => null);
+
+    if (wave6a3Results) {
+        check("Welle 6.A3: state.maxWalkableSlopeY existiert", wave6a3Results.hasMaxWalkableSlopeY);
+        check(
+            "Welle 6.A3: maxWalkableSlopeY == 0.5 (cos 60° = walkable bis 60°)",
+            wave6a3Results.maxWalkableSlopeYIs05
+        );
+        check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
+        check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
+        check(
+            "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
+            wave6a3Results.fnReadsNormal
+        );
+        check("Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag", wave6a3Results.fnSetsSteepFlag);
+        check("Welle 6.A3: isPlayerGrounded setzt groundNormalY", wave6a3Results.fnSetsGroundNormal);
+        check(
+            "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
+            wave6a3Results.skyOnSteepSlope === false
+        );
+        check(
+            "Welle 6.A3: Diskrimination — flache Bauwerks-Oberseite ist NICHT als steil markiert",
+            wave6a3Results.flatBlueprintNotSteep
+        );
+        check("Welle 6.A3: Bewegungs-Loop nutzt slopePenalty-Variable", wave6a3Results.movementUsesSlopePenalty);
+        check("Welle 6.A3: Bewegungs-Loop hat onSteepSlope ? 0.2 : 1.0 Drossel", wave6a3Results.movementHasSlopeBranch);
+        check(
+            "Welle 6.A3: Bewegungs-Loop lässt Velocity stehen wenn onSteepSlope (Slide-Verhalten)",
+            wave6a3Results.movementSlideOnSlope
+        );
+    }
+
+    // ### Welle 6.A4+6.A5 — Raycast-Place + Stabilitäts-Visual ###
+    //
+    // tickBuildMode delegiert an _resolvePhantomTarget — der castet aus
+    // der Kamera, gibt {x, y, z, isStable, hit} zurück. Phantom-Position
+    // folgt damit der Kamera-Blickrichtung (Pitch wirkt!), Tint färbt
+    // bei stabilem Boden grün, sonst rot.
+    const wave6a45Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasResolveMethod = typeof r._resolvePhantomTarget === "function";
+            out.hasTintMethod = typeof r._applyPhantomTint === "function";
+            out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
+
+            // Source-Checks: tickBuildMode nutzt die neuen Pfade
+            const tickSrc = r.tickBuildMode.toString();
+            out.tickUsesResolve = /_resolvePhantomTarget/.test(tickSrc);
+            out.tickUsesTint = /_applyPhantomTint/.test(tickSrc);
+            out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
+
+            const resolveSrc = r._resolvePhantomTarget.toString();
+            out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
+            out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
+            // V8.26 Polish §6.3 — _resolvePhantomTarget ruft jetzt
+            // _runRaycast statt direkt rayTest. _runRaycast wickelt
+            // physicsWorld.rayTest intern + Cleanup. Beide Pattern
+            // sind akzeptabel.
+            out.resolveUsesRayTest = /rayTest|_runRaycast/.test(resolveSrc);
+            out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
+            out.resolveHasFallback = /fallback/.test(resolveSrc);
+            out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
+
+            const tintSrc = r._applyPhantomTint.toString();
+            out.tintCachesOrigColor = /_origColor/.test(tintSrc);
+            out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
+            out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
+
+            // Funktionaler Test: Build-Modus auf "village"-Slot 0 aktivieren,
+            // Kamera so positionieren dass sie in den Heightfield-Boden
+            // schaut, tickBuildMode aufrufen, prüfen dass Phantom im
+            // Treffer-Bereich liegt + isStable=true.
+            const savedYaw = r.state.yaw;
+            const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
+            const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
+            const savedPlayerPos = r.state.playerMesh.position.clone();
+            const savedBuild = JSON.parse(
+                JSON.stringify({
+                    active: r.state.buildMode.active,
+                    slotIndex: r.state.buildMode.slotIndex,
+                    blueprintName: r.state.buildMode.blueprintName,
+                })
+            );
+
+            // Garantiert flache Test-Oberfläche: Tempel spawnen,
+            // Kamera direkt darüber positionieren — die Top-Sub-Box hat
+            // eine flache Oberseite (Normal-Y ~ 1), zuverlässiger als
+            // das prozedurale Heightfield (das an manchen Stellen steil ist).
+            // V9.33 Phase 5c.2.b — die Voxel-Eingangs-Welt hat Voxel-
+            // Chunks bei (60,60) (Sicht-Ring 4 reicht ~172 m); der
+            // Tempel-Spawn auf y=0 würde im Voxel-Terrain stecken,
+            // der Raycast den Voxel-Boden statt den Tempel treffen.
+            // Spawn-Y=200 hebt den Tempel klar über die Voxel-Spitzen
+            // (Surface ~ base+64 max), die Stabilitäts-Probe ist ehrlich.
+            const _spawnArchX = 60;
+            const _spawnArchZ = 60;
+            const _spawnArchY = 200;
+            const _beforeArchA45 = r.state.architectures.length;
+            const _archEntry = r.spawnArchitecture(
+                "temple",
+                { x: _spawnArchX, y: _spawnArchY, z: _spawnArchZ },
+                { seed: 4711 }
+            );
+            out.testArchSpawned = !!_archEntry;
+            let _archTopY = 0;
+            if (_archEntry && _archEntry.mesh) {
+                const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
+                _archTopY = _box.max.y;
+            }
+            r.state.playerMesh.position.set(_spawnArchX, _archTopY + 5, _spawnArchZ);
+            // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
+            r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
+            r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
+            // Build-Modus auf Slot 0 (village in Default-Hotbar)
+            r.selectHotbarSlot(0);
+            out.buildModeActive = r.state.buildMode.active;
+            out.phantomExists = !!r.state.buildMode.phantomMesh;
+            if (r.state.buildMode.phantomMesh) {
+                r.tickBuildMode();
+                const phantomPos = r.state.buildMode.phantomMesh.position;
+                // Erwartung: Phantom landet auf Bauwerks-Top bei
+                // _archTopY, alter Fallback wäre playerY-0.5 = _archTopY+4.5.
+                // Hit-Y ist klar < playerY−1.
+                out.phantomY = phantomPos.y;
+                out.phantomYDownward = phantomPos.y < r.state.playerMesh.position.y - 1;
+                // Stabilität: Boden flache Oberseite → Normal-Y ~ 1 → isStable=true
+                out.phantomOnGroundAfterTick = r.state.buildMode.phantomOnGround;
+
+                // Diskrimination 2: Kamera nach oben in den Himmel → kein Hit → fallback
+                r.state.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
+                r.tickBuildMode();
+                out.phantomOnGroundSky = r.state.buildMode.phantomOnGround;
+            }
+
+            // Cleanup
+            r._clearBuildMode();
+            r.state.architectures = r.state.architectures.slice(0, _beforeArchA45);
+            if (savedCamPos) r.state.camera.position.copy(savedCamPos);
+            if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
+            r.state.playerMesh.position.copy(savedPlayerPos);
+            r.state.yaw = savedYaw;
+
+            return out;
+        })
+        .catch(() => null);
+
+    if (wave6a45Results) {
+        check("Welle 6.A4: _resolvePhantomTarget-Methode existiert", wave6a45Results.hasResolveMethod);
+        check("Welle 6.A5: _applyPhantomTint-Methode existiert", wave6a45Results.hasTintMethod);
+        check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
+        check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
+        check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
+        check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
+        check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
+        check(
+            "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
+            wave6a45Results.resolveUsesGetWorldDirection
+        );
+        check("Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest", wave6a45Results.resolveUsesRayTest);
+        check("Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität", wave6a45Results.resolveReadsNormal);
+        check(
+            "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
+            wave6a45Results.resolveStabilityThreshold
+        );
+        check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
+        check("Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)", wave6a45Results.tintCachesOrigColor);
+        check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
+        check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
+        if (wave6a45Results.phantomExists) {
+            check(
+                "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
+                wave6a45Results.phantomYDownward
+            );
+            check(
+                "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
+                wave6a45Results.phantomOnGroundAfterTick === true
+            );
+            check(
+                "Welle 6.A5: Diskrimination — Kamera auf Himmel → phantomOnGround=false",
+                wave6a45Results.phantomOnGroundSky === false
+            );
+        }
+    }
+
+    // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
+    const wave6e1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || typeof r.describeProgram !== "function") return null;
+            const out = {};
+            out.hasDescribeMethod = typeof r.describeProgram === "function";
+            out.hasPosHelper = typeof r._describeDslPosition === "function";
+            out.hasCondHelper = typeof r._describeDslCondition === "function";
+            // Vorlagen-Smoke-Tests
+            out.weatherDesc = r.describeProgram(["weather", "rainy"]);
+            out.spawnCreatureDesc = r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]);
+            out.chainDesc = r.describeProgram(["chain", ["weather", "sunny"], ["spawn_tree", ["near_player"], 4]]);
+            out.whenDesc = r.describeProgram(["when", ["emotion_above", "joy", 0.7], ["skybox_color", "0xffaa00"]]);
+            out.unknownDesc = r.describeProgram(["fictional_op", 42]);
+            out.weatherOk = /Wetter/.test(out.weatherDesc) && /rainy/.test(out.weatherDesc);
+            out.creatureOk =
+                /3/.test(out.spawnCreatureDesc) &&
+                /happy/.test(out.spawnCreatureDesc) &&
+                /Spieler/.test(out.spawnCreatureDesc);
+            out.chainOk = /und/.test(out.chainDesc);
+            out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
+            out.unknownOk = /fictional_op/.test(out.unknownDesc);
+            // Diskrimination: Beschreibung wird beim addNewAbility gespeichert
+            const beforeCount = r.state.dsl.abilities.length;
+            r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
+            const added = r.state.dsl.abilities.find((a) => a.name === "test_desc_e1");
+            out.persistedDescription = added ? added.description : null;
+            out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
+            r.state.dsl.abilities = r.state.dsl.abilities.slice(0, beforeCount);
+            delete r.state.abilities.test_desc_e1;
+            // Lazy-Compute für Legacy-Save: Eintrag ohne description hinzufügen,
+            // renderAbilitiesList ruft → description wird befüllt.
+            r.state.dsl.abilities.push({
+                name: "legacy_test_e1",
+                program: ["weather", "sunny"],
+                source: "test",
+                createdAt: 0,
+            });
+            if (typeof r.renderAbilitiesList === "function") r.renderAbilitiesList();
+            const legacyAfter = r.state.dsl.abilities.find((a) => a.name === "legacy_test_e1");
+            out.lazyComputed = !!(legacyAfter && legacyAfter.description);
+            r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
+            return out;
+        })
+        .catch(() => null);
+
+    if (wave6e1Results) {
+        check("Welle 6.E1: describeProgram-Methode existiert", wave6e1Results.hasDescribeMethod);
+        check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
+        check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
+        check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
+        check("Welle 6.E1: spawn_creature-Op nutzt count + emotion + position", wave6e1Results.creatureOk);
+        check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
+        check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
+        check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
+        check("Welle 6.E1: addNewAbility persistiert description-Feld", wave6e1Results.persistedOk);
+        check(
+            "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
+            wave6e1Results.lazyComputed
+        );
+    }
+
+    // ### Welle 6.E2 — Intro-Overlay ###
+    const wave6e2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasInitMethod = typeof r.initIntroDialog === "function";
+            out.hasPagesHelper = typeof r._introPages === "function";
+            out.dialogInDom = !!document.getElementById("intro-dialog");
+            const pages = r._introPages ? r._introPages() : [];
+            out.pageCount = pages.length;
+            out.pagesHaveTitle = pages.every((p) => typeof p.title === "string" && p.title.length > 0);
+            out.pagesHaveBody = pages.every((p) => typeof p.body === "string" && p.body.length > 20);
+            // Buttons im DOM
+            const dlg = document.getElementById("intro-dialog");
+            if (dlg) {
+                out.hasPrevBtn = !!dlg.querySelector("[data-intro='prev']");
+                out.hasNextBtn = !!dlg.querySelector("[data-intro='next']");
+                out.hasSkipBtn = !!dlg.querySelector("[data-intro='skip']");
+            }
+            // Idempotenz: zweiter Aufruf erzeugt kein zweites Dialog
+            r.initIntroDialog();
+            out.singletonAfterReinit = document.querySelectorAll("#intro-dialog").length === 1;
+            return out;
+        })
+        .catch(() => null);
+
+    if (wave6e2Results) {
+        check("Welle 6.E2: initIntroDialog-Methode existiert", wave6e2Results.hasInitMethod);
+        check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
+        check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
+        check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
+        check(
+            "Welle 6.E2: alle Seiten haben Titel + Text",
+            wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody
+        );
+        check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
+        check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
+        check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
+        check("Welle 6.E2: Re-Init erzeugt kein Duplikat (Singleton)", wave6e2Results.singletonAfterReinit);
+    }
+
+    // ### Welle 6.F1 + 6.F2 — Visuelle Verbindungs-Linien + Brech-Warning ###
+    //
+    // _addConnectionLines hängt pro Connection eine THREE.Line an die
+    // gebaute Group. Farbe folgt computeConnectionStrength via
+    // _connectionColor (grün/gelb/rot). 6.F2: Wenn die schwächste
+    // Verbindung < 0.7 ist, schreibt _applyCompoundWorldEffects einen
+    // idempotenten weakness-Journal-Eintrag.
+    const wave6fResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasAddLinesMethod = typeof r._addConnectionLines === "function";
+            out.hasColorHelper = typeof r._connectionColor === "function";
+
+            // Farb-Mapping
+            out.colorWeak = r._connectionColor(0.4);
+            out.colorOk = r._connectionColor(1.0);
+            out.colorStrong = r._connectionColor(2.0);
+            out.colorWeakIsRed = out.colorWeak === 0xff5555;
+            out.colorOkIsYellow = out.colorOk === 0xffcc44;
+            out.colorStrongIsGreen = out.colorStrong === 0x66ff88;
+
+            // Test-Bauplan mit zwei Parts + einer expliziten Verbindung
+            const testName = "wave6f_test";
+            r.state.blueprints[testName] = {
+                name: testName,
+                label: "Test",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        color: 0x888888,
+                        material: "stein",
+                    },
+                    {
+                        shape: "box",
+                        position: { x: 1.05, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                        color: 0x888888,
+                        material: "stein",
+                    },
+                ],
+                connections: [{ type: "masonry", partA: 0, partB: 1 }],
+            };
+            // Build und auf THREE.Line prüfen
+            const built = r._buildFromBlueprint(r.state.blueprints[testName]);
+            // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
+            // einen Mittelpunkt-Marker (beide isConnectionLine), damit
+            // die Verbindung auch bei überlappenden Parts sichtbar ist.
+            let connLineCount = 0;
+            let connMarkerCount = 0;
+            let lineColor = null;
+            built.traverse((node) => {
+                if (node.userData && node.userData.isConnectionLine) {
+                    if (node.isLine) connLineCount++;
+                    if (node.isMesh) connMarkerCount++;
+                    if (node.material && node.material.color) lineColor = node.material.color.getHex();
+                }
+            });
+            out.lineCount = connLineCount;
+            out.lineExists = connLineCount === 1 && connMarkerCount === 1;
+            out.lineHasUserDataFlag = connLineCount === 1;
+            out.lineColor = lineColor;
+
+            // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
+            // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
+            const weakName = "wave6f_weak";
+            r.state.blueprints[weakName] = {
+                name: weakName,
+                label: "Schwach",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                        material: "stein",
+                    },
+                    {
+                        shape: "box",
+                        position: { x: 10, y: 0, z: 0 },
+                        size: { x: 0.5, y: 0.5, z: 0.5 },
+                        material: "stein",
+                    },
+                ],
+                connections: [{ type: "gluing", partA: 0, partB: 1 }],
+            };
+            const weakStrength = r.computeConnectionStrength(
+                r.state.blueprints[weakName].connections[0],
+                r.state.blueprints[weakName]
+            );
+            out.weakStrength = weakStrength;
+            out.weakIsBelowThreshold = weakStrength < 0.7;
+
+            // Journal-Counter vor spawn
+            const beforeJournal =
+                r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+            const beforeSeenKeys =
+                r.state.worldJournal && r.state.worldJournal.seen
+                    ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+                    : 0;
+            const beforeArchCount = r.state.architectures.length;
+            r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
+            const afterSeenKeys =
+                r.state.worldJournal && r.state.worldJournal.seen
+                    ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+                    : 0;
+            const afterJournal =
+                r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+            out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
+            out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
+
+            // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
+            r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
+            const after2Journal =
+                r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+            out.weakIsIdempotent = after2Journal === afterJournal;
+
+            // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
+            const strongName = "wave6f_strong";
+            r.state.blueprints[strongName] = {
+                name: strongName,
+                label: "Stark",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                        material: "eisen",
+                    },
+                    {
+                        shape: "box",
+                        position: { x: 2.0, y: 0, z: 0 },
+                        size: { x: 2, y: 2, z: 2 },
+                        material: "eisen",
+                    },
+                ],
+                connections: [{ type: "welding", partA: 0, partB: 1 }],
+            };
+            const strongStrength = r.computeConnectionStrength(
+                r.state.blueprints[strongName].connections[0],
+                r.state.blueprints[strongName]
+            );
+            out.strongStrength = strongStrength;
+            out.strongIsAboveThreshold = strongStrength >= 0.7;
+            const seenBefore3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+                k.startsWith("weak_connection:" + strongName)
+            ).length;
+            r.spawnArchitecture(strongName, { x: 270, y: 0, z: 270 }, { seed: 3 });
+            const seenAfter3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+                k.startsWith("weak_connection:" + strongName)
+            ).length;
+            out.strongNoWarning = seenAfter3 === seenBefore3;
+
+            // Cleanup
+            r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+            delete r.state.blueprints[testName];
+            delete r.state.blueprints[weakName];
+            delete r.state.blueprints[strongName];
+
+            return out;
+        })
+        .catch(() => null);
+
+    if (wave6fResults) {
+        check("Welle 6.F1: _addConnectionLines-Methode existiert", wave6fResults.hasAddLinesMethod);
+        check("Welle 6.F1: _connectionColor-Helper existiert", wave6fResults.hasColorHelper);
+        check("Welle 6.F1: schwache Verbindung (<0.7) = rot 0xff5555", wave6fResults.colorWeakIsRed);
+        check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
+        check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
+        check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
+        check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
+        check("Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)", wave6fResults.weakIsBelowThreshold);
+        check(
+            "Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag",
+            wave6fResults.weakJournalIncrement
+        );
+        check("Welle 6.F2: weak_connection:-Schlüssel im worldJournal.seen", wave6fResults.weakSeenKeyAdded);
+        check("Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn", wave6fResults.weakIsIdempotent);
+        check(
+            "Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)",
+            wave6fResults.strongIsAboveThreshold
+        );
+        check(
+            "Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus",
+            wave6fResults.strongNoWarning
+        );
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.D Etappen 1, 2, 3a, 3b, 1.6, 1.7 + Reflexions-Fixes — Soul/Stats/Equipment/Avatar-Editor).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6DSoul(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
+    //
+    // Vision-Pfeiler-Test: der Spieler ist ein Compound im selben
+    // Hylomorphismus-System wie Architekturen + Materialien. Die 10
+    // MATERIAL_TAG_KEYS sind die EINE Sprache; Soul-Tags + Material-Tags
+    // sind beide an dieselbe Achsen-Liste gebunden. STAT_FROM_TAGS-Formeln
+    // sind reine Funktionen — Diskriminations-Tests prüfen Verhältnisse
+    // (Phönix schneller als Drache, Drache mehr HP als Phönix).
+    const wave6dResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
+            // sieht sie direkt (kein window-Prefix nötig).
+            const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+            if (!C || !C.STAT_FROM_TAGS) return null;
+            const out = {};
+            out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
+            out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
+            out.hasComputeMethod = typeof r.computePlayerStats === "function";
+            out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
+            out.hasRenderMethod = typeof r.renderPlayerStatsUI === "function";
+
+            // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
+            const defs = r.playerSoulDefs;
+            out.allSoulsHaveBodyParts = ["human", "phoenix", "dragon"].every(
+                (s) => defs[s] && Array.isArray(defs[s].bodyParts) && defs[s].bodyParts.length >= 3
+            );
+            out.bodyPartsHaveShapeMaterial = ["human", "phoenix", "dragon"].every((s) =>
+                defs[s].bodyParts.every((p) => typeof p.shape === "string" && typeof p.material === "string")
+            );
+            // Tag-Aggregation: bodyParts liefern Compound-Tags via dieselbe
+            // MAX-Aggregation wie Architekturen (computeCompoundTags).
+            out.hasSoulCompoundTagsMethod = typeof r.computeSoulCompoundTags === "function";
+            const humanCompoundTags = r.computeSoulCompoundTags(defs.human);
+            out.humanCompoundTagsAreObject = humanCompoundTags && typeof humanCompoundTags === "object";
+            // Aggregierte Tags sollten echte MATERIAL_TAG_KEYS sein
+            out.compoundUsesMaterialKeys = Object.keys(humanCompoundTags).every((k) => C.MATERIAL_TAG_KEYS.includes(k));
+            // Body-Materialien müssen in state.materials existieren
+            out.bodyMaterialsExist =
+                !!r.state.materials.knochen &&
+                !!r.state.materials.fleisch &&
+                !!r.state.materials.federn &&
+                !!r.state.materials.schuppen &&
+                !!r.state.materials.glut;
+            out.bodyMaterialsAreLebendig =
+                (r.state.materials.knochen.tags.lebendig || 0) > 0.9 &&
+                (r.state.materials.fleisch.tags.lebendig || 0) > 0.9 &&
+                (r.state.materials.federn.tags.lebendig || 0) > 0.9 &&
+                (r.state.materials.schuppen.tags.lebendig || 0) > 0.9;
+
+            // computePlayerStats — gibt {tags, stats} zurück
+            const computed = r.computePlayerStats();
+            out.computedHasTags = computed && typeof computed.tags === "object";
+            out.computedHasStats = computed && typeof computed.stats === "object";
+            out.computedStatsHasAll =
+                computed &&
+                computed.stats &&
+                ["hpMax", "damage", "speed", "jumpPower", "staminaMax", "precision", "magicResist", "heatResist"].every(
+                    (k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k])
+                );
+
+            // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
+            const savedSoul = r.state.player.soul;
+            r.state.player.soul = "human";
+            const humanStats = r.computePlayerStats().stats;
+            r.state.player.soul = "phoenix";
+            const phoenixStats = r.computePlayerStats().stats;
+            r.state.player.soul = "dragon";
+            const dragonStats = r.computePlayerStats().stats;
+            r.state.player.soul = savedSoul;
+
+            out.humanStats = humanStats;
+            out.phoenixStats = phoenixStats;
+            out.dragonStats = dragonStats;
+
+            // Vision-Treue: Phönix = glass cannon (schneller, weniger HP)
+            out.phoenixFasterThanDragon = phoenixStats.speed > dragonStats.speed;
+            out.phoenixJumpsHigherThanDragon = phoenixStats.jumpPower > dragonStats.jumpPower;
+            out.dragonHasMoreHpThanPhoenix = dragonStats.hpMax > phoenixStats.hpMax;
+            out.dragonHasMoreDamageThanPhoenix = dragonStats.damage > phoenixStats.damage;
+            out.phoenixHasMoreMagicResistThanDragon = phoenixStats.magicResist > dragonStats.magicResist;
+            // Phönix brennbar=0.9, wärme=0.9: -0.9*0.3 + 0.9*0.5 = 0.18.
+            // Drache brennbar=0.3, wärme=0.8: -0.3*0.3 + 0.8*0.5 = 0.31. Drache mehr Hitze-Resistenz.
+            out.dragonHasMoreHeatResistThanPhoenix = dragonStats.heatResist > phoenixStats.heatResist;
+            // Mensch ist balanced (zwischen den anderen beiden bei HP)
+            out.humanHpBetweenPhoenixAndDragon =
+                humanStats.hpMax > phoenixStats.hpMax && humanStats.hpMax < dragonStats.hpMax;
+
+            // recomputePlayerStats — applies to state
+            r.state.player.soul = "phoenix";
+            r.recomputePlayerStats();
+            out.stateSpeedMatches = Math.abs(r.state.speed - phoenixStats.speed) < 0.001;
+            out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - phoenixStats.jumpPower) < 0.001;
+            out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - phoenixStats.speed * 2) < 0.001;
+            out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
+            out.statePlayerHasHpAndStamina =
+                typeof r.state.player.hp === "number" &&
+                typeof r.state.player.hpMax === "number" &&
+                typeof r.state.player.stamina === "number" &&
+                typeof r.state.player.staminaMax === "number" &&
+                r.state.player.hp === r.state.player.hpMax;
+            // Restore
+            r.state.player.soul = savedSoul;
+            r.recomputePlayerStats();
+
+            // applyPlayerSoul ruft recompute auf
+            const applySrc = r.applyPlayerSoul.toString();
+            out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
+
+            // UI im DOM
+            out.statsContainerInDom = !!document.getElementById("player-stats");
+            // Render-Methode arbeitet ohne Crash
+            let renderOk = false;
+            try {
+                r.renderPlayerStatsUI();
+                renderOk = true;
+            } catch (e) {
+                out.renderError = String(e);
+            }
+            out.renderOk = renderOk;
+            if (renderOk) {
+                const dom = document.getElementById("player-stats");
+                out.statRowsCount = dom ? dom.querySelectorAll(".stat-row").length : 0;
+                out.hasTagLine = dom ? !!dom.querySelector(".stat-tags") : false;
+            }
+            return out;
+        })
+        .catch(() => null);
+
+    // ### Schöpfer-Reflexions-Fixes (13.05.2026, Welle 6.D Etappe 3a+) ###
+    // Sechs Lücken, die der Schöpfer aufdeckte:
+    //  1. WASD A/D-Swap (Drache-Steuerung „invertiert")
+    //  2. „damage X" als Chat-Pattern (war nur DSL-JSON)
+    //  3. Aura am Charakter statt Boden-Ring
+    //  4. Tod-Wunde persistent + linear regenerierend
+    //  5. Werkzeug-Anwendung kostet Stamina
+    //  6. Konsumables aus Compound-Tags (Logik statt Tabelle)
+    const reflexResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+            const out = {};
+
+            // (1) WASD: Original-Mapping wiederhergestellt. Geometrisch
+            // ist state.right tatsächlich „player-links" wegen Right-Hand-
+            // Coords (forward × up = -X). A=+right=player-links, D=-right=
+            // player-rechts — wie es immer war. V9.44-f — die WASD-Logik
+            // lebt in der Bewegungs-Phase _loopPlayerMovement.
+            const loopSrc = r._loopPlayerMovement.toString();
+            out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
+            out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
+
+            // (2) Chat-Pattern für damage
+            const dmgPattern = r.parseChatToDsl("schade mir 42");
+            out.damageChatParses =
+                dmgPattern && dmgPattern.program && dmgPattern.program[0] === "damage" && dmgPattern.program[1] === 42;
+            const trinkPattern = r.parseChatToDsl("trink trank_lichts");
+            out.trinkChatParses = trinkPattern && trinkPattern.program[0] === "apply_boost";
+            const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
+            out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
+
+            // (3) Aura: ECHTER Glow als Sphere + dezenter Sub-Mesh-Tint
+            r.applyPlayerSoul("human");
+            const sub = r.state.playerMesh.children[0];
+            out.subMeshExists = !!sub && !!sub.material;
+            const beforeColor = sub && sub.material ? sub.material.color.getHex() : null;
+            r.tickPlayerAura();
+            out.auraBaseColorCached = sub && sub.userData && typeof sub.userData._auraBaseColor === "number";
+            const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
+            out.auraTintChangedColor = beforeColor !== afterColor;
+            out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
+            // Echter Glow V4: Sprite mit AdditiveBlending + CanvasTexture
+            // (Radial-Gradient für weichen Falloff statt Sphere-Kante)
+            out.glowSpriteExists = !!r.state.playerAuraGlow;
+            if (r.state.playerAuraGlow) {
+                out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
+                out.glowIsSprite = r.state.playerAuraGlow.isSprite === true;
+                const mat = r.state.playerAuraGlow.material;
+                out.glowIsTransparent = !!mat && mat.transparent === true;
+                out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
+                out.glowHasTexture = !!(mat && mat.map);
+                // Position folgt Spieler
+                const pp = r.state.playerMesh.position;
+                const gp = r.state.playerAuraGlow.position;
+                out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
+            }
+
+            // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
+            // wurde wieder revertiert, weil er den Drache in 3rd-Person
+            // visuell zum Spieler hin gespiegelt hat. Kopf-Box bleibt
+            // bei +0.85 in Z (Forward-Richtung).
+            r.applyPlayerSoul("dragon");
+            const dragonGroup = r.state.playerMesh;
+            let dragonHasInnerFlip = false;
+            if (dragonGroup && dragonGroup.children.length > 0) {
+                // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
+                for (const c of dragonGroup.children) {
+                    if (c && c.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
+                        dragonHasInnerFlip = true;
+                        break;
+                    }
+                }
+            }
+            out.dragonNoInnerFlip = !dragonHasInnerFlip;
+            r.applyPlayerSoul("human"); // restore
+
+            // Welle 6.D Polish — player_speed-DSL-Op setzt jetzt
+            // sprintSpeed mit (= 2× speed). Vorher konnte ein dsl
+            // `player_speed 25` state.speed=25 setzen ohne
+            // sprintSpeed zu aktualisieren → Shift drücken machte
+            // den Spieler LANGSAMER.
+            const beforeSprintBug = r.state.sprintSpeed;
+            r.dslRun(["player_speed", 20], { source: "test" });
+            out.speedAfterDsl = r.state.speed;
+            out.sprintAfterDsl = r.state.sprintSpeed;
+            out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * 2) < 0.001;
+            out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
+            // Restore baseline mit explizitem Soul-Reset (frühere Tests
+            // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
+            r.state.player.soul = "human";
+            r.state.player.boosts = [];
+            r.state.player.deathWoundIntensity = 0;
+            r.state.player.equipped = { tool: null, armor: null };
+            r.recomputePlayerStats();
+            // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
+            const humanResult = r.computePlayerStats();
+            out.humanSpeed = humanResult.stats.speed;
+            out.humanTags = JSON.stringify(humanResult.tags);
+            out.humanWound = r.state.player.deathWoundIntensity;
+            out.humanBoostCount = r.state.player.boosts.length;
+            // Mensch ist „balanced" — niedriges magieleitung, hoher dichte
+            // (durch sphere-Kopf-Aktivierung clamped auf 1). Speed-Base 7
+            // gibt Mensch genau 7 (= deutlich höher als vorher 6.1).
+            out.humanSpeedRaised = humanResult.stats.speed >= 7;
+
+            // (4) Tod-Wunde persistent + regeneriert
+            out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
+            out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
+            r.state.player.deathWoundIntensity = 0;
+            r.state.player.phoenixUntil = -Infinity;
+            const baselineHpMax = r.state.player.hpMax;
+            r.triggerPhoenixDeath("test");
+            out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
+            // Wunde drückt dichte/lebendig/zähigkeit → hpMax sinkt + lebendig-Tag sinkt
+            const woundedHpMax = r.state.player.hpMax;
+            out.woundReducesHp = woundedHpMax < baselineHpMax;
+            // Regen-Tick: nach 60 Sekunden simulierter Zeit Wunde reduziert
+            r.state.player.deathLastTick = -Infinity;
+            r.tickPhoenixDeath(performance.now() / 1000);
+            out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
+
+            // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
+            r.state.player.deathWoundIntensity = 0;
+            r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
+            out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
+            out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
+            // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
+            // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
+            // (Default frieden überspringt Stamina-Kosten).
+            if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+            r.state.blueprints.wound_test_bp = {
+                name: "wound_test_bp",
+                label: "Test",
+                builtIn: false,
+                // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
+                parts: [
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                ],
+            };
+            if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+            const staBefore = r.state.player.stamina;
+            const applyOk = r.applyOpToPart("wound_test_bp", 0, "hammer");
+            out.applyOpResult = applyOk;
+            out.staBefore = staBefore;
+            out.staAfter = r.state.player.stamina;
+            out.applyOpOkWithStamina = applyOk && applyOk.ok;
+            out.staminaWasDeducted = r.state.player.stamina < staBefore;
+            // Stamina auf 0 → applyOpToPart lehnt ab
+            r.state.player.stamina = 1; // weniger als cost 10
+            const applyFail = r.applyOpToPart("wound_test_bp", 0, "hammer");
+            out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
+            // Cleanup
+            delete r.state.blueprints.wound_test_bp;
+            r.state.player.stamina = r.state.player.staminaMax;
+
+            // (6) Konsumables aus Compound-Tags
+            out.hasSetBlueprintAsConsumable = typeof r.setBlueprintAsConsumable === "function";
+            // Setup: Bauplan aus quarz-Helix + glut-Sphere (sollte magieleitung + brennbar hoch)
+            r.state.blueprints.wave6d_potion = {
+                name: "wave6d_potion",
+                label: "Magie-Trank",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 0.3, y: 0.5, z: 2 },
+                    },
+                    {
+                        shape: "sphere",
+                        material: "glut",
+                        position: { x: 0, y: 0.5, z: 0 },
+                        size: { x: 0.2, y: 0.2, z: 0.2 },
+                    },
+                ],
+            };
+            const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
+            out.markConsumableOk = markRes && markRes.ok;
+            out.blueprintGotRoleConsumable = r.state.blueprints.wave6d_potion.role === "consumable";
+            out.blueprintHasConsumableMeta =
+                r.state.blueprints.wave6d_potion.consumableMeta &&
+                r.state.blueprints.wave6d_potion.consumableMeta.durationSeconds === 45;
+            // Aktivieren → tagBonus aus Compound-Tags emergiert
+            r.state.player.boosts = [];
+            const drinkRes = r.activateConsumable("wave6d_potion");
+            out.drinkOk = drinkRes && drinkRes.ok;
+            const boost = r.state.player.boosts.find((b) => b.source === "consume:wave6d_potion");
+            out.boostExists = !!boost;
+            out.boostTagBonusFromCompound = boost && boost.tagDelta && (boost.tagDelta.magieleitung || 0) > 0.05;
+            out.boostUsesBlueprintDuration = boost && Math.abs(boost.expiresAt - performance.now() / 1000 - 45) < 2;
+            // Cleanup
+            delete r.state.blueprints.wave6d_potion;
+            r.state.player.boosts = [];
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (reflexResults && !reflexResults.error) {
+        // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
+        // weil forward × up = -X im right-handed Coord-System)
+        check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
+        check("Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)", reflexResults.dPressNegRight);
+        // (2) Chat
+        check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
+        check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
+        check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
+        // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
+        check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
+        check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
+        check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
+        check("Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert", reflexResults.glowSpriteExists);
+        if (reflexResults.glowSpriteExists) {
+            check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
+            check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
+            check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
+            check("Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)", reflexResults.glowIsAdditive);
+            check(
+                "Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)",
+                reflexResults.glowHasTexture
+            );
+            check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
+        }
+        // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
+        // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
+        check(
+            "Drache: kein Inner-π-Flip mehr (Avatar schaut vom Spieler weg in 3rd-Person)",
+            reflexResults.dragonNoInnerFlip
+        );
+        // Sprint-Bug-Fix: player_speed setzt jetzt sprintSpeed mit
+        check(
+            "Welle 6.D Polish: player_speed-DSL-Op aktualisiert sprintSpeed = 2× speed",
+            reflexResults.sprintFollowsSpeed,
+            `speed=${reflexResults.speedAfterDsl} sprint=${reflexResults.sprintAfterDsl}`
+        );
+        check(
+            "Welle 6.D Polish: Sprint ist nach player_speed wirklich SCHNELLER als Walk",
+            reflexResults.sprintActuallyFaster
+        );
+        check(
+            "Welle 6.D Polish: Mensch-Speed mind. 7 (Base-Erhöhung, war vorher 6.1)",
+            reflexResults.humanSpeedRaised,
+            `speed=${(reflexResults.humanSpeed || 0).toFixed(2)}`
+        );
+        // (4) Wunde
+        check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
+        check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
+        check("Reflex 4: triggerPhoenixDeath setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
+        check("Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)", reflexResults.woundReducesHp);
+        check("Reflex 4: tickPhoenixDeath regeneriert Wunde linear", reflexResults.woundRegens);
+        // (5) Werkzeug-Kosten
+        check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
+        check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
+        check(
+            "Reflex 5: applyOpToPart läuft mit ausreichend Stamina",
+            reflexResults.applyOpOkWithStamina,
+            `result=${JSON.stringify(reflexResults.applyOpResult)} sta ${reflexResults.staBefore}→${reflexResults.staAfter}`
+        );
+        check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
+        check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
+        // (6) Konsumables-Logik
+        check("Reflex 6: setBlueprintAsConsumable-Methode existiert", reflexResults.hasSetBlueprintAsConsumable);
+        check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
+        check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
+        check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
+        check(
+            "Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags",
+            reflexResults.drinkOk && reflexResults.boostExists
+        );
+        check(
+            "Reflex 6: Diskrimination — quarz+glut-Bauplan → magieleitung-Boost",
+            reflexResults.boostTagBonusFromCompound
+        );
+        check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
+    } else if (reflexResults && reflexResults.error) {
+        check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
+    }
+
+    // ### Welle 6.D Etappe 3b — Equipment + Aura ###
+    const wave6d3bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+            const out = {};
+            // Konstanten + Methoden
+            out.hasArmorWeight = typeof C.ARMOR_STAT_WEIGHT === "number";
+            out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
+            out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
+            out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
+            out.hasEquipTool = typeof r.equipTool === "function";
+            out.hasEquipArmor = typeof r.equipArmor === "function";
+            out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
+            out.hasEquippedState =
+                r.state.player.equipped && "tool" in r.state.player.equipped && "armor" in r.state.player.equipped;
+            out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
+            out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
+            // NON_BROADCASTABLE
+            out.equipNonBroadcast =
+                C.NON_BROADCASTABLE_OPS.has("equip_tool") &&
+                C.NON_BROADCASTABLE_OPS.has("equip_armor") &&
+                C.NON_BROADCASTABLE_OPS.has("unequip");
+
+            // Setup: Custom-Bauplan für Armor + Werkzeug
+            const savedSoul = r.state.player.soul;
+            r.applyPlayerSoul("human");
+            const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+
+            // Eisen-Rüstung-Bauplan
+            r.state.blueprints.test_armor_eisen = {
+                name: "test_armor_eisen",
+                label: "Eisen-Plate",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                ],
+            };
+            // Markieren als Rüstung
+            const markResult = r.setBlueprintAsArmor("test_armor_eisen");
+            out.markArmorOk = markResult.ok;
+            out.markArmorSetsRole = r.state.blueprints.test_armor_eisen.role === "armor";
+
+            // Built-in schützen
+            r.state.blueprints.village.builtIn = true;
+            const markBuiltinResult = r.setBlueprintAsArmor("village");
+            out.markBuiltinRejected = !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
+
+            // Equip Rüstung
+            const equipResult = r.equipArmor("test_armor_eisen");
+            out.equipArmorOk = equipResult.ok;
+            out.equippedArmorIs = r.state.player.equipped.armor === "test_armor_eisen";
+            // Stat-Diskrimination: eisen hat hohe dichte + härte → hpMax steigt
+            const armoredStats = r.state.player.stats;
+            out.armorIncreasesHp = armoredStats.hpMax > baselineStats.hpMax + 5;
+            out.armorIncreasesDamage = armoredStats.damage > baselineStats.damage + 0.5;
+
+            // Equip auf Rüstung ohne Marker → abgelehnt
+            r.state.blueprints.test_plain = {
+                name: "test_plain",
+                label: "Unmarked",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                ],
+            };
+            const equipUnmarkedResult = r.equipArmor("test_plain");
+            out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
+
+            // Unequip
+            r.equipArmor(null);
+            out.unequippedRestoresStats = Math.abs(r.state.player.stats.hpMax - baselineStats.hpMax) < 0.01;
+            out.equippedArmorNull = r.state.player.equipped.armor === null;
+
+            // Equipped via DSL
+            r.equipArmor("test_armor_eisen");
+            r.dslRun(["unequip", "armor"], { source: "test" });
+            out.dslUnequipWorks = r.state.player.equipped.armor === null;
+
+            // Werkzeug equippen
+            r.state.player.tools = r.state.player.tools || [];
+            if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
+            const equipToolResult = r.equipTool("hammer");
+            out.equipBuiltinToolOk = equipToolResult.ok;
+            out.equippedToolIs = r.state.player.equipped.tool === "hammer";
+            // Built-in-Werkzeug hat KEINEN sourceBlueprint → trägt kein Tag-Bonus
+            // (das ist ok: nur Bauplan-Werkzeuge stacken Stats; Built-ins
+            // sind Präzisions-Modulatoren via opChain).
+            const toolStats = r.state.player.stats;
+            out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
+
+            // Save-Round-Trip
+            r.equipArmor("test_armor_eisen");
+            r.equipTool("hammer");
+            const snap = r.buildStateSnapshot();
+            out.snapHasEquipped =
+                snap.playerEquipped &&
+                snap.playerEquipped.armor === "test_armor_eisen" &&
+                snap.playerEquipped.tool === "hammer";
+
+            // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
+            r.tickPlayerAura();
+            // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
+            const subMesh = r.state.playerMesh.children[0];
+            out.auraSubMeshTinted =
+                !!subMesh && !!subMesh.userData && typeof subMesh.userData._auraBaseColor === "number";
+
+            // Cleanup
+            r.equipArmor(null);
+            r.equipTool(null);
+            delete r.state.blueprints.test_armor_eisen;
+            delete r.state.blueprints.test_plain;
+            r.applyPlayerSoul(savedSoul);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6d3bResults && !wave6d3bResults.error) {
+        check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasArmorWeight);
+        check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
+        check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
+        check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
+        check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
+        check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
+        check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
+        check("Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}", wave6d3bResults.hasEquippedState);
+        check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
+        check(
+            "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
+            wave6d3bResults.auraHueMapHasAllTags
+        );
+        check("Welle 6.D Etappe 3b: equip-Ops in NON_BROADCASTABLE_OPS (privat)", wave6d3bResults.equipNonBroadcast);
+        check("Welle 6.D Etappe 3b: setBlueprintAsArmor liefert ok", wave6d3bResults.markArmorOk);
+        check("Welle 6.D Etappe 3b: setBlueprintAsArmor setzt role:'armor'", wave6d3bResults.markArmorSetsRole);
+        check(
+            "Welle 6.D Etappe 3b: Built-in-Bauplan kann nicht als Rüstung markiert werden",
+            wave6d3bResults.markBuiltinRejected
+        );
+        check("Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan", wave6d3bResults.equipArmorOk);
+        check("Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung", wave6d3bResults.equippedArmorIs);
+        check(
+            "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht hpMax (dichte + härte hoch)",
+            wave6d3bResults.armorIncreasesHp
+        );
+        check(
+            "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht damage",
+            wave6d3bResults.armorIncreasesDamage
+        );
+        check("Welle 6.D Etappe 3b: Bauplan ohne role:'armor' wird abgelehnt", wave6d3bResults.unmarkedRejected);
+        check("Welle 6.D Etappe 3b: unequip stellt baseline-Stats wieder her", wave6d3bResults.unequippedRestoresStats);
+        check(
+            "Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip",
+            wave6d3bResults.equippedArmorNull
+        );
+        check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
+        check("Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug", wave6d3bResults.equipBuiltinToolOk);
+        check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
+        check(
+            "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
+            wave6d3bResults.builtinToolNoStatChange
+        );
+        check("Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped", wave6d3bResults.snapHasEquipped);
+        check(
+            "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
+            wave6d3bResults.auraSubMeshTinted
+        );
+    } else if (wave6d3bResults && wave6d3bResults.error) {
+        check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
+    }
+
+    // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
+    const wave6d3aResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+            const out = {};
+            // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
+            // Modus (Default frieden blockiert sonst Schaden + Stamina).
+            if (typeof r.setGameMode === "function") r.setGameMode("pfad");
+
+            // --- Tod-Behandlung ---
+            out.hasDamageMethod = typeof r.damagePlayer === "function";
+            out.hasTriggerPhoenixMethod = typeof r.triggerPhoenixDeath === "function";
+            out.hasTickPhoenixMethod = typeof r.tickPhoenixDeath === "function";
+            out.hasPhoenixState = "phoenixUntil" in r.state.player;
+            out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
+
+            // Setup
+            const savedSoul = r.state.player.soul;
+            if (savedSoul !== "human") r.applyPlayerSoul("human");
+            r.state.player.phoenixUntil = -Infinity;
+
+            const hpMax = r.state.player.hpMax;
+            const hpBefore = r.state.player.hp;
+            r.damagePlayer(20, "test");
+            out.hpDropped = r.state.player.hp === hpBefore - 20;
+            // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
+            const hpAfterHeat = r.state.player.hp;
+            r.damagePlayer(20, "fire-test");
+            const hpDelta = hpAfterHeat - r.state.player.hp;
+            out.heatResistReducesDamage = hpDelta < 20 - 1;
+
+            // Tod-Trigger
+            r.damagePlayer(99999, "kill-test");
+            out.killTriggersPhoenix = r.state.player.soul === "phoenix";
+            out.phoenixUntilSet = r.state.player.phoenixUntil > performance.now() / 1000;
+            out.preDeathSoulRemembered = r.state.player.preDeathSoul === "human";
+            out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
+            out.weltTrauerAwe = r.state.player.emotions.awe > 0.15;
+            out.hpRestoredAfterDeath = r.state.player.hp > 0;
+            // Journal-Eintrag
+            const journalEntries = r.state.worldJournal && r.state.worldJournal.entries;
+            out.journalHasLossEntry =
+                Array.isArray(journalEntries) &&
+                journalEntries.some((e) => e.type === "loss" && /fiel/.test(e.text || ""));
+
+            // Doppelt-Tod-Schutz
+            const hpInPhoenix = r.state.player.hp;
+            const beforeJournalCount = journalEntries.length;
+            r.damagePlayer(99999, "kill-test-2");
+            const afterJournalCount = journalEntries.length;
+            out.deathDoubleProtected = afterJournalCount === beforeJournalCount;
+            // (HP sollte nicht weiter sinken weil phoenixUntil > now)
+            out.hpUntouchedDuringPhoenix = Math.abs(r.state.player.hp - hpInPhoenix) < 1;
+
+            // tickPhoenixDeath regeneriert HP linear
+            r.state.player.hp = 10;
+            r.state.player.deathLastTick = -Infinity;
+            r.tickPhoenixDeath(performance.now() / 1000);
+            out.tickRegenerates = r.state.player.hp > 10;
+
+            // Reset
+            r.state.player.phoenixUntil = -Infinity;
+            r.state.player.preDeathSoul = null;
+            r.state.player.emotions.sorrow = 0;
+            r.state.player.emotions.awe = 0;
+            r.state.player.hp = r.state.player.hpMax;
+
+            // --- Min-Regel-Hybrid ---
+            out.hasPrecisionDecay = typeof C.PRECISION_DECAY === "number";
+            out.precisionDecayValue = C.PRECISION_DECAY;
+            out.precisionDecayIs07 = Math.abs(C.PRECISION_DECAY - 0.7) < 0.001;
+            // Beispiel aus wave-6-design §10.5
+            const examplePart = {
+                shape: "box",
+                material: "stein",
+                opChain: [
+                    { tool: "hand", op: "knap", cap: 0.4 },
+                    { tool: "hammer", op: "hammer", cap: 0.7 },
+                    { tool: "feile", op: "file", cap: 0.85 },
+                    { tool: "polierscheibe", op: "polish", cap: 0.97 },
+                ],
+            };
+            const exPrec = r.computePartPrecision(examplePart);
+            // Erwartung: 0.4 + (0.97-0.4) × 0.7^3 = 0.4 + 0.57 × 0.343 = ~0.595
+            out.hybridExampleValue = exPrec;
+            out.hybridMatchesDoc = Math.abs(exPrec - 0.595) < 0.01;
+            // Edge: 1 Schritt → min (kein Hybrid-Effekt)
+            const onePart = { shape: "box", material: "stein", opChain: [{ cap: 0.4 }] };
+            out.oneStepReturnsMin = Math.abs(r.computePartPrecision(onePart) - 0.4) < 0.001;
+            // Edge: leere Chain → 0.4
+            const noChainPart = { shape: "box", material: "stein", opChain: [] };
+            out.emptyChainReturnsDefault = Math.abs(r.computePartPrecision(noChainPart) - 0.4) < 0.001;
+            // Diskrimination: Hybrid liefert STRIKT MEHR als reine min für ≥2 Schritte
+            const twoPart = {
+                shape: "box",
+                material: "stein",
+                opChain: [{ cap: 0.4 }, { cap: 0.9 }],
+            };
+            const twoPrec = r.computePartPrecision(twoPart);
+            out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
+
+            // --- Konsumables ---
+            out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
+            out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
+            out.hasActivateMethod = typeof r.activateConsumable === "function";
+            // define_consumable via DSL
+            r.dslRun(
+                [
+                    "define_consumable",
+                    "trank_des_lichts",
+                    { magieleitung: 0.3, resoniert: 0.2 },
+                    60,
+                    "Trank des Lichts",
+                ],
+                { source: "test" }
+            );
+            const cn = r.state.consumables.trank_des_lichts;
+            out.consumableDefined = !!cn;
+            out.consumableTagBonus = cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
+            out.consumableDuration = cn && cn.durationSeconds === 60;
+            out.consumableLabel = cn && cn.label === "Trank des Lichts";
+
+            // apply_boost via DSL → Boost im Array
+            r.state.player.boosts = [];
+            r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
+            const b = r.state.player.boosts.find((x) => x.source === "consume:trank_des_lichts");
+            out.applyBoostAddsBoost = !!b;
+            out.boostTagBonus = b && Math.abs((b.tagDelta.magieleitung || 0) - 0.3) < 0.001;
+
+            // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
+            r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
+            const matching = r.state.player.boosts.filter((x) => x.source === "consume:trank_des_lichts");
+            out.consumableDedupes = matching.length === 1;
+
+            // Unknown name → kein Boost
+            const beforeBoostCount = r.state.player.boosts.length;
+            r.dslRun(["apply_boost", "nicht_da"], { source: "test" });
+            out.unknownRejected = r.state.player.boosts.length === beforeBoostCount;
+
+            // Non-broadcast: apply_boost ist in NON_BROADCASTABLE_OPS
+            out.applyBoostNonBroadcast = C.NON_BROADCASTABLE_OPS.has("apply_boost");
+
+            // Save-Round-Trip
+            const snap = r.buildStateSnapshot();
+            out.snapHasConsumables = !!(snap.consumables && snap.consumables.trank_des_lichts);
+
+            // Cleanup
+            r.state.consumables = {};
+            r.state.player.boosts = [];
+            if (savedSoul !== "phoenix") r.applyPlayerSoul(savedSoul);
+            r.state.player.phoenixUntil = -Infinity;
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6d3aResults && !wave6d3aResults.error) {
+        // Tod-Behandlung
+        check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
+        check("Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert", wave6d3aResults.hasTriggerPhoenixMethod);
+        check("Welle 6.D Etappe 3a: tickPhoenixDeath-Methode existiert", wave6d3aResults.hasTickPhoenixMethod);
+        check("Welle 6.D Etappe 3a: state.player.phoenixUntil existiert", wave6d3aResults.hasPhoenixState);
+        check(
+            "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
+            wave6d3aResults.damageOpInNonBroadcast
+        );
+        check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
+        check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
+        check("Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)", wave6d3aResults.killTriggersPhoenix);
+        check("Welle 6.D Etappe 3a: phoenixUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
+        check("Welle 6.D Etappe 3a: preDeathSoul merkt vorherige Seele", wave6d3aResults.preDeathSoulRemembered);
+        check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
+        check("Welle 6.D Etappe 3a: Welt-Trauer — awe +0.2 nach Tod", wave6d3aResults.weltTrauerAwe);
+        check("Welle 6.D Etappe 3a: HP wird in Wandlung auf max gesetzt", wave6d3aResults.hpRestoredAfterDeath);
+        check("Welle 6.D Etappe 3a: Journal hat 'loss'-Eintrag mit 'fiel'", wave6d3aResults.journalHasLossEntry);
+        check(
+            "Welle 6.D Etappe 3a: Doppelt-Tod-Schutz — zweiter damagePlayer in Wandlung wirkt nicht",
+            wave6d3aResults.deathDoubleProtected
+        );
+        check("Welle 6.D Etappe 3a: HP unangetastet während Wandlung", wave6d3aResults.hpUntouchedDuringPhoenix);
+        check("Welle 6.D Etappe 3a: tickPhoenixDeath regeneriert HP", wave6d3aResults.tickRegenerates);
+        // Min-Regel-Hybrid
+        check("Welle 6.D Etappe 3a: PRECISION_DECAY-Konstante existiert", wave6d3aResults.hasPrecisionDecay);
+        check(
+            "Welle 6.D Etappe 3a: PRECISION_DECAY == 0.7",
+            wave6d3aResults.precisionDecayIs07,
+            `value=${wave6d3aResults.precisionDecayValue}`
+        );
+        check(
+            "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
+            wave6d3aResults.hybridMatchesDoc,
+            `actual=${(wave6d3aResults.hybridExampleValue || 0).toFixed(3)}`
+        );
+        check("Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)", wave6d3aResults.oneStepReturnsMin);
+        check("Welle 6.D Etappe 3a: leere opChain → Default 0.4", wave6d3aResults.emptyChainReturnsDefault);
+        check(
+            "Welle 6.D Etappe 3a: Diskrimination — 2 Stufen liefern Wert zwischen min und max",
+            wave6d3aResults.twoStepAboveMin
+        );
+        // Konsumables
+        check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
+        check(
+            "Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert",
+            wave6d3aResults.hasCreateConsumableMethod
+        );
+        check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
+        check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
+        check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
+        check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
+        check("Welle 6.D Etappe 3a: Konsumabel speichert label", wave6d3aResults.consumableLabel);
+        check("Welle 6.D Etappe 3a: apply_boost DSL-Op fügt Boost hinzu", wave6d3aResults.applyBoostAddsBoost);
+        check("Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus", wave6d3aResults.boostTagBonus);
+        check(
+            "Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>",
+            wave6d3aResults.consumableDedupes
+        );
+        check("Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt", wave6d3aResults.unknownRejected);
+        check(
+            "Welle 6.D Etappe 3a: apply_boost in NON_BROADCASTABLE_OPS (privat)",
+            wave6d3aResults.applyBoostNonBroadcast
+        );
+        check("Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables", wave6d3aResults.snapHasConsumables);
+    } else if (wave6d3aResults && wave6d3aResults.error) {
+        check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
+    }
+
+    // ### Welle 6.D Etappe 2 — Boosts (temporäre Tag-Deltas) ###
+    //
+    // state.player.boosts ist ein Array; tickPlayerBoosts filtert
+    // Abgelaufene + triggert Emotion + Resonance 1×/s; computePlayerStats
+    // addiert aktive Deltas vor der Stat-Berechnung.
+    const wave6d2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+            const out = {};
+            out.hasBoostsField = Array.isArray(r.state.player.boosts);
+            out.hasAddMethod = typeof r.addPlayerBoost === "function";
+            out.hasTickMethod = typeof r.tickPlayerBoosts === "function";
+            out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
+            out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
+            out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
+
+            // Setup: Save initial state für Vergleich
+            r.state.player.boosts = [];
+            r.recomputePlayerStats();
+            const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+
+            // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
+            const added = r.addPlayerBoost({
+                source: "test:flame",
+                tagDelta: { wärmeleitung: 0.3 },
+                durationSeconds: 60,
+                label: "Test-Flamme",
+            });
+            out.addReturnsTrue = added === true;
+            out.boostsArrayHasOne = r.state.player.boosts.length === 1;
+            out.boostHasTagDelta =
+                r.state.player.boosts[0] && Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.3) < 0.001;
+
+            // Stats reagieren auf das Boost — staminaMax steigt da
+            // wärmeleitung in der Formel steht (× 40).
+            const boostedStats = r.state.player.stats;
+            out.staminaIncreased = boostedStats.staminaMax > baselineStats.staminaMax + 5;
+            out.heatResistIncreased = boostedStats.heatResist > baselineStats.heatResist;
+
+            // Duplikat-Source: zweiter Boost mit gleicher source verlängert nur
+            r.addPlayerBoost({
+                source: "test:flame",
+                tagDelta: { wärmeleitung: 0.5 },
+                durationSeconds: 120,
+                label: "Test-Flamme stärker",
+            });
+            out.dedupesBySource = r.state.player.boosts.length === 1;
+            out.dedupeReplacesDelta = Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
+
+            // tickPlayerBoosts entfernt abgelaufene Boosts.
+            // V7.75: prüfen ob der test:flame-Boost spezifisch
+            // entfernt wurde (statt "boosts.length===0"). Grund:
+            // ab V7.75 kann tickPlayerBoosts gleichzeitig einen
+            // world:resonance-Boost setzen, wenn der Spieler nah
+            // bei einer hochresonanten Welt-Affinitäts-Architektur
+            // (kristall_geode, quarz) steht — das ist Vision-treu
+            // (Welt resoniert mit dem Spieler), nicht der Bug.
+            r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
+            r.state.player.boostLastTick = -Infinity; // Throttle umgehen
+            r.tickPlayerBoosts(performance.now() / 1000);
+            out.expiredRemoved = !r.state.player.boosts.some((b) => b.source === "test:flame");
+
+            // Emotion-Trigger: awe hoch → magieleitung-Boost
+            r.state.player.emotions.awe = 0.9;
+            r.state.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
+            r.state.player.boostLastTick = -Infinity;
+            r.tickPlayerBoosts(performance.now() / 1000);
+            const aweBoost = r.state.player.boosts.find((b) => b.source === "emotion:awe");
+            out.emotionAweTriggered = !!aweBoost;
+            out.aweBoostHasMagieleitung =
+                aweBoost && aweBoost.tagDelta.magieleitung && aweBoost.tagDelta.magieleitung > 0;
+            out.magicResistIncreased = aweBoost ? r.state.player.stats.magicResist > baselineStats.magicResist : false;
+
+            // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
+            const beforeArchCount = r.state.architectures.length;
+            const savedPos = {
+                x: r.state.playerMesh.position.x,
+                y: r.state.playerMesh.position.y,
+                z: r.state.playerMesh.position.z,
+            };
+            r.state.playerMesh.position.set(80, 5, 80);
+            // Wir nutzen einen Custom-Bauplan mit Quarz-Helix-Array.
+            // Vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) —
+            // Resonance-Array-Detector (W5-B Prinzip 5) verlangt
+            // gleiche Shape auf gleichem Radius ±12 % vom Schwerpunkt.
+            // Quarz hat resoniert=0.9 + magieleitung=0.85, helix-Shape
+            // verstärkt beide. Array-Bonus + ggf. Symmetrieachse-Bonus
+            // bringen das Compound über die signature-Schwelle (2.5).
+            r.state.blueprints.wave6d2_resonator = {
+                name: "wave6d2_resonator",
+                label: "Resonator",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: 1, y: 0, z: 0 },
+                        size: { x: 0.5, y: 1, z: 3 },
+                    },
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: 0, y: 0, z: 1 },
+                        size: { x: 0.5, y: 1, z: 3 },
+                    },
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: -1, y: 0, z: 0 },
+                        size: { x: 0.5, y: 1, z: 3 },
+                    },
+                    {
+                        shape: "helix",
+                        material: "quarz",
+                        position: { x: 0, y: 0, z: -1 },
+                        size: { x: 0.5, y: 1, z: 3 },
+                    },
+                ],
+            };
+            r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
+            // Debug: tatsächlichen Spatial-Tag-Wert + Distanz ausgeben
+            const sigTags = r.computeSpatialTags(r.state.blueprints.wave6d2_resonator);
+            out.signatureResonierValue = sigTags.resoniert || 0;
+            out.signatureThreshold = C.WORLD_EFFECT_THRESHOLDS.resonance_signature;
+            out.distanceToSig = Math.hypot(82 - 80, 82 - 80);
+            r.state.player.boosts = []; // Reset
+            r.state.player.boostLastTick = -Infinity;
+            r.tickPlayerBoosts(performance.now() / 1000);
+            const resBoost = r.state.player.boosts.find((b) => b.source === "world:resonance");
+            out.resonanceBoostTriggered = !!resBoost;
+            out.resonanceHasResonierDelta = resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
+
+            // Boost außerhalb Reichweite → kein Trigger
+            r.state.playerMesh.position.set(-200, 5, -200);
+            r.state.player.boosts = [];
+            r.state.player.boostLastTick = -Infinity;
+            r.tickPlayerBoosts(performance.now() / 1000);
+            const resBoost2 = r.state.player.boosts.find((b) => b.source === "world:resonance");
+            out.resonanceNotTriggeredFar = !resBoost2;
+
+            // Cleanup
+            r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+            delete r.state.blueprints.wave6d2_resonator;
+            r.state.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
+            r.state.player.boosts = [];
+            r.state.player.emotions.awe = 0;
+            r.recomputePlayerStats();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6d2Results && !wave6d2Results.error) {
+        check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
+        check("Welle 6.D Etappe 2: addPlayerBoost-Methode existiert", wave6d2Results.hasAddMethod);
+        check("Welle 6.D Etappe 2: tickPlayerBoosts-Methode existiert", wave6d2Results.hasTickMethod);
+        check(
+            "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
+            wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
+        );
+        check("Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert", wave6d2Results.hasResonanceConst);
+        check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
+        check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
+        check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
+        check(
+            "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht staminaMax",
+            wave6d2Results.staminaIncreased
+        );
+        check(
+            "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht heatResist",
+            wave6d2Results.heatResistIncreased
+        );
+        check("Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)", wave6d2Results.dedupesBySource);
+        check("Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts", wave6d2Results.dedupeReplacesDelta);
+        check("Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts", wave6d2Results.expiredRemoved);
+        check(
+            "Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost",
+            wave6d2Results.emotionAweTriggered
+        );
+        check("Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0", wave6d2Results.aweBoostHasMagieleitung);
+        check(
+            "Welle 6.D Etappe 2: Diskrimination — magieleitung-Boost erhöht magicResist",
+            wave6d2Results.magicResistIncreased
+        );
+        check(
+            "Welle 6.D Etappe 2: Welt-Resonanz-Trigger — Nähe zu Signature-Struktur erzeugt resoniert-Boost",
+            wave6d2Results.resonanceBoostTriggered,
+            `sig.resoniert=${(wave6d2Results.signatureResonierValue || 0).toFixed(2)} thr=${wave6d2Results.signatureThreshold} dist=${(wave6d2Results.distanceToSig || 0).toFixed(2)}`
+        );
+        check(
+            "Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0",
+            wave6d2Results.resonanceHasResonierDelta
+        );
+        check(
+            "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
+            wave6d2Results.resonanceNotTriggeredFar
+        );
+    } else if (wave6d2Results && wave6d2Results.error) {
+        check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
+    }
+
+    // ### Welle 6.D Etappe 1.6 — Custom-Seelen via DSL ###
+    //
+    // Schöpfer kann mit define_soul(name, bodyParts) eigene Charaktere
+    // komponieren — Form × Material via dieselbe Hylomorphismus-Pipe
+    // wie Bauwerke. Vision: „mehr Charaktere, mehr Wachstums-Freiheit
+    // durch simple Regeln".
+    const wave6d16Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasGetSoulDef = typeof r._getSoulDef === "function";
+            out.hasCreateMethod = typeof r.createOrUpdateSoulFromDsl === "function";
+            out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
+
+            // DSL-Op define_soul ist im Interpreter
+            const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
+            out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
+            // Fallback: prüfen via dslRun
+            const beforeCount = Object.keys(r.state.customSouls || {}).length;
+            const testParts = [
+                {
+                    shape: "box",
+                    material: "knochen",
+                    position: { x: 0, y: 0, z: 0 },
+                    size: { x: 0.5, y: 1.0, z: 0.4 },
+                },
+                {
+                    shape: "helix",
+                    material: "quarz",
+                    position: { x: 0, y: 0.6, z: 0 },
+                    size: { x: 0.3, y: 0.6, z: 2 },
+                },
+                {
+                    shape: "sphere",
+                    material: "glut",
+                    position: { x: 0, y: 0.3, z: 0 },
+                    size: { x: 0.25, y: 0.25, z: 0.25 },
+                },
+            ];
+            r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
+            const afterCount = Object.keys(r.state.customSouls || {}).length;
+            out.customSoulAdded = afterCount === beforeCount + 1;
+            const created = r.state.customSouls.kristall_geist;
+            out.customHasBodyParts = !!(created && Array.isArray(created.bodyParts) && created.bodyParts.length === 3);
+            out.customHasLabel = !!(created && typeof created.label === "string");
+
+            // _getSoulDef findet die Custom-Seele
+            const def = r._getSoulDef("kristall_geist");
+            out.getSoulDefFindsCustom = !!def && def.name === "kristall_geist";
+
+            // Built-in-Override verboten
+            r.dslRun(["define_soul", "human", testParts], { source: "test" });
+            out.builtinProtected = !!r.playerSoulDefs.human && Array.isArray(r.playerSoulDefs.human.bodyParts);
+
+            // Compound-Tags der Custom-Seele unterscheiden sich von Built-ins
+            const customTags = r.computeSoulCompoundTags(created);
+            const humanTags = r.computeSoulCompoundTags(r.playerSoulDefs.human);
+            out.customTagsExist = customTags && Object.keys(customTags).length > 0;
+            // kristall_geist hat quarz+glut → hohe magieleitung
+            out.customMagicHigh = (customTags.magieleitung || 0) > (humanTags.magieleitung || 0);
+
+            // applyPlayerSoul auf Custom funktioniert
+            const savedSoul = r.state.player.soul;
+            const applied = r.applyPlayerSoul("kristall_geist");
+            out.applyCustomReturnsTrue = applied === true;
+            out.stateSoulIsCustom = r.state.player.soul === "kristall_geist";
+            // Stats wurden für die Custom-Seele neu berechnet
+            out.customStatsComputed = !!(r.state.player.stats && r.state.player.stats.hpMax > 0);
+            out.customStatsDifferFromHuman = (() => {
+                r.state.player.soul = "human";
+                const humanStats = r.computePlayerStats().stats;
+                r.state.player.soul = "kristall_geist";
+                const customStats = r.computePlayerStats().stats;
+                return Math.abs(customStats.magicResist - humanStats.magicResist) > 0.05;
+            })();
+
+            // UI-Dropdown enthält die neue Seele
+            if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+            const select = document.getElementById("player-soul-select");
+            out.dropdownContainsCustom = select && [...select.options].some((o) => o.value === "kristall_geist");
+
+            // Cap-Test: 16 Custom-Seelen max
+            let overflowResult = "ok";
+            for (let i = 0; i < 20; i++) {
+                const res = r.createOrUpdateSoulFromDsl(`spam_${i}`, testParts);
+                if (!res.ok && res.reason === "too_many_souls") {
+                    overflowResult = "cap_hit";
+                    break;
+                }
+            }
+            out.capHit = overflowResult === "cap_hit";
+
+            // Save-Round-Trip vor dem finalen Cleanup
+            r.state.customSouls = {
+                save_test: {
+                    name: "save_test",
+                    label: "Save Test",
+                    bodyParts: testParts,
+                    createdAt: 0,
+                },
+            };
+            const snap = r.buildStateSnapshot();
+            out.snapshotHasCustomSouls = !!(snap.customSouls && snap.customSouls.save_test);
+
+            // Cleanup — Custom-Seelen entfernen + Dropdown auffrischen,
+            // damit nachfolgende Tests (Ring 5: Dropdown hat 3 Optionen)
+            // wieder den Built-in-Standardzustand sehen.
+            r.state.customSouls = {};
+            r.state.player.soul = savedSoul;
+            r.applyPlayerSoul(savedSoul);
+            if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
+
+            return out;
+        })
+        .catch(() => null);
+
+    // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
+    const wave6d17Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasRenderMethod = typeof r.renderSoulEditorUI === "function";
+            out.hasCloneMethod = typeof r.cloneSoulToCustom === "function";
+            out.hasDeleteMethod = typeof r.deleteCustomSoul === "function";
+            out.hasAddPartMethod = typeof r.addPartToCustomSoul === "function";
+            out.hasUpdatePartMethod = typeof r.updatePartInCustomSoul === "function";
+            out.hasRemovePartMethod = typeof r.removePartFromCustomSoul === "function";
+            // DOM-Container
+            out.editorInDom = !!document.getElementById("soul-editor");
+
+            // Empty state
+            r.state.customSouls = {};
+            r.renderSoulEditorUI();
+            const editor1 = document.getElementById("soul-editor");
+            out.emptyStateRendered = !!(editor1 && editor1.querySelector(".soul-editor-empty"));
+            out.hasCloneActionBtn = !!editor1.querySelector(".soul-editor-actions button");
+
+            // Klonen aus aktiver Seele
+            const savedSoul = r.state.player.soul;
+            r.state.player.soul = "human";
+            const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
+            out.cloneReturnsOk = cloneResult && cloneResult.ok;
+            out.cloneHasBodyParts =
+                r.state.customSouls.test_clone_a &&
+                Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
+                r.state.customSouls.test_clone_a.bodyParts.length === 4;
+
+            // Editor zeigt jetzt die Custom-Seele
+            r.state.soulEditor = { editingName: "test_clone_a" };
+            r.renderSoulEditorUI();
+            const editor2 = document.getElementById("soul-editor");
+            out.customRowRendered = !!editor2.querySelector(".soul-editor-row");
+            out.editorPaneRendered = !!editor2.querySelector(".soul-editor-pane");
+            out.partRowsCount = editor2.querySelectorAll(".soul-part-row").length;
+            out.editorHasShapeSelect = !!editor2.querySelector(".soul-part-row select");
+
+            // Add part
+            const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
+            const addResult = r.addPartToCustomSoul("test_clone_a", {
+                shape: "torus",
+                material: "quarz",
+                position: { x: 0, y: 1, z: 0 },
+                size: { x: 0.5, y: 0.2, z: 0.5 },
+            });
+            out.addReturnsOk = addResult && addResult.ok;
+            out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
+
+            // Update part
+            const updateResult = r.updatePartInCustomSoul("test_clone_a", 0, {
+                material: "schuppen",
+            });
+            out.updateReturnsOk = updateResult && updateResult.ok;
+            out.updateApplied = r.state.customSouls.test_clone_a.bodyParts[0].material === "schuppen";
+
+            // Remove part
+            const beforeRm = r.state.customSouls.test_clone_a.bodyParts.length;
+            const rmResult = r.removePartFromCustomSoul("test_clone_a", 0);
+            out.removeReturnsOk = rmResult && rmResult.ok;
+            out.removedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeRm - 1;
+
+            // Mindestens-1-Schutz: alle bis auf eins entfernen → letztes lehnt ab
+            while (r.state.customSouls.test_clone_a.bodyParts.length > 1) {
+                r.removePartFromCustomSoul("test_clone_a", 0);
+            }
+            const lastRmResult = r.removePartFromCustomSoul("test_clone_a", 0);
+            out.lastPartProtected = !lastRmResult.ok && lastRmResult.reason === "would_be_empty";
+
+            // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
+            r.applyPlayerSoul("test_clone_a");
+            out.customSoulRendered =
+                !!r.state.playerMesh && r.state.playerMesh.children && r.state.playerMesh.children.length > 0;
+
+            // Delete: wenn aktive Seele gelöscht → fallback auf "human"
+            const delResult = r.deleteCustomSoul("test_clone_a");
+            out.deleteReturnsOk = delResult && delResult.ok;
+            out.deletedFromMap = !r.state.customSouls.test_clone_a;
+            out.fallbackToHuman = r.state.player.soul === "human";
+
+            // Cleanup
+            r.state.player.soul = savedSoul;
+            r.applyPlayerSoul(savedSoul);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6d17Results && !wave6d17Results.error) {
+        check("Welle 6.D Etappe 1.7: renderSoulEditorUI-Methode existiert", wave6d17Results.hasRenderMethod);
+        check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
+        check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
+        check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
+        check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
+        check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
+        check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
+        check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
+        check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
+        check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
+        check("Welle 6.D Etappe 1.7: Klon hat alle 4 Body-Parts vom Mensch", wave6d17Results.cloneHasBodyParts);
+        check("Welle 6.D Etappe 1.7: Custom-Row im Editor gerendert", wave6d17Results.customRowRendered);
+        check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
+        check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
+        check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
+        check(
+            "Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu",
+            wave6d17Results.addReturnsOk && wave6d17Results.addedPart
+        );
+        check(
+            "Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an",
+            wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied
+        );
+        check(
+            "Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part",
+            wave6d17Results.removeReturnsOk && wave6d17Results.removedPart
+        );
+        check(
+            "Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden",
+            wave6d17Results.lastPartProtected
+        );
+        check(
+            "Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh",
+            wave6d17Results.customSoulRendered
+        );
+        check(
+            "Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map",
+            wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap
+        );
+        check(
+            "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
+            wave6d17Results.fallbackToHuman
+        );
+    } else if (wave6d17Results && wave6d17Results.error) {
+        check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
+    }
+
+    if (wave6d16Results) {
+        check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
+        check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);
+        check(
+            "Welle 6.D Etappe 1.6: state.customSouls-Container existiert",
+            wave6d16Results.customSoulsContainerExists
+        );
+        check("Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu", wave6d16Results.customSoulAdded);
+        check("Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen", wave6d16Results.customHasBodyParts);
+        check("Welle 6.D Etappe 1.6: Custom-Seele bekommt einen label", wave6d16Results.customHasLabel);
+        check(
+            "Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins",
+            wave6d16Results.getSoulDefFindsCustom
+        );
+        check(
+            "Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)",
+            wave6d16Results.builtinProtected
+        );
+        check("Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet", wave6d16Results.customTagsExist);
+        check(
+            "Welle 6.D Etappe 1.6: Vision-Diskrimination — quarz+glut-Seele hat höhere magieleitung als Mensch",
+            wave6d16Results.customMagicHigh
+        );
+        check("Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen", wave6d16Results.applyCustomReturnsTrue);
+        check(
+            "Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply",
+            wave6d16Results.stateSoulIsCustom
+        );
+        check("Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet", wave6d16Results.customStatsComputed);
+        check(
+            "Welle 6.D Etappe 1.6: Custom-Stats unterscheiden sich von Built-in-Stats (Vision-Diskrimination)",
+            wave6d16Results.customStatsDifferFromHuman
+        );
+        check("Welle 6.D Etappe 1.6: UI-Dropdown listet Custom-Seelen", wave6d16Results.dropdownContainsCustom);
+        check("Welle 6.D Etappe 1.6: Cap 16 — überzählige werden abgelehnt", wave6d16Results.capHit);
+        check(
+            "Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls",
+            wave6d16Results.snapshotHasCustomSouls
+        );
+    }
+
+    if (wave6dResults) {
+        check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
+        check(
+            "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
+            wave6dResults.statKeys === "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
+        );
+        check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
+        check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
+        check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
+        check("Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts", wave6dResults.allSoulsHaveBodyParts);
+        check("Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material", wave6dResults.bodyPartsHaveShapeMaterial);
+        check(
+            "Welle 6.D Etappe 1.5: computeSoulCompoundTags-Methode existiert",
+            wave6dResults.hasSoulCompoundTagsMethod
+        );
+        check(
+            "Welle 6.D Etappe 1.5: computeSoulCompoundTags liefert ein Tag-Objekt",
+            wave6dResults.humanCompoundTagsAreObject
+        );
+        check(
+            "Welle 6.D Etappe 1.5: Vision-Treue — aggregierte Tags nutzen MATERIAL_TAG_KEYS",
+            wave6dResults.compoundUsesMaterialKeys
+        );
+        check(
+            "Welle 6.D Etappe 1.5: 5 Körper-Materialien (knochen/fleisch/federn/schuppen/glut) sind in state.materials",
+            wave6dResults.bodyMaterialsExist
+        );
+        check(
+            "Welle 6.D Etappe 1.5: alle Körper-Materialien tragen lebendig > 0.9",
+            wave6dResults.bodyMaterialsAreLebendig
+        );
+        check(
+            "Welle 6.D: computePlayerStats liefert {tags, stats}",
+            wave6dResults.computedHasTags && wave6dResults.computedHasStats
+        );
+        check("Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen", wave6dResults.computedStatsHasAll);
+        // Vision-Diskrimination
+        check(
+            "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
+            wave6dResults.phoenixFasterThanDragon
+        );
+        check(
+            "Welle 6.D: Diskrimination — Phönix springt höher als Drache",
+            wave6dResults.phoenixJumpsHigherThanDragon
+        );
+        check("Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)", wave6dResults.dragonHasMoreHpThanPhoenix);
+        check(
+            "Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix",
+            wave6dResults.dragonHasMoreDamageThanPhoenix
+        );
+        check(
+            "Welle 6.D: Diskrimination — Phönix mehr Magie-Resistenz als Drache (magieleitung hoch)",
+            wave6dResults.phoenixHasMoreMagicResistThanDragon
+        );
+        check(
+            "Welle 6.D: Diskrimination — Drache mehr Hitze-Resistenz als Phönix (brennbar niedrig)",
+            wave6dResults.dragonHasMoreHeatResistThanPhoenix
+        );
+        check(
+            "Welle 6.D: Diskrimination — Mensch HP zwischen Phönix + Drache (balanced)",
+            wave6dResults.humanHpBetweenPhoenixAndDragon
+        );
+        // State-Anwendung
+        check("Welle 6.D: recomputePlayerStats setzt state.speed", wave6dResults.stateSpeedMatches);
+        check("Welle 6.D: recomputePlayerStats setzt state.jumpPower", wave6dResults.stateJumpPowerMatches);
+        check("Welle 6.D: state.sprintSpeed = 2 × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
+        check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
+        check(
+            "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
+            wave6dResults.statePlayerHasHpAndStamina
+        );
+        check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
+        check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
+        check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
+        if (wave6dResults.renderOk) {
+            check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
+            check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
+        }
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.G P1.5 + P2 + P3 + P4 — Hylomorphismus-Unification + Welt-Affinität + Felsen + Terrain-Materie).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6GHylomorphism(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.G Phase 1.5 — Hylomorphismus-Unification ###
+    // V7.73 hatte Bäume als Parallelcode (state.vegetation, eigene
+    // spawnTreeAt + _buildTreeCollision). V7.74 fließt das ins
+    // bestehende Architektur-System: baum_eiche/baum_kiefer als
+    // _defaultBlueprints, spawn_tree DSL-Op routet durch
+    // spawnArchitecture. EINE Sprache, EIN Renderpfad. Inseln + UFOs
+    // bleiben Sonderpfad (Inseln = floating-chunk-Disziplin, UFOs =
+    // 6.F4-Vorstufe).
+    const wave6gResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // V7.74 Erwartung: Helfer für Inseln + UFOs leben weiter,
+            // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
+            out.hasIslandHelper = typeof r._buildIslandCollision === "function";
+            out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
+            out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
+            out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
+            out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
+            out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
+
+            // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
+            // laub-Material müssen als Built-ins existieren.
+            const bps = r.state.blueprints || {};
+            out.hasBaumEiche = !!(
+                bps.baum_eiche &&
+                Array.isArray(bps.baum_eiche.parts) &&
+                bps.baum_eiche.parts.length === 2
+            );
+            out.hasBaumKiefer = !!(
+                bps.baum_kiefer &&
+                Array.isArray(bps.baum_kiefer.parts) &&
+                bps.baum_kiefer.parts.length === 2
+            );
+            out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
+            const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
+            const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
+            out.eichenStammHolz = !!(
+                eichenStamm &&
+                eichenStamm.material === "holz" &&
+                eichenStamm.shape === "cylinder"
+            );
+            out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
+            out.hasLaubMaterial = !!(
+                r.state.materials &&
+                r.state.materials.laub &&
+                r.state.materials.laub.builtIn === true
+            );
+
+            // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
+            // NICHT in state.vegetation. state.vegetation enthält nur noch
+            // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
+            const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+            const archTrees = archs.filter((a) => a.type === "baum_eiche" || a.type === "baum_kiefer");
+            out.worldgenTreesInArchitectures = archTrees.length;
+            // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
+            // muss eine Compound-Kollision haben.
+            const renderedTree = archTrees.find((a) => a.mesh && a.collision && a.collision.body);
+            out.treeHasCompoundCollision = !!renderedTree;
+
+            // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
+            const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
+            out.initIslandsCount = initIslands.length;
+            out.initIslandsWithCollision = initIslands.filter(
+                (i) => i.userData && i.userData.collision && i.userData.collision.body
+            ).length;
+
+            // Vegetation enthält NUR noch Gras + Blumen (keine Bäume).
+            const veg = Array.isArray(r.state.vegetation) ? r.state.vegetation : [];
+            out.vegetationCount = veg.length;
+            // Diskrimination: kein Eintrag in state.vegetation hat eine
+            // Stamm-Cylinder mit Höhe ≥2 (Bäume sind weg).
+            out.noTreesInVegetation = !veg.some((v) => {
+                let isTreeLike = false;
+                v.traverse &&
+                    v.traverse((n) => {
+                        if (
+                            !isTreeLike &&
+                            n.isMesh &&
+                            n.geometry &&
+                            n.geometry.type === "CylinderGeometry" &&
+                            n.geometry.parameters &&
+                            n.geometry.parameters.height >= 2 &&
+                            (n.geometry.parameters.radiusBottom || 0) >= 0.3
+                        )
+                            isTreeLike = true;
+                    });
+                return isTreeLike;
+            });
+
+            // DSL-Op-Tests: spawn_tree → erzeugt Architektur, NICHT
+            // mehr Three.js-Group in state.vegetation.
+            const archsBefore = r.state.architectures.length;
+            const islandsBefore = r.state.floatingIslands.length;
+            const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
+            const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
+            const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+            const tx = playerPos.x + 50;
+            const ty = playerPos.y;
+            const tz = playerPos.z + 50;
+
+            r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
+            r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
+                source: "test",
+            });
+            r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
+
+            const archsAfter = r.state.architectures.length;
+            const islandsAfter = r.state.floatingIslands.length;
+            const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
+            const vegAfter = r.state.vegetation ? r.state.vegetation.length : 0;
+            out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
+            out.treeNotAddedToVegetation = vegAfter === vegBefore;
+            out.islandSpawned = islandsAfter > islandsBefore;
+            out.ufoSpawned = ufosAfter > ufosBefore;
+
+            const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
+            out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
+            out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
+            out.newTreeHasCollision = !!(
+                newTreeArch &&
+                newTreeArch.collision &&
+                newTreeArch.collision.body &&
+                newTreeArch.collision.shape
+            );
+            // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
+            if (newTreeArch && typeof r.computeCompoundTags === "function") {
+                const bp = r.state.blueprints[newTreeArch.type];
+                const tags = r.computeCompoundTags(bp);
+                out.treeTagsLebendig = tags && tags.lebendig > 0.5;
+                out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
+            }
+
+            const newIsland = islandsAfter > islandsBefore ? r.state.floatingIslands[islandsAfter - 1] : null;
+            const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
+            out.islandHasCollision = !!(
+                newIsland &&
+                newIsland.userData &&
+                newIsland.userData.collision &&
+                newIsland.userData.collision.body &&
+                newIsland.userData.collision.tmesh
+            );
+            out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
+            // V9.42-a — Inseln aus Surface-Nets-Pipeline. Vollkörper
+            // emergiert per Konstruktion (Iso-Fläche schließt sich
+            // oben + unten). Test misst nicht die Vertex-Zahl
+            // (Surface-Nets-Auflösung variiert), sondern die Y-Spanne
+            // der Geometrie: ein Vollkörper hat eine Höhe > 0.5 m.
+            if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
+                const pa = newIsland.geometry.attributes.position.array;
+                let minY = Infinity;
+                let maxY = -Infinity;
+                for (let i = 1; i < pa.length; i += 3) {
+                    if (pa[i] < minY) minY = pa[i];
+                    if (pa[i] > maxY) maxY = pa[i];
+                }
+                out.islandHasUnderside = isFinite(minY) && isFinite(maxY) && maxY - minY > 0.5;
+            }
+
+            // Diskrimination: derselbe Seed → dieselben Vertices.
+            const beforeIslandsCount = r.state.floatingIslands.length;
+            r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
+            r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
+            const i1 = r.state.floatingIslands[beforeIslandsCount];
+            const i2 = r.state.floatingIslands[beforeIslandsCount + 1];
+            if (i1 && i2 && i1.geometry && i2.geometry) {
+                const v1 = i1.geometry.attributes.position.array;
+                const v2 = i2.geometry.attributes.position.array;
+                out.seedDeterministic =
+                    v1.length === v2.length &&
+                    v1.length > 0 &&
+                    Math.abs(v1[1] - v2[1]) < 0.0001 &&
+                    Math.abs(v1[10] - v2[10]) < 0.0001;
+            }
+
+            // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
+            if (typeof r.parseChatToDsl === "function") {
+                const treeBuilt = r.parseChatToDsl("pflanze baum hier");
+                const treeProg = treeBuilt && treeBuilt.program;
+                out.chatTreeProg =
+                    Array.isArray(treeProg) &&
+                    treeProg[0] === "spawn_tree" &&
+                    Array.isArray(treeProg[1]) &&
+                    treeProg[1][0] === "at";
+                const islandBuilt = r.parseChatToDsl("setze insel hier");
+                const islandProg = islandBuilt && islandBuilt.program;
+                out.chatIslandProg =
+                    Array.isArray(islandProg) &&
+                    islandProg[0] === "spawn_island" &&
+                    Array.isArray(islandProg[1]) &&
+                    islandProg[1][0] === "at" &&
+                    Number.isFinite(islandProg[3]);
+                const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
+                const ufoProg = ufoBuilt && ufoBuilt.program;
+                out.chatUfoProg =
+                    Array.isArray(ufoProg) &&
+                    ufoProg[0] === "spawn_ufo" &&
+                    Array.isArray(ufoProg[1]) &&
+                    ufoProg[1][0] === "at";
+            }
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6gResults && !wave6gResults.error) {
+        check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
+        check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
+        check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
+        // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
+        // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
+        // Anwendungen. Beweis: `_voxelChunkGeometry` akzeptiert
+        // einen `densityFn`-Callback (Default-Pfad bleibt für Welt-
+        // Chunks erhalten, Insel-Pfad übergibt `_islandDensityAt`).
+        const r42a = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
+            if (out.hasIslandDensity) {
+                // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
+                // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
+                const dummyNoise = { noise2D: () => 0 };
+                out.solidInCenter = r._islandDensityAt(0, 0, 0, 6, 5, dummyNoise) > 0;
+                out.airFarAway = r._islandDensityAt(20, 0, 0, 6, 5, dummyNoise) < 0;
+                out.airAbove = r._islandDensityAt(0, 50, 0, 6, 5, dummyNoise) < 0;
+            }
+            // Mesher mit densityFn-Callback: untere Hälfte fest,
+            // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
+            out.mesherAcceptsDensity =
+                typeof r._voxelChunkGeometry === "function" &&
+                (() => {
+                    try {
+                        const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
+                        const pos = g && g.getAttribute("position");
+                        return !!(pos && pos.count > 0);
+                    } catch {
+                        return false;
+                    }
+                })();
+            return out;
+        });
+        check("V9.42-a: _islandDensityAt existiert", r42a.hasIslandDensity);
+        check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
+        check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
+        check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
+        check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
+        // V9.42-b — Skirt-Disziplin im Smooth-Pass: Naht-Vertices
+        // (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1) dürfen
+        // NICHT verschoben werden, sonst zerstört Laplacian die V9.10-
+        // Skirt-Überlappung zwischen zwei Nachbar-Chunks. Wir messen
+        // das, indem wir ZWEI benachbarte Voxel-Chunks bauen und
+        // prüfen, dass an der gemeinsamen Naht (X-Welt-Koord
+        // identisch) substanziell viele Vertices identische Position
+        // teilen. Pre-V9.42-b: ~0 Übereinstimmung (Smooth zog jede
+        // Seite anders). Post-V9.42-b: >50 % der Vertices an der Naht.
+        const r42bSkirt = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const chunks = [...r.state.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
+            if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
+            const seen = new Map();
+            let dup = 0;
+            for (const c of chunks) {
+                const pa = c.mesh.geometry.getAttribute("position").array;
+                for (let i = 0; i < pa.length; i += 3) {
+                    const key = `${pa[i].toFixed(2)}|${pa[i + 1].toFixed(2)}|${pa[i + 2].toFixed(2)}`;
+                    if (seen.has(key)) dup++;
+                    else seen.set(key, true);
+                }
+            }
+            return { chunks: chunks.length, unique: seen.size, duplicates: dup };
+        });
+        check(
+            `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
+            (r42bSkirt.duplicates || 0) >= 200
+        );
+        // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
+        const r42bIslandAmp = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const noise = { noise2D: () => 0.5 };
+            // height=5: kleine Insel
+            const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
+            // height=20: grosse Insel — Density-Wert in der Mitte
+            // sollte SUBSTANZIELL grösser sein (mehr Material in der Höhe).
+            const big = r._islandDensityAt(0, 0, 0, 6, 20, noise);
+            return { small, big, ratio: small > 0 ? big / small : 0 };
+        });
+        check(
+            `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
+            r42bIslandAmp.ratio > 1.5
+        );
+        // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
+        const r42bDsl = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const before = r.state.floatingIslands.length;
+            r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
+            const after = r.state.floatingIslands.length;
+            const isle = r.state.floatingIslands[before];
+            if (!isle) return { spawned: false };
+            const bbox = new window.THREE.Box3().setFromObject(isle);
+            return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
+        });
+        check(
+            `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
+            r42bDsl.spawned && r42bDsl.width > 24
+        );
+        // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertex-
+        // Colors (wie der Voxel-Boden), kein Terrain-ShaderMaterial
+        // mehr (das passte nicht zur Surface-Nets-Geometrie ohne
+        // aField/uv → "Löcher"-Befund). _attachIslandColors gibt der
+        // Insel grün-oben/erdig-unten per Vertex-Normale.
+        const r42c = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
+            const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
+            if (isle) {
+                out.material = isle.material.type;
+                out.hasVertexColors = !!isle.material.vertexColors;
+                out.hasColorAttr = !!isle.geometry.getAttribute("color");
+            }
+            return out;
+        });
+        check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
+        check(
+            `V9.42-c: Insel nutzt MeshToonMaterial (kein Terrain-Shader) — ${r42c.material}`,
+            r42c.material === "MeshToonMaterial" && r42c.hasVertexColors === true
+        );
+        check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
+        check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
+        check(
+            "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
+            wave6gResults.parallelTreeHelperRemoved
+        );
+        check(
+            "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
+            wave6gResults.parallelSpawnTreeAtRemoved
+        );
+        check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert mit 2 parts", wave6gResults.hasBaumEiche);
+        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert mit 2 parts", wave6gResults.hasBaumKiefer);
+        check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
+        check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
+        check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
+        check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
+        check(
+            `Welle 6.G P1.5: Worldgen-Bäume (n=${wave6gResults.worldgenTreesInArchitectures}) sind in state.architectures`,
+            wave6gResults.worldgenTreesInArchitectures > 0
+        );
+        check(
+            "Welle 6.G P1.5: mind. ein Worldgen-Baum hat Compound-Box-Kollision",
+            wave6gResults.treeHasCompoundCollision
+        );
+        check(
+            "Welle 6.G P1.5: state.vegetation enthält KEINE Bäume mehr (nur Gras + Blumen)",
+            wave6gResults.noTreesInVegetation
+        );
+        check(
+            `Welle 6.G P1.5: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
+            wave6gResults.initIslandsCount > 0 &&
+                wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount
+        );
+        check(
+            "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
+            wave6gResults.treeAddedToArchitectures
+        );
+        check(
+            "Welle 6.G P1.5: spawn_tree DSL-Op fügt NICHTS zu state.vegetation hinzu (Parallelcode weg)",
+            wave6gResults.treeNotAddedToVegetation
+        );
+        check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
+        check("Welle 6.G P1.5: neu-gespawnter Baum hat Mesh (in Reichweite)", wave6gResults.newTreeHasMesh);
+        check(
+            "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
+            wave6gResults.newTreeHasCollision
+        );
+        if (wave6gResults.treeTagsLebendig !== undefined) {
+            check("Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)", wave6gResults.treeTagsLebendig);
+            check("Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)", wave6gResults.treeTagsBrennbar);
+        }
+        check(
+            "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
+            wave6gResults.islandSpawned
+        );
+        check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
+        check(
+            "Welle 6.G P1.5: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
+            wave6gResults.islandHasCollision
+        );
+        if (wave6gResults.islandHasUnderside !== undefined) {
+            check(
+                "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
+                wave6gResults.islandHasUnderside
+            );
+        }
+        check(
+            "Welle 6.G P1.5: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
+            wave6gResults.ufoHasNoCollision
+        );
+        check(
+            "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
+            wave6gResults.seedDeterministic
+        );
+        check("Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]", wave6gResults.chatTreeProg);
+        check(
+            "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
+            wave6gResults.chatIslandProg
+        );
+        check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
+    }
+
+    // ### Welle 6.G Phase 2 — Welt-Affinitäts-Feld ###
+    // Bäume + Strukturen verteilen sich organisch über das Welt-Feld
+    // (4 Noise-Schichten: lebendig/dichte/glut/magieleitung). KEINE
+    // Tabelle — Bauplan-Compound-Tags resonieren mit Welt-Tag-Feld.
+    // Drei neue Baupläne: stein_block (dichte), kristall_geode
+    // (magieleitung), glutbrunnen (glut). Hook in ensureChunkAt
+    // füllt neue Chunks beim Player-Approach.
+    const wave6gP2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
+            out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
+            // V9.39 — der Voxel-Populator ist die lebende Schicht.
+            out.hasPopulateChunk = typeof r._populateVoxelChunkVegetation === "function";
+            // Drei neue Baupläne als Built-ins.
+            const bps = r.state.blueprints || {};
+            out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
+            out.hasKristallGeode = !!(
+                bps.kristall_geode &&
+                bps.kristall_geode.builtIn &&
+                bps.kristall_geode.parts.length >= 2
+            );
+            out.hasGlutbrunnen = !!(bps.glutbrunnen && bps.glutbrunnen.builtIn && bps.glutbrunnen.parts.length >= 2);
+            // worldFieldAt liefert 4 Tag-Achsen.
+            if (out.hasWorldFieldAt) {
+                const sample = r.worldFieldAt(0, 0);
+                out.fieldHas4Axes = !!(
+                    sample &&
+                    typeof sample.lebendig === "number" &&
+                    typeof sample.dichte === "number" &&
+                    typeof sample.glut === "number" &&
+                    typeof sample.magieleitung === "number"
+                );
+                out.fieldValuesInRange =
+                    sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
+            }
+            // Determinismus: zweimaliger Aufruf an dieselbe Position →
+            // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
+            // Positionen → unterschiedliche Werte (mit hoher
+            // Wahrscheinlichkeit, da Noise nicht-konstant).
+            if (out.hasWorldFieldAt) {
+                const a1 = r.worldFieldAt(50, 30);
+                const a2 = r.worldFieldAt(50, 30);
+                out.fieldDeterministic =
+                    Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
+                const b1 = r.worldFieldAt(50, 30);
+                const b2 = r.worldFieldAt(1000, -1000);
+                out.fieldVariesBySamplePos =
+                    Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
+            }
+            // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
+            // in lebendig) hat höhere Affinität in einer lebendig-
+            // hohen Region als ein stein_block (dichte-hoch, lebendig=0).
+            // Wir suchen empirisch eine lebendig-hohe Position und
+            // verifizieren das Verhältnis.
+            if (out.hasSpawnAffinity && out.hasWorldFieldAt) {
+                // Iteriere Welt-Grid um eine Position mit hohem lebendig
+                // zu finden.
+                let bestLebendigSpot = null;
+                let bestLebendig = 0;
+                for (let x = -200; x <= 200; x += 25) {
+                    for (let z = -200; z <= 200; z += 25) {
+                        const f = r.worldFieldAt(x, z);
+                        if (f.lebendig > bestLebendig) {
+                            bestLebendig = f.lebendig;
+                            bestLebendigSpot = { x, z };
+                        }
+                    }
+                }
+                if (bestLebendigSpot && bestLebendig > 0.5) {
+                    const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestLebendigSpot.x, bestLebendigSpot.z);
+                    const steinAff = r.spawnAffinityForBlueprint("stein_block", bestLebendigSpot.x, bestLebendigSpot.z);
+                    // In hohem-lebendig-Bereich sollte Baum >> Stein.
+                    out.affinityFavorsTreeInLebendigRegion = treeAff > steinAff * 1.5;
+                }
+                // Dasselbe für dichte: in dichte-hoher Region
+                // sollte stein_block bevorzugt sein.
+                let bestDichteSpot = null;
+                let bestDichte = 0;
+                for (let x = -200; x <= 200; x += 25) {
+                    for (let z = -200; z <= 200; z += 25) {
+                        const f = r.worldFieldAt(x, z);
+                        if (f.dichte > bestDichte) {
+                            bestDichte = f.dichte;
+                            bestDichteSpot = { x, z };
+                        }
+                    }
+                }
+                if (bestDichteSpot && bestDichte > 0.5) {
+                    const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestDichteSpot.x, bestDichteSpot.z);
+                    const steinAff = r.spawnAffinityForBlueprint("stein_block", bestDichteSpot.x, bestDichteSpot.z);
+                    // Wenn die Stelle auch lebendig-hoch ist, könnte
+                    // tree gewinnen. Wir prüfen primär „stein hat
+                    // signifikant > 0", was die Affinity-Anwendung
+                    // bestätigt.
+                    out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
+                    // Für klare Diskrimination: an einer wirklich
+                    // dichte-dominanten Position erwarten wir
+                    // stein > tree (wenn lebendig dort low).
+                    const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
+                    if (f.lebendig < 0.4) {
+                        out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
+                    }
+                }
+            }
+            // Initial-Worldgen: state.architectures enthält jetzt
+            // Affinity-gespawnte Strukturen — Bäume + (idealerweise)
+            // mindestens eine der drei neuen Bauplan-Typen.
+            const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+            out.archCount = archs.length;
+            const typeCounts = {};
+            for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
+            out.affinitySpawnTypes = typeCounts;
+            out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
+            // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Populator
+            // `populateChunkVegetation` ist als toter Pfad entfernt.
+            // Die Vision-Anker (Welt-Affinitäts-Feld treibt
+            // Vegetations-Verteilung, idempotent) lebt im Voxel-
+            // Pendant `_populateVoxelChunkVegetation` weiter — am
+            // Voxel-Chunk-Lifecycle aufgehängt (V9.24-Verdrahtung).
+            // Der Test scant `voxelPopulatedChunks` (der Voxel-
+            // Idempotenz-Cache, befüllt durch die initialen ~81
+            // Voxel-Chunks beim Welt-Aufbau).
+            out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
+            if (typeof r._populateVoxelChunkVegetation === "function") {
+                const before = archs.length;
+                // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
+                // zurückgeben dank voxelPopulatedChunks-Cache.
+                const firstChunkKey = r.state.voxelPopulatedChunks ? [...r.state.voxelPopulatedChunks][0] : null;
+                if (firstChunkKey) {
+                    const [cx, cz] = firstChunkKey.split(",").map(Number);
+                    const secondReturn = r._populateVoxelChunkVegetation(cx, cz);
+                    const after = r.state.architectures.length;
+                    out.populateIdempotent = secondReturn === 0 && after === before;
+                }
+            }
+            // Architecture-Culling-Rate ist jetzt 2 Hz (V7.75 Bugfix).
+            out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
+            // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
+            // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
+            const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
+            out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6gP2Results && !wave6gP2Results.error) {
+        check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
+        check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
+        // V9.39 — `populateChunkVegetation` ist gelöscht; der Vision-
+        // Anker (Welt-Affinitäts-Feld treibt Vegetation) lebt in
+        // `_populateVoxelChunkVegetation` weiter (am Voxel-Chunk-
+        // Lifecycle aufgehängt). Der `hasPopulateChunk`-Flag prüft
+        // jetzt das Voxel-Pendant (umgewidmet im evaluate-Block).
+        check(
+            "Welle 6.G P2 (V9.39): _populateVoxelChunkVegetation-Methode existiert (Voxel-Pendant)",
+            wave6gP2Results.hasPopulateChunk
+        );
+        check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
+        check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
+        check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
+        check(
+            "Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)",
+            wave6gP2Results.fieldHas4Axes
+        );
+        check("Welle 6.G P2: worldFieldAt-Werte im Bereich [0,1]", wave6gP2Results.fieldValuesInRange);
+        check(
+            "Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)",
+            wave6gP2Results.fieldDeterministic
+        );
+        check(
+            "Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)",
+            wave6gP2Results.fieldVariesBySamplePos
+        );
+        if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
+            check(
+                "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
+                wave6gP2Results.affinityFavorsTreeInLebendigRegion
+            );
+        }
+        if (wave6gP2Results.steinAffinityNonzeroInDichteRegion !== undefined) {
+            check(
+                "Welle 6.G P2: Stein-Affinity > 0 in dichte-hoher Region",
+                wave6gP2Results.steinAffinityNonzeroInDichteRegion
+            );
+        }
+        if (wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion !== undefined) {
+            check(
+                "Welle 6.G P2: Stein-Affinity > Baum-Affinity in dichte-only-Region (lebendig<0.4)",
+                wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion
+            );
+        }
+        check(
+            `Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt (n=${wave6gP2Results.archCount})`,
+            wave6gP2Results.archCount > 0
+        );
+        check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
+        check(
+            `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
+            wave6gP2Results.populatedChunksSize >= 1
+        );
+        check(
+            "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
+            wave6gP2Results.populateIdempotent
+        );
+        check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
+        check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
+    }
+
+    // ### W6.G P3 Phase 1 — Felsformationen ###
+    // felsbogen (ein Trilithon — ein begehbarer Überhang) + felsturm
+    // (eine vertikale Fels-Nadel) als emergente Welt-Bürger. KEIN
+    // Voxel-Terrain — das Compound-Architektur-System trägt den
+    // Überhang: die Per-Sub-Mesh-Box-Kollision lässt zwischen den
+    // zwei Pfeilern eine echte begehbare Lücke.
+    const wave6gP3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            const bps = r.state.blueprints || {};
+            const fb = bps.felsbogen;
+            const ft = bps.felsturm;
+            out.hasFelsbogen = !!(fb && fb.builtIn && fb.parts && fb.parts.length >= 3);
+            out.hasFelsturm = !!(ft && ft.builtIn && ft.parts && ft.parts.length >= 3);
+
+            // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
+            // eine begehbare Lücke; ein Sturz spannt darüber.
+            if (fb && fb.parts) {
+                const boxes = fb.parts
+                    .filter((p) => p.shape === "box")
+                    .slice()
+                    .sort((a, b) => a.position.y - b.position.y);
+                if (boxes.length >= 3) {
+                    const a = boxes[0];
+                    const b = boxes[1];
+                    const lintel = boxes[2];
+                    const innerGap = Math.abs(b.position.x - a.position.x) - (a.size.x / 2 + b.size.x / 2);
+                    out.felsbogenGap = innerGap;
+                    out.felsbogenWalkable = innerGap > 2; // Spieler-Hitbox ist ~1 m
+                    out.felsbogenLintelAbove = lintel.position.y > a.position.y && lintel.position.y > b.position.y;
+                }
+            }
+
+            // Felsturm — vertikal: bbox-Höhe deutlich grösser als Breite.
+            if (ft && ft.parts) {
+                let minY = Infinity;
+                let maxY = -Infinity;
+                let minX = Infinity;
+                let maxX = -Infinity;
+                for (const p of ft.parts) {
+                    minY = Math.min(minY, p.position.y - p.size.y / 2);
+                    maxY = Math.max(maxY, p.position.y + p.size.y / 2);
+                    minX = Math.min(minX, p.position.x - p.size.x / 2);
+                    maxX = Math.max(maxX, p.position.x + p.size.x / 2);
+                }
+                out.felsturmSpanY = maxY - minY;
+                out.felsturmSpanX = maxX - minX;
+                out.felsturmVertical = maxY - minY > (maxX - minX) * 2;
+            }
+
+            // Felsbogen ist ein Stein-Compound — dicht.
+            if (fb) {
+                const tags = r.computeCompoundTags(fb);
+                out.felsbogenDichte = tags ? tags.dichte || 0 : 0;
+                out.felsbogenIsDense = out.felsbogenDichte > 0.5;
+            }
+
+            // spawnArchitecture("felsbogen") → Mesh + Compound-Kollision
+            // mit mehreren Kind-Boxen. Das IST der begehbare Durchgang
+            // auf Kollisions-Ebene — eine einzelne AABB hätte keinen.
+            const pm = r.state.playerMesh;
+            const px = pm ? pm.position.x : 0;
+            const pz = pm ? pm.position.z : 0;
+            const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
+            out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
+            out.felsbogenHasMesh = !!(eb && eb.mesh);
+            out.felsbogenCompoundChildren =
+                eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
+            out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
+            // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
+            // (0x7a7a7a), NICHT weiss. Vorher fiel _buildFromBlueprint
+            // ohne part.color auf 0xffffff zurück — alle material-
+            // basierten Baupläne waren weiss.
+            if (eb && eb.mesh) {
+                let firstMeshHex = null;
+                eb.mesh.traverse((n) => {
+                    if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                        firstMeshHex = n.material.color.getHex();
+                    }
+                });
+                out.felsbogenMeshHex = firstMeshHex;
+                // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
+                // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
+                // ein dunkleres Grau, aber klar KEIN Weiss.
+                if (firstMeshHex !== null) {
+                    const rr = (firstMeshHex >> 16) & 0xff;
+                    const gg = (firstMeshHex >> 8) & 0xff;
+                    const bb = firstMeshHex & 0xff;
+                    out.felsbogenNotWhite = firstMeshHex !== 0xffffff;
+                    out.felsbogenStoneGrey = rr === gg && gg === bb && rr <= 0xa0;
+                }
+            }
+            const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
+            out.felsturmSpawned = !!(et && et.type === "felsturm");
+            out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
+
+            // V9.39 Phase 5c.2.c.3.b.iii — Placement-Probe nutzt jetzt
+            // den Voxel-Populator (das Heightfield-Pendant ist tot).
+            // Vision-Anker bleibt: über ein Raster frischer Chunks MUSS
+            // mindestens ein Felsbogen + ein Felsturm spawnen
+            // (Landmark-Wurf 0.014 × Affinitäts-Floor, 12×12=144 Chunks
+            // statistisch sicher). Vorher: `populateChunkVegetation`.
+            if (typeof r._populateVoxelChunkVegetation === "function") {
+                const before = r.state.architectures.length;
+                // Frische Voxel-Chunk-Indices, deutlich außerhalb des
+                // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
+                const fresh = new Set();
+                for (let cx = 20; cx <= 31; cx++) {
+                    for (let cz = 20; cz <= 31; cz++) {
+                        const key = `${cx},${cz}`;
+                        if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
+                        fresh.add(key);
+                        r._populateVoxelChunkVegetation(cx, cz);
+                    }
+                }
+                let fbCount = 0;
+                let ftCount = 0;
+                for (let i = before; i < r.state.architectures.length; i++) {
+                    const t = r.state.architectures[i].type;
+                    if (t === "felsbogen") fbCount++;
+                    else if (t === "felsturm") ftCount++;
+                }
+                out.placedFelsbogen = fbCount;
+                out.placedFelsturm = ftCount;
+                out.placementWorks = fbCount > 0 && ftCount > 0;
+                r.state.architectures.length = before;
+                // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
+                // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
+                // einen späteren echten Pass).
+                for (const k of fresh) {
+                    if (r.state.voxelPopulatedChunks) r.state.voxelPopulatedChunks.delete(k);
+                }
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6gP3Results && !wave6gP3Results.error) {
+        check("W6.G P3: Bauplan 'felsbogen' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsbogen);
+        check("W6.G P3: Bauplan 'felsturm' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsturm);
+        check(
+            `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
+            wave6gP3Results.felsbogenWalkable
+        );
+        check("W6.G P3: Felsbogen-Sturz spannt über den Pfeilern", wave6gP3Results.felsbogenLintelAbove);
+        check(
+            `W6.G P3: Felsturm ist vertikal (Höhe ${(wave6gP3Results.felsturmSpanY || 0).toFixed(1)} >> Breite ${(wave6gP3Results.felsturmSpanX || 0).toFixed(1)})`,
+            wave6gP3Results.felsturmVertical
+        );
+        check("W6.G P3: Felsbogen ist ein dichtes Stein-Compound", wave6gP3Results.felsbogenIsDense);
+        check(
+            "W6.G P3: spawnArchitecture('felsbogen') erzeugt Mesh + Eintrag",
+            wave6gP3Results.felsbogenSpawned && wave6gP3Results.felsbogenHasMesh
+        );
+        check(
+            `W6.G P3: der Felsbogen rendert stein-grau, nicht weiss (V9.06-Fix, hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)})`,
+            wave6gP3Results.felsbogenNotWhite && wave6gP3Results.felsbogenStoneGrey
+        );
+        check(
+            `W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene (n=${wave6gP3Results.felsbogenCompoundChildren})`,
+            wave6gP3Results.felsbogenWalkThroughCollision
+        );
+        check(
+            "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + Kollision",
+            wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
+        );
+        check(
+            `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
+            wave6gP3Results.placementWorks
+        );
+    }
+
+    // ### W6.G P4 — das Terrain wird Materie ###
+    // Der Boden gibt: ein Grabe-Hieb löst Terrain in Material auf,
+    // dessen Identität aus worldFieldAt emergiert (die Farbe, die der
+    // Spieler sieht, ist das Material, das er bekommt). Kein Voxel-
+    // Rewrite, keine Biom-Tabelle — der kontinuierliche Affinitäts-
+    // Feld trägt es. Das Terrain joint die Hylomorphismus-Sprache.
+    const wave6gP4Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            const mats = r.state.materials || {};
+            out.hasErde = !!(mats.erde && mats.erde.builtIn);
+            out.hasTerrainMaterialAt = typeof r._terrainMaterialAt === "function";
+
+            // Resonanz — die dominante Welt-Achse bestimmt das Material.
+            // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
+            const origWFA = r.worldFieldAt;
+            const known = ["erde", "stein", "glut", "quarz"];
+            if (out.hasTerrainMaterialAt) {
+                const probe = (lebendig, dichte, glut, magieleitung) => {
+                    r.worldFieldAt = () => ({ lebendig, dichte, glut, magieleitung });
+                    return r._terrainMaterialAt(0, 0);
+                };
+                out.lebendigYieldsErde = probe(0.9, 0.2, 0.1, 0.1) === "erde";
+                out.dichteYieldsStein = probe(0.2, 0.9, 0.1, 0.1) === "stein";
+                out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
+                out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
+                r.worldFieldAt = origWFA;
+                out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
+                // Das Terrain ist nicht uniform — über ein Raster
+                // emergieren ≥2 verschiedene Boden-Materialien.
+                const seen = {};
+                for (let x = -200; x <= 200; x += 40) {
+                    for (let z = -200; z <= 200; z += 40) {
+                        seen[r._terrainMaterialAt(x, z)] = true;
+                    }
+                }
+                out.terrainMaterialVariety = Object.keys(seen).length;
+            }
+
+            // Integration — ein Grabe-Hieb (tryMouseBreak, Terrain-Zweig)
+            // füllt das Inventar mit dem Boden-Material. _raycastWorldHit
+            // + _pickArchitectureAtCrosshair mocken (kein Physik-Setup).
+            if (out.hasTerrainMaterialAt && typeof r.tryMouseBreak === "function") {
+                const origRay = r._raycastWorldHit;
+                const origPick = r._pickArchitectureAtCrosshair;
+                const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
+                if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
+                const digX = 60;
+                const digZ = -40;
+                r._raycastWorldHit = () => ({ hit: true, x: digX, y: 5, z: digZ });
+                r._pickArchitectureAtCrosshair = () => null;
+                const expectMat = r._terrainMaterialAt(digX, digZ);
+                const inv = r.state.player.inventory;
+                // Inventar tief snapshotten — der Grabe-Test darf den
+                // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
+                // prüfen „Inventar initial leer"). V8.97-Disziplin.
+                const invSnapshot = inv.map((s) => (s ? { ...s } : null));
+                const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
+                const ok = r.tryMouseBreak();
+                const dugSlot = inv.find((s) => s && s.kind === "material" && s.material === expectMat);
+                out.digReturned = ok === true;
+                out.digYieldedMaterial =
+                    !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
+                out.digYieldMatchesField = !!dugSlot;
+                out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
+                for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+                r._raycastWorldHit = origRay;
+                r._pickArchitectureAtCrosshair = origPick;
+
+                // Un-mocked Realpfad — der ECHTE _raycastWorldHit gegen
+                // das echte Terrain. Nur _pickArchitectureAtCrosshair
+                // wird genullt (damit garantiert der Terrain-Zweig
+                // läuft, nicht ein Architektur-Treffer). Die Kamera
+                // blickt gerade nach unten → der Ammo-Raycast trifft
+                // den Voxel-Boden unter dem Spieler. Beweist: echter
+                // Raycast + V9.36-`carveVoxelSphere` + Material-Yield,
+                // ohne Mock.
+                if (r.state.camera && r.state.playerMesh) {
+                    const cam = r.state.camera;
+                    const pm = r.state.playerMesh;
+                    const savedPos = cam.position.clone();
+                    const savedQuat = cam.quaternion.clone();
+                    cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
+                    cam.lookAt(pm.position.x, pm.position.y - 20, pm.position.z);
+                    cam.updateMatrixWorld(true);
+                    r._pickArchitectureAtCrosshair = () => null;
+                    const realHit = r._raycastWorldHit(40);
+                    out.realRaycastHit = !!(realHit && realHit.hit);
+                    const matSumBefore = inv
+                        .filter((s) => s && s.kind === "material")
+                        .reduce((a, s) => a + (s.count || 0), 0);
+                    r.tryMouseBreak();
+                    const matSumAfter = inv
+                        .filter((s) => s && s.kind === "material")
+                        .reduce((a, s) => a + (s.count || 0), 0);
+                    out.realDigYielded = matSumAfter > matSumBefore;
+                    for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
+                    r._pickArchitectureAtCrosshair = origPick;
+                    cam.position.copy(savedPos);
+                    cam.quaternion.copy(savedQuat);
+                    cam.updateMatrixWorld(true);
+                }
+                if (typeof r.setGameMode === "function") r.setGameMode(origMode);
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6gP4Results && !wave6gP4Results.error) {
+        check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
+        check("W6.G P4: _terrainMaterialAt-Methode existiert", wave6gP4Results.hasTerrainMaterialAt);
+        check("W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material", wave6gP4Results.returnsKnownMaterial);
+        check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
+        check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);
+        check("W6.G P4: glut-dominante Region → glut (Resonanz)", wave6gP4Results.glutYieldsGlut);
+        check("W6.G P4: magie-dominante Region → quarz (Resonanz)", wave6gP4Results.magieYieldsQuarz);
+        check(
+            `W6.G P4: das Terrain ist nicht uniform (${wave6gP4Results.terrainMaterialVariety} Boden-Materialien über das Raster)`,
+            (wave6gP4Results.terrainMaterialVariety || 0) >= 2
+        );
+        check(
+            "W6.G P4: ein Grabe-Hieb (tryMouseBreak) füllt das Inventar mit Boden-Material",
+            wave6gP4Results.digReturned && wave6gP4Results.digYieldedMaterial
+        );
+        check(
+            "W6.G P4: das gegrabene Material entspricht worldFieldAt am Grabe-Ort + der Yield ist in [1,10]",
+            wave6gP4Results.digYieldMatchesField && wave6gP4Results.digYieldCountSane
+        );
+        check("W6.G P4: der ECHTE Raycast (Kamera nach unten) trifft das Terrain", wave6gP4Results.realRaycastHit);
+        check(
+            "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxelSphere) yieldet Material",
+            wave6gP4Results.realDigYielded
+        );
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandVoxelTerrainCore(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Voxel-Terrain-Bogen Phase 1 — Dichte-Feld + Surface Nets ###
+    // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
+    // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
+    // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
+    // V9.35 — vor dem _spawnVoxelTestChunk-Test räumen wir alle
+    // Voxel-Chunks direkt ab (~81 Chunks, ~5-6 MB Ammo-Heap zurück);
+    // die alte setVoxelTerrainActive(false)-Geste ist tot (Toggle ist
+    // weg). Die folgenden Tests bauen ihren Voxel-Ring per direktem
+    // _tickVoxelChunkStreaming neu auf — saubere Test-Isolation.
+    await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (r && r.state && r.state.voxelChunks && typeof r._disposeVoxelChunk === "function") {
+            for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+        }
+    });
+    const voxelP1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasDensityAt = typeof r._terrainDensityAt === "function";
+            out.hasChunkGeometry = typeof r._voxelChunkGeometry === "function";
+            out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
+
+            if (out.hasDensityAt) {
+                // Das Feld ist genuin 3D — bei festem (x,z) nimmt die
+                // Dichte mit der Höhe ab (mehr Luft oben). Über mehrere
+                // Stichproben gemittelt, damit das 3D-Noise-Band die
+                // Monotonie nicht lokal kippt.
+                let lowerSum = 0;
+                let upperSum = 0;
+                for (let s = 0; s < 8; s++) {
+                    const sx = s * 37 - 100;
+                    const sz = s * 53 + 40;
+                    lowerSum += r._terrainDensityAt(sx, -40, sz);
+                    upperSum += r._terrainDensityAt(sx, 60, sz);
+                }
+                out.densityIs3D = lowerSum > upperSum;
+                // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0),
+                // der vertikal zwischen festem Grund liegt.
+                let foundCave = false;
+                for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
+                    for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
+                        for (let sy = -40; sy <= 20 && !foundCave; sy += 4) {
+                            if (
+                                r._terrainDensityAt(sx, sy, sz) < 0 &&
+                                r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                                r._terrainDensityAt(sx, sy + 6, sz) > 0
+                            ) {
+                                foundCave = true;
+                            }
+                        }
+                    }
+                }
+                out.densityCanCave = foundCave;
+
+                // V9.12 — der Voxel-Chunk fasst das ganze Oberflächen-
+                // Band: der Boden ist überall fest, die Decke überall
+                // Luft → keine Klipp-Löcher. V9.26: Chunk-Bounds erhöht
+                // auf base-58 .. base+86 (Marge ~22 gegen ridged-Spike-
+                // Löcher am erweiterten Sicht-Ring).
+                const cBase = r.state.terrainBaseHeight || 0;
+                let floorAllSolid = true;
+                let ceilAllAir = true;
+                for (let sx = -220; sx <= 220; sx += 20) {
+                    for (let sz = -220; sz <= 220; sz += 20) {
+                        if (r._terrainDensityAt(sx, cBase - 58, sz) <= 0) floorAllSolid = false;
+                        if (r._terrainDensityAt(sx, cBase + 86, sz) >= 0) ceilAllAir = false;
+                    }
+                }
+                out.chunkContainsSurface = floorAllSolid && ceilAllAir;
+
+                // V9.18 Phase 4 — Höhlen entstehen mit der Welt.
+                // Über ein 3D-Raster: eine Höhlen-Zelle ist Luft, von
+                // festem Grund 6 m darüber UND darunter umschlossen
+                // (echte Höhle, kein offener Himmel). Es gibt viele
+                // davon (Höhlen existieren) — aber sie sind eine
+                // Minderheit des festen Volumens (die Welt ist nicht
+                // hohl). Und der Boden unter dem Höhlen-Band (base-44,
+                // unter der caveFloor-Hüllkurve) bleibt überall fest.
+                let caveCells = 0;
+                let solidCells = 0;
+                let p4FloorSolid = true;
+                for (let sx = -200; sx <= 200; sx += 25) {
+                    for (let sz = -200; sz <= 200; sz += 25) {
+                        if (r._terrainDensityAt(sx, cBase - 44, sz) <= 0) p4FloorSolid = false;
+                        for (let sy = cBase - 26; sy <= cBase + 44; sy += 5) {
+                            const dHere = r._terrainDensityAt(sx, sy, sz);
+                            if (dHere > 0) solidCells++;
+                            if (
+                                dHere < 0 &&
+                                r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
+                                r._terrainDensityAt(sx, sy + 6, sz) > 0
+                            ) {
+                                caveCells++;
+                            }
+                        }
+                    }
+                }
+                out.cavesExist = caveCells >= 8;
+                out.worldNotHollow = caveCells * 3 < solidCells;
+                out.caveFloorSolid = p4FloorSolid;
+            }
+
+            if (out.hasChunkGeometry) {
+                const geom = r._voxelChunkGeometry(0, -24, 0, 20, 20, 20, 1.8);
+                out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
+                if (out.geomBuilt) {
+                    const pos = geom.getAttribute("position");
+                    out.geomVertexCount = pos.count;
+                    let allFinite = true;
+                    for (let v = 0; v < pos.count * 3; v++) {
+                        if (!Number.isFinite(pos.array[v])) allFinite = false;
+                    }
+                    out.geomFinite = allFinite;
+                    out.geomHasNormals = !!geom.getAttribute("normal");
+                    out.geomHasIndex = !!geom.getIndex();
+                    // V9.16 — die Normalen kommen aus dem Dichte-
+                    // Gradienten: jede ist ein endlicher Einheits-
+                    // vektor (kein Facetten-Rauten-Muster).
+                    const nrm = geom.getAttribute("normal");
+                    let normalsUnit = !!nrm && nrm.count === pos.count;
+                    if (nrm) {
+                        for (let v = 0; v < nrm.count; v++) {
+                            const nl = Math.sqrt(
+                                nrm.getX(v) * nrm.getX(v) + nrm.getY(v) * nrm.getY(v) + nrm.getZ(v) * nrm.getZ(v)
+                            );
+                            if (!Number.isFinite(nl) || Math.abs(nl - 1) > 0.02) {
+                                normalsUnit = false;
+                                break;
+                            }
+                        }
+                    }
+                    out.normalsUnit = normalsUnit;
+                    // V9.11 — kein Streck-Dreieck (Index-Aliasing-Bug):
+                    // jede Triangle-Kante ist lokal klein (≤ ein paar
+                    // Zellen). Ein Stray-Dreieck quer durch den Chunk
+                    // hätte eine Kante von zig Zellen — das war die
+                    // unsaubere Naht. step=1.8 → Grenze 5×step=9.
+                    if (out.geomHasIndex) {
+                        const ia = geom.getIndex().array;
+                        const pa = pos.array;
+                        let maxEdge = 0;
+                        const elen = (p, q) => Math.hypot(pa[p] - pa[q], pa[p + 1] - pa[q + 1], pa[p + 2] - pa[q + 2]);
+                        for (let t = 0; t + 2 < ia.length; t += 3) {
+                            const a = ia[t] * 3;
+                            const b = ia[t + 1] * 3;
+                            const c = ia[t + 2] * 3;
+                            const m = Math.max(elen(a, b), elen(b, c), elen(c, a));
+                            if (m > maxEdge) maxEdge = m;
+                        }
+                        out.geomMaxEdge = maxEdge;
+                        out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
+
+                        // V9.41.b — Laplacian-Smooth: prüfe, dass die
+                        // Position eines Vertex deutlich näher am
+                        // Durchschnitt seiner Nachbarn liegt als der
+                        // Original-Vertex (Surface-Nets-Treppe). Wir
+                        // messen pro Vertex die Y-Distanz zum Nachbar-
+                        // Mittel und mitteln über alle Vertices. Pre-
+                        // V9.41.b liegt der Wert in der Größenordnung
+                        // step/2 = 0.9 (Surface-Nets-Zellen-Auflösung).
+                        // Nach 1 Iteration mit Lambda 0.5 sollte der
+                        // Wert ungefähr halbiert sein — der Vertex ist
+                        // jetzt 50% des Weges zum Nachbar-Mittel.
+                        const neighborSets = new Array(pos.count);
+                        for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
+                        for (let t = 0; t + 2 < ia.length; t += 3) {
+                            const i0 = ia[t],
+                                i1 = ia[t + 1],
+                                i2 = ia[t + 2];
+                            neighborSets[i0].add(i1);
+                            neighborSets[i0].add(i2);
+                            neighborSets[i1].add(i0);
+                            neighborSets[i1].add(i2);
+                            neighborSets[i2].add(i0);
+                            neighborSets[i2].add(i1);
+                        }
+                        let totalDev = 0;
+                        let sampledVerts = 0;
+                        for (let v = 0; v < pos.count; v++) {
+                            const nbrs = neighborSets[v];
+                            if (nbrs.size < 2) continue;
+                            let sy = 0;
+                            for (const n of nbrs) sy += pa[n * 3 + 1];
+                            const avgY = sy / nbrs.size;
+                            totalDev += Math.abs(pa[v * 3 + 1] - avgY);
+                            sampledVerts++;
+                        }
+                        out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
+                        // step = 1.8 für Test-Chunk; pre-Smooth wäre
+                        // diese Mean-Dev typisch > 0.3 (steile Treppen).
+                        // Post-Smooth mit Lambda 0.5 sollte sie unter
+                        // 0.25 fallen — das ist die Härtung.
+                        out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
+
+                        // V9.41 — alternierende Diagonalen (Schach-Brett).
+                        // Quad emittiert pro Paar 6 Indizes: 2 Dreiecke.
+                        // a-c-Diagonale: indices = [a,b,c, a,c,d] →
+                        // erster Vertex des ersten Dreiecks (a) == erster
+                        // Vertex des zweiten Dreiecks (a).
+                        // b-d-Diagonale: indices = [a,b,d, b,c,d] →
+                        // ZWEITER Vertex des ersten Dreiecks (b) == ERSTER
+                        // Vertex des zweiten Dreiecks (b).
+                        // Pre-V9.41: nur a-c-Pattern. Post-V9.41 mit
+                        // Schach-Brett: beide Patterns kommen vor.
+                        let acDiag = 0;
+                        let bdDiag = 0;
+                        for (let t = 0; t + 5 < ia.length; t += 6) {
+                            if (ia[t] === ia[t + 3]) acDiag++;
+                            else if (ia[t + 1] === ia[t + 3]) bdDiag++;
+                        }
+                        out.diagonalAcCount = acDiag;
+                        out.diagonalBdCount = bdDiag;
+                        out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
+                    }
+                }
+            }
+
+            // Phase 2a — der Kollisions-Builder.
+            out.hasStaticTriCollision = typeof r._buildStaticTriMeshCollision === "function";
+            out.hasIslandCollision = typeof r._buildIslandCollision === "function";
+
+            if (out.hasSpawnTest && r.state.scene) {
+                const before = r.state.scene.children.length;
+                const m1 = r._spawnVoxelTestChunk();
+                const afterOne = r.state.scene.children.length;
+                // m1 bekommt eine btBvhTriangleMeshShape-Kollision.
+                out.spawnHasCollision = !!(
+                    m1 &&
+                    m1.userData &&
+                    m1.userData.collision &&
+                    m1.userData.collision.body &&
+                    m1.userData.collision.kind === "voxel"
+                );
+                const m2 = r._spawnVoxelTestChunk();
+                const afterTwo = r.state.scene.children.length;
+                out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
+                // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
+                out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
+                // Der alte Test-Chunk gab seine Kollision frei.
+                out.spawnDisposesOldCollision = !!(m1 && m1.userData && m1.userData.collision === null);
+                out.spawnNewHasCollision = !!(m2 && m2.userData && m2.userData.collision && m2.userData.collision.body);
+                // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
+                if (r._voxelTestMesh) {
+                    r._disposeStaticCollision(r._voxelTestMesh);
+                    r.state.scene.remove(r._voxelTestMesh);
+                    r._voxelTestMesh = null;
+                }
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelP1Results && !voxelP1Results.error) {
+        check("Voxel P1: _terrainDensityAt-Methode existiert", voxelP1Results.hasDensityAt);
+        check("Voxel P1: _voxelChunkGeometry-Methode existiert", voxelP1Results.hasChunkGeometry);
+        check("Voxel P1: _spawnVoxelTestChunk-Methode existiert", voxelP1Results.hasSpawnTest);
+        check("Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)", voxelP1Results.densityIs3D);
+        check("Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)", voxelP1Results.densityCanCave);
+        check(
+            "Voxel P2b-Politur: der Voxel-Chunk fasst das ganze Oberflächen-Band (Boden fest + Decke Luft — keine Klipp-Löcher)",
+            voxelP1Results.chunkContainsSurface
+        );
+        check("Voxel P4: die Wurm-Höhlen schnitzen echte Luft im Höhlen-Band", voxelP1Results.cavesExist);
+        check(
+            "Voxel P4: die Welt ist nicht hohl (das Höhlen-Band bleibt überwiegend fest)",
+            voxelP1Results.worldNotHollow
+        );
+        check(
+            "Voxel P4: die Tiefen-Hüllkurve hält den Boden (base-44) unter den Höhlen fest",
+            voxelP1Results.caveFloorSolid
+        );
+        check(
+            `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
+            voxelP1Results.geomBuilt && (voxelP1Results.geomVertexCount || 0) > 0
+        );
+        check("Voxel P1: alle Mesh-Positionen sind endlich (kein NaN)", voxelP1Results.geomFinite);
+        check(
+            "Voxel P1: das Mesh trägt Normalen + einen Index",
+            voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
+        );
+        check(
+            "Voxel P3b-Politur: die Voxel-Normalen sind Einheitsvektoren aus dem Dichte-Gradienten (glatt, kein Facetten-Muster)",
+            voxelP1Results.normalsUnit
+        );
+        check(
+            `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,
+            voxelP1Results.geomNoStrayTris
+        );
+        check(
+            `V9.41: Quad-Diagonalen alternieren (Schach-Brett) — beide Patterns vorhanden (a-c ${voxelP1Results.diagonalAcCount}, b-d ${voxelP1Results.diagonalBdCount})`,
+            voxelP1Results.diagonalAlternates
+        );
+        check(
+            `V9.41.b: Laplacian-Smooth glättet Voxel-Treppen — mittlere Y-Abweichung vom Nachbar-Mittel ${(voxelP1Results.smoothMeanYDev || 0).toFixed(2)} < 0.25 (step 1.8)`,
+            voxelP1Results.smoothMeanYDevLow
+        );
+        check(
+            "V9.41: keine Diagonal-Pattern-Dominanz — beide Muster ≥ 10% des jeweils anderen",
+            voxelP1Results.diagonalAcCount > 0 &&
+                voxelP1Results.diagonalBdCount > 0 &&
+                Math.min(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) /
+                    Math.max(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) >=
+                    0.1
+        );
+        check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
+        check(
+            "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
+            voxelP1Results.spawnReplaces
+        );
+        check("Voxel P2a: _buildStaticTriMeshCollision-Methode existiert", voxelP1Results.hasStaticTriCollision);
+        check(
+            "Voxel P2a: _buildIslandCollision existiert weiter (Regression nach Extraktion)",
+            voxelP1Results.hasIslandCollision
+        );
+        check(
+            "Voxel P2a: der Voxel-Test-Chunk bekommt eine btBvhTriangleMeshShape-Kollision (kind voxel)",
+            voxelP1Results.spawnHasCollision
+        );
+        check(
+            "Voxel P2a: ein zweiter Spawn gibt die Kollision des alten Chunks frei",
+            voxelP1Results.spawnDisposesOldCollision
+        );
+        check("Voxel P2a: der neue Test-Chunk trägt wieder eine Kollision", voxelP1Results.spawnNewHasCollision);
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
+    // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
+    // Parallel, hinter dem Flag — jeder Schritt reversibel.
+    const voxelP2bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
+            out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
+            out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
+            out.hasConfig = typeof r._voxelChunkConfig === "function";
+            out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
+            // V9.35 Phase 5c.2.c.2 — die Toggle-Methoden sind tot;
+            // Voxel ist permanent + irreversibel. Der Ring ist schon
+            // beim Init gefüllt (state.voxelTerrainActive defaults
+            // auf true). Die alten Reversibilitäts-Tests (Heightfield
+            // ruht / erwacht / setVoxelTerrainActive füllt|räumt)
+            // sind ersatzlos entfallen.
+
+            if (out.hasTick) {
+                // V9.40-c — Test-Deterministik: der Game-Loop läuft im
+                // Headless-Chromium gedrosselt (~1 Hz im Hintergrund-Tab),
+                // also bauen wir den Voxel-Ring hier explizit synchron.
+                // Der V9.40-c-Hook (`_tickDirtyVoxelChunks`) verschob das
+                // Timing-Fenster gerade weit genug, dass die initial-
+                // Spawn-Tests rot wurden — der explizite Drain heilt das
+                // an der Test-Seite (im Spiel-Pfad läuft alles asynchron).
+                const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+                for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
+                out.activated = r.state.voxelTerrainActive === true;
+                out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
+                // jeder gemeshte Voxel-Chunk trägt eine Kollision.
+                let meshCount = 0;
+                let collCount = 0;
+                for (const e of r.state.voxelChunks.values()) {
+                    if (e && e.mesh) {
+                        meshCount++;
+                        if (e.mesh.userData && e.mesh.userData.collision && e.mesh.userData.collision.body) {
+                            collCount++;
+                        }
+                    }
+                }
+                out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
+
+                // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
+                out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
+                out.hasVoxelSurfaceY = typeof r._voxelSurfaceY === "function";
+                let grassEntries = 0;
+                let grassBlades = 0;
+                if (r.state.voxelChunkGrass) {
+                    for (const g of r.state.voxelChunkGrass.values()) {
+                        grassEntries++;
+                        if (g && g.isInstancedMesh) grassBlades += g.count;
+                    }
+                }
+                out.voxelGrassBuilt = grassEntries > 0;
+                out.voxelGrassHasBlades = grassBlades > 0;
+                // _voxelSurfaceY: liefert eine endliche Höhe, dort ist
+                // fester Grund + knapp darüber (Scan-Schritt) Luft.
+                const sy = r._voxelSurfaceY(12, -8);
+                out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
+                out.voxelSurfaceIsBoundary =
+                    out.voxelSurfaceFinite &&
+                    r._terrainDensityAt(12, sy, -8) > 0 &&
+                    r._terrainDensityAt(12, sy + 1.2, -8) <= 0;
+
+                // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
+                out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
+                out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
+                // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
+                const ringBefore = r.state.chunkRingRadius;
+                r.state.chunkRingRadius = 6;
+                out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
+                r.state.chunkRingRadius = ringBefore;
+                // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
+                // Aufruf für denselben Chunk spawnt nichts mehr.
+                r._populateVoxelChunkVegetation(777, 777);
+                out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
+                out.voxelVegMarksChunk = !!(
+                    r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777")
+                );
+
+                // V9.25 Phase 5b — die Höhen-Konsumenten sind voxel-aware.
+                // (Das Voxel-Terrain ist hier aktiv → worldMeta.voxelTerrain
+                // gesetzt.) getTerrainHeightAt + findSurfaceAbove liefern
+                // die Voxel-Oberfläche, nicht das schlafende Heightfield.
+                const vsRef = r._voxelSurfaceY(10, 10);
+                const ghVoxel = r.getTerrainHeightAt(10, 10);
+                out.getTerrainHeightVoxelAware =
+                    typeof vsRef === "number" &&
+                    Number.isFinite(vsRef) &&
+                    typeof ghVoxel === "number" &&
+                    Math.abs(ghVoxel - vsRef) < 0.01;
+                const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
+                out.findSurfaceVoxelAware =
+                    typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+
+                // V9.26 Phase 5c-Migration + V9.35 Phase 5c.2.c.2
+                // Zwangs-Migration — eine geladene alte Welt OHNE
+                // voxelTerrain-Flag UND eine alte explizit Heightfield-
+                // Opt-out-Welt werden BEIDE voxel-basiert (der Opt-out
+                // existiert nicht mehr; das Heightfield ist Dead-Code).
+                // Die fresh-Eingangs-Welt ist seit V9.33 ebenfalls
+                // voxel-default. Das Welt-Journal wird vor dem Test
+                // gesichert + danach restored — sonst flutet der
+                // Migrations-Genesis-Eintrag den nachfolgenden
+                // „Journal nicht überflutet"-Test.
+                const origMeta = r.state.worldMeta;
+                const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
+                const origJournalSeen =
+                    r.state.worldJournal && r.state.worldJournal.seen
+                        ? Object.assign({}, r.state.worldJournal.seen)
+                        : null;
+                // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
+                const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
+                r.state.worldMeta = oldMeta;
+                r.ensureWorldMeta();
+                out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
+                // V9.35 — explizit Heightfield-Opt-out wird auch
+                // zwangs-migriert (der Opt-out existiert nicht mehr).
+                const optOutMeta = {
+                    worldId: "test-opt-out",
+                    slug: "test-opt-out",
+                    bornAt: 100,
+                    seed: "test",
+                    voxelTerrain: false,
+                };
+                r.state.worldMeta = optOutMeta;
+                r.ensureWorldMeta();
+                out.migrationForcesOptOut = optOutMeta.voxelTerrain === true;
+                r.state.worldMeta = origMeta;
+                if (r.state.worldJournal && origJournalEntries) {
+                    r.state.worldJournal.entries = origJournalEntries;
+                    if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
+                }
+
+                // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
+                let anyColorAttr = false;
+                let colorMin = 1;
+                let colorMax = 0;
+                let skirtProven = false;
+                const cfg0 = r._voxelChunkConfig();
+                for (const e of r.state.voxelChunks.values()) {
+                    if (!e || !e.mesh || !e.mesh.geometry) continue;
+                    const col = e.mesh.geometry.getAttribute("color");
+                    if (col) {
+                        anyColorAttr = true;
+                        for (let i = 0; i < col.count; i++) {
+                            const rr = col.getX(i);
+                            if (rr < colorMin) colorMin = rr;
+                            if (rr > colorMax) colorMax = rr;
+                        }
+                    }
+                    const g = e.mesh.geometry;
+                    g.computeBoundingBox();
+                    const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
+                    if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
+                }
+                out.voxelHasFieldColors = anyColorAttr;
+                out.voxelColorVaries = colorMax - colorMin > 0.05;
+                out.voxelSkirt = skirtProven;
+
+                // Streaming: alles abräumen, ein Tick baut wieder auf.
+                for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+                const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                r._tickVoxelChunkStreaming(pos);
+                out.tickBuilds = r.state.voxelChunks.size >= 1;
+                // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
+                r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
+                out.pruneRemovesFar = r.state.voxelChunks.size === 0;
+
+                // V9.35: nach dem Prune baut der Streaming-Ring den
+                // Spieler-Ring neu auf — wir restaurieren das hier
+                // direkt, damit nachfolgende Tests Voxel-Chunks haben.
+                r._tickVoxelChunkStreaming(pos);
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelP2bResults && !voxelP2bResults.error) {
+        check(
+            "Voxel P2b: alle Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/_voxelChunkConfig)",
+            voxelP2bResults.hasEnsure &&
+                voxelP2bResults.hasTick &&
+                voxelP2bResults.hasPrune &&
+                voxelP2bResults.hasConfig
+        );
+        check(
+            "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
+            voxelP2bResults.activated && voxelP2bResults.ringFilled
+        );
+        check(
+            "Voxel P2b: jeder gemeshte Voxel-Chunk trägt eine btBvhTriangleMeshShape-Kollision",
+            voxelP2bResults.voxelChunksHaveCollision
+        );
+        check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
+        check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
+        check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
+        check(
+            "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
+            voxelP2bResults.voxelHasFieldColors
+        );
+        check(
+            "Voxel P2b-Politur: die Voxel-Farben variieren über die Welt (keine Mono-Biom-Fläche)",
+            voxelP2bResults.voxelColorVaries
+        );
+        check(
+            "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
+            voxelP2bResults.voxelSkirt
+        );
+        check(
+            "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
+            voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
+        );
+        check(
+            "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
+            voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
+        );
+        check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
+        check("Voxel V9.22: der Voxel-Chunk-Ring trägt Instanced-Gras-Halme", voxelP2bResults.voxelGrassHasBlades);
+        check(
+            "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
+            voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
+        );
+        check(
+            "Voxel V9.24: der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler (chunkRingRadius)",
+            voxelP2bResults.voxelRingFollowsSlider
+        );
+        check(
+            "Voxel V9.24: _populateVoxelChunkVegetation ist idempotent (zweiter Aufruf → 0)",
+            voxelP2bResults.voxelVegIdempotent
+        );
+        check(
+            "Voxel V9.24: _populateVoxelChunkVegetation markiert den Chunk in voxelPopulatedChunks",
+            voxelP2bResults.voxelVegMarksChunk
+        );
+        check(
+            "Voxel V9.25 Phase 5b: getTerrainHeightAt liefert in einer Voxel-Welt die Voxel-Oberfläche",
+            voxelP2bResults.getTerrainHeightVoxelAware
+        );
+        check(
+            "Voxel V9.25 Phase 5b: findSurfaceAbove liefert in einer Voxel-Welt die Voxel-Oberfläche",
+            voxelP2bResults.findSurfaceVoxelAware
+        );
+        check(
+            "Voxel V9.26 Phase 5c: eine geladene alte Welt ohne voxelTerrain-Flag wird voxel-basiert",
+            voxelP2bResults.migrationFlipsOldWorld
+        );
+        check(
+            "Voxel V9.35 Phase 5c.2.c.2: ein altes voxelTerrain:false (V9.23-Opt-out) wird zwangs-migriert (Toggle ist tot)",
+            voxelP2bResults.migrationForcesOptOut
+        );
+    }
+
+    // ### Voxel V9.35 Phase 5c.2.c.2 — Toggle-Tod: Voxel permanent + irreversibel ###
+    // Der V9.13-`voxel terrain on/off`-Toggle ist als Reversibilitäts-
+    // Schicht entfernt — Voxel ist beim Init aktiv, `worldMeta.voxel-
+    // Terrain` ist immer true (Zwangs-Migration in `ensureWorldMeta`
+    // zieht jede alte Welt mit). Die drei Toggle-Methoden + der Chat-
+    // Befehl sind weg.
+    const voxelV935ToggleResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // Die drei Toggle-Methoden sind GELÖSCHT.
+            out.noSetActive = typeof r.setVoxelTerrainActive !== "function";
+            out.noDormant = typeof r._setHeightfieldDormant !== "function";
+            out.noRestore = typeof r._restoreVoxelTerrain !== "function";
+            // Voxel ist beim Init aktiv (kein toggle nötig).
+            out.voxelPermanent = r.state.voxelTerrainActive === true;
+            out.metaPermanent = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
+            // Der Welt-Snapshot trägt das Flag (überlebt Reload).
+            const snap = r.buildStateSnapshot();
+            out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
+            // Chat-Toggle ist tot — `voxel terrain on/off` ist kein
+            // erkanntes Kommando mehr. Der Source-Scan prüft das
+            // String-Literal `=== "voxel terrain on"` (die echte
+            // Code-Logik, nicht ein Kommentar — der V9.35-Eintrag-
+            // Kommentar erwähnt den toten Befehl als Doku).
+            const src = (typeof r.processChatCommand === "function" && r.processChatCommand.toString()) || "";
+            out.noChatToggle = !/===\s*["']voxel terrain on["']/.test(src);
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV935ToggleResults && !voxelV935ToggleResults.error) {
+        check(
+            "Voxel V9.35: setVoxelTerrainActive-Methode ist gelöscht (Toggle-Tod)",
+            voxelV935ToggleResults.noSetActive
+        );
+        check(
+            "Voxel V9.35: _setHeightfieldDormant-Methode ist gelöscht (Reversibilitäts-Schicht weg)",
+            voxelV935ToggleResults.noDormant
+        );
+        check(
+            "Voxel V9.35: _restoreVoxelTerrain-Methode ist gelöscht (kein Init-Restore mehr nötig)",
+            voxelV935ToggleResults.noRestore
+        );
+        check(
+            "Voxel V9.35: voxelTerrainActive ist permanent true (Default + nie umschaltbar)",
+            voxelV935ToggleResults.voxelPermanent
+        );
+        check(
+            "Voxel V9.35: worldMeta.voxelTerrain ist permanent true (Zwangs-Migration)",
+            voxelV935ToggleResults.metaPermanent
+        );
+        check(
+            "Voxel V9.35: der Welt-Snapshot trägt das voxelTerrain-Flag (überlebt Reload)",
+            voxelV935ToggleResults.snapshotHasFlag
+        );
+        check(
+            "Voxel V9.35: der `voxel terrain on/off`-Chat-Toggle ist aus processChatCommand entfernt",
+            voxelV935ToggleResults.noChatToggle
+        );
+    }
+
+    // ### Voxel V9.27 Phase 5c.1 + V9.28 — fusioniert für Heap-Schonung ###
+    // V9.27: eine Voxel-Welt überspringt die initialen 64 Heightfield-
+    // Chunks. V9.28: zusätzlich ist die heightData/caveData/volcanoData-
+    // Allokation übersprungen (V9.25 Phase 5b ehrlich abgeschlossen —
+    // updateCreatures ist der letzte missed Höhen-Konsument, jetzt
+    // voxel-aware via getTerrainHeightAt). BEIDE teilen sich die zwei
+    // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression),
+    // damit das pre-existing btBvhTriangleMeshShape-Auxiliar-Leck
+    // (Ammo-Heap) nicht den Welle-10b-Test OOM'ed.
+    const voxelP5c1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            const origVoxel = r.state.worldMeta && r.state.worldMeta.voxelTerrain;
+
+            // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
+            r.state.worldMeta.voxelTerrain = true;
+            r.state.lastWorldgen = 0;
+            r.generateNewWorld({ force: true });
+            // V9.27 Phase 5c.1: chunkMap leer.
+            out.voxelChunkMapEmpty = r.state.chunkMap && r.state.chunkMap.size === 0;
+            out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
+            // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
+            out.voxelGroundFieldNull = r.state.groundHeightField === null;
+            out.voxelMinHeightZero = r.state.minHeight === 0;
+            out.voxelMaxHeightZero = r.state.maxHeight === 0;
+            out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
+
+            // V9.28: updateCreatures ist voxel-aware. Spawne eine
+            // Kreatur an bekannter Position, lasse einen Frame laufen,
+            // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
+            if (
+                typeof r.spawnCreatureAt === "function" &&
+                typeof r._voxelSurfaceY === "function" &&
+                typeof r.updateCreatures === "function"
+            ) {
+                const testX = 5;
+                const testZ = 5;
+                const voxelY = r._voxelSurfaceY(testX, testZ);
+                const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
+                if (creature && Number.isFinite(voxelY)) {
+                    r.updateCreatures(0.016);
+                    const expected = voxelY + 0.5;
+                    const actual = creature.position.y;
+                    out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
+                    out.creatureNotAtFallback = Math.abs(actual - 0.5) > 1.0;
+                }
+            }
+
+            // V9.37 Phase 5c.2.c.3.b.i: der ehemalige V9.27-Heightfield-
+            // Regression-Pfad (worldMeta.voxelTerrain = false → 64
+            // Chunks gebaut) ist mit dem Lösch des `else`-Pfads in
+            // `generateTerrainWithParameters` tot. Der Beweis
+            // wandert um: selbst wenn ein Test-Setup `voxelTerrain
+            // = false` mutiert, baut der Welt-Generator keine
+            // Heightfield-Chunks mehr (chunkMap bleibt leer).
+            r.state.worldMeta.voxelTerrain = false;
+            r.state.lastWorldgen = 0;
+            r.generateNewWorld({ force: true });
+            out.heightfieldElseDead = r.state.chunkMap && r.state.chunkMap.size === 0;
+            // Restore: voxelTerrain auf true zurück + Regen, damit
+            // die nachfolgenden Tests eine Voxel-Welt haben.
+            r.state.worldMeta.voxelTerrain = true;
+            r.state.lastWorldgen = 0;
+            r.generateNewWorld({ force: true });
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelP5c1Results && !voxelP5c1Results.error) {
+        check(
+            "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
+            voxelP5c1Results.voxelChunkMapEmpty
+        );
+        // V9.39 Phase 5c.2.c.3.b.iii — der V9.27-Material-Erhaltungs-
+        // Test ist gestrichen. Sein Vision-Ziel („Heightfield-Material
+        // bleibt für voxel-off-Toggle erhalten") wurde mit V9.35 obsolet
+        // (Toggle-Tod) und mit V9.39 vollendet (terrainMaterial-Setzer
+        // gelöscht — kein Heightfield-Mesh nutzt es mehr).
+        check(
+            "Voxel V9.37 Phase 5c.2.c.3.b.i: der Heightfield-`else`-Pfad in generateTerrainWithParameters ist tot — auch `voxelTerrain = false` baut keine Heightfield-Chunks mehr",
+            voxelP5c1Results.heightfieldElseDead
+        );
+        check(
+            "Voxel V9.28: eine Voxel-Welt hat KEIN groundHeightField (heightData übersprungen)",
+            voxelP5c1Results.voxelGroundFieldNull
+        );
+        check(
+            "Voxel V9.28: state.minHeight ist 0 in einer Voxel-Welt (kein Infinity-Leak)",
+            voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
+        );
+        check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
+        check(
+            "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
+            voxelP5c1Results.creatureOnVoxelSurface
+        );
+        check(
+            "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
+            voxelP5c1Results.creatureNotAtFallback
+        );
+        // V9.37 Phase 5c.2.c.3.b.i: die zwei V9.28-Heightfield-Regression-
+        // Tests („groundHeightField gefüllt", „minHeight/maxHeight gesetzt")
+        // sind mit dem Lösch des `else`-Pfads in `generateTerrainWith-
+        // Parameters` tot — sie prüften, dass eine `voxelTerrain=false`-
+        // Welt noch das Heightfield aufbaut; mit V9.37 baut sie keine
+        // Heightfield-Chunks mehr, der heightData-Allokations-Pfad in
+        // `isVoxelWorldGen2` lebt zwar noch, aber kein Spieler-Pfad
+        // erreicht ihn (eine spätere Welle 5c.2.c.3.b.ii könnte ihn
+        // auch noch ablösen, sobald die Test-Anker umgewidmet sind).
+    }
+
+    // ### Voxel V9.39 — V9.29-Disposal-Test gestrichen ###
+    // Der V9.29-Test prüfte die `_disposeChunkPhysics`-Auxiliars-
+    // Cleanup-Disziplin (Body + Shape + MotionState + TMesh) an einem
+    // Heightfield-Chunk, der per `ensureChunkAt(40,40)` direkt gebaut
+    // wurde. Beide Methoden sind in V9.39 als toter Pfad entfernt;
+    // die V9.29-Lehre lebt im `_disposeStaticCollision`-Helper weiter
+    // (Inseln + Voxel-Chunks). V9.37-Disziplin: Test einer
+    // unreachable Schicht ist toter Schutz — ehrlich streichen.
+
+    // ### Voxel V9.30 — Lösch-Beweise ###
+    // Die V9.30-Welle löschte `generateChunk` + `addTerrainPhysics`
+    // (V9.28-Befund: nachweislich tot). Die zwei Lösch-Beweise leben
+    // weiter; die V9.30-Regression-Schutzanker (`ensureChunkAt`/
+    // `_terrainHeightAtWorld` leben weiter) sind in V9.39 verfallen
+    // — die geschützte Schicht ist selbst tot. V9.37-Disziplin:
+    // ehrlich streichen, nicht heilen.
+    const voxelV930Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            return {
+                noGenerateChunk: typeof r.generateChunk !== "function",
+                noAddTerrainPhysics: typeof r.addTerrainPhysics !== "function",
+            };
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV930Results && !voxelV930Results.error) {
+        check("Voxel V9.30: generateChunk ist gelöscht (tote Methode, V9.28-Befund)", voxelV930Results.noGenerateChunk);
+        check(
+            "Voxel V9.30: addTerrainPhysics ist gelöscht (tote Methode, V9.28-Befund)",
+            voxelV930Results.noAddTerrainPhysics
+        );
+    }
+
+    // ### Voxel V9.34 — Phase 5c.2.c.1: weitere tote Heightfield-Schichten gelöscht ###
+    // Drei nachweislich tote Schichten, in derselben V9.30-Disziplin (pure
+    // Dead-Code, keine Verhaltens-Änderung): (1) `extendTerrain` — die
+    // Legacy-direction-API für Playtest-Kompat hatte keinen Aufrufer mehr
+    // (alle Playtest-Pfade routen direkt über `ensureChunkAt`); (2) das
+    // `caveData`-Float-Array — wurde in `generateTerrainWithParameters`
+    // alloziert + befüllt, aber NIE gelesen (das Versprechen aus dem
+    // Kommentar „behalten wir nur als Tag-Flags für späteren shader-
+    // Gebrauch" wurde nie erfüllt); (3) das `volcanoData`-Float-Array —
+    // dieselbe Klasse, identisches Schicksal. Wer eine der drei je wieder
+    // anlegt, muss eine echte Notwendigkeit benennen. caveNoise +
+    // volcanoNoise (die SimplexNoise-Instanzen) leben weiter — sie
+    // modulieren die Höhe in `_terrainHeightAtWorld` (echte Konsumenten).
+    // V9.39 Phase 5c.2.c.3.b.iii — die V9.34-Regression-Schutzanker
+    // („ensureChunkAt + _terrainHeightAtWorld leben weiter",
+    // „caveNoise/volcanoNoise leben weiter") sind in V9.39 verfallen
+    // — alle drei genannten Mechaniken sind gelöscht. Die zwei
+    // V9.34-Lösch-Beweise (extendTerrain + caveData/volcanoData-
+    // Arrays) leben unter den V9.39-Lösch-Beweisen unten (zusammen
+    // mit den drei neuen). V9.37-Disziplin: Test einer unreachable
+    // Schicht ist toter Schutz — ehrlich streichen.
+    const voxelV934Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const srcGen =
+                (typeof r.generateTerrainWithParameters === "function" && r.generateTerrainWithParameters.toString()) ||
+                "";
+            return {
+                noExtendTerrain: typeof r.extendTerrain !== "function",
+                noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
+                noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(srcGen),
+                noCaveDataWrite: !/caveData\[i\]\s*=/.test(srcGen),
+                noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(srcGen),
+            };
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV934Results && !voxelV934Results.error) {
+        check(
+            "Voxel V9.34: extendTerrain ist gelöscht (Legacy-direction-API ohne Aufrufer)",
+            voxelV934Results.noExtendTerrain
+        );
+        check(
+            "Voxel V9.34: caveData-Float-Array ist gelöscht (nie gelesen)",
+            voxelV934Results.noCaveDataAlloc && voxelV934Results.noCaveDataWrite
+        );
+        check(
+            "Voxel V9.34: volcanoData-Float-Array ist gelöscht (nie gelesen)",
+            voxelV934Results.noVolcanoDataAlloc && voxelV934Results.noVolcanoDataWrite
+        );
+    }
+
+    // ### V9.38 — Phase 5c.2.c.3.b.ii Lösch-Beweise ###
+    // V9.35 machte `worldMeta.voxelTerrain` permanent true → fünf
+    // voxel-Gate-`else`-Hälften wurden unreachable. V9.38 löscht sie
+    // ehrlich (pure Dead-Code-Welle, V9.30/V9.37-Disziplin).
+    const voxelV938Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const srcGen =
+                (typeof r.generateTerrainWithParameters === "function" && r.generateTerrainWithParameters.toString()) ||
+                "";
+            const srcGet = (typeof r.getTerrainHeightAt === "function" && r.getTerrainHeightAt.toString()) || "";
+            const srcFind = (typeof r.findSurfaceAbove === "function" && r.findSurfaceAbove.toString()) || "";
+            return {
+                // (1) `calculateTerrainSteepness` ist gelöscht — kein
+                // Aufrufer mehr nach Wasserfall-Loop-Lösch.
+                noCalcSteepness: typeof r.calculateTerrainSteepness !== "function",
+                // (2) heightData-Allokations-Loop in generateTerrain*
+                // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
+                noHeightDataAlloc: !/new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/.test(srcGen),
+                // (3) der Wasserfall-Loop (256×256) ist weg:
+                // kein `for (let z = 0; z < DEPTH; z++)` mehr.
+                noWaterfallLoop: !/for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/.test(srcGen),
+                // (4) `getTerrainHeightAt` ist voxel-only — kein
+                // `groundHeightField`-Read mehr in der Source.
+                getHeightVoxelOnly: !/groundHeightField/.test(srcGet),
+                // (5) `findSurfaceAbove` ist voxel-only — kein
+                // `groundHeightField`-Read mehr, kein floatingIslands-
+                // Loop.
+                findSurfaceVoxelOnly: !/groundHeightField/.test(srcFind) && !/floatingIslands/.test(srcFind),
+                // Regression-Schutz: die zwei verschlankten Funktionen
+                // leben weiter + liefern eine endliche Zahl.
+                getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
+                findSurfaceWorks: Number.isFinite(r.findSurfaceAbove(0, -100, 0)),
+            };
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV938Results && !voxelV938Results.error) {
+        check(
+            "Voxel V9.38 Phase 5c.2.c.3.b.ii: calculateTerrainSteepness ist gelöscht (kein Aufrufer nach Wasserfall-Loop-Lösch)",
+            voxelV938Results.noCalcSteepness
+        );
+        check(
+            "Voxel V9.38 Phase 5c.2.c.3.b.ii: heightData-Allokations-else-Pfad in generateTerrainWithParameters ist gelöscht",
+            voxelV938Results.noHeightDataAlloc
+        );
+        check(
+            "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Wasser kommt aus dem Hydrosphären-Netz)",
+            voxelV938Results.noWaterfallLoop
+        );
+        check(
+            "Voxel V9.38 Phase 5c.2.c.3.b.ii: getTerrainHeightAt ist voxel-only (Heightfield-else-Pfad + Raycast-Fallback gelöscht)",
+            voxelV938Results.getHeightVoxelOnly
+        );
+        check(
+            "Voxel V9.38 Phase 5c.2.c.3.b.ii: findSurfaceAbove ist voxel-only (Heightfield-Pfad + floatingIslands-Loop gelöscht)",
+            voxelV938Results.findSurfaceVoxelOnly
+        );
+        check(
+            "Voxel V9.38: getTerrainHeightAt liefert weiter eine endliche Höhe (Regression)",
+            voxelV938Results.getHeightWorks
+        );
+        check(
+            "Voxel V9.38: findSurfaceAbove liefert weiter eine endliche Höhe (Regression)",
+            voxelV938Results.findSurfaceWorks
+        );
+    }
+
+    // ### V9.39 — Phase 5c.2.c.3.b.iii Lösch-Beweise ###
+    // Die letzte grosse Aufräum-Welle der Heightfield-Pipeline: sechs
+    // tote Methoden + alle ihre Konsumenten + `terrainMaterial`-Setzer
+    // gelöscht. V9.30/V9.37-Disziplin: pure Dead-Code-Welle, keine
+    // Verhaltens-Änderung im Spiel (Voxel ist seit V9.35 die einzige
+    // Welt-Form). Die Vision-Schichten (Affinitäts-Vegetation, Wind-
+    // Gras, Welt-Affinität pro Vertex) leben in den Voxel-Pendants
+    // weiter (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
+    // `_attachVoxelFieldColors`).
+    const voxelV939Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const proto = Object.getPrototypeOf(r);
+            return {
+                // (1)-(6) die sechs Methoden sind gelöscht
+                noEnsureChunkAt: typeof r.ensureChunkAt !== "function",
+                noPopulateChunkVegetation: typeof r.populateChunkVegetation !== "function",
+                noBuildChunkGrass: typeof r._buildChunkGrass !== "function",
+                noDisposeChunkGrass: typeof r._disposeChunkGrass !== "function",
+                noTerrainHeightAtWorld: typeof r._terrainHeightAtWorld !== "function",
+                noDisposeChunkPhysics: typeof r._disposeChunkPhysics !== "function",
+                noPruneDistantChunks: typeof r.pruneDistantChunks !== "function",
+                noChunkGeometry: typeof r._chunkGeometry !== "function",
+                // (7) `state.terrainMaterial` wird nicht mehr aktiv gesetzt
+                terrainMaterialNull: r.state.terrainMaterial === null,
+                // (8) der Game-Loop ruft kein `pruneDistantChunks` mehr
+                loopHasNoPrune: !(
+                    proto._gameLoopTick &&
+                    /pruneDistantChunks/.test(
+                        (
+                            Object.getOwnPropertyNames(proto)
+                                .map((n) => proto[n])
+                                .find((f) => typeof f === "function" && /tickArchitectureCulling/.test(f.toString())) ||
+                            function () {}
+                        ).toString()
+                    )
+                ),
+                // (9) `_buildWaterPlane` ist voxel-only — kein echter
+                // `this._terrainHeightAtWorld(...)`-Aufruf mehr (der
+                // Erklär-Kommentar darf den Namen erwähnen — V9.36-
+                // Test-Kommentar-Falle: Regex auf den Aufruf-Pattern).
+                waterPlaneVoxelOnly:
+                    typeof r._buildWaterPlane === "function" &&
+                    !/this\._terrainHeightAtWorld\s*\(/.test(r._buildWaterPlane.toString()),
+                // (10) Voxel-Pendants leben weiter (Vision-Anker)
+                voxelGrassAlive:
+                    typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
+                voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
+                voxelSurfaceYAlive: typeof r._voxelSurfaceY === "function",
+                // (11) Die geteilten Helper bleiben:
+                // `_vegetationSampleSpawn` (per-Sample-Spawn-Kern,
+                // V9.24-extrahiert) + `_attachVoxelFieldColors` (Voxel-
+                // Affinitäts-Färbung).
+                sampleSpawnAlive: typeof r._vegetationSampleSpawn === "function",
+                attachVoxelFieldColorsAlive: typeof r._attachVoxelFieldColors === "function",
+            };
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV939Results && !voxelV939Results.error) {
+        check("Voxel V9.39: ensureChunkAt ist gelöscht", voxelV939Results.noEnsureChunkAt);
+        check("Voxel V9.39: populateChunkVegetation ist gelöscht", voxelV939Results.noPopulateChunkVegetation);
+        check(
+            "Voxel V9.39: _buildChunkGrass + _disposeChunkGrass sind gelöscht",
+            voxelV939Results.noBuildChunkGrass && voxelV939Results.noDisposeChunkGrass
+        );
+        check("Voxel V9.39: _terrainHeightAtWorld ist gelöscht", voxelV939Results.noTerrainHeightAtWorld);
+        check("Voxel V9.39: _disposeChunkPhysics ist gelöscht", voxelV939Results.noDisposeChunkPhysics);
+        check("Voxel V9.39: pruneDistantChunks ist gelöscht", voxelV939Results.noPruneDistantChunks);
+        check("Voxel V9.39: _chunkGeometry ist gelöscht", voxelV939Results.noChunkGeometry);
+        check(
+            "Voxel V9.39: state.terrainMaterial wird nicht mehr gesetzt (null nach Welt-Aufbau)",
+            voxelV939Results.terrainMaterialNull
+        );
+        check(
+            "Voxel V9.39: _buildWaterPlane ist voxel-only (kein _terrainHeightAtWorld-Aufruf mehr)",
+            voxelV939Results.waterPlaneVoxelOnly
+        );
+        check(
+            "Voxel V9.39: Voxel-Gras-Pendant lebt weiter (_buildVoxelChunkGrass + state.voxelChunkGrass)",
+            voxelV939Results.voxelGrassAlive
+        );
+        check(
+            "Voxel V9.39: Voxel-Vegetations-Pendant lebt weiter (_populateVoxelChunkVegetation)",
+            voxelV939Results.voxelVegetationAlive
+        );
+        check(
+            "Voxel V9.39: _voxelSurfaceY lebt weiter (Höhen-Quelle für getTerrainHeightAt)",
+            voxelV939Results.voxelSurfaceYAlive
+        );
+        check(
+            "Voxel V9.39: _vegetationSampleSpawn + _attachVoxelFieldColors leben weiter (geteilte Vision-Helper)",
+            voxelV939Results.sampleSpawnAlive && voxelV939Results.attachVoxelFieldColorsAlive
+        );
+    }
+
+    // ### Voxel V9.31 — motionState-Leck in _disposeStaticCollision geheilt ###
+    // Pre-V9.31-Bug: `_buildStaticTriMeshCollision` (Inseln + Voxel-
+    // Chunks + Voxel-Test-Chunk) erzeugte einen `btDefaultMotionState`,
+    // der NIE destroyed wurde — `_disposeStaticCollision` räumte nur
+    // body+shape+tmesh, nicht motionState (Ammo.destroy(body) cascadiert
+    // nicht zu seinen Auxiliars, V8.26-§6.4-Muster). Mit 81 Voxel-Chunks
+    // pro Welt + mehreren Welt-Regen-Zyklen summierte sich das zum
+    // OOM-Crash (`_buildStaticTriMeshCollision: Aborted(OOM)`). V9.31
+    // speichert motionState in `userData.collision.motionState` + räumt
+    // ihn in `_disposeStaticCollision`. Plus: Boden-Fehlt-Selbstanalyse
+    // (selfReflection + Game-Loop) ist jetzt voxel-aware — in einer
+    // Voxel-Welt sind groundChunks LEGITIM leer (V9.27-Skip), der
+    // alte Check triggerte sonst eine Welt-Regen-Death-Spiral.
+    const voxelV931Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            // V9.31-Probe: baue eine Insel + räume sie + prüfe ob
+            // alle 4 Ammo-Auxiliars sauber verschwinden (body, shape,
+            // tmesh, motionState). Test in heightfield-Welt (default).
+            const out = {};
+            out.hasDispose = typeof r._disposeStaticCollision === "function";
+            out.hasBuilder = typeof r._buildStaticTriMeshCollision === "function";
+            // Source-Audit: prüfe dass _buildStaticTriMeshCollision
+            // motionState speichert + _disposeStaticCollision ihn räumt.
+            const buildSrc = r._buildStaticTriMeshCollision.toString();
+            const disposeSrc = r._disposeStaticCollision.toString();
+            out.buildStoresMotionState = /motionState/.test(buildSrc) && /motionState,?\s*kind/.test(buildSrc);
+            out.disposeDestroysMotionState = /c\.motionState/.test(disposeSrc);
+            // selfAwarenessAnalyze ist jetzt voxel-aware
+            const selfRefSrc = (r.selfAwarenessAnalyze || function () {}).toString();
+            out.selfReflectionVoxelAware = /voxelTerrainActive/.test(selfRefSrc);
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV931Results && !voxelV931Results.error) {
+        check(
+            "Voxel V9.31: _buildStaticTriMeshCollision speichert motionState in userData.collision",
+            voxelV931Results.buildStoresMotionState
+        );
+        check(
+            "Voxel V9.31: _disposeStaticCollision räumt motionState (Ammo-Heap-Leck-Fix)",
+            voxelV931Results.disposeDestroysMotionState
+        );
+        check(
+            "Voxel V9.31: selfAwarenessAnalyze-Boden-Check ist voxel-aware (kein Death-Spiral in Voxel-Welt)",
+            voxelV931Results.selfReflectionVoxelAware
+        );
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandHydrosphere(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Voxel V9.43-c — der per-Chunk-Wasserfall-Spawner ist abgelöst ###
+    // V9.32/V9.43-a spawnten Wasserfälle per-Chunk-Zufall
+    // (`_buildVoxelChunkWaterfalls`: 6×6-Raster, 12 % Hash-Wahrschein-
+    // lichkeit an steilen Voxel-Klippen). V9.43-c löst das ab —
+    // Wasserfälle kommen aus dem Hydrosphären-Netz (ein Fluss kreuzt
+    // eine echte Voxel-Klippe, `_hydroExtractWaterfalls`). Der
+    // per-Chunk-Spawner + seine State-Map sind gelöscht; `_ensure-
+    // VoxelChunkAt`/`_disposeVoxelChunk` hooken sie nicht mehr. Das
+    // Material `_ensureWaterfallMaterial` + die vertikale Plane-
+    // Geometrie bleiben (von `_buildHydroWaterfall` reuset) — nur die
+    // Spawn-Quelle wanderte vom Zufall zum Drainage-Netz (§7/§10).
+    const voxelV943cAblation = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const ensureSrc = (r._ensureVoxelChunkAt || function () {}).toString();
+            const disposeSrc = (r._disposeVoxelChunk || function () {}).toString();
+            return {
+                buildGone: typeof r._buildVoxelChunkWaterfalls !== "function",
+                disposeGone: typeof r._disposeVoxelChunkWaterfalls !== "function",
+                ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
+                disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
+                stateMapGone: !("voxelChunkWaterfalls" in r.state),
+                materialKept: typeof r._ensureWaterfallMaterial === "function",
+            };
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV943cAblation && !voxelV943cAblation.error) {
+        check(
+            "Voxel V9.43-c: _buildVoxelChunkWaterfalls ist gelöscht (per-Chunk-Spawner abgelöst)",
+            voxelV943cAblation.buildGone
+        );
+        check("Voxel V9.43-c: _disposeVoxelChunkWaterfalls ist gelöscht", voxelV943cAblation.disposeGone);
+        check(
+            "Voxel V9.43-c: _ensureVoxelChunkAt hookt den Wasserfall-Spawner nicht mehr",
+            voxelV943cAblation.ensureNoHook
+        );
+        check(
+            "Voxel V9.43-c: _disposeVoxelChunk hookt den Wasserfall-Spawner nicht mehr",
+            voxelV943cAblation.disposeNoHook
+        );
+        check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
+        check(
+            "Voxel V9.43-c: _ensureWaterfallMaterial lebt weiter (von _buildHydroWaterfall reuset)",
+            voxelV943cAblation.materialKept
+        );
+    }
+
+    // ### Voxel V9.43-a — Wasser-Ultiversum: das Wasserfall-Material ###
+    // V9.43-a vereinheitlichte die Wasser-Sprache: ein geteiltes
+    // ShaderMaterial mit Abwärts-Flow (`_ensureWaterfallMaterial`),
+    // das die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog) mit dem Meer
+    // teilt. V9.43-c reuset dieses Material für die netz-verankerten
+    // Wasserfall-Planes (`_buildHydroWaterfall`) — der per-Chunk-
+    // Zufalls-Spawner ist abgelöst (siehe V9.43-c-Ablösungs-Block).
+    const voxelV943Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r) return null;
+            const out = {};
+            out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
+            let mat = null;
+            if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
+            out.matIsShader = !!mat && mat.type === "ShaderMaterial";
+            const u = (mat && mat.uniforms) || {};
+            out.hasFlowUniforms =
+                !!u.uFlowDir &&
+                !!u.uFlowDir.value &&
+                u.uFlowDir.value.y < 0 &&
+                typeof (u.uFlowSpeed && u.uFlowSpeed.value) === "number" &&
+                !!u.uTime;
+            out.sharesWaterUniforms =
+                !!u.uDeep &&
+                !!u.uShallow &&
+                !!u.fogColor &&
+                typeof (u.fogNear && u.fogNear.value) === "number" &&
+                typeof (u.fogFar && u.fogFar.value) === "number" &&
+                !!u.uSunDir &&
+                !!u.uLight;
+            // Day-Night synct das Wasserfall-Material (Fog-Uniform).
+            out.dayNightSyncsWaterfall = false;
+            if (mat && typeof r._applyDayNightToScene === "function") {
+                try {
+                    r._applyDayNightToScene();
+                    out.dayNightSyncsWaterfall = typeof u.fogNear.value === "number" && u.fogNear.value > 0;
+                } catch {
+                    out.dayNightSyncsWaterfall = false;
+                }
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV943Results && !voxelV943Results.error) {
+        check(
+            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein ShaderMaterial",
+            voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
+        );
+        check(
+            "Voxel V9.43-a: das Wasserfall-Material trägt uFlowDir (abwärts) + uFlowSpeed + uTime",
+            voxelV943Results.hasFlowUniforms
+        );
+        check(
+            "Voxel V9.43-a: das Wasserfall-Material teilt die Wasser-Substanz-Uniforms mit dem Meer",
+            voxelV943Results.sharesWaterUniforms
+        );
+        check(
+            "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Fog-Uniform gesetzt)",
+            voxelV943Results.dayNightSyncsWaterfall
+        );
+    }
+
+    // ### Voxel V9.47 — Fluviale Erosion (Stream-Power-Inzision) ###
+    // `_computeErosion` lässt Terrain + Drainage ko-evolvieren: je
+    // Iteration Priority-Flood → Flow-Accumulation → Inzision
+    // `Δh=k·A^m·S^n` NUR in Kanälen (A ≥ channelMinArea). Grate bleiben
+    // unberührt, Täler schneiden ein. Delta fliesst in _terrainMacroSurfaceY.
+    const voxelV947Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // `_computeErosion` nullt state.erosion beim Start — der
+            // Worldgen-Stand wird gesichert + am Ende wiederhergestellt,
+            // damit die nachfolgenden Hydrosphäre-Tests das erodierte
+            // Gelände sehen.
+            const savedEro = r.state.erosion;
+            out.methodsExist =
+                typeof r._computeErosion === "function" &&
+                typeof r._erosionIncisionPass === "function" &&
+                typeof r._erosionDeltaAt === "function";
+            out.stateDeclared = "erosion" in r.state;
+            const e = r.state.erosion;
+            out.wired =
+                !!e &&
+                e.delta instanceof Float32Array &&
+                typeof e.dim === "number" &&
+                typeof e.cell === "number" &&
+                e.delta.length === e.dim * e.dim;
+            if (!out.methodsExist || !out.wired) return out;
+            const E = r.constructor.EROSION;
+            // (1) reine Inzision: jedes Delta ≤ 0, keines unter −maxDelta.
+            let allNeg = true;
+            let minD = 0;
+            let sumD = 0;
+            let carved = 0;
+            for (let i = 0; i < e.delta.length; i++) {
+                const v = e.delta[i];
+                if (v > 1e-4) allNeg = false;
+                if (v < minD) minD = v;
+                sumD += v;
+                if (v < -3) carved++;
+            }
+            out.pureIncision = allNeg;
+            out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01;
+            out.carvesChannels = minD < -5 && carved > 0;
+            // (2) der Schnitt ist gezielt — nur ein Bruchteil der Welt
+            // wird berührt (Kanäle), nicht die ganze Fläche (Blanket).
+            out.channelFocused = carved / e.delta.length < 0.3;
+            // (3) Determinismus — zwei Läufe byte-identisch (kein RNG).
+            const t0 = performance.now();
+            const e2 = r._computeErosion();
+            out.recomputeMs = performance.now() - t0;
+            let sum2 = 0;
+            for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
+            out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
+            // (4) `_erosionDeltaAt`: 0 weit ausserhalb der Region, im
+            // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
+            out.deltaZeroOutside = r._erosionDeltaAt(99999, 99999) === 0;
+            out.deltaFiniteInside = Number.isFinite(r._erosionDeltaAt(0, 0));
+            out.perfOk = out.recomputeMs < 600;
+            // den Worldgen-Erosions-Stand wiederherstellen (das letzte
+            // `_computeErosion` liess state.erosion null).
+            r.state.erosion = savedEro;
+            return out;
+        })
+        .catch((err) => ({ error: String(err) }));
+
+    if (voxelV947Results && !voxelV947Results.error) {
+        const ev = voxelV947Results;
+        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + _erosionDeltaAt existieren", ev.methodsExist);
+        check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
+        check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
+        if (ev.methodsExist && ev.wired) {
+            check(
+                "Voxel V9.47: reine Inzision — jedes Delta ≤ 0, ≥ −maxDelta",
+                ev.pureIncision && ev.boundedByMaxDelta
+            );
+            check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
+            check("Voxel V9.47: der Schnitt ist kanal-fokussiert, kein Flächen-Blanket", ev.channelFocused);
+            check("Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)", ev.deterministic);
+            check(
+                "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
+                ev.deltaZeroOutside && ev.deltaFiniteInside
+            );
+            check(
+                `Voxel V9.47: _computeErosion im Perf-Budget (${Math.round(ev.recomputeMs || 0)} ms < 600)`,
+                ev.perfOk
+            );
+        }
+    } else {
+        check("Voxel V9.47: Erosions-Tests laufen", false, voxelV947Results ? voxelV947Results.error : "no result");
+    }
+
+    // ### Voxel V9.43-b — Der Hydrosphären-Atlas ###
+    // Aus der Voxel-Surface ein deterministisches Drainage-Netz:
+    // Priority-Flood (Senken auffüllen → Seen) → D8-Flow-Direction →
+    // Flow-Accumulation → Netz-Extraktion (Flüsse/Seen/Wasserfälle).
+    // Reine Daten, headless-prüfbar — kein Rendering, kein Carven.
+    const voxelV943bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.methodExists = typeof r._computeHydrosphere === "function";
+            out.stateDeclared = "hydrosphere" in r.state;
+            if (!out.methodExists) return out;
+            const t0 = performance.now();
+            const h1 = r._computeHydrosphere();
+            out.perfMs = performance.now() - t0;
+            out.shape =
+                !!h1 &&
+                h1.ready === true &&
+                Array.isArray(h1.rivers) &&
+                Array.isArray(h1.lakes) &&
+                Array.isArray(h1.waterfalls) &&
+                typeof h1.dim === "number" &&
+                typeof h1.cell === "number";
+            out.riverCount = h1.rivers.length;
+            out.lakeCount = h1.lakes.length;
+            out.waterfallCount = h1.waterfalls.length;
+            out.maxAccum = h1.stats ? h1.stats.maxAccum : 0;
+            out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
+            out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
+            out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
+            out.riverPointsTotal = h1.stats ? h1.stats.riverPointsTotal : 0;
+            out.lakeCellsMax = h1.stats ? h1.stats.lakeCellsMax : 0;
+            out.lakeCells = h1.stats ? h1.stats.lakeCells : 0;
+            // Determinismus — zwei Läufe, byte-identisches Netz
+            const h2 = r._computeHydrosphere();
+            out.deterministic =
+                JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
+                JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
+                JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
+            // Jeder Fluss steigt STRIKT monoton ab — point.y ist die
+            // Füllhöhe, die entlang flowTo strikt monoton fällt (V9.46:
+            // auch durch eine See-Durchquerung — das Priority-Flood-ε
+            // hält filled selbst im Becken strikt fallend).
+            out.riversDescend = h1.rivers.every((rv) => {
+                for (let k = 0; k + 1 < rv.points.length; k++) {
+                    if (rv.points[k].y <= rv.points[k + 1].y) return false;
+                }
+                return true;
+            });
+            // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
+            // sind keine Mündung mehr — der Fluss fliesst hindurch).
+            out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
+            // V9.46 — mindestens ein Fluss fliesst durch einen See
+            // HINDURCH: ein Land-Punkt NACH einer See-Durchquerung.
+            out.riverThroughLake = h1.rivers.some((rv) => {
+                let sawLake = false;
+                for (const p of rv.points) {
+                    if (p.inLake) sawLake = true;
+                    else if (sawLake) return true;
+                }
+                return false;
+            });
+            // Flow-Accumulation stromab monoton → Breite wächst
+            out.widthGrows = h1.rivers.every((rv) => {
+                for (let k = 0; k + 1 < rv.points.length; k++) {
+                    if (rv.points[k].width > rv.points[k + 1].width + 1e-6) return false;
+                }
+                return true;
+            });
+            // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
+            out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
+            // Jede Land-Zelle hat nach dem Priority-Flood einen Abfluss
+            out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
+            // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
+            out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
+            // V9.49-a/e — das vereinte Wasser-Feld: je Region-Zelle der
+            // flache Wasser-Spiegel (`waterY`) + die Klassifikation
+            // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt
+            // `waterLevel`, ein See `lake.level`, eine trockene Zelle
+            // den Meeresspiegel-Default. Die Wahrheit, aus der V9.49 EIN
+            // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12 + §13).
+            const wf = h1.water;
+            out.waterFieldShape =
+                !!wf &&
+                wf.waterY instanceof Float32Array &&
+                wf.waterKind instanceof Uint8Array &&
+                wf.waterY.length === h1.dim * h1.dim &&
+                wf.waterKind.length === h1.dim * h1.dim;
+            let kindOk = true;
+            let finiteOk = true;
+            let oceanCells = 0;
+            let lakeFieldCells = 0;
+            let oceanY = null;
+            let oceanFlat = true;
+            if (out.waterFieldShape) {
+                for (let i = 0; i < wf.waterKind.length; i++) {
+                    const k = wf.waterKind[i];
+                    if (k > 2) kindOk = false;
+                    if (k === 1) {
+                        oceanCells++;
+                        // V9.49-e — alle Ozean-Zellen teilen EINEN
+                        // flachen Spiegel (kein per-Zelle-filled mehr).
+                        if (oceanY === null) oceanY = wf.waterY[i];
+                        else if (Math.abs(wf.waterY[i] - oceanY) > 1e-4) oceanFlat = false;
+                    } else if (k === 2) lakeFieldCells++;
+                    if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
+                }
+            }
+            out.waterKindValid = kindOk && finiteOk;
+            out.waterFieldOceanFlat = oceanFlat && oceanCells > 0;
+            out.waterFieldOceanCells = oceanCells;
+            out.waterFieldLakeCells = lakeFieldCells;
+            // das Feld IST das Netz: Ozean-/See-Zell-Zahl deckt sich mit
+            // den Netz-Extraktions-Zählern (eine Quelle, keine Drift).
+            out.waterFieldMatchesNet =
+                !!h1.stats && oceanCells === h1.stats.seaCells && lakeFieldCells === h1.stats.lakeCells;
+            // Determinismus — das Feld ist so deterministisch wie das Netz.
+            out.waterFieldDeterministic =
+                !!(h2.water && h2.water.waterKind) &&
+                wf.waterKind.length === h2.water.waterKind.length &&
+                wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
+            // V9.50-a — das Wasser-Level-Feld `_waterLevelAt`.
+            out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
+            out.hasRiverAt = typeof r._hydroRiverAt === "function";
+            out.waterLevelOceanOk = false;
+            out.waterLevelLakeOk = false;
+            if (out.hasWaterLevelAt && out.waterFieldShape) {
+                const dimH = h1.dim;
+                const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+                let oceanProbed = false;
+                let lakeProbed = false;
+                for (let i = 0; i < wf.waterKind.length && !(oceanProbed && lakeProbed); i++) {
+                    const wx = h1.originX + ((i % dimH) + 0.5) * h1.cell;
+                    const wz = h1.originZ + (((i / dimH) | 0) + 0.5) * h1.cell;
+                    if (wf.waterKind[i] === 1 && !oceanProbed) {
+                        const lv = r._waterLevelAt(wx, wz);
+                        out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
+                        oceanProbed = true;
+                    } else if (wf.waterKind[i] === 2 && !lakeProbed) {
+                        const lv = r._waterLevelAt(wx, wz);
+                        out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
+                        lakeProbed = true;
+                    }
+                }
+            }
+            // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden.
+            out.hasTarnPass = typeof r._hydroSeedTarns === "function";
+            out.tarnCount = Array.isArray(r.state.tarns) ? r.state.tarns.length : -1;
+            out.tarnsHighAltitude = true;
+            out.tarnsBecameLakes = 0;
+            if (Array.isArray(r.state.tarns) && r.state.tarns.length && h1.lakes) {
+                const base = r.state.terrainBaseHeight || 0;
+                const minRel = 11; // TARN.minReliefAbs minus Float-Marge
+                for (const t of r.state.tarns) {
+                    if (!(t.surf - base >= minRel)) out.tarnsHighAltitude = false;
+                    // Zähle Wasser-Zellen (kind=2) im Tarn-Fussabdruck
+                    // — der Beweis, dass die Mulde zu einem See wurde.
+                    let lakeCells = 0;
+                    if (h1.water) {
+                        const hi = Math.floor((t.x - h1.originX) / h1.cell);
+                        const hj = Math.floor((t.z - h1.originZ) / h1.cell);
+                        const rng = Math.ceil(t.r / h1.cell);
+                        for (let dj = -rng; dj <= rng; dj++) {
+                            for (let di = -rng; di <= rng; di++) {
+                                const ci = hi + di;
+                                const cj = hj + dj;
+                                if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
+                                if (h1.water.waterKind[ci + cj * h1.dim] === 2) lakeCells++;
+                            }
+                        }
+                    }
+                    // ein Tarn gilt als See, wenn ≥ minLakeCells (6)
+                    // See-Zellen in seinem Fussabdruck liegen.
+                    if (lakeCells >= 6) out.tarnsBecameLakes++;
+                }
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV943bResults && !voxelV943bResults.error) {
+        const hb = voxelV943bResults;
+        check("Voxel V9.43-b: _computeHydrosphere existiert", hb.methodExists);
+        check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
+        check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
+        check(
+            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum}, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
+            hb.riverCount > 0
+        );
+        check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
+        check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)", hb.riversDescend);
+        check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
+        check("Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)", hb.riverThroughLake);
+        check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
+        check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
+        check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
+        check(
+            `Voxel V9.43-b: Berechnung im Perf-Budget (${Math.round(hb.perfMs || 0)} ms < 500 ms)`,
+            typeof hb.perfMs === "number" && hb.perfMs < 500
+        );
+        check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
+        check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
+        check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
+        check("Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel", hb.waterFieldOceanFlat);
+        check(
+            `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
+            hb.waterFieldMatchesNet
+        );
+        check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
+        check(
+            "Voxel V9.50-a: `_waterLevelAt` + `_hydroRiverAt` existieren (das Wasser-Level-Feld)",
+            hb.hasWaterLevelAt && hb.hasRiverAt
+        );
+        check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
+        check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
+        check("Voxel V9.51: `_hydroSeedTarns` existiert (der Tarn-Pass)", hb.hasTarnPass);
+        check(`Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden (${hb.tarnCount} Tarns)`, hb.tarnCount >= 1);
+        check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
+        check(
+            `Voxel V9.51: jede Tarn-Mulde wurde zu einem See (${hb.tarnsBecameLakes}/${hb.tarnCount})`,
+            hb.tarnCount >= 1 && hb.tarnsBecameLakes === hb.tarnCount
+        );
+    }
+
+    // ### Voxel V9.50-b — das Chunk-Wasser (Rendering) ###
+    // Das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk baut
+    // seine Wasser-Fläche selbst (`_buildVoxelChunkWater`) aus
+    // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
+    // Terrain. `hydrosphereMeshes` trägt nur noch die Wasserfälle.
+    const voxelChunkWaterResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
+            out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
+            out.hasChunkWater = typeof r._buildVoxelChunkWater === "function";
+            out.hasChunkWaterDispose = typeof r._disposeVoxelChunkWater === "function";
+            out.hasGate = typeof r._voxelChunkTouchesWater === "function";
+            out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
+            if (!out.hasBuild || !out.hasSurfMat || !out.hasChunkWater) return out;
+            const sm = r._ensureHydroSurfaceMaterial();
+            out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
+            const su = (sm && sm.uniforms) || {};
+            out.surfMatSharesUniforms =
+                !!su.uDeep && !!su.uShallow && !!su.uFoam && !!su.uSunDir && !!su.uLight && !!su.fogColor && !!su.uTime;
+            out.shaderHasGerstner =
+                !!sm && /gerstnerWave/.test(sm.vertexShader || "") && /aWave/.test(sm.vertexShader || "");
+            out.depthWriteOn = !!sm && sm.depthWrite === true;
+            const hydro = r.state.hydrosphere;
+            out.hydroReady = !!(hydro && hydro.ready);
+            if (!out.hydroReady) return out;
+            out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
+                rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
+            );
+            r._buildHydrosphereMeshes();
+            const meshes = r.state.hydrosphereMeshes;
+            out.meshesArray = Array.isArray(meshes);
+            out.onlyWaterfalls =
+                out.meshesArray && meshes.every((m) => m.userData && m.userData.hydroKind === "waterfall");
+            out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length;
+            out.fallsUseWaterfallMat =
+                out.meshesArray &&
+                (meshes.length === 0 ||
+                    meshes.every(
+                        (m) =>
+                            m.material === r.state.waterfallMaterial &&
+                            m.geometry &&
+                            m.geometry.type === "PlaneGeometry"
+                    ));
+            out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
+            out.chunkWaterIsMesh = false;
+            out.chunkWaterUsesMat = false;
+            out.chunkWaterHasAttrs = false;
+            out.chunkWaterHasQuads = false;
+            out.chunkWaterOnLevel = true;
+            out.chunkWaterWaveValid = true;
+            out.gateOceanTrue = false;
+            if (hydro.water && hydro.water.waterKind) {
+                const span = r._voxelChunkConfig().span;
+                let oi = -1;
+                for (let k = 0; k < hydro.water.waterKind.length; k++) {
+                    if (hydro.water.waterKind[k] === 1) {
+                        oi = k;
+                        break;
+                    }
+                }
+                if (oi >= 0) {
+                    const owx = hydro.originX + ((oi % hydro.dim) + 0.5) * hydro.cell;
+                    const owz = hydro.originZ + (((oi / hydro.dim) | 0) + 0.5) * hydro.cell;
+                    const cx = Math.floor(owx / span);
+                    const cz = Math.floor(owz / span);
+                    out.gateOceanTrue = r._voxelChunkTouchesWater(cx, cz) === true;
+                    r._disposeVoxelChunkWater(`${cx},${cz}`);
+                    r._buildVoxelChunkWater(cx, cz);
+                    const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
+                    out.chunkWaterIsMesh = !!(wm && wm.type === "Mesh");
+                    out.chunkWaterUsesMat = !!(wm && wm.material === sm);
+                    if (out.chunkWaterIsMesh && wm.geometry) {
+                        const g = wm.geometry;
+                        out.chunkWaterHasAttrs = !!(
+                            g.attributes.position &&
+                            g.attributes.aFlow &&
+                            g.attributes.aShore &&
+                            g.attributes.aWave
+                        );
+                        out.chunkWaterHasQuads = !!(g.index && g.index.count > 0);
+                        const pos = g.attributes.position.array;
+                        // Exaktheit: jeder Vertex sitzt auf `_waterLevelAt`
+                        // — das Wasser liegt auf dem Level-Feld, kein Schweben.
+                        for (let v = 0; v < pos.length; v += 3) {
+                            if (Math.abs(pos[v + 1] - r._waterLevelAt(pos[v], pos[v + 2])) > 0.05) {
+                                out.chunkWaterOnLevel = false;
+                                break;
+                            }
+                        }
+                        const aw = g.attributes.aWave.array;
+                        for (let k = 0; k < aw.length; k++) {
+                            if (aw[k] < -0.001 || aw[k] > 1.001) {
+                                out.chunkWaterWaveValid = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            r._disposeHydrosphereMeshes();
+            out.disposeClears = Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
+            r._buildHydrosphereMeshes();
+            out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelChunkWaterResults && !voxelChunkWaterResults.error) {
+        const hc = voxelChunkWaterResults;
+        check(
+            "Voxel V9.43-c: _buildHydrosphereMeshes + _disposeHydrosphereMeshes existieren",
+            hc.hasBuild && hc.hasDispose
+        );
+        check(
+            "Voxel V9.50-b: die Chunk-Wasser-Methoden existieren (Build/Dispose/Gate)",
+            hc.hasChunkWater && hc.hasChunkWaterDispose && hc.hasGate
+        );
+        check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
+        check(
+            "Voxel V9.43-c: das Wasser-Material teilt die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog)",
+            hc.surfMatSharesUniforms
+        );
+        check("Voxel V9.49-c: der vereinte Shader trägt Gerstner-Wellen + aWave-Modulation", hc.shaderHasGerstner);
+        check("Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an)", hc.depthWriteOn);
+        if (hc.hydroReady) {
+            check(
+                "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
+                hc.riverPointsHaveVoxelY
+            );
+            check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
+            check(
+                `Voxel V9.50-b: hydrosphereMeshes trägt nur Wasserfälle (== hydro.waterfalls: ${hc.fallCountMatches})`,
+                hc.onlyWaterfalls && hc.fallCountMatches
+            );
+            check(
+                "Voxel V9.43-c: Wasserfall-Planes nutzen das V9.43-a-Material + PlaneGeometry",
+                hc.fallsUseWaterfallMat
+            );
+            check("Voxel V9.50-b: state.voxelChunkWater ist eine Map", hc.waterMapIsMap);
+            check(
+                "Voxel V9.50-b: ein Ozean-Chunk baut eine Wasser-Fläche (Mesh, geteiltes Material)",
+                hc.chunkWaterIsMesh && hc.chunkWaterUsesMat
+            );
+            check(
+                "Voxel V9.50-b: das Chunk-Wasser trägt position/aFlow/aShore/aWave + nasse Quads",
+                hc.chunkWaterHasAttrs && hc.chunkWaterHasQuads
+            );
+            check(
+                "Voxel V9.50-b: jeder Wasser-Vertex sitzt EXAKT auf `_waterLevelAt` (kein Schweben)",
+                hc.chunkWaterOnLevel
+            );
+            check("Voxel V9.50-b: aWave ist je Vertex in [0,1]", hc.chunkWaterWaveValid);
+            check("Voxel V9.50-b: der Wasser-Gate erkennt einen Ozean-Chunk", hc.gateOceanTrue);
+            check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
+            check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
+        }
+    }
+
+    // ### Voxel V9.50-b — Ufer-Schaum + Fluss-Flow im Chunk-Wasser ###
+    const voxelFoamResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+            out.shaderHasShore = !!sm && /aShore/.test(sm.vertexShader || "") && /vShore/.test(sm.fragmentShader || "");
+            out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
+            out.shaderHasCrest = !!sm && /crest/.test(sm.fragmentShader || "");
+            const hydro = r.state.hydrosphere;
+            out.hydroReady = !!(hydro && hydro.ready);
+            if (!out.hydroReady) return out;
+            const span = r._voxelChunkConfig().span;
+            out.shoreInRange = true;
+            out.riverHasFlow = false;
+            out.hasGeo = true;
+            let rp = null;
+            for (const rv of hydro.rivers) {
+                for (const p of rv.points) {
+                    if (!p.inLake) {
+                        rp = p;
+                        break;
+                    }
+                }
+                if (rp) break;
+            }
+            if (rp) {
+                const cx = Math.floor(rp.x / span);
+                const cz = Math.floor(rp.z / span);
+                r._disposeVoxelChunkWater(`${cx},${cz}`);
+                r._buildVoxelChunkWater(cx, cz);
+                const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
+                const g = wm && wm.geometry;
+                out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
+                if (out.hasGeo) {
+                    const aSh = g.attributes.aShore.array;
+                    for (let k = 0; k < aSh.length; k++) {
+                        if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
+                    }
+                    const fa = g.attributes.aFlow.array;
+                    for (let k = 0; k + 1 < fa.length; k += 2) {
+                        if (Math.hypot(fa[k], fa[k + 1]) > 0.5) {
+                            out.riverHasFlow = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                out.riverHasFlow = true; // keine Land-Flüsse → vacuous
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelFoamResults && !voxelFoamResults.error) {
+        const h = voxelFoamResults;
+        check("Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
+        check("Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)", h.shaderScaledScroll);
+        check("Voxel V9.49-c: der Shader trägt Ozean-Schaumkämme (crest)", h.shaderHasCrest);
+        if (h.hydroReady) {
+            check("Voxel V9.50-b: das Chunk-Wasser trägt aShore + aFlow", h.hasGeo);
+            check("Voxel V9.50-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
+            check("Voxel V9.50-b: ein Fluss-Chunk trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
+        }
+    }
+
+    // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
+    // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
+    // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
+    // erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel`
+    // bzw. den Ziel-See-Level), und der Spieler schwimmt in einem See
+    // wie im Meer (`_hydroWaterLevelAt` speist die Schwimm-Physik).
+    const voxelV943c2 = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasWaterLevelAt = typeof r._hydroWaterLevelAt === "function";
+            const hydro = r.state.hydrosphere;
+            out.hydroReady = !!(hydro && hydro.ready);
+            if (!out.hasWaterLevelAt || !out.hydroReady) return out;
+            // _hydroWaterLevelAt: über einer GERENDERTEN See-Zelle → der
+            // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
+            // zählen nicht — die Meeres-Plane vertritt sie.
+            out.lakeLevelOk = true;
+            out.ringFollowsPlane = true;
+            const wlT = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+            const renderedLk = hydro.lakes.find(
+                (l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0
+            );
+            if (renderedLk) {
+                const cellIdx = renderedLk.cells[0];
+                const ci = cellIdx % hydro.dim;
+                const cj = (cellIdx / hydro.dim) | 0;
+                const wx = hydro.originX + (ci + 0.5) * hydro.cell;
+                const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - renderedLk.level) < 0.01;
+                // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
+                // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
+                // einen See-Wasserspiegel, nicht den Meeresspiegel.
+                const cellsSet = new Set(renderedLk.cells);
+                let ringChecked = false;
+                for (let dj = -1; dj <= 1 && !ringChecked; dj++) {
+                    for (let di = -1; di <= 1 && !ringChecked; di++) {
+                        const ni = ci + di;
+                        const nj = cj + dj;
+                        if (ni < 0 || nj < 0 || ni >= hydro.dim || nj >= hydro.dim) continue;
+                        if (cellsSet.has(ni + nj * hydro.dim)) continue;
+                        const rx = hydro.originX + (ni + 0.5) * hydro.cell;
+                        const rz = hydro.originZ + (nj + 0.5) * hydro.cell;
+                        out.ringFollowsPlane = r._hydroWaterLevelAt(rx, rz) > wlT + 1.5;
+                        ringChecked = true;
+                    }
+                }
+            }
+            // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
+            out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
+            // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
+            // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
+            r._buildHydrosphereMeshes();
+            const meshes = r.state.hydrosphereMeshes || [];
+            const riverMeshes = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
+            out.mouthReachesSea = true;
+            out.seaMouthChecked = false;
+            for (let i = 0; i < hydro.rivers.length; i++) {
+                if (hydro.rivers[i].mouth !== "sea") continue;
+                const m = riverMeshes[i];
+                if (!m || !m.geometry || !m.geometry.attributes.position) continue;
+                const pos = m.geometry.attributes.position.array;
+                const vc = pos.length / 3;
+                const lastY = pos[(vc - 1) * 3 + 1];
+                out.seaMouthChecked = true;
+                if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
+            }
+            // Die Schwimm-Physik (in _loopPhysicsSync) speist den
+            // effektiven Wasserspiegel aus _hydroWaterLevelAt.
+            out.physicsUsesEffWater =
+                typeof r._loopPhysicsSync === "function" && /_hydroWaterLevelAt/.test(r._loopPhysicsSync.toString());
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV943c2 && !voxelV943c2.error) {
+        const h2 = voxelV943c2;
+        check("Voxel V9.43-c.2: _hydroWaterLevelAt existiert", h2.hasWaterLevelAt);
+        check("Voxel V9.43-c.2: _hydroWaterLevelAt liefert über einer See-Zelle den See-Füllstand", h2.lakeLevelOk);
+        check(
+            "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
+            h2.ringFollowsPlane
+        );
+        check(
+            "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
+            h2.seaFallbackOk
+        );
+        check(
+            "Voxel V9.43-c.2: ein Meer-Mündungs-Fluss-Ribbon endet sichtbar auf dem Meeresspiegel",
+            h2.mouthReachesSea
+        );
+        check(
+            "Voxel V9.43-c.2: die Schwimm-Physik speist den effektiven Wasserspiegel (Seen schwimmbar)",
+            h2.physicsUsesEffWater
+        );
+    }
+
+    // ### Voxel V9.43-d — die Flüsse carven echte Betten ###
+    // `_terrainDensityAt` fragt die Hydrosphäre (Bucket-Index) + senkt
+    // die Dichte im Fluss-Kanal + in See-Senken → der Chunk-Mesher
+    // produziert echte Rinnen mit Ufern + gemuldete Becken. Zirkel-frei
+    // über das `_hydroComputing`-Suppress-Flag. Ohne Hydrosphäre
+    // bit-identisch zu vor V9.43-d.
+    const voxelV943d = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.methodsExist =
+                typeof r._hydrosphereCarveAt === "function" && typeof r._hydroBuildCarveIndex === "function";
+            const hydro = r.state.hydrosphere;
+            out.hydroReady = !!(hydro && hydro.ready);
+            if (!out.methodsExist || !out.hydroReady) return out;
+            if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
+            // (2) der Carve-Index ist an state.hydrosphere verdrahtet
+            out.indexWired =
+                Array.isArray(hydro.riverBuckets) &&
+                hydro.lakeBedCell instanceof Float32Array &&
+                hydro.lakeW instanceof Float32Array &&
+                hydro.lakeNear instanceof Uint8Array &&
+                typeof hydro.bucketSize === "number" &&
+                typeof hydro.bucketsDim === "number";
+            // einen Fluss-Punkt mit echter Flow-Richtung finden —
+            // V9.46: NICHT in einem See (See-Durchquerungs-Segmente
+            // werden bewusst nicht gecarvt) und mit nicht-See-Nachbar,
+            // damit das Segment rp→next im Carve-Index liegt.
+            let rp = null;
+            for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
+                const pts = hydro.rivers[ri].points;
+                for (let k = 0; k + 1 < pts.length; k++) {
+                    if (pts[k].inLake || pts[k + 1].inLake) continue;
+                    if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) > 0.5) {
+                        rp = pts[k];
+                        break;
+                    }
+                }
+            }
+            out.foundRiverPoint = !!rp;
+            if (rp) {
+                const HC = r.constructor.HYDROSPHERE;
+                const rx = rp.x;
+                const rz = rp.z;
+                // V9.45-b — lakeNear neutralisiert: alle Fluss-Sub-Tests
+                // messen den reinen Fluss-Carve + das Terrain, ohne dass
+                // ein zufällig benachbarter See-Blend die Mess-Punkte
+                // verfälscht (ein Fluss-Punkt kann im 1-Ring eines Sees
+                // liegen). Am Ende des Blocks wiederhergestellt.
+                const savedLN = hydro.lakeNear;
+                hydro.lakeNear = new Uint8Array(savedLN.length);
+                // (3) der Fluss-Mittelpunkt wird gecarvt
+                const carveCenter = r._hydrosphereCarveAt(rx, rz);
+                out.riverCenterCarved = carveCenter > 0.5;
+                // (4) das Bett liegt unter den Ufern: das Carve-Profil
+                // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
+                const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
+                const bankW = Math.max(2, D * HC.carveBankSlope);
+                const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
+                const pX = -rp.flowZ;
+                const pZ = rp.flowX;
+                const rcCenter = r._hydrosphereCarveAt(rx, rz);
+                const midOff = halfW + bankW * 0.45;
+                const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
+                out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
+                // (5) der Carve senkt die Voxel-Surface am Fluss
+                const sCarve = r._voxelSurfaceY(rx, rz);
+                r._hydroComputing = true;
+                const sNoCarve = r._voxelSurfaceY(rx, rz);
+                r._hydroComputing = false;
+                out.surfaceLowered = Number.isFinite(sCarve) && Number.isFinite(sNoCarve) && sCarve < sNoCarve - 0.3;
+                // (8) der Carve ist rein subtraktiv: die _terrainDensityAt-
+                // Differenz (Carve aktiv vs. suppressed) === der Carve-Betrag
+                const y = (r.state.terrainBaseHeight || 0) + 10;
+                const dCarve = r._terrainDensityAt(rx, y, rz);
+                r._hydroComputing = true;
+                const dSuppressed = r._terrainDensityAt(rx, y, rz);
+                r._hydroComputing = false;
+                out.carveIsSubtractive = Math.abs(dSuppressed - dCarve - carveCenter) < 0.001;
+                // (9) ohne Hydrosphäre bit-identisch — _hydrosphereCarveAt → 0
+                const savedHydro = r.state.hydrosphere;
+                r.state.hydrosphere = null;
+                out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === 0;
+                r.state.hydrosphere = savedHydro;
+                // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
+                const base = r.state.terrainBaseHeight || 0;
+                out.floorSolid = r._terrainDensityAt(rx, base - 56, rz) > 0;
+                hydro.lakeNear = savedLN;
+            }
+            // (6+7) V9.45-b — ein See-Becken wird zu einem flachen,
+            // wasserdichten Topf gesculptet: `_hydrosphereLakeAt` liefert
+            // ein bedY über dem Meeresspiegel (die Meeres-Plane bleibt
+            // verdeckt) + unter dem See-Spiegel; die geblendete Voxel-
+            // Surface sitzt auf bedY, knapp darunter ist fester Grund.
+            out.lakeSculpted = false;
+            out.lakeBedWatertight = false;
+            const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
+            for (let li = 0; li < hydro.lakes.length && !out.lakeSculpted; li++) {
+                const lk = hydro.lakes[li];
+                if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
+                if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
+                const idx = lk.cells[(lk.cells.length / 2) | 0];
+                const ci = idx % hydro.dim;
+                const cj = (idx / hydro.dim) | 0;
+                const wx = hydro.originX + (ci + 0.5) * hydro.cell;
+                const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+                const la = r._hydrosphereLakeAt(wx, wz);
+                if (la && la.w > 0.5 && Number.isFinite(la.bedY)) {
+                    out.lakeSculpted = true;
+                    const bedOk = la.bedY > wl2 && la.bedY < lk.level;
+                    const solidBelow = r._terrainDensityAt(wx, la.bedY - 2, wz) > 0;
+                    const surfY = r._voxelSurfaceY(wx, wz);
+                    const surfOnBed = Number.isFinite(surfY) && Math.abs(surfY - la.bedY) < 2.5;
+                    out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
+                }
+            }
+            // (11) Re-Compute ist zirkel-frei: das Suppress-Flag hält den
+            // Carve aus der eigenen Berechnung — ein Re-Compute liefert
+            // dasselbe Netz wie der un-gecarvte Worldgen-Compute.
+            const reHydro = r._computeHydrosphere();
+            out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
+            // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
+            out.flagClean = !r._hydroComputing;
+            // (13) V9.50 — das Chunk-Wasser fragt das Fluss-Netz:
+            // `_buildVoxelChunkWater` ruft `_waterLevelAt` (das über
+            // `_hydroRiverAt` denselben `riverBuckets`-Index liest).
+            out.unifiedQueriesRivers =
+                typeof r._buildVoxelChunkWater === "function" &&
+                /_waterLevelAt/.test(r._buildVoxelChunkWater.toString());
+            // (14) der Carve ist im Perf-Budget
+            const t0 = performance.now();
+            const span = hydro.size;
+            for (let i = 0; i < 50000; i++) {
+                r._hydrosphereCarveAt(
+                    hydro.originX + (i % 211) * (span / 211),
+                    hydro.originZ + ((i * 7) % 211) * (span / 211)
+                );
+            }
+            out.carvePerfMs = performance.now() - t0;
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV943d && !voxelV943d.error) {
+        const d = voxelV943d;
+        check("Voxel V9.43-d: _hydrosphereCarveAt + _hydroBuildCarveIndex existieren", d.methodsExist);
+        check(
+            "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
+            d.indexWired
+        );
+        check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
+        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (Carve-Profil fällt zur Bank ab)", d.bedBelowBanks);
+        check("Voxel V9.43-d: der Carve senkt die Voxel-Surface am Fluss", d.surfaceLowered);
+        check(
+            "Voxel V9.43-d: der Carve ist rein subtraktiv (_terrainDensityAt-Differenz === Carve-Betrag)",
+            d.carveIsSubtractive
+        );
+        check(
+            "Voxel V9.43-d: ohne Hydrosphäre ist der Carve 0 (bit-identisch zu vor V9.43-d)",
+            d.carveZeroWithoutHydro
+        );
+        check("Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)", d.floorSolid);
+        check("Voxel V9.45-b: ein See-Becken wird zu einem flachen Topf gesculptet", d.lakeSculpted);
+        check(
+            "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
+            d.lakeBedWatertight
+        );
+        check(
+            "Voxel V9.43-d: ein Re-Compute bleibt zirkel-frei (Suppress-Flag — gleiches Netz wie der Worldgen-Compute)",
+            d.recomputeStable
+        );
+        check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
+        check("Voxel V9.50-b: das Chunk-Wasser fragt das Wasser-Level-Feld (`_waterLevelAt`)", d.unifiedQueriesRivers);
+        check(
+            `Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe in ${Math.round(d.carvePerfMs || 0)} ms < 300 ms)`,
+            typeof d.carvePerfMs === "number" && d.carvePerfMs < 300
+        );
+    }
+
+    // ### V9.43-e — das Wasser-Ultiversum bekommt Klang ###
+    // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen
+    // (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass).
+    // `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
+    // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode
+    // rampt verzögert hinterher). Vision §1.4 multisensorisch.
+    const voxelV943e = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasBuild = typeof r._buildHydroAudioLayer === "function";
+            out.hasTick = typeof r._tickHydrosphereAudio === "function";
+            out.hasSegDist = typeof r._pointSegDist2D === "function";
+            if (out.hasSegDist) {
+                out.segPerp = Math.abs(r._pointSegDist2D(0, 5, -10, 0, 10, 0) - 5) < 1e-6;
+                out.segClamp = Math.abs(r._pointSegDist2D(20, 0, -10, 0, 10, 0) - 10) < 1e-6;
+                out.segZero = r._pointSegDist2D(3, 0, -10, 0, 10, 0) < 1e-6;
+            }
+            if (!r.state.symphony.enabled) {
+                try {
+                    r.initSymphony();
+                } catch (e) {
+                    void e;
+                }
+            }
+            const s = r.state.symphony;
+            out.symphonyOn = !!s.enabled;
+            const ha = s.hydroAudio;
+            out.hasHydroAudio = !!ha;
+            if (ha) {
+                out.riverLayer = !!(ha.river && ha.river.noise && ha.river.filter && ha.river.gain);
+                out.fallLayer = !!(ha.waterfall && ha.waterfall.noise && ha.waterfall.filter && ha.waterfall.gain);
+                out.riverBandpass = !!(ha.river && ha.river.filter.type === "bandpass");
+                out.fallLowpass = !!(ha.waterfall && ha.waterfall.filter.type === "lowpass");
+            }
+            const hydro = r.state.hydrosphere;
+            out.hasHydro = !!(hydro && hydro.ready);
+            if (out.hasHydro && ha && r.state.playerMesh) {
+                const pm = r.state.playerMesh.position;
+                const orig = { x: pm.x, z: pm.z };
+                let rp = null;
+                if (Array.isArray(hydro.rivers)) {
+                    for (const rv of hydro.rivers) {
+                        if (rv.points && rv.points.length) {
+                            rp = rv.points[0];
+                            break;
+                        }
+                    }
+                }
+                out.hasRiver = !!rp;
+                if (rp) {
+                    pm.x = rp.x;
+                    pm.z = rp.z;
+                    ha.lastTick = -Infinity;
+                    r._tickHydrosphereAudio();
+                    out.riverNear = ha.river.target;
+                    pm.x = rp.x + 5000;
+                    pm.z = rp.z + 5000;
+                    ha.lastTick = -Infinity;
+                    r._tickHydrosphereAudio();
+                    out.riverFar = ha.river.target;
+                }
+                const wf = Array.isArray(hydro.waterfalls) && hydro.waterfalls.length ? hydro.waterfalls[0] : null;
+                out.hasWaterfall = !!wf;
+                if (wf) {
+                    pm.x = wf.x;
+                    pm.z = wf.z;
+                    ha.lastTick = -Infinity;
+                    r._tickHydrosphereAudio();
+                    out.fallNear = ha.waterfall.target;
+                    pm.x = wf.x + 5000;
+                    pm.z = wf.z + 5000;
+                    ha.lastTick = -Infinity;
+                    r._tickHydrosphereAudio();
+                    out.fallFar = ha.waterfall.target;
+                }
+                pm.x = orig.x;
+                pm.z = orig.z;
+            }
+            return out;
+        })
+        .catch((err) => ({ error: err.message }));
+
+    if (!voxelV943e || voxelV943e.error) {
+        check(
+            "V9.43-e: Wasser-Klang-Snapshot erreichbar",
+            false,
+            (voxelV943e && voxelV943e.error) || "page.evaluate fehlgeschlagen"
+        );
+    } else {
+        const e = voxelV943e;
+        check("V9.43-e: _buildHydroAudioLayer existiert", e.hasBuild);
+        check("V9.43-e: _tickHydrosphereAudio existiert", e.hasTick);
+        check("V9.43-e: _pointSegDist2D existiert", e.hasSegDist);
+        check("V9.43-e: _pointSegDist2D — Lot auf das Segment (5 m)", e.segPerp);
+        check("V9.43-e: _pointSegDist2D — Klemmung auf den Endpunkt (10 m)", e.segClamp);
+        check("V9.43-e: _pointSegDist2D — Punkt auf dem Segment ist 0", e.segZero);
+        check("V9.43-e: Symphonie aktiv (initSymphony headless)", e.symphonyOn);
+        check("V9.43-e: state.symphony.hydroAudio gebaut", e.hasHydroAudio);
+        check("V9.43-e: Fluss-Layer komplett (noise + filter + gain)", e.riverLayer);
+        check("V9.43-e: Wasserfall-Layer komplett (noise + filter + gain)", e.fallLayer);
+        check("V9.43-e: Fluss-Filter ist Bandpass (helles Rauschen)", e.riverBandpass);
+        check("V9.43-e: Wasserfall-Filter ist Lowpass (dunkles Donnern)", e.fallLowpass);
+        check(
+            "V9.43-e: Fluss-Klang reagiert auf Distanz (nah laut, fern still)",
+            e.hasRiver === true && e.riverNear > 0.05 && e.riverFar === 0,
+            `nah=${(e.riverNear || 0).toFixed(3)} fern=${(e.riverFar || 0).toFixed(3)}`
+        );
+        check(
+            "V9.43-e: Wasserfall-Donnern reagiert auf Distanz (nah laut, fern still)",
+            e.hasWaterfall === true && e.fallNear > 0.05 && e.fallFar === 0,
+            `nah=${(e.fallNear || 0).toFixed(3)} fern=${(e.fallFar || 0).toFixed(3)}`
+        );
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandVoxelP3AndInventory(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
+    // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
+    const voxelP3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasCarve = typeof r.carveVoxelSphere === "function";
+            out.hasRemesh = typeof r._remeshVoxelChunksAround === "function";
+            if (out.hasCarve && r.state.worldMeta) {
+                const base = r.state.terrainBaseHeight || 0;
+                // Der Schnitt zieht am Kugel-Zentrum exakt strength (48) ab.
+                r.state.worldMeta.voxelEdits = [];
+                const dBefore = r._terrainDensityAt(0, base - 33, 0);
+                r.carveVoxelSphere(0, base - 33, 0, 12);
+                const dAfter = r._terrainDensityAt(0, base - 33, 0);
+                out.carveSubtracts = Math.abs(dBefore - dAfter - 48) < 0.01;
+                out.editStored = r.state.worldMeta.voxelEdits.length === 1;
+                // Ein fester Punkt wird zu Luft (echtes Loch).
+                let solidToAir = false;
+                for (let sy = base + 20; sy >= base - 30 && !solidToAir; sy -= 3) {
+                    const dB = r._terrainDensityAt(50, sy, 50);
+                    if (dB > 1 && dB < 40) {
+                        r.state.worldMeta.voxelEdits = [];
+                        r.carveVoxelSphere(50, sy, 50, 12);
+                        if (r._terrainDensityAt(50, sy, 50) < 0) solidToAir = true;
+                    }
+                }
+                out.solidToAir = solidToAir;
+                // Persistenz: der Edit reist im Welt-Snapshot.
+                r.state.worldMeta.voxelEdits = [];
+                r.carveVoxelSphere(10, base, 10, 5);
+                const snap = r.buildStateSnapshot();
+                out.snapshotHasEdit = !!(
+                    snap &&
+                    snap.worldMeta &&
+                    Array.isArray(snap.worldMeta.voxelEdits) &&
+                    snap.worldMeta.voxelEdits.length >= 1
+                );
+                // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt.
+                r.state.worldMeta.voxelEdits = [];
+                for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
+                out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
+                // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
+                // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+                r.state.worldMeta.voxelEdits = [];
+                r.processChatCommand("voxel carve");
+                out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
+                // sauber zurücklassen.
+                r.state.worldMeta.voxelEdits = [];
+                if (typeof r.saveState === "function") r.saveState();
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelP3Results && !voxelP3Results.error) {
+        check(
+            "Voxel P3: carveVoxelSphere + _remeshVoxelChunksAround existieren",
+            voxelP3Results.hasCarve && voxelP3Results.hasRemesh
+        );
+        check(
+            "Voxel P3: der Schnitt zieht am Kugel-Zentrum die Dichte ab (festes → Luft)",
+            voxelP3Results.carveSubtracts
+        );
+        check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
+        check("Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)", voxelP3Results.solidToAir);
+        check("Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)", voxelP3Results.snapshotHasEdit);
+        check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
+        check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
+    }
+
+    // V9.40-c — Async-Rebuild via Dirty-Queue: ein Edit markiert
+    // die Voxel-Chunks dirty (statt sie sync zu rebuilden); ein
+    // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks`
+    // ist die Test-Naht für sofortigen sync-Drain.
+    const voxelV940cResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasTick = typeof r._tickDirtyVoxelChunks === "function";
+            out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
+            // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
+            // gleich Chunks zum Markieren findet.
+            const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+            for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+            if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+                out.skip = true;
+                return out;
+            }
+            // Ein Carve in der Nähe des Spielers markiert Chunks dirty
+            // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
+            const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
+            r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+            out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
+            // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
+            const dirtyMid = r.state.dirtyVoxelChunks.size;
+            const built = r._drainDirtyVoxelChunks();
+            out.drainRebuilt = built > 0;
+            out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
+            out.drainReturnedCount = built === dirtyMid;
+            // Game-Loop-Tick rebuildet pro Frame max 1.
+            r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+            const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
+            if (dirtyPostEdit > 1) {
+                r._tickDirtyVoxelChunks(pm);
+                out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
+            } else {
+                out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
+            }
+            // Disposal räumt dirty-Marker mit.
+            r._drainDirtyVoxelChunks();
+            r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
+            const dirtyKey = [...r.state.dirtyVoxelChunks][0];
+            if (dirtyKey) {
+                r._disposeVoxelChunk(dirtyKey);
+                out.disposeClearsDirty = !r.state.dirtyVoxelChunks.has(dirtyKey);
+            } else {
+                out.disposeClearsDirty = true;
+            }
+            r._drainDirtyVoxelChunks();
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
+        check(
+            "V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren",
+            voxelV940cResults.hasTick && voxelV940cResults.hasDrain
+        );
+        check(
+            "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
+            voxelV940cResults.editMarksDirty
+        );
+        check(
+            "V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set",
+            voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet
+        );
+        check(
+            "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
+            voxelV940cResults.drainReturnedCount
+        );
+        check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
+        check(
+            "V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
+            voxelV940cResults.disposeClearsDirty
+        );
+    }
+
+    // V9.40-d — Dispose-Before-Build (Heap-Druck-Heilung) + Retry-
+    // Counter. Schöpfer-V9.40-c-Browser-Befund: kaskadierende OOMs
+    // weil V9.40-b's Pre-Build-Pattern alter+neuer parallel im
+    // Ammo-Heap leben liess.
+    const voxelV940dResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // Ring auffüllen.
+            const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+            for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
+            if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+                out.skip = true;
+                return out;
+            }
+            // Dispose-Before-Build: stuben den Code-Pfad indem wir
+            // einen Chunk-Key wählen, der existiert + rebuild rufen
+            // + prüfen dass die alte Mesh-Identität weg ist.
+            const someKey = [...r.state.voxelChunks.keys()].find((k) => {
+                const e = r.state.voxelChunks.get(k);
+                return e && e.mesh;
+            });
+            if (!someKey) {
+                out.skip = true;
+                return out;
+            }
+            const [cxStr, czStr] = someKey.split(",");
+            const cx = parseInt(cxStr, 10);
+            const cz = parseInt(czStr, 10);
+            const oldMesh = r.state.voxelChunks.get(someKey).mesh;
+            const ok = r._rebuildVoxelChunk(cx, cz);
+            const newEntry = r.state.voxelChunks.get(someKey);
+            out.rebuildOk = ok === true;
+            // Bei Erfolg: neuer Mesh ist nicht der alte (Identität gewechselt).
+            out.meshIdentityChanged = !!(newEntry && newEntry.mesh && newEntry.mesh !== oldMesh);
+            // Retry-Counter: stub _buildVoxelChunkData um null zu returnen.
+            const origBuild = r._buildVoxelChunkData;
+            r._buildVoxelChunkData = () => null;
+            // 1. Versuch: fail → dirty bleibt, attempts=1
+            r._rebuildVoxelChunk(cx, cz);
+            const attempts1 = r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey);
+            out.retryCounter1 = attempts1 === 1;
+            out.dirtyAfterFail = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.has(someKey));
+            // 2. Versuch: fail → attempts=2
+            r._rebuildVoxelChunk(cx, cz);
+            out.retryCounter2 = (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
+            // 3. Versuch: fail → empty markiert, counter weg
+            r._rebuildVoxelChunk(cx, cz);
+            const finalEntry = r.state.voxelChunks.get(someKey);
+            out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
+            out.counterClearedAfterGiveUp = !(
+                r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey)
+            );
+            // Restore.
+            r._buildVoxelChunkData = origBuild;
+            if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV940dResults && !voxelV940dResults.error && !voxelV940dResults.skip) {
+        check(
+            "V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt",
+            voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged
+        );
+        check(
+            "V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)",
+            voxelV940dResults.retryCounter1
+        );
+        check(
+            "V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)",
+            voxelV940dResults.dirtyAfterFail
+        );
+        check("V9.40-d: Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
+        check(
+            "V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert",
+            voxelV940dResults.giveUpAsEmpty
+        );
+        check(
+            "V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)",
+            voxelV940dResults.counterClearedAfterGiveUp
+        );
+    }
+
+    // V9.40-e — drei Heilungen nach dem zweiten Schöpfer-Browser-
+    // Audit: (1) `_addVoxelEdit` clampt Y auf den Chunk-Bereich +
+    // verwirft Edits weit ausserhalb (Schöpfer-Hinweis ehren);
+    // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit
+    // (Memory-Hygiene); (3) `_ensureVoxelChunkAt` (Streaming-Pfad)
+    // bekommt Retry-Counter wie der Re-Mesh-Pfad — vor V9.40-e
+    // markierte er bei OOM sofort `{empty:true}` (V9.24-Symptom-
+    // Geste). Damit sind beide Bau-Pfade (Stream + Re-Mesh) konsistent.
+    const voxelV940eResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            const base = r.state.terrainBaseHeight || 0;
+            // (1) Edit-Y-Bound: weit-außerhalb-Edit wird verworfen.
+            const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
+            const farUpResult = r._addVoxelEdit(0, base + 10000, 0, 3, "carve");
+            out.farEditRejected = farUpResult === false;
+            out.farEditNotStored =
+                (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
+            const farDownResult = r._addVoxelEdit(0, base - 10000, 0, 3, "carve");
+            out.farDownRejected = farDownResult === false;
+            // Normaler Edit innerhalb Band bleibt erhalten.
+            const inBoundResult = r._addVoxelEdit(0, base, 0, 3, "carve");
+            out.inBoundAccepted = inBoundResult === true;
+            // Edit knapp ÜBER der Decke (mit Marge) wird geclampt
+            // statt verworfen.
+            const nearEdgeResult = r._addVoxelEdit(0, base + 86, 0, 3, "carve");
+            out.nearEdgeAccepted = nearEdgeResult === true;
+            // Räumen.
+            r.state.worldMeta.voxelEdits = [];
+
+            // (2) _disposeVoxelChunk räumt voxelRebuildAttempts.
+            if (!r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts = new Map();
+            r.state.voxelRebuildAttempts.set("99,99", 2);
+            r.state.voxelChunks.set("99,99", { empty: true });
+            r._disposeVoxelChunk("99,99");
+            out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
+
+            // (3) _ensureVoxelChunkAt Retry-Pfad: stub den
+            // Kollisions-Builder, sehe dass nach 2 Fails KEIN
+            // empty-Eintrag steht (Retry pending), nach 3 ein empty.
+            const fakeKey = "0,-999"; // weit weg, ungebraucht
+            const origBuildColl = r._buildStaticTriMeshCollision;
+            r._buildStaticTriMeshCollision = () => null;
+            r._ensureVoxelChunkAt(0, -999);
+            out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
+            out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
+            r._ensureVoxelChunkAt(0, -999);
+            out.streamAttempt2 = r.state.voxelRebuildAttempts.get(fakeKey) === 2;
+            r._ensureVoxelChunkAt(0, -999);
+            const finalE = r.state.voxelChunks.get(fakeKey);
+            out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
+            out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
+            // Restore + Cleanup.
+            r._buildStaticTriMeshCollision = origBuildColl;
+            r._disposeVoxelChunk(fakeKey);
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelV940eResults && !voxelV940eResults.error) {
+        check(
+            "V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
+            voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
+        );
+        check("V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden", voxelV940eResults.farDownRejected);
+        check("V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands", voxelV940eResults.inBoundAccepted);
+        check(
+            "V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)",
+            voxelV940eResults.nearEdgeAccepted
+        );
+        check(
+            "V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)",
+            voxelV940eResults.disposeClearsAttempts
+        );
+        check(
+            "V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)",
+            voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1
+        );
+        check(
+            "V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)",
+            voxelV940eResults.streamAttempt2
+        );
+        check(
+            "V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert",
+            voxelV940eResults.streamGiveUpAsEmpty
+        );
+        check("V9.40-e: Streaming-Counter geräumt nach give-up", voxelV940eResults.streamCounterClearedAfterGiveUp);
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
+    // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
+    const voxelP3bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasFill = typeof r.fillVoxelSphere === "function";
+            if (out.hasFill && r.state.worldMeta) {
+                const base = r.state.terrainBaseHeight || 0;
+                // Der Füll-Schnitt addiert am Kugel-Zentrum exakt strength.
+                r.state.worldMeta.voxelEdits = [];
+                const dBefore = r._terrainDensityAt(0, base + 40, 0);
+                r.fillVoxelSphere(0, base + 40, 0, 12);
+                const dAfter = r._terrainDensityAt(0, base + 40, 0);
+                out.fillAdds = Math.abs(dAfter - dBefore - 48) < 0.01;
+                out.editIsFillMode =
+                    r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
+                // Ein Luft-Punkt wird durch das Füllen zu festem Grund.
+                let airToSolid = false;
+                for (let sy = base + 35; sy >= base - 25 && !airToSolid; sy -= 3) {
+                    const dB = r._terrainDensityAt(70, sy, 70);
+                    if (dB < -1 && dB > -40) {
+                        r.state.worldMeta.voxelEdits = [];
+                        r.fillVoxelSphere(70, sy, 70, 12);
+                        if (r._terrainDensityAt(70, sy, 70) > 0) airToSolid = true;
+                    }
+                }
+                out.airToSolid = airToSolid;
+                // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
+                r.state.worldMeta.voxelEdits = [];
+                const dPre = r._terrainDensityAt(120, base - 33, 120);
+                r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12, strength: 48 }];
+                out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
+                // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
+                // frieden — damit das V9.17-Füll-Gate frei ist.
+                // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+                const p3bMode = r.getGameMode ? r.getGameMode() : "frieden";
+                r.setGameMode("frieden");
+                r.state.worldMeta.voxelEdits = [];
+                r.processChatCommand("voxel fill");
+                out.chatFillAddsEdit =
+                    r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
+                r.setGameMode(p3bMode);
+                // sauber zurücklassen.
+                r.state.worldMeta.voxelEdits = [];
+                if (typeof r.saveState === "function") r.saveState();
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelP3bResults && !voxelP3bResults.error) {
+        check("Voxel P3b: fillVoxelSphere-Methode existiert", voxelP3bResults.hasFill);
+        check(
+            "Voxel P3b: der Füll-Schnitt addiert am Kugel-Zentrum die Dichte (Luft → fest)",
+            voxelP3bResults.fillAdds
+        );
+        check("Voxel P3b: der Füll-Edit trägt mode:fill", voxelP3bResults.editIsFillMode);
+        check(
+            "Voxel P3b: ein Luft-Punkt wird durch das Füllen zu festem Grund (aufgeschüttet)",
+            voxelP3bResults.airToSolid
+        );
+        check("Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)", voxelP3bResults.modelessIsCarve);
+        check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
+    }
+
+    // ### Voxel-Terrain-Bogen Phase 3c — Material-Erhaltungs-Kreis ###
+    // Im pfad-Modus kostet das Aufschütten Material; in frieden +
+    // schöpfer ist es frei (das Spielmodi-Muster).
+    const voxelP3cResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.player) return null;
+            const out = {};
+            out.hasConsume = typeof r._consumeAnyMaterial === "function";
+            out.hasGate = typeof r._voxelFillGate === "function";
+            if (out.hasConsume && out.hasGate) {
+                const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
+                const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
+                const wm = r.state.worldMeta;
+                const matTotal = () => {
+                    let t = 0;
+                    for (const s of r.state.player.inventory) {
+                        if (s && s.kind === "material") t += s.count || 0;
+                    }
+                    return t;
+                };
+                // _consumeAnyMaterial: genug → true + reduziert.
+                r.state.player.inventory = new Array(27).fill(null);
+                r.addMaterialToInventory("stein", 10);
+                out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
+                // zu wenig → false + unverändert.
+                r.state.player.inventory = new Array(27).fill(null);
+                r.addMaterialToInventory("stein", 2);
+                out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
+                // Gate in frieden → frei, kein Verbrauch.
+                r.setGameMode("frieden");
+                r.state.player.inventory = new Array(27).fill(null);
+                const gF = r._voxelFillGate();
+                out.gateFriedenFree = gF.ok === true && gF.free === true;
+                // Gate in pfad mit Material → ok + verbraucht.
+                r.setGameMode("pfad");
+                r.state.player.inventory = new Array(27).fill(null);
+                r.addMaterialToInventory("stein", 10);
+                const gP = r._voxelFillGate();
+                out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
+                // Gate in pfad ohne Material → abgelehnt.
+                r.state.player.inventory = new Array(27).fill(null);
+                out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
+                // Chat `voxel fill` in pfad ohne Material → kein Edit.
+                // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
+                wm.voxelEdits = [];
+                r.processChatCommand("voxel fill");
+                out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
+                // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
+                r.addMaterialToInventory("stein", 10);
+                wm.voxelEdits = [];
+                r.processChatCommand("voxel fill");
+                out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
+                // sauber zurücklassen.
+                wm.voxelEdits = [];
+                r.state.player.inventory = invBackup;
+                r.setGameMode(modeBackup);
+                if (typeof r.saveState === "function") r.saveState();
+            }
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (voxelP3cResults && !voxelP3cResults.error) {
+        check(
+            "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
+            voxelP3cResults.hasConsume && voxelP3cResults.hasGate
+        );
+        check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
+        check(
+            "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
+            voxelP3cResults.consumeTooLittle
+        );
+        check(
+            "Voxel P3c: das Füll-Gate ist in frieden frei (kein Material-Verbrauch)",
+            voxelP3cResults.gateFriedenFree
+        );
+        check(
+            "Voxel P3c: das Füll-Gate verbraucht im pfad-Modus Material (Erhaltungs-Kreis)",
+            voxelP3cResults.gatePfadConsumes
+        );
+        check("Voxel P3c: das Füll-Gate lehnt im pfad-Modus ohne Material ab", voxelP3cResults.gatePfadDeniesEmpty);
+        check(
+            "Voxel P3c: `voxel fill` in pfad ohne Material schüttet nicht / mit Material schon",
+            voxelP3cResults.chatFillDeniedNoMat && voxelP3cResults.chatFillWorksWithMat
+        );
+    }
+
+    // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
+    // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
+    // damagePlayer + Stamina-Kosten sind modus-gated.
+    const wave6c2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
+            out.hasSetGameMode = typeof r.setGameMode === "function";
+            out.hasGetGameMode = typeof r.getGameMode === "function";
+            // Default-Modus für NEUE Welten ist frieden — checken über
+            // _buildEmptyWorldSnapshot (init-time-Verhalten), nicht
+            // runtime-state (vorherige Tests haben evtl. auf pfad
+            // geschaltet).
+            if (typeof r._buildEmptyWorldSnapshot === "function") {
+                const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
+                out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
+            }
+            out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
+            out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
+
+            // Übergänge: setGameMode auf jeden der drei Modi.
+            r.setGameMode("pfad");
+            out.setPfadWorks = r.getGameMode() === "pfad" && r.state.worldMeta.gameMode === "pfad";
+            r.setGameMode("schöpfer");
+            out.setSchoepferWorks = r.getGameMode() === "schöpfer" && r.state.worldMeta.gameMode === "schöpfer";
+            r.setGameMode("frieden");
+            out.setFriedenWorks = r.getGameMode() === "frieden";
+            // Ungültiger Wert → frieden-Fallback.
+            r.setGameMode("garbage");
+            out.invalidFallsToFrieden = r.getGameMode() === "frieden";
+
+            // damagePlayer-Gate: frieden + schöpfer → return false,
+            // pfad → return true (existing path).
+            const hpBefore = r.state.player.hp;
+            r.setGameMode("frieden");
+            const damageInFrieden = r.damagePlayer(50, "test");
+            out.friedenBlocksDamage = damageInFrieden === false && r.state.player.hp === hpBefore;
+
+            r.setGameMode("schöpfer");
+            const damageInSchoepfer = r.damagePlayer(50, "test");
+            out.schoepferBlocksDamage = damageInSchoepfer === false && r.state.player.hp === hpBefore;
+
+            // pfad → Schaden wirkt
+            r.setGameMode("pfad");
+            // Aus möglichen Phönix-Wandlungen rausnehmen (test-cleanup)
+            r.state.player.phoenixUntil = 0;
+            r.state.player.hp = 100;
+            const damageInPfad = r.damagePlayer(30, "test");
+            out.pfadAcceptsDamage = damageInPfad === true && r.state.player.hp < 100;
+
+            // Stamina-Gate: applyOpToPart kostet nur in pfad.
+            // Setup: ein eigener Bauplan mit holz-Material.
+            r.state.blueprints["mode-test-bp"] = {
+                name: "mode-test-bp",
+                label: "Mode-Test",
+                builtIn: false,
+                parts: [
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1, y: 1, z: 1 },
+                    },
+                ],
+            };
+            // Stamina voll setzen
+            r.state.player.stamina = 100;
+
+            r.setGameMode("frieden");
+            const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "feile");
+            out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
+
+            r.state.player.stamina = 100;
+            r.setGameMode("schöpfer");
+            const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "feile");
+            out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
+
+            r.state.player.stamina = 100;
+            r.setGameMode("pfad");
+            const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
+            // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
+            // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
+            // konsumiert), die genaue Skalierung prüft der V8.39-Block.
+            out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
+
+            // Cleanup
+            delete r.state.blueprints["mode-test-bp"];
+            r.setGameMode("frieden");
+
+            // DSL-Op set_mode
+            if (typeof r.dslRun === "function") {
+                r.dslRun(["set_mode", "pfad"], { source: "test" });
+                out.dslSetModeWorks = r.getGameMode() === "pfad";
+                r.setGameMode("frieden");
+            }
+
+            // set_mode ist in NON_BROADCASTABLE_OPS
+            out.setModeNonBroadcastable =
+                r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
+
+            // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
+            if (typeof r.parseChatToDsl === "function") {
+                const built = r.parseChatToDsl("setze modus pfad");
+                out.chatPfad =
+                    built &&
+                    Array.isArray(built.program) &&
+                    built.program[0] === "set_mode" &&
+                    built.program[1] === "pfad";
+                const built2 = r.parseChatToDsl("modus schöpfer");
+                out.chatSchoepfer =
+                    built2 &&
+                    Array.isArray(built2.program) &&
+                    built2.program[0] === "set_mode" &&
+                    built2.program[1] === "schöpfer";
+            }
+
+            // describeProgram-Eintrag
+            if (typeof r.describeProgram === "function") {
+                const desc = r.describeProgram(["set_mode", "pfad"]);
+                out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
+            }
+
+            // UI: Radio + Status-Bar
+            out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
+            out.statusModeInDom = !!document.getElementById("status-mode");
+            out.gameModeSectionInDom = !!document.getElementById("game-mode-section");
+            // Status-Bar zeigt aktuellen Modus
+            r.setGameMode("pfad");
+            const statusItem = document.getElementById("status-mode");
+            out.statusReflectsMode = statusItem && /pfad/i.test(statusItem.textContent);
+            // Radio ist gecheckt
+            const checkedRadio = document.querySelector('input[name="game-mode-radio"]:checked');
+            out.radioReflectsMode = checkedRadio && checkedRadio.value === "pfad";
+            r.setGameMode("frieden");
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6c2Results && !wave6c2Results.error) {
+        check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
+        check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
+        check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
+        check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
+        check(
+            "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
+            wave6c2Results.canonicalDefaultIsFrieden
+        );
+        check("Welle 6.C2: worldMeta.gameMode ist persistiert", wave6c2Results.worldMetaHasGameMode);
+        check("Welle 6.C2: setGameMode('pfad') wechselt korrekt", wave6c2Results.setPfadWorks);
+        check("Welle 6.C2: setGameMode('schöpfer') wechselt korrekt", wave6c2Results.setSchoepferWorks);
+        check("Welle 6.C2: setGameMode('frieden') wechselt korrekt", wave6c2Results.setFriedenWorks);
+        check("Welle 6.C2: ungültiger Modus fällt auf frieden zurück", wave6c2Results.invalidFallsToFrieden);
+        check(
+            "Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)",
+            wave6c2Results.friedenBlocksDamage
+        );
+        check(
+            "Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)",
+            wave6c2Results.schoepferBlocksDamage
+        );
+        check("Welle 6.C2: damagePlayer im pfad-Modus wirkt (HP reduziert)", wave6c2Results.pfadAcceptsDamage);
+        check("Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina", wave6c2Results.friedenSkipsStamina);
+        check("Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina", wave6c2Results.schoepferSkipsStamina);
+        check("Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (Modus-Gate)", wave6c2Results.pfadChargesStamina);
+        check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
+        check(
+            "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
+            wave6c2Results.setModeNonBroadcastable
+        );
+        check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
+        check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
+        check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
+        check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
+        check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
+        check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
+        check("Welle 6.C2: Status-Bar spiegelt aktuellen Modus", wave6c2Results.statusReflectsMode);
+        check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
+    }
+
+    // ### Welle 6.C1 — Hylomorphismus-Inventar ===
+    // 27 Slots mit Tag-Resonanz statt Minecraft-Tabelle. Tag-Profile
+    // emergieren aus computeCompoundTags(blueprint). Drag-Click-Pfad:
+    // Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
+    const wave6c1Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // Datenmodell
+            out.hasInventoryArray = Array.isArray(r.state.player && r.state.player.inventory);
+            out.inventorySize = r.state.player.inventory.length;
+            out.inventoryHas27Slots = r.state.player.inventory.length === 27;
+            out.initiallyEmpty = r.state.player.inventory.every((s) => s === null);
+
+            // Methoden
+            out.hasAddToInventory = typeof r.addToInventory === "function";
+            out.hasRemoveFromInventory = typeof r.removeFromInventory === "function";
+            out.hasRenderInventoryUI = typeof r.renderInventoryUI === "function";
+            out.hasSelectInventorySlot = typeof r.selectInventorySlot === "function";
+            out.hasTryAssign = typeof r.tryAssignFromInventoryToHotbar === "function";
+            out.hasToggleOverlay = typeof r.toggleInventoryOverlay === "function";
+            out.hasPlayPing = typeof r.playInventoryHoverPing === "function";
+            out.hasInventoryInitDOM = typeof r.inventoryInitDOM === "function";
+
+            // addToInventory: ein bekannter Bauplan → erster leerer Slot
+            const okAdd = r.addToInventory("baum_eiche", 3);
+            out.addedToInventory = okAdd === true;
+            out.slot0HasBaum =
+                r.state.player.inventory[0] &&
+                r.state.player.inventory[0].blueprintName === "baum_eiche" &&
+                r.state.player.inventory[0].count === 3;
+            // Zweiter Add desselben Bauplans: count kumuliert
+            r.addToInventory("baum_eiche", 2);
+            out.stacksCount = r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
+            // Unbekannter Bauplan → false
+            out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
+
+            // removeFromInventory: 5 → 3
+            r.removeFromInventory(0, 2);
+            out.removeWorks = r.state.player.inventory[0].count === 3;
+            // Komplett entfernen → null
+            r.removeFromInventory(0, 99);
+            out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
+
+            // DSL-Op add_to_inventory
+            if (typeof r.dslRun === "function") {
+                r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
+                const has = r.state.player.inventory.some((s) => s && s.blueprintName === "village");
+                out.dslOpWorks = has;
+            }
+
+            // NON_BROADCASTABLE
+            out.addToInventoryNonBroadcastable =
+                r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
+
+            // describeProgram-Eintrag
+            if (typeof r.describeProgram === "function") {
+                const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
+                out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
+            }
+
+            // UI: Overlay-Element + Grid + Selected-Display
+            out.overlayInDom = !!document.getElementById("inventory-overlay");
+            out.gridInDom = !!document.getElementById("inventory-grid");
+            out.selectedInDom = !!document.getElementById("inventory-selected");
+            // Initial hidden
+            const overlay = document.getElementById("inventory-overlay");
+            out.initiallyHidden = overlay && overlay.hasAttribute("hidden");
+
+            // Toggle öffnet + rendert 27 Slots
+            r.toggleInventoryOverlay(true);
+            const slots = document.querySelectorAll("#inventory-grid .inventory-slot");
+            out.gridRendered27 = slots.length === 27;
+            out.overlayVisibleAfterToggle = !overlay.hasAttribute("hidden");
+
+            // Tag-Magic-Test: kristall_geode (quarz, magieleitung 0.85)
+            // sollte die magie-Klasse bekommen. baum_eiche (laub,
+            // lebendig 1.0) → lebendig-Klasse.
+            r.state.player.inventory[0] = { blueprintName: "kristall_geode", count: 1 };
+            r.state.player.inventory[1] = { blueprintName: "baum_eiche", count: 1 };
+            r.renderInventoryUI();
+            const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
+            const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
+            out.geodeHasMagieClass = slot0 && slot0.classList.contains("tag-magieleitung");
+            out.baumHasLebendigClass = slot1 && slot1.classList.contains("tag-lebendig");
+            // baum_eiche hat laub → brennbar 0.85 hoch
+            out.baumHasBrennendClass = slot1 && slot1.classList.contains("tag-brennend");
+
+            // Click → selectInventorySlot setzt inventorySelected
+            r.selectInventorySlot(0);
+            out.selectionWorks = r.state.inventorySelected === "kristall_geode";
+            // Zweiter Klick auf gleichen → toggelt aus
+            r.selectInventorySlot(0);
+            out.selectionTogglesOff = r.state.inventorySelected === null;
+            r.selectInventorySlot(0);
+
+            // tryAssignFromInventoryToHotbar legt in Hotbar ab
+            const hotbarBefore = r.state.hotbar.slice();
+            const assignOk = r.tryAssignFromInventoryToHotbar(3);
+            out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
+            out.assignClearsSelection = r.state.inventorySelected === null;
+
+            // Toggle close
+            r.toggleInventoryOverlay(false);
+            out.toggleCloseHides = overlay.hasAttribute("hidden");
+            out.toggleCloseClearsSelected = r.state.inventorySelected === null;
+
+            // Test-Cleanup: Hotbar + Inventar zurück auf Defaults,
+            // damit nachfolgende Tests (Ring 6.5 Default-Hotbar etc.)
+            // nicht von Test-Verschmutzung verletzt werden.
+            r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+            r.state.player.inventory = new Array(27).fill(null);
+            if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
+            if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6c1Results && !wave6c1Results.error) {
+        check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
+        check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
+        check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
+        check("Welle 6.C1: addToInventory-Methode existiert", wave6c1Results.hasAddToInventory);
+        check("Welle 6.C1: removeFromInventory-Methode existiert", wave6c1Results.hasRemoveFromInventory);
+        check("Welle 6.C1: renderInventoryUI-Methode existiert", wave6c1Results.hasRenderInventoryUI);
+        check("Welle 6.C1: selectInventorySlot-Methode existiert", wave6c1Results.hasSelectInventorySlot);
+        check("Welle 6.C1: tryAssignFromInventoryToHotbar existiert", wave6c1Results.hasTryAssign);
+        check("Welle 6.C1: toggleInventoryOverlay-Methode existiert", wave6c1Results.hasToggleOverlay);
+        check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
+        check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
+        check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
+        check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
+        check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);
+        check("Welle 6.C1: removeFromInventory reduziert count", wave6c1Results.removeWorks);
+        check("Welle 6.C1: removeFromInventory(>count) clear Slot zu null", wave6c1Results.fullRemoveClearsSlot);
+        check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
+        check("Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS", wave6c1Results.addToInventoryNonBroadcastable);
+        check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
+        check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
+        check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
+        check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
+        check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
+        check("Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay", wave6c1Results.overlayVisibleAfterToggle);
+        check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
+        check("Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse", wave6c1Results.geodeHasMagieClass);
+        check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
+        check("Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)", wave6c1Results.baumHasBrennendClass);
+        check("Welle 6.C1: selectInventorySlot setzt inventorySelected", wave6c1Results.selectionWorks);
+        check("Welle 6.C1: zweiter Klick auf gleichen Slot toggelt aus", wave6c1Results.selectionTogglesOff);
+        check("Welle 6.C1: tryAssignFromInventoryToHotbar legt in Hotbar ab", wave6c1Results.assignWorks);
+        check("Welle 6.C1: Assign löscht inventorySelected", wave6c1Results.assignClearsSelection);
+        check("Welle 6.C1: toggleInventoryOverlay(false) versteckt + räumt", wave6c1Results.toggleCloseHides);
+        check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
+    }
+
+    // ### Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
+    // Vier Pfade testen: inv→inv (swap), inv→hot (Hotbar setzt),
+    // hot→hot (swap), hot→inv (Hotbar räumen). HTML5-Drag-Events
+    // simulieren wir nicht (Headless-Inkonsistenz); statt dessen
+    // testen wir die Drop-Handler direkt mit fingiertem state.drag.
+    const dragResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasDragStart = typeof r._onSlotDragStart === "function";
+            out.hasDragOver = typeof r._onSlotDragOver === "function";
+            out.hasDrop = typeof r._onSlotDrop === "function";
+            out.hasDragEnd = typeof r._onSlotDragEnd === "function";
+            out.hasDragLeave = typeof r._onSlotDragLeave === "function";
+
+            // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
+            r.state.player.inventory = new Array(27).fill(null);
+            r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+            r.state.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
+            r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+
+            // Fake-Event-Object für drop-Handler.
+            const mkEvent = () => ({
+                preventDefault: () => {},
+                currentTarget: null,
+            });
+
+            // (1) inv → inv: Slot 0 ↔ Slot 5 tauschen.
+            r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+            r._onSlotDrop(mkEvent(), "inv", 5);
+            out.invToInvSwap =
+                r.state.player.inventory[0] === null &&
+                r.state.player.inventory[5] &&
+                r.state.player.inventory[5].blueprintName === "baum_eiche";
+
+            // Reset
+            r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+            r.state.player.inventory[5] = null;
+
+            // (2) inv → hot mit leerem Hot + Inv-count=1: konsequenter
+            // Slot-Move (Schöpfer-Wunsch V7.77+: „soll nichtmehr im
+            // Inventar sein, nurnoch in der Hotbar"). Inv-Slot wird
+            // null, Hot = name.
+            r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+            r._onSlotDrop(mkEvent(), "hot", 3);
+            out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
+            out.invToHotEmptiesInvSlot = r.state.player.inventory[0] === null;
+
+            // (2b) inv → hot mit leerem Hot + Inv-count=5: Slot wird
+            // KOMPLETT null (egal count). Stack wird konsumiert.
+            r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 5 };
+            r.state.hotbar[4] = null;
+            r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+            r._onSlotDrop(mkEvent(), "hot", 4);
+            out.invToHotEmptiesIgnoresCount =
+                r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
+
+            // (2c) inv → hot mit gleichem Bauplan in Hot: Inv-Slot
+            // wird TROTZDEM leer (Schöpfer-Wunsch: konsequenter Move,
+            // Bauplan ist aus Inv weg, in Hot war er schon).
+            r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
+            r.state.hotbar[4] = "baum_eiche";
+            r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+            r._onSlotDrop(mkEvent(), "hot", 4);
+            out.invToHotSameNameStillEmpties =
+                r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
+
+            // (2d) inv → hot mit anderem Bauplan: Swap.
+            r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+            r.state.hotbar[4] = "village";
+            r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+            r._onSlotDrop(mkEvent(), "hot", 4);
+            out.invToHotSwap =
+                r.state.hotbar[4] === "baum_eiche" &&
+                r.state.player.inventory[0] &&
+                r.state.player.inventory[0].blueprintName === "village" &&
+                r.state.player.inventory[0].count === 1;
+
+            // Reset
+            r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+            r.state.hotbar[3] = null;
+            r.state.hotbar[4] = null;
+
+            // (3) hot → hot: Slot 0 (village) ↔ Slot 1 (temple).
+            r.state.drag = { kind: "hot", index: 0, name: "village" };
+            r._onSlotDrop(mkEvent(), "hot", 1);
+            out.hotToHotSwap = r.state.hotbar[0] === "temple" && r.state.hotbar[1] === "village";
+
+            // Reset
+            r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+
+            // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE
+            // (Schöpfer-Fix V7.77+: alte Logik räumte nur Hotbar,
+            // Bauplan verschwand). Erwartung: Hot wird null,
+            // Inv-Slot 10 bekommt {temple, count: 1}.
+            r.state.player.inventory[10] = null;
+            r.state.drag = { kind: "hot", index: 1, name: "temple" };
+            r._onSlotDrop(mkEvent(), "inv", 10);
+            out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
+            out.hotToInvFillsInvSlot =
+                r.state.player.inventory[10] &&
+                r.state.player.inventory[10].blueprintName === "temple" &&
+                r.state.player.inventory[10].count === 1;
+
+            // (4b) hot → inv mit gleichem Bauplan im Ziel: Stack
+            // (count += 1, Hot wird null).
+            r.state.hotbar[1] = "temple"; // Hot wieder befüllen
+            r.state.player.inventory[10] = { blueprintName: "temple", count: 3 };
+            r.state.drag = { kind: "hot", index: 1, name: "temple" };
+            r._onSlotDrop(mkEvent(), "inv", 10);
+            out.hotToInvStacksSameBp =
+                r.state.hotbar[1] === null && r.state.player.inventory[10] && r.state.player.inventory[10].count === 4;
+
+            // (4c) hot → inv mit anderem Bauplan im Ziel: no-op.
+            r.state.hotbar[1] = "village";
+            r.state.player.inventory[10] = { blueprintName: "temple", count: 2 };
+            r.state.drag = { kind: "hot", index: 1, name: "village" };
+            r._onSlotDrop(mkEvent(), "inv", 10);
+            out.hotToInvOtherBpNoOp =
+                r.state.hotbar[1] === "village" &&
+                r.state.player.inventory[10] &&
+                r.state.player.inventory[10].blueprintName === "temple" &&
+                r.state.player.inventory[10].count === 2;
+
+            // Cleanup für (5)
+            r.state.player.inventory[10] = null;
+
+            // (5) src === target: no-op (state unverändert).
+            const before = JSON.stringify(r.state.hotbar);
+            r.state.drag = { kind: "hot", index: 0, name: "village" };
+            r._onSlotDrop(mkEvent(), "hot", 0);
+            out.sameSlotNoOp = JSON.stringify(r.state.hotbar) === before;
+
+            // (6) drag wird nach drop genullt.
+            out.dragClearedAfterDrop = r.state.drag === null;
+
+            // (7) DOM: gefüllte Inventar-Slots sind draggable.
+            r.toggleInventoryOverlay(true);
+            r.renderInventoryUI();
+            const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
+            const emptySlot = document.querySelector("#inventory-grid .inventory-slot.empty");
+            out.filledSlotIsDraggable = slot0 && slot0.draggable === true;
+            // Leerer Inventar-Slot ist NICHT draggable (kein Mehrwert).
+            out.emptySlotNotDraggable = emptySlot && emptySlot.draggable === false;
+
+            // (8) Hotbar-Slots: gefüllte sind draggable.
+            r._renderHotbarDOM();
+            const hSlot0 = document.querySelector('#hotbar [data-slot="0"]');
+            const hSlot3 = document.querySelector('#hotbar [data-slot="3"]');
+            out.hotFilledDraggable = hSlot0 && hSlot0.draggable === true;
+            out.hotEmptyNotDraggable = hSlot3 && hSlot3.draggable === false;
+
+            // Cleanup
+            r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+            r.state.player.inventory = new Array(27).fill(null);
+            r.toggleInventoryOverlay(false);
+            r._renderHotbarDOM();
+            r.renderInventoryUI();
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (dragResults && !dragResults.error) {
+        check("Welle 6.C1 Drag: _onSlotDragStart existiert", dragResults.hasDragStart);
+        check("Welle 6.C1 Drag: _onSlotDragOver existiert", dragResults.hasDragOver);
+        check("Welle 6.C1 Drag: _onSlotDrop existiert", dragResults.hasDrop);
+        check("Welle 6.C1 Drag: _onSlotDragEnd existiert", dragResults.hasDragEnd);
+        check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
+        check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
+        check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
+        check(
+            "Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)",
+            dragResults.invToHotEmptiesInvSlot
+        );
+        check(
+            "Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)",
+            dragResults.invToHotEmptiesIgnoresCount
+        );
+        check(
+            "Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem",
+            dragResults.invToHotSameNameStillEmpties
+        );
+        check("Welle 6.C1 Drag: inv→hot mit anderem Bauplan im Hot ist Swap", dragResults.invToHotSwap);
+        check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
+        check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
+        check("Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}", dragResults.hotToInvFillsInvSlot);
+        check("Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)", dragResults.hotToInvStacksSameBp);
+        check(
+            "Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)",
+            dragResults.hotToInvOtherBpNoOp
+        );
+        check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
+        check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
+        check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);
+        check("Welle 6.C1 Drag: leerer Inventar-Slot ist NICHT draggable", dragResults.emptySlotNotDraggable);
+        check("Welle 6.C1 Drag: gefüllter Hotbar-Slot ist draggable", dragResults.hotFilledDraggable);
+        check("Welle 6.C1 Drag: leerer Hotbar-Slot ist NICHT draggable", dragResults.hotEmptyNotDraggable);
+    }
+
+    // ### Welle 6.C1 Pointer-Lock-Fix: Drag&Drop braucht freie Maus ===
+    // Inventar öffnen → exitPointerLock damit Maus-Cursor erscheint
+    // und HTML5-Drag&Drop funktioniert. WASD bleibt aktiv (Minecraft-
+    // Konvention). Esc schließt Inventar.
+    const lockResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
+            r.toggleInventoryOverlay(false);
+            if (!r.state.keys) r.state.keys = {};
+            r.state.keys.w = true;
+            r.state.keys.a = true;
+
+            // Inventar öffnen → exitPointerLock wird gerufen (wir
+            // können das in jsdom/headless nicht direkt prüfen,
+            // aber wir können verifizieren dass der Pfad ohne Crash
+            // läuft + state.inventoryOpen true wird).
+            let exitCalled = 0;
+            const origExit = document.exitPointerLock;
+            document.exitPointerLock = function () {
+                exitCalled++;
+                if (typeof origExit === "function") {
+                    try {
+                        origExit.call(document);
+                    } catch {
+                        /* defensive in headless */
+                    }
+                }
+            };
+            // pointerLockElement-Property zur Laufzeit setzen
+            // damit der Check `if (document.pointerLockElement)`
+            // den Pfad nimmt.
+            try {
+                Object.defineProperty(document, "pointerLockElement", {
+                    value: document.body,
+                    configurable: true,
+                });
+            } catch {
+                /* defensive */
+            }
+
+            r.toggleInventoryOverlay(true);
+            out.exitLockCalledOnOpen = exitCalled >= 1;
+            out.overlayOpenAfterToggle = r.state.inventoryOpen === true;
+            // WASD bleibt aktiv (Minecraft-Konvention) — Schöpfer-Wunsch.
+            out.wKeyStillActiveAfterOpen = r.state.keys.w === true;
+            out.aKeyStillActiveAfterOpen = r.state.keys.a === true;
+
+            // Esc-Handler bei offenem Inventar → toggle close.
+            // Wir simulieren das durch direkten Aufruf des Pfads
+            // (Keydown-Synthetic ist in Headless flaky).
+            // Verifizieren dass toggleInventoryOverlay(false) sauber
+            // arbeitet ohne Pointer-Lock erneut zu setzen.
+            r.toggleInventoryOverlay(false);
+            out.closeWorksWithoutReLock = r.state.inventoryOpen === false;
+
+            // Cleanup
+            document.exitPointerLock = origExit;
+            r.state.keys.w = false;
+            r.state.keys.a = false;
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (lockResults && !lockResults.error) {
+        check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
+        check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
+        check(
+            "Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)",
+            lockResults.wKeyStillActiveAfterOpen
+        );
+        check("Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar", lockResults.aKeyStillActiveAfterOpen);
+        check(
+            "Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)",
+            lockResults.closeWorksWithoutReLock
+        );
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.A6 (Maus-Aktionen + Resonanz-Abklang) + 6.C3 V2/Tastenbelegung).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6Keybindings(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
+    // LMB abbauen / RMB platzieren über konfigurierbares Keybinding.
+    // Architektur-Hit → removeArchitecture; kein Hit → V9.36-Voxel-carve.
+    // Stamina-Gate via getGameMode wie applyOpToPart (6.C2).
+    const wave6a6Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // Statische Konstante
+            out.hasStaminaCost = r.constructor.MOUSE_ACTION_STAMINA_COST === 5;
+            // Methoden-Existenz
+            out.hasTryMouseBreak = typeof r.tryMouseBreak === "function";
+            out.hasTryMousePlace = typeof r.tryMousePlace === "function";
+            out.hasRemoveArchitecture = typeof r.removeArchitecture === "function";
+            out.hasPickArchitecture = typeof r._pickArchitectureAtCrosshair === "function";
+            out.hasRaycastWorldHit = typeof r._raycastWorldHit === "function";
+            out.hasStaminaGate = typeof r._mouseActionStaminaGate === "function";
+            out.hasConsumeStamina = typeof r._consumeMouseStamina === "function";
+
+            // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
+            const oldMode = r.getGameMode();
+            r.setGameMode("pfad");
+            r.state.player.stamina = 100;
+            r.state.player.phoenixUntil = 0;
+
+            // Stamina-Gate: pfad mit voller Stamina → ok, cost 5
+            const gateOk = r._mouseActionStaminaGate();
+            out.pfadGateOk = gateOk.ok === true && gateOk.cost === 5;
+
+            // Stamina verbrauchen: pfad zieht 5 ab
+            r._consumeMouseStamina();
+            out.pfadConsumesFive = r.state.player.stamina === 95;
+
+            // Stamina unter Kosten → verweigert
+            r.state.player.stamina = 2;
+            const gateBlocked = r._mouseActionStaminaGate();
+            out.pfadGateBlocksLow = gateBlocked.ok === false && gateBlocked.have === 2;
+
+            // frieden + schöpfer: kein Stamina-Verbrauch
+            r.setGameMode("frieden");
+            r.state.player.stamina = 50;
+            r._consumeMouseStamina();
+            out.friedenSkipsStamina = r.state.player.stamina === 50;
+
+            r.setGameMode("schöpfer");
+            r.state.player.stamina = 50;
+            r._consumeMouseStamina();
+            out.schoepferSkipsStamina = r.state.player.stamina === 50;
+
+            // frieden gate immer ok
+            r.state.player.stamina = 0;
+            r.setGameMode("frieden");
+            out.friedenGateOkAtZero = r._mouseActionStaminaGate().ok === true;
+
+            // removeArchitecture: synthetisches Setup ohne Mesh/Body
+            const fakeEntry = { id: 99999, type: "test_arch", position: { x: 0, y: 0, z: 0 }, mesh: null };
+            r.state.architectures.push(fakeEntry);
+            const archCountBefore = r.state.architectures.length;
+            const removed = r.removeArchitecture(fakeEntry);
+            out.removeArchitectureWorks = removed === true && r.state.architectures.length === archCountBefore - 1;
+
+            // removeArchitecture mit nicht-existentem Entry → false
+            out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
+
+            // V9.35: tryMousePlace ohne aktiven Bau-Modus läuft in den
+            // V9.15-Voxel-Fill-Pfad (das Gegenstück zum LMB-Graben);
+            // seit voxel permanent + irreversibel ist, ist dieser Pfad
+            // immer erreichbar. Wir prüfen darum nur Crash-Frei +
+            // boolean-Rückgabe (true bei erfolgreichem Fill, false
+            // wenn der Raycast nichts trifft).
+            r.setGameMode("frieden");
+            r.state.buildMode.active = false;
+            const placeResult = r.tryMousePlace();
+            out.placeReturnsBoolean = placeResult === true || placeResult === false;
+
+            // tryMouseBreak ohne hit & ohne Architektur → false (kein crash)
+            // (kein physicsWorld in den meisten Tests, also fallback gilt)
+            const breakResult = r.tryMouseBreak();
+            out.breakSafeWithoutHit = breakResult === false || breakResult === true;
+
+            // Cleanup
+            r.setGameMode(oldMode);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6a6Results && !wave6a6Results.error) {
+        check("Welle 6.A6: MOUSE_ACTION_STAMINA_COST === 5", wave6a6Results.hasStaminaCost);
+        check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
+        check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
+        check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
+        check("Welle 6.A6: _pickArchitectureAtCrosshair existiert", wave6a6Results.hasPickArchitecture);
+        check("Welle 6.A6: _raycastWorldHit existiert", wave6a6Results.hasRaycastWorldHit);
+        check("Welle 6.A6: _mouseActionStaminaGate existiert", wave6a6Results.hasStaminaGate);
+        check("Welle 6.A6: _consumeMouseStamina existiert", wave6a6Results.hasConsumeStamina);
+        check("Welle 6.A6: Stamina-Gate im pfad-Modus ok mit cost=5", wave6a6Results.pfadGateOk);
+        check("Welle 6.A6: pfad verbraucht 5 Stamina pro Aktion", wave6a6Results.pfadConsumesFive);
+        check("Welle 6.A6: pfad verweigert bei zu wenig Stamina", wave6a6Results.pfadGateBlocksLow);
+        check("Welle 6.A6: frieden überspringt Stamina-Verbrauch", wave6a6Results.friedenSkipsStamina);
+        check("Welle 6.A6: schöpfer überspringt Stamina-Verbrauch", wave6a6Results.schoepferSkipsStamina);
+        check("Welle 6.A6: frieden-Gate immer ok (auch bei 0 Stamina)", wave6a6Results.friedenGateOkAtZero);
+        check("Welle 6.A6: removeArchitecture entfernt Eintrag", wave6a6Results.removeArchitectureWorks);
+        check(
+            "Welle 6.A6: removeArchitecture lehnt nicht-existenten Eintrag ab",
+            wave6a6Results.removeArchitectureRejectsGhost
+        );
+        check(
+            "Welle 6.A6 + V9.35: tryMousePlace ohne Bau-Modus läuft den Voxel-Fill-Pfad (crash-frei, boolean-Rückgabe)",
+            wave6a6Results.placeReturnsBoolean
+        );
+        check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
+    }
+
+    // ### Welle 6.A6 V2 — Vision §1.2: Resonanz-Abklang beim Abbauen ###
+    // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit
+    // einem Sinus-Ping. Stille Strukturen bleiben stumm — Verstummen
+    // tönt nur wo Klang war.
+    const wave6a6V2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
+            out.removeIntegratesPing =
+                typeof r.removeArchitecture === "function" &&
+                r.removeArchitecture.toString().includes("_playArchitectureFarewellPing");
+            // Threshold-Konstante existiert
+            const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
+            out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
+
+            // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
+            if (typeof r.initSymphony === "function") r.initSymphony();
+            const ctxOk = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+            out.symphonyReady = !!ctxOk;
+            if (!ctxOk) return out;
+
+            // kristall_geode: resoniert ≈ 2.7 (Built-in, Welle 6.G P2)
+            const geodeTags = r.computeCompoundTags(r.state.blueprints.kristall_geode);
+            out.geodeIsResonant = (geodeTags.resoniert || 0) >= thr.resonance_mild;
+            // stein_block: resoniert ≈ 0
+            const stoneTags = r.computeCompoundTags(r.state.blueprints.stein_block);
+            out.stoneIsNotResonant = (stoneTags.resoniert || 0) < thr.resonance_mild;
+
+            // Spy auf createOscillator
+            const ctx = r.state.symphony.ctx;
+            const orig = ctx.createOscillator.bind(ctx);
+            const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+
+            // Test A: Geode-Abbau → mind. 1 Oszillator
+            const geode = r.spawnArchitecture("kristall_geode", { x: p.x, y: p.y, z: p.z + 6 });
+            let counterA = 0;
+            ctx.createOscillator = function () {
+                counterA++;
+                return orig();
+            };
+            r.removeArchitecture(geode);
+            out.geodeRemovalRingsOnce = counterA >= 1;
+
+            // Test B: Stein-Abbau → kein Oszillator (Negativ-Kontrolle)
+            const stone = r.spawnArchitecture("stein_block", { x: p.x + 4, y: p.y, z: p.z + 4 });
+            let counterB = 0;
+            ctx.createOscillator = function () {
+                counterB++;
+                return orig();
+            };
+            r.removeArchitecture(stone);
+            out.stoneRemovalIsSilent = counterB === 0;
+
+            // Test C: Symphony aus → kein Ping selbst bei resonanter Struktur
+            r.state.symphony.enabled = false;
+            const geode2 = r.spawnArchitecture("kristall_geode", { x: p.x - 4, y: p.y, z: p.z - 4 });
+            let counterC = 0;
+            ctx.createOscillator = function () {
+                counterC++;
+                return orig();
+            };
+            r.removeArchitecture(geode2);
+            out.disabledSymphonyStaysSilent = counterC === 0;
+            r.state.symphony.enabled = true;
+
+            ctx.createOscillator = orig;
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6a6V2Results && !wave6a6V2Results.error) {
+        check("Welle 6.A6 V2: _playArchitectureFarewellPing existiert", wave6a6V2Results.hasFarewellPing);
+        check(
+            "Welle 6.A6 V2: removeArchitecture ruft _playArchitectureFarewellPing",
+            wave6a6V2Results.removeIntegratesPing
+        );
+        check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
+        check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
+        if (wave6a6V2Results.symphonyReady) {
+            check("Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold", wave6a6V2Results.geodeIsResonant);
+            check(
+                "Welle 6.A6 V2: stein_block trägt resoniert < mild-Threshold (Negativ)",
+                wave6a6V2Results.stoneIsNotResonant
+            );
+            check(
+                "Welle 6.A6 V2: Geode-Abbau erzeugt mind. einen Oszillator (Vision §1.2)",
+                wave6a6V2Results.geodeRemovalRingsOnce
+            );
+            check("Welle 6.A6 V2: Stein-Abbau bleibt stumm (Vision-Disziplin)", wave6a6V2Results.stoneRemovalIsSilent);
+            check(
+                "Welle 6.A6 V2: deaktivierte Symphony unterdrückt auch resonanten Abbau-Ping",
+                wave6a6V2Results.disabledSymphonyStaysSilent
+            );
+        }
+    }
+
+    // ### Welle 6.C3 V2 — HUD spiegelt aktuelle Keybindings ###
+    // _updateBuildModeHud baut den Text aus state.keybindings über
+    // _formatBindingCode. setKeybinding + resetKeybindings triggern
+    // ein HUD-Refresh, sodass der Spieler nie veraltete Beschriftung
+    // sieht.
+    const wave6c3V2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            r.resetKeybindings();
+            r.setHotbarSlot(0, "village");
+            r.selectHotbarSlot(0);
+            const hud = document.getElementById("build-mode-hud");
+            out.hudVisible = hud && !hud.hidden;
+            const textDefault = hud ? hud.textContent : "";
+            out.defaultMentionsConfirmBuild = /F/.test(textDefault);
+            out.defaultMentionsPlacePretty = /Rechte Maustaste/.test(textDefault);
+            out.defaultMentionsBreakPretty = /Linke Maustaste/.test(textDefault);
+
+            // Rebind „place" → KeyB. setKeybinding muss HUD aktualisieren.
+            r.setKeybinding("place", "KeyB");
+            const textAfter = hud ? hud.textContent : "";
+            out.afterRebindContainsB = /\bB\b/.test(textAfter);
+            out.afterRebindDropsOldLabel = !/Rechte Maustaste/.test(textAfter);
+
+            // Reset wirkt auch auf HUD.
+            r.resetKeybindings();
+            const textReset = hud ? hud.textContent : "";
+            out.afterResetMentionsRMB = /Rechte Maustaste/.test(textReset);
+
+            r._clearBuildMode();
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6c3V2Results && !wave6c3V2Results.error) {
+        check("Welle 6.C3 V2: HUD sichtbar im Bau-Modus", wave6c3V2Results.hudVisible);
+        check("Welle 6.C3 V2: Default-HUD enthält 'F' (confirmBuild)", wave6c3V2Results.defaultMentionsConfirmBuild);
+        check(
+            "Welle 6.C3 V2: Default-HUD enthält 'Rechte Maustaste' (place)",
+            wave6c3V2Results.defaultMentionsPlacePretty
+        );
+        check(
+            "Welle 6.C3 V2: Default-HUD enthält 'Linke Maustaste' (break)",
+            wave6c3V2Results.defaultMentionsBreakPretty
+        );
+        check(
+            "Welle 6.C3 V2: setKeybinding(place→KeyB) reflektiert sich im HUD-Text",
+            wave6c3V2Results.afterRebindContainsB
+        );
+        check("Welle 6.C3 V2: HUD-Text verliert das alte Label nach Rebind", wave6c3V2Results.afterRebindDropsOldLabel);
+        check("Welle 6.C3 V2: resetKeybindings stellt HUD-Default wieder her", wave6c3V2Results.afterResetMentionsRMB);
+    }
+
+    // ### Welle 6.C3 — Tastenbelegung (Keybindings) ###
+    // Sechs Aktionen rebindable: break, place, confirmBuild, inventory,
+    // cancelBuild, jump. Default-Map ist Minecraft-Konvention. Konflikt-
+    // Auflösung über Swap. Persistiert in localStorage.
+    const wave6c3Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            // Statische Konstanten
+            out.hasDefaults =
+                r.constructor.DEFAULT_KEYBINDINGS &&
+                typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
+                Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
+            // V8.17: 12 Aktionen (6 Original + 6 Drawer/Camera-Shortcuts).
+            out.hasActions =
+                Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 12;
+            out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
+            const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
+            out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
+            // Defaults sind Minecraft-Konvention
+            out.defaultBreakIsMouse0 = r.constructor.DEFAULT_KEYBINDINGS.break === "Mouse0";
+            out.defaultPlaceIsMouse2 = r.constructor.DEFAULT_KEYBINDINGS.place === "Mouse2";
+            out.defaultConfirmBuildIsKeyF = r.constructor.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
+            out.defaultInventoryIsTab = r.constructor.DEFAULT_KEYBINDINGS.inventory === "Tab";
+
+            // State init
+            out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
+            out.keybindRebindInitNull = r.state.keybindRebind === null;
+
+            // Methoden-Existenz
+            out.hasLoad = typeof r._loadKeybindings === "function";
+            out.hasSave = typeof r._saveKeybindings === "function";
+            out.hasSet = typeof r.setKeybinding === "function";
+            out.hasReset = typeof r.resetKeybindings === "function";
+            out.hasEventToCode = typeof r._eventToBindingCode === "function";
+            out.hasActionFor = typeof r._actionForBindingCode === "function";
+            out.hasBeginRebind = typeof r.beginKeybindRebind === "function";
+            out.hasCancelRebind = typeof r.cancelKeybindRebind === "function";
+            out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
+            out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
+            out.hasFormatCode = typeof r._formatBindingCode === "function";
+
+            // setKeybinding ändert state
+            const before = r.state.keybindings.confirmBuild;
+            const setOk = r.setKeybinding("confirmBuild", "KeyG");
+            out.setKeybindingWorks = setOk === true && r.state.keybindings.confirmBuild === "KeyG";
+
+            // setKeybinding-Konflikt = Swap: bind „place" auf das gerade
+            // gesetzte „KeyG" → confirmBuild bekommt das alte „Mouse2"
+            // (das war place's Default).
+            const oldPlace = r.state.keybindings.place;
+            r.setKeybinding("place", "KeyG");
+            out.swapHappened = r.state.keybindings.place === "KeyG" && r.state.keybindings.confirmBuild === oldPlace;
+
+            // Reset auf Defaults
+            r.resetKeybindings();
+            out.resetRestoresDefaults =
+                r.state.keybindings.break === "Mouse0" &&
+                r.state.keybindings.place === "Mouse2" &&
+                r.state.keybindings.confirmBuild === "KeyF" &&
+                r.state.keybindings.confirmBuild === before; // before war auch der Default
+
+            // setKeybinding-Validierung: unbekannte Aktion → false
+            out.setRejectsUnknownAction = r.setKeybinding("ficto", "KeyZ") === false;
+            out.setRejectsEmptyCode = r.setKeybinding("break", "") === false;
+
+            // _actionForBindingCode reverse-lookup
+            out.actionForMouse0 = r._actionForBindingCode("Mouse0") === "break";
+            out.actionForMouse2 = r._actionForBindingCode("Mouse2") === "place";
+            out.actionForKeyF = r._actionForBindingCode("KeyF") === "confirmBuild";
+            out.actionForUnbound = r._actionForBindingCode("KeyZ") === null;
+
+            // _eventToBindingCode
+            const mouseEvt = { type: "mousedown", button: 0 };
+            const mouseEvt2 = { type: "mousedown", button: 2 };
+            const keyEvt = { type: "keydown", code: "KeyG" };
+            out.codeForMouseDownLMB = r._eventToBindingCode(mouseEvt) === "Mouse0";
+            out.codeForMouseDownRMB = r._eventToBindingCode(mouseEvt2) === "Mouse2";
+            out.codeForKeyDown = r._eventToBindingCode(keyEvt) === "KeyG";
+
+            // beginKeybindRebind setzt state, cancel räumt auf
+            r.beginKeybindRebind("break");
+            out.rebindActive = r.state.keybindRebind && r.state.keybindRebind.action === "break";
+            r.cancelKeybindRebind();
+            out.rebindCancelClears = r.state.keybindRebind === null;
+
+            // _completeKeybindRebind ändert die Bindung
+            r.beginKeybindRebind("jump");
+            r._completeKeybindRebind("KeyJ");
+            out.completeBindsCode = r.state.keybindings.jump === "KeyJ";
+            // Escape im Rebind-Modus → Abbruch (Binding bleibt)
+            r.beginKeybindRebind("jump");
+            r._completeKeybindRebind("Escape");
+            out.escCancelsRebind = r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
+
+            // _formatBindingCode pretty-print
+            out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
+            out.formatMouse2 = r._formatBindingCode("Mouse2") === "Rechte Maustaste";
+            out.formatSpace = r._formatBindingCode("Space") === "Leertaste";
+            out.formatKeyF = r._formatBindingCode("KeyF") === "F";
+
+            // UI: Section + Liste + Reset-Button im DOM
+            out.sectionInDom = !!document.getElementById("keybindings-section");
+            out.listInDom = !!document.getElementById("keybindings-list");
+            out.resetInDom = !!document.getElementById("keybindings-reset");
+            // 6 keybind-row Zeilen
+            out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12;
+            // Pro Aktion ein Rebind-Button mit data-action
+            out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12;
+
+            // Reset für nachfolgende Tests
+            r.resetKeybindings();
+            r.state.keybindRebind = null;
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6c3Results && !wave6c3Results.error) {
+        check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
+        check("Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)", wave6c3Results.hasActions);
+        check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
+        check(
+            "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
+            wave6c3Results.actionsCorrect
+        );
+        check("Welle 6.C3: Default break === Mouse0 (LMB)", wave6c3Results.defaultBreakIsMouse0);
+        check("Welle 6.C3: Default place === Mouse2 (RMB)", wave6c3Results.defaultPlaceIsMouse2);
+        check("Welle 6.C3: Default confirmBuild === KeyF", wave6c3Results.defaultConfirmBuildIsKeyF);
+        check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
+        check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
+        check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
+        check(
+            "Welle 6.C3: _loadKeybindings + _saveKeybindings existieren",
+            wave6c3Results.hasLoad && wave6c3Results.hasSave
+        );
+        check(
+            "Welle 6.C3: setKeybinding + resetKeybindings existieren",
+            wave6c3Results.hasSet && wave6c3Results.hasReset
+        );
+        check(
+            "Welle 6.C3: _eventToBindingCode + _actionForBindingCode existieren",
+            wave6c3Results.hasEventToCode && wave6c3Results.hasActionFor
+        );
+        check(
+            "Welle 6.C3: beginKeybindRebind + cancelKeybindRebind existieren",
+            wave6c3Results.hasBeginRebind && wave6c3Results.hasCancelRebind
+        );
+        check(
+            "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI + _formatBindingCode existieren",
+            wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI && wave6c3Results.hasFormatCode
+        );
+        check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
+        check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
+        check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
+        check("Welle 6.C3: setKeybinding lehnt unbekannte Aktion ab", wave6c3Results.setRejectsUnknownAction);
+        check("Welle 6.C3: setKeybinding lehnt leeren Code ab", wave6c3Results.setRejectsEmptyCode);
+        check("Welle 6.C3: actionFor Mouse0 → break", wave6c3Results.actionForMouse0);
+        check("Welle 6.C3: actionFor Mouse2 → place", wave6c3Results.actionForMouse2);
+        check("Welle 6.C3: actionFor KeyF → confirmBuild", wave6c3Results.actionForKeyF);
+        check("Welle 6.C3: actionFor ungebundener Code → null", wave6c3Results.actionForUnbound);
+        check("Welle 6.C3: eventToCode MouseEvent LMB → Mouse0", wave6c3Results.codeForMouseDownLMB);
+        check("Welle 6.C3: eventToCode MouseEvent RMB → Mouse2", wave6c3Results.codeForMouseDownRMB);
+        check("Welle 6.C3: eventToCode KeyboardEvent → event.code", wave6c3Results.codeForKeyDown);
+        check("Welle 6.C3: beginKeybindRebind setzt state.keybindRebind", wave6c3Results.rebindActive);
+        check("Welle 6.C3: cancelKeybindRebind räumt auf", wave6c3Results.rebindCancelClears);
+        check("Welle 6.C3: _completeKeybindRebind bindet neuen Code", wave6c3Results.completeBindsCode);
+        check("Welle 6.C3: Escape im Rebind-Modus → Abbruch (kein Binding-Wechsel)", wave6c3Results.escCancelsRebind);
+        check("Welle 6.C3: format Mouse0 → 'Linke Maustaste'", wave6c3Results.formatMouse0);
+        check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
+        check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
+        check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
+        check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
+        check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
+        check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
+        check("Welle 6.C3/V8.17: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+    }
+}
+
+// V9.52-c Sub-Welle c — Band-Funktion (Welle 6.H P1 + V2 + P2A + P2B.1 + P2B.5 + P2C — Kreatur-Aufträge + Hylomorphismus-Compounds + Bring-Phase + Material-Konsum).
+// Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
+async function checkBandWelle6HCreatures(ctx) {
+    const { page, check, logs, errors, finalState } = ctx;
+    void errors;
+    void finalState;
+    // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
+    // Tasks sind Beziehungs-Gesten, keine Identität (Vision §1.1 Co-Schöpfer).
+    // Default-Task „wander" hält das heutige Emotion-Verhalten — Aura ist stumm.
+    // follow_player + wait haben Aura-Sprite (grün/bernstein) als visuelles Feedback.
+    // Multi-User: Tasks in NON_BROADCASTABLE_OPS (Phase 2 mit expliziten IDs).
+    const wave6hResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+            const out = {};
+            // Statische Konstanten
+            out.hasTasks =
+                Array.isArray(r.constructor.CREATURE_TASKS) &&
+                r.constructor.CREATURE_TASKS.length >= 3 &&
+                r.constructor.CREATURE_TASKS.includes("wander") &&
+                r.constructor.CREATURE_TASKS.includes("follow_player") &&
+                r.constructor.CREATURE_TASKS.includes("wait");
+            out.hasAuraHueMap =
+                r.constructor.CREATURE_TASK_AURA_HUE &&
+                r.constructor.CREATURE_TASK_AURA_HUE.follow_player === 120 &&
+                r.constructor.CREATURE_TASK_AURA_HUE.wait === 40 &&
+                r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
+            out.hasFollowDistance =
+                Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) && r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
+
+            // Methoden
+            out.hasAssign = typeof r.assignCreatureTask === "function";
+            out.hasGet = typeof r._getCreatureTask === "function";
+            out.hasTick = typeof r._tickCreatureTaskDirection === "function";
+            out.hasNearestFinder = typeof r.findNearestCreature === "function";
+            out.hasAssignNearest = typeof r.assignTaskToNearestCreature === "function";
+            out.hasAssignAll = typeof r.assignTaskToAllCreatures === "function";
+            out.hasAuraRefresh = typeof r._refreshCreatureTaskAura === "function";
+
+            // Default-Task für initial-gespawnte Kreaturen ist wander
+            const c0 = r.state.creatures[0];
+            out.initialTaskWander = r._getCreatureTask(c0).name === "wander";
+            out.initialNoAura = !c0.userData.taskAura;
+
+            // assignCreatureTask wechselt + erzeugt Aura für non-wander
+            r.assignCreatureTask(c0, "follow_player");
+            out.assignFollowOk = r._getCreatureTask(c0).name === "follow_player";
+            out.followCreatesAura = !!c0.userData.taskAura;
+
+            // Aura-Hue für follow_player ist grünlich (g > r, g > b)
+            const followColor = c0.userData.taskAura.material.color;
+            out.followAuraGreenish = followColor.g > followColor.r && followColor.g > followColor.b;
+
+            r.assignCreatureTask(c0, "wait");
+            out.waitChangesAuraColor = c0.userData.taskAura.material.color.r > c0.userData.taskAura.material.color.b;
+
+            r.assignCreatureTask(c0, "wander");
+            out.wanderRemovesAura = !c0.userData.taskAura;
+
+            // Unknown Task wird abgelehnt
+            out.unknownRejected = r.assignCreatureTask(c0, "fictional") === false;
+
+            // tickCreatureTaskDirection
+            const c1 = r.state.creatures[1];
+            r.assignCreatureTask(c1, "wait");
+            const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+            out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
+
+            // follow_player: weit weg → Richtung zum Spieler
+            const p = r.state.playerMesh.position;
+            c1.position.set(p.x + 10, p.y, p.z + 10);
+            r.assignCreatureTask(c1, "follow_player");
+            const fdir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+            out.followDirectionToPlayer = fdir.x < 0 && fdir.z < 0 && Math.hypot(fdir.x, fdir.z) > 0;
+
+            // follow_player: innerhalb haltDist → direction = (0,0,0)
+            c1.position.set(p.x + 0.3, p.y, p.z + 0.3);
+            const stopDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+            out.followStopsAtHalt = stopDir.x === 0 && stopDir.z === 0;
+
+            // wander → null (Caller fällt auf Emotion-Logik)
+            r.assignCreatureTask(c1, "wander");
+            const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
+            out.wanderReturnsNull = wDir === null;
+
+            // distance-Arg-Validierung (clamp)
+            r.assignCreatureTask(c1, "follow_player", { distance: 1.5 });
+            out.distanceArgKept = r._getCreatureTask(c1).args.distance === 1.5;
+
+            // findNearestCreature
+            for (let i = 0; i < r.state.creatures.length; i++) {
+                r.state.creatures[i].position.set(p.x + 100 + i * 5, p.y, p.z + 100 + i * 5);
+            }
+            r.state.creatures[2].position.set(p.x + 2, p.y, p.z + 2);
+            const nearest = r.findNearestCreature(p);
+            out.nearestIsCorrect = nearest === r.state.creatures[2];
+
+            // assignTaskToNearestCreature
+            r.assignCreatureTask(r.state.creatures[2], "wander");
+            const target = r.assignTaskToNearestCreature(p, "follow_player");
+            out.assignNearestWorks =
+                target === r.state.creatures[2] && r._getCreatureTask(target).name === "follow_player";
+
+            // assignTaskToAllCreatures
+            const count = r.assignTaskToAllCreatures("wait");
+            out.assignAllWorks =
+                count === r.state.creatures.length &&
+                r.state.creatures.every((c) => r._getCreatureTask(c).name === "wait");
+            r.assignTaskToAllCreatures("wander");
+
+            // DSL-Ops
+            r.dslRun(["creature_task", 0, "follow_player"], { source: "test" });
+            out.dslSingleWorks = r._getCreatureTask(r.state.creatures[0]).name === "follow_player";
+            r.dslRun(["creature_task_all", "wander"], { source: "test" });
+            out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
+            r.dslRun(["creature_task", 9999, "follow_player"], { source: "test" });
+            out.dslOobSafe = true; // wenn wir hier sind, kein crash
+
+            // NON_BROADCASTABLE_OPS Mitgliedschaft
+            const nbs = r.constructor.NON_BROADCASTABLE_OPS;
+            out.nbCreatureTask = nbs.has("creature_task");
+            out.nbCreatureTaskNearest = nbs.has("creature_task_nearest");
+            out.nbCreatureTaskAll = nbs.has("creature_task_all");
+
+            // Chat-Patterns
+            const folge = r.parseChatToDsl("folge mir");
+            out.chatFolgeMir =
+                folge &&
+                Array.isArray(folge.program) &&
+                folge.program[0] === "creature_task_nearest" &&
+                folge.program[1] === "follow_player";
+            const warte = r.parseChatToDsl("warte");
+            out.chatWarte = warte && warte.program[0] === "creature_task_nearest" && warte.program[1] === "wait";
+            const erkunde = r.parseChatToDsl("erkunde");
+            out.chatErkunde =
+                erkunde && erkunde.program[0] === "creature_task_nearest" && erkunde.program[1] === "wander";
+            const kommHer = r.parseChatToDsl("komm her");
+            out.chatKommHer =
+                kommHer &&
+                kommHer.program[0] === "creature_task_nearest" &&
+                kommHer.program[1] === "follow_player" &&
+                kommHer.program[2] === 1.5;
+            const alle = r.parseChatToDsl("alle folgt mir");
+            out.chatAlleFolgt = alle && alle.program[0] === "creature_task_all" && alle.program[1] === "follow_player";
+            const alleWarten = r.parseChatToDsl("alle warten");
+            out.chatAlleWarten =
+                alleWarten && alleWarten.program[0] === "creature_task_all" && alleWarten.program[1] === "wait";
+
+            // describeProgram-Einträge
+            const desc1 = r.describeProgram(["creature_task_nearest", "follow_player"]);
+            out.descNearest = typeof desc1 === "string" && /folge|nächste|Auftrag/i.test(desc1);
+            const desc2 = r.describeProgram(["creature_task_all", "wait"]);
+            out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
+
+            // removeCreature räumt Aura mit
+            const cToRemove = r.state.creatures[r.state.creatures.length - 1];
+            r.assignCreatureTask(cToRemove, "wait");
+            const auraToCheck = cToRemove.userData.taskAura;
+            out.preRemoveAuraInScene = r.state.scene.children.includes(auraToCheck);
+            r.removeCreature(cToRemove);
+            r.state.creatures.pop(); // sync state mit removeCreature-Pfad
+            out.postRemoveAuraGone = !r.state.scene.children.includes(auraToCheck);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hResults && !wave6hResults.error) {
+        check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
+        check(
+            "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
+            wave6hResults.hasAuraHueMap
+        );
+        check("Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv", wave6hResults.hasFollowDistance);
+        check(
+            "Welle 6.H Phase 1: alle Methoden existieren (assign/get/tick/nearest/all/auraRefresh)",
+            wave6hResults.hasAssign &&
+                wave6hResults.hasGet &&
+                wave6hResults.hasTick &&
+                wave6hResults.hasNearestFinder &&
+                wave6hResults.hasAssignNearest &&
+                wave6hResults.hasAssignAll &&
+                wave6hResults.hasAuraRefresh
+        );
+        check(
+            "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
+            wave6hResults.initialTaskWander
+        );
+        check("Welle 6.H Phase 1: Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
+        check(
+            "Welle 6.H Phase 1: assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
+            wave6hResults.assignFollowOk && wave6hResults.followCreatesAura
+        );
+        check("Welle 6.H Phase 1: Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
+        check("Welle 6.H Phase 1: Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
+        check(
+            "Welle 6.H Phase 1: Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
+            wave6hResults.wanderRemovesAura
+        );
+        check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
+        check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
+        check(
+            "Welle 6.H Phase 1: follow_player-Direction zeigt zum Spieler (weit weg)",
+            wave6hResults.followDirectionToPlayer
+        );
+        check("Welle 6.H Phase 1: follow_player stoppt am haltDist (direction=0)", wave6hResults.followStopsAtHalt);
+        check(
+            "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
+            wave6hResults.wanderReturnsNull
+        );
+        check("Welle 6.H Phase 1: distance-Arg landet in task.args", wave6hResults.distanceArgKept);
+        check("Welle 6.H Phase 1: findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
+        check("Welle 6.H Phase 1: assignTaskToNearestCreature wirkt auf nahste", wave6hResults.assignNearestWorks);
+        check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
+        check("Welle 6.H Phase 1: DSL creature_task setzt Task", wave6hResults.dslSingleWorks);
+        check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
+        check("Welle 6.H Phase 1: DSL mit OOB-Index crasht nicht", wave6hResults.dslOobSafe);
+        check(
+            "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
+            wave6hResults.nbCreatureTask && wave6hResults.nbCreatureTaskNearest && wave6hResults.nbCreatureTaskAll
+        );
+        check("Welle 6.H Phase 1: Chat 'folge mir' → creature_task_nearest follow_player", wave6hResults.chatFolgeMir);
+        check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
+        check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
+        check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
+        check(
+            "Welle 6.H Phase 1: Chat 'alle folgt mir' → creature_task_all follow_player",
+            wave6hResults.chatAlleFolgt
+        );
+        check("Welle 6.H Phase 1: Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
+        check("Welle 6.H Phase 1: describeProgram für nearest enthält 'folge'/'nächste'", wave6hResults.descNearest);
+        check("Welle 6.H Phase 1: describeProgram für all enthält 'alle'", wave6hResults.descAll);
+        check(
+            "Welle 6.H Phase 1: removeCreature räumt Aura aus Scene (kein Memory-Leak)",
+            wave6hResults.preRemoveAuraInScene && wave6hResults.postRemoveAuraGone
+        );
+    }
+
+    // ### Welle 6.H V2 — Vision-/UX-/Performance-Schließungen ###
+    // Nach Schöpfer-Audit: Audio-Antwort bei Task-Wechsel (§1.2),
+    // Journal-Eintrag bei Geste (§1.1), Leerschlag-Feedback (UX),
+    // Status-Bar-Zähler (UX), Texture-Cache (Performance),
+    // describeProgram-Distanz (UX).
+    const wave6hV2Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+            const out = {};
+
+            // === Audio-Antwort bei Task-Wechsel (Vision §1.2) ===
+            out.hasTaskPingMethod = typeof r._playCreatureTaskPing === "function";
+            out.hasPingFreq =
+                r.constructor.CREATURE_TASK_PING_FREQ &&
+                r.constructor.CREATURE_TASK_PING_FREQ.follow_player === 494 &&
+                r.constructor.CREATURE_TASK_PING_FREQ.wait === 294 &&
+                r.constructor.CREATURE_TASK_PING_FREQ.wander === null;
+
+            if (typeof r.initSymphony === "function") r.initSymphony();
+            const symReady = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+            out.symphonyReady = !!symReady;
+
+            if (symReady) {
+                const ctx = r.state.symphony.ctx;
+                const orig = ctx.createOscillator.bind(ctx);
+                const c = r.state.creatures[0];
+                // Wechsel wander → follow_player → Ping
+                r.assignCreatureTask(c, "wander", {}, { silent: true });
+                let n = 0;
+                ctx.createOscillator = function () {
+                    n++;
+                    return orig();
+                };
+                r.assignCreatureTask(c, "follow_player");
+                out.followPings = n >= 1;
+                n = 0;
+                r.assignCreatureTask(c, "wait");
+                out.waitPings = n >= 1;
+                // Wechsel zu wander → KEIN Ping (Lösen der Bindung ist still)
+                n = 0;
+                r.assignCreatureTask(c, "wander");
+                out.wanderIsSilent = n === 0;
+                ctx.createOscillator = orig;
+            }
+
+            // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
+            out.hasJournalMethod = typeof r._journalCreatureTask === "function";
+            const c1 = r.state.creatures[1];
+            r.assignCreatureTask(c1, "wander", {}, { silent: true });
+            const jBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+            r.assignCreatureTask(c1, "follow_player");
+            const jAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+            out.journalGrows = jAfter > jBefore;
+            // Eintrag trägt type=relationship
+            const lastEntry =
+                r.state.worldJournal && r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1];
+            out.journalTypeIsRelationship = lastEntry && lastEntry.type === "relationship";
+
+            // === silent-Option unterdrückt Audio + Journal ===
+            const c2 = r.state.creatures[2];
+            r.assignCreatureTask(c2, "wander", {}, { silent: true });
+            const jPre = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+            r.assignCreatureTask(c2, "wait", {}, { silent: true });
+            const jPost = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+            out.silentSuppressesJournal = jPost === jPre;
+
+            // === Leerschlag-Feedback (UX + Vision §1.1) ===
+            // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60
+            const pPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            for (const c of r.state.creatures) c.position.set(pPos.x + 500, pPos.y, pPos.z + 500);
+            const chatOutput = document.getElementById("chat-output");
+            const chatBefore = chatOutput ? chatOutput.children.length : 0;
+            const journalBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+            const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
+            const chatAfter = chatOutput ? chatOutput.children.length : 0;
+            const journalAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
+            const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
+            out.leerschlagReturnsNull = result === null;
+            out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
+            out.leerschlagWritesJournal = journalAfter > journalBefore;
+            out.leerschlagJournalTypeReach =
+                r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1].type === "reach";
+
+            // === Texture-Cache (Performance) ===
+            out.hasCacheMethod = typeof r._getCreatureTaskAuraTexture === "function";
+            const firstTexture = r._getCreatureTaskAuraTexture();
+            const secondTexture = r._getCreatureTaskAuraTexture();
+            out.textureCacheReusesInstance = firstTexture === secondTexture;
+            // 10 Task-Wechsel sollten dieselbe Map nutzen
+            const c3 = r.state.creatures[0];
+            c3.position.set(pPos.x + 1, pPos.y, pPos.z + 1); // wieder nah
+            const uniqueMaps = new Set();
+            for (let i = 0; i < 10; i++) {
+                r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
+                if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
+                    uniqueMaps.add(c3.userData.taskAura.material.map);
+                }
+                r.assignCreatureTask(c3, "wander", {}, { silent: true });
+            }
+            out.textureSharedAcross10Cycles = uniqueMaps.size === 1;
+
+            // === Status-Bar Task-Zähler (UX) ===
+            out.hasRenderTaskStatus = typeof r._renderTaskStatusUI === "function";
+            out.statusTasksInDom = !!document.getElementById("status-tasks");
+            r.assignTaskToAllCreatures("wander");
+            r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
+            r.assignCreatureTask(r.state.creatures[1], "follow_player", {}, { silent: true });
+            r.assignCreatureTask(r.state.creatures[2], "wait", {}, { silent: true });
+            r._renderTaskStatusUI();
+            const taskEl = document.getElementById("status-tasks");
+            const taskText = taskEl ? taskEl.textContent : "";
+            out.statusShowsCounts = /2 folgen/.test(taskText) && /1 warten/.test(taskText);
+            // Alle wander → "—"
+            r.assignTaskToAllCreatures("wander");
+            r._renderTaskStatusUI();
+            const taskText2 = taskEl ? taskEl.textContent : "";
+            out.statusEmptyDash = taskText2 === "—";
+
+            // === describeProgram zeigt Distanz ===
+            const descWithDist = r.describeProgram(["creature_task_nearest", "follow_player", 1.5]);
+            const descWithoutDist = r.describeProgram(["creature_task_nearest", "follow_player"]);
+            out.descShowsDistance = /1\.5m|Distanz/i.test(descWithDist);
+            out.descNoDistanceWhenNotGiven = !/1\.5/.test(descWithoutDist);
+
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hV2Results && !wave6hV2Results.error) {
+        check("Welle 6.H V2: _playCreatureTaskPing existiert", wave6hV2Results.hasTaskPingMethod);
+        check(
+            "Welle 6.H V2: CREATURE_TASK_PING_FREQ map (follow=494/wait=294/wander=null)",
+            wave6hV2Results.hasPingFreq
+        );
+        check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
+        if (wave6hV2Results.symphonyReady) {
+            check(
+                "Welle 6.H V2: Wechsel zu follow_player erzeugt Audio-Ping (Vision §1.2)",
+                wave6hV2Results.followPings
+            );
+            check("Welle 6.H V2: Wechsel zu wait erzeugt Audio-Ping (Vision §1.2)", wave6hV2Results.waitPings);
+            check(
+                "Welle 6.H V2: Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
+                wave6hV2Results.wanderIsSilent
+            );
+        }
+        check("Welle 6.H V2: _journalCreatureTask existiert", wave6hV2Results.hasJournalMethod);
+        check("Welle 6.H V2: Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)", wave6hV2Results.journalGrows);
+        check("Welle 6.H V2: Journal-Eintrag trägt type='relationship'", wave6hV2Results.journalTypeIsRelationship);
+        check(
+            "Welle 6.H V2: silent-Option unterdrückt Audio + Journal (Spawn-Defaults bleiben still)",
+            wave6hV2Results.silentSuppressesJournal
+        );
+        check(
+            "Welle 6.H V2: Leerschlag-Geste schreibt Chat-Output 'Keine Kreatur in der Nähe'",
+            wave6hV2Results.leerschlagWritesChat
+        );
+        check(
+            "Welle 6.H V2: Leerschlag-Geste schreibt 'reach'-Journal-Eintrag",
+            wave6hV2Results.leerschlagWritesJournal && wave6hV2Results.leerschlagJournalTypeReach
+        );
+        check("Welle 6.H V2: assignTaskToNearest returnt null bei Leerschlag", wave6hV2Results.leerschlagReturnsNull);
+        check(
+            "Welle 6.H V2: _getCreatureTaskAuraTexture existiert + cached",
+            wave6hV2Results.hasCacheMethod && wave6hV2Results.textureCacheReusesInstance
+        );
+        check(
+            "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
+            wave6hV2Results.textureSharedAcross10Cycles
+        );
+        check("Welle 6.H V2: _renderTaskStatusUI existiert", wave6hV2Results.hasRenderTaskStatus);
+        check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
+        check("Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
+        check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
+        check("Welle 6.H V2: describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
+        check(
+            "Welle 6.H V2: describeProgram zeigt keine Distanz wenn nicht gesetzt",
+            wave6hV2Results.descNoDistanceWhenNotGiven
+        );
+    }
+
+    // ### Welle 6.H Phase 2A — Kreaturen als Hylomorphismus-Compounds ###
+    // Kreaturen sind jetzt Multi-Mesh-Groups aus bodyParts × Material —
+    // selbe Sprache wie Spieler-Seele (6.D) + Architektur (6.G P1.5).
+    // Drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
+    const wave6hP2aResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state) return null;
+            const out = {};
+            const souls = r.constructor.CREATURE_SOULS;
+            out.soulsFrozen = !!souls && Object.isFrozen(souls);
+            out.threeSouls = souls && Object.keys(souls).length === 3 && souls.sprite && souls.wesen && souls.geist;
+            out.hasSoulNames =
+                Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 3;
+            out.hasNamePool =
+                Array.isArray(r.constructor.CREATURE_NAME_POOL) && r.constructor.CREATURE_NAME_POOL.length >= 20;
+            const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
+            out.bodyPartsHaveSchema =
+                spritePart && typeof spritePart.shape === "string" && typeof spritePart.material === "string";
+            out.spriteAuraY = souls && souls.sprite && souls.sprite.auraY === 0.55;
+            out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
+            out.hasBuildCreatureGroup = typeof r._buildCreatureGroup === "function";
+            out.hasPickSoulName = typeof r._pickCreatureSoulName === "function";
+            out.hasPickName = typeof r._pickCreatureName === "function";
+            out.hasComputeTags = typeof r.computeCreatureCompoundTags === "function";
+            out.hasAuraOffsetY = typeof r._creatureAuraOffsetY === "function";
+            out.hasCreatureDrawer = typeof r.creatureDrawerInitDOM === "function";
+            out.hasRenderList = typeof r._renderCreatureListUI === "function";
+            if (r.state.creatures.length > 0) {
+                const c0 = r.state.creatures[0];
+                out.initialIsGroup = c0 && c0.isGroup === true;
+                out.initialHasSoul =
+                    typeof c0.userData.soul === "string" &&
+                    r.constructor.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
+                out.initialHasName = typeof c0.userData.name === "string" && c0.userData.name.length > 0;
+                out.initialHasTask = c0.userData.task && c0.userData.task.name === "wander";
+                out.initialHasChildren = c0.children && c0.children.length >= 2;
+            }
+            r.clearCreatures();
+            const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+            const sprite = r.spawnCreatureAt(p.x + 1, p.y, p.z + 1, "happy", "sprite");
+            const wesen = r.spawnCreatureAt(p.x + 2, p.y, p.z + 2, "happy", "wesen");
+            const geist = r.spawnCreatureAt(p.x + 3, p.y, p.z + 3, "happy", "geist");
+            const tagsSprite = r.computeCreatureCompoundTags(sprite);
+            const tagsWesen = r.computeCreatureCompoundTags(wesen);
+            const tagsGeist = r.computeCreatureCompoundTags(geist);
+            out.spriteMoreMagie = (tagsSprite.magieleitung || 0) > (tagsWesen.magieleitung || 0);
+            out.wesenMoreDichte = (tagsWesen.dichte || 0) > (tagsGeist.dichte || 0);
+            out.spriteHasResoniert = (tagsSprite.resoniert || 0) > 0;
+            out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
+            out.geistHasLebendig = (tagsGeist.lebendig || 0) > 0;
+            const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
+            out.unknownSoulFallback = !!fb && r.constructor.CREATURE_SOUL_NAMES.includes(fb.userData.soul);
+            out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.55) < 0.01;
+            out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
+            out.spawnSpriteWorks = sprite && sprite.userData.soul === "sprite";
+            out.spawnWesenWorks = wesen && wesen.userData.soul === "wesen";
+            out.spawnGeistWorks = geist && geist.userData.soul === "geist";
+            out.hasCreatureDrawerEl = !!document.querySelector('[data-drawer="kreaturen"]');
+            out.hasTaskActions = !!document.getElementById("creature-task-actions");
+            const select = document.getElementById("creature-soul-select");
+            out.hasSoulSelect = !!select && select.options.length === 4;
+            out.hasCreatureList = !!document.getElementById("creature-list");
+            out.hasFolgeMir = !!document.querySelector('[data-cmd="folge mir"]');
+            out.hasKommHer = !!document.querySelector('[data-cmd="komm her"]');
+            out.hasWarte = !!document.querySelector('[data-cmd="warte"]');
+            out.hasErkunde = !!document.querySelector('[data-cmd="erkunde"]');
+            out.hasAlleFolgen = !!document.querySelector('[data-cmd="alle folgt mir"]');
+            out.hasAlleWarten = !!document.querySelector('[data-cmd="alle warten"]');
+            out.spawn1Button = !!document.querySelector('[data-creature-spawn="1"]');
+            out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
+            r._renderCreatureListUI();
+            const list = document.getElementById("creature-list");
+            out.listRendersRows = list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
+            const firstRow = list && list.querySelector(".creature-row");
+            out.rowHasNameSoulTask =
+                firstRow &&
+                firstRow.querySelector(".creature-name") &&
+                firstRow.querySelector(".creature-soul") &&
+                firstRow.querySelector(".creature-task");
+            r.assignCreatureTask(sprite, "follow_player");
+            const firstRow2 = list && list.querySelector(".creature-row");
+            const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
+            out.taskCellUpdates =
+                taskCell && (taskCell.textContent === "folgt" || taskCell.classList.contains("follow_player"));
+            out.preDisposeChildren = sprite.children.length >= 2;
+            r.removeCreature(sprite);
+            r.state.creatures = r.state.creatures.filter((c) => c !== sprite);
+            out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
+            r.clearCreatures();
+            r._renderCreatureListUI();
+            out.emptyListDash = list && list.textContent === "—";
+            // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
+            // UI Run-Button): brauchen Kreaturen-Population.
+            r.spawnCreatures(10);
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hP2aResults && !wave6hP2aResults.error) {
+        check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
+        check("Welle 6.H P2A: drei Seelen (sprite/wesen/geist)", wave6hP2aResults.threeSouls);
+        check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
+        check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
+        check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
+        check("Welle 6.H P2A: sprite.auraY === 0.55", wave6hP2aResults.spriteAuraY);
+        check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
+        check(
+            "Welle 6.H P2A: alle Methoden existieren",
+            wave6hP2aResults.hasBuildCreatureGroup &&
+                wave6hP2aResults.hasPickSoulName &&
+                wave6hP2aResults.hasPickName &&
+                wave6hP2aResults.hasComputeTags &&
+                wave6hP2aResults.hasAuraOffsetY &&
+                wave6hP2aResults.hasCreatureDrawer &&
+                wave6hP2aResults.hasRenderList
+        );
+        check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
+        check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
+        check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
+        check("Welle 6.H P2A: Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
+        check("Welle 6.H P2A: Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
+        check("Welle 6.H P2A: Diskrimination — sprite mehr magieleitung als wesen", wave6hP2aResults.spriteMoreMagie);
+        check("Welle 6.H P2A: Diskrimination — wesen mehr dichte als geist", wave6hP2aResults.wesenMoreDichte);
+        check("Welle 6.H P2A: sprite-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
+        check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
+        check("Welle 6.H P2A: geist-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
+        check("Welle 6.H P2A: Unknown soulName fällt auf bekannte Seele zurück", wave6hP2aResults.unknownSoulFallback);
+        check("Welle 6.H P2A: _creatureAuraOffsetY(sprite) === 0.55", wave6hP2aResults.spriteAuraOffset);
+        check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
+        check(
+            "Welle 6.H P2A: spawnCreatureAt(soulName) setzt korrekte Soul",
+            wave6hP2aResults.spawnSpriteWorks && wave6hP2aResults.spawnWesenWorks && wave6hP2aResults.spawnGeistWorks
+        );
+        check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
+        check("Welle 6.H P2A: Aufträge-Section im DOM", wave6hP2aResults.hasTaskActions);
+        check("Welle 6.H P2A: Form-Dropdown mit 4 Optionen", wave6hP2aResults.hasSoulSelect);
+        check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
+        check(
+            "Welle 6.H P2A: alle 6 Aufträge-Buttons als data-cmd",
+            wave6hP2aResults.hasFolgeMir &&
+                wave6hP2aResults.hasKommHer &&
+                wave6hP2aResults.hasWarte &&
+                wave6hP2aResults.hasErkunde &&
+                wave6hP2aResults.hasAlleFolgen &&
+                wave6hP2aResults.hasAlleWarten
+        );
+        check("Welle 6.H P2A: Spawn-Buttons +1/+5", wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button);
+        check("Welle 6.H P2A: Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
+        check(
+            "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
+            wave6hP2aResults.rowHasNameSoulTask
+        );
+        check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
+        check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
+        check("Welle 6.H P2A: Leere Liste zeigt '—'", wave6hP2aResults.emptyListDash);
+    }
+
+    // ### Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern ###
+    // gather-Task mit args.material findet nächste Architektur mit
+    // diesem Material in den Parts, läuft hin, erntet bei haltDist
+    // = 1.5m → entfernt Architektur + addToInventory + memory.
+    const wave6hP2bResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
+            const out = {};
+            out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
+            out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
+            out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
+            out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
+            out.speed = r.constructor.CREATURE_GATHER_SPEED;
+            out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
+            out.hasRemember = typeof r._creatureRemember === "function";
+            out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
+            out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
+            out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
+
+            // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
+            const c0 = r.state.creatures[0];
+            c0.userData.memory = [];
+            for (let i = 0; i < 205; i++) r._creatureRemember(c0, "found", { idx: i });
+            out.memCapEnforced = c0.userData.memory.length === 200;
+            out.memFifoCorrect = c0.userData.memory[0].content.idx === 5 && c0.userData.memory[29].content.idx === 34;
+            out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
+
+            // _findNearestArchitectureWithMaterial
+            const p = r.state.playerMesh.position;
+            const woodTarget = r._findNearestArchitectureWithMaterial(p, "holz");
+            out.findsHolz = !!woodTarget;
+            if (woodTarget) {
+                out.holzPartConfirmed =
+                    woodTarget.type &&
+                    r.state.blueprints[woodTarget.type] &&
+                    r.state.blueprints[woodTarget.type].parts.some((part) => part && part.material === "holz");
+            }
+            out.findsFictionalNull = r._findNearestArchitectureWithMaterial(p, "fictional_xyz") === null;
+
+            // _buildCreatureTaskArgs context-dependent
+            out.gatherStringArg = r._buildCreatureTaskArgs("gather", "holz").material === "holz";
+            out.followNumberArg = r._buildCreatureTaskArgs("follow_player", 1.5).distance === 1.5;
+            out.waitEmptyArg = Object.keys(r._buildCreatureTaskArgs("wait", "x")).length === 0;
+            out.gatherWithNumberDrops = !r._buildCreatureTaskArgs("gather", 5).material;
+
+            // Gather-Direction: läuft zum Ziel
+            const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
+            c0.position.set(p.x, p.y, p.z);
+            r.assignCreatureTask(c0, "gather", { material: "holz" }, { silent: true });
+            const task = r._getCreatureTask(c0);
+            const dir = r._tickCreatureTaskDirection(c0, task, "happy");
+            out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
+            out.gatherDirTargetsX = dir && dir.x > 0;
+            out.targetCached = !!task.args._target;
+
+            // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
+            // carrying (nicht direkt Inventar; Bring-Phase folgt).
+            // c0 weit weg vom Spieler positionieren damit nicht sofort
+            // Übergabe ausgelöst wird.
+            const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
+            c0.position.set(p.x + 50.5, p.y, p.z + 50);
+            c0.userData.carrying = null;
+            r.state.player.inventory = new Array(27).fill(null);
+            r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
+            const archCountBefore = r.state.architectures.length;
+            const t2 = r._getCreatureTask(c0);
+            r._tickCreatureTaskDirection(c0, t2, "happy");
+            out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
+            // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
+            // erst bei Übergabe gefüllt. carrying-State prüfen.
+            out.inventoryHasHarvested =
+                c0.userData.carrying &&
+                c0.userData.carrying.materials &&
+                (c0.userData.carrying.materials.stein || 0) > 0;
+            out.memoryHasGathered =
+                c0.userData.memory &&
+                c0.userData.memory.some(
+                    (m) => m.type === "gathered" && m.content && m.content.blueprint === "stein_block"
+                );
+            void tempArch;
+
+            // Unknown Material → wander-Fallback (carrying muss leer sein,
+            // sonst greift Bring-Phase statt Sucher-Phase).
+            c0.userData.carrying = null;
+            if (c0.userData.carryingSprite) {
+                r.state.scene.remove(c0.userData.carryingSprite);
+                c0.userData.carryingSprite = null;
+            }
+            r.assignCreatureTask(c0, "wander", {}, { silent: true });
+            r.assignCreatureTask(c0, "gather", { material: "fictional_xyz" }, { silent: true });
+            const t3 = r._getCreatureTask(c0);
+            r._tickCreatureTaskDirection(c0, t3, "happy");
+            const tAfter = r._getCreatureTask(c0);
+            out.unknownReturnsToWander = tAfter.name === "wander";
+            out.memoryHasNoMaterial = c0.userData.memory.some(
+                (m) => m.type === "no_material" && m.content && m.content.material === "fictional_xyz"
+            );
+
+            // DSL-Op + Chat
+            r.assignCreatureTask(r.state.creatures[1], "wander", {}, { silent: true });
+            r.state.creatures[1].position.set(p.x + 1, p.y, p.z + 1);
+            r.dslRun(["creature_task", 1, "gather", "holz"], { source: "test" });
+            const dt = r._getCreatureTask(r.state.creatures[1]);
+            out.dslGatherWorks = dt && dt.name === "gather" && dt.args.material === "holz";
+
+            const cases = [
+                ["sammle holz", "creature_task_nearest", "gather", "holz"],
+                ["bring quarz", "creature_task_nearest", "gather", "quarz"],
+                ["alle sammeln eisen", "creature_task_all", "gather", "eisen"],
+            ];
+            out.chatPatterns = cases.every(([text, op, tn, mat]) => {
+                const parsed = r.parseChatToDsl(text);
+                return parsed && parsed.program[0] === op && parsed.program[1] === tn && parsed.program[2] === mat;
+            });
+
+            // NON_BROADCASTABLE_OPS bleibt
+            const set = r.constructor.NON_BROADCASTABLE_OPS;
+            out.nonBroadcastable =
+                set.has("creature_task") && set.has("creature_task_nearest") && set.has("creature_task_all");
+
+            // Status-Bar
+            r.assignTaskToAllCreatures("wander", {}, { silent: true });
+            r.assignCreatureTask(r.state.creatures[0], "gather", { material: "holz" }, { silent: true });
+            r.assignCreatureTask(r.state.creatures[1], "gather", { material: "holz" }, { silent: true });
+            r.assignCreatureTask(r.state.creatures[2], "follow_player", {}, { silent: true });
+            r._renderTaskStatusUI();
+            const stext = document.getElementById("status-tasks").textContent;
+            out.statusShowsGather = /2 sammeln/.test(stext);
+            out.statusShowsFollow = /1 folgen/.test(stext);
+
+            // describeProgram
+            const d1 = r.describeProgram(["creature_task_nearest", "gather", "holz"]);
+            out.descShowsMaterial = /Material/.test(d1) && /holz/.test(d1);
+
+            // Liste zeigt 'sammelt holz'
+            r._renderCreatureListUI();
+            const list = document.getElementById("creature-list");
+            const firstTask = list && list.querySelector(".creature-row .creature-task");
+            out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
+            out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
+
+            // UI-Sammeln-Sektion
+            out.hasGatherSelect = !!document.getElementById("creature-gather-select");
+            out.gatherSelectHasMaterials = document.querySelectorAll("#creature-gather-select option").length >= 10;
+            out.hasNearestGatherBtn = !!document.querySelector('[data-creature-gather="nearest"]');
+            out.hasAllGatherBtn = !!document.querySelector('[data-creature-gather="all"]');
+
+            // Cleanup für nachfolgende Tests
+            r.assignTaskToAllCreatures("wander", {}, { silent: true });
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hP2bResults && !wave6hP2bResults.error) {
+        check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
+        check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
+        check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
+        check(
+            "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
+            Number.isFinite(wave6hP2bResults.haltDist) &&
+                Number.isFinite(wave6hP2bResults.speed) &&
+                wave6hP2bResults.memCap
+        );
+        check(
+            "Welle 6.H P2B.1: alle 4 Methoden existieren (_creatureRemember/_findNearestArchitectureWithMaterial/_buildCreatureTaskArgs/_describeCreatureTaskArg)",
+            wave6hP2bResults.hasRemember &&
+                wave6hP2bResults.hasFindArch &&
+                wave6hP2bResults.hasBuildArgs &&
+                wave6hP2bResults.hasDescribeArg
+        );
+        check(
+            "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
+            wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
+        );
+        check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
+        check("Welle 6.H P2B.1: _findNearestArchitectureWithMaterial(holz) findet Baum", wave6hP2bResults.findsHolz);
+        check("Welle 6.H P2B.1: gefundene Architektur trägt material im Part", wave6hP2bResults.holzPartConfirmed);
+        check("Welle 6.H P2B.1: Unknown Material → null", wave6hP2bResults.findsFictionalNull);
+        check(
+            "Welle 6.H P2B.1: _buildCreatureTaskArgs context-aware (gather→material, follow→distance, wait→leer, gather+number droppt)",
+            wave6hP2bResults.gatherStringArg &&
+                wave6hP2bResults.followNumberArg &&
+                wave6hP2bResults.waitEmptyArg &&
+                wave6hP2bResults.gatherWithNumberDrops
+        );
+        check(
+            "Welle 6.H P2B.1: gather-Tick Direction zeigt zum Ziel",
+            wave6hP2bResults.gatherDirNonZero && wave6hP2bResults.gatherDirTargetsX
+        );
+        check("Welle 6.H P2B.1: Ziel wird in task.args._target gecached", wave6hP2bResults.targetCached);
+        check(
+            "Welle 6.H P2B.1: bei haltDist → Architektur entfernt + Inventar gefüllt + memory 'gathered'",
+            wave6hP2bResults.archRemovedOnHarvest &&
+                wave6hP2bResults.inventoryHasHarvested &&
+                wave6hP2bResults.memoryHasGathered
+        );
+        check(
+            "Welle 6.H P2B.1: gather mit unbekanntem Material → Task fällt auf wander",
+            wave6hP2bResults.unknownReturnsToWander
+        );
+        check("Welle 6.H P2B.1: 'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
+        check("Welle 6.H P2B.1: DSL creature_task(idx, gather, material) wirkt", wave6hP2bResults.dslGatherWorks);
+        check(
+            "Welle 6.H P2B.1: Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
+            wave6hP2bResults.chatPatterns
+        );
+        check("Welle 6.H P2B.1: gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS", wave6hP2bResults.nonBroadcastable);
+        check(
+            "Welle 6.H P2B.1: Status-Bar zeigt 'N sammeln' bei gather-Tasks",
+            wave6hP2bResults.statusShowsGather && wave6hP2bResults.statusShowsFollow
+        );
+        check("Welle 6.H P2B.1: describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
+        check(
+            "Welle 6.H P2B.1: Liste zeigt 'sammelt' + .gather-Class",
+            wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
+        );
+        check(
+            "Welle 6.H P2B.1: #creature-gather-select im DOM mit ≥10 Optionen",
+            wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
+        );
+        check(
+            "Welle 6.H P2B.1: 'Nächste sammelt' + 'Alle sammeln' Buttons im DOM",
+            wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
+        );
+    }
+
+    // ### Welle 6.H Phase 2B.5 — harvestArchitecture + Material-Inventar + Bring-Phase ###
+    // EINE Funktion für Spieler-LMB UND Kreatur-gather: Hylomorphismus-
+    // Wurzel. Architekturen lösen sich in Material-Map auf (volumen-
+    // basiert). Inventar dual-typed: {kind:'material'} | {kind:'blueprint'}.
+    // Kreaturen tragen Ernte in carrying, bringen sie zum Spieler.
+    const wave6hP2b5Results = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
+            const out = {};
+            out.hasHarvest = typeof r.harvestArchitecture === "function";
+            out.hasAddMaterial = typeof r.addMaterialToInventory === "function";
+            out.hasVolumeConst = r.constructor.HARVEST_VOLUME_TO_UNITS === 4;
+            out.hasHandoverDist = r.constructor.CREATURE_HANDOVER_DIST === 2.0;
+            out.hasCarryingVisual = typeof r._refreshCreatureCarryingVisual === "function";
+
+            const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
+
+            // Material-Map aus parts × Volumen
+            const stoneBlock = r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z + 30 });
+            const h1 = r.harvestArchitecture(stoneBlock, "test");
+            out.steinBlockHasStein = h1 && h1.materials && h1.materials.stein >= 10;
+            out.steinHasBlueprintName = h1 && h1.blueprint === "stein_block";
+
+            const oak = r.spawnArchitecture("baum_eiche", { x: p.x + 35, y: p.y, z: p.z + 30 });
+            const h2 = r.harvestArchitecture(oak, "test");
+            out.oakHasHolzAndLaub = h2 && h2.materials && h2.materials.holz > 0 && h2.materials.laub > 0;
+            out.oakHasNoStein = h2 && (!h2.materials.stein || h2.materials.stein === 0);
+
+            // Diskrimination: größerer Bauplan = mehr Material
+            r.state.blueprints._test_small = {
+                name: "_test_small",
+                label: "Small",
+                builtIn: false,
+                parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
+            };
+            r.state.blueprints._test_big = {
+                name: "_test_big",
+                label: "Big",
+                builtIn: false,
+                parts: [{ shape: "box", material: "stein", size: { x: 2, y: 2, z: 2 } }],
+            };
+            const s = r.spawnArchitecture("_test_small", { x: p.x + 60, y: p.y, z: p.z });
+            const b = r.spawnArchitecture("_test_big", { x: p.x + 65, y: p.y, z: p.z });
+            const hs = r.harvestArchitecture(s);
+            const hb = r.harvestArchitecture(b);
+            out.volumeDiscrimination = hb.materials.stein > hs.materials.stein;
+            delete r.state.blueprints._test_small;
+            delete r.state.blueprints._test_big;
+
+            // addMaterialToInventory + Schema
+            r.state.player.inventory = new Array(27).fill(null);
+            const ok1 = r.addMaterialToInventory("holz", 5);
+            const ok2 = r.addMaterialToInventory("holz", 3);
+            const ok3 = r.addMaterialToInventory("stein", 4);
+            const okBad = r.addMaterialToInventory("fictional_xyz", 1);
+            out.matAddOk = ok1 && ok2 && ok3;
+            out.matStacks =
+                r.state.player.inventory[0] &&
+                r.state.player.inventory[0].count === 8 &&
+                r.state.player.inventory[0].kind === "material";
+            out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
+            out.matRejectsUnknown = okBad === false;
+
+            // Spieler-LMB nutzt harvestArchitecture (EINE Funktion).
+            // V8.29 — deterministisch: Kamera EXPLIZIT positionieren
+            // (nicht auf die Render-Loop-Kamera des letzten Frames
+            // verlassen, die je nach Spieler-Zustand variiert) +
+            // Test-Block weit von anderen Architekturen spawnen,
+            // damit der Raycast garantiert NUR das Target trifft.
+            r.state.player.inventory = new Array(27).fill(null);
+            const tcx = p.x + 6;
+            const tcz = p.z + 6;
+            const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
+            void target;
+            if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
+            if (r.state.camera) {
+                // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
+                r.state.camera.position.set(tcx, p.y + 1.5, tcz - 6);
+                r.state.camera.lookAt(tcx, p.y, tcz);
+                r.state.camera.updateMatrixWorld(true);
+            }
+            const archBeforeLmb = r.state.architectures.length;
+            r.tryMouseBreak();
+            out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
+            out.lmbFilledInventory = r.state.player.inventory.some(
+                (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+            );
+
+            // Kreatur-gather: zwei-Phasen mit carrying
+            r.state.player.inventory = new Array(27).fill(null);
+            r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
+            const c = r.state.creatures[0];
+            c.position.set(p.x + 29.5, p.y, p.z);
+            c.userData.carrying = null;
+            r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
+            r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+            out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
+            out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
+            out.carryingSpriteCreated = !!c.userData.carryingSprite;
+
+            // Kreatur zum Spieler bewegen → Übergabe
+            c.position.set(p.x + 1.5, p.y, p.z);
+            r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+            out.carryingClearedAfterDelivery = c.userData.carrying === null;
+            out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
+                (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+            );
+            out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
+
+            // Inventar-UI rendert Material-Slot mit Klasse
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("holz", 7);
+            r.renderInventoryUI();
+            const slot = document.querySelector('[data-inv-slot="0"]');
+            out.uiHasMaterialClass = slot && slot.classList.contains("material-slot");
+            const label = slot && slot.querySelector(".slot-label");
+            out.uiShowsMaterialName = label && /holz/i.test(label.textContent);
+
+            // Cleanup für nachfolgende Tests
+            r.spawnCreatures(10);
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hP2b5Results && !wave6hP2b5Results.error) {
+        check("Welle 6.H P2B.5: harvestArchitecture-Methode existiert", wave6hP2b5Results.hasHarvest);
+        check("Welle 6.H P2B.5: addMaterialToInventory-Methode existiert", wave6hP2b5Results.hasAddMaterial);
+        check("Welle 6.H P2B.5: HARVEST_VOLUME_TO_UNITS===4", wave6hP2b5Results.hasVolumeConst);
+        check("Welle 6.H P2B.5: CREATURE_HANDOVER_DIST===2.0", wave6hP2b5Results.hasHandoverDist);
+        check("Welle 6.H P2B.5: _refreshCreatureCarryingVisual-Methode existiert", wave6hP2b5Results.hasCarryingVisual);
+        check(
+            "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
+            wave6hP2b5Results.steinBlockHasStein
+        );
+        check("Welle 6.H P2B.5: Rückgabe-Objekt trägt blueprint-Namen", wave6hP2b5Results.steinHasBlueprintName);
+        check(
+            "Welle 6.H P2B.5: baum_eiche → holz UND laub (Compound-Diskrimination)",
+            wave6hP2b5Results.oakHasHolzAndLaub
+        );
+        check("Welle 6.H P2B.5: baum_eiche enthält KEIN stein (Negativ-Kontrolle)", wave6hP2b5Results.oakHasNoStein);
+        check(
+            "Welle 6.H P2B.5: Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
+            wave6hP2b5Results.volumeDiscrimination
+        );
+        check("Welle 6.H P2B.5: addMaterialToInventory akzeptiert bekanntes Material", wave6hP2b5Results.matAddOk);
+        check("Welle 6.H P2B.5: Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
+        check("Welle 6.H P2B.5: Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
+        check("Welle 6.H P2B.5: addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
+        check("Welle 6.H P2B.5: Spieler-LMB entfernt Architektur (eine Funktion)", wave6hP2b5Results.lmbShrunkArch);
+        check(
+            "Welle 6.H P2B.5: Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
+            wave6hP2b5Results.lmbFilledInventory
+        );
+        check(
+            "Welle 6.H P2B.5: Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
+            wave6hP2b5Results.creatureCarryingSet
+        );
+        check(
+            "Welle 6.H P2B.5: Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
+            wave6hP2b5Results.inventoryStillEmptyAfterHarvest
+        );
+        check("Welle 6.H P2B.5: Carrying-Sprite wird beim Harvest erzeugt", wave6hP2b5Results.carryingSpriteCreated);
+        check(
+            "Welle 6.H P2B.5: Bei <2m zum Spieler: carrying wird geclearet",
+            wave6hP2b5Results.carryingClearedAfterDelivery
+        );
+        check(
+            "Welle 6.H P2B.5: Materialien gehen ins Spieler-Inventar bei Übergabe",
+            wave6hP2b5Results.playerHasMaterialAfterDelivery
+        );
+        check("Welle 6.H P2B.5: 'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
+        check("Welle 6.H P2B.5: Material-Slot trägt .material-slot CSS-Klasse", wave6hP2b5Results.uiHasMaterialClass);
+        check("Welle 6.H P2B.5: Material-Slot-Label zeigt Material-Namen", wave6hP2b5Results.uiShowsMaterialName);
+    }
+
+    // ### Welle 6.H Phase 2C — Material-Konsum beim Bauen (modus-symmetrisch) ###
+    // Vision §1.5 Schöpfer-darf-frei-erschaffen + Modus-Symmetrie zu
+    // damagePlayer/applyOpToPart-Stamina: pfad konsumiert, frieden +
+    // schöpfer kostenlos. computeBuildCost ≡ harvestArchitecture
+    // (Wertneutralität — bauen einer Box kostet das was harvest
+    // zurückliefert).
+    const wave6hP2cResults = await page
+        .evaluate(() => {
+            const r = window.anazhRealm;
+            if (!r || !r.state || !r.state.playerMesh) return null;
+            const out = {};
+            out.hasComputeBuildCost = typeof r.computeBuildCost === "function";
+            out.hasCheckBuildCost = typeof r.checkBuildCost === "function";
+            out.hasTryConsumeBuildCost = typeof r.tryConsumeBuildCost === "function";
+            out.hasBuildMaterialGate = typeof r._buildMaterialGate === "function";
+
+            // Wertneutralität: build-cost ≡ harvest-return.
+            const p = r.state.playerMesh.position;
+            const cost = r.computeBuildCost("stein_block");
+            const arch = r.spawnArchitecture("stein_block", {
+                x: p.x + 120,
+                y: p.y,
+                z: p.z + 120,
+            });
+            const harvest = r.harvestArchitecture(arch, "test");
+            out.symmetryHarvest = harvest && harvest.materials.stein === cost.stein;
+            out.steinBlockOnlyStein = Object.keys(cost).length === 1 && cost.stein > 0;
+
+            // Compound-Diskrimination
+            const oakCost = r.computeBuildCost("baum_eiche");
+            out.oakHasHolzAndLaub = oakCost.holz > 0 && oakCost.laub > 0;
+            out.oakHasNoStein = !oakCost.stein || oakCost.stein === 0;
+
+            // checkBuildCost ok/missing
+            const origMode = r.getGameMode();
+            r.setGameMode("pfad");
+            r.state.player.inventory = new Array(27).fill(null);
+            const c1 = r.checkBuildCost("stein_block");
+            out.checkEmptyInventoryRejected = !c1.ok && c1.missing.stein > 0;
+            r.addMaterialToInventory("stein", 200);
+            const c2 = r.checkBuildCost("stein_block");
+            out.checkSufficientOk = c2.ok && Object.keys(c2.missing).length === 0;
+
+            // Atomarer Konsum + Atomarität bei Mangel
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("stein", 100);
+            const beforeConsume = r.state.player.inventory[0].count;
+            const consumed = r.tryConsumeBuildCost("stein_block");
+            const afterConsume = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+            out.consumesExactly = consumed.ok && beforeConsume - afterConsume === consumed.cost.stein;
+
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("holz", 100);
+            const beforeAtomic = r.state.player.inventory[0].count;
+            const atomicResult = r.tryConsumeBuildCost("baum_eiche");
+            const afterAtomic = r.state.player.inventory[0].count;
+            out.atomicAtomicityOnFail = !atomicResult.ok && beforeAtomic === afterAtomic;
+            out.atomicReportsMissing = atomicResult.missing && atomicResult.missing.laub > 0;
+
+            // confirmBuild pfad mit Material
+            r.setGameMode("pfad");
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("stein", 200);
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "stein_block");
+            r.selectHotbarSlot(0);
+            // Welle 6.X.1 A2 — confirmBuild prüft jetzt phantomOnGround
+            // im pfad-Modus. Im Headless-Setup läuft tickBuildMode nicht
+            // (das würde via Raycast die Stabilität setzen). Wir simulieren
+            // einen stabilen Phantom-Stand für den Material-Konsum-Test.
+            if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
+            const archBeforePfad = r.state.architectures.length;
+            const stoneBeforePfad = r.state.player.inventory[0].count;
+            const builtPfad = r.confirmBuild();
+            const stoneAfterPfad = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+            out.pfadBuildsWithMaterial = builtPfad === true;
+            out.pfadConsumesMaterial = stoneBeforePfad > stoneAfterPfad;
+            out.pfadGrowsWorld = r.state.architectures.length > archBeforePfad;
+
+            // confirmBuild pfad ohne Material → ablehnung
+            r.state.player.inventory = new Array(27).fill(null);
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "stein_block");
+            r.selectHotbarSlot(0);
+            const archBeforeNoMat = r.state.architectures.length;
+            const builtNoMat = r.confirmBuild();
+            out.pfadRejectsWithoutMaterial = builtNoMat === false;
+            out.pfadNoArchOnReject = r.state.architectures.length === archBeforeNoMat;
+
+            // confirmBuild schöpfer ohne Material → baut frei
+            r.setGameMode("schöpfer");
+            r.state.player.inventory = new Array(27).fill(null);
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "stein_block");
+            r.selectHotbarSlot(0);
+            const archBeforeSchoepfer = r.state.architectures.length;
+            const builtSchoepfer = r.confirmBuild();
+            out.schoepferBuildsFree = builtSchoepfer === true;
+            out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
+            out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
+
+            // confirmBuild frieden ohne Material → baut frei
+            r.setGameMode("frieden");
+            r.state.player.inventory = new Array(27).fill(null);
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "stein_block");
+            r.selectHotbarSlot(0);
+            const builtFrieden = r.confirmBuild();
+            out.friedenBuildsFree = builtFrieden === true;
+            out.friedenEmptyAfter = r.state.player.inventory.every((s) => !s);
+
+            // HUD-Reflexion
+            r.setGameMode("pfad");
+            r.state.player.inventory = new Array(27).fill(null);
+            r.addMaterialToInventory("stein", 30);
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "stein_block");
+            r.selectHotbarSlot(0);
+            const hud = document.getElementById("build-mode-hud");
+            const hudHtml = hud && hud.innerHTML;
+            out.hudShowsCostInPfad = hudHtml && /stein/.test(hudHtml) && /\(30\)/.test(hudHtml);
+
+            r.setGameMode("schöpfer");
+            const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
+            out.hudShowsFreiInSchoepfer = /frei/i.test(hudSchoepfer);
+
+            r.setGameMode("frieden");
+            const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
+            out.hudShowsFreiInFrieden = /frei/i.test(hudFrieden);
+
+            // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
+            // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
+            r._clearBuildMode && r._clearBuildMode();
+            r.setHotbarSlot(0, "village");
+            r.setHotbarSlot(1, "temple");
+            r.setHotbarSlot(2, "waterfall");
+            for (let i = 3; i < 9; i++) r.setHotbarSlot(i, null);
+            r.setGameMode(origMode || "frieden");
+            return out;
+        })
+        .catch((e) => ({ error: String(e) }));
+
+    if (wave6hP2cResults && !wave6hP2cResults.error) {
+        check("Welle 6.H P2C: computeBuildCost existiert", wave6hP2cResults.hasComputeBuildCost);
+        check("Welle 6.H P2C: checkBuildCost existiert", wave6hP2cResults.hasCheckBuildCost);
+        check("Welle 6.H P2C: tryConsumeBuildCost existiert", wave6hP2cResults.hasTryConsumeBuildCost);
+        check("Welle 6.H P2C: _buildMaterialGate existiert", wave6hP2cResults.hasBuildMaterialGate);
+        check(
+            "Welle 6.H P2C: computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
+            wave6hP2cResults.symmetryHarvest
+        );
+        check("Welle 6.H P2C: stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
+        check("Welle 6.H P2C: baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
+        check("Welle 6.H P2C: baum_eiche-Kosten enthalten KEIN stein (Diskrimination)", wave6hP2cResults.oakHasNoStein);
+        check(
+            "Welle 6.H P2C: pfad + leeres Inventar → checkBuildCost.ok=false",
+            wave6hP2cResults.checkEmptyInventoryRejected
+        );
+        check(
+            "Welle 6.H P2C: pfad + ausreichend Material → checkBuildCost.ok=true",
+            wave6hP2cResults.checkSufficientOk
+        );
+        check("Welle 6.H P2C: tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
+        check("Welle 6.H P2C: Atomarität — bei Mangel wird NICHTS abgezogen", wave6hP2cResults.atomicAtomicityOnFail);
+        check("Welle 6.H P2C: missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
+        check(
+            "Welle 6.H P2C: pfad + Material → confirmBuild liefert true + spawnt",
+            wave6hP2cResults.pfadBuildsWithMaterial && wave6hP2cResults.pfadGrowsWorld
+        );
+        check("Welle 6.H P2C: pfad-Modus konsumiert Material aus Inventar", wave6hP2cResults.pfadConsumesMaterial);
+        check("Welle 6.H P2C: pfad ohne Material → confirmBuild lehnt ab", wave6hP2cResults.pfadRejectsWithoutMaterial);
+        check("Welle 6.H P2C: pfad-Ablehnung → keine Architektur entsteht", wave6hP2cResults.pfadNoArchOnReject);
+        check(
+            "Welle 6.H P2C: schöpfer-Modus baut ohne Material (Vision §1.5)",
+            wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
+        );
+        check("Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
+        check(
+            "Welle 6.H P2C: frieden-Modus baut ohne Material (Erstbegegnung umarmt)",
+            wave6hP2cResults.friedenBuildsFree
+        );
+        check("Welle 6.H P2C: frieden-Modus: Inventar bleibt leer", wave6hP2cResults.friedenEmptyAfter);
+        check("Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
+        check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
+        check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
+    }
+}
+
 (async () => {
     console.log(`Starte Save-Server ...`);
     const server = await startSaveServer();
@@ -7725,8421 +15660,19 @@ async function checkBandLateMultiUser(ctx) {
             await checkBandW4LofiPad(ctx);
             await checkBandLateMultiUser(ctx);
 
-            // --- Ab hier weiter inline (Sub-Wellen c-e ziehen Welle 6.A .. Datei-Ende nach) ---
-            // ### Welle 6.A — Interaktion-Polish (Wall-Sliding + Erdung auf Bauwerken) ###
-            //
-            // 6.A1: `playerBody.setFriction(0)` lässt den Spieler entlang Wänden
-            // rutschen statt zu hängen. Setzen passiert beim Body-Spawn UND
-            // `optimizePhysics` darf es nicht überschreiben.
-            //
-            // 6.A2: `isPlayerGrounded`-Raycast trifft Bauwerks-Compound-Bodies
-            // (die sind im physicsWorld, also reicht rayTest). Threshold leicht
-            // entspannt von 0.5 → 0.6, damit der minimale y-Offset eines Sub-
-            // Compounds beim Stehen auf einer Plattform nicht den Sprung
-            // blockiert.
-            const wave6aResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state.playerBody) return null;
-                    const out = {};
-
-                    // 6.A1 — Spieler-Friction beim Spawn
-                    out.playerFriction = r.state.playerBody.getFriction();
-                    out.playerFrictionZero = Math.abs(out.playerFriction) < 0.001;
-
-                    // 6.A1 — optimizePhysics behält Spieler-Friction 0
-                    r.optimizePhysics();
-                    out.playerFrictionAfterOptimize = r.state.playerBody.getFriction();
-                    out.frictionPreservedAfterOptimize = Math.abs(out.playerFrictionAfterOptimize) < 0.001;
-
-                    // 6.A1 — Diskriminations-Test: andere Bodies behalten 0.5
-                    let otherBody = null;
-                    for (const rb of r.state.rigidBodies) {
-                        if (rb !== r.state.playerMesh) {
-                            otherBody = rb.userData.physicsBody;
-                            break;
-                        }
-                    }
-                    out.hasOtherBody = !!otherBody;
-                    out.otherFriction = otherBody ? otherBody.getFriction() : null;
-                    out.otherFrictionDefault = otherBody ? Math.abs(otherBody.getFriction() - 0.5) < 0.01 : false;
-
-                    // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
-                    const fnSrc = r.isPlayerGrounded.toString();
-                    out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
-                    out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
-
-                    // 6.A2 — Diskriminations-Test: Spieler an einer kontrollierten Position
-                    // (frühere Tests können mesh.position verschoben haben — wir setzen
-                    // eine eindeutige Setup-Position, statt uns auf den Live-Zustand
-                    // zu verlassen). Über offenes Terrain (in der Luft) → not grounded,
-                    // auf gespawntem Bauwerk → grounded.
-                    const savedX = r.state.playerMesh.position.x;
-                    const savedY = r.state.playerMesh.position.y;
-                    const savedZ = r.state.playerMesh.position.z;
-
-                    // Spawnen wir einen Tempel an einer eindeutigen, vom Terrain
-                    // freien Position (Heightfield hat höchstens ~50m Höhe; wir
-                    // wählen y=0 als Spawn-Y damit der Tempel direkt mit dem
-                    // Heightfield-Niveau überlappt — typischer In-Spiel-Fall).
-                    const archX = savedX + 20;
-                    const archZ = savedZ + 20;
-                    const beforeArchCount = r.state.architectures.length;
-                    const entry = r.spawnArchitecture("temple", { x: archX, y: 0, z: archZ }, { seed: 4242 });
-                    out.archEntrySpawned = !!entry;
-                    out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
-
-                    if (entry && entry.mesh) {
-                        const box = new THREE.Box3().setFromObject(entry.mesh);
-                        const topY = box.max.y;
-                        // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
-                        // 2.5 m runter, also trifft das Bauwerk nicht.
-                        r.state.playerMesh.position.set(archX, topY + 50, archZ);
-                        // Welle 6.X.5 — Cache invalidieren vor frischem Compute.
-                        delete r.state._groundedCachedAt;
-                        out.isGroundedHighInSky = r.isPlayerGrounded();
-                        // Positiv-Test: Spieler in steigenden Höhen über die
-                        // visuelle Top-BBox. Visuelle Box ist nicht 1:1 mit dem
-                        // Collision-Compound (Dekor-Mesh-Spitzen ragen oft über
-                        // die strukturellen Sub-Boxes), deshalb gehen wir die
-                        // ersten paar Frame-Distanzen durch — sobald für EINE
-                        // davon `isGrounded === true` zurückkommt, ist die
-                        // Bauwerks-Erdung bewiesen. groundDistance(0.6) ist die
-                        // theoretische Obergrenze pro Sample.
-                        out.archTopY = topY;
-                        let foundGrounded = false;
-                        let groundedAtDy = null;
-                        for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
-                            r.state.playerMesh.position.set(archX, topY + dy, archZ);
-                            // Welle 6.X.5 — Cache invalidieren vor jeder
-                            // Position-Probe. In echtem Spiel ändert sich die
-                            // Position nur via Physics-Tick zwischen Frames;
-                            // im Test setzen wir manuell, also Cache resetten.
-                            delete r.state._groundedCachedAt;
-                            if (r.isPlayerGrounded()) {
-                                foundGrounded = true;
-                                groundedAtDy = dy;
-                                break;
-                            }
-                        }
-                        out.isGroundedOnArchitecture = foundGrounded;
-                        out.groundedAtDy = groundedAtDy;
-                        // Restore
-                        r.state.playerMesh.position.set(savedX, savedY, savedZ);
-                    } else {
-                        out.isGroundedOnArchitecture = false;
-                        out.isGroundedHighInSky = false;
-                    }
-                    // Cleanup: gespawnte Architektur entfernen
-                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
-
-                    return out;
-                })
-                .catch(() => null);
-
-            if (wave6aResults) {
-                check("Welle 6.A1: Spieler-Body-Friction ist 0 (Wall-Sliding aktiv)", wave6aResults.playerFrictionZero);
-                check(
-                    "Welle 6.A1: optimizePhysics() überschreibt Spieler-Friction nicht",
-                    wave6aResults.frictionPreservedAfterOptimize
-                );
-                if (wave6aResults.hasOtherBody) {
-                    check(
-                        "Welle 6.A1: Diskrimination — andere Bodies behalten Friction 0.5",
-                        wave6aResults.otherFrictionDefault
-                    );
-                }
-                check(
-                    "Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)",
-                    wave6aResults.hasGroundDistanceVar
-                );
-                check(
-                    "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
-                    wave6aResults.groundDistanceIs06
-                );
-                if (wave6aResults.archEntrySpawned) {
-                    check("Welle 6.A2: Bauwerk-Spawn liefert Compound-Body", wave6aResults.archHasCollision);
-                    check(
-                        "Welle 6.A2: Negativ-Kontrolle — hoch im Himmel nicht geerdet",
-                        wave6aResults.isGroundedHighInSky === false
-                    );
-                    check(
-                        "Welle 6.A2: Diskrimination — Spieler 0.5 m über Bauwerks-Oberseite ist geerdet",
-                        wave6aResults.isGroundedOnArchitecture === true
-                    );
-                }
-            }
-
-            // ### Welle 6.A3 — Slope-Steepness (Anti-Wandkleben) ###
-            //
-            // isPlayerGrounded liest pro Hit die Surface-Normal. Das flachste
-            // Normal-Y wird in `state.groundNormalY` gespeichert; wenn keine
-            // begehbare Fläche dabei ist (Normal-Y < maxWalkableSlopeY=0.5,
-            // entspricht >60° Steigung), gilt `state.onSteepSlope = true` und
-            // der Bewegungs-Input wird auf 20 % gedrosselt. Damit klebt der
-            // Spieler nicht mehr an senkrechten Wänden.
-            const wave6a3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    // 6.A3 — state-Felder existieren mit korrekten Defaults
-                    out.hasMaxWalkableSlopeY = typeof r.state.maxWalkableSlopeY === "number";
-                    out.maxWalkableSlopeYValue = r.state.maxWalkableSlopeY;
-                    out.maxWalkableSlopeYIs05 = Math.abs(r.state.maxWalkableSlopeY - 0.5) < 0.001;
-                    out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
-                    out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
-
-                    // 6.A3 — Diskriminations-Test mit zwei kontrollierten Setups:
-                    // (a) Spieler hoch in den Himmel → nicht geerdet → onSteepSlope MUSS false sein
-                    //     (Logik: onSteepSlope = isGrounded && bestNormalY<0.5).
-                    // (b) Spieler auf der Oberseite eines spawnenden Bauwerks (Tempel)
-                    //     → geerdet, Normal-Y der Top-Box ist ~1.0 → onSteepSlope MUSS false sein.
-                    // Wir reden NICHT über das natürliche Initial-Terrain — das ist
-                    // prozedural und kann an einzelnen Stellen steile Hänge haben.
-                    const _savedX = r.state.playerMesh.position.x;
-                    const _savedY = r.state.playerMesh.position.y;
-                    const _savedZ = r.state.playerMesh.position.z;
-
-                    // (a) Himmel — Cache invalidieren (V8.X.5 D1 hält das Ergebnis
-                    // 33 ms; nach dem 20-s-Lauf hat er einen stale Wert von der
-                    // alten Spieler-Position). Vor jedem isPlayerGrounded-Call
-                    // den `_groundedCachedAt` nullen.
-                    r.state.playerMesh.position.set(0, 5000, 0);
-                    r.state._groundedCachedAt = 0;
-                    r.isPlayerGrounded();
-                    out.skyOnSteepSlope = r.state.onSteepSlope;
-                    out.skyGroundNormalY = r.state.groundNormalY;
-
-                    // (b) Flacher Bauwerks-Top: separater Tempel-Spawn
-                    const _beforeArchA3 = r.state.architectures.length;
-                    const _entryA3 = r.spawnArchitecture(
-                        "temple",
-                        { x: _savedX + 40, y: 0, z: _savedZ + 40 },
-                        { seed: 9999 }
-                    );
-                    let flatBlueprintNotSteep = false;
-                    if (_entryA3 && _entryA3.mesh) {
-                        const box = new THREE.Box3().setFromObject(_entryA3.mesh);
-                        // Setze Spieler knapp über die Top-Fläche
-                        r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
-                        r.state._groundedCachedAt = 0;
-                        r.isPlayerGrounded();
-                        flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
-                        out.archTopGroundNormalY = r.state.groundNormalY;
-                        out.archTopOnSteepSlope = r.state.onSteepSlope;
-                    }
-                    out.flatBlueprintNotSteep = flatBlueprintNotSteep;
-                    r.state.architectures = r.state.architectures.slice(0, _beforeArchA3);
-                    r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
-
-                    // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
-                    // (sonst wäre das Tracking ein No-op)
-                    const fnSrc = r.isPlayerGrounded.toString();
-                    out.fnReadsNormal = fnSrc.includes("get_m_hitNormalWorld");
-                    out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
-                    out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
-
-                    // 6.A3 — Diskriminations-Test: Bewegungs-Loop drosselt auf
-                    // steilem Hang. Wir prüfen die slopePenalty-Logik im
-                    // Quellcode der Bewegungs-Phase (statischer Check, weil
-                    // einen echten Slope im Headless zu synthetisieren fragil
-                    // ist). V9.44-f — die Bewegung lebt in _loopPlayerMovement.
-                    const loopSrc = r._loopPlayerMovement ? r._loopPlayerMovement.toString() : "";
-                    out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
-                    out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
-                    out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
-
-                    return out;
-                })
-                .catch(() => null);
-
-            if (wave6a3Results) {
-                check("Welle 6.A3: state.maxWalkableSlopeY existiert", wave6a3Results.hasMaxWalkableSlopeY);
-                check(
-                    "Welle 6.A3: maxWalkableSlopeY == 0.5 (cos 60° = walkable bis 60°)",
-                    wave6a3Results.maxWalkableSlopeYIs05
-                );
-                check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
-                check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
-                check(
-                    "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
-                    wave6a3Results.fnReadsNormal
-                );
-                check("Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag", wave6a3Results.fnSetsSteepFlag);
-                check("Welle 6.A3: isPlayerGrounded setzt groundNormalY", wave6a3Results.fnSetsGroundNormal);
-                check(
-                    "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
-                    wave6a3Results.skyOnSteepSlope === false
-                );
-                check(
-                    "Welle 6.A3: Diskrimination — flache Bauwerks-Oberseite ist NICHT als steil markiert",
-                    wave6a3Results.flatBlueprintNotSteep
-                );
-                check(
-                    "Welle 6.A3: Bewegungs-Loop nutzt slopePenalty-Variable",
-                    wave6a3Results.movementUsesSlopePenalty
-                );
-                check(
-                    "Welle 6.A3: Bewegungs-Loop hat onSteepSlope ? 0.2 : 1.0 Drossel",
-                    wave6a3Results.movementHasSlopeBranch
-                );
-                check(
-                    "Welle 6.A3: Bewegungs-Loop lässt Velocity stehen wenn onSteepSlope (Slide-Verhalten)",
-                    wave6a3Results.movementSlideOnSlope
-                );
-            }
-
-            // ### Welle 6.A4+6.A5 — Raycast-Place + Stabilitäts-Visual ###
-            //
-            // tickBuildMode delegiert an _resolvePhantomTarget — der castet aus
-            // der Kamera, gibt {x, y, z, isStable, hit} zurück. Phantom-Position
-            // folgt damit der Kamera-Blickrichtung (Pitch wirkt!), Tint färbt
-            // bei stabilem Boden grün, sonst rot.
-            const wave6a45Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasResolveMethod = typeof r._resolvePhantomTarget === "function";
-                    out.hasTintMethod = typeof r._applyPhantomTint === "function";
-                    out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
-
-                    // Source-Checks: tickBuildMode nutzt die neuen Pfade
-                    const tickSrc = r.tickBuildMode.toString();
-                    out.tickUsesResolve = /_resolvePhantomTarget/.test(tickSrc);
-                    out.tickUsesTint = /_applyPhantomTint/.test(tickSrc);
-                    out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
-
-                    const resolveSrc = r._resolvePhantomTarget.toString();
-                    out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
-                    out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
-                    // V8.26 Polish §6.3 — _resolvePhantomTarget ruft jetzt
-                    // _runRaycast statt direkt rayTest. _runRaycast wickelt
-                    // physicsWorld.rayTest intern + Cleanup. Beide Pattern
-                    // sind akzeptabel.
-                    out.resolveUsesRayTest = /rayTest|_runRaycast/.test(resolveSrc);
-                    out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
-                    out.resolveHasFallback = /fallback/.test(resolveSrc);
-                    out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
-
-                    const tintSrc = r._applyPhantomTint.toString();
-                    out.tintCachesOrigColor = /_origColor/.test(tintSrc);
-                    out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
-                    out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
-
-                    // Funktionaler Test: Build-Modus auf "village"-Slot 0 aktivieren,
-                    // Kamera so positionieren dass sie in den Heightfield-Boden
-                    // schaut, tickBuildMode aufrufen, prüfen dass Phantom im
-                    // Treffer-Bereich liegt + isStable=true.
-                    const savedYaw = r.state.yaw;
-                    const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
-                    const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
-                    const savedPlayerPos = r.state.playerMesh.position.clone();
-                    const savedBuild = JSON.parse(
-                        JSON.stringify({
-                            active: r.state.buildMode.active,
-                            slotIndex: r.state.buildMode.slotIndex,
-                            blueprintName: r.state.buildMode.blueprintName,
-                        })
-                    );
-
-                    // Garantiert flache Test-Oberfläche: Tempel spawnen,
-                    // Kamera direkt darüber positionieren — die Top-Sub-Box hat
-                    // eine flache Oberseite (Normal-Y ~ 1), zuverlässiger als
-                    // das prozedurale Heightfield (das an manchen Stellen steil ist).
-                    // V9.33 Phase 5c.2.b — die Voxel-Eingangs-Welt hat Voxel-
-                    // Chunks bei (60,60) (Sicht-Ring 4 reicht ~172 m); der
-                    // Tempel-Spawn auf y=0 würde im Voxel-Terrain stecken,
-                    // der Raycast den Voxel-Boden statt den Tempel treffen.
-                    // Spawn-Y=200 hebt den Tempel klar über die Voxel-Spitzen
-                    // (Surface ~ base+64 max), die Stabilitäts-Probe ist ehrlich.
-                    const _spawnArchX = 60;
-                    const _spawnArchZ = 60;
-                    const _spawnArchY = 200;
-                    const _beforeArchA45 = r.state.architectures.length;
-                    const _archEntry = r.spawnArchitecture(
-                        "temple",
-                        { x: _spawnArchX, y: _spawnArchY, z: _spawnArchZ },
-                        { seed: 4711 }
-                    );
-                    out.testArchSpawned = !!_archEntry;
-                    let _archTopY = 0;
-                    if (_archEntry && _archEntry.mesh) {
-                        const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
-                        _archTopY = _box.max.y;
-                    }
-                    r.state.playerMesh.position.set(_spawnArchX, _archTopY + 5, _spawnArchZ);
-                    // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
-                    r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
-                    r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
-                    // Build-Modus auf Slot 0 (village in Default-Hotbar)
-                    r.selectHotbarSlot(0);
-                    out.buildModeActive = r.state.buildMode.active;
-                    out.phantomExists = !!r.state.buildMode.phantomMesh;
-                    if (r.state.buildMode.phantomMesh) {
-                        r.tickBuildMode();
-                        const phantomPos = r.state.buildMode.phantomMesh.position;
-                        // Erwartung: Phantom landet auf Bauwerks-Top bei
-                        // _archTopY, alter Fallback wäre playerY-0.5 = _archTopY+4.5.
-                        // Hit-Y ist klar < playerY−1.
-                        out.phantomY = phantomPos.y;
-                        out.phantomYDownward = phantomPos.y < r.state.playerMesh.position.y - 1;
-                        // Stabilität: Boden flache Oberseite → Normal-Y ~ 1 → isStable=true
-                        out.phantomOnGroundAfterTick = r.state.buildMode.phantomOnGround;
-
-                        // Diskrimination 2: Kamera nach oben in den Himmel → kein Hit → fallback
-                        r.state.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
-                        r.tickBuildMode();
-                        out.phantomOnGroundSky = r.state.buildMode.phantomOnGround;
-                    }
-
-                    // Cleanup
-                    r._clearBuildMode();
-                    r.state.architectures = r.state.architectures.slice(0, _beforeArchA45);
-                    if (savedCamPos) r.state.camera.position.copy(savedCamPos);
-                    if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
-                    r.state.playerMesh.position.copy(savedPlayerPos);
-                    r.state.yaw = savedYaw;
-
-                    return out;
-                })
-                .catch(() => null);
-
-            if (wave6a45Results) {
-                check("Welle 6.A4: _resolvePhantomTarget-Methode existiert", wave6a45Results.hasResolveMethod);
-                check("Welle 6.A5: _applyPhantomTint-Methode existiert", wave6a45Results.hasTintMethod);
-                check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
-                check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
-                check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
-                check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
-                check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
-                check(
-                    "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
-                    wave6a45Results.resolveUsesGetWorldDirection
-                );
-                check(
-                    "Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest",
-                    wave6a45Results.resolveUsesRayTest
-                );
-                check(
-                    "Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität",
-                    wave6a45Results.resolveReadsNormal
-                );
-                check(
-                    "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
-                    wave6a45Results.resolveStabilityThreshold
-                );
-                check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
-                check(
-                    "Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)",
-                    wave6a45Results.tintCachesOrigColor
-                );
-                check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
-                check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
-                if (wave6a45Results.phantomExists) {
-                    check(
-                        "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
-                        wave6a45Results.phantomYDownward
-                    );
-                    check(
-                        "Welle 6.A5: Diskrimination — Kamera auf Boden → phantomOnGround=true",
-                        wave6a45Results.phantomOnGroundAfterTick === true
-                    );
-                    check(
-                        "Welle 6.A5: Diskrimination — Kamera auf Himmel → phantomOnGround=false",
-                        wave6a45Results.phantomOnGroundSky === false
-                    );
-                }
-            }
-
-            // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
-            const wave6e1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || typeof r.describeProgram !== "function") return null;
-                    const out = {};
-                    out.hasDescribeMethod = typeof r.describeProgram === "function";
-                    out.hasPosHelper = typeof r._describeDslPosition === "function";
-                    out.hasCondHelper = typeof r._describeDslCondition === "function";
-                    // Vorlagen-Smoke-Tests
-                    out.weatherDesc = r.describeProgram(["weather", "rainy"]);
-                    out.spawnCreatureDesc = r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]);
-                    out.chainDesc = r.describeProgram([
-                        "chain",
-                        ["weather", "sunny"],
-                        ["spawn_tree", ["near_player"], 4],
-                    ]);
-                    out.whenDesc = r.describeProgram([
-                        "when",
-                        ["emotion_above", "joy", 0.7],
-                        ["skybox_color", "0xffaa00"],
-                    ]);
-                    out.unknownDesc = r.describeProgram(["fictional_op", 42]);
-                    out.weatherOk = /Wetter/.test(out.weatherDesc) && /rainy/.test(out.weatherDesc);
-                    out.creatureOk =
-                        /3/.test(out.spawnCreatureDesc) &&
-                        /happy/.test(out.spawnCreatureDesc) &&
-                        /Spieler/.test(out.spawnCreatureDesc);
-                    out.chainOk = /und/.test(out.chainDesc);
-                    out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
-                    out.unknownOk = /fictional_op/.test(out.unknownDesc);
-                    // Diskrimination: Beschreibung wird beim addNewAbility gespeichert
-                    const beforeCount = r.state.dsl.abilities.length;
-                    r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
-                    const added = r.state.dsl.abilities.find((a) => a.name === "test_desc_e1");
-                    out.persistedDescription = added ? added.description : null;
-                    out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
-                    r.state.dsl.abilities = r.state.dsl.abilities.slice(0, beforeCount);
-                    delete r.state.abilities.test_desc_e1;
-                    // Lazy-Compute für Legacy-Save: Eintrag ohne description hinzufügen,
-                    // renderAbilitiesList ruft → description wird befüllt.
-                    r.state.dsl.abilities.push({
-                        name: "legacy_test_e1",
-                        program: ["weather", "sunny"],
-                        source: "test",
-                        createdAt: 0,
-                    });
-                    if (typeof r.renderAbilitiesList === "function") r.renderAbilitiesList();
-                    const legacyAfter = r.state.dsl.abilities.find((a) => a.name === "legacy_test_e1");
-                    out.lazyComputed = !!(legacyAfter && legacyAfter.description);
-                    r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
-                    return out;
-                })
-                .catch(() => null);
-
-            if (wave6e1Results) {
-                check("Welle 6.E1: describeProgram-Methode existiert", wave6e1Results.hasDescribeMethod);
-                check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
-                check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
-                check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
-                check("Welle 6.E1: spawn_creature-Op nutzt count + emotion + position", wave6e1Results.creatureOk);
-                check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
-                check("Welle 6.E1: when-Op rendert Condition + Then", wave6e1Results.whenOk);
-                check("Welle 6.E1: unbekannter Op fällt sauber auf Fallback", wave6e1Results.unknownOk);
-                check("Welle 6.E1: addNewAbility persistiert description-Feld", wave6e1Results.persistedOk);
-                check(
-                    "Welle 6.E1: Lazy-Compute füllt description bei alten Saves (renderAbilitiesList)",
-                    wave6e1Results.lazyComputed
-                );
-            }
-
-            // ### Welle 6.E2 — Intro-Overlay ###
-            const wave6e2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasInitMethod = typeof r.initIntroDialog === "function";
-                    out.hasPagesHelper = typeof r._introPages === "function";
-                    out.dialogInDom = !!document.getElementById("intro-dialog");
-                    const pages = r._introPages ? r._introPages() : [];
-                    out.pageCount = pages.length;
-                    out.pagesHaveTitle = pages.every((p) => typeof p.title === "string" && p.title.length > 0);
-                    out.pagesHaveBody = pages.every((p) => typeof p.body === "string" && p.body.length > 20);
-                    // Buttons im DOM
-                    const dlg = document.getElementById("intro-dialog");
-                    if (dlg) {
-                        out.hasPrevBtn = !!dlg.querySelector("[data-intro='prev']");
-                        out.hasNextBtn = !!dlg.querySelector("[data-intro='next']");
-                        out.hasSkipBtn = !!dlg.querySelector("[data-intro='skip']");
-                    }
-                    // Idempotenz: zweiter Aufruf erzeugt kein zweites Dialog
-                    r.initIntroDialog();
-                    out.singletonAfterReinit = document.querySelectorAll("#intro-dialog").length === 1;
-                    return out;
-                })
-                .catch(() => null);
-
-            if (wave6e2Results) {
-                check("Welle 6.E2: initIntroDialog-Methode existiert", wave6e2Results.hasInitMethod);
-                check("Welle 6.E2: _introPages-Helper existiert", wave6e2Results.hasPagesHelper);
-                check("Welle 6.E2: #intro-dialog im DOM (init-Aufruf in init()-Sequenz)", wave6e2Results.dialogInDom);
-                check("Welle 6.E2: drei Intro-Seiten", wave6e2Results.pageCount === 3);
-                check(
-                    "Welle 6.E2: alle Seiten haben Titel + Text",
-                    wave6e2Results.pagesHaveTitle && wave6e2Results.pagesHaveBody
-                );
-                check("Welle 6.E2: Prev-Button vorhanden", wave6e2Results.hasPrevBtn);
-                check("Welle 6.E2: Next-Button vorhanden", wave6e2Results.hasNextBtn);
-                check("Welle 6.E2: Skip-Button vorhanden", wave6e2Results.hasSkipBtn);
-                check("Welle 6.E2: Re-Init erzeugt kein Duplikat (Singleton)", wave6e2Results.singletonAfterReinit);
-            }
-
-            // ### Welle 6.F1 + 6.F2 — Visuelle Verbindungs-Linien + Brech-Warning ###
-            //
-            // _addConnectionLines hängt pro Connection eine THREE.Line an die
-            // gebaute Group. Farbe folgt computeConnectionStrength via
-            // _connectionColor (grün/gelb/rot). 6.F2: Wenn die schwächste
-            // Verbindung < 0.7 ist, schreibt _applyCompoundWorldEffects einen
-            // idempotenten weakness-Journal-Eintrag.
-            const wave6fResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasAddLinesMethod = typeof r._addConnectionLines === "function";
-                    out.hasColorHelper = typeof r._connectionColor === "function";
-
-                    // Farb-Mapping
-                    out.colorWeak = r._connectionColor(0.4);
-                    out.colorOk = r._connectionColor(1.0);
-                    out.colorStrong = r._connectionColor(2.0);
-                    out.colorWeakIsRed = out.colorWeak === 0xff5555;
-                    out.colorOkIsYellow = out.colorOk === 0xffcc44;
-                    out.colorStrongIsGreen = out.colorStrong === 0x66ff88;
-
-                    // Test-Bauplan mit zwei Parts + einer expliziten Verbindung
-                    const testName = "wave6f_test";
-                    r.state.blueprints[testName] = {
-                        name: testName,
-                        label: "Test",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                color: 0x888888,
-                                material: "stein",
-                            },
-                            {
-                                shape: "box",
-                                position: { x: 1.05, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                                color: 0x888888,
-                                material: "stein",
-                            },
-                        ],
-                        connections: [{ type: "masonry", partA: 0, partB: 1 }],
-                    };
-                    // Build und auf THREE.Line prüfen
-                    const built = r._buildFromBlueprint(r.state.blueprints[testName]);
-                    // V8.38 — eine Verbindung erzeugt jetzt eine Linie UND
-                    // einen Mittelpunkt-Marker (beide isConnectionLine), damit
-                    // die Verbindung auch bei überlappenden Parts sichtbar ist.
-                    let connLineCount = 0;
-                    let connMarkerCount = 0;
-                    let lineColor = null;
-                    built.traverse((node) => {
-                        if (node.userData && node.userData.isConnectionLine) {
-                            if (node.isLine) connLineCount++;
-                            if (node.isMesh) connMarkerCount++;
-                            if (node.material && node.material.color) lineColor = node.material.color.getHex();
-                        }
-                    });
-                    out.lineCount = connLineCount;
-                    out.lineExists = connLineCount === 1 && connMarkerCount === 1;
-                    out.lineHasUserDataFlag = connLineCount === 1;
-                    out.lineColor = lineColor;
-
-                    // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
-                    // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
-                    const weakName = "wave6f_weak";
-                    r.state.blueprints[weakName] = {
-                        name: weakName,
-                        label: "Schwach",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 0.5, y: 0.5, z: 0.5 },
-                                material: "stein",
-                            },
-                            {
-                                shape: "box",
-                                position: { x: 10, y: 0, z: 0 },
-                                size: { x: 0.5, y: 0.5, z: 0.5 },
-                                material: "stein",
-                            },
-                        ],
-                        connections: [{ type: "gluing", partA: 0, partB: 1 }],
-                    };
-                    const weakStrength = r.computeConnectionStrength(
-                        r.state.blueprints[weakName].connections[0],
-                        r.state.blueprints[weakName]
-                    );
-                    out.weakStrength = weakStrength;
-                    out.weakIsBelowThreshold = weakStrength < 0.7;
-
-                    // Journal-Counter vor spawn
-                    const beforeJournal =
-                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
-                    const beforeSeenKeys =
-                        r.state.worldJournal && r.state.worldJournal.seen
-                            ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:"))
-                                  .length
-                            : 0;
-                    const beforeArchCount = r.state.architectures.length;
-                    r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
-                    const afterSeenKeys =
-                        r.state.worldJournal && r.state.worldJournal.seen
-                            ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:"))
-                                  .length
-                            : 0;
-                    const afterJournal =
-                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
-                    out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
-                    out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
-
-                    // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
-                    r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
-                    const after2Journal =
-                        r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
-                    out.weakIsIdempotent = after2Journal === afterJournal;
-
-                    // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
-                    const strongName = "wave6f_strong";
-                    r.state.blueprints[strongName] = {
-                        name: strongName,
-                        label: "Stark",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                                material: "eisen",
-                            },
-                            {
-                                shape: "box",
-                                position: { x: 2.0, y: 0, z: 0 },
-                                size: { x: 2, y: 2, z: 2 },
-                                material: "eisen",
-                            },
-                        ],
-                        connections: [{ type: "welding", partA: 0, partB: 1 }],
-                    };
-                    const strongStrength = r.computeConnectionStrength(
-                        r.state.blueprints[strongName].connections[0],
-                        r.state.blueprints[strongName]
-                    );
-                    out.strongStrength = strongStrength;
-                    out.strongIsAboveThreshold = strongStrength >= 0.7;
-                    const seenBefore3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
-                        k.startsWith("weak_connection:" + strongName)
-                    ).length;
-                    r.spawnArchitecture(strongName, { x: 270, y: 0, z: 270 }, { seed: 3 });
-                    const seenAfter3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
-                        k.startsWith("weak_connection:" + strongName)
-                    ).length;
-                    out.strongNoWarning = seenAfter3 === seenBefore3;
-
-                    // Cleanup
-                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
-                    delete r.state.blueprints[testName];
-                    delete r.state.blueprints[weakName];
-                    delete r.state.blueprints[strongName];
-
-                    return out;
-                })
-                .catch(() => null);
-
-            if (wave6fResults) {
-                check("Welle 6.F1: _addConnectionLines-Methode existiert", wave6fResults.hasAddLinesMethod);
-                check("Welle 6.F1: _connectionColor-Helper existiert", wave6fResults.hasColorHelper);
-                check("Welle 6.F1: schwache Verbindung (<0.7) = rot 0xff5555", wave6fResults.colorWeakIsRed);
-                check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
-                check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
-                check("Welle 6.F1: Bauplan mit Connection erhält THREE.Line im Group", wave6fResults.lineExists);
-                check("Welle 6.F1: Line trägt userData.isConnectionLine-Flag", wave6fResults.lineHasUserDataFlag);
-                check(
-                    "Welle 6.F2: weakBauplan hat strength < 0.7 (test-setup korrekt)",
-                    wave6fResults.weakIsBelowThreshold
-                );
-                check(
-                    "Welle 6.F2: spawnArchitecture mit schwacher Verbindung schreibt Journal-Eintrag",
-                    wave6fResults.weakJournalIncrement
-                );
-                check("Welle 6.F2: weak_connection:-Schlüssel im worldJournal.seen", wave6fResults.weakSeenKeyAdded);
-                check(
-                    "Welle 6.F2: Idempotent — zweiter Spawn schreibt KEIN doppeltes Warn",
-                    wave6fResults.weakIsIdempotent
-                );
-                check(
-                    "Welle 6.F2: starker Bauplan hat strength ≥ 0.7 (test-setup korrekt)",
-                    wave6fResults.strongIsAboveThreshold
-                );
-                check(
-                    "Welle 6.F2: Diskrimination — starker Bauplan löst KEINE weak-Warning aus",
-                    wave6fResults.strongNoWarning
-                );
-            }
-
-            // ### Welle 6.D Etappe 1 — Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
-            //
-            // Vision-Pfeiler-Test: der Spieler ist ein Compound im selben
-            // Hylomorphismus-System wie Architekturen + Materialien. Die 10
-            // MATERIAL_TAG_KEYS sind die EINE Sprache; Soul-Tags + Material-Tags
-            // sind beide an dieselbe Achsen-Liste gebunden. STAT_FROM_TAGS-Formeln
-            // sind reine Funktionen — Diskriminations-Tests prüfen Verhältnisse
-            // (Phönix schneller als Drache, Drache mehr HP als Phönix).
-            const wave6dResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
-                    // sieht sie direkt (kein window-Prefix nötig).
-                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
-                    if (!C || !C.STAT_FROM_TAGS) return null;
-                    const out = {};
-                    out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
-                    out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
-                    out.hasComputeMethod = typeof r.computePlayerStats === "function";
-                    out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
-                    out.hasRenderMethod = typeof r.renderPlayerStatsUI === "function";
-
-                    // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
-                    const defs = r.playerSoulDefs;
-                    out.allSoulsHaveBodyParts = ["human", "phoenix", "dragon"].every(
-                        (s) => defs[s] && Array.isArray(defs[s].bodyParts) && defs[s].bodyParts.length >= 3
-                    );
-                    out.bodyPartsHaveShapeMaterial = ["human", "phoenix", "dragon"].every((s) =>
-                        defs[s].bodyParts.every((p) => typeof p.shape === "string" && typeof p.material === "string")
-                    );
-                    // Tag-Aggregation: bodyParts liefern Compound-Tags via dieselbe
-                    // MAX-Aggregation wie Architekturen (computeCompoundTags).
-                    out.hasSoulCompoundTagsMethod = typeof r.computeSoulCompoundTags === "function";
-                    const humanCompoundTags = r.computeSoulCompoundTags(defs.human);
-                    out.humanCompoundTagsAreObject = humanCompoundTags && typeof humanCompoundTags === "object";
-                    // Aggregierte Tags sollten echte MATERIAL_TAG_KEYS sein
-                    out.compoundUsesMaterialKeys = Object.keys(humanCompoundTags).every((k) =>
-                        C.MATERIAL_TAG_KEYS.includes(k)
-                    );
-                    // Body-Materialien müssen in state.materials existieren
-                    out.bodyMaterialsExist =
-                        !!r.state.materials.knochen &&
-                        !!r.state.materials.fleisch &&
-                        !!r.state.materials.federn &&
-                        !!r.state.materials.schuppen &&
-                        !!r.state.materials.glut;
-                    out.bodyMaterialsAreLebendig =
-                        (r.state.materials.knochen.tags.lebendig || 0) > 0.9 &&
-                        (r.state.materials.fleisch.tags.lebendig || 0) > 0.9 &&
-                        (r.state.materials.federn.tags.lebendig || 0) > 0.9 &&
-                        (r.state.materials.schuppen.tags.lebendig || 0) > 0.9;
-
-                    // computePlayerStats — gibt {tags, stats} zurück
-                    const computed = r.computePlayerStats();
-                    out.computedHasTags = computed && typeof computed.tags === "object";
-                    out.computedHasStats = computed && typeof computed.stats === "object";
-                    out.computedStatsHasAll =
-                        computed &&
-                        computed.stats &&
-                        [
-                            "hpMax",
-                            "damage",
-                            "speed",
-                            "jumpPower",
-                            "staminaMax",
-                            "precision",
-                            "magicResist",
-                            "heatResist",
-                        ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
-
-                    // Diskriminations-Test: drei Seelen → drei verschiedene Stat-Profile
-                    const savedSoul = r.state.player.soul;
-                    r.state.player.soul = "human";
-                    const humanStats = r.computePlayerStats().stats;
-                    r.state.player.soul = "phoenix";
-                    const phoenixStats = r.computePlayerStats().stats;
-                    r.state.player.soul = "dragon";
-                    const dragonStats = r.computePlayerStats().stats;
-                    r.state.player.soul = savedSoul;
-
-                    out.humanStats = humanStats;
-                    out.phoenixStats = phoenixStats;
-                    out.dragonStats = dragonStats;
-
-                    // Vision-Treue: Phönix = glass cannon (schneller, weniger HP)
-                    out.phoenixFasterThanDragon = phoenixStats.speed > dragonStats.speed;
-                    out.phoenixJumpsHigherThanDragon = phoenixStats.jumpPower > dragonStats.jumpPower;
-                    out.dragonHasMoreHpThanPhoenix = dragonStats.hpMax > phoenixStats.hpMax;
-                    out.dragonHasMoreDamageThanPhoenix = dragonStats.damage > phoenixStats.damage;
-                    out.phoenixHasMoreMagicResistThanDragon = phoenixStats.magicResist > dragonStats.magicResist;
-                    // Phönix brennbar=0.9, wärme=0.9: -0.9*0.3 + 0.9*0.5 = 0.18.
-                    // Drache brennbar=0.3, wärme=0.8: -0.3*0.3 + 0.8*0.5 = 0.31. Drache mehr Hitze-Resistenz.
-                    out.dragonHasMoreHeatResistThanPhoenix = dragonStats.heatResist > phoenixStats.heatResist;
-                    // Mensch ist balanced (zwischen den anderen beiden bei HP)
-                    out.humanHpBetweenPhoenixAndDragon =
-                        humanStats.hpMax > phoenixStats.hpMax && humanStats.hpMax < dragonStats.hpMax;
-
-                    // recomputePlayerStats — applies to state
-                    r.state.player.soul = "phoenix";
-                    r.recomputePlayerStats();
-                    out.stateSpeedMatches = Math.abs(r.state.speed - phoenixStats.speed) < 0.001;
-                    out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - phoenixStats.jumpPower) < 0.001;
-                    out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - phoenixStats.speed * 2) < 0.001;
-                    out.statePlayerStatsCached =
-                        r.state.player.stats && r.state.player.stats.hpMax === phoenixStats.hpMax;
-                    out.statePlayerHasHpAndStamina =
-                        typeof r.state.player.hp === "number" &&
-                        typeof r.state.player.hpMax === "number" &&
-                        typeof r.state.player.stamina === "number" &&
-                        typeof r.state.player.staminaMax === "number" &&
-                        r.state.player.hp === r.state.player.hpMax;
-                    // Restore
-                    r.state.player.soul = savedSoul;
-                    r.recomputePlayerStats();
-
-                    // applyPlayerSoul ruft recompute auf
-                    const applySrc = r.applyPlayerSoul.toString();
-                    out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
-
-                    // UI im DOM
-                    out.statsContainerInDom = !!document.getElementById("player-stats");
-                    // Render-Methode arbeitet ohne Crash
-                    let renderOk = false;
-                    try {
-                        r.renderPlayerStatsUI();
-                        renderOk = true;
-                    } catch (e) {
-                        out.renderError = String(e);
-                    }
-                    out.renderOk = renderOk;
-                    if (renderOk) {
-                        const dom = document.getElementById("player-stats");
-                        out.statRowsCount = dom ? dom.querySelectorAll(".stat-row").length : 0;
-                        out.hasTagLine = dom ? !!dom.querySelector(".stat-tags") : false;
-                    }
-                    return out;
-                })
-                .catch(() => null);
-
-            // ### Schöpfer-Reflexions-Fixes (13.05.2026, Welle 6.D Etappe 3a+) ###
-            // Sechs Lücken, die der Schöpfer aufdeckte:
-            //  1. WASD A/D-Swap (Drache-Steuerung „invertiert")
-            //  2. „damage X" als Chat-Pattern (war nur DSL-JSON)
-            //  3. Aura am Charakter statt Boden-Ring
-            //  4. Tod-Wunde persistent + linear regenerierend
-            //  5. Werkzeug-Anwendung kostet Stamina
-            //  6. Konsumables aus Compound-Tags (Logik statt Tabelle)
-            const reflexResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
-                    const out = {};
-
-                    // (1) WASD: Original-Mapping wiederhergestellt. Geometrisch
-                    // ist state.right tatsächlich „player-links" wegen Right-Hand-
-                    // Coords (forward × up = -X). A=+right=player-links, D=-right=
-                    // player-rechts — wie es immer war. V9.44-f — die WASD-Logik
-                    // lebt in der Bewegungs-Phase _loopPlayerMovement.
-                    const loopSrc = r._loopPlayerMovement.toString();
-                    out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
-                    out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
-
-                    // (2) Chat-Pattern für damage
-                    const dmgPattern = r.parseChatToDsl("schade mir 42");
-                    out.damageChatParses =
-                        dmgPattern &&
-                        dmgPattern.program &&
-                        dmgPattern.program[0] === "damage" &&
-                        dmgPattern.program[1] === 42;
-                    const trinkPattern = r.parseChatToDsl("trink trank_lichts");
-                    out.trinkChatParses = trinkPattern && trinkPattern.program[0] === "apply_boost";
-                    const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
-                    out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
-
-                    // (3) Aura: ECHTER Glow als Sphere + dezenter Sub-Mesh-Tint
-                    r.applyPlayerSoul("human");
-                    const sub = r.state.playerMesh.children[0];
-                    out.subMeshExists = !!sub && !!sub.material;
-                    const beforeColor = sub && sub.material ? sub.material.color.getHex() : null;
-                    r.tickPlayerAura();
-                    out.auraBaseColorCached = sub && sub.userData && typeof sub.userData._auraBaseColor === "number";
-                    const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
-                    out.auraTintChangedColor = beforeColor !== afterColor;
-                    out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
-                    // Echter Glow V4: Sprite mit AdditiveBlending + CanvasTexture
-                    // (Radial-Gradient für weichen Falloff statt Sphere-Kante)
-                    out.glowSpriteExists = !!r.state.playerAuraGlow;
-                    if (r.state.playerAuraGlow) {
-                        out.glowInScene = r.state.scene.children.includes(r.state.playerAuraGlow);
-                        out.glowIsSprite = r.state.playerAuraGlow.isSprite === true;
-                        const mat = r.state.playerAuraGlow.material;
-                        out.glowIsTransparent = !!mat && mat.transparent === true;
-                        out.glowIsAdditive = !!mat && mat.blending === THREE.AdditiveBlending;
-                        out.glowHasTexture = !!(mat && mat.map);
-                        // Position folgt Spieler
-                        const pp = r.state.playerMesh.position;
-                        const gp = r.state.playerAuraGlow.position;
-                        out.glowFollowsPlayer = Math.abs(gp.x - pp.x) < 0.01 && Math.abs(gp.z - pp.z) < 0.01;
-                    }
-
-                    // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
-                    // wurde wieder revertiert, weil er den Drache in 3rd-Person
-                    // visuell zum Spieler hin gespiegelt hat. Kopf-Box bleibt
-                    // bei +0.85 in Z (Forward-Richtung).
-                    r.applyPlayerSoul("dragon");
-                    const dragonGroup = r.state.playerMesh;
-                    let dragonHasInnerFlip = false;
-                    if (dragonGroup && dragonGroup.children.length > 0) {
-                        // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
-                        for (const c of dragonGroup.children) {
-                            if (c && c.isGroup && Math.abs((c.rotation.y || 0) - Math.PI) < 0.01) {
-                                dragonHasInnerFlip = true;
-                                break;
-                            }
-                        }
-                    }
-                    out.dragonNoInnerFlip = !dragonHasInnerFlip;
-                    r.applyPlayerSoul("human"); // restore
-
-                    // Welle 6.D Polish — player_speed-DSL-Op setzt jetzt
-                    // sprintSpeed mit (= 2× speed). Vorher konnte ein dsl
-                    // `player_speed 25` state.speed=25 setzen ohne
-                    // sprintSpeed zu aktualisieren → Shift drücken machte
-                    // den Spieler LANGSAMER.
-                    const beforeSprintBug = r.state.sprintSpeed;
-                    r.dslRun(["player_speed", 20], { source: "test" });
-                    out.speedAfterDsl = r.state.speed;
-                    out.sprintAfterDsl = r.state.sprintSpeed;
-                    out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * 2) < 0.001;
-                    out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
-                    // Restore baseline mit explizitem Soul-Reset (frühere Tests
-                    // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
-                    r.state.player.soul = "human";
-                    r.state.player.boosts = [];
-                    r.state.player.deathWoundIntensity = 0;
-                    r.state.player.equipped = { tool: null, armor: null };
-                    r.recomputePlayerStats();
-                    // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
-                    const humanResult = r.computePlayerStats();
-                    out.humanSpeed = humanResult.stats.speed;
-                    out.humanTags = JSON.stringify(humanResult.tags);
-                    out.humanWound = r.state.player.deathWoundIntensity;
-                    out.humanBoostCount = r.state.player.boosts.length;
-                    // Mensch ist „balanced" — niedriges magieleitung, hoher dichte
-                    // (durch sphere-Kopf-Aktivierung clamped auf 1). Speed-Base 7
-                    // gibt Mensch genau 7 (= deutlich höher als vorher 6.1).
-                    out.humanSpeedRaised = humanResult.stats.speed >= 7;
-
-                    // (4) Tod-Wunde persistent + regeneriert
-                    out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
-                    out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
-                    r.state.player.deathWoundIntensity = 0;
-                    r.state.player.phoenixUntil = -Infinity;
-                    const baselineHpMax = r.state.player.hpMax;
-                    r.triggerPhoenixDeath("test");
-                    out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
-                    // Wunde drückt dichte/lebendig/zähigkeit → hpMax sinkt + lebendig-Tag sinkt
-                    const woundedHpMax = r.state.player.hpMax;
-                    out.woundReducesHp = woundedHpMax < baselineHpMax;
-                    // Regen-Tick: nach 60 Sekunden simulierter Zeit Wunde reduziert
-                    r.state.player.deathLastTick = -Infinity;
-                    r.tickPhoenixDeath(performance.now() / 1000);
-                    out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
-
-                    // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
-                    r.state.player.deathWoundIntensity = 0;
-                    r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
-                    out.hasStaminaCostConst = typeof C.TOOL_OP_STAMINA_COST === "number" && C.TOOL_OP_STAMINA_COST > 0;
-                    out.hasStaminaRegenConst = typeof C.STAMINA_REGEN_PER_SEC === "number";
-                    // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
-                    // Welle 6.C2: Stamina-Tests laufen im pfad-Modus
-                    // (Default frieden überspringt Stamina-Kosten).
-                    if (typeof r.setGameMode === "function") r.setGameMode("pfad");
-                    r.state.blueprints.wound_test_bp = {
-                        name: "wound_test_bp",
-                        label: "Test",
-                        builtIn: false,
-                        // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
-                        parts: [
-                            {
-                                shape: "box",
-                                material: "eisen",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                        ],
-                    };
-                    if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
-                    const staBefore = r.state.player.stamina;
-                    const applyOk = r.applyOpToPart("wound_test_bp", 0, "hammer");
-                    out.applyOpResult = applyOk;
-                    out.staBefore = staBefore;
-                    out.staAfter = r.state.player.stamina;
-                    out.applyOpOkWithStamina = applyOk && applyOk.ok;
-                    out.staminaWasDeducted = r.state.player.stamina < staBefore;
-                    // Stamina auf 0 → applyOpToPart lehnt ab
-                    r.state.player.stamina = 1; // weniger als cost 10
-                    const applyFail = r.applyOpToPart("wound_test_bp", 0, "hammer");
-                    out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
-                    // Cleanup
-                    delete r.state.blueprints.wound_test_bp;
-                    r.state.player.stamina = r.state.player.staminaMax;
-
-                    // (6) Konsumables aus Compound-Tags
-                    out.hasSetBlueprintAsConsumable = typeof r.setBlueprintAsConsumable === "function";
-                    // Setup: Bauplan aus quarz-Helix + glut-Sphere (sollte magieleitung + brennbar hoch)
-                    r.state.blueprints.wave6d_potion = {
-                        name: "wave6d_potion",
-                        label: "Magie-Trank",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 0.3, y: 0.5, z: 2 },
-                            },
-                            {
-                                shape: "sphere",
-                                material: "glut",
-                                position: { x: 0, y: 0.5, z: 0 },
-                                size: { x: 0.2, y: 0.2, z: 0.2 },
-                            },
-                        ],
-                    };
-                    const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
-                    out.markConsumableOk = markRes && markRes.ok;
-                    out.blueprintGotRoleConsumable = r.state.blueprints.wave6d_potion.role === "consumable";
-                    out.blueprintHasConsumableMeta =
-                        r.state.blueprints.wave6d_potion.consumableMeta &&
-                        r.state.blueprints.wave6d_potion.consumableMeta.durationSeconds === 45;
-                    // Aktivieren → tagBonus aus Compound-Tags emergiert
-                    r.state.player.boosts = [];
-                    const drinkRes = r.activateConsumable("wave6d_potion");
-                    out.drinkOk = drinkRes && drinkRes.ok;
-                    const boost = r.state.player.boosts.find((b) => b.source === "consume:wave6d_potion");
-                    out.boostExists = !!boost;
-                    out.boostTagBonusFromCompound =
-                        boost && boost.tagDelta && (boost.tagDelta.magieleitung || 0) > 0.05;
-                    out.boostUsesBlueprintDuration =
-                        boost && Math.abs(boost.expiresAt - performance.now() / 1000 - 45) < 2;
-                    // Cleanup
-                    delete r.state.blueprints.wave6d_potion;
-                    r.state.player.boosts = [];
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (reflexResults && !reflexResults.error) {
-                // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
-                // weil forward × up = -X im right-handed Coord-System)
-                check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
-                check(
-                    "Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)",
-                    reflexResults.dPressNegRight
-                );
-                // (2) Chat
-                check(
-                    "Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]",
-                    reflexResults.damageChatParses
-                );
-                check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
-                check(
-                    "Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]",
-                    reflexResults.ruesteChatParses
-                );
-                // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
-                check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
-                check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
-                check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-                check(
-                    "Reflex 3 V4: weicher Glow — Sprite mit Radial-Texture existiert",
-                    reflexResults.glowSpriteExists
-                );
-                if (reflexResults.glowSpriteExists) {
-                    check("Reflex 3 V4: Glow-Sprite ist in der Welt-Szene", reflexResults.glowInScene);
-                    check("Reflex 3 V4: Glow ist ein THREE.Sprite (Billboard)", reflexResults.glowIsSprite);
-                    check("Reflex 3 V4: Glow-Material ist transparent", reflexResults.glowIsTransparent);
-                    check(
-                        "Reflex 3 V4: Glow nutzt AdditiveBlending (echter Leucht-Effekt)",
-                        reflexResults.glowIsAdditive
-                    );
-                    check(
-                        "Reflex 3 V4: Glow hat Map-Texture (Radial-Gradient für weichen Falloff)",
-                        reflexResults.glowHasTexture
-                    );
-                    check("Reflex 3 V4: Glow-Position folgt Spieler (x/z)", reflexResults.glowFollowsPlayer);
-                }
-                // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
-                // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
-                check(
-                    "Drache: kein Inner-π-Flip mehr (Avatar schaut vom Spieler weg in 3rd-Person)",
-                    reflexResults.dragonNoInnerFlip
-                );
-                // Sprint-Bug-Fix: player_speed setzt jetzt sprintSpeed mit
-                check(
-                    "Welle 6.D Polish: player_speed-DSL-Op aktualisiert sprintSpeed = 2× speed",
-                    reflexResults.sprintFollowsSpeed,
-                    `speed=${reflexResults.speedAfterDsl} sprint=${reflexResults.sprintAfterDsl}`
-                );
-                check(
-                    "Welle 6.D Polish: Sprint ist nach player_speed wirklich SCHNELLER als Walk",
-                    reflexResults.sprintActuallyFaster
-                );
-                check(
-                    "Welle 6.D Polish: Mensch-Speed mind. 7 (Base-Erhöhung, war vorher 6.1)",
-                    reflexResults.humanSpeedRaised,
-                    `speed=${(reflexResults.humanSpeed || 0).toFixed(2)}`
-                );
-                // (4) Wunde
-                check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
-                check("Reflex 4: AnazhRealm.WOUND_TAG_PENALTY-Konstante existiert", reflexResults.hasWoundPenaltyConst);
-                check("Reflex 4: triggerPhoenixDeath setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
-                check(
-                    "Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)",
-                    reflexResults.woundReducesHp
-                );
-                check("Reflex 4: tickPhoenixDeath regeneriert Wunde linear", reflexResults.woundRegens);
-                // (5) Werkzeug-Kosten
-                check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
-                check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
-                check(
-                    "Reflex 5: applyOpToPart läuft mit ausreichend Stamina",
-                    reflexResults.applyOpOkWithStamina,
-                    `result=${JSON.stringify(reflexResults.applyOpResult)} sta ${reflexResults.staBefore}→${reflexResults.staAfter}`
-                );
-                check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
-                check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
-                // (6) Konsumables-Logik
-                check(
-                    "Reflex 6: setBlueprintAsConsumable-Methode existiert",
-                    reflexResults.hasSetBlueprintAsConsumable
-                );
-                check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
-                check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
-                check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
-                check(
-                    "Reflex 6: activateConsumable auf Bauplan emergiert Boost aus Compound-Tags",
-                    reflexResults.drinkOk && reflexResults.boostExists
-                );
-                check(
-                    "Reflex 6: Diskrimination — quarz+glut-Bauplan → magieleitung-Boost",
-                    reflexResults.boostTagBonusFromCompound
-                );
-                check(
-                    "Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds",
-                    reflexResults.boostUsesBlueprintDuration
-                );
-            } else if (reflexResults && reflexResults.error) {
-                check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
-            }
-
-            // ### Welle 6.D Etappe 3b — Equipment + Aura ###
-            const wave6d3bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
-                    const out = {};
-                    // Konstanten + Methoden
-                    out.hasArmorWeight = typeof C.ARMOR_STAT_WEIGHT === "number";
-                    out.hasToolWeight = typeof C.TOOL_STAT_WEIGHT === "number";
-                    out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
-                    out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
-                    out.hasEquipTool = typeof r.equipTool === "function";
-                    out.hasEquipArmor = typeof r.equipArmor === "function";
-                    out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
-                    out.hasEquippedState =
-                        r.state.player.equipped &&
-                        "tool" in r.state.player.equipped &&
-                        "armor" in r.state.player.equipped;
-                    out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
-                    out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
-                    // NON_BROADCASTABLE
-                    out.equipNonBroadcast =
-                        C.NON_BROADCASTABLE_OPS.has("equip_tool") &&
-                        C.NON_BROADCASTABLE_OPS.has("equip_armor") &&
-                        C.NON_BROADCASTABLE_OPS.has("unequip");
-
-                    // Setup: Custom-Bauplan für Armor + Werkzeug
-                    const savedSoul = r.state.player.soul;
-                    r.applyPlayerSoul("human");
-                    const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
-
-                    // Eisen-Rüstung-Bauplan
-                    r.state.blueprints.test_armor_eisen = {
-                        name: "test_armor_eisen",
-                        label: "Eisen-Plate",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                material: "eisen",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                            {
-                                shape: "box",
-                                material: "eisen",
-                                position: { x: 0, y: 1, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                        ],
-                    };
-                    // Markieren als Rüstung
-                    const markResult = r.setBlueprintAsArmor("test_armor_eisen");
-                    out.markArmorOk = markResult.ok;
-                    out.markArmorSetsRole = r.state.blueprints.test_armor_eisen.role === "armor";
-
-                    // Built-in schützen
-                    r.state.blueprints.village.builtIn = true;
-                    const markBuiltinResult = r.setBlueprintAsArmor("village");
-                    out.markBuiltinRejected =
-                        !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
-
-                    // Equip Rüstung
-                    const equipResult = r.equipArmor("test_armor_eisen");
-                    out.equipArmorOk = equipResult.ok;
-                    out.equippedArmorIs = r.state.player.equipped.armor === "test_armor_eisen";
-                    // Stat-Diskrimination: eisen hat hohe dichte + härte → hpMax steigt
-                    const armoredStats = r.state.player.stats;
-                    out.armorIncreasesHp = armoredStats.hpMax > baselineStats.hpMax + 5;
-                    out.armorIncreasesDamage = armoredStats.damage > baselineStats.damage + 0.5;
-
-                    // Equip auf Rüstung ohne Marker → abgelehnt
-                    r.state.blueprints.test_plain = {
-                        name: "test_plain",
-                        label: "Unmarked",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                material: "stein",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                        ],
-                    };
-                    const equipUnmarkedResult = r.equipArmor("test_plain");
-                    out.unmarkedRejected =
-                        !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
-
-                    // Unequip
-                    r.equipArmor(null);
-                    out.unequippedRestoresStats = Math.abs(r.state.player.stats.hpMax - baselineStats.hpMax) < 0.01;
-                    out.equippedArmorNull = r.state.player.equipped.armor === null;
-
-                    // Equipped via DSL
-                    r.equipArmor("test_armor_eisen");
-                    r.dslRun(["unequip", "armor"], { source: "test" });
-                    out.dslUnequipWorks = r.state.player.equipped.armor === null;
-
-                    // Werkzeug equippen
-                    r.state.player.tools = r.state.player.tools || [];
-                    if (!r.state.player.tools.includes("hammer")) r.state.player.tools.push("hammer");
-                    const equipToolResult = r.equipTool("hammer");
-                    out.equipBuiltinToolOk = equipToolResult.ok;
-                    out.equippedToolIs = r.state.player.equipped.tool === "hammer";
-                    // Built-in-Werkzeug hat KEINEN sourceBlueprint → trägt kein Tag-Bonus
-                    // (das ist ok: nur Bauplan-Werkzeuge stacken Stats; Built-ins
-                    // sind Präzisions-Modulatoren via opChain).
-                    const toolStats = r.state.player.stats;
-                    out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
-
-                    // Save-Round-Trip
-                    r.equipArmor("test_armor_eisen");
-                    r.equipTool("hammer");
-                    const snap = r.buildStateSnapshot();
-                    out.snapHasEquipped =
-                        snap.playerEquipped &&
-                        snap.playerEquipped.armor === "test_armor_eisen" &&
-                        snap.playerEquipped.tool === "hammer";
-
-                    // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
-                    r.tickPlayerAura();
-                    // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
-                    const subMesh = r.state.playerMesh.children[0];
-                    out.auraSubMeshTinted =
-                        !!subMesh && !!subMesh.userData && typeof subMesh.userData._auraBaseColor === "number";
-
-                    // Cleanup
-                    r.equipArmor(null);
-                    r.equipTool(null);
-                    delete r.state.blueprints.test_armor_eisen;
-                    delete r.state.blueprints.test_plain;
-                    r.applyPlayerSoul(savedSoul);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6d3bResults && !wave6d3bResults.error) {
-                check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasArmorWeight);
-                check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT-Konstante existiert", wave6d3bResults.hasToolWeight);
-                check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
-                check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
-                check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
-                check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
-                check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
-                check("Welle 6.D Etappe 3b: state.player.equipped = {tool, armor}", wave6d3bResults.hasEquippedState);
-                check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
-                check(
-                    "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
-                    wave6d3bResults.auraHueMapHasAllTags
-                );
-                check(
-                    "Welle 6.D Etappe 3b: equip-Ops in NON_BROADCASTABLE_OPS (privat)",
-                    wave6d3bResults.equipNonBroadcast
-                );
-                check("Welle 6.D Etappe 3b: setBlueprintAsArmor liefert ok", wave6d3bResults.markArmorOk);
-                check("Welle 6.D Etappe 3b: setBlueprintAsArmor setzt role:'armor'", wave6d3bResults.markArmorSetsRole);
-                check(
-                    "Welle 6.D Etappe 3b: Built-in-Bauplan kann nicht als Rüstung markiert werden",
-                    wave6d3bResults.markBuiltinRejected
-                );
-                check(
-                    "Welle 6.D Etappe 3b: equipArmor erfolgreich auf markiertem Bauplan",
-                    wave6d3bResults.equipArmorOk
-                );
-                check(
-                    "Welle 6.D Etappe 3b: state.player.equipped.armor zeigt auf Rüstung",
-                    wave6d3bResults.equippedArmorIs
-                );
-                check(
-                    "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht hpMax (dichte + härte hoch)",
-                    wave6d3bResults.armorIncreasesHp
-                );
-                check(
-                    "Welle 6.D Etappe 3b: Diskrimination — Eisen-Rüstung erhöht damage",
-                    wave6d3bResults.armorIncreasesDamage
-                );
-                check(
-                    "Welle 6.D Etappe 3b: Bauplan ohne role:'armor' wird abgelehnt",
-                    wave6d3bResults.unmarkedRejected
-                );
-                check(
-                    "Welle 6.D Etappe 3b: unequip stellt baseline-Stats wieder her",
-                    wave6d3bResults.unequippedRestoresStats
-                );
-                check(
-                    "Welle 6.D Etappe 3b: state.player.equipped.armor == null nach unequip",
-                    wave6d3bResults.equippedArmorNull
-                );
-                check("Welle 6.D Etappe 3b: DSL-Op unequip(armor) entfernt Rüstung", wave6d3bResults.dslUnequipWorks);
-                check(
-                    "Welle 6.D Etappe 3b: equipTool akzeptiert Built-in-Werkzeug",
-                    wave6d3bResults.equipBuiltinToolOk
-                );
-                check("Welle 6.D Etappe 3b: state.player.equipped.tool ist gesetzt", wave6d3bResults.equippedToolIs);
-                check(
-                    "Welle 6.D Etappe 3b: Built-in-Werkzeug ohne sourceBlueprint → kein Stat-Beitrag (ok)",
-                    wave6d3bResults.builtinToolNoStatChange
-                );
-                check(
-                    "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped",
-                    wave6d3bResults.snapHasEquipped
-                );
-                check(
-                    "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
-                    wave6d3bResults.auraSubMeshTinted
-                );
-            } else if (wave6d3bResults && wave6d3bResults.error) {
-                check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
-            }
-
-            // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
-            const wave6d3aResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
-                    const out = {};
-                    // Welle 6.C2: Tests für Tod/Stamina/Phönix laufen im pfad-
-                    // Modus (Default frieden blockiert sonst Schaden + Stamina).
-                    if (typeof r.setGameMode === "function") r.setGameMode("pfad");
-
-                    // --- Tod-Behandlung ---
-                    out.hasDamageMethod = typeof r.damagePlayer === "function";
-                    out.hasTriggerPhoenixMethod = typeof r.triggerPhoenixDeath === "function";
-                    out.hasTickPhoenixMethod = typeof r.tickPhoenixDeath === "function";
-                    out.hasPhoenixState = "phoenixUntil" in r.state.player;
-                    out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
-
-                    // Setup
-                    const savedSoul = r.state.player.soul;
-                    if (savedSoul !== "human") r.applyPlayerSoul("human");
-                    r.state.player.phoenixUntil = -Infinity;
-
-                    const hpMax = r.state.player.hpMax;
-                    const hpBefore = r.state.player.hp;
-                    r.damagePlayer(20, "test");
-                    out.hpDropped = r.state.player.hp === hpBefore - 20;
-                    // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
-                    const hpAfterHeat = r.state.player.hp;
-                    r.damagePlayer(20, "fire-test");
-                    const hpDelta = hpAfterHeat - r.state.player.hp;
-                    out.heatResistReducesDamage = hpDelta < 20 - 1;
-
-                    // Tod-Trigger
-                    r.damagePlayer(99999, "kill-test");
-                    out.killTriggersPhoenix = r.state.player.soul === "phoenix";
-                    out.phoenixUntilSet = r.state.player.phoenixUntil > performance.now() / 1000;
-                    out.preDeathSoulRemembered = r.state.player.preDeathSoul === "human";
-                    out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
-                    out.weltTrauerAwe = r.state.player.emotions.awe > 0.15;
-                    out.hpRestoredAfterDeath = r.state.player.hp > 0;
-                    // Journal-Eintrag
-                    const journalEntries = r.state.worldJournal && r.state.worldJournal.entries;
-                    out.journalHasLossEntry =
-                        Array.isArray(journalEntries) &&
-                        journalEntries.some((e) => e.type === "loss" && /fiel/.test(e.text || ""));
-
-                    // Doppelt-Tod-Schutz
-                    const hpInPhoenix = r.state.player.hp;
-                    const beforeJournalCount = journalEntries.length;
-                    r.damagePlayer(99999, "kill-test-2");
-                    const afterJournalCount = journalEntries.length;
-                    out.deathDoubleProtected = afterJournalCount === beforeJournalCount;
-                    // (HP sollte nicht weiter sinken weil phoenixUntil > now)
-                    out.hpUntouchedDuringPhoenix = Math.abs(r.state.player.hp - hpInPhoenix) < 1;
-
-                    // tickPhoenixDeath regeneriert HP linear
-                    r.state.player.hp = 10;
-                    r.state.player.deathLastTick = -Infinity;
-                    r.tickPhoenixDeath(performance.now() / 1000);
-                    out.tickRegenerates = r.state.player.hp > 10;
-
-                    // Reset
-                    r.state.player.phoenixUntil = -Infinity;
-                    r.state.player.preDeathSoul = null;
-                    r.state.player.emotions.sorrow = 0;
-                    r.state.player.emotions.awe = 0;
-                    r.state.player.hp = r.state.player.hpMax;
-
-                    // --- Min-Regel-Hybrid ---
-                    out.hasPrecisionDecay = typeof C.PRECISION_DECAY === "number";
-                    out.precisionDecayValue = C.PRECISION_DECAY;
-                    out.precisionDecayIs07 = Math.abs(C.PRECISION_DECAY - 0.7) < 0.001;
-                    // Beispiel aus wave-6-design §10.5
-                    const examplePart = {
-                        shape: "box",
-                        material: "stein",
-                        opChain: [
-                            { tool: "hand", op: "knap", cap: 0.4 },
-                            { tool: "hammer", op: "hammer", cap: 0.7 },
-                            { tool: "feile", op: "file", cap: 0.85 },
-                            { tool: "polierscheibe", op: "polish", cap: 0.97 },
-                        ],
-                    };
-                    const exPrec = r.computePartPrecision(examplePart);
-                    // Erwartung: 0.4 + (0.97-0.4) × 0.7^3 = 0.4 + 0.57 × 0.343 = ~0.595
-                    out.hybridExampleValue = exPrec;
-                    out.hybridMatchesDoc = Math.abs(exPrec - 0.595) < 0.01;
-                    // Edge: 1 Schritt → min (kein Hybrid-Effekt)
-                    const onePart = { shape: "box", material: "stein", opChain: [{ cap: 0.4 }] };
-                    out.oneStepReturnsMin = Math.abs(r.computePartPrecision(onePart) - 0.4) < 0.001;
-                    // Edge: leere Chain → 0.4
-                    const noChainPart = { shape: "box", material: "stein", opChain: [] };
-                    out.emptyChainReturnsDefault = Math.abs(r.computePartPrecision(noChainPart) - 0.4) < 0.001;
-                    // Diskrimination: Hybrid liefert STRIKT MEHR als reine min für ≥2 Schritte
-                    const twoPart = {
-                        shape: "box",
-                        material: "stein",
-                        opChain: [{ cap: 0.4 }, { cap: 0.9 }],
-                    };
-                    const twoPrec = r.computePartPrecision(twoPart);
-                    out.twoStepAboveMin = twoPrec > 0.4 && twoPrec < 0.9;
-
-                    // --- Konsumables ---
-                    out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
-                    out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
-                    out.hasActivateMethod = typeof r.activateConsumable === "function";
-                    // define_consumable via DSL
-                    r.dslRun(
-                        [
-                            "define_consumable",
-                            "trank_des_lichts",
-                            { magieleitung: 0.3, resoniert: 0.2 },
-                            60,
-                            "Trank des Lichts",
-                        ],
-                        { source: "test" }
-                    );
-                    const cn = r.state.consumables.trank_des_lichts;
-                    out.consumableDefined = !!cn;
-                    out.consumableTagBonus = cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
-                    out.consumableDuration = cn && cn.durationSeconds === 60;
-                    out.consumableLabel = cn && cn.label === "Trank des Lichts";
-
-                    // apply_boost via DSL → Boost im Array
-                    r.state.player.boosts = [];
-                    r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
-                    const b = r.state.player.boosts.find((x) => x.source === "consume:trank_des_lichts");
-                    out.applyBoostAddsBoost = !!b;
-                    out.boostTagBonus = b && Math.abs((b.tagDelta.magieleitung || 0) - 0.3) < 0.001;
-
-                    // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
-                    r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
-                    const matching = r.state.player.boosts.filter((x) => x.source === "consume:trank_des_lichts");
-                    out.consumableDedupes = matching.length === 1;
-
-                    // Unknown name → kein Boost
-                    const beforeBoostCount = r.state.player.boosts.length;
-                    r.dslRun(["apply_boost", "nicht_da"], { source: "test" });
-                    out.unknownRejected = r.state.player.boosts.length === beforeBoostCount;
-
-                    // Non-broadcast: apply_boost ist in NON_BROADCASTABLE_OPS
-                    out.applyBoostNonBroadcast = C.NON_BROADCASTABLE_OPS.has("apply_boost");
-
-                    // Save-Round-Trip
-                    const snap = r.buildStateSnapshot();
-                    out.snapHasConsumables = !!(snap.consumables && snap.consumables.trank_des_lichts);
-
-                    // Cleanup
-                    r.state.consumables = {};
-                    r.state.player.boosts = [];
-                    if (savedSoul !== "phoenix") r.applyPlayerSoul(savedSoul);
-                    r.state.player.phoenixUntil = -Infinity;
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6d3aResults && !wave6d3aResults.error) {
-                // Tod-Behandlung
-                check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
-                check(
-                    "Welle 6.D Etappe 3a: triggerPhoenixDeath-Methode existiert",
-                    wave6d3aResults.hasTriggerPhoenixMethod
-                );
-                check("Welle 6.D Etappe 3a: tickPhoenixDeath-Methode existiert", wave6d3aResults.hasTickPhoenixMethod);
-                check("Welle 6.D Etappe 3a: state.player.phoenixUntil existiert", wave6d3aResults.hasPhoenixState);
-                check(
-                    "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
-                    wave6d3aResults.damageOpInNonBroadcast
-                );
-                check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
-                check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
-                check(
-                    "Welle 6.D Etappe 3a: HP=0 → Phönix-Wandlung (soul=phoenix)",
-                    wave6d3aResults.killTriggersPhoenix
-                );
-                check("Welle 6.D Etappe 3a: phoenixUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
-                check(
-                    "Welle 6.D Etappe 3a: preDeathSoul merkt vorherige Seele",
-                    wave6d3aResults.preDeathSoulRemembered
-                );
-                check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
-                check("Welle 6.D Etappe 3a: Welt-Trauer — awe +0.2 nach Tod", wave6d3aResults.weltTrauerAwe);
-                check("Welle 6.D Etappe 3a: HP wird in Wandlung auf max gesetzt", wave6d3aResults.hpRestoredAfterDeath);
-                check(
-                    "Welle 6.D Etappe 3a: Journal hat 'loss'-Eintrag mit 'fiel'",
-                    wave6d3aResults.journalHasLossEntry
-                );
-                check(
-                    "Welle 6.D Etappe 3a: Doppelt-Tod-Schutz — zweiter damagePlayer in Wandlung wirkt nicht",
-                    wave6d3aResults.deathDoubleProtected
-                );
-                check(
-                    "Welle 6.D Etappe 3a: HP unangetastet während Wandlung",
-                    wave6d3aResults.hpUntouchedDuringPhoenix
-                );
-                check("Welle 6.D Etappe 3a: tickPhoenixDeath regeneriert HP", wave6d3aResults.tickRegenerates);
-                // Min-Regel-Hybrid
-                check("Welle 6.D Etappe 3a: PRECISION_DECAY-Konstante existiert", wave6d3aResults.hasPrecisionDecay);
-                check(
-                    "Welle 6.D Etappe 3a: PRECISION_DECAY == 0.7",
-                    wave6d3aResults.precisionDecayIs07,
-                    `value=${wave6d3aResults.precisionDecayValue}`
-                );
-                check(
-                    "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
-                    wave6d3aResults.hybridMatchesDoc,
-                    `actual=${(wave6d3aResults.hybridExampleValue || 0).toFixed(3)}`
-                );
-                check(
-                    "Welle 6.D Etappe 3a: 1 Schritt → reine min (kein Hybrid-Effekt)",
-                    wave6d3aResults.oneStepReturnsMin
-                );
-                check("Welle 6.D Etappe 3a: leere opChain → Default 0.4", wave6d3aResults.emptyChainReturnsDefault);
-                check(
-                    "Welle 6.D Etappe 3a: Diskrimination — 2 Stufen liefern Wert zwischen min und max",
-                    wave6d3aResults.twoStepAboveMin
-                );
-                // Konsumables
-                check(
-                    "Welle 6.D Etappe 3a: state.consumables-Container existiert",
-                    wave6d3aResults.hasConsumablesContainer
-                );
-                check(
-                    "Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert",
-                    wave6d3aResults.hasCreateConsumableMethod
-                );
-                check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
-                check(
-                    "Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an",
-                    wave6d3aResults.consumableDefined
-                );
-                check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
-                check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
-                check("Welle 6.D Etappe 3a: Konsumabel speichert label", wave6d3aResults.consumableLabel);
-                check("Welle 6.D Etappe 3a: apply_boost DSL-Op fügt Boost hinzu", wave6d3aResults.applyBoostAddsBoost);
-                check("Welle 6.D Etappe 3a: aktiver Boost trägt Konsumabel-tagBonus", wave6d3aResults.boostTagBonus);
-                check(
-                    "Welle 6.D Etappe 3a: zweimal apply_boost — Dedupe via consume:<name>",
-                    wave6d3aResults.consumableDedupes
-                );
-                check(
-                    "Welle 6.D Etappe 3a: unbekannter Konsumabel-Name wird abgelehnt",
-                    wave6d3aResults.unknownRejected
-                );
-                check(
-                    "Welle 6.D Etappe 3a: apply_boost in NON_BROADCASTABLE_OPS (privat)",
-                    wave6d3aResults.applyBoostNonBroadcast
-                );
-                check(
-                    "Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables",
-                    wave6d3aResults.snapHasConsumables
-                );
-            } else if (wave6d3aResults && wave6d3aResults.error) {
-                check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
-            }
-
-            // ### Welle 6.D Etappe 2 — Boosts (temporäre Tag-Deltas) ###
-            //
-            // state.player.boosts ist ein Array; tickPlayerBoosts filtert
-            // Abgelaufene + triggert Emotion + Resonance 1×/s; computePlayerStats
-            // addiert aktive Deltas vor der Stat-Berechnung.
-            const wave6d2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
-                    const out = {};
-                    out.hasBoostsField = Array.isArray(r.state.player.boosts);
-                    out.hasAddMethod = typeof r.addPlayerBoost === "function";
-                    out.hasTickMethod = typeof r.tickPlayerBoosts === "function";
-                    out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
-                    out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
-                    out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
-
-                    // Setup: Save initial state für Vergleich
-                    r.state.player.boosts = [];
-                    r.recomputePlayerStats();
-                    const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
-
-                    // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
-                    const added = r.addPlayerBoost({
-                        source: "test:flame",
-                        tagDelta: { wärmeleitung: 0.3 },
-                        durationSeconds: 60,
-                        label: "Test-Flamme",
-                    });
-                    out.addReturnsTrue = added === true;
-                    out.boostsArrayHasOne = r.state.player.boosts.length === 1;
-                    out.boostHasTagDelta =
-                        r.state.player.boosts[0] &&
-                        Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.3) < 0.001;
-
-                    // Stats reagieren auf das Boost — staminaMax steigt da
-                    // wärmeleitung in der Formel steht (× 40).
-                    const boostedStats = r.state.player.stats;
-                    out.staminaIncreased = boostedStats.staminaMax > baselineStats.staminaMax + 5;
-                    out.heatResistIncreased = boostedStats.heatResist > baselineStats.heatResist;
-
-                    // Duplikat-Source: zweiter Boost mit gleicher source verlängert nur
-                    r.addPlayerBoost({
-                        source: "test:flame",
-                        tagDelta: { wärmeleitung: 0.5 },
-                        durationSeconds: 120,
-                        label: "Test-Flamme stärker",
-                    });
-                    out.dedupesBySource = r.state.player.boosts.length === 1;
-                    out.dedupeReplacesDelta = Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
-
-                    // tickPlayerBoosts entfernt abgelaufene Boosts.
-                    // V7.75: prüfen ob der test:flame-Boost spezifisch
-                    // entfernt wurde (statt "boosts.length===0"). Grund:
-                    // ab V7.75 kann tickPlayerBoosts gleichzeitig einen
-                    // world:resonance-Boost setzen, wenn der Spieler nah
-                    // bei einer hochresonanten Welt-Affinitäts-Architektur
-                    // (kristall_geode, quarz) steht — das ist Vision-treu
-                    // (Welt resoniert mit dem Spieler), nicht der Bug.
-                    r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
-                    r.state.player.boostLastTick = -Infinity; // Throttle umgehen
-                    r.tickPlayerBoosts(performance.now() / 1000);
-                    out.expiredRemoved = !r.state.player.boosts.some((b) => b.source === "test:flame");
-
-                    // Emotion-Trigger: awe hoch → magieleitung-Boost
-                    r.state.player.emotions.awe = 0.9;
-                    r.state.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
-                    r.state.player.boostLastTick = -Infinity;
-                    r.tickPlayerBoosts(performance.now() / 1000);
-                    const aweBoost = r.state.player.boosts.find((b) => b.source === "emotion:awe");
-                    out.emotionAweTriggered = !!aweBoost;
-                    out.aweBoostHasMagieleitung =
-                        aweBoost && aweBoost.tagDelta.magieleitung && aweBoost.tagDelta.magieleitung > 0;
-                    out.magicResistIncreased = aweBoost
-                        ? r.state.player.stats.magicResist > baselineStats.magicResist
-                        : false;
-
-                    // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
-                    const beforeArchCount = r.state.architectures.length;
-                    const savedPos = {
-                        x: r.state.playerMesh.position.x,
-                        y: r.state.playerMesh.position.y,
-                        z: r.state.playerMesh.position.z,
-                    };
-                    r.state.playerMesh.position.set(80, 5, 80);
-                    // Wir nutzen einen Custom-Bauplan mit Quarz-Helix-Array.
-                    // Vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) —
-                    // Resonance-Array-Detector (W5-B Prinzip 5) verlangt
-                    // gleiche Shape auf gleichem Radius ±12 % vom Schwerpunkt.
-                    // Quarz hat resoniert=0.9 + magieleitung=0.85, helix-Shape
-                    // verstärkt beide. Array-Bonus + ggf. Symmetrieachse-Bonus
-                    // bringen das Compound über die signature-Schwelle (2.5).
-                    r.state.blueprints.wave6d2_resonator = {
-                        name: "wave6d2_resonator",
-                        label: "Resonator",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: 1, y: 0, z: 0 },
-                                size: { x: 0.5, y: 1, z: 3 },
-                            },
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: 0, y: 0, z: 1 },
-                                size: { x: 0.5, y: 1, z: 3 },
-                            },
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: -1, y: 0, z: 0 },
-                                size: { x: 0.5, y: 1, z: 3 },
-                            },
-                            {
-                                shape: "helix",
-                                material: "quarz",
-                                position: { x: 0, y: 0, z: -1 },
-                                size: { x: 0.5, y: 1, z: 3 },
-                            },
-                        ],
-                    };
-                    r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
-                    // Debug: tatsächlichen Spatial-Tag-Wert + Distanz ausgeben
-                    const sigTags = r.computeSpatialTags(r.state.blueprints.wave6d2_resonator);
-                    out.signatureResonierValue = sigTags.resoniert || 0;
-                    out.signatureThreshold = C.WORLD_EFFECT_THRESHOLDS.resonance_signature;
-                    out.distanceToSig = Math.hypot(82 - 80, 82 - 80);
-                    r.state.player.boosts = []; // Reset
-                    r.state.player.boostLastTick = -Infinity;
-                    r.tickPlayerBoosts(performance.now() / 1000);
-                    const resBoost = r.state.player.boosts.find((b) => b.source === "world:resonance");
-                    out.resonanceBoostTriggered = !!resBoost;
-                    out.resonanceHasResonierDelta =
-                        resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
-
-                    // Boost außerhalb Reichweite → kein Trigger
-                    r.state.playerMesh.position.set(-200, 5, -200);
-                    r.state.player.boosts = [];
-                    r.state.player.boostLastTick = -Infinity;
-                    r.tickPlayerBoosts(performance.now() / 1000);
-                    const resBoost2 = r.state.player.boosts.find((b) => b.source === "world:resonance");
-                    out.resonanceNotTriggeredFar = !resBoost2;
-
-                    // Cleanup
-                    r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
-                    delete r.state.blueprints.wave6d2_resonator;
-                    r.state.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
-                    r.state.player.boosts = [];
-                    r.state.player.emotions.awe = 0;
-                    r.recomputePlayerStats();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6d2Results && !wave6d2Results.error) {
-                check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
-                check("Welle 6.D Etappe 2: addPlayerBoost-Methode existiert", wave6d2Results.hasAddMethod);
-                check("Welle 6.D Etappe 2: tickPlayerBoosts-Methode existiert", wave6d2Results.hasTickMethod);
-                check(
-                    "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
-                    wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
-                );
-                check(
-                    "Welle 6.D Etappe 2: BOOST_RESONANCE_DELTA-Konstante existiert",
-                    wave6d2Results.hasResonanceConst
-                );
-                check("Welle 6.D Etappe 2: addPlayerBoost liefert true", wave6d2Results.addReturnsTrue);
-                check("Welle 6.D Etappe 2: boost wird ins Array geschrieben", wave6d2Results.boostsArrayHasOne);
-                check("Welle 6.D Etappe 2: boost trägt tagDelta + Wert", wave6d2Results.boostHasTagDelta);
-                check(
-                    "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht staminaMax",
-                    wave6d2Results.staminaIncreased
-                );
-                check(
-                    "Welle 6.D Etappe 2: Diskrimination — wärmeleitung-Boost erhöht heatResist",
-                    wave6d2Results.heatResistIncreased
-                );
-                check(
-                    "Welle 6.D Etappe 2: gleiche source dedupliziert (nur 1 Eintrag)",
-                    wave6d2Results.dedupesBySource
-                );
-                check(
-                    "Welle 6.D Etappe 2: dedupe ersetzt tagDelta des bestehenden Boosts",
-                    wave6d2Results.dedupeReplacesDelta
-                );
-                check(
-                    "Welle 6.D Etappe 2: tickPlayerBoosts entfernt abgelaufene Boosts",
-                    wave6d2Results.expiredRemoved
-                );
-                check(
-                    "Welle 6.D Etappe 2: Emotion-Trigger — awe>0.7 erzeugt magieleitung-Boost",
-                    wave6d2Results.emotionAweTriggered
-                );
-                check(
-                    "Welle 6.D Etappe 2: Emotion-Boost trägt magieleitung-Delta > 0",
-                    wave6d2Results.aweBoostHasMagieleitung
-                );
-                check(
-                    "Welle 6.D Etappe 2: Diskrimination — magieleitung-Boost erhöht magicResist",
-                    wave6d2Results.magicResistIncreased
-                );
-                check(
-                    "Welle 6.D Etappe 2: Welt-Resonanz-Trigger — Nähe zu Signature-Struktur erzeugt resoniert-Boost",
-                    wave6d2Results.resonanceBoostTriggered,
-                    `sig.resoniert=${(wave6d2Results.signatureResonierValue || 0).toFixed(2)} thr=${wave6d2Results.signatureThreshold} dist=${(wave6d2Results.distanceToSig || 0).toFixed(2)}`
-                );
-                check(
-                    "Welle 6.D Etappe 2: Welt-Resonanz-Boost trägt resoniert-Delta > 0",
-                    wave6d2Results.resonanceHasResonierDelta
-                );
-                check(
-                    "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
-                    wave6d2Results.resonanceNotTriggeredFar
-                );
-            } else if (wave6d2Results && wave6d2Results.error) {
-                check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
-            }
-
-            // ### Welle 6.D Etappe 1.6 — Custom-Seelen via DSL ###
-            //
-            // Schöpfer kann mit define_soul(name, bodyParts) eigene Charaktere
-            // komponieren — Form × Material via dieselbe Hylomorphismus-Pipe
-            // wie Bauwerke. Vision: „mehr Charaktere, mehr Wachstums-Freiheit
-            // durch simple Regeln".
-            const wave6d16Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasGetSoulDef = typeof r._getSoulDef === "function";
-                    out.hasCreateMethod = typeof r.createOrUpdateSoulFromDsl === "function";
-                    out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
-
-                    // DSL-Op define_soul ist im Interpreter
-                    const ops = r._dslOps || (r.dslOps && r.dslOps()) || null;
-                    out.dslOpRegistered = ops ? typeof ops.define_soul === "function" : false;
-                    // Fallback: prüfen via dslRun
-                    const beforeCount = Object.keys(r.state.customSouls || {}).length;
-                    const testParts = [
-                        {
-                            shape: "box",
-                            material: "knochen",
-                            position: { x: 0, y: 0, z: 0 },
-                            size: { x: 0.5, y: 1.0, z: 0.4 },
-                        },
-                        {
-                            shape: "helix",
-                            material: "quarz",
-                            position: { x: 0, y: 0.6, z: 0 },
-                            size: { x: 0.3, y: 0.6, z: 2 },
-                        },
-                        {
-                            shape: "sphere",
-                            material: "glut",
-                            position: { x: 0, y: 0.3, z: 0 },
-                            size: { x: 0.25, y: 0.25, z: 0.25 },
-                        },
-                    ];
-                    r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
-                    const afterCount = Object.keys(r.state.customSouls || {}).length;
-                    out.customSoulAdded = afterCount === beforeCount + 1;
-                    const created = r.state.customSouls.kristall_geist;
-                    out.customHasBodyParts = !!(
-                        created &&
-                        Array.isArray(created.bodyParts) &&
-                        created.bodyParts.length === 3
-                    );
-                    out.customHasLabel = !!(created && typeof created.label === "string");
-
-                    // _getSoulDef findet die Custom-Seele
-                    const def = r._getSoulDef("kristall_geist");
-                    out.getSoulDefFindsCustom = !!def && def.name === "kristall_geist";
-
-                    // Built-in-Override verboten
-                    r.dslRun(["define_soul", "human", testParts], { source: "test" });
-                    out.builtinProtected = !!r.playerSoulDefs.human && Array.isArray(r.playerSoulDefs.human.bodyParts);
-
-                    // Compound-Tags der Custom-Seele unterscheiden sich von Built-ins
-                    const customTags = r.computeSoulCompoundTags(created);
-                    const humanTags = r.computeSoulCompoundTags(r.playerSoulDefs.human);
-                    out.customTagsExist = customTags && Object.keys(customTags).length > 0;
-                    // kristall_geist hat quarz+glut → hohe magieleitung
-                    out.customMagicHigh = (customTags.magieleitung || 0) > (humanTags.magieleitung || 0);
-
-                    // applyPlayerSoul auf Custom funktioniert
-                    const savedSoul = r.state.player.soul;
-                    const applied = r.applyPlayerSoul("kristall_geist");
-                    out.applyCustomReturnsTrue = applied === true;
-                    out.stateSoulIsCustom = r.state.player.soul === "kristall_geist";
-                    // Stats wurden für die Custom-Seele neu berechnet
-                    out.customStatsComputed = !!(r.state.player.stats && r.state.player.stats.hpMax > 0);
-                    out.customStatsDifferFromHuman = (() => {
-                        r.state.player.soul = "human";
-                        const humanStats = r.computePlayerStats().stats;
-                        r.state.player.soul = "kristall_geist";
-                        const customStats = r.computePlayerStats().stats;
-                        return Math.abs(customStats.magicResist - humanStats.magicResist) > 0.05;
-                    })();
-
-                    // UI-Dropdown enthält die neue Seele
-                    if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
-                    const select = document.getElementById("player-soul-select");
-                    out.dropdownContainsCustom =
-                        select && [...select.options].some((o) => o.value === "kristall_geist");
-
-                    // Cap-Test: 16 Custom-Seelen max
-                    let overflowResult = "ok";
-                    for (let i = 0; i < 20; i++) {
-                        const res = r.createOrUpdateSoulFromDsl(`spam_${i}`, testParts);
-                        if (!res.ok && res.reason === "too_many_souls") {
-                            overflowResult = "cap_hit";
-                            break;
-                        }
-                    }
-                    out.capHit = overflowResult === "cap_hit";
-
-                    // Save-Round-Trip vor dem finalen Cleanup
-                    r.state.customSouls = {
-                        save_test: {
-                            name: "save_test",
-                            label: "Save Test",
-                            bodyParts: testParts,
-                            createdAt: 0,
-                        },
-                    };
-                    const snap = r.buildStateSnapshot();
-                    out.snapshotHasCustomSouls = !!(snap.customSouls && snap.customSouls.save_test);
-
-                    // Cleanup — Custom-Seelen entfernen + Dropdown auffrischen,
-                    // damit nachfolgende Tests (Ring 5: Dropdown hat 3 Optionen)
-                    // wieder den Built-in-Standardzustand sehen.
-                    r.state.customSouls = {};
-                    r.state.player.soul = savedSoul;
-                    r.applyPlayerSoul(savedSoul);
-                    if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
-
-                    return out;
-                })
-                .catch(() => null);
-
-            // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
-            const wave6d17Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasRenderMethod = typeof r.renderSoulEditorUI === "function";
-                    out.hasCloneMethod = typeof r.cloneSoulToCustom === "function";
-                    out.hasDeleteMethod = typeof r.deleteCustomSoul === "function";
-                    out.hasAddPartMethod = typeof r.addPartToCustomSoul === "function";
-                    out.hasUpdatePartMethod = typeof r.updatePartInCustomSoul === "function";
-                    out.hasRemovePartMethod = typeof r.removePartFromCustomSoul === "function";
-                    // DOM-Container
-                    out.editorInDom = !!document.getElementById("soul-editor");
-
-                    // Empty state
-                    r.state.customSouls = {};
-                    r.renderSoulEditorUI();
-                    const editor1 = document.getElementById("soul-editor");
-                    out.emptyStateRendered = !!(editor1 && editor1.querySelector(".soul-editor-empty"));
-                    out.hasCloneActionBtn = !!editor1.querySelector(".soul-editor-actions button");
-
-                    // Klonen aus aktiver Seele
-                    const savedSoul = r.state.player.soul;
-                    r.state.player.soul = "human";
-                    const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
-                    out.cloneReturnsOk = cloneResult && cloneResult.ok;
-                    out.cloneHasBodyParts =
-                        r.state.customSouls.test_clone_a &&
-                        Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
-                        r.state.customSouls.test_clone_a.bodyParts.length === 4;
-
-                    // Editor zeigt jetzt die Custom-Seele
-                    r.state.soulEditor = { editingName: "test_clone_a" };
-                    r.renderSoulEditorUI();
-                    const editor2 = document.getElementById("soul-editor");
-                    out.customRowRendered = !!editor2.querySelector(".soul-editor-row");
-                    out.editorPaneRendered = !!editor2.querySelector(".soul-editor-pane");
-                    out.partRowsCount = editor2.querySelectorAll(".soul-part-row").length;
-                    out.editorHasShapeSelect = !!editor2.querySelector(".soul-part-row select");
-
-                    // Add part
-                    const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
-                    const addResult = r.addPartToCustomSoul("test_clone_a", {
-                        shape: "torus",
-                        material: "quarz",
-                        position: { x: 0, y: 1, z: 0 },
-                        size: { x: 0.5, y: 0.2, z: 0.5 },
-                    });
-                    out.addReturnsOk = addResult && addResult.ok;
-                    out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
-
-                    // Update part
-                    const updateResult = r.updatePartInCustomSoul("test_clone_a", 0, {
-                        material: "schuppen",
-                    });
-                    out.updateReturnsOk = updateResult && updateResult.ok;
-                    out.updateApplied = r.state.customSouls.test_clone_a.bodyParts[0].material === "schuppen";
-
-                    // Remove part
-                    const beforeRm = r.state.customSouls.test_clone_a.bodyParts.length;
-                    const rmResult = r.removePartFromCustomSoul("test_clone_a", 0);
-                    out.removeReturnsOk = rmResult && rmResult.ok;
-                    out.removedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeRm - 1;
-
-                    // Mindestens-1-Schutz: alle bis auf eins entfernen → letztes lehnt ab
-                    while (r.state.customSouls.test_clone_a.bodyParts.length > 1) {
-                        r.removePartFromCustomSoul("test_clone_a", 0);
-                    }
-                    const lastRmResult = r.removePartFromCustomSoul("test_clone_a", 0);
-                    out.lastPartProtected = !lastRmResult.ok && lastRmResult.reason === "would_be_empty";
-
-                    // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
-                    r.applyPlayerSoul("test_clone_a");
-                    out.customSoulRendered =
-                        !!r.state.playerMesh && r.state.playerMesh.children && r.state.playerMesh.children.length > 0;
-
-                    // Delete: wenn aktive Seele gelöscht → fallback auf "human"
-                    const delResult = r.deleteCustomSoul("test_clone_a");
-                    out.deleteReturnsOk = delResult && delResult.ok;
-                    out.deletedFromMap = !r.state.customSouls.test_clone_a;
-                    out.fallbackToHuman = r.state.player.soul === "human";
-
-                    // Cleanup
-                    r.state.player.soul = savedSoul;
-                    r.applyPlayerSoul(savedSoul);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6d17Results && !wave6d17Results.error) {
-                check("Welle 6.D Etappe 1.7: renderSoulEditorUI-Methode existiert", wave6d17Results.hasRenderMethod);
-                check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
-                check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
-                check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
-                check(
-                    "Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert",
-                    wave6d17Results.hasUpdatePartMethod
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert",
-                    wave6d17Results.hasRemovePartMethod
-                );
-                check("Welle 6.D Etappe 1.7: #soul-editor im DOM (Spieler-Drawer)", wave6d17Results.editorInDom);
-                check("Welle 6.D Etappe 1.7: Empty-State zeigt Hinweis-Text", wave6d17Results.emptyStateRendered);
-                check("Welle 6.D Etappe 1.7: Klonen/Neu-Action-Buttons vorhanden", wave6d17Results.hasCloneActionBtn);
-                check("Welle 6.D Etappe 1.7: Klonen aus aktiver Seele liefert ok", wave6d17Results.cloneReturnsOk);
-                check("Welle 6.D Etappe 1.7: Klon hat alle 4 Body-Parts vom Mensch", wave6d17Results.cloneHasBodyParts);
-                check("Welle 6.D Etappe 1.7: Custom-Row im Editor gerendert", wave6d17Results.customRowRendered);
-                check("Welle 6.D Etappe 1.7: Editor-Pane mit Parts gerendert", wave6d17Results.editorPaneRendered);
-                check("Welle 6.D Etappe 1.7: 4 Part-Rows im Editor", wave6d17Results.partRowsCount === 4);
-                check("Welle 6.D Etappe 1.7: Shape-Select vorhanden", wave6d17Results.editorHasShapeSelect);
-                check(
-                    "Welle 6.D Etappe 1.7: addPartToCustomSoul fügt Part hinzu",
-                    wave6d17Results.addReturnsOk && wave6d17Results.addedPart
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: updatePartInCustomSoul wendet Patch an",
-                    wave6d17Results.updateReturnsOk && wave6d17Results.updateApplied
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: removePartFromCustomSoul entfernt Part",
-                    wave6d17Results.removeReturnsOk && wave6d17Results.removedPart
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: Mindestens-1-Schutz — letztes Part kann nicht gelöscht werden",
-                    wave6d17Results.lastPartProtected
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: End-to-End — applyPlayerSoul auf Custom rendert Mesh",
-                    wave6d17Results.customSoulRendered
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: deleteCustomSoul entfernt aus Map",
-                    wave6d17Results.deleteReturnsOk && wave6d17Results.deletedFromMap
-                );
-                check(
-                    "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
-                    wave6d17Results.fallbackToHuman
-                );
-            } else if (wave6d17Results && wave6d17Results.error) {
-                check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
-            }
-
-            if (wave6d16Results) {
-                check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
-                check(
-                    "Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert",
-                    wave6d16Results.hasCreateMethod
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: state.customSouls-Container existiert",
-                    wave6d16Results.customSoulsContainerExists
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: define_soul DSL-Op fügt Custom-Seele hinzu",
-                    wave6d16Results.customSoulAdded
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: Custom-Seele hat bodyParts mit 3 Teilen",
-                    wave6d16Results.customHasBodyParts
-                );
-                check("Welle 6.D Etappe 1.6: Custom-Seele bekommt einen label", wave6d16Results.customHasLabel);
-                check(
-                    "Welle 6.D Etappe 1.6: _getSoulDef findet Custom-Seele neben Built-ins",
-                    wave6d16Results.getSoulDefFindsCustom
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: Built-in-Name geschützt (human nicht überschreibbar)",
-                    wave6d16Results.builtinProtected
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: Compound-Tags der Custom-Seele werden berechnet",
-                    wave6d16Results.customTagsExist
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: Vision-Diskrimination — quarz+glut-Seele hat höhere magieleitung als Mensch",
-                    wave6d16Results.customMagicHigh
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: applyPlayerSoul akzeptiert Custom-Namen",
-                    wave6d16Results.applyCustomReturnsTrue
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: state.player.soul ist die Custom-Seele nach apply",
-                    wave6d16Results.stateSoulIsCustom
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: Stats werden für Custom-Seele neu berechnet",
-                    wave6d16Results.customStatsComputed
-                );
-                check(
-                    "Welle 6.D Etappe 1.6: Custom-Stats unterscheiden sich von Built-in-Stats (Vision-Diskrimination)",
-                    wave6d16Results.customStatsDifferFromHuman
-                );
-                check("Welle 6.D Etappe 1.6: UI-Dropdown listet Custom-Seelen", wave6d16Results.dropdownContainsCustom);
-                check("Welle 6.D Etappe 1.6: Cap 16 — überzählige werden abgelehnt", wave6d16Results.capHit);
-                check(
-                    "Welle 6.D Etappe 1.6: buildStateSnapshot persistiert customSouls",
-                    wave6d16Results.snapshotHasCustomSouls
-                );
-            }
-
-            if (wave6dResults) {
-                check("Welle 6.D: AnazhRealm.STAT_FROM_TAGS-Matrix existiert", wave6dResults.hasStatMatrix);
-                check(
-                    "Welle 6.D: STAT_FROM_TAGS hat 8 Stats (hpMax + damage + speed + jumpPower + stamina + precision + 2× Resist)",
-                    wave6dResults.statKeys ===
-                        "damage,heatResist,hpMax,jumpPower,magicResist,precision,speed,staminaMax"
-                );
-                check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
-                check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
-                check("Welle 6.D: renderPlayerStatsUI-Methode existiert", wave6dResults.hasRenderMethod);
-                check(
-                    "Welle 6.D Etappe 1.5: alle drei Seelen tragen ≥3 bodyParts",
-                    wave6dResults.allSoulsHaveBodyParts
-                );
-                check(
-                    "Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material",
-                    wave6dResults.bodyPartsHaveShapeMaterial
-                );
-                check(
-                    "Welle 6.D Etappe 1.5: computeSoulCompoundTags-Methode existiert",
-                    wave6dResults.hasSoulCompoundTagsMethod
-                );
-                check(
-                    "Welle 6.D Etappe 1.5: computeSoulCompoundTags liefert ein Tag-Objekt",
-                    wave6dResults.humanCompoundTagsAreObject
-                );
-                check(
-                    "Welle 6.D Etappe 1.5: Vision-Treue — aggregierte Tags nutzen MATERIAL_TAG_KEYS",
-                    wave6dResults.compoundUsesMaterialKeys
-                );
-                check(
-                    "Welle 6.D Etappe 1.5: 5 Körper-Materialien (knochen/fleisch/federn/schuppen/glut) sind in state.materials",
-                    wave6dResults.bodyMaterialsExist
-                );
-                check(
-                    "Welle 6.D Etappe 1.5: alle Körper-Materialien tragen lebendig > 0.9",
-                    wave6dResults.bodyMaterialsAreLebendig
-                );
-                check(
-                    "Welle 6.D: computePlayerStats liefert {tags, stats}",
-                    wave6dResults.computedHasTags && wave6dResults.computedHasStats
-                );
-                check(
-                    "Welle 6.D: computed.stats hat alle 8 Werte als finite Zahlen",
-                    wave6dResults.computedStatsHasAll
-                );
-                // Vision-Diskrimination
-                check(
-                    "Welle 6.D: Diskrimination — Phönix schneller als Drache (low dichte)",
-                    wave6dResults.phoenixFasterThanDragon
-                );
-                check(
-                    "Welle 6.D: Diskrimination — Phönix springt höher als Drache",
-                    wave6dResults.phoenixJumpsHigherThanDragon
-                );
-                check(
-                    "Welle 6.D: Diskrimination — Drache mehr HP als Phönix (tank)",
-                    wave6dResults.dragonHasMoreHpThanPhoenix
-                );
-                check(
-                    "Welle 6.D: Diskrimination — Drache mehr Schaden als Phönix",
-                    wave6dResults.dragonHasMoreDamageThanPhoenix
-                );
-                check(
-                    "Welle 6.D: Diskrimination — Phönix mehr Magie-Resistenz als Drache (magieleitung hoch)",
-                    wave6dResults.phoenixHasMoreMagicResistThanDragon
-                );
-                check(
-                    "Welle 6.D: Diskrimination — Drache mehr Hitze-Resistenz als Phönix (brennbar niedrig)",
-                    wave6dResults.dragonHasMoreHeatResistThanPhoenix
-                );
-                check(
-                    "Welle 6.D: Diskrimination — Mensch HP zwischen Phönix + Drache (balanced)",
-                    wave6dResults.humanHpBetweenPhoenixAndDragon
-                );
-                // State-Anwendung
-                check("Welle 6.D: recomputePlayerStats setzt state.speed", wave6dResults.stateSpeedMatches);
-                check("Welle 6.D: recomputePlayerStats setzt state.jumpPower", wave6dResults.stateJumpPowerMatches);
-                check("Welle 6.D: state.sprintSpeed = 2 × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
-                check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
-                check(
-                    "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
-                    wave6dResults.statePlayerHasHpAndStamina
-                );
-                check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
-                check("Welle 6.D: #player-stats im DOM (Spieler-Drawer)", wave6dResults.statsContainerInDom);
-                check("Welle 6.D: renderPlayerStatsUI läuft ohne Crash", wave6dResults.renderOk);
-                if (wave6dResults.renderOk) {
-                    check("Welle 6.D: 8 stat-row-Einträge im DOM", wave6dResults.statRowsCount === 8);
-                    check("Welle 6.D: stat-tags-Zeile (dominante Achsen) im DOM", wave6dResults.hasTagLine);
-                }
-            }
-
-            // ### Welle 6.G Phase 1.5 — Hylomorphismus-Unification ###
-            // V7.73 hatte Bäume als Parallelcode (state.vegetation, eigene
-            // spawnTreeAt + _buildTreeCollision). V7.74 fließt das ins
-            // bestehende Architektur-System: baum_eiche/baum_kiefer als
-            // _defaultBlueprints, spawn_tree DSL-Op routet durch
-            // spawnArchitecture. EINE Sprache, EIN Renderpfad. Inseln + UFOs
-            // bleiben Sonderpfad (Inseln = floating-chunk-Disziplin, UFOs =
-            // 6.F4-Vorstufe).
-            const wave6gResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // V7.74 Erwartung: Helfer für Inseln + UFOs leben weiter,
-                    // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
-                    out.hasIslandHelper = typeof r._buildIslandCollision === "function";
-                    out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
-                    out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
-                    out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
-                    out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
-                    out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
-
-                    // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
-                    // laub-Material müssen als Built-ins existieren.
-                    const bps = r.state.blueprints || {};
-                    out.hasBaumEiche = !!(
-                        bps.baum_eiche &&
-                        Array.isArray(bps.baum_eiche.parts) &&
-                        bps.baum_eiche.parts.length === 2
-                    );
-                    out.hasBaumKiefer = !!(
-                        bps.baum_kiefer &&
-                        Array.isArray(bps.baum_kiefer.parts) &&
-                        bps.baum_kiefer.parts.length === 2
-                    );
-                    out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
-                    const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
-                    const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
-                    out.eichenStammHolz = !!(
-                        eichenStamm &&
-                        eichenStamm.material === "holz" &&
-                        eichenStamm.shape === "cylinder"
-                    );
-                    out.eichenKroneLaub = !!(
-                        eichenKrone &&
-                        eichenKrone.material === "laub" &&
-                        eichenKrone.shape === "sphere"
-                    );
-                    out.hasLaubMaterial = !!(
-                        r.state.materials &&
-                        r.state.materials.laub &&
-                        r.state.materials.laub.builtIn === true
-                    );
-
-                    // Initiale Welt: Worldgen-Bäume sind jetzt in state.architectures,
-                    // NICHT in state.vegetation. state.vegetation enthält nur noch
-                    // Gras + Blumen. state.architectures enthält baum_eiche/baum_kiefer.
-                    const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
-                    const archTrees = archs.filter((a) => a.type === "baum_eiche" || a.type === "baum_kiefer");
-                    out.worldgenTreesInArchitectures = archTrees.length;
-                    // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
-                    // muss eine Compound-Kollision haben.
-                    const renderedTree = archTrees.find((a) => a.mesh && a.collision && a.collision.body);
-                    out.treeHasCompoundCollision = !!renderedTree;
-
-                    // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
-                    const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
-                    out.initIslandsCount = initIslands.length;
-                    out.initIslandsWithCollision = initIslands.filter(
-                        (i) => i.userData && i.userData.collision && i.userData.collision.body
-                    ).length;
-
-                    // Vegetation enthält NUR noch Gras + Blumen (keine Bäume).
-                    const veg = Array.isArray(r.state.vegetation) ? r.state.vegetation : [];
-                    out.vegetationCount = veg.length;
-                    // Diskrimination: kein Eintrag in state.vegetation hat eine
-                    // Stamm-Cylinder mit Höhe ≥2 (Bäume sind weg).
-                    out.noTreesInVegetation = !veg.some((v) => {
-                        let isTreeLike = false;
-                        v.traverse &&
-                            v.traverse((n) => {
-                                if (
-                                    !isTreeLike &&
-                                    n.isMesh &&
-                                    n.geometry &&
-                                    n.geometry.type === "CylinderGeometry" &&
-                                    n.geometry.parameters &&
-                                    n.geometry.parameters.height >= 2 &&
-                                    (n.geometry.parameters.radiusBottom || 0) >= 0.3
-                                )
-                                    isTreeLike = true;
-                            });
-                        return isTreeLike;
-                    });
-
-                    // DSL-Op-Tests: spawn_tree → erzeugt Architektur, NICHT
-                    // mehr Three.js-Group in state.vegetation.
-                    const archsBefore = r.state.architectures.length;
-                    const islandsBefore = r.state.floatingIslands.length;
-                    const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
-                    const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
-                    const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-                    const tx = playerPos.x + 50;
-                    const ty = playerPos.y;
-                    const tz = playerPos.z + 50;
-
-                    r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
-                    r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
-                        source: "test",
-                    });
-                    r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
-
-                    const archsAfter = r.state.architectures.length;
-                    const islandsAfter = r.state.floatingIslands.length;
-                    const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
-                    const vegAfter = r.state.vegetation ? r.state.vegetation.length : 0;
-                    out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
-                    out.treeNotAddedToVegetation = vegAfter === vegBefore;
-                    out.islandSpawned = islandsAfter > islandsBefore;
-                    out.ufoSpawned = ufosAfter > ufosBefore;
-
-                    const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
-                    out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
-                    out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
-                    out.newTreeHasCollision = !!(
-                        newTreeArch &&
-                        newTreeArch.collision &&
-                        newTreeArch.collision.body &&
-                        newTreeArch.collision.shape
-                    );
-                    // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
-                    if (newTreeArch && typeof r.computeCompoundTags === "function") {
-                        const bp = r.state.blueprints[newTreeArch.type];
-                        const tags = r.computeCompoundTags(bp);
-                        out.treeTagsLebendig = tags && tags.lebendig > 0.5;
-                        out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
-                    }
-
-                    const newIsland = islandsAfter > islandsBefore ? r.state.floatingIslands[islandsAfter - 1] : null;
-                    const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
-                    out.islandHasCollision = !!(
-                        newIsland &&
-                        newIsland.userData &&
-                        newIsland.userData.collision &&
-                        newIsland.userData.collision.body &&
-                        newIsland.userData.collision.tmesh
-                    );
-                    out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
-                    // V9.42-a — Inseln aus Surface-Nets-Pipeline. Vollkörper
-                    // emergiert per Konstruktion (Iso-Fläche schließt sich
-                    // oben + unten). Test misst nicht die Vertex-Zahl
-                    // (Surface-Nets-Auflösung variiert), sondern die Y-Spanne
-                    // der Geometrie: ein Vollkörper hat eine Höhe > 0.5 m.
-                    if (newIsland && newIsland.geometry && newIsland.geometry.attributes.position) {
-                        const pa = newIsland.geometry.attributes.position.array;
-                        let minY = Infinity;
-                        let maxY = -Infinity;
-                        for (let i = 1; i < pa.length; i += 3) {
-                            if (pa[i] < minY) minY = pa[i];
-                            if (pa[i] > maxY) maxY = pa[i];
-                        }
-                        out.islandHasUnderside = isFinite(minY) && isFinite(maxY) && maxY - minY > 0.5;
-                    }
-
-                    // Diskrimination: derselbe Seed → dieselben Vertices.
-                    const beforeIslandsCount = r.state.floatingIslands.length;
-                    r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
-                    r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
-                    const i1 = r.state.floatingIslands[beforeIslandsCount];
-                    const i2 = r.state.floatingIslands[beforeIslandsCount + 1];
-                    if (i1 && i2 && i1.geometry && i2.geometry) {
-                        const v1 = i1.geometry.attributes.position.array;
-                        const v2 = i2.geometry.attributes.position.array;
-                        out.seedDeterministic =
-                            v1.length === v2.length &&
-                            v1.length > 0 &&
-                            Math.abs(v1[1] - v2[1]) < 0.0001 &&
-                            Math.abs(v1[10] - v2[10]) < 0.0001;
-                    }
-
-                    // Chat-Pattern-Tests bleiben — die Patterns selbst sind gleich.
-                    if (typeof r.parseChatToDsl === "function") {
-                        const treeBuilt = r.parseChatToDsl("pflanze baum hier");
-                        const treeProg = treeBuilt && treeBuilt.program;
-                        out.chatTreeProg =
-                            Array.isArray(treeProg) &&
-                            treeProg[0] === "spawn_tree" &&
-                            Array.isArray(treeProg[1]) &&
-                            treeProg[1][0] === "at";
-                        const islandBuilt = r.parseChatToDsl("setze insel hier");
-                        const islandProg = islandBuilt && islandBuilt.program;
-                        out.chatIslandProg =
-                            Array.isArray(islandProg) &&
-                            islandProg[0] === "spawn_island" &&
-                            Array.isArray(islandProg[1]) &&
-                            islandProg[1][0] === "at" &&
-                            Number.isFinite(islandProg[3]);
-                        const ufoBuilt = r.parseChatToDsl("rufe ufo hier");
-                        const ufoProg = ufoBuilt && ufoBuilt.program;
-                        out.chatUfoProg =
-                            Array.isArray(ufoProg) &&
-                            ufoProg[0] === "spawn_ufo" &&
-                            Array.isArray(ufoProg[1]) &&
-                            ufoProg[1][0] === "at";
-                    }
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6gResults && !wave6gResults.error) {
-                check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
-                check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
-                check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
-                // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
-                // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
-                // Anwendungen. Beweis: `_voxelChunkGeometry` akzeptiert
-                // einen `densityFn`-Callback (Default-Pfad bleibt für Welt-
-                // Chunks erhalten, Insel-Pfad übergibt `_islandDensityAt`).
-                const r42a = await page.evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = { hasIslandDensity: typeof r._islandDensityAt === "function" };
-                    if (out.hasIslandDensity) {
-                        // Density bei Mitte (lx=lz=ly=0): innerhalb der Insel-
-                        // Schicht → > 0 (fest). Density weit außen → < 0 (Luft).
-                        const dummyNoise = { noise2D: () => 0 };
-                        out.solidInCenter = r._islandDensityAt(0, 0, 0, 6, 5, dummyNoise) > 0;
-                        out.airFarAway = r._islandDensityAt(20, 0, 0, 6, 5, dummyNoise) < 0;
-                        out.airAbove = r._islandDensityAt(0, 50, 0, 6, 5, dummyNoise) < 0;
-                    }
-                    // Mesher mit densityFn-Callback: untere Hälfte fest,
-                    // obere Hälfte Luft → garantierte Iso-Fläche bei y=2.
-                    out.mesherAcceptsDensity =
-                        typeof r._voxelChunkGeometry === "function" &&
-                        (() => {
-                            try {
-                                const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
-                                const pos = g && g.getAttribute("position");
-                                return !!(pos && pos.count > 0);
-                            } catch {
-                                return false;
-                            }
-                        })();
-                    return out;
-                });
-                check("V9.42-a: _islandDensityAt existiert", r42a.hasIslandDensity);
-                check("V9.42-a: _islandDensityAt liefert fest in der Mitte (> 0)", r42a.solidInCenter);
-                check("V9.42-a: _islandDensityAt liefert Luft außerhalb des Radius", r42a.airFarAway);
-                check("V9.42-a: _islandDensityAt liefert Luft weit über der Insel", r42a.airAbove);
-                check("V9.42-a: _voxelChunkGeometry akzeptiert densityFn-Callback", !!r42a.mesherAcceptsDensity);
-                // V9.42-b — Skirt-Disziplin im Smooth-Pass: Naht-Vertices
-                // (in Rand-Zellen i==0 / i==dimX-1 / k==0 / k==dimZ-1) dürfen
-                // NICHT verschoben werden, sonst zerstört Laplacian die V9.10-
-                // Skirt-Überlappung zwischen zwei Nachbar-Chunks. Wir messen
-                // das, indem wir ZWEI benachbarte Voxel-Chunks bauen und
-                // prüfen, dass an der gemeinsamen Naht (X-Welt-Koord
-                // identisch) substanziell viele Vertices identische Position
-                // teilen. Pre-V9.42-b: ~0 Übereinstimmung (Smooth zog jede
-                // Seite anders). Post-V9.42-b: >50 % der Vertices an der Naht.
-                const r42bSkirt = await page.evaluate(() => {
-                    const r = window.anazhRealm;
-                    const chunks = [...r.state.voxelChunks.values()]
-                        .filter((c) => c && c.mesh && c.mesh.geometry)
-                        .slice(0, 9);
-                    if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
-                    const seen = new Map();
-                    let dup = 0;
-                    for (const c of chunks) {
-                        const pa = c.mesh.geometry.getAttribute("position").array;
-                        for (let i = 0; i < pa.length; i += 3) {
-                            const key = `${pa[i].toFixed(2)}|${pa[i + 1].toFixed(2)}|${pa[i + 2].toFixed(2)}`;
-                            if (seen.has(key)) dup++;
-                            else seen.set(key, true);
-                        }
-                    }
-                    return { chunks: chunks.length, unique: seen.size, duplicates: dup };
-                });
-                check(
-                    `V9.42-b: Skirt-Naht — ${r42bSkirt.duplicates || 0} Vertices teilen identische Position zwischen ${r42bSkirt.chunks || 0} Nachbar-Chunks (Smooth respektiert Naht)`,
-                    (r42bSkirt.duplicates || 0) >= 200
-                );
-                // V9.42-b — Insel-Höhen-Amplitude skaliert mit `height`.
-                const r42bIslandAmp = await page.evaluate(() => {
-                    const r = window.anazhRealm;
-                    const noise = { noise2D: () => 0.5 };
-                    // height=5: kleine Insel
-                    const small = r._islandDensityAt(0, 0, 0, 6, 5, noise);
-                    // height=20: grosse Insel — Density-Wert in der Mitte
-                    // sollte SUBSTANZIELL grösser sein (mehr Material in der Höhe).
-                    const big = r._islandDensityAt(0, 0, 0, 6, 20, noise);
-                    return { small, big, ratio: small > 0 ? big / small : 0 };
-                });
-                check(
-                    `V9.42-b: Insel-Amplitude skaliert mit height (ratio ${(r42bIslandAmp.ratio || 0).toFixed(2)}x bei height 20 vs 5)`,
-                    r42bIslandAmp.ratio > 1.5
-                );
-                // V9.42-b — DSL spawn_island akzeptiert 5. `size`-Argument.
-                const r42bDsl = await page.evaluate(() => {
-                    const r = window.anazhRealm;
-                    const before = r.state.floatingIslands.length;
-                    r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
-                    const after = r.state.floatingIslands.length;
-                    const isle = r.state.floatingIslands[before];
-                    if (!isle) return { spawned: false };
-                    const bbox = new window.THREE.Box3().setFromObject(isle);
-                    return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
-                });
-                check(
-                    `V9.42-b: DSL spawn_island mit size=30 baut eine grosse Insel (${(r42bDsl.width || 0).toFixed(1)} m breit)`,
-                    r42bDsl.spawned && r42bDsl.width > 24
-                );
-                // V9.42-c — Insel-Material vereinheitlicht: MeshToon + vertex-
-                // Colors (wie der Voxel-Boden), kein Terrain-ShaderMaterial
-                // mehr (das passte nicht zur Surface-Nets-Geometrie ohne
-                // aField/uv → "Löcher"-Befund). _attachIslandColors gibt der
-                // Insel grün-oben/erdig-unten per Vertex-Normale.
-                const r42c = await page.evaluate(() => {
-                    const r = window.anazhRealm;
-                    const out = { hasAttachColors: typeof r._attachIslandColors === "function" };
-                    const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
-                    if (isle) {
-                        out.material = isle.material.type;
-                        out.hasVertexColors = !!isle.material.vertexColors;
-                        out.hasColorAttr = !!isle.geometry.getAttribute("color");
-                    }
-                    return out;
-                });
-                check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
-                check(
-                    `V9.42-c: Insel nutzt MeshToonMaterial (kein Terrain-Shader) — ${r42c.material}`,
-                    r42c.material === "MeshToonMaterial" && r42c.hasVertexColors === true
-                );
-                check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
-                check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
-                check(
-                    "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
-                    wave6gResults.parallelTreeHelperRemoved
-                );
-                check(
-                    "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
-                    wave6gResults.parallelSpawnTreeAtRemoved
-                );
-                check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert mit 2 parts", wave6gResults.hasBaumEiche);
-                check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert mit 2 parts", wave6gResults.hasBaumKiefer);
-                check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
-                check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
-                check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
-                check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
-                check(
-                    `Welle 6.G P1.5: Worldgen-Bäume (n=${wave6gResults.worldgenTreesInArchitectures}) sind in state.architectures`,
-                    wave6gResults.worldgenTreesInArchitectures > 0
-                );
-                check(
-                    "Welle 6.G P1.5: mind. ein Worldgen-Baum hat Compound-Box-Kollision",
-                    wave6gResults.treeHasCompoundCollision
-                );
-                check(
-                    "Welle 6.G P1.5: state.vegetation enthält KEINE Bäume mehr (nur Gras + Blumen)",
-                    wave6gResults.noTreesInVegetation
-                );
-                check(
-                    `Welle 6.G P1.5: initiale Welt-Inseln (n=${wave6gResults.initIslandsCount}) haben Kollision`,
-                    wave6gResults.initIslandsCount > 0 &&
-                        wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount
-                );
-                check(
-                    "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
-                    wave6gResults.treeAddedToArchitectures
-                );
-                check(
-                    "Welle 6.G P1.5: spawn_tree DSL-Op fügt NICHTS zu state.vegetation hinzu (Parallelcode weg)",
-                    wave6gResults.treeNotAddedToVegetation
-                );
-                check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
-                check("Welle 6.G P1.5: neu-gespawnter Baum hat Mesh (in Reichweite)", wave6gResults.newTreeHasMesh);
-                check(
-                    "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
-                    wave6gResults.newTreeHasCollision
-                );
-                if (wave6gResults.treeTagsLebendig !== undefined) {
-                    check(
-                        "Welle 6.G P1.5: Baum-Compound-Tags zeigen lebendig (holz + laub)",
-                        wave6gResults.treeTagsLebendig
-                    );
-                    check(
-                        "Welle 6.G P1.5: Baum-Compound-Tags zeigen brennbar (holz + laub)",
-                        wave6gResults.treeTagsBrennbar
-                    );
-                }
-                check(
-                    "Welle 6.G P1.5: spawn_island DSL-Op fügt Insel zu state.floatingIslands hinzu",
-                    wave6gResults.islandSpawned
-                );
-                check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
-                check(
-                    "Welle 6.G P1.5: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
-                    wave6gResults.islandHasCollision
-                );
-                if (wave6gResults.islandHasUnderside !== undefined) {
-                    check(
-                        "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
-                        wave6gResults.islandHasUnderside
-                    );
-                }
-                check(
-                    "Welle 6.G P1.5: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
-                    wave6gResults.ufoHasNoCollision
-                );
-                check(
-                    "Welle 6.G P1.5: spawn_island mit gleichem Seed produziert identische Vertices (Multi-User-Sync)",
-                    wave6gResults.seedDeterministic
-                );
-                check(
-                    "Welle 6.G P1.5: Chat 'pflanze baum hier' → spawn_tree mit ['at',...]",
-                    wave6gResults.chatTreeProg
-                );
-                check(
-                    "Welle 6.G P1.5: Chat 'setze insel hier' → spawn_island mit ['at',...] + eingebettetem Seed",
-                    wave6gResults.chatIslandProg
-                );
-                check("Welle 6.G P1.5: Chat 'rufe ufo hier' → spawn_ufo mit ['at',...]", wave6gResults.chatUfoProg);
-            }
-
-            // ### Welle 6.G Phase 2 — Welt-Affinitäts-Feld ###
-            // Bäume + Strukturen verteilen sich organisch über das Welt-Feld
-            // (4 Noise-Schichten: lebendig/dichte/glut/magieleitung). KEINE
-            // Tabelle — Bauplan-Compound-Tags resonieren mit Welt-Tag-Feld.
-            // Drei neue Baupläne: stein_block (dichte), kristall_geode
-            // (magieleitung), glutbrunnen (glut). Hook in ensureChunkAt
-            // füllt neue Chunks beim Player-Approach.
-            const wave6gP2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
-                    out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
-                    // V9.39 — der Voxel-Populator ist die lebende Schicht.
-                    out.hasPopulateChunk = typeof r._populateVoxelChunkVegetation === "function";
-                    // Drei neue Baupläne als Built-ins.
-                    const bps = r.state.blueprints || {};
-                    out.hasSteinBlock = !!(
-                        bps.stein_block &&
-                        bps.stein_block.builtIn &&
-                        bps.stein_block.parts.length >= 1
-                    );
-                    out.hasKristallGeode = !!(
-                        bps.kristall_geode &&
-                        bps.kristall_geode.builtIn &&
-                        bps.kristall_geode.parts.length >= 2
-                    );
-                    out.hasGlutbrunnen = !!(
-                        bps.glutbrunnen &&
-                        bps.glutbrunnen.builtIn &&
-                        bps.glutbrunnen.parts.length >= 2
-                    );
-                    // worldFieldAt liefert 4 Tag-Achsen.
-                    if (out.hasWorldFieldAt) {
-                        const sample = r.worldFieldAt(0, 0);
-                        out.fieldHas4Axes = !!(
-                            sample &&
-                            typeof sample.lebendig === "number" &&
-                            typeof sample.dichte === "number" &&
-                            typeof sample.glut === "number" &&
-                            typeof sample.magieleitung === "number"
-                        );
-                        out.fieldValuesInRange =
-                            sample.lebendig >= 0 && sample.lebendig <= 1 && sample.dichte >= 0 && sample.dichte <= 1;
-                    }
-                    // Determinismus: zweimaliger Aufruf an dieselbe Position →
-                    // dieselben Werte. Cross-Welt-Variation: zwei verschiedene
-                    // Positionen → unterschiedliche Werte (mit hoher
-                    // Wahrscheinlichkeit, da Noise nicht-konstant).
-                    if (out.hasWorldFieldAt) {
-                        const a1 = r.worldFieldAt(50, 30);
-                        const a2 = r.worldFieldAt(50, 30);
-                        out.fieldDeterministic =
-                            Math.abs(a1.lebendig - a2.lebendig) < 1e-9 && Math.abs(a1.dichte - a2.dichte) < 1e-9;
-                        const b1 = r.worldFieldAt(50, 30);
-                        const b2 = r.worldFieldAt(1000, -1000);
-                        out.fieldVariesBySamplePos =
-                            Math.abs(b1.lebendig - b2.lebendig) > 0.001 || Math.abs(b1.dichte - b2.dichte) > 0.001;
-                    }
-                    // spawnAffinityForBlueprint: baum_eiche (holz+laub, hoch
-                    // in lebendig) hat höhere Affinität in einer lebendig-
-                    // hohen Region als ein stein_block (dichte-hoch, lebendig=0).
-                    // Wir suchen empirisch eine lebendig-hohe Position und
-                    // verifizieren das Verhältnis.
-                    if (out.hasSpawnAffinity && out.hasWorldFieldAt) {
-                        // Iteriere Welt-Grid um eine Position mit hohem lebendig
-                        // zu finden.
-                        let bestLebendigSpot = null;
-                        let bestLebendig = 0;
-                        for (let x = -200; x <= 200; x += 25) {
-                            for (let z = -200; z <= 200; z += 25) {
-                                const f = r.worldFieldAt(x, z);
-                                if (f.lebendig > bestLebendig) {
-                                    bestLebendig = f.lebendig;
-                                    bestLebendigSpot = { x, z };
-                                }
-                            }
-                        }
-                        if (bestLebendigSpot && bestLebendig > 0.5) {
-                            const treeAff = r.spawnAffinityForBlueprint(
-                                "baum_eiche",
-                                bestLebendigSpot.x,
-                                bestLebendigSpot.z
-                            );
-                            const steinAff = r.spawnAffinityForBlueprint(
-                                "stein_block",
-                                bestLebendigSpot.x,
-                                bestLebendigSpot.z
-                            );
-                            // In hohem-lebendig-Bereich sollte Baum >> Stein.
-                            out.affinityFavorsTreeInLebendigRegion = treeAff > steinAff * 1.5;
-                        }
-                        // Dasselbe für dichte: in dichte-hoher Region
-                        // sollte stein_block bevorzugt sein.
-                        let bestDichteSpot = null;
-                        let bestDichte = 0;
-                        for (let x = -200; x <= 200; x += 25) {
-                            for (let z = -200; z <= 200; z += 25) {
-                                const f = r.worldFieldAt(x, z);
-                                if (f.dichte > bestDichte) {
-                                    bestDichte = f.dichte;
-                                    bestDichteSpot = { x, z };
-                                }
-                            }
-                        }
-                        if (bestDichteSpot && bestDichte > 0.5) {
-                            const treeAff = r.spawnAffinityForBlueprint(
-                                "baum_eiche",
-                                bestDichteSpot.x,
-                                bestDichteSpot.z
-                            );
-                            const steinAff = r.spawnAffinityForBlueprint(
-                                "stein_block",
-                                bestDichteSpot.x,
-                                bestDichteSpot.z
-                            );
-                            // Wenn die Stelle auch lebendig-hoch ist, könnte
-                            // tree gewinnen. Wir prüfen primär „stein hat
-                            // signifikant > 0", was die Affinity-Anwendung
-                            // bestätigt.
-                            out.steinAffinityNonzeroInDichteRegion = steinAff > 0.05;
-                            // Für klare Diskrimination: an einer wirklich
-                            // dichte-dominanten Position erwarten wir
-                            // stein > tree (wenn lebendig dort low).
-                            const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
-                            if (f.lebendig < 0.4) {
-                                out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
-                            }
-                        }
-                    }
-                    // Initial-Worldgen: state.architectures enthält jetzt
-                    // Affinity-gespawnte Strukturen — Bäume + (idealerweise)
-                    // mindestens eine der drei neuen Bauplan-Typen.
-                    const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
-                    out.archCount = archs.length;
-                    const typeCounts = {};
-                    for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
-                    out.affinitySpawnTypes = typeCounts;
-                    out.hasInitialTrees = (typeCounts.baum_eiche || 0) + (typeCounts.baum_kiefer || 0) > 0;
-                    // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Populator
-                    // `populateChunkVegetation` ist als toter Pfad entfernt.
-                    // Die Vision-Anker (Welt-Affinitäts-Feld treibt
-                    // Vegetations-Verteilung, idempotent) lebt im Voxel-
-                    // Pendant `_populateVoxelChunkVegetation` weiter — am
-                    // Voxel-Chunk-Lifecycle aufgehängt (V9.24-Verdrahtung).
-                    // Der Test scant `voxelPopulatedChunks` (der Voxel-
-                    // Idempotenz-Cache, befüllt durch die initialen ~81
-                    // Voxel-Chunks beim Welt-Aufbau).
-                    out.populatedChunksSize = r.state.voxelPopulatedChunks ? r.state.voxelPopulatedChunks.size : 0;
-                    if (typeof r._populateVoxelChunkVegetation === "function") {
-                        const before = archs.length;
-                        // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
-                        // zurückgeben dank voxelPopulatedChunks-Cache.
-                        const firstChunkKey = r.state.voxelPopulatedChunks
-                            ? [...r.state.voxelPopulatedChunks][0]
-                            : null;
-                        if (firstChunkKey) {
-                            const [cx, cz] = firstChunkKey.split(",").map(Number);
-                            const secondReturn = r._populateVoxelChunkVegetation(cx, cz);
-                            const after = r.state.architectures.length;
-                            out.populateIdempotent = secondReturn === 0 && after === before;
-                        }
-                    }
-                    // Architecture-Culling-Rate ist jetzt 2 Hz (V7.75 Bugfix).
-                    out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
-                    // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
-                    // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
-                    const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
-                    out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6gP2Results && !wave6gP2Results.error) {
-                check("Welle 6.G P2: worldFieldAt-Methode existiert", wave6gP2Results.hasWorldFieldAt);
-                check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
-                // V9.39 — `populateChunkVegetation` ist gelöscht; der Vision-
-                // Anker (Welt-Affinitäts-Feld treibt Vegetation) lebt in
-                // `_populateVoxelChunkVegetation` weiter (am Voxel-Chunk-
-                // Lifecycle aufgehängt). Der `hasPopulateChunk`-Flag prüft
-                // jetzt das Voxel-Pendant (umgewidmet im evaluate-Block).
-                check(
-                    "Welle 6.G P2 (V9.39): _populateVoxelChunkVegetation-Methode existiert (Voxel-Pendant)",
-                    wave6gP2Results.hasPopulateChunk
-                );
-                check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
-                check(
-                    "Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in",
-                    wave6gP2Results.hasKristallGeode
-                );
-                check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
-                check(
-                    "Welle 6.G P2: worldFieldAt liefert 4 Tag-Achsen (lebendig/dichte/glut/magie)",
-                    wave6gP2Results.fieldHas4Axes
-                );
-                check("Welle 6.G P2: worldFieldAt-Werte im Bereich [0,1]", wave6gP2Results.fieldValuesInRange);
-                check(
-                    "Welle 6.G P2: worldFieldAt deterministisch (selbe Position → selber Wert)",
-                    wave6gP2Results.fieldDeterministic
-                );
-                check(
-                    "Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)",
-                    wave6gP2Results.fieldVariesBySamplePos
-                );
-                if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
-                    check(
-                        "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
-                        wave6gP2Results.affinityFavorsTreeInLebendigRegion
-                    );
-                }
-                if (wave6gP2Results.steinAffinityNonzeroInDichteRegion !== undefined) {
-                    check(
-                        "Welle 6.G P2: Stein-Affinity > 0 in dichte-hoher Region",
-                        wave6gP2Results.steinAffinityNonzeroInDichteRegion
-                    );
-                }
-                if (wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion !== undefined) {
-                    check(
-                        "Welle 6.G P2: Stein-Affinity > Baum-Affinity in dichte-only-Region (lebendig<0.4)",
-                        wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion
-                    );
-                }
-                check(
-                    `Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt (n=${wave6gP2Results.archCount})`,
-                    wave6gP2Results.archCount > 0
-                );
-                check("Welle 6.G P2: Initial-Worldgen hat mind. einen Baum gespawnt", wave6gP2Results.hasInitialTrees);
-                check(
-                    `Welle 6.G P2: populatedChunks-Cache befüllt (size=${wave6gP2Results.populatedChunksSize})`,
-                    wave6gP2Results.populatedChunksSize >= 1
-                );
-                check(
-                    "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
-                    wave6gP2Results.populateIdempotent
-                );
-                check(
-                    "Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)",
-                    wave6gP2Results.cullingRateIs2Hz
-                );
-                check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
-            }
-
-            // ### W6.G P3 Phase 1 — Felsformationen ###
-            // felsbogen (ein Trilithon — ein begehbarer Überhang) + felsturm
-            // (eine vertikale Fels-Nadel) als emergente Welt-Bürger. KEIN
-            // Voxel-Terrain — das Compound-Architektur-System trägt den
-            // Überhang: die Per-Sub-Mesh-Box-Kollision lässt zwischen den
-            // zwei Pfeilern eine echte begehbare Lücke.
-            const wave6gP3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    const bps = r.state.blueprints || {};
-                    const fb = bps.felsbogen;
-                    const ft = bps.felsturm;
-                    out.hasFelsbogen = !!(fb && fb.builtIn && fb.parts && fb.parts.length >= 3);
-                    out.hasFelsturm = !!(ft && ft.builtIn && ft.parts && ft.parts.length >= 3);
-
-                    // Felsbogen — die zwei Pfeiler (tiefste Box-Parts) lassen
-                    // eine begehbare Lücke; ein Sturz spannt darüber.
-                    if (fb && fb.parts) {
-                        const boxes = fb.parts
-                            .filter((p) => p.shape === "box")
-                            .slice()
-                            .sort((a, b) => a.position.y - b.position.y);
-                        if (boxes.length >= 3) {
-                            const a = boxes[0];
-                            const b = boxes[1];
-                            const lintel = boxes[2];
-                            const innerGap = Math.abs(b.position.x - a.position.x) - (a.size.x / 2 + b.size.x / 2);
-                            out.felsbogenGap = innerGap;
-                            out.felsbogenWalkable = innerGap > 2; // Spieler-Hitbox ist ~1 m
-                            out.felsbogenLintelAbove =
-                                lintel.position.y > a.position.y && lintel.position.y > b.position.y;
-                        }
-                    }
-
-                    // Felsturm — vertikal: bbox-Höhe deutlich grösser als Breite.
-                    if (ft && ft.parts) {
-                        let minY = Infinity;
-                        let maxY = -Infinity;
-                        let minX = Infinity;
-                        let maxX = -Infinity;
-                        for (const p of ft.parts) {
-                            minY = Math.min(minY, p.position.y - p.size.y / 2);
-                            maxY = Math.max(maxY, p.position.y + p.size.y / 2);
-                            minX = Math.min(minX, p.position.x - p.size.x / 2);
-                            maxX = Math.max(maxX, p.position.x + p.size.x / 2);
-                        }
-                        out.felsturmSpanY = maxY - minY;
-                        out.felsturmSpanX = maxX - minX;
-                        out.felsturmVertical = maxY - minY > (maxX - minX) * 2;
-                    }
-
-                    // Felsbogen ist ein Stein-Compound — dicht.
-                    if (fb) {
-                        const tags = r.computeCompoundTags(fb);
-                        out.felsbogenDichte = tags ? tags.dichte || 0 : 0;
-                        out.felsbogenIsDense = out.felsbogenDichte > 0.5;
-                    }
-
-                    // spawnArchitecture("felsbogen") → Mesh + Compound-Kollision
-                    // mit mehreren Kind-Boxen. Das IST der begehbare Durchgang
-                    // auf Kollisions-Ebene — eine einzelne AABB hätte keinen.
-                    const pm = r.state.playerMesh;
-                    const px = pm ? pm.position.x : 0;
-                    const pz = pm ? pm.position.z : 0;
-                    const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
-                    out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-                    out.felsbogenHasMesh = !!(eb && eb.mesh);
-                    out.felsbogenCompoundChildren =
-                        eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
-                    out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
-                    // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
-                    // (0x7a7a7a), NICHT weiss. Vorher fiel _buildFromBlueprint
-                    // ohne part.color auf 0xffffff zurück — alle material-
-                    // basierten Baupläne waren weiss.
-                    if (eb && eb.mesh) {
-                        let firstMeshHex = null;
-                        eb.mesh.traverse((n) => {
-                            if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
-                                firstMeshHex = n.material.color.getHex();
-                            }
-                        });
-                        out.felsbogenMeshHex = firstMeshHex;
-                        // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
-                        // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
-                        // ein dunkleres Grau, aber klar KEIN Weiss.
-                        if (firstMeshHex !== null) {
-                            const rr = (firstMeshHex >> 16) & 0xff;
-                            const gg = (firstMeshHex >> 8) & 0xff;
-                            const bb = firstMeshHex & 0xff;
-                            out.felsbogenNotWhite = firstMeshHex !== 0xffffff;
-                            out.felsbogenStoneGrey = rr === gg && gg === bb && rr <= 0xa0;
-                        }
-                    }
-                    const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
-                    out.felsturmSpawned = !!(et && et.type === "felsturm");
-                    out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
-
-                    // V9.39 Phase 5c.2.c.3.b.iii — Placement-Probe nutzt jetzt
-                    // den Voxel-Populator (das Heightfield-Pendant ist tot).
-                    // Vision-Anker bleibt: über ein Raster frischer Chunks MUSS
-                    // mindestens ein Felsbogen + ein Felsturm spawnen
-                    // (Landmark-Wurf 0.014 × Affinitäts-Floor, 12×12=144 Chunks
-                    // statistisch sicher). Vorher: `populateChunkVegetation`.
-                    if (typeof r._populateVoxelChunkVegetation === "function") {
-                        const before = r.state.architectures.length;
-                        // Frische Voxel-Chunk-Indices, deutlich außerhalb des
-                        // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
-                        const fresh = new Set();
-                        for (let cx = 20; cx <= 31; cx++) {
-                            for (let cz = 20; cz <= 31; cz++) {
-                                const key = `${cx},${cz}`;
-                                if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
-                                fresh.add(key);
-                                r._populateVoxelChunkVegetation(cx, cz);
-                            }
-                        }
-                        let fbCount = 0;
-                        let ftCount = 0;
-                        for (let i = before; i < r.state.architectures.length; i++) {
-                            const t = r.state.architectures[i].type;
-                            if (t === "felsbogen") fbCount++;
-                            else if (t === "felsturm") ftCount++;
-                        }
-                        out.placedFelsbogen = fbCount;
-                        out.placedFelsturm = ftCount;
-                        out.placementWorks = fbCount > 0 && ftCount > 0;
-                        r.state.architectures.length = before;
-                        // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
-                        // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
-                        // einen späteren echten Pass).
-                        for (const k of fresh) {
-                            if (r.state.voxelPopulatedChunks) r.state.voxelPopulatedChunks.delete(k);
-                        }
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6gP3Results && !wave6gP3Results.error) {
-                check("W6.G P3: Bauplan 'felsbogen' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsbogen);
-                check("W6.G P3: Bauplan 'felsturm' existiert als Built-in (>=3 Parts)", wave6gP3Results.hasFelsturm);
-                check(
-                    `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
-                    wave6gP3Results.felsbogenWalkable
-                );
-                check("W6.G P3: Felsbogen-Sturz spannt über den Pfeilern", wave6gP3Results.felsbogenLintelAbove);
-                check(
-                    `W6.G P3: Felsturm ist vertikal (Höhe ${(wave6gP3Results.felsturmSpanY || 0).toFixed(1)} >> Breite ${(wave6gP3Results.felsturmSpanX || 0).toFixed(1)})`,
-                    wave6gP3Results.felsturmVertical
-                );
-                check("W6.G P3: Felsbogen ist ein dichtes Stein-Compound", wave6gP3Results.felsbogenIsDense);
-                check(
-                    "W6.G P3: spawnArchitecture('felsbogen') erzeugt Mesh + Eintrag",
-                    wave6gP3Results.felsbogenSpawned && wave6gP3Results.felsbogenHasMesh
-                );
-                check(
-                    `W6.G P3: der Felsbogen rendert stein-grau, nicht weiss (V9.06-Fix, hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)})`,
-                    wave6gP3Results.felsbogenNotWhite && wave6gP3Results.felsbogenStoneGrey
-                );
-                check(
-                    `W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene (n=${wave6gP3Results.felsbogenCompoundChildren})`,
-                    wave6gP3Results.felsbogenWalkThroughCollision
-                );
-                check(
-                    "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + Kollision",
-                    wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
-                );
-                check(
-                    `W6.G P3: Felsbögen UND Felstürme spawnen über das Welt-Affinitäts-Feld (Bögen=${wave6gP3Results.placedFelsbogen}, Türme=${wave6gP3Results.placedFelsturm})`,
-                    wave6gP3Results.placementWorks
-                );
-            }
-
-            // ### W6.G P4 — das Terrain wird Materie ###
-            // Der Boden gibt: ein Grabe-Hieb löst Terrain in Material auf,
-            // dessen Identität aus worldFieldAt emergiert (die Farbe, die der
-            // Spieler sieht, ist das Material, das er bekommt). Kein Voxel-
-            // Rewrite, keine Biom-Tabelle — der kontinuierliche Affinitäts-
-            // Feld trägt es. Das Terrain joint die Hylomorphismus-Sprache.
-            const wave6gP4Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    const mats = r.state.materials || {};
-                    out.hasErde = !!(mats.erde && mats.erde.builtIn);
-                    out.hasTerrainMaterialAt = typeof r._terrainMaterialAt === "function";
-
-                    // Resonanz — die dominante Welt-Achse bestimmt das Material.
-                    // worldFieldAt mocken (Muster wie andere Tests, Z. ~14339).
-                    const origWFA = r.worldFieldAt;
-                    const known = ["erde", "stein", "glut", "quarz"];
-                    if (out.hasTerrainMaterialAt) {
-                        const probe = (lebendig, dichte, glut, magieleitung) => {
-                            r.worldFieldAt = () => ({ lebendig, dichte, glut, magieleitung });
-                            return r._terrainMaterialAt(0, 0);
-                        };
-                        out.lebendigYieldsErde = probe(0.9, 0.2, 0.1, 0.1) === "erde";
-                        out.dichteYieldsStein = probe(0.2, 0.9, 0.1, 0.1) === "stein";
-                        out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
-                        out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
-                        r.worldFieldAt = origWFA;
-                        out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
-                        // Das Terrain ist nicht uniform — über ein Raster
-                        // emergieren ≥2 verschiedene Boden-Materialien.
-                        const seen = {};
-                        for (let x = -200; x <= 200; x += 40) {
-                            for (let z = -200; z <= 200; z += 40) {
-                                seen[r._terrainMaterialAt(x, z)] = true;
-                            }
-                        }
-                        out.terrainMaterialVariety = Object.keys(seen).length;
-                    }
-
-                    // Integration — ein Grabe-Hieb (tryMouseBreak, Terrain-Zweig)
-                    // füllt das Inventar mit dem Boden-Material. _raycastWorldHit
-                    // + _pickArchitectureAtCrosshair mocken (kein Physik-Setup).
-                    if (out.hasTerrainMaterialAt && typeof r.tryMouseBreak === "function") {
-                        const origRay = r._raycastWorldHit;
-                        const origPick = r._pickArchitectureAtCrosshair;
-                        const origMode = typeof r.getGameMode === "function" ? r.getGameMode() : "frieden";
-                        if (typeof r.setGameMode === "function") r.setGameMode("frieden"); // Stamina frei
-                        const digX = 60;
-                        const digZ = -40;
-                        r._raycastWorldHit = () => ({ hit: true, x: digX, y: 5, z: digZ });
-                        r._pickArchitectureAtCrosshair = () => null;
-                        const expectMat = r._terrainMaterialAt(digX, digZ);
-                        const inv = r.state.player.inventory;
-                        // Inventar tief snapshotten — der Grabe-Test darf den
-                        // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
-                        // prüfen „Inventar initial leer"). V8.97-Disziplin.
-                        const invSnapshot = inv.map((s) => (s ? { ...s } : null));
-                        const matSlotsBefore = inv.filter((s) => s && s.kind === "material").length;
-                        const ok = r.tryMouseBreak();
-                        const dugSlot = inv.find((s) => s && s.kind === "material" && s.material === expectMat);
-                        out.digReturned = ok === true;
-                        out.digYieldedMaterial =
-                            !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
-                        out.digYieldMatchesField = !!dugSlot;
-                        out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
-                        for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
-                        r._raycastWorldHit = origRay;
-                        r._pickArchitectureAtCrosshair = origPick;
-
-                        // Un-mocked Realpfad — der ECHTE _raycastWorldHit gegen
-                        // das echte Terrain. Nur _pickArchitectureAtCrosshair
-                        // wird genullt (damit garantiert der Terrain-Zweig
-                        // läuft, nicht ein Architektur-Treffer). Die Kamera
-                        // blickt gerade nach unten → der Ammo-Raycast trifft
-                        // den Voxel-Boden unter dem Spieler. Beweist: echter
-                        // Raycast + V9.36-`carveVoxelSphere` + Material-Yield,
-                        // ohne Mock.
-                        if (r.state.camera && r.state.playerMesh) {
-                            const cam = r.state.camera;
-                            const pm = r.state.playerMesh;
-                            const savedPos = cam.position.clone();
-                            const savedQuat = cam.quaternion.clone();
-                            cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
-                            cam.lookAt(pm.position.x, pm.position.y - 20, pm.position.z);
-                            cam.updateMatrixWorld(true);
-                            r._pickArchitectureAtCrosshair = () => null;
-                            const realHit = r._raycastWorldHit(40);
-                            out.realRaycastHit = !!(realHit && realHit.hit);
-                            const matSumBefore = inv
-                                .filter((s) => s && s.kind === "material")
-                                .reduce((a, s) => a + (s.count || 0), 0);
-                            r.tryMouseBreak();
-                            const matSumAfter = inv
-                                .filter((s) => s && s.kind === "material")
-                                .reduce((a, s) => a + (s.count || 0), 0);
-                            out.realDigYielded = matSumAfter > matSumBefore;
-                            for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
-                            r._pickArchitectureAtCrosshair = origPick;
-                            cam.position.copy(savedPos);
-                            cam.quaternion.copy(savedQuat);
-                            cam.updateMatrixWorld(true);
-                        }
-                        if (typeof r.setGameMode === "function") r.setGameMode(origMode);
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6gP4Results && !wave6gP4Results.error) {
-                check("W6.G P4: Material 'erde' existiert als Built-in", wave6gP4Results.hasErde);
-                check("W6.G P4: _terrainMaterialAt-Methode existiert", wave6gP4Results.hasTerrainMaterialAt);
-                check(
-                    "W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material",
-                    wave6gP4Results.returnsKnownMaterial
-                );
-                check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
-                check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);
-                check("W6.G P4: glut-dominante Region → glut (Resonanz)", wave6gP4Results.glutYieldsGlut);
-                check("W6.G P4: magie-dominante Region → quarz (Resonanz)", wave6gP4Results.magieYieldsQuarz);
-                check(
-                    `W6.G P4: das Terrain ist nicht uniform (${wave6gP4Results.terrainMaterialVariety} Boden-Materialien über das Raster)`,
-                    (wave6gP4Results.terrainMaterialVariety || 0) >= 2
-                );
-                check(
-                    "W6.G P4: ein Grabe-Hieb (tryMouseBreak) füllt das Inventar mit Boden-Material",
-                    wave6gP4Results.digReturned && wave6gP4Results.digYieldedMaterial
-                );
-                check(
-                    "W6.G P4: das gegrabene Material entspricht worldFieldAt am Grabe-Ort + der Yield ist in [1,10]",
-                    wave6gP4Results.digYieldMatchesField && wave6gP4Results.digYieldCountSane
-                );
-                check(
-                    "W6.G P4: der ECHTE Raycast (Kamera nach unten) trifft das Terrain",
-                    wave6gP4Results.realRaycastHit
-                );
-                check(
-                    "W6.G P4: ein un-gemockter Grabe-Hieb (echter Raycast + V9.36-carveVoxelSphere) yieldet Material",
-                    wave6gP4Results.realDigYielded
-                );
-            }
-
-            // ### Voxel-Terrain-Bogen Phase 1 — Dichte-Feld + Surface Nets ###
-            // Parallel-System: ein 3D-Dichte-Feld + ein Surface-Nets-Mesher.
-            // Beweist, dass echte Höhlen/Überhänge möglich sind, ohne das
-            // Heightfield anzufassen. Siehe docs/roadmap.md „Voxel-Terrain-Bogen".
-            // V9.35 — vor dem _spawnVoxelTestChunk-Test räumen wir alle
-            // Voxel-Chunks direkt ab (~81 Chunks, ~5-6 MB Ammo-Heap zurück);
-            // die alte setVoxelTerrainActive(false)-Geste ist tot (Toggle ist
-            // weg). Die folgenden Tests bauen ihren Voxel-Ring per direktem
-            // _tickVoxelChunkStreaming neu auf — saubere Test-Isolation.
-            await page.evaluate(() => {
-                const r = window.anazhRealm;
-                if (r && r.state && r.state.voxelChunks && typeof r._disposeVoxelChunk === "function") {
-                    for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
-                }
-            });
-            const voxelP1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasDensityAt = typeof r._terrainDensityAt === "function";
-                    out.hasChunkGeometry = typeof r._voxelChunkGeometry === "function";
-                    out.hasSpawnTest = typeof r._spawnVoxelTestChunk === "function";
-
-                    if (out.hasDensityAt) {
-                        // Das Feld ist genuin 3D — bei festem (x,z) nimmt die
-                        // Dichte mit der Höhe ab (mehr Luft oben). Über mehrere
-                        // Stichproben gemittelt, damit das 3D-Noise-Band die
-                        // Monotonie nicht lokal kippt.
-                        let lowerSum = 0;
-                        let upperSum = 0;
-                        for (let s = 0; s < 8; s++) {
-                            const sx = s * 37 - 100;
-                            const sz = s * 53 + 40;
-                            lowerSum += r._terrainDensityAt(sx, -40, sz);
-                            upperSum += r._terrainDensityAt(sx, 60, sz);
-                        }
-                        out.densityIs3D = lowerSum > upperSum;
-                        // Das Feld KANN eine Höhle: ein Luft-Punkt (Dichte < 0),
-                        // der vertikal zwischen festem Grund liegt.
-                        let foundCave = false;
-                        for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
-                            for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
-                                for (let sy = -40; sy <= 20 && !foundCave; sy += 4) {
-                                    if (
-                                        r._terrainDensityAt(sx, sy, sz) < 0 &&
-                                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
-                                        r._terrainDensityAt(sx, sy + 6, sz) > 0
-                                    ) {
-                                        foundCave = true;
-                                    }
-                                }
-                            }
-                        }
-                        out.densityCanCave = foundCave;
-
-                        // V9.12 — der Voxel-Chunk fasst das ganze Oberflächen-
-                        // Band: der Boden ist überall fest, die Decke überall
-                        // Luft → keine Klipp-Löcher. V9.26: Chunk-Bounds erhöht
-                        // auf base-58 .. base+86 (Marge ~22 gegen ridged-Spike-
-                        // Löcher am erweiterten Sicht-Ring).
-                        const cBase = r.state.terrainBaseHeight || 0;
-                        let floorAllSolid = true;
-                        let ceilAllAir = true;
-                        for (let sx = -220; sx <= 220; sx += 20) {
-                            for (let sz = -220; sz <= 220; sz += 20) {
-                                if (r._terrainDensityAt(sx, cBase - 58, sz) <= 0) floorAllSolid = false;
-                                if (r._terrainDensityAt(sx, cBase + 86, sz) >= 0) ceilAllAir = false;
-                            }
-                        }
-                        out.chunkContainsSurface = floorAllSolid && ceilAllAir;
-
-                        // V9.18 Phase 4 — Höhlen entstehen mit der Welt.
-                        // Über ein 3D-Raster: eine Höhlen-Zelle ist Luft, von
-                        // festem Grund 6 m darüber UND darunter umschlossen
-                        // (echte Höhle, kein offener Himmel). Es gibt viele
-                        // davon (Höhlen existieren) — aber sie sind eine
-                        // Minderheit des festen Volumens (die Welt ist nicht
-                        // hohl). Und der Boden unter dem Höhlen-Band (base-44,
-                        // unter der caveFloor-Hüllkurve) bleibt überall fest.
-                        let caveCells = 0;
-                        let solidCells = 0;
-                        let p4FloorSolid = true;
-                        for (let sx = -200; sx <= 200; sx += 25) {
-                            for (let sz = -200; sz <= 200; sz += 25) {
-                                if (r._terrainDensityAt(sx, cBase - 44, sz) <= 0) p4FloorSolid = false;
-                                for (let sy = cBase - 26; sy <= cBase + 44; sy += 5) {
-                                    const dHere = r._terrainDensityAt(sx, sy, sz);
-                                    if (dHere > 0) solidCells++;
-                                    if (
-                                        dHere < 0 &&
-                                        r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
-                                        r._terrainDensityAt(sx, sy + 6, sz) > 0
-                                    ) {
-                                        caveCells++;
-                                    }
-                                }
-                            }
-                        }
-                        out.cavesExist = caveCells >= 8;
-                        out.worldNotHollow = caveCells * 3 < solidCells;
-                        out.caveFloorSolid = p4FloorSolid;
-                    }
-
-                    if (out.hasChunkGeometry) {
-                        const geom = r._voxelChunkGeometry(0, -24, 0, 20, 20, 20, 1.8);
-                        out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
-                        if (out.geomBuilt) {
-                            const pos = geom.getAttribute("position");
-                            out.geomVertexCount = pos.count;
-                            let allFinite = true;
-                            for (let v = 0; v < pos.count * 3; v++) {
-                                if (!Number.isFinite(pos.array[v])) allFinite = false;
-                            }
-                            out.geomFinite = allFinite;
-                            out.geomHasNormals = !!geom.getAttribute("normal");
-                            out.geomHasIndex = !!geom.getIndex();
-                            // V9.16 — die Normalen kommen aus dem Dichte-
-                            // Gradienten: jede ist ein endlicher Einheits-
-                            // vektor (kein Facetten-Rauten-Muster).
-                            const nrm = geom.getAttribute("normal");
-                            let normalsUnit = !!nrm && nrm.count === pos.count;
-                            if (nrm) {
-                                for (let v = 0; v < nrm.count; v++) {
-                                    const nl = Math.sqrt(
-                                        nrm.getX(v) * nrm.getX(v) +
-                                            nrm.getY(v) * nrm.getY(v) +
-                                            nrm.getZ(v) * nrm.getZ(v)
-                                    );
-                                    if (!Number.isFinite(nl) || Math.abs(nl - 1) > 0.02) {
-                                        normalsUnit = false;
-                                        break;
-                                    }
-                                }
-                            }
-                            out.normalsUnit = normalsUnit;
-                            // V9.11 — kein Streck-Dreieck (Index-Aliasing-Bug):
-                            // jede Triangle-Kante ist lokal klein (≤ ein paar
-                            // Zellen). Ein Stray-Dreieck quer durch den Chunk
-                            // hätte eine Kante von zig Zellen — das war die
-                            // unsaubere Naht. step=1.8 → Grenze 5×step=9.
-                            if (out.geomHasIndex) {
-                                const ia = geom.getIndex().array;
-                                const pa = pos.array;
-                                let maxEdge = 0;
-                                const elen = (p, q) =>
-                                    Math.hypot(pa[p] - pa[q], pa[p + 1] - pa[q + 1], pa[p + 2] - pa[q + 2]);
-                                for (let t = 0; t + 2 < ia.length; t += 3) {
-                                    const a = ia[t] * 3;
-                                    const b = ia[t + 1] * 3;
-                                    const c = ia[t + 2] * 3;
-                                    const m = Math.max(elen(a, b), elen(b, c), elen(c, a));
-                                    if (m > maxEdge) maxEdge = m;
-                                }
-                                out.geomMaxEdge = maxEdge;
-                                out.geomNoStrayTris = maxEdge > 0 && maxEdge < 1.8 * 5;
-
-                                // V9.41.b — Laplacian-Smooth: prüfe, dass die
-                                // Position eines Vertex deutlich näher am
-                                // Durchschnitt seiner Nachbarn liegt als der
-                                // Original-Vertex (Surface-Nets-Treppe). Wir
-                                // messen pro Vertex die Y-Distanz zum Nachbar-
-                                // Mittel und mitteln über alle Vertices. Pre-
-                                // V9.41.b liegt der Wert in der Größenordnung
-                                // step/2 = 0.9 (Surface-Nets-Zellen-Auflösung).
-                                // Nach 1 Iteration mit Lambda 0.5 sollte der
-                                // Wert ungefähr halbiert sein — der Vertex ist
-                                // jetzt 50% des Weges zum Nachbar-Mittel.
-                                const neighborSets = new Array(pos.count);
-                                for (let v = 0; v < pos.count; v++) neighborSets[v] = new Set();
-                                for (let t = 0; t + 2 < ia.length; t += 3) {
-                                    const i0 = ia[t],
-                                        i1 = ia[t + 1],
-                                        i2 = ia[t + 2];
-                                    neighborSets[i0].add(i1);
-                                    neighborSets[i0].add(i2);
-                                    neighborSets[i1].add(i0);
-                                    neighborSets[i1].add(i2);
-                                    neighborSets[i2].add(i0);
-                                    neighborSets[i2].add(i1);
-                                }
-                                let totalDev = 0;
-                                let sampledVerts = 0;
-                                for (let v = 0; v < pos.count; v++) {
-                                    const nbrs = neighborSets[v];
-                                    if (nbrs.size < 2) continue;
-                                    let sy = 0;
-                                    for (const n of nbrs) sy += pa[n * 3 + 1];
-                                    const avgY = sy / nbrs.size;
-                                    totalDev += Math.abs(pa[v * 3 + 1] - avgY);
-                                    sampledVerts++;
-                                }
-                                out.smoothMeanYDev = sampledVerts > 0 ? totalDev / sampledVerts : 0;
-                                // step = 1.8 für Test-Chunk; pre-Smooth wäre
-                                // diese Mean-Dev typisch > 0.3 (steile Treppen).
-                                // Post-Smooth mit Lambda 0.5 sollte sie unter
-                                // 0.25 fallen — das ist die Härtung.
-                                out.smoothMeanYDevLow = out.smoothMeanYDev > 0 && out.smoothMeanYDev < 0.25;
-
-                                // V9.41 — alternierende Diagonalen (Schach-Brett).
-                                // Quad emittiert pro Paar 6 Indizes: 2 Dreiecke.
-                                // a-c-Diagonale: indices = [a,b,c, a,c,d] →
-                                // erster Vertex des ersten Dreiecks (a) == erster
-                                // Vertex des zweiten Dreiecks (a).
-                                // b-d-Diagonale: indices = [a,b,d, b,c,d] →
-                                // ZWEITER Vertex des ersten Dreiecks (b) == ERSTER
-                                // Vertex des zweiten Dreiecks (b).
-                                // Pre-V9.41: nur a-c-Pattern. Post-V9.41 mit
-                                // Schach-Brett: beide Patterns kommen vor.
-                                let acDiag = 0;
-                                let bdDiag = 0;
-                                for (let t = 0; t + 5 < ia.length; t += 6) {
-                                    if (ia[t] === ia[t + 3]) acDiag++;
-                                    else if (ia[t + 1] === ia[t + 3]) bdDiag++;
-                                }
-                                out.diagonalAcCount = acDiag;
-                                out.diagonalBdCount = bdDiag;
-                                out.diagonalAlternates = acDiag > 0 && bdDiag > 0;
-                            }
-                        }
-                    }
-
-                    // Phase 2a — der Kollisions-Builder.
-                    out.hasStaticTriCollision = typeof r._buildStaticTriMeshCollision === "function";
-                    out.hasIslandCollision = typeof r._buildIslandCollision === "function";
-
-                    if (out.hasSpawnTest && r.state.scene) {
-                        const before = r.state.scene.children.length;
-                        const m1 = r._spawnVoxelTestChunk();
-                        const afterOne = r.state.scene.children.length;
-                        // m1 bekommt eine btBvhTriangleMeshShape-Kollision.
-                        out.spawnHasCollision = !!(
-                            m1 &&
-                            m1.userData &&
-                            m1.userData.collision &&
-                            m1.userData.collision.body &&
-                            m1.userData.collision.kind === "voxel"
-                        );
-                        const m2 = r._spawnVoxelTestChunk();
-                        const afterTwo = r.state.scene.children.length;
-                        out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
-                        // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
-                        out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
-                        // Der alte Test-Chunk gab seine Kollision frei.
-                        out.spawnDisposesOldCollision = !!(m1 && m1.userData && m1.userData.collision === null);
-                        out.spawnNewHasCollision = !!(
-                            m2 &&
-                            m2.userData &&
-                            m2.userData.collision &&
-                            m2.userData.collision.body
-                        );
-                        // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
-                        if (r._voxelTestMesh) {
-                            r._disposeStaticCollision(r._voxelTestMesh);
-                            r.state.scene.remove(r._voxelTestMesh);
-                            r._voxelTestMesh = null;
-                        }
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelP1Results && !voxelP1Results.error) {
-                check("Voxel P1: _terrainDensityAt-Methode existiert", voxelP1Results.hasDensityAt);
-                check("Voxel P1: _voxelChunkGeometry-Methode existiert", voxelP1Results.hasChunkGeometry);
-                check("Voxel P1: _spawnVoxelTestChunk-Methode existiert", voxelP1Results.hasSpawnTest);
-                check(
-                    "Voxel P1: das Dichte-Feld ist genuin 3D (Dichte nimmt mit der Höhe ab)",
-                    voxelP1Results.densityIs3D
-                );
-                check(
-                    "Voxel P1: das Dichte-Feld KANN eine Höhle (Luft zwischen festem Grund)",
-                    voxelP1Results.densityCanCave
-                );
-                check(
-                    "Voxel P2b-Politur: der Voxel-Chunk fasst das ganze Oberflächen-Band (Boden fest + Decke Luft — keine Klipp-Löcher)",
-                    voxelP1Results.chunkContainsSurface
-                );
-                check("Voxel P4: die Wurm-Höhlen schnitzen echte Luft im Höhlen-Band", voxelP1Results.cavesExist);
-                check(
-                    "Voxel P4: die Welt ist nicht hohl (das Höhlen-Band bleibt überwiegend fest)",
-                    voxelP1Results.worldNotHollow
-                );
-                check(
-                    "Voxel P4: die Tiefen-Hüllkurve hält den Boden (base-44) unter den Höhlen fest",
-                    voxelP1Results.caveFloorSolid
-                );
-                check(
-                    `Voxel P1: _voxelChunkGeometry mesht eine Geometrie (${voxelP1Results.geomVertexCount || 0} Vertices)`,
-                    voxelP1Results.geomBuilt && (voxelP1Results.geomVertexCount || 0) > 0
-                );
-                check("Voxel P1: alle Mesh-Positionen sind endlich (kein NaN)", voxelP1Results.geomFinite);
-                check(
-                    "Voxel P1: das Mesh trägt Normalen + einen Index",
-                    voxelP1Results.geomHasNormals && voxelP1Results.geomHasIndex
-                );
-                check(
-                    "Voxel P3b-Politur: die Voxel-Normalen sind Einheitsvektoren aus dem Dichte-Gradienten (glatt, kein Facetten-Muster)",
-                    voxelP1Results.normalsUnit
-                );
-                check(
-                    `Voxel P2b-Politur: kein Streck-Dreieck — jede Kante ist lokal klein (maxEdge ${(voxelP1Results.geomMaxEdge || 0).toFixed(1)} < 9)`,
-                    voxelP1Results.geomNoStrayTris
-                );
-                check(
-                    `V9.41: Quad-Diagonalen alternieren (Schach-Brett) — beide Patterns vorhanden (a-c ${voxelP1Results.diagonalAcCount}, b-d ${voxelP1Results.diagonalBdCount})`,
-                    voxelP1Results.diagonalAlternates
-                );
-                check(
-                    `V9.41.b: Laplacian-Smooth glättet Voxel-Treppen — mittlere Y-Abweichung vom Nachbar-Mittel ${(voxelP1Results.smoothMeanYDev || 0).toFixed(2)} < 0.25 (step 1.8)`,
-                    voxelP1Results.smoothMeanYDevLow
-                );
-                check(
-                    "V9.41: keine Diagonal-Pattern-Dominanz — beide Muster ≥ 10% des jeweils anderen",
-                    voxelP1Results.diagonalAcCount > 0 &&
-                        voxelP1Results.diagonalBdCount > 0 &&
-                        Math.min(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) /
-                            Math.max(voxelP1Results.diagonalAcCount, voxelP1Results.diagonalBdCount) >=
-                            0.1
-                );
-                check("Voxel P1: _spawnVoxelTestChunk stellt ein Mesh in die Szene", voxelP1Results.spawnAddsMesh);
-                check(
-                    "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
-                    voxelP1Results.spawnReplaces
-                );
-                check(
-                    "Voxel P2a: _buildStaticTriMeshCollision-Methode existiert",
-                    voxelP1Results.hasStaticTriCollision
-                );
-                check(
-                    "Voxel P2a: _buildIslandCollision existiert weiter (Regression nach Extraktion)",
-                    voxelP1Results.hasIslandCollision
-                );
-                check(
-                    "Voxel P2a: der Voxel-Test-Chunk bekommt eine btBvhTriangleMeshShape-Kollision (kind voxel)",
-                    voxelP1Results.spawnHasCollision
-                );
-                check(
-                    "Voxel P2a: ein zweiter Spawn gibt die Kollision des alten Chunks frei",
-                    voxelP1Results.spawnDisposesOldCollision
-                );
-                check(
-                    "Voxel P2a: der neue Test-Chunk trägt wieder eine Kollision",
-                    voxelP1Results.spawnNewHasCollision
-                );
-            }
-
-            // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
-            // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
-            // Parallel, hinter dem Flag — jeder Schritt reversibel.
-            const voxelP2bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasEnsure = typeof r._ensureVoxelChunkAt === "function";
-                    out.hasTick = typeof r._tickVoxelChunkStreaming === "function";
-                    out.hasPrune = typeof r._pruneDistantVoxelChunks === "function";
-                    out.hasConfig = typeof r._voxelChunkConfig === "function";
-                    out.hasAttachColors = typeof r._attachVoxelFieldColors === "function";
-                    // V9.35 Phase 5c.2.c.2 — die Toggle-Methoden sind tot;
-                    // Voxel ist permanent + irreversibel. Der Ring ist schon
-                    // beim Init gefüllt (state.voxelTerrainActive defaults
-                    // auf true). Die alten Reversibilitäts-Tests (Heightfield
-                    // ruht / erwacht / setVoxelTerrainActive füllt|räumt)
-                    // sind ersatzlos entfallen.
-
-                    if (out.hasTick) {
-                        // V9.40-c — Test-Deterministik: der Game-Loop läuft im
-                        // Headless-Chromium gedrosselt (~1 Hz im Hintergrund-Tab),
-                        // also bauen wir den Voxel-Ring hier explizit synchron.
-                        // Der V9.40-c-Hook (`_tickDirtyVoxelChunks`) verschob das
-                        // Timing-Fenster gerade weit genug, dass die initial-
-                        // Spawn-Tests rot wurden — der explizite Drain heilt das
-                        // an der Test-Seite (im Spiel-Pfad läuft alles asynchron).
-                        const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-                        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
-                        for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
-                        out.activated = r.state.voxelTerrainActive === true;
-                        out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
-                        // jeder gemeshte Voxel-Chunk trägt eine Kollision.
-                        let meshCount = 0;
-                        let collCount = 0;
-                        for (const e of r.state.voxelChunks.values()) {
-                            if (e && e.mesh) {
-                                meshCount++;
-                                if (e.mesh.userData && e.mesh.userData.collision && e.mesh.userData.collision.body) {
-                                    collCount++;
-                                }
-                            }
-                        }
-                        out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
-
-                        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
-                        out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
-                        out.hasVoxelSurfaceY = typeof r._voxelSurfaceY === "function";
-                        let grassEntries = 0;
-                        let grassBlades = 0;
-                        if (r.state.voxelChunkGrass) {
-                            for (const g of r.state.voxelChunkGrass.values()) {
-                                grassEntries++;
-                                if (g && g.isInstancedMesh) grassBlades += g.count;
-                            }
-                        }
-                        out.voxelGrassBuilt = grassEntries > 0;
-                        out.voxelGrassHasBlades = grassBlades > 0;
-                        // _voxelSurfaceY: liefert eine endliche Höhe, dort ist
-                        // fester Grund + knapp darüber (Scan-Schritt) Luft.
-                        const sy = r._voxelSurfaceY(12, -8);
-                        out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
-                        out.voxelSurfaceIsBoundary =
-                            out.voxelSurfaceFinite &&
-                            r._terrainDensityAt(12, sy, -8) > 0 &&
-                            r._terrainDensityAt(12, sy + 1.2, -8) <= 0;
-
-                        // V9.24 — die geheilten Verbindungen: Sicht-Ring + Vegetation.
-                        out.hasVegSampleSpawn = typeof r._vegetationSampleSpawn === "function";
-                        out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
-                        // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
-                        const ringBefore = r.state.chunkRingRadius;
-                        r.state.chunkRingRadius = 6;
-                        out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
-                        r.state.chunkRingRadius = ringBefore;
-                        // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
-                        // Aufruf für denselben Chunk spawnt nichts mehr.
-                        r._populateVoxelChunkVegetation(777, 777);
-                        out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
-                        out.voxelVegMarksChunk = !!(
-                            r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777")
-                        );
-
-                        // V9.25 Phase 5b — die Höhen-Konsumenten sind voxel-aware.
-                        // (Das Voxel-Terrain ist hier aktiv → worldMeta.voxelTerrain
-                        // gesetzt.) getTerrainHeightAt + findSurfaceAbove liefern
-                        // die Voxel-Oberfläche, nicht das schlafende Heightfield.
-                        const vsRef = r._voxelSurfaceY(10, 10);
-                        const ghVoxel = r.getTerrainHeightAt(10, 10);
-                        out.getTerrainHeightVoxelAware =
-                            typeof vsRef === "number" &&
-                            Number.isFinite(vsRef) &&
-                            typeof ghVoxel === "number" &&
-                            Math.abs(ghVoxel - vsRef) < 0.01;
-                        const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
-                        out.findSurfaceVoxelAware =
-                            typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
-
-                        // V9.26 Phase 5c-Migration + V9.35 Phase 5c.2.c.2
-                        // Zwangs-Migration — eine geladene alte Welt OHNE
-                        // voxelTerrain-Flag UND eine alte explizit Heightfield-
-                        // Opt-out-Welt werden BEIDE voxel-basiert (der Opt-out
-                        // existiert nicht mehr; das Heightfield ist Dead-Code).
-                        // Die fresh-Eingangs-Welt ist seit V9.33 ebenfalls
-                        // voxel-default. Das Welt-Journal wird vor dem Test
-                        // gesichert + danach restored — sonst flutet der
-                        // Migrations-Genesis-Eintrag den nachfolgenden
-                        // „Journal nicht überflutet"-Test.
-                        const origMeta = r.state.worldMeta;
-                        const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
-                        const origJournalSeen =
-                            r.state.worldJournal && r.state.worldJournal.seen
-                                ? Object.assign({}, r.state.worldJournal.seen)
-                                : null;
-                        // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
-                        const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
-                        r.state.worldMeta = oldMeta;
-                        r.ensureWorldMeta();
-                        out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
-                        // V9.35 — explizit Heightfield-Opt-out wird auch
-                        // zwangs-migriert (der Opt-out existiert nicht mehr).
-                        const optOutMeta = {
-                            worldId: "test-opt-out",
-                            slug: "test-opt-out",
-                            bornAt: 100,
-                            seed: "test",
-                            voxelTerrain: false,
-                        };
-                        r.state.worldMeta = optOutMeta;
-                        r.ensureWorldMeta();
-                        out.migrationForcesOptOut = optOutMeta.voxelTerrain === true;
-                        r.state.worldMeta = origMeta;
-                        if (r.state.worldJournal && origJournalEntries) {
-                            r.state.worldJournal.entries = origJournalEntries;
-                            if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
-                        }
-
-                        // V9.10 — Welt-Feld-Farbe + Naht-Skirt.
-                        let anyColorAttr = false;
-                        let colorMin = 1;
-                        let colorMax = 0;
-                        let skirtProven = false;
-                        const cfg0 = r._voxelChunkConfig();
-                        for (const e of r.state.voxelChunks.values()) {
-                            if (!e || !e.mesh || !e.mesh.geometry) continue;
-                            const col = e.mesh.geometry.getAttribute("color");
-                            if (col) {
-                                anyColorAttr = true;
-                                for (let i = 0; i < col.count; i++) {
-                                    const rr = col.getX(i);
-                                    if (rr < colorMin) colorMin = rr;
-                                    if (rr > colorMax) colorMax = rr;
-                                }
-                            }
-                            const g = e.mesh.geometry;
-                            g.computeBoundingBox();
-                            const ox = (e.mesh.userData.voxelChunkX || 0) * cfg0.span;
-                            if (g.boundingBox && g.boundingBox.max.x - ox > cfg0.span) skirtProven = true;
-                        }
-                        out.voxelHasFieldColors = anyColorAttr;
-                        out.voxelColorVaries = colorMax - colorMin > 0.05;
-                        out.voxelSkirt = skirtProven;
-
-                        // Streaming: alles abräumen, ein Tick baut wieder auf.
-                        for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
-                        const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-                        r._tickVoxelChunkStreaming(pos);
-                        out.tickBuilds = r.state.voxelChunks.size >= 1;
-                        // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
-                        r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
-                        out.pruneRemovesFar = r.state.voxelChunks.size === 0;
-
-                        // V9.35: nach dem Prune baut der Streaming-Ring den
-                        // Spieler-Ring neu auf — wir restaurieren das hier
-                        // direkt, damit nachfolgende Tests Voxel-Chunks haben.
-                        r._tickVoxelChunkStreaming(pos);
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelP2bResults && !voxelP2bResults.error) {
-                check(
-                    "Voxel P2b: alle Ring-Methoden existieren (_ensureVoxelChunkAt/_tickVoxelChunkStreaming/_pruneDistantVoxelChunks/_voxelChunkConfig)",
-                    voxelP2bResults.hasEnsure &&
-                        voxelP2bResults.hasTick &&
-                        voxelP2bResults.hasPrune &&
-                        voxelP2bResults.hasConfig
-                );
-                check(
-                    "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
-                    voxelP2bResults.activated && voxelP2bResults.ringFilled
-                );
-                check(
-                    "Voxel P2b: jeder gemeshte Voxel-Chunk trägt eine btBvhTriangleMeshShape-Kollision",
-                    voxelP2bResults.voxelChunksHaveCollision
-                );
-                check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
-                check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
-                check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
-                check(
-                    "Voxel P2b-Politur: jeder Voxel-Chunk trägt ein Welt-Feld-Farb-Attribut",
-                    voxelP2bResults.voxelHasFieldColors
-                );
-                check(
-                    "Voxel P2b-Politur: die Voxel-Farben variieren über die Welt (keine Mono-Biom-Fläche)",
-                    voxelP2bResults.voxelColorVaries
-                );
-                check(
-                    "Voxel P2b-Politur: der Chunk-Skirt schliesst die Naht (Geometrie überlappt die Chunk-Spanne)",
-                    voxelP2bResults.voxelSkirt
-                );
-                check(
-                    "Voxel V9.22: _buildVoxelChunkGrass + _voxelSurfaceY existieren",
-                    voxelP2bResults.hasVoxelGrass && voxelP2bResults.hasVoxelSurfaceY
-                );
-                check(
-                    "Voxel V9.22: _voxelSurfaceY liefert eine echte Fest/Luft-Grenze",
-                    voxelP2bResults.voxelSurfaceFinite && voxelP2bResults.voxelSurfaceIsBoundary
-                );
-                check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
-                check(
-                    "Voxel V9.22: der Voxel-Chunk-Ring trägt Instanced-Gras-Halme",
-                    voxelP2bResults.voxelGrassHasBlades
-                );
-                check(
-                    "Voxel V9.24: _vegetationSampleSpawn + _populateVoxelChunkVegetation existieren",
-                    voxelP2bResults.hasVegSampleSpawn && voxelP2bResults.hasVoxelVegPopulator
-                );
-                check(
-                    "Voxel V9.24: der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler (chunkRingRadius)",
-                    voxelP2bResults.voxelRingFollowsSlider
-                );
-                check(
-                    "Voxel V9.24: _populateVoxelChunkVegetation ist idempotent (zweiter Aufruf → 0)",
-                    voxelP2bResults.voxelVegIdempotent
-                );
-                check(
-                    "Voxel V9.24: _populateVoxelChunkVegetation markiert den Chunk in voxelPopulatedChunks",
-                    voxelP2bResults.voxelVegMarksChunk
-                );
-                check(
-                    "Voxel V9.25 Phase 5b: getTerrainHeightAt liefert in einer Voxel-Welt die Voxel-Oberfläche",
-                    voxelP2bResults.getTerrainHeightVoxelAware
-                );
-                check(
-                    "Voxel V9.25 Phase 5b: findSurfaceAbove liefert in einer Voxel-Welt die Voxel-Oberfläche",
-                    voxelP2bResults.findSurfaceVoxelAware
-                );
-                check(
-                    "Voxel V9.26 Phase 5c: eine geladene alte Welt ohne voxelTerrain-Flag wird voxel-basiert",
-                    voxelP2bResults.migrationFlipsOldWorld
-                );
-                check(
-                    "Voxel V9.35 Phase 5c.2.c.2: ein altes voxelTerrain:false (V9.23-Opt-out) wird zwangs-migriert (Toggle ist tot)",
-                    voxelP2bResults.migrationForcesOptOut
-                );
-            }
-
-            // ### Voxel V9.35 Phase 5c.2.c.2 — Toggle-Tod: Voxel permanent + irreversibel ###
-            // Der V9.13-`voxel terrain on/off`-Toggle ist als Reversibilitäts-
-            // Schicht entfernt — Voxel ist beim Init aktiv, `worldMeta.voxel-
-            // Terrain` ist immer true (Zwangs-Migration in `ensureWorldMeta`
-            // zieht jede alte Welt mit). Die drei Toggle-Methoden + der Chat-
-            // Befehl sind weg.
-            const voxelV935ToggleResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // Die drei Toggle-Methoden sind GELÖSCHT.
-                    out.noSetActive = typeof r.setVoxelTerrainActive !== "function";
-                    out.noDormant = typeof r._setHeightfieldDormant !== "function";
-                    out.noRestore = typeof r._restoreVoxelTerrain !== "function";
-                    // Voxel ist beim Init aktiv (kein toggle nötig).
-                    out.voxelPermanent = r.state.voxelTerrainActive === true;
-                    out.metaPermanent = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
-                    // Der Welt-Snapshot trägt das Flag (überlebt Reload).
-                    const snap = r.buildStateSnapshot();
-                    out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
-                    // Chat-Toggle ist tot — `voxel terrain on/off` ist kein
-                    // erkanntes Kommando mehr. Der Source-Scan prüft das
-                    // String-Literal `=== "voxel terrain on"` (die echte
-                    // Code-Logik, nicht ein Kommentar — der V9.35-Eintrag-
-                    // Kommentar erwähnt den toten Befehl als Doku).
-                    const src = (typeof r.processChatCommand === "function" && r.processChatCommand.toString()) || "";
-                    out.noChatToggle = !/===\s*["']voxel terrain on["']/.test(src);
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV935ToggleResults && !voxelV935ToggleResults.error) {
-                check(
-                    "Voxel V9.35: setVoxelTerrainActive-Methode ist gelöscht (Toggle-Tod)",
-                    voxelV935ToggleResults.noSetActive
-                );
-                check(
-                    "Voxel V9.35: _setHeightfieldDormant-Methode ist gelöscht (Reversibilitäts-Schicht weg)",
-                    voxelV935ToggleResults.noDormant
-                );
-                check(
-                    "Voxel V9.35: _restoreVoxelTerrain-Methode ist gelöscht (kein Init-Restore mehr nötig)",
-                    voxelV935ToggleResults.noRestore
-                );
-                check(
-                    "Voxel V9.35: voxelTerrainActive ist permanent true (Default + nie umschaltbar)",
-                    voxelV935ToggleResults.voxelPermanent
-                );
-                check(
-                    "Voxel V9.35: worldMeta.voxelTerrain ist permanent true (Zwangs-Migration)",
-                    voxelV935ToggleResults.metaPermanent
-                );
-                check(
-                    "Voxel V9.35: der Welt-Snapshot trägt das voxelTerrain-Flag (überlebt Reload)",
-                    voxelV935ToggleResults.snapshotHasFlag
-                );
-                check(
-                    "Voxel V9.35: der `voxel terrain on/off`-Chat-Toggle ist aus processChatCommand entfernt",
-                    voxelV935ToggleResults.noChatToggle
-                );
-            }
-
-            // ### Voxel V9.27 Phase 5c.1 + V9.28 — fusioniert für Heap-Schonung ###
-            // V9.27: eine Voxel-Welt überspringt die initialen 64 Heightfield-
-            // Chunks. V9.28: zusätzlich ist die heightData/caveData/volcanoData-
-            // Allokation übersprungen (V9.25 Phase 5b ehrlich abgeschlossen —
-            // updateCreatures ist der letzte missed Höhen-Konsument, jetzt
-            // voxel-aware via getTerrainHeightAt). BEIDE teilen sich die zwei
-            // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression),
-            // damit das pre-existing btBvhTriangleMeshShape-Auxiliar-Leck
-            // (Ammo-Heap) nicht den Welle-10b-Test OOM'ed.
-            const voxelP5c1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    const origVoxel = r.state.worldMeta && r.state.worldMeta.voxelTerrain;
-
-                    // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
-                    r.state.worldMeta.voxelTerrain = true;
-                    r.state.lastWorldgen = 0;
-                    r.generateNewWorld({ force: true });
-                    // V9.27 Phase 5c.1: chunkMap leer.
-                    out.voxelChunkMapEmpty = r.state.chunkMap && r.state.chunkMap.size === 0;
-                    out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
-                    // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
-                    out.voxelGroundFieldNull = r.state.groundHeightField === null;
-                    out.voxelMinHeightZero = r.state.minHeight === 0;
-                    out.voxelMaxHeightZero = r.state.maxHeight === 0;
-                    out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
-
-                    // V9.28: updateCreatures ist voxel-aware. Spawne eine
-                    // Kreatur an bekannter Position, lasse einen Frame laufen,
-                    // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
-                    if (
-                        typeof r.spawnCreatureAt === "function" &&
-                        typeof r._voxelSurfaceY === "function" &&
-                        typeof r.updateCreatures === "function"
-                    ) {
-                        const testX = 5;
-                        const testZ = 5;
-                        const voxelY = r._voxelSurfaceY(testX, testZ);
-                        const creature = r.spawnCreatureAt(testX, 50, testZ, "happy");
-                        if (creature && Number.isFinite(voxelY)) {
-                            r.updateCreatures(0.016);
-                            const expected = voxelY + 0.5;
-                            const actual = creature.position.y;
-                            out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
-                            out.creatureNotAtFallback = Math.abs(actual - 0.5) > 1.0;
-                        }
-                    }
-
-                    // V9.37 Phase 5c.2.c.3.b.i: der ehemalige V9.27-Heightfield-
-                    // Regression-Pfad (worldMeta.voxelTerrain = false → 64
-                    // Chunks gebaut) ist mit dem Lösch des `else`-Pfads in
-                    // `generateTerrainWithParameters` tot. Der Beweis
-                    // wandert um: selbst wenn ein Test-Setup `voxelTerrain
-                    // = false` mutiert, baut der Welt-Generator keine
-                    // Heightfield-Chunks mehr (chunkMap bleibt leer).
-                    r.state.worldMeta.voxelTerrain = false;
-                    r.state.lastWorldgen = 0;
-                    r.generateNewWorld({ force: true });
-                    out.heightfieldElseDead = r.state.chunkMap && r.state.chunkMap.size === 0;
-                    // Restore: voxelTerrain auf true zurück + Regen, damit
-                    // die nachfolgenden Tests eine Voxel-Welt haben.
-                    r.state.worldMeta.voxelTerrain = true;
-                    r.state.lastWorldgen = 0;
-                    r.generateNewWorld({ force: true });
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelP5c1Results && !voxelP5c1Results.error) {
-                check(
-                    "Voxel V9.27 Phase 5c.1: eine Voxel-Welt überspringt die initialen 64 Heightfield-Chunks (chunkMap leer)",
-                    voxelP5c1Results.voxelChunkMapEmpty
-                );
-                // V9.39 Phase 5c.2.c.3.b.iii — der V9.27-Material-Erhaltungs-
-                // Test ist gestrichen. Sein Vision-Ziel („Heightfield-Material
-                // bleibt für voxel-off-Toggle erhalten") wurde mit V9.35 obsolet
-                // (Toggle-Tod) und mit V9.39 vollendet (terrainMaterial-Setzer
-                // gelöscht — kein Heightfield-Mesh nutzt es mehr).
-                check(
-                    "Voxel V9.37 Phase 5c.2.c.3.b.i: der Heightfield-`else`-Pfad in generateTerrainWithParameters ist tot — auch `voxelTerrain = false` baut keine Heightfield-Chunks mehr",
-                    voxelP5c1Results.heightfieldElseDead
-                );
-                check(
-                    "Voxel V9.28: eine Voxel-Welt hat KEIN groundHeightField (heightData übersprungen)",
-                    voxelP5c1Results.voxelGroundFieldNull
-                );
-                check(
-                    "Voxel V9.28: state.minHeight ist 0 in einer Voxel-Welt (kein Infinity-Leak)",
-                    voxelP5c1Results.voxelMinHeightZero && voxelP5c1Results.voxelMinHeightFinite
-                );
-                check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
-                check(
-                    "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
-                    voxelP5c1Results.creatureOnVoxelSurface
-                );
-                check(
-                    "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
-                    voxelP5c1Results.creatureNotAtFallback
-                );
-                // V9.37 Phase 5c.2.c.3.b.i: die zwei V9.28-Heightfield-Regression-
-                // Tests („groundHeightField gefüllt", „minHeight/maxHeight gesetzt")
-                // sind mit dem Lösch des `else`-Pfads in `generateTerrainWith-
-                // Parameters` tot — sie prüften, dass eine `voxelTerrain=false`-
-                // Welt noch das Heightfield aufbaut; mit V9.37 baut sie keine
-                // Heightfield-Chunks mehr, der heightData-Allokations-Pfad in
-                // `isVoxelWorldGen2` lebt zwar noch, aber kein Spieler-Pfad
-                // erreicht ihn (eine spätere Welle 5c.2.c.3.b.ii könnte ihn
-                // auch noch ablösen, sobald die Test-Anker umgewidmet sind).
-            }
-
-            // ### Voxel V9.39 — V9.29-Disposal-Test gestrichen ###
-            // Der V9.29-Test prüfte die `_disposeChunkPhysics`-Auxiliars-
-            // Cleanup-Disziplin (Body + Shape + MotionState + TMesh) an einem
-            // Heightfield-Chunk, der per `ensureChunkAt(40,40)` direkt gebaut
-            // wurde. Beide Methoden sind in V9.39 als toter Pfad entfernt;
-            // die V9.29-Lehre lebt im `_disposeStaticCollision`-Helper weiter
-            // (Inseln + Voxel-Chunks). V9.37-Disziplin: Test einer
-            // unreachable Schicht ist toter Schutz — ehrlich streichen.
-
-            // ### Voxel V9.30 — Lösch-Beweise ###
-            // Die V9.30-Welle löschte `generateChunk` + `addTerrainPhysics`
-            // (V9.28-Befund: nachweislich tot). Die zwei Lösch-Beweise leben
-            // weiter; die V9.30-Regression-Schutzanker (`ensureChunkAt`/
-            // `_terrainHeightAtWorld` leben weiter) sind in V9.39 verfallen
-            // — die geschützte Schicht ist selbst tot. V9.37-Disziplin:
-            // ehrlich streichen, nicht heilen.
-            const voxelV930Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    return {
-                        noGenerateChunk: typeof r.generateChunk !== "function",
-                        noAddTerrainPhysics: typeof r.addTerrainPhysics !== "function",
-                    };
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV930Results && !voxelV930Results.error) {
-                check(
-                    "Voxel V9.30: generateChunk ist gelöscht (tote Methode, V9.28-Befund)",
-                    voxelV930Results.noGenerateChunk
-                );
-                check(
-                    "Voxel V9.30: addTerrainPhysics ist gelöscht (tote Methode, V9.28-Befund)",
-                    voxelV930Results.noAddTerrainPhysics
-                );
-            }
-
-            // ### Voxel V9.34 — Phase 5c.2.c.1: weitere tote Heightfield-Schichten gelöscht ###
-            // Drei nachweislich tote Schichten, in derselben V9.30-Disziplin (pure
-            // Dead-Code, keine Verhaltens-Änderung): (1) `extendTerrain` — die
-            // Legacy-direction-API für Playtest-Kompat hatte keinen Aufrufer mehr
-            // (alle Playtest-Pfade routen direkt über `ensureChunkAt`); (2) das
-            // `caveData`-Float-Array — wurde in `generateTerrainWithParameters`
-            // alloziert + befüllt, aber NIE gelesen (das Versprechen aus dem
-            // Kommentar „behalten wir nur als Tag-Flags für späteren shader-
-            // Gebrauch" wurde nie erfüllt); (3) das `volcanoData`-Float-Array —
-            // dieselbe Klasse, identisches Schicksal. Wer eine der drei je wieder
-            // anlegt, muss eine echte Notwendigkeit benennen. caveNoise +
-            // volcanoNoise (die SimplexNoise-Instanzen) leben weiter — sie
-            // modulieren die Höhe in `_terrainHeightAtWorld` (echte Konsumenten).
-            // V9.39 Phase 5c.2.c.3.b.iii — die V9.34-Regression-Schutzanker
-            // („ensureChunkAt + _terrainHeightAtWorld leben weiter",
-            // „caveNoise/volcanoNoise leben weiter") sind in V9.39 verfallen
-            // — alle drei genannten Mechaniken sind gelöscht. Die zwei
-            // V9.34-Lösch-Beweise (extendTerrain + caveData/volcanoData-
-            // Arrays) leben unter den V9.39-Lösch-Beweisen unten (zusammen
-            // mit den drei neuen). V9.37-Disziplin: Test einer unreachable
-            // Schicht ist toter Schutz — ehrlich streichen.
-            const voxelV934Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const srcGen =
-                        (typeof r.generateTerrainWithParameters === "function" &&
-                            r.generateTerrainWithParameters.toString()) ||
-                        "";
-                    return {
-                        noExtendTerrain: typeof r.extendTerrain !== "function",
-                        noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
-                        noVolcanoDataAlloc: !/const\s+volcanoData\s*=\s*new\s+Float32Array/.test(srcGen),
-                        noCaveDataWrite: !/caveData\[i\]\s*=/.test(srcGen),
-                        noVolcanoDataWrite: !/volcanoData\[i\]\s*=/.test(srcGen),
-                    };
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV934Results && !voxelV934Results.error) {
-                check(
-                    "Voxel V9.34: extendTerrain ist gelöscht (Legacy-direction-API ohne Aufrufer)",
-                    voxelV934Results.noExtendTerrain
-                );
-                check(
-                    "Voxel V9.34: caveData-Float-Array ist gelöscht (nie gelesen)",
-                    voxelV934Results.noCaveDataAlloc && voxelV934Results.noCaveDataWrite
-                );
-                check(
-                    "Voxel V9.34: volcanoData-Float-Array ist gelöscht (nie gelesen)",
-                    voxelV934Results.noVolcanoDataAlloc && voxelV934Results.noVolcanoDataWrite
-                );
-            }
-
-            // ### V9.38 — Phase 5c.2.c.3.b.ii Lösch-Beweise ###
-            // V9.35 machte `worldMeta.voxelTerrain` permanent true → fünf
-            // voxel-Gate-`else`-Hälften wurden unreachable. V9.38 löscht sie
-            // ehrlich (pure Dead-Code-Welle, V9.30/V9.37-Disziplin).
-            const voxelV938Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const srcGen =
-                        (typeof r.generateTerrainWithParameters === "function" &&
-                            r.generateTerrainWithParameters.toString()) ||
-                        "";
-                    const srcGet =
-                        (typeof r.getTerrainHeightAt === "function" && r.getTerrainHeightAt.toString()) || "";
-                    const srcFind = (typeof r.findSurfaceAbove === "function" && r.findSurfaceAbove.toString()) || "";
-                    return {
-                        // (1) `calculateTerrainSteepness` ist gelöscht — kein
-                        // Aufrufer mehr nach Wasserfall-Loop-Lösch.
-                        noCalcSteepness: typeof r.calculateTerrainSteepness !== "function",
-                        // (2) heightData-Allokations-Loop in generateTerrain*
-                        // ist weg: keine `new Float32Array(WIDTH * DEPTH)` mehr.
-                        noHeightDataAlloc: !/new\s+Float32Array\(WIDTH\s*\*\s*DEPTH\)/.test(srcGen),
-                        // (3) der Wasserfall-Loop (256×256) ist weg:
-                        // kein `for (let z = 0; z < DEPTH; z++)` mehr.
-                        noWaterfallLoop: !/for\s*\(\s*let\s+z\s*=\s*0\s*;\s*z\s*<\s*DEPTH\s*;/.test(srcGen),
-                        // (4) `getTerrainHeightAt` ist voxel-only — kein
-                        // `groundHeightField`-Read mehr in der Source.
-                        getHeightVoxelOnly: !/groundHeightField/.test(srcGet),
-                        // (5) `findSurfaceAbove` ist voxel-only — kein
-                        // `groundHeightField`-Read mehr, kein floatingIslands-
-                        // Loop.
-                        findSurfaceVoxelOnly: !/groundHeightField/.test(srcFind) && !/floatingIslands/.test(srcFind),
-                        // Regression-Schutz: die zwei verschlankten Funktionen
-                        // leben weiter + liefern eine endliche Zahl.
-                        getHeightWorks: Number.isFinite(r.getTerrainHeightAt(0, 0)),
-                        findSurfaceWorks: Number.isFinite(r.findSurfaceAbove(0, -100, 0)),
-                    };
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV938Results && !voxelV938Results.error) {
-                check(
-                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: calculateTerrainSteepness ist gelöscht (kein Aufrufer nach Wasserfall-Loop-Lösch)",
-                    voxelV938Results.noCalcSteepness
-                );
-                check(
-                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: heightData-Allokations-else-Pfad in generateTerrainWithParameters ist gelöscht",
-                    voxelV938Results.noHeightDataAlloc
-                );
-                check(
-                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: Heightfield-Wasserfall-Loop ist gelöscht (Wasser kommt aus dem Hydrosphären-Netz)",
-                    voxelV938Results.noWaterfallLoop
-                );
-                check(
-                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: getTerrainHeightAt ist voxel-only (Heightfield-else-Pfad + Raycast-Fallback gelöscht)",
-                    voxelV938Results.getHeightVoxelOnly
-                );
-                check(
-                    "Voxel V9.38 Phase 5c.2.c.3.b.ii: findSurfaceAbove ist voxel-only (Heightfield-Pfad + floatingIslands-Loop gelöscht)",
-                    voxelV938Results.findSurfaceVoxelOnly
-                );
-                check(
-                    "Voxel V9.38: getTerrainHeightAt liefert weiter eine endliche Höhe (Regression)",
-                    voxelV938Results.getHeightWorks
-                );
-                check(
-                    "Voxel V9.38: findSurfaceAbove liefert weiter eine endliche Höhe (Regression)",
-                    voxelV938Results.findSurfaceWorks
-                );
-            }
-
-            // ### V9.39 — Phase 5c.2.c.3.b.iii Lösch-Beweise ###
-            // Die letzte grosse Aufräum-Welle der Heightfield-Pipeline: sechs
-            // tote Methoden + alle ihre Konsumenten + `terrainMaterial`-Setzer
-            // gelöscht. V9.30/V9.37-Disziplin: pure Dead-Code-Welle, keine
-            // Verhaltens-Änderung im Spiel (Voxel ist seit V9.35 die einzige
-            // Welt-Form). Die Vision-Schichten (Affinitäts-Vegetation, Wind-
-            // Gras, Welt-Affinität pro Vertex) leben in den Voxel-Pendants
-            // weiter (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
-            // `_attachVoxelFieldColors`).
-            const voxelV939Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const proto = Object.getPrototypeOf(r);
-                    return {
-                        // (1)-(6) die sechs Methoden sind gelöscht
-                        noEnsureChunkAt: typeof r.ensureChunkAt !== "function",
-                        noPopulateChunkVegetation: typeof r.populateChunkVegetation !== "function",
-                        noBuildChunkGrass: typeof r._buildChunkGrass !== "function",
-                        noDisposeChunkGrass: typeof r._disposeChunkGrass !== "function",
-                        noTerrainHeightAtWorld: typeof r._terrainHeightAtWorld !== "function",
-                        noDisposeChunkPhysics: typeof r._disposeChunkPhysics !== "function",
-                        noPruneDistantChunks: typeof r.pruneDistantChunks !== "function",
-                        noChunkGeometry: typeof r._chunkGeometry !== "function",
-                        // (7) `state.terrainMaterial` wird nicht mehr aktiv gesetzt
-                        terrainMaterialNull: r.state.terrainMaterial === null,
-                        // (8) der Game-Loop ruft kein `pruneDistantChunks` mehr
-                        loopHasNoPrune: !(
-                            proto._gameLoopTick &&
-                            /pruneDistantChunks/.test(
-                                (
-                                    Object.getOwnPropertyNames(proto)
-                                        .map((n) => proto[n])
-                                        .find(
-                                            (f) =>
-                                                typeof f === "function" && /tickArchitectureCulling/.test(f.toString())
-                                        ) || function () {}
-                                ).toString()
-                            )
-                        ),
-                        // (9) `_buildWaterPlane` ist voxel-only — kein echter
-                        // `this._terrainHeightAtWorld(...)`-Aufruf mehr (der
-                        // Erklär-Kommentar darf den Namen erwähnen — V9.36-
-                        // Test-Kommentar-Falle: Regex auf den Aufruf-Pattern).
-                        waterPlaneVoxelOnly:
-                            typeof r._buildWaterPlane === "function" &&
-                            !/this\._terrainHeightAtWorld\s*\(/.test(r._buildWaterPlane.toString()),
-                        // (10) Voxel-Pendants leben weiter (Vision-Anker)
-                        voxelGrassAlive:
-                            typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
-                        voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
-                        voxelSurfaceYAlive: typeof r._voxelSurfaceY === "function",
-                        // (11) Die geteilten Helper bleiben:
-                        // `_vegetationSampleSpawn` (per-Sample-Spawn-Kern,
-                        // V9.24-extrahiert) + `_attachVoxelFieldColors` (Voxel-
-                        // Affinitäts-Färbung).
-                        sampleSpawnAlive: typeof r._vegetationSampleSpawn === "function",
-                        attachVoxelFieldColorsAlive: typeof r._attachVoxelFieldColors === "function",
-                    };
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV939Results && !voxelV939Results.error) {
-                check("Voxel V9.39: ensureChunkAt ist gelöscht", voxelV939Results.noEnsureChunkAt);
-                check("Voxel V9.39: populateChunkVegetation ist gelöscht", voxelV939Results.noPopulateChunkVegetation);
-                check(
-                    "Voxel V9.39: _buildChunkGrass + _disposeChunkGrass sind gelöscht",
-                    voxelV939Results.noBuildChunkGrass && voxelV939Results.noDisposeChunkGrass
-                );
-                check("Voxel V9.39: _terrainHeightAtWorld ist gelöscht", voxelV939Results.noTerrainHeightAtWorld);
-                check("Voxel V9.39: _disposeChunkPhysics ist gelöscht", voxelV939Results.noDisposeChunkPhysics);
-                check("Voxel V9.39: pruneDistantChunks ist gelöscht", voxelV939Results.noPruneDistantChunks);
-                check("Voxel V9.39: _chunkGeometry ist gelöscht", voxelV939Results.noChunkGeometry);
-                check(
-                    "Voxel V9.39: state.terrainMaterial wird nicht mehr gesetzt (null nach Welt-Aufbau)",
-                    voxelV939Results.terrainMaterialNull
-                );
-                check(
-                    "Voxel V9.39: _buildWaterPlane ist voxel-only (kein _terrainHeightAtWorld-Aufruf mehr)",
-                    voxelV939Results.waterPlaneVoxelOnly
-                );
-                check(
-                    "Voxel V9.39: Voxel-Gras-Pendant lebt weiter (_buildVoxelChunkGrass + state.voxelChunkGrass)",
-                    voxelV939Results.voxelGrassAlive
-                );
-                check(
-                    "Voxel V9.39: Voxel-Vegetations-Pendant lebt weiter (_populateVoxelChunkVegetation)",
-                    voxelV939Results.voxelVegetationAlive
-                );
-                check(
-                    "Voxel V9.39: _voxelSurfaceY lebt weiter (Höhen-Quelle für getTerrainHeightAt)",
-                    voxelV939Results.voxelSurfaceYAlive
-                );
-                check(
-                    "Voxel V9.39: _vegetationSampleSpawn + _attachVoxelFieldColors leben weiter (geteilte Vision-Helper)",
-                    voxelV939Results.sampleSpawnAlive && voxelV939Results.attachVoxelFieldColorsAlive
-                );
-            }
-
-            // ### Voxel V9.31 — motionState-Leck in _disposeStaticCollision geheilt ###
-            // Pre-V9.31-Bug: `_buildStaticTriMeshCollision` (Inseln + Voxel-
-            // Chunks + Voxel-Test-Chunk) erzeugte einen `btDefaultMotionState`,
-            // der NIE destroyed wurde — `_disposeStaticCollision` räumte nur
-            // body+shape+tmesh, nicht motionState (Ammo.destroy(body) cascadiert
-            // nicht zu seinen Auxiliars, V8.26-§6.4-Muster). Mit 81 Voxel-Chunks
-            // pro Welt + mehreren Welt-Regen-Zyklen summierte sich das zum
-            // OOM-Crash (`_buildStaticTriMeshCollision: Aborted(OOM)`). V9.31
-            // speichert motionState in `userData.collision.motionState` + räumt
-            // ihn in `_disposeStaticCollision`. Plus: Boden-Fehlt-Selbstanalyse
-            // (selfReflection + Game-Loop) ist jetzt voxel-aware — in einer
-            // Voxel-Welt sind groundChunks LEGITIM leer (V9.27-Skip), der
-            // alte Check triggerte sonst eine Welt-Regen-Death-Spiral.
-            const voxelV931Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    // V9.31-Probe: baue eine Insel + räume sie + prüfe ob
-                    // alle 4 Ammo-Auxiliars sauber verschwinden (body, shape,
-                    // tmesh, motionState). Test in heightfield-Welt (default).
-                    const out = {};
-                    out.hasDispose = typeof r._disposeStaticCollision === "function";
-                    out.hasBuilder = typeof r._buildStaticTriMeshCollision === "function";
-                    // Source-Audit: prüfe dass _buildStaticTriMeshCollision
-                    // motionState speichert + _disposeStaticCollision ihn räumt.
-                    const buildSrc = r._buildStaticTriMeshCollision.toString();
-                    const disposeSrc = r._disposeStaticCollision.toString();
-                    out.buildStoresMotionState = /motionState/.test(buildSrc) && /motionState,?\s*kind/.test(buildSrc);
-                    out.disposeDestroysMotionState = /c\.motionState/.test(disposeSrc);
-                    // selfAwarenessAnalyze ist jetzt voxel-aware
-                    const selfRefSrc = (r.selfAwarenessAnalyze || function () {}).toString();
-                    out.selfReflectionVoxelAware = /voxelTerrainActive/.test(selfRefSrc);
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV931Results && !voxelV931Results.error) {
-                check(
-                    "Voxel V9.31: _buildStaticTriMeshCollision speichert motionState in userData.collision",
-                    voxelV931Results.buildStoresMotionState
-                );
-                check(
-                    "Voxel V9.31: _disposeStaticCollision räumt motionState (Ammo-Heap-Leck-Fix)",
-                    voxelV931Results.disposeDestroysMotionState
-                );
-                check(
-                    "Voxel V9.31: selfAwarenessAnalyze-Boden-Check ist voxel-aware (kein Death-Spiral in Voxel-Welt)",
-                    voxelV931Results.selfReflectionVoxelAware
-                );
-            }
-
-            // ### Voxel V9.43-c — der per-Chunk-Wasserfall-Spawner ist abgelöst ###
-            // V9.32/V9.43-a spawnten Wasserfälle per-Chunk-Zufall
-            // (`_buildVoxelChunkWaterfalls`: 6×6-Raster, 12 % Hash-Wahrschein-
-            // lichkeit an steilen Voxel-Klippen). V9.43-c löst das ab —
-            // Wasserfälle kommen aus dem Hydrosphären-Netz (ein Fluss kreuzt
-            // eine echte Voxel-Klippe, `_hydroExtractWaterfalls`). Der
-            // per-Chunk-Spawner + seine State-Map sind gelöscht; `_ensure-
-            // VoxelChunkAt`/`_disposeVoxelChunk` hooken sie nicht mehr. Das
-            // Material `_ensureWaterfallMaterial` + die vertikale Plane-
-            // Geometrie bleiben (von `_buildHydroWaterfall` reuset) — nur die
-            // Spawn-Quelle wanderte vom Zufall zum Drainage-Netz (§7/§10).
-            const voxelV943cAblation = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const ensureSrc = (r._ensureVoxelChunkAt || function () {}).toString();
-                    const disposeSrc = (r._disposeVoxelChunk || function () {}).toString();
-                    return {
-                        buildGone: typeof r._buildVoxelChunkWaterfalls !== "function",
-                        disposeGone: typeof r._disposeVoxelChunkWaterfalls !== "function",
-                        ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
-                        disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
-                        stateMapGone: !("voxelChunkWaterfalls" in r.state),
-                        materialKept: typeof r._ensureWaterfallMaterial === "function",
-                    };
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV943cAblation && !voxelV943cAblation.error) {
-                check(
-                    "Voxel V9.43-c: _buildVoxelChunkWaterfalls ist gelöscht (per-Chunk-Spawner abgelöst)",
-                    voxelV943cAblation.buildGone
-                );
-                check("Voxel V9.43-c: _disposeVoxelChunkWaterfalls ist gelöscht", voxelV943cAblation.disposeGone);
-                check(
-                    "Voxel V9.43-c: _ensureVoxelChunkAt hookt den Wasserfall-Spawner nicht mehr",
-                    voxelV943cAblation.ensureNoHook
-                );
-                check(
-                    "Voxel V9.43-c: _disposeVoxelChunk hookt den Wasserfall-Spawner nicht mehr",
-                    voxelV943cAblation.disposeNoHook
-                );
-                check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
-                check(
-                    "Voxel V9.43-c: _ensureWaterfallMaterial lebt weiter (von _buildHydroWaterfall reuset)",
-                    voxelV943cAblation.materialKept
-                );
-            }
-
-            // ### Voxel V9.43-a — Wasser-Ultiversum: das Wasserfall-Material ###
-            // V9.43-a vereinheitlichte die Wasser-Sprache: ein geteiltes
-            // ShaderMaterial mit Abwärts-Flow (`_ensureWaterfallMaterial`),
-            // das die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog) mit dem Meer
-            // teilt. V9.43-c reuset dieses Material für die netz-verankerten
-            // Wasserfall-Planes (`_buildHydroWaterfall`) — der per-Chunk-
-            // Zufalls-Spawner ist abgelöst (siehe V9.43-c-Ablösungs-Block).
-            const voxelV943Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r) return null;
-                    const out = {};
-                    out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
-                    let mat = null;
-                    if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
-                    out.matIsShader = !!mat && mat.type === "ShaderMaterial";
-                    const u = (mat && mat.uniforms) || {};
-                    out.hasFlowUniforms =
-                        !!u.uFlowDir &&
-                        !!u.uFlowDir.value &&
-                        u.uFlowDir.value.y < 0 &&
-                        typeof (u.uFlowSpeed && u.uFlowSpeed.value) === "number" &&
-                        !!u.uTime;
-                    out.sharesWaterUniforms =
-                        !!u.uDeep &&
-                        !!u.uShallow &&
-                        !!u.fogColor &&
-                        typeof (u.fogNear && u.fogNear.value) === "number" &&
-                        typeof (u.fogFar && u.fogFar.value) === "number" &&
-                        !!u.uSunDir &&
-                        !!u.uLight;
-                    // Day-Night synct das Wasserfall-Material (Fog-Uniform).
-                    out.dayNightSyncsWaterfall = false;
-                    if (mat && typeof r._applyDayNightToScene === "function") {
-                        try {
-                            r._applyDayNightToScene();
-                            out.dayNightSyncsWaterfall = typeof u.fogNear.value === "number" && u.fogNear.value > 0;
-                        } catch {
-                            out.dayNightSyncsWaterfall = false;
-                        }
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV943Results && !voxelV943Results.error) {
-                check(
-                    "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein ShaderMaterial",
-                    voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
-                );
-                check(
-                    "Voxel V9.43-a: das Wasserfall-Material trägt uFlowDir (abwärts) + uFlowSpeed + uTime",
-                    voxelV943Results.hasFlowUniforms
-                );
-                check(
-                    "Voxel V9.43-a: das Wasserfall-Material teilt die Wasser-Substanz-Uniforms mit dem Meer",
-                    voxelV943Results.sharesWaterUniforms
-                );
-                check(
-                    "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Fog-Uniform gesetzt)",
-                    voxelV943Results.dayNightSyncsWaterfall
-                );
-            }
-
-            // ### Voxel V9.47 — Fluviale Erosion (Stream-Power-Inzision) ###
-            // `_computeErosion` lässt Terrain + Drainage ko-evolvieren: je
-            // Iteration Priority-Flood → Flow-Accumulation → Inzision
-            // `Δh=k·A^m·S^n` NUR in Kanälen (A ≥ channelMinArea). Grate bleiben
-            // unberührt, Täler schneiden ein. Delta fliesst in _terrainMacroSurfaceY.
-            const voxelV947Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // `_computeErosion` nullt state.erosion beim Start — der
-                    // Worldgen-Stand wird gesichert + am Ende wiederhergestellt,
-                    // damit die nachfolgenden Hydrosphäre-Tests das erodierte
-                    // Gelände sehen.
-                    const savedEro = r.state.erosion;
-                    out.methodsExist =
-                        typeof r._computeErosion === "function" &&
-                        typeof r._erosionIncisionPass === "function" &&
-                        typeof r._erosionDeltaAt === "function";
-                    out.stateDeclared = "erosion" in r.state;
-                    const e = r.state.erosion;
-                    out.wired =
-                        !!e &&
-                        e.delta instanceof Float32Array &&
-                        typeof e.dim === "number" &&
-                        typeof e.cell === "number" &&
-                        e.delta.length === e.dim * e.dim;
-                    if (!out.methodsExist || !out.wired) return out;
-                    const E = r.constructor.EROSION;
-                    // (1) reine Inzision: jedes Delta ≤ 0, keines unter −maxDelta.
-                    let allNeg = true;
-                    let minD = 0;
-                    let sumD = 0;
-                    let carved = 0;
-                    for (let i = 0; i < e.delta.length; i++) {
-                        const v = e.delta[i];
-                        if (v > 1e-4) allNeg = false;
-                        if (v < minD) minD = v;
-                        sumD += v;
-                        if (v < -3) carved++;
-                    }
-                    out.pureIncision = allNeg;
-                    out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01;
-                    out.carvesChannels = minD < -5 && carved > 0;
-                    // (2) der Schnitt ist gezielt — nur ein Bruchteil der Welt
-                    // wird berührt (Kanäle), nicht die ganze Fläche (Blanket).
-                    out.channelFocused = carved / e.delta.length < 0.3;
-                    // (3) Determinismus — zwei Läufe byte-identisch (kein RNG).
-                    const t0 = performance.now();
-                    const e2 = r._computeErosion();
-                    out.recomputeMs = performance.now() - t0;
-                    let sum2 = 0;
-                    for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
-                    out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
-                    // (4) `_erosionDeltaAt`: 0 weit ausserhalb der Region, im
-                    // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
-                    out.deltaZeroOutside = r._erosionDeltaAt(99999, 99999) === 0;
-                    out.deltaFiniteInside = Number.isFinite(r._erosionDeltaAt(0, 0));
-                    out.perfOk = out.recomputeMs < 600;
-                    // den Worldgen-Erosions-Stand wiederherstellen (das letzte
-                    // `_computeErosion` liess state.erosion null).
-                    r.state.erosion = savedEro;
-                    return out;
-                })
-                .catch((err) => ({ error: String(err) }));
-
-            if (voxelV947Results && !voxelV947Results.error) {
-                const ev = voxelV947Results;
-                check(
-                    "Voxel V9.47: _computeErosion + _erosionIncisionPass + _erosionDeltaAt existieren",
-                    ev.methodsExist
-                );
-                check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
-                check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
-                if (ev.methodsExist && ev.wired) {
-                    check(
-                        "Voxel V9.47: reine Inzision — jedes Delta ≤ 0, ≥ −maxDelta",
-                        ev.pureIncision && ev.boundedByMaxDelta
-                    );
-                    check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
-                    check("Voxel V9.47: der Schnitt ist kanal-fokussiert, kein Flächen-Blanket", ev.channelFocused);
-                    check(
-                        "Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)",
-                        ev.deterministic
-                    );
-                    check(
-                        "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
-                        ev.deltaZeroOutside && ev.deltaFiniteInside
-                    );
-                    check(
-                        `Voxel V9.47: _computeErosion im Perf-Budget (${Math.round(ev.recomputeMs || 0)} ms < 600)`,
-                        ev.perfOk
-                    );
-                }
-            } else {
-                check(
-                    "Voxel V9.47: Erosions-Tests laufen",
-                    false,
-                    voxelV947Results ? voxelV947Results.error : "no result"
-                );
-            }
-
-            // ### Voxel V9.43-b — Der Hydrosphären-Atlas ###
-            // Aus der Voxel-Surface ein deterministisches Drainage-Netz:
-            // Priority-Flood (Senken auffüllen → Seen) → D8-Flow-Direction →
-            // Flow-Accumulation → Netz-Extraktion (Flüsse/Seen/Wasserfälle).
-            // Reine Daten, headless-prüfbar — kein Rendering, kein Carven.
-            const voxelV943bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.methodExists = typeof r._computeHydrosphere === "function";
-                    out.stateDeclared = "hydrosphere" in r.state;
-                    if (!out.methodExists) return out;
-                    const t0 = performance.now();
-                    const h1 = r._computeHydrosphere();
-                    out.perfMs = performance.now() - t0;
-                    out.shape =
-                        !!h1 &&
-                        h1.ready === true &&
-                        Array.isArray(h1.rivers) &&
-                        Array.isArray(h1.lakes) &&
-                        Array.isArray(h1.waterfalls) &&
-                        typeof h1.dim === "number" &&
-                        typeof h1.cell === "number";
-                    out.riverCount = h1.rivers.length;
-                    out.lakeCount = h1.lakes.length;
-                    out.waterfallCount = h1.waterfalls.length;
-                    out.maxAccum = h1.stats ? h1.stats.maxAccum : 0;
-                    out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
-                    out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
-                    out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
-                    out.riverPointsTotal = h1.stats ? h1.stats.riverPointsTotal : 0;
-                    out.lakeCellsMax = h1.stats ? h1.stats.lakeCellsMax : 0;
-                    out.lakeCells = h1.stats ? h1.stats.lakeCells : 0;
-                    // Determinismus — zwei Läufe, byte-identisches Netz
-                    const h2 = r._computeHydrosphere();
-                    out.deterministic =
-                        JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
-                        JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
-                        JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-                    // Jeder Fluss steigt STRIKT monoton ab — point.y ist die
-                    // Füllhöhe, die entlang flowTo strikt monoton fällt (V9.46:
-                    // auch durch eine See-Durchquerung — das Priority-Flood-ε
-                    // hält filled selbst im Becken strikt fallend).
-                    out.riversDescend = h1.rivers.every((rv) => {
-                        for (let k = 0; k + 1 < rv.points.length; k++) {
-                            if (rv.points[k].y <= rv.points[k + 1].y) return false;
-                        }
-                        return true;
-                    });
-                    // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
-                    // sind keine Mündung mehr — der Fluss fliesst hindurch).
-                    out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
-                    // V9.46 — mindestens ein Fluss fliesst durch einen See
-                    // HINDURCH: ein Land-Punkt NACH einer See-Durchquerung.
-                    out.riverThroughLake = h1.rivers.some((rv) => {
-                        let sawLake = false;
-                        for (const p of rv.points) {
-                            if (p.inLake) sawLake = true;
-                            else if (sawLake) return true;
-                        }
-                        return false;
-                    });
-                    // Flow-Accumulation stromab monoton → Breite wächst
-                    out.widthGrows = h1.rivers.every((rv) => {
-                        for (let k = 0; k + 1 < rv.points.length; k++) {
-                            if (rv.points[k].width > rv.points[k + 1].width + 1e-6) return false;
-                        }
-                        return true;
-                    });
-                    // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
-                    out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
-                    // Jede Land-Zelle hat nach dem Priority-Flood einen Abfluss
-                    out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
-                    // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
-                    out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-                    // V9.49-a/e — das vereinte Wasser-Feld: je Region-Zelle der
-                    // flache Wasser-Spiegel (`waterY`) + die Klassifikation
-                    // (`waterKind` 0 Land · 1 Ozean · 2 See). Ozean trägt
-                    // `waterLevel`, ein See `lake.level`, eine trockene Zelle
-                    // den Meeresspiegel-Default. Die Wahrheit, aus der V9.49 EIN
-                    // Höhenfeld-Mesh baut (`docs/hydrosphere.md` §12 + §13).
-                    const wf = h1.water;
-                    out.waterFieldShape =
-                        !!wf &&
-                        wf.waterY instanceof Float32Array &&
-                        wf.waterKind instanceof Uint8Array &&
-                        wf.waterY.length === h1.dim * h1.dim &&
-                        wf.waterKind.length === h1.dim * h1.dim;
-                    let kindOk = true;
-                    let finiteOk = true;
-                    let oceanCells = 0;
-                    let lakeFieldCells = 0;
-                    let oceanY = null;
-                    let oceanFlat = true;
-                    if (out.waterFieldShape) {
-                        for (let i = 0; i < wf.waterKind.length; i++) {
-                            const k = wf.waterKind[i];
-                            if (k > 2) kindOk = false;
-                            if (k === 1) {
-                                oceanCells++;
-                                // V9.49-e — alle Ozean-Zellen teilen EINEN
-                                // flachen Spiegel (kein per-Zelle-filled mehr).
-                                if (oceanY === null) oceanY = wf.waterY[i];
-                                else if (Math.abs(wf.waterY[i] - oceanY) > 1e-4) oceanFlat = false;
-                            } else if (k === 2) lakeFieldCells++;
-                            if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
-                        }
-                    }
-                    out.waterKindValid = kindOk && finiteOk;
-                    out.waterFieldOceanFlat = oceanFlat && oceanCells > 0;
-                    out.waterFieldOceanCells = oceanCells;
-                    out.waterFieldLakeCells = lakeFieldCells;
-                    // das Feld IST das Netz: Ozean-/See-Zell-Zahl deckt sich mit
-                    // den Netz-Extraktions-Zählern (eine Quelle, keine Drift).
-                    out.waterFieldMatchesNet =
-                        !!h1.stats && oceanCells === h1.stats.seaCells && lakeFieldCells === h1.stats.lakeCells;
-                    // Determinismus — das Feld ist so deterministisch wie das Netz.
-                    out.waterFieldDeterministic =
-                        !!(h2.water && h2.water.waterKind) &&
-                        wf.waterKind.length === h2.water.waterKind.length &&
-                        wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
-                    // V9.50-a — das Wasser-Level-Feld `_waterLevelAt`.
-                    out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
-                    out.hasRiverAt = typeof r._hydroRiverAt === "function";
-                    out.waterLevelOceanOk = false;
-                    out.waterLevelLakeOk = false;
-                    if (out.hasWaterLevelAt && out.waterFieldShape) {
-                        const dimH = h1.dim;
-                        const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-                        let oceanProbed = false;
-                        let lakeProbed = false;
-                        for (let i = 0; i < wf.waterKind.length && !(oceanProbed && lakeProbed); i++) {
-                            const wx = h1.originX + ((i % dimH) + 0.5) * h1.cell;
-                            const wz = h1.originZ + (((i / dimH) | 0) + 0.5) * h1.cell;
-                            if (wf.waterKind[i] === 1 && !oceanProbed) {
-                                const lv = r._waterLevelAt(wx, wz);
-                                out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
-                                oceanProbed = true;
-                            } else if (wf.waterKind[i] === 2 && !lakeProbed) {
-                                const lv = r._waterLevelAt(wx, wz);
-                                out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
-                                lakeProbed = true;
-                            }
-                        }
-                    }
-                    // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden.
-                    out.hasTarnPass = typeof r._hydroSeedTarns === "function";
-                    out.tarnCount = Array.isArray(r.state.tarns) ? r.state.tarns.length : -1;
-                    out.tarnsHighAltitude = true;
-                    out.tarnsBecameLakes = 0;
-                    if (Array.isArray(r.state.tarns) && r.state.tarns.length && h1.lakes) {
-                        const base = r.state.terrainBaseHeight || 0;
-                        const minRel = 11; // TARN.minReliefAbs minus Float-Marge
-                        for (const t of r.state.tarns) {
-                            if (!(t.surf - base >= minRel)) out.tarnsHighAltitude = false;
-                            // Zähle Wasser-Zellen (kind=2) im Tarn-Fussabdruck
-                            // — der Beweis, dass die Mulde zu einem See wurde.
-                            let lakeCells = 0;
-                            if (h1.water) {
-                                const hi = Math.floor((t.x - h1.originX) / h1.cell);
-                                const hj = Math.floor((t.z - h1.originZ) / h1.cell);
-                                const rng = Math.ceil(t.r / h1.cell);
-                                for (let dj = -rng; dj <= rng; dj++) {
-                                    for (let di = -rng; di <= rng; di++) {
-                                        const ci = hi + di;
-                                        const cj = hj + dj;
-                                        if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
-                                        if (h1.water.waterKind[ci + cj * h1.dim] === 2) lakeCells++;
-                                    }
-                                }
-                            }
-                            // ein Tarn gilt als See, wenn ≥ minLakeCells (6)
-                            // See-Zellen in seinem Fussabdruck liegen.
-                            if (lakeCells >= 6) out.tarnsBecameLakes++;
-                        }
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV943bResults && !voxelV943bResults.error) {
-                const hb = voxelV943bResults;
-                check("Voxel V9.43-b: _computeHydrosphere existiert", hb.methodExists);
-                check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
-                check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
-                check(
-                    `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum}, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
-                    hb.riverCount > 0
-                );
-                check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-                check(
-                    "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)",
-                    hb.riversDescend
-                );
-                check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
-                check(
-                    "Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)",
-                    hb.riverThroughLake
-                );
-                check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
-                check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
-                check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
-                check(
-                    `Voxel V9.43-b: Berechnung im Perf-Budget (${Math.round(hb.perfMs || 0)} ms < 500 ms)`,
-                    typeof hb.perfMs === "number" && hb.perfMs < 500
-                );
-                check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
-                check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
-                check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
-                check("Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel", hb.waterFieldOceanFlat);
-                check(
-                    `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
-                    hb.waterFieldMatchesNet
-                );
-                check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
-                check(
-                    "Voxel V9.50-a: `_waterLevelAt` + `_hydroRiverAt` existieren (das Wasser-Level-Feld)",
-                    hb.hasWaterLevelAt && hb.hasRiverAt
-                );
-                check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
-                check(
-                    "Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)",
-                    hb.waterLevelLakeOk
-                );
-                check("Voxel V9.51: `_hydroSeedTarns` existiert (der Tarn-Pass)", hb.hasTarnPass);
-                check(`Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden (${hb.tarnCount} Tarns)`, hb.tarnCount >= 1);
-                check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
-                check(
-                    `Voxel V9.51: jede Tarn-Mulde wurde zu einem See (${hb.tarnsBecameLakes}/${hb.tarnCount})`,
-                    hb.tarnCount >= 1 && hb.tarnsBecameLakes === hb.tarnCount
-                );
-            }
-
-            // ### Voxel V9.50-b — das Chunk-Wasser (Rendering) ###
-            // Das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk baut
-            // seine Wasser-Fläche selbst (`_buildVoxelChunkWater`) aus
-            // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
-            // Terrain. `hydrosphereMeshes` trägt nur noch die Wasserfälle.
-            const voxelChunkWaterResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
-                    out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
-                    out.hasChunkWater = typeof r._buildVoxelChunkWater === "function";
-                    out.hasChunkWaterDispose = typeof r._disposeVoxelChunkWater === "function";
-                    out.hasGate = typeof r._voxelChunkTouchesWater === "function";
-                    out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
-                    if (!out.hasBuild || !out.hasSurfMat || !out.hasChunkWater) return out;
-                    const sm = r._ensureHydroSurfaceMaterial();
-                    out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
-                    const su = (sm && sm.uniforms) || {};
-                    out.surfMatSharesUniforms =
-                        !!su.uDeep &&
-                        !!su.uShallow &&
-                        !!su.uFoam &&
-                        !!su.uSunDir &&
-                        !!su.uLight &&
-                        !!su.fogColor &&
-                        !!su.uTime;
-                    out.shaderHasGerstner =
-                        !!sm && /gerstnerWave/.test(sm.vertexShader || "") && /aWave/.test(sm.vertexShader || "");
-                    out.depthWriteOn = !!sm && sm.depthWrite === true;
-                    const hydro = r.state.hydrosphere;
-                    out.hydroReady = !!(hydro && hydro.ready);
-                    if (!out.hydroReady) return out;
-                    out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
-                        rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
-                    );
-                    r._buildHydrosphereMeshes();
-                    const meshes = r.state.hydrosphereMeshes;
-                    out.meshesArray = Array.isArray(meshes);
-                    out.onlyWaterfalls =
-                        out.meshesArray && meshes.every((m) => m.userData && m.userData.hydroKind === "waterfall");
-                    out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length;
-                    out.fallsUseWaterfallMat =
-                        out.meshesArray &&
-                        (meshes.length === 0 ||
-                            meshes.every(
-                                (m) =>
-                                    m.material === r.state.waterfallMaterial &&
-                                    m.geometry &&
-                                    m.geometry.type === "PlaneGeometry"
-                            ));
-                    out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
-                    out.chunkWaterIsMesh = false;
-                    out.chunkWaterUsesMat = false;
-                    out.chunkWaterHasAttrs = false;
-                    out.chunkWaterHasQuads = false;
-                    out.chunkWaterOnLevel = true;
-                    out.chunkWaterWaveValid = true;
-                    out.gateOceanTrue = false;
-                    if (hydro.water && hydro.water.waterKind) {
-                        const span = r._voxelChunkConfig().span;
-                        let oi = -1;
-                        for (let k = 0; k < hydro.water.waterKind.length; k++) {
-                            if (hydro.water.waterKind[k] === 1) {
-                                oi = k;
-                                break;
-                            }
-                        }
-                        if (oi >= 0) {
-                            const owx = hydro.originX + ((oi % hydro.dim) + 0.5) * hydro.cell;
-                            const owz = hydro.originZ + (((oi / hydro.dim) | 0) + 0.5) * hydro.cell;
-                            const cx = Math.floor(owx / span);
-                            const cz = Math.floor(owz / span);
-                            out.gateOceanTrue = r._voxelChunkTouchesWater(cx, cz) === true;
-                            r._disposeVoxelChunkWater(`${cx},${cz}`);
-                            r._buildVoxelChunkWater(cx, cz);
-                            const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
-                            out.chunkWaterIsMesh = !!(wm && wm.type === "Mesh");
-                            out.chunkWaterUsesMat = !!(wm && wm.material === sm);
-                            if (out.chunkWaterIsMesh && wm.geometry) {
-                                const g = wm.geometry;
-                                out.chunkWaterHasAttrs = !!(
-                                    g.attributes.position &&
-                                    g.attributes.aFlow &&
-                                    g.attributes.aShore &&
-                                    g.attributes.aWave
-                                );
-                                out.chunkWaterHasQuads = !!(g.index && g.index.count > 0);
-                                const pos = g.attributes.position.array;
-                                // Exaktheit: jeder Vertex sitzt auf `_waterLevelAt`
-                                // — das Wasser liegt auf dem Level-Feld, kein Schweben.
-                                for (let v = 0; v < pos.length; v += 3) {
-                                    if (Math.abs(pos[v + 1] - r._waterLevelAt(pos[v], pos[v + 2])) > 0.05) {
-                                        out.chunkWaterOnLevel = false;
-                                        break;
-                                    }
-                                }
-                                const aw = g.attributes.aWave.array;
-                                for (let k = 0; k < aw.length; k++) {
-                                    if (aw[k] < -0.001 || aw[k] > 1.001) {
-                                        out.chunkWaterWaveValid = false;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    r._disposeHydrosphereMeshes();
-                    out.disposeClears =
-                        Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
-                    r._buildHydrosphereMeshes();
-                    out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelChunkWaterResults && !voxelChunkWaterResults.error) {
-                const hc = voxelChunkWaterResults;
-                check(
-                    "Voxel V9.43-c: _buildHydrosphereMeshes + _disposeHydrosphereMeshes existieren",
-                    hc.hasBuild && hc.hasDispose
-                );
-                check(
-                    "Voxel V9.50-b: die Chunk-Wasser-Methoden existieren (Build/Dispose/Gate)",
-                    hc.hasChunkWater && hc.hasChunkWaterDispose && hc.hasGate
-                );
-                check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
-                check(
-                    "Voxel V9.43-c: das Wasser-Material teilt die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog)",
-                    hc.surfMatSharesUniforms
-                );
-                check(
-                    "Voxel V9.49-c: der vereinte Shader trägt Gerstner-Wellen + aWave-Modulation",
-                    hc.shaderHasGerstner
-                );
-                check("Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an)", hc.depthWriteOn);
-                if (hc.hydroReady) {
-                    check(
-                        "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
-                        hc.riverPointsHaveVoxelY
-                    );
-                    check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
-                    check(
-                        `Voxel V9.50-b: hydrosphereMeshes trägt nur Wasserfälle (== hydro.waterfalls: ${hc.fallCountMatches})`,
-                        hc.onlyWaterfalls && hc.fallCountMatches
-                    );
-                    check(
-                        "Voxel V9.43-c: Wasserfall-Planes nutzen das V9.43-a-Material + PlaneGeometry",
-                        hc.fallsUseWaterfallMat
-                    );
-                    check("Voxel V9.50-b: state.voxelChunkWater ist eine Map", hc.waterMapIsMap);
-                    check(
-                        "Voxel V9.50-b: ein Ozean-Chunk baut eine Wasser-Fläche (Mesh, geteiltes Material)",
-                        hc.chunkWaterIsMesh && hc.chunkWaterUsesMat
-                    );
-                    check(
-                        "Voxel V9.50-b: das Chunk-Wasser trägt position/aFlow/aShore/aWave + nasse Quads",
-                        hc.chunkWaterHasAttrs && hc.chunkWaterHasQuads
-                    );
-                    check(
-                        "Voxel V9.50-b: jeder Wasser-Vertex sitzt EXAKT auf `_waterLevelAt` (kein Schweben)",
-                        hc.chunkWaterOnLevel
-                    );
-                    check("Voxel V9.50-b: aWave ist je Vertex in [0,1]", hc.chunkWaterWaveValid);
-                    check("Voxel V9.50-b: der Wasser-Gate erkennt einen Ozean-Chunk", hc.gateOceanTrue);
-                    check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
-                    check(
-                        "Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf",
-                        hc.rebuildsAfterDispose
-                    );
-                }
-            }
-
-            // ### Voxel V9.50-b — Ufer-Schaum + Fluss-Flow im Chunk-Wasser ###
-            const voxelFoamResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-                    out.shaderHasShore =
-                        !!sm && /aShore/.test(sm.vertexShader || "") && /vShore/.test(sm.fragmentShader || "");
-                    out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
-                    out.shaderHasCrest = !!sm && /crest/.test(sm.fragmentShader || "");
-                    const hydro = r.state.hydrosphere;
-                    out.hydroReady = !!(hydro && hydro.ready);
-                    if (!out.hydroReady) return out;
-                    const span = r._voxelChunkConfig().span;
-                    out.shoreInRange = true;
-                    out.riverHasFlow = false;
-                    out.hasGeo = true;
-                    let rp = null;
-                    for (const rv of hydro.rivers) {
-                        for (const p of rv.points) {
-                            if (!p.inLake) {
-                                rp = p;
-                                break;
-                            }
-                        }
-                        if (rp) break;
-                    }
-                    if (rp) {
-                        const cx = Math.floor(rp.x / span);
-                        const cz = Math.floor(rp.z / span);
-                        r._disposeVoxelChunkWater(`${cx},${cz}`);
-                        r._buildVoxelChunkWater(cx, cz);
-                        const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
-                        const g = wm && wm.geometry;
-                        out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
-                        if (out.hasGeo) {
-                            const aSh = g.attributes.aShore.array;
-                            for (let k = 0; k < aSh.length; k++) {
-                                if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
-                            }
-                            const fa = g.attributes.aFlow.array;
-                            for (let k = 0; k + 1 < fa.length; k += 2) {
-                                if (Math.hypot(fa[k], fa[k + 1]) > 0.5) {
-                                    out.riverHasFlow = true;
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        out.riverHasFlow = true; // keine Land-Flüsse → vacuous
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelFoamResults && !voxelFoamResults.error) {
-                const h = voxelFoamResults;
-                check("Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
-                check(
-                    "Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)",
-                    h.shaderScaledScroll
-                );
-                check("Voxel V9.49-c: der Shader trägt Ozean-Schaumkämme (crest)", h.shaderHasCrest);
-                if (h.hydroReady) {
-                    check("Voxel V9.50-b: das Chunk-Wasser trägt aShore + aFlow", h.hasGeo);
-                    check("Voxel V9.50-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
-                    check("Voxel V9.50-b: ein Fluss-Chunk trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
-                }
-            }
-
-            // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
-            // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
-            // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
-            // erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel`
-            // bzw. den Ziel-See-Level), und der Spieler schwimmt in einem See
-            // wie im Meer (`_hydroWaterLevelAt` speist die Schwimm-Physik).
-            const voxelV943c2 = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasWaterLevelAt = typeof r._hydroWaterLevelAt === "function";
-                    const hydro = r.state.hydrosphere;
-                    out.hydroReady = !!(hydro && hydro.ready);
-                    if (!out.hasWaterLevelAt || !out.hydroReady) return out;
-                    // _hydroWaterLevelAt: über einer GERENDERTEN See-Zelle → der
-                    // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
-                    // zählen nicht — die Meeres-Plane vertritt sie.
-                    out.lakeLevelOk = true;
-                    out.ringFollowsPlane = true;
-                    const wlT = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-                    const renderedLk = hydro.lakes.find(
-                        (l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0
-                    );
-                    if (renderedLk) {
-                        const cellIdx = renderedLk.cells[0];
-                        const ci = cellIdx % hydro.dim;
-                        const cj = (cellIdx / hydro.dim) | 0;
-                        const wx = hydro.originX + (ci + 0.5) * hydro.cell;
-                        const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                        out.lakeLevelOk = Math.abs(r._hydroWaterLevelAt(wx, wz) - renderedLk.level) < 0.01;
-                        // V9.45-c — der Auftrieb folgt der dilatierten See-Plane:
-                        // eine 1-Ring-Zelle (nicht selbst See-Zelle) liefert auch
-                        // einen See-Wasserspiegel, nicht den Meeresspiegel.
-                        const cellsSet = new Set(renderedLk.cells);
-                        let ringChecked = false;
-                        for (let dj = -1; dj <= 1 && !ringChecked; dj++) {
-                            for (let di = -1; di <= 1 && !ringChecked; di++) {
-                                const ni = ci + di;
-                                const nj = cj + dj;
-                                if (ni < 0 || nj < 0 || ni >= hydro.dim || nj >= hydro.dim) continue;
-                                if (cellsSet.has(ni + nj * hydro.dim)) continue;
-                                const rx = hydro.originX + (ni + 0.5) * hydro.cell;
-                                const rz = hydro.originZ + (nj + 0.5) * hydro.cell;
-                                out.ringFollowsPlane = r._hydroWaterLevelAt(rx, rz) > wlT + 1.5;
-                                ringChecked = true;
-                            }
-                        }
-                    }
-                    // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
-                    out.seaFallbackOk = r._hydroWaterLevelAt(999999, 999999) === r.state.waterLevel;
-                    // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
-                    // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
-                    r._buildHydrosphereMeshes();
-                    const meshes = r.state.hydrosphereMeshes || [];
-                    const riverMeshes = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
-                    out.mouthReachesSea = true;
-                    out.seaMouthChecked = false;
-                    for (let i = 0; i < hydro.rivers.length; i++) {
-                        if (hydro.rivers[i].mouth !== "sea") continue;
-                        const m = riverMeshes[i];
-                        if (!m || !m.geometry || !m.geometry.attributes.position) continue;
-                        const pos = m.geometry.attributes.position.array;
-                        const vc = pos.length / 3;
-                        const lastY = pos[(vc - 1) * 3 + 1];
-                        out.seaMouthChecked = true;
-                        if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
-                    }
-                    // Die Schwimm-Physik (in _loopPhysicsSync) speist den
-                    // effektiven Wasserspiegel aus _hydroWaterLevelAt.
-                    out.physicsUsesEffWater =
-                        typeof r._loopPhysicsSync === "function" &&
-                        /_hydroWaterLevelAt/.test(r._loopPhysicsSync.toString());
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV943c2 && !voxelV943c2.error) {
-                const h2 = voxelV943c2;
-                check("Voxel V9.43-c.2: _hydroWaterLevelAt existiert", h2.hasWaterLevelAt);
-                check(
-                    "Voxel V9.43-c.2: _hydroWaterLevelAt liefert über einer See-Zelle den See-Füllstand",
-                    h2.lakeLevelOk
-                );
-                check(
-                    "Voxel V9.45-c: der Auftrieb folgt der dilatierten See-Plane (1-Ring-Zelle = See-Spiegel)",
-                    h2.ringFollowsPlane
-                );
-                check(
-                    "Voxel V9.43-c.2: _hydroWaterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
-                    h2.seaFallbackOk
-                );
-                check(
-                    "Voxel V9.43-c.2: ein Meer-Mündungs-Fluss-Ribbon endet sichtbar auf dem Meeresspiegel",
-                    h2.mouthReachesSea
-                );
-                check(
-                    "Voxel V9.43-c.2: die Schwimm-Physik speist den effektiven Wasserspiegel (Seen schwimmbar)",
-                    h2.physicsUsesEffWater
-                );
-            }
-
-            // ### Voxel V9.43-d — die Flüsse carven echte Betten ###
-            // `_terrainDensityAt` fragt die Hydrosphäre (Bucket-Index) + senkt
-            // die Dichte im Fluss-Kanal + in See-Senken → der Chunk-Mesher
-            // produziert echte Rinnen mit Ufern + gemuldete Becken. Zirkel-frei
-            // über das `_hydroComputing`-Suppress-Flag. Ohne Hydrosphäre
-            // bit-identisch zu vor V9.43-d.
-            const voxelV943d = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.methodsExist =
-                        typeof r._hydrosphereCarveAt === "function" && typeof r._hydroBuildCarveIndex === "function";
-                    const hydro = r.state.hydrosphere;
-                    out.hydroReady = !!(hydro && hydro.ready);
-                    if (!out.methodsExist || !out.hydroReady) return out;
-                    if (r.state.worldMeta) r.state.worldMeta.voxelEdits = [];
-                    // (2) der Carve-Index ist an state.hydrosphere verdrahtet
-                    out.indexWired =
-                        Array.isArray(hydro.riverBuckets) &&
-                        hydro.lakeBedCell instanceof Float32Array &&
-                        hydro.lakeW instanceof Float32Array &&
-                        hydro.lakeNear instanceof Uint8Array &&
-                        typeof hydro.bucketSize === "number" &&
-                        typeof hydro.bucketsDim === "number";
-                    // einen Fluss-Punkt mit echter Flow-Richtung finden —
-                    // V9.46: NICHT in einem See (See-Durchquerungs-Segmente
-                    // werden bewusst nicht gecarvt) und mit nicht-See-Nachbar,
-                    // damit das Segment rp→next im Carve-Index liegt.
-                    let rp = null;
-                    for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
-                        const pts = hydro.rivers[ri].points;
-                        for (let k = 0; k + 1 < pts.length; k++) {
-                            if (pts[k].inLake || pts[k + 1].inLake) continue;
-                            if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) > 0.5) {
-                                rp = pts[k];
-                                break;
-                            }
-                        }
-                    }
-                    out.foundRiverPoint = !!rp;
-                    if (rp) {
-                        const HC = r.constructor.HYDROSPHERE;
-                        const rx = rp.x;
-                        const rz = rp.z;
-                        // V9.45-b — lakeNear neutralisiert: alle Fluss-Sub-Tests
-                        // messen den reinen Fluss-Carve + das Terrain, ohne dass
-                        // ein zufällig benachbarter See-Blend die Mess-Punkte
-                        // verfälscht (ein Fluss-Punkt kann im 1-Ring eines Sees
-                        // liegen). Am Ende des Blocks wiederhergestellt.
-                        const savedLN = hydro.lakeNear;
-                        hydro.lakeNear = new Uint8Array(savedLN.length);
-                        // (3) der Fluss-Mittelpunkt wird gecarvt
-                        const carveCenter = r._hydrosphereCarveAt(rx, rz);
-                        out.riverCenterCarved = carveCenter > 0.5;
-                        // (4) das Bett liegt unter den Ufern: das Carve-Profil
-                        // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
-                        const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
-                        const bankW = Math.max(2, D * HC.carveBankSlope);
-                        const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
-                        const pX = -rp.flowZ;
-                        const pZ = rp.flowX;
-                        const rcCenter = r._hydrosphereCarveAt(rx, rz);
-                        const midOff = halfW + bankW * 0.45;
-                        const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-                        out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
-                        // (5) der Carve senkt die Voxel-Surface am Fluss
-                        const sCarve = r._voxelSurfaceY(rx, rz);
-                        r._hydroComputing = true;
-                        const sNoCarve = r._voxelSurfaceY(rx, rz);
-                        r._hydroComputing = false;
-                        out.surfaceLowered =
-                            Number.isFinite(sCarve) && Number.isFinite(sNoCarve) && sCarve < sNoCarve - 0.3;
-                        // (8) der Carve ist rein subtraktiv: die _terrainDensityAt-
-                        // Differenz (Carve aktiv vs. suppressed) === der Carve-Betrag
-                        const y = (r.state.terrainBaseHeight || 0) + 10;
-                        const dCarve = r._terrainDensityAt(rx, y, rz);
-                        r._hydroComputing = true;
-                        const dSuppressed = r._terrainDensityAt(rx, y, rz);
-                        r._hydroComputing = false;
-                        out.carveIsSubtractive = Math.abs(dSuppressed - dCarve - carveCenter) < 0.001;
-                        // (9) ohne Hydrosphäre bit-identisch — _hydrosphereCarveAt → 0
-                        const savedHydro = r.state.hydrosphere;
-                        r.state.hydrosphere = null;
-                        out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === 0;
-                        r.state.hydrosphere = savedHydro;
-                        // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
-                        const base = r.state.terrainBaseHeight || 0;
-                        out.floorSolid = r._terrainDensityAt(rx, base - 56, rz) > 0;
-                        hydro.lakeNear = savedLN;
-                    }
-                    // (6+7) V9.45-b — ein See-Becken wird zu einem flachen,
-                    // wasserdichten Topf gesculptet: `_hydrosphereLakeAt` liefert
-                    // ein bedY über dem Meeresspiegel (die Meeres-Plane bleibt
-                    // verdeckt) + unter dem See-Spiegel; die geblendete Voxel-
-                    // Surface sitzt auf bedY, knapp darunter ist fester Grund.
-                    out.lakeSculpted = false;
-                    out.lakeBedWatertight = false;
-                    const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
-                    for (let li = 0; li < hydro.lakes.length && !out.lakeSculpted; li++) {
-                        const lk = hydro.lakes[li];
-                        if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
-                        if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
-                        const idx = lk.cells[(lk.cells.length / 2) | 0];
-                        const ci = idx % hydro.dim;
-                        const cj = (idx / hydro.dim) | 0;
-                        const wx = hydro.originX + (ci + 0.5) * hydro.cell;
-                        const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
-                        const la = r._hydrosphereLakeAt(wx, wz);
-                        if (la && la.w > 0.5 && Number.isFinite(la.bedY)) {
-                            out.lakeSculpted = true;
-                            const bedOk = la.bedY > wl2 && la.bedY < lk.level;
-                            const solidBelow = r._terrainDensityAt(wx, la.bedY - 2, wz) > 0;
-                            const surfY = r._voxelSurfaceY(wx, wz);
-                            const surfOnBed = Number.isFinite(surfY) && Math.abs(surfY - la.bedY) < 2.5;
-                            out.lakeBedWatertight = bedOk && solidBelow && surfOnBed;
-                        }
-                    }
-                    // (11) Re-Compute ist zirkel-frei: das Suppress-Flag hält den
-                    // Carve aus der eigenen Berechnung — ein Re-Compute liefert
-                    // dasselbe Netz wie der un-gecarvte Worldgen-Compute.
-                    const reHydro = r._computeHydrosphere();
-                    out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
-                    // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
-                    out.flagClean = !r._hydroComputing;
-                    // (13) V9.50 — das Chunk-Wasser fragt das Fluss-Netz:
-                    // `_buildVoxelChunkWater` ruft `_waterLevelAt` (das über
-                    // `_hydroRiverAt` denselben `riverBuckets`-Index liest).
-                    out.unifiedQueriesRivers =
-                        typeof r._buildVoxelChunkWater === "function" &&
-                        /_waterLevelAt/.test(r._buildVoxelChunkWater.toString());
-                    // (14) der Carve ist im Perf-Budget
-                    const t0 = performance.now();
-                    const span = hydro.size;
-                    for (let i = 0; i < 50000; i++) {
-                        r._hydrosphereCarveAt(
-                            hydro.originX + (i % 211) * (span / 211),
-                            hydro.originZ + ((i * 7) % 211) * (span / 211)
-                        );
-                    }
-                    out.carvePerfMs = performance.now() - t0;
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV943d && !voxelV943d.error) {
-                const d = voxelV943d;
-                check("Voxel V9.43-d: _hydrosphereCarveAt + _hydroBuildCarveIndex existieren", d.methodsExist);
-                check(
-                    "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
-                    d.indexWired
-                );
-                check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
-                check(
-                    "Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (Carve-Profil fällt zur Bank ab)",
-                    d.bedBelowBanks
-                );
-                check("Voxel V9.43-d: der Carve senkt die Voxel-Surface am Fluss", d.surfaceLowered);
-                check(
-                    "Voxel V9.43-d: der Carve ist rein subtraktiv (_terrainDensityAt-Differenz === Carve-Betrag)",
-                    d.carveIsSubtractive
-                );
-                check(
-                    "Voxel V9.43-d: ohne Hydrosphäre ist der Carve 0 (bit-identisch zu vor V9.43-d)",
-                    d.carveZeroWithoutHydro
-                );
-                check(
-                    "Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)",
-                    d.floorSolid
-                );
-                check("Voxel V9.45-b: ein See-Becken wird zu einem flachen Topf gesculptet", d.lakeSculpted);
-                check(
-                    "Voxel V9.45-b: der See-Boden ist wasserdicht — über dem Meer, unter dem Spiegel, fester Grund",
-                    d.lakeBedWatertight
-                );
-                check(
-                    "Voxel V9.43-d: ein Re-Compute bleibt zirkel-frei (Suppress-Flag — gleiches Netz wie der Worldgen-Compute)",
-                    d.recomputeStable
-                );
-                check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
-                check(
-                    "Voxel V9.50-b: das Chunk-Wasser fragt das Wasser-Level-Feld (`_waterLevelAt`)",
-                    d.unifiedQueriesRivers
-                );
-                check(
-                    `Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe in ${Math.round(d.carvePerfMs || 0)} ms < 300 ms)`,
-                    typeof d.carvePerfMs === "number" && d.carvePerfMs < 300
-                );
-            }
-
-            // ### V9.43-e — das Wasser-Ultiversum bekommt Klang ###
-            // Zwei positions-modulierte White-Noise-Layer: Fluss-Rauschen
-            // (heller Bandpass) + Wasserfall-Donnern (dunkler Lowpass).
-            // `_tickHydrosphereAudio` setzt je Layer ein `target` aus der
-            // Spieler-Distanz — der deterministische Mess-Punkt (der GainNode
-            // rampt verzögert hinterher). Vision §1.4 multisensorisch.
-            const voxelV943e = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasBuild = typeof r._buildHydroAudioLayer === "function";
-                    out.hasTick = typeof r._tickHydrosphereAudio === "function";
-                    out.hasSegDist = typeof r._pointSegDist2D === "function";
-                    if (out.hasSegDist) {
-                        out.segPerp = Math.abs(r._pointSegDist2D(0, 5, -10, 0, 10, 0) - 5) < 1e-6;
-                        out.segClamp = Math.abs(r._pointSegDist2D(20, 0, -10, 0, 10, 0) - 10) < 1e-6;
-                        out.segZero = r._pointSegDist2D(3, 0, -10, 0, 10, 0) < 1e-6;
-                    }
-                    if (!r.state.symphony.enabled) {
-                        try {
-                            r.initSymphony();
-                        } catch (e) {
-                            void e;
-                        }
-                    }
-                    const s = r.state.symphony;
-                    out.symphonyOn = !!s.enabled;
-                    const ha = s.hydroAudio;
-                    out.hasHydroAudio = !!ha;
-                    if (ha) {
-                        out.riverLayer = !!(ha.river && ha.river.noise && ha.river.filter && ha.river.gain);
-                        out.fallLayer = !!(
-                            ha.waterfall &&
-                            ha.waterfall.noise &&
-                            ha.waterfall.filter &&
-                            ha.waterfall.gain
-                        );
-                        out.riverBandpass = !!(ha.river && ha.river.filter.type === "bandpass");
-                        out.fallLowpass = !!(ha.waterfall && ha.waterfall.filter.type === "lowpass");
-                    }
-                    const hydro = r.state.hydrosphere;
-                    out.hasHydro = !!(hydro && hydro.ready);
-                    if (out.hasHydro && ha && r.state.playerMesh) {
-                        const pm = r.state.playerMesh.position;
-                        const orig = { x: pm.x, z: pm.z };
-                        let rp = null;
-                        if (Array.isArray(hydro.rivers)) {
-                            for (const rv of hydro.rivers) {
-                                if (rv.points && rv.points.length) {
-                                    rp = rv.points[0];
-                                    break;
-                                }
-                            }
-                        }
-                        out.hasRiver = !!rp;
-                        if (rp) {
-                            pm.x = rp.x;
-                            pm.z = rp.z;
-                            ha.lastTick = -Infinity;
-                            r._tickHydrosphereAudio();
-                            out.riverNear = ha.river.target;
-                            pm.x = rp.x + 5000;
-                            pm.z = rp.z + 5000;
-                            ha.lastTick = -Infinity;
-                            r._tickHydrosphereAudio();
-                            out.riverFar = ha.river.target;
-                        }
-                        const wf =
-                            Array.isArray(hydro.waterfalls) && hydro.waterfalls.length ? hydro.waterfalls[0] : null;
-                        out.hasWaterfall = !!wf;
-                        if (wf) {
-                            pm.x = wf.x;
-                            pm.z = wf.z;
-                            ha.lastTick = -Infinity;
-                            r._tickHydrosphereAudio();
-                            out.fallNear = ha.waterfall.target;
-                            pm.x = wf.x + 5000;
-                            pm.z = wf.z + 5000;
-                            ha.lastTick = -Infinity;
-                            r._tickHydrosphereAudio();
-                            out.fallFar = ha.waterfall.target;
-                        }
-                        pm.x = orig.x;
-                        pm.z = orig.z;
-                    }
-                    return out;
-                })
-                .catch((err) => ({ error: err.message }));
-
-            if (!voxelV943e || voxelV943e.error) {
-                check(
-                    "V9.43-e: Wasser-Klang-Snapshot erreichbar",
-                    false,
-                    (voxelV943e && voxelV943e.error) || "page.evaluate fehlgeschlagen"
-                );
-            } else {
-                const e = voxelV943e;
-                check("V9.43-e: _buildHydroAudioLayer existiert", e.hasBuild);
-                check("V9.43-e: _tickHydrosphereAudio existiert", e.hasTick);
-                check("V9.43-e: _pointSegDist2D existiert", e.hasSegDist);
-                check("V9.43-e: _pointSegDist2D — Lot auf das Segment (5 m)", e.segPerp);
-                check("V9.43-e: _pointSegDist2D — Klemmung auf den Endpunkt (10 m)", e.segClamp);
-                check("V9.43-e: _pointSegDist2D — Punkt auf dem Segment ist 0", e.segZero);
-                check("V9.43-e: Symphonie aktiv (initSymphony headless)", e.symphonyOn);
-                check("V9.43-e: state.symphony.hydroAudio gebaut", e.hasHydroAudio);
-                check("V9.43-e: Fluss-Layer komplett (noise + filter + gain)", e.riverLayer);
-                check("V9.43-e: Wasserfall-Layer komplett (noise + filter + gain)", e.fallLayer);
-                check("V9.43-e: Fluss-Filter ist Bandpass (helles Rauschen)", e.riverBandpass);
-                check("V9.43-e: Wasserfall-Filter ist Lowpass (dunkles Donnern)", e.fallLowpass);
-                check(
-                    "V9.43-e: Fluss-Klang reagiert auf Distanz (nah laut, fern still)",
-                    e.hasRiver === true && e.riverNear > 0.05 && e.riverFar === 0,
-                    `nah=${(e.riverNear || 0).toFixed(3)} fern=${(e.riverFar || 0).toFixed(3)}`
-                );
-                check(
-                    "V9.43-e: Wasserfall-Donnern reagiert auf Distanz (nah laut, fern still)",
-                    e.hasWaterfall === true && e.fallNear > 0.05 && e.fallFar === 0,
-                    `nah=${(e.fallNear || 0).toFixed(3)} fern=${(e.fallFar || 0).toFixed(3)}`
-                );
-            }
-
-            // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
-            // `carveVoxelSphere` schnitzt eine Kugel Luft ins Dichte-Feld.
-            const voxelP3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasCarve = typeof r.carveVoxelSphere === "function";
-                    out.hasRemesh = typeof r._remeshVoxelChunksAround === "function";
-                    if (out.hasCarve && r.state.worldMeta) {
-                        const base = r.state.terrainBaseHeight || 0;
-                        // Der Schnitt zieht am Kugel-Zentrum exakt strength (48) ab.
-                        r.state.worldMeta.voxelEdits = [];
-                        const dBefore = r._terrainDensityAt(0, base - 33, 0);
-                        r.carveVoxelSphere(0, base - 33, 0, 12);
-                        const dAfter = r._terrainDensityAt(0, base - 33, 0);
-                        out.carveSubtracts = Math.abs(dBefore - dAfter - 48) < 0.01;
-                        out.editStored = r.state.worldMeta.voxelEdits.length === 1;
-                        // Ein fester Punkt wird zu Luft (echtes Loch).
-                        let solidToAir = false;
-                        for (let sy = base + 20; sy >= base - 30 && !solidToAir; sy -= 3) {
-                            const dB = r._terrainDensityAt(50, sy, 50);
-                            if (dB > 1 && dB < 40) {
-                                r.state.worldMeta.voxelEdits = [];
-                                r.carveVoxelSphere(50, sy, 50, 12);
-                                if (r._terrainDensityAt(50, sy, 50) < 0) solidToAir = true;
-                            }
-                        }
-                        out.solidToAir = solidToAir;
-                        // Persistenz: der Edit reist im Welt-Snapshot.
-                        r.state.worldMeta.voxelEdits = [];
-                        r.carveVoxelSphere(10, base, 10, 5);
-                        const snap = r.buildStateSnapshot();
-                        out.snapshotHasEdit = !!(
-                            snap &&
-                            snap.worldMeta &&
-                            Array.isArray(snap.worldMeta.voxelEdits) &&
-                            snap.worldMeta.voxelEdits.length >= 1
-                        );
-                        // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt.
-                        r.state.worldMeta.voxelEdits = [];
-                        for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
-                        out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
-                        // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
-                        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
-                        r.state.worldMeta.voxelEdits = [];
-                        r.processChatCommand("voxel carve");
-                        out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
-                        // sauber zurücklassen.
-                        r.state.worldMeta.voxelEdits = [];
-                        if (typeof r.saveState === "function") r.saveState();
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelP3Results && !voxelP3Results.error) {
-                check(
-                    "Voxel P3: carveVoxelSphere + _remeshVoxelChunksAround existieren",
-                    voxelP3Results.hasCarve && voxelP3Results.hasRemesh
-                );
-                check(
-                    "Voxel P3: der Schnitt zieht am Kugel-Zentrum die Dichte ab (festes → Luft)",
-                    voxelP3Results.carveSubtracts
-                );
-                check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
-                check(
-                    "Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)",
-                    voxelP3Results.solidToAir
-                );
-                check(
-                    "Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)",
-                    voxelP3Results.snapshotHasEdit
-                );
-                check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
-                check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
-            }
-
-            // V9.40-c — Async-Rebuild via Dirty-Queue: ein Edit markiert
-            // die Voxel-Chunks dirty (statt sie sync zu rebuilden); ein
-            // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks`
-            // ist die Test-Naht für sofortigen sync-Drain.
-            const voxelV940cResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasTick = typeof r._tickDirtyVoxelChunks === "function";
-                    out.hasDrain = typeof r._drainDirtyVoxelChunks === "function";
-                    // Den Test-Voxel-Ring synchron auffüllen, damit der Edit
-                    // gleich Chunks zum Markieren findet.
-                    const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-                    if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
-                    for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
-                    if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
-                        out.skip = true;
-                        return out;
-                    }
-                    // Ein Carve in der Nähe des Spielers markiert Chunks dirty
-                    // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
-                    const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
-                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
-                    out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
-                    // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
-                    const dirtyMid = r.state.dirtyVoxelChunks.size;
-                    const built = r._drainDirtyVoxelChunks();
-                    out.drainRebuilt = built > 0;
-                    out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
-                    out.drainReturnedCount = built === dirtyMid;
-                    // Game-Loop-Tick rebuildet pro Frame max 1.
-                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
-                    const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
-                    if (dirtyPostEdit > 1) {
-                        r._tickDirtyVoxelChunks(pm);
-                        out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
-                    } else {
-                        out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
-                    }
-                    // Disposal räumt dirty-Marker mit.
-                    r._drainDirtyVoxelChunks();
-                    r.carveVoxelSphere(pm.x, pm.y - 1.5, pm.z, 3.5);
-                    const dirtyKey = [...r.state.dirtyVoxelChunks][0];
-                    if (dirtyKey) {
-                        r._disposeVoxelChunk(dirtyKey);
-                        out.disposeClearsDirty = !r.state.dirtyVoxelChunks.has(dirtyKey);
-                    } else {
-                        out.disposeClearsDirty = true;
-                    }
-                    r._drainDirtyVoxelChunks();
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV940cResults && !voxelV940cResults.error && !voxelV940cResults.skip) {
-                check(
-                    "V9.40-c: _tickDirtyVoxelChunks + _drainDirtyVoxelChunks existieren",
-                    voxelV940cResults.hasTick && voxelV940cResults.hasDrain
-                );
-                check(
-                    "V9.40-c: ein Carve markiert Voxel-Chunks dirty (statt sofort sync rebuild)",
-                    voxelV940cResults.editMarksDirty
-                );
-                check(
-                    "V9.40-c: _drainDirtyVoxelChunks rebuildet + leert das Set",
-                    voxelV940cResults.drainRebuilt && voxelV940cResults.drainEmptiesSet
-                );
-                check(
-                    "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
-                    voxelV940cResults.drainReturnedCount
-                );
-                check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
-                check(
-                    "V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
-                    voxelV940cResults.disposeClearsDirty
-                );
-            }
-
-            // V9.40-d — Dispose-Before-Build (Heap-Druck-Heilung) + Retry-
-            // Counter. Schöpfer-V9.40-c-Browser-Befund: kaskadierende OOMs
-            // weil V9.40-b's Pre-Build-Pattern alter+neuer parallel im
-            // Ammo-Heap leben liess.
-            const voxelV940dResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // Ring auffüllen.
-                    const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-                    if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
-                    for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
-                    if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
-                        out.skip = true;
-                        return out;
-                    }
-                    // Dispose-Before-Build: stuben den Code-Pfad indem wir
-                    // einen Chunk-Key wählen, der existiert + rebuild rufen
-                    // + prüfen dass die alte Mesh-Identität weg ist.
-                    const someKey = [...r.state.voxelChunks.keys()].find((k) => {
-                        const e = r.state.voxelChunks.get(k);
-                        return e && e.mesh;
-                    });
-                    if (!someKey) {
-                        out.skip = true;
-                        return out;
-                    }
-                    const [cxStr, czStr] = someKey.split(",");
-                    const cx = parseInt(cxStr, 10);
-                    const cz = parseInt(czStr, 10);
-                    const oldMesh = r.state.voxelChunks.get(someKey).mesh;
-                    const ok = r._rebuildVoxelChunk(cx, cz);
-                    const newEntry = r.state.voxelChunks.get(someKey);
-                    out.rebuildOk = ok === true;
-                    // Bei Erfolg: neuer Mesh ist nicht der alte (Identität gewechselt).
-                    out.meshIdentityChanged = !!(newEntry && newEntry.mesh && newEntry.mesh !== oldMesh);
-                    // Retry-Counter: stub _buildVoxelChunkData um null zu returnen.
-                    const origBuild = r._buildVoxelChunkData;
-                    r._buildVoxelChunkData = () => null;
-                    // 1. Versuch: fail → dirty bleibt, attempts=1
-                    r._rebuildVoxelChunk(cx, cz);
-                    const attempts1 = r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey);
-                    out.retryCounter1 = attempts1 === 1;
-                    out.dirtyAfterFail = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.has(someKey));
-                    // 2. Versuch: fail → attempts=2
-                    r._rebuildVoxelChunk(cx, cz);
-                    out.retryCounter2 =
-                        (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
-                    // 3. Versuch: fail → empty markiert, counter weg
-                    r._rebuildVoxelChunk(cx, cz);
-                    const finalEntry = r.state.voxelChunks.get(someKey);
-                    out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
-                    out.counterClearedAfterGiveUp = !(
-                        r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey)
-                    );
-                    // Restore.
-                    r._buildVoxelChunkData = origBuild;
-                    if (r._drainDirtyVoxelChunks) r._drainDirtyVoxelChunks();
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV940dResults && !voxelV940dResults.error && !voxelV940dResults.skip) {
-                check(
-                    "V9.40-d: _rebuildVoxelChunk liefert true bei Erfolg + die Mesh-Identität wechselt",
-                    voxelV940dResults.rebuildOk && voxelV940dResults.meshIdentityChanged
-                );
-                check(
-                    "V9.40-d: bei Build-Fail wird der voxelRebuildAttempts-Counter gepflegt (1. Versuch)",
-                    voxelV940dResults.retryCounter1
-                );
-                check(
-                    "V9.40-d: bei Build-Fail wird der Chunk wieder dirty markiert (Retry-Chance)",
-                    voxelV940dResults.dirtyAfterFail
-                );
-                check("V9.40-d: Counter steigt bei wiederholten Fails (2. Versuch)", voxelV940dResults.retryCounter2);
-                check(
-                    "V9.40-d: nach 3 Fails wird der Chunk ehrlich als {empty:true} markiert",
-                    voxelV940dResults.giveUpAsEmpty
-                );
-                check(
-                    "V9.40-d: nach dem give-up wird der Counter geräumt (für späteren neuen Versuch)",
-                    voxelV940dResults.counterClearedAfterGiveUp
-                );
-            }
-
-            // V9.40-e — drei Heilungen nach dem zweiten Schöpfer-Browser-
-            // Audit: (1) `_addVoxelEdit` clampt Y auf den Chunk-Bereich +
-            // verwirft Edits weit ausserhalb (Schöpfer-Hinweis ehren);
-            // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit
-            // (Memory-Hygiene); (3) `_ensureVoxelChunkAt` (Streaming-Pfad)
-            // bekommt Retry-Counter wie der Re-Mesh-Pfad — vor V9.40-e
-            // markierte er bei OOM sofort `{empty:true}` (V9.24-Symptom-
-            // Geste). Damit sind beide Bau-Pfade (Stream + Re-Mesh) konsistent.
-            const voxelV940eResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    const base = r.state.terrainBaseHeight || 0;
-                    // (1) Edit-Y-Bound: weit-außerhalb-Edit wird verworfen.
-                    const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
-                    const farUpResult = r._addVoxelEdit(0, base + 10000, 0, 3, "carve");
-                    out.farEditRejected = farUpResult === false;
-                    out.farEditNotStored =
-                        (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
-                    const farDownResult = r._addVoxelEdit(0, base - 10000, 0, 3, "carve");
-                    out.farDownRejected = farDownResult === false;
-                    // Normaler Edit innerhalb Band bleibt erhalten.
-                    const inBoundResult = r._addVoxelEdit(0, base, 0, 3, "carve");
-                    out.inBoundAccepted = inBoundResult === true;
-                    // Edit knapp ÜBER der Decke (mit Marge) wird geclampt
-                    // statt verworfen.
-                    const nearEdgeResult = r._addVoxelEdit(0, base + 86, 0, 3, "carve");
-                    out.nearEdgeAccepted = nearEdgeResult === true;
-                    // Räumen.
-                    r.state.worldMeta.voxelEdits = [];
-
-                    // (2) _disposeVoxelChunk räumt voxelRebuildAttempts.
-                    if (!r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts = new Map();
-                    r.state.voxelRebuildAttempts.set("99,99", 2);
-                    r.state.voxelChunks.set("99,99", { empty: true });
-                    r._disposeVoxelChunk("99,99");
-                    out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
-
-                    // (3) _ensureVoxelChunkAt Retry-Pfad: stub den
-                    // Kollisions-Builder, sehe dass nach 2 Fails KEIN
-                    // empty-Eintrag steht (Retry pending), nach 3 ein empty.
-                    const fakeKey = "0,-999"; // weit weg, ungebraucht
-                    const origBuildColl = r._buildStaticTriMeshCollision;
-                    r._buildStaticTriMeshCollision = () => null;
-                    r._ensureVoxelChunkAt(0, -999);
-                    out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
-                    out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
-                    r._ensureVoxelChunkAt(0, -999);
-                    out.streamAttempt2 = r.state.voxelRebuildAttempts.get(fakeKey) === 2;
-                    r._ensureVoxelChunkAt(0, -999);
-                    const finalE = r.state.voxelChunks.get(fakeKey);
-                    out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
-                    out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
-                    // Restore + Cleanup.
-                    r._buildStaticTriMeshCollision = origBuildColl;
-                    r._disposeVoxelChunk(fakeKey);
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelV940eResults && !voxelV940eResults.error) {
-                check(
-                    "V9.40-e: _addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
-                    voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
-                );
-                check(
-                    "V9.40-e: _addVoxelEdit verwirft Edit weit unter dem Chunk-Boden",
-                    voxelV940eResults.farDownRejected
-                );
-                check(
-                    "V9.40-e: _addVoxelEdit akzeptiert Edit innerhalb des Chunk-Bands",
-                    voxelV940eResults.inBoundAccepted
-                );
-                check(
-                    "V9.40-e: _addVoxelEdit clampt Edit knapp ÜBER der Decke (innerhalb Marge)",
-                    voxelV940eResults.nearEdgeAccepted
-                );
-                check(
-                    "V9.40-e: _disposeVoxelChunk räumt voxelRebuildAttempts (Memory-Hygiene)",
-                    voxelV940eResults.disposeClearsAttempts
-                );
-                check(
-                    "V9.40-e: _ensureVoxelChunkAt-Streaming-Fail setzt KEINEN Map-Eintrag (Retry erlaubt)",
-                    voxelV940eResults.streamFail1NoEntry && voxelV940eResults.streamAttempt1
-                );
-                check(
-                    "V9.40-e: Streaming-Retry-Counter steigt bei wiederholten Fails (2. Versuch)",
-                    voxelV940eResults.streamAttempt2
-                );
-                check(
-                    "V9.40-e: nach 3 Streaming-Fails wird der Chunk ehrlich als {empty:true} markiert",
-                    voxelV940eResults.streamGiveUpAsEmpty
-                );
-                check(
-                    "V9.40-e: Streaming-Counter geräumt nach give-up",
-                    voxelV940eResults.streamCounterClearedAfterGiveUp
-                );
-            }
-
-            // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ###
-            // `fillVoxelSphere` addiert Dichte (Boden aufschütten).
-            const voxelP3bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasFill = typeof r.fillVoxelSphere === "function";
-                    if (out.hasFill && r.state.worldMeta) {
-                        const base = r.state.terrainBaseHeight || 0;
-                        // Der Füll-Schnitt addiert am Kugel-Zentrum exakt strength.
-                        r.state.worldMeta.voxelEdits = [];
-                        const dBefore = r._terrainDensityAt(0, base + 40, 0);
-                        r.fillVoxelSphere(0, base + 40, 0, 12);
-                        const dAfter = r._terrainDensityAt(0, base + 40, 0);
-                        out.fillAdds = Math.abs(dAfter - dBefore - 48) < 0.01;
-                        out.editIsFillMode =
-                            r.state.worldMeta.voxelEdits.length === 1 &&
-                            r.state.worldMeta.voxelEdits[0].mode === "fill";
-                        // Ein Luft-Punkt wird durch das Füllen zu festem Grund.
-                        let airToSolid = false;
-                        for (let sy = base + 35; sy >= base - 25 && !airToSolid; sy -= 3) {
-                            const dB = r._terrainDensityAt(70, sy, 70);
-                            if (dB < -1 && dB > -40) {
-                                r.state.worldMeta.voxelEdits = [];
-                                r.fillVoxelSphere(70, sy, 70, 12);
-                                if (r._terrainDensityAt(70, sy, 70) > 0) airToSolid = true;
-                            }
-                        }
-                        out.airToSolid = airToSolid;
-                        // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
-                        r.state.worldMeta.voxelEdits = [];
-                        const dPre = r._terrainDensityAt(120, base - 33, 120);
-                        r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12, strength: 48 }];
-                        out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
-                        // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
-                        // frieden — damit das V9.17-Füll-Gate frei ist.
-                        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
-                        const p3bMode = r.getGameMode ? r.getGameMode() : "frieden";
-                        r.setGameMode("frieden");
-                        r.state.worldMeta.voxelEdits = [];
-                        r.processChatCommand("voxel fill");
-                        out.chatFillAddsEdit =
-                            r.state.worldMeta.voxelEdits.length === 1 &&
-                            r.state.worldMeta.voxelEdits[0].mode === "fill";
-                        r.setGameMode(p3bMode);
-                        // sauber zurücklassen.
-                        r.state.worldMeta.voxelEdits = [];
-                        if (typeof r.saveState === "function") r.saveState();
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelP3bResults && !voxelP3bResults.error) {
-                check("Voxel P3b: fillVoxelSphere-Methode existiert", voxelP3bResults.hasFill);
-                check(
-                    "Voxel P3b: der Füll-Schnitt addiert am Kugel-Zentrum die Dichte (Luft → fest)",
-                    voxelP3bResults.fillAdds
-                );
-                check("Voxel P3b: der Füll-Edit trägt mode:fill", voxelP3bResults.editIsFillMode);
-                check(
-                    "Voxel P3b: ein Luft-Punkt wird durch das Füllen zu festem Grund (aufgeschüttet)",
-                    voxelP3bResults.airToSolid
-                );
-                check(
-                    "Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)",
-                    voxelP3bResults.modelessIsCarve
-                );
-                check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
-            }
-
-            // ### Voxel-Terrain-Bogen Phase 3c — Material-Erhaltungs-Kreis ###
-            // Im pfad-Modus kostet das Aufschütten Material; in frieden +
-            // schöpfer ist es frei (das Spielmodi-Muster).
-            const voxelP3cResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.player) return null;
-                    const out = {};
-                    out.hasConsume = typeof r._consumeAnyMaterial === "function";
-                    out.hasGate = typeof r._voxelFillGate === "function";
-                    if (out.hasConsume && out.hasGate) {
-                        const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
-                        const modeBackup = r.getGameMode ? r.getGameMode() : "frieden";
-                        const wm = r.state.worldMeta;
-                        const matTotal = () => {
-                            let t = 0;
-                            for (const s of r.state.player.inventory) {
-                                if (s && s.kind === "material") t += s.count || 0;
-                            }
-                            return t;
-                        };
-                        // _consumeAnyMaterial: genug → true + reduziert.
-                        r.state.player.inventory = new Array(27).fill(null);
-                        r.addMaterialToInventory("stein", 10);
-                        out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
-                        // zu wenig → false + unverändert.
-                        r.state.player.inventory = new Array(27).fill(null);
-                        r.addMaterialToInventory("stein", 2);
-                        out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
-                        // Gate in frieden → frei, kein Verbrauch.
-                        r.setGameMode("frieden");
-                        r.state.player.inventory = new Array(27).fill(null);
-                        const gF = r._voxelFillGate();
-                        out.gateFriedenFree = gF.ok === true && gF.free === true;
-                        // Gate in pfad mit Material → ok + verbraucht.
-                        r.setGameMode("pfad");
-                        r.state.player.inventory = new Array(27).fill(null);
-                        r.addMaterialToInventory("stein", 10);
-                        const gP = r._voxelFillGate();
-                        out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
-                        // Gate in pfad ohne Material → abgelehnt.
-                        r.state.player.inventory = new Array(27).fill(null);
-                        out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
-                        // Chat `voxel fill` in pfad ohne Material → kein Edit.
-                        // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
-                        wm.voxelEdits = [];
-                        r.processChatCommand("voxel fill");
-                        out.chatFillDeniedNoMat = wm.voxelEdits.length === 0;
-                        // Chat `voxel fill` in pfad mit Material → Edit + Verbrauch.
-                        r.addMaterialToInventory("stein", 10);
-                        wm.voxelEdits = [];
-                        r.processChatCommand("voxel fill");
-                        out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
-                        // sauber zurücklassen.
-                        wm.voxelEdits = [];
-                        r.state.player.inventory = invBackup;
-                        r.setGameMode(modeBackup);
-                        if (typeof r.saveState === "function") r.saveState();
-                    }
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (voxelP3cResults && !voxelP3cResults.error) {
-                check(
-                    "Voxel P3c: _consumeAnyMaterial + _voxelFillGate existieren",
-                    voxelP3cResults.hasConsume && voxelP3cResults.hasGate
-                );
-                check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
-                check(
-                    "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
-                    voxelP3cResults.consumeTooLittle
-                );
-                check(
-                    "Voxel P3c: das Füll-Gate ist in frieden frei (kein Material-Verbrauch)",
-                    voxelP3cResults.gateFriedenFree
-                );
-                check(
-                    "Voxel P3c: das Füll-Gate verbraucht im pfad-Modus Material (Erhaltungs-Kreis)",
-                    voxelP3cResults.gatePfadConsumes
-                );
-                check(
-                    "Voxel P3c: das Füll-Gate lehnt im pfad-Modus ohne Material ab",
-                    voxelP3cResults.gatePfadDeniesEmpty
-                );
-                check(
-                    "Voxel P3c: `voxel fill` in pfad ohne Material schüttet nicht / mit Material schon",
-                    voxelP3cResults.chatFillDeniedNoMat && voxelP3cResults.chatFillWorksWithMat
-                );
-            }
-
-            // ### Welle 6.C2 — Spielmodi (frieden / pfad / schöpfer) ###
-            // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
-            // damagePlayer + Stamina-Kosten sind modus-gated.
-            const wave6c2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
-                    out.hasSetGameMode = typeof r.setGameMode === "function";
-                    out.hasGetGameMode = typeof r.getGameMode === "function";
-                    // Default-Modus für NEUE Welten ist frieden — checken über
-                    // _buildEmptyWorldSnapshot (init-time-Verhalten), nicht
-                    // runtime-state (vorherige Tests haben evtl. auf pfad
-                    // geschaltet).
-                    if (typeof r._buildEmptyWorldSnapshot === "function") {
-                        const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
-                        out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
-                    }
-                    out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
-                    out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
-
-                    // Übergänge: setGameMode auf jeden der drei Modi.
-                    r.setGameMode("pfad");
-                    out.setPfadWorks = r.getGameMode() === "pfad" && r.state.worldMeta.gameMode === "pfad";
-                    r.setGameMode("schöpfer");
-                    out.setSchoepferWorks = r.getGameMode() === "schöpfer" && r.state.worldMeta.gameMode === "schöpfer";
-                    r.setGameMode("frieden");
-                    out.setFriedenWorks = r.getGameMode() === "frieden";
-                    // Ungültiger Wert → frieden-Fallback.
-                    r.setGameMode("garbage");
-                    out.invalidFallsToFrieden = r.getGameMode() === "frieden";
-
-                    // damagePlayer-Gate: frieden + schöpfer → return false,
-                    // pfad → return true (existing path).
-                    const hpBefore = r.state.player.hp;
-                    r.setGameMode("frieden");
-                    const damageInFrieden = r.damagePlayer(50, "test");
-                    out.friedenBlocksDamage = damageInFrieden === false && r.state.player.hp === hpBefore;
-
-                    r.setGameMode("schöpfer");
-                    const damageInSchoepfer = r.damagePlayer(50, "test");
-                    out.schoepferBlocksDamage = damageInSchoepfer === false && r.state.player.hp === hpBefore;
-
-                    // pfad → Schaden wirkt
-                    r.setGameMode("pfad");
-                    // Aus möglichen Phönix-Wandlungen rausnehmen (test-cleanup)
-                    r.state.player.phoenixUntil = 0;
-                    r.state.player.hp = 100;
-                    const damageInPfad = r.damagePlayer(30, "test");
-                    out.pfadAcceptsDamage = damageInPfad === true && r.state.player.hp < 100;
-
-                    // Stamina-Gate: applyOpToPart kostet nur in pfad.
-                    // Setup: ein eigener Bauplan mit holz-Material.
-                    r.state.blueprints["mode-test-bp"] = {
-                        name: "mode-test-bp",
-                        label: "Mode-Test",
-                        builtIn: false,
-                        parts: [
-                            {
-                                shape: "box",
-                                material: "holz",
-                                position: { x: 0, y: 0, z: 0 },
-                                size: { x: 1, y: 1, z: 1 },
-                            },
-                        ],
-                    };
-                    // Stamina voll setzen
-                    r.state.player.stamina = 100;
-
-                    r.setGameMode("frieden");
-                    const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
-
-                    r.state.player.stamina = 100;
-                    r.setGameMode("schöpfer");
-                    const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
-
-                    r.state.player.stamina = 100;
-                    r.setGameMode("pfad");
-                    const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "feile");
-                    // V8.39 — die Kosten skalieren mit dem Werkzeug-cap (nicht
-                    // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
-                    // konsumiert), die genaue Skalierung prüft der V8.39-Block.
-                    out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
-
-                    // Cleanup
-                    delete r.state.blueprints["mode-test-bp"];
-                    r.setGameMode("frieden");
-
-                    // DSL-Op set_mode
-                    if (typeof r.dslRun === "function") {
-                        r.dslRun(["set_mode", "pfad"], { source: "test" });
-                        out.dslSetModeWorks = r.getGameMode() === "pfad";
-                        r.setGameMode("frieden");
-                    }
-
-                    // set_mode ist in NON_BROADCASTABLE_OPS
-                    out.setModeNonBroadcastable =
-                        r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
-
-                    // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
-                    if (typeof r.parseChatToDsl === "function") {
-                        const built = r.parseChatToDsl("setze modus pfad");
-                        out.chatPfad =
-                            built &&
-                            Array.isArray(built.program) &&
-                            built.program[0] === "set_mode" &&
-                            built.program[1] === "pfad";
-                        const built2 = r.parseChatToDsl("modus schöpfer");
-                        out.chatSchoepfer =
-                            built2 &&
-                            Array.isArray(built2.program) &&
-                            built2.program[0] === "set_mode" &&
-                            built2.program[1] === "schöpfer";
-                    }
-
-                    // describeProgram-Eintrag
-                    if (typeof r.describeProgram === "function") {
-                        const desc = r.describeProgram(["set_mode", "pfad"]);
-                        out.describeWorks = typeof desc === "string" && /Welt-Beziehung|pfad/.test(desc);
-                    }
-
-                    // UI: Radio + Status-Bar
-                    out.radiosInDom = document.querySelectorAll('input[name="game-mode-radio"]').length === 3;
-                    out.statusModeInDom = !!document.getElementById("status-mode");
-                    out.gameModeSectionInDom = !!document.getElementById("game-mode-section");
-                    // Status-Bar zeigt aktuellen Modus
-                    r.setGameMode("pfad");
-                    const statusItem = document.getElementById("status-mode");
-                    out.statusReflectsMode = statusItem && /pfad/i.test(statusItem.textContent);
-                    // Radio ist gecheckt
-                    const checkedRadio = document.querySelector('input[name="game-mode-radio"]:checked');
-                    out.radioReflectsMode = checkedRadio && checkedRadio.value === "pfad";
-                    r.setGameMode("frieden");
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6c2Results && !wave6c2Results.error) {
-                check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
-                check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
-                check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
-                check(
-                    "Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)",
-                    wave6c2Results.defaultModeFrieden
-                );
-                check(
-                    "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
-                    wave6c2Results.canonicalDefaultIsFrieden
-                );
-                check("Welle 6.C2: worldMeta.gameMode ist persistiert", wave6c2Results.worldMetaHasGameMode);
-                check("Welle 6.C2: setGameMode('pfad') wechselt korrekt", wave6c2Results.setPfadWorks);
-                check("Welle 6.C2: setGameMode('schöpfer') wechselt korrekt", wave6c2Results.setSchoepferWorks);
-                check("Welle 6.C2: setGameMode('frieden') wechselt korrekt", wave6c2Results.setFriedenWorks);
-                check("Welle 6.C2: ungültiger Modus fällt auf frieden zurück", wave6c2Results.invalidFallsToFrieden);
-                check(
-                    "Welle 6.C2: damagePlayer im frieden-Modus blockiert (HP unverändert)",
-                    wave6c2Results.friedenBlocksDamage
-                );
-                check(
-                    "Welle 6.C2: damagePlayer im schöpfer-Modus blockiert (HP unverändert)",
-                    wave6c2Results.schoepferBlocksDamage
-                );
-                check("Welle 6.C2: damagePlayer im pfad-Modus wirkt (HP reduziert)", wave6c2Results.pfadAcceptsDamage);
-                check(
-                    "Welle 6.C2: applyOpToPart im frieden-Modus kostet KEINE Stamina",
-                    wave6c2Results.friedenSkipsStamina
-                );
-                check(
-                    "Welle 6.C2: applyOpToPart im schöpfer-Modus kostet KEINE Stamina",
-                    wave6c2Results.schoepferSkipsStamina
-                );
-                check(
-                    "Welle 6.C2: applyOpToPart im pfad-Modus kostet Stamina (Modus-Gate)",
-                    wave6c2Results.pfadChargesStamina
-                );
-                check("Welle 6.C2: DSL-Op set_mode setzt Modus", wave6c2Results.dslSetModeWorks);
-                check(
-                    "Welle 6.C2: set_mode ist in NON_BROADCASTABLE_OPS (Multi-User-privat)",
-                    wave6c2Results.setModeNonBroadcastable
-                );
-                check("Welle 6.C2: Chat 'setze modus pfad' → set_mode-Programm", wave6c2Results.chatPfad);
-                check("Welle 6.C2: Chat 'modus schöpfer' → set_mode-Programm", wave6c2Results.chatSchoepfer);
-                check("Welle 6.C2: describeProgram nennt 'Welt-Beziehung' oder Modus", wave6c2Results.describeWorks);
-                check("Welle 6.C2: 3 Radio-Buttons im DOM", wave6c2Results.radiosInDom);
-                check("Welle 6.C2: #status-mode im DOM", wave6c2Results.statusModeInDom);
-                check("Welle 6.C2: #game-mode-section im DOM", wave6c2Results.gameModeSectionInDom);
-                check("Welle 6.C2: Status-Bar spiegelt aktuellen Modus", wave6c2Results.statusReflectsMode);
-                check("Welle 6.C2: Radio-Button reflektiert aktuellen Modus", wave6c2Results.radioReflectsMode);
-            }
-
-            // ### Welle 6.C1 — Hylomorphismus-Inventar ===
-            // 27 Slots mit Tag-Resonanz statt Minecraft-Tabelle. Tag-Profile
-            // emergieren aus computeCompoundTags(blueprint). Drag-Click-Pfad:
-            // Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
-            const wave6c1Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // Datenmodell
-                    out.hasInventoryArray = Array.isArray(r.state.player && r.state.player.inventory);
-                    out.inventorySize = r.state.player.inventory.length;
-                    out.inventoryHas27Slots = r.state.player.inventory.length === 27;
-                    out.initiallyEmpty = r.state.player.inventory.every((s) => s === null);
-
-                    // Methoden
-                    out.hasAddToInventory = typeof r.addToInventory === "function";
-                    out.hasRemoveFromInventory = typeof r.removeFromInventory === "function";
-                    out.hasRenderInventoryUI = typeof r.renderInventoryUI === "function";
-                    out.hasSelectInventorySlot = typeof r.selectInventorySlot === "function";
-                    out.hasTryAssign = typeof r.tryAssignFromInventoryToHotbar === "function";
-                    out.hasToggleOverlay = typeof r.toggleInventoryOverlay === "function";
-                    out.hasPlayPing = typeof r.playInventoryHoverPing === "function";
-                    out.hasInventoryInitDOM = typeof r.inventoryInitDOM === "function";
-
-                    // addToInventory: ein bekannter Bauplan → erster leerer Slot
-                    const okAdd = r.addToInventory("baum_eiche", 3);
-                    out.addedToInventory = okAdd === true;
-                    out.slot0HasBaum =
-                        r.state.player.inventory[0] &&
-                        r.state.player.inventory[0].blueprintName === "baum_eiche" &&
-                        r.state.player.inventory[0].count === 3;
-                    // Zweiter Add desselben Bauplans: count kumuliert
-                    r.addToInventory("baum_eiche", 2);
-                    out.stacksCount = r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
-                    // Unbekannter Bauplan → false
-                    out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
-
-                    // removeFromInventory: 5 → 3
-                    r.removeFromInventory(0, 2);
-                    out.removeWorks = r.state.player.inventory[0].count === 3;
-                    // Komplett entfernen → null
-                    r.removeFromInventory(0, 99);
-                    out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
-
-                    // DSL-Op add_to_inventory
-                    if (typeof r.dslRun === "function") {
-                        r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
-                        const has = r.state.player.inventory.some((s) => s && s.blueprintName === "village");
-                        out.dslOpWorks = has;
-                    }
-
-                    // NON_BROADCASTABLE
-                    out.addToInventoryNonBroadcastable =
-                        r.constructor.NON_BROADCASTABLE_OPS &&
-                        r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
-
-                    // describeProgram-Eintrag
-                    if (typeof r.describeProgram === "function") {
-                        const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
-                        out.describeWorks = typeof d === "string" && /Inventar|baum_eiche|5/.test(d);
-                    }
-
-                    // UI: Overlay-Element + Grid + Selected-Display
-                    out.overlayInDom = !!document.getElementById("inventory-overlay");
-                    out.gridInDom = !!document.getElementById("inventory-grid");
-                    out.selectedInDom = !!document.getElementById("inventory-selected");
-                    // Initial hidden
-                    const overlay = document.getElementById("inventory-overlay");
-                    out.initiallyHidden = overlay && overlay.hasAttribute("hidden");
-
-                    // Toggle öffnet + rendert 27 Slots
-                    r.toggleInventoryOverlay(true);
-                    const slots = document.querySelectorAll("#inventory-grid .inventory-slot");
-                    out.gridRendered27 = slots.length === 27;
-                    out.overlayVisibleAfterToggle = !overlay.hasAttribute("hidden");
-
-                    // Tag-Magic-Test: kristall_geode (quarz, magieleitung 0.85)
-                    // sollte die magie-Klasse bekommen. baum_eiche (laub,
-                    // lebendig 1.0) → lebendig-Klasse.
-                    r.state.player.inventory[0] = { blueprintName: "kristall_geode", count: 1 };
-                    r.state.player.inventory[1] = { blueprintName: "baum_eiche", count: 1 };
-                    r.renderInventoryUI();
-                    const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
-                    const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
-                    out.geodeHasMagieClass = slot0 && slot0.classList.contains("tag-magieleitung");
-                    out.baumHasLebendigClass = slot1 && slot1.classList.contains("tag-lebendig");
-                    // baum_eiche hat laub → brennbar 0.85 hoch
-                    out.baumHasBrennendClass = slot1 && slot1.classList.contains("tag-brennend");
-
-                    // Click → selectInventorySlot setzt inventorySelected
-                    r.selectInventorySlot(0);
-                    out.selectionWorks = r.state.inventorySelected === "kristall_geode";
-                    // Zweiter Klick auf gleichen → toggelt aus
-                    r.selectInventorySlot(0);
-                    out.selectionTogglesOff = r.state.inventorySelected === null;
-                    r.selectInventorySlot(0);
-
-                    // tryAssignFromInventoryToHotbar legt in Hotbar ab
-                    const hotbarBefore = r.state.hotbar.slice();
-                    const assignOk = r.tryAssignFromInventoryToHotbar(3);
-                    out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
-                    out.assignClearsSelection = r.state.inventorySelected === null;
-
-                    // Toggle close
-                    r.toggleInventoryOverlay(false);
-                    out.toggleCloseHides = overlay.hasAttribute("hidden");
-                    out.toggleCloseClearsSelected = r.state.inventorySelected === null;
-
-                    // Test-Cleanup: Hotbar + Inventar zurück auf Defaults,
-                    // damit nachfolgende Tests (Ring 6.5 Default-Hotbar etc.)
-                    // nicht von Test-Verschmutzung verletzt werden.
-                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
-                    r.state.player.inventory = new Array(27).fill(null);
-                    if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
-                    if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6c1Results && !wave6c1Results.error) {
-                check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
-                check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
-                check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
-                check("Welle 6.C1: addToInventory-Methode existiert", wave6c1Results.hasAddToInventory);
-                check("Welle 6.C1: removeFromInventory-Methode existiert", wave6c1Results.hasRemoveFromInventory);
-                check("Welle 6.C1: renderInventoryUI-Methode existiert", wave6c1Results.hasRenderInventoryUI);
-                check("Welle 6.C1: selectInventorySlot-Methode existiert", wave6c1Results.hasSelectInventorySlot);
-                check("Welle 6.C1: tryAssignFromInventoryToHotbar existiert", wave6c1Results.hasTryAssign);
-                check("Welle 6.C1: toggleInventoryOverlay-Methode existiert", wave6c1Results.hasToggleOverlay);
-                check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
-                check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
-                check("Welle 6.C1: addToInventory legt Eintrag in ersten leeren Slot", wave6c1Results.slot0HasBaum);
-                check("Welle 6.C1: addToInventory stackt bei gleichem Bauplan-Namen", wave6c1Results.stacksCount);
-                check("Welle 6.C1: addToInventory lehnt unbekannten Bauplan ab", wave6c1Results.addRejectsUnknown);
-                check("Welle 6.C1: removeFromInventory reduziert count", wave6c1Results.removeWorks);
-                check(
-                    "Welle 6.C1: removeFromInventory(>count) clear Slot zu null",
-                    wave6c1Results.fullRemoveClearsSlot
-                );
-                check("Welle 6.C1: DSL-Op add_to_inventory funktioniert", wave6c1Results.dslOpWorks);
-                check(
-                    "Welle 6.C1: add_to_inventory in NON_BROADCASTABLE_OPS",
-                    wave6c1Results.addToInventoryNonBroadcastable
-                );
-                check("Welle 6.C1: describeProgram nennt Inventar/Bauplan/Count", wave6c1Results.describeWorks);
-                check("Welle 6.C1: #inventory-overlay im DOM", wave6c1Results.overlayInDom);
-                check("Welle 6.C1: #inventory-grid im DOM", wave6c1Results.gridInDom);
-                check("Welle 6.C1: #inventory-selected im DOM", wave6c1Results.selectedInDom);
-                check("Welle 6.C1: Overlay initial versteckt", wave6c1Results.initiallyHidden);
-                check(
-                    "Welle 6.C1: toggleInventoryOverlay(true) öffnet Overlay",
-                    wave6c1Results.overlayVisibleAfterToggle
-                );
-                check("Welle 6.C1: Grid rendert 27 Slot-Elemente", wave6c1Results.gridRendered27);
-                check(
-                    "Welle 6.C1: kristall_geode-Slot bekommt tag-magieleitung Klasse",
-                    wave6c1Results.geodeHasMagieClass
-                );
-                check("Welle 6.C1: baum_eiche-Slot bekommt tag-lebendig Klasse", wave6c1Results.baumHasLebendigClass);
-                check(
-                    "Welle 6.C1: baum_eiche-Slot bekommt tag-brennend Klasse (laub)",
-                    wave6c1Results.baumHasBrennendClass
-                );
-                check("Welle 6.C1: selectInventorySlot setzt inventorySelected", wave6c1Results.selectionWorks);
-                check("Welle 6.C1: zweiter Klick auf gleichen Slot toggelt aus", wave6c1Results.selectionTogglesOff);
-                check("Welle 6.C1: tryAssignFromInventoryToHotbar legt in Hotbar ab", wave6c1Results.assignWorks);
-                check("Welle 6.C1: Assign löscht inventorySelected", wave6c1Results.assignClearsSelection);
-                check("Welle 6.C1: toggleInventoryOverlay(false) versteckt + räumt", wave6c1Results.toggleCloseHides);
-                check("Welle 6.C1: Schließen räumt inventorySelected", wave6c1Results.toggleCloseClearsSelected);
-            }
-
-            // ### Welle 6.C1+ — Drag&Drop für Inventar ↔ Hotbar ===
-            // Vier Pfade testen: inv→inv (swap), inv→hot (Hotbar setzt),
-            // hot→hot (swap), hot→inv (Hotbar räumen). HTML5-Drag-Events
-            // simulieren wir nicht (Headless-Inkonsistenz); statt dessen
-            // testen wir die Drop-Handler direkt mit fingiertem state.drag.
-            const dragResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasDragStart = typeof r._onSlotDragStart === "function";
-                    out.hasDragOver = typeof r._onSlotDragOver === "function";
-                    out.hasDrop = typeof r._onSlotDrop === "function";
-                    out.hasDragEnd = typeof r._onSlotDragEnd === "function";
-                    out.hasDragLeave = typeof r._onSlotDragLeave === "function";
-
-                    // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-                    r.state.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
-                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
-
-                    // Fake-Event-Object für drop-Handler.
-                    const mkEvent = () => ({
-                        preventDefault: () => {},
-                        currentTarget: null,
-                    });
-
-                    // (1) inv → inv: Slot 0 ↔ Slot 5 tauschen.
-                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
-                    r._onSlotDrop(mkEvent(), "inv", 5);
-                    out.invToInvSwap =
-                        r.state.player.inventory[0] === null &&
-                        r.state.player.inventory[5] &&
-                        r.state.player.inventory[5].blueprintName === "baum_eiche";
-
-                    // Reset
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-                    r.state.player.inventory[5] = null;
-
-                    // (2) inv → hot mit leerem Hot + Inv-count=1: konsequenter
-                    // Slot-Move (Schöpfer-Wunsch V7.77+: „soll nichtmehr im
-                    // Inventar sein, nurnoch in der Hotbar"). Inv-Slot wird
-                    // null, Hot = name.
-                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
-                    r._onSlotDrop(mkEvent(), "hot", 3);
-                    out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
-                    out.invToHotEmptiesInvSlot = r.state.player.inventory[0] === null;
-
-                    // (2b) inv → hot mit leerem Hot + Inv-count=5: Slot wird
-                    // KOMPLETT null (egal count). Stack wird konsumiert.
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 5 };
-                    r.state.hotbar[4] = null;
-                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
-                    r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotEmptiesIgnoresCount =
-                        r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
-
-                    // (2c) inv → hot mit gleichem Bauplan in Hot: Inv-Slot
-                    // wird TROTZDEM leer (Schöpfer-Wunsch: konsequenter Move,
-                    // Bauplan ist aus Inv weg, in Hot war er schon).
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
-                    r.state.hotbar[4] = "baum_eiche";
-                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
-                    r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotSameNameStillEmpties =
-                        r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
-
-                    // (2d) inv → hot mit anderem Bauplan: Swap.
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-                    r.state.hotbar[4] = "village";
-                    r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
-                    r._onSlotDrop(mkEvent(), "hot", 4);
-                    out.invToHotSwap =
-                        r.state.hotbar[4] === "baum_eiche" &&
-                        r.state.player.inventory[0] &&
-                        r.state.player.inventory[0].blueprintName === "village" &&
-                        r.state.player.inventory[0].count === 1;
-
-                    // Reset
-                    r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-                    r.state.hotbar[3] = null;
-                    r.state.hotbar[4] = null;
-
-                    // (3) hot → hot: Slot 0 (village) ↔ Slot 1 (temple).
-                    r.state.drag = { kind: "hot", index: 0, name: "village" };
-                    r._onSlotDrop(mkEvent(), "hot", 1);
-                    out.hotToHotSwap = r.state.hotbar[0] === "temple" && r.state.hotbar[1] === "village";
-
-                    // Reset
-                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
-
-                    // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE
-                    // (Schöpfer-Fix V7.77+: alte Logik räumte nur Hotbar,
-                    // Bauplan verschwand). Erwartung: Hot wird null,
-                    // Inv-Slot 10 bekommt {temple, count: 1}.
-                    r.state.player.inventory[10] = null;
-                    r.state.drag = { kind: "hot", index: 1, name: "temple" };
-                    r._onSlotDrop(mkEvent(), "inv", 10);
-                    out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
-                    out.hotToInvFillsInvSlot =
-                        r.state.player.inventory[10] &&
-                        r.state.player.inventory[10].blueprintName === "temple" &&
-                        r.state.player.inventory[10].count === 1;
-
-                    // (4b) hot → inv mit gleichem Bauplan im Ziel: Stack
-                    // (count += 1, Hot wird null).
-                    r.state.hotbar[1] = "temple"; // Hot wieder befüllen
-                    r.state.player.inventory[10] = { blueprintName: "temple", count: 3 };
-                    r.state.drag = { kind: "hot", index: 1, name: "temple" };
-                    r._onSlotDrop(mkEvent(), "inv", 10);
-                    out.hotToInvStacksSameBp =
-                        r.state.hotbar[1] === null &&
-                        r.state.player.inventory[10] &&
-                        r.state.player.inventory[10].count === 4;
-
-                    // (4c) hot → inv mit anderem Bauplan im Ziel: no-op.
-                    r.state.hotbar[1] = "village";
-                    r.state.player.inventory[10] = { blueprintName: "temple", count: 2 };
-                    r.state.drag = { kind: "hot", index: 1, name: "village" };
-                    r._onSlotDrop(mkEvent(), "inv", 10);
-                    out.hotToInvOtherBpNoOp =
-                        r.state.hotbar[1] === "village" &&
-                        r.state.player.inventory[10] &&
-                        r.state.player.inventory[10].blueprintName === "temple" &&
-                        r.state.player.inventory[10].count === 2;
-
-                    // Cleanup für (5)
-                    r.state.player.inventory[10] = null;
-
-                    // (5) src === target: no-op (state unverändert).
-                    const before = JSON.stringify(r.state.hotbar);
-                    r.state.drag = { kind: "hot", index: 0, name: "village" };
-                    r._onSlotDrop(mkEvent(), "hot", 0);
-                    out.sameSlotNoOp = JSON.stringify(r.state.hotbar) === before;
-
-                    // (6) drag wird nach drop genullt.
-                    out.dragClearedAfterDrop = r.state.drag === null;
-
-                    // (7) DOM: gefüllte Inventar-Slots sind draggable.
-                    r.toggleInventoryOverlay(true);
-                    r.renderInventoryUI();
-                    const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
-                    const emptySlot = document.querySelector("#inventory-grid .inventory-slot.empty");
-                    out.filledSlotIsDraggable = slot0 && slot0.draggable === true;
-                    // Leerer Inventar-Slot ist NICHT draggable (kein Mehrwert).
-                    out.emptySlotNotDraggable = emptySlot && emptySlot.draggable === false;
-
-                    // (8) Hotbar-Slots: gefüllte sind draggable.
-                    r._renderHotbarDOM();
-                    const hSlot0 = document.querySelector('#hotbar [data-slot="0"]');
-                    const hSlot3 = document.querySelector('#hotbar [data-slot="3"]');
-                    out.hotFilledDraggable = hSlot0 && hSlot0.draggable === true;
-                    out.hotEmptyNotDraggable = hSlot3 && hSlot3.draggable === false;
-
-                    // Cleanup
-                    r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.toggleInventoryOverlay(false);
-                    r._renderHotbarDOM();
-                    r.renderInventoryUI();
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (dragResults && !dragResults.error) {
-                check("Welle 6.C1 Drag: _onSlotDragStart existiert", dragResults.hasDragStart);
-                check("Welle 6.C1 Drag: _onSlotDragOver existiert", dragResults.hasDragOver);
-                check("Welle 6.C1 Drag: _onSlotDrop existiert", dragResults.hasDrop);
-                check("Welle 6.C1 Drag: _onSlotDragEnd existiert", dragResults.hasDragEnd);
-                check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
-                check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
-                check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
-                check(
-                    "Welle 6.C1 Drag: inv→hot leert Inv-Slot (count=1, konsequenter Move)",
-                    dragResults.invToHotEmptiesInvSlot
-                );
-                check(
-                    "Welle 6.C1 Drag: inv→hot leert Inv-Slot auch bei count=5 (Stack konsumiert)",
-                    dragResults.invToHotEmptiesIgnoresCount
-                );
-                check(
-                    "Welle 6.C1 Drag: inv→hot mit gleichem Bauplan im Hot leert Inv-Slot trotzdem",
-                    dragResults.invToHotSameNameStillEmpties
-                );
-                check("Welle 6.C1 Drag: inv→hot mit anderem Bauplan im Hot ist Swap", dragResults.invToHotSwap);
-                check("Welle 6.C1 Drag: hot→hot tauscht Hotbar-Slots", dragResults.hotToHotSwap);
-                check("Welle 6.C1 Drag: hot→inv räumt Hotbar-Slot (zu null)", dragResults.hotToInvClearsHotbar);
-                check(
-                    "Welle 6.C1 Drag: hot→inv füllt leeren Inv-Slot mit {name, count:1}",
-                    dragResults.hotToInvFillsInvSlot
-                );
-                check(
-                    "Welle 6.C1 Drag: hot→inv stackt auf gleichem Bauplan (count += 1)",
-                    dragResults.hotToInvStacksSameBp
-                );
-                check(
-                    "Welle 6.C1 Drag: hot→inv mit anderem Bauplan ist no-op (kein Datenverlust)",
-                    dragResults.hotToInvOtherBpNoOp
-                );
-                check("Welle 6.C1 Drag: src===target ist no-op", dragResults.sameSlotNoOp);
-                check("Welle 6.C1 Drag: state.drag wird nach drop genullt", dragResults.dragClearedAfterDrop);
-                check("Welle 6.C1 Drag: gefüllter Inventar-Slot ist draggable", dragResults.filledSlotIsDraggable);
-                check("Welle 6.C1 Drag: leerer Inventar-Slot ist NICHT draggable", dragResults.emptySlotNotDraggable);
-                check("Welle 6.C1 Drag: gefüllter Hotbar-Slot ist draggable", dragResults.hotFilledDraggable);
-                check("Welle 6.C1 Drag: leerer Hotbar-Slot ist NICHT draggable", dragResults.hotEmptyNotDraggable);
-            }
-
-            // ### Welle 6.C1 Pointer-Lock-Fix: Drag&Drop braucht freie Maus ===
-            // Inventar öffnen → exitPointerLock damit Maus-Cursor erscheint
-            // und HTML5-Drag&Drop funktioniert. WASD bleibt aktiv (Minecraft-
-            // Konvention). Esc schließt Inventar.
-            const lockResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
-                    r.toggleInventoryOverlay(false);
-                    if (!r.state.keys) r.state.keys = {};
-                    r.state.keys.w = true;
-                    r.state.keys.a = true;
-
-                    // Inventar öffnen → exitPointerLock wird gerufen (wir
-                    // können das in jsdom/headless nicht direkt prüfen,
-                    // aber wir können verifizieren dass der Pfad ohne Crash
-                    // läuft + state.inventoryOpen true wird).
-                    let exitCalled = 0;
-                    const origExit = document.exitPointerLock;
-                    document.exitPointerLock = function () {
-                        exitCalled++;
-                        if (typeof origExit === "function") {
-                            try {
-                                origExit.call(document);
-                            } catch {
-                                /* defensive in headless */
-                            }
-                        }
-                    };
-                    // pointerLockElement-Property zur Laufzeit setzen
-                    // damit der Check `if (document.pointerLockElement)`
-                    // den Pfad nimmt.
-                    try {
-                        Object.defineProperty(document, "pointerLockElement", {
-                            value: document.body,
-                            configurable: true,
-                        });
-                    } catch {
-                        /* defensive */
-                    }
-
-                    r.toggleInventoryOverlay(true);
-                    out.exitLockCalledOnOpen = exitCalled >= 1;
-                    out.overlayOpenAfterToggle = r.state.inventoryOpen === true;
-                    // WASD bleibt aktiv (Minecraft-Konvention) — Schöpfer-Wunsch.
-                    out.wKeyStillActiveAfterOpen = r.state.keys.w === true;
-                    out.aKeyStillActiveAfterOpen = r.state.keys.a === true;
-
-                    // Esc-Handler bei offenem Inventar → toggle close.
-                    // Wir simulieren das durch direkten Aufruf des Pfads
-                    // (Keydown-Synthetic ist in Headless flaky).
-                    // Verifizieren dass toggleInventoryOverlay(false) sauber
-                    // arbeitet ohne Pointer-Lock erneut zu setzen.
-                    r.toggleInventoryOverlay(false);
-                    out.closeWorksWithoutReLock = r.state.inventoryOpen === false;
-
-                    // Cleanup
-                    document.exitPointerLock = origExit;
-                    r.state.keys.w = false;
-                    r.state.keys.a = false;
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (lockResults && !lockResults.error) {
-                check(
-                    "Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen",
-                    lockResults.exitLockCalledOnOpen
-                );
-                check(
-                    "Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen",
-                    lockResults.overlayOpenAfterToggle
-                );
-                check(
-                    "Welle 6.C1 Lock: WASD bleibt aktiv (Schöpfer-Wunsch: weiterbewegen geht)",
-                    lockResults.wKeyStillActiveAfterOpen
-                );
-                check(
-                    "Welle 6.C1 Lock: A-Taste bleibt aktiv bei offenem Inventar",
-                    lockResults.aKeyStillActiveAfterOpen
-                );
-                check(
-                    "Welle 6.C1 Lock: Inventar-schließen ohne Re-Lock (Canvas-Click bleibt User-Wahl)",
-                    lockResults.closeWorksWithoutReLock
-                );
-            }
-
-            // ### Welle 6.A6 — Maus-Aktionen (abbauen + platzieren) ###
-            // LMB abbauen / RMB platzieren über konfigurierbares Keybinding.
-            // Architektur-Hit → removeArchitecture; kein Hit → V9.36-Voxel-carve.
-            // Stamina-Gate via getGameMode wie applyOpToPart (6.C2).
-            const wave6a6Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // Statische Konstante
-                    out.hasStaminaCost = r.constructor.MOUSE_ACTION_STAMINA_COST === 5;
-                    // Methoden-Existenz
-                    out.hasTryMouseBreak = typeof r.tryMouseBreak === "function";
-                    out.hasTryMousePlace = typeof r.tryMousePlace === "function";
-                    out.hasRemoveArchitecture = typeof r.removeArchitecture === "function";
-                    out.hasPickArchitecture = typeof r._pickArchitectureAtCrosshair === "function";
-                    out.hasRaycastWorldHit = typeof r._raycastWorldHit === "function";
-                    out.hasStaminaGate = typeof r._mouseActionStaminaGate === "function";
-                    out.hasConsumeStamina = typeof r._consumeMouseStamina === "function";
-
-                    // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
-                    const oldMode = r.getGameMode();
-                    r.setGameMode("pfad");
-                    r.state.player.stamina = 100;
-                    r.state.player.phoenixUntil = 0;
-
-                    // Stamina-Gate: pfad mit voller Stamina → ok, cost 5
-                    const gateOk = r._mouseActionStaminaGate();
-                    out.pfadGateOk = gateOk.ok === true && gateOk.cost === 5;
-
-                    // Stamina verbrauchen: pfad zieht 5 ab
-                    r._consumeMouseStamina();
-                    out.pfadConsumesFive = r.state.player.stamina === 95;
-
-                    // Stamina unter Kosten → verweigert
-                    r.state.player.stamina = 2;
-                    const gateBlocked = r._mouseActionStaminaGate();
-                    out.pfadGateBlocksLow = gateBlocked.ok === false && gateBlocked.have === 2;
-
-                    // frieden + schöpfer: kein Stamina-Verbrauch
-                    r.setGameMode("frieden");
-                    r.state.player.stamina = 50;
-                    r._consumeMouseStamina();
-                    out.friedenSkipsStamina = r.state.player.stamina === 50;
-
-                    r.setGameMode("schöpfer");
-                    r.state.player.stamina = 50;
-                    r._consumeMouseStamina();
-                    out.schoepferSkipsStamina = r.state.player.stamina === 50;
-
-                    // frieden gate immer ok
-                    r.state.player.stamina = 0;
-                    r.setGameMode("frieden");
-                    out.friedenGateOkAtZero = r._mouseActionStaminaGate().ok === true;
-
-                    // removeArchitecture: synthetisches Setup ohne Mesh/Body
-                    const fakeEntry = { id: 99999, type: "test_arch", position: { x: 0, y: 0, z: 0 }, mesh: null };
-                    r.state.architectures.push(fakeEntry);
-                    const archCountBefore = r.state.architectures.length;
-                    const removed = r.removeArchitecture(fakeEntry);
-                    out.removeArchitectureWorks =
-                        removed === true && r.state.architectures.length === archCountBefore - 1;
-
-                    // removeArchitecture mit nicht-existentem Entry → false
-                    out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
-
-                    // V9.35: tryMousePlace ohne aktiven Bau-Modus läuft in den
-                    // V9.15-Voxel-Fill-Pfad (das Gegenstück zum LMB-Graben);
-                    // seit voxel permanent + irreversibel ist, ist dieser Pfad
-                    // immer erreichbar. Wir prüfen darum nur Crash-Frei +
-                    // boolean-Rückgabe (true bei erfolgreichem Fill, false
-                    // wenn der Raycast nichts trifft).
-                    r.setGameMode("frieden");
-                    r.state.buildMode.active = false;
-                    const placeResult = r.tryMousePlace();
-                    out.placeReturnsBoolean = placeResult === true || placeResult === false;
-
-                    // tryMouseBreak ohne hit & ohne Architektur → false (kein crash)
-                    // (kein physicsWorld in den meisten Tests, also fallback gilt)
-                    const breakResult = r.tryMouseBreak();
-                    out.breakSafeWithoutHit = breakResult === false || breakResult === true;
-
-                    // Cleanup
-                    r.setGameMode(oldMode);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6a6Results && !wave6a6Results.error) {
-                check("Welle 6.A6: MOUSE_ACTION_STAMINA_COST === 5", wave6a6Results.hasStaminaCost);
-                check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
-                check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
-                check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
-                check("Welle 6.A6: _pickArchitectureAtCrosshair existiert", wave6a6Results.hasPickArchitecture);
-                check("Welle 6.A6: _raycastWorldHit existiert", wave6a6Results.hasRaycastWorldHit);
-                check("Welle 6.A6: _mouseActionStaminaGate existiert", wave6a6Results.hasStaminaGate);
-                check("Welle 6.A6: _consumeMouseStamina existiert", wave6a6Results.hasConsumeStamina);
-                check("Welle 6.A6: Stamina-Gate im pfad-Modus ok mit cost=5", wave6a6Results.pfadGateOk);
-                check("Welle 6.A6: pfad verbraucht 5 Stamina pro Aktion", wave6a6Results.pfadConsumesFive);
-                check("Welle 6.A6: pfad verweigert bei zu wenig Stamina", wave6a6Results.pfadGateBlocksLow);
-                check("Welle 6.A6: frieden überspringt Stamina-Verbrauch", wave6a6Results.friedenSkipsStamina);
-                check("Welle 6.A6: schöpfer überspringt Stamina-Verbrauch", wave6a6Results.schoepferSkipsStamina);
-                check("Welle 6.A6: frieden-Gate immer ok (auch bei 0 Stamina)", wave6a6Results.friedenGateOkAtZero);
-                check("Welle 6.A6: removeArchitecture entfernt Eintrag", wave6a6Results.removeArchitectureWorks);
-                check(
-                    "Welle 6.A6: removeArchitecture lehnt nicht-existenten Eintrag ab",
-                    wave6a6Results.removeArchitectureRejectsGhost
-                );
-                check(
-                    "Welle 6.A6 + V9.35: tryMousePlace ohne Bau-Modus läuft den Voxel-Fill-Pfad (crash-frei, boolean-Rückgabe)",
-                    wave6a6Results.placeReturnsBoolean
-                );
-                check("Welle 6.A6: tryMouseBreak crasht nicht ohne Hit", wave6a6Results.breakSafeWithoutHit);
-            }
-
-            // ### Welle 6.A6 V2 — Vision §1.2: Resonanz-Abklang beim Abbauen ###
-            // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit
-            // einem Sinus-Ping. Stille Strukturen bleiben stumm — Verstummen
-            // tönt nur wo Klang war.
-            const wave6a6V2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
-                    out.removeIntegratesPing =
-                        typeof r.removeArchitecture === "function" &&
-                        r.removeArchitecture.toString().includes("_playArchitectureFarewellPing");
-                    // Threshold-Konstante existiert
-                    const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
-                    out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
-
-                    // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
-                    if (typeof r.initSymphony === "function") r.initSymphony();
-                    const ctxOk = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
-                    out.symphonyReady = !!ctxOk;
-                    if (!ctxOk) return out;
-
-                    // kristall_geode: resoniert ≈ 2.7 (Built-in, Welle 6.G P2)
-                    const geodeTags = r.computeCompoundTags(r.state.blueprints.kristall_geode);
-                    out.geodeIsResonant = (geodeTags.resoniert || 0) >= thr.resonance_mild;
-                    // stein_block: resoniert ≈ 0
-                    const stoneTags = r.computeCompoundTags(r.state.blueprints.stein_block);
-                    out.stoneIsNotResonant = (stoneTags.resoniert || 0) < thr.resonance_mild;
-
-                    // Spy auf createOscillator
-                    const ctx = r.state.symphony.ctx;
-                    const orig = ctx.createOscillator.bind(ctx);
-                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-
-                    // Test A: Geode-Abbau → mind. 1 Oszillator
-                    const geode = r.spawnArchitecture("kristall_geode", { x: p.x, y: p.y, z: p.z + 6 });
-                    let counterA = 0;
-                    ctx.createOscillator = function () {
-                        counterA++;
-                        return orig();
-                    };
-                    r.removeArchitecture(geode);
-                    out.geodeRemovalRingsOnce = counterA >= 1;
-
-                    // Test B: Stein-Abbau → kein Oszillator (Negativ-Kontrolle)
-                    const stone = r.spawnArchitecture("stein_block", { x: p.x + 4, y: p.y, z: p.z + 4 });
-                    let counterB = 0;
-                    ctx.createOscillator = function () {
-                        counterB++;
-                        return orig();
-                    };
-                    r.removeArchitecture(stone);
-                    out.stoneRemovalIsSilent = counterB === 0;
-
-                    // Test C: Symphony aus → kein Ping selbst bei resonanter Struktur
-                    r.state.symphony.enabled = false;
-                    const geode2 = r.spawnArchitecture("kristall_geode", { x: p.x - 4, y: p.y, z: p.z - 4 });
-                    let counterC = 0;
-                    ctx.createOscillator = function () {
-                        counterC++;
-                        return orig();
-                    };
-                    r.removeArchitecture(geode2);
-                    out.disabledSymphonyStaysSilent = counterC === 0;
-                    r.state.symphony.enabled = true;
-
-                    ctx.createOscillator = orig;
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6a6V2Results && !wave6a6V2Results.error) {
-                check("Welle 6.A6 V2: _playArchitectureFarewellPing existiert", wave6a6V2Results.hasFarewellPing);
-                check(
-                    "Welle 6.A6 V2: removeArchitecture ruft _playArchitectureFarewellPing",
-                    wave6a6V2Results.removeIntegratesPing
-                );
-                check(
-                    "Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar",
-                    wave6a6V2Results.thresholdReadable
-                );
-                check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
-                if (wave6a6V2Results.symphonyReady) {
-                    check(
-                        "Welle 6.A6 V2: kristall_geode trägt resoniert ≥ mild-Threshold",
-                        wave6a6V2Results.geodeIsResonant
-                    );
-                    check(
-                        "Welle 6.A6 V2: stein_block trägt resoniert < mild-Threshold (Negativ)",
-                        wave6a6V2Results.stoneIsNotResonant
-                    );
-                    check(
-                        "Welle 6.A6 V2: Geode-Abbau erzeugt mind. einen Oszillator (Vision §1.2)",
-                        wave6a6V2Results.geodeRemovalRingsOnce
-                    );
-                    check(
-                        "Welle 6.A6 V2: Stein-Abbau bleibt stumm (Vision-Disziplin)",
-                        wave6a6V2Results.stoneRemovalIsSilent
-                    );
-                    check(
-                        "Welle 6.A6 V2: deaktivierte Symphony unterdrückt auch resonanten Abbau-Ping",
-                        wave6a6V2Results.disabledSymphonyStaysSilent
-                    );
-                }
-            }
-
-            // ### Welle 6.C3 V2 — HUD spiegelt aktuelle Keybindings ###
-            // _updateBuildModeHud baut den Text aus state.keybindings über
-            // _formatBindingCode. setKeybinding + resetKeybindings triggern
-            // ein HUD-Refresh, sodass der Spieler nie veraltete Beschriftung
-            // sieht.
-            const wave6c3V2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    r.resetKeybindings();
-                    r.setHotbarSlot(0, "village");
-                    r.selectHotbarSlot(0);
-                    const hud = document.getElementById("build-mode-hud");
-                    out.hudVisible = hud && !hud.hidden;
-                    const textDefault = hud ? hud.textContent : "";
-                    out.defaultMentionsConfirmBuild = /F/.test(textDefault);
-                    out.defaultMentionsPlacePretty = /Rechte Maustaste/.test(textDefault);
-                    out.defaultMentionsBreakPretty = /Linke Maustaste/.test(textDefault);
-
-                    // Rebind „place" → KeyB. setKeybinding muss HUD aktualisieren.
-                    r.setKeybinding("place", "KeyB");
-                    const textAfter = hud ? hud.textContent : "";
-                    out.afterRebindContainsB = /\bB\b/.test(textAfter);
-                    out.afterRebindDropsOldLabel = !/Rechte Maustaste/.test(textAfter);
-
-                    // Reset wirkt auch auf HUD.
-                    r.resetKeybindings();
-                    const textReset = hud ? hud.textContent : "";
-                    out.afterResetMentionsRMB = /Rechte Maustaste/.test(textReset);
-
-                    r._clearBuildMode();
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6c3V2Results && !wave6c3V2Results.error) {
-                check("Welle 6.C3 V2: HUD sichtbar im Bau-Modus", wave6c3V2Results.hudVisible);
-                check(
-                    "Welle 6.C3 V2: Default-HUD enthält 'F' (confirmBuild)",
-                    wave6c3V2Results.defaultMentionsConfirmBuild
-                );
-                check(
-                    "Welle 6.C3 V2: Default-HUD enthält 'Rechte Maustaste' (place)",
-                    wave6c3V2Results.defaultMentionsPlacePretty
-                );
-                check(
-                    "Welle 6.C3 V2: Default-HUD enthält 'Linke Maustaste' (break)",
-                    wave6c3V2Results.defaultMentionsBreakPretty
-                );
-                check(
-                    "Welle 6.C3 V2: setKeybinding(place→KeyB) reflektiert sich im HUD-Text",
-                    wave6c3V2Results.afterRebindContainsB
-                );
-                check(
-                    "Welle 6.C3 V2: HUD-Text verliert das alte Label nach Rebind",
-                    wave6c3V2Results.afterRebindDropsOldLabel
-                );
-                check(
-                    "Welle 6.C3 V2: resetKeybindings stellt HUD-Default wieder her",
-                    wave6c3V2Results.afterResetMentionsRMB
-                );
-            }
-
-            // ### Welle 6.C3 — Tastenbelegung (Keybindings) ###
-            // Sechs Aktionen rebindable: break, place, confirmBuild, inventory,
-            // cancelBuild, jump. Default-Map ist Minecraft-Konvention. Konflikt-
-            // Auflösung über Swap. Persistiert in localStorage.
-            const wave6c3Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    // Statische Konstanten
-                    out.hasDefaults =
-                        r.constructor.DEFAULT_KEYBINDINGS &&
-                        typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
-                        Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
-                    // V8.17: 12 Aktionen (6 Original + 6 Drawer/Camera-Shortcuts).
-                    out.hasActions =
-                        Array.isArray(r.constructor.KEYBINDING_ACTIONS) &&
-                        r.constructor.KEYBINDING_ACTIONS.length === 12;
-                    out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
-                    const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
-                    out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
-                    // Defaults sind Minecraft-Konvention
-                    out.defaultBreakIsMouse0 = r.constructor.DEFAULT_KEYBINDINGS.break === "Mouse0";
-                    out.defaultPlaceIsMouse2 = r.constructor.DEFAULT_KEYBINDINGS.place === "Mouse2";
-                    out.defaultConfirmBuildIsKeyF = r.constructor.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
-                    out.defaultInventoryIsTab = r.constructor.DEFAULT_KEYBINDINGS.inventory === "Tab";
-
-                    // State init
-                    out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
-                    out.keybindRebindInitNull = r.state.keybindRebind === null;
-
-                    // Methoden-Existenz
-                    out.hasLoad = typeof r._loadKeybindings === "function";
-                    out.hasSave = typeof r._saveKeybindings === "function";
-                    out.hasSet = typeof r.setKeybinding === "function";
-                    out.hasReset = typeof r.resetKeybindings === "function";
-                    out.hasEventToCode = typeof r._eventToBindingCode === "function";
-                    out.hasActionFor = typeof r._actionForBindingCode === "function";
-                    out.hasBeginRebind = typeof r.beginKeybindRebind === "function";
-                    out.hasCancelRebind = typeof r.cancelKeybindRebind === "function";
-                    out.hasInitDOM = typeof r.keybindingsInitDOM === "function";
-                    out.hasRenderUI = typeof r._renderKeybindingsUI === "function";
-                    out.hasFormatCode = typeof r._formatBindingCode === "function";
-
-                    // setKeybinding ändert state
-                    const before = r.state.keybindings.confirmBuild;
-                    const setOk = r.setKeybinding("confirmBuild", "KeyG");
-                    out.setKeybindingWorks = setOk === true && r.state.keybindings.confirmBuild === "KeyG";
-
-                    // setKeybinding-Konflikt = Swap: bind „place" auf das gerade
-                    // gesetzte „KeyG" → confirmBuild bekommt das alte „Mouse2"
-                    // (das war place's Default).
-                    const oldPlace = r.state.keybindings.place;
-                    r.setKeybinding("place", "KeyG");
-                    out.swapHappened =
-                        r.state.keybindings.place === "KeyG" && r.state.keybindings.confirmBuild === oldPlace;
-
-                    // Reset auf Defaults
-                    r.resetKeybindings();
-                    out.resetRestoresDefaults =
-                        r.state.keybindings.break === "Mouse0" &&
-                        r.state.keybindings.place === "Mouse2" &&
-                        r.state.keybindings.confirmBuild === "KeyF" &&
-                        r.state.keybindings.confirmBuild === before; // before war auch der Default
-
-                    // setKeybinding-Validierung: unbekannte Aktion → false
-                    out.setRejectsUnknownAction = r.setKeybinding("ficto", "KeyZ") === false;
-                    out.setRejectsEmptyCode = r.setKeybinding("break", "") === false;
-
-                    // _actionForBindingCode reverse-lookup
-                    out.actionForMouse0 = r._actionForBindingCode("Mouse0") === "break";
-                    out.actionForMouse2 = r._actionForBindingCode("Mouse2") === "place";
-                    out.actionForKeyF = r._actionForBindingCode("KeyF") === "confirmBuild";
-                    out.actionForUnbound = r._actionForBindingCode("KeyZ") === null;
-
-                    // _eventToBindingCode
-                    const mouseEvt = { type: "mousedown", button: 0 };
-                    const mouseEvt2 = { type: "mousedown", button: 2 };
-                    const keyEvt = { type: "keydown", code: "KeyG" };
-                    out.codeForMouseDownLMB = r._eventToBindingCode(mouseEvt) === "Mouse0";
-                    out.codeForMouseDownRMB = r._eventToBindingCode(mouseEvt2) === "Mouse2";
-                    out.codeForKeyDown = r._eventToBindingCode(keyEvt) === "KeyG";
-
-                    // beginKeybindRebind setzt state, cancel räumt auf
-                    r.beginKeybindRebind("break");
-                    out.rebindActive = r.state.keybindRebind && r.state.keybindRebind.action === "break";
-                    r.cancelKeybindRebind();
-                    out.rebindCancelClears = r.state.keybindRebind === null;
-
-                    // _completeKeybindRebind ändert die Bindung
-                    r.beginKeybindRebind("jump");
-                    r._completeKeybindRebind("KeyJ");
-                    out.completeBindsCode = r.state.keybindings.jump === "KeyJ";
-                    // Escape im Rebind-Modus → Abbruch (Binding bleibt)
-                    r.beginKeybindRebind("jump");
-                    r._completeKeybindRebind("Escape");
-                    out.escCancelsRebind = r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
-
-                    // _formatBindingCode pretty-print
-                    out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
-                    out.formatMouse2 = r._formatBindingCode("Mouse2") === "Rechte Maustaste";
-                    out.formatSpace = r._formatBindingCode("Space") === "Leertaste";
-                    out.formatKeyF = r._formatBindingCode("KeyF") === "F";
-
-                    // UI: Section + Liste + Reset-Button im DOM
-                    out.sectionInDom = !!document.getElementById("keybindings-section");
-                    out.listInDom = !!document.getElementById("keybindings-list");
-                    out.resetInDom = !!document.getElementById("keybindings-reset");
-                    // 6 keybind-row Zeilen
-                    out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12;
-                    // Pro Aktion ein Rebind-Button mit data-action
-                    out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12;
-
-                    // Reset für nachfolgende Tests
-                    r.resetKeybindings();
-                    r.state.keybindRebind = null;
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6c3Results && !wave6c3Results.error) {
-                check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
-                check(
-                    "Welle 6.C3/V8.17: KEYBINDING_ACTIONS hat 12 Einträge (6 + 6 Drawer/Camera)",
-                    wave6c3Results.hasActions
-                );
-                check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
-                check(
-                    "Welle 6.C3: Actions vollständig (break/place/confirmBuild/inventory/cancelBuild/jump)",
-                    wave6c3Results.actionsCorrect
-                );
-                check("Welle 6.C3: Default break === Mouse0 (LMB)", wave6c3Results.defaultBreakIsMouse0);
-                check("Welle 6.C3: Default place === Mouse2 (RMB)", wave6c3Results.defaultPlaceIsMouse2);
-                check("Welle 6.C3: Default confirmBuild === KeyF", wave6c3Results.defaultConfirmBuildIsKeyF);
-                check("Welle 6.C3: Default inventory === Tab", wave6c3Results.defaultInventoryIsTab);
-                check("Welle 6.C3: state.keybindings initialisiert", wave6c3Results.hasKeybindingsState);
-                check("Welle 6.C3: state.keybindRebind initial null", wave6c3Results.keybindRebindInitNull);
-                check(
-                    "Welle 6.C3: _loadKeybindings + _saveKeybindings existieren",
-                    wave6c3Results.hasLoad && wave6c3Results.hasSave
-                );
-                check(
-                    "Welle 6.C3: setKeybinding + resetKeybindings existieren",
-                    wave6c3Results.hasSet && wave6c3Results.hasReset
-                );
-                check(
-                    "Welle 6.C3: _eventToBindingCode + _actionForBindingCode existieren",
-                    wave6c3Results.hasEventToCode && wave6c3Results.hasActionFor
-                );
-                check(
-                    "Welle 6.C3: beginKeybindRebind + cancelKeybindRebind existieren",
-                    wave6c3Results.hasBeginRebind && wave6c3Results.hasCancelRebind
-                );
-                check(
-                    "Welle 6.C3: keybindingsInitDOM + _renderKeybindingsUI + _formatBindingCode existieren",
-                    wave6c3Results.hasInitDOM && wave6c3Results.hasRenderUI && wave6c3Results.hasFormatCode
-                );
-                check("Welle 6.C3: setKeybinding ändert state.keybindings", wave6c3Results.setKeybindingWorks);
-                check("Welle 6.C3: Konflikt-Schutz tauscht Bindings (Swap)", wave6c3Results.swapHappened);
-                check("Welle 6.C3: resetKeybindings stellt Defaults wieder her", wave6c3Results.resetRestoresDefaults);
-                check("Welle 6.C3: setKeybinding lehnt unbekannte Aktion ab", wave6c3Results.setRejectsUnknownAction);
-                check("Welle 6.C3: setKeybinding lehnt leeren Code ab", wave6c3Results.setRejectsEmptyCode);
-                check("Welle 6.C3: actionFor Mouse0 → break", wave6c3Results.actionForMouse0);
-                check("Welle 6.C3: actionFor Mouse2 → place", wave6c3Results.actionForMouse2);
-                check("Welle 6.C3: actionFor KeyF → confirmBuild", wave6c3Results.actionForKeyF);
-                check("Welle 6.C3: actionFor ungebundener Code → null", wave6c3Results.actionForUnbound);
-                check("Welle 6.C3: eventToCode MouseEvent LMB → Mouse0", wave6c3Results.codeForMouseDownLMB);
-                check("Welle 6.C3: eventToCode MouseEvent RMB → Mouse2", wave6c3Results.codeForMouseDownRMB);
-                check("Welle 6.C3: eventToCode KeyboardEvent → event.code", wave6c3Results.codeForKeyDown);
-                check("Welle 6.C3: beginKeybindRebind setzt state.keybindRebind", wave6c3Results.rebindActive);
-                check("Welle 6.C3: cancelKeybindRebind räumt auf", wave6c3Results.rebindCancelClears);
-                check("Welle 6.C3: _completeKeybindRebind bindet neuen Code", wave6c3Results.completeBindsCode);
-                check(
-                    "Welle 6.C3: Escape im Rebind-Modus → Abbruch (kein Binding-Wechsel)",
-                    wave6c3Results.escCancelsRebind
-                );
-                check("Welle 6.C3: format Mouse0 → 'Linke Maustaste'", wave6c3Results.formatMouse0);
-                check("Welle 6.C3: format Mouse2 → 'Rechte Maustaste'", wave6c3Results.formatMouse2);
-                check("Welle 6.C3: format Space → 'Leertaste'", wave6c3Results.formatSpace);
-                check("Welle 6.C3: format KeyF → 'F'", wave6c3Results.formatKeyF);
-                check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
-                check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
-                check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-                check("Welle 6.C3/V8.17: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
-                check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
-            }
-
-            // ### Welle 6.H Phase 1 — Kreaturen-Aufträge (follow_player / wait / wander) ###
-            // Tasks sind Beziehungs-Gesten, keine Identität (Vision §1.1 Co-Schöpfer).
-            // Default-Task „wander" hält das heutige Emotion-Verhalten — Aura ist stumm.
-            // follow_player + wait haben Aura-Sprite (grün/bernstein) als visuelles Feedback.
-            // Multi-User: Tasks in NON_BROADCASTABLE_OPS (Phase 2 mit expliziten IDs).
-            const wave6hResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
-                    const out = {};
-                    // Statische Konstanten
-                    out.hasTasks =
-                        Array.isArray(r.constructor.CREATURE_TASKS) &&
-                        r.constructor.CREATURE_TASKS.length >= 3 &&
-                        r.constructor.CREATURE_TASKS.includes("wander") &&
-                        r.constructor.CREATURE_TASKS.includes("follow_player") &&
-                        r.constructor.CREATURE_TASKS.includes("wait");
-                    out.hasAuraHueMap =
-                        r.constructor.CREATURE_TASK_AURA_HUE &&
-                        r.constructor.CREATURE_TASK_AURA_HUE.follow_player === 120 &&
-                        r.constructor.CREATURE_TASK_AURA_HUE.wait === 40 &&
-                        r.constructor.CREATURE_TASK_AURA_HUE.wander === null;
-                    out.hasFollowDistance =
-                        Number.isFinite(r.constructor.CREATURE_FOLLOW_DISTANCE) &&
-                        r.constructor.CREATURE_FOLLOW_DISTANCE > 0;
-
-                    // Methoden
-                    out.hasAssign = typeof r.assignCreatureTask === "function";
-                    out.hasGet = typeof r._getCreatureTask === "function";
-                    out.hasTick = typeof r._tickCreatureTaskDirection === "function";
-                    out.hasNearestFinder = typeof r.findNearestCreature === "function";
-                    out.hasAssignNearest = typeof r.assignTaskToNearestCreature === "function";
-                    out.hasAssignAll = typeof r.assignTaskToAllCreatures === "function";
-                    out.hasAuraRefresh = typeof r._refreshCreatureTaskAura === "function";
-
-                    // Default-Task für initial-gespawnte Kreaturen ist wander
-                    const c0 = r.state.creatures[0];
-                    out.initialTaskWander = r._getCreatureTask(c0).name === "wander";
-                    out.initialNoAura = !c0.userData.taskAura;
-
-                    // assignCreatureTask wechselt + erzeugt Aura für non-wander
-                    r.assignCreatureTask(c0, "follow_player");
-                    out.assignFollowOk = r._getCreatureTask(c0).name === "follow_player";
-                    out.followCreatesAura = !!c0.userData.taskAura;
-
-                    // Aura-Hue für follow_player ist grünlich (g > r, g > b)
-                    const followColor = c0.userData.taskAura.material.color;
-                    out.followAuraGreenish = followColor.g > followColor.r && followColor.g > followColor.b;
-
-                    r.assignCreatureTask(c0, "wait");
-                    out.waitChangesAuraColor =
-                        c0.userData.taskAura.material.color.r > c0.userData.taskAura.material.color.b;
-
-                    r.assignCreatureTask(c0, "wander");
-                    out.wanderRemovesAura = !c0.userData.taskAura;
-
-                    // Unknown Task wird abgelehnt
-                    out.unknownRejected = r.assignCreatureTask(c0, "fictional") === false;
-
-                    // tickCreatureTaskDirection
-                    const c1 = r.state.creatures[1];
-                    r.assignCreatureTask(c1, "wait");
-                    const waitDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-                    out.waitGivesZeroDir = waitDir && waitDir.x === 0 && waitDir.z === 0;
-
-                    // follow_player: weit weg → Richtung zum Spieler
-                    const p = r.state.playerMesh.position;
-                    c1.position.set(p.x + 10, p.y, p.z + 10);
-                    r.assignCreatureTask(c1, "follow_player");
-                    const fdir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-                    out.followDirectionToPlayer = fdir.x < 0 && fdir.z < 0 && Math.hypot(fdir.x, fdir.z) > 0;
-
-                    // follow_player: innerhalb haltDist → direction = (0,0,0)
-                    c1.position.set(p.x + 0.3, p.y, p.z + 0.3);
-                    const stopDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-                    out.followStopsAtHalt = stopDir.x === 0 && stopDir.z === 0;
-
-                    // wander → null (Caller fällt auf Emotion-Logik)
-                    r.assignCreatureTask(c1, "wander");
-                    const wDir = r._tickCreatureTaskDirection(c1, r._getCreatureTask(c1), "happy");
-                    out.wanderReturnsNull = wDir === null;
-
-                    // distance-Arg-Validierung (clamp)
-                    r.assignCreatureTask(c1, "follow_player", { distance: 1.5 });
-                    out.distanceArgKept = r._getCreatureTask(c1).args.distance === 1.5;
-
-                    // findNearestCreature
-                    for (let i = 0; i < r.state.creatures.length; i++) {
-                        r.state.creatures[i].position.set(p.x + 100 + i * 5, p.y, p.z + 100 + i * 5);
-                    }
-                    r.state.creatures[2].position.set(p.x + 2, p.y, p.z + 2);
-                    const nearest = r.findNearestCreature(p);
-                    out.nearestIsCorrect = nearest === r.state.creatures[2];
-
-                    // assignTaskToNearestCreature
-                    r.assignCreatureTask(r.state.creatures[2], "wander");
-                    const target = r.assignTaskToNearestCreature(p, "follow_player");
-                    out.assignNearestWorks =
-                        target === r.state.creatures[2] && r._getCreatureTask(target).name === "follow_player";
-
-                    // assignTaskToAllCreatures
-                    const count = r.assignTaskToAllCreatures("wait");
-                    out.assignAllWorks =
-                        count === r.state.creatures.length &&
-                        r.state.creatures.every((c) => r._getCreatureTask(c).name === "wait");
-                    r.assignTaskToAllCreatures("wander");
-
-                    // DSL-Ops
-                    r.dslRun(["creature_task", 0, "follow_player"], { source: "test" });
-                    out.dslSingleWorks = r._getCreatureTask(r.state.creatures[0]).name === "follow_player";
-                    r.dslRun(["creature_task_all", "wander"], { source: "test" });
-                    out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
-                    r.dslRun(["creature_task", 9999, "follow_player"], { source: "test" });
-                    out.dslOobSafe = true; // wenn wir hier sind, kein crash
-
-                    // NON_BROADCASTABLE_OPS Mitgliedschaft
-                    const nbs = r.constructor.NON_BROADCASTABLE_OPS;
-                    out.nbCreatureTask = nbs.has("creature_task");
-                    out.nbCreatureTaskNearest = nbs.has("creature_task_nearest");
-                    out.nbCreatureTaskAll = nbs.has("creature_task_all");
-
-                    // Chat-Patterns
-                    const folge = r.parseChatToDsl("folge mir");
-                    out.chatFolgeMir =
-                        folge &&
-                        Array.isArray(folge.program) &&
-                        folge.program[0] === "creature_task_nearest" &&
-                        folge.program[1] === "follow_player";
-                    const warte = r.parseChatToDsl("warte");
-                    out.chatWarte =
-                        warte && warte.program[0] === "creature_task_nearest" && warte.program[1] === "wait";
-                    const erkunde = r.parseChatToDsl("erkunde");
-                    out.chatErkunde =
-                        erkunde && erkunde.program[0] === "creature_task_nearest" && erkunde.program[1] === "wander";
-                    const kommHer = r.parseChatToDsl("komm her");
-                    out.chatKommHer =
-                        kommHer &&
-                        kommHer.program[0] === "creature_task_nearest" &&
-                        kommHer.program[1] === "follow_player" &&
-                        kommHer.program[2] === 1.5;
-                    const alle = r.parseChatToDsl("alle folgt mir");
-                    out.chatAlleFolgt =
-                        alle && alle.program[0] === "creature_task_all" && alle.program[1] === "follow_player";
-                    const alleWarten = r.parseChatToDsl("alle warten");
-                    out.chatAlleWarten =
-                        alleWarten && alleWarten.program[0] === "creature_task_all" && alleWarten.program[1] === "wait";
-
-                    // describeProgram-Einträge
-                    const desc1 = r.describeProgram(["creature_task_nearest", "follow_player"]);
-                    out.descNearest = typeof desc1 === "string" && /folge|nächste|Auftrag/i.test(desc1);
-                    const desc2 = r.describeProgram(["creature_task_all", "wait"]);
-                    out.descAll = typeof desc2 === "string" && /alle/i.test(desc2);
-
-                    // removeCreature räumt Aura mit
-                    const cToRemove = r.state.creatures[r.state.creatures.length - 1];
-                    r.assignCreatureTask(cToRemove, "wait");
-                    const auraToCheck = cToRemove.userData.taskAura;
-                    out.preRemoveAuraInScene = r.state.scene.children.includes(auraToCheck);
-                    r.removeCreature(cToRemove);
-                    r.state.creatures.pop(); // sync state mit removeCreature-Pfad
-                    out.postRemoveAuraGone = !r.state.scene.children.includes(auraToCheck);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hResults && !wave6hResults.error) {
-                check("Welle 6.H Phase 1: CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
-                check(
-                    "Welle 6.H Phase 1: CREATURE_TASK_AURA_HUE map (follow=120/wait=40/wander=null)",
-                    wave6hResults.hasAuraHueMap
-                );
-                check(
-                    "Welle 6.H Phase 1: CREATURE_FOLLOW_DISTANCE definiert + positiv",
-                    wave6hResults.hasFollowDistance
-                );
-                check(
-                    "Welle 6.H Phase 1: alle Methoden existieren (assign/get/tick/nearest/all/auraRefresh)",
-                    wave6hResults.hasAssign &&
-                        wave6hResults.hasGet &&
-                        wave6hResults.hasTick &&
-                        wave6hResults.hasNearestFinder &&
-                        wave6hResults.hasAssignNearest &&
-                        wave6hResults.hasAssignAll &&
-                        wave6hResults.hasAuraRefresh
-                );
-                check(
-                    "Welle 6.H Phase 1: Default-Task initial-gespawnter Kreaturen ist wander",
-                    wave6hResults.initialTaskWander
-                );
-                check("Welle 6.H Phase 1: Default-Task wander hat KEINE Aura", wave6hResults.initialNoAura);
-                check(
-                    "Welle 6.H Phase 1: assignCreatureTask(follow_player) setzt Task + erzeugt Aura",
-                    wave6hResults.assignFollowOk && wave6hResults.followCreatesAura
-                );
-                check("Welle 6.H Phase 1: Aura für follow_player ist grünlich", wave6hResults.followAuraGreenish);
-                check("Welle 6.H Phase 1: Wechsel auf wait ändert Aura-Farbe", wave6hResults.waitChangesAuraColor);
-                check(
-                    "Welle 6.H Phase 1: Rückkehr zu wander entfernt Aura (Lifecycle-Sauberkeit)",
-                    wave6hResults.wanderRemovesAura
-                );
-                check("Welle 6.H Phase 1: assignCreatureTask lehnt unbekannten Task ab", wave6hResults.unknownRejected);
-                check("Welle 6.H Phase 1: wait-Task liefert direction (0,0,0)", wave6hResults.waitGivesZeroDir);
-                check(
-                    "Welle 6.H Phase 1: follow_player-Direction zeigt zum Spieler (weit weg)",
-                    wave6hResults.followDirectionToPlayer
-                );
-                check(
-                    "Welle 6.H Phase 1: follow_player stoppt am haltDist (direction=0)",
-                    wave6hResults.followStopsAtHalt
-                );
-                check(
-                    "Welle 6.H Phase 1: wander-Direction liefert null (Fallback auf Emotion-Logik)",
-                    wave6hResults.wanderReturnsNull
-                );
-                check("Welle 6.H Phase 1: distance-Arg landet in task.args", wave6hResults.distanceArgKept);
-                check("Welle 6.H Phase 1: findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
-                check(
-                    "Welle 6.H Phase 1: assignTaskToNearestCreature wirkt auf nahste",
-                    wave6hResults.assignNearestWorks
-                );
-                check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
-                check("Welle 6.H Phase 1: DSL creature_task setzt Task", wave6hResults.dslSingleWorks);
-                check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
-                check("Welle 6.H Phase 1: DSL mit OOB-Index crasht nicht", wave6hResults.dslOobSafe);
-                check(
-                    "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
-                    wave6hResults.nbCreatureTask &&
-                        wave6hResults.nbCreatureTaskNearest &&
-                        wave6hResults.nbCreatureTaskAll
-                );
-                check(
-                    "Welle 6.H Phase 1: Chat 'folge mir' → creature_task_nearest follow_player",
-                    wave6hResults.chatFolgeMir
-                );
-                check("Welle 6.H Phase 1: Chat 'warte' → creature_task_nearest wait", wave6hResults.chatWarte);
-                check("Welle 6.H Phase 1: Chat 'erkunde' → creature_task_nearest wander", wave6hResults.chatErkunde);
-                check("Welle 6.H Phase 1: Chat 'komm her' → follow_player mit distance=1.5", wave6hResults.chatKommHer);
-                check(
-                    "Welle 6.H Phase 1: Chat 'alle folgt mir' → creature_task_all follow_player",
-                    wave6hResults.chatAlleFolgt
-                );
-                check("Welle 6.H Phase 1: Chat 'alle warten' → creature_task_all wait", wave6hResults.chatAlleWarten);
-                check(
-                    "Welle 6.H Phase 1: describeProgram für nearest enthält 'folge'/'nächste'",
-                    wave6hResults.descNearest
-                );
-                check("Welle 6.H Phase 1: describeProgram für all enthält 'alle'", wave6hResults.descAll);
-                check(
-                    "Welle 6.H Phase 1: removeCreature räumt Aura aus Scene (kein Memory-Leak)",
-                    wave6hResults.preRemoveAuraInScene && wave6hResults.postRemoveAuraGone
-                );
-            }
-
-            // ### Welle 6.H V2 — Vision-/UX-/Performance-Schließungen ###
-            // Nach Schöpfer-Audit: Audio-Antwort bei Task-Wechsel (§1.2),
-            // Journal-Eintrag bei Geste (§1.1), Leerschlag-Feedback (UX),
-            // Status-Bar-Zähler (UX), Texture-Cache (Performance),
-            // describeProgram-Distanz (UX).
-            const wave6hV2Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
-                    const out = {};
-
-                    // === Audio-Antwort bei Task-Wechsel (Vision §1.2) ===
-                    out.hasTaskPingMethod = typeof r._playCreatureTaskPing === "function";
-                    out.hasPingFreq =
-                        r.constructor.CREATURE_TASK_PING_FREQ &&
-                        r.constructor.CREATURE_TASK_PING_FREQ.follow_player === 494 &&
-                        r.constructor.CREATURE_TASK_PING_FREQ.wait === 294 &&
-                        r.constructor.CREATURE_TASK_PING_FREQ.wander === null;
-
-                    if (typeof r.initSymphony === "function") r.initSymphony();
-                    const symReady = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
-                    out.symphonyReady = !!symReady;
-
-                    if (symReady) {
-                        const ctx = r.state.symphony.ctx;
-                        const orig = ctx.createOscillator.bind(ctx);
-                        const c = r.state.creatures[0];
-                        // Wechsel wander → follow_player → Ping
-                        r.assignCreatureTask(c, "wander", {}, { silent: true });
-                        let n = 0;
-                        ctx.createOscillator = function () {
-                            n++;
-                            return orig();
-                        };
-                        r.assignCreatureTask(c, "follow_player");
-                        out.followPings = n >= 1;
-                        n = 0;
-                        r.assignCreatureTask(c, "wait");
-                        out.waitPings = n >= 1;
-                        // Wechsel zu wander → KEIN Ping (Lösen der Bindung ist still)
-                        n = 0;
-                        r.assignCreatureTask(c, "wander");
-                        out.wanderIsSilent = n === 0;
-                        ctx.createOscillator = orig;
-                    }
-
-                    // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
-                    out.hasJournalMethod = typeof r._journalCreatureTask === "function";
-                    const c1 = r.state.creatures[1];
-                    r.assignCreatureTask(c1, "wander", {}, { silent: true });
-                    const jBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-                    r.assignCreatureTask(c1, "follow_player");
-                    const jAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-                    out.journalGrows = jAfter > jBefore;
-                    // Eintrag trägt type=relationship
-                    const lastEntry =
-                        r.state.worldJournal && r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1];
-                    out.journalTypeIsRelationship = lastEntry && lastEntry.type === "relationship";
-
-                    // === silent-Option unterdrückt Audio + Journal ===
-                    const c2 = r.state.creatures[2];
-                    r.assignCreatureTask(c2, "wander", {}, { silent: true });
-                    const jPre = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-                    r.assignCreatureTask(c2, "wait", {}, { silent: true });
-                    const jPost = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-                    out.silentSuppressesJournal = jPost === jPre;
-
-                    // === Leerschlag-Feedback (UX + Vision §1.1) ===
-                    // Alle Kreaturen weit weg, dann Auftrag mit maxDist=60
-                    const pPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
-                    for (const c of r.state.creatures) c.position.set(pPos.x + 500, pPos.y, pPos.z + 500);
-                    const chatOutput = document.getElementById("chat-output");
-                    const chatBefore = chatOutput ? chatOutput.children.length : 0;
-                    const journalBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-                    const result = r.assignTaskToNearestCreature(pPos, "follow_player", {}, 60);
-                    const chatAfter = chatOutput ? chatOutput.children.length : 0;
-                    const journalAfter = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
-                    const lastLine = chatOutput && chatOutput.lastChild ? chatOutput.lastChild.textContent : "";
-                    out.leerschlagReturnsNull = result === null;
-                    out.leerschlagWritesChat = chatAfter > chatBefore && /Keine Kreatur/.test(lastLine);
-                    out.leerschlagWritesJournal = journalAfter > journalBefore;
-                    out.leerschlagJournalTypeReach =
-                        r.state.worldJournal.entries[r.state.worldJournal.entries.length - 1].type === "reach";
-
-                    // === Texture-Cache (Performance) ===
-                    out.hasCacheMethod = typeof r._getCreatureTaskAuraTexture === "function";
-                    const firstTexture = r._getCreatureTaskAuraTexture();
-                    const secondTexture = r._getCreatureTaskAuraTexture();
-                    out.textureCacheReusesInstance = firstTexture === secondTexture;
-                    // 10 Task-Wechsel sollten dieselbe Map nutzen
-                    const c3 = r.state.creatures[0];
-                    c3.position.set(pPos.x + 1, pPos.y, pPos.z + 1); // wieder nah
-                    const uniqueMaps = new Set();
-                    for (let i = 0; i < 10; i++) {
-                        r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
-                        if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
-                            uniqueMaps.add(c3.userData.taskAura.material.map);
-                        }
-                        r.assignCreatureTask(c3, "wander", {}, { silent: true });
-                    }
-                    out.textureSharedAcross10Cycles = uniqueMaps.size === 1;
-
-                    // === Status-Bar Task-Zähler (UX) ===
-                    out.hasRenderTaskStatus = typeof r._renderTaskStatusUI === "function";
-                    out.statusTasksInDom = !!document.getElementById("status-tasks");
-                    r.assignTaskToAllCreatures("wander");
-                    r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
-                    r.assignCreatureTask(r.state.creatures[1], "follow_player", {}, { silent: true });
-                    r.assignCreatureTask(r.state.creatures[2], "wait", {}, { silent: true });
-                    r._renderTaskStatusUI();
-                    const taskEl = document.getElementById("status-tasks");
-                    const taskText = taskEl ? taskEl.textContent : "";
-                    out.statusShowsCounts = /2 folgen/.test(taskText) && /1 warten/.test(taskText);
-                    // Alle wander → "—"
-                    r.assignTaskToAllCreatures("wander");
-                    r._renderTaskStatusUI();
-                    const taskText2 = taskEl ? taskEl.textContent : "";
-                    out.statusEmptyDash = taskText2 === "—";
-
-                    // === describeProgram zeigt Distanz ===
-                    const descWithDist = r.describeProgram(["creature_task_nearest", "follow_player", 1.5]);
-                    const descWithoutDist = r.describeProgram(["creature_task_nearest", "follow_player"]);
-                    out.descShowsDistance = /1\.5m|Distanz/i.test(descWithDist);
-                    out.descNoDistanceWhenNotGiven = !/1\.5/.test(descWithoutDist);
-
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hV2Results && !wave6hV2Results.error) {
-                check("Welle 6.H V2: _playCreatureTaskPing existiert", wave6hV2Results.hasTaskPingMethod);
-                check(
-                    "Welle 6.H V2: CREATURE_TASK_PING_FREQ map (follow=494/wait=294/wander=null)",
-                    wave6hV2Results.hasPingFreq
-                );
-                check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
-                if (wave6hV2Results.symphonyReady) {
-                    check(
-                        "Welle 6.H V2: Wechsel zu follow_player erzeugt Audio-Ping (Vision §1.2)",
-                        wave6hV2Results.followPings
-                    );
-                    check("Welle 6.H V2: Wechsel zu wait erzeugt Audio-Ping (Vision §1.2)", wave6hV2Results.waitPings);
-                    check(
-                        "Welle 6.H V2: Wechsel zu wander bleibt STUMM (Disziplin: Lösen tönt nicht)",
-                        wave6hV2Results.wanderIsSilent
-                    );
-                }
-                check("Welle 6.H V2: _journalCreatureTask existiert", wave6hV2Results.hasJournalMethod);
-                check(
-                    "Welle 6.H V2: Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)",
-                    wave6hV2Results.journalGrows
-                );
-                check(
-                    "Welle 6.H V2: Journal-Eintrag trägt type='relationship'",
-                    wave6hV2Results.journalTypeIsRelationship
-                );
-                check(
-                    "Welle 6.H V2: silent-Option unterdrückt Audio + Journal (Spawn-Defaults bleiben still)",
-                    wave6hV2Results.silentSuppressesJournal
-                );
-                check(
-                    "Welle 6.H V2: Leerschlag-Geste schreibt Chat-Output 'Keine Kreatur in der Nähe'",
-                    wave6hV2Results.leerschlagWritesChat
-                );
-                check(
-                    "Welle 6.H V2: Leerschlag-Geste schreibt 'reach'-Journal-Eintrag",
-                    wave6hV2Results.leerschlagWritesJournal && wave6hV2Results.leerschlagJournalTypeReach
-                );
-                check(
-                    "Welle 6.H V2: assignTaskToNearest returnt null bei Leerschlag",
-                    wave6hV2Results.leerschlagReturnsNull
-                );
-                check(
-                    "Welle 6.H V2: _getCreatureTaskAuraTexture existiert + cached",
-                    wave6hV2Results.hasCacheMethod && wave6hV2Results.textureCacheReusesInstance
-                );
-                check(
-                    "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
-                    wave6hV2Results.textureSharedAcross10Cycles
-                );
-                check("Welle 6.H V2: _renderTaskStatusUI existiert", wave6hV2Results.hasRenderTaskStatus);
-                check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
-                check(
-                    "Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup",
-                    wave6hV2Results.statusShowsCounts
-                );
-                check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
-                check("Welle 6.H V2: describeProgram zeigt Distanz wenn gesetzt", wave6hV2Results.descShowsDistance);
-                check(
-                    "Welle 6.H V2: describeProgram zeigt keine Distanz wenn nicht gesetzt",
-                    wave6hV2Results.descNoDistanceWhenNotGiven
-                );
-            }
-
-            // ### Welle 6.H Phase 2A — Kreaturen als Hylomorphismus-Compounds ###
-            // Kreaturen sind jetzt Multi-Mesh-Groups aus bodyParts × Material —
-            // selbe Sprache wie Spieler-Seele (6.D) + Architektur (6.G P1.5).
-            // Drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
-            const wave6hP2aResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state) return null;
-                    const out = {};
-                    const souls = r.constructor.CREATURE_SOULS;
-                    out.soulsFrozen = !!souls && Object.isFrozen(souls);
-                    out.threeSouls =
-                        souls && Object.keys(souls).length === 3 && souls.sprite && souls.wesen && souls.geist;
-                    out.hasSoulNames =
-                        Array.isArray(r.constructor.CREATURE_SOUL_NAMES) &&
-                        r.constructor.CREATURE_SOUL_NAMES.length === 3;
-                    out.hasNamePool =
-                        Array.isArray(r.constructor.CREATURE_NAME_POOL) &&
-                        r.constructor.CREATURE_NAME_POOL.length >= 20;
-                    const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
-                    out.bodyPartsHaveSchema =
-                        spritePart && typeof spritePart.shape === "string" && typeof spritePart.material === "string";
-                    out.spriteAuraY = souls && souls.sprite && souls.sprite.auraY === 0.55;
-                    out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
-                    out.hasBuildCreatureGroup = typeof r._buildCreatureGroup === "function";
-                    out.hasPickSoulName = typeof r._pickCreatureSoulName === "function";
-                    out.hasPickName = typeof r._pickCreatureName === "function";
-                    out.hasComputeTags = typeof r.computeCreatureCompoundTags === "function";
-                    out.hasAuraOffsetY = typeof r._creatureAuraOffsetY === "function";
-                    out.hasCreatureDrawer = typeof r.creatureDrawerInitDOM === "function";
-                    out.hasRenderList = typeof r._renderCreatureListUI === "function";
-                    if (r.state.creatures.length > 0) {
-                        const c0 = r.state.creatures[0];
-                        out.initialIsGroup = c0 && c0.isGroup === true;
-                        out.initialHasSoul =
-                            typeof c0.userData.soul === "string" &&
-                            r.constructor.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
-                        out.initialHasName = typeof c0.userData.name === "string" && c0.userData.name.length > 0;
-                        out.initialHasTask = c0.userData.task && c0.userData.task.name === "wander";
-                        out.initialHasChildren = c0.children && c0.children.length >= 2;
-                    }
-                    r.clearCreatures();
-                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
-                    const sprite = r.spawnCreatureAt(p.x + 1, p.y, p.z + 1, "happy", "sprite");
-                    const wesen = r.spawnCreatureAt(p.x + 2, p.y, p.z + 2, "happy", "wesen");
-                    const geist = r.spawnCreatureAt(p.x + 3, p.y, p.z + 3, "happy", "geist");
-                    const tagsSprite = r.computeCreatureCompoundTags(sprite);
-                    const tagsWesen = r.computeCreatureCompoundTags(wesen);
-                    const tagsGeist = r.computeCreatureCompoundTags(geist);
-                    out.spriteMoreMagie = (tagsSprite.magieleitung || 0) > (tagsWesen.magieleitung || 0);
-                    out.wesenMoreDichte = (tagsWesen.dichte || 0) > (tagsGeist.dichte || 0);
-                    out.spriteHasResoniert = (tagsSprite.resoniert || 0) > 0;
-                    out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
-                    out.geistHasLebendig = (tagsGeist.lebendig || 0) > 0;
-                    const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
-                    out.unknownSoulFallback = !!fb && r.constructor.CREATURE_SOUL_NAMES.includes(fb.userData.soul);
-                    out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.55) < 0.01;
-                    out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
-                    out.spawnSpriteWorks = sprite && sprite.userData.soul === "sprite";
-                    out.spawnWesenWorks = wesen && wesen.userData.soul === "wesen";
-                    out.spawnGeistWorks = geist && geist.userData.soul === "geist";
-                    out.hasCreatureDrawerEl = !!document.querySelector('[data-drawer="kreaturen"]');
-                    out.hasTaskActions = !!document.getElementById("creature-task-actions");
-                    const select = document.getElementById("creature-soul-select");
-                    out.hasSoulSelect = !!select && select.options.length === 4;
-                    out.hasCreatureList = !!document.getElementById("creature-list");
-                    out.hasFolgeMir = !!document.querySelector('[data-cmd="folge mir"]');
-                    out.hasKommHer = !!document.querySelector('[data-cmd="komm her"]');
-                    out.hasWarte = !!document.querySelector('[data-cmd="warte"]');
-                    out.hasErkunde = !!document.querySelector('[data-cmd="erkunde"]');
-                    out.hasAlleFolgen = !!document.querySelector('[data-cmd="alle folgt mir"]');
-                    out.hasAlleWarten = !!document.querySelector('[data-cmd="alle warten"]');
-                    out.spawn1Button = !!document.querySelector('[data-creature-spawn="1"]');
-                    out.spawn5Button = !!document.querySelector('[data-creature-spawn="5"]');
-                    r._renderCreatureListUI();
-                    const list = document.getElementById("creature-list");
-                    out.listRendersRows =
-                        list && list.querySelectorAll(".creature-row").length === r.state.creatures.length;
-                    const firstRow = list && list.querySelector(".creature-row");
-                    out.rowHasNameSoulTask =
-                        firstRow &&
-                        firstRow.querySelector(".creature-name") &&
-                        firstRow.querySelector(".creature-soul") &&
-                        firstRow.querySelector(".creature-task");
-                    r.assignCreatureTask(sprite, "follow_player");
-                    const firstRow2 = list && list.querySelector(".creature-row");
-                    const taskCell = firstRow2 && firstRow2.querySelector(".creature-task");
-                    out.taskCellUpdates =
-                        taskCell && (taskCell.textContent === "folgt" || taskCell.classList.contains("follow_player"));
-                    out.preDisposeChildren = sprite.children.length >= 2;
-                    r.removeCreature(sprite);
-                    r.state.creatures = r.state.creatures.filter((c) => c !== sprite);
-                    out.sceneAfterRemove = !r.state.scene.children.includes(sprite);
-                    r.clearCreatures();
-                    r._renderCreatureListUI();
-                    out.emptyListDash = list && list.textContent === "—";
-                    // Cleanup für nachfolgende Tests (Ring 3 V2 peace,
-                    // UI Run-Button): brauchen Kreaturen-Population.
-                    r.spawnCreatures(10);
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hP2aResults && !wave6hP2aResults.error) {
-                check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
-                check("Welle 6.H P2A: drei Seelen (sprite/wesen/geist)", wave6hP2aResults.threeSouls);
-                check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
-                check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
-                check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
-                check("Welle 6.H P2A: sprite.auraY === 0.55", wave6hP2aResults.spriteAuraY);
-                check("Welle 6.H P2A: wesen.auraY === 0.8", wave6hP2aResults.wesenAuraY);
-                check(
-                    "Welle 6.H P2A: alle Methoden existieren",
-                    wave6hP2aResults.hasBuildCreatureGroup &&
-                        wave6hP2aResults.hasPickSoulName &&
-                        wave6hP2aResults.hasPickName &&
-                        wave6hP2aResults.hasComputeTags &&
-                        wave6hP2aResults.hasAuraOffsetY &&
-                        wave6hP2aResults.hasCreatureDrawer &&
-                        wave6hP2aResults.hasRenderList
-                );
-                check("Welle 6.H P2A: Initial-Kreatur ist THREE.Group", wave6hP2aResults.initialIsGroup);
-                check("Welle 6.H P2A: Initial-Kreatur trägt Soul-Name", wave6hP2aResults.initialHasSoul);
-                check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
-                check("Welle 6.H P2A: Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
-                check("Welle 6.H P2A: Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
-                check(
-                    "Welle 6.H P2A: Diskrimination — sprite mehr magieleitung als wesen",
-                    wave6hP2aResults.spriteMoreMagie
-                );
-                check("Welle 6.H P2A: Diskrimination — wesen mehr dichte als geist", wave6hP2aResults.wesenMoreDichte);
-                check("Welle 6.H P2A: sprite-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
-                check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
-                check("Welle 6.H P2A: geist-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
-                check(
-                    "Welle 6.H P2A: Unknown soulName fällt auf bekannte Seele zurück",
-                    wave6hP2aResults.unknownSoulFallback
-                );
-                check("Welle 6.H P2A: _creatureAuraOffsetY(sprite) === 0.55", wave6hP2aResults.spriteAuraOffset);
-                check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
-                check(
-                    "Welle 6.H P2A: spawnCreatureAt(soulName) setzt korrekte Soul",
-                    wave6hP2aResults.spawnSpriteWorks &&
-                        wave6hP2aResults.spawnWesenWorks &&
-                        wave6hP2aResults.spawnGeistWorks
-                );
-                check("Welle 6.H P2A: Kreaturen-Drawer im DOM", wave6hP2aResults.hasCreatureDrawerEl);
-                check("Welle 6.H P2A: Aufträge-Section im DOM", wave6hP2aResults.hasTaskActions);
-                check("Welle 6.H P2A: Form-Dropdown mit 4 Optionen", wave6hP2aResults.hasSoulSelect);
-                check("Welle 6.H P2A: Kreatur-Liste-Container im DOM", wave6hP2aResults.hasCreatureList);
-                check(
-                    "Welle 6.H P2A: alle 6 Aufträge-Buttons als data-cmd",
-                    wave6hP2aResults.hasFolgeMir &&
-                        wave6hP2aResults.hasKommHer &&
-                        wave6hP2aResults.hasWarte &&
-                        wave6hP2aResults.hasErkunde &&
-                        wave6hP2aResults.hasAlleFolgen &&
-                        wave6hP2aResults.hasAlleWarten
-                );
-                check(
-                    "Welle 6.H P2A: Spawn-Buttons +1/+5",
-                    wave6hP2aResults.spawn1Button && wave6hP2aResults.spawn5Button
-                );
-                check("Welle 6.H P2A: Liste rendert eine Zeile pro Kreatur", wave6hP2aResults.listRendersRows);
-                check(
-                    "Welle 6.H P2A: Zeile hat .creature-name + .creature-soul + .creature-task",
-                    wave6hP2aResults.rowHasNameSoulTask
-                );
-                check("Welle 6.H P2A: Task-Wechsel triggert Liste-Refresh", wave6hP2aResults.taskCellUpdates);
-                check("Welle 6.H P2A: removeCreature entfernt Group aus scene", wave6hP2aResults.sceneAfterRemove);
-                check("Welle 6.H P2A: Leere Liste zeigt '—'", wave6hP2aResults.emptyListDash);
-            }
-
-            // ### Welle 6.H Phase 2B.1 — Kreaturen sammeln + erinnern ###
-            // gather-Task mit args.material findet nächste Architektur mit
-            // diesem Material in den Parts, läuft hin, erntet bei haltDist
-            // = 1.5m → entfernt Architektur + addToInventory + memory.
-            const wave6hP2bResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 3) return null;
-                    const out = {};
-                    out.tasksHasGather = r.constructor.CREATURE_TASKS.includes("gather");
-                    out.auraHueGather = r.constructor.CREATURE_TASK_AURA_HUE.gather === 200;
-                    out.pingFreqGather = r.constructor.CREATURE_TASK_PING_FREQ.gather === 392;
-                    out.haltDist = r.constructor.CREATURE_GATHER_HALT_DIST;
-                    out.speed = r.constructor.CREATURE_GATHER_SPEED;
-                    out.memCap = r.constructor.CREATURE_MEMORY_CAP === 200;
-                    out.hasRemember = typeof r._creatureRemember === "function";
-                    out.hasFindArch = typeof r._findNearestArchitectureWithMaterial === "function";
-                    out.hasBuildArgs = typeof r._buildCreatureTaskArgs === "function";
-                    out.hasDescribeArg = typeof r._describeCreatureTaskArg === "function";
-
-                    // Memory + FIFO-Cap (Phase 2D.1: jetzt 200 statt 30)
-                    const c0 = r.state.creatures[0];
-                    c0.userData.memory = [];
-                    for (let i = 0; i < 205; i++) r._creatureRemember(c0, "found", { idx: i });
-                    out.memCapEnforced = c0.userData.memory.length === 200;
-                    out.memFifoCorrect =
-                        c0.userData.memory[0].content.idx === 5 && c0.userData.memory[29].content.idx === 34;
-                    out.memHasTimestamp = typeof c0.userData.memory[0].at === "number";
-
-                    // _findNearestArchitectureWithMaterial
-                    const p = r.state.playerMesh.position;
-                    const woodTarget = r._findNearestArchitectureWithMaterial(p, "holz");
-                    out.findsHolz = !!woodTarget;
-                    if (woodTarget) {
-                        out.holzPartConfirmed =
-                            woodTarget.type &&
-                            r.state.blueprints[woodTarget.type] &&
-                            r.state.blueprints[woodTarget.type].parts.some((part) => part && part.material === "holz");
-                    }
-                    out.findsFictionalNull = r._findNearestArchitectureWithMaterial(p, "fictional_xyz") === null;
-
-                    // _buildCreatureTaskArgs context-dependent
-                    out.gatherStringArg = r._buildCreatureTaskArgs("gather", "holz").material === "holz";
-                    out.followNumberArg = r._buildCreatureTaskArgs("follow_player", 1.5).distance === 1.5;
-                    out.waitEmptyArg = Object.keys(r._buildCreatureTaskArgs("wait", "x")).length === 0;
-                    out.gatherWithNumberDrops = !r._buildCreatureTaskArgs("gather", 5).material;
-
-                    // Gather-Direction: läuft zum Ziel
-                    const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
-                    c0.position.set(p.x, p.y, p.z);
-                    r.assignCreatureTask(c0, "gather", { material: "holz" }, { silent: true });
-                    const task = r._getCreatureTask(c0);
-                    const dir = r._tickCreatureTaskDirection(c0, task, "happy");
-                    out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
-                    out.gatherDirTargetsX = dir && dir.x > 0;
-                    out.targetCached = !!task.args._target;
-
-                    // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
-                    // carrying (nicht direkt Inventar; Bring-Phase folgt).
-                    // c0 weit weg vom Spieler positionieren damit nicht sofort
-                    // Übergabe ausgelöst wird.
-                    const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
-                    c0.position.set(p.x + 50.5, p.y, p.z + 50);
-                    c0.userData.carrying = null;
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
-                    const archCountBefore = r.state.architectures.length;
-                    const t2 = r._getCreatureTask(c0);
-                    r._tickCreatureTaskDirection(c0, t2, "happy");
-                    out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
-                    // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
-                    // erst bei Übergabe gefüllt. carrying-State prüfen.
-                    out.inventoryHasHarvested =
-                        c0.userData.carrying &&
-                        c0.userData.carrying.materials &&
-                        (c0.userData.carrying.materials.stein || 0) > 0;
-                    out.memoryHasGathered =
-                        c0.userData.memory &&
-                        c0.userData.memory.some(
-                            (m) => m.type === "gathered" && m.content && m.content.blueprint === "stein_block"
-                        );
-                    void tempArch;
-
-                    // Unknown Material → wander-Fallback (carrying muss leer sein,
-                    // sonst greift Bring-Phase statt Sucher-Phase).
-                    c0.userData.carrying = null;
-                    if (c0.userData.carryingSprite) {
-                        r.state.scene.remove(c0.userData.carryingSprite);
-                        c0.userData.carryingSprite = null;
-                    }
-                    r.assignCreatureTask(c0, "wander", {}, { silent: true });
-                    r.assignCreatureTask(c0, "gather", { material: "fictional_xyz" }, { silent: true });
-                    const t3 = r._getCreatureTask(c0);
-                    r._tickCreatureTaskDirection(c0, t3, "happy");
-                    const tAfter = r._getCreatureTask(c0);
-                    out.unknownReturnsToWander = tAfter.name === "wander";
-                    out.memoryHasNoMaterial = c0.userData.memory.some(
-                        (m) => m.type === "no_material" && m.content && m.content.material === "fictional_xyz"
-                    );
-
-                    // DSL-Op + Chat
-                    r.assignCreatureTask(r.state.creatures[1], "wander", {}, { silent: true });
-                    r.state.creatures[1].position.set(p.x + 1, p.y, p.z + 1);
-                    r.dslRun(["creature_task", 1, "gather", "holz"], { source: "test" });
-                    const dt = r._getCreatureTask(r.state.creatures[1]);
-                    out.dslGatherWorks = dt && dt.name === "gather" && dt.args.material === "holz";
-
-                    const cases = [
-                        ["sammle holz", "creature_task_nearest", "gather", "holz"],
-                        ["bring quarz", "creature_task_nearest", "gather", "quarz"],
-                        ["alle sammeln eisen", "creature_task_all", "gather", "eisen"],
-                    ];
-                    out.chatPatterns = cases.every(([text, op, tn, mat]) => {
-                        const parsed = r.parseChatToDsl(text);
-                        return (
-                            parsed && parsed.program[0] === op && parsed.program[1] === tn && parsed.program[2] === mat
-                        );
-                    });
-
-                    // NON_BROADCASTABLE_OPS bleibt
-                    const set = r.constructor.NON_BROADCASTABLE_OPS;
-                    out.nonBroadcastable =
-                        set.has("creature_task") && set.has("creature_task_nearest") && set.has("creature_task_all");
-
-                    // Status-Bar
-                    r.assignTaskToAllCreatures("wander", {}, { silent: true });
-                    r.assignCreatureTask(r.state.creatures[0], "gather", { material: "holz" }, { silent: true });
-                    r.assignCreatureTask(r.state.creatures[1], "gather", { material: "holz" }, { silent: true });
-                    r.assignCreatureTask(r.state.creatures[2], "follow_player", {}, { silent: true });
-                    r._renderTaskStatusUI();
-                    const stext = document.getElementById("status-tasks").textContent;
-                    out.statusShowsGather = /2 sammeln/.test(stext);
-                    out.statusShowsFollow = /1 folgen/.test(stext);
-
-                    // describeProgram
-                    const d1 = r.describeProgram(["creature_task_nearest", "gather", "holz"]);
-                    out.descShowsMaterial = /Material/.test(d1) && /holz/.test(d1);
-
-                    // Liste zeigt 'sammelt holz'
-                    r._renderCreatureListUI();
-                    const list = document.getElementById("creature-list");
-                    const firstTask = list && list.querySelector(".creature-row .creature-task");
-                    out.listShowsSammelt = firstTask && /sammelt/.test(firstTask.textContent);
-                    out.listTaskHasGatherClass = firstTask && firstTask.classList.contains("gather");
-
-                    // UI-Sammeln-Sektion
-                    out.hasGatherSelect = !!document.getElementById("creature-gather-select");
-                    out.gatherSelectHasMaterials =
-                        document.querySelectorAll("#creature-gather-select option").length >= 10;
-                    out.hasNearestGatherBtn = !!document.querySelector('[data-creature-gather="nearest"]');
-                    out.hasAllGatherBtn = !!document.querySelector('[data-creature-gather="all"]');
-
-                    // Cleanup für nachfolgende Tests
-                    r.assignTaskToAllCreatures("wander", {}, { silent: true });
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hP2bResults && !wave6hP2bResults.error) {
-                check("Welle 6.H P2B.1: CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
-                check("Welle 6.H P2B.1: AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
-                check("Welle 6.H P2B.1: PING_FREQ.gather === 392 (G4)", wave6hP2bResults.pingFreqGather);
-                check(
-                    "Welle 6.H P2B.1: HALT_DIST/SPEED/MEM_CAP=200 als Konstanten (P2D.1: Cap 30 → 200)",
-                    Number.isFinite(wave6hP2bResults.haltDist) &&
-                        Number.isFinite(wave6hP2bResults.speed) &&
-                        wave6hP2bResults.memCap
-                );
-                check(
-                    "Welle 6.H P2B.1: alle 4 Methoden existieren (_creatureRemember/_findNearestArchitectureWithMaterial/_buildCreatureTaskArgs/_describeCreatureTaskArg)",
-                    wave6hP2bResults.hasRemember &&
-                        wave6hP2bResults.hasFindArch &&
-                        wave6hP2bResults.hasBuildArgs &&
-                        wave6hP2bResults.hasDescribeArg
-                );
-                check(
-                    "Welle 6.H P2B.1: memory[] FIFO-Cap=200 nach 205 Pushes (P2D.1)",
-                    wave6hP2bResults.memCapEnforced && wave6hP2bResults.memFifoCorrect
-                );
-                check("Welle 6.H P2B.1: memory-Eintrag hat at-Timestamp", wave6hP2bResults.memHasTimestamp);
-                check(
-                    "Welle 6.H P2B.1: _findNearestArchitectureWithMaterial(holz) findet Baum",
-                    wave6hP2bResults.findsHolz
-                );
-                check(
-                    "Welle 6.H P2B.1: gefundene Architektur trägt material im Part",
-                    wave6hP2bResults.holzPartConfirmed
-                );
-                check("Welle 6.H P2B.1: Unknown Material → null", wave6hP2bResults.findsFictionalNull);
-                check(
-                    "Welle 6.H P2B.1: _buildCreatureTaskArgs context-aware (gather→material, follow→distance, wait→leer, gather+number droppt)",
-                    wave6hP2bResults.gatherStringArg &&
-                        wave6hP2bResults.followNumberArg &&
-                        wave6hP2bResults.waitEmptyArg &&
-                        wave6hP2bResults.gatherWithNumberDrops
-                );
-                check(
-                    "Welle 6.H P2B.1: gather-Tick Direction zeigt zum Ziel",
-                    wave6hP2bResults.gatherDirNonZero && wave6hP2bResults.gatherDirTargetsX
-                );
-                check("Welle 6.H P2B.1: Ziel wird in task.args._target gecached", wave6hP2bResults.targetCached);
-                check(
-                    "Welle 6.H P2B.1: bei haltDist → Architektur entfernt + Inventar gefüllt + memory 'gathered'",
-                    wave6hP2bResults.archRemovedOnHarvest &&
-                        wave6hP2bResults.inventoryHasHarvested &&
-                        wave6hP2bResults.memoryHasGathered
-                );
-                check(
-                    "Welle 6.H P2B.1: gather mit unbekanntem Material → Task fällt auf wander",
-                    wave6hP2bResults.unknownReturnsToWander
-                );
-                check("Welle 6.H P2B.1: 'no_material'-Erinnerung gespeichert", wave6hP2bResults.memoryHasNoMaterial);
-                check(
-                    "Welle 6.H P2B.1: DSL creature_task(idx, gather, material) wirkt",
-                    wave6hP2bResults.dslGatherWorks
-                );
-                check(
-                    "Welle 6.H P2B.1: Chat 'sammle/bring/alle sammeln' Patterns routen korrekt",
-                    wave6hP2bResults.chatPatterns
-                );
-                check(
-                    "Welle 6.H P2B.1: gather-DSL-Ops bleiben in NON_BROADCASTABLE_OPS",
-                    wave6hP2bResults.nonBroadcastable
-                );
-                check(
-                    "Welle 6.H P2B.1: Status-Bar zeigt 'N sammeln' bei gather-Tasks",
-                    wave6hP2bResults.statusShowsGather && wave6hP2bResults.statusShowsFollow
-                );
-                check("Welle 6.H P2B.1: describeProgram zeigt Material", wave6hP2bResults.descShowsMaterial);
-                check(
-                    "Welle 6.H P2B.1: Liste zeigt 'sammelt' + .gather-Class",
-                    wave6hP2bResults.listShowsSammelt && wave6hP2bResults.listTaskHasGatherClass
-                );
-                check(
-                    "Welle 6.H P2B.1: #creature-gather-select im DOM mit ≥10 Optionen",
-                    wave6hP2bResults.hasGatherSelect && wave6hP2bResults.gatherSelectHasMaterials
-                );
-                check(
-                    "Welle 6.H P2B.1: 'Nächste sammelt' + 'Alle sammeln' Buttons im DOM",
-                    wave6hP2bResults.hasNearestGatherBtn && wave6hP2bResults.hasAllGatherBtn
-                );
-            }
-
-            // ### Welle 6.H Phase 2B.5 — harvestArchitecture + Material-Inventar + Bring-Phase ###
-            // EINE Funktion für Spieler-LMB UND Kreatur-gather: Hylomorphismus-
-            // Wurzel. Architekturen lösen sich in Material-Map auf (volumen-
-            // basiert). Inventar dual-typed: {kind:'material'} | {kind:'blueprint'}.
-            // Kreaturen tragen Ernte in carrying, bringen sie zum Spieler.
-            const wave6hP2b5Results = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
-                    const out = {};
-                    out.hasHarvest = typeof r.harvestArchitecture === "function";
-                    out.hasAddMaterial = typeof r.addMaterialToInventory === "function";
-                    out.hasVolumeConst = r.constructor.HARVEST_VOLUME_TO_UNITS === 4;
-                    out.hasHandoverDist = r.constructor.CREATURE_HANDOVER_DIST === 2.0;
-                    out.hasCarryingVisual = typeof r._refreshCreatureCarryingVisual === "function";
-
-                    const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
-
-                    // Material-Map aus parts × Volumen
-                    const stoneBlock = r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z + 30 });
-                    const h1 = r.harvestArchitecture(stoneBlock, "test");
-                    out.steinBlockHasStein = h1 && h1.materials && h1.materials.stein >= 10;
-                    out.steinHasBlueprintName = h1 && h1.blueprint === "stein_block";
-
-                    const oak = r.spawnArchitecture("baum_eiche", { x: p.x + 35, y: p.y, z: p.z + 30 });
-                    const h2 = r.harvestArchitecture(oak, "test");
-                    out.oakHasHolzAndLaub = h2 && h2.materials && h2.materials.holz > 0 && h2.materials.laub > 0;
-                    out.oakHasNoStein = h2 && (!h2.materials.stein || h2.materials.stein === 0);
-
-                    // Diskrimination: größerer Bauplan = mehr Material
-                    r.state.blueprints._test_small = {
-                        name: "_test_small",
-                        label: "Small",
-                        builtIn: false,
-                        parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
-                    };
-                    r.state.blueprints._test_big = {
-                        name: "_test_big",
-                        label: "Big",
-                        builtIn: false,
-                        parts: [{ shape: "box", material: "stein", size: { x: 2, y: 2, z: 2 } }],
-                    };
-                    const s = r.spawnArchitecture("_test_small", { x: p.x + 60, y: p.y, z: p.z });
-                    const b = r.spawnArchitecture("_test_big", { x: p.x + 65, y: p.y, z: p.z });
-                    const hs = r.harvestArchitecture(s);
-                    const hb = r.harvestArchitecture(b);
-                    out.volumeDiscrimination = hb.materials.stein > hs.materials.stein;
-                    delete r.state.blueprints._test_small;
-                    delete r.state.blueprints._test_big;
-
-                    // addMaterialToInventory + Schema
-                    r.state.player.inventory = new Array(27).fill(null);
-                    const ok1 = r.addMaterialToInventory("holz", 5);
-                    const ok2 = r.addMaterialToInventory("holz", 3);
-                    const ok3 = r.addMaterialToInventory("stein", 4);
-                    const okBad = r.addMaterialToInventory("fictional_xyz", 1);
-                    out.matAddOk = ok1 && ok2 && ok3;
-                    out.matStacks =
-                        r.state.player.inventory[0] &&
-                        r.state.player.inventory[0].count === 8 &&
-                        r.state.player.inventory[0].kind === "material";
-                    out.matNewSlot = r.state.player.inventory[1] && r.state.player.inventory[1].material === "stein";
-                    out.matRejectsUnknown = okBad === false;
-
-                    // Spieler-LMB nutzt harvestArchitecture (EINE Funktion).
-                    // V8.29 — deterministisch: Kamera EXPLIZIT positionieren
-                    // (nicht auf die Render-Loop-Kamera des letzten Frames
-                    // verlassen, die je nach Spieler-Zustand variiert) +
-                    // Test-Block weit von anderen Architekturen spawnen,
-                    // damit der Raycast garantiert NUR das Target trifft.
-                    r.state.player.inventory = new Array(27).fill(null);
-                    const tcx = p.x + 6;
-                    const tcz = p.z + 6;
-                    const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
-                    void target;
-                    if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
-                    if (r.state.camera) {
-                        // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
-                        r.state.camera.position.set(tcx, p.y + 1.5, tcz - 6);
-                        r.state.camera.lookAt(tcx, p.y, tcz);
-                        r.state.camera.updateMatrixWorld(true);
-                    }
-                    const archBeforeLmb = r.state.architectures.length;
-                    r.tryMouseBreak();
-                    out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
-                    out.lmbFilledInventory = r.state.player.inventory.some(
-                        (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
-                    );
-
-                    // Kreatur-gather: zwei-Phasen mit carrying
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
-                    const c = r.state.creatures[0];
-                    c.position.set(p.x + 29.5, p.y, p.z);
-                    c.userData.carrying = null;
-                    r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
-                    r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
-                    out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
-                    out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
-                    out.carryingSpriteCreated = !!c.userData.carryingSprite;
-
-                    // Kreatur zum Spieler bewegen → Übergabe
-                    c.position.set(p.x + 1.5, p.y, p.z);
-                    r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
-                    out.carryingClearedAfterDelivery = c.userData.carrying === null;
-                    out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
-                        (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
-                    );
-                    out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
-
-                    // Inventar-UI rendert Material-Slot mit Klasse
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("holz", 7);
-                    r.renderInventoryUI();
-                    const slot = document.querySelector('[data-inv-slot="0"]');
-                    out.uiHasMaterialClass = slot && slot.classList.contains("material-slot");
-                    const label = slot && slot.querySelector(".slot-label");
-                    out.uiShowsMaterialName = label && /holz/i.test(label.textContent);
-
-                    // Cleanup für nachfolgende Tests
-                    r.spawnCreatures(10);
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hP2b5Results && !wave6hP2b5Results.error) {
-                check("Welle 6.H P2B.5: harvestArchitecture-Methode existiert", wave6hP2b5Results.hasHarvest);
-                check("Welle 6.H P2B.5: addMaterialToInventory-Methode existiert", wave6hP2b5Results.hasAddMaterial);
-                check("Welle 6.H P2B.5: HARVEST_VOLUME_TO_UNITS===4", wave6hP2b5Results.hasVolumeConst);
-                check("Welle 6.H P2B.5: CREATURE_HANDOVER_DIST===2.0", wave6hP2b5Results.hasHandoverDist);
-                check(
-                    "Welle 6.H P2B.5: _refreshCreatureCarryingVisual-Methode existiert",
-                    wave6hP2b5Results.hasCarryingVisual
-                );
-                check(
-                    "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
-                    wave6hP2b5Results.steinBlockHasStein
-                );
-                check(
-                    "Welle 6.H P2B.5: Rückgabe-Objekt trägt blueprint-Namen",
-                    wave6hP2b5Results.steinHasBlueprintName
-                );
-                check(
-                    "Welle 6.H P2B.5: baum_eiche → holz UND laub (Compound-Diskrimination)",
-                    wave6hP2b5Results.oakHasHolzAndLaub
-                );
-                check(
-                    "Welle 6.H P2B.5: baum_eiche enthält KEIN stein (Negativ-Kontrolle)",
-                    wave6hP2b5Results.oakHasNoStein
-                );
-                check(
-                    "Welle 6.H P2B.5: Diskrimination — 2×2×2-Box liefert mehr als 1×1×1",
-                    wave6hP2b5Results.volumeDiscrimination
-                );
-                check(
-                    "Welle 6.H P2B.5: addMaterialToInventory akzeptiert bekanntes Material",
-                    wave6hP2b5Results.matAddOk
-                );
-                check("Welle 6.H P2B.5: Material-Slots stacken (5+3=8), kind='material'", wave6hP2b5Results.matStacks);
-                check("Welle 6.H P2B.5: Unterschiedliche Materialien in neuen Slots", wave6hP2b5Results.matNewSlot);
-                check("Welle 6.H P2B.5: addMaterialToInventory lehnt Unknown ab", wave6hP2b5Results.matRejectsUnknown);
-                check(
-                    "Welle 6.H P2B.5: Spieler-LMB entfernt Architektur (eine Funktion)",
-                    wave6hP2b5Results.lmbShrunkArch
-                );
-                check(
-                    "Welle 6.H P2B.5: Spieler-LMB füllt Material-Slots (Vision-Inkonsistenz behoben)",
-                    wave6hP2b5Results.lmbFilledInventory
-                );
-                check(
-                    "Welle 6.H P2B.5: Kreatur-Ernte setzt userData.carrying (statt direkt Inventar)",
-                    wave6hP2b5Results.creatureCarryingSet
-                );
-                check(
-                    "Welle 6.H P2B.5: Spieler-Inventar bleibt LEER bis Bring-Phase abgeschlossen",
-                    wave6hP2b5Results.inventoryStillEmptyAfterHarvest
-                );
-                check(
-                    "Welle 6.H P2B.5: Carrying-Sprite wird beim Harvest erzeugt",
-                    wave6hP2b5Results.carryingSpriteCreated
-                );
-                check(
-                    "Welle 6.H P2B.5: Bei <2m zum Spieler: carrying wird geclearet",
-                    wave6hP2b5Results.carryingClearedAfterDelivery
-                );
-                check(
-                    "Welle 6.H P2B.5: Materialien gehen ins Spieler-Inventar bei Übergabe",
-                    wave6hP2b5Results.playerHasMaterialAfterDelivery
-                );
-                check("Welle 6.H P2B.5: 'delivered'-Memory-Eintrag bei Übergabe", wave6hP2b5Results.memoryHasDelivered);
-                check(
-                    "Welle 6.H P2B.5: Material-Slot trägt .material-slot CSS-Klasse",
-                    wave6hP2b5Results.uiHasMaterialClass
-                );
-                check(
-                    "Welle 6.H P2B.5: Material-Slot-Label zeigt Material-Namen",
-                    wave6hP2b5Results.uiShowsMaterialName
-                );
-            }
-
-            // ### Welle 6.H Phase 2C — Material-Konsum beim Bauen (modus-symmetrisch) ###
-            // Vision §1.5 Schöpfer-darf-frei-erschaffen + Modus-Symmetrie zu
-            // damagePlayer/applyOpToPart-Stamina: pfad konsumiert, frieden +
-            // schöpfer kostenlos. computeBuildCost ≡ harvestArchitecture
-            // (Wertneutralität — bauen einer Box kostet das was harvest
-            // zurückliefert).
-            const wave6hP2cResults = await page
-                .evaluate(() => {
-                    const r = window.anazhRealm;
-                    if (!r || !r.state || !r.state.playerMesh) return null;
-                    const out = {};
-                    out.hasComputeBuildCost = typeof r.computeBuildCost === "function";
-                    out.hasCheckBuildCost = typeof r.checkBuildCost === "function";
-                    out.hasTryConsumeBuildCost = typeof r.tryConsumeBuildCost === "function";
-                    out.hasBuildMaterialGate = typeof r._buildMaterialGate === "function";
-
-                    // Wertneutralität: build-cost ≡ harvest-return.
-                    const p = r.state.playerMesh.position;
-                    const cost = r.computeBuildCost("stein_block");
-                    const arch = r.spawnArchitecture("stein_block", {
-                        x: p.x + 120,
-                        y: p.y,
-                        z: p.z + 120,
-                    });
-                    const harvest = r.harvestArchitecture(arch, "test");
-                    out.symmetryHarvest = harvest && harvest.materials.stein === cost.stein;
-                    out.steinBlockOnlyStein = Object.keys(cost).length === 1 && cost.stein > 0;
-
-                    // Compound-Diskrimination
-                    const oakCost = r.computeBuildCost("baum_eiche");
-                    out.oakHasHolzAndLaub = oakCost.holz > 0 && oakCost.laub > 0;
-                    out.oakHasNoStein = !oakCost.stein || oakCost.stein === 0;
-
-                    // checkBuildCost ok/missing
-                    const origMode = r.getGameMode();
-                    r.setGameMode("pfad");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    const c1 = r.checkBuildCost("stein_block");
-                    out.checkEmptyInventoryRejected = !c1.ok && c1.missing.stein > 0;
-                    r.addMaterialToInventory("stein", 200);
-                    const c2 = r.checkBuildCost("stein_block");
-                    out.checkSufficientOk = c2.ok && Object.keys(c2.missing).length === 0;
-
-                    // Atomarer Konsum + Atomarität bei Mangel
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("stein", 100);
-                    const beforeConsume = r.state.player.inventory[0].count;
-                    const consumed = r.tryConsumeBuildCost("stein_block");
-                    const afterConsume = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-                    out.consumesExactly = consumed.ok && beforeConsume - afterConsume === consumed.cost.stein;
-
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("holz", 100);
-                    const beforeAtomic = r.state.player.inventory[0].count;
-                    const atomicResult = r.tryConsumeBuildCost("baum_eiche");
-                    const afterAtomic = r.state.player.inventory[0].count;
-                    out.atomicAtomicityOnFail = !atomicResult.ok && beforeAtomic === afterAtomic;
-                    out.atomicReportsMissing = atomicResult.missing && atomicResult.missing.laub > 0;
-
-                    // confirmBuild pfad mit Material
-                    r.setGameMode("pfad");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("stein", 200);
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "stein_block");
-                    r.selectHotbarSlot(0);
-                    // Welle 6.X.1 A2 — confirmBuild prüft jetzt phantomOnGround
-                    // im pfad-Modus. Im Headless-Setup läuft tickBuildMode nicht
-                    // (das würde via Raycast die Stabilität setzen). Wir simulieren
-                    // einen stabilen Phantom-Stand für den Material-Konsum-Test.
-                    if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
-                    const archBeforePfad = r.state.architectures.length;
-                    const stoneBeforePfad = r.state.player.inventory[0].count;
-                    const builtPfad = r.confirmBuild();
-                    const stoneAfterPfad = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
-                    out.pfadBuildsWithMaterial = builtPfad === true;
-                    out.pfadConsumesMaterial = stoneBeforePfad > stoneAfterPfad;
-                    out.pfadGrowsWorld = r.state.architectures.length > archBeforePfad;
-
-                    // confirmBuild pfad ohne Material → ablehnung
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "stein_block");
-                    r.selectHotbarSlot(0);
-                    const archBeforeNoMat = r.state.architectures.length;
-                    const builtNoMat = r.confirmBuild();
-                    out.pfadRejectsWithoutMaterial = builtNoMat === false;
-                    out.pfadNoArchOnReject = r.state.architectures.length === archBeforeNoMat;
-
-                    // confirmBuild schöpfer ohne Material → baut frei
-                    r.setGameMode("schöpfer");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "stein_block");
-                    r.selectHotbarSlot(0);
-                    const archBeforeSchoepfer = r.state.architectures.length;
-                    const builtSchoepfer = r.confirmBuild();
-                    out.schoepferBuildsFree = builtSchoepfer === true;
-                    out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
-                    out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
-
-                    // confirmBuild frieden ohne Material → baut frei
-                    r.setGameMode("frieden");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "stein_block");
-                    r.selectHotbarSlot(0);
-                    const builtFrieden = r.confirmBuild();
-                    out.friedenBuildsFree = builtFrieden === true;
-                    out.friedenEmptyAfter = r.state.player.inventory.every((s) => !s);
-
-                    // HUD-Reflexion
-                    r.setGameMode("pfad");
-                    r.state.player.inventory = new Array(27).fill(null);
-                    r.addMaterialToInventory("stein", 30);
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "stein_block");
-                    r.selectHotbarSlot(0);
-                    const hud = document.getElementById("build-mode-hud");
-                    const hudHtml = hud && hud.innerHTML;
-                    out.hudShowsCostInPfad = hudHtml && /stein/.test(hudHtml) && /\(30\)/.test(hudHtml);
-
-                    r.setGameMode("schöpfer");
-                    const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
-                    out.hudShowsFreiInSchoepfer = /frei/i.test(hudSchoepfer);
-
-                    r.setGameMode("frieden");
-                    const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
-                    out.hudShowsFreiInFrieden = /frei/i.test(hudFrieden);
-
-                    // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
-                    // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
-                    r._clearBuildMode && r._clearBuildMode();
-                    r.setHotbarSlot(0, "village");
-                    r.setHotbarSlot(1, "temple");
-                    r.setHotbarSlot(2, "waterfall");
-                    for (let i = 3; i < 9; i++) r.setHotbarSlot(i, null);
-                    r.setGameMode(origMode || "frieden");
-                    return out;
-                })
-                .catch((e) => ({ error: String(e) }));
-
-            if (wave6hP2cResults && !wave6hP2cResults.error) {
-                check("Welle 6.H P2C: computeBuildCost existiert", wave6hP2cResults.hasComputeBuildCost);
-                check("Welle 6.H P2C: checkBuildCost existiert", wave6hP2cResults.hasCheckBuildCost);
-                check("Welle 6.H P2C: tryConsumeBuildCost existiert", wave6hP2cResults.hasTryConsumeBuildCost);
-                check("Welle 6.H P2C: _buildMaterialGate existiert", wave6hP2cResults.hasBuildMaterialGate);
-                check(
-                    "Welle 6.H P2C: computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
-                    wave6hP2cResults.symmetryHarvest
-                );
-                check("Welle 6.H P2C: stein_block-Kosten enthalten NUR stein", wave6hP2cResults.steinBlockOnlyStein);
-                check("Welle 6.H P2C: baum_eiche-Kosten enthalten holz UND laub", wave6hP2cResults.oakHasHolzAndLaub);
-                check(
-                    "Welle 6.H P2C: baum_eiche-Kosten enthalten KEIN stein (Diskrimination)",
-                    wave6hP2cResults.oakHasNoStein
-                );
-                check(
-                    "Welle 6.H P2C: pfad + leeres Inventar → checkBuildCost.ok=false",
-                    wave6hP2cResults.checkEmptyInventoryRejected
-                );
-                check(
-                    "Welle 6.H P2C: pfad + ausreichend Material → checkBuildCost.ok=true",
-                    wave6hP2cResults.checkSufficientOk
-                );
-                check("Welle 6.H P2C: tryConsumeBuildCost zieht genau die Kosten ab", wave6hP2cResults.consumesExactly);
-                check(
-                    "Welle 6.H P2C: Atomarität — bei Mangel wird NICHTS abgezogen",
-                    wave6hP2cResults.atomicAtomicityOnFail
-                );
-                check("Welle 6.H P2C: missing-Map zeigt fehlendes Sub-Material", wave6hP2cResults.atomicReportsMissing);
-                check(
-                    "Welle 6.H P2C: pfad + Material → confirmBuild liefert true + spawnt",
-                    wave6hP2cResults.pfadBuildsWithMaterial && wave6hP2cResults.pfadGrowsWorld
-                );
-                check(
-                    "Welle 6.H P2C: pfad-Modus konsumiert Material aus Inventar",
-                    wave6hP2cResults.pfadConsumesMaterial
-                );
-                check(
-                    "Welle 6.H P2C: pfad ohne Material → confirmBuild lehnt ab",
-                    wave6hP2cResults.pfadRejectsWithoutMaterial
-                );
-                check(
-                    "Welle 6.H P2C: pfad-Ablehnung → keine Architektur entsteht",
-                    wave6hP2cResults.pfadNoArchOnReject
-                );
-                check(
-                    "Welle 6.H P2C: schöpfer-Modus baut ohne Material (Vision §1.5)",
-                    wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
-                );
-                check(
-                    "Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)",
-                    wave6hP2cResults.schoepferEmptyAfter
-                );
-                check(
-                    "Welle 6.H P2C: frieden-Modus baut ohne Material (Erstbegegnung umarmt)",
-                    wave6hP2cResults.friedenBuildsFree
-                );
-                check("Welle 6.H P2C: frieden-Modus: Inventar bleibt leer", wave6hP2cResults.friedenEmptyAfter);
-                check(
-                    "Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge",
-                    wave6hP2cResults.hudShowsCostInPfad
-                );
-                check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
-                check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
-            }
+            // V9.52-c: Band 2 (Welle 6.A .. Welle 6.H Phase 2C) als 8 thematische
+            // Band-Funktionen, je 475-1567 Z. Welle 6.X Audit-Fixes und alles weiter
+            // bleibt inline (Sub-Wellen d-e nachziehen).
+            await checkBandWelle6APolish(ctx);
+            await checkBandWelle6DSoul(ctx);
+            await checkBandWelle6GHylomorphism(ctx);
+            await checkBandVoxelTerrainCore(ctx);
+            await checkBandHydrosphere(ctx);
+            await checkBandVoxelP3AndInventory(ctx);
+            await checkBandWelle6Keybindings(ctx);
+            await checkBandWelle6HCreatures(ctx);
+
+            // --- Ab hier weiter inline (Sub-Wellen d-e ziehen Welle 6.X .. Datei-Ende nach) ---
 
             // ### Welle 6.X.1 Audit-Fixes (17.05.2026) ###
             // Vier Bug-Quartett-Fixes aus dem Schöpfer-Audit:
