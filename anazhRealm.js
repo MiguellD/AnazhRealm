@@ -15946,19 +15946,26 @@ class AnazhRealm {
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
+                // V9.60-d (kombiniert) — drei Meshes pro Wasserfall, ent-
+                // sprechend der Riesen-Lehre der echten Spiele-Wasserfälle:
+                //   (1) vertikale Plane = der fallende Strahl (V9.43-a,
+                //       jetzt V9.60-d.3 mit See-Spiegel-Verbindung)
+                //   (2) Top-Lip-Foam = Foam-Bahn an der See-Kante (V9.60-d.2,
+                //       Riesen-Lehre Genshin / BOTW)
+                //   (3) Foam-Pool unten = Aufprall-Foam + Erosion-Topf
+                //       (V9.60-d.1 + V9.60-d.4, Riesen-Lehre + Real-World)
+                // Alle drei nutzen geteilte Materialien — Vision §1.3
+                // fraktal, eine Wasser-Sprache mit Attribut-Modulation.
                 const m = this._buildHydroWaterfall(wf, wfMat);
                 if (m) {
                     this.state.scene.add(m);
                     meshes.push(m);
                 }
-                // V9.60-d.1 — Foam-Pool am Aufprall (Riesen-Lehre Genshin /
-                // BOTW / Witcher / NMS: jeder Wasserfall hat unten einen
-                // hellen Foam-Schaum-Pool, wo das Wasser aufschlägt). Eine
-                // horizontale CircleGeometry mit dem Hydro-Surface-Material,
-                // aShore=1 für maximales Foam-Band, aFlow=0 für Ruhe.
-                // Schöpfer-Befund nach V9.60-b.1: "See-zu-See-Verbindung
-                // noch unsauber" — der Wasserfall fiel bisher unsichtbar
-                // in den Boden, kein visueller Aufprall-Akzent.
+                const lip = this._buildHydroWaterfallTopFoam(wf);
+                if (lip) {
+                    this.state.scene.add(lip);
+                    meshes.push(lip);
+                }
                 const pool = this._buildHydroWaterfallPool(wf);
                 if (pool) {
                     this.state.scene.add(pool);
@@ -16051,13 +16058,21 @@ class AnazhRealm {
     // Vertikale Plane an der Fluss-Klippen-Kreuzung, gedreht so dass die
     // Normale (+z) den Sturz hinab zeigt (die Gefälle-Tangente).
     _buildHydroWaterfall(wf, mat) {
-        const dropH = Math.min(Math.max(wf.topY - wf.bottomY, 2), 60);
+        // V9.60-d.3 — See-Spiegel-Verbindung: wenn der See-Spiegel an der
+        // Wasserfall-Stelle höher liegt als wf.topY (das Voxel-Bett), reicht
+        // die Plane bis zum See-Spiegel hoch. Heilt den Riss zwischen See-
+        // Wasserfläche und Wasserfall-Plane-Top, den der Schöpfer als
+        // "Verbindung zwischen Seen noch unsauber" markiert hat. Witcher 3 +
+        // NMS machen das genauso — Wasser muss optisch verbunden sein.
+        const waterHere = typeof this._waterLevelAt === "function" ? this._waterLevelAt(wf.x, wf.z) : wf.topY;
+        const topY = Math.max(wf.topY, waterHere);
+        const dropH = Math.min(Math.max(topY - wf.bottomY, 2), 60);
         const width = Math.max(3, wf.width || 3);
         const planeH = dropH + 2;
         const segH = Math.max(6, Math.round(planeH / 2.5));
         const geo = new THREE.PlaneGeometry(width, planeH, 4, segH);
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(wf.x, (wf.topY + wf.bottomY) / 2, wf.z);
+        mesh.position.set(wf.x, (topY + wf.bottomY) / 2, wf.z);
         let dx = wf.flowX || 0;
         let dz = wf.flowZ || 0;
         if (dx === 0 && dz === 0) dz = 1;
@@ -16068,6 +16083,43 @@ class AnazhRealm {
         return mesh;
     }
 
+    // V9.60-d.2 — Top-Lip-Foam (Riesen-Lehre Genshin Impact / BOTW): eine
+    // schmale Foam-Bahn an der See-Kante wo das Wasser über die Klippe geht.
+    // Horizontale PlaneGeometry, schmal in Fließrichtung (~width*0.5), breit
+    // quer (~width*1.1). Foam-Material via aShore=1. Position direkt am
+    // adjustedTopY + 0.1 m (sichtbar über dem See-Spiegel ohne Z-Fighting).
+    // Macht den Übergang von horizontaler See-Wasserfläche zur vertikalen
+    // Wasserfall-Plane optisch sauber.
+    _buildHydroWaterfallTopFoam(wf) {
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) return null;
+        const waterHere = typeof this._waterLevelAt === "function" ? this._waterLevelAt(wf.x, wf.z) : wf.topY;
+        const topY = Math.max(wf.topY, waterHere);
+        const width = Math.max(3, wf.width || 3);
+        const w = width * 1.1;
+        const h = Math.max(2, width * 0.5);
+        const geo = new THREE.PlaneGeometry(w, h, 4, 4);
+        geo.rotateX(-Math.PI / 2);
+        const vCount = geo.attributes.position.count;
+        const aShoreArr = new Float32Array(vCount);
+        const aFlowArr = new Float32Array(vCount * 2);
+        const aWaveArr = new Float32Array(vCount);
+        for (let i = 0; i < vCount; i++) aShoreArr[i] = 1.0;
+        geo.setAttribute("aShore", new THREE.BufferAttribute(aShoreArr, 1));
+        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
+        geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(wf.x, topY + 0.1, wf.z);
+        let dx = wf.flowX || 0;
+        let dz = wf.flowZ || 0;
+        if (dx === 0 && dz === 0) dz = 1;
+        mesh.rotation.y = Math.atan2(dx, dz);
+        mesh.renderOrder = 1;
+        mesh.frustumCulled = false;
+        mesh.userData = { isHydrosphere: true, hydroKind: "waterfall_lip" };
+        return mesh;
+    }
+
     // V9.60-d.1 — Foam-Pool am Wasserfall-Aufprall. Horizontale
     // CircleGeometry auf `wf.bottomY + 0.15` (knapp über dem Wasser, damit
     // sie nicht im Bett-Carve verschwindet). Radius skaliert mit Drop-Höhe:
@@ -16075,12 +16127,18 @@ class AnazhRealm {
     // geteilte `hydroSurfaceMaterial`; aShore=1 + aFlow=0 + aWave=0 pro
     // Vertex → der Shader rendert volles Foam-Band, sanfte Pool-Ruhe. Ein
     // zweites Mesh pro Wasserfall, kein neuer Shader nötig.
+    // V9.60-d.4 — Erosion-Topf (Real-World-Lehre): der Pool sitzt in einer
+    // leichten Bett-Senke unter dem normalen Fluss-Bett. Wir simulieren das
+    // visuell via leicht TIEFEREM Pool-Y (`bottomY - 0.4`) und etwas
+    // grösserem Radius — der Wasserfall "frisst" eine Mulde in den Boden,
+    // genau wie ein echter Wasserfall am Aufprall sediment-erodiert.
+    // Witcher 3 / Real-World macht das genauso.
     _buildHydroWaterfallPool(wf) {
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) return null;
         const dropH = Math.max(wf.topY - wf.bottomY, 2);
         const width = Math.max(3, wf.width || 3);
-        const radius = Math.max(width * 1.3, 3 + dropH * 0.15);
+        const radius = Math.max(width * 1.5, 3.5 + dropH * 0.18);
         const geo = new THREE.CircleGeometry(radius, 22);
         geo.rotateX(-Math.PI / 2);
         const vCount = geo.attributes.position.count;
@@ -16092,7 +16150,8 @@ class AnazhRealm {
         geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlowArr, 2));
         geo.setAttribute("aWave", new THREE.BufferAttribute(aWaveArr, 1));
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(wf.x, wf.bottomY + 0.15, wf.z);
+        // V9.60-d.4: Pool sitzt leicht in einer Erosion-Senke (Real-World)
+        mesh.position.set(wf.x, wf.bottomY - 0.25, wf.z);
         mesh.renderOrder = 1;
         mesh.frustumCulled = false;
         mesh.userData = { isHydrosphere: true, hydroKind: "waterfall_pool" };
