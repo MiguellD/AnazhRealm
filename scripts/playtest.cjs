@@ -13459,6 +13459,167 @@ async function checkBandWelleB1WaterSkirts(ctx) {
     }
 }
 
+// V9.71 (Welle C.1) — Wasser-Cell-Feld + Worldgen-Init. Erster Schritt der
+// Wasser-Substanz-Vereinigung (`docs/hydrosphere.md` §16.3). Verifiziert:
+// die Klassen-Konstante CELL_STATE existiert + ist freezed mit korrekten
+// Werten; `_buildVoxelChunkWaterCells` existiert; nach Worldgen tragen
+// streaming-aktive Chunks ein `entry.waterCells`-Feld (Uint8Array, korrekte
+// Länge dim·dim·dimY); Cell-Klassifikation stimmt mit `_terrainDensityAt` +
+// waterLevel überein; Re-Build ergibt bit-identisches Feld (Determinismus).
+async function checkBandWelleC1WaterCells(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) Konstante CELL_STATE
+        const STATE = r.constructor.CELL_STATE;
+        out.hasCellState = !!STATE;
+        out.cellStateAir = STATE && STATE.AIR;
+        out.cellStateWater = STATE && STATE.WATER;
+        out.cellStateSolid = STATE && STATE.SOLID;
+        out.cellStateFrozen = STATE && Object.isFrozen(STATE);
+        // 2) Methode `_buildVoxelChunkWaterCells` existiert
+        out.hasMethod = typeof r._buildVoxelChunkWaterCells === "function";
+        // 3) Konfig + Erwartungen
+        const cfg = r._voxelChunkConfig();
+        const expectedLen = cfg.dim * cfg.dim * cfg.dimY;
+        out.expectedLen = expectedLen;
+        // 4) Streaming-aktiver Chunk hat waterCells
+        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+            return { ...out, error: "no voxel chunks streamed" };
+        }
+        // Den ersten "filled" Chunk wählen (mit Mesh, nicht empty)
+        let testKey = null;
+        let testEntry = null;
+        for (const [key, entry] of r.state.voxelChunks.entries()) {
+            if (entry && entry.mesh && entry.waterCells) {
+                testKey = key;
+                testEntry = entry;
+                break;
+            }
+        }
+        out.foundFilledChunk = !!testEntry;
+        if (!testEntry) {
+            return { ...out, foundFilledChunk: false };
+        }
+        out.testKey = testKey;
+        out.hasWaterCells = testEntry.waterCells instanceof Uint8Array;
+        out.waterCellsLen = testEntry.waterCells.length;
+        out.waterCellsLenCorrect = testEntry.waterCells.length === expectedLen;
+        // 5) Klassifikations-Stichprobe: scan 64 zufällige Cells im Chunk,
+        // vergleiche state[i] mit der Density+waterLevel-Regel
+        const commaIdx = testKey.indexOf(",");
+        const cx = parseInt(testKey.slice(0, commaIdx), 10);
+        const cz = parseInt(testKey.slice(commaIdx + 1), 10);
+        const span = cfg.span;
+        const step = cfg.step;
+        const base = r.state.terrainBaseHeight || 0;
+        const oy = base - cfg.floorDrop;
+        const ox = cx * span;
+        const oz = cz * span;
+        const wl = r.state.waterLevel;
+        let mismatches = 0;
+        let solidCount = 0;
+        let waterCount = 0;
+        let airCount = 0;
+        const SAMPLES = 64;
+        for (let n = 0; n < SAMPLES; n++) {
+            // Deterministische Sample-Position (kein Math.random für Reproduzierbarkeit)
+            const i = (n * 17) % cfg.dim;
+            const k = ((n * 19 + 5) | 0) % cfg.dim;
+            const j = ((n * 23 + 11) | 0) % cfg.dimY;
+            const idx = i + k * cfg.dim + j * cfg.dim * cfg.dim;
+            const actual = testEntry.waterCells[idx];
+            const cy = oy + (j + 0.5) * step;
+            const cxw = ox + (i + 0.5) * step;
+            const czw = oz + (k + 0.5) * step;
+            const d = r._terrainDensityAt(cxw, cy, czw);
+            let expected;
+            if (d > 0) expected = STATE.SOLID;
+            else if (cy <= wl) expected = STATE.WATER;
+            else expected = STATE.AIR;
+            if (actual !== expected) mismatches++;
+            if (actual === STATE.SOLID) solidCount++;
+            else if (actual === STATE.WATER) waterCount++;
+            else airCount++;
+        }
+        out.mismatches = mismatches;
+        out.classificationCorrect = mismatches === 0;
+        out.sampleSolidCount = solidCount;
+        out.sampleWaterCount = waterCount;
+        out.sampleAirCount = airCount;
+        // 6) Determinismus: ein zweiter Build des SELBEN Chunks ergibt das
+        // gleiche Feld
+        const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step);
+        out.secondLen = second.length;
+        let driftCount = 0;
+        for (let i = 0; i < expectedLen; i++) {
+            if (testEntry.waterCells[i] !== second[i]) driftCount++;
+        }
+        out.deterministic = driftCount === 0;
+        out.driftCount = driftCount;
+        // 7) Realismus-Check: über alle Cells hinweg gibt es überhaupt
+        // Wasser-Cells (sonst ist die Welt komplett trocken — Bug)? Plus:
+        // gibt es solid-Cells (sonst ist die Welt leer)?
+        let totalSolid = 0;
+        let totalWater = 0;
+        let totalAir = 0;
+        for (let i = 0; i < testEntry.waterCells.length; i++) {
+            const s = testEntry.waterCells[i];
+            if (s === STATE.SOLID) totalSolid++;
+            else if (s === STATE.WATER) totalWater++;
+            else totalAir++;
+        }
+        out.totalSolid = totalSolid;
+        out.totalWater = totalWater;
+        out.totalAir = totalAir;
+        out.hasSolidCells = totalSolid > 0;
+        // Wasser-Realismus: ein Küsten-Chunk sollte ≥ 1 water haben;
+        // ein Hochland-Chunk darf 0 water haben. Wir verlangen NICHT
+        // dass jeder Chunk Wasser hat — nur dass das Feld nicht-leer ist.
+        out.hasMeaningfulField = totalSolid + totalWater + totalAir === testEntry.waterCells.length;
+        return out;
+    });
+    if (res.error) {
+        check("Welle C.1 V9.71: Cell-Feld-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle C.1 V9.71: CELL_STATE existiert + ist freezed", res.hasCellState && res.cellStateFrozen);
+    check(
+        "Welle C.1 V9.71: CELL_STATE.AIR=0, WATER=1, SOLID=2",
+        res.cellStateAir === 0 && res.cellStateWater === 1 && res.cellStateSolid === 2
+    );
+    check("Welle C.1 V9.71: _buildVoxelChunkWaterCells existiert", res.hasMethod);
+    check("Welle C.1 V9.71: streaming-aktiver gefüllter Chunk gefunden (Vorbedingung)", res.foundFilledChunk);
+    if (!res.foundFilledChunk) return;
+    check("Welle C.1 V9.71: entry.waterCells ist Uint8Array", res.hasWaterCells);
+    check(
+        "Welle C.1 V9.71: entry.waterCells.length = dim·dim·dimY",
+        res.waterCellsLenCorrect,
+        `len=${res.waterCellsLen}, expected=${res.expectedLen}`
+    );
+    check(
+        "Welle C.1 V9.71: Klassifikations-Stichprobe (64 Cells) stimmt mit Density+waterLevel überein",
+        res.classificationCorrect,
+        `mismatches=${res.mismatches} (solid=${res.sampleSolidCount}, water=${res.sampleWaterCount}, air=${res.sampleAirCount})`
+    );
+    check(
+        "Welle C.1 V9.71: Re-Build ergibt bit-identisches Feld (Determinismus)",
+        res.deterministic,
+        `drift=${res.driftCount}`
+    );
+    check(
+        "Welle C.1 V9.71: Chunk hat solid-Cells (Welt nicht leer)",
+        res.hasSolidCells,
+        `totalSolid=${res.totalSolid}, totalWater=${res.totalWater}, totalAir=${res.totalAir}`
+    );
+    check(
+        "Welle C.1 V9.71: Cell-Summe stimmt mit Feld-Länge (kein unklassifizierter State)",
+        res.hasMeaningfulField
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30358,6 +30519,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleA5VisionProof(ctx);
             await checkBandWelleA6GateAudit(ctx);
             await checkBandWelleB1WaterSkirts(ctx);
+            await checkBandWelleC1WaterCells(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

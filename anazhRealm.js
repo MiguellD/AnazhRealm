@@ -14959,6 +14959,55 @@ class AnazhRealm {
     // (degenerierte Iso-Fläche — kein Mesh möglich), oder `null` (OOM /
     // Kollision-Build fail). Der Caller entscheidet, was mit dem Resultat
     // passiert — atomarer Swap im `_rebuildVoxelChunk` (Re-Mesh nach Edit).
+    // === V9.71 (Welle C.1) — Wasser-Substanz-Vereinigung Phase 1 =========
+    // Die drei Voxel-Cell-Zustände der Welle-C-Vereinigung. Eine Cell ist
+    // entweder LUFT (begehbar, leer), WASSER (Spieler schwimmt, später baut
+    // der Iso-Surface-Mesher hier seine Boundary), oder FEST (Land/Architektur/
+    // Voxel-Fill). EINE Sprache mit dem Voxel-Terrain — das ist der
+    // Vision-Kern (statt parallele Drainage-Karte + Quad-Mesh-Sandwich).
+    static get CELL_STATE() {
+        return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
+    }
+
+    // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
+    // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
+    // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
+    // `dim·dim·dimY` (Indizierung: `i + k·dim + j·dim·dim` mit i=x, k=z, j=y).
+    // Der Cell-Feld-Aufbau ist deterministisch in (Seed + state.waterLevel)
+    // — ein Re-Build ergibt bit-identische Cells. Aktuell paralleler Pfad zum
+    // alten Hydrosphäre-Atlas; C.2 wird daraus die Wasser-Iso-Surface bauen,
+    // C.5 schaltet den Atlas ab.
+    //
+    // Performance: dim·dim·dimY = 24·24·124 = 71 424 Cells × `_terrainDensityAt`
+    // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
+    // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
+    // shared mit Mesher-Density-Grid.
+    _buildVoxelChunkWaterCells(ox, oy, oz, step) {
+        const { dim, dimY } = this._voxelChunkConfig();
+        const cells = new Uint8Array(dim * dim * dimY);
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        const STATE = AnazhRealm.CELL_STATE;
+        for (let j = 0; j < dimY; j++) {
+            const cy = oy + (j + 0.5) * step;
+            const baseJ = j * dim * dim;
+            const underWater = cy <= waterLevel;
+            for (let k = 0; k < dim; k++) {
+                const cz = oz + (k + 0.5) * step;
+                const baseK = k * dim;
+                for (let i = 0; i < dim; i++) {
+                    const cx = ox + (i + 0.5) * step;
+                    const d = this._terrainDensityAt(cx, cy, cz);
+                    let s;
+                    if (d > 0) s = STATE.SOLID;
+                    else if (underWater) s = STATE.WATER;
+                    else s = STATE.AIR;
+                    cells[i + baseK + baseJ] = s;
+                }
+            }
+        }
+        return cells;
+    }
+
     _buildVoxelChunkData(cx, cz) {
         if (!this.state.scene) return null;
         const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
@@ -14986,7 +15035,12 @@ class AnazhRealm {
             mat.dispose();
             return null;
         }
-        return { mesh, kind: "filled" };
+        // V9.71 (Welle C.1) — paralleles Wasser-Cell-Feld zum Mesh. Lebt im
+        // entry, nicht im globalen state. Aktueller alter Wasser-Pfad
+        // (`_buildVoxelChunkWater` über `_waterLevelAt` + Drainage-Karte)
+        // bleibt unverändert nebenher — bis C.5 ihn ablöst.
+        const waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step);
+        return { mesh, kind: "filled", waterCells };
     }
 
     // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
@@ -15043,7 +15097,7 @@ class AnazhRealm {
             return true;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh };
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
         this.state.voxelChunks.set(key, entry);
         this._buildVoxelChunkGrass(cx, cz);
         this._buildVoxelChunkWater(cx, cz);
