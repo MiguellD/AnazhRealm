@@ -13186,6 +13186,120 @@ async function checkBandWelleA5VisionProof(ctx) {
     check("Welle A.5 V9.68: Recompute schreibt Journal-Eintrag type=water", res.hasWaterJournal);
 }
 
+// V9.69 (Welle A.6 — Browser-Audit-Folge) — der Chunk-Water-Gate sieht
+// jetzt Voxel-Edits. Schöpfer-Befund nach V9.68-Audit: „die löcher werden
+// nicht gefüllt". Wurzel: `_voxelChunkTouchesWater` las nur die Macro-
+// Surface, nicht die Edit-Schicht — ein tiefer Carve in Hochland blieb
+// unsichtbar, weil der Gate keinen Wasser-Mesh-Bau zugelassen hatte. Heilung:
+// neue Predicate (2) scannt `worldMeta.voxelEdits` nach Carves, deren
+// Unterkante unter waterLevel reicht.
+async function checkBandWelleA6GateAudit(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        out.hasGate = typeof r._voxelChunkTouchesWater === "function";
+        // Trockenen Hochland-Spot (>10m über waterLevel) suchen, dessen Chunk
+        // also OHNE Edits gate(1)=false zurückgibt.
+        const wl = r.state.waterLevel;
+        const cfg = r._voxelChunkConfig();
+        const span = cfg.span;
+        let dryCX = null;
+        let dryCZ = null;
+        let dryMacro = -Infinity;
+        for (let cx = -8; cx <= 8 && dryCX === null; cx++) {
+            for (let cz = -8; cz <= 8 && dryCX === null; cz++) {
+                // Sample am Chunk-Zentrum
+                const x = cx * span + span / 2;
+                const z = cz * span + span / 2;
+                const m = r._terrainMacroSurfaceY(x, z, false);
+                if (!Number.isFinite(m) || m < wl + 16) continue; // braucht hochland
+                // Gate ohne Edits muss false sein (Sanity)
+                if (r._voxelChunkTouchesWater(cx, cz)) continue;
+                dryCX = cx;
+                dryCZ = cz;
+                dryMacro = m;
+            }
+        }
+        out.foundDryChunk = dryCX !== null;
+        out.drySpot = { cx: dryCX, cz: dryCZ, macroY: dryMacro };
+        if (!out.foundDryChunk) {
+            return out; // Welt zu nass — überspringe Test (Seed-abhängig)
+        }
+        // VOR Edit: Gate false (Vorbedingung)
+        out.gateBeforeEdit = r._voxelChunkTouchesWater(dryCX, dryCZ);
+        // Lokalität-Probe Vorbereitung: ferner Chunk-Status snapshotten —
+        // mein Edit darf NICHT seinen Gate-Status flippen (egal ob er
+        // vorher true oder false war).
+        const farCX = dryCX + 5;
+        const farCZ = dryCZ + 5;
+        out.gateFarBeforeEdit = r._voxelChunkTouchesWater(farCX, farCZ);
+        // Tiefer Carve am Chunk-Zentrum: ed.y am Macro, r=12 → bot = ed.y-12.
+        // Damit bot < waterLevel: ed.y < wl + 12. dryMacro > wl + 16, also
+        // verschiebe ed.y nach unten — wir setzen ed.y = wl + 8 (klar unter
+        // dryMacro, aber bot = wl-4 ist unter wl). Plus _addVoxelEdit clamp.
+        const cX = dryCX * span + span / 2;
+        const cZ = dryCZ * span + span / 2;
+        const editsBefore = (r.state.worldMeta && r.state.worldMeta.voxelEdits) || [];
+        const editsCountBefore = editsBefore.length;
+        const editOk = r._addVoxelEdit(cX, wl + 8, cZ, 12, "carve");
+        out.editAccepted = editOk === true;
+        // NACH Edit: Gate true (das ist die Heilung)
+        out.gateAfterEdit = r._voxelChunkTouchesWater(dryCX, dryCZ);
+        out.healed = out.gateBeforeEdit === false && out.gateAfterEdit === true;
+        // Lokalität-Probe: ferner Chunk darf seinen Status NICHT durch
+        // mein Edit ändern — die Predicate (2) prüft den xz-Footprint mit
+        // Marge r=12; bei 5 Chunks Distanz (~216 m) ist die Edit-Kugel weit
+        // ausserhalb. Stabilität egal ob ferner Chunk durch Macro-Dip/See/
+        // Fluss true ist.
+        out.gateFarAfterEdit = r._voxelChunkTouchesWater(farCX, farCZ);
+        out.farChunkStable = out.gateFarAfterEdit === out.gateFarBeforeEdit;
+        // Fill-Edit triggert den Gate NICHT (Fills heben, verstecken kein Wasser)
+        // Den Carve cleanup, dann Fill-Test
+        r.state.worldMeta.voxelEdits.length = editsCountBefore;
+        out.gateBackToFalseAfterCleanup = r._voxelChunkTouchesWater(dryCX, dryCZ) === false;
+        const fillOk = r._addVoxelEdit(cX, wl + 8, cZ, 12, "fill");
+        out.fillAccepted = fillOk === true;
+        out.gateFillIgnored = r._voxelChunkTouchesWater(dryCX, dryCZ) === false;
+        // Cleanup
+        r.state.worldMeta.voxelEdits.length = editsCountBefore;
+        // Source-Probe: der Gate ruft die voxelEdits-Schleife (mit-wandern bei Refactor)
+        out.gateUsesEdits = /voxelEdits/.test(r._voxelChunkTouchesWater.toString());
+        return out;
+    });
+    if (res.error) {
+        check("Welle A.6 V9.69: Gate-Audit-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle A.6 V9.69: _voxelChunkTouchesWater existiert", res.hasGate);
+    check(
+        "Welle A.6 V9.69: Trockener Hochland-Chunk gefunden (Vorbedingung)",
+        res.foundDryChunk,
+        `chunk=(${res.drySpot.cx}, ${res.drySpot.cz}) macroY=${res.drySpot.macroY}`
+    );
+    if (!res.foundDryChunk) {
+        check("Welle A.6 V9.69: Gate-Heilung (Welt zu nass für Test)", true, "skip — seed");
+        return;
+    }
+    check("Welle A.6 V9.69: Gate vor Edit ist false (Vorbedingung)", res.gateBeforeEdit === false);
+    check("Welle A.6 V9.69: _addVoxelEdit Tiefen-Carve akzeptiert", res.editAccepted);
+    check(
+        "Welle A.6 V9.69: Gate nach Tiefen-Carve ist true (Heilung)",
+        res.gateAfterEdit === true,
+        `vorher=${res.gateBeforeEdit}, nachher=${res.gateAfterEdit}`
+    );
+    check("Welle A.6 V9.69: Edit triggert Gate — gleicher Chunk false→true", res.healed);
+    check(
+        "Welle A.6 V9.69: Lokalität — ferner Chunk-Gate stabil durch Edit",
+        res.farChunkStable,
+        `vorher=${res.gateFarBeforeEdit}, nachher=${res.gateFarAfterEdit}`
+    );
+    check("Welle A.6 V9.69: Gate-Cleanup nach Edit-Entfernung", res.gateBackToFalseAfterCleanup);
+    check("Welle A.6 V9.69: Fill-Edit triggert Gate NICHT (nur Carves)", res.gateFillIgnored);
+    check("Welle A.6 V9.69: Gate-Funktion liest voxelEdits (Source-Probe)", res.gateUsesEdits);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30083,6 +30197,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleA3EffectiveSurface(ctx);
             await checkBandWelleA4Recompute(ctx);
             await checkBandWelleA5VisionProof(ctx);
+            await checkBandWelleA6GateAudit(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

@@ -16831,11 +16831,17 @@ class AnazhRealm {
         this.state.voxelChunkWater.delete(key);
     }
 
-    // V9.50-b — der Wasser-Gate: trägt der Chunk-Fussabdruck überhaupt Wasser?
-    // Billig + konservativ (lieber bauen als ein Loch riskieren). Drei Fragen:
+    // V9.50-b / V9.69 — der Wasser-Gate: trägt der Chunk-Fussabdruck überhaupt
+    // Wasser? Billig + konservativ (lieber bauen als ein Loch riskieren). Vier
+    // Fragen:
     // (1) dippt die Makro-Surface nahe den Meeresspiegel (möglicher Ozean)?
-    // (2) liegt eine See-Zelle im Fussabdruck? (3) ein Fluss-Bucket? Trockenes
-    // Hochland fällt durch → kein per-Zelle-Säulen-Scan dort.
+    // (2) erreicht ein Voxel-Carve in/am Chunk hinunter unter den waterLevel
+    //     (Spieler-Pool im Hochland, V9.69 Welle A.6 Browser-Audit-Heilung —
+    //     der Schöpfer-Befund „die löcher werden nicht gefüllt" hatte hier
+    //     seine Wurzel: ohne Predicate (2) sah der Gate die Edits NICHT,
+    //     also blieb das Wasser-Mesh ein leeres Versprechen).
+    // (3) liegt eine See-Zelle im Fussabdruck? (4) ein Fluss-Bucket?
+    // Trockenes Hochland ohne Edits fällt durch → kein per-Zelle-Säulen-Scan.
     _voxelChunkTouchesWater(cx, cz) {
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
@@ -16850,9 +16856,29 @@ class AnazhRealm {
                 }
             }
         }
+        // (2) V9.69 — Voxel-Carve, der unter den waterLevel reicht. Eine
+        // Edit-Kugel mit `mode === "carve"`, deren Unterkante (ed.y − ed.r)
+        // unter dem Meeresspiegel liegt UND deren xz-Footprint den Chunk
+        // berührt, gilt als wasser-fähig. Spiegelt die V9.66-Wahrheits-Quelle
+        // im Effective-Surface-Pfad: was der Compute sieht, sieht jetzt auch
+        // der Gate. Fills + Architekturen sind hier irrelevant (sie heben
+        // die Surface, verstecken aber kein bestehendes Wasser).
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (Array.isArray(edits) && edits.length) {
+            for (let e = 0; e < edits.length; e++) {
+                const ed = edits[e];
+                if (!ed || ed.mode !== "carve") continue;
+                const r = ed.r;
+                if (!Number.isFinite(r) || r <= 0) continue;
+                if (ed.y - r >= waterLevel) continue; // Carve reicht nicht unter Wasser
+                if (ed.x + r < ox || ed.x - r > ox + span) continue;
+                if (ed.z + r < oz || ed.z - r > oz + span) continue;
+                return true;
+            }
+        }
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return false;
-        // (2) See — die 16-m-Hydro-Zellen im Fussabdruck (+1 Zelle Marge).
+        // (3) See — die 16-m-Hydro-Zellen im Fussabdruck (+1 Zelle Marge).
         if (h.water && h.water.waterKind) {
             const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
             const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
@@ -16865,7 +16891,7 @@ class AnazhRealm {
                 }
             }
         }
-        // (3) Fluss — die `riverBuckets` im Fussabdruck.
+        // (4) Fluss — die `riverBuckets` im Fussabdruck.
         if (h.riverBuckets) {
             const b0i = Math.floor((ox - h.originX) / h.bucketSize);
             const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
