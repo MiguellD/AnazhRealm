@@ -1103,3 +1103,117 @@ adaptive Höhen-Schwelle, Hang-Gate, dedup, adaptive Tiefe), `_tarnDeltaAt`
 `_computeErosion` mit Tarn-Suppression. +4 Playtest-Invarianten (`_hydroSeedTarns`
 existiert; ≥1 Tarn gesetzt; jeder Tarn im Hochland; jeder Tarn wurde zu einem See
 — `lakeCells ≥ minLakeCells` im Fussabdruck). Browser-Audit steht aus.
+
+---
+
+## 16. Die Zwei-Skalen-Naht (V9.69-Reflexion) — Welle B als Heilungsplan
+
+Schöpfer-Browser-Audit Round 2 (nach V9.69) brachte drei distinkte Symptome — alle
+aus EINER strukturellen Wurzel:
+
+1. **Sheet verbindet nicht** — die Wasserfläche bricht am Chunk-Boundary.
+2. **Lake-Mask-Sprung** — `_waterLevelAt` springt am 3×3-Mask-Rand binär (Bergsee ↔ Meer).
+3. **FPS-Stocken** bei Voxel-Edit-Bursts.
+
+### 16.1 Die Riesen-Reflexion
+
+Jede Wasser-Geniale Welt lebt in **EINER SKALA**:
+
+| Spiel | Wasser-Sprache | Skala |
+|---|---|---|
+| Minecraft | Cell-Wasser-Level (0-7), Cellular-Automaton | 1 m³ |
+| Genshin / BOTW | Handgemaltes Asset pro Region | pro Künstler-Pinsel |
+| NMS / Subnautica | Ein globales Ozean-Mesh + isolierte See-Assets | global |
+| Noita | Pixel-Sim alles | 1 px |
+
+**Wir leben in ZWEI Skalen**:
+
+- **Drainage-Karte** (`state.hydrosphere`, 16 m × 16 m) — Priority-Flood-Atlas mit
+  Flüssen, Seen, Wasserfällen als reine Daten.
+- **Voxel-Mesh** (`_buildVoxelChunkWater`, 1.8 m × 1.8 m × 25×25 Vertices pro Chunk) —
+  jedes Chunk-Wasser-Quad lebt auf der Voxel-Skala.
+
+Die beiden Skalen MÜSSEN sich an jedem Punkt einig werden. Mathematisch nicht glatt:
+
+- An der Chunk-Naht (43.2-m-Grenzen, die ZWISCHEN 16-m-Hydro-Cells liegen) muss
+  der 1.8-m-Vertex eine 16-m-Karte abtasten. Die Boundary-Vertices der zwei Chunks
+  treffen exakt am gleichen (x,z) — sie sehen identische `_waterLevelAt`-Returns,
+  aber die NACHBAR-Vertex-Reihen sind auf verschiedenen Seiten der Hydro-Cell-
+  Linien → `aShore`/`aFlow`/`aWave` interpolieren über DIFFERENT-quantisierte
+  Nachbarn → der Foam-Ring zerreißt visuell an der Naht.
+- Der Lake-Mask-Rand ist eine 16-m-Cell-Grenze. Eine 1.8-m-Vertex 1 Cell INNEN sieht
+  `lake.level` (~waterLevel+15m), eine 1.8-m-Vertex 1 Cell AUSSEN sieht `waterLevel`.
+  15-m-Sprung in 16-m-Distanz.
+- Recompute baut ALLE Chunk-Wasser-Meshes (20+) neu, jeder mit 625 Vertices ×
+  `_voxelSurfaceY` (~90-Step-Säulen-Scan) = ~1.1 Mio Density-Samples pro Recompute.
+  Synchron im Hauptthread → spürbares FPS-Stocken bei Carve-Burst.
+
+### 16.2 Welle B als Heilungsplan (V9.70+)
+
+**Disziplin**: nicht die radikale Wende; die drei Symptome heilen, die ZWEI-Skalen-
+Wurzel bewusst belassen. Eine optionale Mega-Welle „Substanz-Vereinigung" (§16.3)
+bleibt ehrlich im Backlog — wird nur gebaut, wenn Welle B nicht reicht.
+
+**B.1 V9.70 — Wasser-Mesh-Skirts** (Stil V9.10 Terrain-Naht-Skirts). Jeder
+Chunk-Wasser-Mesh erweitert sein Vertex-Raster um 1-2 Cells über jeden Boundary
+hinaus. Mechanik: NV von `dim+1` → `dim+3`; `i,j`-Range von `[0, dim]` → `[-1,
+dim+1]`. Welt-Koords `vx = ox + i*step` bleibt formel-identisch, jetzt mit i auch
+negativ. Quads über die Naht hinaus werden gebaut, beide Chunks bedecken den
+gemeinsamen Schnitt. Naht-Riss strukturell weg. Kosten: pro Chunk ~10 % mehr
+Vertices (27×27 = 729 statt 25×25 = 625 — ~17 % mehr Memory; akzeptabel).
+
+**B.2 V9.71 — Sanfter Lake-Mask-Falloff** in `_waterLevelAt`. Mechanik: für (x, z)
+berechne Distanz `d` zur nächsten echten Lake-Cell (`waterKind===2`). Innerhalb 1
+Cell → voll `lake.level`. 1-3 Cells außerhalb → linear (oder Gauss) fade von
+`lake.level` zu `max(waterLevel, surrounding effective)`. ≥3 Cells außerhalb →
+`waterLevel`. **Vorsicht**: Bergsee-Spiegel bleibt scharf SICHTBAR (es soll als See
+erkennbar sein) — nur der TRANSITION smooth. Performance: pro Vertex ein 5×5-Scan
+statt 3×3 = ~2.8× teurer; bei ~12 500 calls/s im Streaming-Pfad evtl. spürbar →
+optional Distance-Field-Precompute pro Lake.
+
+**B.3 V9.72 — Inkrementeller Mesh-Rebuild via dirty-bbox**. Mechanik: neue
+`state.hydroDirtyBBox = {minX, maxX, minZ, maxZ} | null`; `_markHydroDirty(bbox?)`
+union't; `_recomputeHydrosphere` rebuildet beim Mesh-Phase nur die Voxel-Chunks
+deren Footprint die bbox berührt. Atlas-Phase bleibt global (Priority-Flood ist
+nicht lokal zerlegbar — eine Mutation kann globale Flow-Routen ändern). Mesh-Phase
+fällt von 20+ Chunks auf 1-3 → ~80 % Sparung pro Recompute. Bei rapidem Carve-Burst
+(N Edits in 300 ms): EIN Atlas-Recompute (~250 ms) statt N (vorher hatten wir das
+schon via Debounce); EIN Mesh-Rebuild für die UNION der bboxes statt N × 20 Chunks.
+
+**B.4 V9.73 — Visual-Test als Disziplin** (optional). Ergänzt die V9.69-Truth-
+Source-Tests um eine ECHTE Render-Konsequenz-Prüfung. Akzeptanz: Carve unter
+waterLevel im Hochland-Chunk → Chunk-Water-Mesh hat ≥ N wet Vertices, war vor Edit
+null. **Lehre permanent** (V9.69): Truth-Source-Tests + Render-Konsequenz-Tests
+gehören zu jeder Welt-Reaktions-Welle.
+
+### 16.3 Die Mega-Welle „Wasser-Substanz-Vereinigung" — ehrliches Backlog (V9.80+, vielleicht NIE)
+
+Die radikale Heilung der Zwei-Skalen-Wurzel: statt Drainage-Karte (16m) + Voxel-
+Mesh (1.8m) gibt's EINE Wahrheits-Quelle. Das Voxel-Density-Feld trägt einen 3.
+Cell-Zustand `isWater` (Fest|Luft|Wasser). Der Surface-Nets-Mesher baut ZWEI
+Iso-Surfaces (Solid|Else + Water|Air) aus DERSELBEN Geometrie-Quelle — wie das
+V9.50-Mantra „das Wasser kommt aus der Terrain-Wahrheit", aber konsequent zu Ende
+geführt. **Vorteile**: naht-frei per Konstruktion; Spieler-Carve setzt Wasser-
+Cells direkt im Feld (lokal-cheap, kein globaler Atlas-Recompute); Drainage
+emergiert aus Cell-Connectivity (Cellular-Automaton-Tick statt Priority-Flood).
+**Nachteile / Risiken**: substantieller Aufwand — `_terrainDensityAt` erweitert,
+`_voxelChunkGeometry` baut zwei Meshes, der ganze Hydrosphäre-Atlas wird DERIVED
+VIEW oder obsolet; Welt-Identität (Welt-Seeds verändern Wasser-Position!) und
+Save-Backward-Compat brechen; Cellular-Automaton-Flow kostet pro Frame X Cell-
+Iterationen — wenn das zu teuer ist, müssen wir wieder einen globalen Atlas
+darüber legen (zurück zur Zwei-Skalen-Sünde). **Vorbedingung für den Bau**:
+Welle B reicht NICHT — Schöpfer-Browser-Audit Round 3 nach B.3 zeigt residuale
+Naht/Sprung-Probleme, die nur eine Sprache-Vereinigung heilen kann.
+
+**V9.50-Lehre als Disziplin**: das ehrliche Genug ist besser als das radikale
+Perfekt. Wir bauen die Mega-Welle NICHT proaktiv. Wenn Welle B die Symptome
+befriedet, bleibt §16.3 in diesem Dokument als ehrlich-benanntes „könnte man
+machen, aber muss nicht" stehen.
+
+### 16.4 Geliefert (mit Welle B abgeschlossen, geplant)
+
+Pro Sub-Welle: ein git-Commit + ein Chronik-Eintrag in `handover.md` + Test-Band
+in `playtest.cjs` + Schöpfer-Browser-Audit. Welle-B-Statistik nach Abschluss
+(geplant): ~3 Sub-Wellen × 1 Session, `anazhRealm.js` ~+80 Z. netto (Skirt-Logik,
+Falloff-Helfer, dirty-bbox-Union), `scripts/playtest.cjs` ~+150 Z. (3 Test-Bänder
++ Visual-Test-Disziplin). Browser-Audit Round 3 entscheidet, ob §16.3 nötig wird.
