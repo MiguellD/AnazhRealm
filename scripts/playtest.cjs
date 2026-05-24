@@ -13300,6 +13300,165 @@ async function checkBandWelleA6GateAudit(ctx) {
     check("Welle A.6 V9.69: Gate-Funktion liest voxelEdits (Source-Probe)", res.gateUsesEdits);
 }
 
+// V9.70 (Welle B.1) — Wasser-Mesh-Skirts gegen die Sheet-Naht. Verifiziert
+// die Konstante WATER_CHUNK_SKIRT existiert; das Vertex-Raster ist um 2·SKIRT
+// erweitert (NV = dim+3 statt dim+1); Welt-Koord-Berechnung berücksichtigt
+// die Skirt-Verschiebung (erster Vertex bei vx = cx·span − step); zwei
+// adjacent Chunks teilen Boundary-Vertex-Positionen an Welt-(boundaryX, z)
+// EXAKT (Sheet verbindet); ferner Voxel-Chunk-Code (`_buildVoxelChunkWater`)
+// nutzt die Konstante (mit-wanderndes Source-Pattern).
+async function checkBandWelleB1WaterSkirts(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        const SKIRT = r.constructor.WATER_CHUNK_SKIRT;
+        out.skirtConstant = SKIRT;
+        out.skirtIs1 = SKIRT === 1;
+        out.hasSkirtUsage = /WATER_CHUNK_SKIRT/.test(r._buildVoxelChunkWater.toString());
+        // Welt-Konfig
+        const cfg = r._voxelChunkConfig();
+        const span = cfg.span;
+        const dim = cfg.dim;
+        const step = cfg.step;
+        // Einen Wasser-tragenden Chunk finden (Gate true) — typischerweise
+        // ein Küsten-Chunk im 4er-Streaming-Ring. Sample Macro-Y und prüfe
+        // Gate true.
+        let wetCX = null;
+        let wetCZ = null;
+        for (let cx = -6; cx <= 6 && wetCX === null; cx++) {
+            for (let cz = -6; cz <= 6 && wetCX === null; cz++) {
+                if (r._voxelChunkTouchesWater(cx, cz)) {
+                    wetCX = cx;
+                    wetCZ = cz;
+                }
+            }
+        }
+        out.foundWetChunk = wetCX !== null;
+        if (!out.foundWetChunk) return out;
+        // Force-Build des Chunks (falls noch nicht gestreamt)
+        if (!r.state.voxelChunkWater) r.state.voxelChunkWater = new Map();
+        const key = `${wetCX},${wetCZ}`;
+        r._disposeVoxelChunkWater(key);
+        r._buildVoxelChunkWater(wetCX, wetCZ);
+        const mesh = r.state.voxelChunkWater.get(key);
+        out.meshBuilt = !!(mesh && mesh.geometry);
+        if (!mesh || !mesh.geometry) return out;
+        // Erwartete Buffer-Größe: (dim+1+2*SKIRT)² Vertices × 3 (positions)
+        const NV = dim + 1 + 2 * SKIRT;
+        const posAttr = mesh.geometry.getAttribute("position");
+        out.expectedVertexCount = NV * NV;
+        out.actualVertexCount = posAttr ? posAttr.count : -1;
+        out.vertexCountMatches = out.actualVertexCount === out.expectedVertexCount;
+        // Erster Vertex muss bei (vx = cx·span − step, ?, vz = cz·span − step)
+        // liegen (Skirt-Verschiebung, V9.70-Mechanik).
+        if (posAttr) {
+            const v0x = posAttr.getX(0);
+            const v0z = posAttr.getZ(0);
+            const expectedV0x = wetCX * span - SKIRT * step;
+            const expectedV0z = wetCZ * span - SKIRT * step;
+            out.firstVertexX = v0x;
+            out.firstVertexZ = v0z;
+            out.firstVertexMatchesSkirt =
+                Math.abs(v0x - expectedV0x) < 0.001 && Math.abs(v0z - expectedV0z) < 0.001;
+            // Letzter Vertex: (i=NV−1, j=NV−1) → vx = cx·span + (dim+SKIRT)·step
+            const last = NV * NV - 1;
+            const lastX = posAttr.getX(last);
+            const lastZ = posAttr.getZ(last);
+            const expectedLastX = wetCX * span + (dim + SKIRT) * step;
+            const expectedLastZ = wetCZ * span + (dim + SKIRT) * step;
+            out.lastVertexMatchesSkirt =
+                Math.abs(lastX - expectedLastX) < 0.001 && Math.abs(lastZ - expectedLastZ) < 0.001;
+        }
+        // Naht-Beweis: Chunk (wetCX, wetCZ) und sein rechter Nachbar
+        // (wetCX+1, wetCZ) müssen Boundary-Vertices an exakt derselben
+        // Welt-Position teilen. Chunk-A's letzte „echte" Vertex-Spalte
+        // ist bei i = dim+SKIRT → vx = cx·span + dim·step = (cx+1)·span.
+        // Chunk-B's erste „echte" Vertex-Spalte ist bei i = SKIRT → vx =
+        // (cx+1)·span. Außerdem haben beide Chunks Skirt-Vertices, die
+        // OVER die Naht hineinragen.
+        if (r._voxelChunkTouchesWater(wetCX + 1, wetCZ)) {
+            const keyB = `${wetCX + 1},${wetCZ}`;
+            r._disposeVoxelChunkWater(keyB);
+            r._buildVoxelChunkWater(wetCX + 1, wetCZ);
+            const meshB = r.state.voxelChunkWater.get(keyB);
+            if (meshB && meshB.geometry) {
+                const posB = meshB.geometry.getAttribute("position");
+                // Chunk A: Vertex bei (i=dim+SKIRT, j=SKIRT) — Boundary-Mitte rechts
+                const iA = dim + SKIRT;
+                const jA = SKIRT;
+                const vA = iA + jA * NV;
+                // Chunk B: Vertex bei (i=SKIRT, j=SKIRT) — Boundary-Mitte links
+                const iB = SKIRT;
+                const jB = SKIRT;
+                const vB = iB + jB * NV;
+                const ax = posAttr.getX(vA);
+                const az = posAttr.getZ(vA);
+                const bx = posB.getX(vB);
+                const bz = posB.getZ(vB);
+                out.boundaryAX = ax;
+                out.boundaryBX = bx;
+                out.boundaryMatches = Math.abs(ax - bx) < 0.001 && Math.abs(az - bz) < 0.001;
+                // Plus: Chunk A's Skirt-Vertex jenseits der Naht (i=dim+2·SKIRT,
+                // j=SKIRT) muss innerhalb von Chunk B's Bereich liegen — beweist
+                // den Overlap.
+                const aSkirtBeyond = posAttr.getX(dim + 2 * SKIRT + jA * NV);
+                const expectedBeyond = (wetCX + 1) * span + SKIRT * step;
+                out.skirtReachesIntoNeighbor = Math.abs(aSkirtBeyond - expectedBeyond) < 0.001;
+                out.aSkirtBeyondX = aSkirtBeyond;
+            }
+        } else {
+            // Nachbar ist trocken — Boundary-Test überspringen, aber den
+            // Skirt-Bleed-Test trotzdem aussagekräftig machen.
+            out.boundaryMatches = "skip — Nachbar trocken";
+            out.skirtReachesIntoNeighbor = "skip — Nachbar trocken";
+        }
+        // Konstanten-Check
+        out.dim = dim;
+        out.step = step;
+        return out;
+    });
+    if (res.error) {
+        check("Welle B.1 V9.70: Skirt-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle B.1 V9.70: WATER_CHUNK_SKIRT == 1", res.skirtIs1, `SKIRT=${res.skirtConstant}`);
+    check(
+        "Welle B.1 V9.70: _buildVoxelChunkWater nutzt WATER_CHUNK_SKIRT (Source-Probe)",
+        res.hasSkirtUsage
+    );
+    check("Welle B.1 V9.70: wasser-tragenden Chunk gefunden (Vorbedingung)", res.foundWetChunk);
+    if (!res.foundWetChunk) return;
+    check("Welle B.1 V9.70: Mesh wurde gebaut", res.meshBuilt);
+    check(
+        "Welle B.1 V9.70: Vertex-Count = (dim+1+2·SKIRT)² (Skirt-Erweiterung)",
+        res.vertexCountMatches,
+        `actual=${res.actualVertexCount}, expected=${res.expectedVertexCount}`
+    );
+    check(
+        "Welle B.1 V9.70: Erster Vertex bei cx·span − step (Skirt-Verschiebung links/oben)",
+        res.firstVertexMatchesSkirt,
+        `v0=(${res.firstVertexX}, ${res.firstVertexZ})`
+    );
+    check(
+        "Welle B.1 V9.70: Letzter Vertex bei cx·span + (dim+SKIRT)·step (Skirt-Erweiterung rechts/unten)",
+        res.lastVertexMatchesSkirt
+    );
+    if (res.boundaryMatches !== "skip — Nachbar trocken") {
+        check(
+            "Welle B.1 V9.70: Boundary-Vertex zweier adjacent Chunks an gleicher Welt-Position",
+            res.boundaryMatches,
+            `ax=${res.boundaryAX}, bx=${res.boundaryBX}`
+        );
+        check(
+            "Welle B.1 V9.70: Skirt-Vertex ragt 1 Cell in den Nachbar-Chunk",
+            res.skirtReachesIntoNeighbor,
+            `aSkirtBeyond=${res.aSkirtBeyondX}`
+        );
+    }
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30198,6 +30357,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleA4Recompute(ctx);
             await checkBandWelleA5VisionProof(ctx);
             await checkBandWelleA6GateAudit(ctx);
+            await checkBandWelleB1WaterSkirts(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

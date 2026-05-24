@@ -13591,6 +13591,19 @@ class AnazhRealm {
         return 300;
     }
 
+    // V9.70 (Welle B.1) — Wasser-Mesh-Skirt: jeder Voxel-Chunk-Wasser-Mesh
+    // erweitert sein Vertex-Raster um N Cells über jeden Boundary hinaus.
+    // Boundary-Vertices benachbarter Chunks fallen auf exakt dieselbe Welt-
+    // Position → das Sheet verbindet sich ohne Riss (Schöpfer-Browser-Audit
+    // Round 2 Befund „das Sheet scheint nicht zu verbinden"). SKIRT=1 reicht
+    // (1.8 m Bleed pro Seite, NV von dim+1=25 auf dim+3=27 → ~17 % mehr Memory
+    // pro Chunk). Höhere Werte würden das Bleed verstärken, aber Memory
+    // quadratisch wachsen — eine Cell ist genug, weil die Naht zwischen
+    // exakt 1.8-m-Vertex-Reihen liegt.
+    static get WATER_CHUNK_SKIRT() {
+        return 1;
+    }
+
     _markHydroDirty() {
         // Während des Worldgens (Hydrosphäre noch nicht ready) oder vor dem
         // ersten Compute: still ignorieren — der erste `_computeHydrosphere`
@@ -16750,7 +16763,20 @@ class AnazhRealm {
             this.state.voxelChunkWater.set(key, null);
             return;
         }
-        const NV = dim + 1;
+        // V9.70 (Welle B.1) — Skirt-Erweiterung gegen die Sheet-Naht: das
+        // Vertex-Raster geht jetzt 1 Cell über jeden Chunk-Boundary hinaus.
+        // Welt-Koord-Index `wi = i - SKIRT` (analog wj) macht die Welt-
+        // Position bei (i=0) gleich `ox − step` (1.8 m vor dem Chunk-Anfang)
+        // und bei (i=NV−1) gleich `ox + (dim+1)·step` (1.8 m über das Chunk-
+        // Ende). Boundary-Vertices zweier adjacent Chunks überlappen damit
+        // exakt — beide bedecken die Naht aus ihrer Seite. Der Sheet-Riss
+        // (V9.69-Browser-Audit-Befund „das Sheet scheint nicht zu verbinden")
+        // ist strukturell weg. Skirt-Vertices außerhalb des Chunks rufen
+        // dieselben deterministischen Helfer (`_waterLevelAt`,
+        // `_voxelSurfaceY`) — ihre Wet/Dry-Klassifikation folgt der echten
+        // Welt-Topologie dort, kein Phantom-Wasser jenseits der Uferlinie.
+        const SKIRT = AnazhRealm.WATER_CHUNK_SKIRT;
+        const NV = dim + 1 + 2 * SKIRT;
         const positions = new Float32Array(NV * NV * 3);
         const aFlow = new Float32Array(NV * NV * 2);
         const aShore = new Float32Array(NV * NV);
@@ -16759,8 +16785,8 @@ class AnazhRealm {
         for (let j = 0; j < NV; j++) {
             for (let i = 0; i < NV; i++) {
                 const v = i + j * NV;
-                const vx = ox + i * step;
-                const vz = oz + j * step;
+                const vx = ox + (i - SKIRT) * step;
+                const vz = oz + (j - SKIRT) * step;
                 const wl = this._waterLevelAt(vx, vz);
                 const sy = this._voxelSurfaceY(vx, vz);
                 positions[v * 3] = vx;
@@ -16784,8 +16810,9 @@ class AnazhRealm {
             }
         }
         const indices = [];
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
+        const NQ = dim + 2 * SKIRT; // Quad-Zeilen/Spalten (= NV − 1)
+        for (let j = 0; j < NQ; j++) {
+            for (let i = 0; i < NQ; i++) {
                 const v00 = i + j * NV;
                 const v10 = v00 + 1;
                 const v01 = v00 + NV;
