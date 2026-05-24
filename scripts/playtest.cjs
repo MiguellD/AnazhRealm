@@ -13535,9 +13535,12 @@ async function checkBandWelleC1WaterCells(ctx) {
             const cxw = ox + (i + 0.5) * step;
             const czw = oz + (k + 0.5) * step;
             const d = r._terrainDensityAt(cxw, cy, czw);
+            // V9.73-Heilung: Build nutzt jetzt _waterLevelAt(cxw, czw) pro
+            // Säule (für Bergseen). Test muss mit-wandern.
+            const wlCol = r._waterLevelAt(cxw, czw);
             let expected;
             if (d > 0) expected = STATE.SOLID;
-            else if (cy <= wl) expected = STATE.WATER;
+            else if (cy <= wlCol) expected = STATE.WATER;
             else expected = STATE.AIR;
             if (actual !== expected) mismatches++;
             if (actual === STATE.SOLID) solidCount++;
@@ -13634,6 +13637,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
+        const STATE = r.constructor.CELL_STATE;
         // 1) State-Felder existieren
         out.hasIsoMap = r.state.voxelChunkWaterIso !== undefined;
         out.hasVisibleFlag = typeof r.state.voxelWaterIsoVisible === "boolean";
@@ -13681,23 +13685,96 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.allChunksTracked = chunksWithoutIso === 0;
         // Mesh-Sichtbarkeit prüfen: default ist false → kein sichtbares Iso-Mesh
         out.allIsoHidden = isoMeshVisibleCount === 0;
-        // 5) Toggle-Test: visible auf true setzen → alle existierenden Iso-
-        // Meshes werden sichtbar.
+        // 5) Toggle-Test ENTWEDER-ODER (V9.73-Heilung):
+        // Vor Toggle: alte Quads sichtbar, Iso unsichtbar.
+        let oldQuadsVisibleBefore = 0;
+        let oldQuadsTotal = 0;
+        if (r.state.voxelChunkWater) {
+            for (const m of r.state.voxelChunkWater.values()) {
+                if (m) {
+                    oldQuadsTotal++;
+                    if (m.visible) oldQuadsVisibleBefore++;
+                }
+            }
+        }
+        out.oldQuadsTotal = oldQuadsTotal;
+        out.oldQuadsAllVisibleBefore = oldQuadsTotal > 0 && oldQuadsVisibleBefore === oldQuadsTotal;
         r._setVoxelWaterIsoVisible(true);
         let visibleAfterToggle = 0;
         for (const m of r.state.voxelChunkWaterIso.values()) {
             if (m && m.visible) visibleAfterToggle++;
         }
+        let oldQuadsVisibleAfterToggle = 0;
+        if (r.state.voxelChunkWater) {
+            for (const m of r.state.voxelChunkWater.values()) {
+                if (m && m.visible) oldQuadsVisibleAfterToggle++;
+            }
+        }
         out.visibleAfterToggle = visibleAfterToggle;
-        out.toggleMakesVisible = visibleAfterToggle === isoMeshCount && isoMeshCount > 0;
-        // 6) Toggle zurück auf false → alle unsichtbar
+        out.toggleMakesIsoVisible = visibleAfterToggle === isoMeshCount && isoMeshCount > 0;
+        out.toggleHidesOldQuads = oldQuadsTotal > 0 && oldQuadsVisibleAfterToggle === 0;
+        // 6) Toggle zurück auf false → Iso unsichtbar, alte Quads wieder sichtbar
         r._setVoxelWaterIsoVisible(false);
         let visibleAfterReset = 0;
         for (const m of r.state.voxelChunkWaterIso.values()) {
             if (m && m.visible) visibleAfterReset++;
         }
+        let oldQuadsVisibleAfterReset = 0;
+        if (r.state.voxelChunkWater) {
+            for (const m of r.state.voxelChunkWater.values()) {
+                if (m && m.visible) oldQuadsVisibleAfterReset++;
+            }
+        }
         out.toggleResetHides = visibleAfterReset === 0;
-        // 7) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
+        out.toggleResetRestoresOldQuads = oldQuadsTotal > 0 && oldQuadsVisibleAfterReset === oldQuadsTotal;
+        // 7) V9.73-Heilung-Test: Cell-Init erfasst Bergsee-Wasser (über
+        // state.waterLevel). Wenn Lake-Cells im 16-m-Hydrosphäre-Atlas
+        // existieren, MUSS in einem Chunk in deren Footprint mindestens
+        // eine water-Cell über state.waterLevel im Cell-Feld stehen.
+        // (Vor V9.73 hatte die Cell-Init nur globalen waterLevel benutzt
+        // → Bergseen fehlten im Iso-Mesh.)
+        const wlGlobal = r.state.waterLevel;
+        let bergseeCellsFound = false;
+        let bergseeCheckable = false;
+        const hydro = r.state.hydrosphere;
+        if (hydro && hydro.ready && hydro.water && hydro.water.waterKind) {
+            // Suche eine Lake-Cell mit waterY > wlGlobal + 1 (klarer Bergsee)
+            const wK = hydro.water.waterKind;
+            const wY = hydro.water.waterY;
+            for (let idx = 0; idx < wK.length; idx++) {
+                if (wK[idx] === 2 && wY[idx] > wlGlobal + 1) {
+                    bergseeCheckable = true;
+                    break;
+                }
+            }
+            if (bergseeCheckable) {
+                // Scanne alle Chunk-Cells nach mind. einer water-Cell mit cy > wlGlobal
+                const cfg = r._voxelChunkConfig();
+                const base = r.state.terrainBaseHeight || 0;
+                const ooy = base - cfg.floorDrop;
+                for (const [, entry] of r.state.voxelChunks.entries()) {
+                    if (!entry || !entry.waterCells) continue;
+                    const cells = entry.waterCells;
+                    for (let j = 0; j < cfg.dimY; j++) {
+                        const cy = ooy + (j + 0.5) * cfg.step;
+                        if (cy <= wlGlobal + 0.5) continue; // nur OBER globalem Spiegel
+                        const baseJ = j * cfg.dim * cfg.dim;
+                        let found = false;
+                        for (let n = 0; n < cfg.dim * cfg.dim && !found; n++) {
+                            if (cells[baseJ + n] === STATE.WATER) found = true;
+                        }
+                        if (found) {
+                            bergseeCellsFound = true;
+                            break;
+                        }
+                    }
+                    if (bergseeCellsFound) break;
+                }
+            }
+        }
+        out.bergseeCheckable = bergseeCheckable;
+        out.bergseeCellsFound = bergseeCellsFound;
+        // 8) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
         // (NICHT eigener Shader).
         if (sampleMeshKey) {
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
@@ -13741,16 +13818,43 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
     );
     if (res.isoMeshCount > 0) {
         check(
+            "Welle C.2 V9.72/V9.73: vor Toggle sind ALLE alten Quad-Meshes sichtbar (Default-Stand)",
+            res.oldQuadsAllVisibleBefore,
+            `quads=${res.oldQuadsTotal}`
+        );
+        check(
             "Welle C.2 V9.72: _setVoxelWaterIsoVisible(true) macht alle Iso-Meshes sichtbar",
-            res.toggleMakesVisible,
+            res.toggleMakesIsoVisible,
             `visibleAfter=${res.visibleAfterToggle}/${res.isoMeshCount}`
         );
-        check("Welle C.2 V9.72: _setVoxelWaterIsoVisible(false) versteckt sie wieder", res.toggleResetHides);
+        check(
+            "Welle C.2 V9.73 (Heilung): _setVoxelWaterIsoVisible(true) versteckt alle alten Quad-Meshes (entweder-oder)",
+            res.toggleHidesOldQuads,
+            `quads=${res.oldQuadsTotal}`
+        );
+        check("Welle C.2 V9.72: _setVoxelWaterIsoVisible(false) versteckt Iso-Meshes wieder", res.toggleResetHides);
+        check(
+            "Welle C.2 V9.73 (Heilung): _setVoxelWaterIsoVisible(false) macht alte Quad-Meshes wieder sichtbar",
+            res.toggleResetRestoresOldQuads
+        );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
             "Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'",
             res.sampleMeshUserData === true
         );
+        if (res.bergseeCheckable) {
+            check(
+                "Welle C.2 V9.73 (Heilung): Bergsee-Cells über waterLevel sind als state=WATER im Feld",
+                res.bergseeCellsFound,
+                "Cells über globalem waterLevel müssen water tragen, wenn Bergsee im Hydrosphäre-Atlas vermerkt"
+            );
+        } else {
+            check(
+                "Welle C.2 V9.73 (Heilung): Bergsee-Cell-Init (Vorbedingung: ≥1 Lake mit waterY > waterLevel+1)",
+                true,
+                "skip — keine Bergseen in der Test-Welt (Seed-abhängig)"
+            );
+        }
     } else {
         // Welt ohne Wasser-Cells in irgendeinem Chunk — Toggle-Tests
         // bedeutungslos, aber Source-Logik schon verifiziert.

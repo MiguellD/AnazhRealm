@@ -1240,7 +1240,7 @@ Welle-A-Pfade bleiben PARALLEL aktiv unter Feature-Flag → vergleichbar im Brow
 **Schöpfer-Browser-Audit**: Sheet verbindet sichtbar; Wasser folgt der echten
 Terrain-Topographie (auch in Höhlen-Decken — eine Höhle voll Wasser wäre möglich).
 
-**C.3 V9.73 — Lokaler Cellular-Flow nach Spieler-Edit**. Spieler-Carve
+**C.3 V9.74 — Lokaler Cellular-Flow nach Spieler-Edit**. Spieler-Carve
 (`carveVoxelSphere`): Cells in der Sphere werden auf air gesetzt. DANN lokaler BFS-
 Flow-Pass: starte BFS von den 26 Nachbarn der gecarvten Cells; eine Cell qualifiziert
 sich für water-State wenn (1) state=air, (2) ein Nachbar ist water UND `nachbar.y ≥
@@ -1253,7 +1253,7 @@ Recompute**. Reaktion ist instantan (1 Frame). **Test-Band**: Carve unter waterL
 + adjacent zu water-Cell → Cell wird water; Damm-Spawn im Fluss → Cells solid; Damm-
 Remove → Cells werden water.
 
-**C.4 V9.74 — Welle-A-Mechanik auf Cell-Sprache überführen**. Damm-Bauplan bleibt;
+**C.4 V9.75 — Welle-A-Mechanik auf Cell-Sprache überführen**. Damm-Bauplan bleibt;
 `spawnArchitecture` für solide Architekturen ruft jetzt `_stampSolidCellsFromBlueprint`
 (statt `_blockerIndexAdd`). Alte Welle-A-Helper werden gestrichen: `_blockerIndexAdd`/
 `Remove`/`Top`, `_blockerComputePartAABB`, `_effectiveSurfaceY`, `_voxelEditSurfaceDelta`,
@@ -1265,7 +1265,7 @@ umgeschrieben — die Vision (Spieler-Wille beeinflusst Wasser) BLEIBT, die Mech
 wechselt. **Plus**: Damm in Fluss → Cell-Stempel im Fluss-Bereich → Fluss endet dort
 visuell (nicht nur „Drainage-Karte routet um").
 
-**C.5 V9.75 — Alten Hydrosphäre-Atlas streichen (Aufräum-Welle)**. Streichen:
+**C.5 V9.76 — Alten Hydrosphäre-Atlas streichen (Aufräum-Welle)**. Streichen:
 `_computeHydrosphere`, `_hydroInit`, `_hydroMarkOcean`, `_hydroPriorityFlood`,
 `_hydroFlowDirection`, `_hydroAccumulate`, `_hydroExtractLakes`, `_hydroExtractRivers`,
 `_hydroBuildCarveIndex`, `_hydroBuildWaterField`, `_hydroBlur`, `_hydroSeedTarns`,

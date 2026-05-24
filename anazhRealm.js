@@ -14996,12 +14996,25 @@ class AnazhRealm {
     _buildVoxelChunkWaterCells(ox, oy, oz, step) {
         const { dim, dimY } = this._voxelChunkConfig();
         const cells = new Uint8Array(dim * dim * dimY);
-        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         const STATE = AnazhRealm.CELL_STATE;
+        // V9.73 (Welle C.2 Heilung) — pro xz-Spalte das `_waterLevelAt`
+        // einmal cachen (statt pro Cell, statt `state.waterLevel` direkt).
+        // Erfasst Meeres + Bergseen + Flüsse — das gleiche Wasser-Niveau
+        // wie der alte Quad-Mesh-Pfad. So sehen die water-Cells auch
+        // Bergseen über dem globalen waterLevel. 576 Spalten × O(25) calls
+        // statt 71 424 calls — viel billiger.
+        const colCount = dim * dim;
+        const colWaterY = new Float64Array(colCount);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) {
+                const cx = ox + (i + 0.5) * step;
+                colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
+            }
+        }
         for (let j = 0; j < dimY; j++) {
             const cy = oy + (j + 0.5) * step;
             const baseJ = j * dim * dim;
-            const underWater = cy <= waterLevel;
             for (let k = 0; k < dim; k++) {
                 const cz = oz + (k + 0.5) * step;
                 const baseK = k * dim;
@@ -15010,7 +15023,7 @@ class AnazhRealm {
                     const d = this._terrainDensityAt(cx, cy, cz);
                     let s;
                     if (d > 0) s = STATE.SOLID;
-                    else if (underWater) s = STATE.WATER;
+                    else if (cy <= colWaterY[i + baseK]) s = STATE.WATER;
                     else s = STATE.AIR;
                     cells[i + baseK + baseJ] = s;
                 }
@@ -15118,17 +15131,28 @@ class AnazhRealm {
         this.state.voxelChunkWaterIso.delete(key);
     }
 
-    // V9.72 (Welle C.2) — Sichtbarkeits-Toggle für die Iso-Wasser-Meshes.
-    // Schaltet alle existierenden Meshes parallel um + setzt den State-Flag,
-    // damit neu gebaute Meshes die richtige Default-Sichtbarkeit erben.
-    // Aufrufer: Schöpfer-Browser-Audit (Chat-Befehl oder Console-API) zur
-    // Vergleichs-Inspektion alter Quad-Mesh ↔ neuer Iso-Mesh.
+    // V9.72 (Welle C.2) / V9.73 (Heilung) — Sichtbarkeits-Toggle ENTWEDER-
+    // ODER: das alte Quad-Mesh und das neue Iso-Mesh schalten sich
+    // gegenseitig aus. So sieht der Schöpfer im Browser-Audit den klaren
+    // Vergleich — nicht beides gleichzeitig (additiv), das wäre kein
+    // visueller Unterschied gewesen (V9.72-Audit-Befund „dieser Befehl
+    // scheint nichts zu ändern"). State-Flag wird gesetzt damit neu
+    // gestreamte Chunks (`_buildVoxelChunkWater` + `_buildVoxelChunkWaterIso-
+    // Surface`) die richtige Default-Sichtbarkeit erben.
     _setVoxelWaterIsoVisible(visible) {
         const v = !!visible;
         this.state.voxelWaterIsoVisible = v;
-        if (!this.state.voxelChunkWaterIso) return;
-        for (const m of this.state.voxelChunkWaterIso.values()) {
-            if (m) m.visible = v;
+        // Neue Iso-Meshes: sichtbar wenn Toggle an
+        if (this.state.voxelChunkWaterIso) {
+            for (const m of this.state.voxelChunkWaterIso.values()) {
+                if (m) m.visible = v;
+            }
+        }
+        // Alte Quad-Meshes: INVERS — unsichtbar wenn Toggle an
+        if (this.state.voxelChunkWater) {
+            for (const m of this.state.voxelChunkWater.values()) {
+                if (m) m.visible = !v;
+            }
         }
     }
 
@@ -17027,6 +17051,10 @@ class AnazhRealm {
         const mesh = new THREE.Mesh(geo, mat);
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
         mesh.userData = { isHydrosphere: true, hydroKind: "chunk-water" };
+        // V9.73 (Welle C.2 Heilung) — neue Quad-Meshes folgen dem Toggle:
+        // wenn der Iso-Pfad sichtbar ist, sind die alten Quads unsichtbar
+        // (entweder-oder). Default: Toggle=false → Quad-Mesh sichtbar.
+        mesh.visible = !this.state.voxelWaterIsoVisible;
         this.state.scene.add(mesh);
         this.state.voxelChunkWater.set(key, mesh);
     }
