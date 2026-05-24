@@ -30,6 +30,17 @@ class AnazhRealm {
             voxelChunks: null,
             voxelChunkGrass: null,
             voxelChunkWater: null,
+            // V9.72 (Welle C.2) — Wasser-Iso-Surface-Meshes pro Voxel-Chunk,
+            // gebaut aus `entry.waterCells` via Surface-Nets-Mesher (statt
+            // per-Chunk-Quad-Mesh). Naht-frei per Konstruktion. Paralleles
+            // System neben dem alten `voxelChunkWater` — Toggle via
+            // `voxelWaterIsoVisible`. C.5 räumt das alte System ab.
+            voxelChunkWaterIso: null,
+            // V9.72 (Welle C.2) — Sichtbarkeit der Iso-Surface-Meshes.
+            // Default false: das alte Quad-Mesh ist sichtbar, das neue Iso-
+            // Mesh existiert aber bleibt unsichtbar (Browser-Audit-Vergleich
+            // erst wenn der Schöpfer toggled).
+            voxelWaterIsoVisible: false,
             voxelPopulatedChunks: null,
             // V9.65 (Welle A.2) — Generischer Blocker-Index (16-m-Bucket-Grid).
             // Alle soliden Architektur-Parts (dichte ≥ 0.3) werden hier
@@ -15008,6 +15019,119 @@ class AnazhRealm {
         return cells;
     }
 
+    // V9.72 (Welle C.2) — Iso-Surface-Mesh für das Wasser-Cell-Feld.
+    // Der bestehende `_voxelChunkGeometry`-Mesher (Surface-Nets) bekommt
+    // hier einen Zwillings-Pass: statt der Boden-Density-Funktion eine
+    // Wasser-Cell-Density. Die Iso-Surface liegt zwischen Water-Cells
+    // (state=1) und allem anderen (air/solid). **Naht-frei per Konstruktion**
+    // — gleiche Surface-Nets-Maschinerie wie der Boden-Mesher, identische
+    // Vertex-Quantisierung. Density-Konvention für den Mesher: +1 = innen
+    // (water), −1 = außen (air/solid). Pro Vertex Average über die 8
+    // angrenzenden Cells für eine glatte Iso-Surface. Aktuell paralleler
+    // Pfad zum alten Quad-Mesh-System; das Mesh existiert in der Scene aber
+    // mit `visible = false` per Default — der Toggle (`_setVoxelWaterIsoVisible`)
+    // schaltet auf das neue System um. C.5 räumt das alte System ab.
+    _buildVoxelChunkWaterIsoSurface(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return null;
+        if (!this.state.voxelChunks) return null;
+        if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
+        const key = `${cx},${cz}`;
+        // Idempotenz: vorhandenes Mesh disposen, bevor wir neu bauen
+        this._disposeVoxelChunkWaterIso(key);
+        const entry = this.state.voxelChunks.get(key);
+        if (!entry || !entry.waterCells) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const cells = entry.waterCells;
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - floorDrop;
+        const STATE = AnazhRealm.CELL_STATE;
+        // Density-Funktion über das Cell-Feld: pro Vertex (Welt-Koord)
+        // Average der 8 angrenzenden Cells. Water-Cell zählt +1, alles
+        // andere −1. Out-of-bounds zählt −1 (Mesh endet sauber an Chunk-
+        // Rändern; cross-chunk-Naht wird durch deterministische 1:1-
+        // Vertex-Position an der Grenze gesichert, NICHT durch Skirt-Pad).
+        const cellState = (i, k, j) => {
+            if (i < 0 || k < 0 || j < 0 || i >= dim || k >= dim || j >= dimY) return -1;
+            return cells[i + k * dim + j * dim * dim] === STATE.WATER ? 1 : -1;
+        };
+        const sampleWater = (x, y, z) => {
+            // Sample-Vertex (x, y, z) liegt an einer Cell-Ecke. Die 8
+            // angrenzenden Cells: (i−1+di, k−1+dk, j−1+dj) für di/dk/dj ∈ {0,1}.
+            const fi = (x - ox) / step;
+            const fk = (z - oz) / step;
+            const fj = (y - oy) / step;
+            const i = Math.floor(fi);
+            const k = Math.floor(fk);
+            const j = Math.floor(fj);
+            let sum = 0;
+            for (let dj = 0; dj <= 1; dj++) {
+                for (let dk = 0; dk <= 1; dk++) {
+                    for (let di = 0; di <= 1; di++) {
+                        sum += cellState(i - 1 + di, k - 1 + dk, j - 1 + dj);
+                    }
+                }
+            }
+            return sum / 8;
+        };
+        // Den Surface-Nets-Mesher mit der Wasser-Density-Funktion aufrufen.
+        // dim·dimY·dim Cell-Würfel → (dim+1)·(dimY+1)·(dim+1) Vertex-Samples.
+        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, dimY, dim, step, sampleWater, 0);
+        if (!geom) {
+            // Kein Wasser im Chunk-Bereich (alle Cells air/solid) → null
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) {
+            geom.dispose();
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
+        mesh.userData = {
+            isHydrosphere: true,
+            hydroKind: "chunk-water-iso",
+            voxelChunkX: cx,
+            voxelChunkZ: cz,
+        };
+        mesh.visible = !!this.state.voxelWaterIsoVisible;
+        this.state.scene.add(mesh);
+        this.state.voxelChunkWaterIso.set(key, mesh);
+        return mesh;
+    }
+
+    // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,
+    // Material ist welt-global geteilt → NICHT disposen (V9.43-a-Lehre).
+    _disposeVoxelChunkWaterIso(key) {
+        if (!this.state.voxelChunkWaterIso) return;
+        const mesh = this.state.voxelChunkWaterIso.get(key);
+        if (mesh) {
+            if (this.state.scene) this.state.scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+        }
+        this.state.voxelChunkWaterIso.delete(key);
+    }
+
+    // V9.72 (Welle C.2) — Sichtbarkeits-Toggle für die Iso-Wasser-Meshes.
+    // Schaltet alle existierenden Meshes parallel um + setzt den State-Flag,
+    // damit neu gebaute Meshes die richtige Default-Sichtbarkeit erben.
+    // Aufrufer: Schöpfer-Browser-Audit (Chat-Befehl oder Console-API) zur
+    // Vergleichs-Inspektion alter Quad-Mesh ↔ neuer Iso-Mesh.
+    _setVoxelWaterIsoVisible(visible) {
+        const v = !!visible;
+        this.state.voxelWaterIsoVisible = v;
+        if (!this.state.voxelChunkWaterIso) return;
+        for (const m of this.state.voxelChunkWaterIso.values()) {
+            if (m) m.visible = v;
+        }
+    }
+
     _buildVoxelChunkData(cx, cz) {
         if (!this.state.scene) return null;
         const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
@@ -15101,6 +15225,10 @@ class AnazhRealm {
         this.state.voxelChunks.set(key, entry);
         this._buildVoxelChunkGrass(cx, cz);
         this._buildVoxelChunkWater(cx, cz);
+        // V9.72 (Welle C.2) — paralleles Iso-Wasser-Mesh (default unsichtbar).
+        // Liegt im Cell-Feld; der bestehende Surface-Nets-Mesher baut die Iso-
+        // Surface. Browser-Audit-Toggle via `_setVoxelWaterIsoVisible(true)`.
+        this._buildVoxelChunkWaterIsoSurface(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
         return true;
     }
@@ -15214,6 +15342,9 @@ class AnazhRealm {
         }
         this._disposeVoxelChunkGrass(key);
         this._disposeVoxelChunkWater(key);
+        // V9.72 (Welle C.2) — auch das Iso-Wasser-Mesh disposen (geteilt
+        // mit dem Chunk-Lifecycle).
+        this._disposeVoxelChunkWaterIso(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und

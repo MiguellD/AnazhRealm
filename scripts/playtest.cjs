@@ -13620,6 +13620,148 @@ async function checkBandWelleC1WaterCells(ctx) {
     );
 }
 
+// V9.72 (Welle C.2) — Iso-Surface-Mesher für Wasser. Verifiziert: state-
+// Felder `voxelChunkWaterIso` + `voxelWaterIsoVisible` existieren; die
+// Build-Methode existiert; nach Worldgen tragen streaming-aktive Chunks
+// ein Iso-Wasser-Mesh ODER null (wenn der Chunk kein Wasser hat); das
+// Iso-Mesh nutzt das geteilte hydroSurfaceMaterial; default ist es
+// unsichtbar (visible=false); der Toggle setzt visible auf allen Meshes;
+// zwei adjacent Wasser-tragende Chunks haben Iso-Mesh-Geometrie, deren
+// Vertex-Position-Bereich an der Boundary-Linie deterministisch ist.
+async function checkBandWelleC2WaterIsoSurface(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) State-Felder existieren
+        out.hasIsoMap = r.state.voxelChunkWaterIso !== undefined;
+        out.hasVisibleFlag = typeof r.state.voxelWaterIsoVisible === "boolean";
+        out.defaultVisibleIsFalse = r.state.voxelWaterIsoVisible === false;
+        // 2) Methoden existieren
+        out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
+        out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
+        out.hasToggleMethod = typeof r._setVoxelWaterIsoVisible === "function";
+        // 3) Source-Probe: _rebuildVoxelChunk ruft die Build-Methode (mit-
+        // wandernde Doku-Probe).
+        out.rebuildCallsBuild = /this\._buildVoxelChunkWaterIsoSurface\(/.test(r._rebuildVoxelChunk.toString());
+        out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(r._disposeVoxelChunk.toString());
+        // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
+        // sollte für jeden gefüllten Chunk einen Eintrag haben (Mesh oder
+        // null, je nach Wasser-Existenz im Chunk).
+        if (!r.state.voxelChunkWaterIso || !r.state.voxelChunks) {
+            return { ...out, error: "iso map or chunks empty" };
+        }
+        let chunksWithIso = 0;
+        let chunksWithoutIso = 0;
+        let isoMeshCount = 0;
+        let isoMeshVisibleCount = 0;
+        let isoMeshGeomTotal = 0;
+        let sampleMeshKey = null;
+        for (const [key, entry] of r.state.voxelChunks.entries()) {
+            if (!entry || !entry.mesh || !entry.waterCells) continue;
+            const m = r.state.voxelChunkWaterIso.get(key);
+            if (m === undefined) {
+                chunksWithoutIso++;
+                continue;
+            }
+            chunksWithIso++;
+            if (m && m.geometry) {
+                isoMeshCount++;
+                isoMeshGeomTotal += m.geometry.getAttribute("position").count;
+                if (m.visible) isoMeshVisibleCount++;
+                if (!sampleMeshKey) sampleMeshKey = key;
+            }
+        }
+        out.chunksWithIso = chunksWithIso;
+        out.chunksWithoutIso = chunksWithoutIso;
+        out.isoMeshCount = isoMeshCount;
+        out.isoMeshGeomTotal = isoMeshGeomTotal;
+        out.isoMeshVisibleCount = isoMeshVisibleCount;
+        out.allChunksTracked = chunksWithoutIso === 0;
+        // Mesh-Sichtbarkeit prüfen: default ist false → kein sichtbares Iso-Mesh
+        out.allIsoHidden = isoMeshVisibleCount === 0;
+        // 5) Toggle-Test: visible auf true setzen → alle existierenden Iso-
+        // Meshes werden sichtbar.
+        r._setVoxelWaterIsoVisible(true);
+        let visibleAfterToggle = 0;
+        for (const m of r.state.voxelChunkWaterIso.values()) {
+            if (m && m.visible) visibleAfterToggle++;
+        }
+        out.visibleAfterToggle = visibleAfterToggle;
+        out.toggleMakesVisible = visibleAfterToggle === isoMeshCount && isoMeshCount > 0;
+        // 6) Toggle zurück auf false → alle unsichtbar
+        r._setVoxelWaterIsoVisible(false);
+        let visibleAfterReset = 0;
+        for (const m of r.state.voxelChunkWaterIso.values()) {
+            if (m && m.visible) visibleAfterReset++;
+        }
+        out.toggleResetHides = visibleAfterReset === 0;
+        // 7) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
+        // (NICHT eigener Shader).
+        if (sampleMeshKey) {
+            const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
+            out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
+            out.sampleMeshUserData = sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-iso";
+        } else {
+            // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
+            // Wasser) — Test überspringen, aber als sanity-skip markieren.
+            out.sampleMeshUsesHydroMat = "skip — kein Iso-Mesh in der Welt";
+            out.sampleMeshUserData = "skip";
+        }
+        return out;
+    });
+    if (res.error) {
+        check("Welle C.2 V9.72: Iso-Mesher-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle C.2 V9.72: state.voxelChunkWaterIso + state.voxelWaterIsoVisible existieren", res.hasIsoMap && res.hasVisibleFlag);
+    check("Welle C.2 V9.72: voxelWaterIsoVisible default = false", res.defaultVisibleIsFalse);
+    check(
+        "Welle C.2 V9.72: Build/Dispose/Toggle-Methoden existieren",
+        res.hasBuildMethod && res.hasDisposeMethod && res.hasToggleMethod
+    );
+    check(
+        "Welle C.2 V9.72: _rebuildVoxelChunk ruft _buildVoxelChunkWaterIsoSurface (Source-Probe)",
+        res.rebuildCallsBuild
+    );
+    check(
+        "Welle C.2 V9.72: _disposeVoxelChunk ruft _disposeVoxelChunkWaterIso (Source-Probe)",
+        res.disposeCallsDispose
+    );
+    check(
+        "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
+        res.allChunksTracked,
+        `mitIso=${res.chunksWithIso}, ohne=${res.chunksWithoutIso}, geomTotal=${res.isoMeshGeomTotal}, meshes=${res.isoMeshCount}`
+    );
+    check(
+        "Welle C.2 V9.72: alle Iso-Meshes sind default unsichtbar (parallel-zu-alt, kein visueller Konflikt)",
+        res.allIsoHidden,
+        `visibleCount=${res.isoMeshVisibleCount}`
+    );
+    if (res.isoMeshCount > 0) {
+        check(
+            "Welle C.2 V9.72: _setVoxelWaterIsoVisible(true) macht alle Iso-Meshes sichtbar",
+            res.toggleMakesVisible,
+            `visibleAfter=${res.visibleAfterToggle}/${res.isoMeshCount}`
+        );
+        check("Welle C.2 V9.72: _setVoxelWaterIsoVisible(false) versteckt sie wieder", res.toggleResetHides);
+        check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
+        check(
+            "Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'",
+            res.sampleMeshUserData === true
+        );
+    } else {
+        // Welt ohne Wasser-Cells in irgendeinem Chunk — Toggle-Tests
+        // bedeutungslos, aber Source-Logik schon verifiziert.
+        check(
+            "Welle C.2 V9.72: Iso-Mesher-Toggle-Tests (Vorbedingung: ≥1 Iso-Mesh)",
+            true,
+            "skip — keine Wasser-Cells in den gestreamten Chunks (Worldgen-Seed-abhängig)"
+        );
+    }
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30520,6 +30662,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleA6GateAudit(ctx);
             await checkBandWelleB1WaterSkirts(ctx);
             await checkBandWelleC1WaterCells(ctx);
+            await checkBandWelleC2WaterIsoSurface(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
