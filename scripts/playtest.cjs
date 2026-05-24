@@ -13866,6 +13866,197 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
     }
 }
 
+// V9.74 (Welle C.3) — Cellular-Reaktion nach Spieler-Edit. Verifiziert dass
+// (1) Architektur-AABBs `botY` als ergänzte Y-Grenze tragen (Cell-Stempel-
+// Pfad braucht beide Y-Grenzen), (2) `_stampArchitectureSolidCellsInto`
+// existiert und vom Cell-Build aufgerufen wird, (3) ein Damm-Spawn in einem
+// streaming-aktiven Chunk → Cells im Damm-Footprint werden SOLID nach
+// Chunk-Rebuild, (4) Damm-Remove → Cells werden wieder air/water je nach
+// Density+waterLevel, (5) Voxel-Carve unter waterLevel → Cells werden water
+// nach Rebuild (das ist der „Cellular-Flow"-Effekt: das Wasser fließt in
+// das frische Loch via Cell-Klassifikation, kein BFS nötig).
+async function checkBandWelleC3CellularReaction(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        const STATE = r.constructor.CELL_STATE;
+        // 1) Stempel-Methode existiert
+        out.hasStampMethod = typeof r._stampArchitectureSolidCellsInto === "function";
+        out.cellBuildCallsStamp = /this\._stampArchitectureSolidCellsInto\(/.test(
+            r._buildVoxelChunkWaterCells.toString()
+        );
+        // 2) AABB hat botY (V9.74-Erweiterung)
+        const cfg = r._voxelChunkConfig();
+        const span = cfg.span;
+        const step = cfg.step;
+        const base = r.state.terrainBaseHeight || 0;
+        const oy = base - cfg.floorDrop;
+        // Test-Architektur: Damm an einer freien Position spawnen
+        const testCx = 2;
+        const testCz = 2;
+        const damPos = { x: testCx * span + span / 2, y: 10, z: testCz * span + span / 2 };
+        // Hochland-Höhe finden (über waterLevel)
+        const macroY = r._terrainMacroSurfaceY(damPos.x, damPos.z, false);
+        damPos.y = Math.max(macroY + 2, r.state.waterLevel + 4);
+        const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
+        out.damSpawnSucceeded = !!damEntry;
+        if (damEntry && damEntry.blockerAABBs && damEntry.blockerAABBs[0]) {
+            const aabb = damEntry.blockerAABBs[0];
+            out.aabbHasBotY = Number.isFinite(aabb.botY);
+            out.aabbBotY = aabb.botY;
+            out.aabbTopY = aabb.topY;
+            out.aabbHasHeight = Number.isFinite(aabb.botY) && aabb.topY > aabb.botY;
+        }
+        // Drainen der dirty Chunks (sync) damit der Damm-Stempel sichtbar wird
+        r._drainDirtyVoxelChunks();
+        // 3) Im Chunk im Damm-Footprint: Cells im Damm-Stempel-Bereich sind SOLID
+        const damChunkKey = `${testCx},${testCz}`;
+        const damChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
+        out.damChunkExists = !!(damChunkEntry && damChunkEntry.waterCells);
+        if (damChunkEntry && damChunkEntry.waterCells) {
+            const cells = damChunkEntry.waterCells;
+            const aabb = damEntry.blockerAABBs[0];
+            // Sample am Damm-Zentrum (Cell-Indizes)
+            const cellI = Math.floor((damPos.x - testCx * span) / step);
+            const cellK = Math.floor((damPos.z - testCz * span) / step);
+            const cellJ = Math.floor((aabb.topY - oy) / step) - 1; // 1 Cell unter top
+            const idx = cellI + cellK * cfg.dim + cellJ * cfg.dim * cfg.dim;
+            out.damCellState = cells[idx];
+            out.damCellIsSolid = cells[idx] === STATE.SOLID;
+        }
+        // 4) Damm-Remove → Drain → Cells gehen zurück
+        if (damEntry) {
+            r.removeArchitecture(damEntry);
+            r._drainDirtyVoxelChunks();
+            const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
+            if (afterRemoveEntry && afterRemoveEntry.waterCells) {
+                const cells = afterRemoveEntry.waterCells;
+                const aabb_remove_pos = { x: damPos.x, z: damPos.z };
+                const cellI = Math.floor((aabb_remove_pos.x - testCx * span) / step);
+                const cellK = Math.floor((aabb_remove_pos.z - testCz * span) / step);
+                // Cell genau am alten Damm-Zentrum: sollte JETZT NICHT mehr
+                // solid sein (entweder air oder water, aber nicht solid durch
+                // Architektur-Stempel — Worldgen-Density-Klassifikation könnte
+                // solid sein wenn Land darunter, aber selbst dann nicht durch
+                // Stempel).
+                // Easier check: Cell direkt ÜBER macroY → nicht solid.
+                const cellJAbove = Math.floor((macroY + 2 - oy) / step);
+                const idxAbove = cellI + cellK * cfg.dim + cellJAbove * cfg.dim * cfg.dim;
+                out.cellAfterRemoveAbove = cells[idxAbove];
+                // Nach Remove: über macroY sollte air (oder water wenn unter wl)
+                out.removeRestores =
+                    cells[idxAbove] === STATE.AIR || cells[idxAbove] === STATE.WATER;
+            }
+        }
+        // 5) Voxel-Carve unter waterLevel → Cells werden water
+        // Suche einen Trockenland-Hochland-Spot mit macroY > wl + 6 (genug
+        // Distanz dass r=12-Carve unter wl reicht)
+        const wl = r.state.waterLevel;
+        let carveX = null;
+        let carveZ = null;
+        let carveMacro = null;
+        for (let cx = -4; cx <= 4 && carveX === null; cx++) {
+            for (let cz = -4; cz <= 4 && carveX === null; cz++) {
+                if (cx === testCx && cz === testCz) continue;
+                const x = cx * span + span / 2;
+                const z = cz * span + span / 2;
+                const m = r._terrainMacroSurfaceY(x, z, false);
+                if (Number.isFinite(m) && m > wl + 6 && m < wl + 14) {
+                    carveX = x;
+                    carveZ = z;
+                    carveMacro = m;
+                }
+            }
+        }
+        out.carveSpotFound = carveX !== null;
+        if (carveX !== null) {
+            // r=12 Carve am macroY → cells under macroY werden air/water je nach wl
+            r._addVoxelEdit(carveX, wl + 4, carveZ, 12, "carve");
+            r._drainDirtyVoxelChunks();
+            const carveCx = Math.floor(carveX / span);
+            const carveCz = Math.floor(carveZ / span);
+            const carveChunkKey = `${carveCx},${carveCz}`;
+            const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
+            if (carveChunkEntry && carveChunkEntry.waterCells) {
+                const cells = carveChunkEntry.waterCells;
+                // Sample am Carve-Zentrum (sollte air oder water sein, nicht solid)
+                const cellI = Math.floor((carveX - carveCx * span) / step);
+                const cellK = Math.floor((carveZ - carveCz * span) / step);
+                // Cell unter wl
+                const cellJUnderWL = Math.floor((wl - 2 - oy) / step);
+                const idxUnderWL = cellI + cellK * cfg.dim + cellJUnderWL * cfg.dim * cfg.dim;
+                if (cellJUnderWL >= 0 && cellJUnderWL < cfg.dimY) {
+                    out.carveCellUnderWL = cells[idxUnderWL];
+                    // Nach Carve sollte cell unter wl WATER sein (Carve hat
+                    // Density gesenkt → not solid → state=water weil cy<=wl)
+                    out.carveCellsBecomeWater = cells[idxUnderWL] === STATE.WATER;
+                }
+            }
+            // Cleanup
+            if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits)) {
+                r.state.worldMeta.voxelEdits.pop();
+            }
+        }
+        // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
+        // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
+        out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
+        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(
+            r.removeArchitecture.toString()
+        );
+        return out;
+    });
+    if (res.error) {
+        check("Welle C.3 V9.74: Cellular-Reaktion-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle C.3 V9.74: _stampArchitectureSolidCellsInto existiert", res.hasStampMethod);
+    check(
+        "Welle C.3 V9.74: _buildVoxelChunkWaterCells ruft _stampArchitectureSolidCellsInto",
+        res.cellBuildCallsStamp
+    );
+    check("Welle C.3 V9.74: Damm-Spawn als Test-Setup erfolgreich", res.damSpawnSucceeded);
+    check(
+        "Welle C.3 V9.74: Blocker-AABB hat botY (V9.74-Erweiterung)",
+        res.aabbHasBotY && res.aabbHasHeight,
+        `botY=${res.aabbBotY}, topY=${res.aabbTopY}`
+    );
+    check("Welle C.3 V9.74: Voxel-Chunk im Damm-Footprint existiert", res.damChunkExists);
+    if (res.damChunkExists) {
+        check(
+            "Welle C.3 V9.74: Damm-Cell im Footprint ist SOLID (Architektur-Stempel)",
+            res.damCellIsSolid,
+            `state=${res.damCellState}`
+        );
+        check(
+            "Welle C.3 V9.74: Nach Remove ist die Cell NICHT mehr durch Stempel solid",
+            res.removeRestores,
+            `state=${res.cellAfterRemoveAbove}`
+        );
+    }
+    check(
+        "Welle C.3 V9.74: Trocken-Spot für Carve-Test gefunden (Vorbedingung)",
+        res.carveSpotFound,
+        `macroY=${res.carveSpotFound ? res.carveMacro || "?" : "n/a"}`
+    );
+    if (res.carveSpotFound) {
+        check(
+            "Welle C.3 V9.74: Carve unter waterLevel → Cell wird WATER (cellular-Flow-Effekt)",
+            res.carveCellsBecomeWater,
+            `state=${res.carveCellUnderWL}`
+        );
+    }
+    check(
+        "Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)",
+        res.spawnTriggersRemesh
+    );
+    check(
+        "Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)",
+        res.removeTriggersRemesh
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30767,6 +30958,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleB1WaterSkirts(ctx);
             await checkBandWelleC1WaterCells(ctx);
             await checkBandWelleC2WaterIsoSurface(ctx);
+            await checkBandWelleC3CellularReaction(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

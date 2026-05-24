@@ -15029,7 +15029,53 @@ class AnazhRealm {
                 }
             }
         }
+        // V9.74 (Welle C.3) — Architektur-Cell-Stempel: solide Architekturen
+        // (V9.65-Blocker-Index) sind im Cell-Feld direkt zu sehen. Eine Damm-
+        // Stein-Wand stempelt ihre Cells als SOLID; der Iso-Surface-Mesher
+        // (C.2) baut dann das Wasser DRUMHERUM, nicht durch den Damm. Ist
+        // die einlösende Bedeutung der Damm-Vision: die Substanz ist DA,
+        // wo der Spieler sie baut.
+        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz);
         return cells;
+    }
+
+    // V9.74 (Welle C.3) — stempelt solide Architektur-AABBs als state=SOLID
+    // ins Cell-Feld. Wird vom Cell-Build aufgerufen, nachdem die Density+
+    // waterLevel-Klassifikation läuft. Iteriert alle Architekturen mit
+    // `blockerAABBs` (V9.65-Index) und scant Chunk-Footprint-Überlappung.
+    // Cell-Y-Range pro AABB: vom Bottom (topY − ~Architektur-Höhe) bis zur
+    // topY. Die echte Höhe wird aus aabb.botY abgelesen (V9.74-Erweiterung
+    // des AABB-Cache mit Bottom-Y).
+    _stampArchitectureSolidCellsInto(cells, ox, oy, oz) {
+        if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
+        const { dim, dimY, step } = this._voxelChunkConfig();
+        const STATE = AnazhRealm.CELL_STATE;
+        for (const entry of this.state.architectures) {
+            if (!entry || !entry.blockerAABBs) continue;
+            for (const aabb of entry.blockerAABBs) {
+                // Chunk-Footprint-Schnitt
+                if (aabb.maxX < ox || aabb.minX > ox + dim * step) continue;
+                if (aabb.maxZ < oz || aabb.minZ > oz + dim * step) continue;
+                // Cell-Range im Chunk (xz)
+                const i0 = Math.max(0, Math.floor((aabb.minX - ox) / step));
+                const i1 = Math.min(dim - 1, Math.floor((aabb.maxX - ox) / step));
+                const k0 = Math.max(0, Math.floor((aabb.minZ - oz) / step));
+                const k1 = Math.min(dim - 1, Math.floor((aabb.maxZ - oz) / step));
+                // Y-Range: vom Bottom bis zur topY der Architektur
+                const yBot = Number.isFinite(aabb.botY) ? aabb.botY : aabb.topY - 4;
+                const j0 = Math.max(0, Math.floor((yBot - oy) / step));
+                const j1 = Math.min(dimY - 1, Math.floor((aabb.topY - oy) / step));
+                for (let j = j0; j <= j1; j++) {
+                    const baseJ = j * dim * dim;
+                    for (let k = k0; k <= k1; k++) {
+                        const baseK = k * dim;
+                        for (let i = i0; i <= i1; i++) {
+                            cells[i + baseK + baseJ] = STATE.SOLID;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // V9.72 (Welle C.2) — Iso-Surface-Mesh für das Wasser-Cell-Feld.
@@ -15668,11 +15714,18 @@ class AnazhRealm {
         if (!part || !part.size || !part.position) return null;
         const sx = part.size.x || 1;
         const sz = part.size.z || 1;
+        const sy = part.size.y || 1;
         const halfMax = Math.max(sx, sz) * 0.5;
         const cx = entry.position.x + (part.position.x || 0);
         const cz = entry.position.z + (part.position.z || 0);
-        const topY = entry.position.y - 0.5 + (part.position.y || 0) + (part.size.y || 1) * 0.5;
-        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY };
+        // V9.74 (Welle C.3) — botY ergänzt: der Cell-Stempel-Pfad
+        // (`_stampArchitectureSolidCellsInto`) braucht beide Y-Grenzen, um
+        // die vertikale Höhe der Architektur korrekt im Cell-Feld zu
+        // setzen. V9.65 hatte nur topY (Hydrosphäre-Surface-Hebung).
+        const centerY = entry.position.y - 0.5 + (part.position.y || 0);
+        const topY = centerY + sy * 0.5;
+        const botY = centerY - sy * 0.5;
+        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY, botY };
     }
 
     _blockerIndexAdd(entry) {
@@ -27731,6 +27784,18 @@ class AnazhRealm {
         // Plattform / Vegetation) und der Blocker-Index tatsächlich gefüllt
         // wurde (entry.blockerAABBs ≠ null), markieren wir dirty.
         if (!opts.silent && entry.blockerAABBs) this._markHydroDirty();
+        // V9.74 (Welle C.3) — Voxel-Chunks im Footprint dirty markieren, damit
+        // das Cell-Feld mit dem Architektur-Stempel neu gebaut wird. Spielt
+        // die Welle-A-Vision auf Cell-Sprache (Damm-Cells werden SOLID,
+        // Wasser-Cells im Stempel-Bereich werden überschrieben).
+        if (!opts.silent && entry.blockerAABBs) {
+            for (const aabb of entry.blockerAABBs) {
+                const cxw = (aabb.minX + aabb.maxX) * 0.5;
+                const czw = (aabb.minZ + aabb.maxZ) * 0.5;
+                const r = Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5;
+                this._remeshVoxelChunksAround(cxw, czw, r);
+            }
+        }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
         // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
@@ -28723,8 +28788,24 @@ class AnazhRealm {
         // Architektur ein Blocker war; nach dem Cleanup markieren wir dirty
         // (das Wasser bekommt seinen Pfad zurück).
         const wasBlocker = !!entry.blockerAABBs;
+        // V9.74 (Welle C.3) — Footprint-bboxes vor dem Index-Remove
+        // einfrieren (sonst sind sie schon weg). Voxel-Chunks im Footprint
+        // werden dirty markiert → Cell-Feld baut ohne Architektur-Stempel
+        // neu, Wasser-Cells nehmen den Platz zurück.
+        const blockerFootprints = wasBlocker
+            ? entry.blockerAABBs.map((a) => ({
+                  cx: (a.minX + a.maxX) * 0.5,
+                  cz: (a.minZ + a.maxZ) * 0.5,
+                  r: Math.max(a.maxX - a.minX, a.maxZ - a.minZ) * 0.5,
+              }))
+            : null;
         this._blockerIndexRemove(entry);
-        if (wasBlocker) this._markHydroDirty();
+        if (wasBlocker) {
+            this._markHydroDirty();
+            for (const fp of blockerFootprints) {
+                this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r);
+            }
+        }
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
         // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.
