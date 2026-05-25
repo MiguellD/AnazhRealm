@@ -15114,9 +15114,25 @@ class AnazhRealm {
             }
             return sum / 8;
         };
-        // Den Surface-Nets-Mesher mit der Wasser-Density-Funktion aufrufen.
-        // dim·dimY·dim Cell-Würfel → (dim+1)·(dimY+1)·(dim+1) Vertex-Samples.
-        const geom = this._voxelChunkGeometry(ox, oy, oz, dim, dimY, dim, step, sampleWater, 0);
+        // V9.79 (Welle C.9 — die Pad+Crop-Heilung der Oberflächen-Naht):
+        // bis V9.78 baute der Iso-Mesher das Wasser-Mesh nur über die dim·
+        // dimY·dim Cell-Würfel des Chunks (cropMargin=0). Adjacent Chunks
+        // hatten dann unabhängige Meshes mit eigenen Boundary-Vertices —
+        // KEINE shared Vertices, KEINE überlappenden Faces → eine 1-Cell-
+        // Lücke (1.8 m) an der Oberfläche, sichtbar als persistenter Riss
+        // („verbinden im Volumen aber nicht an der Oberfläche", Schöpfer-
+        // Audit V9.78). Heilung übernimmt den V9.42-d-Trick vom Boden-
+        // Mesher: Origin um 1 step verschoben, dim+3 cell-Würfel,
+        // cropMargin=1. Der Mesher smootht das pad-erweiterte Volumen
+        // voll + schneidet den 1-Cell-Pad danach ab. Adjacent Chunks
+        // **OVERLAPPEN** an der Boundary (chunk-A's letzter kept-Cube und
+        // chunk-B's erster kept-Cube belegen dieselbe Welt-Position) →
+        // keine sichtbare Naht. Pad-Cells außerhalb des Chunks werden
+        // via OOB-Live in `cellState` (V9.78) berechnet — beide Nachbar-
+        // Chunks sehen dort identische Density, also auch das Smoothing
+        // läuft deterministisch gleich. Eine Wasser-Sprache, eine Skala,
+        // eine Geometrie-Quelle.
+        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sampleWater, 1);
         if (!geom) {
             // Kein Wasser im Chunk-Bereich (alle Cells air/solid) → null
             this.state.voxelChunkWaterIso.set(key, null);
