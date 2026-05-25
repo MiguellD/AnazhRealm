@@ -97,14 +97,24 @@ Heilungen 1–8. Allokations-Sturm-Heilungen + Spatial-Hash + LOD + Renderer-Set
 - Browser-Test: 60 fps stabil über 60 s in normaler Welt (vorher: dips auf 30–40 fps alle ~2 s).
 - audit:strict 0 Failures.
 
-### Welle Perf-2 — die Chunk-Build-Hebel (V9.85, ~1 Tag, weitere 15 %)
+### Welle Perf-2 — die Chunk-Build- & Welt-Aufbau-Hebel (V9.85, sechs Sub-Wellen)
 
-Heilungen 9–11. Pre-sampled Macro-Grid + Gradient-Normals nutzen `preDensity` + Frame-Time-Budget statt `MAX_PER_FRAME=1`. Löst die Streaming-Spikes wenn neue Chunks streamen.
+Erweitert nach dem V9.84-Browser-Audit um zwei Wurzel-Heilungen aus Schöpfer-Befunden: **Shadow-Swimming bei WASD-Bewegung** (Witcher-3-Lehre: Stable Shadow Maps) + **Wasser-Flecken in Bergwänden** (Minecraft-Lehre: Atlas-Connectivity-Check). Beide sind thematisch passend („Welt-Aufbau-Politur"), beide haben präzise Profi-Lösungen.
+
+**Sechs Sub-Wellen nach Schmerz-Priorität**:
+
+- **2.a — Frame-Time-Budget statt `MAX_PER_FRAME=1`** (Heilung 11). Subnautica/NMS-Pattern: baue Chunks solange `now() - frameStart < 4 ms`, max N. Auf 60-FPS-Maschine ~3–4 Chunks/Frame; auf überlasteter Maschine 0–1. Adaptiv, NIEMALS Spike. Heilt den V9.84-Audit-Befund „massive Ruckler beim Laden". Direkter Schmerz-Killer.
+- **2.b — Distance-priorisierte Streaming-Queue** (neu). Standard Voxel-Engine-Pattern: statt Ring-für-Ring-Iteration einen Min-Heap nach Entfernung-zum-Spieler. Der nächste sichtbare Chunk wird zuerst gebaut → Spieler sieht sofort Boden um sich, ferne Chunks füllen sich ohne Druck. Synergie mit 2.a (Budget × Priorisierung = harmonisches Laden).
+- **2.c — Stable Shadow Maps via Texel-Snapping** (neu, Witcher-3-Lehre + Microsoft-DX11-Tutorial). Shadow-Camera-Position wird auf Texel-Boundaries gesnapt: `Math.round(playerX / texelSize) * texelSize` mit `texelSize = shadowFrustumWidth / shadowMapSize = 600/2048 ≈ 0.293 m`. Spieler läuft kontinuierlich, Shadow-Camera springt diskret pro Texel → Schatten-Pattern bleibt absolut stabil. Heilt den V9.84-Audit-Befund „Schatten rauscht bei WASD, nicht bei Maus" (Maus = Rotation, nicht Position).
+- **2.d — Wasser-Cell Bergwand-Filter (Atlas-Connectivity)** (neu, Minecraft/Subnautica-Lehre). Eine WATER-Cell ist nur valid, wenn sie in eine echte Atlas-Wasser-Quelle hinein-flood-fillen kann (Ozean, Lake, River im `state.hydrosphere`). Mountain-Mulden-Cells (kleine Höhlen in der Bergwand) werden zu AIR umklassifiziert. Plus Steepness-Filter: bei großem Density-Gradient (Bergwand) keine WATER-Cells erzeugen. Heilt den V9.84-Audit-Befund „kleine Wasser-Chunks aus dem Nichts in steilen Hängen". Plus marginaler Perf-Gewinn (weniger Iso-Mesh-Surfaces zu rendern).
+- **2.e — `_voxelGradientNormals` nutzt `preDensity`-Grid** (Heilung 10). V9.81 hat das Density-Grid für Mesher + Wasser-Cells geteilt — die Gradient-Normal-Berechnung resampelt 18 k Punkte pro Chunk separat. Diese letzte Resampling-Stelle nutzt das geteilte Grid via Trilinear-Interpolation. Spart ~30–45 ms pro Chunk-Build.
+- **2.f — Pre-sampled Macro-Surface-Grid** (Heilung 9). `_terrainMacroSurfaceY` wird ~90 000-mal pro Chunk gerufen. Pre-sample 40×40-Grid pro Chunk-Footprint, lookup via bilinear. Semantisch exakter Mittelwert. Spart ~50–80 ms pro Chunk = ~50 % schnelleres Streaming. Größte verbliebene Cost-Sparung.
 
 **Akzeptanz Perf-2:**
 
 - Diagnose-Tool (`scripts/diag-pump.cjs` wieder erschaffen, V9.83-Stil): per-Chunk-Build-Wall-Time ≤ 60 ms (vorher: 100–150 ms).
 - Streaming-Ring (81 Chunks) füllt sich in < 5 s auf 60-FPS-Maschine (vorher: ~10 s).
+- Schöpfer-Browser-Audit: kein sichtbares Schatten-Rauschen bei WASD-Bewegung; keine Floating-Water-Patches in Bergwänden; smoothes „harmonisches" Laden.
 - audit:strict 0 Failures.
 
 ### Welle Perf-3 — die tiefen Operationen (optional, V9.86+, je 1–2 Tage)

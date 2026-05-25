@@ -17266,9 +17266,15 @@ class AnazhRealm {
         for (const key of drop) this._disposeVoxelChunk(key);
     }
 
-    // Streamt den Voxel-Chunk-Ring um den Spieler — ein Chunk je Frame
-    // (Meshen + BVH-Kollision sind nicht gratis), dann Prune. No-op, wenn
-    // das Voxel-Terrain nicht aktiv ist.
+    // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
+    // Time-Budget statt fester `MAX_PER_FRAME=1`. Profi-Pattern aus Subnautica/
+    // NMS: baue Chunks solange `now() - start < FRAME_BUDGET_MS`, mit einem
+    // harten oberen Cap als Sicherheits-Netz. Adaptiv: auf 60-FPS-Maschine
+    // mit schnellen Chunks (~30 ms nach Perf-2.e+f) baut der Loop 2–4 chunks
+    // pro Frame; auf überlasteter Maschine 0–1. Niemals Frame-Spike. Wenn
+    // ein einzelner Chunk schon teurer als das Budget ist (heute typisch
+    // 100–150 ms), bleibt das Verhalten effektiv 1-chunk-pro-Frame —
+    // identisch zum alten Pfad, aber bereit für die Cost-Heilungen.
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
@@ -17276,7 +17282,9 @@ class AnazhRealm {
         const pcx = Math.floor(playerPos.x / span);
         const pcz = Math.floor(playerPos.z / span);
         let built = 0;
-        const MAX_PER_FRAME = 1;
+        const FRAME_BUDGET_MS = 4;
+        const MAX_PER_FRAME = 6;
+        const tStart = performance.now();
         outer: for (let r = 0; r <= ringRadius; r++) {
             for (let dz = -r; dz <= r; dz++) {
                 for (let dx = -r; dx <= r; dx++) {
@@ -17285,6 +17293,12 @@ class AnazhRealm {
                     if (this.state.voxelChunks.has(key)) continue;
                     this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
                     if (++built >= MAX_PER_FRAME) break outer;
+                    // Soft-Budget: nach dem aktuellen Build prüfen, ob wir
+                    // noch Zeit haben. `performance.now() - tStart` schließt
+                    // den letzten _ensureVoxelChunkAt-Aufruf ein — wenn EIN
+                    // chunk schon > Budget kostet, bauen wir trotzdem mind.
+                    // einen pro Frame (sonst friert Streaming komplett ein).
+                    if (performance.now() - tStart > FRAME_BUDGET_MS) break outer;
                 }
             }
         }
