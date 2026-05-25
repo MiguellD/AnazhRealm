@@ -22582,9 +22582,17 @@ async function checkBandWelle6HCreatureStats(ctx) {
         cs.userData.carrying = null;
         cw.position.set(player.x + 50, player.y, player.z);
         cs.position.set(player.x + 50, player.y, player.z);
+        // V9.84 Perf-1.d — `_tickCreatureTaskDirection` returnt jetzt einen
+        // geteilten Scratch-Vector3 (statt eines frischen pro Aufruf), um
+        // ~120 Vec3-Allokationen/Frame im updateCreatures-Loop zu sparen.
+        // Im Test müssen wir die erste Direction KOPIEREN, bevor der zweite
+        // Aufruf den Scratch überschreibt — sonst lesen wir zweimal denselben
+        // Wert. V9.56-i-Doku-Sync: der Test wandert mit der Mechanik.
         const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
+        const dirWX = dirW.x,
+            dirWZ = dirW.z;
         const dirS = r._tickCreatureTaskDirection(cs, cs.userData.task, "happy");
-        const spW = Math.hypot(dirW.x, dirW.z);
+        const spW = Math.hypot(dirWX, dirWZ);
         const spS = Math.hypot(dirS.x, dirS.z);
         out.tickSpriteFaster = spS > spW;
         out.tickWesenAtBase = Math.abs(spW - r.constructor.CREATURE_BUILD_SPEED) < 1.0;

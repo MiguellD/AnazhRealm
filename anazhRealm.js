@@ -11496,18 +11496,30 @@ class AnazhRealm {
     // null bei wander → Caller fällt auf heutige Emotion-Logik zurück).
     _tickCreatureTaskDirection(creature, task, emotion) {
         if (!task || task.name === "wander") return null;
-        if (task.name === "wait") return new THREE.Vector3(0, 0, 0);
+        // V9.84 Perf-1.d — alle Task-Return-Direktionen gehen jetzt durch
+        // EINEN geteilten Scratch-Vector3 (`_creatureTaskScratchDir`) statt
+        // pro Aufruf ein neues `THREE.Vector3` zu allokieren. Bei 120 Kreaturen
+        // mit Tasks waren das ~120 Allokationen/Frame. Der Aufrufer
+        // (`updateCreatures`) liest den Wert SYNCHRON im for-Loop und
+        // schreibt ihn in `creature.position`, bevor die nächste Kreatur
+        // dran ist → kein Konflikt durch geteilten Scratch.
+        if (task.name === "wait") return this._creatureTaskOutDir().set(0, 0, 0);
         if (task.name === "follow_player") return this._tickCreatureFollowPlayer(creature, task, emotion);
         if (task.name === "gather") return this._tickCreatureGather(creature, task);
         if (task.name === "build") return this._tickCreatureBuild(creature, task);
         return null;
     }
 
+    _creatureTaskOutDir() {
+        return this._creatureTaskScratchDir || (this._creatureTaskScratchDir = new THREE.Vector3());
+    }
+
     // Welle 6.H — folgt dem Spieler bis CREATURE_FOLLOW_DISTANCE (oder task-
     // spezifischer Halt-Distanz). Happy-Emotion läuft volle Speed, sonst 70%.
     _tickCreatureFollowPlayer(creature, task, emotion) {
+        const out = this._creatureTaskOutDir();
         const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-        if (!player) return new THREE.Vector3(0, 0, 0);
+        if (!player) return out.set(0, 0, 0);
         const haltDist =
             Number.isFinite(task.args?.distance) && task.args.distance > 0
                 ? Math.min(20, Math.max(0.5, task.args.distance))
@@ -11515,18 +11527,19 @@ class AnazhRealm {
         const dx = player.x - creature.position.x;
         const dz = player.z - creature.position.z;
         const dist = Math.hypot(dx, dz);
-        if (dist <= haltDist) return new THREE.Vector3(0, 0, 0);
+        if (dist <= haltDist) return out.set(0, 0, 0);
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
         const nx = dx / dist;
         const nz = dz / dist;
-        return new THREE.Vector3(nx * speed, 0, nz * speed);
+        return out.set(nx * speed, 0, nz * speed);
     }
 
     // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
     // Phase 1 = sucht Material + erntet (cyan-Aura); Phase 2 = trägt Ernte zum
     // Spieler + übergibt (purple-Aura via _refreshCreatureCarryingVisual).
     _tickCreatureGather(creature, task) {
+        const out = this._creatureTaskOutDir();
         const material = task.args && task.args.material;
         if (typeof material !== "string" || material.length === 0) {
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
@@ -11536,7 +11549,7 @@ class AnazhRealm {
         if (carrying) {
             // BRING-PHASE: zurück zum Spieler, dann übergeben.
             const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-            if (!player) return new THREE.Vector3(0, 0, 0);
+            if (!player) return out.set(0, 0, 0);
             const dxp = player.x - creature.position.x;
             const dzp = player.z - creature.position.z;
             const distp = Math.hypot(dxp, dzp);
@@ -11564,14 +11577,14 @@ class AnazhRealm {
                     this._refreshCreatureCarryingVisual(creature);
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                return new THREE.Vector3(0, 0, 0);
+                return out.set(0, 0, 0);
             }
             // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
             const speed =
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
+            return out.set((dxp / distp) * speed, 0, (dzp / distp) * speed);
         }
         // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
         let target = task.args._target;
@@ -11622,7 +11635,7 @@ class AnazhRealm {
                 });
             }
             if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-            return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
+            return out.set(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
         }
         // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
         const speed =
@@ -11631,7 +11644,7 @@ class AnazhRealm {
             this._creatureBodySpeedMultiplier(creature);
         const nx = dx / dist;
         const nz = dz / dist;
-        return new THREE.Vector3(nx * speed, 0, nz * speed);
+        return out.set(nx * speed, 0, nz * speed);
     }
 
     // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
@@ -11644,6 +11657,7 @@ class AnazhRealm {
     // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-Eintrag
     // (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
     _tickCreatureBuild(creature, task) {
+        const out = this._creatureTaskOutDir();
         const blueprint = task.args && task.args.blueprint;
         if (typeof blueprint !== "string" || blueprint.length === 0) {
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
@@ -11660,7 +11674,7 @@ class AnazhRealm {
         }
         const carrying = creature.userData && creature.userData.carrying;
         const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-        if (!player) return new THREE.Vector3(0, 0, 0);
+        if (!player) return out.set(0, 0, 0);
         // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
         const buildSpeed =
             AnazhRealm.CREATURE_BUILD_SPEED *
@@ -11723,9 +11737,9 @@ class AnazhRealm {
                     this.renderInventoryUI();
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                return new THREE.Vector3(0, 0, 0);
+                return out.set(0, 0, 0);
             }
-            return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
+            return out.set((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
         }
         // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
         const dxp2 = creature.position.x - player.x;
@@ -11737,9 +11751,9 @@ class AnazhRealm {
             // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
             if (distp2 < 0.001) {
                 // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
-                return new THREE.Vector3(buildSpeed, 0, 0);
+                return out.set(buildSpeed, 0, 0);
             }
-            return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
+            return out.set((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
         }
         // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
         // (analog confirmBuild, kalibriert auf at_player wo player.y die
@@ -11766,7 +11780,7 @@ class AnazhRealm {
             this._refreshCreatureCarryingVisual(creature);
         }
         this.assignCreatureTask(creature, "wander", {}, { silent: true });
-        return new THREE.Vector3(0, 0, 0);
+        return out.set(0, 0, 0);
     }
 
     // Welle 6.H V2 — geteilte Gradient-Textur als Cache (analog 6.D
