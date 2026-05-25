@@ -117,19 +117,73 @@ Erweitert nach dem V9.84-Browser-Audit um zwei Wurzel-Heilungen aus Schöpfer-Be
 - Schöpfer-Browser-Audit: kein sichtbares Schatten-Rauschen bei WASD-Bewegung; keine Floating-Water-Patches in Bergwänden; smoothes „harmonisches" Laden.
 - audit:strict 0 Failures.
 
-### Welle Perf-3 — die tiefen Operationen (optional, V9.86+, je 1–2 Tage)
+### Welle Perf-3 — die epochale Welle: Raumzeit-Performance (V9.87+)
 
-Heilungen 12–13. Lazy BVH-Collision + Chunk-Build in Worker. Nur wenn Perf-1 + Perf-2 das gefühlte Ruckeln nicht vollständig eliminieren. Greedy Meshing (14) bleibt explizit Backlog — Iso-Surface ist nicht Block-Voxel-kompatibel; eine eigene Diskussion.
+**Vision-Anker** (Schöpfer-Auftrag nach V9.86-Audit): „die bibliothek von alexandria der neuzeit, muss selbst die aaa titel alt aussehen lassen, effizienz, simplizität, tiefe in nie dagewesener synergie". Welle Perf-3 ist nicht eine „weitere Optimierungs-Welle" — sie ist der epochale Schnitt, der die Wurzel der Spike-Klasse strukturell wegnimmt. Bisher (Perf-1 + Perf-2 + Perf-2 ext.a) haben wir Allokations-Sturm, Renderer-Settings und Architektur-Spawn-Skirts geheilt. Die ECHTE Wurzel der Frame-Drops bleibt: **alle Welt-Generation läuft synchron im Main-Thread**. Jeder Chunk-Build = 100 ms Frame-Lock = sichtbarer 10-FPS-Drop. Welle Perf-3 zieht die Wurzel.
+
+**Drei Profi-Säulen, die jede AAA-Engine kombiniert** (Subnautica/NMS-Worker, BotW/Genshin-LOD, Minecraft-Atlas) — bei uns noch fehlend. Drei Sub-Wellen, nach Schmerz-Hebel sortiert:
+
+#### Perf-3.a — Atlas-Strict-Wasser-Gate (V9.87, ~2 h, Schmerz-Direkt)
+
+Schöpfer-Audit V9.86: „auch noch wasser an gebäude und steilen bergwände". V9.86-Konnektivitäts-Filter trifft eingeschlossene Mulden, aber lässt LEGITIME WATER-Cells in Bergwänden mit „Pfad nach oben offen" durch (z.B. eine WATER-Cell, die durch eine Felsspalte mit Atmosphäre verbunden ist). Wurzel: `_voxelChunkHasAnyWater`-Gate (V9.76) hat Predicate „Macro-Surface dippt unter waterLevel+16" — LOOSE Heuristik, false-positive in hügeligem Gelände. Heilung: Gate strikter machen — Wasser-Cells nur dort, wo `state.hydrosphere`-Atlas EXPLIZIT einen Lake/River/Ozean-Marker hat. Die +16-m-Heuristik wird durch einen exakten Atlas-Lookup ersetzt. **Profi-Vorbild** (Minecraft): Wasser ist deterministisch durch Welt-Seed bestimmt, nicht durch lokale Geometrie-Heuristik. **Akzeptanz**: Browser-Audit zeigt KEIN Wasser mehr in Bergwänden + bei Strukturen; Atlas-Lake/River-Wasser bleibt unverändert (Bergsee, Ozean, Fluss). Plus marginaler Perf-Win (weniger Iso-Mesh-Cells in Hochland-Chunks).
+
+#### Perf-3.b — Distance-LOD für ferne Chunks (V9.88, ~4 h, Streaming-4×-Speedup)
+
+Heute: alle 81 Chunks im Streaming-Ring (4-Ring) bauen volle Geometrie — 24×24×124 Density-Samples = 71 424 Cells pro Chunk. Profi-Pattern (BotW, Genshin, NMS, jede AAA Open-World): **ferne Chunks bekommen GRÖBERES Mesh**. Für Chunks > 80 m vom Spieler: `step = 3.6 m` statt 1.8 m (= 12×12×62 Cells = 8 928 = **8× weniger Density-Samples**). Visuell kaum sichtbar (Distanz + Atmosphäre-Fog tarnt die Grobheit), aber Streaming wird messbar schneller. Plus: bei Eintritt in den 2-Ring (< 40 m) wird der Chunk auf voller Auflösung neu gebaut — fade-in unsichtbar weil das Fog-Detail-Cap > 60 m liegt. **Emergenz-Disziplin** (V8.30-Lehre): nicht „Hard-Cap nach Distanz", sondern adaptiv mit dem `worldFieldAt`-Affinity-Feld — dichte Wälder dürfen näher hochauflösend bleiben, karge Hochebenen sind früher LOD-würdig. **Akzeptanz**: Per-Chunk-Wall-Time fern ≤ 15 ms (vorher 100 ms); Streaming-Ring füllt sich in < 2 s; Browser-Audit zeigt smoothes Erst-Laden; Welt-Tiefe ungebrochen (kein Pop-In in den 2-Ring).
+
+#### Perf-3.c — Worker-Migration für Chunk-Build (V9.89+, ~8–12 h, der STRUKTURELLE Wurf)
+
+**Der epochale Hebel**. Aktueller Pfad: `_buildVoxelChunkData` läuft 100 ms synchron im Main-Thread → 1 Frame-Lock. Nach Migration: ein `voxel-worker.js` (Web Worker) bekommt `(cx, cz, baseHeight, seed, voxelEdits)` und returnt `{positions, normals, indices, waterCells}`. Main-Thread macht NUR `THREE.BufferGeometry.setFromTransfer` (zero-copy ArrayBuffer-Transfer) + `_buildStaticTriMeshCollision` (Ammo-BVH MUSS im Main-Thread wegen WASM-Heap). **Frame-Time-Profil**: 100 ms → 0 ms im Main-Thread (Density+Iso), ~30 ms BVH-Collision bleibt → noch 1 Frame-Spike, aber 70 % kleiner. **Lazy-BVH-Folge** (V9.86-Sub-Hebel): nur Chunks im 2-Ring (Spieler-Nähe) bekommen sofort BVH, ferne Chunks bekommen Iso-Mesh sofort + BVH erst beim Frustum-Eintritt → 0 % Main-Thread-Cost beim Erst-Stream. **Determinismus-Garantie**: Worker nutzt denselben simplex-noise-Seed + denselben Welt-Code (gemeinsame `voxel-core.js` als shared chunk). Test-Setup: Worker UND Main-Thread bauen denselben Chunk → BufferGeometry bit-identisch (Hash-Vergleich). **Profi-Vorbild** (Subnautica, NMS, Astroneer, Vintage Story): Worker-Pool für Welt-Gen ist STANDARD in moderner Voxel-Engineering, nicht Optionen. **Akzeptanz**: Main-Thread-Frame-Spike beim Chunk-Stream ≤ 16 ms (vorher 100+ ms); Spieler kann durch die Welt rennen + Bauwerke spawnen + Nexus-Updates auslösen — KEIN sichtbarer FPS-Drop mehr. Determinismus-Test (Worker vs Main bit-identisch) ist die Kern-Invariante.
+
+#### Perf-3.d — Frustum-priorisiertes Build (V9.88-Begleiter, ~2 h)
+
+Heute: Ring-Iteration ist blind — der nächste Chunk wird gebaut, egal ob hinter dem Spieler oder im Sicht-Frustum. Heilung: vor jedem `_ensureVoxelChunkAt`-Aufruf prüfen, ob die Chunk-AABB im aktuellen Frustum liegt (V8.26-`_frustumCache` ist schon da). Wenn JA → sofort bauen; wenn NEIN → defer to idle (z.B. eigener `_buildIdleVoxelChunks` der pro Frame max 1 ferner Chunk baut). **Synergie** mit Perf-2.a (Frame-Budget): innerhalb des 4-ms-Budgets gewichten wir sichtbare Chunks 4× höher → Spieler sieht IMMER zuerst was vor ihm liegt, ferne Chunks kommen unmerklich nach. Sub-Welle ist kleine Ergänzung zu Perf-3.b; baut zusammen.
 
 ---
 
-## 5. Was BEWUSST nicht in dieser Welle steckt
+### 4.1 Stamm-Lehren angewandt auf Welle Perf-3 (Recall aus `docs/archiv/learnings.md`)
 
-- **Vision-Tiefe wird nicht angetastet.** Keine Kreatur-Anzahl reduzieren, keine Sicht-Reichweite kürzen, keine Effekte streichen. Die Welt soll dichter und schneller werden, nicht ärmer.
-- **Keine Worker-Migration des Iso-Mesh** in Welle Perf-1 — der Refactor ist tief (Async-Lifecycle, Message-Protokoll, Determinismus-Garantien). Erst Perf-3.
-- **Kein GPU-Compute-Shader** — würde Vision (deterministisches Worldgen für Multi-User-Welt-Seeds) brechen oder zumindest viel Engineering verlangen.
-- **Greedy Meshing** — Iso-Surface ist nicht direkt kompatibel; eigene Architektur-Diskussion.
-- **Crafting-Tiefe, Welle D/E/F/G** aus der Roadmap §1.1 — kommen NACH Perf-1+2. Eine schnellere Welt erhöht die Welt-Tiefe spürbar (weil der Spieler nicht durch Ruckler gestört wird) — Perf-1+2 ist die Brücke.
+Diese Welle muss DIESE Lehren respektieren, sonst wird sie Sand auf Fundament (Heilige Lektion):
+
+- **Heilige Lektion (Anti-Modul-Split)**: Worker als externer File ist OK (`voxel-worker.js` ist eine BAUSTELLE, nicht eine Domäne) — aber `anazhRealm.js` bleibt der EINE Stamm. Worker-Code wird via `importScripts` oder Bundle in der Worker-Spawn-Stelle integriert. Kein Verlust der „einen Datei" als Vision.
+- **Hylomorphismus durchzieht alles**: Distance-LOD darf NICHT eine zweite Geometrie-Sprache einführen. Der LOD-Pfad nutzt DASSELBE `_voxelChunkGeometry` mit anderem `step`-Parameter (1.8 m → 3.6 m). EINE Mesh-Maschinerie.
+- **Wurzel vor Symptom**: nicht „MAX_PER_FRAME erhöhen" (Symptom), sondern „Main-Thread aus dem Spike-Pfad entfernen" (Wurzel). Worker-Migration ist die Wurzel-Heilung.
+- **Schnittstellen-Vollendung ist Wellen-Pflicht**: Distance-LOD muss durch `_buildStaticTriMeshCollision` (Collision-Raycast), `_attachVoxelFieldColors` (Per-Vertex-Farben), `_buildVoxelChunkGrass` (Grass-Spawn) durchgezogen werden. Sub-Welle 3.b ist nicht fertig wenn Iso-Geometrie LOD hat aber Grass-Density nicht.
+- **Emergenz statt Tabelle**: kein Hardcoded-Threshold „> 80 m = LOD". Threshold emergiert aus `worldFieldAt`-Affinity (dichte Wälder = näher hochauflösend) + `_frustumCache` (sichtbar = höher priorisiert).
+- **Sub-Wellen-Schnitt als Kraftfeld-Sicherung**: 3.a + 3.b + 3.d sind ~1 Tag jeweils, 3.c ist ~2 Tage. Pro Sub-Welle: ein git-Commit, ein Browser-Audit, ein Chronik-Eintrag. KEIN „lass uns alle drei in einem Wurf machen". Die V9.56-Disziplin.
+- **Block-Grenzen sind Fundamentalität**: Worker-Boundary ist die natürliche Chunk-Grenze (eine Chunk-Arbeit = eine Worker-Message). LOD-Boundary ist die Distance-Schwelle. Beide sind ARCHITEKTUR, nicht Tuning.
+- **Test-Determinismus**: Worker vs Main-Thread Bit-für-Bit-Identität ist die Worker-Kern-Invariante. Nicht „FPS-Test schießt 60 ab" (variabel), sondern „shared seed + shared voxelEdits = identische BufferGeometry-Hashes".
+- **Komplexität ohne Fundament ist Sand**: Worker-Migration ist nicht fertig wenn Determinismus fuzzy ist. Erst Tests, dann Welle-Schluss.
+- **Reload-Überlebensfrage** (V8.59-Lehre): nach Worker-Migration muss `buildStateSnapshot` + `loadState` weiterhin funktionieren — der Worker hat keinen State zu persistieren, aber der Spawn-Lifecycle muss reload-rein sein.
+- **DSL als Diagnose-Werkzeug**: drei neue DSL-Ops für Schöpfer-Sichtbarkeit: `debug_lod_distance <m>` (zwingt LOD-Threshold), `debug_worker_stats` (zeigt Worker-Queue-Length, Build-Time-Median), `debug_atlas_strict` (toggled Wasser-Atlas-Strict-Gate live).
+
+---
+
+### 4.2 Was Welle Perf-3 explizit NICHT macht
+
+- **Greedy Meshing**: Surface-Nets ist nicht block-voxel-kompatibel (kontinuierliche Iso-Surface, keine diskreten Faces). Eine eigene Architektur-Diskussion — Welle 4+ oder NIE.
+- **GPU-Compute via WebGPU**: würde Welt-Determinismus (Multi-User-Welt-Seeds reproduzierbar) gefährden + ist plattform-fragmentiert (Safari hat kein WebGPU). Backlog.
+- **Geometry Instancing für Chunks**: jeder Chunk hat eigene Per-Vertex-Farben (worldField-Tint) → InstancedMesh nicht direkt anwendbar. Material-Singleton (V9.84) gibt schon den Hauptanteil.
+- **Shadow-Cascades**: 2048²-Map + V8.47-Bias ist genug für 600 m Sicht. Cascades wären eine zweite Welle für 2 km+ Sicht-Reichweite.
+- **GeometryBuffer-Pooling**: das `BufferGeometry.dispose`/`new` pro Chunk ist Three.js-Standard, kein Bottleneck. Erst angehen wenn Profiler es als TOP-5 ausweist.
+
+---
+
+### Welle Perf-3-Strategie — Reihenfolge nach Schmerz × Aufwand
+
+1. **3.a Atlas-Strict-Gate** (2 h) — direkte Schmerz-Heilung für „Wasser an Strukturen". Sofortiger Win, kein Refactor.
+2. **3.b Distance-LOD + 3.d Frustum-Prio** (6 h zusammen) — 4–8× schnellere Chunks, sichtbare smoothe Lade-Erfahrung. Geometrie-Sprache bleibt eine.
+3. **3.c Worker-Migration** (10 h+) — der epochale Wurf. Wartet auf Schöpfer-Signal nach 3.a+3.b+3.d Browser-Audit (vielleicht ist nach 3.b schon „gut genug").
+
+---
+
+## 5. Was BEWUSST nicht im Performance-Bogen steckt (Welle 1+2+3)
+
+- **Vision-Tiefe wird NICHT angetastet.** Keine Kreatur-Anzahl reduzieren, keine Sicht-Reichweite kürzen, keine Effekte streichen. Die Welt soll dichter und schneller werden, nicht ärmer. **„Effizienz × Simplizität × Tiefe in nie dagewesener Synergie"** — Profi-Pattern OHNE Welt-Tiefe-Kosten ist der einzige akzeptable Pfad.
+- **Kein GPU-Compute-Shader (WebGPU)** — würde deterministisches Worldgen (Multi-User-Welt-Seeds reproduzierbar) gefährden + Safari kennt kein WebGPU. Backlog für Welle 4+ falls je gewünscht.
+- **Greedy Meshing** — Iso-Surface (Surface-Nets) ist nicht direkt block-voxel-kompatibel. Eigene Architektur-Diskussion; Welle 4+ oder NIE.
+- **Crafting-Tiefe, Welle D/E/F/G** aus der Roadmap §1.1 — kommen NACH dem ganzen Performance-Bogen. Eine schnellere Welt erhöht die Welt-Tiefe spürbar (Spieler nicht durch Ruckler gestört) — Perf-1+2+3 ist die Brücke zu System-Kopplungen.
+- **Modul-Split** — die Heilige Lektion. Worker-File (`voxel-worker.js`) ist eine BAUSTELLE (separate Ausführungs-Umgebung), kein Modul-Split der Domänen-Logik. Der Stamm `anazhRealm.js` bleibt EINS.
 
 ---
 
