@@ -14368,9 +14368,14 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0) {
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0, preDensity = null) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
-        const density = this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        // V9.81 (Welle C.11 — Density-Grid-Sharing): wenn der Aufrufer schon
+        // das Density-Grid hat (z.B. weil er es auch für die Cell-Klassifikation
+        // braucht), kann er es als `preDensity` übergeben. So wird die teure
+        // Density-Sample-Schleife (~90k `_terrainDensityAt`-Calls) nur einmal
+        // pro Chunk-Build ausgeführt, nicht zweimal.
+        const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
         const { positions, vertCells, cellVert } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -14925,15 +14930,27 @@ class AnazhRealm {
         return false;
     }
 
-    _buildVoxelChunkWaterCells(ox, oy, oz, step) {
+    // V9.81 (Welle C.11 — Density-Grid-Sharing für Performance): `preDensity`
+    // ist das vom Boden-Mesher schon gesampelte Density-Grid (Float32Array
+    // mit (dim+4)·(dimY+1)·(dim+4) Werten, Vertex-Sampling bei Origin
+    // `ox-step, oy, oz-step`, V9.42-d-Pad). Cell-Center-Density wird als
+    // 8-Corner-Avg der angrenzenden Vertex-Densities berechnet (trilineare
+    // Interpolation) — spart 71 424 erneute `_terrainDensityAt`-Calls
+    // (~200 ms im Browser, der Streaming-FPS-Killer). Wenn `preDensity`
+    // null ist, samplen wir das Grid intern hier — beide Pfade liefern
+    // IDENTISCHE Klassifikation, sodass Determinismus + Test-Konsistenz
+    // erhalten bleiben (Test ruft uns ohne preDensity).
+    _buildVoxelChunkWaterCells(ox, oy, oz, step, preDensity = null) {
         const { dim, dimY } = this._voxelChunkConfig();
         const cells = new Uint8Array(dim * dim * dimY);
         const STATE = AnazhRealm.CELL_STATE;
-        // V9.73 (Welle C.2 Heilung) — pro xz-Spalte das `_waterLevelAt`
-        // einmal cachen (statt pro Cell, statt `state.waterLevel` direkt).
-        // Erfasst Meere + Bergseen + Flüsse — das gleiche Wasser-Niveau
-        // wie der alte Quad-Mesh-Pfad. So sehen die water-Cells auch
-        // Bergseen über dem globalen waterLevel.
+        // Density-Grid besorgen (vorab oder selbst samplen)
+        let density = preDensity;
+        if (!density) {
+            const sample = (x, y, z) => this._terrainDensityAt(x, y, z);
+            density = this._voxelSampleDensityGrid(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sample);
+        }
+        // Pro xz-Spalte das `_waterLevelAt` einmal cachen (V9.73-Heilung).
         const colCount = dim * dim;
         const colWaterY = new Float64Array(colCount);
         for (let k = 0; k < dim; k++) {
@@ -14943,44 +14960,42 @@ class AnazhRealm {
                 colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
             }
         }
-        // V9.76 (per-Chunk-Band) → V9.77 (global Band, below-band=WATER) →
-        // V9.78 (Welle C.8 — Floating-Plane geheilt): die V9.77-below-band=
-        // WATER-Annahme erzeugte eine FALSCHE Iso-Plane bei `cy=bandBottom`
-        // innerhalb von Mountain-Säulen — in-band-Cell SOLID, below-band-
-        // Cell WATER → Iso-Transition = horizontale Plane durch die Fels-
-        // wand. Schöpfer-Browser-Audit V9.77: „eine wenig über dem boden
-        // eine zweite oberfläche". Ehrlich erkannt: das ist genau die
-        // bandBottom-Plane.
-        //
-        // V9.78 heilt strukturell: NUR above-band wird geskipt (Cells über
-        // `bandTop` sind garantiert AIR — kein Wasser möglich; mountain-AIR
-        // und mountain-SOLID sind beide −1 für den Iso, also Skip = AIR
-        // konsistent). Below-band UND in-band laufen voll-Klassifikation
-        // (Density + waterLevel). Mountain-Säulen unter dem Wasser-Spiegel
-        // bleiben SOLID statt fälschlicherweise WATER → kein Floating-Plane
-        // mehr. Performance: 60+ Layer above-band geskipt × 576 cells ~ 34k
-        // Samples gespart pro Wasser-Chunk; der Rest ~37k Samples × 3μs
-        // = ~110 ms. Trocken-Gate schützt Hochland weiterhin. Naht-frei
-        // dank globalem Band + identischer OOB-Live-Compute-Regel.
         const band = this.state.hydroBand;
         const bandTop = band ? band.top : Infinity;
+        // Cell (i, k, j) Center ist Mittelpunkt der 8 Density-Grid-Vertices
+        // (i+1, j, k+1) bis (i+2, j+1, k+2) (Pad +1 links/unten ausgeglichen).
+        const Nx = dim + 4;
+        const Ny = dimY + 1;
+        const NxNy = Nx * Ny;
         for (let j = 0; j < dimY; j++) {
             const cy = oy + (j + 0.5) * step;
             if (cy > bandTop) {
-                // Above band: alle AIR (Uint8Array-Default 0). Garantiert
-                // kein Wasser (cy > waterLevel+10m Marge), Iso behandelt
-                // AIR=SOLID identisch.
                 continue;
             }
             const baseJ = j * dim * dim;
-            // In-band + below-band: voller Density+waterLevel-Check.
-            // Mountain-Cells unter dem Wasser-Spiegel bleiben SOLID (d>0).
+            const j1 = j;
+            const j2 = j + 1;
             for (let k = 0; k < dim; k++) {
-                const cz = oz + (k + 0.5) * step;
                 const baseK = k * dim;
+                const k1 = k + 1;
+                const k2 = k + 2;
+                const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
+                const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
+                const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
+                const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
                 for (let i = 0; i < dim; i++) {
-                    const cx = ox + (i + 0.5) * step;
-                    const d = this._terrainDensityAt(cx, cy, cz);
+                    const i1 = i + 1;
+                    const i2 = i + 2;
+                    const d =
+                        (density[i1 + ofs_j1_k1] +
+                            density[i2 + ofs_j1_k1] +
+                            density[i1 + ofs_j2_k1] +
+                            density[i2 + ofs_j2_k1] +
+                            density[i1 + ofs_j1_k2] +
+                            density[i2 + ofs_j1_k2] +
+                            density[i1 + ofs_j2_k2] +
+                            density[i2 + ofs_j2_k2]) *
+                        0.125;
                     let s;
                     if (d > 0) s = STATE.SOLID;
                     else if (cy <= colWaterY[i + baseK]) s = STATE.WATER;
@@ -15202,12 +15217,38 @@ class AnazhRealm {
         const ox = cx * span;
         const oz = cz * span;
         const oy = base - floorDrop;
+        // V9.81 (Welle C.11 — Density-Grid-Sharing): das Density-Grid einmal
+        // samplen + an Boden-Mesher UND Cell-Build weiterreichen. Spart die
+        // teuersten ~71 k `_terrainDensityAt`-Calls pro Wasser-Chunk (~200 ms
+        // im Browser, der Streaming-FPS-Killer). Das Grid hat (dim+4)·
+        // (dimY+1)·(dim+4) Vertex-Densities (V9.42-d-Pad bei `ox-step, oz-step`).
+        const terrainSample = (x, y, z) => this._terrainDensityAt(x, y, z);
+        const terrainDensity = this._voxelSampleDensityGrid(
+            ox - step,
+            oy,
+            oz - step,
+            dim + 3,
+            dimY,
+            dim + 3,
+            step,
+            terrainSample
+        );
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
         // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
         // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
-        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
-        // gesmootht (seine Welt-Nachbarn lagen im pad).
-        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
+        // ab. V9.81: `preDensity` reicht das geteilte Grid herein.
+        const geom = this._voxelChunkGeometry(
+            ox - step,
+            oy,
+            oz - step,
+            dim + 3,
+            dimY,
+            dim + 3,
+            step,
+            undefined,
+            1,
+            terrainDensity
+        );
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
         const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
@@ -15232,7 +15273,7 @@ class AnazhRealm {
         // dann sauber (vorhandener null-check). Big FPS-Win für Hochland-
         // Chunks.
         const waterCells = this._voxelChunkHasAnyWater(cx, cz)
-            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step)
+            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity)
             : null;
         return { mesh, kind: "filled", waterCells };
     }

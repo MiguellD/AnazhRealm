@@ -12486,7 +12486,23 @@ async function checkBandWelleC1WaterCells(ctx) {
                 // beide oberhalb des Bands.
                 expected = actual === STATE.SOLID ? STATE.SOLID : STATE.AIR;
             } else {
-                const d = r._terrainDensityAt(cxw, cy, czw);
+                // V9.81 — Build nutzt jetzt 8-Corner-Avg aus dem geteilten
+                // Density-Grid (Trilinear-Interp am Cell-Center). Test muss
+                // mit-wandern und dieselbe Trilinear-Avg berechnen, sonst
+                // Mismatch an Borderline-Cells (d nahe 0).
+                let dSum = 0;
+                for (let dj = 0; dj <= 1; dj++) {
+                    for (let dk = 0; dk <= 1; dk++) {
+                        for (let di = 0; di <= 1; di++) {
+                            dSum += r._terrainDensityAt(
+                                ox + (i + di) * step,
+                                oy + (j + dj) * step,
+                                oz + (k + dk) * step
+                            );
+                        }
+                    }
+                }
+                const d = dSum / 8;
                 const wlCol = r._waterLevelAt(cxw, czw);
                 if (d > 0) expected = STATE.SOLID;
                 else if (cy <= wlCol) expected = STATE.WATER;
