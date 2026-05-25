@@ -12104,39 +12104,51 @@ class AnazhRealm {
             const baseY = terrainHeight + 0.5;
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             creature.position.y = baseY + floatOffset;
-            // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
-            const aura = creature.userData && creature.userData.taskAura;
-            if (aura) {
-                aura.position.set(
-                    creature.position.x,
-                    creature.position.y + this._creatureAuraOffsetY(creature),
-                    creature.position.z
-                );
-            }
-            // Welle 6.H P2B.5 — Carrying-Sprite folgt der Kreatur darüber.
-            const carrySprite = creature.userData && creature.userData.carryingSprite;
-            if (carrySprite) {
-                carrySprite.position.set(
-                    creature.position.x,
-                    creature.position.y + this._creatureAuraOffsetY(creature) + 0.5,
-                    creature.position.z
-                );
-            }
-
-            // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
-            // sollte heute nicht mehr entstehen, aber falls in Zukunft mal ein
-            // andersgeformter Spawn dazukommt, brechen wir den Frame nicht ab.
-            // V9.84 Perf-1.c — zwei gepoolte THREE.Color statt frischer Allokation
-            // pro Kreatur pro Frame. Vorher: 120 Kreaturen × 60 fps = 7200
-            // Color-Allokationen/s → GC-Spikes. `material.color.lerp` mutiert
-            // das material.color, NICHT den target → Singletons bleiben rein.
-            if (creature.material && creature.material.color) {
-                if (!this._creatureHappyColor) {
-                    this._creatureHappyColor = new THREE.Color(0x00ff00);
-                    this._creatureNeutralColor = new THREE.Color(0x0000ff);
+            // V9.84 Perf-1.e — Visual-Updates (Aura-Position, Carrying-Sprite-
+            // Position, Color-Lerp) gated auf `inFrustum`. Eine Kreatur, die
+            // nicht zu sehen ist, braucht keine Sprite-Positionen pro Frame
+            // und kein Color-Lerp (beides unsichtbar). Spart 3 Operationen
+            // pro off-screen-Kreatur — bei 120 Kreaturen, 50% off-screen =
+            // ~180 gesparte Mutationen/Frame. Wenn der Spieler hinschwenkt
+            // (Frustum-Eintritt), die Updates kommen sofort wieder zurück
+            // → kein sichtbarer Welt-Tiefe-Verlust. Bewegung + Physik
+            // bleiben aktiv für ALLE Kreaturen (das ist der V8.49-Anker:
+            // off-screen-Kreaturen leben weiter, sie zeigen sich nur nicht).
+            if (inFrustum) {
+                // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
+                const aura = creature.userData && creature.userData.taskAura;
+                if (aura) {
+                    aura.position.set(
+                        creature.position.x,
+                        creature.position.y + this._creatureAuraOffsetY(creature),
+                        creature.position.z
+                    );
                 }
-                const targetColor = emotion === "happy" ? this._creatureHappyColor : this._creatureNeutralColor;
-                creature.material.color.lerp(targetColor, 0.05);
+                // Welle 6.H P2B.5 — Carrying-Sprite folgt der Kreatur darüber.
+                const carrySprite = creature.userData && creature.userData.carryingSprite;
+                if (carrySprite) {
+                    carrySprite.position.set(
+                        creature.position.x,
+                        creature.position.y + this._creatureAuraOffsetY(creature) + 0.5,
+                        creature.position.z
+                    );
+                }
+
+                // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
+                // sollte heute nicht mehr entstehen, aber falls in Zukunft mal ein
+                // andersgeformter Spawn dazukommt, brechen wir den Frame nicht ab.
+                // V9.84 Perf-1.c — zwei gepoolte THREE.Color statt frischer Allokation
+                // pro Kreatur pro Frame. Vorher: 120 Kreaturen × 60 fps = 7200
+                // Color-Allokationen/s → GC-Spikes. `material.color.lerp` mutiert
+                // das material.color, NICHT den target → Singletons bleiben rein.
+                if (creature.material && creature.material.color) {
+                    if (!this._creatureHappyColor) {
+                        this._creatureHappyColor = new THREE.Color(0x00ff00);
+                        this._creatureNeutralColor = new THREE.Color(0x0000ff);
+                    }
+                    const targetColor = emotion === "happy" ? this._creatureHappyColor : this._creatureNeutralColor;
+                    creature.material.color.lerp(targetColor, 0.05);
+                }
             }
 
             // Springen basierend auf Emotion
