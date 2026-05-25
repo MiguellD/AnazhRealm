@@ -12013,241 +12013,6 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Voxel V9.50-b — das Chunk-Wasser (Rendering) ###
-    // Das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk baut
-    // seine Wasser-Fläche selbst (`_buildVoxelChunkWater`) aus
-    // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
-    // Terrain. `hydrosphereMeshes` trägt nur noch die Wasserfälle.
-    const voxelChunkWaterResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return null;
-        const out = {};
-        out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
-        out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
-        out.hasChunkWater = typeof r._buildVoxelChunkWater === "function";
-        out.hasChunkWaterDispose = typeof r._disposeVoxelChunkWater === "function";
-        out.hasGate = typeof r._voxelChunkTouchesWater === "function";
-        out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
-        if (!out.hasBuild || !out.hasSurfMat || !out.hasChunkWater) return out;
-        const sm = r._ensureHydroSurfaceMaterial();
-        out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
-        const su = (sm && sm.uniforms) || {};
-        out.surfMatSharesUniforms =
-            !!su.uDeep && !!su.uShallow && !!su.uFoam && !!su.uSunDir && !!su.uLight && !!su.fogColor && !!su.uTime;
-        out.shaderHasGerstner =
-            !!sm && /gerstnerWave/.test(sm.vertexShader || "") && /aWave/.test(sm.vertexShader || "");
-        out.depthWriteOn = !!sm && sm.depthWrite === true;
-        const hydro = r.state.hydrosphere;
-        out.hydroReady = !!(hydro && hydro.ready);
-        if (!out.hydroReady) return out;
-        out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
-            rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
-        );
-        r._buildHydrosphereMeshes();
-        const meshes = r.state.hydrosphereMeshes;
-        out.meshesArray = Array.isArray(meshes);
-        // V9.63 — pro Wasserfall ZWEI Meshes (Cleanup vor Welle A):
-        //   (1) hydroKind="waterfall" = vertikale Plane (wfMat + PlaneGeometry)
-        //   (2) hydroKind="waterfall_pool" = Aufprall-Pool (hydroSurfaceMat + CircleGeometry)
-        const WF_KINDS = ["waterfall", "waterfall_pool"];
-        out.onlyWaterfalls =
-            out.meshesArray && meshes.every((m) => m.userData && WF_KINDS.indexOf(m.userData.hydroKind) >= 0);
-        out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length * 2;
-        out.fallsUseWaterfallMat =
-            out.meshesArray &&
-            (meshes.length === 0 ||
-                meshes.every((m) => {
-                    const k = m.userData && m.userData.hydroKind;
-                    if (k === "waterfall_pool") {
-                        return (
-                            m.material === r.state.hydroSurfaceMaterial &&
-                            m.geometry &&
-                            m.geometry.type === "CircleGeometry"
-                        );
-                    }
-                    return (
-                        m.material === r.state.waterfallMaterial && m.geometry && m.geometry.type === "PlaneGeometry"
-                    );
-                }));
-        out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
-        out.chunkWaterIsMesh = false;
-        out.chunkWaterUsesMat = false;
-        out.chunkWaterHasAttrs = false;
-        out.chunkWaterHasQuads = false;
-        out.chunkWaterOnLevel = true;
-        out.chunkWaterWaveValid = true;
-        out.gateOceanTrue = false;
-        if (hydro.water && hydro.water.waterKind) {
-            const span = r._voxelChunkConfig().span;
-            let oi = -1;
-            for (let k = 0; k < hydro.water.waterKind.length; k++) {
-                if (hydro.water.waterKind[k] === 1) {
-                    oi = k;
-                    break;
-                }
-            }
-            if (oi >= 0) {
-                const owx = hydro.originX + ((oi % hydro.dim) + 0.5) * hydro.cell;
-                const owz = hydro.originZ + (((oi / hydro.dim) | 0) + 0.5) * hydro.cell;
-                const cx = Math.floor(owx / span);
-                const cz = Math.floor(owz / span);
-                out.gateOceanTrue = r._voxelChunkTouchesWater(cx, cz) === true;
-                r._disposeVoxelChunkWater(`${cx},${cz}`);
-                r._buildVoxelChunkWater(cx, cz);
-                const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
-                out.chunkWaterIsMesh = !!(wm && wm.type === "Mesh");
-                out.chunkWaterUsesMat = !!(wm && wm.material === sm);
-                if (out.chunkWaterIsMesh && wm.geometry) {
-                    const g = wm.geometry;
-                    out.chunkWaterHasAttrs = !!(
-                        g.attributes.position &&
-                        g.attributes.aFlow &&
-                        g.attributes.aShore &&
-                        g.attributes.aWave
-                    );
-                    out.chunkWaterHasQuads = !!(g.index && g.index.count > 0);
-                    const pos = g.attributes.position.array;
-                    // Exaktheit: jeder Vertex sitzt auf `_waterLevelAt`
-                    // — das Wasser liegt auf dem Level-Feld, kein Schweben.
-                    for (let v = 0; v < pos.length; v += 3) {
-                        if (Math.abs(pos[v + 1] - r._waterLevelAt(pos[v], pos[v + 2])) > 0.05) {
-                            out.chunkWaterOnLevel = false;
-                            break;
-                        }
-                    }
-                    const aw = g.attributes.aWave.array;
-                    for (let k = 0; k < aw.length; k++) {
-                        if (aw[k] < -0.001 || aw[k] > 1.001) {
-                            out.chunkWaterWaveValid = false;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        r._disposeHydrosphereMeshes();
-        out.disposeClears = Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
-        r._buildHydrosphereMeshes();
-        out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
-        return out;
-    });
-
-    if (voxelChunkWaterResults && !voxelChunkWaterResults.error) {
-        const hc = voxelChunkWaterResults;
-        check(
-            "Voxel V9.43-c: _buildHydrosphereMeshes + _disposeHydrosphereMeshes existieren",
-            hc.hasBuild && hc.hasDispose
-        );
-        check(
-            "Voxel V9.50-b: die Chunk-Wasser-Methoden existieren (Build/Dispose/Gate)",
-            hc.hasChunkWater && hc.hasChunkWaterDispose && hc.hasGate
-        );
-        check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
-        check(
-            "Voxel V9.43-c: das Wasser-Material teilt die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog)",
-            hc.surfMatSharesUniforms
-        );
-        check("Voxel V9.49-c: der vereinte Shader trägt Gerstner-Wellen + aWave-Modulation", hc.shaderHasGerstner);
-        check("Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an)", hc.depthWriteOn);
-        if (hc.hydroReady) {
-            check(
-                "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
-                hc.riverPointsHaveVoxelY
-            );
-            check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
-            check(
-                `Voxel V9.63: hydrosphereMeshes trägt Plane + Pool pro Wasserfall (== hydro.waterfalls × 2: ${hc.fallCountMatches})`,
-                hc.onlyWaterfalls && hc.fallCountMatches
-            );
-            check(
-                "Voxel V9.63: Plane (wfMat+PlaneGeometry), Pool (hydroSurfaceMat+CircleGeometry)",
-                hc.fallsUseWaterfallMat
-            );
-            check("Voxel V9.50-b: state.voxelChunkWater ist eine Map", hc.waterMapIsMap);
-            check(
-                "Voxel V9.50-b: ein Ozean-Chunk baut eine Wasser-Fläche (Mesh, geteiltes Material)",
-                hc.chunkWaterIsMesh && hc.chunkWaterUsesMat
-            );
-            check(
-                "Voxel V9.50-b: das Chunk-Wasser trägt position/aFlow/aShore/aWave + nasse Quads",
-                hc.chunkWaterHasAttrs && hc.chunkWaterHasQuads
-            );
-            check(
-                "Voxel V9.50-b: jeder Wasser-Vertex sitzt EXAKT auf `_waterLevelAt` (kein Schweben)",
-                hc.chunkWaterOnLevel
-            );
-            check("Voxel V9.50-b: aWave ist je Vertex in [0,1]", hc.chunkWaterWaveValid);
-            check("Voxel V9.50-b: der Wasser-Gate erkennt einen Ozean-Chunk", hc.gateOceanTrue);
-            check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
-            check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
-        }
-    }
-
-    // ### Voxel V9.50-b — Ufer-Schaum + Fluss-Flow im Chunk-Wasser ###
-    const voxelFoamResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return null;
-        const out = {};
-        const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-        out.shaderHasShore = !!sm && /aShore/.test(sm.vertexShader || "") && /vShore/.test(sm.fragmentShader || "");
-        out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
-        out.shaderHasCrest = !!sm && /crest/.test(sm.fragmentShader || "");
-        const hydro = r.state.hydrosphere;
-        out.hydroReady = !!(hydro && hydro.ready);
-        if (!out.hydroReady) return out;
-        const span = r._voxelChunkConfig().span;
-        out.shoreInRange = true;
-        out.riverHasFlow = false;
-        out.hasGeo = true;
-        let rp = null;
-        for (const rv of hydro.rivers) {
-            for (const p of rv.points) {
-                if (!p.inLake) {
-                    rp = p;
-                    break;
-                }
-            }
-            if (rp) break;
-        }
-        if (rp) {
-            const cx = Math.floor(rp.x / span);
-            const cz = Math.floor(rp.z / span);
-            r._disposeVoxelChunkWater(`${cx},${cz}`);
-            r._buildVoxelChunkWater(cx, cz);
-            const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
-            const g = wm && wm.geometry;
-            out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
-            if (out.hasGeo) {
-                const aSh = g.attributes.aShore.array;
-                for (let k = 0; k < aSh.length; k++) {
-                    if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
-                }
-                const fa = g.attributes.aFlow.array;
-                for (let k = 0; k + 1 < fa.length; k += 2) {
-                    if (Math.hypot(fa[k], fa[k + 1]) > 0.5) {
-                        out.riverHasFlow = true;
-                        break;
-                    }
-                }
-            }
-        } else {
-            out.riverHasFlow = true; // keine Land-Flüsse → vacuous
-        }
-        return out;
-    });
-
-    if (voxelFoamResults && !voxelFoamResults.error) {
-        const h = voxelFoamResults;
-        check("Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
-        check("Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)", h.shaderScaledScroll);
-        check("Voxel V9.49-c: der Shader trägt Ozean-Schaumkämme (crest)", h.shaderHasCrest);
-        if (h.hydroReady) {
-            check("Voxel V9.50-b: das Chunk-Wasser trägt aShore + aFlow", h.hasGeo);
-            check("Voxel V9.50-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
-            check("Voxel V9.50-b: ein Fluss-Chunk trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
-        }
-    }
-
     // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
     // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
     // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
@@ -12464,11 +12229,11 @@ async function checkBandHydrosphere(ctx) {
         out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
         // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
         out.flagClean = !r._hydroComputing;
-        // (13) V9.50 — das Chunk-Wasser fragt das Fluss-Netz:
-        // `_buildVoxelChunkWater` ruft `_waterLevelAt` (das über
-        // `_hydroRiverAt` denselben `riverBuckets`-Index liest).
+        // (13) V9.75 — das Iso-Wasser-Mesh fragt das Wasser-Level-Feld
+        // (`_buildVoxelChunkWaterCells` ruft `_waterLevelAt` pro xz-Spalte).
         out.unifiedQueriesRivers =
-            typeof r._buildVoxelChunkWater === "function" && /_waterLevelAt/.test(r._buildVoxelChunkWater.toString());
+            typeof r._buildVoxelChunkWaterCells === "function" &&
+            /_waterLevelAt/.test(r._buildVoxelChunkWaterCells.toString());
         // (14) der Carve ist im Perf-Budget
         const t0 = performance.now();
         const span = hydro.size;
@@ -12511,7 +12276,10 @@ async function checkBandHydrosphere(ctx) {
             d.recomputeStable
         );
         check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
-        check("Voxel V9.50-b: das Chunk-Wasser fragt das Wasser-Level-Feld (`_waterLevelAt`)", d.unifiedQueriesRivers);
+        check(
+            "Voxel V9.75: das Iso-Wasser-Cell-Feld fragt das Wasser-Level-Feld (`_waterLevelAt`)",
+            d.unifiedQueriesRivers
+        );
         check(
             "Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe < 300 ms)",
             typeof d.carvePerfMs === "number" && d.carvePerfMs < 300,
@@ -12640,832 +12408,6 @@ async function checkBandHydrosphere(ctx) {
 // ALLE Architekturen mit soliden Parts (dichte ≥ 0.3), `_blockerTopAt`
 // liefert die richtige Höhe — und pro-Part: ein Baum-Stamm (Holz) blockt,
 // die Krone (Laub, dichte 0.1) NICHT.
-async function checkBandWelleA2Blocker(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state || !r.state.scene) return { error: "no realm" };
-        const out = {};
-        // 1) Damm-Bauplan bleibt als built-in (V9.64-Invariante)
-        out.hasDammBlueprint = !!(r.state.blueprints && r.state.blueprints.damm && r.state.blueprints.damm.parts);
-        // 2) Generische Blocker-Methoden existieren (die V9.64-Dam-Helfer
-        // wurden weggeräumt — Vision-rein, kein Type-Whitelist).
-        out.hasGenericMethods =
-            typeof r._blockerIndexAdd === "function" &&
-            typeof r._blockerIndexRemove === "function" &&
-            typeof r._blockerTopAt === "function" &&
-            typeof r._isPartSolid === "function";
-        out.legacyDamHelpersGone = typeof r._damIndexAdd === "undefined" && typeof r._damTopAt === "undefined";
-        // 3) _isPartSolid klassifiziert nach Substanz
-        out.steinSolid = r._isPartSolid({ material: "stein" }) === true;
-        out.holzSolid = r._isPartSolid({ material: "holz" }) === true;
-        out.laubBlocksNot = r._isPartSolid({ material: "laub" }) === false;
-        out.federnBlocksNot = r._isPartSolid({ material: "federn" }) === false;
-        out.glutBlocksNot = r._isPartSolid({ material: "glut" }) === false;
-        out.missingMaterialNotSolid = r._isPartSolid({ material: "nicht-existent" }) === false;
-        // 4) Damm: Spawn → Index + _blockerTopAt
-        const damPos = { x: 300, y: 5, z: 300 };
-        const damEntry = r.spawnArchitecture("damm", damPos, { silent: true });
-        out.damSpawnSucceeded = !!damEntry;
-        if (damEntry) {
-            out.indexHasEntry = !!(r.state.blockerIndex && r.state.blockerIndex.size > 0);
-            const top = r._blockerTopAt(damPos.x, damPos.z);
-            out.damTopReturnsHeight = Number.isFinite(top) && top > 0;
-            out.damTopValue = top;
-            const offTop = r._blockerTopAt(damPos.x + 50, damPos.z + 50);
-            out.damTopOffReturnsNone = offTop === -Infinity;
-            r.removeArchitecture(damEntry);
-            const topAfter = r._blockerTopAt(damPos.x, damPos.z);
-            out.indexClearedAfterRemove = topAfter === -Infinity;
-        }
-        // 5) Stein-Block: derselbe Pfad indexiert auch ihn (kein Damm-Privileg)
-        const blockPos = { x: 360, y: 5, z: 360 };
-        const blockEntry = r.spawnArchitecture("stein_block", blockPos, { silent: true });
-        out.blockSpawnSucceeded = !!blockEntry;
-        if (blockEntry) {
-            const top = r._blockerTopAt(blockPos.x, blockPos.z);
-            out.blockTopReturnsHeight = Number.isFinite(top) && top > 0;
-            r.removeArchitecture(blockEntry);
-        }
-        // 6) Baum-Eiche pro-Part: Stamm (holz, sx=0.8) blockt am Zentrum,
-        // aber außerhalb der Stamm-Hülle ist die Krone (laub) transparent.
-        // Stamm-AABB-Halbradius = max(0.8, 0.8) * 0.5 = 0.4 m;
-        // Krone-AABB-Halbradius wäre 1.2 m, wird aber NICHT indexiert.
-        const treePos = { x: 420, y: 5, z: 420 };
-        const treeEntry = r.spawnArchitecture("baum_eiche", treePos, { silent: true });
-        out.treeSpawnSucceeded = !!treeEntry;
-        if (treeEntry) {
-            // Genau am Zentrum: im Stamm-AABB → blockt
-            const trunkTop = r._blockerTopAt(treePos.x, treePos.z);
-            out.trunkBlocks = Number.isFinite(trunkTop) && trunkTop > 0;
-            // 0.8 m versetzt: außerhalb Stamm (0.4 m), innerhalb Krone (1.2 m) → frei
-            const crownOnly = r._blockerTopAt(treePos.x + 0.8, treePos.z);
-            out.crownDoesNotBlock = crownOnly === -Infinity;
-            // entry.blockerAABBs hat exakt einen Eintrag (Stamm), nicht zwei
-            out.treeIndexedOneAABB = Array.isArray(treeEntry.blockerAABBs) && treeEntry.blockerAABBs.length === 1;
-            r.removeArchitecture(treeEntry);
-        }
-        return out;
-    });
-    if (res.error) {
-        check("Welle A.2 V9.65: Blocker-Band-Test (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle A.2 V9.65: Damm-Bauplan als built-in", res.hasDammBlueprint);
-    check(
-        "Welle A.2 V9.65: _blockerIndexAdd / _blockerIndexRemove / _blockerTopAt / _isPartSolid existieren",
-        res.hasGenericMethods
-    );
-    check("Welle A.2 V9.65: Legacy-Damm-Helfer (V9.64) sind weg", res.legacyDamHelpersGone);
-    check("Welle A.2 V9.65: _isPartSolid: Stein ist solide", res.steinSolid);
-    check("Welle A.2 V9.65: _isPartSolid: Holz ist solide (dichte 0.4 ≥ 0.3)", res.holzSolid);
-    check("Welle A.2 V9.65: _isPartSolid: Laub ist NICHT solide (dichte 0.1)", res.laubBlocksNot);
-    check("Welle A.2 V9.65: _isPartSolid: Federn sind NICHT solide", res.federnBlocksNot);
-    check("Welle A.2 V9.65: _isPartSolid: Glut ist NICHT solide", res.glutBlocksNot);
-    check("Welle A.2 V9.65: _isPartSolid: fehlendes Material ist NICHT solide", res.missingMaterialNotSolid);
-    check("Welle A.2 V9.65: spawnArchitecture('damm') liefert einen Eintrag", res.damSpawnSucceeded);
-    check("Welle A.2 V9.65: state.blockerIndex hat nach Damm-Spawn einen Eintrag", res.indexHasEntry);
-    check(
-        "Welle A.2 V9.65: _blockerTopAt liefert die Damm-Top-Höhe am Damm-Zentrum",
-        res.damTopReturnsHeight,
-        `top=${res.damTopValue}`
-    );
-    check("Welle A.2 V9.65: _blockerTopAt liefert -Infinity ausserhalb des Damm-AABB", res.damTopOffReturnsNone);
-    check("Welle A.2 V9.65: removeArchitecture cleared den Damm-Index-Eintrag", res.indexClearedAfterRemove);
-    check(
-        "Welle A.2 V9.65: spawnArchitecture('stein_block') wird auch indexiert (generisch)",
-        res.blockSpawnSucceeded && res.blockTopReturnsHeight
-    );
-    check("Welle A.2 V9.65: spawnArchitecture('baum_eiche') liefert einen Eintrag", res.treeSpawnSucceeded);
-    check("Welle A.2 V9.65: Baum-Stamm (Holz) blockiert am Zentrum", res.trunkBlocks);
-    check("Welle A.2 V9.65: Baum-Krone (Laub) blockiert NICHT", res.crownDoesNotBlock);
-    check("Welle A.2 V9.65: Baum-Eintrag hat nur EINEN AABB (Stamm, nicht Krone)", res.treeIndexedOneAABB);
-}
-
-// V9.66 (Welle A.3) — die Wahrheits-Quelle der Hydrosphäre. `_effectiveSurfaceY`
-// kombiniert Worldgen-Surface + Voxel-Edits + Blocker zur EINEN Höhe, die der
-// Spieler wirklich sieht. Verifiziert: ohne Spieler-Mutation = Macro-Surface;
-// mit Damm = höher; mit Fill-Edit = höher; mit Carve-Edit = tiefer; die
-// Hydrosphäre-Sample-Pfade rufen die neue Funktion (Source-Probe).
-async function checkBandWelleA3EffectiveSurface(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        // 1) Wahrheits-Funktion + Edit-Delta-Helfer existieren
-        out.hasEffective = typeof r._effectiveSurfaceY === "function";
-        out.hasEditDelta = typeof r._voxelEditSurfaceDelta === "function";
-        // 2) Ohne Mutation: effective ≈ macro (Toleranz für ±1 mm Floating-Point)
-        const x = 250;
-        const z = 250;
-        const macroRaw = r._terrainMacroSurfaceY(x, z, false);
-        // Vorbereitung: alle Test-Edits + Test-Architekturen weg, sauberer Stand
-        const editsBefore = (r.state.worldMeta && r.state.worldMeta.voxelEdits) || [];
-        const editsCountBefore = editsBefore.length;
-        const baselineEff = r._effectiveSurfaceY(x, z);
-        out.baselineMatchesMacro = Math.abs(baselineEff - macroRaw) < 0.001;
-        out.baselineValue = baselineEff;
-        // 3) Mit einer Damm-Architektur an (x,z) — effective lifts to dam-top
-        const damEntry = r.spawnArchitecture("damm", { x, y: macroRaw + 2, z }, { silent: true });
-        out.damSpawnSucceeded = !!damEntry;
-        if (damEntry) {
-            const withDam = r._effectiveSurfaceY(x, z);
-            out.damLiftsSurface = withDam > baselineEff + 0.5;
-            out.damEffValue = withDam;
-            // Genau auf der Dam-Top sollte der effective ≈ dam-topY sein
-            const blockerTop = r._blockerTopAt(x, z);
-            out.effMatchesBlockerTop = Math.abs(withDam - blockerTop) < 0.001;
-            r.removeArchitecture(damEntry);
-            const afterRemove = r._effectiveSurfaceY(x, z);
-            out.removeRestoresSurface = Math.abs(afterRemove - baselineEff) < 0.001;
-        }
-        // 4) Mit einem Fill-Edit über der Surface — effective lifts
-        const fillX = 280;
-        const fillZ = 280;
-        const macroFill = r._terrainMacroSurfaceY(fillX, fillZ, false);
-        if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
-        const fillEdit = { x: fillX, y: macroFill + 3, z: fillZ, r: 4, mode: "fill", strength: 48 };
-        r.state.worldMeta.voxelEdits.push(fillEdit);
-        const withFill = r._effectiveSurfaceY(fillX, fillZ);
-        out.fillLiftsSurface = withFill > macroFill + 1;
-        out.fillEffValue = withFill;
-        out.fillEffExpected = macroFill + 3 + 4; // ed.y + r
-        out.fillEffMatches = Math.abs(withFill - out.fillEffExpected) < 0.1;
-        // 5) Mit einem Carve-Edit, der die Surface schneidet — effective lowers
-        const carveX = 320;
-        const carveZ = 320;
-        const macroCarve = r._terrainMacroSurfaceY(carveX, carveZ, false);
-        const carveEdit = { x: carveX, y: macroCarve - 1, z: carveZ, r: 4, mode: "carve", strength: 48 };
-        r.state.worldMeta.voxelEdits.push(carveEdit);
-        const withCarve = r._effectiveSurfaceY(carveX, carveZ);
-        out.carveLowersSurface = withCarve < macroCarve - 1;
-        out.carveEffValue = withCarve;
-        // 6) Edit ausserhalb der xz-Reichweite hat keinen Effekt
-        const farX = 500;
-        const farZ = 500;
-        const macroFar = r._terrainMacroSurfaceY(farX, farZ, false);
-        const effFar = r._effectiveSurfaceY(farX, farZ);
-        out.distantEditNoEffect = Math.abs(effFar - macroFar) < 0.001;
-        // Cleanup: nur unsere zwei Edits entfernen
-        r.state.worldMeta.voxelEdits.length = editsCountBefore;
-        // 7) Source-Probe: Hydrosphäre-Compute-Pfade rufen _effectiveSurfaceY
-        const seedTarnsSrc = r._hydroSeedTarns.toString();
-        out.tarnsUsesEffective = /this\._effectiveSurfaceY\(/.test(seedTarnsSrc);
-        const hydroInitSrc = r._hydroInit.toString();
-        out.hydroInitUsesEffective = /this\._effectiveSurfaceY\(/.test(hydroInitSrc);
-        return out;
-    });
-    if (res.error) {
-        check("Welle A.3 V9.66: Effective-Surface-Band-Test (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle A.3 V9.66: _effectiveSurfaceY existiert", res.hasEffective);
-    check("Welle A.3 V9.66: _voxelEditSurfaceDelta existiert", res.hasEditDelta);
-    check(
-        "Welle A.3 V9.66: ohne Mutation = _terrainMacroSurfaceY (≤ 1 mm)",
-        res.baselineMatchesMacro,
-        `eff=${res.baselineValue}`
-    );
-    check("Welle A.3 V9.66: spawnArchitecture('damm') als Test-Setup", res.damSpawnSucceeded);
-    check(
-        "Welle A.3 V9.66: Damm hebt die effektive Surface",
-        res.damLiftsSurface,
-        `vor=${res.baselineValue}, mit Damm=${res.damEffValue}`
-    );
-    check("Welle A.3 V9.66: effective == _blockerTopAt am Damm-Zentrum", res.effMatchesBlockerTop);
-    check("Welle A.3 V9.66: Damm-Remove stellt die Surface wieder her", res.removeRestoresSurface);
-    check("Welle A.3 V9.66: Fill-Edit hebt die effektive Surface", res.fillLiftsSurface, `eff=${res.fillEffValue}`);
-    check(
-        "Welle A.3 V9.66: Fill-Edit hebt auf erwartete Höhe (ed.y + r)",
-        res.fillEffMatches,
-        `eff=${res.fillEffValue}, erwartet=${res.fillEffExpected}`
-    );
-    check(
-        "Welle A.3 V9.66: Carve-Edit senkt die effektive Surface",
-        res.carveLowersSurface,
-        `eff=${res.carveEffValue}`
-    );
-    check("Welle A.3 V9.66: ferner Edit hat keinen Effekt am fremden Punkt", res.distantEditNoEffect);
-    check("Welle A.3 V9.66: _hydroSeedTarns ruft _effectiveSurfaceY", res.tarnsUsesEffective);
-    check("Welle A.3 V9.66: _hydroInit ruft _effectiveSurfaceY", res.hydroInitUsesEffective);
-}
-
-// V9.67 (Welle A.4) — reaktive Hydrosphäre mit Debounce. `_markHydroDirty`,
-// `_recomputeHydrosphere`, `_tickHydroRecompute` als Trio; Trigger in
-// spawnArchitecture (solid + nicht-silent), removeArchitecture (solid),
-// _addVoxelEdit. Verifiziert: das Trio existiert; ein nicht-silent Damm-
-// Spawn setzt hydroDirty; ein silent Spawn nicht; ein Voxel-Edit setzt
-// dirty; Direct-Recompute löscht das Flag + setzt hydroLastRecomputeMs;
-// Tick VOR Debounce-Fenster räumt nicht; Tick NACH Debounce-Fenster räumt;
-// Source-Probe der Trigger-Stellen.
-async function checkBandWelleA4Recompute(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state || !r.state.scene) return { error: "no realm" };
-        const out = {};
-        // 1) das Trio existiert
-        out.hasMarkDirty = typeof r._markHydroDirty === "function";
-        out.hasRecompute = typeof r._recomputeHydrosphere === "function";
-        out.hasTick = typeof r._tickHydroRecompute === "function";
-        // 2) Konstante korrekt
-        out.debounceMs = r.constructor.HYDRO_RECOMPUTE_DEBOUNCE_MS;
-        out.debounceIs300 = out.debounceMs === 300;
-        // 3) Hydrosphäre muss ready sein, sonst kein Trigger-Effekt
-        out.hydroReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-        // 4) initial: Flag false
-        r.state.hydroDirty = false;
-        r.state.hydroDirtyAt = 0;
-        // 5) silent-Spawn an einer Test-Position triggert NICHT
-        const silentEntry = r.spawnArchitecture("damm", { x: 600, y: 5, z: 600 }, { silent: true });
-        out.silentSpawnNoDirty = r.state.hydroDirty === false;
-        if (silentEntry) r.removeArchitecture(silentEntry);
-        r.state.hydroDirty = false;
-        // 6) NICHT-silent solider Spawn triggert
-        const damEntry = r.spawnArchitecture("damm", { x: 610, y: 5, z: 610 });
-        out.solidSpawnSetsDirty = r.state.hydroDirty === true;
-        out.solidSpawnAtPositive = r.state.hydroDirtyAt > 0;
-        // 7) Tick VOR Debounce-Fenster räumt nicht
-        const dirtyAt = r.state.hydroDirtyAt;
-        r._tickHydroRecompute(dirtyAt + 100); // erst 100 ms, < 300
-        out.tickEarlyKeepsDirty = r.state.hydroDirty === true;
-        // 8) Tick NACH Debounce-Fenster räumt + führt Recompute aus
-        const before = r.state.hydrosphere;
-        r._tickHydroRecompute(dirtyAt + 400); // > 300
-        out.tickLateClearsDirty = r.state.hydroDirty === false;
-        out.recomputeRan = r.state.hydroLastRecomputeMs > 0;
-        out.recomputeMsValue = r.state.hydroLastRecomputeMs;
-        out.hydroStillReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
-        out.hydroIsNewObject = r.state.hydrosphere !== before;
-        // 9) Remove eines Blocker-Eintrags markiert dirty
-        r.state.hydroDirty = false;
-        r.removeArchitecture(damEntry);
-        out.removeSetsDirty = r.state.hydroDirty === true;
-        // 10) Voxel-Edit markiert dirty (direkt _addVoxelEdit rufen)
-        r.state.hydroDirty = false;
-        const editOk = r._addVoxelEdit(700, 5, 700, 3, "carve");
-        out.editAccepted = editOk === true;
-        out.editSetsDirty = r.state.hydroDirty === true;
-        // Cleanup: den Test-Edit am Ende der Liste entfernen
-        if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits)) {
-            const last = r.state.worldMeta.voxelEdits[r.state.worldMeta.voxelEdits.length - 1];
-            if (last && last.x === 700 && last.z === 700) {
-                r.state.worldMeta.voxelEdits.pop();
-            }
-        }
-        // 11) Source-Probes: spawnArchitecture + removeArchitecture +
-        //     _addVoxelEdit rufen _markHydroDirty (mit-wanderndes Pattern)
-        out.spawnUsesMarkDirty = /this\._markHydroDirty\(\)/.test(r.spawnArchitecture.toString());
-        out.removeUsesMarkDirty = /this\._markHydroDirty\(\)/.test(r.removeArchitecture.toString());
-        out.editUsesMarkDirty = /this\._markHydroDirty\(\)/.test(r._addVoxelEdit.toString());
-        // 12) Loop-Phase ruft _tickHydroRecompute (mit-wanderndes Pattern)
-        out.loopCallsTick = /_tickHydroRecompute\(/.test(r.startEternalLoop.toString());
-        // 13) Performance-Beobachtung: Recompute war messbar (>0).
-        //     Headless ist signifikant langsamer als der Browser (GC + ohne
-        //     warm-jitted V8); Schwelle 5000 ms ist ein Headless-Floor, nicht
-        //     das Vision-Budget (< 300 ms im echten Browser, V9.43-b-Baseline).
-        out.recomputeUnderBudget = r.state.hydroLastRecomputeMs > 0 && r.state.hydroLastRecomputeMs < 5000;
-        return out;
-    });
-    if (res.error) {
-        check("Welle A.4 V9.67: Recompute-Band-Test (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle A.4 V9.67: _markHydroDirty existiert", res.hasMarkDirty);
-    check("Welle A.4 V9.67: _recomputeHydrosphere existiert", res.hasRecompute);
-    check("Welle A.4 V9.67: _tickHydroRecompute existiert", res.hasTick);
-    check("Welle A.4 V9.67: HYDRO_RECOMPUTE_DEBOUNCE_MS = 300", res.debounceIs300, `ms=${res.debounceMs}`);
-    check("Welle A.4 V9.67: state.hydrosphere ist ready (Vorbedingung)", res.hydroReady);
-    check("Welle A.4 V9.67: silent Spawn markiert NICHT dirty", res.silentSpawnNoDirty);
-    check("Welle A.4 V9.67: nicht-silent solider Spawn markiert dirty", res.solidSpawnSetsDirty);
-    check("Welle A.4 V9.67: hydroDirtyAt-Zeitstempel gesetzt", res.solidSpawnAtPositive);
-    check("Welle A.4 V9.67: Tick VOR Debounce-Fenster (100ms) behält dirty", res.tickEarlyKeepsDirty);
-    check("Welle A.4 V9.67: Tick NACH Debounce-Fenster (400ms) räumt dirty", res.tickLateClearsDirty);
-    check(
-        "Welle A.4 V9.67: Recompute hat hydroLastRecomputeMs gesetzt",
-        res.recomputeRan,
-        `ms=${res.recomputeMsValue}`
-    );
-    check("Welle A.4 V9.67: Hydrosphäre nach Recompute weiterhin ready", res.hydroStillReady);
-    check("Welle A.4 V9.67: Recompute erzeugt ein neues Hydrosphäre-Objekt", res.hydroIsNewObject);
-    check("Welle A.4 V9.67: removeArchitecture eines Blockers markiert dirty", res.removeSetsDirty);
-    check("Welle A.4 V9.67: _addVoxelEdit akzeptiert den Test-Edit", res.editAccepted);
-    check("Welle A.4 V9.67: _addVoxelEdit markiert dirty", res.editSetsDirty);
-    check("Welle A.4 V9.67: spawnArchitecture ruft _markHydroDirty", res.spawnUsesMarkDirty);
-    check("Welle A.4 V9.67: removeArchitecture ruft _markHydroDirty", res.removeUsesMarkDirty);
-    check("Welle A.4 V9.67: _addVoxelEdit ruft _markHydroDirty", res.editUsesMarkDirty);
-    check("Welle A.4 V9.67: startEternalLoop ruft _tickHydroRecompute", res.loopCallsTick);
-    check(
-        "Welle A.4 V9.67: Recompute-Dauer im Headless-Floor (< 5000 ms)",
-        res.recomputeUnderBudget,
-        `ms=${res.recomputeMsValue} (Browser-Budget < 300 ms)`
-    );
-}
-
-// V9.68 (Welle A.5) — der Vision-Beweis: das Wasser kennt die Welt. Spawnt
-// einen Damm direkt auf einem Fluss-Segment, lässt die Hydrosphäre neu
-// rechnen, prüft empirisch dass das Drainage-Netz sich verändert hat —
-// und kehrt zum Original zurück, sobald der Damm entfernt wird.
-// Vier Vision-Beweis-Invarianten (Roadmap §Welle A.5):
-//   (i) Damm im Fluss → Drainage-Netz verändert
-//   (ii) Stein-Block im Fluss → dieselbe Reaktion (kein Damm-Privileg)
-//   (iii) Carve im Trockenland senkt die effektive Surface unter waterLevel
-//   (iv) Architektur-Remove → Drainage-Netz kehrt zum Original-Pfad zurück
-// Plus: Symphonie-Ping-Methode existiert + Recompute schreibt Journal.
-async function checkBandWelleA5VisionProof(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state || !r.state.hydrosphere || !r.state.hydrosphere.ready) {
-            return { error: "hydrosphere not ready" };
-        }
-        const out = {};
-        out.hasPingMethod = typeof r._playHydroRecomputePing === "function";
-        // Fingerprint-Funktion: ein kompakter Sentinel des Drainage-Netzes.
-        // Verändert sich zusammen mit der Topologie (Fluss-Anzahl, See-
-        // Anzahl, Mündungs-Positionen, totaler Fluss-Punkt-Count).
-        const fingerprint = () => {
-            const h = r.state.hydrosphere;
-            if (!h || !h.ready) return null;
-            let mouthSum = 0;
-            let pointCount = 0;
-            let pointHash = 0;
-            for (const riv of h.rivers) {
-                pointCount += riv.points.length;
-                const last = riv.points[riv.points.length - 1];
-                if (last) mouthSum += last.x + last.z;
-                // Stabiler XOR-Hash über alle Punkt-Koordinaten — detektiert
-                // auch eine 1-Zellen-Pfad-Verschiebung, die `mouthSum` allein
-                // verpassen würde.
-                for (const p of riv.points) {
-                    pointHash = (pointHash * 31 + ((p.x | 0) ^ (p.z | 0))) | 0;
-                }
-            }
-            const stats = h.stats || {};
-            return {
-                riverCount: h.rivers.length,
-                lakeCount: h.lakes.length,
-                waterfallCount: h.waterfalls.length,
-                pointCount,
-                mouthSum: Math.round(mouthSum * 100) / 100,
-                pointHash,
-                surfMax: stats.surfMax,
-                maxAccum: stats.maxAccum,
-                lakeCells: stats.lakeCells,
-            };
-        };
-        const eq = (a, b) =>
-            a.riverCount === b.riverCount &&
-            a.lakeCount === b.lakeCount &&
-            a.waterfallCount === b.waterfallCount &&
-            a.pointCount === b.pointCount &&
-            Math.abs(a.mouthSum - b.mouthSum) < 0.5 &&
-            a.pointHash === b.pointHash &&
-            a.surfMax === b.surfMax &&
-            a.maxAccum === b.maxAccum &&
-            a.lakeCells === b.lakeCells;
-        // Baseline-Fingerprint
-        const baseFp = fingerprint();
-        out.baseFp = baseFp;
-        out.hasRivers = baseFp.riverCount > 0;
-        // Determinismus-Check: ein No-Op-Recompute (ohne Mutation) muss
-        // bit-identischen Fingerprint liefern — andernfalls sind unsere
-        // Veränderungs-Tests unten unfair (würden auch ohne Damm rot).
-        r._recomputeHydrosphere();
-        const noopFp = fingerprint();
-        out.noopFp = noopFp;
-        out.noopDeterministic = eq(noopFp, baseFp);
-        if (!baseFp.riverCount) {
-            out.skippedRiverTests = "no rivers in worldgen (seed-abhängig)";
-            return out;
-        }
-        // Längsten Fluss finden, einen Mittelpunkt picken
-        let longest = r.state.hydrosphere.rivers[0];
-        for (const riv of r.state.hydrosphere.rivers) {
-            if (riv.points.length > longest.points.length) longest = riv;
-        }
-        const mid = longest.points[Math.floor(longest.points.length / 2)];
-        out.midpoint = { x: mid.x, z: mid.z, y: mid.y, flowX: mid.flowX, flowZ: mid.flowZ };
-        // Hilfs-Funktion: ein 3×3-Architektur-Plug grid-aligned auf den Hydro-
-        // Sample-Positionen (16-m-Grid). Drei Disziplinen für sichtbaren Effekt:
-        // 1. **Grid-aligned**: Hydro samplet bei `originX + (i+0.5)*cell`. Eine
-        //    Architektur mit AABB-halfRadius 4m bedeckt nur ihre EIGENE Sample-
-        //    Zelle; jede diagonale Versatz-Position verfehlt die Sample-Grid.
-        //    Daher di/dj als ganze Cell-Schritte (16m), egal welche Flow-Richtung.
-        // 2. Spawn-Y aus der lokalen MACRO-Surface — `mid.y` ist die Wasser-Y
-        //    (priority-flood-filled), nicht der Bett-Macro.
-        // 3. Hoch genug bauen, dass der 3×3-Blur (_hydroBlur) die Hebung nicht
-        //    zur ε-Erhebung dämpft — `dyAboveMacro=15` ergibt nach Blur ~5m Boost,
-        //    genug zum Re-Routen einer Fluss-Zelle.
-        const buildPlug = (cx, cz, type, dyAboveMacro) => {
-            const entries = [];
-            for (let di = -1; di <= 1; di++) {
-                for (let dj = -1; dj <= 1; dj++) {
-                    const x = cx + di * 16;
-                    const z = cz + dj * 16;
-                    const macroHere = r._terrainMacroSurfaceY(x, z, false);
-                    if (!Number.isFinite(macroHere)) continue;
-                    const e = r.spawnArchitecture(type, { x, y: macroHere + dyAboveMacro, z });
-                    if (e) entries.push(e);
-                }
-            }
-            return entries;
-        };
-        // (i) Damm-Plug im Fluss → Drainage-Netz verändert
-        const damPlug = buildPlug(mid.x, mid.z, "damm", 15);
-        out.damPlugSize = damPlug.length;
-        r._recomputeHydrosphere();
-        const damFp = fingerprint();
-        out.damFp = damFp;
-        out.damChanged = !eq(damFp, baseFp);
-        // (iv) Damm-Remove → Netz kehrt zurück
-        for (const e of damPlug) r.removeArchitecture(e);
-        r._recomputeHydrosphere();
-        const restoredFp = fingerprint();
-        out.restoredFp = restoredFp;
-        out.removeRestores = eq(restoredFp, baseFp);
-        // (ii) Stein-Block-Plug im Fluss → dieselbe Reaktion (kein Damm-Privileg)
-        const blockPlug = buildPlug(mid.x, mid.z, "stein_block", 15);
-        r._recomputeHydrosphere();
-        const blockFp = fingerprint();
-        out.blockFp = blockFp;
-        out.blockChanged = !eq(blockFp, baseFp);
-        for (const e of blockPlug) r.removeArchitecture(e);
-        r._recomputeHydrosphere();
-        // (iii) Carve im Trockenland senkt effective unter waterLevel.
-        // Wir brauchen einen Spot, der nicht zu hoch über waterLevel liegt,
-        // weil _addVoxelEdit den Radius auf max 12 m klemmt → maximaler
-        // Surface-Drop ist ~12 m (bei r=12, carveY=macro-6 → eff=macro-18).
-        const wl = r.state.waterLevel;
-        let dryX = 0;
-        let dryZ = 0;
-        let macroAt = -Infinity;
-        const cands = [];
-        for (let cx = -400; cx <= 400; cx += 80) {
-            for (let cz = -400; cz <= 400; cz += 80) {
-                cands.push({ x: cx, z: cz });
-            }
-        }
-        for (const cand of cands) {
-            const m = r._terrainMacroSurfaceY(cand.x, cand.z);
-            // Sweet spot: 4..14 m über waterLevel — hoch genug für „Trockenland",
-            // niedrig genug dass der r=12-Carve unter den waterLevel reicht.
-            if (Number.isFinite(m) && m > wl + 4 && m < wl + 14 && m > macroAt) {
-                macroAt = m;
-                dryX = cand.x;
-                dryZ = cand.z;
-            }
-        }
-        out.drySpot = { x: dryX, z: dryZ, macroY: macroAt, waterLevel: wl };
-        out.foundDrySpot = macroAt > wl + 4 && macroAt < wl + 14;
-        if (out.foundDrySpot) {
-            // r=12, carveY so dass das Carve-Volumen die Surface UMSCHLIESST:
-            // top = carveY + r > macroAt (cuts) und bot = carveY - r < waterLevel.
-            const carveR = 12;
-            const carveY = macroAt - carveR * 0.5;
-            const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
-            const carveOk = r._addVoxelEdit(dryX, carveY, dryZ, carveR, "carve");
-            out.carveOk = carveOk === true;
-            const effAfter = r._effectiveSurfaceY(dryX, dryZ);
-            out.effAfterCarve = effAfter;
-            out.carveLowersBelowWater = effAfter < wl;
-            // Cleanup
-            if (r.state.worldMeta.voxelEdits.length > editsBefore) {
-                r.state.worldMeta.voxelEdits.length = editsBefore;
-            }
-        }
-        // (v) Welt-Feedback: Recompute schreibt Journal-Eintrag type=water
-        const journal = r.state.worldJournal && r.state.worldJournal.entries;
-        out.hasWaterJournal = Array.isArray(journal) && journal.some((e) => e.type === "water");
-        return out;
-    });
-    if (res.error) {
-        check("Welle A.5 V9.68: Vision-Proof-Band (Vorbedingung)", false, res.error);
-        return;
-    }
-    check("Welle A.5 V9.68: _playHydroRecomputePing existiert", res.hasPingMethod);
-    check(
-        "Welle A.5 V9.68: No-Op-Recompute ist deterministisch (Fingerprint bit-identisch)",
-        res.noopDeterministic,
-        `base=${JSON.stringify(res.baseFp)}, noop=${JSON.stringify(res.noopFp)}`
-    );
-    check(
-        "Welle A.5 V9.68: Welt hat initiale Flüsse (Vorbedingung)",
-        res.hasRivers,
-        `rivers=${res.baseFp.riverCount}, lakes=${res.baseFp.lakeCount}, falls=${res.baseFp.waterfallCount}`
-    );
-    if (!res.hasRivers) {
-        check("Welle A.5 V9.68: Vision-Beweis (Damm/Block/Carve)", false, "keine Flüsse — Welt zu trocken");
-        return;
-    }
-    check(
-        "Welle A.5 V9.68: (i) Damm im Fluss verändert Drainage-Netz",
-        res.damChanged,
-        `base.pointCount=${res.baseFp.pointCount}, mit Damm.pointCount=${res.damFp.pointCount}, plug=${res.damPlugSize}`
-    );
-    check(
-        "Welle A.5 V9.68: (iv) Damm-Remove stellt Drainage-Netz wieder her",
-        res.removeRestores,
-        `restored=${JSON.stringify(res.restoredFp)}`
-    );
-    check(
-        "Welle A.5 V9.68: (ii) Stein-Block verändert Drainage-Netz (kein Damm-Privileg)",
-        res.blockChanged,
-        `mit Stein-Block=${JSON.stringify(res.blockFp)}`
-    );
-    check(
-        "Welle A.5 V9.68: Trocken-Spot oberhalb Wasser gefunden (Vorbedingung)",
-        res.foundDrySpot,
-        `(${res.drySpot.x}, ${res.drySpot.z}) macroY=${res.drySpot.macroY}`
-    );
-    if (res.foundDrySpot) {
-        check("Welle A.5 V9.68: _addVoxelEdit Trockenland-Carve akzeptiert", res.carveOk);
-        check(
-            "Welle A.5 V9.68: (iii) Carve im Trockenland senkt effective unter waterLevel",
-            res.carveLowersBelowWater,
-            `eff=${res.effAfterCarve}`
-        );
-    }
-    check("Welle A.5 V9.68: Recompute schreibt Journal-Eintrag type=water", res.hasWaterJournal);
-}
-
-// V9.69 (Welle A.6 — Browser-Audit-Folge) — der Chunk-Water-Gate sieht
-// jetzt Voxel-Edits. Schöpfer-Befund nach V9.68-Audit: „die löcher werden
-// nicht gefüllt". Wurzel: `_voxelChunkTouchesWater` las nur die Macro-
-// Surface, nicht die Edit-Schicht — ein tiefer Carve in Hochland blieb
-// unsichtbar, weil der Gate keinen Wasser-Mesh-Bau zugelassen hatte. Heilung:
-// neue Predicate (2) scannt `worldMeta.voxelEdits` nach Carves, deren
-// Unterkante unter waterLevel reicht.
-async function checkBandWelleA6GateAudit(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        out.hasGate = typeof r._voxelChunkTouchesWater === "function";
-        // Trockenen Hochland-Spot (>10m über waterLevel) suchen, dessen Chunk
-        // also OHNE Edits gate(1)=false zurückgibt.
-        const wl = r.state.waterLevel;
-        const cfg = r._voxelChunkConfig();
-        const span = cfg.span;
-        let dryCX = null;
-        let dryCZ = null;
-        let dryMacro = -Infinity;
-        for (let cx = -8; cx <= 8 && dryCX === null; cx++) {
-            for (let cz = -8; cz <= 8 && dryCX === null; cz++) {
-                // Sample am Chunk-Zentrum
-                const x = cx * span + span / 2;
-                const z = cz * span + span / 2;
-                const m = r._terrainMacroSurfaceY(x, z, false);
-                if (!Number.isFinite(m) || m < wl + 16) continue; // braucht hochland
-                // Gate ohne Edits muss false sein (Sanity)
-                if (r._voxelChunkTouchesWater(cx, cz)) continue;
-                dryCX = cx;
-                dryCZ = cz;
-                dryMacro = m;
-            }
-        }
-        out.foundDryChunk = dryCX !== null;
-        out.drySpot = { cx: dryCX, cz: dryCZ, macroY: dryMacro };
-        if (!out.foundDryChunk) {
-            return out; // Welt zu nass — überspringe Test (Seed-abhängig)
-        }
-        // VOR Edit: Gate false (Vorbedingung)
-        out.gateBeforeEdit = r._voxelChunkTouchesWater(dryCX, dryCZ);
-        // Lokalität-Probe Vorbereitung: ferner Chunk-Status snapshotten —
-        // mein Edit darf NICHT seinen Gate-Status flippen (egal ob er
-        // vorher true oder false war).
-        const farCX = dryCX + 5;
-        const farCZ = dryCZ + 5;
-        out.gateFarBeforeEdit = r._voxelChunkTouchesWater(farCX, farCZ);
-        // Tiefer Carve am Chunk-Zentrum: ed.y am Macro, r=12 → bot = ed.y-12.
-        // Damit bot < waterLevel: ed.y < wl + 12. dryMacro > wl + 16, also
-        // verschiebe ed.y nach unten — wir setzen ed.y = wl + 8 (klar unter
-        // dryMacro, aber bot = wl-4 ist unter wl). Plus _addVoxelEdit clamp.
-        const cX = dryCX * span + span / 2;
-        const cZ = dryCZ * span + span / 2;
-        const editsBefore = (r.state.worldMeta && r.state.worldMeta.voxelEdits) || [];
-        const editsCountBefore = editsBefore.length;
-        const editOk = r._addVoxelEdit(cX, wl + 8, cZ, 12, "carve");
-        out.editAccepted = editOk === true;
-        // NACH Edit: Gate true (das ist die Heilung)
-        out.gateAfterEdit = r._voxelChunkTouchesWater(dryCX, dryCZ);
-        out.healed = out.gateBeforeEdit === false && out.gateAfterEdit === true;
-        // Lokalität-Probe: ferner Chunk darf seinen Status NICHT durch
-        // mein Edit ändern — die Predicate (2) prüft den xz-Footprint mit
-        // Marge r=12; bei 5 Chunks Distanz (~216 m) ist die Edit-Kugel weit
-        // ausserhalb. Stabilität egal ob ferner Chunk durch Macro-Dip/See/
-        // Fluss true ist.
-        out.gateFarAfterEdit = r._voxelChunkTouchesWater(farCX, farCZ);
-        out.farChunkStable = out.gateFarAfterEdit === out.gateFarBeforeEdit;
-        // Fill-Edit triggert den Gate NICHT (Fills heben, verstecken kein Wasser)
-        // Den Carve cleanup, dann Fill-Test
-        r.state.worldMeta.voxelEdits.length = editsCountBefore;
-        out.gateBackToFalseAfterCleanup = r._voxelChunkTouchesWater(dryCX, dryCZ) === false;
-        const fillOk = r._addVoxelEdit(cX, wl + 8, cZ, 12, "fill");
-        out.fillAccepted = fillOk === true;
-        out.gateFillIgnored = r._voxelChunkTouchesWater(dryCX, dryCZ) === false;
-        // Cleanup
-        r.state.worldMeta.voxelEdits.length = editsCountBefore;
-        // Source-Probe: der Gate ruft die voxelEdits-Schleife (mit-wandern bei Refactor)
-        out.gateUsesEdits = /voxelEdits/.test(r._voxelChunkTouchesWater.toString());
-        return out;
-    });
-    if (res.error) {
-        check("Welle A.6 V9.69: Gate-Audit-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle A.6 V9.69: _voxelChunkTouchesWater existiert", res.hasGate);
-    check(
-        "Welle A.6 V9.69: Trockener Hochland-Chunk gefunden (Vorbedingung)",
-        res.foundDryChunk,
-        `chunk=(${res.drySpot.cx}, ${res.drySpot.cz}) macroY=${res.drySpot.macroY}`
-    );
-    if (!res.foundDryChunk) {
-        check("Welle A.6 V9.69: Gate-Heilung (Welt zu nass für Test)", true, "skip — seed");
-        return;
-    }
-    check("Welle A.6 V9.69: Gate vor Edit ist false (Vorbedingung)", res.gateBeforeEdit === false);
-    check("Welle A.6 V9.69: _addVoxelEdit Tiefen-Carve akzeptiert", res.editAccepted);
-    check(
-        "Welle A.6 V9.69: Gate nach Tiefen-Carve ist true (Heilung)",
-        res.gateAfterEdit === true,
-        `vorher=${res.gateBeforeEdit}, nachher=${res.gateAfterEdit}`
-    );
-    check("Welle A.6 V9.69: Edit triggert Gate — gleicher Chunk false→true", res.healed);
-    check(
-        "Welle A.6 V9.69: Lokalität — ferner Chunk-Gate stabil durch Edit",
-        res.farChunkStable,
-        `vorher=${res.gateFarBeforeEdit}, nachher=${res.gateFarAfterEdit}`
-    );
-    check("Welle A.6 V9.69: Gate-Cleanup nach Edit-Entfernung", res.gateBackToFalseAfterCleanup);
-    check("Welle A.6 V9.69: Fill-Edit triggert Gate NICHT (nur Carves)", res.gateFillIgnored);
-    check("Welle A.6 V9.69: Gate-Funktion liest voxelEdits (Source-Probe)", res.gateUsesEdits);
-}
-
-// V9.70 (Welle B.1) — Wasser-Mesh-Skirts gegen die Sheet-Naht. Verifiziert
-// die Konstante WATER_CHUNK_SKIRT existiert; das Vertex-Raster ist um 2·SKIRT
-// erweitert (NV = dim+3 statt dim+1); Welt-Koord-Berechnung berücksichtigt
-// die Skirt-Verschiebung (erster Vertex bei vx = cx·span − step); zwei
-// adjacent Chunks teilen Boundary-Vertex-Positionen an Welt-(boundaryX, z)
-// EXAKT (Sheet verbindet); ferner Voxel-Chunk-Code (`_buildVoxelChunkWater`)
-// nutzt die Konstante (mit-wanderndes Source-Pattern).
-async function checkBandWelleB1WaterSkirts(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        const SKIRT = r.constructor.WATER_CHUNK_SKIRT;
-        out.skirtConstant = SKIRT;
-        out.skirtIs1 = SKIRT === 1;
-        out.hasSkirtUsage = /WATER_CHUNK_SKIRT/.test(r._buildVoxelChunkWater.toString());
-        // Welt-Konfig
-        const cfg = r._voxelChunkConfig();
-        const span = cfg.span;
-        const dim = cfg.dim;
-        const step = cfg.step;
-        // Einen Wasser-tragenden Chunk finden (Gate true) — typischerweise
-        // ein Küsten-Chunk im 4er-Streaming-Ring. Sample Macro-Y und prüfe
-        // Gate true.
-        let wetCX = null;
-        let wetCZ = null;
-        for (let cx = -6; cx <= 6 && wetCX === null; cx++) {
-            for (let cz = -6; cz <= 6 && wetCX === null; cz++) {
-                if (r._voxelChunkTouchesWater(cx, cz)) {
-                    wetCX = cx;
-                    wetCZ = cz;
-                }
-            }
-        }
-        out.foundWetChunk = wetCX !== null;
-        if (!out.foundWetChunk) return out;
-        // Force-Build des Chunks (falls noch nicht gestreamt)
-        if (!r.state.voxelChunkWater) r.state.voxelChunkWater = new Map();
-        const key = `${wetCX},${wetCZ}`;
-        r._disposeVoxelChunkWater(key);
-        r._buildVoxelChunkWater(wetCX, wetCZ);
-        const mesh = r.state.voxelChunkWater.get(key);
-        out.meshBuilt = !!(mesh && mesh.geometry);
-        if (!mesh || !mesh.geometry) return out;
-        // Erwartete Buffer-Größe: (dim+1+2*SKIRT)² Vertices × 3 (positions)
-        const NV = dim + 1 + 2 * SKIRT;
-        const posAttr = mesh.geometry.getAttribute("position");
-        out.expectedVertexCount = NV * NV;
-        out.actualVertexCount = posAttr ? posAttr.count : -1;
-        out.vertexCountMatches = out.actualVertexCount === out.expectedVertexCount;
-        // Erster Vertex muss bei (vx = cx·span − step, ?, vz = cz·span − step)
-        // liegen (Skirt-Verschiebung, V9.70-Mechanik).
-        if (posAttr) {
-            const v0x = posAttr.getX(0);
-            const v0z = posAttr.getZ(0);
-            const expectedV0x = wetCX * span - SKIRT * step;
-            const expectedV0z = wetCZ * span - SKIRT * step;
-            out.firstVertexX = v0x;
-            out.firstVertexZ = v0z;
-            out.firstVertexMatchesSkirt = Math.abs(v0x - expectedV0x) < 0.001 && Math.abs(v0z - expectedV0z) < 0.001;
-            // Letzter Vertex: (i=NV−1, j=NV−1) → vx = cx·span + (dim+SKIRT)·step
-            const last = NV * NV - 1;
-            const lastX = posAttr.getX(last);
-            const lastZ = posAttr.getZ(last);
-            const expectedLastX = wetCX * span + (dim + SKIRT) * step;
-            const expectedLastZ = wetCZ * span + (dim + SKIRT) * step;
-            out.lastVertexMatchesSkirt =
-                Math.abs(lastX - expectedLastX) < 0.001 && Math.abs(lastZ - expectedLastZ) < 0.001;
-        }
-        // Naht-Beweis: Chunk (wetCX, wetCZ) und sein rechter Nachbar
-        // (wetCX+1, wetCZ) müssen Boundary-Vertices an exakt derselben
-        // Welt-Position teilen. Chunk-A's letzte „echte" Vertex-Spalte
-        // ist bei i = dim+SKIRT → vx = cx·span + dim·step = (cx+1)·span.
-        // Chunk-B's erste „echte" Vertex-Spalte ist bei i = SKIRT → vx =
-        // (cx+1)·span. Außerdem haben beide Chunks Skirt-Vertices, die
-        // OVER die Naht hineinragen.
-        if (r._voxelChunkTouchesWater(wetCX + 1, wetCZ)) {
-            const keyB = `${wetCX + 1},${wetCZ}`;
-            r._disposeVoxelChunkWater(keyB);
-            r._buildVoxelChunkWater(wetCX + 1, wetCZ);
-            const meshB = r.state.voxelChunkWater.get(keyB);
-            if (meshB && meshB.geometry) {
-                const posB = meshB.geometry.getAttribute("position");
-                // Chunk A: Vertex bei (i=dim+SKIRT, j=SKIRT) — Boundary-Mitte rechts
-                const iA = dim + SKIRT;
-                const jA = SKIRT;
-                const vA = iA + jA * NV;
-                // Chunk B: Vertex bei (i=SKIRT, j=SKIRT) — Boundary-Mitte links
-                const iB = SKIRT;
-                const jB = SKIRT;
-                const vB = iB + jB * NV;
-                const ax = posAttr.getX(vA);
-                const az = posAttr.getZ(vA);
-                const bx = posB.getX(vB);
-                const bz = posB.getZ(vB);
-                out.boundaryAX = ax;
-                out.boundaryBX = bx;
-                out.boundaryMatches = Math.abs(ax - bx) < 0.001 && Math.abs(az - bz) < 0.001;
-                // Plus: Chunk A's Skirt-Vertex jenseits der Naht (i=dim+2·SKIRT,
-                // j=SKIRT) muss innerhalb von Chunk B's Bereich liegen — beweist
-                // den Overlap.
-                const aSkirtBeyond = posAttr.getX(dim + 2 * SKIRT + jA * NV);
-                const expectedBeyond = (wetCX + 1) * span + SKIRT * step;
-                out.skirtReachesIntoNeighbor = Math.abs(aSkirtBeyond - expectedBeyond) < 0.001;
-                out.aSkirtBeyondX = aSkirtBeyond;
-            }
-        } else {
-            // Nachbar ist trocken — Boundary-Test überspringen, aber den
-            // Skirt-Bleed-Test trotzdem aussagekräftig machen.
-            out.boundaryMatches = "skip — Nachbar trocken";
-            out.skirtReachesIntoNeighbor = "skip — Nachbar trocken";
-        }
-        // Konstanten-Check
-        out.dim = dim;
-        out.step = step;
-        return out;
-    });
-    if (res.error) {
-        check("Welle B.1 V9.70: Skirt-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle B.1 V9.70: WATER_CHUNK_SKIRT == 1", res.skirtIs1, `SKIRT=${res.skirtConstant}`);
-    check("Welle B.1 V9.70: _buildVoxelChunkWater nutzt WATER_CHUNK_SKIRT (Source-Probe)", res.hasSkirtUsage);
-    check("Welle B.1 V9.70: wasser-tragenden Chunk gefunden (Vorbedingung)", res.foundWetChunk);
-    if (!res.foundWetChunk) return;
-    check("Welle B.1 V9.70: Mesh wurde gebaut", res.meshBuilt);
-    check(
-        "Welle B.1 V9.70: Vertex-Count = (dim+1+2·SKIRT)² (Skirt-Erweiterung)",
-        res.vertexCountMatches,
-        `actual=${res.actualVertexCount}, expected=${res.expectedVertexCount}`
-    );
-    check(
-        "Welle B.1 V9.70: Erster Vertex bei cx·span − step (Skirt-Verschiebung links/oben)",
-        res.firstVertexMatchesSkirt,
-        `v0=(${res.firstVertexX}, ${res.firstVertexZ})`
-    );
-    check(
-        "Welle B.1 V9.70: Letzter Vertex bei cx·span + (dim+SKIRT)·step (Skirt-Erweiterung rechts/unten)",
-        res.lastVertexMatchesSkirt
-    );
-    if (res.boundaryMatches !== "skip — Nachbar trocken") {
-        check(
-            "Welle B.1 V9.70: Boundary-Vertex zweier adjacent Chunks an gleicher Welt-Position",
-            res.boundaryMatches,
-            `ax=${res.boundaryAX}, bx=${res.boundaryBX}`
-        );
-        check(
-            "Welle B.1 V9.70: Skirt-Vertex ragt 1 Cell in den Nachbar-Chunk",
-            res.skirtReachesIntoNeighbor,
-            `aSkirtBeyond=${res.aSkirtBeyondX}`
-        );
-    }
-}
-
-// V9.71 (Welle C.1) — Wasser-Cell-Feld + Worldgen-Init. Erster Schritt der
-// Wasser-Substanz-Vereinigung (`docs/hydrosphere.md` §16.3). Verifiziert:
-// die Klassen-Konstante CELL_STATE existiert + ist freezed mit korrekten
-// Werten; `_buildVoxelChunkWaterCells` existiert; nach Worldgen tragen
-// streaming-aktive Chunks ein `entry.waterCells`-Feld (Uint8Array, korrekte
-// Länge dim·dim·dimY); Cell-Klassifikation stimmt mit `_terrainDensityAt` +
-// waterLevel überein; Re-Build ergibt bit-identisches Feld (Determinismus).
 async function checkBandWelleC1WaterCells(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -13620,14 +12562,14 @@ async function checkBandWelleC1WaterCells(ctx) {
     check("Welle C.1 V9.71: Cell-Summe stimmt mit Feld-Länge (kein unklassifizierter State)", res.hasMeaningfulField);
 }
 
-// V9.72 (Welle C.2) — Iso-Surface-Mesher für Wasser. Verifiziert: state-
-// Felder `voxelChunkWaterIso` + `voxelWaterIsoVisible` existieren; die
-// Build-Methode existiert; nach Worldgen tragen streaming-aktive Chunks
-// ein Iso-Wasser-Mesh ODER null (wenn der Chunk kein Wasser hat); das
-// Iso-Mesh nutzt das geteilte hydroSurfaceMaterial; default ist es
-// unsichtbar (visible=false); der Toggle setzt visible auf allen Meshes;
-// zwei adjacent Wasser-tragende Chunks haben Iso-Mesh-Geometrie, deren
-// Vertex-Position-Bereich an der Boundary-Linie deterministisch ist.
+// V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — Iso-Surface-Mesher für Wasser
+// ist der EINZIGE Wasser-Render-Pfad (der alte Quad-Mesh ist weg). Verifiziert:
+// `state.voxelChunkWaterIso`-Map existiert; Build/Dispose-Methoden existieren;
+// `_rebuildVoxelChunk` ruft den Build (Source-Probe); nach Worldgen haben
+// gefüllte Chunks ein Iso-Mesh (oder null bei trockenen Chunks); die Iso-
+// Meshes sind sichtbar (default — kein Toggle mehr); Material ist das
+// geteilte `hydroSurfaceMaterial`; userData.hydroKind='chunk-water-iso';
+// Bergsee-Cells über waterLevel werden als WATER erfasst (V9.73-Cell-Init).
 async function checkBandWelleC2WaterIsoSurface(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -13635,14 +12577,14 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const STATE = r.constructor.CELL_STATE;
-        // 1) State-Felder existieren
+        // 1) State-Feld existiert (Map)
         out.hasIsoMap = r.state.voxelChunkWaterIso !== undefined;
-        out.hasVisibleFlag = typeof r.state.voxelWaterIsoVisible === "boolean";
-        out.defaultVisibleIsFalse = r.state.voxelWaterIsoVisible === false;
+        // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
+        out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
+        out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
         // 2) Methoden existieren
         out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
-        out.hasToggleMethod = typeof r._setVoxelWaterIsoVisible === "function";
         // 3) Source-Probe: _rebuildVoxelChunk ruft die Build-Methode (mit-
         // wandernde Doku-Probe).
         out.rebuildCallsBuild = /this\._buildVoxelChunkWaterIsoSurface\(/.test(r._rebuildVoxelChunk.toString());
@@ -13680,50 +12622,8 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.isoMeshGeomTotal = isoMeshGeomTotal;
         out.isoMeshVisibleCount = isoMeshVisibleCount;
         out.allChunksTracked = chunksWithoutIso === 0;
-        // Mesh-Sichtbarkeit prüfen: default ist false → kein sichtbares Iso-Mesh
-        out.allIsoHidden = isoMeshVisibleCount === 0;
-        // 5) Toggle-Test ENTWEDER-ODER (V9.73-Heilung):
-        // Vor Toggle: alte Quads sichtbar, Iso unsichtbar.
-        let oldQuadsVisibleBefore = 0;
-        let oldQuadsTotal = 0;
-        if (r.state.voxelChunkWater) {
-            for (const m of r.state.voxelChunkWater.values()) {
-                if (m) {
-                    oldQuadsTotal++;
-                    if (m.visible) oldQuadsVisibleBefore++;
-                }
-            }
-        }
-        out.oldQuadsTotal = oldQuadsTotal;
-        out.oldQuadsAllVisibleBefore = oldQuadsTotal > 0 && oldQuadsVisibleBefore === oldQuadsTotal;
-        r._setVoxelWaterIsoVisible(true);
-        let visibleAfterToggle = 0;
-        for (const m of r.state.voxelChunkWaterIso.values()) {
-            if (m && m.visible) visibleAfterToggle++;
-        }
-        let oldQuadsVisibleAfterToggle = 0;
-        if (r.state.voxelChunkWater) {
-            for (const m of r.state.voxelChunkWater.values()) {
-                if (m && m.visible) oldQuadsVisibleAfterToggle++;
-            }
-        }
-        out.visibleAfterToggle = visibleAfterToggle;
-        out.toggleMakesIsoVisible = visibleAfterToggle === isoMeshCount && isoMeshCount > 0;
-        out.toggleHidesOldQuads = oldQuadsTotal > 0 && oldQuadsVisibleAfterToggle === 0;
-        // 6) Toggle zurück auf false → Iso unsichtbar, alte Quads wieder sichtbar
-        r._setVoxelWaterIsoVisible(false);
-        let visibleAfterReset = 0;
-        for (const m of r.state.voxelChunkWaterIso.values()) {
-            if (m && m.visible) visibleAfterReset++;
-        }
-        let oldQuadsVisibleAfterReset = 0;
-        if (r.state.voxelChunkWater) {
-            for (const m of r.state.voxelChunkWater.values()) {
-                if (m && m.visible) oldQuadsVisibleAfterReset++;
-            }
-        }
-        out.toggleResetHides = visibleAfterReset === 0;
-        out.toggleResetRestoresOldQuads = oldQuadsTotal > 0 && oldQuadsVisibleAfterReset === oldQuadsTotal;
+        // V9.75 — Iso-Meshes sind default sichtbar (kein Toggle mehr).
+        out.allIsoVisible = isoMeshCount > 0 && isoMeshVisibleCount === isoMeshCount;
         // 7) V9.73-Heilung-Test: Cell-Init erfasst Bergsee-Wasser (über
         // state.waterLevel). Wenn Lake-Cells im 16-m-Hydrosphäre-Atlas
         // existieren, MUSS in einem Chunk in deren Footprint mindestens
@@ -13789,15 +12689,10 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         check("Welle C.2 V9.72: Iso-Mesher-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "Welle C.2 V9.72: state.voxelChunkWaterIso + state.voxelWaterIsoVisible existieren",
-        res.hasIsoMap && res.hasVisibleFlag
-    );
-    check("Welle C.2 V9.72: voxelWaterIsoVisible default = false", res.defaultVisibleIsFalse);
-    check(
-        "Welle C.2 V9.72: Build/Dispose/Toggle-Methoden existieren",
-        res.hasBuildMethod && res.hasDisposeMethod && res.hasToggleMethod
-    );
+    check("Welle C.2 V9.72: state.voxelChunkWaterIso existiert", res.hasIsoMap);
+    check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
+    check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
+    check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
         "Welle C.2 V9.72: _rebuildVoxelChunk ruft _buildVoxelChunkWaterIsoSurface (Source-Probe)",
         res.rebuildCallsBuild
@@ -13811,31 +12706,11 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         res.allChunksTracked,
         `mitIso=${res.chunksWithIso}, ohne=${res.chunksWithoutIso}, geomTotal=${res.isoMeshGeomTotal}, meshes=${res.isoMeshCount}`
     );
-    check(
-        "Welle C.2 V9.72: alle Iso-Meshes sind default unsichtbar (parallel-zu-alt, kein visueller Konflikt)",
-        res.allIsoHidden,
-        `visibleCount=${res.isoMeshVisibleCount}`
-    );
     if (res.isoMeshCount > 0) {
         check(
-            "Welle C.2 V9.72/V9.73: vor Toggle sind ALLE alten Quad-Meshes sichtbar (Default-Stand)",
-            res.oldQuadsAllVisibleBefore,
-            `quads=${res.oldQuadsTotal}`
-        );
-        check(
-            "Welle C.2 V9.72: _setVoxelWaterIsoVisible(true) macht alle Iso-Meshes sichtbar",
-            res.toggleMakesIsoVisible,
-            `visibleAfter=${res.visibleAfterToggle}/${res.isoMeshCount}`
-        );
-        check(
-            "Welle C.2 V9.73 (Heilung): _setVoxelWaterIsoVisible(true) versteckt alle alten Quad-Meshes (entweder-oder)",
-            res.toggleHidesOldQuads,
-            `quads=${res.oldQuadsTotal}`
-        );
-        check("Welle C.2 V9.72: _setVoxelWaterIsoVisible(false) versteckt Iso-Meshes wieder", res.toggleResetHides);
-        check(
-            "Welle C.2 V9.73 (Heilung): _setVoxelWaterIsoVisible(false) macht alte Quad-Meshes wieder sichtbar",
-            res.toggleResetRestoresOldQuads
+            "Welle C.2 V9.75: alle Iso-Meshes sind default sichtbar (einziger Wasser-Render-Pfad)",
+            res.allIsoVisible,
+            `visible=${res.isoMeshVisibleCount}/${res.isoMeshCount}`
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check("Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'", res.sampleMeshUserData === true);
@@ -13853,10 +12728,8 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             );
         }
     } else {
-        // Welt ohne Wasser-Cells in irgendeinem Chunk — Toggle-Tests
-        // bedeutungslos, aber Source-Logik schon verifiziert.
         check(
-            "Welle C.2 V9.72: Iso-Mesher-Toggle-Tests (Vorbedingung: ≥1 Iso-Mesh)",
+            "Welle C.2 V9.72: Iso-Mesh-Sichtbarkeits-Tests (Vorbedingung: ≥1 Iso-Mesh)",
             true,
             "skip — keine Wasser-Cells in den gestreamten Chunks (Worldgen-Seed-abhängig)"
         );
@@ -18220,10 +17093,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r._applyDayNightToScene();
         const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
-        // Welt-Wasser — V9.50: das Wasser sind per-Chunk-Flächen
-        // (`voxelChunkWater`-Map), kein eigenes Mesh mehr; die
-        // Vertex-Höhe + die Uferlinie prüft der V9.50-b-Block.
-        out.waterSystemOk = r.state.voxelChunkWater instanceof Map;
+        // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
+        // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
+        // Pfad ist gestrichen.
+        out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
         // --- Atmosphäre-Persistenz ---
         r.setCelLevels(7);
@@ -18261,7 +17134,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
-        check("V9.50: das Chunk-Wasser-System ist verdrahtet (voxelChunkWater-Map)", v828Results.waterSystemOk);
+        check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
@@ -30935,12 +29808,9 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandVoxelP3AndInventory(ctx);
             await checkBandWelle6Keybindings(ctx);
             await checkBandWelle6HCreatures(ctx);
-            await checkBandWelleA2Blocker(ctx);
-            await checkBandWelleA3EffectiveSurface(ctx);
-            await checkBandWelleA4Recompute(ctx);
-            await checkBandWelleA5VisionProof(ctx);
-            await checkBandWelleA6GateAudit(ctx);
-            await checkBandWelleB1WaterSkirts(ctx);
+            // V9.75 (Welle C.4+5) — Welle-A/B Test-Bänder gestrichen (alte
+            // Maschinerie ist weg). Vision-Beweis lebt jetzt vollständig in
+            // C.1-C.3 (Cell-Feld + Iso-Mesh + Stempel-Reaktion).
             await checkBandWelleC1WaterCells(ctx);
             await checkBandWelleC2WaterIsoSurface(ctx);
             await checkBandWelleC3CellularReaction(ctx);

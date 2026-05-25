@@ -29,24 +29,15 @@ class AnazhRealm {
             voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
-            voxelChunkWater: null,
-            // V9.72 (Welle C.2) — Wasser-Iso-Surface-Meshes pro Voxel-Chunk,
-            // gebaut aus `entry.waterCells` via Surface-Nets-Mesher (statt
-            // per-Chunk-Quad-Mesh). Naht-frei per Konstruktion. Paralleles
-            // System neben dem alten `voxelChunkWater` — Toggle via
-            // `voxelWaterIsoVisible`. C.5 räumt das alte System ab.
+            // V9.75 (Welle C.4+5) — das Wasser-Iso-Surface-Mesh pro Voxel-Chunk
+            // ist seit jetzt der EINZIGE Wasser-Render-Pfad. Gebaut aus
+            // `entry.waterCells` via Surface-Nets-Mesher (gleiche Maschinerie
+            // wie der Boden → naht-frei per Konstruktion). Der alte per-Chunk-
+            // Quad-Mesh (`voxelChunkWater`) + sein Toggle (`voxelWaterIsoVisible`)
+            // sind gestrichen. Eine Wasser-Sprache, eine Skala, eine Geometrie-
+            // Quelle. `docs/hydrosphere.md` §16.
             voxelChunkWaterIso: null,
-            // V9.72 (Welle C.2) — Sichtbarkeit der Iso-Surface-Meshes.
-            // Default false: das alte Quad-Mesh ist sichtbar, das neue Iso-
-            // Mesh existiert aber bleibt unsichtbar (Browser-Audit-Vergleich
-            // erst wenn der Schöpfer toggled).
-            voxelWaterIsoVisible: false,
             voxelPopulatedChunks: null,
-            // V9.65 (Welle A.2) — Generischer Blocker-Index (16-m-Bucket-Grid).
-            // Alle soliden Architektur-Parts (dichte ≥ 0.3) werden hier
-            // pro-Part indexiert. O(1)-Lookup via `_blockerTopAt(x, z)` für
-            // Terrain-Sampling (V9.66). Ersetzt den V9.64-Damm-Spezial-Index.
-            blockerIndex: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
@@ -92,16 +83,6 @@ class AnazhRealm {
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
             // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
             hydrosphere: null,
-            // V9.67 (Welle A.4) — reaktive Hydrosphäre. `hydroDirty` markiert
-            // dass eine Welt-Mutation (solid Architektur, Voxel-Edit) das
-            // Drainage-Netz beeinflussen könnte. `hydroDirtyAt` ist der
-            // Zeitstempel — `_tickHydroRecompute` wartet ~300 ms (Debounce-
-            // Fenster: mehrere Edits in Folge führen zu EINEM Recompute).
-            // Beides Laufzeit-State, nicht im Save.
-            hydroDirty: false,
-            hydroDirtyAt: 0,
-            // Dauer (ms) des letzten Recompute-Passes — Tests + Diagnose.
-            hydroLastRecomputeMs: 0,
             // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
             // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
             // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
@@ -10015,12 +9996,11 @@ class AnazhRealm {
                 this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
             }
         }
-        // V9.50 — das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk
-        // baut seine Wasser-Fläche selbst (`_buildVoxelChunkWater`, aus
-        // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
-        // Terrain). `_buildWaterPlane` setzt nur noch den Meeresspiegel; die
-        // Flächen entstehen mit dem Chunk-Stream.
-        this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Chunk-Wasser, V9.50)`);
+        // V9.75 (Welle C.4+5) — das Wasser ist ein Cell-Zustand im Voxel-Welt-
+        // Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus den Cells
+        // (`_buildVoxelChunkWaterIsoSurface`). EIN Wasser-Mesh, eine Skala,
+        // eine Geometrie-Quelle.
+        this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
     }
 
     // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
@@ -13600,133 +13580,19 @@ class AnazhRealm {
         }
     }
 
-    // V9.67 (Welle A.4) — Debounce-Hebel für die reaktive Hydrosphäre.
-    // Eine Welt-Mutation (solid Architektur gespawnt/entfernt, Voxel-Edit)
-    // markiert das Drainage-Netz als dirty. Der `_tickHydroRecompute`-Tick
-    // wartet ein Fenster (HYDRO_RECOMPUTE_DEBOUNCE_MS), bis mehrere Edits in
-    // Folge zu EINEM Recompute verschmelzen (sonst würde jeder Maus-Carve
-    // einen vollständigen Drainage-Pass triggern → unspielbar). Idempotent:
-    // mehrfaches Markieren resetet das Fenster (jüngster Edit gilt).
-    static get HYDRO_RECOMPUTE_DEBOUNCE_MS() {
-        return 300;
-    }
-
-    // V9.70 (Welle B.1) — Wasser-Mesh-Skirt: jeder Voxel-Chunk-Wasser-Mesh
-    // erweitert sein Vertex-Raster um N Cells über jeden Boundary hinaus.
-    // Boundary-Vertices benachbarter Chunks fallen auf exakt dieselbe Welt-
-    // Position → das Sheet verbindet sich ohne Riss (Schöpfer-Browser-Audit
-    // Round 2 Befund „das Sheet scheint nicht zu verbinden"). SKIRT=1 reicht
-    // (1.8 m Bleed pro Seite, NV von dim+1=25 auf dim+3=27 → ~17 % mehr Memory
-    // pro Chunk). Höhere Werte würden das Bleed verstärken, aber Memory
-    // quadratisch wachsen — eine Cell ist genug, weil die Naht zwischen
-    // exakt 1.8-m-Vertex-Reihen liegt.
-    static get WATER_CHUNK_SKIRT() {
-        return 1;
-    }
-
-    _markHydroDirty() {
-        // Während des Worldgens (Hydrosphäre noch nicht ready) oder vor dem
-        // ersten Compute: still ignorieren — der erste `_computeHydrosphere`
-        // baut das Netz frisch.
-        const h = this.state.hydrosphere;
-        if (!h || !h.ready) return;
-        this.state.hydroDirty = true;
-        this.state.hydroDirtyAt = performance.now();
-    }
-
-    // V9.67 (Welle A.4) — der reaktive Recompute. Ruft `_computeHydrosphere`
-    // (das Drainage-Netz aus der aktuellen Effective-Surface neu) +
-    // `_buildHydrosphereMeshes` (Wasserfall-Meshes + Voxel-Chunk-Wasser-
-    // Layer). **Erosion + Tarns laufen NICHT neu** — die sind Welt-
-    // Geomorphologie aus dem Seed, frozen für die Welt-Identität. Nur das
-    // Drainage-Netz reagiert auf Spieler-Wille. Performance: < 300 ms ist
-    // das Budget (V9.43-b-Baseline beim ersten Compute). Sync — der Pfad
-    // ist nicht async (ein await würde Race-Conditions mit weiteren Edits
-    // erzeugen); die Debounce-Logik vermeidet die meisten Recomputes ohnehin.
-    _recomputeHydrosphere() {
-        const t0 = performance.now();
-        try {
-            const hydro = this._computeHydrosphere();
-            this.state.hydrosphere = hydro;
-        } catch (e) {
-            this.state.hydrosphere = null;
-            this.log(`A.4 Hydrosphäre-Recompute (compute) fehlgeschlagen: ${e.message}`, "ERROR");
-            return;
-        }
-        try {
-            this._buildHydrosphereMeshes();
-        } catch (e) {
-            this.log(`A.4 Hydrosphäre-Recompute (render) fehlgeschlagen: ${e.message}`, "ERROR");
-            return;
-        }
-        const dt = performance.now() - t0;
-        this.state.hydroDirty = false;
-        this.state.hydroLastRecomputeMs = dt;
-        // Welt-Effekt-Ping: das Wasser sucht einen neuen Weg. Welt-Journal-
-        // Eintrag (Vision §3 — die Welt erinnert sich an Spieler-Gesten).
-        if (typeof this.journalAppend === "function") {
-            this.journalAppend("water", `Das Wasser sucht einen neuen Weg (Δ ${dt.toFixed(0)} ms).`, {
-                durationMs: dt,
-                rivers:
-                    this.state.hydrosphere && this.state.hydrosphere.rivers ? this.state.hydrosphere.rivers.length : 0,
-                lakes: this.state.hydrosphere && this.state.hydrosphere.lakes ? this.state.hydrosphere.lakes.length : 0,
-            });
-        }
-        // V9.68 (Welle A.5) — multisensorische Spur (§1.4): ein kurzer Wasser-
-        // Ping. Distinkt vom Architektur-Farewell (Sinus-Glissando) durch
-        // gefiltertes Noise + fallendes Lowpass-Cutoff (Wasser-Strömung statt
-        // Glocken-Ton). Welt-stabil idempotent über _playHydroRecomputePing.
-        this._playHydroRecomputePing();
-        this.log(`A.4 Hydrosphäre-Recompute: ${dt.toFixed(0)} ms`, "INFO");
-    }
-
-    // V9.68 (Welle A.5) — multisensorischer Ping beim reaktiven Recompute.
-    // Vision §1.4: Multisensorik. Kein lautes Donnern — ein 0.6-s-Strömungs-
-    // hauch (Bandpass-gefiltertes Noise, Cutoff sinkt von 700→200 Hz, Gain
-    // schwillt + verklingt). Stumm wenn keine Symphonie aktiv ist (Headless,
-    // Audio-Toggle off, kein User-Gesture). Defensive try/catch — der
-    // Recompute darf nie an einem Audio-Fehler scheitern.
-    _playHydroRecomputePing() {
-        const sym = this.state.symphony;
-        if (!sym || !sym.enabled || !sym.ctx) return;
-        try {
-            const ctx = sym.ctx;
-            const now = ctx.currentTime;
-            const dur = 0.6;
-            // Kurzes Noise-Sample (0.6 s, ~26500 Samples bei 44.1 kHz).
-            const sampleRate = ctx.sampleRate || 44100;
-            const buf = ctx.createBuffer(1, Math.floor(sampleRate * dur), sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-            const noise = ctx.createBufferSource();
-            noise.buffer = buf;
-            const filter = ctx.createBiquadFilter();
-            filter.type = "bandpass";
-            filter.Q.value = 1.6;
-            filter.frequency.setValueAtTime(700, now);
-            filter.frequency.exponentialRampToValueAtTime(200, now + dur);
-            const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.0001, now);
-            gain.gain.linearRampToValueAtTime(0.06, now + 0.08);
-            gain.gain.exponentialRampToValueAtTime(0.0005, now + dur);
-            const dest = sym.masterGain || ctx.destination;
-            noise.connect(filter).connect(gain).connect(dest);
-            noise.start(now);
-            noise.stop(now + dur + 0.05);
-        } catch {
-            /* Audio-Fehler nicht hart — die Welt soll auch ohne Klang reagieren */
-        }
-    }
-
-    // V9.67 (Welle A.4) — der Debounce-Tick. Läuft pro Frame, prüft ob ein
-    // Recompute ansteht (Flag gesetzt + Fenster abgelaufen). Sehr billig im
-    // Idle-Fall (zwei Feld-Checks). Aufruf aus dem Game-Loop.
-    _tickHydroRecompute(currentTime) {
-        if (!this.state.hydroDirty) return;
-        const elapsed = currentTime - this.state.hydroDirtyAt;
-        if (elapsed < AnazhRealm.HYDRO_RECOMPUTE_DEBOUNCE_MS) return;
-        this._recomputeHydrosphere();
-    }
+    // V9.75 (Welle C.4+5) — die Welle-A-Reaktiv-Maschinerie (`_markHydroDirty`,
+    // `_recomputeHydrosphere`, `_playHydroRecomputePing`, `_tickHydroRecompute`,
+    // HYDRO_RECOMPUTE_DEBOUNCE_MS) ist gestrichen. Die V9.74-Erkenntnis hält:
+    // das Cell-Feld ist DERIVED aus (Worldgen-Density + voxelEdits + Architektur-
+    // Stempel). Eine Spieler-Mutation propagiert via `_remeshVoxelChunksAround`
+    // (V9.14) zur Cell-Klassifikation — keine zweite Reaktiv-Schicht nötig.
+    // Atlas (`state.hydrosphere`) bleibt Worldgen-frozen (Welt-Identität);
+    // der Spieler-Effekt lebt im Iso-Surface-Mesh. Eine Welt-Substanz, eine
+    // Reaktion. `docs/hydrosphere.md` §16.
+    //
+    // V9.70 WATER_CHUNK_SKIRT gleicher Abbau — die Skirts waren der versuchte
+    // Patch auf die alte Zwei-Skalen-Naht, die mit dem alten Quad-Mesh weg
+    // ist (V9.70-B-Lehre).
 
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
     // wenn noch keine start_plattform-Architektur existiert (z. B. nach
@@ -13831,7 +13697,7 @@ class AnazhRealm {
         const h = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
-                h[i + j * dim] = this._effectiveSurfaceY(originX + i * E.cell, originZ + j * E.cell);
+                h[i + j * dim] = this._terrainMacroSurfaceY(originX + i * E.cell, originZ + j * E.cell, false);
             }
         }
         const orig = Float64Array.from(h);
@@ -14067,7 +13933,7 @@ class AnazhRealm {
                 const jz = n.noise2D(ci * 4.41 + 50.3, cj * 4.41 + 31.8) * cellW * 0.34;
                 const x = -half + (ci + 0.5) * cellW + jx;
                 const z = -half + (cj + 0.5) * cellW + jz;
-                pts.push({ ci, cj, x, z, surf: this._effectiveSurfaceY(x, z) });
+                pts.push({ ci, cj, x, z, surf: this._terrainMacroSurfaceY(x, z, false) });
             }
         }
         // ADAPTIVE Höhen-Schwelle — die Tarns sitzen im oberen Relief-Anteil
@@ -14090,8 +13956,12 @@ class AnazhRealm {
             // Hang messen — ein Tarn sitzt in einer sanften Hochmulde; sanft
             // genug, dass die grosse, tiefe Gauss-Mulde ein geschlossenes
             // Becken formt (`depthMin` > 0.83·maxSlope·radiusMax).
-            const gx = (this._effectiveSurfaceY(p.x + d, p.z) - this._effectiveSurfaceY(p.x - d, p.z)) / (2 * d);
-            const gz = (this._effectiveSurfaceY(p.x, p.z + d) - this._effectiveSurfaceY(p.x, p.z - d)) / (2 * d);
+            const gx =
+                (this._terrainMacroSurfaceY(p.x + d, p.z, false) - this._terrainMacroSurfaceY(p.x - d, p.z, false)) /
+                (2 * d);
+            const gz =
+                (this._terrainMacroSurfaceY(p.x, p.z + d, false) - this._terrainMacroSurfaceY(p.x, p.z - d, false)) /
+                (2 * d);
             const slope = Math.hypot(gx, gz);
             if (slope > T.maxSlope) continue;
             let tooClose = false;
@@ -14266,71 +14136,13 @@ class AnazhRealm {
         return Math.max(withoutTarnFinal + tarnDelta, waterRef + 1);
     }
 
-    // V9.66 (Welle A.3) — 2D-Voxel-Edit-Delta für die Hydrosphäre. Welches
-    // Surface-Delta erzeugen die persistierten Voxel-Edits (`worldMeta.voxel-
-    // Edits`-Map) an der Säule (x, z)? Approximativ: für jede Edit-Kugel, die
-    // diese Säule schneidet, berechne den vertikalen Span (`±√(r²−d_xz²)`).
-    // Edits sind chronologisch im Array — wir wenden sie der Reihe nach an,
-    // sodass ein späteres `fill` ein früheres `carve` überschreiben kann (die
-    // 3D-Wahrheit, projiziert auf 2D). Ein `fill`, dessen Top über die aktuelle
-    // Surface ragt, hebt sie auf diesen Top; ein `carve`, der die aktuelle
-    // Surface erreicht, senkt sie auf den Carve-Boden. Edits, die die Säule
-    // nicht erreichen oder ganz unterhalb liegen, werden ignoriert. Performance:
-    // linearer Scan über alle Edits — für Welt mit > 1000 Edits später bucketn,
-    // jetzt einfach + ehrlich. Aufrufer: `_effectiveSurfaceY`.
-    _voxelEditSurfaceDelta(x, z, macro) {
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (!Array.isArray(edits) || edits.length === 0) return 0;
-        let effSurf = macro;
-        for (let i = 0; i < edits.length; i++) {
-            const ed = edits[i];
-            if (!ed || !Number.isFinite(ed.r) || ed.r <= 0) continue;
-            const dx = x - ed.x;
-            const dz = z - ed.z;
-            const d2 = dx * dx + dz * dz;
-            const r2 = ed.r * ed.r;
-            if (d2 >= r2) continue;
-            const halfV = Math.sqrt(r2 - d2);
-            const top = ed.y + halfV;
-            const bot = ed.y - halfV;
-            if (ed.mode === "fill") {
-                if (top > effSurf) effSurf = top;
-            } else {
-                // carve schneidet nur, wenn die Kugel die aktuelle Surface
-                // erreicht (top ≥ effSurf) — eine vergrabene Carve-Kugel weit
-                // unter der Surface erzeugt eine Höhle, kein Surface-Loch.
-                if (top >= effSurf && bot < effSurf) effSurf = bot;
-            }
-        }
-        return effSurf - macro;
-    }
-
-    // V9.66 (Welle A.3) — die Wahrheits-Quelle der Hydrosphäre. Kombiniert
-    // drei Schichten zur EINEN Surface, die der Spieler wirklich sieht:
-    //
-    //   1. `_terrainMacroSurfaceY(x, z, false)` — die Worldgen-Surface
-    //      (Tektonik + Kontinent + Erosion + Submarine + Tarn). Ohne die feine
-    //      Detail-Oktave (die das Drainage-Netz nur verrauschte — V9.43-b).
-    //   2. + `_voxelEditSurfaceDelta(x, z, macro)` — die Spieler-Voxel-Edits
-    //      (carve senkt, fill hebt). Approximativ als 2D-Projektion der
-    //      3D-Kugeln.
-    //   3. + `_blockerTopAt(x, z)` — die V9.65-Architektur-Blocker (Damm,
-    //      Stein-Block, Baum-Stamm, jede Architektur mit dichte ≥ 0.3).
-    //      MAX statt Addition, weil eine 3-m-Damm-Wand auf 5-m-Terrain das
-    //      Land auf 8 m hebt (3 m über Terrain), nicht auf 13 m.
-    //
-    // Vision (Welle A): die Hydrosphäre sieht die WIRKLICHE Welt-Geometrie —
-    // jede solide Geste blockiert Wasser, jede Wegnahme öffnet einen Pfad.
-    // Genutzt vom Hydrosphäre-Compute-Pfad (`_computeErosion`, `_hydroSeedTarns`,
-    // `_hydroInit`); der reaktive Recompute (V9.67 A.4) ruft diese Funktion
-    // erneut auf, sodass die Hydrosphäre auf Welt-Mutation reagiert.
-    _effectiveSurfaceY(x, z) {
-        const macro = this._terrainMacroSurfaceY(x, z, false);
-        if (!Number.isFinite(macro)) return macro;
-        const surfWithEdits = macro + this._voxelEditSurfaceDelta(x, z, macro);
-        const blockerTop = this._blockerTopAt(x, z);
-        return blockerTop > surfWithEdits ? blockerTop : surfWithEdits;
-    }
+    // V9.75 (Welle C.4+5) — `_voxelEditSurfaceDelta` + `_effectiveSurfaceY`
+    // gestrichen. Sie waren die Welle-A-Wahrheits-Quelle für den reaktiven
+    // Drainage-Recompute; mit dem Cell-Feld als DERIVED-View (V9.74) ist das
+    // 2D-Edit-Delta nicht mehr nötig. Der Hydrosphäre-Compute-Pfad
+    // (`_computeErosion`, `_hydroSeedTarns`, `_hydroInit`) liest jetzt direkt
+    // `_terrainMacroSurfaceY` (worldgen-frozen — das Drainage-Netz ist
+    // Welt-Identität, nicht Spieler-Wille; Spieler-Wille lebt im Cell-Feld).
 
     _terrainDensityAt(x, y, z) {
         if (!this._voxelNoise) {
@@ -15168,7 +14980,9 @@ class AnazhRealm {
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
-        mesh.visible = !!this.state.voxelWaterIsoVisible;
+        // V9.75 (Welle C.4+5) — das Iso-Mesh ist seit jetzt das EINZIGE
+        // Wasser-Mesh. Default sichtbar; der Toggle `_setVoxelWaterIsoVisible`
+        // ist gestrichen (war Browser-Audit-Werkzeug der Migration-Phase).
         this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
@@ -15184,31 +14998,6 @@ class AnazhRealm {
             if (mesh.geometry) mesh.geometry.dispose();
         }
         this.state.voxelChunkWaterIso.delete(key);
-    }
-
-    // V9.72 (Welle C.2) / V9.73 (Heilung) — Sichtbarkeits-Toggle ENTWEDER-
-    // ODER: das alte Quad-Mesh und das neue Iso-Mesh schalten sich
-    // gegenseitig aus. So sieht der Schöpfer im Browser-Audit den klaren
-    // Vergleich — nicht beides gleichzeitig (additiv), das wäre kein
-    // visueller Unterschied gewesen (V9.72-Audit-Befund „dieser Befehl
-    // scheint nichts zu ändern"). State-Flag wird gesetzt damit neu
-    // gestreamte Chunks (`_buildVoxelChunkWater` + `_buildVoxelChunkWaterIso-
-    // Surface`) die richtige Default-Sichtbarkeit erben.
-    _setVoxelWaterIsoVisible(visible) {
-        const v = !!visible;
-        this.state.voxelWaterIsoVisible = v;
-        // Neue Iso-Meshes: sichtbar wenn Toggle an
-        if (this.state.voxelChunkWaterIso) {
-            for (const m of this.state.voxelChunkWaterIso.values()) {
-                if (m) m.visible = v;
-            }
-        }
-        // Alte Quad-Meshes: INVERS — unsichtbar wenn Toggle an
-        if (this.state.voxelChunkWater) {
-            for (const m of this.state.voxelChunkWater.values()) {
-                if (m) m.visible = !v;
-            }
-        }
     }
 
     _buildVoxelChunkData(cx, cz) {
@@ -15238,10 +15027,13 @@ class AnazhRealm {
             mat.dispose();
             return null;
         }
-        // V9.71 (Welle C.1) — paralleles Wasser-Cell-Feld zum Mesh. Lebt im
-        // entry, nicht im globalen state. Aktueller alter Wasser-Pfad
-        // (`_buildVoxelChunkWater` über `_waterLevelAt` + Drainage-Karte)
-        // bleibt unverändert nebenher — bis C.5 ihn ablöst.
+        // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) — das Wasser-Cell-Feld ist
+        // seit jetzt die EINZIGE Wasser-Wahrheit pro Chunk. Lebt im entry,
+        // nicht im globalen state. Klassifikation per Cell: SOLID wenn Density
+        // >0 oder Architektur-Stempel, sonst WATER wenn cy ≤ _waterLevelAt(x,z),
+        // sonst AIR. Aus diesem Feld baut `_buildVoxelChunkWaterIsoSurface`
+        // das Iso-Mesh (naht-frei mit dem Boden, weil derselbe Surface-Nets-
+        // Mesher beide Felder samplet).
         const waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step);
         return { mesh, kind: "filled", waterCells };
     }
@@ -15303,10 +15095,10 @@ class AnazhRealm {
         const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
         this.state.voxelChunks.set(key, entry);
         this._buildVoxelChunkGrass(cx, cz);
-        this._buildVoxelChunkWater(cx, cz);
-        // V9.72 (Welle C.2) — paralleles Iso-Wasser-Mesh (default unsichtbar).
-        // Liegt im Cell-Feld; der bestehende Surface-Nets-Mesher baut die Iso-
-        // Surface. Browser-Audit-Toggle via `_setVoxelWaterIsoVisible(true)`.
+        // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist
+        // der einzige Wasser-Render-Pfad. Liest entry.waterCells, baut die
+        // Iso-Surface mit dem Surface-Nets-Mesher (gleiche Maschinerie wie
+        // der Boden → naht-frei per Konstruktion).
         this._buildVoxelChunkWaterIsoSurface(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
         return true;
@@ -15398,9 +15190,9 @@ class AnazhRealm {
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
-        // V9.50-b — und seine Wasser-Fläche (aus `_voxelSurfaceY` vs
-        // `_waterLevelAt` — dieselbe Quelle wie das Terrain).
-        this._buildVoxelChunkWater(cx, cz);
+        // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
+        // Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
+        this._buildVoxelChunkWaterIsoSurface(cx, cz);
         // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
@@ -15420,9 +15212,8 @@ class AnazhRealm {
             if (entry.mesh.material) entry.mesh.material.dispose();
         }
         this._disposeVoxelChunkGrass(key);
-        this._disposeVoxelChunkWater(key);
-        // V9.72 (Welle C.2) — auch das Iso-Wasser-Mesh disposen (geteilt
-        // mit dem Chunk-Lifecycle).
+        // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
+        // disposen (einziger Wasser-Render-Pfad; der alte Quad-Pfad ist weg).
         this._disposeVoxelChunkWaterIso(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
@@ -15677,28 +15468,22 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
-    // V9.65 (Welle A.2) — Generischer Blocker-Index. Ersetzt den V9.64-
-    // Damm-Spezial-Index nach Vision-Klärung „das wasser weiss nicht was es
-    // ist, was es bedeutet zu fliessen": die Regel ist UNIVERSELL — jede
-    // solide Geometrie blockiert Wasser, der `damm`-Bauplan ist eine
-    // ANWENDUNG, kein Spezialfall. Ein 2D-Bucket-Grid (16-m-Zellen) für
-    // O(1)-Lookup im Terrain-Sampling, **pro-Part** indexiert: ein Baum
-    // wird über seinen Holz-Stamm zum Blocker, die Laub-Krone bleibt
-    // transparent (Hylomorphismus-rein — die Substanz entscheidet, nicht
-    // der Name). Solidität aus `dichte ≥ 0.3` — schließt Laub (0.1),
-    // Federn (0.1), Glut (0.25) aus; lässt Holz (0.4), Stein, Metall,
-    // Kristall, Knochen, Schuppen, Erde drin. `_blockerTopAt(x, z)` liest
-    // den höchsten Block-Top an (x,z) für `_terrainMacroSurfaceY` (V9.66).
-    static get BLOCKER_BUCKET_SIZE() {
-        return 16;
-    }
-
+    // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Solid-Klassifikation für
+    // Architektur-Parts. Die Regel ist UNIVERSELL: jede solide Geometrie
+    // blockiert Wasser, der `damm`-Bauplan ist eine ANWENDUNG, kein Spezial-
+    // fall. **Pro-Part**: ein Baum wird über seinen Holz-Stamm zum Blocker,
+    // die Laub-Krone bleibt transparent (Hylomorphismus-rein — die Substanz
+    // entscheidet, nicht der Name). Solidität aus `dichte ≥ 0.3` — schließt
+    // Laub (0.1), Federn (0.1), Glut (0.25) aus; lässt Holz (0.4), Stein,
+    // Metall, Kristall, Knochen, Schuppen, Erde drin.
+    //
+    // V9.65 hatte zusätzlich einen 16-m-Bucket-Grid (`state.blockerIndex`)
+    // für O(1)-`_blockerTopAt`-Lookup im alten Hydrosphäre-Sample-Pfad. Mit
+    // Welle C.4+5 ist Welle-A-Maschinerie gestrichen — der Cell-Stempel
+    // (`_stampArchitectureSolidCellsInto`) iteriert `state.architectures`
+    // direkt und braucht keinen Bucket.
     static get BLOCKER_DENSITY_MIN() {
         return 0.3;
-    }
-
-    _blockerBucketKey(bi, bj) {
-        return `${bi},${bj}`;
     }
 
     // Ist diese Part-Substanz fest genug, um Wasser zu blockieren? Eine
@@ -15737,7 +15522,17 @@ class AnazhRealm {
         return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY, botY };
     }
 
-    _blockerIndexAdd(entry) {
+    // V9.75 (Welle C.4+5) — Blocker-AABBs in den Architektur-Eintrag schreiben.
+    // Aufrufer: `spawnArchitecture`. Liest `bp.parts`, filtert nach `_isPart-
+    // Solid` (dichte ≥ 0.3 — Hylomorphismus-rein, Substanz entscheidet), und
+    // setzt `entry.blockerAABBs` als Array der soliden AABBs. Wird vom Cell-
+    // Stempel (`_stampArchitectureSolidCellsInto`) konsumiert.
+    //
+    // V9.65 hatte zusätzlich einen 16-m-Bucket-Grid für O(1)-`_blockerTopAt`-
+    // Lookup im Hydrosphäre-Sample-Pfad. Der Lookup-Pfad ist mit der Welle-A-
+    // Mechanik gestrichen (V9.75) — das Cell-Feld trägt die Wahrheit. Der
+    // Stempel iteriert `state.architectures` direkt, kein Bucket nötig.
+    _populateBlockerAABBs(entry) {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
@@ -15747,69 +15542,7 @@ class AnazhRealm {
             if (aabb) solidAABBs.push(aabb);
         }
         if (solidAABBs.length === 0) return;
-        if (!this.state.blockerIndex) this.state.blockerIndex = new Map();
         entry.blockerAABBs = solidAABBs;
-        const bs = AnazhRealm.BLOCKER_BUCKET_SIZE;
-        for (const aabb of solidAABBs) {
-            const i0 = Math.floor(aabb.minX / bs);
-            const i1 = Math.floor(aabb.maxX / bs);
-            const j0 = Math.floor(aabb.minZ / bs);
-            const j1 = Math.floor(aabb.maxZ / bs);
-            for (let j = j0; j <= j1; j++) {
-                for (let i = i0; i <= i1; i++) {
-                    const key = this._blockerBucketKey(i, j);
-                    let bucket = this.state.blockerIndex.get(key);
-                    if (!bucket) {
-                        bucket = new Set();
-                        this.state.blockerIndex.set(key, bucket);
-                    }
-                    bucket.add(entry);
-                }
-            }
-        }
-    }
-
-    _blockerIndexRemove(entry) {
-        if (!this.state.blockerIndex || !entry.blockerAABBs) return;
-        const bs = AnazhRealm.BLOCKER_BUCKET_SIZE;
-        for (const a of entry.blockerAABBs) {
-            const i0 = Math.floor(a.minX / bs);
-            const i1 = Math.floor(a.maxX / bs);
-            const j0 = Math.floor(a.minZ / bs);
-            const j1 = Math.floor(a.maxZ / bs);
-            for (let j = j0; j <= j1; j++) {
-                for (let i = i0; i <= i1; i++) {
-                    const bucket = this.state.blockerIndex.get(this._blockerBucketKey(i, j));
-                    if (bucket) bucket.delete(entry);
-                }
-            }
-        }
-        entry.blockerAABBs = null;
-    }
-
-    // V9.65 (Welle A.2) — Blocker-Höhe an (x,z): die Welt-Y-Koordinate des
-    // höchsten soliden Parts, der (x,z) überdeckt; -Infinity wenn frei.
-    // O(1) Bucket-Lookup + linearer Scan (typisch ≤3-5 AABBs pro Bucket).
-    // Nutzt entry.blockerAABBs-Cache. Ersetzt das V9.64-`_damTopAt` (die
-    // Damm-Variante ist jetzt ein Aufruf-Fall — gleicher Pfad wie Felsblock,
-    // Felsturm, Baum-Stamm). Genutzt von `_terrainMacroSurfaceY` (V9.66) +
-    // Hydrosphäre-Sample-Pfaden (A.3).
-    _blockerTopAt(x, z) {
-        if (!this.state.blockerIndex) return -Infinity;
-        const bs = AnazhRealm.BLOCKER_BUCKET_SIZE;
-        const bucket = this.state.blockerIndex.get(this._blockerBucketKey(Math.floor(x / bs), Math.floor(z / bs)));
-        if (!bucket) return -Infinity;
-        let top = -Infinity;
-        for (const entry of bucket) {
-            const aabbs = entry.blockerAABBs;
-            if (!aabbs) continue;
-            for (const a of aabbs) {
-                if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) {
-                    if (a.topY > top) top = a.topY;
-                }
-            }
-        }
-        return top;
     }
 
     // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
@@ -15891,7 +15624,7 @@ class AnazhRealm {
         const raw = new Float64Array(n);
         for (let j = 0; j < dim; j++) {
             for (let i = 0; i < dim; i++) {
-                const s = this._effectiveSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell);
+                const s = this._terrainMacroSurfaceY(originX + (i + 0.5) * cell, originZ + (j + 0.5) * cell, false);
                 raw[j * dim + i] = Number.isFinite(s) ? s : base - 52;
             }
         }
@@ -16548,21 +16281,19 @@ class AnazhRealm {
         if (!hydro || !hydro.ready) return;
         this._disposeHydrosphereMeshes(); // idempotenter Rebuild
         const meshes = [];
-        // V9.50 — Ozean + Seen + Flüsse leben als nasse Quads in den per-Chunk
-        // gebauten Wasser-Flächen (`_buildVoxelChunkWater`). Hier bleiben nur
-        // die Wasserfälle — die eine ehrliche vertikale Ausnahme (ein Höhenfeld
-        // kann nichts Vertikales tragen). `docs/hydrosphere.md` §14.
+        // V9.75 (Welle C.4+5) — die einzige Ausnahme: Wasserfälle als
+        // vertikale Planes (ein Höhenfeld kann nichts Vertikales tragen).
+        // Ozean + Seen + Flüsse leben jetzt im Iso-Surface-Mesh
+        // (`_buildVoxelChunkWaterIsoSurface`) aus dem Voxel-Cell-Feld —
+        // EIN Wasser-Mesh, naht-frei per Konstruktion. `docs/hydrosphere.md`
+        // §16.
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
-                // V9.63 (Cleanup für Welle A): zurück auf zwei Meshes pro
-                // Wasserfall — die Render-Schicht ist sekundär, Welle A
-                // (Wasser ↔ Spieler-Wille) bringt das echte Wasser-Verstehen.
+                // V9.63 (Cleanup für Welle A): zwei Meshes pro Wasserfall.
                 //   (1) Plane = vertikaler Strahl (V9.60-d.3 mit See-Spiegel-
                 //       Verbindung)
                 //   (2) Pool = Aufprall-Foam + Erosion-Topf (V9.60-d.1+d.4)
-                // V9.61 (Trapez+Spray+Billow) + V9.62 (Cross+Alpha) +
-                // V9.60-d.2 (Lip) entfernt — alles war Symptom-Polieren.
                 const m = this._buildHydroWaterfall(wf, wfMat);
                 if (m) {
                     this.state.scene.add(m);
@@ -16576,18 +16307,25 @@ class AnazhRealm {
             }
         }
         this.state.hydrosphereMeshes = meshes;
-        // V9.50 — der Atlas ist fertig: jeder schon gestreamte Voxel-Chunk
-        // bekommt sein Wasser neu gebaut. Ein Chunk, der VOR der Hydrosphäre
-        // gebaut wurde, kannte nur den Ozean-Default — jetzt sieht er Seen +
-        // Flüsse. Neue Chunks bauen ihr Wasser im `_ensureVoxelChunkAt`-Pfad.
+        // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
+        // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
+        // die Lake/Fluss-Wahrheit aus `_waterLevelAt` jetzt sehen.
         if (this.state.voxelChunks) {
             for (const key of this.state.voxelChunks.keys()) {
-                this._disposeVoxelChunkWater(key);
                 const ci = key.indexOf(",");
-                this._buildVoxelChunkWater(Number(key.slice(0, ci)), Number(key.slice(ci + 1)));
+                const cx = Number(key.slice(0, ci));
+                const cz = Number(key.slice(ci + 1));
+                const entry = this.state.voxelChunks.get(key);
+                if (entry && entry.mesh) {
+                    // Cell-Feld neu rechnen mit jetzt fertigem Atlas, dann Iso-Mesh
+                    const { step, span, floorDrop } = this._voxelChunkConfig();
+                    const base = this.state.terrainBaseHeight || 0;
+                    entry.waterCells = this._buildVoxelChunkWaterCells(cx * span, base - floorDrop, cz * span, step);
+                    this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                }
             }
         }
-        this.log(`V9.50: Hydrosphäre gerendert — Chunk-Wasser + ${hydro.waterfalls.length} Wasserfall-Planes`, "INFO");
+        this.log(`V9.75: Hydrosphäre gerendert — Iso-Wasser + ${hydro.waterfalls.length} Wasserfall-Planes`, "INFO");
     }
 
     // Räumt alle gerenderten Hydrosphären-Meshes (Geometrie disposen, aus der
@@ -16727,8 +16465,8 @@ class AnazhRealm {
     // Gerstner-Wellen-Verschiebung (1 offener Ozean, weich auf 0 am Ufer →
     // kein Küsten-Riss); `aFlow` trägt die Fluss-Gefälle-Tangente (Schaum
     // scrollt stromab); `aShore` das tiefen-getriebene Ufer-Schaum-Band.
-    // EIN Material für Ozean + See + Fluss aller per-Chunk-Wasser-Flächen
-    // (`_buildVoxelChunkWater`). Teilt die Wasser-Substanz mit dem Wasserfall
+    // EIN Material für Ozean + See + Fluss aller per-Chunk-Iso-Wasser-Meshes
+    // (`_buildVoxelChunkWaterIsoSurface`). Teilt die Wasser-Substanz mit dem Wasserfall
     // (`_ensureWaterfallMaterial`); uSunDir/uLight/fog* speist
     // `_applyDayNightToScene`. Vision §1.3 fraktal — eine Wasser-Sprache.
     _ensureHydroSurfaceMaterial() {
@@ -17012,203 +16750,14 @@ class AnazhRealm {
         this.state.voxelChunkGrass.delete(key);
     }
 
-    // V9.50-b — die Wasser-Fläche EINES Voxel-Chunks. Geschwisterlich zu
-    // `_buildVoxelChunkGrass`: ein Höhenfeld-Raster über den Chunk, je Zelle
-    // nass, wo `_voxelSurfaceY < _waterLevelAt`. Die Geometrie kommt damit aus
-    // DERSELBEN Voxel-Oberfläche wie das Terrain → die Uferlinie ist der
-    // exakte Schnitt (kein 16-m-Modell, kein Bleed, kein Schweben — strukturell,
-    // das „Visual = Collision"-Gesetz aufs Wasser angewandt). Die Quad-Höhe ist
-    // der flache Wasser-Spiegel; das opake Terrain verdeckt, was darüber liegt.
-    // Über das Gate gegatet — ein trockener Hochland-Chunk baut kein Wasser.
-    // `docs/hydrosphere.md` §14.
-    _buildVoxelChunkWater(cx, cz) {
-        if (!this.state.scene || typeof THREE === "undefined") return;
-        if (!this.state.voxelChunkWater) this.state.voxelChunkWater = new Map();
-        const key = `${cx},${cz}`;
-        if (this.state.voxelChunkWater.has(key)) return;
-        const { dim, step, span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        if (!this._voxelChunkTouchesWater(cx, cz)) {
-            this.state.voxelChunkWater.set(key, null);
-            return;
-        }
-        // V9.70 (Welle B.1) — Skirt-Erweiterung gegen die Sheet-Naht: das
-        // Vertex-Raster geht jetzt 1 Cell über jeden Chunk-Boundary hinaus.
-        // Welt-Koord-Index `wi = i - SKIRT` (analog wj) macht die Welt-
-        // Position bei (i=0) gleich `ox − step` (1.8 m vor dem Chunk-Anfang)
-        // und bei (i=NV−1) gleich `ox + (dim+1)·step` (1.8 m über das Chunk-
-        // Ende). Boundary-Vertices zweier adjacent Chunks überlappen damit
-        // exakt — beide bedecken die Naht aus ihrer Seite. Der Sheet-Riss
-        // (V9.69-Browser-Audit-Befund „das Sheet scheint nicht zu verbinden")
-        // ist strukturell weg. Skirt-Vertices außerhalb des Chunks rufen
-        // dieselben deterministischen Helfer (`_waterLevelAt`,
-        // `_voxelSurfaceY`) — ihre Wet/Dry-Klassifikation folgt der echten
-        // Welt-Topologie dort, kein Phantom-Wasser jenseits der Uferlinie.
-        const SKIRT = AnazhRealm.WATER_CHUNK_SKIRT;
-        const NV = dim + 1 + 2 * SKIRT;
-        const positions = new Float32Array(NV * NV * 3);
-        const aFlow = new Float32Array(NV * NV * 2);
-        const aShore = new Float32Array(NV * NV);
-        const aWave = new Float32Array(NV * NV);
-        const wet = new Uint8Array(NV * NV);
-        for (let j = 0; j < NV; j++) {
-            for (let i = 0; i < NV; i++) {
-                const v = i + j * NV;
-                const vx = ox + (i - SKIRT) * step;
-                const vz = oz + (j - SKIRT) * step;
-                const wl = this._waterLevelAt(vx, vz);
-                const sy = this._voxelSurfaceY(vx, vz);
-                positions[v * 3] = vx;
-                positions[v * 3 + 1] = wl;
-                positions[v * 3 + 2] = vz;
-                // nass: die ECHTE Voxel-Oberfläche liegt unter dem Spiegel
-                // (sy null = die Säule trägt kein Fest → tiefes Wasser).
-                const depth = sy === null ? 999 : wl - sy;
-                if (depth <= 0) continue;
-                wet[v] = 1;
-                const river = this._hydroRiverAt(vx, vz);
-                if (river) {
-                    aFlow[v * 2] = river.flowX;
-                    aFlow[v * 2 + 1] = river.flowZ;
-                } else if (wl <= waterLevel + 0.01) {
-                    // offener Ozean wogt; am flachen Ufer weich auf 0 (kein Riss).
-                    aWave[v] = depth < 6 ? depth / 6 : 1;
-                }
-                // Ufer-Schaum tiefen-getrieben: 1 an der Wasserlinie, 0 tief.
-                aShore[v] = depth < 4 ? 1 - depth / 4 : 0;
-            }
-        }
-        const indices = [];
-        const NQ = dim + 2 * SKIRT; // Quad-Zeilen/Spalten (= NV − 1)
-        for (let j = 0; j < NQ; j++) {
-            for (let i = 0; i < NQ; i++) {
-                const v00 = i + j * NV;
-                const v10 = v00 + 1;
-                const v01 = v00 + NV;
-                const v11 = v01 + 1;
-                // ein Quad je Zelle mit ≥ 1 nasser Ecke → 1-Zell-Dilatation,
-                // damit das opake Ufer-Terrain die Wasserlinie sauber schneidet.
-                if (wet[v00] || wet[v10] || wet[v01] || wet[v11]) {
-                    indices.push(v00, v10, v11, v00, v11, v01);
-                }
-            }
-        }
-        if (indices.length === 0) {
-            this.state.voxelChunkWater.set(key, null);
-            return;
-        }
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) {
-            this.state.voxelChunkWater.set(key, null);
-            return;
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlow, 2));
-        geo.setAttribute("aShore", new THREE.BufferAttribute(aShore, 1));
-        geo.setAttribute("aWave", new THREE.BufferAttribute(aWave, 1));
-        geo.setIndex(indices);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
-        mesh.userData = { isHydrosphere: true, hydroKind: "chunk-water" };
-        // V9.73 (Welle C.2 Heilung) — neue Quad-Meshes folgen dem Toggle:
-        // wenn der Iso-Pfad sichtbar ist, sind die alten Quads unsichtbar
-        // (entweder-oder). Default: Toggle=false → Quad-Mesh sichtbar.
-        mesh.visible = !this.state.voxelWaterIsoVisible;
-        this.state.scene.add(mesh);
-        this.state.voxelChunkWater.set(key, mesh);
-    }
-
-    // V9.50-b — räumt die Wasser-Fläche eines Chunks. Das Wasser-Material ist
-    // welt-global geteilt — NICHT disposen (V9.43-a-Lehre). Idempotent.
-    _disposeVoxelChunkWater(key) {
-        if (!this.state.voxelChunkWater) return;
-        const mesh = this.state.voxelChunkWater.get(key);
-        if (mesh) {
-            if (this.state.scene) this.state.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
-        }
-        this.state.voxelChunkWater.delete(key);
-    }
-
-    // V9.50-b / V9.69 — der Wasser-Gate: trägt der Chunk-Fussabdruck überhaupt
-    // Wasser? Billig + konservativ (lieber bauen als ein Loch riskieren). Vier
-    // Fragen:
-    // (1) dippt die Makro-Surface nahe den Meeresspiegel (möglicher Ozean)?
-    // (2) erreicht ein Voxel-Carve in/am Chunk hinunter unter den waterLevel
-    //     (Spieler-Pool im Hochland, V9.69 Welle A.6 Browser-Audit-Heilung —
-    //     der Schöpfer-Befund „die löcher werden nicht gefüllt" hatte hier
-    //     seine Wurzel: ohne Predicate (2) sah der Gate die Edits NICHT,
-    //     also blieb das Wasser-Mesh ein leeres Versprechen).
-    // (3) liegt eine See-Zelle im Fussabdruck? (4) ein Fluss-Bucket?
-    // Trockenes Hochland ohne Edits fällt durch → kein per-Zelle-Säulen-Scan.
-    _voxelChunkTouchesWater(cx, cz) {
-        const { span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        // (1) Ozean — die Makro-Surface an einem 4×4-Raster; dippt das Minimum
-        // unter waterLevel + 16 (Roughness-Marge), ist Ozean möglich.
-        for (let j = 0; j <= 3; j++) {
-            for (let i = 0; i <= 3; i++) {
-                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
-                    return true;
-                }
-            }
-        }
-        // (2) V9.69 — Voxel-Carve, der unter den waterLevel reicht. Eine
-        // Edit-Kugel mit `mode === "carve"`, deren Unterkante (ed.y − ed.r)
-        // unter dem Meeresspiegel liegt UND deren xz-Footprint den Chunk
-        // berührt, gilt als wasser-fähig. Spiegelt die V9.66-Wahrheits-Quelle
-        // im Effective-Surface-Pfad: was der Compute sieht, sieht jetzt auch
-        // der Gate. Fills + Architekturen sind hier irrelevant (sie heben
-        // die Surface, verstecken aber kein bestehendes Wasser).
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (Array.isArray(edits) && edits.length) {
-            for (let e = 0; e < edits.length; e++) {
-                const ed = edits[e];
-                if (!ed || ed.mode !== "carve") continue;
-                const r = ed.r;
-                if (!Number.isFinite(r) || r <= 0) continue;
-                if (ed.y - r >= waterLevel) continue; // Carve reicht nicht unter Wasser
-                if (ed.x + r < ox || ed.x - r > ox + span) continue;
-                if (ed.z + r < oz || ed.z - r > oz + span) continue;
-                return true;
-            }
-        }
-        const h = this.state.hydrosphere;
-        if (!h || !h.ready) return false;
-        // (3) See — die 16-m-Hydro-Zellen im Fussabdruck (+1 Zelle Marge).
-        if (h.water && h.water.waterKind) {
-            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
-            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
-            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
-            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
-            for (let cj = c0j; cj <= c1j; cj++) {
-                for (let ci = c0i; ci <= c1i; ci++) {
-                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
-                }
-            }
-        }
-        // (4) Fluss — die `riverBuckets` im Fussabdruck.
-        if (h.riverBuckets) {
-            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-            for (let bj = b0j; bj <= b1j; bj++) {
-                for (let bi = b0i; bi <= b1i; bi++) {
-                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                    if (list && list.length) return true;
-                }
-            }
-        }
-        return false;
-    }
+    // V9.75 (Welle C.4+5) — `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
+    // `_voxelChunkTouchesWater` sind gestrichen. Der alte per-Chunk-Quad-Mesh
+    // (V9.50-b) war die zweite Wasser-Sprache — 16-m-Drainage-Atlas + 1.8-m-
+    // Voxel-Quad-Mesh in unsynchroner Wahrheit. Mit dem Iso-Surface-Mesh aus
+    // dem Cell-Feld (V9.72) ist EIN Wasser-Mesh per Chunk, eine Skala, eine
+    // Geometrie-Quelle. Die V9.70-Skirts (gegen die Sheet-Naht) sind mit
+    // gestrichen — die Naht ist nicht mehr da, weil das Iso-Mesh den
+    // Cell-Feld-Boundary 1:1 mit dem Boden-Mesh teilt.
 
     // V9.43-a — das geteilte Wasserfall-Material. EIN ShaderMaterial für
     // ALLE Wasserfall-Planes der Welt (lazy gebaut, in state.waterfallMaterial
@@ -17431,11 +16980,12 @@ class AnazhRealm {
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
         while (edits.length > CAP) edits.shift();
+        // V9.75 (Welle C.4+5) — `_remeshVoxelChunksAround` ist der EINZIGE
+        // Reaktiv-Pfad: die betroffenen Voxel-Chunks bauen sich neu, das
+        // Cell-Feld klassifiziert die neue Lage (carve unter waterLevel →
+        // WATER, fill → SOLID), der Iso-Mesher rendert. Kein Hydro-Recompute
+        // mehr (V9.67-Maschinerie ist weg, V9.74-Erkenntnis: Cell ist DERIVED).
         this._remeshVoxelChunksAround(x, z, radius);
-        // V9.67 (Welle A.4) — Voxel-Edit kann den Fluss-Pfad verändern: ein
-        // Carve im Trockenland erzeugt eine Mulde (Wasser sammelt sich), ein
-        // Fill im Fluss-Bett blockiert die Drainage. Recompute via Debounce.
-        this._markHydroDirty();
         if (typeof this.saveState === "function") this.saveState();
         return true;
     }
@@ -19982,9 +19532,9 @@ class AnazhRealm {
             }
         }
         this.state.architectures = [];
-        // V9.65 — Blocker-Index muss beim Restore neu aufgebaut werden
-        // (spawnArchitecture pflegt ihn automatisch für alle soliden Parts).
-        this.state.blockerIndex = new Map();
+        // V9.75 (Welle C.4+5) — kein `state.blockerIndex`-Reset mehr; das
+        // Bucket-Grid ist gestrichen. `spawnArchitecture` setzt
+        // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
             this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
@@ -27780,19 +27330,12 @@ class AnazhRealm {
             entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
-        // V9.65 (Welle A.2) — Blocker-Index pflegen: jede Architektur mit
-        // soliden Parts (dichte ≥ 0.3) wird pro-Part im 2D-Grid registriert.
-        // Vision-rein: kein Type-Whitelist, die Substanz entscheidet — ein
-        // Baum-Stamm (Holz) blockt, die Krone (Laub) nicht. Architekturen
-        // ohne solide Parts (z.B. reine Glut/Laub-Compounds) werden früh
-        // verworfen und kosten keinen Index-Slot.
-        this._blockerIndexAdd(entry);
-        // V9.67 (Welle A.4) — reaktive Hydrosphäre. Eine neu gespawnte solide
-        // Architektur kann den Fluss umlenken oder eine Senke öffnen. Nur
-        // wenn der Spawn KEIN Worldgen-Setup ist (silent=true für Genesis-
-        // Plattform / Vegetation) und der Blocker-Index tatsächlich gefüllt
-        // wurde (entry.blockerAABBs ≠ null), markieren wir dirty.
-        if (!opts.silent && entry.blockerAABBs) this._markHydroDirty();
+        // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Blocker-AABBs pro
+        // Architektur cachen: jede Architektur mit soliden Parts (dichte ≥ 0.3)
+        // bekommt `entry.blockerAABBs` für den Cell-Stempel (V9.74). Vision-
+        // rein: kein Type-Whitelist, die Substanz entscheidet — Baum-Stamm
+        // (Holz) stempelt, Krone (Laub) nicht.
+        this._populateBlockerAABBs(entry);
         // V9.74 (Welle C.3) — Voxel-Chunks im Footprint dirty markieren, damit
         // das Cell-Feld mit dem Architektur-Stempel neu gebaut wird. Spielt
         // die Welle-A-Vision auf Cell-Sprache (Damm-Cells werden SOLID,
@@ -28808,9 +28351,12 @@ class AnazhRealm {
                   r: Math.max(a.maxX - a.minX, a.maxZ - a.minZ) * 0.5,
               }))
             : null;
-        this._blockerIndexRemove(entry);
+        // V9.75 (Welle C.4+5) — Cell-Feld-Reaktion ohne Hydro-Recompute:
+        // betroffene Voxel-Chunks remeshen → Cell-Stempel-Loop ignoriert die
+        // entfernte Architektur (sie ist gleich aus state.architectures raus),
+        // Wasser-Cells nehmen den Platz zurück, Iso-Mesh rendert.
+        entry.blockerAABBs = null;
         if (wasBlocker) {
-            this._markHydroDirty();
             for (const fp of blockerFootprints) {
                 this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r);
             }
@@ -36250,9 +35796,9 @@ class AnazhRealm {
             // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
             this.tickAffordances(delta);
 
-            // V9.67 (Welle A.4) — reaktive Hydrosphäre: dirty-Flag + Debounce
-            // (~300 ms) → ein Recompute pro Edit-Burst, nicht pro Frame.
-            this._tickHydroRecompute(currentTime);
+            // V9.75 (Welle C.4+5) — kein reaktiver Hydro-Tick mehr. Die
+            // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
+            // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
 
             // ### Rendering ### (V9.44-f → _loopRender)
             this._loopRender(currentTime);
