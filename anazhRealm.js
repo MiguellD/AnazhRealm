@@ -15080,39 +15080,62 @@ class AnazhRealm {
         // keine Plane → naht-frei + Floating-Plane-frei per Konstruktion.
         const band = this.state.hydroBand;
         const bandTop = band ? band.top : Infinity;
-        const cellState = (i, k, j) => {
-            if (j < 0 || j >= dimY) return -1; // Y-bounded
+        // V9.80 (Welle C.10 — nur Wasser-Luft-Iso, keine Bodenfläche): die
+        // Surface-Nets-Iso rendert normalerweise die VOLLE Hülle um die
+        // Wasser-Cells — Top (water-air), Bottom (water-solid) und Sides
+        // (water-solid lateral). Die Bottom-Hülle ist normalerweise hidden
+        // by terrain, aber mit V9.79-Pad+Crop wurde sie sichtbar (Schöpfer-
+        // Audit V9.79: „am grund des wassers entsteht eine zweite oberfläche").
+        // Vision-Heilung: das Wasser-Mesh soll NUR die obere Wasserfläche
+        // sein — wo Wasser auf Luft trifft. Wir klassifizieren die Cells
+        // 3-fach (AIR/WATER/SOLID) und unterdrücken Übergänge ohne Luft
+        // (Bottom + Underwater-Sides) sowie ohne Wasser (Mountain-Top, der
+        // schon vom Terrain-Mesh getragen wird). Nur Mischungen mit
+        // WATER+AIR erzeugen Iso → das ist die sichtbare Wasseroberfläche.
+        const cellClass = (i, k, j) => {
+            if (j < 0 || j >= dimY) return STATE.AIR;
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
-                return cells[i + k * dim + j * dim * dim] === STATE.WATER ? 1 : -1;
+                return cells[i + k * dim + j * dim * dim];
             }
-            // OOB live-compute — identisch zur Cell-Init: above-band=AIR,
-            // sonst voller Density+waterLevel-Check (mountain-Säulen
-            // bleiben SOLID statt fälschlicherweise WATER).
+            // OOB live-compute — identisch zur Cell-Init.
             const wy = oy + (j + 0.5) * step;
-            if (wy > bandTop) return -1;
+            if (wy > bandTop) return STATE.AIR;
             const wx = ox + (i + 0.5) * step;
             const wz = oz + (k + 0.5) * step;
-            if (this._terrainDensityAt(wx, wy, wz) > 0) return -1; // SOLID
-            return wy <= this._waterLevelAt(wx, wz) ? 1 : -1;
+            if (this._terrainDensityAt(wx, wy, wz) > 0) return STATE.SOLID;
+            return wy <= this._waterLevelAt(wx, wz) ? STATE.WATER : STATE.AIR;
         };
         const sampleWater = (x, y, z) => {
-            // Sample-Vertex (x, y, z) liegt an einer Cell-Ecke. Die 8
-            // angrenzenden Cells: (i−1+di, k−1+dk, j−1+dj) für di/dk/dj ∈ {0,1}.
             const fi = (x - ox) / step;
             const fk = (z - oz) / step;
             const fj = (y - oy) / step;
             const i = Math.floor(fi);
             const k = Math.floor(fk);
             const j = Math.floor(fj);
-            let sum = 0;
+            let cWater = 0;
+            let cAir = 0;
             for (let dj = 0; dj <= 1; dj++) {
                 for (let dk = 0; dk <= 1; dk++) {
                     for (let di = 0; di <= 1; di++) {
-                        sum += cellState(i - 1 + di, k - 1 + dk, j - 1 + dj);
+                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
+                        if (cls === STATE.WATER) cWater++;
+                        else if (cls === STATE.AIR) cAir++;
+                        // SOLID zählt weder als Wasser noch als Luft.
                     }
                 }
             }
-            return sum / 8;
+            // Unterdrücke Wasser-Solid-Iso (Bottom/Underwater-Sides): keine
+            // Luft im Sample → behandle als „tief drinnen" (+1), kein Iso.
+            if (cAir === 0) return 1;
+            // Unterdrücke Iso ohne Wasser (Mountain-Top, Sky): keine Wasser-
+            // Cells → behandle als „außen" (-1), kein Iso. Das Terrain-Mesh
+            // trägt die Mountain-Oberfläche.
+            if (cWater === 0) return -1;
+            // Mischung mit Wasser UND Luft (+ ggf. Solid am Ufer): Standard
+            // Iso bei (cWater - cAir) = 0, geglättet durch das 8-Cell-Average.
+            // Solid-Cells bleiben für die Iso-Position neutral; das Terrain
+            // verdeckt sie ohnehin.
+            return (cWater - cAir) / 8;
         };
         // V9.79 (Welle C.9 — die Pad+Crop-Heilung der Oberflächen-Naht):
         // bis V9.78 baute der Iso-Mesher das Wasser-Mesh nur über die dim·
