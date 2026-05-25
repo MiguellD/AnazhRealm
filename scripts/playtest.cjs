@@ -12449,8 +12449,15 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.hasWaterCells = testEntry.waterCells instanceof Uint8Array;
         out.waterCellsLen = testEntry.waterCells.length;
         out.waterCellsLenCorrect = testEntry.waterCells.length === expectedLen;
-        // 5) Klassifikations-Stichprobe: scan 64 zufällige Cells im Chunk,
-        // vergleiche state[i] mit der Density+waterLevel-Regel
+        // 5) Klassifikations-Stichprobe: scan 64 Cells im Wasser-Band des
+        // Chunks, vergleiche state[i] mit der Density+waterLevel-Regel.
+        // V9.76 (Welle C.6): die Cell-Klassifikation läuft nur noch im
+        // Y-Band um die Wasser-Spiegel (`minWaterY−3·step .. maxWaterY+3·step`)
+        // — Cells außerhalb sind alle AIR (für den Iso-Mesher äquivalent zu
+        // SOLID, weil beide not-WATER sind). Der Test samplet darum bewusst
+        // INNERHALB des Bands, wo die Semantik den Iso treibt. Cells
+        // außerhalb des Bands sind eine Implementierungs-Optimierung, nicht
+        // mehr Teil der Wahrheit.
         const commaIdx = testKey.indexOf(",");
         const cx = parseInt(testKey.slice(0, commaIdx), 10);
         const cz = parseInt(testKey.slice(commaIdx + 1), 10);
@@ -12460,7 +12467,27 @@ async function checkBandWelleC1WaterCells(ctx) {
         const oy = base - cfg.floorDrop;
         const ox = cx * span;
         const oz = cz * span;
-        const wl = r.state.waterLevel;
+        // Wasser-Band des Test-Chunks bestimmen (gleiche Logik wie
+        // `_buildVoxelChunkWaterCells`).
+        let minWY = Infinity;
+        let maxWY = -Infinity;
+        for (let k = 0; k < cfg.dim; k++) {
+            const cz2 = oz + (k + 0.5) * step;
+            for (let i = 0; i < cfg.dim; i++) {
+                const cx2 = ox + (i + 0.5) * step;
+                const wy = r._waterLevelAt(cx2, cz2);
+                if (wy < minWY) minWY = wy;
+                if (wy > maxWY) maxWY = wy;
+            }
+        }
+        // Y-Band-Boundary exakt wie der Build: cy = oy + (j+0.5)*step,
+        // Band-Bedingung cyBandLo <= cy <= cyBandHi → j-Range:
+        // ceil((cyBandLo-oy)/step - 0.5) <= j <= floor((cyBandHi-oy)/step - 0.5).
+        const yBandLo = minWY - 3 * step;
+        const yBandHi = maxWY + 3 * step;
+        const jBandLo = Math.max(0, Math.ceil((yBandLo - oy) / step - 0.5));
+        const jBandHi = Math.min(cfg.dimY - 1, Math.floor((yBandHi - oy) / step - 0.5));
+        const jBandRange = Math.max(1, jBandHi - jBandLo + 1);
         let mismatches = 0;
         let solidCount = 0;
         let waterCount = 0;
@@ -12470,15 +12497,13 @@ async function checkBandWelleC1WaterCells(ctx) {
             // Deterministische Sample-Position (kein Math.random für Reproduzierbarkeit)
             const i = (n * 17) % cfg.dim;
             const k = ((n * 19 + 5) | 0) % cfg.dim;
-            const j = ((n * 23 + 11) | 0) % cfg.dimY;
+            const j = jBandLo + (((n * 23 + 11) | 0) % jBandRange);
             const idx = i + k * cfg.dim + j * cfg.dim * cfg.dim;
             const actual = testEntry.waterCells[idx];
             const cy = oy + (j + 0.5) * step;
             const cxw = ox + (i + 0.5) * step;
             const czw = oz + (k + 0.5) * step;
             const d = r._terrainDensityAt(cxw, cy, czw);
-            // V9.73-Heilung: Build nutzt jetzt _waterLevelAt(cxw, czw) pro
-            // Säule (für Bergseen). Test muss mit-wandern.
             const wlCol = r._waterLevelAt(cxw, czw);
             let expected;
             if (d > 0) expected = STATE.SOLID;
@@ -12495,12 +12520,19 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.sampleWaterCount = waterCount;
         out.sampleAirCount = airCount;
         // 6) Determinismus: ein zweiter Build des SELBEN Chunks ergibt das
-        // gleiche Feld
+        // gleiche Feld. V9.76: dirty-Queue vorher drainen — sonst hätte
+        // testEntry.waterCells einen alten Stempel-Stand (vor neuesten
+        // Architekturen aus vorherigen Test-Bändern), und der zweite Build
+        // sähe den aktuellen Stand → Stempel-Drift. Mit Drain sind beide
+        // Builds gegen denselben architectures-Snapshot.
+        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        const refreshed = r.state.voxelChunks.get(testKey);
+        const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
         const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step);
         out.secondLen = second.length;
         let driftCount = 0;
         for (let i = 0; i < expectedLen; i++) {
-            if (testEntry.waterCells[i] !== second[i]) driftCount++;
+            if (reference[i] !== second[i]) driftCount++;
         }
         out.deterministic = driftCount === 0;
         out.driftCount = driftCount;

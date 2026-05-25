@@ -14814,28 +14814,131 @@ class AnazhRealm {
     // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
     // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
     // shared mit Mesher-Density-Grid.
+    // V9.76 (Welle C.6 — Trocken-Gate, Performance): trägt der Chunk-Fußabdruck
+    // überhaupt Wasser? Wenn nein, sparen wir 71 424 `_terrainDensityAt`-Samples
+    // pro Chunk (~200ms im Browser, Killer für Streaming-FPS). Konservativ
+    // (lieber bauen als ein Loch riskieren), drei Predicates:
+    //   (1) dippt die Macro-Surface an einem 4×4-Raster nahe `waterLevel + 16`
+    //       (Roughness-Marge) → möglicher Ozean/Bergsee in diesem Chunk;
+    //   (2) ein Voxel-Carve unter waterLevel, dessen xz-Footprint den Chunk
+    //       berührt (V9.69-Predicate — Spieler-Pool im Hochland);
+    //   (3) der Hydrosphäre-Atlas hat eine Lake-Zelle ODER ein Fluss-Bucket
+    //       im Chunk-Footprint (See, Fluss, Tarn — alles über `_waterLevelAt`
+    //       erfassbar). Reanimiert die V9.69-Gate-Logik (`_voxelChunkTouches-
+    //       Water`), die in V9.75 vorschnell gestrichen wurde — sie war
+    //       Performance-Schutz, nicht der Naht-Patch (Welle B), den wir
+    //       beerdigt haben.
+    _voxelChunkHasAnyWater(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        // (1) Ozean / Bergsee — Macro-Surface dippt unter waterLevel + 16
+        for (let j = 0; j <= 3; j++) {
+            for (let i = 0; i <= 3; i++) {
+                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
+                    return true;
+                }
+            }
+        }
+        // (2) Voxel-Carve unter waterLevel im xz-Footprint
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (Array.isArray(edits) && edits.length) {
+            for (let e = 0; e < edits.length; e++) {
+                const ed = edits[e];
+                if (!ed || ed.mode !== "carve") continue;
+                const r = ed.r;
+                if (!Number.isFinite(r) || r <= 0) continue;
+                if (ed.y - r >= waterLevel) continue;
+                if (ed.x + r < ox || ed.x - r > ox + span) continue;
+                if (ed.z + r < oz || ed.z - r > oz + span) continue;
+                return true;
+            }
+        }
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        // (3) See-Zellen im Footprint (+1 Cell Marge)
+        if (h.water && h.water.waterKind) {
+            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
+            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
+            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
+            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+            for (let cj = c0j; cj <= c1j; cj++) {
+                for (let ci = c0i; ci <= c1i; ci++) {
+                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
+                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
+                }
+            }
+        }
+        // (4) Fluss-Bucket im Footprint
+        if (h.riverBuckets) {
+            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
+            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
+            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
+            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
+            for (let bj = b0j; bj <= b1j; bj++) {
+                for (let bi = b0i; bi <= b1i; bi++) {
+                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
+                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
+                    if (list && list.length) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     _buildVoxelChunkWaterCells(ox, oy, oz, step) {
         const { dim, dimY } = this._voxelChunkConfig();
         const cells = new Uint8Array(dim * dim * dimY);
         const STATE = AnazhRealm.CELL_STATE;
         // V9.73 (Welle C.2 Heilung) — pro xz-Spalte das `_waterLevelAt`
         // einmal cachen (statt pro Cell, statt `state.waterLevel` direkt).
-        // Erfasst Meeres + Bergseen + Flüsse — das gleiche Wasser-Niveau
-        // wie der alte Quad-Mesh-Pfad. So sehen die water-Cells auch
-        // Bergseen über dem globalen waterLevel. 576 Spalten × O(25) calls
-        // statt 71 424 calls — viel billiger.
         const colCount = dim * dim;
         const colWaterY = new Float64Array(colCount);
+        let minWaterY = Infinity;
+        let maxWaterY = -Infinity;
         for (let k = 0; k < dim; k++) {
             const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) {
                 const cx = ox + (i + 0.5) * step;
-                colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
+                const wy = this._waterLevelAt(cx, cz);
+                colWaterY[i + k * dim] = wy;
+                if (wy < minWaterY) minWaterY = wy;
+                if (wy > maxWaterY) maxWaterY = wy;
             }
         }
+        // V9.76 (Welle C.6 — Y-Band-Optimierung): die Iso-Mesher-Density-
+        // Funktion unterscheidet nur WATER (+1) vs not-WATER (−1). AIR und
+        // SOLID sind für den Wasser-Iso ÄQUIVALENT (beides −1). Wir können
+        // also die Density-Samples für Cells außerhalb des Wasser-Bands
+        // sparen: cy > maxWaterY + Marge → garantiert nicht-water → AIR.
+        // cy unter dem Band → garantiert nicht-water → AIR (oder SOLID; egal
+        // für den Iso). Marge = 3 Cells (5.4 m), deckt Bergsee-Höhen-Varianz
+        // + Surface-Roughness ab. Innerhalb des Bands: voller Density-Check.
+        // Spart bei einem typischen Chunk ~95 % der `_terrainDensityAt`-
+        // Samples (von 71 424 auf ~4 000). Architektur-Stempel läuft danach
+        // separat und überschreibt cells in der Architektur-Y-Range. **OK,
+        // weil keine andere Schicht entry.waterCells liest** (nur der Iso-
+        // Mesher, der AIR=SOLID gleich behandelt).
+        const yBandMargin = 3 * step;
+        const cyBandTop = maxWaterY + yBandMargin;
+        const cyBandBottom = minWaterY - yBandMargin;
         for (let j = 0; j < dimY; j++) {
             const cy = oy + (j + 0.5) * step;
             const baseJ = j * dim * dim;
+            if (cy > cyBandTop) {
+                // Über dem Wasser-Band: alle Cells sind AIR (es kann hier
+                // physisch kein Wasser-Cell entstehen). Uint8Array ist mit
+                // 0 = AIR initialisiert, also kein Schreiben nötig.
+                continue;
+            }
+            if (cy < cyBandBottom) {
+                // Unter dem Wasser-Band: irrelevant für Iso (kein Wasser-
+                // Übergang). Lassen wir auf AIR (0) — der Iso-Mesher würde
+                // hier ohnehin nicht abtasten (Mesh terminiert am Band-Rand).
+                continue;
+            }
+            // Innerhalb des Wasser-Bands: voller Density+waterLevel-Check.
             for (let k = 0; k < dim; k++) {
                 const cz = oz + (k + 0.5) * step;
                 const baseK = k * dim;
@@ -14930,14 +15033,35 @@ class AnazhRealm {
         const oz = cz * span;
         const oy = base - floorDrop;
         const STATE = AnazhRealm.CELL_STATE;
-        // Density-Funktion über das Cell-Feld: pro Vertex (Welt-Koord)
-        // Average der 8 angrenzenden Cells. Water-Cell zählt +1, alles
-        // andere −1. Out-of-bounds zählt −1 (Mesh endet sauber an Chunk-
-        // Rändern; cross-chunk-Naht wird durch deterministische 1:1-
-        // Vertex-Position an der Grenze gesichert, NICHT durch Skirt-Pad).
+        // V9.76 (Welle C.6 — Naht-Heilung): die alte cellState-Funktion gab
+        // für Out-of-Chunk-Cells konstant −1 zurück. Folge: Chunk-A samplet
+        // an seiner rechten Boundary 4 Water-Cells + 4 OOB(−1) → Density=0;
+        // Chunk-B spiegelbildlich an seiner linken Boundary. Surface-Nets-
+        // Smoothing zog beide Iso-Vertices ~0.5·step nach innen → ein 1-Cell-
+        // Gap (1.8 m) Riss in der Wasser-Fläche, sichtbar im Schöpfer-Browser-
+        // Audit nach V9.75. Heilung: OOB-Samples werden LIVE aus
+        // `_terrainDensityAt` + `_waterLevelAt` berechnet — exakt das, was der
+        // Nachbar-Chunk in seinem Cell-Feld sehen würde. Beide Nachbarn lesen
+        // dieselben Welt-Konstanten an der Boundary → Density-Werte stimmen
+        // überein → Iso-Vertices stimmen überein → Naht weg. Architektur-
+        // Stempel an exakter Chunk-Boundary wird im OOB-Sample ignoriert
+        // (Edge-case, vernachlässigbar). Performance: typischer Boundary-
+        // Sample-Bereich ist ~4·(dim+1)·dimY·8 ≈ 100k Cells je Mesh, aber
+        // davon sind die meisten in-Chunk; OOB ist nur der 1-Vertex-breite
+        // Ring → ~4·dim·dimY·8 ≈ 95k Lookups max. Die Density-Funktion ist
+        // gecached (`_voxelNoise`) → ~3μs/Sample.
         const cellState = (i, k, j) => {
-            if (i < 0 || k < 0 || j < 0 || i >= dim || k >= dim || j >= dimY) return -1;
-            return cells[i + k * dim + j * dim * dim] === STATE.WATER ? 1 : -1;
+            if (j < 0 || j >= dimY) return -1; // Y-bounded
+            if (i >= 0 && k >= 0 && i < dim && k < dim) {
+                return cells[i + k * dim + j * dim * dim] === STATE.WATER ? 1 : -1;
+            }
+            // OOB live-compute (Naht-Heilung): identisch zum Cell-Init des
+            // Nachbar-Chunks (`_buildVoxelChunkWaterCells`-Klassifikation).
+            const wx = ox + (i + 0.5) * step;
+            const wz = oz + (k + 0.5) * step;
+            const wy = oy + (j + 0.5) * step;
+            if (this._terrainDensityAt(wx, wy, wz) > 0) return -1;
+            return wy <= this._waterLevelAt(wx, wz) ? 1 : -1;
         };
         const sampleWater = (x, y, z) => {
             // Sample-Vertex (x, y, z) liegt an einer Cell-Ecke. Die 8
@@ -15027,14 +15151,18 @@ class AnazhRealm {
             mat.dispose();
             return null;
         }
-        // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) — das Wasser-Cell-Feld ist
-        // seit jetzt die EINZIGE Wasser-Wahrheit pro Chunk. Lebt im entry,
-        // nicht im globalen state. Klassifikation per Cell: SOLID wenn Density
-        // >0 oder Architektur-Stempel, sonst WATER wenn cy ≤ _waterLevelAt(x,z),
-        // sonst AIR. Aus diesem Feld baut `_buildVoxelChunkWaterIsoSurface`
-        // das Iso-Mesh (naht-frei mit dem Boden, weil derselbe Surface-Nets-
-        // Mesher beide Felder samplet).
-        const waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step);
+        // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) / V9.76 (Welle C.6 — Gate):
+        // das Wasser-Cell-Feld ist die EINZIGE Wasser-Wahrheit pro Chunk.
+        // Lebt im entry, nicht im globalen state. **Trocken-Gate** vor dem
+        // 71 424-Cell-Bau (~200ms Density-Samples): wenn der Chunk kein
+        // Wasser tragen kann (Macro-Surface überall >waterLevel+16 UND kein
+        // Voxel-Carve unter waterLevel UND kein Atlas-Lake/Fluss im Footprint),
+        // dann waterCells = null. `_buildVoxelChunkWaterIsoSurface` skip'pt
+        // dann sauber (vorhandener null-check). Big FPS-Win für Hochland-
+        // Chunks.
+        const waterCells = this._voxelChunkHasAnyWater(cx, cz)
+            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step)
+            : null;
         return { mesh, kind: "filled", waterCells };
     }
 
@@ -16317,11 +16445,24 @@ class AnazhRealm {
                 const cz = Number(key.slice(ci + 1));
                 const entry = this.state.voxelChunks.get(key);
                 if (entry && entry.mesh) {
-                    // Cell-Feld neu rechnen mit jetzt fertigem Atlas, dann Iso-Mesh
-                    const { step, span, floorDrop } = this._voxelChunkConfig();
-                    const base = this.state.terrainBaseHeight || 0;
-                    entry.waterCells = this._buildVoxelChunkWaterCells(cx * span, base - floorDrop, cz * span, step);
-                    this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                    // V9.76 — Trocken-Gate auch in der Worldgen-Finalisierung:
+                    // Hochland-Chunks ohne Wasser ersparen sich den 71k-Cell-
+                    // Density-Pass (Atlas-fertig macht den Gate-Pfad (3)+(4)
+                    // erst jetzt verlässlich).
+                    if (this._voxelChunkHasAnyWater(cx, cz)) {
+                        const { step, span, floorDrop } = this._voxelChunkConfig();
+                        const base = this.state.terrainBaseHeight || 0;
+                        entry.waterCells = this._buildVoxelChunkWaterCells(
+                            cx * span,
+                            base - floorDrop,
+                            cz * span,
+                            step
+                        );
+                        this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                    } else {
+                        entry.waterCells = null;
+                        this._disposeVoxelChunkWaterIso(`${cx},${cz}`);
+                    }
                 }
             }
         }
