@@ -15020,34 +15020,38 @@ class AnazhRealm {
     // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
     // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
     // shared mit Mesher-Density-Grid.
-    // V9.76 (Welle C.6 — Trocken-Gate, Performance): trägt der Chunk-Fußabdruck
-    // überhaupt Wasser? Wenn nein, sparen wir 71 424 `_terrainDensityAt`-Samples
-    // pro Chunk (~200ms im Browser, Killer für Streaming-FPS). Konservativ
-    // (lieber bauen als ein Loch riskieren), drei Predicates:
-    //   (1) dippt die Macro-Surface an einem 4×4-Raster nahe `waterLevel + 16`
-    //       (Roughness-Marge) → möglicher Ozean/Bergsee in diesem Chunk;
-    //   (2) ein Voxel-Carve unter waterLevel, dessen xz-Footprint den Chunk
-    //       berührt (V9.69-Predicate — Spieler-Pool im Hochland);
-    //   (3) der Hydrosphäre-Atlas hat eine Lake-Zelle ODER ein Fluss-Bucket
-    //       im Chunk-Footprint (See, Fluss, Tarn — alles über `_waterLevelAt`
-    //       erfassbar). Reanimiert die V9.69-Gate-Logik (`_voxelChunkTouches-
-    //       Water`), die in V9.75 vorschnell gestrichen wurde — sie war
-    //       Performance-Schutz, nicht der Naht-Patch (Welle B), den wir
-    //       beerdigt haben.
+    // V9.76 (Welle C.6) / V9.87 (Welle Perf-3.a — Atlas-Strict): trägt der
+    // Chunk-Fußabdruck überhaupt Wasser? Wenn nein, sparen wir 71 424
+    // `_terrainDensityAt`-Samples pro Chunk (~200ms im Browser, Killer für
+    // Streaming-FPS). **V9.87-Schnitt**: die ursprüngliche V9.76-Predicate (1)
+    // war eine LOOSE Macro-Dipp-Heuristik („Macro-Surface < waterLevel + 16
+    // am 4×4-Raster"). False-positive in hügeligem Gelände — ein Bergtal
+    // konnte lokal unter waterLevel+16 dippen ohne dass dort jemals ein
+    // Atlas-Marker steht. Folge: Hochland-Chunks bauten Wasser-Cells, der
+    // V9.86-Konnektivitäts-Filter heilte zwar eingeschlossene Mulden, aber
+    // legitime WATER-Cells in Bergwänden mit Pfad-nach-oben (Felsspalte
+    // mit Atmosphäre verbunden) blieben sichtbar → der V9.86-Schöpfer-Audit:
+    // „auch noch wasser an gebäude und steilen bergwände". Profi-Pattern
+    // (Minecraft): Wasser ist deterministisch durch Welt-Seed/Atlas
+    // bestimmt, nicht durch lokale Geometrie-Heuristik. **Atlas-Strict-Gate**:
+    // drei Predicates, jeder ist eine EXPLIZITE Wasser-Wahrheits-Quelle:
+    //   (1) ein Voxel-Carve unter waterLevel, dessen xz-Footprint den Chunk
+    //       berührt (V9.69-Predicate — Spieler-Pool im Hochland; bleibt,
+    //       weil Spieler-Edit unabhängig vom Atlas Wasser entstehen kann);
+    //   (2) der Hydrosphäre-Atlas hat eine Ozean-Zelle (waterKind === 1) ODER
+    //       eine See-Zelle (waterKind === 2) im Chunk-Footprint (+1 Cell Marge
+    //       für Boundary-Continuität);
+    //   (3) ein Fluss-Bucket im Footprint.
+    // Plus marginaler Perf-Win: Hochland-Chunks ohne Atlas-Marker bauen
+    // jetzt 0 Wasser-Cells (vorher passierten sie das +16-m-Gate und bauten
+    // Cells, die später per Konnektivitäts-Filter ausgesiebt wurden).
     _voxelChunkHasAnyWater(cx, cz) {
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
         const oz = cz * span;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        // (1) Ozean / Bergsee — Macro-Surface dippt unter waterLevel + 16
-        for (let j = 0; j <= 3; j++) {
-            for (let i = 0; i <= 3; i++) {
-                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
-                    return true;
-                }
-            }
-        }
-        // (2) Voxel-Carve unter waterLevel im xz-Footprint
+        // (1) Voxel-Carve unter waterLevel im xz-Footprint — Spieler-Wille
+        // überschreibt Atlas (Hochland-Pool emergiert lokal).
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         if (Array.isArray(edits) && edits.length) {
             for (let e = 0; e < edits.length; e++) {
@@ -15063,20 +15067,24 @@ class AnazhRealm {
         }
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return false;
-        // (3) See-Zellen im Footprint (+1 Cell Marge)
+        // (2) Atlas-Marker: Ozean (kind === 1) ODER See (kind === 2) im
+        // Chunk-Footprint (+1 Cell Marge für Boundary-Continuität — der
+        // 16-m-Atlas-Cell-Raster liegt nicht perfekt auf dem Chunk-Raster).
         if (h.water && h.water.waterKind) {
             const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
             const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
             const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
             const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+            const wK = h.water.waterKind;
             for (let cj = c0j; cj <= c1j; cj++) {
                 for (let ci = c0i; ci <= c1i; ci++) {
                     if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
+                    const kind = wK[ci + cj * h.dim];
+                    if (kind === 1 || kind === 2) return true;
                 }
             }
         }
-        // (4) Fluss-Bucket im Footprint
+        // (3) Fluss-Bucket im Footprint
         if (h.riverBuckets) {
             const b0i = Math.floor((ox - h.originX) / h.bucketSize);
             const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
@@ -37224,7 +37232,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.86";
+AnazhRealm.VERSION = "9.87";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
