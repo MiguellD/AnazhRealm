@@ -83,6 +83,15 @@ class AnazhRealm {
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
             // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
             hydrosphere: null,
+            // V9.77 (Welle C.7) — globales Wasser-Y-Band für die Cell-Klassi-
+            // fikations-Optimierung. Wird nach `_computeHydrosphere` aus
+            // `state.waterLevel` + allen Lake-Spiegeln berechnet. ALLE Voxel-
+            // Chunks teilen dieses Band → Cells außerhalb des Bands sind
+            // deterministisch (above=AIR, below=WATER) ohne Chunk-spezifische
+            // Drift. So bleibt die OOB-Live-Naht-Heilung (V9.76) konsistent
+            // und der Speedup (~60% weniger Density-Samples auf Wasser-Chunks)
+            // existiert ohne Naht-Risiko. Format: `{ top, bottom }` Welt-Y.
+            hydroBand: null,
             // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
             // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
             // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
@@ -13573,11 +13582,40 @@ class AnazhRealm {
             this.state.hydrosphere = null;
             this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
         }
+        // V9.77 — globales Wasser-Y-Band für die Cell-Klassifikation berechnen.
+        // ALLE Chunks teilen dieses Band → Cells außerhalb sind deterministisch
+        // gleich (above=AIR, below=WATER), die OOB-Live-Naht-Heilung (V9.76)
+        // bleibt konsistent. Marge 10 m über/unter, um Roughness + Tarn-
+        // Variationen sicher zu umfassen.
+        this._computeHydroBand();
         try {
             this._buildHydrosphereMeshes();
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
+    }
+
+    // V9.77 (Welle C.7) — das globale Wasser-Y-Band aus aller Hydrosphäre-
+    // Wahrheit. `top` = max(state.waterLevel, alle lake.level) + 10 m
+    // Marge. `bottom` = state.waterLevel - 10 m (Ozean-Floor ist tiefer,
+    // aber für die Iso-Mesher-Korrektheit reicht "below this is water"
+    // weil die Iso nur die OBERE Wasser-Grenze rendert). Cells außerhalb
+    // des Bands werden ohne Density-Sample klassifiziert: above=AIR,
+    // below=WATER. OOB-Live-Compute in `_buildVoxelChunkWaterIsoSurface`
+    // nutzt dieselbe Regel → Naht-frei zwischen allen Chunks.
+    _computeHydroBand() {
+        const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        let topY = wl;
+        const h = this.state.hydrosphere;
+        if (h && Array.isArray(h.lakes)) {
+            for (const lake of h.lakes) {
+                if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            }
+        }
+        this.state.hydroBand = {
+            top: topY + 10,
+            bottom: wl - 10,
+        };
     }
 
     // V9.75 (Welle C.4+5) — die Welle-A-Reaktiv-Maschinerie (`_markHydroDirty`,
@@ -14893,52 +14931,62 @@ class AnazhRealm {
         const STATE = AnazhRealm.CELL_STATE;
         // V9.73 (Welle C.2 Heilung) — pro xz-Spalte das `_waterLevelAt`
         // einmal cachen (statt pro Cell, statt `state.waterLevel` direkt).
+        // Erfasst Meere + Bergseen + Flüsse — das gleiche Wasser-Niveau
+        // wie der alte Quad-Mesh-Pfad. So sehen die water-Cells auch
+        // Bergseen über dem globalen waterLevel.
         const colCount = dim * dim;
         const colWaterY = new Float64Array(colCount);
-        let minWaterY = Infinity;
-        let maxWaterY = -Infinity;
         for (let k = 0; k < dim; k++) {
             const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) {
                 const cx = ox + (i + 0.5) * step;
-                const wy = this._waterLevelAt(cx, cz);
-                colWaterY[i + k * dim] = wy;
-                if (wy < minWaterY) minWaterY = wy;
-                if (wy > maxWaterY) maxWaterY = wy;
+                colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
             }
         }
-        // V9.76 (Welle C.6 — Y-Band-Optimierung): die Iso-Mesher-Density-
-        // Funktion unterscheidet nur WATER (+1) vs not-WATER (−1). AIR und
-        // SOLID sind für den Wasser-Iso ÄQUIVALENT (beides −1). Wir können
-        // also die Density-Samples für Cells außerhalb des Wasser-Bands
-        // sparen: cy > maxWaterY + Marge → garantiert nicht-water → AIR.
-        // cy unter dem Band → garantiert nicht-water → AIR (oder SOLID; egal
-        // für den Iso). Marge = 3 Cells (5.4 m), deckt Bergsee-Höhen-Varianz
-        // + Surface-Roughness ab. Innerhalb des Bands: voller Density-Check.
-        // Spart bei einem typischen Chunk ~95 % der `_terrainDensityAt`-
-        // Samples (von 71 424 auf ~4 000). Architektur-Stempel läuft danach
-        // separat und überschreibt cells in der Architektur-Y-Range. **OK,
-        // weil keine andere Schicht entry.waterCells liest** (nur der Iso-
-        // Mesher, der AIR=SOLID gleich behandelt).
-        const yBandMargin = 3 * step;
-        const cyBandTop = maxWaterY + yBandMargin;
-        const cyBandBottom = minWaterY - yBandMargin;
+        // V9.76 (Welle C.6) → V9.77 (Welle C.7) — GLOBALES Y-Band-Schema.
+        // Die V9.76-per-Chunk-Band-Optimierung war ein subtiler Bug: per-
+        // Chunk-min/max-waterY varierte (Bergsee-Chunk hatte band-top=21.4 m,
+        // Ozean-Chunk 2.4 m). Cells unter dem Band waren AIR, aber der OOB-
+        // Live-Compute des Nachbar-Chunks returnt WATER unter dem Spiegel
+        // → Iso-Vertices stimmten nicht überein → Risse + Parcellen.
+        //
+        // V9.77 heilt mit einem GLOBALEN Band (`state.hydroBand`): ALLE
+        // Chunks teilen dieselben Thresholds. Cells außerhalb sind determin-
+        // istisch gleich (above=AIR, below=WATER), und der OOB-Live-Compute
+        // im Iso-Mesher nutzt EXAKT dieselbe Regel. Boundary-Density ist
+        // identisch von beiden Seiten → naht-frei per Konstruktion (jetzt
+        // wirklich, weil die Konstruktion konsistent ist).
+        //
+        // Vision-Annahme: below-band = WATER ist physisch nicht ganz korrekt
+        // für Mountain-Innen-Cells (die wären SOLID), aber für den Iso-Mesher
+        // ist das egal: die opake Terrain-Geometrie verdeckt jede falsche
+        // Iso-Surface inside-mountain. Und der Mesher rendert keine Iso
+        // zwischen WATER-Cells (alle +1) — also keine Geister-Surface tief
+        // unter waterLevel. Architektur-Stempel überschreibt Cells wo nötig
+        // (Damm im Wasser wird SOLID, Wasser fließt drumherum).
+        const band = this.state.hydroBand;
+        const bandTop = band ? band.top : Infinity;
+        const bandBottom = band ? band.bottom : -Infinity;
         for (let j = 0; j < dimY; j++) {
             const cy = oy + (j + 0.5) * step;
             const baseJ = j * dim * dim;
-            if (cy > cyBandTop) {
-                // Über dem Wasser-Band: alle Cells sind AIR (es kann hier
-                // physisch kein Wasser-Cell entstehen). Uint8Array ist mit
-                // 0 = AIR initialisiert, also kein Schreiben nötig.
+            if (cy > bandTop) {
+                // Above band: alle AIR. Uint8Array ist mit 0=AIR vorbelegt.
                 continue;
             }
-            if (cy < cyBandBottom) {
-                // Unter dem Wasser-Band: irrelevant für Iso (kein Wasser-
-                // Übergang). Lassen wir auf AIR (0) — der Iso-Mesher würde
-                // hier ohnehin nicht abtasten (Mesh terminiert am Band-Rand).
+            if (cy < bandBottom) {
+                // Below band: alle WATER (konsistent mit OOB-Live-Compute).
+                // Iso-Mesher sieht hier keine Transition (alle Cells +1) →
+                // kein Mesh. Hidden by terrain wo solid.
+                for (let k = 0; k < dim; k++) {
+                    const baseK = k * dim;
+                    for (let i = 0; i < dim; i++) {
+                        cells[i + baseK + baseJ] = STATE.WATER;
+                    }
+                }
                 continue;
             }
-            // Innerhalb des Wasser-Bands: voller Density+waterLevel-Check.
+            // Innerhalb des Bands: volle Density+waterLevel-Klassifikation.
             for (let k = 0; k < dim; k++) {
                 const cz = oz + (k + 0.5) * step;
                 const baseK = k * dim;
@@ -15033,34 +15081,29 @@ class AnazhRealm {
         const oz = cz * span;
         const oy = base - floorDrop;
         const STATE = AnazhRealm.CELL_STATE;
-        // V9.76 (Welle C.6 — Naht-Heilung): die alte cellState-Funktion gab
-        // für Out-of-Chunk-Cells konstant −1 zurück. Folge: Chunk-A samplet
-        // an seiner rechten Boundary 4 Water-Cells + 4 OOB(−1) → Density=0;
-        // Chunk-B spiegelbildlich an seiner linken Boundary. Surface-Nets-
-        // Smoothing zog beide Iso-Vertices ~0.5·step nach innen → ein 1-Cell-
-        // Gap (1.8 m) Riss in der Wasser-Fläche, sichtbar im Schöpfer-Browser-
-        // Audit nach V9.75. Heilung: OOB-Samples werden LIVE aus
-        // `_terrainDensityAt` + `_waterLevelAt` berechnet — exakt das, was der
-        // Nachbar-Chunk in seinem Cell-Feld sehen würde. Beide Nachbarn lesen
-        // dieselben Welt-Konstanten an der Boundary → Density-Werte stimmen
-        // überein → Iso-Vertices stimmen überein → Naht weg. Architektur-
-        // Stempel an exakter Chunk-Boundary wird im OOB-Sample ignoriert
-        // (Edge-case, vernachlässigbar). Performance: typischer Boundary-
-        // Sample-Bereich ist ~4·(dim+1)·dimY·8 ≈ 100k Cells je Mesh, aber
-        // davon sind die meisten in-Chunk; OOB ist nur der 1-Vertex-breite
-        // Ring → ~4·dim·dimY·8 ≈ 95k Lookups max. Die Density-Funktion ist
-        // gecached (`_voxelNoise`) → ~3μs/Sample.
+        // V9.77 (Welle C.7 — Naht-Heilung + globales Band): die OOB-Live-
+        // Berechnung folgt EXAKT der Cell-Klassifikations-Logik von
+        // `_buildVoxelChunkWaterCells` — gleicher above/below/in-band-Pfad,
+        // gleiche Density+waterLevel-Regeln. Beide Nachbar-Chunks sehen an
+        // der Boundary identische Density → Iso-Vertices stimmen → Naht weg.
+        // Performance: OOB-Region ist nur der 1-Vertex-Ring am Chunk-Rand;
+        // above/below-band-Cells returnen sofort ohne Density-Call.
+        const band = this.state.hydroBand;
+        const bandTop = band ? band.top : Infinity;
+        const bandBottom = band ? band.bottom : -Infinity;
         const cellState = (i, k, j) => {
             if (j < 0 || j >= dimY) return -1; // Y-bounded
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
                 return cells[i + k * dim + j * dim * dim] === STATE.WATER ? 1 : -1;
             }
-            // OOB live-compute (Naht-Heilung): identisch zum Cell-Init des
-            // Nachbar-Chunks (`_buildVoxelChunkWaterCells`-Klassifikation).
+            // OOB live-compute — muss mit dem Cell-Init des Nachbar-Chunks
+            // identisch sein, sonst Naht.
+            const wy = oy + (j + 0.5) * step;
+            if (wy > bandTop) return -1; // above band: AIR
+            if (wy < bandBottom) return 1; // below band: WATER
             const wx = ox + (i + 0.5) * step;
             const wz = oz + (k + 0.5) * step;
-            const wy = oy + (j + 0.5) * step;
-            if (this._terrainDensityAt(wx, wy, wz) > 0) return -1;
+            if (this._terrainDensityAt(wx, wy, wz) > 0) return -1; // SOLID
             return wy <= this._waterLevelAt(wx, wz) ? 1 : -1;
         };
         const sampleWater = (x, y, z) => {

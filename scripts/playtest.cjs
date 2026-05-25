@@ -12449,15 +12449,10 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.hasWaterCells = testEntry.waterCells instanceof Uint8Array;
         out.waterCellsLen = testEntry.waterCells.length;
         out.waterCellsLenCorrect = testEntry.waterCells.length === expectedLen;
-        // 5) Klassifikations-Stichprobe: scan 64 Cells im Wasser-Band des
-        // Chunks, vergleiche state[i] mit der Density+waterLevel-Regel.
-        // V9.76 (Welle C.6): die Cell-Klassifikation läuft nur noch im
-        // Y-Band um die Wasser-Spiegel (`minWaterY−3·step .. maxWaterY+3·step`)
-        // — Cells außerhalb sind alle AIR (für den Iso-Mesher äquivalent zu
-        // SOLID, weil beide not-WATER sind). Der Test samplet darum bewusst
-        // INNERHALB des Bands, wo die Semantik den Iso treibt. Cells
-        // außerhalb des Bands sind eine Implementierungs-Optimierung, nicht
-        // mehr Teil der Wahrheit.
+        // 5) Klassifikations-Stichprobe: scan 64 Cells im Chunk, vergleiche
+        // mit der V9.77-Cell-Klassifikations-Logik (globales Band + Density-
+        // Regel im Band). Above-band = AIR, below-band = WATER, in-band =
+        // Density+waterLevel-Check.
         const commaIdx = testKey.indexOf(",");
         const cx = parseInt(testKey.slice(0, commaIdx), 10);
         const cz = parseInt(testKey.slice(commaIdx + 1), 10);
@@ -12467,48 +12462,33 @@ async function checkBandWelleC1WaterCells(ctx) {
         const oy = base - cfg.floorDrop;
         const ox = cx * span;
         const oz = cz * span;
-        // Wasser-Band des Test-Chunks bestimmen (gleiche Logik wie
-        // `_buildVoxelChunkWaterCells`).
-        let minWY = Infinity;
-        let maxWY = -Infinity;
-        for (let k = 0; k < cfg.dim; k++) {
-            const cz2 = oz + (k + 0.5) * step;
-            for (let i = 0; i < cfg.dim; i++) {
-                const cx2 = ox + (i + 0.5) * step;
-                const wy = r._waterLevelAt(cx2, cz2);
-                if (wy < minWY) minWY = wy;
-                if (wy > maxWY) maxWY = wy;
-            }
-        }
-        // Y-Band-Boundary exakt wie der Build: cy = oy + (j+0.5)*step,
-        // Band-Bedingung cyBandLo <= cy <= cyBandHi → j-Range:
-        // ceil((cyBandLo-oy)/step - 0.5) <= j <= floor((cyBandHi-oy)/step - 0.5).
-        const yBandLo = minWY - 3 * step;
-        const yBandHi = maxWY + 3 * step;
-        const jBandLo = Math.max(0, Math.ceil((yBandLo - oy) / step - 0.5));
-        const jBandHi = Math.min(cfg.dimY - 1, Math.floor((yBandHi - oy) / step - 0.5));
-        const jBandRange = Math.max(1, jBandHi - jBandLo + 1);
+        const band = r.state.hydroBand || { top: Infinity, bottom: -Infinity };
         let mismatches = 0;
         let solidCount = 0;
         let waterCount = 0;
         let airCount = 0;
         const SAMPLES = 64;
         for (let n = 0; n < SAMPLES; n++) {
-            // Deterministische Sample-Position (kein Math.random für Reproduzierbarkeit)
             const i = (n * 17) % cfg.dim;
             const k = ((n * 19 + 5) | 0) % cfg.dim;
-            const j = jBandLo + (((n * 23 + 11) | 0) % jBandRange);
+            const j = ((n * 23 + 11) | 0) % cfg.dimY;
             const idx = i + k * cfg.dim + j * cfg.dim * cfg.dim;
             const actual = testEntry.waterCells[idx];
             const cy = oy + (j + 0.5) * step;
             const cxw = ox + (i + 0.5) * step;
             const czw = oz + (k + 0.5) * step;
-            const d = r._terrainDensityAt(cxw, cy, czw);
-            const wlCol = r._waterLevelAt(cxw, czw);
             let expected;
-            if (d > 0) expected = STATE.SOLID;
-            else if (cy <= wlCol) expected = STATE.WATER;
-            else expected = STATE.AIR;
+            if (cy > band.top) {
+                expected = STATE.AIR;
+            } else if (cy < band.bottom) {
+                expected = STATE.WATER;
+            } else {
+                const d = r._terrainDensityAt(cxw, cy, czw);
+                const wlCol = r._waterLevelAt(cxw, czw);
+                if (d > 0) expected = STATE.SOLID;
+                else if (cy <= wlCol) expected = STATE.WATER;
+                else expected = STATE.AIR;
+            }
             if (actual !== expected) mismatches++;
             if (actual === STATE.SOLID) solidCount++;
             else if (actual === STATE.WATER) waterCount++;
