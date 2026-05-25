@@ -12217,18 +12217,30 @@ class AnazhRealm {
             return false;
         }
 
-        const frustum =
-            providedFrustum ||
-            (() => {
-                const f = new THREE.Frustum();
-                f.setFromProjectionMatrix(
-                    new THREE.Matrix4().multiplyMatrices(
-                        this.state.camera.projectionMatrix,
-                        this.state.camera.matrixWorldInverse
-                    )
-                );
-                return f;
-            })();
+        // V9.84 Perf-1.b — Frustum + Matrix4 + Sphere als state-Pool statt
+        // pro-Aufruf-Allokation. Wer einen eigenen Frustum liefert (Render-
+        // Pass via `_loopFrustumCulling`), nutzt den; sonst ziehen wir den
+        // gepoolten `_frustumCache` (in `_loopFrustumCulling` pro Frame
+        // einmal aktualisiert) oder bauen ihn bei pre-init lazy. Vorher:
+        // `updateCreatures` rief `isInFrustum(creature)` ohne providedFrustum
+        // → die Closure baute pro Kreatur `new THREE.Frustum` + `Matrix4`
+        // = bei 120 Kreaturen 240 Allokationen/Frame. Plus der Sphere-Shift-
+        // Pfad allokierte `new THREE.Vector3` + `Sphere` pro Objekt mit
+        // Position-Offset (Inseln, Vegetation).
+        let frustum = providedFrustum || this._frustumCache;
+        if (!frustum) {
+            // Pre-init: das `_loopFrustumCulling` ist noch nicht gelaufen.
+            // Wir bauen das Cache lazy + initial, ab dem nächsten Frame
+            // wird es vom Render-Pass aktualisiert.
+            this._frustumCache = new THREE.Frustum();
+            this._frustumMatrixCache = new THREE.Matrix4();
+            this._frustumMatrixCache.multiplyMatrices(
+                this.state.camera.projectionMatrix,
+                this.state.camera.matrixWorldInverse
+            );
+            this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+            frustum = this._frustumCache;
+        }
 
         if (object.geometry) {
             if (!object.geometry.boundingSphere) {
@@ -12243,19 +12255,19 @@ class AnazhRealm {
             if (sphere && Number.isFinite(sphere.radius) && sphere.radius > 0) {
                 // boundingSphere für Chunks ist bereits in Welt-Koordinaten
                 // (chunk.position=(0,0,0)). Für Inseln/Vegetation mit position-Offset
-                // verschieben wir das Center temporär.
+                // verschieben wir das Center temporär — über einen gepoolten
+                // Scratch-Sphere statt frischer Allokation.
                 if (
                     object.position &&
                     (object.position.x !== 0 || object.position.y !== 0 || object.position.z !== 0)
                 ) {
-                    const center = sphere.center;
-                    const shiftedCenter = new THREE.Vector3(
-                        center.x + object.position.x,
-                        center.y + object.position.y,
-                        center.z + object.position.z
-                    );
-                    const shifted = new THREE.Sphere(shiftedCenter, sphere.radius);
-                    return frustum.intersectsSphere(shifted);
+                    if (!this._frustumSphereScratch) {
+                        this._frustumSphereScratch = new THREE.Sphere(new THREE.Vector3(), 0);
+                    }
+                    const s = this._frustumSphereScratch;
+                    s.center.copy(sphere.center).add(object.position);
+                    s.radius = sphere.radius;
+                    return frustum.intersectsSphere(s);
                 }
                 return frustum.intersectsSphere(sphere);
             }
