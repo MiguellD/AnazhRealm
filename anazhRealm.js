@@ -15100,6 +15100,33 @@ class AnazhRealm {
                 }
             }
         }
+        // V9.85 Perf-2.c — Mountain-Mulden-Filter: eine WATER-Cell mit einer
+        // SOLID-Cell DIREKT DARÜBER ist physikalisch unmöglich (Wasser würde
+        // auslaufen). Das passiert in steilen Bergwänden, wenn der 8-Corner-
+        // Density-Mittelwert gerade so negativ ist (kleine Tasche in der
+        // Wand) und cy < waterY (Cell ist unter Atlas-Wasser-Spiegel) →
+        // V9.84-Audit-Befund „kleine Wasserchunks in steilen Hängen, aus dem
+        // Nichts". Heilung: ein einzelner Top-Down-Pass mutiert solche
+        // hängenden WATER-Cells zu AIR. Echte See-/Ozean-Cells haben
+        // entweder AIR (Oberfläche) oder WATER (Volumen) ÜBER sich — werden
+        // NICHT gefiltert. Höhlen-Wasser (WATER direkt unter SOLID-Decke)
+        // wird ehrlich gestrichen — war im V9.84-Befund explizit unerwünscht,
+        // ist auch im Vision-Pfeiler V1 nicht vorgesehen. Pass läuft VOR
+        // dem Architektur-Stempel, damit ein Damm-Bauwerk (das Wasser
+        // bewusst staut) NICHT vom Filter berührt wird.
+        const dimSq = dim * dim;
+        const STATE_AIR = STATE.AIR;
+        const STATE_WATER = STATE.WATER;
+        const STATE_SOLID = STATE.SOLID;
+        for (let j = 0; j < dimY - 1; j++) {
+            const baseJ = j * dimSq;
+            const baseJAbove = (j + 1) * dimSq;
+            for (let idxInLayer = 0; idxInLayer < dimSq; idxInLayer++) {
+                if (cells[idxInLayer + baseJ] === STATE_WATER && cells[idxInLayer + baseJAbove] === STATE_SOLID) {
+                    cells[idxInLayer + baseJ] = STATE_AIR;
+                }
+            }
+        }
         // V9.74 (Welle C.3) — Architektur-Cell-Stempel: solide Architekturen
         // (V9.65-Blocker-Index) sind im Cell-Feld direkt zu sehen. Eine Damm-
         // Stein-Wand stempelt ihre Cells als SOLID; der Iso-Surface-Mesher
