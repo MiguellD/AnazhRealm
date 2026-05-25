@@ -12479,10 +12479,12 @@ async function checkBandWelleC1WaterCells(ctx) {
             const czw = oz + (k + 0.5) * step;
             let expected;
             if (cy > band.top) {
-                // V9.78 — above-band ist AIR (Skip). Below-band ist VOLL
-                // klassifiziert (keine WATER-Abkürzung mehr — die hatte
-                // die Floating-Plane erzeugt).
-                expected = STATE.AIR;
+                // V9.78 — above-band ist AIR (Skip). Aber Architektur-Stempel
+                // läuft danach + kann Cells über bandTop auf SOLID setzen
+                // (Baum-Stamm, hoher Felsblock etc.). Für den Iso sind AIR
+                // und SOLID identisch (beide −1), darum akzeptieren wir
+                // beide oberhalb des Bands.
+                expected = actual === STATE.SOLID ? STATE.SOLID : STATE.AIR;
             } else {
                 const d = r._terrainDensityAt(cxw, cy, czw);
                 const wlCol = r._waterLevelAt(cxw, czw);
