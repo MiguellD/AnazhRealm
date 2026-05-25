@@ -12112,8 +12112,16 @@ class AnazhRealm {
             // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
             // sollte heute nicht mehr entstehen, aber falls in Zukunft mal ein
             // andersgeformter Spawn dazukommt, brechen wir den Frame nicht ab.
+            // V9.84 Perf-1.c — zwei gepoolte THREE.Color statt frischer Allokation
+            // pro Kreatur pro Frame. Vorher: 120 Kreaturen × 60 fps = 7200
+            // Color-Allokationen/s → GC-Spikes. `material.color.lerp` mutiert
+            // das material.color, NICHT den target → Singletons bleiben rein.
             if (creature.material && creature.material.color) {
-                const targetColor = emotion === "happy" ? new THREE.Color(0x00ff00) : new THREE.Color(0x0000ff);
+                if (!this._creatureHappyColor) {
+                    this._creatureHappyColor = new THREE.Color(0x00ff00);
+                    this._creatureNeutralColor = new THREE.Color(0x0000ff);
+                }
+                const targetColor = emotion === "happy" ? this._creatureHappyColor : this._creatureNeutralColor;
                 creature.material.color.lerp(targetColor, 0.05);
             }
 
