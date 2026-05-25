@@ -27347,6 +27347,15 @@ class AnazhRealm {
                 const r = Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5;
                 this._remeshVoxelChunksAround(cxw, czw, r);
             }
+            // V9.75 (Welle C.4+5 — multisensorische Spur erhalten): wenn eine
+            // solide Architektur die Welt-Cell-Klassifikation mutiert (Wasser
+            // strömt um den Damm), antwortet die Welt mit einem kurzen
+            // Strömungs-Hauch. Übernimmt den Audio-Pfad des gestrichenen
+            // `_playHydroRecomputePing` (V9.68) — der Recompute selbst ist
+            // weg, die multisensorische Spur (Vision §1.4) bleibt. KEIN
+            // Journal-Eintrag pro Spawn (würde die 6.F2-Idempotenz-Invariante
+            // brechen — Journal-Schicht zählt total).
+            this._playWaterReactionPing();
         }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -28360,6 +28369,8 @@ class AnazhRealm {
             for (const fp of blockerFootprints) {
                 this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r);
             }
+            // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück.
+            this._playWaterReactionPing();
         }
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
@@ -28380,6 +28391,45 @@ class AnazhRealm {
     }
 
     // Vision §1.2-Helfer: kurzer Abklang-Sinus wenn eine resonierende
+    // V9.75 (Welle C.4+5 — multisensorische Spur erhalten): kurzer Wasser-
+    // Strömungs-Hauch wenn eine solide Welt-Geste die Wasser-Cell-Klassifika-
+    // tion verschiebt (Architektur-Spawn/Remove, später ggf. Voxel-Edit
+    // unter waterLevel). Übernimmt den Audio-Pfad des gestrichenen
+    // `_playHydroRecomputePing` (V9.68): Bandpass-Noise, Cutoff fällt von
+    // 700→200 Hz, kurzer Gain-Bogen. Defensive try/catch — die Welt darf
+    // nie an einem Audio-Fehler scheitern. Stumm wenn Symphonie aus
+    // (Headless, Audio-Toggle off, kein User-Gesture).
+    _playWaterReactionPing() {
+        const sym = this.state.symphony;
+        if (!sym || !sym.enabled || !sym.ctx) return;
+        try {
+            const ctx = sym.ctx;
+            const now = ctx.currentTime;
+            const dur = 0.6;
+            const sampleRate = ctx.sampleRate || 44100;
+            const buf = ctx.createBuffer(1, Math.floor(sampleRate * dur), sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            const filter = ctx.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.Q.value = 1.6;
+            filter.frequency.setValueAtTime(700, now);
+            filter.frequency.exponentialRampToValueAtTime(200, now + dur);
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.06, now + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.0005, now + dur);
+            const dest = sym.masterGain || ctx.destination;
+            noise.connect(filter).connect(gain).connect(dest);
+            noise.start(now);
+            noise.stop(now + dur + 0.05);
+        } catch {
+            /* Audio-Fehler nicht hart — die Welt soll auch ohne Klang reagieren */
+        }
+    }
+
     // Architektur abgebaut wird. Frequenz folgt der Tag-Stärke (höher
     // Resonanz = hellerer Ton). Lebenszeit 0.85 s mit exponentiellem
     // Decay — analog _applyCompoundWorldEffects "singing"-Schicht, nur

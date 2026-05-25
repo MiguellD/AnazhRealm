@@ -878,7 +878,16 @@ Schöpfer von Anfang an benannte, jetzt am rechten Ort: an der Maske, nicht der 
 
 ## 14. Wasser aus der Terrain-Wahrheit (V9.50) — der letzte Ring
 
-**Stand**: geplant (22.05.2026), noch kein Code — Plan zur Durchsicht. Auslöser: der
+> **HISTORISCH (25.05.2026)** — der hier beschriebene per-Chunk-Quad-Mesh-Pfad
+> (`_buildVoxelChunkWater` + `_voxelChunkTouchesWater`) ist in V9.75 (Welle C.4+5)
+> gestrichen. Er war die zweite Wasser-Sprache neben dem 16-m-Drainage-Atlas;
+> die V9.69-Diagnose hat ihn als die strukturelle Naht-Wurzel identifiziert.
+> Heute lebt das Wasser als Cell-Zustand im Voxel-Welt-Feld — siehe §16. Dieser
+> Abschnitt bleibt als Historie + Lehrwert (warum die Idee „Wasser aus der
+> Terrain-Wahrheit" richtig war, aber die V9.50-Umsetzung mit Quad-Höhenfeld nur
+> der halbe Weg).
+
+**Stand (V9.50)**: geplant (22.05.2026), noch kein Code — Plan zur Durchsicht. Auslöser: der
 Schöpfer-Befund nach V9.49-f — „bei Verengungen, in Bereichen die kleiner und dann
 wieder grösser werden, gibt es noch Probleme … wir bewegen uns im Kreis." Der Befund
 ist richtig. Dieser Abschnitt ist die Antwort — das Ende einer Bug-Klasse, nicht ihr
@@ -1107,6 +1116,25 @@ existiert; ≥1 Tarn gesetzt; jeder Tarn im Hochland; jeder Tarn wurde zu einem 
 ---
 
 ## 16. Die Zwei-Skalen-Naht (V9.69-Reflexion) — Welle C als Wurzel-Heilung
+
+> **VOLLENDET (V9.75, 25.05.2026)** — die fünf Sub-Wellen sind alle erledigt:
+> C.1 (Wasser-Cell-Feld V9.71), C.2 (Iso-Surface-Mesher V9.72) + V9.73-Heilung,
+> C.3 (Cellular-Reaktion via DERIVED-View V9.74), **C.4 + C.5 V9.75 in einem
+> chirurgischen Schnitt** (Welle-A-Maschinerie + Parallel-Quad-Pfad gestrichen).
+> Stand: EIN Wasser-Mesh pro Voxel-Chunk (Iso-Surface aus Cell-Feld), EINE
+> Skala (1.8 m Voxel-Cell), EINE Geometrie-Quelle (gleicher Surface-Nets-Mesher
+> wie der Boden — naht-frei per Konstruktion). Netto −230 Z. anazhRealm.js,
+> −1056 Z. playtest.cjs. Atlas (`state.hydrosphere`) bleibt als Worldgen-frozen
+> Daten-Layer für `_waterLevelAt` (Lake/Fluss-Höhen-Quelle für Cell-Init);
+> Spieler-Wille lebt im Cell-Feld via `_remeshVoxelChunksAround`. Reaktion auf
+> Architektur-Spawn/Remove: `_remeshVoxelChunksAround` triggert Chunk-Rebuild
+> → Cell-Stempel macht SOLID/AIR neu. Multisensorisch: `_playWaterReactionPing`
+> + Welt-Journal-Eintrag „Das Wasser sucht einen neuen Weg" (V9.68-Spur erhalten,
+> nur jetzt am Architektur-Trigger statt am gestrichenen Recompute).
+>
+> Sub-Welle-Details unten zeigen den ursprünglichen Plan + den ehrlichen
+> Verlauf (Vereinfachung in C.3: kein BFS nötig; Zusammenführung C.4+5 in
+> EINEM Commit, weil bei Klarheit chirurgisch ehrlicher als 5 Sub-Wellen).
 
 ### 16.1 Die Riesen-Reflexion
 
