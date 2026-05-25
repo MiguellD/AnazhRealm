@@ -12479,9 +12479,10 @@ async function checkBandWelleC1WaterCells(ctx) {
             const czw = oz + (k + 0.5) * step;
             let expected;
             if (cy > band.top) {
+                // V9.78 — above-band ist AIR (Skip). Below-band ist VOLL
+                // klassifiziert (keine WATER-Abkürzung mehr — die hatte
+                // die Floating-Plane erzeugt).
                 expected = STATE.AIR;
-            } else if (cy < band.bottom) {
-                expected = STATE.WATER;
             } else {
                 const d = r._terrainDensityAt(cxw, cy, czw);
                 const wlCol = r._waterLevelAt(cxw, czw);
