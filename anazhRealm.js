@@ -12000,6 +12000,41 @@ class AnazhRealm {
         const playerPos = this.state.playerMesh.position;
         // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
         const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
+        // V9.84 Perf-1.f — Spatial-Hash für Flocking. Vorher: O(N²) Loop mit
+        // early-exit bei 6 Nachbarn. Bei 120 Kreaturen in einem Cluster waren
+        // das bis zu 14 400 Distanz-Tests/Frame. Jetzt: 5-m-Bucket-Grid (passt
+        // zur Flocking-Range `dsq < 25` = 5 m), pro Kreatur prüft der Flocking-
+        // Loop nur die 3×3-Nachbar-Cells statt aller Kreaturen. Bei verteilten
+        // Wesen typisch 5–15 Kandidaten statt 120. Map + Buckets als Pool
+        // recycelt — keine Allokation pro Frame.
+        const FLOCK_CELL = 5;
+        if (!this._flockGrid) {
+            this._flockGrid = new Map();
+            this._flockBucketPool = [];
+        }
+        const flockGrid = this._flockGrid;
+        const flockBucketPool = this._flockBucketPool;
+        // Buckets in den Pool zurück, Map leeren — beides allokationsfrei.
+        for (const bucket of flockGrid.values()) {
+            bucket.length = 0;
+            flockBucketPool.push(bucket);
+        }
+        flockGrid.clear();
+        // Grid auffüllen — nur happy-Kreaturen, weil das die einzigen Flocking-
+        // Teilnehmer sind (siehe Filter im Flocking-Loop weiter unten).
+        for (let j = 0; j < this.state.creatures.length; j++) {
+            if (this.state.creatureEmotions[j] !== "happy") continue;
+            const c = this.state.creatures[j];
+            const gcx = Math.floor(c.position.x / FLOCK_CELL);
+            const gcz = Math.floor(c.position.z / FLOCK_CELL);
+            const key = gcx * 100000 + gcz; // numerischer Key für Map-Speed
+            let bucket = flockGrid.get(key);
+            if (!bucket) {
+                bucket = flockBucketPool.pop() || [];
+                flockGrid.set(key, bucket);
+            }
+            bucket.push(j);
+        }
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -12051,24 +12086,39 @@ class AnazhRealm {
                     if (toPlayer.length() > 2) {
                         direction.copy(toPlayer.normalize().multiplyScalar(speed));
                     }
-                    // V8.49 — Schwarm-Kohäsion: nur für sichtbare Kreaturen
-                    // (off-screen ist Flocking unsichtbar), distanceToSquared
-                    // statt distanceTo (kein sqrt), und nach 6 Nachbarn
-                    // abbrechen. Das war eine O(N²)-Schleife über ALLE
-                    // Kreaturen — bei 120 sind das 14400 Distanz-Tests/Frame.
-                    // Das Verhalten bleibt: 6 nahe Nachbarn reichen für
-                    // Flocking genauso wie 119.
+                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare
+                    // Kreaturen (off-screen ist Flocking unsichtbar), distanceToSquared
+                    // statt distanceTo (kein sqrt), nach 6 Nachbarn abbrechen, UND
+                    // jetzt Spatial-Hash statt voller O(N²)-Schleife. Wir prüfen
+                    // nur die 9 Cells (3×3) um die eigene Kreatur, statt aller 120.
+                    // Bei verteilten happy-Kreaturen typisch 5–15 Kandidaten
+                    // statt 120 → 10–20× schneller. Bei dichtem Cluster fällt
+                    // der Win auf early-exit-Niveau (alle 6 Nachbarn in derselben
+                    // Cell), bleibt aber nie schlechter als der alte Pfad.
                     if (inFrustum) {
                         let neighbors = 0;
-                        for (let j = 0; j < this.state.creatures.length && neighbors < 6; j++) {
-                            if (i === j || this.state.creatureEmotions[j] !== "happy") continue;
-                            const otherCreature = this.state.creatures[j];
-                            const dsq = creature.position.distanceToSquared(otherCreature.position);
-                            if (dsq > 1 && dsq < 25) {
-                                const toOther = scratchB.subVectors(otherCreature.position, creature.position);
-                                toOther.y = 0;
-                                direction.add(toOther.normalize().multiplyScalar(0.5));
-                                neighbors++;
+                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
+                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
+                        cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
+                            for (let dgz = -1; dgz <= 1; dgz++) {
+                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
+                                if (!bucket) continue;
+                                for (let bi = 0; bi < bucket.length; bi++) {
+                                    const j = bucket[bi];
+                                    if (i === j) continue;
+                                    // creatureEmotions[j] === "happy" ist beim
+                                    // Grid-Bau schon garantiert (Filter oben),
+                                    // also brauchen wir den Check hier nicht.
+                                    const otherCreature = this.state.creatures[j];
+                                    const dsq = creature.position.distanceToSquared(otherCreature.position);
+                                    if (dsq > 1 && dsq < 25) {
+                                        const toOther = scratchB.subVectors(otherCreature.position, creature.position);
+                                        toOther.y = 0;
+                                        direction.add(toOther.normalize().multiplyScalar(0.5));
+                                        neighbors++;
+                                        if (neighbors >= 6) break cellLoop;
+                                    }
+                                }
                             }
                         }
                     }
