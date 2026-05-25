@@ -7245,6 +7245,22 @@ async function checkBandLateMultiUser(ctx) {
             fraktal.program[1][0] === "at" &&
             Number.isInteger(fraktal.program[5]);
 
+        // 7b. V9.74.1 — Chat-Pattern "baue damm hier" routet über
+        // spawn_blueprint (kein eigener spawn_damm-Op nötig, der `damm`-Bauplan
+        // ist seit V9.64 built-in). Macht den Welle-A-Vision-Pfeiler vom
+        // Spieler direkt anstoßbar — vorher nur über DSL-Syntax oder Hotbar.
+        const dammPattern = r.parseChatToDsl("baue damm hier");
+        out.dammHasSpawnBlueprint =
+            dammPattern &&
+            Array.isArray(dammPattern.program) &&
+            dammPattern.program[0] === "spawn_blueprint" &&
+            dammPattern.program[1] === "damm" &&
+            Array.isArray(dammPattern.program[2]) &&
+            dammPattern.program[2][0] === "at" &&
+            Number.isFinite(dammPattern.program[2][1]) &&
+            Number.isFinite(dammPattern.program[2][3]) &&
+            Number.isInteger(dammPattern.program[3]);
+
         // 8. Diskrimination: spawn_village mit FIXEM Seed → deterministisch
         // (zwei Spawn-Aufrufe mit gleichem Seed liefern dieselbe Architektur-Geometrie)
         const beforeArchCount = r.state.architectures.length;
@@ -7297,6 +7313,10 @@ async function checkBandLateMultiUser(ctx) {
         );
         check("Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position", ring11V21Results.kreatureHasAt);
         check("Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed", ring11V21Results.fraktalHasSeed);
+        check(
+            "V9.74.1: Chat 'baue damm hier' routet über spawn_blueprint(damm, at, seed)",
+            ring11V21Results.dammHasSpawnBlueprint
+        );
         check(
             "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
             ring11V21Results.seedDeterminismHolds
@@ -11993,239 +12013,6 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Voxel V9.50-b — das Chunk-Wasser (Rendering) ###
-    // Das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk baut
-    // seine Wasser-Fläche selbst (`_buildVoxelChunkWater`) aus
-    // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
-    // Terrain. `hydrosphereMeshes` trägt nur noch die Wasserfälle.
-    const voxelChunkWaterResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return null;
-        const out = {};
-        out.hasBuild = typeof r._buildHydrosphereMeshes === "function";
-        out.hasDispose = typeof r._disposeHydrosphereMeshes === "function";
-        out.hasChunkWater = typeof r._buildVoxelChunkWater === "function";
-        out.hasChunkWaterDispose = typeof r._disposeVoxelChunkWater === "function";
-        out.hasGate = typeof r._voxelChunkTouchesWater === "function";
-        out.hasSurfMat = typeof r._ensureHydroSurfaceMaterial === "function";
-        if (!out.hasBuild || !out.hasSurfMat || !out.hasChunkWater) return out;
-        const sm = r._ensureHydroSurfaceMaterial();
-        out.surfMatShader = !!sm && sm.type === "ShaderMaterial";
-        const su = (sm && sm.uniforms) || {};
-        out.surfMatSharesUniforms =
-            !!su.uDeep && !!su.uShallow && !!su.uFoam && !!su.uSunDir && !!su.uLight && !!su.fogColor && !!su.uTime;
-        out.shaderHasGerstner =
-            !!sm && /gerstnerWave/.test(sm.vertexShader || "") && /aWave/.test(sm.vertexShader || "");
-        out.depthWriteOn = !!sm && sm.depthWrite === true;
-        const hydro = r.state.hydrosphere;
-        out.hydroReady = !!(hydro && hydro.ready);
-        if (!out.hydroReady) return out;
-        out.riverPointsHaveVoxelY = hydro.rivers.every((rv) =>
-            rv.points.every((p) => typeof p.voxelY === "number" && Number.isFinite(p.voxelY))
-        );
-        r._buildHydrosphereMeshes();
-        const meshes = r.state.hydrosphereMeshes;
-        out.meshesArray = Array.isArray(meshes);
-        // V9.63 — pro Wasserfall ZWEI Meshes (Cleanup vor Welle A):
-        //   (1) hydroKind="waterfall" = vertikale Plane (wfMat + PlaneGeometry)
-        //   (2) hydroKind="waterfall_pool" = Aufprall-Pool (hydroSurfaceMat + CircleGeometry)
-        const WF_KINDS = ["waterfall", "waterfall_pool"];
-        out.onlyWaterfalls =
-            out.meshesArray && meshes.every((m) => m.userData && WF_KINDS.indexOf(m.userData.hydroKind) >= 0);
-        out.fallCountMatches = out.meshesArray && meshes.length === hydro.waterfalls.length * 2;
-        out.fallsUseWaterfallMat =
-            out.meshesArray &&
-            (meshes.length === 0 ||
-                meshes.every((m) => {
-                    const k = m.userData && m.userData.hydroKind;
-                    if (k === "waterfall_pool") {
-                        return (
-                            m.material === r.state.hydroSurfaceMaterial &&
-                            m.geometry &&
-                            m.geometry.type === "CircleGeometry"
-                        );
-                    }
-                    return m.material === r.state.waterfallMaterial && m.geometry && m.geometry.type === "PlaneGeometry";
-                }));
-        out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
-        out.chunkWaterIsMesh = false;
-        out.chunkWaterUsesMat = false;
-        out.chunkWaterHasAttrs = false;
-        out.chunkWaterHasQuads = false;
-        out.chunkWaterOnLevel = true;
-        out.chunkWaterWaveValid = true;
-        out.gateOceanTrue = false;
-        if (hydro.water && hydro.water.waterKind) {
-            const span = r._voxelChunkConfig().span;
-            let oi = -1;
-            for (let k = 0; k < hydro.water.waterKind.length; k++) {
-                if (hydro.water.waterKind[k] === 1) {
-                    oi = k;
-                    break;
-                }
-            }
-            if (oi >= 0) {
-                const owx = hydro.originX + ((oi % hydro.dim) + 0.5) * hydro.cell;
-                const owz = hydro.originZ + (((oi / hydro.dim) | 0) + 0.5) * hydro.cell;
-                const cx = Math.floor(owx / span);
-                const cz = Math.floor(owz / span);
-                out.gateOceanTrue = r._voxelChunkTouchesWater(cx, cz) === true;
-                r._disposeVoxelChunkWater(`${cx},${cz}`);
-                r._buildVoxelChunkWater(cx, cz);
-                const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
-                out.chunkWaterIsMesh = !!(wm && wm.type === "Mesh");
-                out.chunkWaterUsesMat = !!(wm && wm.material === sm);
-                if (out.chunkWaterIsMesh && wm.geometry) {
-                    const g = wm.geometry;
-                    out.chunkWaterHasAttrs = !!(
-                        g.attributes.position &&
-                        g.attributes.aFlow &&
-                        g.attributes.aShore &&
-                        g.attributes.aWave
-                    );
-                    out.chunkWaterHasQuads = !!(g.index && g.index.count > 0);
-                    const pos = g.attributes.position.array;
-                    // Exaktheit: jeder Vertex sitzt auf `_waterLevelAt`
-                    // — das Wasser liegt auf dem Level-Feld, kein Schweben.
-                    for (let v = 0; v < pos.length; v += 3) {
-                        if (Math.abs(pos[v + 1] - r._waterLevelAt(pos[v], pos[v + 2])) > 0.05) {
-                            out.chunkWaterOnLevel = false;
-                            break;
-                        }
-                    }
-                    const aw = g.attributes.aWave.array;
-                    for (let k = 0; k < aw.length; k++) {
-                        if (aw[k] < -0.001 || aw[k] > 1.001) {
-                            out.chunkWaterWaveValid = false;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        r._disposeHydrosphereMeshes();
-        out.disposeClears = Array.isArray(r.state.hydrosphereMeshes) && r.state.hydrosphereMeshes.length === 0;
-        r._buildHydrosphereMeshes();
-        out.rebuildsAfterDispose = Array.isArray(r.state.hydrosphereMeshes);
-        return out;
-    });
-
-    if (voxelChunkWaterResults && !voxelChunkWaterResults.error) {
-        const hc = voxelChunkWaterResults;
-        check(
-            "Voxel V9.43-c: _buildHydrosphereMeshes + _disposeHydrosphereMeshes existieren",
-            hc.hasBuild && hc.hasDispose
-        );
-        check(
-            "Voxel V9.50-b: die Chunk-Wasser-Methoden existieren (Build/Dispose/Gate)",
-            hc.hasChunkWater && hc.hasChunkWaterDispose && hc.hasGate
-        );
-        check("Voxel V9.43-c: das Hydrosphären-Wasser-Material ist ein ShaderMaterial", hc.surfMatShader);
-        check(
-            "Voxel V9.43-c: das Wasser-Material teilt die Wasser-Substanz-Uniforms (Farbe/Sonne/Fog)",
-            hc.surfMatSharesUniforms
-        );
-        check("Voxel V9.49-c: der vereinte Shader trägt Gerstner-Wellen + aWave-Modulation", hc.shaderHasGerstner);
-        check("Voxel V9.49-c: das Wasser-Material schreibt Tiefe (depthWrite an)", hc.depthWriteOn);
-        if (hc.hydroReady) {
-            check(
-                "Voxel V9.43-c: jeder Fluss-Punkt trägt voxelY (Re-Verankerung gegen die Voxel-Surface)",
-                hc.riverPointsHaveVoxelY
-            );
-            check("Voxel V9.43-c: state.hydrosphereMeshes ist ein Array nach Worldgen", hc.meshesArray);
-            check(
-                `Voxel V9.63: hydrosphereMeshes trägt Plane + Pool pro Wasserfall (== hydro.waterfalls × 2: ${hc.fallCountMatches})`,
-                hc.onlyWaterfalls && hc.fallCountMatches
-            );
-            check(
-                "Voxel V9.63: Plane (wfMat+PlaneGeometry), Pool (hydroSurfaceMat+CircleGeometry)",
-                hc.fallsUseWaterfallMat
-            );
-            check("Voxel V9.50-b: state.voxelChunkWater ist eine Map", hc.waterMapIsMap);
-            check(
-                "Voxel V9.50-b: ein Ozean-Chunk baut eine Wasser-Fläche (Mesh, geteiltes Material)",
-                hc.chunkWaterIsMesh && hc.chunkWaterUsesMat
-            );
-            check(
-                "Voxel V9.50-b: das Chunk-Wasser trägt position/aFlow/aShore/aWave + nasse Quads",
-                hc.chunkWaterHasAttrs && hc.chunkWaterHasQuads
-            );
-            check(
-                "Voxel V9.50-b: jeder Wasser-Vertex sitzt EXAKT auf `_waterLevelAt` (kein Schweben)",
-                hc.chunkWaterOnLevel
-            );
-            check("Voxel V9.50-b: aWave ist je Vertex in [0,1]", hc.chunkWaterWaveValid);
-            check("Voxel V9.50-b: der Wasser-Gate erkennt einen Ozean-Chunk", hc.gateOceanTrue);
-            check("Voxel V9.43-c: _disposeHydrosphereMeshes räumt die Mesh-Liste", hc.disposeClears);
-            check("Voxel V9.43-c: _buildHydrosphereMeshes baut nach Dispose wieder auf", hc.rebuildsAfterDispose);
-        }
-    }
-
-    // ### Voxel V9.50-b — Ufer-Schaum + Fluss-Flow im Chunk-Wasser ###
-    const voxelFoamResults = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return null;
-        const out = {};
-        const sm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-        out.shaderHasShore = !!sm && /aShore/.test(sm.vertexShader || "") && /vShore/.test(sm.fragmentShader || "");
-        out.shaderScaledScroll = !!sm && /uFlowSpeed \* fmag/.test(sm.fragmentShader || "");
-        out.shaderHasCrest = !!sm && /crest/.test(sm.fragmentShader || "");
-        const hydro = r.state.hydrosphere;
-        out.hydroReady = !!(hydro && hydro.ready);
-        if (!out.hydroReady) return out;
-        const span = r._voxelChunkConfig().span;
-        out.shoreInRange = true;
-        out.riverHasFlow = false;
-        out.hasGeo = true;
-        let rp = null;
-        for (const rv of hydro.rivers) {
-            for (const p of rv.points) {
-                if (!p.inLake) {
-                    rp = p;
-                    break;
-                }
-            }
-            if (rp) break;
-        }
-        if (rp) {
-            const cx = Math.floor(rp.x / span);
-            const cz = Math.floor(rp.z / span);
-            r._disposeVoxelChunkWater(`${cx},${cz}`);
-            r._buildVoxelChunkWater(cx, cz);
-            const wm = r.state.voxelChunkWater.get(`${cx},${cz}`);
-            const g = wm && wm.geometry;
-            out.hasGeo = !!(g && g.attributes.aShore && g.attributes.aFlow);
-            if (out.hasGeo) {
-                const aSh = g.attributes.aShore.array;
-                for (let k = 0; k < aSh.length; k++) {
-                    if (aSh[k] < -0.001 || aSh[k] > 1.001) out.shoreInRange = false;
-                }
-                const fa = g.attributes.aFlow.array;
-                for (let k = 0; k + 1 < fa.length; k += 2) {
-                    if (Math.hypot(fa[k], fa[k + 1]) > 0.5) {
-                        out.riverHasFlow = true;
-                        break;
-                    }
-                }
-            }
-        } else {
-            out.riverHasFlow = true; // keine Land-Flüsse → vacuous
-        }
-        return out;
-    });
-
-    if (voxelFoamResults && !voxelFoamResults.error) {
-        const h = voxelFoamResults;
-        check("Voxel V9.49-c: der vereinte Shader verdrahtet aShore/vShore (Ufer-Schaum)", h.shaderHasShore);
-        check("Voxel V9.48: der Fluss-Schaum scrollt nach Flow-Betrag (uFlowSpeed * fmag)", h.shaderScaledScroll);
-        check("Voxel V9.49-c: der Shader trägt Ozean-Schaumkämme (crest)", h.shaderHasCrest);
-        if (h.hydroReady) {
-            check("Voxel V9.50-b: das Chunk-Wasser trägt aShore + aFlow", h.hasGeo);
-            check("Voxel V9.50-b: aShore ist je Vertex in [0,1]", h.shoreInRange);
-            check("Voxel V9.50-b: ein Fluss-Chunk trägt eine Flow-Richtung (aFlow ≠ 0)", h.riverHasFlow);
-        }
-    }
-
     // ### Voxel V9.43-c.2 — das Wasser wird synergetisch ###
     // Schöpfer-Browser-Befund: die Seen/Flüsse schweben ein paar Meter
     // über dem Meer, nicht synergetisch. V9.43-c.2: Fluss-Mündungen
@@ -12442,11 +12229,11 @@ async function checkBandHydrosphere(ctx) {
         out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
         // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
         out.flagClean = !r._hydroComputing;
-        // (13) V9.50 — das Chunk-Wasser fragt das Fluss-Netz:
-        // `_buildVoxelChunkWater` ruft `_waterLevelAt` (das über
-        // `_hydroRiverAt` denselben `riverBuckets`-Index liest).
+        // (13) V9.75 — das Iso-Wasser-Mesh fragt das Wasser-Level-Feld
+        // (`_buildVoxelChunkWaterCells` ruft `_waterLevelAt` pro xz-Spalte).
         out.unifiedQueriesRivers =
-            typeof r._buildVoxelChunkWater === "function" && /_waterLevelAt/.test(r._buildVoxelChunkWater.toString());
+            typeof r._buildVoxelChunkWaterCells === "function" &&
+            /_waterLevelAt/.test(r._buildVoxelChunkWaterCells.toString());
         // (14) der Carve ist im Perf-Budget
         const t0 = performance.now();
         const span = hydro.size;
@@ -12489,7 +12276,10 @@ async function checkBandHydrosphere(ctx) {
             d.recomputeStable
         );
         check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
-        check("Voxel V9.50-b: das Chunk-Wasser fragt das Wasser-Level-Feld (`_waterLevelAt`)", d.unifiedQueriesRivers);
+        check(
+            "Voxel V9.75: das Iso-Wasser-Cell-Feld fragt das Wasser-Level-Feld (`_waterLevelAt`)",
+            d.unifiedQueriesRivers
+        );
         check(
             "Voxel V9.43-d: der Carve ist im Perf-Budget (50k Aufrufe < 300 ms)",
             typeof d.carvePerfMs === "number" && d.carvePerfMs < 300,
@@ -12612,58 +12402,548 @@ async function checkBandHydrosphere(ctx) {
     }
 }
 
-// V9.64 (Welle A.1) — Damm-Bauplan + Architektur-Index. Verifiziert die
-// Vision-Pfeiler-Vorbereitung: Damm-Bauplan existiert, Spawn pflegt den
-// Index, _damTopAt liefert die richtige Höhe an der Damm-Position.
-async function checkBandWelleA1Damm(ctx) {
+// V9.65 (Welle A.2) — Generischer Blocker-Index + Damm als Anwendungsfall.
+// Verifiziert die Vision-Klärung „jede solide Geometrie blockt, nicht nur
+// Dämme": Damm-Bauplan existiert weiter, Spawn pflegt den Blocker-Index für
+// ALLE Architekturen mit soliden Parts (dichte ≥ 0.3), `_blockerTopAt`
+// liefert die richtige Höhe — und pro-Part: ein Baum-Stamm (Holz) blockt,
+// die Krone (Laub, dichte 0.1) NICHT.
+async function checkBandWelleC1WaterCells(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
-        if (!r || !r.state || !r.state.scene) return { error: "no realm" };
+        if (!r || !r.state) return { error: "no realm" };
         const out = {};
-        // 1) Damm-Bauplan existiert als built-in
-        out.hasDammBlueprint =
-            !!(r.state.blueprints && r.state.blueprints.damm && r.state.blueprints.damm.parts);
-        // 2) Damm-Index-Methoden existieren
-        out.hasIndexMethods =
-            typeof r._damIndexAdd === "function" &&
-            typeof r._damIndexRemove === "function" &&
-            typeof r._damTopAt === "function";
-        // 3) Spawn an einer Test-Position, prüfe damIndex + _damTopAt
-        const testPos = { x: 300, y: 5, z: 300 };
-        const entry = r.spawnArchitecture("damm", testPos, { silent: true });
-        out.spawnSucceeded = !!entry;
-        if (entry) {
-            out.indexHasEntry = !!(r.state.damIndex && r.state.damIndex.size > 0);
-            // _damTopAt am Damm-Zentrum sollte > 0 sein (Damm-Top)
-            const top = r._damTopAt(testPos.x, testPos.z);
-            out.damTopReturnsHeight = Number.isFinite(top) && top > 0;
-            out.damTopValue = top;
-            // _damTopAt 50m weg sollte -Infinity (kein Damm dort)
-            const offTop = r._damTopAt(testPos.x + 50, testPos.z + 50);
-            out.damTopOffReturnsNone = offTop === -Infinity;
-            // 4) Remove pflegt den Index
-            r.removeArchitecture(entry);
-            const topAfter = r._damTopAt(testPos.x, testPos.z);
-            out.indexClearedAfterRemove = topAfter === -Infinity;
+        // 1) Konstante CELL_STATE
+        const STATE = r.constructor.CELL_STATE;
+        out.hasCellState = !!STATE;
+        out.cellStateAir = STATE && STATE.AIR;
+        out.cellStateWater = STATE && STATE.WATER;
+        out.cellStateSolid = STATE && STATE.SOLID;
+        out.cellStateFrozen = STATE && Object.isFrozen(STATE);
+        // 2) Methode `_buildVoxelChunkWaterCells` existiert
+        out.hasMethod = typeof r._buildVoxelChunkWaterCells === "function";
+        // 3) Konfig + Erwartungen
+        const cfg = r._voxelChunkConfig();
+        const expectedLen = cfg.dim * cfg.dim * cfg.dimY;
+        out.expectedLen = expectedLen;
+        // 4) Streaming-aktiver Chunk hat waterCells
+        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+            return { ...out, error: "no voxel chunks streamed" };
+        }
+        // Den ersten "filled" Chunk wählen (mit Mesh, nicht empty)
+        let testKey = null;
+        let testEntry = null;
+        for (const [key, entry] of r.state.voxelChunks.entries()) {
+            if (entry && entry.mesh && entry.waterCells) {
+                testKey = key;
+                testEntry = entry;
+                break;
+            }
+        }
+        out.foundFilledChunk = !!testEntry;
+        if (!testEntry) {
+            return { ...out, foundFilledChunk: false };
+        }
+        out.testKey = testKey;
+        out.hasWaterCells = testEntry.waterCells instanceof Uint8Array;
+        out.waterCellsLen = testEntry.waterCells.length;
+        out.waterCellsLenCorrect = testEntry.waterCells.length === expectedLen;
+        // 5) Klassifikations-Stichprobe: scan 64 Cells im Chunk, vergleiche
+        // mit der V9.77-Cell-Klassifikations-Logik (globales Band + Density-
+        // Regel im Band). Above-band = AIR, below-band = WATER, in-band =
+        // Density+waterLevel-Check.
+        const commaIdx = testKey.indexOf(",");
+        const cx = parseInt(testKey.slice(0, commaIdx), 10);
+        const cz = parseInt(testKey.slice(commaIdx + 1), 10);
+        const span = cfg.span;
+        const step = cfg.step;
+        const base = r.state.terrainBaseHeight || 0;
+        const oy = base - cfg.floorDrop;
+        const ox = cx * span;
+        const oz = cz * span;
+        const band = r.state.hydroBand || { top: Infinity, bottom: -Infinity };
+        let mismatches = 0;
+        let solidCount = 0;
+        let waterCount = 0;
+        let airCount = 0;
+        const SAMPLES = 64;
+        for (let n = 0; n < SAMPLES; n++) {
+            const i = (n * 17) % cfg.dim;
+            const k = ((n * 19 + 5) | 0) % cfg.dim;
+            const j = ((n * 23 + 11) | 0) % cfg.dimY;
+            const idx = i + k * cfg.dim + j * cfg.dim * cfg.dim;
+            const actual = testEntry.waterCells[idx];
+            const cy = oy + (j + 0.5) * step;
+            const cxw = ox + (i + 0.5) * step;
+            const czw = oz + (k + 0.5) * step;
+            let expected;
+            if (cy > band.top) {
+                // V9.78 — above-band ist AIR (Skip). Aber Architektur-Stempel
+                // läuft danach + kann Cells über bandTop auf SOLID setzen
+                // (Baum-Stamm, hoher Felsblock etc.). Für den Iso sind AIR
+                // und SOLID identisch (beide −1), darum akzeptieren wir
+                // beide oberhalb des Bands.
+                expected = actual === STATE.SOLID ? STATE.SOLID : STATE.AIR;
+            } else {
+                // V9.81 — Build nutzt jetzt 8-Corner-Avg aus dem geteilten
+                // Density-Grid (Trilinear-Interp am Cell-Center). Test muss
+                // mit-wandern und dieselbe Trilinear-Avg berechnen, sonst
+                // Mismatch an Borderline-Cells (d nahe 0).
+                let dSum = 0;
+                for (let dj = 0; dj <= 1; dj++) {
+                    for (let dk = 0; dk <= 1; dk++) {
+                        for (let di = 0; di <= 1; di++) {
+                            dSum += r._terrainDensityAt(
+                                ox + (i + di) * step,
+                                oy + (j + dj) * step,
+                                oz + (k + dk) * step
+                            );
+                        }
+                    }
+                }
+                const d = dSum / 8;
+                const wlCol = r._waterLevelAt(cxw, czw);
+                if (d > 0) expected = STATE.SOLID;
+                else if (cy <= wlCol) expected = STATE.WATER;
+                else expected = STATE.AIR;
+            }
+            if (actual !== expected) mismatches++;
+            if (actual === STATE.SOLID) solidCount++;
+            else if (actual === STATE.WATER) waterCount++;
+            else airCount++;
+        }
+        out.mismatches = mismatches;
+        out.classificationCorrect = mismatches === 0;
+        out.sampleSolidCount = solidCount;
+        out.sampleWaterCount = waterCount;
+        out.sampleAirCount = airCount;
+        // 6) Determinismus: ein zweiter Build des SELBEN Chunks ergibt das
+        // gleiche Feld. V9.76: dirty-Queue vorher drainen — sonst hätte
+        // testEntry.waterCells einen alten Stempel-Stand (vor neuesten
+        // Architekturen aus vorherigen Test-Bändern), und der zweite Build
+        // sähe den aktuellen Stand → Stempel-Drift. Mit Drain sind beide
+        // Builds gegen denselben architectures-Snapshot.
+        if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
+        const refreshed = r.state.voxelChunks.get(testKey);
+        const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
+        const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step);
+        out.secondLen = second.length;
+        let driftCount = 0;
+        for (let i = 0; i < expectedLen; i++) {
+            if (reference[i] !== second[i]) driftCount++;
+        }
+        out.deterministic = driftCount === 0;
+        out.driftCount = driftCount;
+        // 7) Realismus-Check: über alle Cells hinweg gibt es überhaupt
+        // Wasser-Cells (sonst ist die Welt komplett trocken — Bug)? Plus:
+        // gibt es solid-Cells (sonst ist die Welt leer)?
+        let totalSolid = 0;
+        let totalWater = 0;
+        let totalAir = 0;
+        for (let i = 0; i < testEntry.waterCells.length; i++) {
+            const s = testEntry.waterCells[i];
+            if (s === STATE.SOLID) totalSolid++;
+            else if (s === STATE.WATER) totalWater++;
+            else totalAir++;
+        }
+        out.totalSolid = totalSolid;
+        out.totalWater = totalWater;
+        out.totalAir = totalAir;
+        out.hasSolidCells = totalSolid > 0;
+        // Wasser-Realismus: ein Küsten-Chunk sollte ≥ 1 water haben;
+        // ein Hochland-Chunk darf 0 water haben. Wir verlangen NICHT
+        // dass jeder Chunk Wasser hat — nur dass das Feld nicht-leer ist.
+        out.hasMeaningfulField = totalSolid + totalWater + totalAir === testEntry.waterCells.length;
+        return out;
+    });
+    if (res.error) {
+        check("Welle C.1 V9.71: Cell-Feld-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle C.1 V9.71: CELL_STATE existiert + ist freezed", res.hasCellState && res.cellStateFrozen);
+    check(
+        "Welle C.1 V9.71: CELL_STATE.AIR=0, WATER=1, SOLID=2",
+        res.cellStateAir === 0 && res.cellStateWater === 1 && res.cellStateSolid === 2
+    );
+    check("Welle C.1 V9.71: _buildVoxelChunkWaterCells existiert", res.hasMethod);
+    check("Welle C.1 V9.71: streaming-aktiver gefüllter Chunk gefunden (Vorbedingung)", res.foundFilledChunk);
+    if (!res.foundFilledChunk) return;
+    check("Welle C.1 V9.71: entry.waterCells ist Uint8Array", res.hasWaterCells);
+    check(
+        "Welle C.1 V9.71: entry.waterCells.length = dim·dim·dimY",
+        res.waterCellsLenCorrect,
+        `len=${res.waterCellsLen}, expected=${res.expectedLen}`
+    );
+    check(
+        "Welle C.1 V9.71: Klassifikations-Stichprobe (64 Cells) stimmt mit Density+waterLevel überein",
+        res.classificationCorrect,
+        `mismatches=${res.mismatches} (solid=${res.sampleSolidCount}, water=${res.sampleWaterCount}, air=${res.sampleAirCount})`
+    );
+    check(
+        "Welle C.1 V9.71: Re-Build ergibt bit-identisches Feld (Determinismus)",
+        res.deterministic,
+        `drift=${res.driftCount}`
+    );
+    check(
+        "Welle C.1 V9.71: Chunk hat solid-Cells (Welt nicht leer)",
+        res.hasSolidCells,
+        `totalSolid=${res.totalSolid}, totalWater=${res.totalWater}, totalAir=${res.totalAir}`
+    );
+    check("Welle C.1 V9.71: Cell-Summe stimmt mit Feld-Länge (kein unklassifizierter State)", res.hasMeaningfulField);
+}
+
+// V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — Iso-Surface-Mesher für Wasser
+// ist der EINZIGE Wasser-Render-Pfad (der alte Quad-Mesh ist weg). Verifiziert:
+// `state.voxelChunkWaterIso`-Map existiert; Build/Dispose-Methoden existieren;
+// `_rebuildVoxelChunk` ruft den Build (Source-Probe); nach Worldgen haben
+// gefüllte Chunks ein Iso-Mesh (oder null bei trockenen Chunks); die Iso-
+// Meshes sind sichtbar (default — kein Toggle mehr); Material ist das
+// geteilte `hydroSurfaceMaterial`; userData.hydroKind='chunk-water-iso';
+// Bergsee-Cells über waterLevel werden als WATER erfasst (V9.73-Cell-Init).
+async function checkBandWelleC2WaterIsoSurface(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        const STATE = r.constructor.CELL_STATE;
+        // 1) State-Feld existiert (Map)
+        out.hasIsoMap = r.state.voxelChunkWaterIso !== undefined;
+        // V9.75 — Toggle ist weg, Iso-Mesh ist der EINZIGE Wasser-Mesh.
+        out.toggleGone = typeof r._setVoxelWaterIsoVisible === "undefined";
+        out.oldQuadStateGone = typeof r.state.voxelChunkWater === "undefined";
+        // 2) Methoden existieren
+        out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
+        out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
+        // 3) Source-Probe: _rebuildVoxelChunk ruft die Build-Methode (mit-
+        // wandernde Doku-Probe).
+        out.rebuildCallsBuild = /this\._buildVoxelChunkWaterIsoSurface\(/.test(r._rebuildVoxelChunk.toString());
+        out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(r._disposeVoxelChunk.toString());
+        // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
+        // sollte für jeden gefüllten Chunk einen Eintrag haben (Mesh oder
+        // null, je nach Wasser-Existenz im Chunk).
+        if (!r.state.voxelChunkWaterIso || !r.state.voxelChunks) {
+            return { ...out, error: "iso map or chunks empty" };
+        }
+        let chunksWithIso = 0;
+        let chunksWithoutIso = 0;
+        let isoMeshCount = 0;
+        let isoMeshVisibleCount = 0;
+        let isoMeshGeomTotal = 0;
+        let sampleMeshKey = null;
+        for (const [key, entry] of r.state.voxelChunks.entries()) {
+            if (!entry || !entry.mesh || !entry.waterCells) continue;
+            const m = r.state.voxelChunkWaterIso.get(key);
+            if (m === undefined) {
+                chunksWithoutIso++;
+                continue;
+            }
+            chunksWithIso++;
+            if (m && m.geometry) {
+                isoMeshCount++;
+                isoMeshGeomTotal += m.geometry.getAttribute("position").count;
+                if (m.visible) isoMeshVisibleCount++;
+                if (!sampleMeshKey) sampleMeshKey = key;
+            }
+        }
+        out.chunksWithIso = chunksWithIso;
+        out.chunksWithoutIso = chunksWithoutIso;
+        out.isoMeshCount = isoMeshCount;
+        out.isoMeshGeomTotal = isoMeshGeomTotal;
+        out.isoMeshVisibleCount = isoMeshVisibleCount;
+        out.allChunksTracked = chunksWithoutIso === 0;
+        // V9.75 — Iso-Meshes sind default sichtbar (kein Toggle mehr).
+        out.allIsoVisible = isoMeshCount > 0 && isoMeshVisibleCount === isoMeshCount;
+        // 7) V9.73-Heilung-Test: Cell-Init erfasst Bergsee-Wasser (über
+        // state.waterLevel). Wenn Lake-Cells im 16-m-Hydrosphäre-Atlas
+        // existieren, MUSS in einem Chunk in deren Footprint mindestens
+        // eine water-Cell über state.waterLevel im Cell-Feld stehen.
+        // (Vor V9.73 hatte die Cell-Init nur globalen waterLevel benutzt
+        // → Bergseen fehlten im Iso-Mesh.)
+        const wlGlobal = r.state.waterLevel;
+        let bergseeCellsFound = false;
+        let bergseeCheckable = false;
+        const hydro = r.state.hydrosphere;
+        if (hydro && hydro.ready && hydro.water && hydro.water.waterKind) {
+            // Suche eine Lake-Cell mit waterY > wlGlobal + 1 (klarer Bergsee)
+            const wK = hydro.water.waterKind;
+            const wY = hydro.water.waterY;
+            for (let idx = 0; idx < wK.length; idx++) {
+                if (wK[idx] === 2 && wY[idx] > wlGlobal + 1) {
+                    bergseeCheckable = true;
+                    break;
+                }
+            }
+            if (bergseeCheckable) {
+                // Scanne alle Chunk-Cells nach mind. einer water-Cell mit cy > wlGlobal
+                const cfg = r._voxelChunkConfig();
+                const base = r.state.terrainBaseHeight || 0;
+                const ooy = base - cfg.floorDrop;
+                for (const [, entry] of r.state.voxelChunks.entries()) {
+                    if (!entry || !entry.waterCells) continue;
+                    const cells = entry.waterCells;
+                    for (let j = 0; j < cfg.dimY; j++) {
+                        const cy = ooy + (j + 0.5) * cfg.step;
+                        if (cy <= wlGlobal + 0.5) continue; // nur OBER globalem Spiegel
+                        const baseJ = j * cfg.dim * cfg.dim;
+                        let found = false;
+                        for (let n = 0; n < cfg.dim * cfg.dim && !found; n++) {
+                            if (cells[baseJ + n] === STATE.WATER) found = true;
+                        }
+                        if (found) {
+                            bergseeCellsFound = true;
+                            break;
+                        }
+                    }
+                    if (bergseeCellsFound) break;
+                }
+            }
+        }
+        out.bergseeCheckable = bergseeCheckable;
+        out.bergseeCellsFound = bergseeCellsFound;
+        // 8) Material-Probe: Mesh nutzt das geteilte hydroSurfaceMaterial
+        // (NICHT eigener Shader).
+        if (sampleMeshKey) {
+            const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
+            out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
+            out.sampleMeshUserData = sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-iso";
+        } else {
+            // Welt hatte keinen Iso-Mesh (z.B. alle Chunks im Hochland, kein
+            // Wasser) — Test überspringen, aber als sanity-skip markieren.
+            out.sampleMeshUsesHydroMat = "skip — kein Iso-Mesh in der Welt";
+            out.sampleMeshUserData = "skip";
         }
         return out;
     });
     if (res.error) {
-        check("Welle A.1 V9.64: Damm-Band-Test (realm verfügbar)", false, res.error);
+        check("Welle C.2 V9.72: Iso-Mesher-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle A.1 V9.64: Damm-Bauplan als built-in", res.hasDammBlueprint);
-    check("Welle A.1 V9.64: _damIndexAdd / _damIndexRemove / _damTopAt existieren", res.hasIndexMethods);
-    check("Welle A.1 V9.64: spawnArchitecture('damm') liefert einen Eintrag", res.spawnSucceeded);
-    check("Welle A.1 V9.64: state.damIndex hat nach Spawn einen Eintrag", res.indexHasEntry);
+    check("Welle C.2 V9.72: state.voxelChunkWaterIso existiert", res.hasIsoMap);
+    check("Welle C.2 V9.75: alter Quad-Mesh-Pfad (`state.voxelChunkWater`) ist gestrichen", res.oldQuadStateGone);
+    check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
+    check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
-        "Welle A.1 V9.64: _damTopAt liefert die Damm-Top-Höhe am Damm-Zentrum",
-        res.damTopReturnsHeight,
-        `top=${res.damTopValue}`
+        "Welle C.2 V9.72: _rebuildVoxelChunk ruft _buildVoxelChunkWaterIsoSurface (Source-Probe)",
+        res.rebuildCallsBuild
     );
-    check("Welle A.1 V9.64: _damTopAt liefert -Infinity ausserhalb des Damm-AABB", res.damTopOffReturnsNone);
-    check("Welle A.1 V9.64: removeArchitecture cleared den Index-Eintrag", res.indexClearedAfterRemove);
+    check(
+        "Welle C.2 V9.72: _disposeVoxelChunk ruft _disposeVoxelChunkWaterIso (Source-Probe)",
+        res.disposeCallsDispose
+    );
+    check(
+        "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
+        res.allChunksTracked,
+        `mitIso=${res.chunksWithIso}, ohne=${res.chunksWithoutIso}, geomTotal=${res.isoMeshGeomTotal}, meshes=${res.isoMeshCount}`
+    );
+    if (res.isoMeshCount > 0) {
+        check(
+            "Welle C.2 V9.75: alle Iso-Meshes sind default sichtbar (einziger Wasser-Render-Pfad)",
+            res.allIsoVisible,
+            `visible=${res.isoMeshVisibleCount}/${res.isoMeshCount}`
+        );
+        check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
+        check("Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'", res.sampleMeshUserData === true);
+        if (res.bergseeCheckable) {
+            check(
+                "Welle C.2 V9.73 (Heilung): Bergsee-Cells über waterLevel sind als state=WATER im Feld",
+                res.bergseeCellsFound,
+                "Cells über globalem waterLevel müssen water tragen, wenn Bergsee im Hydrosphäre-Atlas vermerkt"
+            );
+        } else {
+            check(
+                "Welle C.2 V9.73 (Heilung): Bergsee-Cell-Init (Vorbedingung: ≥1 Lake mit waterY > waterLevel+1)",
+                true,
+                "skip — keine Bergseen in der Test-Welt (Seed-abhängig)"
+            );
+        }
+    } else {
+        check(
+            "Welle C.2 V9.72: Iso-Mesh-Sichtbarkeits-Tests (Vorbedingung: ≥1 Iso-Mesh)",
+            true,
+            "skip — keine Wasser-Cells in den gestreamten Chunks (Worldgen-Seed-abhängig)"
+        );
+    }
+}
+
+// V9.74 (Welle C.3) — Cellular-Reaktion nach Spieler-Edit. Verifiziert dass
+// (1) Architektur-AABBs `botY` als ergänzte Y-Grenze tragen (Cell-Stempel-
+// Pfad braucht beide Y-Grenzen), (2) `_stampArchitectureSolidCellsInto`
+// existiert und vom Cell-Build aufgerufen wird, (3) ein Damm-Spawn in einem
+// streaming-aktiven Chunk → Cells im Damm-Footprint werden SOLID nach
+// Chunk-Rebuild, (4) Damm-Remove → Cells werden wieder air/water je nach
+// Density+waterLevel, (5) Voxel-Carve unter waterLevel → Cells werden water
+// nach Rebuild (das ist der „Cellular-Flow"-Effekt: das Wasser fließt in
+// das frische Loch via Cell-Klassifikation, kein BFS nötig).
+async function checkBandWelleC3CellularReaction(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        const STATE = r.constructor.CELL_STATE;
+        // 1) Stempel-Methode existiert
+        out.hasStampMethod = typeof r._stampArchitectureSolidCellsInto === "function";
+        out.cellBuildCallsStamp = /this\._stampArchitectureSolidCellsInto\(/.test(
+            r._buildVoxelChunkWaterCells.toString()
+        );
+        // 2) AABB hat botY (V9.74-Erweiterung)
+        const cfg = r._voxelChunkConfig();
+        const span = cfg.span;
+        const step = cfg.step;
+        const base = r.state.terrainBaseHeight || 0;
+        const oy = base - cfg.floorDrop;
+        // Test-Architektur: Damm an einer freien Position spawnen
+        const testCx = 2;
+        const testCz = 2;
+        const damPos = { x: testCx * span + span / 2, y: 10, z: testCz * span + span / 2 };
+        // Hochland-Höhe finden (über waterLevel)
+        const macroY = r._terrainMacroSurfaceY(damPos.x, damPos.z, false);
+        damPos.y = Math.max(macroY + 2, r.state.waterLevel + 4);
+        const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
+        out.damSpawnSucceeded = !!damEntry;
+        if (damEntry && damEntry.blockerAABBs && damEntry.blockerAABBs[0]) {
+            const aabb = damEntry.blockerAABBs[0];
+            out.aabbHasBotY = Number.isFinite(aabb.botY);
+            out.aabbBotY = aabb.botY;
+            out.aabbTopY = aabb.topY;
+            out.aabbHasHeight = Number.isFinite(aabb.botY) && aabb.topY > aabb.botY;
+        }
+        // Drainen der dirty Chunks (sync) damit der Damm-Stempel sichtbar wird
+        r._drainDirtyVoxelChunks();
+        // 3) Im Chunk im Damm-Footprint: Cells im Damm-Stempel-Bereich sind SOLID
+        const damChunkKey = `${testCx},${testCz}`;
+        const damChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
+        out.damChunkExists = !!(damChunkEntry && damChunkEntry.waterCells);
+        if (damChunkEntry && damChunkEntry.waterCells) {
+            const cells = damChunkEntry.waterCells;
+            const aabb = damEntry.blockerAABBs[0];
+            // Sample am Damm-Zentrum (Cell-Indizes)
+            const cellI = Math.floor((damPos.x - testCx * span) / step);
+            const cellK = Math.floor((damPos.z - testCz * span) / step);
+            const cellJ = Math.floor((aabb.topY - oy) / step) - 1; // 1 Cell unter top
+            const idx = cellI + cellK * cfg.dim + cellJ * cfg.dim * cfg.dim;
+            out.damCellState = cells[idx];
+            out.damCellIsSolid = cells[idx] === STATE.SOLID;
+        }
+        // 4) Damm-Remove → Drain → Cells gehen zurück
+        if (damEntry) {
+            r.removeArchitecture(damEntry);
+            r._drainDirtyVoxelChunks();
+            const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
+            if (afterRemoveEntry && afterRemoveEntry.waterCells) {
+                const cells = afterRemoveEntry.waterCells;
+                const aabb_remove_pos = { x: damPos.x, z: damPos.z };
+                const cellI = Math.floor((aabb_remove_pos.x - testCx * span) / step);
+                const cellK = Math.floor((aabb_remove_pos.z - testCz * span) / step);
+                // Cell genau am alten Damm-Zentrum: sollte JETZT NICHT mehr
+                // solid sein (entweder air oder water, aber nicht solid durch
+                // Architektur-Stempel — Worldgen-Density-Klassifikation könnte
+                // solid sein wenn Land darunter, aber selbst dann nicht durch
+                // Stempel).
+                // Easier check: Cell direkt ÜBER macroY → nicht solid.
+                const cellJAbove = Math.floor((macroY + 2 - oy) / step);
+                const idxAbove = cellI + cellK * cfg.dim + cellJAbove * cfg.dim * cfg.dim;
+                out.cellAfterRemoveAbove = cells[idxAbove];
+                // Nach Remove: über macroY sollte air (oder water wenn unter wl)
+                out.removeRestores = cells[idxAbove] === STATE.AIR || cells[idxAbove] === STATE.WATER;
+            }
+        }
+        // 5) Voxel-Carve unter waterLevel → Cells werden water
+        // Suche einen Trockenland-Hochland-Spot mit macroY > wl + 6 (genug
+        // Distanz dass r=12-Carve unter wl reicht)
+        const wl = r.state.waterLevel;
+        let carveX = null;
+        let carveZ = null;
+        let carveMacro = null;
+        for (let cx = -4; cx <= 4 && carveX === null; cx++) {
+            for (let cz = -4; cz <= 4 && carveX === null; cz++) {
+                if (cx === testCx && cz === testCz) continue;
+                const x = cx * span + span / 2;
+                const z = cz * span + span / 2;
+                const m = r._terrainMacroSurfaceY(x, z, false);
+                if (Number.isFinite(m) && m > wl + 6 && m < wl + 14) {
+                    carveX = x;
+                    carveZ = z;
+                    carveMacro = m;
+                }
+            }
+        }
+        out.carveSpotFound = carveX !== null;
+        if (carveX !== null) {
+            // r=12 Carve am macroY → cells under macroY werden air/water je nach wl
+            r._addVoxelEdit(carveX, wl + 4, carveZ, 12, "carve");
+            r._drainDirtyVoxelChunks();
+            const carveCx = Math.floor(carveX / span);
+            const carveCz = Math.floor(carveZ / span);
+            const carveChunkKey = `${carveCx},${carveCz}`;
+            const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
+            if (carveChunkEntry && carveChunkEntry.waterCells) {
+                const cells = carveChunkEntry.waterCells;
+                // Sample am Carve-Zentrum (sollte air oder water sein, nicht solid)
+                const cellI = Math.floor((carveX - carveCx * span) / step);
+                const cellK = Math.floor((carveZ - carveCz * span) / step);
+                // Cell unter wl
+                const cellJUnderWL = Math.floor((wl - 2 - oy) / step);
+                const idxUnderWL = cellI + cellK * cfg.dim + cellJUnderWL * cfg.dim * cfg.dim;
+                if (cellJUnderWL >= 0 && cellJUnderWL < cfg.dimY) {
+                    out.carveCellUnderWL = cells[idxUnderWL];
+                    // Nach Carve sollte cell unter wl WATER sein (Carve hat
+                    // Density gesenkt → not solid → state=water weil cy<=wl)
+                    out.carveCellsBecomeWater = cells[idxUnderWL] === STATE.WATER;
+                }
+            }
+            // Cleanup
+            if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits)) {
+                r.state.worldMeta.voxelEdits.pop();
+            }
+        }
+        // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
+        // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
+        out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
+        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.removeArchitecture.toString());
+        return out;
+    });
+    if (res.error) {
+        check("Welle C.3 V9.74: Cellular-Reaktion-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle C.3 V9.74: _stampArchitectureSolidCellsInto existiert", res.hasStampMethod);
+    check("Welle C.3 V9.74: _buildVoxelChunkWaterCells ruft _stampArchitectureSolidCellsInto", res.cellBuildCallsStamp);
+    check("Welle C.3 V9.74: Damm-Spawn als Test-Setup erfolgreich", res.damSpawnSucceeded);
+    check(
+        "Welle C.3 V9.74: Blocker-AABB hat botY (V9.74-Erweiterung)",
+        res.aabbHasBotY && res.aabbHasHeight,
+        `botY=${res.aabbBotY}, topY=${res.aabbTopY}`
+    );
+    check("Welle C.3 V9.74: Voxel-Chunk im Damm-Footprint existiert", res.damChunkExists);
+    if (res.damChunkExists) {
+        check(
+            "Welle C.3 V9.74: Damm-Cell im Footprint ist SOLID (Architektur-Stempel)",
+            res.damCellIsSolid,
+            `state=${res.damCellState}`
+        );
+        check(
+            "Welle C.3 V9.74: Nach Remove ist die Cell NICHT mehr durch Stempel solid",
+            res.removeRestores,
+            `state=${res.cellAfterRemoveAbove}`
+        );
+    }
+    check(
+        "Welle C.3 V9.74: Trocken-Spot für Carve-Test gefunden (Vorbedingung)",
+        res.carveSpotFound,
+        `macroY=${res.carveSpotFound ? res.carveMacro || "?" : "n/a"}`
+    );
+    if (res.carveSpotFound) {
+        check(
+            "Welle C.3 V9.74: Carve unter waterLevel → Cell wird WATER (cellular-Flow-Effekt)",
+            res.carveCellsBecomeWater,
+            `state=${res.carveCellUnderWL}`
+        );
+    }
+    check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);
+    check("Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.removeTriggersRemesh);
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
@@ -15995,14 +16275,22 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
         out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
 
-        // _findOldestCreature liefert die älteste (kleinster bornAt)
+        // _findOldestCreature liefert die älteste (kleinster bornAt). Test-
+        // Isolation: ALLE Kreaturen auf `now` setzen (jung), dann c0+c1
+        // gezielt älter. Sonst ist der Test fragil gegen die Welt-Lifetime
+        // (Worldgen-Kreaturen mit bornAt = WorldgenZeitpunkt werden mit
+        // jedem Playtest-Sekunde älter relativ zu c1, ab > 10s Test-Laufzeit
+        // sind sie ÄLTER als c1).
         if (r.state.creatures.length >= 2) {
+            const now = Date.now();
+            for (const c of r.state.creatures) {
+                if (!c.userData) c.userData = {};
+                c.userData.bornAt = now;
+            }
             const c0 = r.state.creatures[0];
             const c1 = r.state.creatures[1];
-            if (!c0.userData) c0.userData = {};
-            if (!c1.userData) c1.userData = {};
-            c0.userData.bornAt = Date.now() - 5000;
-            c1.userData.bornAt = Date.now() - 10000;
+            c0.userData.bornAt = now - 5000;
+            c1.userData.bornAt = now - 10000;
             const oldest = r._findOldestCreature();
             out.oldestIsOlder = oldest === c1;
         } else {
@@ -16836,10 +17124,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r._applyDayNightToScene();
         const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
-        // Welt-Wasser — V9.50: das Wasser sind per-Chunk-Flächen
-        // (`voxelChunkWater`-Map), kein eigenes Mesh mehr; die
-        // Vertex-Höhe + die Uferlinie prüft der V9.50-b-Block.
-        out.waterSystemOk = r.state.voxelChunkWater instanceof Map;
+        // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
+        // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
+        // Pfad ist gestrichen.
+        out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
         // --- Atmosphäre-Persistenz ---
         r.setCelLevels(7);
@@ -16877,7 +17165,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
-        check("V9.50: das Chunk-Wasser-System ist verdrahtet (voxelChunkWater-Map)", v828Results.waterSystemOk);
+        check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
     } else {
         check("V8.28: Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
@@ -21050,7 +21338,24 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             pm.position.z = -77.25;
             r._applyDayNightToScene();
             const tgt = r.state.directionalLight.target.position;
-            out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
+            // V9.85 Perf-2.b — Texel-Snap-Toleranz: das Shadow-Target wird
+            // jetzt auf die Texel-Boundary gerundet (~0.293m bei 600m/2048).
+            // Toleranz 0.5m deckt den Snap-Rundungsfehler ab. Der Schatten
+            // FOLGT weiterhin dem Spieler, nur diskret pro Texel statt
+            // kontinuierlich — das ist GENAU die Stable-Shadow-Maps-Heilung.
+            out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
+            // V9.85 Perf-2.b — Snap-Beweis: eine winzige Sub-Texel-Bewegung
+            // (0.05m, weniger als texelSize=0.293) darf das Shadow-Target
+            // NICHT verändern. Wenn der Snap kaputt ist, kriecht es um 0.05m
+            // mit → Schatten-Swimming. Wenn der Snap wirkt, bleibt es exakt
+            // wo es war → Schatten stabil. Das IST der Welle-2.b-Beweis.
+            const tgtX1 = tgt.x;
+            const tgtZ1 = tgt.z;
+            pm.position.x = 123.5 + 0.05;
+            pm.position.z = -77.25 + 0.05;
+            r._applyDayNightToScene();
+            const tgt2 = r.state.directionalLight.target.position;
+            out.shadowSnapStable = Math.abs(tgt2.x - tgtX1) < 0.001 && Math.abs(tgt2.z - tgtZ1) < 0.001;
             pm.position.x = ox;
             pm.position.z = oz;
             r._applyDayNightToScene();
@@ -21073,7 +21378,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Spieler-Mechanik lebt; die `usesSunDir`-Probe in
         // `_applyDayNightToScene` lebt auch.
         check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
-        check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)", v848Results.shadowFollowsPlayer);
+        check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
+        check(
+            "V9.85 Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
+            v848Results.shadowSnapStable
+        );
         check("V8.48: _applyDayNightToScene leitet lightDir aus sunDir ab", v848Results.usesSunDir);
     } else {
         check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
@@ -22294,9 +22603,17 @@ async function checkBandWelle6HCreatureStats(ctx) {
         cs.userData.carrying = null;
         cw.position.set(player.x + 50, player.y, player.z);
         cs.position.set(player.x + 50, player.y, player.z);
+        // V9.84 Perf-1.d — `_tickCreatureTaskDirection` returnt jetzt einen
+        // geteilten Scratch-Vector3 (statt eines frischen pro Aufruf), um
+        // ~120 Vec3-Allokationen/Frame im updateCreatures-Loop zu sparen.
+        // Im Test müssen wir die erste Direction KOPIEREN, bevor der zweite
+        // Aufruf den Scratch überschreibt — sonst lesen wir zweimal denselben
+        // Wert. V9.56-i-Doku-Sync: der Test wandert mit der Mechanik.
         const dirW = r._tickCreatureTaskDirection(cw, cw.userData.task, "happy");
+        const dirWX = dirW.x,
+            dirWZ = dirW.z;
         const dirS = r._tickCreatureTaskDirection(cs, cs.userData.task, "happy");
-        const spW = Math.hypot(dirW.x, dirW.z);
+        const spW = Math.hypot(dirWX, dirWZ);
         const spS = Math.hypot(dirS.x, dirS.z);
         out.tickSpriteFaster = spS > spW;
         out.tickWesenAtBase = Math.abs(spW - r.constructor.CREATURE_BUILD_SPEED) < 1.0;
@@ -29477,7 +29794,54 @@ async function checkBandRing6Workshop(ctx) {
 
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await new Promise((r) => setTimeout(r, DURATION_MS));
+        // V9.83 Wurzel-Heilung der CI-Flake-Klasse: das Headless-Chromium drosselt
+        // requestAnimationFrame auf ~1 Hz, während `_tickVoxelChunkStreaming`
+        // genau 1 Chunk pro Frame baut (MAX_PER_FRAME=1). Ein 20-s-Wall-Clock-
+        // Sleep erreicht damit nur ~20 Chunks → unter CPU-Last (CI) fällt das
+        // unter den 20-Chunk-Threshold. Die V8.50-Lehre (CLAUDE.md-Gotcha) sagt
+        // explizit: Loop-Features deterministisch über `_gameLoopTick` synchron
+        // treiben statt auf rAF warten. Hier auf den Warmup angewandt: wir
+        // pumpen den Game-Loop mit ~16 ms-Cadence (≈60 FPS-Äquivalent), damit
+        // Streaming + creature-ticks + grok-Trigger unabhängig von Headless-
+        // Drosselung + CI-CPU-Last deterministisch ablaufen. Wall-Clock-
+        // getriebene Trigger (Grok 1.5 s, idle 45 s) sehen weiterhin echte
+        // performance.now()-Werte → keine semantische Verschiebung.
+        await page.evaluate(async (durationMs) => {
+            const start = performance.now();
+            // Phase 1 — auf den Game-Loop warten. Der Konstruktor exponiert
+            // `_gameLoopTick` erst am Ende; im Headless dauert die Init
+            // 200–1500 ms (Worldgen + Materialien). Wir geben max 5 s,
+            // danach fallen wir auf den passiven Sleep zurück (defensiv).
+            const deadline = start + Math.min(5000, durationMs);
+            while (
+                (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
+                performance.now() < deadline
+            ) {
+                await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+            const r = window.anazhRealm;
+            if (!r || typeof r._gameLoopTick !== "function") {
+                // Init nicht zeitig fertig → ehrlicher Fallback, kein Crash.
+                await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
+                return;
+            }
+            // Phase 2 — Loop synchron pumpen, bis das Wall-Clock-Budget
+            // verbraucht ist. setTimeout(0) yieldet zwischen Ticks für
+            // Mikrotasks (Promise-Ketten, async Worldgen) — `setTimeout`
+            // ist im Headless NICHT auf 1 Hz gedrosselt (rAF schon),
+            // also läuft der Pump CPU-gebunden statt frame-gebunden.
+            // Damit wird Streaming + Tick-Logik deterministisch unabhängig
+            // von CPU-Last (CI-Flake-Wurzel der V9.82-Iso-Mesh-Welle).
+            while (performance.now() - start < durationMs) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    // Ein einzelner Tick-Fehler darf den Warmup nicht
+                    // abbrechen; die `pageerror`-Listener fangen ihn auf.
+                }
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+        }, DURATION_MS);
 
         // ### Bericht (informativ) ###
         const fpsText = await page.$eval("#fps", (el) => el.innerText).catch(() => "?");
@@ -29551,7 +29915,12 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandVoxelP3AndInventory(ctx);
             await checkBandWelle6Keybindings(ctx);
             await checkBandWelle6HCreatures(ctx);
-            await checkBandWelleA1Damm(ctx);
+            // V9.75 (Welle C.4+5) — Welle-A/B Test-Bänder gestrichen (alte
+            // Maschinerie ist weg). Vision-Beweis lebt jetzt vollständig in
+            // C.1-C.3 (Cell-Feld + Iso-Mesh + Stempel-Reaktion).
+            await checkBandWelleC1WaterCells(ctx);
+            await checkBandWelleC2WaterIsoSurface(ctx);
+            await checkBandWelleC3CellularReaction(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

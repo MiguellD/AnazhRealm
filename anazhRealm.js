@@ -29,11 +29,15 @@ class AnazhRealm {
             voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
-            voxelChunkWater: null,
+            // V9.75 (Welle C.4+5) — das Wasser-Iso-Surface-Mesh pro Voxel-Chunk
+            // ist seit jetzt der EINZIGE Wasser-Render-Pfad. Gebaut aus
+            // `entry.waterCells` via Surface-Nets-Mesher (gleiche Maschinerie
+            // wie der Boden → naht-frei per Konstruktion). Der alte per-Chunk-
+            // Quad-Mesh (`voxelChunkWater`) + sein Toggle (`voxelWaterIsoVisible`)
+            // sind gestrichen. Eine Wasser-Sprache, eine Skala, eine Geometrie-
+            // Quelle. `docs/hydrosphere.md` §16.
+            voxelChunkWaterIso: null,
             voxelPopulatedChunks: null,
-            // V9.64 (Welle A.1) — Damm-Architektur-Bucket-Index (16-m-Zellen).
-            // O(1)-Lookup via `_damTopAt(x, z)` für Terrain-Sampling (V9.65).
-            damIndex: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
@@ -79,6 +83,15 @@ class AnazhRealm {
             // NICHT im Save persistiert (deterministisch aus dem Seed neu
             // berechenbar). Explizit deklariert — V9.33-State-Audit-Lehre.
             hydrosphere: null,
+            // V9.77 (Welle C.7) — globales Wasser-Y-Band für die Cell-Klassi-
+            // fikations-Optimierung. Wird nach `_computeHydrosphere` aus
+            // `state.waterLevel` + allen Lake-Spiegeln berechnet. ALLE Voxel-
+            // Chunks teilen dieses Band → Cells außerhalb des Bands sind
+            // deterministisch (above=AIR, below=WATER) ohne Chunk-spezifische
+            // Drift. So bleibt die OOB-Live-Naht-Heilung (V9.76) konsistent
+            // und der Speedup (~60% weniger Density-Samples auf Wasser-Chunks)
+            // existiert ohne Naht-Risiko. Format: `{ top, bottom }` Welt-Y.
+            hydroBand: null,
             // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
             // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
             // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
@@ -767,7 +780,9 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.82] [${level}] ${message}`;
+        // V9.86 — Versions-String aus der zentralen Klassen-Konstante statt
+        // hardcoded (war seit V7.82 stale, jeder Bump driftete unsichtbar).
+        const logMessage = `[AnazhRealm V${AnazhRealm.VERSION}] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -6785,16 +6800,21 @@ class AnazhRealm {
                 },
             },
             {
-                // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall hier"
+                // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall/damm hier"
                 // platziert die Struktur am Spieler. Ring 11 V2.1: Position +
                 // Seed werden hier zur Build-Zeit explizit eingebettet, damit
                 // der DSL-Broadcast deterministisch ist (sonst sähen Mitspieler
                 // an einer anderen Stelle ein anders aussehendes Dorf).
+                // V9.74.1 — damm als direkt-spielbarer Vision-Pfeiler der Welle A
+                // (vorher nur über DSL-Syntax oder Hotbar zugänglich, was die
+                // V9.65..V9.74-Mechanik vor dem Spieler verbarg). Damm routet
+                // über den generischen `spawn_blueprint`-Pfad; Dorf/Tempel/
+                // Wasserfall bleiben auf ihren spezialisierten DSL-Ops.
                 example: "baue dorf hier",
-                re: /^baue\s+(dorf|tempel|wasserfall)\s+hier\s*$/i,
+                re: /^baue\s+(dorf|tempel|wasserfall|damm)\s+hier\s*$/i,
                 build: (m) => {
+                    const kind = m[1].toLowerCase();
                     const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
-                    const op = map[m[1].toLowerCase()];
                     // Welle 6.X.3 C1 (Audit 17.05.2026) — Forward-Offset 8 m
                     // statt direkter Spieler-Position. Dorf/Tempel/Wasserfall
                     // sind ~6-10 m groß; ohne Offset stand der Spieler MITTEN
@@ -6807,9 +6827,13 @@ class AnazhRealm {
                     const fx = p.x - Math.sin(yaw) * dist;
                     const fz = p.z - Math.cos(yaw) * dist;
                     const seed = Math.floor(Math.random() * 0xffffffff);
+                    const op = map[kind];
+                    const program = op
+                        ? [op, ["at", fx, p.y, fz], seed]
+                        : ["spawn_blueprint", kind, ["at", fx, p.y, fz], seed];
                     return {
-                        program: [op, ["at", fx, p.y, fz], seed],
-                        describe: `${m[1]} vor dir gebaut`,
+                        program,
+                        describe: `${kind} vor dir gebaut`,
                     };
                 },
             },
@@ -9983,12 +10007,11 @@ class AnazhRealm {
                 this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
             }
         }
-        // V9.50 — das Wasser ist kein eigenes Mesh mehr: jeder Voxel-Chunk
-        // baut seine Wasser-Fläche selbst (`_buildVoxelChunkWater`, aus
-        // `_voxelSurfaceY` vs `_waterLevelAt` — dieselbe Quelle wie das
-        // Terrain). `_buildWaterPlane` setzt nur noch den Meeresspiegel; die
-        // Flächen entstehen mit dem Chunk-Stream.
-        this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Chunk-Wasser, V9.50)`);
+        // V9.75 (Welle C.4+5) — das Wasser ist ein Cell-Zustand im Voxel-Welt-
+        // Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus den Cells
+        // (`_buildVoxelChunkWaterIsoSurface`). EIN Wasser-Mesh, eine Skala,
+        // eine Geometrie-Quelle.
+        this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
     }
 
     // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
@@ -11475,18 +11498,30 @@ class AnazhRealm {
     // null bei wander → Caller fällt auf heutige Emotion-Logik zurück).
     _tickCreatureTaskDirection(creature, task, emotion) {
         if (!task || task.name === "wander") return null;
-        if (task.name === "wait") return new THREE.Vector3(0, 0, 0);
+        // V9.84 Perf-1.d — alle Task-Return-Direktionen gehen jetzt durch
+        // EINEN geteilten Scratch-Vector3 (`_creatureTaskScratchDir`) statt
+        // pro Aufruf ein neues `THREE.Vector3` zu allokieren. Bei 120 Kreaturen
+        // mit Tasks waren das ~120 Allokationen/Frame. Der Aufrufer
+        // (`updateCreatures`) liest den Wert SYNCHRON im for-Loop und
+        // schreibt ihn in `creature.position`, bevor die nächste Kreatur
+        // dran ist → kein Konflikt durch geteilten Scratch.
+        if (task.name === "wait") return this._creatureTaskOutDir().set(0, 0, 0);
         if (task.name === "follow_player") return this._tickCreatureFollowPlayer(creature, task, emotion);
         if (task.name === "gather") return this._tickCreatureGather(creature, task);
         if (task.name === "build") return this._tickCreatureBuild(creature, task);
         return null;
     }
 
+    _creatureTaskOutDir() {
+        return this._creatureTaskScratchDir || (this._creatureTaskScratchDir = new THREE.Vector3());
+    }
+
     // Welle 6.H — folgt dem Spieler bis CREATURE_FOLLOW_DISTANCE (oder task-
     // spezifischer Halt-Distanz). Happy-Emotion läuft volle Speed, sonst 70%.
     _tickCreatureFollowPlayer(creature, task, emotion) {
+        const out = this._creatureTaskOutDir();
         const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-        if (!player) return new THREE.Vector3(0, 0, 0);
+        if (!player) return out.set(0, 0, 0);
         const haltDist =
             Number.isFinite(task.args?.distance) && task.args.distance > 0
                 ? Math.min(20, Math.max(0.5, task.args.distance))
@@ -11494,18 +11529,19 @@ class AnazhRealm {
         const dx = player.x - creature.position.x;
         const dz = player.z - creature.position.z;
         const dist = Math.hypot(dx, dz);
-        if (dist <= haltDist) return new THREE.Vector3(0, 0, 0);
+        if (dist <= haltDist) return out.set(0, 0, 0);
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
         const nx = dx / dist;
         const nz = dz / dist;
-        return new THREE.Vector3(nx * speed, 0, nz * speed);
+        return out.set(nx * speed, 0, nz * speed);
     }
 
     // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
     // Phase 1 = sucht Material + erntet (cyan-Aura); Phase 2 = trägt Ernte zum
     // Spieler + übergibt (purple-Aura via _refreshCreatureCarryingVisual).
     _tickCreatureGather(creature, task) {
+        const out = this._creatureTaskOutDir();
         const material = task.args && task.args.material;
         if (typeof material !== "string" || material.length === 0) {
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
@@ -11515,7 +11551,7 @@ class AnazhRealm {
         if (carrying) {
             // BRING-PHASE: zurück zum Spieler, dann übergeben.
             const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-            if (!player) return new THREE.Vector3(0, 0, 0);
+            if (!player) return out.set(0, 0, 0);
             const dxp = player.x - creature.position.x;
             const dzp = player.z - creature.position.z;
             const distp = Math.hypot(dxp, dzp);
@@ -11543,14 +11579,14 @@ class AnazhRealm {
                     this._refreshCreatureCarryingVisual(creature);
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                return new THREE.Vector3(0, 0, 0);
+                return out.set(0, 0, 0);
             }
             // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation.
             const speed =
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            return new THREE.Vector3((dxp / distp) * speed, 0, (dzp / distp) * speed);
+            return out.set((dxp / distp) * speed, 0, (dzp / distp) * speed);
         }
         // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
         let target = task.args._target;
@@ -11601,7 +11637,7 @@ class AnazhRealm {
                 });
             }
             if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-            return new THREE.Vector3(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
+            return out.set(0, 0, 0); // diesen Tick stehen, nächster sucht neues Ziel
         }
         // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (Such-Phase).
         const speed =
@@ -11610,7 +11646,7 @@ class AnazhRealm {
             this._creatureBodySpeedMultiplier(creature);
         const nx = dx / dist;
         const nz = dz / dist;
-        return new THREE.Vector3(nx * speed, 0, nz * speed);
+        return out.set(nx * speed, 0, nz * speed);
     }
 
     // Welle 6.H Phase 2B.2 — Geste-Umkehrung zu gather. Spieler ist
@@ -11623,6 +11659,7 @@ class AnazhRealm {
     // Ablehnungs-Pfade fallen auf wander zurück mit memory + Journal-Eintrag
     // (Vision §1.1: die Welt antwortet auch auf falsche Wünsche).
     _tickCreatureBuild(creature, task) {
+        const out = this._creatureTaskOutDir();
         const blueprint = task.args && task.args.blueprint;
         if (typeof blueprint !== "string" || blueprint.length === 0) {
             this.assignCreatureTask(creature, "wander", {}, { silent: true });
@@ -11639,7 +11676,7 @@ class AnazhRealm {
         }
         const carrying = creature.userData && creature.userData.carrying;
         const player = this.state.playerMesh ? this.state.playerMesh.position : null;
-        if (!player) return new THREE.Vector3(0, 0, 0);
+        if (!player) return out.set(0, 0, 0);
         // Welle 6.H Phase 2D + 2F.1 — Spec × Body Speed-Modulation (alle build-Phasen).
         const buildSpeed =
             AnazhRealm.CREATURE_BUILD_SPEED *
@@ -11702,9 +11739,9 @@ class AnazhRealm {
                     this.renderInventoryUI();
                 }
                 if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
-                return new THREE.Vector3(0, 0, 0);
+                return out.set(0, 0, 0);
             }
-            return new THREE.Vector3((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
+            return out.set((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
         }
         // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
         const dxp2 = creature.position.x - player.x;
@@ -11716,9 +11753,9 @@ class AnazhRealm {
             // (nimmt Spieler-Bewegung implizit auf, falls Spieler folgt).
             if (distp2 < 0.001) {
                 // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
-                return new THREE.Vector3(buildSpeed, 0, 0);
+                return out.set(buildSpeed, 0, 0);
             }
-            return new THREE.Vector3((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
+            return out.set((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
         }
         // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
         // (analog confirmBuild, kalibriert auf at_player wo player.y die
@@ -11745,7 +11782,7 @@ class AnazhRealm {
             this._refreshCreatureCarryingVisual(creature);
         }
         this.assignCreatureTask(creature, "wander", {}, { silent: true });
-        return new THREE.Vector3(0, 0, 0);
+        return out.set(0, 0, 0);
     }
 
     // Welle 6.H V2 — geteilte Gradient-Textur als Cache (analog 6.D
@@ -11965,6 +12002,41 @@ class AnazhRealm {
         const playerPos = this.state.playerMesh.position;
         // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
         const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
+        // V9.84 Perf-1.f — Spatial-Hash für Flocking. Vorher: O(N²) Loop mit
+        // early-exit bei 6 Nachbarn. Bei 120 Kreaturen in einem Cluster waren
+        // das bis zu 14 400 Distanz-Tests/Frame. Jetzt: 5-m-Bucket-Grid (passt
+        // zur Flocking-Range `dsq < 25` = 5 m), pro Kreatur prüft der Flocking-
+        // Loop nur die 3×3-Nachbar-Cells statt aller Kreaturen. Bei verteilten
+        // Wesen typisch 5–15 Kandidaten statt 120. Map + Buckets als Pool
+        // recycelt — keine Allokation pro Frame.
+        const FLOCK_CELL = 5;
+        if (!this._flockGrid) {
+            this._flockGrid = new Map();
+            this._flockBucketPool = [];
+        }
+        const flockGrid = this._flockGrid;
+        const flockBucketPool = this._flockBucketPool;
+        // Buckets in den Pool zurück, Map leeren — beides allokationsfrei.
+        for (const bucket of flockGrid.values()) {
+            bucket.length = 0;
+            flockBucketPool.push(bucket);
+        }
+        flockGrid.clear();
+        // Grid auffüllen — nur happy-Kreaturen, weil das die einzigen Flocking-
+        // Teilnehmer sind (siehe Filter im Flocking-Loop weiter unten).
+        for (let j = 0; j < this.state.creatures.length; j++) {
+            if (this.state.creatureEmotions[j] !== "happy") continue;
+            const c = this.state.creatures[j];
+            const gcx = Math.floor(c.position.x / FLOCK_CELL);
+            const gcz = Math.floor(c.position.z / FLOCK_CELL);
+            const key = gcx * 100000 + gcz; // numerischer Key für Map-Speed
+            let bucket = flockGrid.get(key);
+            if (!bucket) {
+                bucket = flockBucketPool.pop() || [];
+                flockGrid.set(key, bucket);
+            }
+            bucket.push(j);
+        }
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
@@ -12016,24 +12088,39 @@ class AnazhRealm {
                     if (toPlayer.length() > 2) {
                         direction.copy(toPlayer.normalize().multiplyScalar(speed));
                     }
-                    // V8.49 — Schwarm-Kohäsion: nur für sichtbare Kreaturen
-                    // (off-screen ist Flocking unsichtbar), distanceToSquared
-                    // statt distanceTo (kein sqrt), und nach 6 Nachbarn
-                    // abbrechen. Das war eine O(N²)-Schleife über ALLE
-                    // Kreaturen — bei 120 sind das 14400 Distanz-Tests/Frame.
-                    // Das Verhalten bleibt: 6 nahe Nachbarn reichen für
-                    // Flocking genauso wie 119.
+                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare
+                    // Kreaturen (off-screen ist Flocking unsichtbar), distanceToSquared
+                    // statt distanceTo (kein sqrt), nach 6 Nachbarn abbrechen, UND
+                    // jetzt Spatial-Hash statt voller O(N²)-Schleife. Wir prüfen
+                    // nur die 9 Cells (3×3) um die eigene Kreatur, statt aller 120.
+                    // Bei verteilten happy-Kreaturen typisch 5–15 Kandidaten
+                    // statt 120 → 10–20× schneller. Bei dichtem Cluster fällt
+                    // der Win auf early-exit-Niveau (alle 6 Nachbarn in derselben
+                    // Cell), bleibt aber nie schlechter als der alte Pfad.
                     if (inFrustum) {
                         let neighbors = 0;
-                        for (let j = 0; j < this.state.creatures.length && neighbors < 6; j++) {
-                            if (i === j || this.state.creatureEmotions[j] !== "happy") continue;
-                            const otherCreature = this.state.creatures[j];
-                            const dsq = creature.position.distanceToSquared(otherCreature.position);
-                            if (dsq > 1 && dsq < 25) {
-                                const toOther = scratchB.subVectors(otherCreature.position, creature.position);
-                                toOther.y = 0;
-                                direction.add(toOther.normalize().multiplyScalar(0.5));
-                                neighbors++;
+                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
+                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
+                        cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
+                            for (let dgz = -1; dgz <= 1; dgz++) {
+                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
+                                if (!bucket) continue;
+                                for (let bi = 0; bi < bucket.length; bi++) {
+                                    const j = bucket[bi];
+                                    if (i === j) continue;
+                                    // creatureEmotions[j] === "happy" ist beim
+                                    // Grid-Bau schon garantiert (Filter oben),
+                                    // also brauchen wir den Check hier nicht.
+                                    const otherCreature = this.state.creatures[j];
+                                    const dsq = creature.position.distanceToSquared(otherCreature.position);
+                                    if (dsq > 1 && dsq < 25) {
+                                        const toOther = scratchB.subVectors(otherCreature.position, creature.position);
+                                        toOther.y = 0;
+                                        direction.add(toOther.normalize().multiplyScalar(0.5));
+                                        neighbors++;
+                                        if (neighbors >= 6) break cellLoop;
+                                    }
+                                }
                             }
                         }
                     }
@@ -12069,31 +12156,51 @@ class AnazhRealm {
             const baseY = terrainHeight + 0.5;
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             creature.position.y = baseY + floatOffset;
-            // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
-            const aura = creature.userData && creature.userData.taskAura;
-            if (aura) {
-                aura.position.set(
-                    creature.position.x,
-                    creature.position.y + this._creatureAuraOffsetY(creature),
-                    creature.position.z
-                );
-            }
-            // Welle 6.H P2B.5 — Carrying-Sprite folgt der Kreatur darüber.
-            const carrySprite = creature.userData && creature.userData.carryingSprite;
-            if (carrySprite) {
-                carrySprite.position.set(
-                    creature.position.x,
-                    creature.position.y + this._creatureAuraOffsetY(creature) + 0.5,
-                    creature.position.z
-                );
-            }
+            // V9.84 Perf-1.e — Visual-Updates (Aura-Position, Carrying-Sprite-
+            // Position, Color-Lerp) gated auf `inFrustum`. Eine Kreatur, die
+            // nicht zu sehen ist, braucht keine Sprite-Positionen pro Frame
+            // und kein Color-Lerp (beides unsichtbar). Spart 3 Operationen
+            // pro off-screen-Kreatur — bei 120 Kreaturen, 50% off-screen =
+            // ~180 gesparte Mutationen/Frame. Wenn der Spieler hinschwenkt
+            // (Frustum-Eintritt), die Updates kommen sofort wieder zurück
+            // → kein sichtbarer Welt-Tiefe-Verlust. Bewegung + Physik
+            // bleiben aktiv für ALLE Kreaturen (das ist der V8.49-Anker:
+            // off-screen-Kreaturen leben weiter, sie zeigen sich nur nicht).
+            if (inFrustum) {
+                // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
+                const aura = creature.userData && creature.userData.taskAura;
+                if (aura) {
+                    aura.position.set(
+                        creature.position.x,
+                        creature.position.y + this._creatureAuraOffsetY(creature),
+                        creature.position.z
+                    );
+                }
+                // Welle 6.H P2B.5 — Carrying-Sprite folgt der Kreatur darüber.
+                const carrySprite = creature.userData && creature.userData.carryingSprite;
+                if (carrySprite) {
+                    carrySprite.position.set(
+                        creature.position.x,
+                        creature.position.y + this._creatureAuraOffsetY(creature) + 0.5,
+                        creature.position.z
+                    );
+                }
 
-            // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
-            // sollte heute nicht mehr entstehen, aber falls in Zukunft mal ein
-            // andersgeformter Spawn dazukommt, brechen wir den Frame nicht ab.
-            if (creature.material && creature.material.color) {
-                const targetColor = emotion === "happy" ? new THREE.Color(0x00ff00) : new THREE.Color(0x0000ff);
-                creature.material.color.lerp(targetColor, 0.05);
+                // Farbe basierend auf Emotion. Defensiv: ein creature ohne material
+                // sollte heute nicht mehr entstehen, aber falls in Zukunft mal ein
+                // andersgeformter Spawn dazukommt, brechen wir den Frame nicht ab.
+                // V9.84 Perf-1.c — zwei gepoolte THREE.Color statt frischer Allokation
+                // pro Kreatur pro Frame. Vorher: 120 Kreaturen × 60 fps = 7200
+                // Color-Allokationen/s → GC-Spikes. `material.color.lerp` mutiert
+                // das material.color, NICHT den target → Singletons bleiben rein.
+                if (creature.material && creature.material.color) {
+                    if (!this._creatureHappyColor) {
+                        this._creatureHappyColor = new THREE.Color(0x00ff00);
+                        this._creatureNeutralColor = new THREE.Color(0x0000ff);
+                    }
+                    const targetColor = emotion === "happy" ? this._creatureHappyColor : this._creatureNeutralColor;
+                    creature.material.color.lerp(targetColor, 0.05);
+                }
             }
 
             // Springen basierend auf Emotion
@@ -12196,18 +12303,30 @@ class AnazhRealm {
             return false;
         }
 
-        const frustum =
-            providedFrustum ||
-            (() => {
-                const f = new THREE.Frustum();
-                f.setFromProjectionMatrix(
-                    new THREE.Matrix4().multiplyMatrices(
-                        this.state.camera.projectionMatrix,
-                        this.state.camera.matrixWorldInverse
-                    )
-                );
-                return f;
-            })();
+        // V9.84 Perf-1.b — Frustum + Matrix4 + Sphere als state-Pool statt
+        // pro-Aufruf-Allokation. Wer einen eigenen Frustum liefert (Render-
+        // Pass via `_loopFrustumCulling`), nutzt den; sonst ziehen wir den
+        // gepoolten `_frustumCache` (in `_loopFrustumCulling` pro Frame
+        // einmal aktualisiert) oder bauen ihn bei pre-init lazy. Vorher:
+        // `updateCreatures` rief `isInFrustum(creature)` ohne providedFrustum
+        // → die Closure baute pro Kreatur `new THREE.Frustum` + `Matrix4`
+        // = bei 120 Kreaturen 240 Allokationen/Frame. Plus der Sphere-Shift-
+        // Pfad allokierte `new THREE.Vector3` + `Sphere` pro Objekt mit
+        // Position-Offset (Inseln, Vegetation).
+        let frustum = providedFrustum || this._frustumCache;
+        if (!frustum) {
+            // Pre-init: das `_loopFrustumCulling` ist noch nicht gelaufen.
+            // Wir bauen das Cache lazy + initial, ab dem nächsten Frame
+            // wird es vom Render-Pass aktualisiert.
+            this._frustumCache = new THREE.Frustum();
+            this._frustumMatrixCache = new THREE.Matrix4();
+            this._frustumMatrixCache.multiplyMatrices(
+                this.state.camera.projectionMatrix,
+                this.state.camera.matrixWorldInverse
+            );
+            this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+            frustum = this._frustumCache;
+        }
 
         if (object.geometry) {
             if (!object.geometry.boundingSphere) {
@@ -12222,19 +12341,19 @@ class AnazhRealm {
             if (sphere && Number.isFinite(sphere.radius) && sphere.radius > 0) {
                 // boundingSphere für Chunks ist bereits in Welt-Koordinaten
                 // (chunk.position=(0,0,0)). Für Inseln/Vegetation mit position-Offset
-                // verschieben wir das Center temporär.
+                // verschieben wir das Center temporär — über einen gepoolten
+                // Scratch-Sphere statt frischer Allokation.
                 if (
                     object.position &&
                     (object.position.x !== 0 || object.position.y !== 0 || object.position.z !== 0)
                 ) {
-                    const center = sphere.center;
-                    const shiftedCenter = new THREE.Vector3(
-                        center.x + object.position.x,
-                        center.y + object.position.y,
-                        center.z + object.position.z
-                    );
-                    const shifted = new THREE.Sphere(shiftedCenter, sphere.radius);
-                    return frustum.intersectsSphere(shifted);
+                    if (!this._frustumSphereScratch) {
+                        this._frustumSphereScratch = new THREE.Sphere(new THREE.Vector3(), 0);
+                    }
+                    const s = this._frustumSphereScratch;
+                    s.center.copy(sphere.center).add(object.position);
+                    s.radius = sphere.radius;
+                    return frustum.intersectsSphere(s);
                 }
                 return frustum.intersectsSphere(sphere);
             }
@@ -13561,12 +13680,55 @@ class AnazhRealm {
             this.state.hydrosphere = null;
             this.log(`Hydrosphäre-Berechnung fehlgeschlagen: ${e.message}`, "ERROR");
         }
+        // V9.77 — globales Wasser-Y-Band für die Cell-Klassifikation berechnen.
+        // ALLE Chunks teilen dieses Band → Cells außerhalb sind deterministisch
+        // gleich (above=AIR, below=WATER), die OOB-Live-Naht-Heilung (V9.76)
+        // bleibt konsistent. Marge 10 m über/unter, um Roughness + Tarn-
+        // Variationen sicher zu umfassen.
+        this._computeHydroBand();
         try {
             this._buildHydrosphereMeshes();
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
     }
+
+    // V9.77 (Welle C.7) — das globale Wasser-Y-Band aus aller Hydrosphäre-
+    // Wahrheit. `top` = max(state.waterLevel, alle lake.level) + 10 m
+    // Marge. `bottom` = state.waterLevel - 10 m (Ozean-Floor ist tiefer,
+    // aber für die Iso-Mesher-Korrektheit reicht "below this is water"
+    // weil die Iso nur die OBERE Wasser-Grenze rendert). Cells außerhalb
+    // des Bands werden ohne Density-Sample klassifiziert: above=AIR,
+    // below=WATER. OOB-Live-Compute in `_buildVoxelChunkWaterIsoSurface`
+    // nutzt dieselbe Regel → Naht-frei zwischen allen Chunks.
+    _computeHydroBand() {
+        const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        let topY = wl;
+        const h = this.state.hydrosphere;
+        if (h && Array.isArray(h.lakes)) {
+            for (const lake of h.lakes) {
+                if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            }
+        }
+        this.state.hydroBand = {
+            top: topY + 10,
+            bottom: wl - 10,
+        };
+    }
+
+    // V9.75 (Welle C.4+5) — die Welle-A-Reaktiv-Maschinerie (`_markHydroDirty`,
+    // `_recomputeHydrosphere`, `_playHydroRecomputePing`, `_tickHydroRecompute`,
+    // HYDRO_RECOMPUTE_DEBOUNCE_MS) ist gestrichen. Die V9.74-Erkenntnis hält:
+    // das Cell-Feld ist DERIVED aus (Worldgen-Density + voxelEdits + Architektur-
+    // Stempel). Eine Spieler-Mutation propagiert via `_remeshVoxelChunksAround`
+    // (V9.14) zur Cell-Klassifikation — keine zweite Reaktiv-Schicht nötig.
+    // Atlas (`state.hydrosphere`) bleibt Worldgen-frozen (Welt-Identität);
+    // der Spieler-Effekt lebt im Iso-Surface-Mesh. Eine Welt-Substanz, eine
+    // Reaktion. `docs/hydrosphere.md` §16.
+    //
+    // V9.70 WATER_CHUNK_SKIRT gleicher Abbau — die Skirts waren der versuchte
+    // Patch auf die alte Zwei-Skalen-Naht, die mit dem alten Quad-Mesh weg
+    // ist (V9.70-B-Lehre).
 
     // V8.29 — Genesis-Plattform am Welt-Zentrum. Idempotent: spawnt nur
     // wenn noch keine start_plattform-Architektur existiert (z. B. nach
@@ -13661,6 +13823,11 @@ class AnazhRealm {
         // Erosion läuft VOR `_hydroSeedTarns` (tarn-frei) und muss bei einem
         // Re-Run (Determinismus-Test) ebenfalls tarn-frei sampeln, sonst
         // unterscheiden sich die beiden Läufe. Saved + restored im finally.
+        // V9.66 (Welle A.3) — Erosion läuft am Worldgen-Start, BEVOR Architekturen
+        // gespawnt sind und Voxel-Edits gemacht wurden; daher hier weiterhin
+        // `_terrainMacroSurfaceY` direkt (Blocker-/Edit-Schichten sind leer).
+        // Der reaktive Recompute (A.4) ruft Erosion absichtlich NICHT neu —
+        // sie bleibt die statische Worldgen-Geomorphologie.
         const savedTarns = this.state.tarns;
         this.state.tarns = null;
         const h = new Float64Array(n);
@@ -14105,6 +14272,14 @@ class AnazhRealm {
         return Math.max(withoutTarnFinal + tarnDelta, waterRef + 1);
     }
 
+    // V9.75 (Welle C.4+5) — `_voxelEditSurfaceDelta` + `_effectiveSurfaceY`
+    // gestrichen. Sie waren die Welle-A-Wahrheits-Quelle für den reaktiven
+    // Drainage-Recompute; mit dem Cell-Feld als DERIVED-View (V9.74) ist das
+    // 2D-Edit-Delta nicht mehr nötig. Der Hydrosphäre-Compute-Pfad
+    // (`_computeErosion`, `_hydroSeedTarns`, `_hydroInit`) liest jetzt direkt
+    // `_terrainMacroSurfaceY` (worldgen-frozen — das Drainage-Netz ist
+    // Welt-Identität, nicht Spieler-Wille; Spieler-Wille lebt im Cell-Feld).
+
     _terrainDensityAt(x, y, z) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -14291,9 +14466,14 @@ class AnazhRealm {
     // bewusst NICHT würfelförmig: er ist nur `span` breit (X/Z) aber hoch
     // genug (Y), um das ganze Oberflächen-Band zu fassen (sonst klafft ein
     // Loch, wo die Oberfläche oben/unten aus dem Chunk-Kasten austritt).
-    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0) {
+    _voxelChunkGeometry(ox, oy, oz, dimX, dimY, dimZ, step, densityFn, cropMargin = 0, preDensity = null) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
-        const density = this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        // V9.81 (Welle C.11 — Density-Grid-Sharing): wenn der Aufrufer schon
+        // das Density-Grid hat (z.B. weil er es auch für die Cell-Klassifikation
+        // braucht), kann er es als `preDensity` übergeben. So wird die teure
+        // Density-Sample-Schleife (~90k `_terrainDensityAt`-Calls) nur einmal
+        // pro Chunk-Build ausgeführt, nicht zweimal.
+        const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
         const { positions, vertCells, cellVert } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -14309,7 +14489,16 @@ class AnazhRealm {
         this._voxelLaplacianSmoothPositions(positions, indices);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
         if (positions.length === 0) return null;
-        const normals = this._voxelGradientNormals(positions, sample, step);
+        // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-
+        // Grid (V9.81-Sharing) statt 18k zusätzliche `_terrainDensityAt`-
+        // Aufrufe. Wir reichen die Grid-Geometrie als kompaktes Objekt durch;
+        // _voxelGradientNormals interpoliert trilinear, fällt bei Out-of-Bounds
+        // sauber auf sample() zurück.
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const preGrid = { density, ox, oy, oz, Nx, Ny, Nz, step };
+        const normals = this._voxelGradientNormals(positions, sample, step, preGrid);
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
@@ -14544,16 +14733,72 @@ class AnazhRealm {
     // hartes Rauten-/Trapez-Facetten-Muster. Der Gradient `∇d` IST die wahre
     // Iso-Oberflächen-Normale — glatt, facettierungs-unabhängig. Die Oberfläche
     // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
-    _voxelGradientNormals(positions, sample, step) {
+    // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-Grid
+    // (V9.81-Sharing) statt 6× `_terrainDensityAt` pro Vertex. Bei ~3000
+    // Vertices pro Chunk = 18 000 gesparte Noise-Calls = ~30–45 ms gespart.
+    // Trilinear-Interpolation aus den 8 Corner-Densities pro Sample-Punkt;
+    // Fallback auf sample() wenn das Grid den Sample-Punkt nicht abdeckt
+    // (Edge-Vertices nach Crop+Smooth) — selten, aber sicher.
+    _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
         const eps = step * 0.5;
+        // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
+        // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
+        let lookup;
+        if (preGrid) {
+            const d = preGrid.density;
+            const gOx = preGrid.ox;
+            const gOy = preGrid.oy;
+            const gOz = preGrid.oz;
+            const gStep = preGrid.step;
+            const Nx = preGrid.Nx;
+            const Ny = preGrid.Ny;
+            const Nz = preGrid.Nz;
+            const NxNy = Nx * Ny;
+            const NxMax = Nx - 1;
+            const NyMax = Ny - 1;
+            const NzMax = Nz - 1;
+            lookup = (x, y, z) => {
+                const fx = (x - gOx) / gStep;
+                const fy = (y - gOy) / gStep;
+                const fz = (z - gOz) / gStep;
+                const i = Math.floor(fx);
+                const j = Math.floor(fy);
+                const k = Math.floor(fz);
+                // Beide Bounds-Seiten prüfen (i+1 muss noch im Grid liegen).
+                if (i < 0 || j < 0 || k < 0 || i >= NxMax || j >= NyMax || k >= NzMax) {
+                    return sample(x, y, z);
+                }
+                const tx = fx - i;
+                const ty = fy - j;
+                const tz = fz - k;
+                const base = i + j * Nx + k * NxNy;
+                const d000 = d[base];
+                const d100 = d[base + 1];
+                const d010 = d[base + Nx];
+                const d110 = d[base + 1 + Nx];
+                const d001 = d[base + NxNy];
+                const d101 = d[base + 1 + NxNy];
+                const d011 = d[base + Nx + NxNy];
+                const d111 = d[base + 1 + Nx + NxNy];
+                const d00 = d000 * (1 - tx) + d100 * tx;
+                const d10 = d010 * (1 - tx) + d110 * tx;
+                const d01 = d001 * (1 - tx) + d101 * tx;
+                const d11 = d011 * (1 - tx) + d111 * tx;
+                const d0 = d00 * (1 - ty) + d10 * ty;
+                const d1 = d01 * (1 - ty) + d11 * ty;
+                return d0 * (1 - tz) + d1 * tz;
+            };
+        } else {
+            lookup = sample;
+        }
         for (let v = 0; v < positions.length; v += 3) {
             const px = positions[v];
             const py = positions[v + 1];
             const pz = positions[v + 2];
-            const gx = sample(px + eps, py, pz) - sample(px - eps, py, pz);
-            const gy = sample(px, py + eps, pz) - sample(px, py - eps, pz);
-            const gz = sample(px, py, pz + eps) - sample(px, py, pz - eps);
+            const gx = lookup(px + eps, py, pz) - lookup(px - eps, py, pz);
+            const gy = lookup(px, py + eps, pz) - lookup(px, py - eps, pz);
+            const gz = lookup(px, py, pz + eps) - lookup(px, py, pz - eps);
             const len = Math.hypot(gx, gy, gz);
             if (len < 1e-6) {
                 // Gradient ~0 (sehr seltener Sattelpunkt) → Default „oben".
@@ -14752,6 +14997,445 @@ class AnazhRealm {
     // (degenerierte Iso-Fläche — kein Mesh möglich), oder `null` (OOM /
     // Kollision-Build fail). Der Caller entscheidet, was mit dem Resultat
     // passiert — atomarer Swap im `_rebuildVoxelChunk` (Re-Mesh nach Edit).
+    // === V9.71 (Welle C.1) — Wasser-Substanz-Vereinigung Phase 1 =========
+    // Die drei Voxel-Cell-Zustände der Welle-C-Vereinigung. Eine Cell ist
+    // entweder LUFT (begehbar, leer), WASSER (Spieler schwimmt, später baut
+    // der Iso-Surface-Mesher hier seine Boundary), oder FEST (Land/Architektur/
+    // Voxel-Fill). EINE Sprache mit dem Voxel-Terrain — das ist der
+    // Vision-Kern (statt parallele Drainage-Karte + Quad-Mesh-Sandwich).
+    static get CELL_STATE() {
+        return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
+    }
+
+    // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
+    // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
+    // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
+    // `dim·dim·dimY` (Indizierung: `i + k·dim + j·dim·dim` mit i=x, k=z, j=y).
+    // Der Cell-Feld-Aufbau ist deterministisch in (Seed + state.waterLevel)
+    // — ein Re-Build ergibt bit-identische Cells. Aktuell paralleler Pfad zum
+    // alten Hydrosphäre-Atlas; C.2 wird daraus die Wasser-Iso-Surface bauen,
+    // C.5 schaltet den Atlas ab.
+    //
+    // Performance: dim·dim·dimY = 24·24·124 = 71 424 Cells × `_terrainDensityAt`
+    // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
+    // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
+    // shared mit Mesher-Density-Grid.
+    // V9.76 (Welle C.6 — Trocken-Gate, Performance): trägt der Chunk-Fußabdruck
+    // überhaupt Wasser? Wenn nein, sparen wir 71 424 `_terrainDensityAt`-Samples
+    // pro Chunk (~200ms im Browser, Killer für Streaming-FPS). Konservativ
+    // (lieber bauen als ein Loch riskieren), drei Predicates:
+    //   (1) dippt die Macro-Surface an einem 4×4-Raster nahe `waterLevel + 16`
+    //       (Roughness-Marge) → möglicher Ozean/Bergsee in diesem Chunk;
+    //   (2) ein Voxel-Carve unter waterLevel, dessen xz-Footprint den Chunk
+    //       berührt (V9.69-Predicate — Spieler-Pool im Hochland);
+    //   (3) der Hydrosphäre-Atlas hat eine Lake-Zelle ODER ein Fluss-Bucket
+    //       im Chunk-Footprint (See, Fluss, Tarn — alles über `_waterLevelAt`
+    //       erfassbar). Reanimiert die V9.69-Gate-Logik (`_voxelChunkTouches-
+    //       Water`), die in V9.75 vorschnell gestrichen wurde — sie war
+    //       Performance-Schutz, nicht der Naht-Patch (Welle B), den wir
+    //       beerdigt haben.
+    _voxelChunkHasAnyWater(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+        // (1) Ozean / Bergsee — Macro-Surface dippt unter waterLevel + 16
+        for (let j = 0; j <= 3; j++) {
+            for (let i = 0; i <= 3; i++) {
+                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
+                    return true;
+                }
+            }
+        }
+        // (2) Voxel-Carve unter waterLevel im xz-Footprint
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (Array.isArray(edits) && edits.length) {
+            for (let e = 0; e < edits.length; e++) {
+                const ed = edits[e];
+                if (!ed || ed.mode !== "carve") continue;
+                const r = ed.r;
+                if (!Number.isFinite(r) || r <= 0) continue;
+                if (ed.y - r >= waterLevel) continue;
+                if (ed.x + r < ox || ed.x - r > ox + span) continue;
+                if (ed.z + r < oz || ed.z - r > oz + span) continue;
+                return true;
+            }
+        }
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready) return false;
+        // (3) See-Zellen im Footprint (+1 Cell Marge)
+        if (h.water && h.water.waterKind) {
+            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
+            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
+            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
+            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+            for (let cj = c0j; cj <= c1j; cj++) {
+                for (let ci = c0i; ci <= c1i; ci++) {
+                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
+                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
+                }
+            }
+        }
+        // (4) Fluss-Bucket im Footprint
+        if (h.riverBuckets) {
+            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
+            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
+            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
+            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
+            for (let bj = b0j; bj <= b1j; bj++) {
+                for (let bi = b0i; bi <= b1i; bi++) {
+                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
+                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
+                    if (list && list.length) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // V9.81 (Welle C.11 — Density-Grid-Sharing für Performance): `preDensity`
+    // ist das vom Boden-Mesher schon gesampelte Density-Grid (Float32Array
+    // mit (dim+4)·(dimY+1)·(dim+4) Werten, Vertex-Sampling bei Origin
+    // `ox-step, oy, oz-step`, V9.42-d-Pad). Cell-Center-Density wird als
+    // 8-Corner-Avg der angrenzenden Vertex-Densities berechnet (trilineare
+    // Interpolation) — spart 71 424 erneute `_terrainDensityAt`-Calls
+    // (~200 ms im Browser, der Streaming-FPS-Killer). Wenn `preDensity`
+    // null ist, samplen wir das Grid intern hier — beide Pfade liefern
+    // IDENTISCHE Klassifikation, sodass Determinismus + Test-Konsistenz
+    // erhalten bleiben (Test ruft uns ohne preDensity).
+    _buildVoxelChunkWaterCells(ox, oy, oz, step, preDensity = null) {
+        const { dim, dimY } = this._voxelChunkConfig();
+        const cells = new Uint8Array(dim * dim * dimY);
+        const STATE = AnazhRealm.CELL_STATE;
+        // Density-Grid besorgen (vorab oder selbst samplen)
+        let density = preDensity;
+        if (!density) {
+            const sample = (x, y, z) => this._terrainDensityAt(x, y, z);
+            density = this._voxelSampleDensityGrid(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sample);
+        }
+        // Pro xz-Spalte das `_waterLevelAt` einmal cachen (V9.73-Heilung).
+        const colCount = dim * dim;
+        const colWaterY = new Float64Array(colCount);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) {
+                const cx = ox + (i + 0.5) * step;
+                colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
+            }
+        }
+        const band = this.state.hydroBand;
+        const bandTop = band ? band.top : Infinity;
+        // Cell (i, k, j) Center ist Mittelpunkt der 8 Density-Grid-Vertices
+        // (i+1, j, k+1) bis (i+2, j+1, k+2) (Pad +1 links/unten ausgeglichen).
+        const Nx = dim + 4;
+        const Ny = dimY + 1;
+        const NxNy = Nx * Ny;
+        for (let j = 0; j < dimY; j++) {
+            const cy = oy + (j + 0.5) * step;
+            if (cy > bandTop) {
+                continue;
+            }
+            const baseJ = j * dim * dim;
+            const j1 = j;
+            const j2 = j + 1;
+            for (let k = 0; k < dim; k++) {
+                const baseK = k * dim;
+                const k1 = k + 1;
+                const k2 = k + 2;
+                const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
+                const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
+                const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
+                const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
+                for (let i = 0; i < dim; i++) {
+                    const i1 = i + 1;
+                    const i2 = i + 2;
+                    const d =
+                        (density[i1 + ofs_j1_k1] +
+                            density[i2 + ofs_j1_k1] +
+                            density[i1 + ofs_j2_k1] +
+                            density[i2 + ofs_j2_k1] +
+                            density[i1 + ofs_j1_k2] +
+                            density[i2 + ofs_j1_k2] +
+                            density[i1 + ofs_j2_k2] +
+                            density[i2 + ofs_j2_k2]) *
+                        0.125;
+                    let s;
+                    if (d > 0) s = STATE.SOLID;
+                    else if (cy <= colWaterY[i + baseK]) s = STATE.WATER;
+                    else s = STATE.AIR;
+                    cells[i + baseK + baseJ] = s;
+                }
+            }
+        }
+        // V9.86 Perf-2.c-Refine — Mountain-Mulden-Filter via Atmosphären-
+        // Konnektivität (V9.85 hatte einen einfacheren „SOLID-direkt-darüber"-
+        // Filter, der zu aggressiv war: am Carve-Rand killte er legitime
+        // WATER-Cells, weil eine zufällige Sub-Iso-SOLID-Cell darüber lag
+        // → C.3-Test-Flake auf ~50 %). Neue Frage: „kann diese WATER-Cell
+        // einen Pfad durch AIR/WATER-Cells nach oben zur Atmosphäre
+        // erreichen?" Wenn ja → echtes Wasser (See, Ozean, Spieler-Carve mit
+        // offener Oberseite); wenn nein → eingeschlossene Mountain-/Höhlen-
+        // Mulde → AIR. Top-Down-Pass: für jede xz-Spalte ein `airAbove`-
+        // Flag (Start = 1 = Atmosphäre über bandTop). SOLID setzt Flag=0,
+        // AIR setzt Flag=1, WATER bleibt WATER falls Flag=1 (Pfad oben),
+        // wird AIR falls Flag=0 (eingeschlossen). Heilt Schöpfer-V9.84-
+        // Audit „Wasser in Bergwänden" UND Schöpfer-V9.85-Audit „Wasser
+        // spawnt aus dem Nichts bei Architektur" (potenziell — der dirty-
+        // Pfad respektiert jetzt die Atmosphäre-Wahrheit). Plus: bewahrt
+        // V9.74-Vision (Carve im Hochland → Wasser fließt rein, Pfad nach
+        // oben offen). Pass läuft VOR dem Architektur-Stempel (damm-SOLID-
+        // Cells sind noch nicht da → Damm-Mechanik unverändert).
+        const dimSq = dim * dim;
+        const STATE_AIR = STATE.AIR;
+        const STATE_SOLID = STATE.SOLID;
+        const airAbove = new Uint8Array(dimSq);
+        // Initial: alle Spalten haben Atmosphäre über sich (above-bandTop ist
+        // garantiert AIR, V9.77-globales-Y-Band).
+        for (let p = 0; p < dimSq; p++) airAbove[p] = 1;
+        for (let j = dimY - 1; j >= 0; j--) {
+            const baseJ = j * dimSq;
+            for (let p = 0; p < dimSq; p++) {
+                const idx = p + baseJ;
+                const s = cells[idx];
+                if (s === STATE_SOLID) {
+                    airAbove[p] = 0;
+                } else if (s === STATE_AIR) {
+                    airAbove[p] = 1;
+                } else {
+                    // WATER — wenn kein Air-Pfad nach oben, ist es eine
+                    // eingeschlossene Mulde → AIR. Sonst bleibt WATER und
+                    // schluckt die Air-Brücke durch (WATER ist transparent
+                    // für die Atmosphären-Verbindung — eine WATER-Cell mit
+                    // AIR darüber lässt auch eine WATER-Cell darunter
+                    // „atmen").
+                    if (airAbove[p] === 0) {
+                        cells[idx] = STATE_AIR;
+                    }
+                }
+            }
+        }
+        // V9.74 (Welle C.3) — Architektur-Cell-Stempel: solide Architekturen
+        // (V9.65-Blocker-Index) sind im Cell-Feld direkt zu sehen. Eine Damm-
+        // Stein-Wand stempelt ihre Cells als SOLID; der Iso-Surface-Mesher
+        // (C.2) baut dann das Wasser DRUMHERUM, nicht durch den Damm. Ist
+        // die einlösende Bedeutung der Damm-Vision: die Substanz ist DA,
+        // wo der Spieler sie baut.
+        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz);
+        return cells;
+    }
+
+    // V9.74 (Welle C.3) — stempelt solide Architektur-AABBs als state=SOLID
+    // ins Cell-Feld. Wird vom Cell-Build aufgerufen, nachdem die Density+
+    // waterLevel-Klassifikation läuft. Iteriert alle Architekturen mit
+    // `blockerAABBs` (V9.65-Index) und scant Chunk-Footprint-Überlappung.
+    // Cell-Y-Range pro AABB: vom Bottom (topY − ~Architektur-Höhe) bis zur
+    // topY. Die echte Höhe wird aus aabb.botY abgelesen (V9.74-Erweiterung
+    // des AABB-Cache mit Bottom-Y).
+    _stampArchitectureSolidCellsInto(cells, ox, oy, oz) {
+        if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
+        const { dim, dimY, step } = this._voxelChunkConfig();
+        const STATE = AnazhRealm.CELL_STATE;
+        for (const entry of this.state.architectures) {
+            if (!entry || !entry.blockerAABBs) continue;
+            for (const aabb of entry.blockerAABBs) {
+                // Chunk-Footprint-Schnitt
+                if (aabb.maxX < ox || aabb.minX > ox + dim * step) continue;
+                if (aabb.maxZ < oz || aabb.minZ > oz + dim * step) continue;
+                // Cell-Range im Chunk (xz)
+                const i0 = Math.max(0, Math.floor((aabb.minX - ox) / step));
+                const i1 = Math.min(dim - 1, Math.floor((aabb.maxX - ox) / step));
+                const k0 = Math.max(0, Math.floor((aabb.minZ - oz) / step));
+                const k1 = Math.min(dim - 1, Math.floor((aabb.maxZ - oz) / step));
+                // Y-Range: vom Bottom bis zur topY der Architektur
+                const yBot = Number.isFinite(aabb.botY) ? aabb.botY : aabb.topY - 4;
+                const j0 = Math.max(0, Math.floor((yBot - oy) / step));
+                const j1 = Math.min(dimY - 1, Math.floor((aabb.topY - oy) / step));
+                for (let j = j0; j <= j1; j++) {
+                    const baseJ = j * dim * dim;
+                    for (let k = k0; k <= k1; k++) {
+                        const baseK = k * dim;
+                        for (let i = i0; i <= i1; i++) {
+                            cells[i + baseK + baseJ] = STATE.SOLID;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // V9.72 (Welle C.2) — Iso-Surface-Mesh für das Wasser-Cell-Feld.
+    // Der bestehende `_voxelChunkGeometry`-Mesher (Surface-Nets) bekommt
+    // hier einen Zwillings-Pass: statt der Boden-Density-Funktion eine
+    // Wasser-Cell-Density. Die Iso-Surface liegt zwischen Water-Cells
+    // (state=1) und allem anderen (air/solid). **Naht-frei per Konstruktion**
+    // — gleiche Surface-Nets-Maschinerie wie der Boden-Mesher, identische
+    // Vertex-Quantisierung. Density-Konvention für den Mesher: +1 = innen
+    // (water), −1 = außen (air/solid). Pro Vertex Average über die 8
+    // angrenzenden Cells für eine glatte Iso-Surface. Aktuell paralleler
+    // Pfad zum alten Quad-Mesh-System; das Mesh existiert in der Scene aber
+    // mit `visible = false` per Default — der Toggle (`_setVoxelWaterIsoVisible`)
+    // schaltet auf das neue System um. C.5 räumt das alte System ab.
+    _buildVoxelChunkWaterIsoSurface(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return null;
+        if (!this.state.voxelChunks) return null;
+        if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
+        const key = `${cx},${cz}`;
+        // Idempotenz: vorhandenes Mesh disposen, bevor wir neu bauen
+        this._disposeVoxelChunkWaterIso(key);
+        const entry = this.state.voxelChunks.get(key);
+        if (!entry || !entry.waterCells) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const cells = entry.waterCells;
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - floorDrop;
+        const STATE = AnazhRealm.CELL_STATE;
+        // V9.77 → V9.78 (Welle C.8 — OOB konsistent zur V9.78-Cell-Init): die
+        // OOB-Live-Berechnung folgt EXAKT der `_buildVoxelChunkWaterCells`-
+        // Logik. Above-band → −1 (AIR, identisch zum Skip im Build). Sonst
+        // (in-band UND below-band): voller Density+waterLevel-Check. Die
+        // V9.77-below-band=WATER-Abkürzung ist gestrichen — sie erzeugte
+        // die Floating-Plane bei `cy=bandBottom` in Mountain-Säulen, weil
+        // in-chunk-SOLID gegen OOB-WATER an der Boundary transitionierte.
+        // Jetzt: in-chunk-SOLID gegen OOB-SOLID → keine Transition →
+        // keine Plane → naht-frei + Floating-Plane-frei per Konstruktion.
+        const band = this.state.hydroBand;
+        const bandTop = band ? band.top : Infinity;
+        // V9.80 (Welle C.10 — nur Wasser-Luft-Iso, keine Bodenfläche): die
+        // Surface-Nets-Iso rendert normalerweise die VOLLE Hülle um die
+        // Wasser-Cells — Top (water-air), Bottom (water-solid) und Sides
+        // (water-solid lateral). Die Bottom-Hülle ist normalerweise hidden
+        // by terrain, aber mit V9.79-Pad+Crop wurde sie sichtbar (Schöpfer-
+        // Audit V9.79: „am grund des wassers entsteht eine zweite oberfläche").
+        // Vision-Heilung: das Wasser-Mesh soll NUR die obere Wasserfläche
+        // sein — wo Wasser auf Luft trifft. Wir klassifizieren die Cells
+        // 3-fach (AIR/WATER/SOLID) und unterdrücken Übergänge ohne Luft
+        // (Bottom + Underwater-Sides) sowie ohne Wasser (Mountain-Top, der
+        // schon vom Terrain-Mesh getragen wird). Nur Mischungen mit
+        // WATER+AIR erzeugen Iso → das ist die sichtbare Wasseroberfläche.
+        const cellClass = (i, k, j) => {
+            if (j < 0 || j >= dimY) return STATE.AIR;
+            if (i >= 0 && k >= 0 && i < dim && k < dim) {
+                return cells[i + k * dim + j * dim * dim];
+            }
+            // OOB live-compute — identisch zur Cell-Init.
+            const wy = oy + (j + 0.5) * step;
+            if (wy > bandTop) return STATE.AIR;
+            const wx = ox + (i + 0.5) * step;
+            const wz = oz + (k + 0.5) * step;
+            if (this._terrainDensityAt(wx, wy, wz) > 0) return STATE.SOLID;
+            return wy <= this._waterLevelAt(wx, wz) ? STATE.WATER : STATE.AIR;
+        };
+        const sampleWater = (x, y, z) => {
+            const fi = (x - ox) / step;
+            const fk = (z - oz) / step;
+            const fj = (y - oy) / step;
+            const i = Math.floor(fi);
+            const k = Math.floor(fk);
+            const j = Math.floor(fj);
+            let cWater = 0;
+            let cAir = 0;
+            for (let dj = 0; dj <= 1; dj++) {
+                for (let dk = 0; dk <= 1; dk++) {
+                    for (let di = 0; di <= 1; di++) {
+                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
+                        if (cls === STATE.WATER) cWater++;
+                        else if (cls === STATE.AIR) cAir++;
+                        // SOLID zählt weder als Wasser noch als Luft.
+                    }
+                }
+            }
+            // Unterdrücke Wasser-Solid-Iso (Bottom/Underwater-Sides): keine
+            // Luft im Sample → behandle als „tief drinnen" (+1), kein Iso.
+            if (cAir === 0) return 1;
+            // Unterdrücke Iso ohne Wasser (Mountain-Top, Sky): keine Wasser-
+            // Cells → behandle als „außen" (-1), kein Iso. Das Terrain-Mesh
+            // trägt die Mountain-Oberfläche.
+            if (cWater === 0) return -1;
+            // Mischung mit Wasser UND Luft (+ ggf. Solid am Ufer): Standard
+            // Iso bei (cWater - cAir) = 0, geglättet durch das 8-Cell-Average.
+            // Solid-Cells bleiben für die Iso-Position neutral; das Terrain
+            // verdeckt sie ohnehin.
+            return (cWater - cAir) / 8;
+        };
+        // V9.79 (Welle C.9 — die Pad+Crop-Heilung der Oberflächen-Naht):
+        // bis V9.78 baute der Iso-Mesher das Wasser-Mesh nur über die dim·
+        // dimY·dim Cell-Würfel des Chunks (cropMargin=0). Adjacent Chunks
+        // hatten dann unabhängige Meshes mit eigenen Boundary-Vertices —
+        // KEINE shared Vertices, KEINE überlappenden Faces → eine 1-Cell-
+        // Lücke (1.8 m) an der Oberfläche, sichtbar als persistenter Riss
+        // („verbinden im Volumen aber nicht an der Oberfläche", Schöpfer-
+        // Audit V9.78). Heilung übernimmt den V9.42-d-Trick vom Boden-
+        // Mesher: Origin um 1 step verschoben, dim+3 cell-Würfel,
+        // cropMargin=1. Der Mesher smootht das pad-erweiterte Volumen
+        // voll + schneidet den 1-Cell-Pad danach ab. Adjacent Chunks
+        // **OVERLAPPEN** an der Boundary (chunk-A's letzter kept-Cube und
+        // chunk-B's erster kept-Cube belegen dieselbe Welt-Position) →
+        // keine sichtbare Naht. Pad-Cells außerhalb des Chunks werden
+        // via OOB-Live in `cellState` (V9.78) berechnet — beide Nachbar-
+        // Chunks sehen dort identische Density, also auch das Smoothing
+        // läuft deterministisch gleich. Eine Wasser-Sprache, eine Skala,
+        // eine Geometrie-Quelle.
+        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sampleWater, 1);
+        if (!geom) {
+            // Kein Wasser im Chunk-Bereich (alle Cells air/solid) → null
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) {
+            geom.dispose();
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
+        mesh.userData = {
+            isHydrosphere: true,
+            hydroKind: "chunk-water-iso",
+            voxelChunkX: cx,
+            voxelChunkZ: cz,
+        };
+        // V9.75 (Welle C.4+5) — das Iso-Mesh ist seit jetzt das EINZIGE
+        // Wasser-Mesh. Default sichtbar; der Toggle `_setVoxelWaterIsoVisible`
+        // ist gestrichen (war Browser-Audit-Werkzeug der Migration-Phase).
+        this.state.scene.add(mesh);
+        this.state.voxelChunkWaterIso.set(key, mesh);
+        return mesh;
+    }
+
+    // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,
+    // Material ist welt-global geteilt → NICHT disposen (V9.43-a-Lehre).
+    _disposeVoxelChunkWaterIso(key) {
+        if (!this.state.voxelChunkWaterIso) return;
+        const mesh = this.state.voxelChunkWaterIso.get(key);
+        if (mesh) {
+            if (this.state.scene) this.state.scene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+        }
+        this.state.voxelChunkWaterIso.delete(key);
+    }
+
+    // V9.84 Perf-1.a — ein geteiltes `MeshToonMaterial` für alle Voxel-Chunks
+    // (vorher 81+ Instanzen im Streaming-Ring, jetzt ein einziges). Lazy
+    // initialisiert beim ersten Chunk-Build. `state.toonGradientMap` ist die
+    // geteilte Cel-Texture, die bei Regler-Wechsel via `.needsUpdate=true`
+    // re-uploaded wird (siehe `_refreshToonGradient`) — der Singleton sieht
+    // die Update automatisch. Geteiltes Material darf NIEMALS disposed werden
+    // (sonst sterben alle anderen Chunks mit) — `_disposeVoxelChunk` räumt
+    // entsprechend nur Geometrie, nicht Material.
+    _getVoxelChunkMaterial() {
+        if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
+        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        this.state.voxelChunkMaterial = mat;
+        return mat;
+    }
+
     _buildVoxelChunkData(cx, cz) {
         if (!this.state.scene) return null;
         const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
@@ -14759,16 +15443,49 @@ class AnazhRealm {
         const ox = cx * span;
         const oz = cz * span;
         const oy = base - floorDrop;
+        // V9.81 (Welle C.11 — Density-Grid-Sharing): das Density-Grid einmal
+        // samplen + an Boden-Mesher UND Cell-Build weiterreichen. Spart die
+        // teuersten ~71 k `_terrainDensityAt`-Calls pro Wasser-Chunk (~200 ms
+        // im Browser, der Streaming-FPS-Killer). Das Grid hat (dim+4)·
+        // (dimY+1)·(dim+4) Vertex-Densities (V9.42-d-Pad bei `ox-step, oz-step`).
+        const terrainSample = (x, y, z) => this._terrainDensityAt(x, y, z);
+        const terrainDensity = this._voxelSampleDensityGrid(
+            ox - step,
+            oy,
+            oz - step,
+            dim + 3,
+            dimY,
+            dim + 3,
+            step,
+            terrainSample
+        );
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
         // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
         // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
-        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
-        // gesmootht (seine Welt-Nachbarn lagen im pad).
-        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
+        // ab. V9.81: `preDensity` reicht das geteilte Grid herein.
+        const geom = this._voxelChunkGeometry(
+            ox - step,
+            oy,
+            oz - step,
+            dim + 3,
+            dimY,
+            dim + 3,
+            step,
+            undefined,
+            1,
+            terrainDensity
+        );
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
-        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        // V9.84 Perf-1.a — Material-Singleton statt 81+ Instanzen im Streaming-
+        // Ring. Vertex-Farben leben pro Geometrie (BufferAttribute), das
+        // Material wird von allen Chunks geteilt. `gradientMap` ist die geteilte
+        // DataTexture `state.toonGradientMap`, die bei `_refreshToonGradient`
+        // via `.needsUpdate=true` in-place re-uploaded wird → der Cel-Levels-
+        // Regler propagiert automatisch zu allen Chunks. Die V9.43-c-Welle-C-
+        // Lehre vom `hydroSurfaceMaterial` ist hier angewandt: NIEMALS disposen,
+        // sonst sterben alle anderen Chunks mit (siehe `_disposeVoxelChunk`).
+        const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -14779,7 +15496,19 @@ class AnazhRealm {
             mat.dispose();
             return null;
         }
-        return { mesh, kind: "filled" };
+        // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) / V9.76 (Welle C.6 — Gate):
+        // das Wasser-Cell-Feld ist die EINZIGE Wasser-Wahrheit pro Chunk.
+        // Lebt im entry, nicht im globalen state. **Trocken-Gate** vor dem
+        // 71 424-Cell-Bau (~200ms Density-Samples): wenn der Chunk kein
+        // Wasser tragen kann (Macro-Surface überall >waterLevel+16 UND kein
+        // Voxel-Carve unter waterLevel UND kein Atlas-Lake/Fluss im Footprint),
+        // dann waterCells = null. `_buildVoxelChunkWaterIsoSurface` skip'pt
+        // dann sauber (vorhandener null-check). Big FPS-Win für Hochland-
+        // Chunks.
+        const waterCells = this._voxelChunkHasAnyWater(cx, cz)
+            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity)
+            : null;
+        return { mesh, kind: "filled", waterCells };
     }
 
     // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
@@ -14836,10 +15565,14 @@ class AnazhRealm {
             return true;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh };
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
         this.state.voxelChunks.set(key, entry);
         this._buildVoxelChunkGrass(cx, cz);
-        this._buildVoxelChunkWater(cx, cz);
+        // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist
+        // der einzige Wasser-Render-Pfad. Liest entry.waterCells, baut die
+        // Iso-Surface mit dem Surface-Nets-Mesher (gleiche Maschinerie wie
+        // der Boden → naht-frei per Konstruktion).
+        this._buildVoxelChunkWaterIsoSurface(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
         return true;
     }
@@ -14859,57 +15592,26 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
-        const base = this.state.terrainBaseHeight || 0;
-        const ox = cx * span;
-        const oz = cz * span;
-        // Das Oberflächen-Band reicht ~base-50..base+92 — der Chunk muss es
-        // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // hindurch). V9.45-a: dimY 96, oy = base − floorDrop(66) → Decke
-        // base+106.8 → Marge ~15 gegen ridged-Spike-Löcher am Sicht-Ring-Rand.
-        const oy = base - floorDrop;
-        // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
-        // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
-        // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
-        // nistisch — die Überlapp-Zelle ist in beiden Chunks identisch.
-        // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
-        // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
-        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
-        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
-        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
-        // gesmootht (seine Welt-Nachbarn lagen im pad).
-        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
-        if (!geom) {
-            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
-            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an Rand-
-            // Chunks → sofort `{empty:true}`, kein Retry nötig.
-            this.state.voxelChunks.set(key, { empty: true });
-            return null;
-        }
-        this._attachVoxelFieldColors(geom);
-        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
-        this.state.scene.add(mesh);
-        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
-        // V9.24 / V9.40-e — der Kollisions-Build kann fehlschlagen (OOM bei
-        // vollem Ammo-Heap oder degenerierte Geometrie ohne ein einziges
-        // gültiges Dreieck). Wir disposen den Mesh aus der Scene + Heap.
-        // V9.40-e Retry: max 3 Versuche; in den ersten 2 setzen wir
-        // ABSICHTLICH KEINEN Map-Eintrag (`voxelChunks.has(key)` bleibt
-        // false), sodass der nächste Streaming-Tick es wieder versucht.
-        // Inzwischen wird `_pruneDistantVoxelChunks` ferne Chunks räumen
-        // und Heap freigeben — der Retry hat eine echte Chance. Erst beim
-        // 3. Fail markieren wir ehrlich `{empty:true}` (V9.24-Symptom als
-        // LETZTE Antwort, nicht als Erst-Reaktion — die Lehre von V9.40-d).
-        if (!collisionBody) {
-            this.state.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
-            if (mesh.material) mesh.material.dispose();
-            // V9.40-e Retry: zähle den Versuch + erlaube max 3 Versuche.
+        // V9.82 (Welle C.12) — Streaming-Pfad und Rebuild-Pfad sind jetzt
+        // EINE Pfad-Quelle: beide nutzen `_buildVoxelChunkData` für Boden-
+        // Mesh + Wasser-Cell-Feld (V9.71+V9.81-Density-Grid-Sharing).
+        // **Bug-Heilung**: vor V9.82 baute `_ensureVoxelChunkAt` nur das
+        // Terrain-Mesh direkt via `_voxelChunkGeometry` und setzte
+        // `entry = { mesh }` ohne `waterCells`. Der nachfolgende
+        // `_buildVoxelChunkWaterIsoSurface`-Aufruf scheiterte am
+        // `!entry.waterCells`-Check → kein Iso. Erst beim Spieler-Edit
+        // wurde via `_rebuildVoxelChunk` (das _buildVoxelChunkData ruft)
+        // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
+        // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
+        // Quelle strukturell weg.
+        const fresh = this._buildVoxelChunkData(cx, cz);
+        if (fresh === null) {
+            // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
+            // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
+            // Versuchen ehrlich {empty:true}. Bei attempts < 3: KEIN
+            // Map-Eintrag → der Streaming-Tick versucht es im nächsten
+            // Frame wieder (has(key)===false), inzwischen räumt
+            // _pruneDistantVoxelChunks ferne Chunks + gibt Heap frei.
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
             const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
             this.state.voxelRebuildAttempts.set(key, attempts);
@@ -14918,21 +15620,25 @@ class AnazhRealm {
                 this.state.voxelRebuildAttempts.delete(key);
                 this.log(`Voxel-Chunk ${key}: 3× OOM beim Stream-Build, als empty markiert`, "INFO");
             }
-            // Bei attempts < 3: KEIN Map-Eintrag — der Streaming-Tick wird
-            // den Chunk im nächsten Frame wieder aufrufen (has(key)===false).
-            // Inzwischen räumt _pruneDistantVoxelChunks ferne Chunks + gibt
-            // Heap frei → der Retry hat bessere Chancen.
             return null;
         }
-        const entry = { mesh };
-        this.state.voxelChunks.set(key, entry);
-        // V9.40-e — Erfolg: Retry-Counter zurücksetzen.
+        // Erfolg — Retry-Counter zurücksetzen.
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
+        if (fresh.kind === "empty") {
+            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
+            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an
+            // Rand-Chunks.
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
+        this.state.scene.add(fresh.mesh);
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
+        this.state.voxelChunks.set(key, entry);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
-        // V9.50-b — und seine Wasser-Fläche (aus `_voxelSurfaceY` vs
-        // `_waterLevelAt` — dieselbe Quelle wie das Terrain).
-        this._buildVoxelChunkWater(cx, cz);
+        // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
+        // Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
+        this._buildVoxelChunkWaterIsoSurface(cx, cz);
         // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
         // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
         // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
@@ -14949,10 +15655,16 @@ class AnazhRealm {
             this._disposeStaticCollision(entry.mesh);
             if (this.state.scene) this.state.scene.remove(entry.mesh);
             if (entry.mesh.geometry) entry.mesh.geometry.dispose();
-            if (entry.mesh.material) entry.mesh.material.dispose();
+            // V9.84 Perf-1.a — Material NICHT mehr disposen: `_getVoxelChunkMaterial`
+            // hält ein Singleton (`state.voxelChunkMaterial`), das von ALLEN
+            // Voxel-Chunks geteilt wird. Ein Dispose hier würde alle anderen
+            // Chunks töten (V9.43-c-Lehre vom hydroSurfaceMaterial — geteiltes
+            // Material überlebt jeden Chunk-Disposal). Nur Geometrie räumen.
         }
         this._disposeVoxelChunkGrass(key);
-        this._disposeVoxelChunkWater(key);
+        // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
+        // disposen (einziger Wasser-Render-Pfad; der alte Quad-Pfad ist weg).
+        this._disposeVoxelChunkWaterIso(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -15206,96 +15918,81 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
-    // V9.64 (Welle A.1) — Damm-Index: ein 2D-Bucket-Grid (16-m-Zellen) für
-    // O(1)-Lookup im Terrain-Sampling. Jeder Damm-Architektur-Eintrag wird in
-    // alle Buckets eingetragen, die seine Bounding-Box berührt (eine Damm-
-    // Plane überspannt mehrere Buckets). `_isDamAt` liest einen einzigen
-    // Bucket + prüft AABB pro Eintrag. Vision-Pfeiler "Wasser ↔ Spieler-
-    // Wille" — der Spieler baut Damm, das Terrain liest ihn, der Fluss
-    // weicht ihm aus (V9.65 + V9.66).
-    static get DAM_BUCKET_SIZE() {
-        return 16;
+    // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Solid-Klassifikation für
+    // Architektur-Parts. Die Regel ist UNIVERSELL: jede solide Geometrie
+    // blockiert Wasser, der `damm`-Bauplan ist eine ANWENDUNG, kein Spezial-
+    // fall. **Pro-Part**: ein Baum wird über seinen Holz-Stamm zum Blocker,
+    // die Laub-Krone bleibt transparent (Hylomorphismus-rein — die Substanz
+    // entscheidet, nicht der Name). Solidität aus `dichte ≥ 0.3` — schließt
+    // Laub (0.1), Federn (0.1), Glut (0.25) aus; lässt Holz (0.4), Stein,
+    // Metall, Kristall, Knochen, Schuppen, Erde drin.
+    //
+    // V9.65 hatte zusätzlich einen 16-m-Bucket-Grid (`state.blockerIndex`)
+    // für O(1)-`_blockerTopAt`-Lookup im alten Hydrosphäre-Sample-Pfad. Mit
+    // Welle C.4+5 ist Welle-A-Maschinerie gestrichen — der Cell-Stempel
+    // (`_stampArchitectureSolidCellsInto`) iteriert `state.architectures`
+    // direkt und braucht keinen Bucket.
+    static get BLOCKER_DENSITY_MIN() {
+        return 0.3;
     }
 
-    _damBucketKey(bi, bj) {
-        return `${bi},${bj}`;
+    // Ist diese Part-Substanz fest genug, um Wasser zu blockieren? Eine
+    // Quelle der Wahrheit für alle Welt-Bauwerke (V9.65). Defensiv: ohne
+    // Material-Eintrag gilt der Part als NICHT solide (statt versehentlich
+    // alles zu blockieren — fail-open für die Welt-Reaktion).
+    _isPartSolid(part) {
+        if (!part || typeof part.material !== "string") return false;
+        const mat = this.state.materials && this.state.materials[part.material];
+        if (!mat || !mat.tags) return false;
+        const dichte = mat.tags.dichte;
+        return Number.isFinite(dichte) && dichte >= AnazhRealm.BLOCKER_DENSITY_MIN;
     }
 
-    _damArchAABB(entry) {
-        // Damm-Bounding-Box im Welt-Raum aus parts[0].size (V9.64-Damm hat
-        // ein box-Part). Position-Rotation wird hier ignoriert — die Damm-
-        // Box-Form ist orientation-frei via max(x,z)-Halbradius (sichere
-        // Überdeckung bei jeder Rotation).
-        const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        if (!bp || !bp.parts || !bp.parts[0]) return null;
-        const part = bp.parts[0];
+    // Welt-Raum-AABB eines einzelnen Parts (vor Rotation). Wir nutzen
+    // max(sx, sz)·0.5 als Halbradius — orientation-frei sicher bei jeder
+    // Part-Rotation (kleine Überdeckung, aber kein Loch). topY = entry-Boden
+    // (Position.y − 0.5 = Boden-Heuristik aus `spawnArchitecture`) + lokale
+    // Part-Position.y + halbe Part-Höhe. Die `damm`-Topologie aus V9.64 ist
+    // ein Spezialfall davon (ein Part mit Material `stein`).
+    _blockerComputePartAABB(entry, part) {
+        if (!part || !part.size || !part.position) return null;
         const sx = part.size.x || 1;
         const sz = part.size.z || 1;
+        const sy = part.size.y || 1;
         const halfMax = Math.max(sx, sz) * 0.5;
-        const cx = entry.position.x;
-        const cz = entry.position.z;
-        const topY = entry.position.y - 0.5 + (part.position.y || 0) + (part.size.y || 1) * 0.5;
-        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY };
+        const cx = entry.position.x + (part.position.x || 0);
+        const cz = entry.position.z + (part.position.z || 0);
+        // V9.74 (Welle C.3) — botY ergänzt: der Cell-Stempel-Pfad
+        // (`_stampArchitectureSolidCellsInto`) braucht beide Y-Grenzen, um
+        // die vertikale Höhe der Architektur korrekt im Cell-Feld zu
+        // setzen. V9.65 hatte nur topY (Hydrosphäre-Surface-Hebung).
+        const centerY = entry.position.y - 0.5 + (part.position.y || 0);
+        const topY = centerY + sy * 0.5;
+        const botY = centerY - sy * 0.5;
+        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY, botY };
     }
 
-    _damIndexAdd(entry) {
-        if (!this.state.damIndex) this.state.damIndex = new Map();
-        const aabb = this._damArchAABB(entry);
-        if (!aabb) return;
-        entry.damAABB = aabb;
-        const bs = AnazhRealm.DAM_BUCKET_SIZE;
-        const i0 = Math.floor(aabb.minX / bs);
-        const i1 = Math.floor(aabb.maxX / bs);
-        const j0 = Math.floor(aabb.minZ / bs);
-        const j1 = Math.floor(aabb.maxZ / bs);
-        for (let j = j0; j <= j1; j++) {
-            for (let i = i0; i <= i1; i++) {
-                const key = this._damBucketKey(i, j);
-                let bucket = this.state.damIndex.get(key);
-                if (!bucket) {
-                    bucket = new Set();
-                    this.state.damIndex.set(key, bucket);
-                }
-                bucket.add(entry);
-            }
+    // V9.75 (Welle C.4+5) — Blocker-AABBs in den Architektur-Eintrag schreiben.
+    // Aufrufer: `spawnArchitecture`. Liest `bp.parts`, filtert nach `_isPart-
+    // Solid` (dichte ≥ 0.3 — Hylomorphismus-rein, Substanz entscheidet), und
+    // setzt `entry.blockerAABBs` als Array der soliden AABBs. Wird vom Cell-
+    // Stempel (`_stampArchitectureSolidCellsInto`) konsumiert.
+    //
+    // V9.65 hatte zusätzlich einen 16-m-Bucket-Grid für O(1)-`_blockerTopAt`-
+    // Lookup im Hydrosphäre-Sample-Pfad. Der Lookup-Pfad ist mit der Welle-A-
+    // Mechanik gestrichen (V9.75) — das Cell-Feld trägt die Wahrheit. Der
+    // Stempel iteriert `state.architectures` direkt, kein Bucket nötig.
+    _populateBlockerAABBs(entry) {
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
+        const solidAABBs = [];
+        for (const part of bp.parts) {
+            if (!this._isPartSolid(part)) continue;
+            const aabb = this._blockerComputePartAABB(entry, part);
+            if (aabb) solidAABBs.push(aabb);
         }
-    }
-
-    _damIndexRemove(entry) {
-        if (!this.state.damIndex || !entry.damAABB) return;
-        const bs = AnazhRealm.DAM_BUCKET_SIZE;
-        const a = entry.damAABB;
-        const i0 = Math.floor(a.minX / bs);
-        const i1 = Math.floor(a.maxX / bs);
-        const j0 = Math.floor(a.minZ / bs);
-        const j1 = Math.floor(a.maxZ / bs);
-        for (let j = j0; j <= j1; j++) {
-            for (let i = i0; i <= i1; i++) {
-                const bucket = this.state.damIndex.get(this._damBucketKey(i, j));
-                if (bucket) bucket.delete(entry);
-            }
-        }
-        entry.damAABB = null;
-    }
-
-    // V9.64 (Welle A.1) — Damm-Höhe an (x,z): liefert die Welt-Y-Koordinate
-    // der Damm-Oberkante, wenn (x,z) im AABB eines Damms liegt; sonst -Infinity.
-    // O(1) Bucket-Lookup + linearer Scan der Bucket-Einträge (typisch ≤2-3
-    // Dämme pro Bucket). Nutzt entry.damAABB-Cache (statt jeden Frame neu).
-    _damTopAt(x, z) {
-        if (!this.state.damIndex) return -Infinity;
-        const bs = AnazhRealm.DAM_BUCKET_SIZE;
-        const bucket = this.state.damIndex.get(this._damBucketKey(Math.floor(x / bs), Math.floor(z / bs)));
-        if (!bucket) return -Infinity;
-        let top = -Infinity;
-        for (const entry of bucket) {
-            const a = entry.damAABB;
-            if (!a) continue;
-            if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) {
-                if (a.topY > top) top = a.topY;
-            }
-        }
-        return top;
+        if (solidAABBs.length === 0) return;
+        entry.blockerAABBs = solidAABBs;
     }
 
     // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
@@ -16034,21 +16731,19 @@ class AnazhRealm {
         if (!hydro || !hydro.ready) return;
         this._disposeHydrosphereMeshes(); // idempotenter Rebuild
         const meshes = [];
-        // V9.50 — Ozean + Seen + Flüsse leben als nasse Quads in den per-Chunk
-        // gebauten Wasser-Flächen (`_buildVoxelChunkWater`). Hier bleiben nur
-        // die Wasserfälle — die eine ehrliche vertikale Ausnahme (ein Höhenfeld
-        // kann nichts Vertikales tragen). `docs/hydrosphere.md` §14.
+        // V9.75 (Welle C.4+5) — die einzige Ausnahme: Wasserfälle als
+        // vertikale Planes (ein Höhenfeld kann nichts Vertikales tragen).
+        // Ozean + Seen + Flüsse leben jetzt im Iso-Surface-Mesh
+        // (`_buildVoxelChunkWaterIsoSurface`) aus dem Voxel-Cell-Feld —
+        // EIN Wasser-Mesh, naht-frei per Konstruktion. `docs/hydrosphere.md`
+        // §16.
         const wfMat = this._ensureWaterfallMaterial();
         if (wfMat) {
             for (const wf of hydro.waterfalls) {
-                // V9.63 (Cleanup für Welle A): zurück auf zwei Meshes pro
-                // Wasserfall — die Render-Schicht ist sekundär, Welle A
-                // (Wasser ↔ Spieler-Wille) bringt das echte Wasser-Verstehen.
+                // V9.63 (Cleanup für Welle A): zwei Meshes pro Wasserfall.
                 //   (1) Plane = vertikaler Strahl (V9.60-d.3 mit See-Spiegel-
                 //       Verbindung)
                 //   (2) Pool = Aufprall-Foam + Erosion-Topf (V9.60-d.1+d.4)
-                // V9.61 (Trapez+Spray+Billow) + V9.62 (Cross+Alpha) +
-                // V9.60-d.2 (Lip) entfernt — alles war Symptom-Polieren.
                 const m = this._buildHydroWaterfall(wf, wfMat);
                 if (m) {
                     this.state.scene.add(m);
@@ -16062,18 +16757,38 @@ class AnazhRealm {
             }
         }
         this.state.hydrosphereMeshes = meshes;
-        // V9.50 — der Atlas ist fertig: jeder schon gestreamte Voxel-Chunk
-        // bekommt sein Wasser neu gebaut. Ein Chunk, der VOR der Hydrosphäre
-        // gebaut wurde, kannte nur den Ozean-Default — jetzt sieht er Seen +
-        // Flüsse. Neue Chunks bauen ihr Wasser im `_ensureVoxelChunkAt`-Pfad.
+        // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
+        // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
+        // die Lake/Fluss-Wahrheit aus `_waterLevelAt` jetzt sehen.
         if (this.state.voxelChunks) {
             for (const key of this.state.voxelChunks.keys()) {
-                this._disposeVoxelChunkWater(key);
                 const ci = key.indexOf(",");
-                this._buildVoxelChunkWater(Number(key.slice(0, ci)), Number(key.slice(ci + 1)));
+                const cx = Number(key.slice(0, ci));
+                const cz = Number(key.slice(ci + 1));
+                const entry = this.state.voxelChunks.get(key);
+                if (entry && entry.mesh) {
+                    // V9.76 — Trocken-Gate auch in der Worldgen-Finalisierung:
+                    // Hochland-Chunks ohne Wasser ersparen sich den 71k-Cell-
+                    // Density-Pass (Atlas-fertig macht den Gate-Pfad (3)+(4)
+                    // erst jetzt verlässlich).
+                    if (this._voxelChunkHasAnyWater(cx, cz)) {
+                        const { step, span, floorDrop } = this._voxelChunkConfig();
+                        const base = this.state.terrainBaseHeight || 0;
+                        entry.waterCells = this._buildVoxelChunkWaterCells(
+                            cx * span,
+                            base - floorDrop,
+                            cz * span,
+                            step
+                        );
+                        this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                    } else {
+                        entry.waterCells = null;
+                        this._disposeVoxelChunkWaterIso(`${cx},${cz}`);
+                    }
+                }
             }
         }
-        this.log(`V9.50: Hydrosphäre gerendert — Chunk-Wasser + ${hydro.waterfalls.length} Wasserfall-Planes`, "INFO");
+        this.log(`V9.75: Hydrosphäre gerendert — Iso-Wasser + ${hydro.waterfalls.length} Wasserfall-Planes`, "INFO");
     }
 
     // Räumt alle gerenderten Hydrosphären-Meshes (Geometrie disposen, aus der
@@ -16213,8 +16928,8 @@ class AnazhRealm {
     // Gerstner-Wellen-Verschiebung (1 offener Ozean, weich auf 0 am Ufer →
     // kein Küsten-Riss); `aFlow` trägt die Fluss-Gefälle-Tangente (Schaum
     // scrollt stromab); `aShore` das tiefen-getriebene Ufer-Schaum-Band.
-    // EIN Material für Ozean + See + Fluss aller per-Chunk-Wasser-Flächen
-    // (`_buildVoxelChunkWater`). Teilt die Wasser-Substanz mit dem Wasserfall
+    // EIN Material für Ozean + See + Fluss aller per-Chunk-Iso-Wasser-Meshes
+    // (`_buildVoxelChunkWaterIsoSurface`). Teilt die Wasser-Substanz mit dem Wasserfall
     // (`_ensureWaterfallMaterial`); uSunDir/uLight/fog* speist
     // `_applyDayNightToScene`. Vision §1.3 fraktal — eine Wasser-Sprache.
     _ensureHydroSurfaceMaterial() {
@@ -16498,159 +17213,14 @@ class AnazhRealm {
         this.state.voxelChunkGrass.delete(key);
     }
 
-    // V9.50-b — die Wasser-Fläche EINES Voxel-Chunks. Geschwisterlich zu
-    // `_buildVoxelChunkGrass`: ein Höhenfeld-Raster über den Chunk, je Zelle
-    // nass, wo `_voxelSurfaceY < _waterLevelAt`. Die Geometrie kommt damit aus
-    // DERSELBEN Voxel-Oberfläche wie das Terrain → die Uferlinie ist der
-    // exakte Schnitt (kein 16-m-Modell, kein Bleed, kein Schweben — strukturell,
-    // das „Visual = Collision"-Gesetz aufs Wasser angewandt). Die Quad-Höhe ist
-    // der flache Wasser-Spiegel; das opake Terrain verdeckt, was darüber liegt.
-    // Über das Gate gegatet — ein trockener Hochland-Chunk baut kein Wasser.
-    // `docs/hydrosphere.md` §14.
-    _buildVoxelChunkWater(cx, cz) {
-        if (!this.state.scene || typeof THREE === "undefined") return;
-        if (!this.state.voxelChunkWater) this.state.voxelChunkWater = new Map();
-        const key = `${cx},${cz}`;
-        if (this.state.voxelChunkWater.has(key)) return;
-        const { dim, step, span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        if (!this._voxelChunkTouchesWater(cx, cz)) {
-            this.state.voxelChunkWater.set(key, null);
-            return;
-        }
-        const NV = dim + 1;
-        const positions = new Float32Array(NV * NV * 3);
-        const aFlow = new Float32Array(NV * NV * 2);
-        const aShore = new Float32Array(NV * NV);
-        const aWave = new Float32Array(NV * NV);
-        const wet = new Uint8Array(NV * NV);
-        for (let j = 0; j < NV; j++) {
-            for (let i = 0; i < NV; i++) {
-                const v = i + j * NV;
-                const vx = ox + i * step;
-                const vz = oz + j * step;
-                const wl = this._waterLevelAt(vx, vz);
-                const sy = this._voxelSurfaceY(vx, vz);
-                positions[v * 3] = vx;
-                positions[v * 3 + 1] = wl;
-                positions[v * 3 + 2] = vz;
-                // nass: die ECHTE Voxel-Oberfläche liegt unter dem Spiegel
-                // (sy null = die Säule trägt kein Fest → tiefes Wasser).
-                const depth = sy === null ? 999 : wl - sy;
-                if (depth <= 0) continue;
-                wet[v] = 1;
-                const river = this._hydroRiverAt(vx, vz);
-                if (river) {
-                    aFlow[v * 2] = river.flowX;
-                    aFlow[v * 2 + 1] = river.flowZ;
-                } else if (wl <= waterLevel + 0.01) {
-                    // offener Ozean wogt; am flachen Ufer weich auf 0 (kein Riss).
-                    aWave[v] = depth < 6 ? depth / 6 : 1;
-                }
-                // Ufer-Schaum tiefen-getrieben: 1 an der Wasserlinie, 0 tief.
-                aShore[v] = depth < 4 ? 1 - depth / 4 : 0;
-            }
-        }
-        const indices = [];
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                const v00 = i + j * NV;
-                const v10 = v00 + 1;
-                const v01 = v00 + NV;
-                const v11 = v01 + 1;
-                // ein Quad je Zelle mit ≥ 1 nasser Ecke → 1-Zell-Dilatation,
-                // damit das opake Ufer-Terrain die Wasserlinie sauber schneidet.
-                if (wet[v00] || wet[v10] || wet[v01] || wet[v11]) {
-                    indices.push(v00, v10, v11, v00, v11, v01);
-                }
-            }
-        }
-        if (indices.length === 0) {
-            this.state.voxelChunkWater.set(key, null);
-            return;
-        }
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) {
-            this.state.voxelChunkWater.set(key, null);
-            return;
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute("aFlow", new THREE.BufferAttribute(aFlow, 2));
-        geo.setAttribute("aShore", new THREE.BufferAttribute(aShore, 1));
-        geo.setAttribute("aWave", new THREE.BufferAttribute(aWave, 1));
-        geo.setIndex(indices);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
-        mesh.userData = { isHydrosphere: true, hydroKind: "chunk-water" };
-        this.state.scene.add(mesh);
-        this.state.voxelChunkWater.set(key, mesh);
-    }
-
-    // V9.50-b — räumt die Wasser-Fläche eines Chunks. Das Wasser-Material ist
-    // welt-global geteilt — NICHT disposen (V9.43-a-Lehre). Idempotent.
-    _disposeVoxelChunkWater(key) {
-        if (!this.state.voxelChunkWater) return;
-        const mesh = this.state.voxelChunkWater.get(key);
-        if (mesh) {
-            if (this.state.scene) this.state.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
-        }
-        this.state.voxelChunkWater.delete(key);
-    }
-
-    // V9.50-b — der Wasser-Gate: trägt der Chunk-Fussabdruck überhaupt Wasser?
-    // Billig + konservativ (lieber bauen als ein Loch riskieren). Drei Fragen:
-    // (1) dippt die Makro-Surface nahe den Meeresspiegel (möglicher Ozean)?
-    // (2) liegt eine See-Zelle im Fussabdruck? (3) ein Fluss-Bucket? Trockenes
-    // Hochland fällt durch → kein per-Zelle-Säulen-Scan dort.
-    _voxelChunkTouchesWater(cx, cz) {
-        const { span } = this._voxelChunkConfig();
-        const ox = cx * span;
-        const oz = cz * span;
-        const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        // (1) Ozean — die Makro-Surface an einem 4×4-Raster; dippt das Minimum
-        // unter waterLevel + 16 (Roughness-Marge), ist Ozean möglich.
-        for (let j = 0; j <= 3; j++) {
-            for (let i = 0; i <= 3; i++) {
-                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
-                    return true;
-                }
-            }
-        }
-        const h = this.state.hydrosphere;
-        if (!h || !h.ready) return false;
-        // (2) See — die 16-m-Hydro-Zellen im Fussabdruck (+1 Zelle Marge).
-        if (h.water && h.water.waterKind) {
-            const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
-            const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
-            const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
-            const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
-            for (let cj = c0j; cj <= c1j; cj++) {
-                for (let ci = c0i; ci <= c1i; ci++) {
-                    if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
-                }
-            }
-        }
-        // (3) Fluss — die `riverBuckets` im Fussabdruck.
-        if (h.riverBuckets) {
-            const b0i = Math.floor((ox - h.originX) / h.bucketSize);
-            const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
-            const b0j = Math.floor((oz - h.originZ) / h.bucketSize);
-            const b1j = Math.floor((oz + span - h.originZ) / h.bucketSize);
-            for (let bj = b0j; bj <= b1j; bj++) {
-                for (let bi = b0i; bi <= b1i; bi++) {
-                    if (bi < 0 || bj < 0 || bi >= h.bucketsDim || bj >= h.bucketsDim) continue;
-                    const list = h.riverBuckets[bi + bj * h.bucketsDim];
-                    if (list && list.length) return true;
-                }
-            }
-        }
-        return false;
-    }
+    // V9.75 (Welle C.4+5) — `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
+    // `_voxelChunkTouchesWater` sind gestrichen. Der alte per-Chunk-Quad-Mesh
+    // (V9.50-b) war die zweite Wasser-Sprache — 16-m-Drainage-Atlas + 1.8-m-
+    // Voxel-Quad-Mesh in unsynchroner Wahrheit. Mit dem Iso-Surface-Mesh aus
+    // dem Cell-Feld (V9.72) ist EIN Wasser-Mesh per Chunk, eine Skala, eine
+    // Geometrie-Quelle. Die V9.70-Skirts (gegen die Sheet-Naht) sind mit
+    // gestrichen — die Naht ist nicht mehr da, weil das Iso-Mesh den
+    // Cell-Feld-Boundary 1:1 mit dem Boden-Mesh teilt.
 
     // V9.43-a — das geteilte Wasserfall-Material. EIN ShaderMaterial für
     // ALLE Wasserfall-Planes der Welt (lazy gebaut, in state.waterfallMaterial
@@ -16810,9 +17380,15 @@ class AnazhRealm {
         for (const key of drop) this._disposeVoxelChunk(key);
     }
 
-    // Streamt den Voxel-Chunk-Ring um den Spieler — ein Chunk je Frame
-    // (Meshen + BVH-Kollision sind nicht gratis), dann Prune. No-op, wenn
-    // das Voxel-Terrain nicht aktiv ist.
+    // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
+    // Time-Budget statt fester `MAX_PER_FRAME=1`. Profi-Pattern aus Subnautica/
+    // NMS: baue Chunks solange `now() - start < FRAME_BUDGET_MS`, mit einem
+    // harten oberen Cap als Sicherheits-Netz. Adaptiv: auf 60-FPS-Maschine
+    // mit schnellen Chunks (~30 ms nach Perf-2.e+f) baut der Loop 2–4 chunks
+    // pro Frame; auf überlasteter Maschine 0–1. Niemals Frame-Spike. Wenn
+    // ein einzelner Chunk schon teurer als das Budget ist (heute typisch
+    // 100–150 ms), bleibt das Verhalten effektiv 1-chunk-pro-Frame —
+    // identisch zum alten Pfad, aber bereit für die Cost-Heilungen.
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
@@ -16820,7 +17396,9 @@ class AnazhRealm {
         const pcx = Math.floor(playerPos.x / span);
         const pcz = Math.floor(playerPos.z / span);
         let built = 0;
-        const MAX_PER_FRAME = 1;
+        const FRAME_BUDGET_MS = 4;
+        const MAX_PER_FRAME = 6;
+        const tStart = performance.now();
         outer: for (let r = 0; r <= ringRadius; r++) {
             for (let dz = -r; dz <= r; dz++) {
                 for (let dx = -r; dx <= r; dx++) {
@@ -16829,6 +17407,12 @@ class AnazhRealm {
                     if (this.state.voxelChunks.has(key)) continue;
                     this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
                     if (++built >= MAX_PER_FRAME) break outer;
+                    // Soft-Budget: nach dem aktuellen Build prüfen, ob wir
+                    // noch Zeit haben. `performance.now() - tStart` schließt
+                    // den letzten _ensureVoxelChunkAt-Aufruf ein — wenn EIN
+                    // chunk schon > Budget kostet, bauen wir trotzdem mind.
+                    // einen pro Frame (sonst friert Streaming komplett ein).
+                    if (performance.now() - tStart > FRAME_BUDGET_MS) break outer;
                 }
             }
         }
@@ -16873,6 +17457,11 @@ class AnazhRealm {
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
         while (edits.length > CAP) edits.shift();
+        // V9.75 (Welle C.4+5) — `_remeshVoxelChunksAround` ist der EINZIGE
+        // Reaktiv-Pfad: die betroffenen Voxel-Chunks bauen sich neu, das
+        // Cell-Feld klassifiziert die neue Lage (carve unter waterLevel →
+        // WATER, fill → SOLID), der Iso-Mesher rendert. Kein Hydro-Recompute
+        // mehr (V9.67-Maschinerie ist weg, V9.74-Erkenntnis: Cell ist DERIVED).
         this._remeshVoxelChunksAround(x, z, radius);
         if (typeof this.saveState === "function") this.saveState();
         return true;
@@ -16935,14 +17524,24 @@ class AnazhRealm {
     // am-Spieler-Sortierung), die Skirt-Nachbarn folgen in den nächsten
     // Frames. Tests, die direkt nach einem Edit den gerenderten Mesh
     // prüfen, rufen `_drainDirtyVoxelChunks()` zum sofortigen Drain.
-    _remeshVoxelChunksAround(x, z, r) {
+    // V9.86 — `skirt`-Parameter (default 1): Voxel-Edits ändern die Density,
+    // und der V9.79-Pad+Crop des Iso-Mesh-Builds liest Density 1 Cell in den
+    // Nachbar-Chunk hinein → Skirt-Nachbarn müssen mit-rebuilden, sonst
+    // entsteht eine Naht. Architektur-Spawn/Remove dagegen ändert NUR den
+    // Cell-Stempel im Architektur-Footprint, NICHT die Density-Funktion —
+    // Skirt-Nachbarn brauchen KEINEN Rebuild. Mit `skirt=0` markiert die
+    // Funktion ~89 % weniger Chunks dirty (1 statt 9 typisch) → ~89 %
+    // weniger Per-Chunk-Rebuild-Spikes beim Bauen. Schöpfer-Audit-Befund
+    // V9.85: „beim Bau von Strukturen dropts noch" (FPS-Dip von 119 → 36
+    // beim Spawn von kristall_geode + felsturm-Kaskade).
+    _remeshVoxelChunksAround(x, z, r, skirt = 1) {
         if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
         if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         const { span } = this._voxelChunkConfig();
-        const minCX = Math.floor((x - r) / span) - 1;
-        const maxCX = Math.floor((x + r) / span) + 1;
-        const minCZ = Math.floor((z - r) / span) - 1;
-        const maxCZ = Math.floor((z + r) / span) + 1;
+        const minCX = Math.floor((x - r) / span) - skirt;
+        const maxCX = Math.floor((x + r) / span) + skirt;
+        const minCZ = Math.floor((z - r) / span) - skirt;
+        const maxCZ = Math.floor((z + r) / span) + skirt;
         for (let cx = minCX; cx <= maxCX; cx++) {
             for (let cz = minCZ; cz <= maxCZ; cz++) {
                 const key = `${cx},${cz}`;
@@ -19420,9 +20019,9 @@ class AnazhRealm {
             }
         }
         this.state.architectures = [];
-        // V9.64 — Damm-Index muss beim Restore neu aufgebaut werden
-        // (spawnArchitecture pflegt ihn automatisch).
-        this.state.damIndex = new Map();
+        // V9.75 (Welle C.4+5) — kein `state.blockerIndex`-Reset mehr; das
+        // Bucket-Grid ist gestrichen. `spawnArchitecture` setzt
+        // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
             this.spawnArchitecture(a.type, a.position, { seed: a.seed, scale: a.scale, id: a.id });
@@ -27218,10 +27817,38 @@ class AnazhRealm {
             entry.affordanceStrength = this.computeAffordanceStrength(bp);
         }
         this.state.architectures.push(entry);
-        // V9.64 (Welle A.1) — Damm-Index pflegen: ein 2D-Grid für O(1)-Lookup
-        // im Terrain-Sampling (V9.65). Nur Damm-Architekturen werden indexiert
-        // (kein Index-Wachstum für Bäume/Tempel/etc.).
-        if (type === "damm") this._damIndexAdd(entry);
+        // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Blocker-AABBs pro
+        // Architektur cachen: jede Architektur mit soliden Parts (dichte ≥ 0.3)
+        // bekommt `entry.blockerAABBs` für den Cell-Stempel (V9.74). Vision-
+        // rein: kein Type-Whitelist, die Substanz entscheidet — Baum-Stamm
+        // (Holz) stempelt, Krone (Laub) nicht.
+        this._populateBlockerAABBs(entry);
+        // V9.74 (Welle C.3) — Voxel-Chunks im Footprint dirty markieren, damit
+        // das Cell-Feld mit dem Architektur-Stempel neu gebaut wird. Spielt
+        // die Welle-A-Vision auf Cell-Sprache (Damm-Cells werden SOLID,
+        // Wasser-Cells im Stempel-Bereich werden überschrieben).
+        if (!opts.silent && entry.blockerAABBs) {
+            for (const aabb of entry.blockerAABBs) {
+                const cxw = (aabb.minX + aabb.maxX) * 0.5;
+                const czw = (aabb.minZ + aabb.maxZ) * 0.5;
+                const r = Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5;
+                // V9.86 Perf-2 ext. — `skirt=0` für Architektur-Spawn: nur
+                // die Chunks unter der Architektur-AABB werden rebuildet,
+                // KEINE Skirt-Nachbarn (Density unverändert → keine Naht-
+                // Inkonsistenz). Spart ~89 % der dirty-Chunks → kein
+                // FPS-Spike beim Bau-Klick mehr.
+                this._remeshVoxelChunksAround(cxw, czw, r, 0);
+            }
+            // V9.75 (Welle C.4+5 — multisensorische Spur erhalten): wenn eine
+            // solide Architektur die Welt-Cell-Klassifikation mutiert (Wasser
+            // strömt um den Damm), antwortet die Welt mit einem kurzen
+            // Strömungs-Hauch. Übernimmt den Audio-Pfad des gestrichenen
+            // `_playHydroRecomputePing` (V9.68) — der Recompute selbst ist
+            // weg, die multisensorische Spur (Vision §1.4) bleibt. KEIN
+            // Journal-Eintrag pro Spawn (würde die 6.F2-Idempotenz-Invariante
+            // brechen — Journal-Schicht zählt total).
+            this._playWaterReactionPing();
+        }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
         // Culling-Tick baut ihn auf, sobald der Spieler herankommt.
@@ -28208,8 +28835,38 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
-        // V9.64 (Welle A.1) — Damm-Index pflegen beim Remove.
-        if (entry.type === "damm") this._damIndexRemove(entry);
+        // V9.65 (Welle A.2) — Blocker-Index pflegen beim Remove (frühe Out
+        // für Einträge ohne solide Parts via entry.blockerAABBs-Sentinel).
+        // V9.67 (Welle A.4) — vor dem Index-Cleanup merken, ob diese
+        // Architektur ein Blocker war; nach dem Cleanup markieren wir dirty
+        // (das Wasser bekommt seinen Pfad zurück).
+        const wasBlocker = !!entry.blockerAABBs;
+        // V9.74 (Welle C.3) — Footprint-bboxes vor dem Index-Remove
+        // einfrieren (sonst sind sie schon weg). Voxel-Chunks im Footprint
+        // werden dirty markiert → Cell-Feld baut ohne Architektur-Stempel
+        // neu, Wasser-Cells nehmen den Platz zurück.
+        const blockerFootprints = wasBlocker
+            ? entry.blockerAABBs.map((a) => ({
+                  cx: (a.minX + a.maxX) * 0.5,
+                  cz: (a.minZ + a.maxZ) * 0.5,
+                  r: Math.max(a.maxX - a.minX, a.maxZ - a.minZ) * 0.5,
+              }))
+            : null;
+        // V9.75 (Welle C.4+5) — Cell-Feld-Reaktion ohne Hydro-Recompute:
+        // betroffene Voxel-Chunks remeshen → Cell-Stempel-Loop ignoriert die
+        // entfernte Architektur (sie ist gleich aus state.architectures raus),
+        // Wasser-Cells nehmen den Platz zurück, Iso-Mesh rendert.
+        entry.blockerAABBs = null;
+        if (wasBlocker) {
+            for (const fp of blockerFootprints) {
+                // V9.86 Perf-2 ext. — `skirt=0` analog zu spawnArchitecture:
+                // beim Remove läuft die identische Cell-Stempel-Logik, kein
+                // Density-Effekt → keine Skirt-Nachbarn-Naht.
+                this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r, 0);
+            }
+            // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück.
+            this._playWaterReactionPing();
+        }
         // Vision §1.2 — die Welt antwortet sensorisch. Eine resonierende
         // Struktur (Kristall-Geode, hoch-präzises Werkstück, Singendes
         // Compound) verstummt beim Abbauen mit einem abklingenden Sinus.
@@ -28229,6 +28886,45 @@ class AnazhRealm {
     }
 
     // Vision §1.2-Helfer: kurzer Abklang-Sinus wenn eine resonierende
+    // V9.75 (Welle C.4+5 — multisensorische Spur erhalten): kurzer Wasser-
+    // Strömungs-Hauch wenn eine solide Welt-Geste die Wasser-Cell-Klassifika-
+    // tion verschiebt (Architektur-Spawn/Remove, später ggf. Voxel-Edit
+    // unter waterLevel). Übernimmt den Audio-Pfad des gestrichenen
+    // `_playHydroRecomputePing` (V9.68): Bandpass-Noise, Cutoff fällt von
+    // 700→200 Hz, kurzer Gain-Bogen. Defensive try/catch — die Welt darf
+    // nie an einem Audio-Fehler scheitern. Stumm wenn Symphonie aus
+    // (Headless, Audio-Toggle off, kein User-Gesture).
+    _playWaterReactionPing() {
+        const sym = this.state.symphony;
+        if (!sym || !sym.enabled || !sym.ctx) return;
+        try {
+            const ctx = sym.ctx;
+            const now = ctx.currentTime;
+            const dur = 0.6;
+            const sampleRate = ctx.sampleRate || 44100;
+            const buf = ctx.createBuffer(1, Math.floor(sampleRate * dur), sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buf;
+            const filter = ctx.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.Q.value = 1.6;
+            filter.frequency.setValueAtTime(700, now);
+            filter.frequency.exponentialRampToValueAtTime(200, now + dur);
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.06, now + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.0005, now + dur);
+            const dest = sym.masterGain || ctx.destination;
+            noise.connect(filter).connect(gain).connect(dest);
+            noise.start(now);
+            noise.stop(now + dur + 0.05);
+        } catch {
+            /* Audio-Fehler nicht hart — die Welt soll auch ohne Klang reagieren */
+        }
+    }
+
     // Architektur abgebaut wird. Frequenz folgt der Tag-Stärke (höher
     // Resonanz = hellerer Ton). Lebenszeit 0.85 s mit exponentiellem
     // Decay — analog _applyCompoundWorldEffects "singing"-Schicht, nur
@@ -33114,12 +33810,36 @@ class AnazhRealm {
     // DirectionalLight: Position folgt dem Spieler (V8.48 — Shadow-Frustum
     // zentriert), Target am Spieler-Boden (y=0), Color = lightColor × lightMul,
     // Intensity aus akkumuliertem lightIntensity.
+    //
+    // V9.85 Perf-2.b — Stable Shadow Maps via Texel-Snap (Witcher-3-/Microsoft-
+    // DX11-Pattern). Vorher: focusX/Z liefen kontinuierlich mit dem Spieler →
+    // bei jeder Sub-Texel-Bewegung verschob sich das Shadow-Frustum → jeder
+    // Schatten-Texel sampelte minimal anders → das Schatten-Pattern „kroch"
+    // sichtbar über statische Geometrie (Schöpfer-Audit-Befund V9.84:
+    // „Schatten rauscht bei WASD, nicht bei Maus" — Maus dreht nur die
+    // Kamera, ändert pm.position NICHT). Heilung: focusX/Z auf das Shadow-
+    // Texel-Grid snappen. Spieler bewegt sich kontinuierlich, die Shadow-
+    // Camera springt diskret um ganze Texel — das Schatten-Muster fällt
+    // immer exakt auf dieselben World-Space-Punkte. Konsequenz: kein
+    // Swimming, identische optische Qualität, ein paar Multiplikationen
+    // pro Frame extra. Texel-Größe wird aus der aktuellen Shadow-Frustum-
+    // Breite + mapSize gelesen (selbst-anpassend bei künftigen Anpassungen).
     _dayNightApplyDirectionalLight(sunDir, tint) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
-        const focusX = pm ? pm.position.x : 0;
-        const focusZ = pm ? pm.position.z : 0;
+        let focusX = pm ? pm.position.x : 0;
+        let focusZ = pm ? pm.position.z : 0;
+        if (pm && dl.shadow && dl.shadow.camera && dl.shadow.mapSize) {
+            const sc = dl.shadow.camera;
+            const shadowWidth = sc.right - sc.left; // typisch 600 (±300)
+            const shadowMapSize = dl.shadow.mapSize.width; // typisch 2048
+            if (shadowWidth > 0 && shadowMapSize > 0) {
+                const texelSize = shadowWidth / shadowMapSize; // ~0.293 m bei 600/2048
+                focusX = Math.round(focusX / texelSize) * texelSize;
+                focusZ = Math.round(focusZ / texelSize) * texelSize;
+            }
+        }
         dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
         if (dl.target) {
             dl.target.position.set(focusX, 0, focusZ);
@@ -34877,7 +35597,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.82... Ewigkeit erwacht!", "INFO");
+        this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
@@ -35002,7 +35722,16 @@ class AnazhRealm {
         renderer.setClearColor(0x000000, 1);
         renderer.depthTest = true;
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap. PCFSoft macht 16
+        // Samples pro Fragment (4×4-Kernel-Average), PCF macht 4. Bei der
+        // V8.47-2048er-mapSize + normalBias=1.0 sind die Schatten ohnehin
+        // weich genug positioniert — der zusätzliche 4×4-Filter ist eine
+        // Bandwidth-Investition, die auf Mid-Range-Hardware ~10–20% GPU
+        // kostet, ohne dass der Spieler den Unterschied sieht (V8.47-Bias
+        // dominiert die Soft-Kante). Die V8.47-mapSize=2048 bleibt — die
+        // ist eine bewusste Qualitäts-Investition (schärfere Schatten-Kante),
+        // ihre Rücknahme würde den Bias-Stack neu kalibrieren verlangen.
+        renderer.shadowMap.type = THREE.PCFShadowMap;
         this.state.renderer = renderer;
         this.log("Renderer initialisiert mit Schattenunterstützung", "INFO");
         this.state.selfAwareness.components.push("renderer");
@@ -35644,6 +36373,10 @@ class AnazhRealm {
             // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
             // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
             this.tickAffordances(delta);
+
+            // V9.75 (Welle C.4+5) — kein reaktiver Hydro-Tick mehr. Die
+            // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
+            // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
 
             // ### Rendering ### (V9.44-f → _loopRender)
             this._loopRender(currentTime);
@@ -36485,6 +37218,14 @@ class AnazhRealm {
 // Wenn Du diese Werte tunen willst: dieselben Formeln bleiben, nur die
 // Multiplikatoren ändern. Test-Setup (Welle 6.D Diskrimination) prüft die
 // Verhältnisse, nicht die absoluten Zahlen.
+//
+// V9.86 — die einzige Versions-Quelle. Vorher (V7.82-Stand) war der String
+// hardcoded in `log()` und der Init-Message — verlässlich versions-falsch
+// nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
+// gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
+// `package.json`/`index.html` mitziehen (Doku-Disziplin).
+AnazhRealm.VERSION = "9.86";
+
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
     damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,

@@ -878,7 +878,16 @@ Schöpfer von Anfang an benannte, jetzt am rechten Ort: an der Maske, nicht der 
 
 ## 14. Wasser aus der Terrain-Wahrheit (V9.50) — der letzte Ring
 
-**Stand**: geplant (22.05.2026), noch kein Code — Plan zur Durchsicht. Auslöser: der
+> **HISTORISCH (25.05.2026)** — der hier beschriebene per-Chunk-Quad-Mesh-Pfad
+> (`_buildVoxelChunkWater` + `_voxelChunkTouchesWater`) ist in V9.75 (Welle C.4+5)
+> gestrichen. Er war die zweite Wasser-Sprache neben dem 16-m-Drainage-Atlas;
+> die V9.69-Diagnose hat ihn als die strukturelle Naht-Wurzel identifiziert.
+> Heute lebt das Wasser als Cell-Zustand im Voxel-Welt-Feld — siehe §16. Dieser
+> Abschnitt bleibt als Historie + Lehrwert (warum die Idee „Wasser aus der
+> Terrain-Wahrheit" richtig war, aber die V9.50-Umsetzung mit Quad-Höhenfeld nur
+> der halbe Weg).
+
+**Stand (V9.50)**: geplant (22.05.2026), noch kein Code — Plan zur Durchsicht. Auslöser: der
 Schöpfer-Befund nach V9.49-f — „bei Verengungen, in Bereichen die kleiner und dann
 wieder grösser werden, gibt es noch Probleme … wir bewegen uns im Kreis." Der Befund
 ist richtig. Dieser Abschnitt ist die Antwort — das Ende einer Bug-Klasse, nicht ihr
@@ -1103,3 +1112,279 @@ adaptive Höhen-Schwelle, Hang-Gate, dedup, adaptive Tiefe), `_tarnDeltaAt`
 `_computeErosion` mit Tarn-Suppression. +4 Playtest-Invarianten (`_hydroSeedTarns`
 existiert; ≥1 Tarn gesetzt; jeder Tarn im Hochland; jeder Tarn wurde zu einem See
 — `lakeCells ≥ minLakeCells` im Fussabdruck). Browser-Audit steht aus.
+
+---
+
+## 16. Die Zwei-Skalen-Naht (V9.69-Reflexion) — Welle C als Wurzel-Heilung
+
+> **VOLLENDET (V9.82, 25.05.2026)** — 12 Sub-Wellen über V9.71-V9.82, der
+> Welle-C-Bogen plus sein eigener Browser-Audit-Heilungs-Bogen sind eingelöst.
+>
+> **Schluss-Stand**: EIN Wasser-Mesh pro Voxel-Chunk (Iso-Surface aus dem
+> Cell-Feld, NUR Wasser-Luft-Übergänge — kein Floating-Plane, kein Bottom-
+> Geister), EINE Skala (1.8 m Voxel-Cell), EINE Geometrie-Quelle (Surface-Nets-
+> Mesher wie der Boden, naht-frei per Pad+Crop V9.42-d-Trick), EIN Density-Grid
+> (geteilt mit Boden-Mesher V9.81, ~50× Speedup), EINE Pfad-Quelle für Streaming
+> + Rebuild (V9.82 — Wasser lädt synchron mit Terrain). Netto ~−200 Z.
+> `anazhRealm.js`, ~−1050 Z. `scripts/playtest.cjs`.
+>
+> Atlas (`state.hydrosphere`) bleibt als Worldgen-frozen Daten-Layer für
+> `_waterLevelAt` (Lake/Fluss-Höhen-Quelle für Cell-Init); Spieler-Wille lebt
+> im Cell-Feld via `_remeshVoxelChunksAround` → `_rebuildVoxelChunk` →
+> `_buildVoxelChunkData` (eine Helper-Funktion, beide Streaming + Rebuild
+> nutzen sie). Architektur-Spawn/Remove: Cell-Stempel macht SOLID/AIR neu.
+> Multisensorisch: `_playWaterReactionPing` am Architektur-Trigger.
+>
+> **Sub-Welle-Bogen** (Plan vs. ehrlicher Verlauf):
+> - **C.1-C.5 (V9.71-V9.75)**: das Welle-C-Manifest — Cell-Feld → Iso-Mesher
+>   → Cellular-Reaktion (vereinfacht: kein BFS, Cell ist DERIVED) → C.4+C.5
+>   in EINEM chirurgischen Schnitt (Welle-A-Maschinerie + Parallel-Quad-Pfad
+>   gestrichen).
+> - **C.6 (V9.76)**: Trocken-Gate reanimiert + Naht-Heilung via OOB-Live +
+>   Y-Band-Opt — drei orthogonale Heilungen.
+> - **C.7 (V9.77)**: globales Y-Band gegen Per-Chunk-Drift (V9.76's per-Chunk-
+>   Band war Bug).
+> - **C.8 (V9.78)**: Below-Band-WATER-Shortcut gestrichen (Floating-Plane in
+>   Mountain-Säulen war V9.77-Folge).
+> - **C.9 (V9.79)**: Pad+Crop für Iso-Mesh (V9.42-d-Trick vom Boden-Mesher
+>   übernommen — Oberflächen-Naht endlich strukturell geheilt; drei Wellen
+>   lang verkannte Wurzel).
+> - **C.10 (V9.80)**: nur Wasser-Luft-Iso (Bottom/Side-Geister gestrichen
+>   via cellClass + Suppression-Regeln).
+> - **C.11 (V9.81)**: Density-Grid-Sharing mit Boden-Mesher (~50× Speedup
+>   auf Cell-Build).
+> - **C.12 (V9.82)**: Streaming-Pfad-Bug seit V9.71 gefunden — `_ensureVoxel-
+>   ChunkAt` baute ohne Cells, nur `_rebuildVoxelChunk` hatte sie. Heilung:
+>   eine Pfad-Quelle (`_buildVoxelChunkData`), Wasser lädt synchron mit Terrain.
+>
+> **Sieben permanente Lehren** aus dem Bogen (in `CLAUDE.md/Gotchas` verdrahtet):
+> Performance-Optimierungen MÜSSEN inter-Chunk-Konsistenz wahren (C.7); „Naht-
+> frei per Konstruktion" muss durch OOB-Samples bewiesen sein (C.6/C.9); Cell-
+> Klassifikations-Shortcuts müssen die Iso-Topologie respektieren (C.8);
+> Surface-Nets-Density bestimmt WELCHE Iso-Flächen entstehen, nicht nur wo
+> (C.10); Density-Grids sind teilbare Welt-Wahrheit (C.11); Parallel-Code-
+> Pfade sind Bug-Quellen (C.12); plus die V9.70-B-Lehren (Symptom-Patches auf
+> nicht-mehr-gewolltem System = Flickenteppich; Welt-Substanz lebt in EINER
+> Skala). Sub-Welle-Detail unten dokumentiert den vollen Verlauf inkl. der
+> Verkennens-Momente — wer eine künftige Welt-Schicht baut (Feuer, Wind,
+> Magie-Auras), kann den Bogen als Lehr-Pattern lesen.
+
+### 16.1 Die Riesen-Reflexion
+
+Schöpfer-Browser-Audit Round 2 (nach V9.69) brachte drei distinkte Symptome — alle
+aus EINER strukturellen Wurzel:
+
+1. **Sheet verbindet nicht** — die Wasserfläche bricht am Chunk-Boundary.
+2. **Lake-Mask-Sprung** — `_waterLevelAt` springt am 3×3-Mask-Rand binär (Bergsee ↔ Meer).
+3. **FPS-Stocken** bei Voxel-Edit-Bursts.
+
+Jede Wasser-Geniale Welt lebt in **EINER SKALA**:
+
+| Spiel | Wasser-Sprache | Skala |
+|---|---|---|
+| Minecraft | Cell-Wasser-Level (0-7), Cellular-Automaton | 1 m³ |
+| Genshin / BOTW | Handgemaltes Asset pro Region | pro Künstler-Pinsel |
+| NMS / Subnautica | Ein globales Ozean-Mesh + isolierte See-Assets | global |
+| Noita | Pixel-Sim alles | 1 px |
+
+**Wir leben in ZWEI Skalen** (vor Welle C):
+
+- **Drainage-Karte** (`state.hydrosphere`, 16 m × 16 m) — Priority-Flood-Atlas mit
+  Flüssen, Seen, Wasserfällen als reine Daten.
+- **Voxel-Mesh** (`_buildVoxelChunkWater`, 1.8 m × 1.8 m × 25×25 Vertices pro Chunk) —
+  jedes Chunk-Wasser-Quad lebt auf der Voxel-Skala.
+
+Die beiden Skalen MÜSSEN sich an jedem Punkt einig werden. Mathematisch nicht glatt:
+
+- An der Chunk-Naht (43.2-m-Grenzen, die ZWISCHEN 16-m-Hydro-Cells liegen) muss
+  der 1.8-m-Vertex eine 16-m-Karte abtasten. Die Boundary-Vertices der zwei Chunks
+  treffen exakt am gleichen (x,z) — sie sehen identische `_waterLevelAt`-Returns,
+  aber die NACHBAR-Vertex-Reihen sind auf verschiedenen Seiten der Hydro-Cell-
+  Linien → `aShore`/`aFlow`/`aWave` interpolieren über DIFFERENT-quantisierte
+  Nachbarn → der Foam-Ring zerreißt visuell an der Naht.
+- Der Lake-Mask-Rand ist eine 16-m-Cell-Grenze. Eine 1.8-m-Vertex 1 Cell INNEN sieht
+  `lake.level` (~waterLevel+15m), eine 1.8-m-Vertex 1 Cell AUSSEN sieht `waterLevel`.
+  15-m-Sprung in 16-m-Distanz.
+- Recompute baut ALLE Chunk-Wasser-Meshes (20+) neu, jeder mit 625 Vertices ×
+  `_voxelSurfaceY` (~90-Step-Säulen-Scan) = ~1.1 Mio Density-Samples pro Recompute.
+  Synchron im Hauptthread → spürbares FPS-Stocken bei Carve-Burst.
+
+### 16.2 Welle B — der gescheiterte Patch-Versuch (V9.70, abgebrochen)
+
+**Was war Welle B**: drei Sub-Wellen (B.1 Skirts, B.2 Lake-Mask-Falloff, B.3
+inkrementeller Mesh-Rebuild) — geplant als Symptom-Heilungen für die Zwei-Skalen-
+Wurzel, ohne die Wurzel selbst anzugehen. Eine bürokratische Verkleidung der
+Heiligen-Lektion-Sünde: die Diagnose (zwei Sprachen) war richtig, aber statt der
+Konsequenz zu folgen, hatte ich drei Symptom-Patches geplant + die ehrliche
+Wurzel-Lösung als „V9.80+, vielleicht NIE" weg-bürokratisiert.
+
+**B.1 V9.70 — Wasser-Mesh-Skirts gebaut, visuell wirkungslos**. Mechanik: jeder
+Chunk-Wasser-Mesh erweitert sein Vertex-Raster um 1-Cell-Skirt (NV von dim+1 → dim+3
+= 27 statt 25). Boundary-Vertices zweier adjacent Chunks fallen auf exakt dieselbe
+Welt-Position → beide Meshes bedecken die Naht-Region aus ihrer Seite (Overlap statt
+Lücke). Konstante `WATER_CHUNK_SKIRT = 1`. Headless-Tests grün (9 Invarianten,
+Vertex-Count 729, Boundary-Match bewiesen). **Aber Schöpfer-Browser-Audit Round 3:
+„kein spürbarer Unterschied"**. Diagnose: die Naht ist nicht die Geometrie, sondern
+die Zwei-Sprachen-Wahrheit. Ein Patch auf einem System, das wir aufgrund der eigenen
+Diagnose nicht mehr wollen, ist Flickenteppich mit Visions-Etikett.
+
+**B.2 + B.3 NICHT gebaut**: nach dem B.1-Audit „kein spürbarer Unterschied" + dem
+Schöpfer-Befund „du verlierst dich wie ein deutscher Bürokrat in die Planung der
+Planung" — beide gestrichen. Sie hätten weitere Patches im selben System gewesen.
+
+**Code-Status nach Abbruch**: V9.70-Skirts bleiben im Code als historische Schicht
+— schaden bis Welle C nichts, werden in C.5 ohnehin obsolet (per-Chunk-Quad-Mesh
+ist weg, Skirts irrelevant).
+
+**Lehre permanent verdrahtet** (CLAUDE.md/Gotchas „Symptom-Patches auf einem System,
+das wir nicht mehr wollen, sind Flickenteppich"): wer eine Wurzel-Diagnose stellt,
+MUSS der Konsequenz folgen — entweder die Wurzel angehen oder die Diagnose ehrlich
+verwerfen. Eine Mega-Welle als „vielleicht NIE" weg-bürokratisieren während man
+Symptom-Sub-Wellen auf demselben System plant, ist die deutsche-Bürokraten-Sünde.
+
+### 16.3 Welle C — der ursprüngliche Plan (V9.71-V9.75, historisch)
+
+> **Hinweis (V9.82 Stand)**: dieser Abschnitt dokumentiert den ursprünglichen
+> Welle-C-Plan, der in V9.71-V9.75 umgesetzt wurde. Der echte Verlauf brachte
+> sieben weitere Sub-Wellen C.6-C.12 (V9.76-V9.82) als Browser-Audit-Heilungen
+> — siehe die VOLLENDET-Box oben am §16-Beginn für die Gesamt-Übersicht.
+
+**Anlass**: Schöpfer-Anweisung nach B.1-Abbruch: „bitte, bitte nun die Docs richtig,
+korrekt aktualisieren, das was du sagst auch wirklich einplanen, nimm dir Zeit,
+Weitsicht und Genialität". Plus: „alte Welten interessieren uns noch nicht, wir
+wollen das Spiel zum Laufen bringen" → Welt-Identität-Bruch ist erlaubt.
+
+**Vision**: das Wasser ist ein **Cell-Zustand** im Voxel-Welt-Feld, geschwisterlich
+zu Solid und Air. EINE Sprache, EINE Skala (1.8 m Voxel), EINE Geometrie-Quelle
+(der Surface-Nets-Mesher). Minecraft-Disziplin (Cell-State), Witcher-3-Qualität
+(echte Iso-Surface), Vision-rein (V9.50 zu Ende geführt — „Wasser aus der Terrain-
+Wahrheit" konsequent durchgezogen, nicht halb-half).
+
+**Strukturelle Transformation**:
+
+| Heute (Welle A + B) | Welle C |
+|---|---|
+| `state.hydrosphere` als parallele 16-m-Drainage-Karte | Cell-Feld pro Voxel-Chunk: `state` ∈ {air, water, solid} |
+| `_buildVoxelChunkWater` per-Chunk-Quad-Mesh | Iso-Surface des Wasser-Cell-Feldes via Surface-Nets |
+| `_voxelChunkTouchesWater`-Gate | weg — Cell-Feld weiß direkt |
+| `_blockerIndex` + `_blockerTopAt` + `_effectiveSurfaceY` + `_voxelEditSurfaceDelta` | weg — Architektur-Spawn + Voxel-Edit stempeln Cells direkt |
+| `_markHydroDirty` + `_tickHydroRecompute` + Debounce + `_recomputeHydrosphere` | weg — Cell-Mutation ist instantan + lokal |
+| `_waterLevelAt` 5×5-Lake-Mask-MAX | weg — `_voxelWaterTopAt(x, z)` scannt Cell-Säule |
+| B.1 `WATER_CHUNK_SKIRT` | weg — naht-frei per Iso-Surface-Konstruktion |
+
+**Akzeptanz** (Schöpfer-Browser-Audit Round 4 nach C.5):
+- Sheet verbindet sichtbar über Chunk-Grenzen (per Iso-Surface).
+- Spieler-Carve unter waterLevel → Loch füllt sich SICHTBAR im selben Frame.
+- Damm bauen im Fluss → Wasser staut dahinter; abreißen → Wasser fließt zurück.
+- FPS bleiben bei Carve-Burst stabil (kein globaler Recompute).
+- Keine sichtbare Chunk-Naht im Wasser-Mesh.
+
+### 16.4 Sub-Wellen (klein-additiv, jede mit Test-Band + Schöpfer-Browser-Audit)
+
+**C.1 V9.71 — Wasser-Cell-Feld + Worldgen-Init**. Erweiterung der Voxel-Chunk-
+Datenstruktur: pro Cell ein `Uint8Array`-State (0=air, 1=water, 2=solid). Cell-Feld
+lebt im bestehenden `state.voxelChunks[key]`-Entry, lazy beim Chunk-Build allokiert.
+Worldgen-Init: für jeden Cell-Voxel im neuen Chunk: state = solid wenn `density>0`;
+sonst water wenn `cell.y ≤ state.waterLevel`; sonst air. Initialisierung läuft in
+`_buildVoxelChunkData` parallel zur Density-Sampling-Phase. Aktuelle `state.hydrosphere`
+BLEIBT parallel als Drainage-Karte (Welle-A-Mechanik weiter funktional) — wird in
+C.4/C.5 weggeräumt. **Test-Band** ~10 Invarianten: Cell-Feld existiert; richtige
+Größe (dim·dimY·dim); Worldgen-Init setzt Cells korrekt; Cell unter waterLevel + air-
+Density → state=water; über waterLevel → state=air; positive Density → state=solid;
+deterministisch über Re-Build. **Verhaltens-Beweis**: bestehende Welle-A-Tests grün
+(paralleles System).
+
+**C.2 V9.72 — Iso-Surface-Mesher für Wasser**. Der bestehende Surface-Nets-Mesher
+(`_voxelChunkGeometry`) bekommt einen Zwillings-Pass: nach der Boden-Iso-Surface eine
+zweite Iso-Surface über das Cell-Feld (state==water vs state==air; solid zählt als
+„außerhalb"). Ergebnis: ein zweites Mesh pro Chunk (geschwisterlich zum Boden), das
+die Wasser-Oberfläche als echte Iso-Geometrie trägt. **Naht-frei per Konstruktion**
+— gleiche Cell-Quelle wie Boden, gleicher Mesher, identische Vertex-Quantisierung
+über Chunk-Boundaries. Ersetzt `_buildVoxelChunkWater`. Rendering: `hydroSurfaceMaterial`
+bleibt unverändert (Shader + Animation), aber Geometry kommt jetzt aus Surface-Nets.
+Welle-A-Pfade bleiben PARALLEL aktiv unter Feature-Flag → vergleichbar im Browser.
+**Schöpfer-Browser-Audit**: Sheet verbindet sichtbar; Wasser folgt der echten
+Terrain-Topographie (auch in Höhlen-Decken — eine Höhle voll Wasser wäre möglich).
+
+**C.3 V9.74 — Lokaler Cellular-Flow nach Spieler-Edit**. Spieler-Carve
+(`carveVoxelSphere`): Cells in der Sphere werden auf air gesetzt. DANN lokaler BFS-
+Flow-Pass: starte BFS von den 26 Nachbarn der gecarvten Cells; eine Cell qualifiziert
+sich für water-State wenn (1) state=air, (2) ein Nachbar ist water UND `nachbar.y ≥
+cell.y` (Wasser fließt von oben/seitlich, nicht von unten), (3) `cell.y ≤
+state.waterLevel` (Lake-Y kommt in C.3-Design dazu). BFS-Iter-Cap (z.B. 10000 Cells)
+gegen Pathologien. Spieler-Fill: Cells werden solid (Wasser verschwindet lokal).
+Architektur-Spawn (V9.65-Blocker-AABBs): solide Parts stempeln Cells als solid.
+Architektur-Remove: gestempelte Cells werden air + lokaler Flow-Pass. **KEIN globaler
+Recompute**. Reaktion ist instantan (1 Frame). **Test-Band**: Carve unter waterLevel
++ adjacent zu water-Cell → Cell wird water; Damm-Spawn im Fluss → Cells solid; Damm-
+Remove → Cells werden water.
+
+**C.4 V9.75 — Welle-A-Mechanik auf Cell-Sprache überführen**. Damm-Bauplan bleibt;
+`spawnArchitecture` für solide Architekturen ruft jetzt `_stampSolidCellsFromBlueprint`
+(statt `_blockerIndexAdd`). Alte Welle-A-Helper werden gestrichen: `_blockerIndexAdd`/
+`Remove`/`Top`, `_blockerComputePartAABB`, `_effectiveSurfaceY`, `_voxelEditSurfaceDelta`,
+`_markHydroDirty`, `_tickHydroRecompute`, `_recomputeHydrosphere`. `_isPartSolid` bleibt
+(wird vom Cell-Stempel-Pfad genutzt). `_isAboveWaterAt` liest direkt das Cell-Feld
+(Cell-Säule oberhalb von (x, z) ist nicht-water). `_hydroWaterLevelAt` (Buoyancy) →
+`_voxelWaterTopAt(x, z)`. Welle-A-Vision-Beweis-Tests werden auf Cell-Sprache
+umgeschrieben — die Vision (Spieler-Wille beeinflusst Wasser) BLEIBT, die Mechanik
+wechselt. **Plus**: Damm in Fluss → Cell-Stempel im Fluss-Bereich → Fluss endet dort
+visuell (nicht nur „Drainage-Karte routet um").
+
+**C.5 V9.76 — Alten Hydrosphäre-Atlas streichen (Aufräum-Welle)**. Streichen:
+`_computeHydrosphere`, `_hydroInit`, `_hydroMarkOcean`, `_hydroPriorityFlood`,
+`_hydroFlowDirection`, `_hydroAccumulate`, `_hydroExtractLakes`, `_hydroExtractRivers`,
+`_hydroBuildCarveIndex`, `_hydroBuildWaterField`, `_hydroBlur`, `_hydroSeedTarns`,
+`_tarnDeltaAt`. `state.hydrosphere`, `state.tarns` weg. `_waterLevelAt`-5×5-MAX weg.
+`_voxelChunkTouchesWater`-Gate weg. `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
+`state.voxelChunkWater`, `WATER_CHUNK_SKIRT` weg. `_buildHydrosphereMeshes`,
+`_disposeHydrosphereMeshes`, `state.hydrosphereMeshes` — Wasserfall-Sub-Meshes bleiben
+(vertikale Sonderform), Liste wird kleiner. **Wasserfall-Migration**: Wasserfälle
+könnten Cellular emergieren (vertikale water-Cell-Säulen über Klippen). Erste Variante:
+vereinfachte Logik die direkt das Cell-Feld scannt und Klippen-Wasser-Cells findet
+(in C.5 entscheiden). **Code-netto erwartet**: ~2000-3000 Z. gestrichen, ~500-1000 Z.
+neu — netto-negativ ~1500 Z. (großer Aufräum-Bonus). Plus Welle-A-Tests umgeschrieben.
+
+### 16.5 Disziplin pro Sub-Welle
+
+- Jede playtest-grün; Format/Lint sauber; audit:strict 0 Failures.
+- Test-Band schreibt die Akzeptanz, NICHT die Demo (V9.69-Lehre).
+- Schöpfer-Browser-Audit nach C.2 (Geometrie sichtbar?), C.3 (Reaktion sichtbar?),
+  C.5 (Atlas weg, alles läuft?).
+- Bei Performance-Engpass: messen vor optimieren (V9.55-Lehre).
+- **Parallele Existenz**: C.1-C.3 lassen das alte System nebenher laufen; erst
+  C.4-C.5 ziehen die alte API ab. Das ermöglicht jederzeit Rollback bei Browser-
+  Audit-Misserfolg.
+
+### 16.6 Risiken ehrlich
+
+- **Speicher**: 81 aktive Chunks × 24·120·24 Cells × 1 Byte = 5.6 MB Cell-Felder.
+  Akzeptabel (vs. die ~4 MB pro Voxel-Chunk-Density-Cache).
+- **Worldgen-Performance**: pro Chunk ~69 k Cells × Init-Check. Worldgen jetzt teurer.
+  Messen in C.1, optimieren wenn nötig.
+- **Mesher-Performance**: zweite Iso-Surface pro Chunk ≈ doppelte Mesh-Build-Cost.
+  Messen in C.2; falls Problem, Wasser-Mesh nur in wet-Chunks.
+- **Flow-Performance**: BFS-Cap (10 k Cells) bei großem Edit-Burst. Messen in C.3;
+  falls Problem, Cap reduzieren oder async.
+- **Welt-Identität bricht**: vom Schöpfer explizit erlaubt — alte Seeds sehen anders
+  aus, ist OK.
+- **Welle-A-Test-Bänder umgeschrieben** (~30 Invarianten). Vision bleibt gleich, die
+  Mechanik wechselt — Tests prüfen jetzt Cell-Feld statt Drainage-Netz.
+- **Wasserfall-Mechanik unklar**: in C.5 entscheiden, ob cellular emergent oder weiter
+  als Sondermesh.
+
+### 16.7 Statistik geschätzt
+
+5 Sub-Wellen × 1-2 Sessions = 5-10 Sessions Bauzeit. `anazhRealm.js` ~37 565 Z. →
+~36 000 Z. (netto −1500 Z. dank Atlas-Abbau in C.5). 5 neue Test-Bänder; ~10-15 alte
+Welle-A/B-Tests umgeschrieben.
+
+### 16.8 Vision-Bogen
+
+V9.50 brachte das Wasser-Mesh auf die Voxel-Skala (halb durchgezogen — die WAHRHEIT
+blieb auf der Drainage-Karte). V9.51-V9.69 baute die Welle-A-Mechanik auf der
+parallelen Drainage-Karte (Symptom-Stack über der halben Vision — reaktive Recompute,
+Blocker-Index, effective-surface, alles substantiell, alles ehrlich gebaut, aber
+alles auf einer Schicht die ihre Naht zu der anderen nicht heilen konnte). V9.70
+(B.1) versuchte zu patchen, scheiterte visuell. **Welle C zieht V9.50 ZU ENDE**:
+das Wasser IST das Voxel, nicht nur sein Mesh.

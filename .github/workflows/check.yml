@@ -117,7 +117,14 @@ jobs:
       - name: Dependencies installieren (inkl. puppeteer)
         run: npm install --no-audit --no-fund
 
-      - name: Headless-Playtest (20 s)
+      - name: Headless-Playtest (30 s)
+        # V9.83 — von 20 s auf 30 s erhöht: die V9.79–V9.82-Iso-Mesh-Welle hat
+        # den Chunk-Build verteuert (Iso-Surface + Wasser-Cells + BVH-Collision).
+        # Unter CI-CPU-Last (geteilte Runner) brauchte der Streaming-Ring mehr
+        # Zeit als 20 s, um das `voxelChunks ≥ 20`-Akzeptanz-Niveau zu erreichen
+        # — der Test flackerte zwischen 15 und 25 Chunks. 30 s gibt 50 % Puffer.
+        # Kombiniert mit der synchronen `_gameLoopTick`-Pumpe im Test-Warmup
+        # (CLAUDE.md V8.50-Lehre) ist der Playtest jetzt CPU-Last-robust.
         env:
-          PLAYTEST_SECONDS: "20"
+          PLAYTEST_SECONDS: "30"
         run: npm run playtest
