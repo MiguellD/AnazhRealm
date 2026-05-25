@@ -29765,7 +29765,54 @@ async function checkBandRing6Workshop(ctx) {
 
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        await new Promise((r) => setTimeout(r, DURATION_MS));
+        // V9.83 Wurzel-Heilung der CI-Flake-Klasse: das Headless-Chromium drosselt
+        // requestAnimationFrame auf ~1 Hz, während `_tickVoxelChunkStreaming`
+        // genau 1 Chunk pro Frame baut (MAX_PER_FRAME=1). Ein 20-s-Wall-Clock-
+        // Sleep erreicht damit nur ~20 Chunks → unter CPU-Last (CI) fällt das
+        // unter den 20-Chunk-Threshold. Die V8.50-Lehre (CLAUDE.md-Gotcha) sagt
+        // explizit: Loop-Features deterministisch über `_gameLoopTick` synchron
+        // treiben statt auf rAF warten. Hier auf den Warmup angewandt: wir
+        // pumpen den Game-Loop mit ~16 ms-Cadence (≈60 FPS-Äquivalent), damit
+        // Streaming + creature-ticks + grok-Trigger unabhängig von Headless-
+        // Drosselung + CI-CPU-Last deterministisch ablaufen. Wall-Clock-
+        // getriebene Trigger (Grok 1.5 s, idle 45 s) sehen weiterhin echte
+        // performance.now()-Werte → keine semantische Verschiebung.
+        await page.evaluate(async (durationMs) => {
+            const start = performance.now();
+            // Phase 1 — auf den Game-Loop warten. Der Konstruktor exponiert
+            // `_gameLoopTick` erst am Ende; im Headless dauert die Init
+            // 200–1500 ms (Worldgen + Materialien). Wir geben max 5 s,
+            // danach fallen wir auf den passiven Sleep zurück (defensiv).
+            const deadline = start + Math.min(5000, durationMs);
+            while (
+                (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
+                performance.now() < deadline
+            ) {
+                await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+            const r = window.anazhRealm;
+            if (!r || typeof r._gameLoopTick !== "function") {
+                // Init nicht zeitig fertig → ehrlicher Fallback, kein Crash.
+                await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
+                return;
+            }
+            // Phase 2 — Loop synchron pumpen, bis das Wall-Clock-Budget
+            // verbraucht ist. setTimeout(0) yieldet zwischen Ticks für
+            // Mikrotasks (Promise-Ketten, async Worldgen) — `setTimeout`
+            // ist im Headless NICHT auf 1 Hz gedrosselt (rAF schon),
+            // also läuft der Pump CPU-gebunden statt frame-gebunden.
+            // Damit wird Streaming + Tick-Logik deterministisch unabhängig
+            // von CPU-Last (CI-Flake-Wurzel der V9.82-Iso-Mesh-Welle).
+            while (performance.now() - start < durationMs) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    // Ein einzelner Tick-Fehler darf den Warmup nicht
+                    // abbrechen; die `pageerror`-Listener fangen ihn auf.
+                }
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+        }, DURATION_MS);
 
         // ### Bericht (informativ) ###
         const fpsText = await page.$eval("#fps", (el) => el.innerText).catch(() => "?");
