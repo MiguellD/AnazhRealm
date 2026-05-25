@@ -55,7 +55,7 @@ Konsequenz für jede künftige Iteration: **niemals re-komplexifizieren ohne Not
 | ✅ Rendering (Three.js, Skybox, Planeten) | vorhanden | `vendor/three.min.js` r134 |
 | ✅ Physik (Ammo.js WASM) | vorhanden | gepoolte `tmpVec1/2`, 0 Hot-Path-Allocs |
 | ✅ Bewegung, Sprung, Egoperspektive | vorhanden | WASD + Sprint + Pointer-Lock |
-| ✅ Welt-Generierung (Voxel-Terrain, Inseln, Vegetation, Hydrosphäre) | vollwertig — Voxel-Bogen V9.07+ | 3D-Dichte-Feld + Surface-Nets-Mesher (formbarer Boden, Höhlen, Überhänge), Drainage-Netz mit Flüssen/Seen/Wasserfällen. **Welle C in Bau (V9.71+)**: das Wasser wird ein Voxel-Cell-Zustand (air/water/solid) statt parallele 16-m-Drainage-Karte — die ehrliche Vereinigung der V9.50-Vision „Wasser aus der Terrain-Wahrheit". Detail in `docs/roadmap.md` Welle C + `docs/hydrosphere.md` §16. |
+| ✅ Welt-Generierung (Voxel-Terrain, Inseln, Vegetation, Hydrosphäre) | vollwertig — Voxel-Bogen V9.07+, Welle C VOLLENDET (V9.71-V9.82) | 3D-Dichte-Feld + Surface-Nets-Mesher (formbarer Boden, Höhlen, Überhänge), Drainage-Netz mit Flüssen/Seen/Wasserfällen. **Welle C vollendet (V9.82)**: Wasser ist ein Voxel-Cell-Zustand (air/water/solid), naht-frei per Pad+Crop, nur Wasser-Luft-Iso (kein Floating-Plane), Density-Grid mit Boden-Mesher geteilt (~50× Speedup), Streaming-Pfad geheilt (Cells beim ersten Stream). Detail in `docs/roadmap.md` Welle C + `docs/hydrosphere.md` §16. |
 | ✅ Persistenz (localStorage + JSON + Upload/Download) | vorhanden | 3 Pfade getestet |
 | ✅ Save/Load über CDN-Link | vorhanden | „Lade Datei" Chat-Befehl |
 | ✅ Frustum-Culling korrekt | vorhanden | boundingSphere-basiert |

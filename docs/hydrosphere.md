@@ -1117,24 +1117,57 @@ existiert; ≥1 Tarn gesetzt; jeder Tarn im Hochland; jeder Tarn wurde zu einem 
 
 ## 16. Die Zwei-Skalen-Naht (V9.69-Reflexion) — Welle C als Wurzel-Heilung
 
-> **VOLLENDET (V9.75, 25.05.2026)** — die fünf Sub-Wellen sind alle erledigt:
-> C.1 (Wasser-Cell-Feld V9.71), C.2 (Iso-Surface-Mesher V9.72) + V9.73-Heilung,
-> C.3 (Cellular-Reaktion via DERIVED-View V9.74), **C.4 + C.5 V9.75 in einem
-> chirurgischen Schnitt** (Welle-A-Maschinerie + Parallel-Quad-Pfad gestrichen).
-> Stand: EIN Wasser-Mesh pro Voxel-Chunk (Iso-Surface aus Cell-Feld), EINE
-> Skala (1.8 m Voxel-Cell), EINE Geometrie-Quelle (gleicher Surface-Nets-Mesher
-> wie der Boden — naht-frei per Konstruktion). Netto −230 Z. anazhRealm.js,
-> −1056 Z. playtest.cjs. Atlas (`state.hydrosphere`) bleibt als Worldgen-frozen
-> Daten-Layer für `_waterLevelAt` (Lake/Fluss-Höhen-Quelle für Cell-Init);
-> Spieler-Wille lebt im Cell-Feld via `_remeshVoxelChunksAround`. Reaktion auf
-> Architektur-Spawn/Remove: `_remeshVoxelChunksAround` triggert Chunk-Rebuild
-> → Cell-Stempel macht SOLID/AIR neu. Multisensorisch: `_playWaterReactionPing`
-> + Welt-Journal-Eintrag „Das Wasser sucht einen neuen Weg" (V9.68-Spur erhalten,
-> nur jetzt am Architektur-Trigger statt am gestrichenen Recompute).
+> **VOLLENDET (V9.82, 25.05.2026)** — 12 Sub-Wellen über V9.71-V9.82, der
+> Welle-C-Bogen plus sein eigener Browser-Audit-Heilungs-Bogen sind eingelöst.
 >
-> Sub-Welle-Details unten zeigen den ursprünglichen Plan + den ehrlichen
-> Verlauf (Vereinfachung in C.3: kein BFS nötig; Zusammenführung C.4+5 in
-> EINEM Commit, weil bei Klarheit chirurgisch ehrlicher als 5 Sub-Wellen).
+> **Schluss-Stand**: EIN Wasser-Mesh pro Voxel-Chunk (Iso-Surface aus dem
+> Cell-Feld, NUR Wasser-Luft-Übergänge — kein Floating-Plane, kein Bottom-
+> Geister), EINE Skala (1.8 m Voxel-Cell), EINE Geometrie-Quelle (Surface-Nets-
+> Mesher wie der Boden, naht-frei per Pad+Crop V9.42-d-Trick), EIN Density-Grid
+> (geteilt mit Boden-Mesher V9.81, ~50× Speedup), EINE Pfad-Quelle für Streaming
+> + Rebuild (V9.82 — Wasser lädt synchron mit Terrain). Netto ~−200 Z.
+> `anazhRealm.js`, ~−1050 Z. `scripts/playtest.cjs`.
+>
+> Atlas (`state.hydrosphere`) bleibt als Worldgen-frozen Daten-Layer für
+> `_waterLevelAt` (Lake/Fluss-Höhen-Quelle für Cell-Init); Spieler-Wille lebt
+> im Cell-Feld via `_remeshVoxelChunksAround` → `_rebuildVoxelChunk` →
+> `_buildVoxelChunkData` (eine Helper-Funktion, beide Streaming + Rebuild
+> nutzen sie). Architektur-Spawn/Remove: Cell-Stempel macht SOLID/AIR neu.
+> Multisensorisch: `_playWaterReactionPing` am Architektur-Trigger.
+>
+> **Sub-Welle-Bogen** (Plan vs. ehrlicher Verlauf):
+> - **C.1-C.5 (V9.71-V9.75)**: das Welle-C-Manifest — Cell-Feld → Iso-Mesher
+>   → Cellular-Reaktion (vereinfacht: kein BFS, Cell ist DERIVED) → C.4+C.5
+>   in EINEM chirurgischen Schnitt (Welle-A-Maschinerie + Parallel-Quad-Pfad
+>   gestrichen).
+> - **C.6 (V9.76)**: Trocken-Gate reanimiert + Naht-Heilung via OOB-Live +
+>   Y-Band-Opt — drei orthogonale Heilungen.
+> - **C.7 (V9.77)**: globales Y-Band gegen Per-Chunk-Drift (V9.76's per-Chunk-
+>   Band war Bug).
+> - **C.8 (V9.78)**: Below-Band-WATER-Shortcut gestrichen (Floating-Plane in
+>   Mountain-Säulen war V9.77-Folge).
+> - **C.9 (V9.79)**: Pad+Crop für Iso-Mesh (V9.42-d-Trick vom Boden-Mesher
+>   übernommen — Oberflächen-Naht endlich strukturell geheilt; drei Wellen
+>   lang verkannte Wurzel).
+> - **C.10 (V9.80)**: nur Wasser-Luft-Iso (Bottom/Side-Geister gestrichen
+>   via cellClass + Suppression-Regeln).
+> - **C.11 (V9.81)**: Density-Grid-Sharing mit Boden-Mesher (~50× Speedup
+>   auf Cell-Build).
+> - **C.12 (V9.82)**: Streaming-Pfad-Bug seit V9.71 gefunden — `_ensureVoxel-
+>   ChunkAt` baute ohne Cells, nur `_rebuildVoxelChunk` hatte sie. Heilung:
+>   eine Pfad-Quelle (`_buildVoxelChunkData`), Wasser lädt synchron mit Terrain.
+>
+> **Sieben permanente Lehren** aus dem Bogen (in `CLAUDE.md/Gotchas` verdrahtet):
+> Performance-Optimierungen MÜSSEN inter-Chunk-Konsistenz wahren (C.7); „Naht-
+> frei per Konstruktion" muss durch OOB-Samples bewiesen sein (C.6/C.9); Cell-
+> Klassifikations-Shortcuts müssen die Iso-Topologie respektieren (C.8);
+> Surface-Nets-Density bestimmt WELCHE Iso-Flächen entstehen, nicht nur wo
+> (C.10); Density-Grids sind teilbare Welt-Wahrheit (C.11); Parallel-Code-
+> Pfade sind Bug-Quellen (C.12); plus die V9.70-B-Lehren (Symptom-Patches auf
+> nicht-mehr-gewolltem System = Flickenteppich; Welt-Substanz lebt in EINER
+> Skala). Sub-Welle-Detail unten dokumentiert den vollen Verlauf inkl. der
+> Verkennens-Momente — wer eine künftige Welt-Schicht baut (Feuer, Wind,
+> Magie-Auras), kann den Bogen als Lehr-Pattern lesen.
 
 ### 16.1 Die Riesen-Reflexion
 
@@ -1209,7 +1242,12 @@ MUSS der Konsequenz folgen — entweder die Wurzel angehen oder die Diagnose ehr
 verwerfen. Eine Mega-Welle als „vielleicht NIE" weg-bürokratisieren während man
 Symptom-Sub-Wellen auf demselben System plant, ist die deutsche-Bürokraten-Sünde.
 
-### 16.3 Welle C — die ehrliche Wurzel-Heilung (V9.71+, beschlossen 24.05.2026)
+### 16.3 Welle C — der ursprüngliche Plan (V9.71-V9.75, historisch)
+
+> **Hinweis (V9.82 Stand)**: dieser Abschnitt dokumentiert den ursprünglichen
+> Welle-C-Plan, der in V9.71-V9.75 umgesetzt wurde. Der echte Verlauf brachte
+> sieben weitere Sub-Wellen C.6-C.12 (V9.76-V9.82) als Browser-Audit-Heilungen
+> — siehe die VOLLENDET-Box oben am §16-Beginn für die Gesamt-Übersicht.
 
 **Anlass**: Schöpfer-Anweisung nach B.1-Abbruch: „bitte, bitte nun die Docs richtig,
 korrekt aktualisieren, das was du sagst auch wirklich einplanen, nimm dir Zeit,
