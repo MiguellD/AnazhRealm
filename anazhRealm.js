@@ -15210,6 +15210,22 @@ class AnazhRealm {
         this.state.voxelChunkWaterIso.delete(key);
     }
 
+    // V9.84 Perf-1.a — ein geteiltes `MeshToonMaterial` für alle Voxel-Chunks
+    // (vorher 81+ Instanzen im Streaming-Ring, jetzt ein einziges). Lazy
+    // initialisiert beim ersten Chunk-Build. `state.toonGradientMap` ist die
+    // geteilte Cel-Texture, die bei Regler-Wechsel via `.needsUpdate=true`
+    // re-uploaded wird (siehe `_refreshToonGradient`) — der Singleton sieht
+    // die Update automatisch. Geteiltes Material darf NIEMALS disposed werden
+    // (sonst sterben alle anderen Chunks mit) — `_disposeVoxelChunk` räumt
+    // entsprechend nur Geometrie, nicht Material.
+    _getVoxelChunkMaterial() {
+        if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
+        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        this.state.voxelChunkMaterial = mat;
+        return mat;
+    }
+
     _buildVoxelChunkData(cx, cz) {
         if (!this.state.scene) return null;
         const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
@@ -15251,8 +15267,15 @@ class AnazhRealm {
         );
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
-        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        // V9.84 Perf-1.a — Material-Singleton statt 81+ Instanzen im Streaming-
+        // Ring. Vertex-Farben leben pro Geometrie (BufferAttribute), das
+        // Material wird von allen Chunks geteilt. `gradientMap` ist die geteilte
+        // DataTexture `state.toonGradientMap`, die bei `_refreshToonGradient`
+        // via `.needsUpdate=true` in-place re-uploaded wird → der Cel-Levels-
+        // Regler propagiert automatisch zu allen Chunks. Die V9.43-c-Welle-C-
+        // Lehre vom `hydroSurfaceMaterial` ist hier angewandt: NIEMALS disposen,
+        // sonst sterben alle anderen Chunks mit (siehe `_disposeVoxelChunk`).
+        const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -15422,7 +15445,11 @@ class AnazhRealm {
             this._disposeStaticCollision(entry.mesh);
             if (this.state.scene) this.state.scene.remove(entry.mesh);
             if (entry.mesh.geometry) entry.mesh.geometry.dispose();
-            if (entry.mesh.material) entry.mesh.material.dispose();
+            // V9.84 Perf-1.a — Material NICHT mehr disposen: `_getVoxelChunkMaterial`
+            // hält ein Singleton (`state.voxelChunkMaterial`), das von ALLEN
+            // Voxel-Chunks geteilt wird. Ein Dispose hier würde alle anderen
+            // Chunks töten (V9.43-c-Lehre vom hydroSurfaceMaterial — geteiltes
+            // Material überlebt jeden Chunk-Disposal). Nur Geometrie räumen.
         }
         this._disposeVoxelChunkGrass(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
@@ -35429,7 +35456,16 @@ class AnazhRealm {
         renderer.setClearColor(0x000000, 1);
         renderer.depthTest = true;
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap. PCFSoft macht 16
+        // Samples pro Fragment (4×4-Kernel-Average), PCF macht 4. Bei der
+        // V8.47-2048er-mapSize + normalBias=1.0 sind die Schatten ohnehin
+        // weich genug positioniert — der zusätzliche 4×4-Filter ist eine
+        // Bandwidth-Investition, die auf Mid-Range-Hardware ~10–20% GPU
+        // kostet, ohne dass der Spieler den Unterschied sieht (V8.47-Bias
+        // dominiert die Soft-Kante). Die V8.47-mapSize=2048 bleibt — die
+        // ist eine bewusste Qualitäts-Investition (schärfere Schatten-Kante),
+        // ihre Rücknahme würde den Bias-Stack neu kalibrieren verlangen.
+        renderer.shadowMap.type = THREE.PCFShadowMap;
         this.state.renderer = renderer;
         this.log("Renderer initialisiert mit Schattenunterstützung", "INFO");
         this.state.selfAwareness.components.push("renderer");
