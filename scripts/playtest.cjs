@@ -21338,7 +21338,24 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             pm.position.z = -77.25;
             r._applyDayNightToScene();
             const tgt = r.state.directionalLight.target.position;
-            out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.01 && Math.abs(tgt.z - -77.25) < 0.01;
+            // V9.85 Perf-2.b — Texel-Snap-Toleranz: das Shadow-Target wird
+            // jetzt auf die Texel-Boundary gerundet (~0.293m bei 600m/2048).
+            // Toleranz 0.5m deckt den Snap-Rundungsfehler ab. Der Schatten
+            // FOLGT weiterhin dem Spieler, nur diskret pro Texel statt
+            // kontinuierlich — das ist GENAU die Stable-Shadow-Maps-Heilung.
+            out.shadowFollowsPlayer = Math.abs(tgt.x - 123.5) < 0.5 && Math.abs(tgt.z - -77.25) < 0.5;
+            // V9.85 Perf-2.b — Snap-Beweis: eine winzige Sub-Texel-Bewegung
+            // (0.05m, weniger als texelSize=0.293) darf das Shadow-Target
+            // NICHT verändern. Wenn der Snap kaputt ist, kriecht es um 0.05m
+            // mit → Schatten-Swimming. Wenn der Snap wirkt, bleibt es exakt
+            // wo es war → Schatten stabil. Das IST der Welle-2.b-Beweis.
+            const tgtX1 = tgt.x;
+            const tgtZ1 = tgt.z;
+            pm.position.x = 123.5 + 0.05;
+            pm.position.z = -77.25 + 0.05;
+            r._applyDayNightToScene();
+            const tgt2 = r.state.directionalLight.target.position;
+            out.shadowSnapStable = Math.abs(tgt2.x - tgtX1) < 0.001 && Math.abs(tgt2.z - tgtZ1) < 0.001;
             pm.position.x = ox;
             pm.position.z = oz;
             r._applyDayNightToScene();
@@ -21361,7 +21378,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Spieler-Mechanik lebt; die `usesSunDir`-Probe in
         // `_applyDayNightToScene` lebt auch.
         check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
-        check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz)", v848Results.shadowFollowsPlayer);
+        check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
+        check(
+            "V9.85 Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
+            v848Results.shadowSnapStable
+        );
         check("V8.48: _applyDayNightToScene leitet lightDir aus sunDir ab", v848Results.usesSunDir);
     } else {
         check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");

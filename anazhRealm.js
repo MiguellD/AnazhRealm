@@ -33678,12 +33678,36 @@ class AnazhRealm {
     // DirectionalLight: Position folgt dem Spieler (V8.48 — Shadow-Frustum
     // zentriert), Target am Spieler-Boden (y=0), Color = lightColor × lightMul,
     // Intensity aus akkumuliertem lightIntensity.
+    //
+    // V9.85 Perf-2.b — Stable Shadow Maps via Texel-Snap (Witcher-3-/Microsoft-
+    // DX11-Pattern). Vorher: focusX/Z liefen kontinuierlich mit dem Spieler →
+    // bei jeder Sub-Texel-Bewegung verschob sich das Shadow-Frustum → jeder
+    // Schatten-Texel sampelte minimal anders → das Schatten-Pattern „kroch"
+    // sichtbar über statische Geometrie (Schöpfer-Audit-Befund V9.84:
+    // „Schatten rauscht bei WASD, nicht bei Maus" — Maus dreht nur die
+    // Kamera, ändert pm.position NICHT). Heilung: focusX/Z auf das Shadow-
+    // Texel-Grid snappen. Spieler bewegt sich kontinuierlich, die Shadow-
+    // Camera springt diskret um ganze Texel — das Schatten-Muster fällt
+    // immer exakt auf dieselben World-Space-Punkte. Konsequenz: kein
+    // Swimming, identische optische Qualität, ein paar Multiplikationen
+    // pro Frame extra. Texel-Größe wird aus der aktuellen Shadow-Frustum-
+    // Breite + mapSize gelesen (selbst-anpassend bei künftigen Anpassungen).
     _dayNightApplyDirectionalLight(sunDir, tint) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
-        const focusX = pm ? pm.position.x : 0;
-        const focusZ = pm ? pm.position.z : 0;
+        let focusX = pm ? pm.position.x : 0;
+        let focusZ = pm ? pm.position.z : 0;
+        if (pm && dl.shadow && dl.shadow.camera && dl.shadow.mapSize) {
+            const sc = dl.shadow.camera;
+            const shadowWidth = sc.right - sc.left; // typisch 600 (±300)
+            const shadowMapSize = dl.shadow.mapSize.width; // typisch 2048
+            if (shadowWidth > 0 && shadowMapSize > 0) {
+                const texelSize = shadowWidth / shadowMapSize; // ~0.293 m bei 600/2048
+                focusX = Math.round(focusX / texelSize) * texelSize;
+                focusZ = Math.round(focusZ / texelSize) * texelSize;
+            }
+        }
         dl.position.set(focusX + sunDir.x * lightDist, sunDir.y * lightDist, focusZ + sunDir.z * lightDist);
         if (dl.target) {
             dl.target.position.set(focusX, 0, focusZ);
