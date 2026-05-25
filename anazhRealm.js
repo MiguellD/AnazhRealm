@@ -780,7 +780,9 @@ class AnazhRealm {
     // ### Logging ###
     log(message, level = "INFO") {
         if (level === "DEBUG" && !this.state.debugLogging) return;
-        const logMessage = `[AnazhRealm V7.82] [${level}] ${message}`;
+        // V9.86 — Versions-String aus der zentralen Klassen-Konstante statt
+        // hardcoded (war seit V7.82 stale, jeder Bump driftete unsichtbar).
+        const logMessage = `[AnazhRealm V${AnazhRealm.VERSION}] [${level}] ${message}`;
         this.state.logBuffer.push(logMessage);
         console.log(logMessage);
         if (this.state.logBuffer.length > this.state.maxLogEntries) {
@@ -15165,30 +15167,50 @@ class AnazhRealm {
                 }
             }
         }
-        // V9.85 Perf-2.c — Mountain-Mulden-Filter: eine WATER-Cell mit einer
-        // SOLID-Cell DIREKT DARÜBER ist physikalisch unmöglich (Wasser würde
-        // auslaufen). Das passiert in steilen Bergwänden, wenn der 8-Corner-
-        // Density-Mittelwert gerade so negativ ist (kleine Tasche in der
-        // Wand) und cy < waterY (Cell ist unter Atlas-Wasser-Spiegel) →
-        // V9.84-Audit-Befund „kleine Wasserchunks in steilen Hängen, aus dem
-        // Nichts". Heilung: ein einzelner Top-Down-Pass mutiert solche
-        // hängenden WATER-Cells zu AIR. Echte See-/Ozean-Cells haben
-        // entweder AIR (Oberfläche) oder WATER (Volumen) ÜBER sich — werden
-        // NICHT gefiltert. Höhlen-Wasser (WATER direkt unter SOLID-Decke)
-        // wird ehrlich gestrichen — war im V9.84-Befund explizit unerwünscht,
-        // ist auch im Vision-Pfeiler V1 nicht vorgesehen. Pass läuft VOR
-        // dem Architektur-Stempel, damit ein Damm-Bauwerk (das Wasser
-        // bewusst staut) NICHT vom Filter berührt wird.
+        // V9.86 Perf-2.c-Refine — Mountain-Mulden-Filter via Atmosphären-
+        // Konnektivität (V9.85 hatte einen einfacheren „SOLID-direkt-darüber"-
+        // Filter, der zu aggressiv war: am Carve-Rand killte er legitime
+        // WATER-Cells, weil eine zufällige Sub-Iso-SOLID-Cell darüber lag
+        // → C.3-Test-Flake auf ~50 %). Neue Frage: „kann diese WATER-Cell
+        // einen Pfad durch AIR/WATER-Cells nach oben zur Atmosphäre
+        // erreichen?" Wenn ja → echtes Wasser (See, Ozean, Spieler-Carve mit
+        // offener Oberseite); wenn nein → eingeschlossene Mountain-/Höhlen-
+        // Mulde → AIR. Top-Down-Pass: für jede xz-Spalte ein `airAbove`-
+        // Flag (Start = 1 = Atmosphäre über bandTop). SOLID setzt Flag=0,
+        // AIR setzt Flag=1, WATER bleibt WATER falls Flag=1 (Pfad oben),
+        // wird AIR falls Flag=0 (eingeschlossen). Heilt Schöpfer-V9.84-
+        // Audit „Wasser in Bergwänden" UND Schöpfer-V9.85-Audit „Wasser
+        // spawnt aus dem Nichts bei Architektur" (potenziell — der dirty-
+        // Pfad respektiert jetzt die Atmosphäre-Wahrheit). Plus: bewahrt
+        // V9.74-Vision (Carve im Hochland → Wasser fließt rein, Pfad nach
+        // oben offen). Pass läuft VOR dem Architektur-Stempel (damm-SOLID-
+        // Cells sind noch nicht da → Damm-Mechanik unverändert).
         const dimSq = dim * dim;
         const STATE_AIR = STATE.AIR;
-        const STATE_WATER = STATE.WATER;
         const STATE_SOLID = STATE.SOLID;
-        for (let j = 0; j < dimY - 1; j++) {
+        const airAbove = new Uint8Array(dimSq);
+        // Initial: alle Spalten haben Atmosphäre über sich (above-bandTop ist
+        // garantiert AIR, V9.77-globales-Y-Band).
+        for (let p = 0; p < dimSq; p++) airAbove[p] = 1;
+        for (let j = dimY - 1; j >= 0; j--) {
             const baseJ = j * dimSq;
-            const baseJAbove = (j + 1) * dimSq;
-            for (let idxInLayer = 0; idxInLayer < dimSq; idxInLayer++) {
-                if (cells[idxInLayer + baseJ] === STATE_WATER && cells[idxInLayer + baseJAbove] === STATE_SOLID) {
-                    cells[idxInLayer + baseJ] = STATE_AIR;
+            for (let p = 0; p < dimSq; p++) {
+                const idx = p + baseJ;
+                const s = cells[idx];
+                if (s === STATE_SOLID) {
+                    airAbove[p] = 0;
+                } else if (s === STATE_AIR) {
+                    airAbove[p] = 1;
+                } else {
+                    // WATER — wenn kein Air-Pfad nach oben, ist es eine
+                    // eingeschlossene Mulde → AIR. Sonst bleibt WATER und
+                    // schluckt die Air-Brücke durch (WATER ist transparent
+                    // für die Atmosphären-Verbindung — eine WATER-Cell mit
+                    // AIR darüber lässt auch eine WATER-Cell darunter
+                    // „atmen").
+                    if (airAbove[p] === 0) {
+                        cells[idx] = STATE_AIR;
+                    }
                 }
             }
         }
@@ -17502,14 +17524,24 @@ class AnazhRealm {
     // am-Spieler-Sortierung), die Skirt-Nachbarn folgen in den nächsten
     // Frames. Tests, die direkt nach einem Edit den gerenderten Mesh
     // prüfen, rufen `_drainDirtyVoxelChunks()` zum sofortigen Drain.
-    _remeshVoxelChunksAround(x, z, r) {
+    // V9.86 — `skirt`-Parameter (default 1): Voxel-Edits ändern die Density,
+    // und der V9.79-Pad+Crop des Iso-Mesh-Builds liest Density 1 Cell in den
+    // Nachbar-Chunk hinein → Skirt-Nachbarn müssen mit-rebuilden, sonst
+    // entsteht eine Naht. Architektur-Spawn/Remove dagegen ändert NUR den
+    // Cell-Stempel im Architektur-Footprint, NICHT die Density-Funktion —
+    // Skirt-Nachbarn brauchen KEINEN Rebuild. Mit `skirt=0` markiert die
+    // Funktion ~89 % weniger Chunks dirty (1 statt 9 typisch) → ~89 %
+    // weniger Per-Chunk-Rebuild-Spikes beim Bauen. Schöpfer-Audit-Befund
+    // V9.85: „beim Bau von Strukturen dropts noch" (FPS-Dip von 119 → 36
+    // beim Spawn von kristall_geode + felsturm-Kaskade).
+    _remeshVoxelChunksAround(x, z, r, skirt = 1) {
         if (!this.state.voxelChunks || this.state.voxelChunks.size === 0) return;
         if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
         const { span } = this._voxelChunkConfig();
-        const minCX = Math.floor((x - r) / span) - 1;
-        const maxCX = Math.floor((x + r) / span) + 1;
-        const minCZ = Math.floor((z - r) / span) - 1;
-        const maxCZ = Math.floor((z + r) / span) + 1;
+        const minCX = Math.floor((x - r) / span) - skirt;
+        const maxCX = Math.floor((x + r) / span) + skirt;
+        const minCZ = Math.floor((z - r) / span) - skirt;
+        const maxCZ = Math.floor((z + r) / span) + skirt;
         for (let cx = minCX; cx <= maxCX; cx++) {
             for (let cz = minCZ; cz <= maxCZ; cz++) {
                 const key = `${cx},${cz}`;
@@ -27800,7 +27832,12 @@ class AnazhRealm {
                 const cxw = (aabb.minX + aabb.maxX) * 0.5;
                 const czw = (aabb.minZ + aabb.maxZ) * 0.5;
                 const r = Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5;
-                this._remeshVoxelChunksAround(cxw, czw, r);
+                // V9.86 Perf-2 ext. — `skirt=0` für Architektur-Spawn: nur
+                // die Chunks unter der Architektur-AABB werden rebuildet,
+                // KEINE Skirt-Nachbarn (Density unverändert → keine Naht-
+                // Inkonsistenz). Spart ~89 % der dirty-Chunks → kein
+                // FPS-Spike beim Bau-Klick mehr.
+                this._remeshVoxelChunksAround(cxw, czw, r, 0);
             }
             // V9.75 (Welle C.4+5 — multisensorische Spur erhalten): wenn eine
             // solide Architektur die Welt-Cell-Klassifikation mutiert (Wasser
@@ -28822,7 +28859,10 @@ class AnazhRealm {
         entry.blockerAABBs = null;
         if (wasBlocker) {
             for (const fp of blockerFootprints) {
-                this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r);
+                // V9.86 Perf-2 ext. — `skirt=0` analog zu spawnArchitecture:
+                // beim Remove läuft die identische Cell-Stempel-Logik, kein
+                // Density-Effekt → keine Skirt-Nachbarn-Naht.
+                this._remeshVoxelChunksAround(fp.cx, fp.cz, fp.r, 0);
             }
             // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück.
             this._playWaterReactionPing();
@@ -35557,7 +35597,7 @@ class AnazhRealm {
     }
 
     async init() {
-        this.log("Initialisiere Anazh Realm V7.82... Ewigkeit erwacht!", "INFO");
+        this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
@@ -37178,6 +37218,14 @@ class AnazhRealm {
 // Wenn Du diese Werte tunen willst: dieselben Formeln bleiben, nur die
 // Multiplikatoren ändern. Test-Setup (Welle 6.D Diskrimination) prüft die
 // Verhältnisse, nicht die absoluten Zahlen.
+//
+// V9.86 — die einzige Versions-Quelle. Vorher (V7.82-Stand) war der String
+// hardcoded in `log()` und der Init-Message — verlässlich versions-falsch
+// nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
+// gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
+// `package.json`/`index.html` mitziehen (Doku-Disziplin).
+AnazhRealm.VERSION = "9.86";
+
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
     damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
