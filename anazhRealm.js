@@ -6808,16 +6808,21 @@ class AnazhRealm {
                 },
             },
             {
-                // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall hier"
+                // Ring 6 — architectureTemplates. "baue dorf/tempel/wasserfall/damm hier"
                 // platziert die Struktur am Spieler. Ring 11 V2.1: Position +
                 // Seed werden hier zur Build-Zeit explizit eingebettet, damit
                 // der DSL-Broadcast deterministisch ist (sonst sähen Mitspieler
                 // an einer anderen Stelle ein anders aussehendes Dorf).
+                // V9.74.1 — damm als direkt-spielbarer Vision-Pfeiler der Welle A
+                // (vorher nur über DSL-Syntax oder Hotbar zugänglich, was die
+                // V9.65..V9.74-Mechanik vor dem Spieler verbarg). Damm routet
+                // über den generischen `spawn_blueprint`-Pfad; Dorf/Tempel/
+                // Wasserfall bleiben auf ihren spezialisierten DSL-Ops.
                 example: "baue dorf hier",
-                re: /^baue\s+(dorf|tempel|wasserfall)\s+hier\s*$/i,
+                re: /^baue\s+(dorf|tempel|wasserfall|damm)\s+hier\s*$/i,
                 build: (m) => {
+                    const kind = m[1].toLowerCase();
                     const map = { dorf: "spawn_village", tempel: "spawn_temple", wasserfall: "spawn_waterfall" };
-                    const op = map[m[1].toLowerCase()];
                     // Welle 6.X.3 C1 (Audit 17.05.2026) — Forward-Offset 8 m
                     // statt direkter Spieler-Position. Dorf/Tempel/Wasserfall
                     // sind ~6-10 m groß; ohne Offset stand der Spieler MITTEN
@@ -6830,9 +6835,13 @@ class AnazhRealm {
                     const fx = p.x - Math.sin(yaw) * dist;
                     const fz = p.z - Math.cos(yaw) * dist;
                     const seed = Math.floor(Math.random() * 0xffffffff);
+                    const op = map[kind];
+                    const program = op
+                        ? [op, ["at", fx, p.y, fz], seed]
+                        : ["spawn_blueprint", kind, ["at", fx, p.y, fz], seed];
                     return {
-                        program: [op, ["at", fx, p.y, fz], seed],
-                        describe: `${m[1]} vor dir gebaut`,
+                        program,
+                        describe: `${kind} vor dir gebaut`,
                     };
                 },
             },

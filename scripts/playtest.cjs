@@ -7245,6 +7245,22 @@ async function checkBandLateMultiUser(ctx) {
             fraktal.program[1][0] === "at" &&
             Number.isInteger(fraktal.program[5]);
 
+        // 7b. V9.74.1 — Chat-Pattern "baue damm hier" routet über
+        // spawn_blueprint (kein eigener spawn_damm-Op nötig, der `damm`-Bauplan
+        // ist seit V9.64 built-in). Macht den Welle-A-Vision-Pfeiler vom
+        // Spieler direkt anstoßbar — vorher nur über DSL-Syntax oder Hotbar.
+        const dammPattern = r.parseChatToDsl("baue damm hier");
+        out.dammHasSpawnBlueprint =
+            dammPattern &&
+            Array.isArray(dammPattern.program) &&
+            dammPattern.program[0] === "spawn_blueprint" &&
+            dammPattern.program[1] === "damm" &&
+            Array.isArray(dammPattern.program[2]) &&
+            dammPattern.program[2][0] === "at" &&
+            Number.isFinite(dammPattern.program[2][1]) &&
+            Number.isFinite(dammPattern.program[2][3]) &&
+            Number.isInteger(dammPattern.program[3]);
+
         // 8. Diskrimination: spawn_village mit FIXEM Seed → deterministisch
         // (zwei Spawn-Aufrufe mit gleichem Seed liefern dieselbe Architektur-Geometrie)
         const beforeArchCount = r.state.architectures.length;
@@ -7297,6 +7313,10 @@ async function checkBandLateMultiUser(ctx) {
         );
         check("Ring 11 V2.1: Chat 'spawne kreaturen N' embed at-Position", ring11V21Results.kreatureHasAt);
         check("Ring 11 V2.1: Chat 'baue fraktal X' embed at+rootSeed", ring11V21Results.fraktalHasSeed);
+        check(
+            "V9.74.1: Chat 'baue damm hier' routet über spawn_blueprint(damm, at, seed)",
+            ring11V21Results.dammHasSpawnBlueprint
+        );
         check(
             "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
             ring11V21Results.seedDeterminismHolds
@@ -12045,7 +12065,9 @@ async function checkBandHydrosphere(ctx) {
                             m.geometry.type === "CircleGeometry"
                         );
                     }
-                    return m.material === r.state.waterfallMaterial && m.geometry && m.geometry.type === "PlaneGeometry";
+                    return (
+                        m.material === r.state.waterfallMaterial && m.geometry && m.geometry.type === "PlaneGeometry"
+                    );
                 }));
         out.waterMapIsMap = r.state.voxelChunkWater instanceof Map;
         out.chunkWaterIsMesh = false;
@@ -12625,8 +12647,7 @@ async function checkBandWelleA2Blocker(ctx) {
         if (!r || !r.state || !r.state.scene) return { error: "no realm" };
         const out = {};
         // 1) Damm-Bauplan bleibt als built-in (V9.64-Invariante)
-        out.hasDammBlueprint =
-            !!(r.state.blueprints && r.state.blueprints.damm && r.state.blueprints.damm.parts);
+        out.hasDammBlueprint = !!(r.state.blueprints && r.state.blueprints.damm && r.state.blueprints.damm.parts);
         // 2) Generische Blocker-Methoden existieren (die V9.64-Dam-Helfer
         // wurden weggeräumt — Vision-rein, kein Type-Whitelist).
         out.hasGenericMethods =
@@ -12634,9 +12655,7 @@ async function checkBandWelleA2Blocker(ctx) {
             typeof r._blockerIndexRemove === "function" &&
             typeof r._blockerTopAt === "function" &&
             typeof r._isPartSolid === "function";
-        out.legacyDamHelpersGone =
-            typeof r._damIndexAdd === "undefined" &&
-            typeof r._damTopAt === "undefined";
+        out.legacyDamHelpersGone = typeof r._damIndexAdd === "undefined" && typeof r._damTopAt === "undefined";
         // 3) _isPartSolid klassifiziert nach Substanz
         out.steinSolid = r._isPartSolid({ material: "stein" }) === true;
         out.holzSolid = r._isPartSolid({ material: "holz" }) === true;
@@ -12683,8 +12702,7 @@ async function checkBandWelleA2Blocker(ctx) {
             const crownOnly = r._blockerTopAt(treePos.x + 0.8, treePos.z);
             out.crownDoesNotBlock = crownOnly === -Infinity;
             // entry.blockerAABBs hat exakt einen Eintrag (Stamm), nicht zwei
-            out.treeIndexedOneAABB =
-                Array.isArray(treeEntry.blockerAABBs) && treeEntry.blockerAABBs.length === 1;
+            out.treeIndexedOneAABB = Array.isArray(treeEntry.blockerAABBs) && treeEntry.blockerAABBs.length === 1;
             r.removeArchitecture(treeEntry);
         }
         return out;
@@ -12712,10 +12730,7 @@ async function checkBandWelleA2Blocker(ctx) {
         res.damTopReturnsHeight,
         `top=${res.damTopValue}`
     );
-    check(
-        "Welle A.2 V9.65: _blockerTopAt liefert -Infinity ausserhalb des Damm-AABB",
-        res.damTopOffReturnsNone
-    );
+    check("Welle A.2 V9.65: _blockerTopAt liefert -Infinity ausserhalb des Damm-AABB", res.damTopOffReturnsNone);
     check("Welle A.2 V9.65: removeArchitecture cleared den Damm-Index-Eintrag", res.indexClearedAfterRemove);
     check(
         "Welle A.2 V9.65: spawnArchitecture('stein_block') wird auch indexiert (generisch)",
@@ -12724,10 +12739,7 @@ async function checkBandWelleA2Blocker(ctx) {
     check("Welle A.2 V9.65: spawnArchitecture('baum_eiche') liefert einen Eintrag", res.treeSpawnSucceeded);
     check("Welle A.2 V9.65: Baum-Stamm (Holz) blockiert am Zentrum", res.trunkBlocks);
     check("Welle A.2 V9.65: Baum-Krone (Laub) blockiert NICHT", res.crownDoesNotBlock);
-    check(
-        "Welle A.2 V9.65: Baum-Eintrag hat nur EINEN AABB (Stamm, nicht Krone)",
-        res.treeIndexedOneAABB
-    );
+    check("Welle A.2 V9.65: Baum-Eintrag hat nur EINEN AABB (Stamm, nicht Krone)", res.treeIndexedOneAABB);
 }
 
 // V9.66 (Welle A.3) — die Wahrheits-Quelle der Hydrosphäre. `_effectiveSurfaceY`
@@ -12823,11 +12835,7 @@ async function checkBandWelleA3EffectiveSurface(ctx) {
     );
     check("Welle A.3 V9.66: effective == _blockerTopAt am Damm-Zentrum", res.effMatchesBlockerTop);
     check("Welle A.3 V9.66: Damm-Remove stellt die Surface wieder her", res.removeRestoresSurface);
-    check(
-        "Welle A.3 V9.66: Fill-Edit hebt die effektive Surface",
-        res.fillLiftsSurface,
-        `eff=${res.fillEffValue}`
-    );
+    check("Welle A.3 V9.66: Fill-Edit hebt die effektive Surface", res.fillLiftsSurface, `eff=${res.fillEffValue}`);
     check(
         "Welle A.3 V9.66: Fill-Edit hebt auf erwartete Höhe (ed.y + r)",
         res.fillEffMatches,
@@ -12870,11 +12878,7 @@ async function checkBandWelleA4Recompute(ctx) {
         r.state.hydroDirty = false;
         r.state.hydroDirtyAt = 0;
         // 5) silent-Spawn an einer Test-Position triggert NICHT
-        const silentEntry = r.spawnArchitecture(
-            "damm",
-            { x: 600, y: 5, z: 600 },
-            { silent: true }
-        );
+        const silentEntry = r.spawnArchitecture("damm", { x: 600, y: 5, z: 600 }, { silent: true });
         out.silentSpawnNoDirty = r.state.hydroDirty === false;
         if (silentEntry) r.removeArchitecture(silentEntry);
         r.state.hydroDirty = false;
@@ -13360,8 +13364,7 @@ async function checkBandWelleB1WaterSkirts(ctx) {
             const expectedV0z = wetCZ * span - SKIRT * step;
             out.firstVertexX = v0x;
             out.firstVertexZ = v0z;
-            out.firstVertexMatchesSkirt =
-                Math.abs(v0x - expectedV0x) < 0.001 && Math.abs(v0z - expectedV0z) < 0.001;
+            out.firstVertexMatchesSkirt = Math.abs(v0x - expectedV0x) < 0.001 && Math.abs(v0z - expectedV0z) < 0.001;
             // Letzter Vertex: (i=NV−1, j=NV−1) → vx = cx·span + (dim+SKIRT)·step
             const last = NV * NV - 1;
             const lastX = posAttr.getX(last);
@@ -13424,10 +13427,7 @@ async function checkBandWelleB1WaterSkirts(ctx) {
         return;
     }
     check("Welle B.1 V9.70: WATER_CHUNK_SKIRT == 1", res.skirtIs1, `SKIRT=${res.skirtConstant}`);
-    check(
-        "Welle B.1 V9.70: _buildVoxelChunkWater nutzt WATER_CHUNK_SKIRT (Source-Probe)",
-        res.hasSkirtUsage
-    );
+    check("Welle B.1 V9.70: _buildVoxelChunkWater nutzt WATER_CHUNK_SKIRT (Source-Probe)", res.hasSkirtUsage);
     check("Welle B.1 V9.70: wasser-tragenden Chunk gefunden (Vorbedingung)", res.foundWetChunk);
     if (!res.foundWetChunk) return;
     check("Welle B.1 V9.70: Mesh wurde gebaut", res.meshBuilt);
@@ -13617,10 +13617,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         res.hasSolidCells,
         `totalSolid=${res.totalSolid}, totalWater=${res.totalWater}, totalAir=${res.totalAir}`
     );
-    check(
-        "Welle C.1 V9.71: Cell-Summe stimmt mit Feld-Länge (kein unklassifizierter State)",
-        res.hasMeaningfulField
-    );
+    check("Welle C.1 V9.71: Cell-Summe stimmt mit Feld-Länge (kein unklassifizierter State)", res.hasMeaningfulField);
 }
 
 // V9.72 (Welle C.2) — Iso-Surface-Mesher für Wasser. Verifiziert: state-
@@ -13792,7 +13789,10 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         check("Welle C.2 V9.72: Iso-Mesher-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle C.2 V9.72: state.voxelChunkWaterIso + state.voxelWaterIsoVisible existieren", res.hasIsoMap && res.hasVisibleFlag);
+    check(
+        "Welle C.2 V9.72: state.voxelChunkWaterIso + state.voxelWaterIsoVisible existieren",
+        res.hasIsoMap && res.hasVisibleFlag
+    );
     check("Welle C.2 V9.72: voxelWaterIsoVisible default = false", res.defaultVisibleIsFalse);
     check(
         "Welle C.2 V9.72: Build/Dispose/Toggle-Methoden existieren",
@@ -13838,10 +13838,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             res.toggleResetRestoresOldQuads
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
-        check(
-            "Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'",
-            res.sampleMeshUserData === true
-        );
+        check("Welle C.2 V9.72: Iso-Mesh trägt userData.hydroKind='chunk-water-iso'", res.sampleMeshUserData === true);
         if (res.bergseeCheckable) {
             check(
                 "Welle C.2 V9.73 (Heilung): Bergsee-Cells über waterLevel sind als state=WATER im Feld",
@@ -13946,8 +13943,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const idxAbove = cellI + cellK * cfg.dim + cellJAbove * cfg.dim * cfg.dim;
                 out.cellAfterRemoveAbove = cells[idxAbove];
                 // Nach Remove: über macroY sollte air (oder water wenn unter wl)
-                out.removeRestores =
-                    cells[idxAbove] === STATE.AIR || cells[idxAbove] === STATE.WATER;
+                out.removeRestores = cells[idxAbove] === STATE.AIR || cells[idxAbove] === STATE.WATER;
             }
         }
         // 5) Voxel-Carve unter waterLevel → Cells werden water
@@ -14002,9 +13998,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
         out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
-        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(
-            r.removeArchitecture.toString()
-        );
+        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.removeArchitecture.toString());
         return out;
     });
     if (res.error) {
@@ -14012,10 +14006,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         return;
     }
     check("Welle C.3 V9.74: _stampArchitectureSolidCellsInto existiert", res.hasStampMethod);
-    check(
-        "Welle C.3 V9.74: _buildVoxelChunkWaterCells ruft _stampArchitectureSolidCellsInto",
-        res.cellBuildCallsStamp
-    );
+    check("Welle C.3 V9.74: _buildVoxelChunkWaterCells ruft _stampArchitectureSolidCellsInto", res.cellBuildCallsStamp);
     check("Welle C.3 V9.74: Damm-Spawn als Test-Setup erfolgreich", res.damSpawnSucceeded);
     check(
         "Welle C.3 V9.74: Blocker-AABB hat botY (V9.74-Erweiterung)",
@@ -14047,14 +14038,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `state=${res.carveCellUnderWL}`
         );
     }
-    check(
-        "Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)",
-        res.spawnTriggersRemesh
-    );
-    check(
-        "Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)",
-        res.removeTriggersRemesh
-    );
+    check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);
+    check("Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.removeTriggersRemesh);
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
