@@ -15359,57 +15359,26 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunks.has(key)) return this.state.voxelChunks.get(key);
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
-        const base = this.state.terrainBaseHeight || 0;
-        const ox = cx * span;
-        const oz = cz * span;
-        // Das Oberflächen-Band reicht ~base-50..base+92 — der Chunk muss es
-        // ganz fassen, sonst klafft oben/unten ein Loch (der Spieler fällt
-        // hindurch). V9.45-a: dimY 96, oy = base − floorDrop(66) → Decke
-        // base+106.8 → Marge ~15 gegen ridged-Spike-Löcher am Sicht-Ring-Rand.
-        const oy = base - floorDrop;
-        // dim + 1 in X/Z — ein 1-Zellen-Skirt: der Chunk mesht eine Zelle
-        // in den Nachbarn hinein, sodass die Naht-Quads entstehen + die
-        // Flächen nahtlos zusammenstossen. Das Dichte-Feld ist determi-
-        // nistisch — die Überlapp-Zelle ist in beiden Chunks identisch.
-        // In Y kein Skirt — der Chunk hat keine vertikalen Nachbarn.
-        // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
-        // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
-        // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
-        // ab — der Skirt-Naht-Vertex wird damit voll-deterministisch
-        // gesmootht (seine Welt-Nachbarn lagen im pad).
-        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, undefined, 1);
-        if (!geom) {
-            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
-            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an Rand-
-            // Chunks → sofort `{empty:true}`, kein Retry nötig.
-            this.state.voxelChunks.set(key, { empty: true });
-            return null;
-        }
-        this._attachVoxelFieldColors(geom);
-        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
-        this.state.scene.add(mesh);
-        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
-        // V9.24 / V9.40-e — der Kollisions-Build kann fehlschlagen (OOM bei
-        // vollem Ammo-Heap oder degenerierte Geometrie ohne ein einziges
-        // gültiges Dreieck). Wir disposen den Mesh aus der Scene + Heap.
-        // V9.40-e Retry: max 3 Versuche; in den ersten 2 setzen wir
-        // ABSICHTLICH KEINEN Map-Eintrag (`voxelChunks.has(key)` bleibt
-        // false), sodass der nächste Streaming-Tick es wieder versucht.
-        // Inzwischen wird `_pruneDistantVoxelChunks` ferne Chunks räumen
-        // und Heap freigeben — der Retry hat eine echte Chance. Erst beim
-        // 3. Fail markieren wir ehrlich `{empty:true}` (V9.24-Symptom als
-        // LETZTE Antwort, nicht als Erst-Reaktion — die Lehre von V9.40-d).
-        if (!collisionBody) {
-            this.state.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
-            if (mesh.material) mesh.material.dispose();
-            // V9.40-e Retry: zähle den Versuch + erlaube max 3 Versuche.
+        // V9.82 (Welle C.12) — Streaming-Pfad und Rebuild-Pfad sind jetzt
+        // EINE Pfad-Quelle: beide nutzen `_buildVoxelChunkData` für Boden-
+        // Mesh + Wasser-Cell-Feld (V9.71+V9.81-Density-Grid-Sharing).
+        // **Bug-Heilung**: vor V9.82 baute `_ensureVoxelChunkAt` nur das
+        // Terrain-Mesh direkt via `_voxelChunkGeometry` und setzte
+        // `entry = { mesh }` ohne `waterCells`. Der nachfolgende
+        // `_buildVoxelChunkWaterIsoSurface`-Aufruf scheiterte am
+        // `!entry.waterCells`-Check → kein Iso. Erst beim Spieler-Edit
+        // wurde via `_rebuildVoxelChunk` (das _buildVoxelChunkData ruft)
+        // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
+        // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
+        // Quelle strukturell weg.
+        const fresh = this._buildVoxelChunkData(cx, cz);
+        if (fresh === null) {
+            // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
+            // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
+            // Versuchen ehrlich {empty:true}. Bei attempts < 3: KEIN
+            // Map-Eintrag → der Streaming-Tick versucht es im nächsten
+            // Frame wieder (has(key)===false), inzwischen räumt
+            // _pruneDistantVoxelChunks ferne Chunks + gibt Heap frei.
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
             const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
             this.state.voxelRebuildAttempts.set(key, attempts);
@@ -15418,16 +15387,20 @@ class AnazhRealm {
                 this.state.voxelRebuildAttempts.delete(key);
                 this.log(`Voxel-Chunk ${key}: 3× OOM beim Stream-Build, als empty markiert`, "INFO");
             }
-            // Bei attempts < 3: KEIN Map-Eintrag — der Streaming-Tick wird
-            // den Chunk im nächsten Frame wieder aufrufen (has(key)===false).
-            // Inzwischen räumt _pruneDistantVoxelChunks ferne Chunks + gibt
-            // Heap frei → der Retry hat bessere Chancen.
             return null;
         }
-        const entry = { mesh };
-        this.state.voxelChunks.set(key, entry);
-        // V9.40-e — Erfolg: Retry-Counter zurücksetzen.
+        // Erfolg — Retry-Counter zurücksetzen.
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
+        if (fresh.kind === "empty") {
+            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
+            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an
+            // Rand-Chunks.
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
+        this.state.scene.add(fresh.mesh);
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
+        this.state.voxelChunks.set(key, entry);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         this._buildVoxelChunkGrass(cx, cz);
         // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
