@@ -14487,7 +14487,16 @@ class AnazhRealm {
         this._voxelLaplacianSmoothPositions(positions, indices);
         this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
         if (positions.length === 0) return null;
-        const normals = this._voxelGradientNormals(positions, sample, step);
+        // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-
+        // Grid (V9.81-Sharing) statt 18k zusätzliche `_terrainDensityAt`-
+        // Aufrufe. Wir reichen die Grid-Geometrie als kompaktes Objekt durch;
+        // _voxelGradientNormals interpoliert trilinear, fällt bei Out-of-Bounds
+        // sauber auf sample() zurück.
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const preGrid = { density, ox, oy, oz, Nx, Ny, Nz, step };
+        const normals = this._voxelGradientNormals(positions, sample, step, preGrid);
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         if (indices.length > 0) geom.setIndex(indices);
@@ -14722,16 +14731,72 @@ class AnazhRealm {
     // hartes Rauten-/Trapez-Facetten-Muster. Der Gradient `∇d` IST die wahre
     // Iso-Oberflächen-Normale — glatt, facettierungs-unabhängig. Die Oberfläche
     // zeigt von fest (d>0) zu Luft (d<0): Normale = −∇d.
-    _voxelGradientNormals(positions, sample, step) {
+    // V9.85 Perf-2.d — Gradient-Normals nutzen das geteilte preDensity-Grid
+    // (V9.81-Sharing) statt 6× `_terrainDensityAt` pro Vertex. Bei ~3000
+    // Vertices pro Chunk = 18 000 gesparte Noise-Calls = ~30–45 ms gespart.
+    // Trilinear-Interpolation aus den 8 Corner-Densities pro Sample-Punkt;
+    // Fallback auf sample() wenn das Grid den Sample-Punkt nicht abdeckt
+    // (Edge-Vertices nach Crop+Smooth) — selten, aber sicher.
+    _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
         const eps = step * 0.5;
+        // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
+        // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
+        let lookup;
+        if (preGrid) {
+            const d = preGrid.density;
+            const gOx = preGrid.ox;
+            const gOy = preGrid.oy;
+            const gOz = preGrid.oz;
+            const gStep = preGrid.step;
+            const Nx = preGrid.Nx;
+            const Ny = preGrid.Ny;
+            const Nz = preGrid.Nz;
+            const NxNy = Nx * Ny;
+            const NxMax = Nx - 1;
+            const NyMax = Ny - 1;
+            const NzMax = Nz - 1;
+            lookup = (x, y, z) => {
+                const fx = (x - gOx) / gStep;
+                const fy = (y - gOy) / gStep;
+                const fz = (z - gOz) / gStep;
+                const i = Math.floor(fx);
+                const j = Math.floor(fy);
+                const k = Math.floor(fz);
+                // Beide Bounds-Seiten prüfen (i+1 muss noch im Grid liegen).
+                if (i < 0 || j < 0 || k < 0 || i >= NxMax || j >= NyMax || k >= NzMax) {
+                    return sample(x, y, z);
+                }
+                const tx = fx - i;
+                const ty = fy - j;
+                const tz = fz - k;
+                const base = i + j * Nx + k * NxNy;
+                const d000 = d[base];
+                const d100 = d[base + 1];
+                const d010 = d[base + Nx];
+                const d110 = d[base + 1 + Nx];
+                const d001 = d[base + NxNy];
+                const d101 = d[base + 1 + NxNy];
+                const d011 = d[base + Nx + NxNy];
+                const d111 = d[base + 1 + Nx + NxNy];
+                const d00 = d000 * (1 - tx) + d100 * tx;
+                const d10 = d010 * (1 - tx) + d110 * tx;
+                const d01 = d001 * (1 - tx) + d101 * tx;
+                const d11 = d011 * (1 - tx) + d111 * tx;
+                const d0 = d00 * (1 - ty) + d10 * ty;
+                const d1 = d01 * (1 - ty) + d11 * ty;
+                return d0 * (1 - tz) + d1 * tz;
+            };
+        } else {
+            lookup = sample;
+        }
         for (let v = 0; v < positions.length; v += 3) {
             const px = positions[v];
             const py = positions[v + 1];
             const pz = positions[v + 2];
-            const gx = sample(px + eps, py, pz) - sample(px - eps, py, pz);
-            const gy = sample(px, py + eps, pz) - sample(px, py - eps, pz);
-            const gz = sample(px, py, pz + eps) - sample(px, py, pz - eps);
+            const gx = lookup(px + eps, py, pz) - lookup(px - eps, py, pz);
+            const gy = lookup(px, py + eps, pz) - lookup(px, py - eps, pz);
+            const gz = lookup(px, py, pz + eps) - lookup(px, py, pz - eps);
             const len = Math.hypot(gx, gy, gz);
             if (len < 1e-6) {
                 // Gradient ~0 (sehr seltener Sattelpunkt) → Default „oben".
