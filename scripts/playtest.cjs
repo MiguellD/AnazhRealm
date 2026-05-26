@@ -13211,6 +13211,123 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
     );
 }
 
+// V9.95-a (Welle WebGPU-Compute-Foundation): die Phase-1-Foundation analog zu
+// V9.89-Worker-Foundation. Zwei Modi getestet:
+//   - Headless-Chromium ohne GPU-Adapter: navigator.gpu fehlt → status="unavailable",
+//     graceful (kein Fehler, kein Crash, lastError gesetzt). Die meisten
+//     Invarianten prüfen unconditional die API-Existenz + Status-Maschine.
+//   - Echter Browser mit WebGPU: status="ready", foundationProof.trivialMismatches=0
+//     + determinismMismatches=0 (V9.91-Float32-Cutover-Lehre angewandt).
+//
+// Pflicht-Invarianten (immer geprüft):
+//   (a) `_voxelGpuInit`, `_voxelGpuRunFoundationProof`, `_voxelGpuDispose` existieren
+//   (b) Initial-Status ist "notTried" oder "unavailable" (nicht "pending"/"ready" vor Init)
+//   (c) AnazhRealm.WGSL_TRIVIAL_SQUARE existiert als String
+//   (d) Nach `_voxelGpuInit()`-Aufruf ist Status entweder "ready" oder "unavailable",
+//       nie mehr "pending"
+//   (e) Wenn "unavailable": lastError ist gesetzt (sagt warum)
+//   (f) Wenn "ready": foundationProof existiert mit trivialMismatches=0
+//       UND determinismMismatches=0 (Kern-Invariante — V9.91-Float32-Lehre)
+async function checkBandWelleV995WebGpuFoundation(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r) return { error: "no realm" };
+        const out = {};
+        // (a) API-Existenz
+        out.hasInit = typeof r._voxelGpuInit === "function";
+        out.hasRunProof = typeof r._voxelGpuRunFoundationProof === "function";
+        out.hasDispose = typeof r._voxelGpuDispose === "function";
+        out.hasWgslConst = typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
+        // (b) Initial-Status (kann notTried sein, oder bereits ready/unavailable wenn
+        // Worldgen-State-Sync den GPU-Init schon getriggert hat)
+        out.statusBeforeInit = r.state.voxelGpuStatus;
+        // (c) State-Felder existieren in state
+        out.hasStateFields =
+            "voxelGpuStatus" in r.state &&
+            "voxelGpuAdapter" in r.state &&
+            "voxelGpuDevice" in r.state &&
+            "voxelGpuLimits" in r.state &&
+            "voxelGpuFoundationProof" in r.state &&
+            "voxelGpuLastError" in r.state;
+        // (d) navigator.gpu-Verfügbarkeit (informational)
+        out.hasNavigatorGpu = typeof navigator !== "undefined" && !!navigator.gpu;
+        // (e) Init aufrufen — async, fire-and-await
+        try {
+            await r._voxelGpuInit();
+        } catch (e) {
+            return { ...out, error: "init exception: " + e.message };
+        }
+        out.statusAfterInit = r.state.voxelGpuStatus;
+        out.lastError = r.state.voxelGpuLastError;
+        out.foundationProof = r.state.voxelGpuFoundationProof
+            ? {
+                  n: r.state.voxelGpuFoundationProof.n,
+                  trivialMismatches: r.state.voxelGpuFoundationProof.trivialMismatches,
+                  determinismMismatches: r.state.voxelGpuFoundationProof.determinismMismatches,
+              }
+            : null;
+        out.adapterInfo = r.state.voxelGpuAdapterInfo;
+        out.limits = r.state.voxelGpuLimits;
+        // (f) Init ist idempotent — zweiter Aufruf muss denselben Status liefern
+        try {
+            await r._voxelGpuInit();
+        } catch (e) {
+            return { ...out, error: "second init exception: " + e.message };
+        }
+        out.statusAfterSecondInit = r.state.voxelGpuStatus;
+        return out;
+    });
+    if (res.error) {
+        check("V9.95-a WebGPU-Foundation: Band läuft (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("V9.95-a WebGPU-Foundation: _voxelGpuInit existiert", res.hasInit);
+    check("V9.95-a WebGPU-Foundation: _voxelGpuRunFoundationProof existiert", res.hasRunProof);
+    check("V9.95-a WebGPU-Foundation: _voxelGpuDispose existiert", res.hasDispose);
+    check("V9.95-a WebGPU-Foundation: AnazhRealm.WGSL_TRIVIAL_SQUARE als String exportiert", res.hasWgslConst);
+    check("V9.95-a WebGPU-Foundation: 6 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
+    check(
+        "V9.95-a WebGPU-Foundation: Status nach Init ist 'ready' oder 'unavailable' (nicht 'pending')",
+        res.statusAfterInit === "ready" || res.statusAfterInit === "unavailable",
+        `statusAfterInit=${res.statusAfterInit}, hasNavigatorGpu=${res.hasNavigatorGpu}`
+    );
+    check(
+        "V9.95-a WebGPU-Foundation: Init ist idempotent (zweiter Aufruf gleicher Status)",
+        res.statusAfterInit === res.statusAfterSecondInit,
+        `first=${res.statusAfterInit}, second=${res.statusAfterSecondInit}`
+    );
+    if (res.statusAfterInit === "unavailable") {
+        // Headless-Chromium-Pfad (typisch im CI/Cloud): navigator.gpu fehlt,
+        // lastError sagt warum. Das ist KEIN Fehler — der V9.91-Worker-Pfad
+        // greift als Fallback.
+        check(
+            "V9.95-a WebGPU-Foundation: bei 'unavailable' ist lastError gesetzt (Diagnose-Spur)",
+            !!res.lastError,
+            `lastError=${res.lastError}`
+        );
+    } else if (res.statusAfterInit === "ready") {
+        // Echter-Browser-Pfad: Foundation-Proof muss bestanden sein.
+        check(
+            "V9.95-a WebGPU-Foundation: bei 'ready' ist foundationProof gesetzt",
+            !!res.foundationProof,
+            `foundationProof=${JSON.stringify(res.foundationProof)}`
+        );
+        if (res.foundationProof) {
+            check(
+                "V9.95-a WebGPU-Foundation: Float32-Mismatch GPU vs CPU = 0 (V9.91-Lehre, Kern-Invariante)",
+                res.foundationProof.trivialMismatches === 0,
+                `mismatches=${res.foundationProof.trivialMismatches}/${res.foundationProof.n}`
+            );
+            check(
+                "V9.95-a WebGPU-Foundation: Determinismus innerhalb GPU (zwei Runs bit-identisch) — Kern-Invariante",
+                res.foundationProof.determinismMismatches === 0,
+                `mismatches=${res.foundationProof.determinismMismatches}/${res.foundationProof.n}`
+            );
+        }
+    }
+}
+
 // V9.90 (Welle Perf-3.c Phase 2 — Worker-Density-Cutover): empirischer Beweis
 // dass der Streaming-Pfad jetzt Worker-Density nutzt. Vier Probepunkte:
 //   (1) Worker-State ist nach Worldgen-Abschluss synced (Atlas/Erosion/Tarns
@@ -30805,6 +30922,9 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase2Async(ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
             await checkBandWellePerf3cPhase3FullMesh(ctx);
+            // V9.95-a — WebGPU-Compute-Foundation: API existiert, Init ist idempotent,
+            // bei `ready`-Status Float32-Determinismus + bit-identische zwei-Run-GPU-Runs.
+            await checkBandWelleV995WebGpuFoundation(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).

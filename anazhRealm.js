@@ -246,6 +246,24 @@ class AnazhRealm {
             voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
             voxelMeshPending: null, // Set<"cx,cz,lod">
             voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
+            // V9.95-a (Welle WebGPU-Compute-Foundation): die Phase-1-Foundation
+            // analog zu V9.89-Worker-Foundation. `_voxelGpuInit()` versucht
+            // `navigator.gpu` → adapter → device async lazy zu spawnen. Status-
+            // Maschine: `notTried` → `pending` (Init läuft) → `ready` (adapter+
+            // device verfügbar, trivial-shader hat compiliert + Determinismus-
+            // Run bestanden) ODER `unavailable` (kein navigator.gpu, kein
+            // Adapter, kein Device, oder Trivial-Shader fail). Phase 1 baut
+            // KEINEN Integration-Pfad — V9.95-b liefert WGSL-SimplexNoise +
+            // Density-Compute + Pipeline-Cutover. Hier nur die Foundation +
+            // Determinismus-Test (bit-identische Float32-Resultate zwei Runs
+            // hintereinander, plus Sanity gegen Math.fround-CPU-Referenz).
+            voxelGpuStatus: "notTried", // notTried | pending | ready | unavailable
+            voxelGpuAdapter: null, // GPUAdapter (nur ready-State)
+            voxelGpuDevice: null, // GPUDevice
+            voxelGpuAdapterInfo: null, // {vendor, architecture, device, description}
+            voxelGpuLimits: null, // {maxComputeInvocationsPerWorkgroup, maxStorageBufferBindingSize, maxBufferSize}
+            voxelGpuFoundationProof: null, // {trivialMismatches, determinismMismatches, n} nach erfolg. Init
+            voxelGpuLastError: null, // String, falls Init/Run fehlschlug
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -12753,6 +12771,261 @@ class AnazhRealm {
         // weiterhin trustworthy.
         this._voxelWorkerSyncState({ op: "state-set" });
         this.state.voxelWorkerWorldgenSynced = true;
+        // V9.95-a (Welle WebGPU-Compute-Foundation): nach Worldgen-Abschluss
+        // versuchen wir auch den WebGPU-Adapter zu spawnen + den Foundation-
+        // Proof zu laufen. Fire-and-forget — der Streaming-Pump nutzt den
+        // GPU-Pfad nicht (Phase 1), das kommt mit V9.95-b. Bei navigator.gpu
+        // === undefined bleibt status="unavailable", kein Fehler.
+        if (typeof navigator !== "undefined" && navigator.gpu) {
+            this._voxelGpuInit().catch((e) => {
+                this.log(`WebGPU-Init-Promise-Fehler: ${e.message}`, "ERROR");
+            });
+        }
+    }
+
+    // =====================================================================
+    // V9.95-a (Welle WebGPU-Compute-Foundation, 26.05.2026): die Phase-1-
+    // Foundation analog zu V9.89-Worker-Foundation. Spawnt async einen
+    // WebGPU-Device, kompiliert + dispatch'd einen trivialen Compute-Shader
+    // (square × 256 Float32), beweist bit-identische Float32-Determinismus
+    // (zwei Runs identisch, plus Sanity gegen Math.fround-CPU-Referenz).
+    //
+    // V9.95-b (next session) baut WGSL-SimplexNoise + WGSL-Density-Pipeline
+    // (Mirror von `_terrainDensityAt`) + StorageBuffer-Welt-State-Upload +
+    // Cache-First-Lookup `_fetchOrRequestChunkDensityGpu` + Cutover in
+    // `_buildVoxelChunkData` mit GPU als Stufe-0 vor Worker.
+    //
+    // **Lehre V9.94.r** angewandt: WebGPU-Verfügbarkeit ist öffentliche
+    // Wahrheit (Chrome/Edge stable seit v113 Mai 2023, Safari 18+ seit
+    // Sept 2024) — keine Diagnose-Welle nötig. Wenn der Browser kein
+    // navigator.gpu hat, fallbackt der Code stille auf den V9.91-Worker-
+    // Pfad. Defensive 3-stufige Pipeline (GPU → Worker → sync) bleibt.
+    // =====================================================================
+    _voxelGpuInit() {
+        if (this.state.voxelGpuStatus === "ready") return Promise.resolve(true);
+        if (this.state.voxelGpuStatus === "unavailable") return Promise.resolve(false);
+        if (this.state.voxelGpuStatus === "pending" && this._voxelGpuInitPromise) {
+            return this._voxelGpuInitPromise;
+        }
+        this.state.voxelGpuStatus = "pending";
+        this.state.voxelGpuLastError = null;
+        // Defensive: kein navigator.gpu → unavailable, kein Fehler werfen.
+        if (typeof navigator === "undefined" || !navigator.gpu) {
+            this.state.voxelGpuStatus = "unavailable";
+            this.state.voxelGpuLastError = "navigator.gpu nicht vorhanden";
+            return Promise.resolve(false);
+        }
+        this._voxelGpuInitPromise = (async () => {
+            try {
+                const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+                if (!adapter) {
+                    this.state.voxelGpuStatus = "unavailable";
+                    this.state.voxelGpuLastError = "requestAdapter returnt null";
+                    return false;
+                }
+                this.state.voxelGpuAdapter = adapter;
+                // Adapter-Info ist seit Chrome 119+ verfügbar (vorher Promise).
+                // Defensive: optional, nicht-kritisch.
+                try {
+                    const info =
+                        typeof adapter.requestAdapterInfo === "function" ? await adapter.requestAdapterInfo() : null;
+                    if (info) {
+                        this.state.voxelGpuAdapterInfo = {
+                            vendor: info.vendor || "(unbekannt)",
+                            architecture: info.architecture || "(unbekannt)",
+                            device: info.device || "(unbekannt)",
+                            description: info.description || "(unbekannt)",
+                        };
+                    }
+                } catch (_e) {
+                    // adapterInfo ist optional — Browser-Versionen variieren.
+                }
+                const limits = adapter.limits || {};
+                this.state.voxelGpuLimits = {
+                    maxComputeInvocationsPerWorkgroup: limits.maxComputeInvocationsPerWorkgroup || 0,
+                    maxStorageBufferBindingSize: limits.maxStorageBufferBindingSize || 0,
+                    maxBufferSize: limits.maxBufferSize || 0,
+                };
+                const device = await adapter.requestDevice();
+                if (!device) {
+                    this.state.voxelGpuStatus = "unavailable";
+                    this.state.voxelGpuLastError = "requestDevice returnt null";
+                    return false;
+                }
+                this.state.voxelGpuDevice = device;
+                // Uncaptured-Error-Listener: WGSL-Compile-Failures + Runtime-
+                // Validation-Errors landen hier (nicht im await-throw). Wir
+                // markieren das letzte Fehler-Message für Diagnose.
+                device.addEventListener("uncapturederror", (ev) => {
+                    const msg = ev.error && ev.error.message ? ev.error.message : String(ev.error);
+                    this.state.voxelGpuLastError = "uncapturederror: " + msg;
+                    this.log(`WebGPU uncapturederror: ${msg}`, "ERROR");
+                });
+                // Foundation-Beweis: trivial WGSL + Determinismus + Float32-CPU-Match.
+                const proof = await this._voxelGpuRunFoundationProof(device);
+                if (!proof.ok) {
+                    this.state.voxelGpuStatus = "unavailable";
+                    this.state.voxelGpuLastError = "Foundation-Proof fehlgeschlagen: " + proof.reason;
+                    return false;
+                }
+                this.state.voxelGpuFoundationProof = proof;
+                this.state.voxelGpuStatus = "ready";
+                const a = this.state.voxelGpuAdapterInfo;
+                const tag = a ? `${a.vendor}/${a.architecture}/${a.device}` : "(adapterinfo nicht verfügbar)";
+                this.log(
+                    `WebGPU Foundation bereit: ${tag} — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.`,
+                    "INFO"
+                );
+                return true;
+            } catch (e) {
+                this.state.voxelGpuStatus = "unavailable";
+                this.state.voxelGpuLastError = "Init-Exception: " + e.message;
+                this.log(`WebGPU-Init-Fehler: ${e.message}`, "ERROR");
+                return false;
+            }
+        })();
+        return this._voxelGpuInitPromise;
+    }
+
+    // V9.95-a Foundation-Beweis. Trivialer WGSL-Shader `square(x)` über 256
+    // Float32-Eingaben:
+    //   (a) WGSL compiliert ohne Fehler;
+    //   (b) Dispatch + Read-Back via mapAsync funktioniert;
+    //   (c) Resultat bit-identisch zur Math.fround(v*v)-CPU-Referenz
+    //       (V9.91-Float32-Cutover-Lehre: identische Float32-Mathematik
+    //       beidseitig — WGSL `f32 * f32` und JS `Math.fround(v * v)`
+    //       sind per IEEE-754-Spec identisch);
+    //   (d) Zweiter Run bit-identisch zum ersten (Determinismus innerhalb GPU).
+    // Returns {ok, reason?, n, trivialMismatches, determinismMismatches}.
+    async _voxelGpuRunFoundationProof(device) {
+        const N = 256;
+        const inputData = new Float32Array(N);
+        for (let i = 0; i < N; i++) inputData[i] = i * 0.137;
+        const cpuRef = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+            const v = inputData[i];
+            cpuRef[i] = Math.fround(v * v);
+        }
+        const shaderCode = AnazhRealm.WGSL_TRIVIAL_SQUARE;
+        let module;
+        try {
+            module = device.createShaderModule({ code: shaderCode });
+            const ci = await module.getCompilationInfo();
+            const fatals = ci.messages.filter((m) => m.type === "error");
+            if (fatals.length > 0) {
+                return { ok: false, reason: "WGSL-Compile-Error: " + fatals.map((m) => m.message).join("; ") };
+            }
+        } catch (e) {
+            return { ok: false, reason: "Shader-Modul-Erschaffung: " + e.message };
+        }
+        const inBuf = device.createBuffer({
+            size: inputData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+        device.queue.writeBuffer(inBuf, 0, inputData);
+        const outBuf = device.createBuffer({
+            size: inputData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+        });
+        const readBuf = device.createBuffer({
+            size: inputData.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+        });
+        const pipeline = device.createComputePipeline({
+            layout: "auto",
+            compute: { module, entryPoint: "main" },
+        });
+        const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: inBuf } },
+                { binding: 1, resource: { buffer: outBuf } },
+            ],
+        });
+        const dispatchAndRead = async () => {
+            const enc = device.createCommandEncoder();
+            const pass = enc.beginComputePass();
+            pass.setPipeline(pipeline);
+            pass.setBindGroup(0, bindGroup);
+            pass.dispatchWorkgroups(Math.ceil(N / 64));
+            pass.end();
+            enc.copyBufferToBuffer(outBuf, 0, readBuf, 0, inputData.byteLength);
+            device.queue.submit([enc.finish()]);
+            await readBuf.mapAsync(GPUMapMode.READ);
+            const copy = new Float32Array(readBuf.getMappedRange().slice(0));
+            readBuf.unmap();
+            return copy;
+        };
+        let run1, run2;
+        try {
+            run1 = await dispatchAndRead();
+            run2 = await dispatchAndRead();
+        } catch (e) {
+            try {
+                inBuf.destroy();
+                outBuf.destroy();
+                readBuf.destroy();
+            } catch (_) {
+                /* ignore */
+            }
+            return { ok: false, reason: "Dispatch: " + e.message };
+        }
+        let trivialMismatches = 0;
+        for (let i = 0; i < N; i++) {
+            if (run1[i] !== cpuRef[i]) trivialMismatches++;
+        }
+        let determinismMismatches = 0;
+        for (let i = 0; i < N; i++) {
+            if (run1[i] !== run2[i]) determinismMismatches++;
+        }
+        // Buffers freigeben — die Foundation behält sie nicht.
+        try {
+            inBuf.destroy();
+            outBuf.destroy();
+            readBuf.destroy();
+        } catch (_) {
+            /* ignore */
+        }
+        if (trivialMismatches > 0) {
+            return {
+                ok: false,
+                reason: `Float32-Mismatch GPU vs CPU: ${trivialMismatches}/${N} (V9.91-Lehre verletzt — Float32-strict scheitert)`,
+                n: N,
+                trivialMismatches,
+                determinismMismatches,
+            };
+        }
+        if (determinismMismatches > 0) {
+            return {
+                ok: false,
+                reason: `Determinismus-Bruch: ${determinismMismatches}/${N} Floats unterscheiden sich zwischen zwei identischen GPU-Runs`,
+                n: N,
+                trivialMismatches,
+                determinismMismatches,
+            };
+        }
+        return { ok: true, n: N, trivialMismatches, determinismMismatches };
+    }
+
+    // V9.95-a — räumt die WebGPU-Ressourcen beim Welt-Wechsel oder Dispose.
+    // WebGPU-Devices müssen explizit `destroy()` bekommen, sonst hält der
+    // Browser sie als „dirty" GPU-Slot und der nächste Worldgen kriegt
+    // potentiell einen zweiten Device-Slot (Quota-Limit). Idempotent.
+    _voxelGpuDispose() {
+        try {
+            if (this.state.voxelGpuDevice && typeof this.state.voxelGpuDevice.destroy === "function") {
+                this.state.voxelGpuDevice.destroy();
+            }
+        } catch (_e) {
+            // Defensive
+        }
+        this.state.voxelGpuDevice = null;
+        this.state.voxelGpuAdapter = null;
+        this.state.voxelGpuAdapterInfo = null;
+        this.state.voxelGpuLimits = null;
+        this.state.voxelGpuFoundationProof = null;
+        this.state.voxelGpuStatus = "notTried";
+        this._voxelGpuInitPromise = null;
     }
 
     creatureJump(creature, jumpHeight) {
@@ -37943,7 +38216,29 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.94";
+AnazhRealm.VERSION = "9.95";
+
+// V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
+// als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
+// `f32 * f32` (square) in storage-buffer 1. Workgroup-Size 64, dispatch
+// 4 Workgroups deckt N=256. Per IEEE-754-Spec ist `f32 * f32` deterministisch
+// + bit-identisch zu JS `Math.fround(v * v)` (single-precision multiplication
+// hat keine implementation-defined precision, anders als sin/cos/sqrt).
+// Wer das Pattern für V9.95-b's WGSL-Density-Shader erweitert: Storage-Buffer
+// als read/read_write deklarieren, Uniforms separat, gleicher Dispatch-Stil.
+AnazhRealm.WGSL_TRIVIAL_SQUARE = `
+    @group(0) @binding(0) var<storage, read> inBuf: array<f32>;
+    @group(0) @binding(1) var<storage, read_write> outBuf: array<f32>;
+
+    @compute @workgroup_size(64)
+    fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let i = gid.x;
+        if (i < arrayLength(&inBuf)) {
+            let v = inBuf[i];
+            outBuf[i] = v * v;
+        }
+    }
+`;
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
