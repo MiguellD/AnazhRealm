@@ -17670,7 +17670,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
         r._applyDayNightToScene();
-        const skyU = r.state.skybox.material.uniforms.nebulaColor;
+        // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
+        // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
+        const skyU = r.state.skyboxUniforms.nebulaColor;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         r.state.player.emotions.awe = 1.0;
         r._applyDayNightToScene();
@@ -17902,12 +17904,23 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         } catch {
             out.skyboxFollowsCamera = false;
         }
-        // Shader nutzt lokale Position (vDir) statt vWorldPosition
-        if (r.state.skybox && r.state.skybox.material && r.state.skybox.material.vertexShader) {
+        // V10.0-f-1 Doku-Sync: NodeMaterial hat keinen .vertexShader-String mehr.
+        // Die V8.26-Lehre (lokale Position als Sample-Achse statt vWorldPosition)
+        // lebt jetzt im TSL-Tree von createGalaxySkybox: `const vDir =
+        // normalize(positionLocal);` plus mehrere vDir-Konsumenten im colorNode.
+        // Probe scannt den Builder-Source nach diesen TSL-Patterns.
+        out.shaderUsesLocalPosition = false;
+        out.shaderFragmentUsesVDir = false;
+        try {
+            const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
             out.shaderUsesLocalPosition =
-                /varying vec3 vDir/.test(r.state.skybox.material.vertexShader) &&
-                /vDir = normalize\(position\)/.test(r.state.skybox.material.vertexShader);
-            out.shaderFragmentUsesVDir = /vDir/.test(r.state.skybox.material.fragmentShader);
+                /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
+            // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
+            // (mehrere noise3(vDir.mul(...)) + vDir.y im horizonMask).
+            out.shaderFragmentUsesVDir =
+                /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
+        } catch {
+            // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
         }
 
         // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
@@ -18268,20 +18281,23 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
         out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
-        // Skybox-Shader hat cloudCover-Uniform
+        // V10.0-f-1 Doku-Sync: cloudCover-Uniform lebt jetzt als uniform-Knoten
+        // in state.skyboxUniforms (statt material.uniforms). Plus die TSL-
+        // Identität des Materials als Bonus-Probe (isMeshBasicNodeMaterial).
         out.skyboxHasClouds = !!(
+            r.state.skyboxUniforms &&
+            r.state.skyboxUniforms.cloudCover &&
             r.state.skybox &&
             r.state.skybox.material &&
-            r.state.skybox.material.uniforms &&
-            r.state.skybox.material.uniforms.cloudCover
+            r.state.skybox.material.isMeshBasicNodeMaterial === true
         );
-        // Wolken-Cover folgt weather
+        // Wolken-Cover folgt weather (Pfad zieht aus state.skyboxUniforms)
         r.state.weather = "rainy";
         r._applyDayNightToScene();
-        const cloudRainy = r.state.skybox.material.uniforms.cloudCover.value;
+        const cloudRainy = r.state.skyboxUniforms.cloudCover.value;
         r.state.weather = "sunny";
         r._applyDayNightToScene();
-        const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
+        const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
         // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
@@ -22447,8 +22463,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Helfer, Skybox-Wolken im _dayNightApplySkybox-Helfer.
         const terrainSrc = r._dayNightApplyTerrainShaderUniforms.toString();
         out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(terrainSrc);
+        // V10.0-f-1 Doku-Sync: _dayNightApplySkybox liest jetzt aus
+        // state.skyboxUniforms. Der Cross-Fade-Helper-Aufruf hat dieselbe
+        // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
         const skyboxSrc = r._dayNightApplySkybox.toString();
-        out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(skyboxSrc);
+        out.cloudFades = /u\.cloudCover\.value\s*=\s*this\._weatherBlendedValue/.test(skyboxSrc);
         // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
         const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
@@ -28817,9 +28836,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
         p.emotionLastTick = 299;
+        // V10.0-f-1 Doku-Sync: nebulaColor lebt jetzt in state.skyboxUniforms.
         const readSkyHex = () =>
-            r.state.skybox && r.state.skybox.material.uniforms.nebulaColor
-                ? r.state.skybox.material.uniforms.nebulaColor.value.getHex()
+            r.state.skyboxUniforms && r.state.skyboxUniforms.nebulaColor
+                ? r.state.skyboxUniforms.nebulaColor.value.getHex()
                 : -1;
         const skyBefore = readSkyHex();
         r.updatePlayerEmotions(300);

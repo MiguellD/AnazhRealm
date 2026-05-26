@@ -357,6 +357,49 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-f-1 — skyboxMaterial → MeshBasicNodeMaterial TSL (26.05.2026, erste Sub-Welle des V10.0-f-Bogens, ~140 Z. netto):**
+
+Der V10.0-Bogen schloss seine Foundation mit V10.0-e (Hot-Swap defensive). Die WebGPU-Welt-Vision (`alle Materials laufen dauerhaft auf GPU`) verlangt vier Material-Migrationen. V10.0-f-1 zieht den einfachsten zuerst.
+
+**Wurzel-Vision**: skyboxMaterial ist 3-Octaven-Nebula-Noise + horizont-genordete Wolken-Schicht (V8.26 + V8.28 D). 63 Z. GLSL-Shader, drei Uniforms (time, nebulaColor, cloudCover). Welt-Optik MUSS 1:1 erhalten bleiben — keine vereinfachte Variante. Voll-Qualität-Versprechen des V10.0-f-Bogens.
+
+**Drei strukturelle Bausteine**:
+
+1. **`vendor/three-bootstrap.js` erweitert** (~10 Z. netto): drei zusätzliche Imports — `MeshBasicNodeMaterial` (default-Export aus `three/addons/nodes/materials/`), `* as TSL` aus `three/addons/nodes/Nodes.js` (alle TSL-Helper als Namespace: uniform, vec3, float, positionLocal, normalize, sin, dot, floor, fract, mix, smoothstep, clamp, tslFn, …), und vor allem **SIDE-EFFECT-IMPORT** `three/addons/renderers/webgl-legacy/nodes/WebGLNodes.js`. Letzterer ist der Hebel: das Modul patcht `Material.prototype.onBuild` so, dass jedes `NodeMaterial` AUCH unter dem klassischen `THREE.WebGLRenderer` kompiliert + rendert (V8-Pfad für Cloud-Container, Safari < 18, Firefox ohne `dom.webgpu.enabled`, mobile Browser bis Mitte 2026). Damit läuft das neue skyboxMaterial AUF BEIDEN Renderern — kein WebGPU-only-Risiko, keine Doppel-Pflege, kein Material-Type-Switch in der Renderer-Auswahl-Logik. `THREE_GLOBAL.MeshBasicNodeMaterial` + `THREE_GLOBAL.TSL` angehängt.
+
+2. **`createGalaxySkybox` neu** (~125 Z. TSL ersetzt ~63 Z. GLSL): `MeshBasicNodeMaterial` (no lights, ideal für Skybox-Sphere) statt `ShaderMaterial`. `colorNode` als TSL-Tree:
+   - `vDir = normalize(positionLocal)` — V8.26-Bug-1-Lehre erhalten (lokale Vertex-Position als stabile Sample-Achse, egal wo der Spieler steht; Skybox folgt der Kamera im Render-Loop).
+   - `hash3` als `tslFn`-Closure: `fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123))` — IDENTISCHE Magic-Konstanten zur GLSL-Variante.
+   - `noise3` als `tslFn`-Closure: `floor` + `fract` + smoothstep-Approximation `u = f² · (3 − 2f)` + 8-Corner-Trilinear-Mix. Identische Topologie zur GLSL-Variante.
+   - Drei `noise3`-Octaven für Nebula (Frequenzen 1.0/2.0/4.0, Zeit-Speeds 0.02/0.01/0.005) — atmender Himmel.
+   - Zwei `noise3`-Octaven für Wolken (Frequenzen 2.5/6.0, Zeit-Speeds 0.012+0.008/0.02+0.014) — driftende Wolken.
+   - `horizonMask = smoothstep(-0.05, 0.35, vDir.y)` — Wolken nur oberhalb des Horizonts.
+   - `cloudColor = mix(grau, weiß, clamp(skyLum × 2.2))` — Wolken folgen Himmel-Helligkeit.
+   - `finalColor = mix(nebula, cloudColor, clouds)` als Output.
+   Drei Uniforms (`uTime`, `uNebulaColor` mit `THREE.Color(0x4b0082)` Default, `uCloudCover` Default 0.3) als `uniform()`-Knoten in `state.skyboxUniforms` abgelegt. `material.side = BackSide`, `material.depthWrite = false` — gleich wie vorher.
+
+3. **Drei Mutationspfade umverdrahtet** auf `state.skyboxUniforms`:
+   - (a) DSL `skybox_color` (Z1450-1465 → Z1456-1467): schreibt `state.skyboxUniforms.nebulaColor.value = new THREE.Color(color)`.
+   - (b) `_dayNightApplySkybox` (Z35384-35389 → Z35384-35395): liest `state.skyboxUniforms`, schreibt `u.nebulaColor.value.setRGB(...)` + `u.cloudCover.value = _weatherBlendedValue(0.22, 0.85)`.
+   - (c) `_loopSkyboxPlanets` (Z38504 → Z38504-38507): schreibt `state.skyboxUniforms.time.value = currentTime`.
+   Jede Stelle defensiv (Existenz-Probe `if (this.state.skyboxUniforms)` → Sicherheits-Wand falls Vendor-Bruch + createGalaxySkybox früh-returnt).
+
+**Sechs Test-Probes mit-gewandert** (V9.56-i-Doku-Sync-Pattern angewandt — Tests scannen die alten `material.vertexShader/fragmentShader`-Strings + `material.uniforms.X.value`-Pfade, beides gibt's bei NodeMaterial nicht mehr): V8.26-Bug-1-Probes (Vertex-Shader nutzt lokale Position + Fragment-Shader sampelt mit vDir) scannen jetzt `createGalaxySkybox.toString()` nach `normalize(positionLocal)` + `vDir.y`/`noise3(vDir`-Konsumenten; V8.28-D-`skyboxHasClouds` liest `state.skyboxUniforms.cloudCover` + neue Bonus-Probe `material.isMeshBasicNodeMaterial === true`; V8.28-D-`cloudsFollowWeather` liest `state.skyboxUniforms.cloudCover.value`; V8.46-Cross-Fade-Pattern angepasst auf `u.cloudCover.value = this._weatherBlendedValue`; Ring-3-V2-`aweTriggersSkybox` + W6.G3-V2-`aweRaisesBlue` lesen nebulaColor jetzt aus skyboxUniforms.
+
+**State-Init**: neues `state.skyboxUniforms: null` deklariert (audit:strict-Disziplin — alle state-Top-Levels in init).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (sechs mit-gewanderte Probes grün); audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three-bootstrap.js` +20 Z. (3 Imports + 3 Globals + Doku), `anazhRealm.js` ~+80 Z. netto (TSL-Tree ersetzt GLSL-String, 3 Mutationen umverdrahtet, 1 state-Field), `scripts/playtest.cjs` ~+25 Z. netto (6 Probe-Anpassungen), `index.html` (Cache-Buster 10.0.4 → 10.0.5 + stale-title v9.93 → v10.0-f1 heilen), `package.json` 10.0.4 → 10.0.5, `AnazhRealm.VERSION` "10.0" → "10.0-f1".
+
+**Lehren verdrahtet** (permanent in CLAUDE.md/Gotchas, neue Sektion „Rendering · TSL-Migration"):
+
+1. **NodeMaterial läuft auf BEIDEN Renderern via `webgl-legacy/nodes/WebGLNodes.js`-Side-Effect-Patch** — wer eine `ShaderMaterial → NodeMaterial`-Migration plant (TSL-Port, Vorbedingung für WebGPU-Rendering), MUSS diesen Side-Effect-Import im Bootstrap haben. Sonst: NodeMaterial unter klassischem `WebGLRenderer` rendert NICHT (kein onBuild-Hook → kein Shader-Code generiert → schwarze/leere Material-Slots, kein Crash-Log). Der Patch ist trivial (eine `import`-Zeile ohne Default-Export), aber unverzichtbar für Browser-ohne-WebGPU-Realität.
+
+2. **TSL-uniform-Knoten haben `.value`-Setter, aber leben NICHT in `material.uniforms`** — in TSL definiert man Live-Uniforms via `uniform(initialValue)` (gibt ein uniform-Node-Objekt zurück), das man im `colorNode`/`positionNode` Tree als Sub-Knoten nutzt. Der Setter ist `myUniform.value = newValue` — semantisch identisch zum alten `material.uniforms.myUniform.value`. ABER: das uniform-Objekt lebt NICHT in `material.uniforms` (existiert bei NodeMaterial gar nicht mehr). Pattern: alle Uniforms eines TSL-Materials in einem State-Slot sammeln (`state.skyboxUniforms = { time, nebulaColor, cloudCover }`) und alle Mutationspfade dort hinein schreiben. **Test-Sync-Pflicht**: jeder Playtest-Probe der die alten `material.uniforms.X.value`-Pfade oder `material.vertexShader/fragmentShader`-Strings grep'pt, MUSS migriert werden — vor jeder TSL-Sub-Welle: `grep -n '<materialName>\.material\.' scripts/playtest.cjs` laufen, alle Treffer als „mit-wandernde Doku" merken.
+
+**Was V10.0-f-2 liefern wird (next session, ~1-2h)**: `starsMaterial` portieren. Vorbedingung kleiner als f-1 (~30 Z. GLSL: per-Stern `aSize` + soft round Falloff via `gl_PointCoord` + `uOpacity` + `uPixelRatio` + AdditiveBlending). Pattern: `PointsNodeMaterial` (Vendor liefert), `sizeNode = attribute('aSize').mul(uniform(pixelRatio))`, `colorNode = vec4(attribute('color'), smoothstep(0.5, 0.08, length(pointUV.sub(0.5))).mul(uOpacity))`. Discard für `alpha < 0.01`. Drei Mutationspfade umverdrahten (initial-Setup + `_dayNightApplyStarField`).
+
+---
+
 **V10.0-a/b/c/d/e — Der Three.js-Modernisierungs-Bogen (26.05.2026, fünf Sub-Wellen über eine Session, alte Krücken gelöst):**
 
 Nach V9.95-Bürokraten-Bogen + V9.96-Spawn-Burst-Heilung kam der Schöpfer-Auftrag: „du hast einfach die gesamte arbeit resetet, das Umstellen auf die Zukunft und Lösen von alten Krücken wäre der weg gewesen". Three.js r134 (2021) war die alte Krücke. WebGPURenderer existiert nur in r150+. V10.0-Bogen ist die Migration zur Zukunft.

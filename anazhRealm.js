@@ -52,6 +52,12 @@ class AnazhRealm {
             voxelRebuildAttempts: null,
             terrainPhysicsBody: null,
             skybox: null,
+            // V10.0-f-1 — Live-Uniforms der TSL-Skybox (uniform-Knoten mit
+            // .value-Setter): time, nebulaColor, cloudCover. Initialisiert in
+            // createGalaxySkybox(); mutiert von DSL skybox_color, _dayNight-
+            // ApplySkybox und _loopSkyboxPlanets (alle drei lesen aus diesem
+            // Slot statt aus dem alten material.uniforms).
+            skyboxUniforms: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -1448,16 +1454,18 @@ class AnazhRealm {
                 this.state.timeOfDay = c(value, 0, 1);
             },
             skybox_color: ([color]) => {
-                // Die Skybox-Shader hat das Uniform `nebulaColor` (siehe
-                // createGalaxySkybox). Vorher schrieb dieser DSL-Op fälschlich
-                // in ein nicht existierendes `tintColor`-Uniform und war
-                // daher seit Phase 1 ein stiller No-Op — Ring 3 V2 hat das
-                // beim Trigger-Test bemerkt.
+                // V10.0-f-1 — Skybox ist jetzt MeshBasicNodeMaterial (TSL),
+                // Uniforms leben in `state.skyboxUniforms` als uniform-Knoten
+                // mit direkt mutierbarem `.value`. Der alte
+                // `material.uniforms.nebulaColor.value`-Pfad ist weg.
+                // Pre-V10.0-f-1-Lehre (Ring 3 V2): vorher hieß das Uniform
+                // fälschlich `tintColor` und war ein stiller No-Op — der
+                // jetzige Pfad schreibt die kanonische Welt-Wahrheit.
                 if (typeof color !== "string") return;
-                const skybox = this.state.skybox;
-                if (skybox && skybox.material && skybox.material.uniforms && skybox.material.uniforms.nebulaColor) {
+                const uNebula = this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor;
+                if (uNebula) {
                     try {
-                        skybox.material.uniforms.nebulaColor.value = new THREE.Color(color);
+                        uNebula.value = new THREE.Color(color);
                     } catch {
                         // ungültige Farbe ignorieren
                     }
@@ -9769,97 +9777,126 @@ class AnazhRealm {
 
     // ### Skybox ###
     createGalaxySkybox() {
-        // V8.26 Bug 1 — Sternenrauschen-Fix: Shader nutzt LOKALE `position`
-        // (Vertex-Attribut, immer dieselbe Sphere-Geometrie) statt
-        // `vWorldPosition` (= modelMatrix × position). Vorher rauschten die
-        // Sterne beim Gehen weil die modelMatrix-Translation den Sample-
-        // Punkt verschob. Mit der Skybox die der Kamera folgt (im Render-
-        // Loop) + lokaler `position` als Sample-Achse sind die Sterne
-        // ABSOLUT in Welt-Richtung stabil — egal wo der Spieler steht.
-        const vertexShader = `
-        varying vec3 vDir;
-        void main() {
-            vDir = normalize(position);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        // V10.0-f-1 — skyboxMaterial portiert von ShaderMaterial (GLSL) zu
+        // MeshBasicNodeMaterial (TSL). Welt-Optik 1:1 gespiegelt — dieselbe
+        // 3-Octaven-Nebula-Noise + horizont-genordete Wolken-Schicht mit
+        // Identitäts-Hash-Konstanten (12.9898/78.233/45.5432 + 43758.5453).
+        // Läuft jetzt nativ auf WebGPURenderer (kein Hot-Swap-Trigger mehr
+        // für den Skybox-Pfad) UND auf klassischem WebGLRenderer via
+        // `webgl-legacy/nodes/WebGLNodes.js` (Bootstrap-Side-Effect-Patch).
+        //
+        // Vorheriger Bug-Klassen-Schutz (V8.26 Bug 1): vDir = normalize-
+        // (positionLocal) hält den Sample-Punkt absolut in Welt-Richtung,
+        // egal wo der Spieler steht — die Skybox folgt der Kamera im
+        // Render-Loop, lokale Vertex-Position bleibt die stabile Achse.
+        //
+        // Drei Live-Uniforms in `state.skyboxUniforms` (uniform-Knoten),
+        // mit `.value`-Setter mutierbar — drei Konsumenten:
+        //  - DSL skybox_color (setzt nebulaColor.value)
+        //  - _dayNightApplySkybox (setzt nebulaColor + cloudCover.value)
+        //  - _loopSkyboxPlanets (setzt time.value pro Frame)
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            // Sicherheits-Wand: ohne Node-Build fällt nichts in die Szene.
+            // Sollte nie eintreten — der Bootstrap legt beides ab. Defensive
+            // Diagnose-Hilfe falls Vendor-Bruch.
+            this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
+            return;
         }
-    `;
-        const fragmentShader = `
-        uniform float time;
-        uniform vec3 nebulaColor;
-        uniform float cloudCover;
-        varying vec3 vDir;
-    float random(vec3 st) {
-        return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
-    }
+        const {
+            uniform,
+            vec3,
+            float,
+            positionLocal,
+            normalize,
+            sin,
+            dot,
+            floor,
+            fract,
+            mix,
+            smoothstep,
+            clamp,
+            tslFn,
+        } = TSL;
 
-    float noise(vec3 st) {
-        vec3 i = floor(st);
-        vec3 f = fract(st);
-        vec3 u = f * f * (3.0 - 2.0 * f);
-        return mix(
-            mix(
-                mix(random(i + vec3(0.0, 0.0, 0.0)), random(i + vec3(1.0, 0.0, 0.0)), u.x),
-                mix(random(i + vec3(0.0, 1.0, 0.0)), random(i + vec3(1.0, 1.0, 0.0)), u.x),
-                u.y
-            ),
-            mix(
-                mix(random(i + vec3(0.0, 0.0, 1.0)), random(i + vec3(1.0, 0.0, 1.0)), u.x),
-                mix(random(i + vec3(0.0, 1.0, 1.0)), random(i + vec3(1.0, 1.0, 1.0)), u.x),
-                u.y
-            ),
-            u.z
-        );
-    }
+        // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
+        // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
+        const uTime = uniform(0.0);
+        const uNebulaColor = uniform(new THREE.Color(0x4b0082)); // Indigofarben
+        const uCloudCover = uniform(0.3);
 
-    void main() {
-        // V8.26 Bug 1 — vDir ist normalize(position), stabil egal wo Spieler steht.
-        // Nebula-Noise SEHR langsam animieren (time × 0.02 statt 0.1) damit
-        // die Wolken atmen ohne zu zappeln.
-        float n1 = noise(vDir * 1.0 + time * 0.02);
-        float n2 = noise(vDir * 2.0 + time * 0.01);
-        float n3 = noise(vDir * 4.0 + time * 0.005);
-        // V8.28 6.G4.b — Sterne sind KEIN Shader-Noise mehr. Prozedurales
-        // Stern-Noise hat keine Pixel-Footprint-Info → flackert bei jeder
-        // Kamera-Rotation (Sub-Pixel-Sample-Aliasing). Echte Sterne sind
-        // jetzt diskrete THREE.Points (siehe _buildStarField) — der
-        // Rasterizer macht echtes Anti-Aliasing, kein Flackern möglich.
-        // Skybox traegt nur noch Nebula-Schimmer + (V8.28 D) Wolken.
-        vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
-        // V8.28 6.G4.b D — Wolken-Schicht. Horizont-nahes Noise, weiss
-        // getintet, langsam ziehend. cloudCover emergiert aus weather
-        // (rainy → dichter). Wolken nur oberhalb des Horizonts (vDir.y > 0).
-        float horizonMask = smoothstep(-0.05, 0.35, vDir.y);
-        float cloudN = noise(vDir * 2.5 + vec3(time * 0.012, 0.0, time * 0.008));
-        float cloudN2 = noise(vDir * 6.0 + vec3(time * 0.02, 0.0, time * 0.014));
-        float clouds = smoothstep(0.55, 0.85, cloudN * 0.65 + cloudN2 * 0.35);
-        clouds *= horizonMask * cloudCover;
-        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiss, Nacht dunkelgrau)
-        float skyLum = (nebulaColor.r + nebulaColor.g + nebulaColor.b) / 3.0;
-        vec3 cloudColor = mix(vec3(0.32, 0.34, 0.40), vec3(1.0, 0.98, 0.95), clamp(skyLum * 2.2, 0.0, 1.0));
-        color = mix(color, cloudColor, clouds);
-        gl_FragColor = vec4(color, 1.0);
-    }
-`;
+        // 3D-Hash-Noise (Vendor-Spiegel der alten GLSL `noise(vec3)`):
+        // dieselben Magic-Konstanten, dieselbe Smoothstep-Kurve, dieselbe
+        // 8-Corner-Trilinear-Mix-Topologie. Bit-Identität ist nicht garantiert
+        // (TSL sin/fract sind implementation-defined precision auf WebGPU,
+        // s. WGSL §3.6), aber das Smoothing absorbiert <1e-4-Drift in die
+        // weichen Wolken-Übergänge — visuell ununterscheidbar.
+        const hash3 = tslFn(([st]) => {
+            return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123));
+        });
+        const noise3 = tslFn(([st]) => {
+            const i = floor(st);
+            const f = fract(st);
+            // smoothstep-Approximation f² · (3 − 2f), identisch zur GLSL-Variante
+            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+            const c000 = hash3(i);
+            const c100 = hash3(i.add(vec3(1.0, 0.0, 0.0)));
+            const c010 = hash3(i.add(vec3(0.0, 1.0, 0.0)));
+            const c110 = hash3(i.add(vec3(1.0, 1.0, 0.0)));
+            const c001 = hash3(i.add(vec3(0.0, 0.0, 1.0)));
+            const c101 = hash3(i.add(vec3(1.0, 0.0, 1.0)));
+            const c011 = hash3(i.add(vec3(0.0, 1.0, 1.0)));
+            const c111 = hash3(i.add(vec3(1.0, 1.0, 1.0)));
+            return mix(
+                mix(mix(c000, c100, u.x), mix(c010, c110, u.x), u.y),
+                mix(mix(c001, c101, u.x), mix(c011, c111, u.x), u.y),
+                u.z
+            );
+        });
+
+        // vDir = normalize(positionLocal) — stabile Welt-Achse, V8.26-Bug-Schutz.
+        const vDir = normalize(positionLocal);
+
+        // Drei Octaven Nebula-Noise (sehr langsam animiert, atmender Himmel).
+        const n1 = noise3(vDir.mul(1.0).add(uTime.mul(0.02)));
+        const n2 = noise3(vDir.mul(2.0).add(uTime.mul(0.01)));
+        const n3 = noise3(vDir.mul(4.0).add(uTime.mul(0.005)));
+        const nebulaTint = float(0.5).add(n1.add(n2).add(n3).div(3.0).mul(0.5));
+        const nebula = uNebulaColor.mul(nebulaTint);
+
+        // Wolken-Schicht: horizont-genordet (vDir.y > 0), zwei-Octaven-Noise,
+        // cloudCover-skaliert. Identisch zur GLSL-Variante.
+        const horizonMask = smoothstep(float(-0.05), float(0.35), vDir.y);
+        const cloudN = noise3(vDir.mul(2.5).add(vec3(uTime.mul(0.012), 0.0, uTime.mul(0.008))));
+        const cloudN2 = noise3(vDir.mul(6.0).add(vec3(uTime.mul(0.02), 0.0, uTime.mul(0.014))));
+        const cloudMix = cloudN.mul(0.65).add(cloudN2.mul(0.35));
+        const clouds = smoothstep(float(0.55), float(0.85), cloudMix).mul(horizonMask).mul(uCloudCover);
+
+        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiß, Nacht dunkelgrau).
+        const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
+        const cloudColor = mix(vec3(0.32, 0.34, 0.4), vec3(1.0, 0.98, 0.95), clamp(skyLum.mul(2.2), 0.0, 1.0));
+
+        const finalColor = mix(nebula, cloudColor, clouds);
 
         const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
-        const skyboxMaterial = new THREE.ShaderMaterial({
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            uniforms: {
-                time: { value: 0.0 },
-                nebulaColor: { value: new THREE.Color(0x4b0082) }, // Indigofarben
-                // V8.28 6.G4.b D — Wolken-Deckung (0..1). Aus weather
-                // abgeleitet in _applyDayNightToScene (sunny ~0.25, rainy ~0.85).
-                cloudCover: { value: 0.3 },
-            },
-            side: THREE.BackSide,
-            depthWrite: false,
-        });
+        const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
+        skyboxMaterial.colorNode = finalColor;
+        skyboxMaterial.side = THREE.BackSide;
+        skyboxMaterial.depthWrite = false;
+
+        // Live-Uniforms speichern — DSL/dayNight/loop schreiben hier hinein
+        // statt in das alte `material.uniforms.X.value` (das gibt's bei
+        // NodeMaterial nicht mehr; uniform-Knoten haben .value direkt).
+        this.state.skyboxUniforms = {
+            time: uTime,
+            nebulaColor: uNebulaColor,
+            cloudCover: uCloudCover,
+        };
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
         this.state.scene.add(skybox);
         this.state.skybox = skybox;
-        this.log("Galaxy-Skybox erstellt");
+        this.log("Galaxy-Skybox erstellt (V10.0-f-1 TSL)");
 
         // Planeten hinzufügen
         this.state.planets = [];
@@ -35380,12 +35417,17 @@ class AnazhRealm {
 
     // Skybox-Uniforms: nebulaColor aus skyR/G/B + Wolken-Deckung aus weather
     // (V8.28 6.G4.b D, V8.46 Cross-Fade über Wetter-Transition).
+    // V10.0-f-1: Uniforms leben in `state.skyboxUniforms` (uniform-Knoten),
+    // nicht mehr in `material.uniforms`.
     _dayNightApplySkybox(tint) {
-        if (!this.state.skybox || !this.state.skybox.material || !this.state.skybox.material.uniforms) return;
-        const u = this.state.skybox.material.uniforms.nebulaColor;
-        if (u && u.value) u.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
-        const cloudU = this.state.skybox.material.uniforms.cloudCover;
-        if (cloudU) cloudU.value = this._weatherBlendedValue(0.22, 0.85);
+        const u = this.state.skyboxUniforms;
+        if (!u) return;
+        if (u.nebulaColor && u.nebulaColor.value && u.nebulaColor.value.setRGB) {
+            u.nebulaColor.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+        }
+        if (u.cloudCover) {
+            u.cloudCover.value = this._weatherBlendedValue(0.22, 0.85);
+        }
     }
 
     // V8.28 6.G4.b A — Stern-Feld-Opacity. starField (diskrete Points) nur
@@ -38501,7 +38543,13 @@ class AnazhRealm {
 
     _loopSkyboxPlanets(currentTime) {
         // ### Skybox und Planeten ###
-        this.state.skybox.material.uniforms.time.value = currentTime;
+        // V10.0-f-1: time-Uniform ist jetzt ein uniform-Knoten in
+        // state.skyboxUniforms (statt material.uniforms.time). Defensive
+        // Existenz-Probe weil createGalaxySkybox bei Vendor-Bruch früh
+        // returnen könnte (Sicherheits-Wand im skybox-Builder).
+        if (this.state.skyboxUniforms && this.state.skyboxUniforms.time) {
+            this.state.skyboxUniforms.time.value = currentTime;
+        }
         this.state.planets.forEach((planet) => {
             const theta = currentTime / 10;
             const radius = 400;
@@ -38963,7 +39011,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0";
+AnazhRealm.VERSION = "10.0-f1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
