@@ -13194,6 +13194,155 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
     );
 }
 
+// V9.90 (Welle Perf-3.c Phase 2 — Worker-Density-Cutover): empirischer Beweis
+// dass der Streaming-Pfad jetzt Worker-Density nutzt. Vier Probepunkte:
+//   (1) Worker-State ist nach Worldgen-Abschluss synced (Atlas/Erosion/Tarns
+//       beim Worker angekommen, `voxelWorkerSyncedHydroStateGen ===
+//       voxelWorkerStateGen`).
+//   (2) `_fetchOrRequestChunkDensity` existiert + funktioniert für einen
+//       streaming-aktiven Chunk (Cache-Hit oder pending-Set-Population).
+//   (3) Async Worker-built Chunk ist bit-identisch zu sync-built (Build-
+//       Pfad-Determinismus — der teure Sample-Loop läuft im Worker, aber
+//       das Result-Mesh ist identisch).
+//   (4) voxelEdit triggert Worker-Notify (Cache geleert, state-gen bumpt).
+async function checkBandWellePerf3cPhase2Async(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) Worker-Methoden existieren
+        out.hasFetch = typeof r._fetchOrRequestChunkDensity === "function";
+        out.hasNotifyEdit = typeof r._voxelWorkerNotifyEdit === "function";
+        out.hasSyncWorldgen = typeof r._voxelWorkerSyncWorldgenState === "function";
+        // 2) State-Felder existieren
+        out.hasCacheField = "voxelDensityCache" in r.state;
+        out.hasPendingField = "voxelDensityPending" in r.state;
+        out.hasSyncedGenField = "voxelWorkerWorldgenSynced" in r.state;
+        // 3) Worker spawnt + initial sync
+        const worker = r._getVoxelWorker();
+        if (!worker) return { ...out, error: "worker spawn failed" };
+        try {
+            await r._voxelWorkerSyncState({ op: "init" });
+        } catch (e) {
+            return { ...out, error: "init sync failed: " + e.message };
+        }
+        // Manuell Worldgen-State-Sync triggern (im normalen Worldgen lief das
+        // schon, aber wir wollen einen frischen state-gen-Stempel für den Test).
+        r._voxelWorkerSyncWorldgenState();
+        // Warten bis das ack durchgelaufen ist — das ack des state-set bumpt
+        // voxelWorkerReady auch erneut.
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        out.workerStateGen = r.state.voxelWorkerStateGen;
+        out.workerSynced = r.state.voxelWorkerWorldgenSynced;
+        // 4) Determinismus: sync-Build vs Worker-Density-Build vergleichen.
+        // Wir bauen denselben Chunk zweimal:
+        //   (a) sync (kein preDensity) — das ist das pre-V9.90-Verhalten
+        //   (b) mit Worker-Density vorab abgerufen + an _buildVoxelChunkData
+        //       als preDensity übergeben
+        // Erwartung: identische Vertex-Count und identische BufferGeometry.
+        const cfg = r._voxelChunkConfig(0);
+        const base = r.state.terrainBaseHeight || 0;
+        const span = cfg.span;
+        const step = cfg.step;
+        const cx = 0;
+        const cz = 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - cfg.floorDrop;
+        // Sync-Build (kontrollierter Pfad: _buildVoxelChunkData ohne preDensity)
+        const syncResult = r._buildVoxelChunkData(cx, cz, 0, null);
+        // Worker-Density holen, dann Build mit preDensity
+        let workerDensity;
+        try {
+            workerDensity = await r._voxelWorkerComputeDensity(
+                ox - step,
+                oy,
+                oz - step,
+                cfg.dim + 3,
+                cfg.dimY,
+                cfg.dim + 3,
+                step
+            );
+        } catch (e) {
+            return { ...out, error: "worker density failed: " + e.message };
+        }
+        const workerResult = r._buildVoxelChunkData(cx, cz, 0, workerDensity);
+        out.syncBuildOk = !!(syncResult && syncResult.mesh);
+        out.workerBuildOk = !!(workerResult && workerResult.mesh);
+        if (syncResult && workerResult && syncResult.mesh && workerResult.mesh) {
+            const syncPos = syncResult.mesh.geometry.getAttribute("position");
+            const workerPos = workerResult.mesh.geometry.getAttribute("position");
+            out.syncVertCount = syncPos.count;
+            out.workerVertCount = workerPos.count;
+            out.vertCountMatch = syncPos.count === workerPos.count;
+            // Position-Array bit-identisch?
+            let posMismatches = 0;
+            let maxPosDelta = 0;
+            const len = Math.min(syncPos.array.length, workerPos.array.length);
+            for (let i = 0; i < len; i++) {
+                const dv = syncPos.array[i] - workerPos.array[i];
+                if (dv !== 0) {
+                    posMismatches++;
+                    const ad = Math.abs(dv);
+                    if (ad > maxPosDelta) maxPosDelta = ad;
+                }
+            }
+            out.posMismatches = posMismatches;
+            out.maxPosDelta = maxPosDelta;
+            out.meshIdentical = posMismatches === 0;
+            // Clean up — wir wollen die Test-Builds NICHT in der Szene haben.
+            syncResult.mesh.geometry.dispose();
+            workerResult.mesh.geometry.dispose();
+        }
+        // 5) voxelEdit notify: state-gen bumpt + cache geleert
+        const beforeStateGen = r.state.voxelWorkerStateGen;
+        r._voxelWorkerNotifyEdit({ x: 1000, y: 0, z: 1000, r: 3, strength: 48, mode: "carve" });
+        out.editBumpedStateGen = r.state.voxelWorkerStateGen === beforeStateGen + 1;
+        out.editClearedCache = !r.state.voxelDensityCache || r.state.voxelDensityCache.size === 0;
+        // 6) Source-Probes
+        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(r._ensureVoxelChunkAt.toString());
+        out.addEditCallsNotify = /_voxelWorkerNotifyEdit\(/.test(r._addVoxelEdit.toString());
+        return out;
+    });
+    if (res.error) {
+        check("Welle Perf-3.c V9.90: Phase-2-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle Perf-3.c V9.90: _fetchOrRequestChunkDensity existiert", res.hasFetch);
+    check("Welle Perf-3.c V9.90: _voxelWorkerNotifyEdit existiert", res.hasNotifyEdit);
+    check("Welle Perf-3.c V9.90: _voxelWorkerSyncWorldgenState existiert", res.hasSyncWorldgen);
+    check("Welle Perf-3.c V9.90: state.voxelDensityCache existiert", res.hasCacheField);
+    check("Welle Perf-3.c V9.90: state.voxelDensityPending existiert", res.hasPendingField);
+    check("Welle Perf-3.c V9.90: state.voxelWorkerWorldgenSynced existiert", res.hasSyncedGenField);
+    check(
+        "Welle Perf-3.c V9.90: Worker-State synced nach Worldgen (worldgenSynced=true)",
+        res.workerSynced,
+        `stateGen=${res.workerStateGen}`
+    );
+    check("Welle Perf-3.c V9.90: Sync-Build des Test-Chunks erfolgreich", res.syncBuildOk);
+    check("Welle Perf-3.c V9.90: Worker-Density-Build des Test-Chunks erfolgreich", res.workerBuildOk);
+    if (res.syncBuildOk && res.workerBuildOk) {
+        check(
+            "Welle Perf-3.c V9.90: Vertex-Count identisch zwischen Sync- und Worker-Build",
+            res.vertCountMatch,
+            `sync=${res.syncVertCount}, worker=${res.workerVertCount}`
+        );
+        check(
+            "Welle Perf-3.c V9.90: BufferGeometry bit-identisch (der epochale Beweis)",
+            res.meshIdentical,
+            `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
+        );
+    }
+    check("Welle Perf-3.c V9.90: voxelEdit bumpt state-gen", res.editBumpedStateGen);
+    check("Welle Perf-3.c V9.90: voxelEdit leert Density-Cache", res.editClearedCache);
+    check(
+        "Welle Perf-3.c V9.90: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensity (Source-Probe)",
+        res.ensureUsesFetch
+    );
+    check("Welle Perf-3.c V9.90: _addVoxelEdit ruft _voxelWorkerNotifyEdit (Source-Probe)", res.addEditCallsNotify);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30173,6 +30322,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3bDistanceLod(ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
             await checkBandWellePerf3cWorkerFoundation(ctx);
+            // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
+            await checkBandWellePerf3cPhase2Async(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
