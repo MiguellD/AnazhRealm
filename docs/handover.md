@@ -359,6 +359,40 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 Aus `CLAUDE.md` ausgelagert am 21.05.2026 (Doc-Konsolidierung). Dies ist die **kanonische, ausführliche Chronik** jeder Welle. Die Teil-Historien weiter oben in dieser Datei (Schnell-Lage, die zehn Rückschau-Sektionen, das Session-Tagebuch) sind Teilmengen hiervon und werden im Konsolidierungs-Schritt hier eingeschmolzen.
 
+**V9.94 — Welle WebGPU-Compute-Diagnose-Tool (26.05.2026, kein `anazhRealm.js`-Touch außer Version-Bump).**
+
+Die V9.93.r-Reflexion hatte die neue Roadmap V9.94..V10.0+ ausgelegt. V9.94 stand als KÜRZESTE Welle vorn — eine ~30min-Diagnose, die entscheiden würde, ob V9.95 (WebGPU-Density-Sampling, der epochale Hebel ~6-8h) starten kann oder ob der Pfad geschlossen ist. „NICHT 10h investieren ohne Diagnose" (CLAUDE.md V9.93.r-Schluss-Frage).
+
+**Was gebaut wurde**: `scripts/diag-webgpu.cjs` (~330 Z.) als Puppeteer-Skript, das eine eingebettete HTML-Page (Test-Seite mit allen WebGPU-Calls inline) lädt + drei Schwellen prüft:
+
+1. **(a) Verfügbarkeit**: `navigator.gpu` existiert; `requestAdapter({powerPreference:"high-performance"})` liefert einen Adapter; `requestAdapterInfo()` für vendor/architecture/device/description; `adapter.limits` für `maxComputeWorkgroupSize{X,Y,Z}`, `maxComputeInvocationsPerWorkgroup`, `maxStorageBufferBindingSize`, `maxBufferSize`; `adapter.features` als Array; `adapter.requestDevice()` ohne Fehler. Plus `device.addEventListener("uncapturederror", ...)` für Late-Compile-Errors.
+2. **(b) Trivialer WGSL-Shader + Determinismus**: `square(x)` Compute-Shader (`@workgroup_size(64)`) über 256 Float32-Eingaben. WGSL-Compile via `getCompilationInfo()` (Error-Liste); Dispatch + Read-Back via `mapAsync`; Vergleich mit Float32-CPU-Referenz (`Math.fround(v*v)` — V9.91-Lehre: identische Float32-Mathematik beidseitig). Plus zweiter Dispatch + Read-Back — bit-identisch zum ersten (Determinismus).
+3. **(c) Density-Workload**: 96×96×16 = 147 456 Samples, 4 sin/cos-Pseudo-Octaven (V9.95-Timing-Repräsentant; echte WGSL-Simplex-Noise kommt in V9.95). Median über 5 GPU-Mess-Läufe via `await device.queue.onSubmittedWorkDone()`; Median über 5 CPU-Mess-Läufe mit identischer Math.sin/cos-Pipeline; Speedup = CPU/GPU. Plus Sanity-Check: erste 16 Samples GPU vs CPU |Δ| max (Schwelle 1e-4, weil GPU-sin/cos und JS-Math.sin minimal differieren — nicht bit-identisch erwartet, aber „Δ < 0.0001" beweist Mathematik-Konvergenz).
+
+**Standalone-HTML-Artefakt**: das Skript schreibt zusätzlich `artifacts/diag-webgpu.html` (gitignored, `.gitignore` Line 5). Die HTML-Page enthält denselben Diagnose-Code + einen DOM-Renderer am Ende, der die Resultate in `<pre id="out">` formatiert (grün/rot-Status, Adapter-Info, Speedup-Zahlen, Schwellen-Verdikt). Der Schöpfer öffnet die Datei direkt im echten Browser — ohne save-server, ohne Puppeteer, ohne Build-Step.
+
+**Cloud-Container-Befund (Headless-Puppeteer-Lauf)**: alle drei Schwellen ROT — „navigator.gpu nicht vorhanden". Ich habe mehrere Flag-Kombinationen probiert (`--enable-unsafe-webgpu`, `--enable-features=Vulkan,UseSkiaRenderer,WebGPU`, `--use-vulkan=swiftshader`, `--use-angle=swiftshader`, `--enable-webgpu-developer-features`, `--ignore-gpu-blocklist`, plus `headless: 'shell'`-Variante) — keine brachte `navigator.gpu` zum Vorschein. Linux-Cloud-Container ohne echte GPU + ohne X-Server ist für WebGPU strukturell tot. **Das ist KEIN Urteil über V9.95**, sondern die Daten-Erkenntnis: die Diagnose muss auf der Schöpfer-Maschine laufen.
+
+**Klarer Folge-Schritt**: Schöpfer öffnet `artifacts/diag-webgpu.html` in Chrome 113+, Edge 113+, Safari 18+, oder Firefox Nightly mit `dom.webgpu.enabled=true`. Die Seite zeigt:
+- (a) GRÜN/ROT: WebGPU verfügbar?
+- (b) GRÜN/ROT: WGSL kompiliert + Mathematik bit-identisch (Float32) + deterministisch?
+- (c) GRÜN/ROT: Speedup ≥ 2× vs CPU?
+- Verdikt: „V9.95-Pfad OFFEN" / „fraglich" / „braucht Determinismus-Anpassung" / „GESCHLOSSEN".
+
+Wenn (a)+(b) GRÜN auch bei kleinem (c)-Speedup: V9.95 startet, weil der echte Hebel beim 96×96×62-Volume (LOD-1-Chunk) oder bei voller Welt-Streaming-Ring liegt — kleines (c) bedeutet nur, dass der Mikrobenchmark (147k Samples) zu klein ist, um den GPU-Setup-Overhead zu amortisieren.
+
+**Verhaltens-Beweis**: Skript läuft sauber durch (Exit 1 mit klarer Bewertung, kein Crash). `node --check scripts/diag-webgpu.cjs` ok. audit:strict 0 Failures (keine Änderung an Audit-relevanten Dateien). Format/Lint sauber (Prettier-Check + ESLint nur über die Stamm-Dateien). Dateien: `scripts/diag-webgpu.cjs` neu (~330 Z.), Version-Bump 9.93.0 → 9.94.0 in `package.json` + `index.html` (Titelleiste + Cache-Buster `?v=9.94`) + `AnazhRealm.VERSION = "9.94"`.
+
+**Lehre verdrahtet (permanent in CLAUDE.md-Gotchas, in „Terrain + Chunks"-Sektion)**: zwei Disziplin-Anker.
+
+1. **Vor jeder mehrstündigen Vision-Welle eine ~30-min-Diagnose**. Wer eine 6-8h-Welle baut, deren Vorbedingung (z.B. `navigator.gpu`-Verfügbarkeit, eine bestimmte Browser-API, eine Hardware-Fähigkeit) ungetestet ist, riskiert die Welle nach 4h zu kippen + 4h-Arbeit zu verlieren. Eine Tool-Welle, die nur misst + ein Standalone-Artefakt für den Schöpfer-Audit schreibt, kostet ~30min und entscheidet ehrlich. V9.94 ist das Pattern. Die V9.93.r-Schluss-Frage „NICHT 10h investieren ohne Diagnose" ist jetzt mechanisch eingelöst.
+
+2. **Cloud-Container ≠ Schöpfer-Maschine**. Headless-Linux-Container ohne GPU-Adapter geben für WebGPU-, WebGL-Multi-Sample- oder Render-Pfade NIE den Ground Truth. Diagnose-Tools, die auf solche Pfade fragen, brauchen einen Standalone-Browser-Pfad: eine HTML-Datei, die der Schöpfer direkt im echten Browser öffnet, ist unverzichtbar. Das Skript ist trotzdem wertvoll als reproduzierbares Test-Werkzeug + als CI-Skeleton (sobald WebGPU in Cloud-CI verfügbar wird — Chromium-Issues laufen, Safari hat WebGPU stable seit 09/2024, Firefox Stable wird folgen).
+
+**Was ALS NÄCHSTES wartet**: Schöpfer öffnet die Standalone-HTML im echten Browser → drei Status-Zeilen + Verdikt. Wenn (a)+(b) GRÜN: **V9.95 — WebGPU-Density-Sampling** startet (~6-8h, der epochale Hebel; SimplexNoise + Welt-Atlas als WGSL-Compute-Shader, Atlas als StorageBuffer, pro-Chunk-Density-Cost ~50ms (Worker) → <1ms (GPU), Fallback auf Worker für No-WebGPU-Browser). Wenn (a) ROT: **Welle Vision-Reset** rückt zu **V9.96** (IndexedDB-Persistent-Chunk-Cache, ~4-5h, Welt-Gedächtnis) + **V9.97** (Predictive Prefetch aus Spieler-Velocity, ~3h) — beide unabhängig von GPU.
+
+---
+
 **V9.93.r — Reflexions-Wende (26.05.2026, nach Schöpfer-Konfrontation): der Perf-3-Bogen war Catch-up, nicht Meisterleistung.**
 
 Der Schöpfer hat mich ehrlich + scharf konfrontiert nach V9.93: „du scheinst angst etwas altes zu brechen ... wir den wahren herausforderungen ausweichen, die wahren hebel nicht bewegen ... LOD wasser = 0 und terrain frei, klingt das für mich als ob du zu basteln beginnst, probleme nicht an der wurzel zu heilen ... ist das was die profis tun, oder willst du einfache fix über wahre meisterleistung". Er hatte recht. Lass diese Reflexion in der Chronik stehen — sie ist das Erbe der Welle, wichtiger als jeder Code-Commit.
