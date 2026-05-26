@@ -17,6 +17,14 @@ class AnazhRealm {
         this.state = {
             // ### Kern ###
             renderer: null,
+            // V10.0-d/e — Renderer-Auswahl-State. `rendererKind` = "webgpu"
+            // oder "webgl", entscheidet zur Laufzeit in createScene. `ready`
+            // ist false bis WebGPU's async `init()` durch ist (Game-Loop
+            // skipt render bis dahin). `rendererInkompatibel` = true wenn
+            // Hot-Swap zu WebGL passierte (verhindert wiederholte Versuche).
+            rendererKind: "webgl",
+            rendererReady: false,
+            rendererInkompatibel: false,
             scene: null,
             camera: null,
             playerMesh: null,
@@ -38660,7 +38668,60 @@ class AnazhRealm {
         // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
         // aber unnötige Promise-Rejections im Console-Log vermieden.
         if (!this.state.rendererReady) return;
-        this.state.renderer.render(this.state.scene, this.state.camera);
+        // V10.0-e — WebGPURenderer.render() ist async; bei inkompatiblen
+        // Materials (unsere `hydroSurfaceMaterial` + `waterfallMaterial`
+        // sind klassische ShaderMaterials, WebGPU in r160 erwartet
+        // NodeMaterial/TSL) wirft `NodeMaterial.fromMaterial` einen
+        // Promise-Reject pro Frame. Schöpfer-Browser-Audit V10.0-d zeigte:
+        // FPS sinkt auf 8 wegen ständig wiederholten Errors. Smart-Hot-
+        // Swap: ersten erkannten ShaderMaterial-Error → Renderer-Wechsel
+        // zu WebGLRenderer (identische Config, dispose WebGPU). Eine-
+        // mal-Operation: `state.rendererInkompatibel`-Flag verhindert
+        // weitere Versuche. V10.0-f portiert dann die zwei Custom-Shaders
+        // zu TSL für echten GPU-Render.
+        const renderResult = this.state.renderer.render(this.state.scene, this.state.camera);
+        if (renderResult && typeof renderResult.catch === "function" && !this.state.rendererInkompatibel) {
+            renderResult.catch((err) => {
+                const msg = err && err.message ? err.message : String(err);
+                if (msg.includes("ShaderMaterial") || msg.includes("not compatible") || msg.includes("NodeMaterial")) {
+                    if (this.state.rendererInkompatibel) return; // schon gemeldet
+                    this.state.rendererInkompatibel = true;
+                    this.log(
+                        `WebGPURenderer-Inkompatibilität (${msg.slice(0, 80)}) — Hot-Swap zu WebGLRenderer. V10.0-f wird die Custom-Shaders zu TSL portieren.`,
+                        "WARNING"
+                    );
+                    this._swapToWebGLRenderer();
+                }
+            });
+        }
+    }
+
+    // V10.0-e — Hot-Swap WebGPU→WebGL bei Render-Inkompatibilität. Dispose
+    // den WebGPURenderer (gibt Device-Slot frei), erstelle frischen
+    // WebGLRenderer mit identischer Konfiguration über `_configureRenderer`,
+    // setze state.renderer + state.rendererKind="webgl". Welt rendert ab
+    // nächstem Frame über WebGL — visuell 1:1 wie vor V10.0-a (die V10.0-a-
+    // Bridge-Heilungen ColorManagement+useLegacyLights bleiben aktiv).
+    _swapToWebGLRenderer() {
+        try {
+            const oldRenderer = this.state.renderer;
+            if (oldRenderer && typeof oldRenderer.dispose === "function") {
+                oldRenderer.dispose();
+            }
+        } catch (_e) {
+            /* defensive */
+        }
+        const canvas = document.getElementById("world-canvas");
+        if (!canvas) {
+            this.log("Hot-Swap fehlgeschlagen: world-canvas fehlt", "ERROR");
+            return;
+        }
+        const fallback = new THREE.WebGLRenderer({ canvas });
+        this._configureRenderer(fallback, "webgl");
+        this.state.renderer = fallback;
+        this.state.rendererKind = "webgl";
+        this.state.rendererReady = true;
+        this.log("Hot-Swap abgeschlossen — WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
     }
 
     // ### Hilfsfunktionen ### V7.56

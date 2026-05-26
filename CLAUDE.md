@@ -6,9 +6,31 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V10.0-d, 26.05.2026 — **Renderer-Auswahl-Logik aktiv**. WebGPURenderer wird instanziert wenn `THREE.WebGPU.isAvailable()` true; sonst klassischer WebGLRenderer. Async `init()` mit `state.rendererReady`-Flag im Game-Loop → erster Render erst nach Init. Hot-Swap-Fallback bei init-Fehler. Im Cloud-Container ohne GPU: WebGL aktiv (`rendererKind=webgl`); auf Schöpfer-RDNA3 sollte WebGPU spawnen. ShaderMaterial-Inkompatibilität (V10.0-e portiert) wird zu Console-Errors auf WebGPU-Pfad — Diagnose-Spur für die Folge-Welle.)
+## Aktueller Stand (V10.0-e, 26.05.2026 — **Smart Hot-Swap bei Render-Inkompatibilität**. Schöpfer-Browser-Audit V10.0-d bestätigte: WebGPU LÄUFT auf AMD RDNA-3 ✓, ABER unsere zwei custom `ShaderMaterial`s (hydroSurfaceMaterial + waterfallMaterial) sind in WebGPU r160 nicht kompatibel — `NodeMaterial.fromMaterial` wirft Promise-Reject pro Frame, FPS fiel auf 8. V10.0-e: render()-Promise-Reject-Handler erkennt ShaderMaterial-Fehler + triggert Hot-Swap zu WebGLRenderer (identische Config via `_configureRenderer`). Welt rendert visuell 1:1 wie vor V10.0-a. V10.0-f portiert die zwei Custom-Shaders zu TSL für echten WebGPU-Render.)
 
-**V10.0-d — Renderer-Auswahl-Logik mit defensive Fallback (substantielle Welle, ~90 Z. netto):**
+**V10.0-e — Smart Hot-Swap bei Render-Inkompatibilität (~30 Z. netto, ehrliche Diagnose-Folge-Welle nach Schöpfer-Browser-Audit):**
+
+- **Wurzel-Befund aus Schöpfer-Browser-Log V10.0-d** (AMD RDNA-3, Windows Chrome):
+  - ✅ `WebGPU Foundation bereit: amd/rdna-3/(unbekannt)` (V9.95-Foundation läuft)
+  - ✅ `WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.` (V10.0-d-Wahl-Logik trifft)
+  - ❌ `Uncaught (in promise) Error: NodeMaterial: Material "ShaderMaterial" is not compatible.` (genau die V10.0-d-Bekannte-Begrenzung)
+  - ❌ FPS: 8 (Render-Error pro Frame, alle 60 Frames pro Sekunde rejecten Promise)
+- **Diagnose**: unsere zwei `THREE.ShaderMaterial`-Instanzen (`hydroSurfaceMaterial` für Wasser-Oberfläche, `waterfallMaterial` für Wasserfälle) sind klassische GLSL-Vertex+Fragment-Shaders. WebGPURenderer in r160 versucht via `NodeMaterial.fromMaterial(material)` automatisch zu konvertieren, scheitert aber: ShaderMaterial mit eigenem GLSL ist nicht auto-konvertierbar (nur Standard-Materials wie MeshToonMaterial, MeshBasicMaterial etc.).
+- **Heilung**: `_loopRender` umwickelt den `renderer.render()`-Promise mit einem Reject-Handler. Bei Fehler-Pattern `ShaderMaterial|not compatible|NodeMaterial` → `state.rendererInkompatibel = true` (verhindert wiederholte Versuche) + `_swapToWebGLRenderer()`. Neue Methode `_swapToWebGLRenderer()`: dispose WebGPU-Renderer (Device-Slot frei), neuer WebGLRenderer mit `_configureRenderer(renderer, "webgl")` (V10.0-a-Bridge-Heilungen bleiben aktiv), state-Update. Eine-mal-Operation, kein Reverse-Pfad.
+- **State-Felder neu** (V10.0-d/e zusammen, jetzt im state-Top-Level deklariert um audit:strict-Failure zu heilen): `rendererKind`, `rendererReady`, `rendererInkompatibel`.
+- **Was sichtbar passiert beim Schöpfer-Reload mit `?v=10.0.4`**: WebGPURenderer wird VERSUCHT, async `init()` durch, ersten render()-Aufruf → Promise-Reject → Hot-Swap zu WebGL → ab dann visuell 1:1 wie vor V10.0-a (Bridge-Heilungen aktiv). Console-Log: `WebGPU-Renderer init() abgeschlossen ...` gefolgt von `WebGPURenderer-Inkompatibilität (...) — Hot-Swap zu WebGLRenderer.` + `Hot-Swap abgeschlossen — WebGLRenderer aktiv, Welt rendert sauber.`
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle bestehende Bänder grün — Cloud-Container nutzt WebGL direkt, Hot-Swap-Pfad wird nicht getriggert); audit:strict 0 Failures (state-Init heilt den V10.0-d-State-Field-Failure); Format/Lint sauber. Dateien: `anazhRealm.js` ~+50 Z. (state-Felder + render-Promise-Reject-Handler + `_swapToWebGLRenderer`-Methode), `index.html` Cache-Buster 10.0.3 → 10.0.4, `package.json` 10.0.3 → 10.0.4.
+
+**Was V10.0-f liefern wird (~3-4h substantielle Welle)**: ShaderMaterial-Migration zu NodeMaterial/TSL.
+- `hydroSurfaceMaterial`: aktuell GLSL-Vertex+Fragment für Wasser-Wellen-Animation (sin/cos-displaced positions, FlowMap, foam, shore-tint). Port: `MeshBasicNodeMaterial` mit `positionNode = positionLocal.add(timerLocal.mul(...))` und `colorNode = ...mix(...)`. TSL-Syntax statt GLSL.
+- `waterfallMaterial`: vertikales Wasser-Volume mit Splash-Animation. Ähnlich, TSL-Port.
+- Plus: GLSLNodeBuilder kann GLSL-Snippets in TSL-Trees einbinden — möglicherweise weniger Re-Schreibarbeit.
+- Nach V10.0-f: WebGPURenderer rendert ALLE Materials → Hot-Swap-Pfad bleibt als defensive Sicherung, aber wird nicht mehr getriggert. Welt rendert dauerhaft auf GPU.
+
+---
+
+**Davor — V10.0-d Renderer-Auswahl-Logik mit defensive Fallback (substantielle Welle, ~90 Z. netto):**
 
 - **Wurzel-Vision**: V10.0-a/b/c haben die Foundation gelegt: Three.js r160 ESM, WebGPURenderer + WebGPU-Capability global verfügbar. V10.0-d aktiviert die Auswahl-Logik — wenn der Browser WebGPU kann (AMD RDNA-3, NVIDIA RTX, Apple M-Series ab Safari 18), läuft die Welt auf GPU; sonst klassischer WebGL-Pfad.
 - **Logik in `init()` (ehemals `createRenderer`-Inline-Block)** — ~60 Z.:
