@@ -45,14 +45,12 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 
 **Lehre verdrahtet (permanent in Gotchas)**: **Wenn eine Schicht naht-frei sein muss, lebt sie auf EINER LOD-Skala — egal wie viele LODs die unterliegende Geometrie hat.** Wasser-Iso-Mesh über LOD-Boundaries: die Cell-Klassifikation MUSS uniform sein, sonst klafft die Iso-Position. Heilung: separate die Schichten-LODs (Terrain-LOD frei, Wasser-LOD ≡ 0). Trade-off durch Performance-Gate (Atlas-Strict) gebounded. Generelles Pattern: bei zwei Welt-Schichten, die übereinander gerendert werden, ist die schmalere (Wasser-Iso) der LOD-Determinismus-Träger, die voluminöse (Terrain) kann LOD-aware bleiben.
 
-**Schöpfer-Audit-Befunde aus V9.92-Test → Folge-Wellen-Plan**: 4 weitere Befunde dokumentiert, in V9.93 nur (1) geheilt:
-1. ✅ **Wasser-LOD-Naht** (V9.93, diese Welle): geheilt durch Wasser-Cells immer LOD 0.
-2. ⏳ **Wasserschatten/Hangpfützen an Strukturen** (V9.94, ~2-3h): V9.87-Atlas-Strict-Gate filtert Hochland-Chunks; aber Coast-Mischchunks (Atlas markiert Ozean → Gate trigger → ALLE Spalten samplen state.waterLevel als Fallback) zeigen Pfützen an Mountainside-Cells. Heilung: Per-Column-Atlas-Strict (Helper `_atlasWaterLevelAt(x, z)` returnt -Infinity wenn Atlas an dieser Spalte kein Wasser markiert → Cell bleibt AIR).
-3. ⏳ **LOD-Pop-In beim Annähern** (V9.95, ~4h): aktuell 2 LOD-Stufen mit hartem r=2 Switch. Profi-Pattern (BotW/NMS): 3-4 LOD-Stufen + Cross-Fade-Alpha über 1-2 Frames. Realistischer V9.95-Plan: 3 Stufen (LOD 0 r≤1, LOD 1 r=2-3, LOD 2 r≥4) + sanftere Threshold-Verteilung. Cross-Fade als V9.96.
-4. ⏳ **Berg-Treppenstufen-Textur in einer Richtung** (V9.96+, Render-Schicht): klingt nach MeshToon-Shader-Artefakt mit direktionalem Licht + Per-Vertex-Color-Quantisierung. Eigene Welle.
-5. ⏳ **Toon-Gradient-Polish bei Distanz** (V9.96+): begleitend zu (4).
-
-**WebGPU-Stand-Klärung**: aktuell NICHT aktiv. V9.86-WebGPU-Brainstorm wurde per `docs/performance.md` §4.2 backlogged (Determinismus-Risiko für Multi-User-Welt-Seeds + Safari-Fragmentierung). Perf-3-Bogen (V9.87-V9.92) nutzt Web Workers (CPU-parallel), NICHT GPU. Was im Browser sichtbar ist: V9.93-Stand mit Workern.
+**Schöpfer-Audit-Befunde aus V9.92-Test → in V9.93.r-Reflexion neu eingeordnet** (originale Welle-Nummern waren V9.94/V9.95/V9.96+, nach Vision-Reset wurden sie nach hinten geschoben — die Vision-Pfeiler kommen ZUERST):
+1. ✅ **Wasser-LOD-Naht** (V9.93, diese Welle): Pragmatic Workaround durch „Wasser uniform LOD 0". V9.98-Geometry-Stitching wird das durch Profi-Pattern ersetzen.
+2. ⏳ **Wasserschatten/Hangpfützen an Strukturen** → jetzt **V9.99** (~2h, V9.93.r-Reordering): Per-Column-Atlas-Strict via `_atlasWaterLevelAt(x, z)`-Helper.
+3. ⏳ **LOD-Pop-In beim Annähern** → jetzt **V10.0+** (Render-Schicht, Cross-Fade über 1-2 Frames oder 3-4 LOD-Stufen).
+4. ⏳ **Berg-Treppenstufen-Textur in einer Richtung** → **V10.0+** (MeshToon-Shader-Artefakt, Render-Schicht).
+5. ⏳ **Toon-Gradient-Polish bei Distanz** → **V10.0+** (begleitend zu (4)).
 
 **Davor — V9.92 Welle Perf-3.c Phase 4 (Lazy-BVH für ferne Chunks, der Perf-3-Bogen vollendet):**
 

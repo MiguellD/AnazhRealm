@@ -251,17 +251,17 @@ KEIN Verwerfen — die Foundation bleibt. Die Lehren leben:
 
 ---
 
-## 5. Was BEWUSST nicht im Performance-Bogen steckt (Welle 1+2+3)
+## 6. Was BEWUSST nicht im Performance-Bogen 1+2+3 steckte (vor V9.93.r-Reflexion)
 
 - **Vision-Tiefe wird NICHT angetastet.** Keine Kreatur-Anzahl reduzieren, keine Sicht-Reichweite kürzen, keine Effekte streichen. Die Welt soll dichter und schneller werden, nicht ärmer. **„Effizienz × Simplizität × Tiefe in nie dagewesener Synergie"** — Profi-Pattern OHNE Welt-Tiefe-Kosten ist der einzige akzeptable Pfad.
-- **Kein GPU-Compute-Shader (WebGPU)** — würde deterministisches Worldgen (Multi-User-Welt-Seeds reproduzierbar) gefährden + Safari kennt kein WebGPU. Backlog für Welle 4+ falls je gewünscht.
+- ~~**Kein GPU-Compute-Shader (WebGPU)** — würde deterministisches Worldgen (Multi-User-Welt-Seeds reproduzierbar) gefährden + Safari kennt kein WebGPU. Backlog für Welle 4+ falls je gewünscht.~~ **V9.93.r-Reflexion (26.05.2026)**: dieses Argument ist überholt — siehe §5 Welle Vision-Reset. WebGPU-Compute kommt JETZT als V9.95.
 - **Greedy Meshing** — Iso-Surface (Surface-Nets) ist nicht direkt block-voxel-kompatibel. Eigene Architektur-Diskussion; Welle 4+ oder NIE.
-- **Crafting-Tiefe, Welle D/E/F/G** aus der Roadmap §1.1 — kommen NACH dem ganzen Performance-Bogen. Eine schnellere Welt erhöht die Welt-Tiefe spürbar (Spieler nicht durch Ruckler gestört) — Perf-1+2+3 ist die Brücke zu System-Kopplungen.
+- **Crafting-Tiefe, Welle D/E/F/G** aus der Roadmap §1.1 — kommen NACH dem ganzen Performance-Bogen + Vision-Reset. Eine schnellere Welt erhöht die Welt-Tiefe spürbar (Spieler nicht durch Ruckler gestört) — Perf-1+2+3 + Vision-Reset ist die Brücke zu System-Kopplungen.
 - **Modul-Split** — die Heilige Lektion. Worker-File (`voxel-worker.js`) ist eine BAUSTELLE (separate Ausführungs-Umgebung), kein Modul-Split der Domänen-Logik. Der Stamm `anazhRealm.js` bleibt EINS.
 
 ---
 
-## 6. Vorbedingungen + Risiken
+## 7. Vorbedingungen + Risiken
 
 **Vorbedingungen:**
 
@@ -277,8 +277,10 @@ KEIN Verwerfen — die Foundation bleibt. Die Lehren leben:
 
 ---
 
-## 7. Ehrliche Performance-Reflexion
+## 8. Ehrliche Performance-Reflexion
 
 Diese Welle ist KEIN Selbstzweck — sie ist Vorbereitung für die System-Kopplungs-Wellen D (Kreaturen + Wasser), E (Emotion + lokale Welt), F (Cluster-Resonanz). Jede dieser Wellen fügt Per-Frame-Arbeit hinzu. Wenn V9.82 schon spürbar ruckelt, würde Welle D die Welt unbrauchbar machen. Performance-Welle räumt das Fundament auf, damit die Vision-Wellen wieder Platz haben.
 
 Die Heilige Lektion warnt vor Komplexität ohne Fundament. Diese Welle ist Fundament-Pflege, nicht neue Komplexität — sie streicht oder pooled, mehr nicht. Das Ergebnis ist EINE Datei mit derselben Vision, schneller.
+
+**V9.93.r-Reflexion (26.05.2026)**: V9.87-V9.93 hat das Fundament gebaut — solide AAA-Catch-up, Workers + LOD + Lazy-BVH + Float32-Determinismus. Was fehlt für die ECHTE Bibliothek von Alexandria liegt in §5 Welle Vision-Reset (V9.94-V9.99): WebGPU-Compute als epochaler Hebel + IndexedDB als Welt-Gedächtnis-Pfeiler + Predictive Prefetch + Geometry-Stitching als Profi-Antwort auf LOD-Naht. Das ist der Pfad nach vorne.
