@@ -357,7 +357,53 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
-**V10.0-f-4 — hydroSurfaceMaterial → MeshBasicNodeMaterial TSL (26.05.2026, vierte + letzte Sub-Welle, der KOMPLEXESTE Port, ~230 Z. netto — der V10.0-BOGEN IST VOLLENDET 🎉):**
+**V10.0-f-5 — Hot-Swap-Canvas-Replacement nach Schöpfer-Browser-Audit V10.0-f-4 (26.05.2026, kritische Wurzel-Heilung, ~80 Z. netto):**
+
+Schöpfer-Browser-Audit V10.0-f-4 auf AMD RDNA-3 zeigte: meine „Bogen-Vollendet"-Behauptung war voreilig. Die 4 custom ShaderMaterials sind portiert, ABER eine fünfte Material-Familie wartete übersehen: `MeshToonMaterial` (mit gradientMap + vertexColors) für die Voxel-Welt-Chunks. Plus: V10.0-e's Hot-Swap-Pfad zerschoss sich am Canvas-Context. Welt rendert gar nicht.
+
+**Zwei Wurzeln im Schöpfer-Browser-Log**:
+
+1. `[WebGPU] NodeMaterial: Material "MeshToonMaterial" is not compatible.` — der WebGPURenderer versucht via `NodeMaterial.fromMaterial()` zu konvertieren, scheitert aber mit gradientMap + vertexColors. V10.0-e-Doku versprach Auto-Konvertierung für Standard-Materials, aber die gilt nur OHNE Textures/Gradients. Voxel-Terrain-Chunks (Welt-Volumen) nutzen MeshToonMaterial → der WebGPU-Pfad bricht beim ersten render() der Welt.
+
+2. `THREE.WebGLRenderer: A WebGL context could not be created. Reason: Canvas has an existing context of a different type` → `Uncaught (in promise) Error: Error creating WebGL context.` Welt rendert GAR NICHT. **Wurzel**: ein Canvas-Element kann nur EINEN Context-Type halten. Sobald `new WebGPURenderer({ canvas })` den Canvas via `canvas.getContext("webgpu")` an WebGPU bindet, kann `new WebGLRenderer({ canvas })` keinen `getContext("webgl2")` mehr erschließen → Browser-Wand. `renderer.dispose()` entbindet den Canvas-Context-Type NICHT. V10.0-e's Hot-Swap-Pfad hatte den Bug 4 Sub-Wellen lang unentdeckt, weil im Cloud-Container kein WebGPU verfügbar ist → der Hot-Swap-Pfad wurde im Headless nie getriggert.
+
+**Heilung in V10.0-f-5** (Canvas-Element-Austausch im Hot-Swap):
+
+1. **`_replaceWorldCanvas()` neu** (~25 Z.): altes `<canvas id="world-canvas">` aus DOM entfernen, frisches mit identischer ID/className/width/height/style.cssText an dieselbe Parent-Position einsetzen via `parent.replaceChild(newCanvas, oldCanvas)`. Returnt das neue Canvas (oder null bei DOM-Bruch — defensive Log + early-return).
+
+2. **`_swapToWebGLRenderer` umgebaut**: nutzt `_replaceWorldCanvas()` statt `getElementById("world-canvas")`. `new THREE.WebGLRenderer({ canvas: newCanvas })` mit try/catch — bei Constructor-Fehler graceful logging statt unhandled Promise-Rejection. Nach Renderer-Init: `state.canvas = newCanvas` + `_attachWorldCanvasInputListeners(newCanvas)` (Listener am neuen Canvas, alte zeigen ins entfernte DOM-Element).
+
+3. **`_attachWorldCanvasInputListeners(canvas)` neu** (~30 Z.): extrahiert die zwei `world-canvas`-Listener (click → `requestPointerLock()`, mousedown → keybind-rebind/break/place). Closure-binding auf `this` via Arrow-Functions, das captured `canvas`-Parameter ist der Listener-Anker. Wird in `createScene` (initial) UND in `_swapToWebGLRenderer` (nach Replace) gerufen — einer Wahrheits-Ort für die Listener.
+
+4. **`state.canvas`-Feld neu**: trägt die AKTIVE Canvas-Referenz (entwickelt sich beim Hot-Swap mit). Initialisiert in `createScene`. `state.canvas: null` als state-init deklariert (audit:strict-Disziplin).
+
+**Erwartetes Verhalten beim Schöpfer-Reload `?v=10.0.9`**:
+1. WebGPU-Init startet (AMD RDNA-3) → `WebGPU Foundation bereit ...`
+2. WebGPU-Renderer init() abgeschlossen → `Welt rendert jetzt auf der GPU.`
+3. Erster render() der Welt-Chunks → MeshToon-Inkompatibilität-Reject
+4. Hot-Swap getriggert → Canvas ersetzt → Listener neu gebunden → `Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber.`
+5. Welt rendert visuell 1:1 wie vor V10.0-a (alle V10.0-a-Bridge-Heilungen aktiv).
+
+**Verhaltens-Beweis (Headless)**: Playtest „Alle Invarianten OK" (Cloud-Container nutzt direkt WebGL → Hot-Swap-Pfad nicht getriggert, aber neue Methoden + state-Field bestehen durch audit:strict + Format/Lint). Dateien: `anazhRealm.js` ~+80 Z. netto (zwei neue Methoden + state-Field + Init-Refactor + Hot-Swap-Erweiterung), `index.html` Cache-Buster 10.0.8 → 10.0.9 + title v10.0-f4 → v10.0-f5, `package.json` 10.0.8 → 10.0.9, `AnazhRealm.VERSION` "10.0-f4" → "10.0-f5", CLAUDE.md + handover.md.
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**Canvas-Context-Type ist PERMANENT — Renderer-Hot-Swap MUSS Canvas-Element austauschen**. Browser hält den Context-Type pro Canvas-Element für IMMER fest. `renderer.dispose()` entbindet ihn nicht. Wer Hot-Swap zwischen verschiedenen Renderer-Typen baut, MUSS via `parent.replaceChild(newCanvas, oldCanvas)` ein frisches DOM-Element einsetzen. Plus: alle Event-Listener closure-capturen das alte Canvas — Listener-Bindung als wiederbindbare Methode `_attachXyzListeners(canvas)` extrahieren, beim Init UND nach jedem Swap rufen. Plus `state.canvas` als zentrale Live-Referenz statt `const canvas = ...` im Init-Closure.
+
+**Ehrliche Bogen-Bilanz nach Schöpfer-Audit**: V10.0-f-1..f-4 hat die 4 custom ShaderMaterials portiert (skybox/stars/waterfall/hydroSurface). Aber `MeshToonMaterial` (Voxel-Welt-Volumen, geteilt in `state.voxelChunkMaterial` via V9.84 Perf-1.a) wartet noch — V10.0-f-4-Schluss-Feier war voreilig. Schöpfer-Audit hat das ehrlich aufgedeckt.
+
+**Was V10.0-g liefern wird (next session, ~2-3h)**: `MeshToonMaterial` → `MeshToonNodeMaterial` portieren. Vendor liefert die Klasse (siehe `vendor/three-addons/nodes/materials/MeshToonNodeMaterial.js`). Drei Aspekte:
+- **gradientMap als TSL-`texture()`-Lookup**: das Cel-Shading-Gradient (state.toonGradientMap, DataTexture) muss als sampler2D im TSL-Tree gelesen werden — mit explizitem UV-Index (`uv()` für stage-eigene UV, oder ein computed UV aus dot(normal, sunDir) für den Toon-Step-Lookup).
+- **vertexColors via `attribute("color", "vec3")`**: das V9.10-`_attachVoxelFieldColors`-Pattern muss explizit im colorNode-Tree erscheinen (f-2-Lehre wiederholt sich).
+- **Lighting=true Pfad**: MeshToon ist Lighting-aware (DirectionalLight + AmbientLight + Hemisphere + Fog wirken nativ). MeshToonNodeMaterial erbt das von NodeMaterial mit `this.lights = true` — der Standard-Lighting-Pfad funktioniert ohne manuellen Blinn-Phong wie bei f-3/f-4.
+
+Plus alle anderen MeshToonMaterial-Instanzen scannen (`grep -n 'new THREE\.MeshToonMaterial'` zeigt vier Stellen: voxelChunkMaterial Z16860, Architektur-Material Z16303, Sun/Moon Z25598, andere Z27105) — alle gleichschalten oder per Helfer-Methode konsolidieren. Drei Mutationspfade: initial-Setup, `_refreshToonGradient` (gradientMap-Update wenn celLevels-Slider zieht), `_dayNightApplyTerrainShaderUniforms` (Cel-Levels-Uniform für Toon-Steps).
+
+Nach V10.0-g: WebGPU rendert dauerhaft. Hot-Swap-Pfad bleibt nur defensive (gegen Device-Lost). Der ECHTE V10.0-Bogen vollendet.
+
+---
+
+**V10.0-f-4 — hydroSurfaceMaterial → MeshBasicNodeMaterial TSL (26.05.2026, vierte ShaderMaterial-Migration, ~230 Z. netto):**
 
 Nach f-1 (skybox), f-2 (stars), f-3 (waterfall) bleibt nur noch EIN Material — das Hydrosphären-Material. Das ist EIN Material für ALLE Wasserflächen der Welt (Ozean + See + Fluss aller per-Chunk-Iso-Wasser-Meshes), differenziert über drei per-Vertex-Attribute. ~189 Z. GLSL, 10 Uniforms, Gerstner-6-Octaven, Tangenten-Kreuzprodukt-Normale, Fluss-vs-See-Foam-Trennung, Blinn-Phong-Spec, Fresnel-Alpha, Fog. Der schwerste Port der Welle.
 

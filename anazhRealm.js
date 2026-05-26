@@ -25,6 +25,11 @@ class AnazhRealm {
             rendererKind: "webgl",
             rendererReady: false,
             rendererInkompatibel: false,
+            // V10.0-f-5 — aktives Canvas-DOM-Element. Initialisiert in
+            // createScene; nach einem Hot-Swap (`_swapToWebGLRenderer`) durch
+            // `_replaceWorldCanvas` ausgetauscht (das alte Element ist dann
+            // aus dem DOM entfernt, die closure-captured-Referenzen tot).
+            canvas: null,
             scene: null,
             camera: null,
             playerMesh: null,
@@ -37481,6 +37486,10 @@ class AnazhRealm {
         }
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        // V10.0-f-5: state.canvas trägt die aktive Canvas-Referenz. Nach
+        // einem Hot-Swap (`_swapToWebGLRenderer`) ist das DOM-Canvas-Element
+        // ersetzt — Re-Bind-Pfade lesen das aktuelle Canvas aus state.
+        this.state.canvas = canvas;
 
         // V10.0-a (Welle Three.js-Migration r134 → r160): ColorManagement
         // wurde mit r142+ default ON. Three.js wandelt sRGB-Color-Werte intern
@@ -37844,39 +37853,10 @@ class AnazhRealm {
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
-        canvas.addEventListener("click", () => {
-            // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
-            // re-locken. Sonst würde ein Klick neben das Overlay den
-            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
-            if (this.state.inventoryOpen) return;
-            canvas.requestPointerLock();
-        });
-        // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Nur wenn der
-        // Pointer-Lock aktiv ist (Spieler ist „im Spiel", nicht im UI) und
-        // das Inventar nicht offen ist (Drag&Drop hat eigene Listener).
-        // Rebind-Capture: erster Maus-Button im Capture-Modus bindet die
-        // Aktion und schließt — denselben Pfad wie der Keydown-Capture.
-        canvas.addEventListener("mousedown", (event) => {
-            if (this.state.inventoryOpen) return;
-            if (this.state.keybindRebind) {
-                const code = this._eventToBindingCode(event);
-                if (code) {
-                    this._completeKeybindRebind(code);
-                    event.preventDefault();
-                }
-                return;
-            }
-            if (!this.state.isPointerLocked) return;
-            const code = this._eventToBindingCode(event);
-            const action = this._actionForBindingCode(code);
-            if (action === "break") {
-                this.tryMouseBreak();
-                event.preventDefault();
-            } else if (action === "place") {
-                this.tryMousePlace();
-                event.preventDefault();
-            }
-        });
+        // V10.0-f-5 — Maus-Listener-Bindung als wiederrufbare Methode, damit
+        // ein Hot-Swap (`_swapToWebGLRenderer`) das Canvas-DOM-Element
+        // ersetzen + die Listener am neuen Canvas neu binden kann.
+        this._attachWorldCanvasInputListeners(canvas);
         // Welle 6.X.2 B4 (Audit 17.05.2026) — Scrollrad zyklt durch Hotbar-
         // Slots (Minecraft-Konvention). deltaY > 0 → nächster, < 0 → voriger.
         // Modulo 9 erlaubt Rollover am Ende.
@@ -38864,6 +38844,18 @@ class AnazhRealm {
     // setze state.renderer + state.rendererKind="webgl". Welt rendert ab
     // nächstem Frame über WebGL — visuell 1:1 wie vor V10.0-a (die V10.0-a-
     // Bridge-Heilungen ColorManagement+useLegacyLights bleiben aktiv).
+    // V10.0-f-5 — Hot-Swap-Heilung der V10.0-e-Wurzel: ein Canvas-Element
+    // kann nur EINEN Context-Type halten. Wenn der WebGPURenderer den Canvas
+    // an WebGPU gebunden hat, kann `new WebGLRenderer({ canvas })` keinen
+    // WebGL-Context mehr erschließen → "Canvas has an existing context of a
+    // different type"-Error, Welt rendert gar nicht. V10.0-e dispose'd den
+    // WebGPURenderer, aber das Canvas-Context-Binding bleibt.
+    //
+    // Heilung: das Canvas-Element via `_replaceWorldCanvas` austauschen
+    // (altes raus, neues mit gleicher ID + Größe + Style + Position rein),
+    // dann WebGLRenderer mit dem frischen Canvas. Plus Input-Listener am
+    // neuen Canvas neu binden (closure-captured-canvas der alten Listener
+    // zeigt aufs entfernte Element → tote Pointer-Lock + Maus-Aktionen).
     _swapToWebGLRenderer() {
         try {
             const oldRenderer = this.state.renderer;
@@ -38873,17 +38865,91 @@ class AnazhRealm {
         } catch (_e) {
             /* defensive */
         }
-        const canvas = document.getElementById("world-canvas");
-        if (!canvas) {
-            this.log("Hot-Swap fehlgeschlagen: world-canvas fehlt", "ERROR");
+        const newCanvas = this._replaceWorldCanvas();
+        if (!newCanvas) {
+            this.log("Hot-Swap fehlgeschlagen: Canvas-Austausch nicht möglich", "ERROR");
             return;
         }
-        const fallback = new THREE.WebGLRenderer({ canvas });
+        let fallback;
+        try {
+            fallback = new THREE.WebGLRenderer({ canvas: newCanvas });
+        } catch (err) {
+            this.log(`Hot-Swap fehlgeschlagen: WebGLRenderer-Constructor scheiterte (${err.message})`, "ERROR");
+            return;
+        }
         this._configureRenderer(fallback, "webgl");
         this.state.renderer = fallback;
         this.state.rendererKind = "webgl";
         this.state.rendererReady = true;
-        this.log("Hot-Swap abgeschlossen — WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
+        this.state.canvas = newCanvas;
+        // Input-Listener am neuen Canvas neu binden (alte zeigen ins Leere).
+        this._attachWorldCanvasInputListeners(newCanvas);
+        this.log("Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
+    }
+
+    // V10.0-f-5 — Canvas-Element austauschen: altes vom DOM entfernen, ein
+    // frisches mit identischer ID/Größe/Style/Position einfügen. Notwendig
+    // weil der Canvas-Context-Type (WebGPU vs WebGL) PERMANENT ist —
+    // `new WebGLRenderer({ canvas })` mit WebGPU-gebundenem Canvas wirft.
+    // Returnt das neue Canvas oder null bei DOM-Bruch.
+    _replaceWorldCanvas() {
+        const oldCanvas = this.state.canvas || document.getElementById("world-canvas");
+        if (!oldCanvas || !oldCanvas.parentNode) {
+            this.log("_replaceWorldCanvas: altes Canvas hat keinen DOM-Parent", "ERROR");
+            return null;
+        }
+        const parent = oldCanvas.parentNode;
+        const newCanvas = document.createElement("canvas");
+        newCanvas.id = oldCanvas.id;
+        newCanvas.className = oldCanvas.className;
+        newCanvas.width = oldCanvas.width;
+        newCanvas.height = oldCanvas.height;
+        if (oldCanvas.style && oldCanvas.style.cssText) {
+            newCanvas.style.cssText = oldCanvas.style.cssText;
+        }
+        parent.replaceChild(newCanvas, oldCanvas);
+        return newCanvas;
+    }
+
+    // V10.0-f-5 — Maus-Listener (Pointer-Lock-Click + Mousedown-Action)
+    // als wiederbindbare Methode. Wird beim Init und nach jedem Hot-Swap
+    // gerufen (siehe `_swapToWebGLRenderer`). Listener referenzieren `this`
+    // via Arrow-Closures, nicht das captured Canvas-Element.
+    _attachWorldCanvasInputListeners(canvas) {
+        if (!canvas) return;
+        canvas.addEventListener("click", () => {
+            // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
+            // re-locken. Sonst würde ein Klick neben das Overlay den
+            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
+            if (this.state.inventoryOpen) return;
+            canvas.requestPointerLock();
+        });
+        // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Nur wenn der
+        // Pointer-Lock aktiv ist (Spieler ist „im Spiel", nicht im UI) und
+        // das Inventar nicht offen ist (Drag&Drop hat eigene Listener).
+        // Rebind-Capture: erster Maus-Button im Capture-Modus bindet die
+        // Aktion und schließt — denselben Pfad wie der Keydown-Capture.
+        canvas.addEventListener("mousedown", (event) => {
+            if (this.state.inventoryOpen) return;
+            if (this.state.keybindRebind) {
+                const code = this._eventToBindingCode(event);
+                if (code) {
+                    this._completeKeybindRebind(code);
+                    event.preventDefault();
+                }
+                return;
+            }
+            if (!this.state.isPointerLocked) return;
+            const code = this._eventToBindingCode(event);
+            const action = this._actionForBindingCode(code);
+            if (action === "break") {
+                this.tryMouseBreak();
+                event.preventDefault();
+            } else if (action === "place") {
+                this.tryMousePlace();
+                event.preventDefault();
+            }
+        });
     }
 
     // ### Hilfsfunktionen ### V7.56
@@ -39125,7 +39191,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-f4";
+AnazhRealm.VERSION = "10.0-f5";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
