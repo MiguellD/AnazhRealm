@@ -6,7 +6,34 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V9.95-c, 26.05.2026 — WebGPU-Init-Logging + Trigger-Robustheit nach Schöpfer-Browser-Audit; jeder Init-Pfad loggt jetzt sichtbar, GPU-Init entkoppelt vom Worker-Spawn-Pfad, zweiter Trigger im streaming-tick als Save-Restore-Sicherheit, Cache-Buster auf 9.95.2)
+## Aktueller Stand (V9.95-d, 26.05.2026 — **WebGPU LÄUFT auf Schöpfer-Browser** ✓ (Foundation bereit, trivial-shader bit-identisch, Determinismus bewiesen); Polish-Welle: moderne `adapter.info`-API + GPU-Dispatch-Telemetry + WorldUpload-Log + Cutover-Verfeinerung (GPU-Pending blockt Worker-Mesh-Pfad nicht mehr))
+
+**V9.95-d — Schöpfer-Browser-Audit-Erfolg + Polish-Welle (kein neuer Pipeline-Code, ~40 Z. netto):**
+
+- **MEILENSTEIN**: Schöpfer-Browser-Audit V9.95-c bestätigte **WebGPU funktioniert** — Chrome auf Windows logged `WebGPU Foundation bereit: (adapterinfo nicht verfügbar) — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.` Plus: Chrome-Warning `powerPreference option is currently ignored on Windows (crbug.com/369219127)` ist informational, nicht-blockierend.
+- **Vier Polish-Heilungen**:
+  1. **`adapter.info` moderne API**: Chrome 131+ hat `adapter.requestAdapterInfo()` deprecated zu `adapter.info` (synchron Property). Vorher: nur die alte async-Methode geprüft → `(adapterinfo nicht verfügbar)` im Log. Heilung: prüfe zuerst `adapter.info` (modern), fallback auf `adapter.requestAdapterInfo()` (legacy). Jetzt sieht der Schöpfer den vendor/architecture/device-Tag.
+  2. **GPU-Dispatch-Telemetry**: erster Dispatch logt `[INFO] WebGPU-Density: erster Dispatch — X.XX ms für N Float32-Samples. GPU rechnet jetzt die Welt-Density.` Danach alle 50 Dispatches eine kumulative Telemetry. Sichtbarer Beweis dass GPU aktiv arbeitet (nicht nur „Foundation bereit"-Theater).
+  3. **WorldUpload-Log**: beim ersten `_voxelGpuUploadWorldState` log `[INFO] WebGPU-Density: Welt-State hochgeladen — Permutation (256 u32) + Erosion-Grid (DxD f32) + Tarns (N). Pipeline scharf für eligible Chunks.` So sieht der Schöpfer den Übergang von „Foundation bereit" zu „Pipeline aktiv".
+  4. **Cutover-Verfeinerung**: vorher blockierte GPU-Pending den Worker-Mesh-Pfad (`if (gpuDensity === null) return null;`). Jetzt: GPU-Cache-Hit hat Priorität (Float32Array), aber GPU-Pending/Ineligible fällt durch → Worker-Mesh kann parallel rendern. GPU + Worker arbeiten additiv, keiner blockiert.
+- **Cache-Buster**: `?v=9.95.2` → `?v=9.95.3`.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (21 V9.95-a+b weiterhin grün); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` +40 Z. (4 Patches), `index.html` Cache-Buster, `package.json` 9.95.2 → 9.95.3.
+
+**Erwartete Logs im Schöpfer-Browser jetzt** (bei Reload mit Strg+Shift+R für stale-cache-Bypass):
+1. `WebGPU-Init startet (navigator.gpu vorhanden) ...`
+2. `WebGPU Foundation bereit: <vendor>/<arch>/<device> — ...` (jetzt mit echter Vendor-Info!)
+3. `WebGPU-Density: Welt-State hochgeladen — Permutation (256 u32) + Erosion-Grid (128×128 f32) + Tarns (4). Pipeline scharf ...`
+4. `WebGPU-Density: erster Dispatch — X.XX ms für ~91k Float32-Samples. GPU rechnet jetzt die Welt-Density.`
+5. Alle 50 Chunks: `WebGPU-Density: 50/100/150... Dispatches kumuliert — letzter X.XX ms.`
+
+Wenn der Schöpfer den ersten-Dispatch-Log sieht: **die volle Density-Pipeline läuft auf GPU**. Wenn nicht: vermutlich keine eligible Chunks im Spawn-Bereich (lakeNear in der Hydrosphere-Atlas-Mitte) — der Schöpfer kann via `_voxelGpuChunkEligible(cx, cz, 0)` in DevTools-Console testen.
+
+**Was als nächstes wartet**: Schöpfer-Browser-Audit V9.95-d → sind die echten GPU-Dispatch-Logs sichtbar? Adapter-Info aufgelöst? Dann V9.95-e (Hydrosphere-Carve + Lake-Mask + voxelEdits in WGSL, ~3-4h, 100% Chunk-Coverage auf GPU) ODER V9.95-f (GPU-Density als preDensity in den Worker einschleusen, ~2-3h, Main-Time wieder ~30ms).
+
+---
+
+**Davor — V9.95-c Logging- + Trigger-Heilung (Schöpfer-Browser-Audit-Folge, kein Pipeline-Code-Change, ~80 Z. netto):**
 
 **V9.95-c — Logging- + Trigger-Heilung (Schöpfer-Browser-Audit-Folge, kein Pipeline-Code-Change, ~80 Z. netto):**
 

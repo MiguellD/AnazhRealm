@@ -12868,11 +12868,18 @@ class AnazhRealm {
                     return false;
                 }
                 this.state.voxelGpuAdapter = adapter;
-                // Adapter-Info ist seit Chrome 119+ verfügbar (vorher Promise).
-                // Defensive: optional, nicht-kritisch.
+                // Adapter-Info: in Chrome 131+ ist `adapter.info` eine direkte
+                // Property (synchron), die alte `requestAdapterInfo()`-Methode
+                // wurde deprecated/entfernt. Vor 131: nur die async-Methode.
+                // Wir prüfen beides — direkt-property zuerst (modern), dann
+                // fallback auf die alte Promise-Methode.
                 try {
-                    const info =
-                        typeof adapter.requestAdapterInfo === "function" ? await adapter.requestAdapterInfo() : null;
+                    let info = null;
+                    if (adapter.info && typeof adapter.info === "object") {
+                        info = adapter.info;
+                    } else if (typeof adapter.requestAdapterInfo === "function") {
+                        info = await adapter.requestAdapterInfo();
+                    }
                     if (info) {
                         this.state.voxelGpuAdapterInfo = {
                             vendor: info.vendor || "(unbekannt)",
@@ -13262,8 +13269,15 @@ class AnazhRealm {
                 erosionHas,
                 tarnsCount: tarns.length,
             };
+            const wasFirstUpload = !this.state.voxelGpuWorldUploaded;
             this.state.voxelGpuWorldUploaded = true;
             this.state.voxelGpuWorldStateGen = expectedGen;
+            if (wasFirstUpload) {
+                this.log(
+                    `WebGPU-Density: Welt-State hochgeladen — Permutation (256 u32) + Erosion-Grid (${erosionDim}×${erosionDim} f32, has=${erosionHas}) + Tarns (${tarns.length}). Pipeline scharf für eligible Chunks.`,
+                    "INFO"
+                );
+            }
             return true;
         } catch (e) {
             this.state.voxelGpuLastError = "World-State-Upload: " + e.message;
@@ -13449,6 +13463,22 @@ class AnazhRealm {
             const t1 = typeof performance !== "undefined" ? performance.now() : 0;
             this.state.voxelGpuLastDispatchMs = t1 - t0;
             this.state.voxelGpuDispatchCount++;
+            // V9.95-d Telemetry: erster Dispatch ist die Vision-Bestätigung
+            // („GPU rechnet WIRKLICH Density"). Danach alle 50 Dispatches eine
+            // ms-Telemetry. Sonst stille Beschleunigung — der Schöpfer sieht
+            // den Win nicht.
+            const n = this.state.voxelGpuDispatchCount;
+            if (n === 1) {
+                this.log(
+                    `WebGPU-Density: erster Dispatch — ${this.state.voxelGpuLastDispatchMs.toFixed(2)} ms für ${copy.length} Float32-Samples. GPU rechnet jetzt die Welt-Density.`,
+                    "INFO"
+                );
+            } else if (n % 50 === 0) {
+                this.log(
+                    `WebGPU-Density: ${n} Dispatches kumuliert — letzter ${this.state.voxelGpuLastDispatchMs.toFixed(2)} ms.`,
+                    "INFO"
+                );
+            }
             return copy;
         });
     }
@@ -16965,18 +16995,22 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V9.95-b — GPU-Density als Stufe-0 (höchste Priorität für eligible
-        // Chunks: kein Hydrosphere-Carve im Footprint, kein Lake-Mask, keine
-        // voxelEdits). Eligibility-Gate filtert komplexere Chunks aus → die
-        // fallen auf den V9.91-Worker-Mesh-Pfad. Wenn GPU-Density im Cache:
-        // direkt sync-Build mit preDensity (Main macht Iso+Cells+Colors+BVH,
-        // typisch ~70 ms — etwas mehr als Worker-Mesh-Pfad mit ~30 ms, aber
-        // der Worker ist freier für die HYDRO-Chunks die ihn wirklich
-        // brauchen). Wenn Pending: null returnen, Pump kommt wieder.
+        // V9.95-b/d — GPU-Density als Stufe-0 NUR bei Cache-Hit. Wenn GPU
+        // pending (Request läuft), fällt der Chunk weiter zum Worker-Mesh-
+        // Pfad — beide Pfade rennen parallel, der erste Cache-Hit gewinnt.
+        // GPU-Pipeline läuft im Hintergrund weiter + bei einem späteren
+        // Streaming-Tick steht das Resultat im Cache; aber für DIESEN Frame
+        // bleibt der Worker-Path verfügbar. Ergebnis: GPU + Worker arbeiten
+        // additiv, keiner blockiert den anderen. Eligibility-Gate filtert
+        // Hydro/Edit-Chunks aus → die nutzen direkt den V9.91-Worker-Pfad.
         let gpuDensity;
         if (this.state.voxelGpuStatus === "ready") {
-            gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
-            if (gpuDensity === null) return null;
+            const result = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
+            if (result instanceof Float32Array) {
+                gpuDensity = result;
+            }
+            // null (pending) ODER undefined (ineligible) → kein early-return,
+            // Worker-Mesh-Pfad bleibt der Fallback.
         }
         // V9.91 Phase 3 — voller Worker-Mesh-Build (wenn verfügbar + worldgen-
         // synced + GPU-Pfad nicht traf). Cache-Hit → BufferGeometry-Konstruktion

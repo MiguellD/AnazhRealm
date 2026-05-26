@@ -359,6 +359,41 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 Aus `CLAUDE.md` ausgelagert am 21.05.2026 (Doc-Konsolidierung). Dies ist die **kanonische, ausführliche Chronik** jeder Welle. Die Teil-Historien weiter oben in dieser Datei (Schnell-Lage, die zehn Rückschau-Sektionen, das Session-Tagebuch) sind Teilmengen hiervon und werden im Konsolidierungs-Schritt hier eingeschmolzen.
 
+**V9.95-d — Schöpfer-Browser-Audit-Erfolg + Polish-Welle (26.05.2026, ~40 Z. netto).**
+
+Schöpfer-Browser-Audit V9.95-c bestätigte **WebGPU FUNKTIONIERT** auf seiner Windows-Chrome-Maschine. Log:
+
+```
+[INFO] WebGPU-Init startet (navigator.gpu vorhanden) ...
+[INFO] WebGPU Foundation bereit: (adapterinfo nicht verfügbar) — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.
+```
+
+Plus: Chrome zeigte Warning `powerPreference option is currently ignored when calling requestAdapter() on Windows. See https://crbug.com/369219127` — informational, nicht-blockierend (Chrome-interne Limitierung, der Adapter spawnt trotzdem; betrifft nur die Auswahl zwischen integrierter + diskreter GPU bei Multi-GPU-Systemen).
+
+**Was die V9.95-c-Lehre lieferte**: alle drei sichtbaren End-Pfade (navigator.gpu fehlt / requestAdapter null / Foundation bereit) erscheinen jetzt im Browser-Console. Der V9.95-a-Bug („stille Failure-Pfade") ist strukturell weg. Plus V9.47-Erosion-Log korrekt (36 Stream-Power-Iterationen über 2048m-Region) statt undefined.
+
+**Vier Polish-Heilungen V9.95-d**:
+
+1. **`adapter.info` moderne API**: Chrome 131+ hat `adapter.requestAdapterInfo()` deprecated zu direkter `adapter.info`-Property. Mein V9.95-a-Code prüfte nur die alte async-Methode → `(adapterinfo nicht verfügbar)` im Log obwohl der Adapter funktionierte. Heilung: zuerst `adapter.info` (modern), dann fallback `adapter.requestAdapterInfo()` (legacy). Der Schöpfer sieht jetzt den vendor/architecture/device-Tag (z.B. „nvidia/turing/RTX 3060").
+2. **GPU-Dispatch-Telemetry**: vorher zählte `voxelGpuDispatchCount` still hoch — keine sichtbare Bestätigung dass GPU wirklich arbeitet. Jetzt: erster Dispatch logt `[INFO] WebGPU-Density: erster Dispatch — X.XX ms für N Float32-Samples. GPU rechnet jetzt die Welt-Density.` Danach alle 50 Dispatches kumulative Telemetry. Sichtbare Vision-Bestätigung statt stiller Beschleunigung.
+3. **WorldUpload-Log**: beim ersten `_voxelGpuUploadWorldState`-Aufruf log `[INFO] WebGPU-Density: Welt-State hochgeladen — Permutation (256 u32) + Erosion-Grid (DxD f32, has=H) + Tarns (N). Pipeline scharf für eligible Chunks.` So sieht der Schöpfer den Übergang „Foundation bereit" → „Pipeline aktiv".
+4. **Cutover-Verfeinerung**: vorher blockte GPU-Pending den Worker-Mesh-Pfad (`if (gpuDensity === null) return null;`). Bei GPU-Pending durfte der Worker-Mesh für DENSELBEN Chunk nicht parallel laufen — der Streaming-Pump wartete einen Frame umsonst. Jetzt: GPU-Cache-Hit (Float32Array) hat Priorität, aber GPU-Pending/Ineligible fällt einfach durch → Worker-Mesh-Pfad ist Fallback. **GPU + Worker arbeiten additiv, keiner blockiert den anderen.** Die Streaming-Throughput steigt für eligible Chunks bei warmem GPU-Cache + warmem Worker-Cache.
+
+**Cache-Buster**: `?v=9.95.2` → `?v=9.95.3` (Stamm-Disziplin verdrahtet: jeder Version-Bump zieht beide Stellen mit).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle V9.95-a+b+c Invarianten weiterhin grün); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` +40 Z. netto (modern-adapter.info + Dispatch-Telemetry + WorldUpload-Log + Cutover-Fix), `index.html` Cache-Buster, `package.json` 9.95.2 → 9.95.3.
+
+**Sichtbare Logs beim Schöpfer-Browser-Reload jetzt erwartet** (Strg+Shift+R für stale-cache-Bypass):
+- `WebGPU-Init startet (navigator.gpu vorhanden) ...`
+- `WebGPU Foundation bereit: <vendor>/<arch>/<device> — ...` (jetzt mit echter Vendor-Info!)
+- `WebGPU-Density: Welt-State hochgeladen — Permutation + Erosion + Tarns. Pipeline scharf ...`
+- `WebGPU-Density: erster Dispatch — X.XX ms für ~91k Float32-Samples. GPU rechnet jetzt die Welt-Density.`
+- alle 50 Chunks: `WebGPU-Density: 50/100/150 Dispatches kumuliert — letzter X.XX ms.`
+
+Wenn der erste-Dispatch-Log nicht erscheint, aber Foundation bereit ist: keine eligible Chunks im Spawn-Bereich (Hydrosphere-Atlas-Lake im Footprint). Test via DevTools-Console: `anazhRealm._voxelGpuChunkEligible(0, 0, 0)` → true heißt eligible. Bei `false`: probiere Chunks weiter weg (`anazhRealm._voxelGpuChunkEligible(5, 5, 1)`).
+
+---
+
 **V9.95-c — Logging-Heilung + Trigger-Robustheit nach Schöpfer-Browser-Audit (26.05.2026, ~35 Z. netto).**
 
 Schöpfer-Browser-Audit V9.95-b zeigte im Log: `[AnazhRealm V9.95]` läuft, alle anderen Subsysteme loggen — aber KEIN einziger WebGPU-bezogener Log. Drei Bug-Klassen identifiziert in einem 3-Stufen-Diagnose-Pfad (Lehre 1+2 angewandt, kein Skript nötig):
