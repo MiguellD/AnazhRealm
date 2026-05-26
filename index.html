@@ -29,7 +29,7 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-PVTTncmBK0qEPLY5P4aa/TlCk0m4/HzchrjanefKEhw='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-0wZnc3btID51aZv5XxEWftOn3by2Jg2Jjb6FWPNAnyA='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v9.93 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
@@ -5723,7 +5723,8 @@
         <script type="importmap">
             {
                 "imports": {
-                    "three": "./vendor/three.module.min.js"
+                    "three": "./vendor/three.module.min.js",
+                    "three/addons/": "./vendor/three-addons/"
                 }
             }
         </script>
@@ -5741,6 +5742,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=10.0.1" defer></script>
+        <script src="anazhRealm.js?v=10.0.2" defer></script>
     </body>
 </html>

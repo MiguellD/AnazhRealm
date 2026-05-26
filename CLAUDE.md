@@ -6,7 +6,27 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V10.0-b, 26.05.2026 — **ESM-Loading-Pattern für Three.js + Import-Map**. Three.js r160 läuft jetzt als ESM-Modul, geladen via Inline-Import-Map mit CSP-SHA256-Hash whitelisted. `vendor/three-bootstrap.js` importiert THREE + setzt es global für den klassisch-geladenen `anazhRealm.js`. Fundament für V10.0-c WebGPURenderer-Addon-Loading offen.)
+## Aktueller Stand (V10.0-c, 26.05.2026 — **WebGPURenderer-Addon verfügbar in window.THREE**. ~238 Three.js-Addon-Files (renderers/ + capabilities/ + nodes/ + objects/ + lights/) vendored. Bootstrap importiert `WebGPURenderer` + `WebGPU`-Capability + hängt sie an `THREE.WebGPURenderer` / `THREE.WebGPU`. Spiel läuft 1:1 wie vorher (kein Render-Wechsel — V10.0-d entscheidet zur Laufzeit GPU vs WebGL). Boot-Wait für ESM-Loading defensiv.)
+
+**V10.0-c — WebGPURenderer-Addon vendoren + global verfügbar machen (substantielle Welle, ~1.5 MB Vendor, ~50 Z. Code-Änderung):**
+
+- **Wurzel-Vision**: V10.0-b legte den ESM-Loading-Pfad für Three.js-Core. V10.0-c ergänzt das WebGPURenderer-Addon + Dependencies — damit kann `anazhRealm.js` in V10.0-d zur Laufzeit `new THREE.WebGPURenderer()` mit Fallback auf `THREE.WebGLRenderer()` instantiieren. Heute noch kein Renderer-Wechsel, nur Verfügbarkeit.
+- **Vendor-Erweiterung** (`vendor/three-addons/`, ~1.5 MB, 238 Files): voller Block aus r160 `examples/jsm/`:
+  - `renderers/` (60 Files, 568 KB) — WebGPURenderer, WebGPUBackend, WebGLBackend, common Renderer-Base + nodes/ Subsystem
+  - `capabilities/` (1 File, 12 KB) — `WebGPU.js` mit `isAvailable()`-Capability-Check
+  - `nodes/` (~ files, 932 KB) — TSL (Three Shading Language) Node-System (für Material-Migration V10.0-d)
+  - `objects/` (für `QuadMesh` Dependencie) + `lights/` (für `IESSpotLight`)
+- **Import-Map erweitert** (`index.html`): `"three/addons/": "./vendor/three-addons/"` Mapping. Alle internen `import ... from "three/addons/renderers/..."`-Statements der Addon-Files lösen sich relativ auf, alle `from "three"`-Imports landen am ESM-Build. CSP-SHA256-Hash neu berechnet: `sha256-0wZnc3btID51aZv5XxEWftOn3by2Jg2Jjb6FWPNAnyA=`.
+- **`vendor/three-bootstrap.js` erweitert** (~12 Z. netto): zusätzlich `import WebGPURenderer from "three/addons/renderers/webgpu/WebGPURenderer.js"` + `import WebGPU from "three/addons/capabilities/WebGPU.js"`. WICHTIG: `import * as THREE` liefert ein READ-ONLY Module-Namespace — wir spreaden in ein Plain-Object (`const THREE_GLOBAL = {...THREE}; THREE_GLOBAL.WebGPURenderer = WebGPURenderer; window.THREE = THREE_GLOBAL`).
+- **Boot-Wait in `anazhRealm.js`** (~15 Z. netto): das ESM-Loading von 238 Addon-Files ist async + kann LÄNGER dauern als das Parsing des klassisch-geladenen `anazhRealm.js`. WHATWG-Spec sagt zwar dass defer + module-Scripts in document order laufen, aber die Module-Resolution für einen 238-File-Graph ist non-trivial. AnazhRealm-Constructor nutzt `new THREE.Vector3()` schon im Top-Level → wenn `window.THREE` undefined ist, scheitert es. Defensiver Polling-Wait alle 10ms (`_bootAnazhRealm()`-Funktion am Datei-Ende) — sobald `window.THREE` da ist, starts der Constructor + `init()`.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle bestehende Bänder grün); audit:strict 0 Failures; Format/Lint sauber. Direct Browser-Probe via Puppeteer: `THREE.REVISION="160"`, `THREE.WebGPURenderer` ist `function` (Klasse), `THREE.WebGPU` ist `function`, `THREE.WebGPU.isAvailable() === false` (headless ohne GPU, erwartet), `window.anazhRealm` ist `object`, KEINE Page-Errors. Dateien: `vendor/three-addons/` neu (238 Files, ~1.5 MB), `vendor/three-bootstrap.js` +12 Z., `index.html` (Import-Map + CSP-Hash-Update), `anazhRealm.js` +15 Z. (Boot-Wait). Version-Bump 10.0.1 → 10.0.2.
+
+**Was V10.0-d liefern wird**: Renderer-Auswahl-Logik in `createScene` (oder vergleichbarer Init-Pfad): `const useWebGPU = THREE.WebGPU && THREE.WebGPU.isAvailable(); const renderer = useWebGPU ? new THREE.WebGPURenderer({canvas, antialias:true}) : new THREE.WebGLRenderer({canvas, antialias:true});`. Plus Color-Management + Lights-Bridge-Heilungen mit ziehen. Plus: `ShaderMaterial` (hydroSurfaceMaterial, waterfallMaterial) wird auf WebGLRenderer fallen müssen (keine WGSL/TSL-Variante in r160 für diese Custom-Shader) — V10.0-e portiert die zu TSL für GPU-Pfad.
+
+---
+
+**Davor — V10.0-b ESM-Loading-Pattern für Three.js (Foundation-Welle, kein Render-Wechsel, ~50 Z. netto):**
 
 **V10.0-b — ESM-Loading-Pattern für Three.js (Foundation-Welle, kein Render-Wechsel, ~50 Z. netto):**
 

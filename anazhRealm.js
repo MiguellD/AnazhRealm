@@ -40120,7 +40120,22 @@ AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
         lebendig: 2,
     }),
 });
-const anazhRealm = new AnazhRealm();
-// Globale Referenz für DevTools-Debug und automatisierten Playtest.
-if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
-anazhRealm.init();
+// V10.0-c — Three.js ist seit V10.0-b ein ESM-Modul, das via Bootstrap-
+// Module-Script geladen wird. Dieser classic-defer-Script (`anazhRealm.js`)
+// und das Bootstrap-Module sind beide deferred + sollten in document order
+// laufen (WHATWG-Spec), aber das Module-Loading eines 238-File-Addon-
+// Graphen (V10.0-c) kann den Bootstrap länger ausführen lassen als unser
+// defer-Script. Plus: AnazhRealm-Constructor nutzt schon `new THREE.Vector3()`
+// im Top-Level — wir MÜSSEN auf `window.THREE` warten, BEVOR wir den
+// Constructor rufen. Defensiver Polling-Wait alle 10 ms.
+function _bootAnazhRealm() {
+    if (typeof window !== "undefined" && typeof window.THREE === "undefined") {
+        setTimeout(_bootAnazhRealm, 10);
+        return;
+    }
+    const anazhRealm = new AnazhRealm();
+    // Globale Referenz für DevTools-Debug und automatisierten Playtest.
+    if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
+    anazhRealm.init();
+}
+_bootAnazhRealm();
