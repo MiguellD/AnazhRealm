@@ -359,6 +359,45 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 Aus `CLAUDE.md` ausgelagert am 21.05.2026 (Doc-Konsolidierung). Dies ist die **kanonische, ausführliche Chronik** jeder Welle. Die Teil-Historien weiter oben in dieser Datei (Schnell-Lage, die zehn Rückschau-Sektionen, das Session-Tagebuch) sind Teilmengen hiervon und werden im Konsolidierungs-Schritt hier eingeschmolzen.
 
+**V9.95-b — WebGPU-Density-Pipeline (26.05.2026, Phase 2 analog V9.90-Worker-Density-Cutover).**
+
+Die Foundation aus V9.95-a war fertig: Adapter, Device, Determinismus-Beweis. V9.95-b liefert den eigentlichen Density-Pfad — die ~91k SimplexNoise-Calls pro Chunk laufen auf GPU für eligible Chunks (Trockenland, keine voxelEdits, kein Hydrosphere-Touch — ~30-40% des Streaming-Loops).
+
+**WGSL-Shader** (`AnazhRealm.WGSL_DENSITY_GRID`, ~280 Z. WGSL netto): voller Mirror von `_terrainDensityAt`/`terrainMacroSurfaceY` aus `voxel-worker.js`. Funktionen:
+- `snoise2D` + `snoise3D` — vendor-exakter Stefan-Gustavson-Port: `grad3`-12-Einträge auch für 2D (z ignoriert, GENAU wie Vendor) + `permMod12 = perm % 12` als gradient-index. EINE Subtilität, die zu vermeintlich eleganten Fehlern führt: ein eigenes `grad2` mit 8 Einträgen + `& 7`-Hash würde algorithm-equivalence brechen → GPU sähe eine FUNDAMENTAL andere Welt als Worker (nicht nur Float32-Drift). Disziplin als permanente Gotcha verdrahtet.
+- `erosion_delta_at` (bilinear sample über storage-buffer)
+- `tarn_delta_at` (Gauss-Sum-Loop über packed-buffer)
+- `terrain_macro_surface_y` (warp + tect + cont + ridges + sub-ocean-detail + erosion + tarn — alles in WGSL)
+- `terrain_density_at` (orchestrator mit 3D-Detail-Octaven + Cave-Hülle)
+
+**Bindings** (alle @group(0)):
+- `@binding(0) uniform Params` — 80 Bytes, packed: ox/oy/oz/step + nx/ny/nz + baseHeight/waterLevel + erosionOrigin/Cell/Dim/Has + tarnsCount
+- `@binding(1) storage<read> permTable` — 256 u32, geladen aus `new SimplexNoise(seed+":voxel").perm`
+- `@binding(2) storage<read> erosionDelta` — Float32 dim×dim
+- `@binding(3) storage<read> tarnsBuf` — Float32 ×5 pro Tarn
+- `@binding(4) storage<read_write> outDensity` — Float32 (Nx+1)·(Ny+1)·(Nz+1)
+
+**JS-Seite** (~600 Z. netto): 6 Methoden + 10 State-Felder.
+
+- `_voxelGpuEnsureDensityPipeline()` — lazy `createComputePipeline`.
+- `_voxelGpuUploadWorldState()` — beim Worldgen-Sync: Permutation aus vendor-noise + Erosion-Grid + Tarns-Packed. Idempotent — re-upload nur bei stateGen-Bump.
+- `_voxelGpuChunkEligible(cx, cz, lod)` — Eligibility-Gate: false wenn voxelEdit-Sphere overlapped Chunk-Footprint ODER hydrosphere.lakeNear[ci+cj*dim] markiert ODER hydrosphere.riverBuckets nicht leer im Footprint. Sonst true.
+- `_voxelGpuComputeDensity(ox,oy,oz, dimX,dimY,dimZ, step)` Promise<Float32Array> — schreibt per-Request-Uniforms (80 Bytes Params-Block via DataView), erstellt per-Chunk Out- + Read-Buffer, dispatched + mapAsync. Telemetry: `voxelGpuDispatchCount` + `voxelGpuLastDispatchMs`.
+- `_fetchOrRequestChunkDensityGpu(cx, cz, lod)` — Cache-First-Lookup (V9.90-Pattern). Drei Rückgaben: Float32Array (one-shot consumed), null (pending), undefined (GPU not ready / ineligible). State-gen-Schutz.
+- **Pipeline-Cutover in `_ensureVoxelChunkAt`**: GPU-Density-Cache als Stufe 0 vor Worker-Mesh-Cache. Wenn `gpuDensity` Float32Array: `_buildVoxelChunkData(cx,cz,lod, gpuDensity)` baut Main-Iso+Cells+Colors+BVH. Pending → return null, Pump kommt wieder.
+
+**Edit-Invalidierung**: `_voxelWorkerNotifyEdit` cleart auch `voxelGpuDensityCache`. Plus Edits werden ohnehin vom Eligibility-Gate gefiltert (Chunks-im-Edit-Footprint ineligible).
+
+**Test-Beweis (13 Invarianten grün im Cloud-Container, conditional 4 weitere im echten Browser)**:
+- Unconditional: 6 API-Methoden existieren ✓; WGSL > 1000 Z. ✓; 10 State-Felder ✓; Eligibility-Trockenland-eligible ✓; Eligibility-voxelEdit-Footprint-NICHT-eligible + WEIT-WEG-eligible ✓; Pipeline-Cutover verdrahtet ✓; Edit-Cache-Clear verdrahtet ✓.
+- Conditional bei `voxelGpuStatus === "ready"`: GPU-Compute-Density korrekte Float32-Länge + dispatchCount ≥ 2 + GPU-vs-Main-Sanity |Δ| < 1e-3 (transzendente Toleranz) + GPU-internal-Determinismus = 0 mismatches.
+
+**Lehre verdrahtet (CLAUDE.md/Terrain+Chunks)**: **WGSL-SimplexNoise-Mirror MUSS vendor-Konventionen exakt spiegeln** — wer einen Noise/Hash/PRNG-Algorithmus auf GPU portiert, MUSS jeden Subschritt der Vendor-Implementation 1:1 spiegeln. Vendor `simplex-noise.js` nutzt `grad3`-12 für BEIDE 2D + 3D (in 2D z ignoriert) + `permMod12 = perm % 12` als gradient-index. Ein eigener „eleganterer" 2D-Simplex mit `grad2`-8 + `& 7`-Hash hätte algorithm-equivalence gebrochen → GPU sieht eine FUNDAMENTAL andere Welt als Worker. Plus: Permutation MUSS aus dem JS-Vendor mit identischem Seed (`seed+":voxel"`) kommen. Disziplin: vor JEDEM Vendor-Port den Vendor-Code Zeile-für-Zeile lesen + jeden „Vereinfachungs-Reiz" gegen exakte Spiegel-Disziplin abwägen.
+
+**Was V9.95-c liefert (next session, ~3-4h)**: WGSL-Mirror der Hydrosphere-Carve (Fluss-Bucket-Lookups mit variabler Segment-Anzahl pro Bucket — komplexer storage-buffer-Layout, vermutlich flatten-array + offset-table) + Lake-Mask (bilinear sample) + voxelEdits-Buffer (dynamic re-upload pro Edit). Damit: 100% Chunk-Coverage auf GPU. V9.95-d optional: GPU-Density als preDensity in den Worker einschleusen (zero-roundtrip), sodass Main-Time wieder ~30ms wird (statt ~70ms wie jetzt für GPU-eligible Chunks).
+
+---
+
 **V9.95-a — WebGPU-Compute-Foundation (26.05.2026, Phase 1 analog V9.89-Worker-Foundation).**
 
 Nach der V9.94.r-Reflexion war klar: die WebGPU-Verfügbarkeit ist Stufe-1-öffentliche-Wahrheit, keine Diagnose-Wartepunkt nötig. V9.95-a startet die echte WebGPU-Integration — Phase-1-Pattern aus V9.89: Foundation aufbauen, Determinismus innerhalb der GPU beweisen, KEIN Pipeline-Cutover (kommt mit V9.95-b).

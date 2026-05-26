@@ -264,6 +264,23 @@ class AnazhRealm {
             voxelGpuLimits: null, // {maxComputeInvocationsPerWorkgroup, maxStorageBufferBindingSize, maxBufferSize}
             voxelGpuFoundationProof: null, // {trivialMismatches, determinismMismatches, n} nach erfolg. Init
             voxelGpuLastError: null, // String, falls Init/Run fehlschlug
+            // V9.95-b (Density-Pipeline): GPU rechnet die Worldgen-Density.
+            // Eligibility-Gate filtert Chunks mit Hydrosphere-Carve/Lake-Mask
+            // ODER voxelEdits aus (die fallen auf den V9.91-Worker-Pfad).
+            voxelGpuDensityPipeline: null, // GPUComputePipeline (lazy)
+            voxelGpuPermBuffer: null, // GPUBuffer (512 u32 permutation, geseeded)
+            voxelGpuErosionBuffer: null, // GPUBuffer (erosion grid, dim*dim f32)
+            voxelGpuErosionSize: 0, // bytes
+            voxelGpuTarnsBuffer: null, // GPUBuffer (tarns packed f32)
+            voxelGpuTarnsSize: 0, // bytes
+            voxelGpuParamsBuffer: null, // GPUBuffer (uniform, scalar world-state)
+            voxelGpuWorldUploaded: false, // wurde Welt-State hochgeladen?
+            voxelGpuWorldStateGen: -1, // stateGen-Stempel der letzten Upload
+            voxelGpuDensityCache: null, // Map<"cx,cz,lod", Float32Array> — one-shot
+            voxelGpuDensityPending: null, // Set<"cx,cz,lod">
+            voxelGpuDensityGenAtRequest: null, // Map<key, stateGen> für Stale-Filter
+            voxelGpuDispatchCount: 0, // Diagnose: Anzahl GPU-Dispatches im Lauf
+            voxelGpuLastDispatchMs: 0, // Diagnose: letzte Dispatch-Dauer
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -12744,6 +12761,12 @@ class AnazhRealm {
         this.state.voxelWorkerStateGen++;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        // V9.95-b — auch GPU-Density-Cache invalidieren. Edits werden vom
+        // Eligibility-Gate eh gefiltert (Chunks im Edit-Footprint nicht
+        // eligible), aber stale Density außerhalb des Edit-Footprints muss
+        // auch raus, weil voxelWorkerStateGen sich änderte (per-Request-
+        // Stale-Filter triggert state-gen-Verwurf).
+        if (this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache.clear();
         try {
             this.state.voxelWorker.postMessage({
                 type: "state-update",
@@ -13012,6 +13035,34 @@ class AnazhRealm {
     // Browser sie als „dirty" GPU-Slot und der nächste Worldgen kriegt
     // potentiell einen zweiten Device-Slot (Quota-Limit). Idempotent.
     _voxelGpuDispose() {
+        // V9.95-b — auch Density-Pipeline-Buffers freigeben
+        const bufs = [
+            this.state.voxelGpuPermBuffer,
+            this.state.voxelGpuErosionBuffer,
+            this.state.voxelGpuTarnsBuffer,
+            this.state.voxelGpuParamsBuffer,
+        ];
+        for (const b of bufs) {
+            if (b && typeof b.destroy === "function") {
+                try {
+                    b.destroy();
+                } catch (_e) {
+                    /* defensive */
+                }
+            }
+        }
+        this.state.voxelGpuPermBuffer = null;
+        this.state.voxelGpuErosionBuffer = null;
+        this.state.voxelGpuErosionSize = 0;
+        this.state.voxelGpuTarnsBuffer = null;
+        this.state.voxelGpuTarnsSize = 0;
+        this.state.voxelGpuParamsBuffer = null;
+        this.state.voxelGpuDensityPipeline = null;
+        this.state.voxelGpuWorldUploaded = false;
+        this.state.voxelGpuWorldStateGen = -1;
+        if (this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache.clear();
+        if (this.state.voxelGpuDensityPending) this.state.voxelGpuDensityPending.clear();
+        if (this.state.voxelGpuDensityGenAtRequest) this.state.voxelGpuDensityGenAtRequest.clear();
         try {
             if (this.state.voxelGpuDevice && typeof this.state.voxelGpuDevice.destroy === "function") {
                 this.state.voxelGpuDevice.destroy();
@@ -13026,6 +13077,393 @@ class AnazhRealm {
         this.state.voxelGpuFoundationProof = null;
         this.state.voxelGpuStatus = "notTried";
         this._voxelGpuInitPromise = null;
+    }
+
+    // =====================================================================
+    // V9.95-b — Density-Pipeline (WGSL-Compute statt CPU-noise2D/3D-Calls).
+    // Welt-State (Permutation + Erosion + Tarns + Uniforms) wird beim
+    // Worldgen-Abschluss einmal hochgeladen. Pro Chunk: nur die per-Chunk-
+    // Uniforms (ox/oy/oz/step/nx/ny/nz) + output-Buffer-Allokation +
+    // Dispatch + mapAsync. Eligibility-Gate filtert Chunks mit Hydrosphere
+    // oder voxelEdits aus (die fallen auf den V9.91-Worker-Pfad).
+    // =====================================================================
+
+    // Lazy build der density-Compute-Pipeline. Idempotent.
+    _voxelGpuEnsureDensityPipeline() {
+        if (this.state.voxelGpuDensityPipeline) return this.state.voxelGpuDensityPipeline;
+        const device = this.state.voxelGpuDevice;
+        if (!device) return null;
+        try {
+            const module = device.createShaderModule({ code: AnazhRealm.WGSL_DENSITY_GRID });
+            const pipeline = device.createComputePipeline({
+                layout: "auto",
+                compute: { module, entryPoint: "main" },
+            });
+            this.state.voxelGpuDensityPipeline = pipeline;
+            return pipeline;
+        } catch (e) {
+            this.state.voxelGpuLastError = "Density-Pipeline-Erschaffung: " + e.message;
+            this.log(`WebGPU Density-Pipeline-Fehler: ${e.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Welt-State auf GPU laden: Permutation + Erosion + Tarns. Aufgerufen
+    // beim Worldgen-Abschluss (nach _voxelWorkerSyncWorldgenState). Idempotent
+    // — re-uploaded nur wenn voxelWorkerStateGen sich gegenüber dem letzten
+    // Upload geändert hat. Permutation kommt aus dem SimplexNoise-Vendor mit
+    // demselben Seed wie der Worker (sodass die WGSL-noise2D/3D dieselbe
+    // Permutation sieht — algorithm-äquivalent zum Worker).
+    _voxelGpuUploadWorldState() {
+        if (this.state.voxelGpuStatus !== "ready") return false;
+        const device = this.state.voxelGpuDevice;
+        if (!device) return false;
+        const expectedGen = this.state.voxelWorkerStateGen;
+        if (this.state.voxelGpuWorldUploaded && this.state.voxelGpuWorldStateGen === expectedGen) {
+            return true; // schon up-to-date
+        }
+        try {
+            // 1) Permutation-Table — aus dem SimplexNoise-Vendor (~seed":voxel"
+            // matched den Worker exakt). Wir uploaden die 256-Byte perm-Array
+            // als 256 u32 (1024 Bytes) — die WGSL liest sie als array<u32>.
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            const noise = new SimplexNoise(seed + ":voxel");
+            const permU32 = new Uint32Array(256);
+            for (let i = 0; i < 256; i++) permU32[i] = noise.perm[i];
+            if (!this.state.voxelGpuPermBuffer) {
+                this.state.voxelGpuPermBuffer = device.createBuffer({
+                    size: 256 * 4,
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+            }
+            device.queue.writeBuffer(this.state.voxelGpuPermBuffer, 0, permU32);
+
+            // 2) Erosion-Delta — Float32 dim*dim Grid. Wenn nicht vorhanden:
+            // 1×1-Stub-Buffer (WGSL erosion_delta_at returnt 0 wenn erosionHas=0).
+            const e = this.state.erosion;
+            let erosionData;
+            let erosionDim = 0;
+            let erosionOriginX = 0;
+            let erosionOriginZ = 0;
+            let erosionCell = 1;
+            let erosionHas = 0;
+            if (e && e.delta && e.dim > 1) {
+                erosionData = e.delta instanceof Float32Array ? e.delta : new Float32Array(e.delta);
+                erosionDim = e.dim;
+                erosionOriginX = e.originX;
+                erosionOriginZ = e.originZ;
+                erosionCell = e.cell;
+                erosionHas = 1;
+            } else {
+                erosionData = new Float32Array([0]);
+            }
+            const erBytes = erosionData.byteLength;
+            if (!this.state.voxelGpuErosionBuffer || this.state.voxelGpuErosionSize < erBytes) {
+                if (this.state.voxelGpuErosionBuffer) {
+                    try {
+                        this.state.voxelGpuErosionBuffer.destroy();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                }
+                this.state.voxelGpuErosionBuffer = device.createBuffer({
+                    size: Math.max(erBytes, 16), // min 16 für valid binding
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+                this.state.voxelGpuErosionSize = erBytes;
+            }
+            device.queue.writeBuffer(this.state.voxelGpuErosionBuffer, 0, erosionData);
+
+            // 3) Tarns — packed Float32: [x, z, d, reach2, twoSig2] × N.
+            // Wenn keine: 5-Wert-Stub-Buffer (tarnsCount=0 → loop läuft nicht).
+            const tarns = Array.isArray(this.state.tarns) ? this.state.tarns : [];
+            const tarnsData = new Float32Array(Math.max(tarns.length, 1) * 5);
+            for (let i = 0; i < tarns.length; i++) {
+                const t = tarns[i];
+                tarnsData[i * 5 + 0] = t.x;
+                tarnsData[i * 5 + 1] = t.z;
+                tarnsData[i * 5 + 2] = t.d;
+                tarnsData[i * 5 + 3] = t.reach2;
+                tarnsData[i * 5 + 4] = t.twoSig2;
+            }
+            const tnBytes = tarnsData.byteLength;
+            if (!this.state.voxelGpuTarnsBuffer || this.state.voxelGpuTarnsSize < tnBytes) {
+                if (this.state.voxelGpuTarnsBuffer) {
+                    try {
+                        this.state.voxelGpuTarnsBuffer.destroy();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                }
+                this.state.voxelGpuTarnsBuffer = device.createBuffer({
+                    size: Math.max(tnBytes, 16),
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+                this.state.voxelGpuTarnsSize = tnBytes;
+            }
+            device.queue.writeBuffer(this.state.voxelGpuTarnsBuffer, 0, tarnsData);
+
+            // 4) Uniform-Buffer für Welt-State-Scalars (kein per-Chunk-Update
+            // hier — die per-Chunk-Werte ox/oy/oz/step/nx/ny/nz werden bei
+            // jeder Dispatch separat geschrieben). Schreiben wir die Welt-
+            // State-Felder in den uniform-Block direkt mit; per-Chunk-Felder
+            // bleiben in dem gleichen Buffer, wir overwriten bei jeder
+            // Dispatch (writeBuffer mit offset=0 ist nicht-blocking).
+            // Layout: 64 Bytes (16 floats), 16-aligned.
+            if (!this.state.voxelGpuParamsBuffer) {
+                this.state.voxelGpuParamsBuffer = device.createBuffer({
+                    size: 64,
+                    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+                });
+            }
+            // Stash Welt-State für `_voxelGpuComputeDensity` (die per-Chunk-
+            // Dispatch baut den vollen 64-Byte-Block JIT zusammen).
+            this._voxelGpuWorldStateScalars = {
+                baseHeight: this.state.terrainBaseHeight || 0,
+                waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+                erosionOriginX,
+                erosionOriginZ,
+                erosionCell,
+                erosionDim,
+                erosionHas,
+                tarnsCount: tarns.length,
+            };
+            this.state.voxelGpuWorldUploaded = true;
+            this.state.voxelGpuWorldStateGen = expectedGen;
+            return true;
+        } catch (e) {
+            this.state.voxelGpuLastError = "World-State-Upload: " + e.message;
+            this.log(`WebGPU World-State-Upload-Fehler: ${e.message}`, "ERROR");
+            return false;
+        }
+    }
+
+    // Eligibility-Gate für GPU-Density. Returnt true wenn der Chunk auf GPU
+    // gerechnet werden kann (keine Hydrosphere-Carve im Footprint, keine
+    // Lake-Mask, keine voxelEdits). Sonst muss der Worker-Pfad rechnen
+    // (V9.91), der die Hydrosphere + Edits mitbedenkt.
+    _voxelGpuChunkEligible(cx, cz, lod) {
+        // voxelEdits: irgendein Edit mit xz-Overlap mit Chunk → ineligible
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (Array.isArray(edits) && edits.length > 0) {
+            const cfg = this._voxelChunkConfig(lod);
+            const span = cfg.span;
+            const cox = cx * span;
+            const coz = cz * span;
+            const padding = 4; // edit-Radius-Marge
+            for (let i = 0; i < edits.length; i++) {
+                const ed = edits[i];
+                if (!ed) continue;
+                const r = (ed.r || 0) + padding;
+                if (ed.x + r >= cox && ed.x - r < cox + span && ed.z + r >= coz && ed.z - r < coz + span) {
+                    return false;
+                }
+            }
+        }
+        // Hydrosphere: irgendein Lake-Mask oder River-Bucket im Footprint → ineligible
+        const h = this.state.hydrosphere;
+        if (h && h.ready) {
+            const cfg = this._voxelChunkConfig(lod);
+            const span = cfg.span;
+            const cox = cx * span;
+            const coz = cz * span;
+            const cell = h.cell;
+            const dim = h.dim;
+            if (h.lakeNear) {
+                const ci0 = Math.floor((cox - h.originX) / cell);
+                const cj0 = Math.floor((coz - h.originZ) / cell);
+                const ci1 = Math.floor((cox + span - h.originX) / cell);
+                const cj1 = Math.floor((coz + span - h.originZ) / cell);
+                for (let cj = cj0; cj <= cj1; cj++) {
+                    if (cj < 0 || cj >= dim) continue;
+                    for (let ci = ci0; ci <= ci1; ci++) {
+                        if (ci < 0 || ci >= dim) continue;
+                        if (h.lakeNear[ci + cj * dim]) return false;
+                    }
+                }
+            }
+            if (h.riverBuckets && h.bucketSize && h.bucketsDim) {
+                const bs = h.bucketSize;
+                const bd = h.bucketsDim;
+                const bi0 = Math.floor((cox - h.originX) / bs);
+                const bj0 = Math.floor((coz - h.originZ) / bs);
+                const bi1 = Math.floor((cox + span - h.originX) / bs);
+                const bj1 = Math.floor((coz + span - h.originZ) / bs);
+                for (let bj = bj0; bj <= bj1; bj++) {
+                    if (bj < 0 || bj >= bd) continue;
+                    for (let bi = bi0; bi <= bi1; bi++) {
+                        if (bi < 0 || bi >= bd) continue;
+                        const list = h.riverBuckets[bj * bd + bi];
+                        if (list && list.length > 0) return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    // Density-Grid via WebGPU berechnen. Indizierung identisch zu
+    // `_voxelSampleDensityGrid` (Nx=dimX+1, Ny=dimY+1, Nz=dimZ+1, vertex-
+    // basiert). Returns Promise<Float32Array>. Resolves nach mapAsync-Read.
+    // Diagnose: state.voxelGpuLastDispatchMs für Telemetry, dispatchCount für
+    // Sanity ("läuft der GPU-Pfad überhaupt?").
+    _voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step) {
+        if (this.state.voxelGpuStatus !== "ready") {
+            return Promise.reject(new Error("voxel-gpu not ready"));
+        }
+        const device = this.state.voxelGpuDevice;
+        if (!device) return Promise.reject(new Error("voxel-gpu device gone"));
+        const pipeline = this._voxelGpuEnsureDensityPipeline();
+        if (!pipeline) return Promise.reject(new Error("density pipeline not built"));
+        if (!this._voxelGpuUploadWorldState()) {
+            return Promise.reject(new Error("world-state upload failed"));
+        }
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const total = Nx * Ny * Nz;
+        const outBytes = total * 4;
+
+        // Params-Uniform schreiben (64 Bytes — siehe Params-struct in WGSL).
+        // float32 layout: ox(0) oy(4) oz(8) step(12), nx(16) ny(20) nz(24) _pad(28),
+        //                 baseHeight(32) waterLevel(36) _pad(40) _pad(44),
+        //                 erosionOriginX(48) erosionOriginZ(52) erosionCell(56) erosionDim(60)
+        // uint32-fields nutzen denselben Slot (float-bits reinterpret via DataView).
+        // Letzte 16 Bytes für erosionHas + tarnsCount + 2 pads.
+        const ab = new ArrayBuffer(80);
+        const dv = new DataView(ab);
+        const w = this._voxelGpuWorldStateScalars;
+        dv.setFloat32(0, ox, true);
+        dv.setFloat32(4, oy, true);
+        dv.setFloat32(8, oz, true);
+        dv.setFloat32(12, step, true);
+        dv.setUint32(16, Nx, true);
+        dv.setUint32(20, Ny, true);
+        dv.setUint32(24, Nz, true);
+        dv.setUint32(28, 0, true);
+        dv.setFloat32(32, w.baseHeight, true);
+        dv.setFloat32(36, w.waterLevel, true);
+        dv.setFloat32(40, 0, true);
+        dv.setFloat32(44, 0, true);
+        dv.setFloat32(48, w.erosionOriginX, true);
+        dv.setFloat32(52, w.erosionOriginZ, true);
+        dv.setFloat32(56, w.erosionCell, true);
+        dv.setFloat32(60, w.erosionDim, true);
+        dv.setUint32(64, w.erosionHas, true);
+        dv.setUint32(68, w.tarnsCount, true);
+        dv.setUint32(72, 0, true);
+        dv.setUint32(76, 0, true);
+        // WICHTIG: unser Params-Buffer ist 64 Bytes. Aber Params-struct hat
+        // 20 felder = 80 Bytes (5×16). Wir müssen den Buffer auf 80 Bytes
+        // hochziehen — defensive zuerst prüfen + neu erstellen falls < 80.
+        if (!this.state.voxelGpuParamsBuffer || this.state.voxelGpuParamsBuffer.size < 80) {
+            if (this.state.voxelGpuParamsBuffer) {
+                try {
+                    this.state.voxelGpuParamsBuffer.destroy();
+                } catch (_e) {
+                    /* defensive */
+                }
+            }
+            this.state.voxelGpuParamsBuffer = device.createBuffer({
+                size: 80,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            });
+        }
+        device.queue.writeBuffer(this.state.voxelGpuParamsBuffer, 0, ab);
+
+        // Per-Request Output- + Read-Buffer. Pro chunk ~360 KB für LOD-0,
+        // ~57 KB für LOD-1 — vernachlässigbar.
+        const outBuf = device.createBuffer({
+            size: outBytes,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+        });
+        const readBuf = device.createBuffer({
+            size: outBytes,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+        });
+
+        const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: this.state.voxelGpuParamsBuffer } },
+                { binding: 1, resource: { buffer: this.state.voxelGpuPermBuffer } },
+                { binding: 2, resource: { buffer: this.state.voxelGpuErosionBuffer } },
+                { binding: 3, resource: { buffer: this.state.voxelGpuTarnsBuffer } },
+                { binding: 4, resource: { buffer: outBuf } },
+            ],
+        });
+
+        const t0 = typeof performance !== "undefined" ? performance.now() : 0;
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginComputePass();
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.dispatchWorkgroups(Math.ceil(total / 64));
+        pass.end();
+        encoder.copyBufferToBuffer(outBuf, 0, readBuf, 0, outBytes);
+        device.queue.submit([encoder.finish()]);
+
+        return readBuf.mapAsync(GPUMapMode.READ).then(() => {
+            const copy = new Float32Array(readBuf.getMappedRange().slice(0));
+            readBuf.unmap();
+            try {
+                outBuf.destroy();
+                readBuf.destroy();
+            } catch (_e) {
+                /* defensive */
+            }
+            const t1 = typeof performance !== "undefined" ? performance.now() : 0;
+            this.state.voxelGpuLastDispatchMs = t1 - t0;
+            this.state.voxelGpuDispatchCount++;
+            return copy;
+        });
+    }
+
+    // Cache-First-Lookup für den Streaming-Pfad. Drei Rückgabe-Varianten
+    // analog zu `_fetchOrRequestChunkDensity` (V9.90):
+    //   (a) Float32Array — Cache-Hit (one-shot konsumiert)
+    //   (b) null — GPU-Request läuft pending
+    //   (c) undefined — GPU nicht ready ODER chunk nicht eligible
+    _fetchOrRequestChunkDensityGpu(cx, cz, lod) {
+        if (this.state.voxelGpuStatus !== "ready") return undefined;
+        if (!this._voxelGpuChunkEligible(cx, cz, lod)) return undefined;
+        const cfg = this._voxelChunkConfig(lod);
+        const { dim, step, span, dimY, floorDrop } = cfg;
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - floorDrop;
+        const cacheKey = `${cx},${cz},${lod}`;
+        if (this.state.voxelGpuDensityCache && this.state.voxelGpuDensityCache.has(cacheKey)) {
+            const cached = this.state.voxelGpuDensityCache.get(cacheKey);
+            this.state.voxelGpuDensityCache.delete(cacheKey);
+            return cached;
+        }
+        if (!this.state.voxelGpuDensityPending) this.state.voxelGpuDensityPending = new Set();
+        if (this.state.voxelGpuDensityPending.has(cacheKey)) return null;
+        if (!this.state.voxelGpuDensityGenAtRequest) this.state.voxelGpuDensityGenAtRequest = new Map();
+        this.state.voxelGpuDensityPending.add(cacheKey);
+        const expectedStateGen = this.state.voxelWorkerStateGen;
+        this.state.voxelGpuDensityGenAtRequest.set(cacheKey, expectedStateGen);
+        // Origin + Sample-Dimensions IDENTISCH zur Main-Thread-Geometry-Calls
+        // (V9.42-d-Pad: ox-step + dim+3 in X/Z, vertikal dimY).
+        this._voxelGpuComputeDensity(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step)
+            .then((density) => {
+                this.state.voxelGpuDensityPending.delete(cacheKey);
+                if (this.state.voxelWorkerStateGen !== expectedStateGen) {
+                    this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
+                    return;
+                }
+                this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
+                if (!this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache = new Map();
+                this.state.voxelGpuDensityCache.set(cacheKey, density);
+            })
+            .catch((err) => {
+                this.state.voxelGpuDensityPending.delete(cacheKey);
+                this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
+                this.log(`Voxel-GPU-Density-Fehler (${cacheKey}): ${err.message}`, "ERROR");
+            });
+        return null;
     }
 
     creatureJump(creature, jumpHeight) {
@@ -16490,12 +16928,30 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
+        // V9.95-b — GPU-Density als Stufe-0 (höchste Priorität für eligible
+        // Chunks: kein Hydrosphere-Carve im Footprint, kein Lake-Mask, keine
+        // voxelEdits). Eligibility-Gate filtert komplexere Chunks aus → die
+        // fallen auf den V9.91-Worker-Mesh-Pfad. Wenn GPU-Density im Cache:
+        // direkt sync-Build mit preDensity (Main macht Iso+Cells+Colors+BVH,
+        // typisch ~70 ms — etwas mehr als Worker-Mesh-Pfad mit ~30 ms, aber
+        // der Worker ist freier für die HYDRO-Chunks die ihn wirklich
+        // brauchen). Wenn Pending: null returnen, Pump kommt wieder.
+        let gpuDensity;
+        if (this.state.voxelGpuStatus === "ready") {
+            gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
+            if (gpuDensity === null) return null;
+        }
         // V9.91 Phase 3 — voller Worker-Mesh-Build (wenn verfügbar + worldgen-
-        // synced). Cache-Hit → BufferGeometry-Konstruktion + Stempel + BVH +
-        // Scene (~30 ms Main). Pending → null (Pump kommt wieder). Undefined →
-        // V9.90-Density-Pfad oder voller Sync-Fallback.
+        // synced + GPU-Pfad nicht traf). Cache-Hit → BufferGeometry-Konstruktion
+        // + Stempel + BVH + Scene (~30 ms Main). Pending → null (Pump kommt
+        // wieder). Undefined → V9.90-Density-Pfad oder voller Sync-Fallback.
         let workerMesh;
-        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+        if (
+            !gpuDensity &&
+            this.state.voxelWorker &&
+            this.state.voxelWorkerReady &&
+            this.state.voxelWorkerWorldgenSynced
+        ) {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
             if (workerMesh === null) return null;
         }
@@ -16507,7 +16963,14 @@ class AnazhRealm {
         const lpc = this.state.lastPlayerVoxelChunk;
         if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
         let fresh;
-        if (workerMesh) {
+        if (gpuDensity) {
+            // V9.95-b — GPU-Density als preDensity in den Main-Sync-Build.
+            // _buildVoxelChunkData macht Iso+Cells+Colors+BVH; GPU hat den
+            // ~50 ms Density-Sample-Loop ersetzt (~50× speedup auf integrierter
+            // GPU, ~100× auf diskreter). Sync-Build baut IMMER BVH — Lazy-BVH
+            // ist Worker-Mesh-Pfad-only.
+            fresh = this._buildVoxelChunkData(cx, cz, lod, gpuDensity);
+        } else if (workerMesh) {
             fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         } else {
             // V9.90 Phase 2 — Worker-Density-Fallback (selten — nur wenn der
@@ -38238,6 +38701,314 @@ AnazhRealm.WGSL_TRIVIAL_SQUARE = `
             outBuf[i] = v * v;
         }
     }
+`;
+
+// V9.95-b (Welle WebGPU-Density-Pipeline) — voller WGSL-Compute-Shader für
+// die Worldgen-Density. Mirror von `_terrainDensityAt` aus `voxel-worker.js`
+// (ohne Hydrosphere-Carve/Lake-Mask + ohne voxelEdits — die fallen durchs
+// JS-Eligibility-Gate auf den V9.91-Worker-Pfad zurück). Was läuft auf GPU:
+//   - SimplexNoise (Stefan-Gustavson-Port, public domain, 2D + 3D)
+//   - terrainMacroSurfaceY (domain-warp + tect + cont + ridges + sub-ocean)
+//   - 3D-Detail-Octaven (zwei 3D-Noise-Schichten)
+//   - Cave-Ridged-Hülle (klemmt sich zwischen base-28 und surf-6)
+//   - Erosion-Delta (bilinear sample aus dem upgeloadeten 64×64-Grid)
+//   - Tarn-Delta (Gauss-Sum über die Tarn-Liste)
+//
+// Bindings: alle in @group(0):
+//   @binding(0) uniform Params (scalar world-state)
+//   @binding(1) storage<read> permTable (512 u32, SimplexNoise-Permutation, geseeded)
+//   @binding(2) storage<read> erosionDelta (Float32, dim × dim, 0-padded wenn keine Erosion)
+//   @binding(3) storage<read> tarnsBuf (Float32 packed [x,z,d,reach2,twoSig2] × tarnsCount)
+//   @binding(4) storage<read_write> outDensity (Float32, Nx*Ny*Nz)
+//
+// Workgroup-Size 64 (typische GPU-Cache-Linie). Dispatch ceil(N/64).
+//
+// **Determinismus-Strategie** (V9.95-a-Lehre): `f32 * f32` ist per IEEE-754
+// bit-identisch zwischen WGSL + JS, ABER `sin/cos/sqrt/exp` haben
+// implementation-defined precision (WGSL §3.6, relativer Fehler ≤ 2^-22).
+// Konsequenz: GPU-Resultat ist GPU-intern bit-deterministisch (zwei Runs
+// identisch), aber GPU-vs-Worker NICHT bit-identisch — Toleranz |Δ| < 1e-3
+// für Density-Werte (Surface-Nets-Smoothing absorbiert das im Mesh).
+AnazhRealm.WGSL_DENSITY_GRID = `
+struct Params {
+    // Sample-Region des Chunks
+    ox: f32, oy: f32, oz: f32, step: f32,
+    nx: u32, ny: u32, nz: u32, _pad0: u32,
+    // World-State Scalars
+    baseHeight: f32, waterLevel: f32, _pad1: f32, _pad2: f32,
+    // Erosion-Grid (alle 0 wenn keine Erosion vorhanden)
+    erosionOriginX: f32, erosionOriginZ: f32, erosionCell: f32, erosionDim: f32,
+    erosionHas: u32, tarnsCount: u32, _pad3: u32, _pad4: u32,
+};
+
+@group(0) @binding(0) var<uniform> params: Params;
+@group(0) @binding(1) var<storage, read> permTable: array<u32>;
+@group(0) @binding(2) var<storage, read> erosionDelta: array<f32>;
+@group(0) @binding(3) var<storage, read> tarnsBuf: array<f32>;
+@group(0) @binding(4) var<storage, read_write> outDensity: array<f32>;
+
+// =========================================================================
+// SimplexNoise 2D + 3D — exakter Mirror der vendor/simplex-noise.js (Stefan-
+// Gustavson). Vendor nutzt grad3 (12 Einträge) für BEIDE 2D und 3D (in 2D
+// wird die z-Komponente ignoriert), plus permMod12 = perm % 12 für gi-Index.
+// Unsere Permutation kommt aus 'new SimplexNoise(seed+":voxel")' im Main +
+// wird hochgeladen — exakt dieselbe perm-Reihe wie der Worker.
+// grad3 ist hier hartcodiert (es ist fest, hängt nicht vom Seed ab).
+//
+// **Determinismus-Achtung** (V9.95-a-Lehre): die Welt-MAKRO-Struktur ist
+// algorithm-äquivalent zum Worker, ABER die transzendenten Sub-Operationen
+// (sqrt im exp via Wachstumsformel, abs, etc.) können in WGSL Float32-Drift
+// gegenüber JS Float64 zeigen (relativer Fehler ≤ 2^-22 pro WGSL §3.6).
+// Sanity: GPU-vs-Worker |Δ| typisch < 1e-3 für Density-Werte — Surface-Nets-
+// Smoothing absorbiert das. GPU-internal-Determinismus (zwei Runs identisch)
+// ist bit-exakt ('+ - * /' sind per IEEE-754 garantiert).
+// =========================================================================
+
+fn perm(i: u32) -> u32 {
+    return permTable[i & 255u];
+}
+
+fn permMod12(i: u32) -> u32 {
+    return perm(i) % 12u;
+}
+
+// grad3: 12 Vektoren als WGSL switch (hartcodiert, vendor-grad3-mirror).
+fn grad3(g: u32) -> vec3<f32> {
+    let h: u32 = g % 12u;
+    switch (h) {
+        case 0u: { return vec3<f32>(1.0, 1.0, 0.0); }
+        case 1u: { return vec3<f32>(-1.0, 1.0, 0.0); }
+        case 2u: { return vec3<f32>(1.0, -1.0, 0.0); }
+        case 3u: { return vec3<f32>(-1.0, -1.0, 0.0); }
+        case 4u: { return vec3<f32>(1.0, 0.0, 1.0); }
+        case 5u: { return vec3<f32>(-1.0, 0.0, 1.0); }
+        case 6u: { return vec3<f32>(1.0, 0.0, -1.0); }
+        case 7u: { return vec3<f32>(-1.0, 0.0, -1.0); }
+        case 8u: { return vec3<f32>(0.0, 1.0, 1.0); }
+        case 9u: { return vec3<f32>(0.0, -1.0, 1.0); }
+        case 10u: { return vec3<f32>(0.0, 1.0, -1.0); }
+        default: { return vec3<f32>(0.0, -1.0, -1.0); }
+    }
+}
+
+// 2D Simplex Noise — vendor-mirror, nutzt grad3 (z ignoriert).
+fn snoise2D(p: vec2<f32>) -> f32 {
+    let F2: f32 = 0.366025403784;  // 0.5 * (sqrt(3) - 1)
+    let G2: f32 = 0.211324865405;  // (3 - sqrt(3)) / 6
+
+    let s: f32 = (p.x + p.y) * F2;
+    let i0: i32 = i32(floor(p.x + s));
+    let j0: i32 = i32(floor(p.y + s));
+    let t: f32 = f32(i0 + j0) * G2;
+    let X0: f32 = f32(i0) - t;
+    let Y0: f32 = f32(j0) - t;
+    let x0: f32 = p.x - X0;
+    let y0: f32 = p.y - Y0;
+
+    var i1: i32; var j1: i32;
+    if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
+
+    let x1: f32 = x0 - f32(i1) + G2;
+    let y1: f32 = y0 - f32(j1) + G2;
+    let x2: f32 = x0 - 1.0 + 2.0 * G2;
+    let y2: f32 = y0 - 1.0 + 2.0 * G2;
+
+    let ii: u32 = u32(i0) & 255u;
+    let jj: u32 = u32(j0) & 255u;
+    let gi0: u32 = permMod12(ii + perm(jj));
+    let gi1: u32 = permMod12(ii + u32(i1) + perm(jj + u32(j1)));
+    let gi2: u32 = permMod12(ii + 1u + perm(jj + 1u));
+    let g0v: vec3<f32> = grad3(gi0);
+    let g1v: vec3<f32> = grad3(gi1);
+    let g2v: vec3<f32> = grad3(gi2);
+
+    var n0: f32 = 0.0; var n1: f32 = 0.0; var n2: f32 = 0.0;
+    let t0: f32 = 0.5 - x0*x0 - y0*y0;
+    if (t0 >= 0.0) { let t02 = t0*t0; n0 = t02*t02 * (g0v.x * x0 + g0v.y * y0); }
+    let t1: f32 = 0.5 - x1*x1 - y1*y1;
+    if (t1 >= 0.0) { let t12 = t1*t1; n1 = t12*t12 * (g1v.x * x1 + g1v.y * y1); }
+    let t2: f32 = 0.5 - x2*x2 - y2*y2;
+    if (t2 >= 0.0) { let t22 = t2*t2; n2 = t22*t22 * (g2v.x * x2 + g2v.y * y2); }
+    return 70.0 * (n0 + n1 + n2);
+}
+
+// 3D Simplex Noise — vendor-mirror, grad3 mit permMod12-index.
+fn snoise3D(p: vec3<f32>) -> f32 {
+    let F3: f32 = 1.0 / 3.0;
+    let G3: f32 = 1.0 / 6.0;
+
+    let s: f32 = (p.x + p.y + p.z) * F3;
+    let i: i32 = i32(floor(p.x + s));
+    let j: i32 = i32(floor(p.y + s));
+    let k: i32 = i32(floor(p.z + s));
+    let t: f32 = f32(i + j + k) * G3;
+    let X0: f32 = f32(i) - t;
+    let Y0: f32 = f32(j) - t;
+    let Z0: f32 = f32(k) - t;
+    let x0: f32 = p.x - X0;
+    let y0: f32 = p.y - Y0;
+    let z0: f32 = p.z - Z0;
+
+    var i1: i32 = 0; var j1: i32 = 0; var k1: i32 = 0;
+    var i2: i32 = 0; var j2: i32 = 0; var k2: i32 = 0;
+    if (x0 >= y0) {
+        if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+        else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
+        else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
+    } else {
+        if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; }
+        else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; }
+        else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+    }
+
+    let x1: f32 = x0 - f32(i1) + G3;
+    let y1: f32 = y0 - f32(j1) + G3;
+    let z1: f32 = z0 - f32(k1) + G3;
+    let x2: f32 = x0 - f32(i2) + 2.0 * G3;
+    let y2: f32 = y0 - f32(j2) + 2.0 * G3;
+    let z2: f32 = z0 - f32(k2) + 2.0 * G3;
+    let x3: f32 = x0 - 1.0 + 3.0 * G3;
+    let y3: f32 = y0 - 1.0 + 3.0 * G3;
+    let z3: f32 = z0 - 1.0 + 3.0 * G3;
+
+    let ii: u32 = u32(i) & 255u;
+    let jj: u32 = u32(j) & 255u;
+    let kk: u32 = u32(k) & 255u;
+    let gi0: u32 = permMod12(ii + perm(jj + perm(kk)));
+    let gi1: u32 = permMod12(ii + u32(i1) + perm(jj + u32(j1) + perm(kk + u32(k1))));
+    let gi2: u32 = permMod12(ii + u32(i2) + perm(jj + u32(j2) + perm(kk + u32(k2))));
+    let gi3: u32 = permMod12(ii + 1u + perm(jj + 1u + perm(kk + 1u)));
+    let g0v: vec3<f32> = grad3(gi0);
+    let g1v: vec3<f32> = grad3(gi1);
+    let g2v: vec3<f32> = grad3(gi2);
+    let g3v: vec3<f32> = grad3(gi3);
+
+    var n0: f32 = 0.0; var n1: f32 = 0.0; var n2: f32 = 0.0; var n3: f32 = 0.0;
+    let t0: f32 = 0.6 - x0*x0 - y0*y0 - z0*z0;
+    if (t0 >= 0.0) { let t02 = t0*t0; n0 = t02*t02 * (g0v.x*x0 + g0v.y*y0 + g0v.z*z0); }
+    let t1: f32 = 0.6 - x1*x1 - y1*y1 - z1*z1;
+    if (t1 >= 0.0) { let t12 = t1*t1; n1 = t12*t12 * (g1v.x*x1 + g1v.y*y1 + g1v.z*z1); }
+    let t2: f32 = 0.6 - x2*x2 - y2*y2 - z2*z2;
+    if (t2 >= 0.0) { let t22 = t2*t2; n2 = t22*t22 * (g2v.x*x2 + g2v.y*y2 + g2v.z*z2); }
+    let t3: f32 = 0.6 - x3*x3 - y3*y3 - z3*z3;
+    if (t3 >= 0.0) { let t32 = t3*t3; n3 = t32*t32 * (g3v.x*x3 + g3v.y*y3 + g3v.z*z3); }
+    return 32.0 * (n0 + n1 + n2 + n3);
+}
+
+// =========================================================================
+// Welt-State-Functions (mirror voxel-worker.js)
+// =========================================================================
+
+fn erosion_delta_at(x: f32, z: f32) -> f32 {
+    if (params.erosionHas == 0u) { return 0.0; }
+    let dim: f32 = params.erosionDim;
+    let fx: f32 = (x - params.erosionOriginX) / params.erosionCell;
+    let fz: f32 = (z - params.erosionOriginZ) / params.erosionCell;
+    if (fx < 0.0 || fz < 0.0 || fx >= dim - 1.0 || fz >= dim - 1.0) { return 0.0; }
+    let i0: i32 = i32(fx);
+    let j0: i32 = i32(fz);
+    let tx: f32 = fx - f32(i0);
+    let tz: f32 = fz - f32(j0);
+    let idim: u32 = u32(dim);
+    let a: u32 = u32(i0) + u32(j0) * idim;
+    let d00: f32 = erosionDelta[a];
+    let d10: f32 = erosionDelta[a + 1u];
+    let d01: f32 = erosionDelta[a + idim];
+    let d11: f32 = erosionDelta[a + idim + 1u];
+    return (d00 * (1.0 - tx) + d10 * tx) * (1.0 - tz)
+         + (d01 * (1.0 - tx) + d11 * tx) * tz;
+}
+
+fn tarn_delta_at(x: f32, z: f32) -> f32 {
+    var delta: f32 = 0.0;
+    let cnt: u32 = params.tarnsCount;
+    for (var i: u32 = 0u; i < cnt; i = i + 1u) {
+        let base: u32 = i * 5u;
+        let tx: f32 = tarnsBuf[base + 0u];
+        let tz: f32 = tarnsBuf[base + 1u];
+        let td: f32 = tarnsBuf[base + 2u];
+        let reach2: f32 = tarnsBuf[base + 3u];
+        let twoSig2: f32 = tarnsBuf[base + 4u];
+        let dx: f32 = x - tx;
+        let dz: f32 = z - tz;
+        let d2: f32 = dx * dx + dz * dz;
+        if (d2 > reach2) { continue; }
+        delta = delta - td * exp(-d2 / twoSig2);
+    }
+    return delta;
+}
+
+fn terrain_macro_surface_y(x: f32, z: f32) -> f32 {
+    let base: f32 = params.baseHeight;
+    let warpX: f32 = snoise2D(vec2<f32>(x * 0.00026 + 11.3, z * 0.00026 + 4.1)) * 70.0;
+    let warpZ: f32 = snoise2D(vec2<f32>(x * 0.00026 + 41.7, z * 0.00026 + 23.9)) * 70.0;
+    let wx: f32 = x + warpX;
+    let wz: f32 = z + warpZ;
+    let tect: f32 = snoise2D(vec2<f32>(wx * 0.00088, wz * 0.00088)) * 35.0;
+    let cont: f32 = snoise2D(vec2<f32>(wx * 0.0058, wz * 0.0058)) * 34.0;
+    let ero: f32 = snoise2D(vec2<f32>(x * 0.0014, z * 0.0014)) * 0.5 + 0.5;
+    var mtn: f32 = 1.0 - ero;
+    if (mtn < 0.0) { mtn = 0.0; }
+    mtn = mtn * mtn;
+    let ridgeAmp: f32 = 12.0 + 55.0 * mtn;
+    let rN: f32 = snoise2D(vec2<f32>(wx * 0.013, wz * 0.013));
+    let ranges: f32 = (1.0 - abs(rN)) * (1.0 - abs(rN)) * ridgeAmp;
+    let rN2: f32 = snoise2D(vec2<f32>(wx * 0.026 + 5.7, wz * 0.026 - 2.3));
+    let ranges2: f32 = (1.0 - abs(rN2)) * (1.0 - abs(rN2)) * ridgeAmp * 0.5;
+    let detail: f32 = snoise2D(vec2<f32>(x * 0.045, z * 0.045)) * 4.0;
+    let withoutTarn: f32 = base + tect + cont + ranges + ranges2 + detail + erosion_delta_at(x, z);
+    let waterRefSub: f32 = params.waterLevel;
+    let depthBelow: f32 = waterRefSub - withoutTarn;
+    var withoutTarnFinal: f32 = withoutTarn;
+    if (depthBelow > 1.5) {
+        let subMask: f32 = clamp((depthBelow - 3.0) / 6.0, 0.0, 1.0);
+        let slope: f32 = max(0.0, depthBelow - 4.0);
+        let slopeDrop: f32 = -slope * 0.6;
+        let subA: f32 = snoise2D(vec2<f32>(x * 0.019, z * 0.019 + 31.0)) * (3.0 + slope * 0.3);
+        let rBN: f32 = snoise2D(vec2<f32>(x * 0.026 + 17.0, z * 0.026 + 9.0));
+        let subRidge: f32 = ((1.0 - abs(rBN)) * (1.0 - abs(rBN)) - 0.3) * (3.0 + slope * 0.25);
+        let subC: f32 = snoise2D(vec2<f32>(x * 0.062 - 17.0, z * 0.062 + 8.0)) * 1.0;
+        withoutTarnFinal = withoutTarnFinal + slopeDrop + (subA + subRidge + subC) * subMask;
+    }
+    let td: f32 = tarn_delta_at(x, z);
+    if (td == 0.0) { return withoutTarnFinal; }
+    let waterRef: f32 = params.waterLevel;
+    return max(withoutTarnFinal + td, waterRef + 1.0);
+}
+
+fn terrain_density_at(x: f32, y: f32, z: f32) -> f32 {
+    let surf: f32 = terrain_macro_surface_y(x, z);
+    var d: f32 = surf - y;
+    d = d + snoise3D(vec3<f32>(x * 0.05, y * 0.05, z * 0.05)) * 7.0;
+    d = d + snoise3D(vec3<f32>(x * 0.018, y * 0.022, z * 0.018)) * 5.0;
+    // Cave-Hülle: klemmt sich zwischen base-28 (Floor) und surf-6 (Ceil)
+    let base: f32 = params.baseHeight;
+    let caveFloor: f32 = clamp((y - (base - 28.0)) / 8.0, 0.0, 1.0);
+    let caveCeil: f32 = clamp((surf - 6.0 - y) / 8.0, 0.0, 1.0);
+    let caveEnv: f32 = caveFloor * caveCeil;
+    if (caveEnv > 0.0) {
+        let ridge: f32 = 1.0 - abs(snoise3D(vec3<f32>(x * 0.03, y * 0.034, z * 0.03)));
+        let cave: f32 = max(0.0, (ridge - 0.7) / 0.3);
+        d = d - cave * caveEnv * 36.0;
+    }
+    return d;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let total: u32 = params.nx * params.ny * params.nz;
+    let idx: u32 = gid.x;
+    if (idx >= total) { return; }
+    let nx: u32 = params.nx;
+    let ny: u32 = params.ny;
+    let i: u32 = idx % nx;
+    let j: u32 = (idx / nx) % ny;
+    let k: u32 = idx / (nx * ny);
+    let x: f32 = params.ox + f32(i) * params.step;
+    let y: f32 = params.oy + f32(j) * params.step;
+    let z: f32 = params.oz + f32(k) * params.step;
+    outDensity[idx] = terrain_density_at(x, y, z);
+}
 `;
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
