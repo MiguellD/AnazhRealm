@@ -36141,6 +36141,26 @@ class AnazhRealm {
 
     async init() {
         this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
+        // V9.91.a — strukturelle Heilung des Versions-Anzeige-Bumps: DOM
+        // wird einmalig aus `AnazhRealm.VERSION` geschrieben (statt
+        // hartkodierter v9.86/v9.87/etc. an zwei Stellen in index.html).
+        // Vorher musste der Schöpfer bei jedem Bump DREI Strings ändern
+        // (package.json + index.html<script src=?v=> + index.html<title> +
+        // index.html<span class="version">). Mit der DOM-Init-Heilung
+        // bleibt EIN Wahrheits-Ort: die `AnazhRealm.VERSION` Konstante.
+        // Browser-Audit V9.91 zeigte: title + .version-Span zeigten noch
+        // v9.86 obwohl die Konsole `[AnazhRealm V9.91]` ausgab — genau
+        // diesen Drift-Pfad strukturell weg.
+        const versionLabel = `v${AnazhRealm.VERSION}`;
+        if (typeof document !== "undefined") {
+            try {
+                document.title = `Anazh Realm ${versionLabel} – Das Ultiversum`;
+                const versionSpan = document.querySelector(".version");
+                if (versionSpan) versionSpan.textContent = versionLabel;
+            } catch (e) {
+                this.log(`Versions-DOM-Sync-Fehler: ${e.message}`, "WARN");
+            }
+        }
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
