@@ -239,6 +239,13 @@ class AnazhRealm {
             voxelDensityCache: null, // Map<"cx,cz,lod", Float32Array>
             voxelDensityPending: null, // Set<"cx,cz,lod">
             voxelWorkerWorldgenSynced: false, // turns true nach erstem Worldgen-State-Sync
+            // V9.91 (Phase 3): voller Chunk-Mesh-Cache (positions/normals/
+            // indices/colors/waterCells). Streaming-Pump nutzt diesen
+            // (Phase-3-Pfad), Phase-2-Density-Cache ist Legacy aber bleibt
+            // für Determinismus-Test (V9.89/V9.90-Bänder) erhalten.
+            voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
+            voxelMeshPending: null, // Set<"cx,cz,lod">
+            voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -12320,6 +12327,28 @@ class AnazhRealm {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         pending.resolve(new Float32Array(msg.density));
                     }
+                } else if (msg.type === "chunk-mesh-result" && msg.requestId) {
+                    // V9.91 Phase 3 — voller Mesh-Build vom Worker. Empfange
+                    // alle 5 Arrays via Transferable (zero-copy). Bei `empty`
+                    // ist der Chunk degeneriert (kein Iso) — Resolve mit
+                    // einem Sentinel.
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        if (msg.empty) {
+                            pending.resolve({ empty: true, lod: msg.lod | 0 });
+                        } else {
+                            pending.resolve({
+                                empty: false,
+                                lod: msg.lod | 0,
+                                positions: new Float32Array(msg.positions),
+                                normals: new Float32Array(msg.normals),
+                                indices: new Uint32Array(msg.indices),
+                                colors: new Float32Array(msg.colors),
+                                waterCells: new Uint8Array(msg.waterCells),
+                            });
+                        }
+                    }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
@@ -12387,10 +12416,21 @@ class AnazhRealm {
                 lakeBedCell: h.lakeBedCell,
                 lakeW: h.lakeW,
                 lakeNear: h.lakeNear,
+                // V9.91 (Phase 3) — h.water trägt waterY/waterKind für
+                // `_waterLevelAt`-Mirror im Worker (Cell-Klassifikation +
+                // Strand-Tint). Ohne diese sah der Worker nur den globalen
+                // state.waterLevel, kannte keine Bergsee-Spiegel.
+                water: h.water || null,
             };
         } else {
             snap.hydrosphere = null;
         }
+        // V9.91 (Phase 3) — hydroBand für Cell-Klassifikations-Skip (Cells
+        // außerhalb [bottom..top] sind garantiert AIR; spart 30-40% Cells-
+        // Iterationen).
+        snap.hydroBand = this.state.hydroBand
+            ? { top: this.state.hydroBand.top, bottom: this.state.hydroBand.bottom }
+            : null;
         const e = this.state.erosion;
         if (e) {
             snap.erosion = { originX: e.originX, originZ: e.originZ, cell: e.cell, dim: e.dim, delta: e.delta };
@@ -12450,6 +12490,26 @@ class AnazhRealm {
         });
     }
 
+    // V9.91 (Welle Perf-3.c Phase 3): voller Chunk-Mesh im Worker. Returns
+    // Promise mit {empty, positions, indices, normals, colors, waterCells, lod}.
+    // Bei `empty: true` ist der Chunk degeneriert (kein Iso). Main-Thread
+    // macht nur noch: BufferGeometry-Konstruktion + Architektur-Cell-Stempel
+    // + BVH-Collision + Scene-Attach. Der ~100 ms Density + ~30 ms Iso + ~5 ms
+    // Cells + ~10 ms Colors-Pass lebt jetzt im Worker; Main ~30 ms BVH.
+    _voxelWorkerComputeChunkMesh(cx, cz, lod) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
+            return promise;
+        });
+    }
+
     // V9.90 (Welle Perf-3.c Phase 2): Cache-First-Density-Lookup für den
     // Streaming-Pfad. Drei Rückgabe-Varianten:
     //   (a) Float32Array — Cache-Hit, der Build kann sofort mit preDensity
@@ -12501,6 +12561,91 @@ class AnazhRealm {
         return null;
     }
 
+    // V9.91 (Welle Perf-3.c Phase 3): Cache-First-Mesh-Lookup für den
+    // Streaming-Pfad. Drei Rückgabe-Varianten analog zu Phase-2-Density:
+    //   (a) {empty, positions, ...} — Cache-Hit, der Build kann sofort
+    //       BufferGeometry konstruieren + Architektur-Stempel + BVH.
+    //       Bei `empty:true` ist der Chunk degeneriert (kein Iso).
+    //   (b) null — Worker-Request läuft, Pump kommt nächsten Frame wieder.
+    //   (c) undefined — Worker unverfügbar, sync-Fallback.
+    // **State-Gen-Schutz**: wenn voxelEdit während Roundtrip stateGen
+    // bumpt, wird das stale Result verworfen.
+    _fetchOrRequestChunkMesh(cx, cz, lod) {
+        const cacheKey = `${cx},${cz},${lod}`;
+        if (this.state.voxelMeshCache && this.state.voxelMeshCache.has(cacheKey)) {
+            const cached = this.state.voxelMeshCache.get(cacheKey);
+            this.state.voxelMeshCache.delete(cacheKey);
+            return cached;
+        }
+        const worker = this._getVoxelWorker();
+        if (!worker) return undefined;
+        if (!this.state.voxelMeshPending) this.state.voxelMeshPending = new Set();
+        if (!this.state.voxelMeshGenAtRequest) this.state.voxelMeshGenAtRequest = new Map();
+        if (this.state.voxelMeshPending.has(cacheKey)) return null;
+        this.state.voxelMeshPending.add(cacheKey);
+        const expectedStateGen = this.state.voxelWorkerStateGen;
+        this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
+        this._voxelWorkerComputeChunkMesh(cx, cz, lod)
+            .then((meshData) => {
+                this.state.voxelMeshPending.delete(cacheKey);
+                if (this.state.voxelWorkerStateGen !== expectedStateGen) {
+                    this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                    return;
+                }
+                this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
+                this.state.voxelMeshCache.set(cacheKey, meshData);
+            })
+            .catch((err) => {
+                this.state.voxelMeshPending.delete(cacheKey);
+                this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                this.log(`Voxel-Mesh-Worker-Fehler (${cacheKey}): ${err.message}`, "ERROR");
+            });
+        return null;
+    }
+
+    // V9.91 (Phase 3) — synchroner Build aus Worker-Mesh-Data. Macht:
+    //   (1) BufferGeometry-Konstruktion (positions/normals/indices/colors)
+    //   (2) Material-Singleton zuweisen
+    //   (3) Architektur-Cell-Stempel auf waterCells (Main-only-State)
+    //   (4) BVH-Collision (Ammo, MUSS Main wegen WASM-Heap)
+    //   (5) Scene.add(mesh)
+    // Returns `{mesh, kind, waterCells, lod}` wie `_buildVoxelChunkData`,
+    // oder null bei Collision-OOM.
+    _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData) {
+        if (!this.state.scene || typeof THREE === "undefined") return null;
+        if (meshData.empty) return { mesh: null, kind: "empty", waterCells: null, lod };
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(meshData.positions, 3));
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(meshData.colors, 3));
+        geom.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+        const mat = this._getVoxelChunkMaterial();
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
+        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        if (!collisionBody) {
+            geom.dispose();
+            return null;
+        }
+        // Architektur-Stempel auf waterCells (Main-only — der Worker kennt
+        // keine Architekturen). Nur wenn Cells überhaupt da sind (chunk hat
+        // Wasser laut Atlas-Strict-Gate).
+        let waterCells = null;
+        if (meshData.waterCells && meshData.waterCells.length > 0) {
+            waterCells = meshData.waterCells;
+            const cfg = this._voxelChunkConfig(lod);
+            const base = this.state.terrainBaseHeight || 0;
+            const ox = cx * cfg.span;
+            const oz = cz * cfg.span;
+            const oy = base - cfg.floorDrop;
+            this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, lod);
+        }
+        return { mesh, kind: "filled", waterCells, lod };
+    }
+
     // V9.90 — Worker-State-Update bei voxelEdit (Spieler carvt/füllt). Sendet
     // nur den Delta-Edit, kein full state-set (Atlas/Erosion/Tarns sind
     // unverändert). Bumpt state-gen → stale Worker-Density-Results werden
@@ -12510,6 +12655,7 @@ class AnazhRealm {
         if (!this.state.voxelWorker) return;
         this.state.voxelWorkerStateGen++;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
+        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
         try {
             this.state.voxelWorker.postMessage({
                 type: "state-update",
@@ -12529,6 +12675,7 @@ class AnazhRealm {
     _voxelWorkerSyncWorldgenState() {
         if (!this.state.voxelWorker) return;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
+        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
         // state-gen bumpt durch _voxelWorkerSyncState (send-time-bump).
         // worldgenSynced bleibt ab jetzt true — der Streaming-Pump traut
         // dem Worker für Density-Sampling. voxelEdits bumpen state-gen
@@ -15942,15 +16089,30 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V9.90 Phase 2 — Worker-Density (wenn verfügbar + worldgen-synced):
-        // Cache-Hit → Build mit preDensity (schnell). Pending → null
-        // zurückgeben (Pump kommt wieder). Undefined → sync-Fallback.
-        let workerDensity;
+        // V9.91 Phase 3 — voller Worker-Mesh-Build (wenn verfügbar + worldgen-
+        // synced). Cache-Hit → BufferGeometry-Konstruktion + Stempel + BVH +
+        // Scene (~30 ms Main). Pending → null (Pump kommt wieder). Undefined →
+        // V9.90-Density-Pfad oder voller Sync-Fallback.
+        let workerMesh;
         if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
-            workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
-            if (workerDensity === null) return null;
+            workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
+            if (workerMesh === null) return null;
         }
-        const fresh = this._buildVoxelChunkData(cx, cz, lod, workerDensity || null);
+        let fresh;
+        if (workerMesh) {
+            fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh);
+        } else {
+            // V9.90 Phase 2 — Worker-Density-Fallback (selten — nur wenn der
+            // Mesh-Path explizit `undefined` zurückgab, d.h. Worker komplett
+            // unverfügbar). Zur Sicherheit behalten wir den V9.90-Density-
+            // Cache-Pfad als Stufe-2-Fallback.
+            let workerDensity;
+            if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+                workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
+                if (workerDensity === null) return null;
+            }
+            fresh = this._buildVoxelChunkData(cx, cz, lod, workerDensity || null);
+        }
         if (fresh === null) {
             // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
             // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
@@ -37605,7 +37767,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.90";
+AnazhRealm.VERSION = "9.91";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
