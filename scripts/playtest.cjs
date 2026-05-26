@@ -12423,11 +12423,11 @@ async function checkBandWelleC1WaterCells(ctx) {
         out.cellStateFrozen = STATE && Object.isFrozen(STATE);
         // 2) Methode `_buildVoxelChunkWaterCells` existiert
         out.hasMethod = typeof r._buildVoxelChunkWaterCells === "function";
-        // 3) Konfig + Erwartungen
-        const cfg = r._voxelChunkConfig();
-        const expectedLen = cfg.dim * cfg.dim * cfg.dimY;
-        out.expectedLen = expectedLen;
-        // 4) Streaming-aktiver Chunk hat waterCells
+        // V9.88 (Welle Perf-3.b — Distance-LOD-Doku-Sync): die LOD wandert
+        // pro Chunk; der Test muss die Entry-LOD lesen, NICHT den Default
+        // `_voxelChunkConfig()`-Snapshot. Sonst sieht der Test 71424 erwartet
+        // gegen 8928 tatsächlich.
+        // 3) Streaming-aktiver Chunk hat waterCells
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             return { ...out, error: "no voxel chunks streamed" };
         }
@@ -12446,6 +12446,12 @@ async function checkBandWelleC1WaterCells(ctx) {
             return { ...out, foundFilledChunk: false };
         }
         out.testKey = testKey;
+        // 4) Konfig + Erwartungen — nach Entry-LOD
+        const entryLod = Number.isFinite(testEntry.lod) ? testEntry.lod : 0;
+        const cfg = r._voxelChunkConfig(entryLod);
+        const expectedLen = cfg.dim * cfg.dim * cfg.dimY;
+        out.expectedLen = expectedLen;
+        out.entryLod = entryLod;
         out.hasWaterCells = testEntry.waterCells instanceof Uint8Array;
         out.waterCellsLen = testEntry.waterCells.length;
         out.waterCellsLenCorrect = testEntry.waterCells.length === expectedLen;
@@ -12527,7 +12533,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
         const refreshed = r.state.voxelChunks.get(testKey);
         const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
-        const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step);
+        const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step, null, entryLod);
         out.secondLen = second.length;
         let driftCount = 0;
         for (let i = 0; i < expectedLen; i++) {
@@ -12789,11 +12795,17 @@ async function checkBandWelleC3CellularReaction(ctx) {
             r._buildVoxelChunkWaterCells.toString()
         );
         // 2) AABB hat botY (V9.74-Erweiterung)
-        const cfg = r._voxelChunkConfig();
-        const span = cfg.span;
-        const step = cfg.step;
+        // V9.88 (Welle Perf-3.b — Distance-LOD-Doku-Sync): jede Cell-Index-
+        // Berechnung MUSS die LOD des betreffenden Chunks lesen, sonst greift
+        // dim=24/step=1.8 (LOD 0) auf einem LOD-1-Chunk (dim=12/step=3.6) →
+        // out-of-bounds-Index. Helper für „config für diesen Chunk".
+        const cfgFor = (chunkEntry) => {
+            const lod = chunkEntry && Number.isFinite(chunkEntry.lod) ? chunkEntry.lod : 0;
+            return r._voxelChunkConfig(lod);
+        };
+        // span ist LOD-invariant (43.2 m), darf aus dem Default gelesen werden.
+        const span = r._voxelChunkConfig().span;
         const base = r.state.terrainBaseHeight || 0;
-        const oy = base - cfg.floorDrop;
         // Test-Architektur: Damm an einer freien Position spawnen
         const testCx = 2;
         const testCz = 2;
@@ -12819,7 +12831,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
         if (damChunkEntry && damChunkEntry.waterCells) {
             const cells = damChunkEntry.waterCells;
             const aabb = damEntry.blockerAABBs[0];
-            // Sample am Damm-Zentrum (Cell-Indizes)
+            const cfg = cfgFor(damChunkEntry);
+            const step = cfg.step;
+            const oy = base - cfg.floorDrop;
+            // Sample am Damm-Zentrum (Cell-Indizes — LOD-aware)
             const cellI = Math.floor((damPos.x - testCx * span) / step);
             const cellK = Math.floor((damPos.z - testCz * span) / step);
             const cellJ = Math.floor((aabb.topY - oy) / step) - 1; // 1 Cell unter top
@@ -12835,6 +12850,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
             if (afterRemoveEntry && afterRemoveEntry.waterCells) {
                 const cells = afterRemoveEntry.waterCells;
                 const aabb_remove_pos = { x: damPos.x, z: damPos.z };
+                const cfg = cfgFor(afterRemoveEntry);
+                const step = cfg.step;
+                const oy = base - cfg.floorDrop;
                 const cellI = Math.floor((aabb_remove_pos.x - testCx * span) / step);
                 const cellK = Math.floor((aabb_remove_pos.z - testCz * span) / step);
                 // Cell genau am alten Damm-Zentrum: sollte JETZT NICHT mehr
@@ -12881,6 +12899,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
             const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
             if (carveChunkEntry && carveChunkEntry.waterCells) {
                 const cells = carveChunkEntry.waterCells;
+                const cfg = cfgFor(carveChunkEntry);
+                const step = cfg.step;
+                const oy = base - cfg.floorDrop;
                 // Sample am Carve-Zentrum (sollte air oder water sein, nicht solid)
                 const cellI = Math.floor((carveX - carveCx * span) / step);
                 const cellK = Math.floor((carveZ - carveCz * span) / step);
@@ -12944,6 +12965,121 @@ async function checkBandWelleC3CellularReaction(ctx) {
     }
     check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);
     check("Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.removeTriggersRemesh);
+}
+
+// V9.88 (Welle Perf-3.b — Distance-LOD): empirischer Beweis dass ferne
+// Chunks mit reduzierter Auflösung gebaut werden. Profi-Pattern aus BotW/
+// Genshin: Chunks > 80 m vom Spieler bekommen step=3.6 m statt 1.8 m,
+// dim=12 statt 24, dimY=62 statt 124 → 8× weniger Cells pro Chunk. Span
+// (43.2 m) + vertikaler Range (223.2 m) bleiben konstant → Chunks
+// world-aligned über LOD-Grenze.
+async function checkBandWellePerf3bDistanceLod(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) Config-Trennung LOD 0 vs LOD 1
+        const cfg0 = r._voxelChunkConfig(0);
+        const cfg1 = r._voxelChunkConfig(1);
+        out.lod0Dim = cfg0.dim;
+        out.lod0Step = cfg0.step;
+        out.lod0DimY = cfg0.dimY;
+        out.lod1Dim = cfg1.dim;
+        out.lod1Step = cfg1.step;
+        out.lod1DimY = cfg1.dimY;
+        out.spanInvariant = cfg0.span === cfg1.span;
+        out.verticalRangeInvariant = Math.abs(cfg0.dimY * cfg0.step - cfg1.dimY * cfg1.step) < 0.001;
+        out.lod1CellsLess = cfg1.dim * cfg1.dim * cfg1.dimY < cfg0.dim * cfg0.dim * cfg0.dimY;
+        out.cellsRatio = (cfg0.dim * cfg0.dim * cfg0.dimY) / (cfg1.dim * cfg1.dim * cfg1.dimY);
+        // 2) Helper `_voxelChunkLodFor` Distance-Decision
+        out.hasLodHelper = typeof r._voxelChunkLodFor === "function";
+        if (out.hasLodHelper) {
+            out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
+            out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
+            out.lodFar = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1
+            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
+        }
+        // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`
+        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+            return { ...out, error: "no chunks streamed" };
+        }
+        // Sammle Chunks pro LOD
+        let lod0Count = 0;
+        let lod1Count = 0;
+        let lod0Cells = null;
+        let lod1Cells = null;
+        for (const [, entry] of r.state.voxelChunks.entries()) {
+            if (!entry || !entry.mesh) continue;
+            const elod = Number.isFinite(entry.lod) ? entry.lod : 0;
+            if (elod === 0) {
+                lod0Count++;
+                if (lod0Cells === null && entry.waterCells) lod0Cells = entry.waterCells.length;
+            } else if (elod === 1) {
+                lod1Count++;
+                if (lod1Cells === null && entry.waterCells) lod1Cells = entry.waterCells.length;
+            }
+        }
+        out.lod0Count = lod0Count;
+        out.lod1Count = lod1Count;
+        out.lod0CellsLen = lod0Cells;
+        out.lod1CellsLen = lod1Cells;
+        // 4) Source-Probes
+        out.streamingUsesLod = /_voxelChunkLodFor\(/.test(r._tickVoxelChunkStreaming.toString());
+        out.buildDataAcceptsLod = /_buildVoxelChunkData\s*\(\s*cx\s*,\s*cz\s*,\s*lod/.test(
+            r._buildVoxelChunkData.toString().slice(0, 200)
+        );
+        return out;
+    });
+    if (res.error) {
+        check("Welle Perf-3.b V9.88: Distance-LOD-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle Perf-3.b V9.88: LOD 0 Config (dim=24, step=1.8, dimY=124)",
+        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 124
+    );
+    check(
+        "Welle Perf-3.b V9.88: LOD 1 Config (dim=12, step=3.6, dimY=62) — 8× weniger Cells",
+        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 62
+    );
+    check(
+        "Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)",
+        res.spanInvariant
+    );
+    check(
+        "Welle Perf-3.b V9.88: vertikaler Range invariant (dimY·step = 223.2 m)",
+        res.verticalRangeInvariant
+    );
+    check(
+        "Welle Perf-3.b V9.88: LOD 1 hat 8× weniger Cells als LOD 0",
+        res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
+        `ratio=${res.cellsRatio.toFixed(2)}`
+    );
+    check("Welle Perf-3.b V9.88: _voxelChunkLodFor existiert", res.hasLodHelper);
+    if (res.hasLodHelper) {
+        check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
+        check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
+        check("Welle Perf-3.b V9.88: r=2 (ferner Chunk) → LOD 1", res.lodFar === 1);
+        check("Welle Perf-3.b V9.88: r=4 (sehr ferner Chunk) → LOD 1", res.lodVeryFar === 1);
+    }
+    check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
+    check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
+    if (res.lod0CellsLen !== null && res.lod1CellsLen !== null) {
+        check(
+            "Welle Perf-3.b V9.88: empirisch — LOD-1-Chunk waterCells < LOD-0-Chunk waterCells",
+            res.lod1CellsLen < res.lod0CellsLen,
+            `LOD0=${res.lod0CellsLen}, LOD1=${res.lod1CellsLen}`
+        );
+    }
+    check(
+        "Welle Perf-3.b V9.88: _tickVoxelChunkStreaming nutzt _voxelChunkLodFor (Source-Probe)",
+        res.streamingUsesLod
+    );
+    check(
+        "Welle Perf-3.b V9.88: _buildVoxelChunkData akzeptiert lod-Parameter (Source-Probe)",
+        res.buildDataAcceptsLod
+    );
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
@@ -29921,6 +30057,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleC1WaterCells(ctx);
             await checkBandWelleC2WaterIsoSurface(ctx);
             await checkBandWelleC3CellularReaction(ctx);
+            // V9.88 — Welle Perf-3.b Distance-LOD-Beweis.
+            await checkBandWellePerf3bDistanceLod(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

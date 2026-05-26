@@ -14964,29 +14964,46 @@ class AnazhRealm {
     // Die Konfiguration des Voxel-Chunk-Rings — eine Quelle der Wahrheit.
     // span = dim × step ist die Welt-Kantenlänge eines (würfelförmigen)
     // Voxel-Chunks; die vertikale Spanne deckt das Oberflächen-Band.
-    _voxelChunkConfig() {
-        const dim = 24;
-        const step = 1.8;
-        // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
-        // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
-        // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
-        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — Marge ~22.
-        // V9.45-a: das Relief wuchs (Domain-Warp + grössere Amplituden,
-        // Makro-Oberfläche bis ~base+80). V9.47: die hydraulische Erosion
-        // carvt Täler bis ~16 m tiefer (`EROSION.maxDelta`) → dimY 96 → 100,
-        // `floorDrop` 66 → 74 → Band base-74..base+106, Marge unten + oben ~14.
-        // V9.58-b: Tektonik + 2. ridged-Oktave heben Surface-Max auf ~base+120,
-        // Tektonik senkt das Tiefland auf ~base-55 → dimY 100 → 124, floorDrop
-        // 74 → 90 → Band base-90..base+133, Marge oben ~13 / unten ~10.
-        // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
-        // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
-        // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
-        // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
-        // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
-        // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
-        // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
+    // V9.88 (Welle Perf-3.b — Distance-LOD): optionaler `lod`-Parameter.
+    // **LOD 0** (Default, Nahbereich r=0..1): dim=24, step=1.8 m, dimY=124
+    //   → 71 424 Cells pro Chunk (volle Detail-Auflösung).
+    // **LOD 1** (Fernbereich r≥2, > 80 m vom Spieler): dim=12, step=3.6 m,
+    //   dimY=62 → 8 928 Cells = **8× weniger** (`step` × 2 in jeder
+    //   Dimension). Profi-Pattern aus BotW/Genshin: ferne Chunks sind
+    //   gröber gemesht, weil Distanz + Atmosphäre-Fog die Detail-Differenz
+    //   tarnt. **Konstante**: span = dim·step = 43.2 m BLEIBT, sodass
+    //   adjacent Chunks über LOD-Grenzen WORLD-ALIGN (Chunk 0 endet bei
+    //   x=43.2, Chunk 1 beginnt bei x=43.2 — beide LODs samplen Vertices
+    //   an demselben Punkt). dimY·step = 223.2 m BLEIBT (vertikale Welt-
+    //   Range identisch). **Seam-Verhalten an LOD-Grenze**: V9.42-d-Pad+Crop
+    //   funktioniert WITHIN gleicher LOD; ein LOD0↔LOD1-Übergang erzeugt
+    //   ggf. einen marginalen Vertex-Mismatch (Surface-Nets-Cell-Avg ist
+    //   step-abhängig), der durch Fog beyond ~80 m unsichtbar bleibt —
+    //   wenn Schöpfer-Audit es zeigt, kommt Geometry-Stitching als Folge-
+    //   Welle. **Hylomorphismus-rein** (Stamm-Lehre Stamm-Lehre): EINE
+    //   Geometrie-Maschinerie (`_voxelChunkGeometry`), zwei step-Varianten.
+    _voxelChunkConfig(lod = 0) {
+        // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 124, floorDrop: 90 };
+        if (lod >= 1) {
+            // LOD 1 — Half-Resolution (8× weniger Cells)
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 62, floorDrop: 90, lod: 1 };
+        }
+        // LOD 0 — Full-Resolution (Default, V9.58-b-Stand)
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 124, floorDrop: 90, lod: 0 };
+    }
+
+    // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
+    // r ≤ 1 (chunk-distance, also ≤ 43.2 m + 43.2 m = 86 m world)
+    // → LOD 0 (Nahbereich, volle Auflösung). r ≥ 2 → LOD 1 (Fernbereich,
+    // 8× weniger Cells). Threshold ehrt den Doc-Plan §4 (80 m). KEIN
+    // Affinity-Feld in der Erst-Welle — Folge-Welle 3.b-ext kann Threshold
+    // emergent über `worldFieldAt`-Affinity machen (dichte Wälder = näher
+    // hochauflösend), das ist die V9.56-Disziplin (sub-wellen). Hier reicht
+    // ein einfacher Distance-Threshold für den Beweis.
+    _voxelChunkLodFor(cx, cz, pcx, pcz) {
+        const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+        return r >= 2 ? 1 : 0;
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
@@ -15111,8 +15128,10 @@ class AnazhRealm {
     // null ist, samplen wir das Grid intern hier — beide Pfade liefern
     // IDENTISCHE Klassifikation, sodass Determinismus + Test-Konsistenz
     // erhalten bleiben (Test ruft uns ohne preDensity).
-    _buildVoxelChunkWaterCells(ox, oy, oz, step, preDensity = null) {
-        const { dim, dimY } = this._voxelChunkConfig();
+    // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` wählt dim/dimY analog
+    // zum Boden-Mesher. Cell-Stempel + per-Column-Cache passen sich an.
+    _buildVoxelChunkWaterCells(ox, oy, oz, step, preDensity = null, lod = 0) {
+        const { dim, dimY } = this._voxelChunkConfig(lod);
         const cells = new Uint8Array(dim * dim * dimY);
         const STATE = AnazhRealm.CELL_STATE;
         // Density-Grid besorgen (vorab oder selbst samplen)
@@ -15228,7 +15247,7 @@ class AnazhRealm {
         // (C.2) baut dann das Wasser DRUMHERUM, nicht durch den Damm. Ist
         // die einlösende Bedeutung der Damm-Vision: die Substanz ist DA,
         // wo der Spieler sie baut.
-        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz);
+        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);
         return cells;
     }
 
@@ -15239,9 +15258,11 @@ class AnazhRealm {
     // Cell-Y-Range pro AABB: vom Bottom (topY − ~Architektur-Höhe) bis zur
     // topY. Die echte Höhe wird aus aabb.botY abgelesen (V9.74-Erweiterung
     // des AABB-Cache mit Bottom-Y).
-    _stampArchitectureSolidCellsInto(cells, ox, oy, oz) {
+    // V9.88 (Welle Perf-3.b): `lod` matched die Cell-Grid-Geometrie des
+    // Aufrufers. KRITISCH — sonst out-of-bounds-Writes ins Cells-Array.
+    _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
-        const { dim, dimY, step } = this._voxelChunkConfig();
+        const { dim, dimY, step } = this._voxelChunkConfig(lod);
         const STATE = AnazhRealm.CELL_STATE;
         for (const entry of this.state.architectures) {
             if (!entry || !entry.blockerAABBs) continue;
@@ -15296,7 +15317,11 @@ class AnazhRealm {
             return null;
         }
         const cells = entry.waterCells;
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
+        // V9.88 (Welle Perf-3.b): die Iso-Surface muss die LOD des Cell-Feld-
+        // Aufbaus (V9.71/V9.88) respektieren — sonst iteriert sie über dim=24
+        // ein 12×12-Cell-Feld → out-of-bounds und visueller Bruch.
+        const isoLod = Number.isFinite(entry.lod) ? entry.lod : 0;
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(isoLod);
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
@@ -15444,9 +15469,13 @@ class AnazhRealm {
         return mat;
     }
 
-    _buildVoxelChunkData(cx, cz) {
+    // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
+    // Chunk-Auflösung — LOD 0 = volle Detail (24·24·124 Cells), LOD 1 =
+    // 8× weniger Cells (12·12·62 für ferne Chunks). Doc §4 + Helper
+    // `_voxelChunkLodFor` für die per-Frame-Entscheidung im Streaming-Tick.
+    _buildVoxelChunkData(cx, cz, lod = 0) {
         if (!this.state.scene) return null;
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(lod);
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
@@ -15514,9 +15543,9 @@ class AnazhRealm {
         // dann sauber (vorhandener null-check). Big FPS-Win für Hochland-
         // Chunks.
         const waterCells = this._voxelChunkHasAnyWater(cx, cz)
-            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity)
+            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity, lod)
             : null;
-        return { mesh, kind: "filled", waterCells };
+        return { mesh, kind: "filled", waterCells, lod };
     }
 
     // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
@@ -15536,15 +15565,20 @@ class AnazhRealm {
     // V9.40-d-Retry: bei null wird der Chunk mit `_voxelRebuildAttempts`
     // verfolgt (max 3 Versuche), bevor er als `{empty:true}` markiert wird.
     // Das gibt dem Heap Zeit, sich durch andere Rebuilds zu entspannen.
-    _rebuildVoxelChunk(cx, cz) {
+    // V9.88 (Welle Perf-3.b): `lod` propagiert durch den Rebuild-Pfad.
+    // Wenn null/undefined, übernehmen wir die LOD des Alt-Eintrags
+    // (Voxel-Edit-Trigger: gleiche LOD beibehalten) — sonst neu (Streaming-
+    // Tick-Trigger: distance-Decision hat sich geändert).
+    _rebuildVoxelChunk(cx, cz, lod = null) {
         if (!this.state.scene) return false;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         const oldEntry = this.state.voxelChunks.get(key);
+        const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
         // V9.40-d — Dispose-Before-Build: alter raus aus Heap + physicsWorld
         // BEVOR der neue allokiert. Verhindert das doppelte Leben.
         if (oldEntry) this._disposeVoxelChunk(key);
-        const fresh = this._buildVoxelChunkData(cx, cz);
+        const fresh = this._buildVoxelChunkData(cx, cz, useLod);
         if (fresh === null) {
             // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-
             // Counter pflegen — bei 3 fehlgeschlagenen Versuchen geben wir
@@ -15573,9 +15607,13 @@ class AnazhRealm {
             return true;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod: useLod };
         this.state.voxelChunks.set(key, entry);
-        this._buildVoxelChunkGrass(cx, cz);
+        // V9.88 (Welle Perf-3.b): Grass nur auf LOD-0-Nahchunks. Ferne Chunks
+        // (LOD 1, > 80 m) zeigen keine Gras-Halme — Detail-Cap < 50 m macht
+        // sie ohnehin unsichtbar, und 256 Sample-Calls × `_voxelSurfaceY` pro
+        // Chunk sparen wir.
+        if (useLod === 0) this._buildVoxelChunkGrass(cx, cz);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist
         // der einzige Wasser-Render-Pfad. Liest entry.waterCells, baut die
         // Iso-Surface mit dem Surface-Nets-Mesher (gleiche Maschinerie wie
@@ -15595,7 +15633,10 @@ class AnazhRealm {
     // versucht werden, der Schöpfer sah Lücken im Sicht-Ring. Jetzt darf
     // der nächste Streaming-Tick es nochmal versuchen (Heap könnte sich
     // bis dahin durch Pruning ferner Chunks entspannt haben).
-    _ensureVoxelChunkAt(cx, cz) {
+    // V9.88 (Welle Perf-3.b): `lod` propagiert vom Streaming-Tick herein.
+    // Distance-LOD wird HIER beim ersten Stream gewählt; bei Player-Bewegung
+    // wandert die Decision (Tick erkennt Mismatch → markiert dirty).
+    _ensureVoxelChunkAt(cx, cz, lod = 0) {
         if (!this.state.scene) return null;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
@@ -15612,7 +15653,7 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        const fresh = this._buildVoxelChunkData(cx, cz);
+        const fresh = this._buildVoxelChunkData(cx, cz, lod);
         if (fresh === null) {
             // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
             // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
@@ -15640,10 +15681,11 @@ class AnazhRealm {
             return null;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod };
         this.state.voxelChunks.set(key, entry);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
-        this._buildVoxelChunkGrass(cx, cz);
+        // V9.88 — Grass nur auf LOD-0-Nahchunks (s. _rebuildVoxelChunk-Kommentar).
+        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
         // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
         // Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
         this._buildVoxelChunkWaterIsoSurface(cx, cz);
@@ -16780,13 +16822,21 @@ class AnazhRealm {
                     // Density-Pass (Atlas-fertig macht den Gate-Pfad (3)+(4)
                     // erst jetzt verlässlich).
                     if (this._voxelChunkHasAnyWater(cx, cz)) {
-                        const { step, span, floorDrop } = this._voxelChunkConfig();
+                        // V9.88 — die LOD des Eintrags treibt sowohl Cell-
+                        // Build als auch Iso-Surface. Worldgen-Finalize lief
+                        // historisch immer auf LOD 0 (Pre-Streaming-Tick); bei
+                        // späterem Streaming-Update kann der Chunk auf LOD 1
+                        // wandern.
+                        const entryLod = Number.isFinite(entry.lod) ? entry.lod : 0;
+                        const { step, span, floorDrop } = this._voxelChunkConfig(entryLod);
                         const base = this.state.terrainBaseHeight || 0;
                         entry.waterCells = this._buildVoxelChunkWaterCells(
                             cx * span,
                             base - floorDrop,
                             cz * span,
-                            step
+                            step,
+                            null,
+                            entryLod
                         );
                         this._buildVoxelChunkWaterIsoSurface(cx, cz);
                     } else {
@@ -17411,9 +17461,28 @@ class AnazhRealm {
             for (let dz = -r; dz <= r; dz++) {
                 for (let dx = -r; dx <= r; dx++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                    const key = `${pcx + dx},${pcz + dz}`;
-                    if (this.state.voxelChunks.has(key)) continue;
-                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
+                    const cx = pcx + dx;
+                    const cz = pcz + dz;
+                    const key = `${cx},${cz}`;
+                    // V9.88 (Welle Perf-3.b — Distance-LOD): pro Frame die
+                    // gewünschte LOD aus der Player-Distanz berechnen. Wenn
+                    // ein bestehender Chunk eine ANDERE LOD trägt (Spieler
+                    // hat sich bewegt → ferner Chunk ist jetzt nah, oder
+                    // umgekehrt), markieren wir ihn dirty + rebuilden.
+                    // Sonst skipt der Tick. KEINE doppelte Re-Allokation
+                    // bei stehendem Spieler.
+                    const desiredLod = this._voxelChunkLodFor(cx, cz, pcx, pcz);
+                    const existing = this.state.voxelChunks.get(key);
+                    if (existing) {
+                        const currentLod = Number.isFinite(existing.lod) ? existing.lod : 0;
+                        if (currentLod !== desiredLod && !existing.empty) {
+                            this._rebuildVoxelChunk(cx, cz, desiredLod);
+                            if (++built >= MAX_PER_FRAME) break outer;
+                            if (performance.now() - tStart > FRAME_BUDGET_MS) break outer;
+                        }
+                        continue;
+                    }
+                    this._ensureVoxelChunkAt(cx, cz, desiredLod);
                     if (++built >= MAX_PER_FRAME) break outer;
                     // Soft-Budget: nach dem aktuellen Build prüfen, ob wir
                     // noch Zeit haben. `performance.now() - tStart` schließt
@@ -37232,7 +37301,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.87";
+AnazhRealm.VERSION = "9.88";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
