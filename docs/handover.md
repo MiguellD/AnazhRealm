@@ -357,6 +357,69 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-f-3 — waterfallMaterial → MeshBasicNodeMaterial TSL (26.05.2026, dritte Sub-Welle, mittel-komplex, ~190 Z. netto):**
+
+Nach f-1 (skybox: colorNode only) + f-2 (stars: sizeNode+colorNode) ist f-3 der erste Material-Port mit BEIDEN Stages (Vertex-Displacement via `positionNode` + Fragment-Komposit via `colorNode`) plus 11 Uniforms statt 2-3. Der TSL-Lerntest für Vertex-Manipulation, bevor f-4 (hydroSurfaceMaterial) mit Gerstner-6-Octaven kommt.
+
+**Wurzel**: das Wasserfall-Material (V9.43-a) ist ein vertikales Wasser-Tuch mit billow-Vertex-Displacement (sin-Wellen entlang lokaler Z-Normale, gedämpft an Lippen+Tal) + Fragment-Komposit aus Schaum-Strähnen (2D-vnoise), Basis-Wasserfarbe-Mix, Blinn-Phong-Spec, Fog. ~115 Z. GLSL Vertex+Fragment, 11 Uniforms (uTime, uFlowDir/Speed, uDeep/Shallow/Foam, uSunDir, uLight, fogColor/Near/Far).
+
+**Bausteine**:
+
+1. **`_ensureWaterfallMaterial` neu** (~170 Z. TSL ersetzt ~115 Z. GLSL):
+   - `THREE.MeshBasicNodeMaterial` (no lights — Beleuchtung als manueller Blinn-Phong im colorNode).
+   - **Vertex-Stage**:
+     - `vUv = uv()` (TSL-Knoten für UV-Attribut).
+     - `fp = dot(vUv, uFlowDir).mul(9.0).add(uTime.mul(uFlowSpeed).mul(3.2))` — Flow-Position.
+     - `billow = sin(fp).mul(0.20).add(sin(fp.mul(2.4).add(vUv.x.mul(15.0))).mul(0.10))` — Zwei-Frequenz-Sin-Welle.
+     - `edgeY = smoothstep(0, 0.18, vUv.y).mul(smoothstep(1.0, 0.80, vUv.y))` — Dämpfung an Lippen+Tal.
+     - `displacedLocal = positionLocal.add(vec3(0, 0, billow.mul(edgeY)))` — Vertex entlang +Z displaciert.
+     - `mat.positionNode = displacedLocal` — der TSL-Slot für gl_Position-Replacement.
+   - **Fragment-Stage**:
+     - `hash2` als `tslFn`-Closure: `fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453))` — IDENTISCHE Magic-Konstanten zur GLSL.
+     - `vnoise` als `tslFn`-Closure: floor+fract+smoothstep(f²·(3−2f))+4-Corner-Mix (2D-Pendant zum f-1 3D-noise).
+     - Drei `vnoise`-Schichten: `streak = (streak1 + streak2·0.5) / 1.5` + `turb = vnoise(vUv·vec2(9,5) + flow·1.7)`.
+     - Foam-Maske: `clamp(streak·0.8 + turb·0.35 + impact·0.7 + splash·0.6, 0, 1)` mit impact/splash via smoothstep.
+     - Basis-Wasserfarbe: `mix(uDeep, uShallow, 0.4 + streak·0.6)`, dann `mix(...uFoam, foam·0.85)` Schaum drüber.
+     - Light-Skalierung: `withFoam.mul(uLight)`.
+     - **Blinn-Phong-Spec via TSL-built-ins**:
+       - `n = normalize(transformedNormalWorld)` (TSL: mat3(modelMatrix) × normalLocal).
+       - `wpDisplaced = modelWorldMatrix.mul(vec4(displacedLocal, 1.0)).xyz` — manuell, weil `positionWorld` aus original positionLocal liest, nicht aus positionNode (Schlüssel-Lehre der Welle).
+       - `viewDir = normalize(cameraPosition.sub(wpDisplaced))`.
+       - `halfV = normalize(normalize(uSunDir).add(viewDir))`.
+       - `spec = pow(max(dot(n, halfV), 0.0), 40.0)`.
+       - `withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight))`.
+     - **Fog**: `vFogDepth = length(wpDisplaced.sub(cameraPosition))` (view-radiale Distanz wie GLSL `length(mv.xyz)`).
+     - `fogF = smoothstep(uFogNear, uFogFar, vFogDepth)`; `colFogged = mix(withSpec, uFogColor, fogF)`.
+     - **Alpha**: `edgeX = smoothstep(0, 0.10, vUv.x).mul(smoothstep(1.0, 0.90, vUv.x))`; `alpha = clamp(0.62 + foam·0.33, 0, 1).mul(edgeX)` mit Seiten-Dämpfung.
+     - `mat.colorNode = vec4(colFogged, alpha)`.
+   - Material-Properties: `transparent=true`, `depthWrite=false`, `side=DoubleSide` — identisch.
+   - 11 Uniforms (`uniform()`-Knoten) in `state.waterfallUniforms = { time, flowDir, flowSpeed, deep, shallow, foam, sunDir, light, fogColor, fogNear, fogFar }`. Naming-Wende: TSL-Slot ohne `u`-Präfix-Convention (das `u` war GLSL-Konvention für uniforms).
+
+2. **`_dayNightApplyWaterMaterials` (Z35591) — DUAL-PFAD-Architektur**:
+   - Klassischer `applyToShader(material)` weiter für `state.hydroSurfaceMaterial` (bis V10.0-f-4 noch ShaderMaterial).
+   - Neuer `applyToTSL(uniforms)` für `state.waterfallUniforms` (TSL).
+   - Beide schreiben dieselbe Welt-Wahrheit (sunDir, light, fog*), nur die Lookup-Konvention unterscheidet sich. Nach V10.0-f-4 fällt der klassische Pfad weg + beide Wasser-Materials nutzen `applyToTSL`.
+
+3. **`_loopSkyboxPlanets` (Z38710)**: `state.waterfallUniforms.time.value = currentTime` statt `material.uniforms.uTime.value`. Defensive Existenz-Probe.
+
+**Vier Test-Probes mit-gewandert** (V9.56-i-Pattern):
+- `matIsShader` Probe: `mat.type === "ShaderMaterial"` → `mat.isMeshBasicNodeMaterial === true`.
+- `hasFlowUniforms`/`sharesWaterUniforms`/`dayNightSyncsWaterfall`: alle Uniform-Lookups von `mat.uniforms.uX.value` → `state.waterfallUniforms.X.value`. Naming-Wende mit-getragen (uFlowDir → flowDir, uTime → time, uDeep → deep, etc.).
+
+**State-Init**: `state.waterfallUniforms: null` deklariert.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+90 Z. netto (TSL-Tree ersetzt GLSL-String, 2 Mutationen umverdrahtet mit Dual-Pfad-Architektur, 1 state-Field), `scripts/playtest.cjs` ~+10 Z. netto (4 Probe-Anpassungen), `index.html` (Cache-Buster 10.0.6 → 10.0.7 + title v10.0-f2 → v10.0-f3), `package.json` 10.0.6 → 10.0.7, `AnazhRealm.VERSION` "10.0-f2" → "10.0-f3".
+
+**Zwei neue Lehren verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+1. **TSL-Vertex-Displacement via `positionNode` — Lighting/Fog brauchen MANUELLE displaced-Position**: TSL-built-ins `positionWorld`/`positionView` lesen `positionLocal` direkt (NICHT `positionNode`). Bei Vertex-displacing Materials (Wellen, Gras-Wind, Flag-Flatter, billow-Wasserfall) MUSS man die displaced World-Position manuell rechnen: `modelWorldMatrix.mul(vec4(displacedLocal, 1.0)).xyz`. Sonst hängen Lighting (Blinn-Phong viewDir) + Fog (length(viewPos)) am ORIGINAL-Mesh, nicht an der displaced Oberfläche.
+
+2. **Dual-Pfad-Architektur während Multi-Sub-Welle-Migrationen**: wenn ein Update-Pfad MEHRERE Materials touched (z.B. `_dayNightApplyWaterMaterials` schreibt sunDir+light+fog in hydroSurface + waterfall), aber nur EINIGE sind migriert, baut man ZWEI Closures nebeneinander (`applyToShader` für klassisches Material, `applyToTSL` für NodeMaterial-Slot). Beide schreiben dieselbe Welt-Wahrheit. Sauberer als ein Type-Sniff in einer einzigen Closure — der Migrations-Zustand wird explizit lesbar + leicht löschbar nach Abschluss.
+
+**Was V10.0-f-4 liefern wird (next session, der KOMPLEXESTE Port, ~3-4h)**: `hydroSurfaceMaterial` portieren. ~189 Z. GLSL: Gerstner-6-Octaven-Wellen-Displacement im Vertex (sechs überlagerte sin/cos-Wellen mit Wave-Direction-Vektoren — wesentlich komplexer als f-3-billow weil pro Octave eine Wave-Direction + Steepness + Wavelength), Fragment-Foam-Pattern (mehrlagiges Noise-Komposit), Specular (Blinn-Phong), Fresnel-Schicht, Fog. Plus: Per-Vertex `aFlow`/`aShore`/`aWave`-Attribute (V9.43-c — Fluss-Flow-Richtungen + Tiefen-getriebene Wellen-Amplitude + Ufer-Schaum). Mutationspfade: `_dayNightApplyWaterMaterials` (klassischer Pfad fällt weg), `_loopSkyboxPlanets` (uTime). Nach f-4 läuft die ganze Welt-Optik auf NodeMaterial — WebGPU-Renderer rendert dauerhaft auf GPU, der V10.0-e-Hot-Swap-Pfad bleibt nur als defensive Sicherung.
+
+---
+
 **V10.0-f-2 — starsMaterial → PointsNodeMaterial TSL (26.05.2026, zweite Sub-Welle des V10.0-f-Bogens, ~60 Z. netto):**
 
 Nach V10.0-f-1 (skyboxMaterial-Port) ist die TSL-Foundation erprobt — das Bootstrap-Pattern (Side-Effect-Patch + NodeMaterial-Import + `* as TSL`), der `state.X-Uniforms`-Slot, die Test-Sync-Pflicht. V10.0-f-2 zieht den nächst-einfachsten der vier ShaderMaterials.

@@ -62,6 +62,12 @@ class AnazhRealm {
             // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
+            // V10.0-f-3 — Live-Uniforms des TSL-Wasserfall-Materials (11 uniform-
+            // Knoten): time, flowDir, flowSpeed, deep/shallow/foam, sunDir,
+            // light, fogColor/Near/Far. Init in _ensureWaterfallMaterial();
+            // mutiert von _loopSkyboxPlanets (time) + _dayNightApplyWater-
+            // Materials (sunDir, light, fog*).
+            waterfallUniforms: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -18777,119 +18783,154 @@ class AnazhRealm {
     _ensureWaterfallMaterial() {
         if (this.state.waterfallMaterial) return this.state.waterfallMaterial;
         if (typeof THREE === "undefined") return null;
-        const mat = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uFlowDir: { value: new THREE.Vector2(0, -1) },
-                uFlowSpeed: { value: 0.62 },
-                uDeep: { value: new THREE.Color(0x16364f) },
-                uShallow: { value: new THREE.Color(0x3f88a8) },
-                uFoam: { value: new THREE.Color(0xdff1ff) },
-                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                uLight: { value: 1.0 },
-                fogColor: { value: new THREE.Color(0x88a0c8) },
-                fogNear: { value: 35 },
-                fogFar: { value: 150 },
-            },
-            vertexShader: `
-                uniform float uTime;
-                uniform vec2 uFlowDir;
-                uniform float uFlowSpeed;
-                varying vec2 vUv;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying float vFogDepth;
-                void main() {
-                    vUv = uv;
-                    vec3 p = position;
-                    // Billow: das Wasser-Tuch flattert, während es dem Flow
-                    // folgt — ein scrollendes sin-Muster drückt die Fläche
-                    // entlang ihrer lokalen Normale (+z). Am Lippen-Rand
-                    // (uv.y~1) + Tal-Boden (uv.y~0) gedämpft (dort verankert).
-                    float fp = dot(uv, uFlowDir) * 9.0 + uTime * uFlowSpeed * 3.2;
-                    float billow = sin(fp) * 0.20 + sin(fp * 2.4 + uv.x * 15.0) * 0.10;
-                    float edgeY = smoothstep(0.0, 0.18, uv.y) * smoothstep(1.0, 0.80, uv.y);
-                    p.z += billow * edgeY;
-                    vec4 wp = modelMatrix * vec4(p, 1.0);
-                    vWorldPos = wp.xyz;
-                    // V8.44 — Welt-Raum-Normale (mat3(modelMatrix)), nicht
-                    // normalMatrix: die Beleuchtung darf nicht mit der Kamera
-                    // wandern.
-                    vNormal = normalize(mat3(modelMatrix) * normal);
-                    vec4 mv = viewMatrix * wp;
-                    // V8.45 — radiale Distanz (dreh-invariant) wie Terrain + Meer.
-                    vFogDepth = length(mv.xyz);
-                    gl_Position = projectionMatrix * mv;
-                }
-            `,
-            fragmentShader: `
-                uniform float uTime;
-                uniform vec2 uFlowDir;
-                uniform float uFlowSpeed;
-                uniform vec3 uDeep;
-                uniform vec3 uShallow;
-                uniform vec3 uFoam;
-                uniform vec3 uSunDir;
-                uniform float uLight;
-                uniform vec3 fogColor;
-                uniform float fogNear;
-                uniform float fogFar;
-                varying vec2 vUv;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying float vFogDepth;
-                float hash(vec2 p) {
-                    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
-                }
-                float vnoise(vec2 p) {
-                    vec2 i = floor(p);
-                    vec2 f = fract(p);
-                    vec2 u = f * f * (3.0 - 2.0 * f);
-                    return mix(
-                        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-                        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-                        u.y
-                    );
-                }
-                void main() {
-                    // Flow-Offset — scrollt das Wasser-Muster den Flow entlang.
-                    vec2 flow = uFlowDir * uTime * uFlowSpeed;
-                    vec2 sc = vUv + flow;
-                    // Vertikale Strähnen: hochfrequent quer (uv.x), scrollend
-                    // den Flow hinab.
-                    float streak = vnoise(vec2(vUv.x * 26.0, sc.y * 7.0));
-                    streak += 0.5 * vnoise(vec2(vUv.x * 55.0, sc.y * 15.0 + 3.0));
-                    streak /= 1.5;
-                    // Turbulente Schaum-Ballen, die mit dem Flow hinabtreiben.
-                    float turb = vnoise(vUv * vec2(9.0, 5.0) + flow * 1.7);
-                    // Schaum-Maske: Strähnen + Turbulenz, verstärkt am Aufprall
-                    // (oben) + am Spritzer (unten).
-                    float impact = smoothstep(0.86, 1.0, vUv.y);
-                    float splash = smoothstep(0.22, 0.0, vUv.y);
-                    float foam = clamp(streak * 0.8 + turb * 0.35 + impact * 0.7 + splash * 0.6, 0.0, 1.0);
-                    // Basis-Wasserfarbe, Schaum darüber.
-                    vec3 col = mix(uDeep, uShallow, 0.4 + 0.6 * streak);
-                    col = mix(col, uFoam, foam * 0.85);
-                    col *= uLight;
-                    // Sonnen-Glitzern (Blinn-Phong wie das Meer).
-                    vec3 n = normalize(vNormal);
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
-                    float spec = pow(max(dot(n, halfV), 0.0), 40.0);
-                    col += vec3(1.0, 0.97, 0.85) * spec * 0.5 * uLight;
-                    // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
-                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
-                    col = mix(col, fogColor, fogF);
-                    // Alpha: dichter Körper, weiche Seiten-Ränder.
-                    float edgeX = smoothstep(0.0, 0.10, vUv.x) * smoothstep(1.0, 0.90, vUv.x);
-                    float alpha = (0.62 + 0.33 * foam) * edgeX;
-                    gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
-                }
-            `,
-            transparent: true,
-            depthWrite: false,
-            side: THREE.DoubleSide,
+        // V10.0-f-3 — waterfallMaterial portiert von ShaderMaterial (GLSL) zu
+        // MeshBasicNodeMaterial (TSL). Welt-Optik 1:1: vertikales Wasser-
+        // Tuch mit billow-Displacement entlang lokaler Normale (sin-Wellen
+        // entlang Flow-Achse), Schaum-Strähnen via 2D-vnoise, Blinn-Phong
+        // Sonnen-Glitzern, Fog. Drei strukturelle Teile: positionNode
+        // (Vertex-Displacement), colorNode (Fragment-Foam+Spec+Fog),
+        // material.transparent + depthWrite + DoubleSide.
+        //
+        // Elf Uniforms in state.waterfallUniforms (uniform-Knoten mit .value):
+        // time (per-Frame in _loopSkyboxPlanets), flowDir/flowSpeed (statisch,
+        // 0/−1 vertikaler Abwärts-Flow), deep/shallow/foam (Wasser-Farben),
+        // sunDir/light (von _dayNightApplyWaterMaterials), fogColor/Near/Far
+        // (auch dayNight). Vision §1.3 fraktal: dieselbe Wasser-Sprache wie
+        // das Meer (hydroSurfaceMaterial — V10.0-f-4 folgt).
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            this.log("Wasserfall-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
+            return null;
+        }
+        const {
+            uniform,
+            uv,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            positionLocal,
+            transformedNormalWorld,
+            modelWorldMatrix,
+            cameraPosition,
+            sin,
+            dot,
+            length,
+            mix,
+            smoothstep,
+            clamp,
+            fract,
+            floor,
+            max,
+            pow,
+            normalize,
+            tslFn,
+        } = TSL;
+
+        // Elf Live-Uniforms (uniform-Knoten mit .value-Setter)
+        const uTime = uniform(0.0);
+        const uFlowDir = uniform(new THREE.Vector2(0, -1));
+        const uFlowSpeed = uniform(0.62);
+        const uDeep = uniform(new THREE.Color(0x16364f));
+        const uShallow = uniform(new THREE.Color(0x3f88a8));
+        const uFoam = uniform(new THREE.Color(0xdff1ff));
+        const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
+        const uLight = uniform(1.0);
+        const uFogColor = uniform(new THREE.Color(0x88a0c8));
+        const uFogNear = uniform(35.0);
+        const uFogFar = uniform(150.0);
+
+        // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
+        // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
+        const hash2 = tslFn(([p]) => {
+            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
+        const vnoise = tslFn(([p]) => {
+            const i = floor(p);
+            const f = fract(p);
+            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+            return mix(
+                mix(hash2(i), hash2(i.add(vec2(1.0, 0.0))), u.x),
+                mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
+                u.y
+            );
+        });
+
+        const vUv = uv();
+        const flowTime = uTime.mul(uFlowSpeed);
+
+        // === VERTEX-STAGE: billow-Displacement entlang lokaler Z-Normale.
+        // GLSL: p.z += billow * edgeY. Hier auf positionLocal angewandt.
+        const fp = dot(vUv, uFlowDir).mul(9.0).add(flowTime.mul(3.2));
+        const billow = sin(fp)
+            .mul(0.2)
+            .add(sin(fp.mul(2.4).add(vUv.x.mul(15.0))).mul(0.1));
+        const edgeY = smoothstep(0.0, 0.18, vUv.y).mul(smoothstep(1.0, 0.8, vUv.y));
+        const displacedLocal = positionLocal.add(vec3(0.0, 0.0, billow.mul(edgeY)));
+
+        // World-Position des displaced Vertex (für Blinn-Phong-viewDir + Fog).
+        // mat4×vec4-Multiplikation in TSL via .mul().
+        const wp = modelWorldMatrix.mul(vec4(displacedLocal, 1.0));
+        const vWorldPos = wp.xyz;
+        // V8.45 — radiale View-Distanz (dreh-invariant) = length(viewPos),
+        // semantisch identisch zu length(mv.xyz). cameraPosition ist Welt-
+        // Raum; |worldPos − cameraPos| = view-radial Distanz.
+        const vFogDepth = length(vWorldPos.sub(cameraPosition));
+
+        // === FRAGMENT-STAGE: Schaum + Wasserfarbe + Sonnen-Spec + Fog.
+        const flow = uFlowDir.mul(flowTime);
+        const sc = vUv.add(flow);
+        // Vertikale Strähnen (hochfrequent quer, scrollend Flow hinab).
+        const streak1 = vnoise(vec2(vUv.x.mul(26.0), sc.y.mul(7.0)));
+        const streak2 = vnoise(vec2(vUv.x.mul(55.0), sc.y.mul(15.0).add(3.0)));
+        const streak = streak1.add(streak2.mul(0.5)).div(1.5);
+        // Turbulente Schaum-Ballen.
+        const turb = vnoise(vUv.mul(vec2(9.0, 5.0)).add(flow.mul(1.7)));
+        // Aufprall + Spritzer (uv.y-Position-Maskierung).
+        const impact = smoothstep(0.86, 1.0, vUv.y);
+        const splash = smoothstep(0.22, 0.0, vUv.y);
+        const foam = clamp(streak.mul(0.8).add(turb.mul(0.35)).add(impact.mul(0.7)).add(splash.mul(0.6)), 0.0, 1.0);
+
+        // Basis-Wasserfarbe → Foam-Mix → Light-Skalierung.
+        const baseCol = mix(uDeep, uShallow, float(0.4).add(streak.mul(0.6)));
+        const withFoam = mix(baseCol, uFoam, foam.mul(0.85));
+        const lit = withFoam.mul(uLight);
+
+        // Blinn-Phong Sonnen-Glitzern (V8.44-Welt-Raum-Normale).
+        const n = normalize(transformedNormalWorld);
+        const viewDir = normalize(cameraPosition.sub(vWorldPos));
+        const halfV = normalize(normalize(uSunDir).add(viewDir));
+        const spec = pow(max(dot(n, halfV), 0.0), 40.0);
+        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight));
+
+        // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
+        const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
+        const colFogged = mix(withSpec, uFogColor, fogF);
+
+        // Alpha: dichter Körper, weiche Seiten-Ränder.
+        const edgeX = smoothstep(0.0, 0.1, vUv.x).mul(smoothstep(1.0, 0.9, vUv.x));
+        const alpha = clamp(float(0.62).add(foam.mul(0.33)).mul(edgeX), 0.0, 1.0);
+
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.positionNode = displacedLocal;
+        mat.colorNode = vec4(colFogged, alpha);
+        mat.transparent = true;
+        mat.depthWrite = false;
+        mat.side = THREE.DoubleSide;
+
+        this.state.waterfallUniforms = {
+            time: uTime,
+            flowDir: uFlowDir,
+            flowSpeed: uFlowSpeed,
+            deep: uDeep,
+            shallow: uShallow,
+            foam: uFoam,
+            sunDir: uSunDir,
+            light: uLight,
+            fogColor: uFogColor,
+            fogNear: uFogNear,
+            fogFar: uFogFar,
+        };
         this.state.waterfallMaterial = mat;
         return mat;
     }
@@ -35592,19 +35633,35 @@ class AnazhRealm {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const fog = this.state.fog;
-        const applyTo = (material) => {
+        const lightVal = Math.max(0.22, dl.intensity);
+        // V10.0-f-3 — zwei Update-Pfade nebeneinander, weil hydroSurfaceMaterial
+        // bis V10.0-f-4 noch klassisches ShaderMaterial mit `.uniforms.X.value`
+        // ist, waterfallMaterial aber jetzt TSL mit uniform-Knoten in
+        // state.waterfallUniforms. Nach V10.0-f-4 fällt der applyToShader-
+        // Pfad weg + beide Wasser-Materials nutzen denselben TSL-Slot-Pfad.
+        const applyToShader = (material) => {
             if (!material || !material.uniforms) return;
             const u = material.uniforms;
             if (u.uSunDir) u.uSunDir.value.copy(sunDir);
-            if (u.uLight) u.uLight.value = Math.max(0.22, dl.intensity);
+            if (u.uLight) u.uLight.value = lightVal;
             if (fog) {
                 if (u.fogColor) u.fogColor.value.copy(fog.color);
                 if (u.fogNear) u.fogNear.value = fog.near;
                 if (u.fogFar) u.fogFar.value = fog.far;
             }
         };
-        applyTo(this.state.hydroSurfaceMaterial);
-        applyTo(this.state.waterfallMaterial);
+        const applyToTSL = (uniforms) => {
+            if (!uniforms) return;
+            if (uniforms.sunDir) uniforms.sunDir.value.copy(sunDir);
+            if (uniforms.light) uniforms.light.value = lightVal;
+            if (fog) {
+                if (uniforms.fogColor) uniforms.fogColor.value.copy(fog.color);
+                if (uniforms.fogNear) uniforms.fogNear.value = fog.near;
+                if (uniforms.fogFar) uniforms.fogFar.value = fog.far;
+            }
+        };
+        applyToShader(this.state.hydroSurfaceMaterial);
+        applyToTSL(this.state.waterfallUniforms);
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
@@ -38707,8 +38764,9 @@ class AnazhRealm {
         // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
         // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
         // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
-        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
-            this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
+        // V10.0-f-3: time-Uniform ist jetzt uniform-Knoten in state.waterfallUniforms.
+        if (this.state.waterfallUniforms && this.state.waterfallUniforms.time) {
+            this.state.waterfallUniforms.time.value = currentTime;
         }
         // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
         // + See-Planes) wird zentral animiert; der Flow-Shader scrollt den
@@ -39024,7 +39082,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-f2";
+AnazhRealm.VERSION = "10.0-f3";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

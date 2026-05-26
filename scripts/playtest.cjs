@@ -11653,28 +11653,34 @@ async function checkBandHydrosphere(ctx) {
         out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
         let mat = null;
         if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
-        out.matIsShader = !!mat && mat.type === "ShaderMaterial";
-        const u = (mat && mat.uniforms) || {};
+        // V10.0-f-3 Doku-Sync: Wasserfall ist jetzt MeshBasicNodeMaterial
+        // (TSL). Die alte ShaderMaterial-Identitäts-Probe (mat.type ===
+        // "ShaderMaterial") wandert auf isMeshBasicNodeMaterial=true.
+        out.matIsShader = !!mat && mat.isMeshBasicNodeMaterial === true;
+        // V10.0-f-3 Doku-Sync: Uniforms leben in state.waterfallUniforms
+        // (uniform-Knoten mit .value, kein material.uniforms mehr).
+        const u = r.state.waterfallUniforms || {};
         out.hasFlowUniforms =
-            !!u.uFlowDir &&
-            !!u.uFlowDir.value &&
-            u.uFlowDir.value.y < 0 &&
-            typeof (u.uFlowSpeed && u.uFlowSpeed.value) === "number" &&
-            !!u.uTime;
+            !!u.flowDir &&
+            !!u.flowDir.value &&
+            u.flowDir.value.y < 0 &&
+            typeof (u.flowSpeed && u.flowSpeed.value) === "number" &&
+            !!u.time;
         out.sharesWaterUniforms =
-            !!u.uDeep &&
-            !!u.uShallow &&
+            !!u.deep &&
+            !!u.shallow &&
             !!u.fogColor &&
             typeof (u.fogNear && u.fogNear.value) === "number" &&
             typeof (u.fogFar && u.fogFar.value) === "number" &&
-            !!u.uSunDir &&
-            !!u.uLight;
-        // Day-Night synct das Wasserfall-Material (Fog-Uniform).
+            !!u.sunDir &&
+            !!u.light;
+        // Day-Night synct das Wasserfall-Material (Fog-Uniform) — Probe
+        // bleibt funktional identisch, liest aus dem TSL-Slot.
         out.dayNightSyncsWaterfall = false;
         if (mat && typeof r._applyDayNightToScene === "function") {
             try {
                 r._applyDayNightToScene();
-                out.dayNightSyncsWaterfall = typeof u.fogNear.value === "number" && u.fogNear.value > 0;
+                out.dayNightSyncsWaterfall = !!u.fogNear && typeof u.fogNear.value === "number" && u.fogNear.value > 0;
             } catch {
                 out.dayNightSyncsWaterfall = false;
             }
@@ -11684,15 +11690,15 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV943Results && !voxelV943Results.error) {
         check(
-            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein ShaderMaterial",
+            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein MeshBasicNodeMaterial (V10.0-f-3 TSL)",
             voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
         );
         check(
-            "Voxel V9.43-a: das Wasserfall-Material trägt uFlowDir (abwärts) + uFlowSpeed + uTime",
+            "Voxel V9.43-a: state.waterfallUniforms trägt flowDir (abwärts) + flowSpeed + time",
             voxelV943Results.hasFlowUniforms
         );
         check(
-            "Voxel V9.43-a: das Wasserfall-Material teilt die Wasser-Substanz-Uniforms mit dem Meer",
+            "Voxel V9.43-a: state.waterfallUniforms teilt die Wasser-Substanz-Uniforms mit dem Meer",
             voxelV943Results.sharesWaterUniforms
         );
         check(
