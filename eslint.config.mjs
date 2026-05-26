@@ -51,6 +51,26 @@ export default [
         },
     },
     {
+        files: ["voxel-worker.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "script",
+            globals: {
+                // Web-Worker scope
+                self: "readonly",
+                importScripts: "readonly",
+                postMessage: "readonly",
+                onmessage: "writable",
+                SimplexNoise: "readonly",
+                Float32Array: "readonly",
+                Uint8Array: "readonly",
+            },
+        },
+        rules: {
+            "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+        },
+    },
+    {
         files: ["save-server.js", "signaling-server.js"],
         languageOptions: {
             ecmaVersion: 2022,

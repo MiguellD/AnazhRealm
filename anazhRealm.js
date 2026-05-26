@@ -223,6 +223,29 @@ class AnazhRealm {
             movementWorker: null,
             movementWorkerUrl: null,
             movementWorkerBusy: false,
+            // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): voxel-worker.js
+            // baut Density-Grids parallel zum Main-Thread. Phase 1 nur Foundation
+            // + Determinismus-Test (kein async Integration-Pfad). Phasen 2-4
+            // bringen die tatsächliche Pipeline-Migration.
+            voxelWorker: null,
+            voxelWorkerReady: false,
+            voxelWorkerNextRequestId: 1,
+            voxelWorkerPending: null, // Map<requestId, {resolve, reject}>
+            voxelWorkerStateGen: 0, // bump bei jedem state-update, für Test-Sync
+            // V9.90 (Phase 2): async Density-Pfad. Cache hält fertige Density-
+            // Grids vom Worker (one-shot — der Build konsumiert + löscht).
+            // pendingSet hält Cache-Keys mit laufender Worker-Request, dass
+            // wir nicht doppelt anfordern. Beim voxelEdit wird cache geleert.
+            voxelDensityCache: null, // Map<"cx,cz,lod", Float32Array>
+            voxelDensityPending: null, // Set<"cx,cz,lod">
+            voxelWorkerWorldgenSynced: false, // turns true nach erstem Worldgen-State-Sync
+            // V9.91 (Phase 3): voller Chunk-Mesh-Cache (positions/normals/
+            // indices/colors/waterCells). Streaming-Pump nutzt diesen
+            // (Phase-3-Pfad), Phase-2-Density-Cache ist Legacy aber bleibt
+            // für Determinismus-Test (V9.89/V9.90-Bänder) erhalten.
+            voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
+            voxelMeshPending: null, // Set<"cx,cz,lod">
+            voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -12280,6 +12303,458 @@ class AnazhRealm {
         return worker;
     }
 
+    // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): spawnt den Voxel-
+    // Density-Worker on-demand. Worker importiert simplex-noise via
+    // importScripts, empfängt State per init-Message + Delta-Updates bei
+    // Welt-Mutationen. **Determinismus-Test-Pflicht**: jede Density-Funktion
+    // hier mit-wandert in `voxel-worker.js` — der Playtest-Band Perf-3.c-P1
+    // verifiziert bit-identische Density-Output zwischen Main + Worker.
+    // **Phase 1 Scope**: Worker existiert, State synced, Density on-demand
+    // berechenbar. KEIN async Integration-Pfad in `_buildVoxelChunkData` —
+    // das ist Phase 2 (V9.90+).
+    _getVoxelWorker() {
+        if (this.state.voxelWorker) return this.state.voxelWorker;
+        if (typeof Worker === "undefined") return null;
+        try {
+            const worker = new Worker("voxel-worker.js");
+            this.state.voxelWorkerPending = new Map();
+            worker.onmessage = (e) => {
+                const msg = e.data;
+                if (!msg || !msg.type) return;
+                if (msg.type === "density-grid-result" && msg.requestId) {
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(new Float32Array(msg.density));
+                    }
+                } else if (msg.type === "chunk-mesh-result" && msg.requestId) {
+                    // V9.91 Phase 3 — voller Mesh-Build vom Worker. Empfange
+                    // alle 5 Arrays via Transferable (zero-copy). Bei `empty`
+                    // ist der Chunk degeneriert (kein Iso) — Resolve mit
+                    // einem Sentinel.
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        if (msg.empty) {
+                            pending.resolve({ empty: true, lod: msg.lod | 0 });
+                        } else {
+                            pending.resolve({
+                                empty: false,
+                                lod: msg.lod | 0,
+                                positions: new Float32Array(msg.positions),
+                                normals: new Float32Array(msg.normals),
+                                indices: new Uint32Array(msg.indices),
+                                colors: new Float32Array(msg.colors),
+                                waterCells: new Uint8Array(msg.waterCells),
+                            });
+                        }
+                    }
+                } else if (msg.type === "ack" && msg.requestId) {
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(true);
+                    }
+                } else if (msg.type === "error") {
+                    if (msg.requestId) {
+                        const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                        if (pending) {
+                            this.state.voxelWorkerPending.delete(msg.requestId);
+                            pending.reject(new Error(msg.message));
+                        }
+                    }
+                    this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
+                }
+            };
+            worker.onerror = (err) => {
+                this.log(`Voxel-Worker-Fehler: ${err.message}`, "ERROR");
+                this.state.voxelWorkerReady = false;
+            };
+            this.state.voxelWorker = worker;
+            // Sofort State synchronisieren — der Worker ist erst nutzbar, wenn
+            // sein State (Seed + Atlas + Erosion + Tarns + voxelEdits) gesetzt
+            // ist. Verläuft synchron-fire-and-forget; Ready-Flag wird beim
+            // init-ack gesetzt.
+            this._voxelWorkerSyncState({ op: "init" });
+            return worker;
+        } catch (e) {
+            this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Sammelt den vollen State-Snapshot für den Worker: Seed, baseHeight,
+    // waterLevel, Hydrosphäre-Atlas (riverBuckets + lakeBedCell + lakeW +
+    // lakeNear), erosion-Grid, tarns, voxelEdits, hydroComputing-Flag,
+    // carveBankSlope-Konstante. Strukturierte Klone — der Worker bekommt
+    // eine eigene Kopie. Typed Arrays werden bei `postMessage` automatisch
+    // kopiert (Transferable wäre billiger, aber wir wollen die Atlas-Daten
+    // im Main-Thread BEHALTEN — copy ist die richtige Wahl).
+    _voxelWorkerSnapshotState() {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const snap = {
+            seed,
+            baseHeight: this.state.terrainBaseHeight || 0,
+            waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+            voxelEdits: this._snapshotVoxelEdits(),
+            hydroComputing: !!this._hydroComputing,
+            carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
+        };
+        const h = this.state.hydrosphere;
+        if (h && h.ready) {
+            snap.hydrosphere = {
+                ready: true,
+                originX: h.originX,
+                originZ: h.originZ,
+                cell: h.cell,
+                dim: h.dim,
+                bucketSize: h.bucketSize,
+                bucketsDim: h.bucketsDim,
+                // riverBuckets ist ein Array of Arrays of segment-Objekten —
+                // strukturierte Klon-Kompatibel ohne weitere Transformation.
+                riverBuckets: h.riverBuckets,
+                lakeBedCell: h.lakeBedCell,
+                lakeW: h.lakeW,
+                lakeNear: h.lakeNear,
+                // V9.91 (Phase 3) — h.water trägt waterY/waterKind für
+                // `_waterLevelAt`-Mirror im Worker (Cell-Klassifikation +
+                // Strand-Tint). Ohne diese sah der Worker nur den globalen
+                // state.waterLevel, kannte keine Bergsee-Spiegel.
+                water: h.water || null,
+            };
+        } else {
+            snap.hydrosphere = null;
+        }
+        // V9.91 (Phase 3) — hydroBand für Cell-Klassifikations-Skip (Cells
+        // außerhalb [bottom..top] sind garantiert AIR; spart 30-40% Cells-
+        // Iterationen).
+        snap.hydroBand = this.state.hydroBand
+            ? { top: this.state.hydroBand.top, bottom: this.state.hydroBand.bottom }
+            : null;
+        const e = this.state.erosion;
+        if (e) {
+            snap.erosion = { originX: e.originX, originZ: e.originZ, cell: e.cell, dim: e.dim, delta: e.delta };
+        } else {
+            snap.erosion = null;
+        }
+        snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
+        return snap;
+    }
+
+    _snapshotVoxelEdits() {
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!Array.isArray(edits)) return [];
+        return edits.map((ed) => ({ ...ed }));
+    }
+
+    // State-Snapshot zum Worker senden. `op="init"` triggert das erstmalige
+    // Befüllen (setzt voxelWorkerReady=true beim ack); `op="state-set"` ist
+    // ein full re-sync nach Welt-Wechsel oder Worldgen-Abschluss. Returns
+    // Promise<true> wenn ack kommt.
+    _voxelWorkerSyncState(opts = {}) {
+        const worker = this.state.voxelWorker;
+        if (!worker) return Promise.resolve(false);
+        const op = opts.op === "state-set" ? "state-set" : "init";
+        const requestId = this.state.voxelWorkerNextRequestId++;
+        // V9.90 — state-gen bumpt am SEND-Zeitpunkt (der State HAT sich
+        // geändert, sobald wir die Update-Nachricht abschicken — Empfang +
+        // Ack sind nur die Bestätigung). Saubere Semantik für den
+        // `voxelWorkerSyncedHydroStateGen`-Stempel: nach _voxelWorkerSync-
+        // WorldgenState gilt `syncedGen === stateGen` deterministisch.
+        this.state.voxelWorkerStateGen++;
+        const promise = new Promise((resolve, reject) => {
+            this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+        });
+        worker.postMessage({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
+        return promise.then(() => {
+            this.state.voxelWorkerReady = true;
+            return true;
+        });
+    }
+
+    // Density-Grid via Worker berechnen lassen. Returns Promise<Float32Array>
+    // mit (dimX+1)·(dimY+1)·(dimZ+1) Floats — identische Indizierung wie
+    // `_voxelSampleDensityGrid` im Main-Thread. **Test-Pfad**: der Determinismus-
+    // Band ruft das + vergleicht bit-identisch mit Main-Sampling.
+    _voxelWorkerComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "density-grid", ox, oy, oz, dimX, dimY, dimZ, step, requestId });
+            return promise;
+        });
+    }
+
+    // V9.91 (Welle Perf-3.c Phase 3): voller Chunk-Mesh im Worker. Returns
+    // Promise mit {empty, positions, indices, normals, colors, waterCells, lod}.
+    // Bei `empty: true` ist der Chunk degeneriert (kein Iso). Main-Thread
+    // macht nur noch: BufferGeometry-Konstruktion + Architektur-Cell-Stempel
+    // + BVH-Collision + Scene-Attach. Der ~100 ms Density + ~30 ms Iso + ~5 ms
+    // Cells + ~10 ms Colors-Pass lebt jetzt im Worker; Main ~30 ms BVH.
+    _voxelWorkerComputeChunkMesh(cx, cz, lod) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
+            return promise;
+        });
+    }
+
+    // V9.90 (Welle Perf-3.c Phase 2): Cache-First-Density-Lookup für den
+    // Streaming-Pfad. Drei Rückgabe-Varianten:
+    //   (a) Float32Array — Cache-Hit, der Build kann sofort mit preDensity
+    //       starten (one-shot: Cache-Eintrag wird konsumiert + gelöscht).
+    //   (b) null — Worker ist verfügbar + Request läuft (pending), der
+    //       Streaming-Pump kommt nächsten Frame wieder.
+    //   (c) undefined — Worker nicht verfügbar (Spawn-Fehler, browser ohne
+    //       Worker-Support), Aufrufer fällt auf sync-Density zurück.
+    // Indizierung MUSS exakt zu `_buildVoxelChunkData`-Geometry-Aufruf passen
+    // (ox-step, oy, oz-step, dim+3, dimY, dim+3, step) — sonst Drift zwischen
+    // Worker-Density und Mesher-Erwartung. **State-Gen-Schutz**: wenn während
+    // der Worker-Request ein voxelEdit den State bumpt, wird das Result
+    // discarded (Pump resubmittet beim nächsten Tick mit frischem State).
+    _fetchOrRequestChunkDensity(cx, cz, lod) {
+        const cfg = this._voxelChunkConfig(lod);
+        const { dim, step, span, dimY, floorDrop } = cfg;
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - floorDrop;
+        const cacheKey = `${cx},${cz},${lod}`;
+        if (this.state.voxelDensityCache && this.state.voxelDensityCache.has(cacheKey)) {
+            const cached = this.state.voxelDensityCache.get(cacheKey);
+            this.state.voxelDensityCache.delete(cacheKey);
+            return cached;
+        }
+        const worker = this._getVoxelWorker();
+        if (!worker) return undefined;
+        if (!this.state.voxelDensityPending) this.state.voxelDensityPending = new Set();
+        if (this.state.voxelDensityPending.has(cacheKey)) return null;
+        this.state.voxelDensityPending.add(cacheKey);
+        const expectedStateGen = this.state.voxelWorkerStateGen;
+        // Origin + Sample-Dimensions IDENTISCH zur Main-Thread-Geometry-Calls
+        // (V9.42-d-Pad: ox-step + dim+3 in X/Z, vertikal dimY).
+        this._voxelWorkerComputeDensity(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step)
+            .then((density) => {
+                this.state.voxelDensityPending.delete(cacheKey);
+                // Stale-Result-Filter: wenn state-gen während des Roundtrips
+                // bumpe wurde (voxelEdit, worldgen-rebuild), ist das Grid
+                // gegen alten State berechnet — verwerfen.
+                if (this.state.voxelWorkerStateGen !== expectedStateGen) return;
+                if (!this.state.voxelDensityCache) this.state.voxelDensityCache = new Map();
+                this.state.voxelDensityCache.set(cacheKey, density);
+            })
+            .catch((err) => {
+                this.state.voxelDensityPending.delete(cacheKey);
+                this.log(`Voxel-Density-Worker-Fehler (${cacheKey}): ${err.message}`, "ERROR");
+            });
+        return null;
+    }
+
+    // V9.91 (Welle Perf-3.c Phase 3): Cache-First-Mesh-Lookup für den
+    // Streaming-Pfad. Drei Rückgabe-Varianten analog zu Phase-2-Density:
+    //   (a) {empty, positions, ...} — Cache-Hit, der Build kann sofort
+    //       BufferGeometry konstruieren + Architektur-Stempel + BVH.
+    //       Bei `empty:true` ist der Chunk degeneriert (kein Iso).
+    //   (b) null — Worker-Request läuft, Pump kommt nächsten Frame wieder.
+    //   (c) undefined — Worker unverfügbar, sync-Fallback.
+    // **State-Gen-Schutz**: wenn voxelEdit während Roundtrip stateGen
+    // bumpt, wird das stale Result verworfen.
+    _fetchOrRequestChunkMesh(cx, cz, lod) {
+        const cacheKey = `${cx},${cz},${lod}`;
+        if (this.state.voxelMeshCache && this.state.voxelMeshCache.has(cacheKey)) {
+            const cached = this.state.voxelMeshCache.get(cacheKey);
+            this.state.voxelMeshCache.delete(cacheKey);
+            return cached;
+        }
+        const worker = this._getVoxelWorker();
+        if (!worker) return undefined;
+        if (!this.state.voxelMeshPending) this.state.voxelMeshPending = new Set();
+        if (!this.state.voxelMeshGenAtRequest) this.state.voxelMeshGenAtRequest = new Map();
+        if (this.state.voxelMeshPending.has(cacheKey)) return null;
+        this.state.voxelMeshPending.add(cacheKey);
+        const expectedStateGen = this.state.voxelWorkerStateGen;
+        this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
+        this._voxelWorkerComputeChunkMesh(cx, cz, lod)
+            .then((meshData) => {
+                this.state.voxelMeshPending.delete(cacheKey);
+                if (this.state.voxelWorkerStateGen !== expectedStateGen) {
+                    this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                    return;
+                }
+                this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
+                this.state.voxelMeshCache.set(cacheKey, meshData);
+            })
+            .catch((err) => {
+                this.state.voxelMeshPending.delete(cacheKey);
+                this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                this.log(`Voxel-Mesh-Worker-Fehler (${cacheKey}): ${err.message}`, "ERROR");
+            });
+        return null;
+    }
+
+    // V9.91 (Phase 3) — synchroner Build aus Worker-Mesh-Data. Macht:
+    //   (1) BufferGeometry-Konstruktion (positions/normals/indices/colors)
+    //   (2) Material-Singleton zuweisen
+    //   (3) Architektur-Cell-Stempel auf waterCells (Main-only-State)
+    //   (4) BVH-Collision (Ammo, MUSS Main wegen WASM-Heap)
+    //   (5) Scene.add(mesh)
+    // Returns `{mesh, kind, waterCells, lod}` wie `_buildVoxelChunkData`,
+    // oder null bei Collision-OOM.
+    _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData, opts = {}) {
+        if (!this.state.scene || typeof THREE === "undefined") return null;
+        if (meshData.empty) return { mesh: null, kind: "empty", waterCells: null, lod, hasBVH: false };
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(meshData.positions, 3));
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(meshData.colors, 3));
+        geom.setIndex(new THREE.BufferAttribute(meshData.indices, 1));
+        const mat = this._getVoxelChunkMaterial();
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
+        // V9.92 (Phase 4 — Lazy-BVH): wenn `opts.buildBVH === false`, wird
+        // die teure Ammo-Collision-Allokation (~25-30 ms pro Chunk) übersprungen.
+        // Ferne Chunks (r ≥ 2 vom Spieler) sehen das Mesh ohne Collision —
+        // der Spieler kann sie nicht erreichen ohne Movement. Wenn sie ins
+        // 2-Ring kommen (`_pumpVoxelChunkBVH`) oder der Spieler hineinspringt
+        // (`_ensurePlayerChunkBVH`), wird die BVH nachgereicht.
+        const wantBVH = opts.buildBVH !== false;
+        let hasBVH = false;
+        if (wantBVH) {
+            const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+            if (!collisionBody) {
+                geom.dispose();
+                return null;
+            }
+            hasBVH = true;
+        }
+        // Architektur-Stempel auf waterCells (Main-only — der Worker kennt
+        // keine Architekturen). Nur wenn Cells überhaupt da sind (chunk hat
+        // Wasser laut Atlas-Strict-Gate). V9.93 — Cells sind IMMER LOD 0,
+        // also Stempel-Indizierung mit lod=0.
+        let waterCells = null;
+        if (meshData.waterCells && meshData.waterCells.length > 0) {
+            waterCells = meshData.waterCells;
+            const lod0Cfg = this._voxelChunkConfig(0);
+            const base = this.state.terrainBaseHeight || 0;
+            const ox = cx * lod0Cfg.span;
+            const oz = cz * lod0Cfg.span;
+            const oy = base - lod0Cfg.floorDrop;
+            this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
+        }
+        return { mesh, kind: "filled", waterCells, lod, hasBVH };
+    }
+
+    // V9.92 (Phase 4 — Lazy-BVH): hängt einem Existing-Chunk-Entry seine
+    // BVH-Collision nach. Wird vom `_pumpVoxelChunkBVH`-Helper gerufen
+    // wenn ein ferner (BVH-loser) Chunk ins 2-Ring rückt, ODER vom
+    // `_ensurePlayerChunkBVH`-Safety-Hook wenn der Spieler in einen
+    // BVH-losen Chunk teleportiert. Returns true bei Erfolg, false bei
+    // OOM oder wenn der Chunk schon eine BVH hat / keine Mesh trägt.
+    _upgradeChunkBVH(cx, cz) {
+        if (!this.state.voxelChunks) return false;
+        const key = `${cx},${cz}`;
+        const entry = this.state.voxelChunks.get(key);
+        if (!entry || !entry.mesh || entry.hasBVH || entry.empty) return false;
+        const body = this._buildStaticTriMeshCollision(entry.mesh, { kind: "voxel-chunk", friction: 0.85 });
+        if (!body) return false;
+        entry.hasBVH = true;
+        return true;
+    }
+
+    // V9.92 — pro Streaming-Tick: scant 3×3-Spieler-Nähe + upgraded BVH
+    // für Chunks die zwar im 2-Ring liegen aber noch keine Collision haben.
+    // Rate-limited (max 2 upgrades pro Frame) damit Player-Movement nicht
+    // mehrere BVH-Build-Spikes auf einmal triggert. Kommt der Spieler durch
+    // viel Bewegung in viele neue Chunks, wird das über mehrere Frames
+    // verteilt — keine Spike-Klumpen.
+    _pumpVoxelChunkBVH(pcx, pcz, maxPerFrame = 2) {
+        if (!this.state.voxelChunks) return 0;
+        let upgraded = 0;
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const cx = pcx + dx;
+                const cz = pcz + dz;
+                const key = `${cx},${cz}`;
+                const entry = this.state.voxelChunks.get(key);
+                if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
+                    if (this._upgradeChunkBVH(cx, cz)) {
+                        if (++upgraded >= maxPerFrame) return upgraded;
+                    }
+                }
+            }
+        }
+        return upgraded;
+    }
+
+    // V9.92 — Sicherheits-Wand: stellt sicher dass der Chunk DIREKT UNTER
+    // dem Spieler IMMER eine BVH hat. Wird jeden Frame im Streaming-Tick
+    // gerufen. Wenn der Spieler in einen BVH-losen Chunk teleportiert/
+    // fällt (z.B. via DSL-Op, Welt-Wechsel, Mehrfach-Sprung), würde er
+    // ohne Collision durch den Boden fallen. Sync-Upgrade ist hier
+    // gerechtfertigt — ein einzelner ~25 ms-Spike ist akzeptabel gegen
+    // Spieler-Durchfallen.
+    _ensurePlayerChunkBVH(pcx, pcz) {
+        if (!this.state.voxelChunks) return;
+        const key = `${pcx},${pcz}`;
+        const entry = this.state.voxelChunks.get(key);
+        if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
+            this._upgradeChunkBVH(pcx, pcz);
+        }
+    }
+
+    // V9.90 — Worker-State-Update bei voxelEdit (Spieler carvt/füllt). Sendet
+    // nur den Delta-Edit, kein full state-set (Atlas/Erosion/Tarns sind
+    // unverändert). Bumpt state-gen → stale Worker-Density-Results werden
+    // verworfen. Cache leeren — chunks rund um den Edit haben jetzt stale
+    // Cells; die nächste Pump-Iteration triggert frische Worker-Requests.
+    _voxelWorkerNotifyEdit(ed) {
+        if (!this.state.voxelWorker) return;
+        this.state.voxelWorkerStateGen++;
+        if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
+        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        try {
+            this.state.voxelWorker.postMessage({
+                type: "state-update",
+                delta: {
+                    voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, strength: ed.strength, mode: ed.mode },
+                },
+            });
+        } catch (e) {
+            this.log(`Voxel-Worker-Edit-Sync-Fehler: ${e.message}`, "ERROR");
+        }
+    }
+
+    // V9.90 — Worker-State-Update nach Worldgen-Abschluss. Volle Atlas +
+    // Erosion + Tarns + waterLevel werden gesendet, sodass die nächsten
+    // Density-Requests die fertige Welt sehen. Bumpt state-gen → in-flight
+    // Density-Requests vom Pre-Worldgen-Stand werden discarded.
+    _voxelWorkerSyncWorldgenState() {
+        if (!this.state.voxelWorker) return;
+        if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
+        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        // state-gen bumpt durch _voxelWorkerSyncState (send-time-bump).
+        // worldgenSynced bleibt ab jetzt true — der Streaming-Pump traut
+        // dem Worker für Density-Sampling. voxelEdits bumpen state-gen
+        // weiter (per-request stale-filter), aber der Worker ist
+        // weiterhin trustworthy.
+        this._voxelWorkerSyncState({ op: "state-set" });
+        this.state.voxelWorkerWorldgenSynced = true;
+    }
+
     creatureJump(creature, jumpHeight) {
         const body = creature.userData.physicsBody;
         if (body) {
@@ -13691,6 +14166,12 @@ class AnazhRealm {
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
+        // V9.90 (Welle Perf-3.c Phase 2): Worker erhält den fertigen Atlas
+        // + Erosion + Tarns als full state-set. Sobald `voxelWorkerSyncedHydro-
+        // StateGen === voxelWorkerStateGen`, vertraut der Streaming-Pfad
+        // dem Worker für Density-Sampling. Bumpt state-gen → in-flight
+        // Density-Requests vom Pre-Worldgen-Stand werden discarded.
+        this._voxelWorkerSyncWorldgenState();
     }
 
     // V9.77 (Welle C.7) — das globale Wasser-Y-Band aus aller Hydrosphäre-
@@ -14964,29 +15445,67 @@ class AnazhRealm {
     // Die Konfiguration des Voxel-Chunk-Rings — eine Quelle der Wahrheit.
     // span = dim × step ist die Welt-Kantenlänge eines (würfelförmigen)
     // Voxel-Chunks; die vertikale Spanne deckt das Oberflächen-Band.
-    _voxelChunkConfig() {
-        const dim = 24;
-        const step = 1.8;
-        // dimY ist bewusst grösser — der Chunk ist eine hohe Säule, nicht
-        // ein Würfel. V9.20: das Oberflächen-Band wuchs (kontinentale + ridged
-        // Oktaven, surf ~base-30..base+52, +3D ±12 → base-42..base+64).
-        // V9.26: dimY 68 → 80 (oy base-58, Decke base+86) — Marge ~22.
-        // V9.45-a: das Relief wuchs (Domain-Warp + grössere Amplituden,
-        // Makro-Oberfläche bis ~base+80). V9.47: die hydraulische Erosion
-        // carvt Täler bis ~16 m tiefer (`EROSION.maxDelta`) → dimY 96 → 100,
-        // `floorDrop` 66 → 74 → Band base-74..base+106, Marge unten + oben ~14.
-        // V9.58-b: Tektonik + 2. ridged-Oktave heben Surface-Max auf ~base+120,
-        // Tektonik senkt das Tiefland auf ~base-55 → dimY 100 → 124, floorDrop
-        // 74 → 90 → Band base-90..base+133, Marge oben ~13 / unten ~10.
-        // `floorDrop` ist die EINE Quelle der Chunk-Unterkante (oy = base −
-        // floorDrop); `_voxelSurfaceY` + die Edit-Bounds leiten ihre Y-Spanne
-        // aus diesem Config ab — kein verstreuter Magic-Offset mehr.
-        // V9.24: ringRadius folgt dem Sicht-Ring-Regler (`chunkRingRadius`,
-        // Default 4) — vorher war er hart 2, der Regler tat in einer voxel-
-        // basierten Welt nichts. Der Voxel-Chunk ist breiter (span 43.2 m)
-        // als ein Heightfield-Chunk; Ring 4 ≈ 9×9 Chunks ≈ 389 m Sicht.
+    // V9.88 (Welle Perf-3.b — Distance-LOD): optionaler `lod`-Parameter.
+    // **LOD 0** (Default, Nahbereich r=0..1): dim=24, step=1.8 m, dimY=124
+    //   → 71 424 Cells pro Chunk (volle Detail-Auflösung).
+    // **LOD 1** (Fernbereich r≥2, > 80 m vom Spieler): dim=12, step=3.6 m,
+    //   dimY=62 → 8 928 Cells = **8× weniger** (`step` × 2 in jeder
+    //   Dimension). Profi-Pattern aus BotW/Genshin: ferne Chunks sind
+    //   gröber gemesht, weil Distanz + Atmosphäre-Fog die Detail-Differenz
+    //   tarnt. **Konstante**: span = dim·step = 43.2 m BLEIBT, sodass
+    //   adjacent Chunks über LOD-Grenzen WORLD-ALIGN (Chunk 0 endet bei
+    //   x=43.2, Chunk 1 beginnt bei x=43.2 — beide LODs samplen Vertices
+    //   an demselben Punkt). dimY·step = 223.2 m BLEIBT (vertikale Welt-
+    //   Range identisch). **Seam-Verhalten an LOD-Grenze**: V9.42-d-Pad+Crop
+    //   funktioniert WITHIN gleicher LOD; ein LOD0↔LOD1-Übergang erzeugt
+    //   ggf. einen marginalen Vertex-Mismatch (Surface-Nets-Cell-Avg ist
+    //   step-abhängig), der durch Fog beyond ~80 m unsichtbar bleibt —
+    //   wenn Schöpfer-Audit es zeigt, kommt Geometry-Stitching als Folge-
+    //   Welle. **Hylomorphismus-rein** (Stamm-Lehre Stamm-Lehre): EINE
+    //   Geometrie-Maschinerie (`_voxelChunkGeometry`), zwei step-Varianten.
+    _voxelChunkConfig(lod = 0) {
+        // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
-        return { dim, step, span: dim * step, ringRadius, dimY: 124, floorDrop: 90 };
+        if (lod >= 1) {
+            // LOD 1 — Half-Resolution (8× weniger Cells)
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 62, floorDrop: 90, lod: 1 };
+        }
+        // LOD 0 — Full-Resolution (Default, V9.58-b-Stand)
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 124, floorDrop: 90, lod: 0 };
+    }
+
+    // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
+    // r ≤ 1 (chunk-distance, also ≤ 43.2 m + 43.2 m = 86 m world)
+    // → LOD 0 (Nahbereich, volle Auflösung). r ≥ 2 → LOD 1 (Fernbereich,
+    // 8× weniger Cells). Threshold ehrt den Doc-Plan §4 (80 m). KEIN
+    // Affinity-Feld in der Erst-Welle — Folge-Welle 3.b-ext kann Threshold
+    // emergent über `worldFieldAt`-Affinity machen (dichte Wälder = näher
+    // hochauflösend), das ist die V9.56-Disziplin (sub-wellen). Hier reicht
+    // ein einfacher Distance-Threshold für den Beweis.
+    _voxelChunkLodFor(cx, cz, pcx, pcz) {
+        const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+        return r >= 2 ? 1 : 0;
+    }
+
+    // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
+    // beim Build seine BVH-Collision bekommen? Profi-Pattern aus Subnautica/
+    // NMS: nur 2-Ring (Spieler-Nähe, r ≤ 1, ≤ 86 m) braucht sofort BVH —
+    // dort steht der Spieler, läuft, kollidiert. Ferne Chunks (r ≥ 2) bauen
+    // erstmal nur Mesh + Cells; BVH wird beim Eintritt ins 2-Ring nachgereicht
+    // (Late-Upgrade in `_pumpVoxelChunkBVH`). Spart ~25-30 ms × 70+ Chunks =
+    // ~2 s Wall-Time beim Erst-Stream. Sicherheits-Wand: der Player-Chunk
+    // bekommt IMMER BVH (`_ensurePlayerChunkBVH` syncbuild jeden Frame).
+    _voxelChunkLazyBVHFor(cx, cz, pcx, pcz) {
+        const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+        return r <= 1;
+    }
+
+    // V9.92 — letzter Spieler-Chunk-Index, zwischengespeichert für die
+    // Lazy-BVH-Distance-Decision in `_ensureVoxelChunkAt`. Update im
+    // Streaming-Tick.
+    _setLastPlayerVoxelChunk(pcx, pcz) {
+        if (!this.state) return;
+        this.state.lastPlayerVoxelChunk = { cx: pcx, cz: pcz };
     }
 
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
@@ -15020,34 +15539,38 @@ class AnazhRealm {
     // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
     // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
     // shared mit Mesher-Density-Grid.
-    // V9.76 (Welle C.6 — Trocken-Gate, Performance): trägt der Chunk-Fußabdruck
-    // überhaupt Wasser? Wenn nein, sparen wir 71 424 `_terrainDensityAt`-Samples
-    // pro Chunk (~200ms im Browser, Killer für Streaming-FPS). Konservativ
-    // (lieber bauen als ein Loch riskieren), drei Predicates:
-    //   (1) dippt die Macro-Surface an einem 4×4-Raster nahe `waterLevel + 16`
-    //       (Roughness-Marge) → möglicher Ozean/Bergsee in diesem Chunk;
-    //   (2) ein Voxel-Carve unter waterLevel, dessen xz-Footprint den Chunk
-    //       berührt (V9.69-Predicate — Spieler-Pool im Hochland);
-    //   (3) der Hydrosphäre-Atlas hat eine Lake-Zelle ODER ein Fluss-Bucket
-    //       im Chunk-Footprint (See, Fluss, Tarn — alles über `_waterLevelAt`
-    //       erfassbar). Reanimiert die V9.69-Gate-Logik (`_voxelChunkTouches-
-    //       Water`), die in V9.75 vorschnell gestrichen wurde — sie war
-    //       Performance-Schutz, nicht der Naht-Patch (Welle B), den wir
-    //       beerdigt haben.
+    // V9.76 (Welle C.6) / V9.87 (Welle Perf-3.a — Atlas-Strict): trägt der
+    // Chunk-Fußabdruck überhaupt Wasser? Wenn nein, sparen wir 71 424
+    // `_terrainDensityAt`-Samples pro Chunk (~200ms im Browser, Killer für
+    // Streaming-FPS). **V9.87-Schnitt**: die ursprüngliche V9.76-Predicate (1)
+    // war eine LOOSE Macro-Dipp-Heuristik („Macro-Surface < waterLevel + 16
+    // am 4×4-Raster"). False-positive in hügeligem Gelände — ein Bergtal
+    // konnte lokal unter waterLevel+16 dippen ohne dass dort jemals ein
+    // Atlas-Marker steht. Folge: Hochland-Chunks bauten Wasser-Cells, der
+    // V9.86-Konnektivitäts-Filter heilte zwar eingeschlossene Mulden, aber
+    // legitime WATER-Cells in Bergwänden mit Pfad-nach-oben (Felsspalte
+    // mit Atmosphäre verbunden) blieben sichtbar → der V9.86-Schöpfer-Audit:
+    // „auch noch wasser an gebäude und steilen bergwände". Profi-Pattern
+    // (Minecraft): Wasser ist deterministisch durch Welt-Seed/Atlas
+    // bestimmt, nicht durch lokale Geometrie-Heuristik. **Atlas-Strict-Gate**:
+    // drei Predicates, jeder ist eine EXPLIZITE Wasser-Wahrheits-Quelle:
+    //   (1) ein Voxel-Carve unter waterLevel, dessen xz-Footprint den Chunk
+    //       berührt (V9.69-Predicate — Spieler-Pool im Hochland; bleibt,
+    //       weil Spieler-Edit unabhängig vom Atlas Wasser entstehen kann);
+    //   (2) der Hydrosphäre-Atlas hat eine Ozean-Zelle (waterKind === 1) ODER
+    //       eine See-Zelle (waterKind === 2) im Chunk-Footprint (+1 Cell Marge
+    //       für Boundary-Continuität);
+    //   (3) ein Fluss-Bucket im Footprint.
+    // Plus marginaler Perf-Win: Hochland-Chunks ohne Atlas-Marker bauen
+    // jetzt 0 Wasser-Cells (vorher passierten sie das +16-m-Gate und bauten
+    // Cells, die später per Konnektivitäts-Filter ausgesiebt wurden).
     _voxelChunkHasAnyWater(cx, cz) {
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
         const oz = cz * span;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        // (1) Ozean / Bergsee — Macro-Surface dippt unter waterLevel + 16
-        for (let j = 0; j <= 3; j++) {
-            for (let i = 0; i <= 3; i++) {
-                if (this._terrainMacroSurfaceY(ox + (i / 3) * span, oz + (j / 3) * span) < waterLevel + 16) {
-                    return true;
-                }
-            }
-        }
-        // (2) Voxel-Carve unter waterLevel im xz-Footprint
+        // (1) Voxel-Carve unter waterLevel im xz-Footprint — Spieler-Wille
+        // überschreibt Atlas (Hochland-Pool emergiert lokal).
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         if (Array.isArray(edits) && edits.length) {
             for (let e = 0; e < edits.length; e++) {
@@ -15063,20 +15586,24 @@ class AnazhRealm {
         }
         const h = this.state.hydrosphere;
         if (!h || !h.ready) return false;
-        // (3) See-Zellen im Footprint (+1 Cell Marge)
+        // (2) Atlas-Marker: Ozean (kind === 1) ODER See (kind === 2) im
+        // Chunk-Footprint (+1 Cell Marge für Boundary-Continuität — der
+        // 16-m-Atlas-Cell-Raster liegt nicht perfekt auf dem Chunk-Raster).
         if (h.water && h.water.waterKind) {
             const c0i = Math.floor((ox - h.originX) / h.cell) - 1;
             const c1i = Math.floor((ox + span - h.originX) / h.cell) + 1;
             const c0j = Math.floor((oz - h.originZ) / h.cell) - 1;
             const c1j = Math.floor((oz + span - h.originZ) / h.cell) + 1;
+            const wK = h.water.waterKind;
             for (let cj = c0j; cj <= c1j; cj++) {
                 for (let ci = c0i; ci <= c1i; ci++) {
                     if (ci < 0 || cj < 0 || ci >= h.dim || cj >= h.dim) continue;
-                    if (h.water.waterKind[ci + cj * h.dim] === 2) return true;
+                    const kind = wK[ci + cj * h.dim];
+                    if (kind === 1 || kind === 2) return true;
                 }
             }
         }
-        // (4) Fluss-Bucket im Footprint
+        // (3) Fluss-Bucket im Footprint
         if (h.riverBuckets) {
             const b0i = Math.floor((ox - h.originX) / h.bucketSize);
             const b1i = Math.floor((ox + span - h.originX) / h.bucketSize);
@@ -15103,8 +15630,10 @@ class AnazhRealm {
     // null ist, samplen wir das Grid intern hier — beide Pfade liefern
     // IDENTISCHE Klassifikation, sodass Determinismus + Test-Konsistenz
     // erhalten bleiben (Test ruft uns ohne preDensity).
-    _buildVoxelChunkWaterCells(ox, oy, oz, step, preDensity = null) {
-        const { dim, dimY } = this._voxelChunkConfig();
+    // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` wählt dim/dimY analog
+    // zum Boden-Mesher. Cell-Stempel + per-Column-Cache passen sich an.
+    _buildVoxelChunkWaterCells(ox, oy, oz, step, preDensity = null, lod = 0) {
+        const { dim, dimY } = this._voxelChunkConfig(lod);
         const cells = new Uint8Array(dim * dim * dimY);
         const STATE = AnazhRealm.CELL_STATE;
         // Density-Grid besorgen (vorab oder selbst samplen)
@@ -15220,7 +15749,7 @@ class AnazhRealm {
         // (C.2) baut dann das Wasser DRUMHERUM, nicht durch den Damm. Ist
         // die einlösende Bedeutung der Damm-Vision: die Substanz ist DA,
         // wo der Spieler sie baut.
-        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz);
+        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);
         return cells;
     }
 
@@ -15231,9 +15760,11 @@ class AnazhRealm {
     // Cell-Y-Range pro AABB: vom Bottom (topY − ~Architektur-Höhe) bis zur
     // topY. Die echte Höhe wird aus aabb.botY abgelesen (V9.74-Erweiterung
     // des AABB-Cache mit Bottom-Y).
-    _stampArchitectureSolidCellsInto(cells, ox, oy, oz) {
+    // V9.88 (Welle Perf-3.b): `lod` matched die Cell-Grid-Geometrie des
+    // Aufrufers. KRITISCH — sonst out-of-bounds-Writes ins Cells-Array.
+    _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
-        const { dim, dimY, step } = this._voxelChunkConfig();
+        const { dim, dimY, step } = this._voxelChunkConfig(lod);
         const STATE = AnazhRealm.CELL_STATE;
         for (const entry of this.state.architectures) {
             if (!entry || !entry.blockerAABBs) continue;
@@ -15288,7 +15819,20 @@ class AnazhRealm {
             return null;
         }
         const cells = entry.waterCells;
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
+        // V9.93 (Welle Wasser-LOD-Naht-Heilung): Wasser-Iso-Mesh läuft IMMER
+        // bei LOD 0 (dim=24, step=1.8) — egal welche Terrain-LOD der Chunk
+        // hat. Wurzel des V9.91-Browser-Audits „Wasser hat noch eine Naht am
+        // LOD-Boundary": V9.88-Distance-LOD brachte LOD-spezifische Cell-
+        // Grids; das Wasser-Iso las `entry.lod` → unterschiedliche Step-
+        // Größen pro Chunk → Cell-Center-Iso-Positionen klafften am
+        // Boundary. **Heilung**: Wasser-Cells werden vom Builder IMMER mit
+        // LOD 0 erzeugt (s. `_buildVoxelChunkData`-Heilung), Iso-Mesher
+        // liest sie LOD-0-indiziert → ein-LOD-Wasser-Mesh, naht-frei per
+        // Konstruktion. Terrain-Mesh bleibt LOD-aware (Performance-Win
+        // bleibt erhalten). Atlas-Strict-Gate filtert die meisten LOD-1-
+        // Hochland-Chunks ohnehin (kein Wasser → keine Cells), trade-off
+        // bounded.
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(0);
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
@@ -15436,9 +15980,18 @@ class AnazhRealm {
         return mat;
     }
 
-    _buildVoxelChunkData(cx, cz) {
+    // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
+    // Chunk-Auflösung — LOD 0 = volle Detail (24·24·124 Cells), LOD 1 =
+    // 8× weniger Cells (12·12·62 für ferne Chunks). Doc §4 + Helper
+    // `_voxelChunkLodFor` für die per-Frame-Entscheidung im Streaming-Tick.
+    // V9.90 (Phase 2 — Worker-Density-Cutover): optionaler `preDensityOverride`
+    // erlaubt dem Streaming-Pfad, ein vom Worker vorberechnetes Density-Grid
+    // einzureichen — der teuerste Sampling-Loop (~91k Vertices für LOD 0)
+    // läuft dann im Worker, nicht im Main-Thread. Wenn null, sampelt
+    // `_buildVoxelChunkData` synchron wie zuvor (Fallback ohne Worker).
+    _buildVoxelChunkData(cx, cz, lod = 0, preDensityOverride = null) {
         if (!this.state.scene) return null;
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig();
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(lod);
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
@@ -15448,17 +16001,26 @@ class AnazhRealm {
         // teuersten ~71 k `_terrainDensityAt`-Calls pro Wasser-Chunk (~200 ms
         // im Browser, der Streaming-FPS-Killer). Das Grid hat (dim+4)·
         // (dimY+1)·(dim+4) Vertex-Densities (V9.42-d-Pad bei `ox-step, oz-step`).
-        const terrainSample = (x, y, z) => this._terrainDensityAt(x, y, z);
-        const terrainDensity = this._voxelSampleDensityGrid(
-            ox - step,
-            oy,
-            oz - step,
-            dim + 3,
-            dimY,
-            dim + 3,
-            step,
-            terrainSample
-        );
+        // V9.90 (Phase 2): wenn der Streaming-Pump uns ein vorberechnetes
+        // Density-Grid vom Worker reicht, überspringen wir den teuren Sample-
+        // Loop komplett. Geometry-Indizierung (ox-step + dim+3 + Pad) muss
+        // EXAKT zu Worker-Compute passen — sonst Drift.
+        let terrainDensity;
+        if (preDensityOverride && preDensityOverride.length === (dim + 4) * (dimY + 1) * (dim + 4)) {
+            terrainDensity = preDensityOverride;
+        } else {
+            const terrainSample = (x, y, z) => this._terrainDensityAt(x, y, z);
+            terrainDensity = this._voxelSampleDensityGrid(
+                ox - step,
+                oy,
+                oz - step,
+                dim + 3,
+                dimY,
+                dim + 3,
+                step,
+                terrainSample
+            );
+        }
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
         // `dim + 3` (= dim + 1 Skirt + 2*1 pad), `cropMargin = 1`. Der Mesher
         // smootht das pad-erweiterte Volumen voll + schneidet den pad danach
@@ -15505,10 +16067,35 @@ class AnazhRealm {
         // dann waterCells = null. `_buildVoxelChunkWaterIsoSurface` skip'pt
         // dann sauber (vorhandener null-check). Big FPS-Win für Hochland-
         // Chunks.
-        const waterCells = this._voxelChunkHasAnyWater(cx, cz)
-            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity)
-            : null;
-        return { mesh, kind: "filled", waterCells };
+        // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER mit LOD 0
+        // bauen, egal welche Terrain-LOD der Chunk hat. Naht-frei per
+        // Konstruktion (s. `_buildVoxelChunkWaterIsoSurface`-Kommentar).
+        // Für LOD-0-Chunks teilen wir `terrainDensity` mit dem Boden-Mesher
+        // (V9.81-Sharing wirkt). Für LOD-1-Chunks samplen wir ein zweites
+        // Density-Grid bei LOD 0 (98k Vertices statt 16k) — Mehrkosten
+        // bounded durch V9.87-Atlas-Strict-Gate (Hochland-LOD-1-Chunks
+        // haben kein Wasser, kein Mehraufwand).
+        let waterCells = null;
+        if (this._voxelChunkHasAnyWater(cx, cz)) {
+            if (lod === 0) {
+                waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity, 0);
+            } else {
+                const lod0Cfg = this._voxelChunkConfig(0);
+                const lod0Sample = (x, y, z) => this._terrainDensityAt(x, y, z);
+                const lod0Density = this._voxelSampleDensityGrid(
+                    ox - lod0Cfg.step,
+                    oy,
+                    oz - lod0Cfg.step,
+                    lod0Cfg.dim + 3,
+                    lod0Cfg.dimY,
+                    lod0Cfg.dim + 3,
+                    lod0Cfg.step,
+                    lod0Sample
+                );
+                waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
+            }
+        }
+        return { mesh, kind: "filled", waterCells, lod };
     }
 
     // V9.40-d Dispose-Before-Build: räumt den ALTEN Chunk ZUERST (Kollision
@@ -15528,15 +16115,20 @@ class AnazhRealm {
     // V9.40-d-Retry: bei null wird der Chunk mit `_voxelRebuildAttempts`
     // verfolgt (max 3 Versuche), bevor er als `{empty:true}` markiert wird.
     // Das gibt dem Heap Zeit, sich durch andere Rebuilds zu entspannen.
-    _rebuildVoxelChunk(cx, cz) {
+    // V9.88 (Welle Perf-3.b): `lod` propagiert durch den Rebuild-Pfad.
+    // Wenn null/undefined, übernehmen wir die LOD des Alt-Eintrags
+    // (Voxel-Edit-Trigger: gleiche LOD beibehalten) — sonst neu (Streaming-
+    // Tick-Trigger: distance-Decision hat sich geändert).
+    _rebuildVoxelChunk(cx, cz, lod = null) {
         if (!this.state.scene) return false;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
         const oldEntry = this.state.voxelChunks.get(key);
+        const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
         // V9.40-d — Dispose-Before-Build: alter raus aus Heap + physicsWorld
         // BEVOR der neue allokiert. Verhindert das doppelte Leben.
         if (oldEntry) this._disposeVoxelChunk(key);
-        const fresh = this._buildVoxelChunkData(cx, cz);
+        const fresh = this._buildVoxelChunkData(cx, cz, useLod);
         if (fresh === null) {
             // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-
             // Counter pflegen — bei 3 fehlgeschlagenen Versuchen geben wir
@@ -15565,9 +16157,16 @@ class AnazhRealm {
             return true;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
+        // V9.92 — _rebuildVoxelChunk nutzt den sync-`_buildVoxelChunkData`-
+        // Pfad, der IMMER BVH baut (edit-driven: immediate physical feedback).
+        // hasBVH=true ist der ehrliche Stempel.
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod: useLod, hasBVH: true };
         this.state.voxelChunks.set(key, entry);
-        this._buildVoxelChunkGrass(cx, cz);
+        // V9.88 (Welle Perf-3.b): Grass nur auf LOD-0-Nahchunks. Ferne Chunks
+        // (LOD 1, > 80 m) zeigen keine Gras-Halme — Detail-Cap < 50 m macht
+        // sie ohnehin unsichtbar, und 256 Sample-Calls × `_voxelSurfaceY` pro
+        // Chunk sparen wir.
+        if (useLod === 0) this._buildVoxelChunkGrass(cx, cz);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist
         // der einzige Wasser-Render-Pfad. Liest entry.waterCells, baut die
         // Iso-Surface mit dem Surface-Nets-Mesher (gleiche Maschinerie wie
@@ -15587,7 +16186,21 @@ class AnazhRealm {
     // versucht werden, der Schöpfer sah Lücken im Sicht-Ring. Jetzt darf
     // der nächste Streaming-Tick es nochmal versuchen (Heap könnte sich
     // bis dahin durch Pruning ferner Chunks entspannt haben).
-    _ensureVoxelChunkAt(cx, cz) {
+    // V9.88 (Welle Perf-3.b): `lod` propagiert vom Streaming-Tick herein.
+    // Distance-LOD wird HIER beim ersten Stream gewählt; bei Player-Bewegung
+    // wandert die Decision (Tick erkennt Mismatch → markiert dirty).
+    // V9.90 (Welle Perf-3.c Phase 2 — Worker-Density-Cutover): wenn der
+    // Voxel-Worker verfügbar + ready ist, versucht `_ensureVoxelChunkAt`
+    // ZUERST das Density-Grid vom Worker zu holen (oder anzufordern).
+    // Drei Pfade:
+    //   (a) Cache-Hit (Float32Array): sync Build mit preDensity → schnell,
+    //       der teure ~91k-Sampling-Loop läuft NICHT im Main-Thread.
+    //   (b) Pending (null): Worker-Request läuft, der Pump kommt nächsten
+    //       Frame wieder. RETURN null — der Chunk bleibt für 1-2 Frames
+    //       unsichtbar (Pump-Tick-Latenz, akzeptabel da Spieler-Sicht-Ring
+    //       breit ist).
+    //   (c) Worker unverfügbar (undefined): voller Sync-Fallback wie V9.89.
+    _ensureVoxelChunkAt(cx, cz, lod = 0) {
         if (!this.state.scene) return null;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const key = `${cx},${cz}`;
@@ -15604,7 +16217,38 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        const fresh = this._buildVoxelChunkData(cx, cz);
+        // V9.91 Phase 3 — voller Worker-Mesh-Build (wenn verfügbar + worldgen-
+        // synced). Cache-Hit → BufferGeometry-Konstruktion + Stempel + BVH +
+        // Scene (~30 ms Main). Pending → null (Pump kommt wieder). Undefined →
+        // V9.90-Density-Pfad oder voller Sync-Fallback.
+        let workerMesh;
+        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+            workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
+            if (workerMesh === null) return null;
+        }
+        // V9.92 Phase 4 — Lazy-BVH-Decision: BVH sofort bauen nur wenn Chunk
+        // im 2-Ring (Spieler-Nähe). Ferne Chunks (r ≥ 2) bekommen erst-mal
+        // nur Mesh + Cells; BVH-Upgrade über `_pumpVoxelChunkBVH` wenn sie
+        // ins 2-Ring rücken. Spart ~25-30 ms × ~70 Chunks beim Erst-Stream.
+        let buildBVH = true;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
+        let fresh;
+        if (workerMesh) {
+            fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
+        } else {
+            // V9.90 Phase 2 — Worker-Density-Fallback (selten — nur wenn der
+            // Mesh-Path explizit `undefined` zurückgab, d.h. Worker komplett
+            // unverfügbar). Zur Sicherheit behalten wir den V9.90-Density-
+            // Cache-Pfad als Stufe-2-Fallback. Sync-Build baut IMMER BVH —
+            // Lazy-BVH ist nur am Worker-Pfad.
+            let workerDensity;
+            if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+                workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
+                if (workerDensity === null) return null;
+            }
+            fresh = this._buildVoxelChunkData(cx, cz, lod, workerDensity || null);
+        }
         if (fresh === null) {
             // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
             // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
@@ -15632,10 +16276,20 @@ class AnazhRealm {
             return null;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null };
+        // V9.92 — `fresh.hasBVH` ist `true` wenn die BVH wirklich gebaut wurde
+        // (Lazy-Decision durch `_buildVoxelChunkDataFromWorkerMesh` mit
+        // `opts.buildBVH`). Beim Sync-Fallback gibt's keine Lazy-BVH-Flag-
+        // Variante — Sync baut immer BVH, also default true.
+        const entry = {
+            mesh: fresh.mesh,
+            waterCells: fresh.waterCells || null,
+            lod,
+            hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
+        };
         this.state.voxelChunks.set(key, entry);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
-        this._buildVoxelChunkGrass(cx, cz);
+        // V9.88 — Grass nur auf LOD-0-Nahchunks (s. _rebuildVoxelChunk-Kommentar).
+        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
         // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
         // Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
         this._buildVoxelChunkWaterIsoSurface(cx, cz);
@@ -16772,13 +17426,19 @@ class AnazhRealm {
                     // Density-Pass (Atlas-fertig macht den Gate-Pfad (3)+(4)
                     // erst jetzt verlässlich).
                     if (this._voxelChunkHasAnyWater(cx, cz)) {
-                        const { step, span, floorDrop } = this._voxelChunkConfig();
+                        // V9.88 — die LOD des Eintrags treibt sowohl Cell-
+                        // Build als auch Iso-Surface. Worldgen-Finalize lief
+                        // V9.93 — Wasser-Cells IMMER LOD 0 für naht-freie
+                        // Wasseroberflächen über LOD-Boundaries hinweg.
+                        const lod0Cfg = this._voxelChunkConfig(0);
                         const base = this.state.terrainBaseHeight || 0;
                         entry.waterCells = this._buildVoxelChunkWaterCells(
-                            cx * span,
-                            base - floorDrop,
-                            cz * span,
-                            step
+                            cx * lod0Cfg.span,
+                            base - lod0Cfg.floorDrop,
+                            cz * lod0Cfg.span,
+                            lod0Cfg.step,
+                            null,
+                            0
                         );
                         this._buildVoxelChunkWaterIsoSurface(cx, cz);
                     } else {
@@ -17394,6 +18054,10 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const { span, ringRadius } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
+        // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position
+        // zwischenspeichern, damit `_ensureVoxelChunkAt` Lazy-BVH-Decision
+        // treffen kann (r ≤ 1 = sofort BVH, r ≥ 2 = lazy).
+        this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
         let built = 0;
         const FRAME_BUDGET_MS = 4;
@@ -17403,9 +18067,28 @@ class AnazhRealm {
             for (let dz = -r; dz <= r; dz++) {
                 for (let dx = -r; dx <= r; dx++) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
-                    const key = `${pcx + dx},${pcz + dz}`;
-                    if (this.state.voxelChunks.has(key)) continue;
-                    this._ensureVoxelChunkAt(pcx + dx, pcz + dz);
+                    const cx = pcx + dx;
+                    const cz = pcz + dz;
+                    const key = `${cx},${cz}`;
+                    // V9.88 (Welle Perf-3.b — Distance-LOD): pro Frame die
+                    // gewünschte LOD aus der Player-Distanz berechnen. Wenn
+                    // ein bestehender Chunk eine ANDERE LOD trägt (Spieler
+                    // hat sich bewegt → ferner Chunk ist jetzt nah, oder
+                    // umgekehrt), markieren wir ihn dirty + rebuilden.
+                    // Sonst skipt der Tick. KEINE doppelte Re-Allokation
+                    // bei stehendem Spieler.
+                    const desiredLod = this._voxelChunkLodFor(cx, cz, pcx, pcz);
+                    const existing = this.state.voxelChunks.get(key);
+                    if (existing) {
+                        const currentLod = Number.isFinite(existing.lod) ? existing.lod : 0;
+                        if (currentLod !== desiredLod && !existing.empty) {
+                            this._rebuildVoxelChunk(cx, cz, desiredLod);
+                            if (++built >= MAX_PER_FRAME) break outer;
+                            if (performance.now() - tStart > FRAME_BUDGET_MS) break outer;
+                        }
+                        continue;
+                    }
+                    this._ensureVoxelChunkAt(cx, cz, desiredLod);
                     if (++built >= MAX_PER_FRAME) break outer;
                     // Soft-Budget: nach dem aktuellen Build prüfen, ob wir
                     // noch Zeit haben. `performance.now() - tStart` schließt
@@ -17417,6 +18100,15 @@ class AnazhRealm {
             }
         }
         this._pruneDistantVoxelChunks(playerPos);
+        // V9.92 (Phase 4 — Lazy-BVH): Sicherheits-Wand + BVH-Pump.
+        // (a) `_ensurePlayerChunkBVH` baut sync BVH falls der Spieler-Chunk
+        //     noch keine hat (Teleport-Schutz, ~25 ms 1× wenn nötig).
+        // (b) `_pumpVoxelChunkBVH` upgraded BVH für andere 2-Ring-Chunks
+        //     rate-limited (max 2 pro Frame, über mehrere Frames verteilt
+        //     → kein Spike-Klumpen bei Spieler-Bewegung).
+        const pczNow = Math.floor(playerPos.z / span);
+        this._ensurePlayerChunkBVH(pcx, pczNow);
+        this._pumpVoxelChunkBVH(pcx, pczNow);
     }
 
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben + Phase 3b — Aufschütten ###
@@ -17453,10 +18145,17 @@ class AnazhRealm {
         const Y_MAX = ceilY + radius + 8;
         if (y < Y_MIN || y > Y_MAX) return false;
         const yClamped = Math.max(floorY - radius, Math.min(ceilY + radius, y));
-        edits.push({ x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" });
+        const newEdit = { x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" };
+        edits.push(newEdit);
         // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
         const CAP = 256;
         while (edits.length > CAP) edits.shift();
+        // V9.90 (Welle Perf-3.c Phase 2): Worker bekommt den Edit-Delta —
+        // state-gen bumpt, in-flight Density-Requests werden invalidiert,
+        // Cache geleert. Pump fordert frische Density nach. Hat KEINE
+        // Wirkung wenn der Worker nicht gespawnt ist (typisch wenn vor
+        // Worldgen).
+        this._voxelWorkerNotifyEdit(newEdit);
         // V9.75 (Welle C.4+5) — `_remeshVoxelChunksAround` ist der EINZIGE
         // Reaktiv-Pfad: die betroffenen Voxel-Chunks bauen sich neu, das
         // Cell-Feld klassifiziert die neue Lage (carve unter waterLevel →
@@ -35598,6 +36297,26 @@ class AnazhRealm {
 
     async init() {
         this.log(`Initialisiere Anazh Realm V${AnazhRealm.VERSION}... Ewigkeit erwacht!`, "INFO");
+        // V9.91.a — strukturelle Heilung des Versions-Anzeige-Bumps: DOM
+        // wird einmalig aus `AnazhRealm.VERSION` geschrieben (statt
+        // hartkodierter v9.86/v9.87/etc. an zwei Stellen in index.html).
+        // Vorher musste der Schöpfer bei jedem Bump DREI Strings ändern
+        // (package.json + index.html<script src=?v=> + index.html<title> +
+        // index.html<span class="version">). Mit der DOM-Init-Heilung
+        // bleibt EIN Wahrheits-Ort: die `AnazhRealm.VERSION` Konstante.
+        // Browser-Audit V9.91 zeigte: title + .version-Span zeigten noch
+        // v9.86 obwohl die Konsole `[AnazhRealm V9.91]` ausgab — genau
+        // diesen Drift-Pfad strukturell weg.
+        const versionLabel = `v${AnazhRealm.VERSION}`;
+        if (typeof document !== "undefined") {
+            try {
+                document.title = `Anazh Realm ${versionLabel} – Das Ultiversum`;
+                const versionSpan = document.querySelector(".version");
+                if (versionSpan) versionSpan.textContent = versionLabel;
+            } catch (e) {
+                this.log(`Versions-DOM-Sync-Fehler: ${e.message}`, "WARN");
+            }
+        }
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
@@ -37224,7 +37943,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.86";
+AnazhRealm.VERSION = "9.93";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
