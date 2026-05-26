@@ -13124,6 +13124,34 @@ class AnazhRealm {
         this._voxelGpuInitPromise = null;
     }
 
+    // V10.0-d — gemeinsame Renderer-Konfiguration für WebGPU- und WebGL-
+    // Renderer. Beide Klassen erben von einem gemeinsamen Renderer-Interface
+    // (in r160): `setSize`, `setPixelRatio`, `setClearColor`, `shadowMap.*`
+    // funktionieren identisch. Nur die `useLegacyLights`-Bridge ist WebGL-
+    // only (WebGPURenderer ist always physically-correct + r160 hat das
+    // Property auch beim WebGLRenderer noch).
+    _configureRenderer(renderer, kind) {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(1);
+        // V10.0-a — r155+ entfernte useLegacyLights als default true.
+        // r160 hat es noch, r161+ entfernt das Property komplett. Bridge-
+        // Modus aktiv, bis V10.0-e die Lights physically-correct migriert.
+        // WebGPURenderer hat das Property NICHT — wir setzen es defensiv.
+        if ("useLegacyLights" in renderer) {
+            renderer.useLegacyLights = true;
+        }
+        renderer.setClearColor(0x000000, 1);
+        if (kind === "webgl") {
+            // depthTest ist WebGL-spezifisch (WebGPU regelt das per Pipeline-
+            // State). Auf WebGPURenderer gibt's das Property nicht.
+            renderer.depthTest = true;
+        }
+        renderer.shadowMap.enabled = true;
+        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap (4 statt 16
+        // Samples). Konstante existiert in beiden Renderern.
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+    }
+
     // =====================================================================
     // V9.95-b — Density-Pipeline (WGSL-Compute statt CPU-noise2D/3D-Calls).
     // Welt-State (Permutation + Erosion + Tarns + Uniforms) wird beim
@@ -37301,31 +37329,79 @@ class AnazhRealm {
         if (typeof THREE !== "undefined" && THREE.ColorManagement) {
             THREE.ColorManagement.enabled = false;
         }
-        const renderer = new THREE.WebGLRenderer({ canvas });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(1);
-        // V10.0-a — r155+ entfernte useLegacyLights als default true. Wir
-        // setzen es explizit für Bridge-Verhalten (intensity-Interpretation
-        // wie in r134). r161+ entfernt das Property komplett, aber r160 hat
-        // es noch — wir nutzen es als Übergangs-Schutz.
-        if ("useLegacyLights" in renderer) {
-            renderer.useLegacyLights = true;
+        // V10.0-d — Renderer-Auswahl-Logik: WebGPU wenn verfügbar, sonst
+        // klassischer WebGL. WebGPURenderer braucht `await renderer.init()`
+        // vor dem ersten Render (async); wir blockieren den Render-Pfad
+        // mit `state.rendererReady` bis init durch ist. Defensive 2-Stufen-
+        // Fallback: bei JEDEM Fehler (Constructor, init(), Backend) fallen
+        // wir auf WebGLRenderer zurück mit klarer Log-Spur.
+        //
+        // BEKANNTE BEGRENZUNG (V10.0-e holt das nach): unsere zwei
+        // ShaderMaterials (hydroSurfaceMaterial, waterfallMaterial) nutzen
+        // custom GLSL. WebGPURenderer in r160 unterstützt das via
+        // GLSLNodeBuilder, aber unsere Shaders sind nicht NodeMaterial-
+        // konform. Wenn WebGPU rendert + ShaderMaterial fehlschlägt, sieht
+        // der Schöpfer Browser-Console-Errors — das ist die V10.0-e-Audit-
+        // Spur.
+        const wantWebGPU =
+            typeof THREE.WebGPURenderer === "function" &&
+            THREE.WebGPU &&
+            typeof THREE.WebGPU.isAvailable === "function" &&
+            THREE.WebGPU.isAvailable();
+        let renderer = null;
+        let rendererKind = "webgl";
+        if (wantWebGPU) {
+            try {
+                renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+                rendererKind = "webgpu";
+                this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
+            } catch (err) {
+                this.log(
+                    `WebGPU-Renderer-Constructor scheiterte (${err.message}) — Fallback WebGLRenderer.`,
+                    "WARNING"
+                );
+                renderer = null;
+            }
         }
-        renderer.setClearColor(0x000000, 1);
-        renderer.depthTest = true;
-        renderer.shadowMap.enabled = true;
-        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap. PCFSoft macht 16
-        // Samples pro Fragment (4×4-Kernel-Average), PCF macht 4. Bei der
-        // V8.47-2048er-mapSize + normalBias=1.0 sind die Schatten ohnehin
-        // weich genug positioniert — der zusätzliche 4×4-Filter ist eine
-        // Bandwidth-Investition, die auf Mid-Range-Hardware ~10–20% GPU
-        // kostet, ohne dass der Spieler den Unterschied sieht (V8.47-Bias
-        // dominiert die Soft-Kante). Die V8.47-mapSize=2048 bleibt — die
-        // ist eine bewusste Qualitäts-Investition (schärfere Schatten-Kante),
-        // ihre Rücknahme würde den Bias-Stack neu kalibrieren verlangen.
-        renderer.shadowMap.type = THREE.PCFShadowMap;
+        if (!renderer) {
+            renderer = new THREE.WebGLRenderer({ canvas });
+            rendererKind = "webgl";
+            const reason = wantWebGPU ? "WebGPU-Constructor-Fehler" : "navigator.gpu/Adapter nicht verfügbar";
+            this.log(`WebGLRenderer aktiv (${reason})`, "INFO");
+        }
+        this._configureRenderer(renderer, rendererKind);
+        // Default-ready für WebGL; WebGPU setzt true erst nach `init()`.
+        this.state.rendererKind = rendererKind;
+        this.state.rendererReady = rendererKind === "webgl";
+        if (rendererKind === "webgpu") {
+            renderer
+                .init()
+                .then(() => {
+                    this.state.rendererReady = true;
+                    this.log("WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.", "INFO");
+                })
+                .catch((err) => {
+                    this.log(
+                        `WebGPU-Renderer init() scheiterte (${err.message}) — Hot-Swap zu WebGLRenderer.`,
+                        "ERROR"
+                    );
+                    // Dispose WebGPU-Renderer + neuen WebGL erstellen mit
+                    // identischer Konfiguration. Die Scene + Camera sind
+                    // unangetastet, der neue Renderer übernimmt nahtlos.
+                    try {
+                        if (typeof renderer.dispose === "function") renderer.dispose();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                    const fallbackRenderer = new THREE.WebGLRenderer({ canvas });
+                    this._configureRenderer(fallbackRenderer, "webgl");
+                    this.state.renderer = fallbackRenderer;
+                    this.state.rendererKind = "webgl";
+                    this.state.rendererReady = true;
+                });
+        }
         this.state.renderer = renderer;
-        this.log("Renderer initialisiert mit Schattenunterstützung", "INFO");
+        this.log(`Renderer initialisiert mit Schattenunterstützung (${rendererKind})`, "INFO");
         this.state.selfAwareness.components.push("renderer");
 
         const scene = new THREE.Scene();
@@ -38577,6 +38653,13 @@ class AnazhRealm {
             this.state.windUniforms.uWindTime.value = currentTime;
             this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
         }
+        // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
+        // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
+        // ready ist (typisch 1-2 Frames bei AMD/Nvidia, 5-10 bei Software-
+        // Fallback). Bei WebGL ist `rendererReady` sofort true im
+        // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
+        // aber unnötige Promise-Rejections im Console-Log vermieden.
+        if (!this.state.rendererReady) return;
         this.state.renderer.render(this.state.scene, this.state.camera);
     }
 

@@ -6,9 +6,28 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V10.0-c, 26.05.2026 — **WebGPURenderer-Addon verfügbar in window.THREE**. ~238 Three.js-Addon-Files (renderers/ + capabilities/ + nodes/ + objects/ + lights/) vendored. Bootstrap importiert `WebGPURenderer` + `WebGPU`-Capability + hängt sie an `THREE.WebGPURenderer` / `THREE.WebGPU`. Spiel läuft 1:1 wie vorher (kein Render-Wechsel — V10.0-d entscheidet zur Laufzeit GPU vs WebGL). Boot-Wait für ESM-Loading defensiv.)
+## Aktueller Stand (V10.0-d, 26.05.2026 — **Renderer-Auswahl-Logik aktiv**. WebGPURenderer wird instanziert wenn `THREE.WebGPU.isAvailable()` true; sonst klassischer WebGLRenderer. Async `init()` mit `state.rendererReady`-Flag im Game-Loop → erster Render erst nach Init. Hot-Swap-Fallback bei init-Fehler. Im Cloud-Container ohne GPU: WebGL aktiv (`rendererKind=webgl`); auf Schöpfer-RDNA3 sollte WebGPU spawnen. ShaderMaterial-Inkompatibilität (V10.0-e portiert) wird zu Console-Errors auf WebGPU-Pfad — Diagnose-Spur für die Folge-Welle.)
 
-**V10.0-c — WebGPURenderer-Addon vendoren + global verfügbar machen (substantielle Welle, ~1.5 MB Vendor, ~50 Z. Code-Änderung):**
+**V10.0-d — Renderer-Auswahl-Logik mit defensive Fallback (substantielle Welle, ~90 Z. netto):**
+
+- **Wurzel-Vision**: V10.0-a/b/c haben die Foundation gelegt: Three.js r160 ESM, WebGPURenderer + WebGPU-Capability global verfügbar. V10.0-d aktiviert die Auswahl-Logik — wenn der Browser WebGPU kann (AMD RDNA-3, NVIDIA RTX, Apple M-Series ab Safari 18), läuft die Welt auf GPU; sonst klassischer WebGL-Pfad.
+- **Logik in `init()` (ehemals `createRenderer`-Inline-Block)** — ~60 Z.:
+  - **`wantWebGPU`-Check**: `typeof THREE.WebGPURenderer === "function" && THREE.WebGPU && typeof THREE.WebGPU.isAvailable === "function" && THREE.WebGPU.isAvailable()`. Drei Schwellen: WebGPURenderer-Klasse vorhanden (V10.0-c-Vendor), WebGPU-Capability-Modul geladen, Browser hat `navigator.gpu`+Adapter (Capability-Check intern).
+  - **Renderer-Instantiation mit try/catch**: WebGPURenderer-Constructor scheitert bei manchen Browsern stille (z.B. unsupported feature). Bei Exception: log + Fallback zu WebGLRenderer.
+  - **`_configureRenderer(renderer, kind)`-Helper** — gemeinsame Konfiguration für beide Renderer-Typen: setSize, setPixelRatio(1), useLegacyLights (WebGL-only, defensiv geprüft), setClearColor, shadowMap.enabled + PCFShadowMap-Type. `depthTest=true` nur für WebGL (WebGPU regelt Depth per Pipeline-State).
+  - **Async `init()` für WebGPU**: `state.rendererReady = false` als Startzustand für WebGPU, `true` für WebGL. `renderer.init().then(() => ready=true).catch(err => Hot-Swap)`. Bei jedem init-Fehler: WebGPURenderer.dispose() + neuer WebGLRenderer mit identischer Konfiguration. Game-Loop bleibt aktiv (skip-render-Frames bis ready).
+- **Game-Loop-Guard**: `_gameLoopTick`-render-Aufruf prüft `if (!this.state.rendererReady) return;` — überspringt den `renderer.render(scene, camera)`-Call bis async-Init durch ist. Typisch 1-2 Frames bei AMD/NVIDIA, 5-10 bei Software-Fallback. Kein Crash, keine sichtbare Wirkung im Browser.
+- **State-Felder neu**: `state.rendererKind` (`"webgpu"` | `"webgl"`), `state.rendererReady` (Boolean).
+- **Bridge-Heilungen (V10.0-a) bleiben aktiv**: `ColorManagement.enabled = false` + `useLegacyLights = true`. Welt-Optik identisch zur r134-Baseline. Three.js zeigt zwar Deprecation-Warning für `useLegacyLights` im Console, aber Funktionalität bleibt in r160.
+- **Bekannte Begrenzung** (V10.0-e behebt das): unsere zwei `ShaderMaterial`-Stellen (`hydroSurfaceMaterial`, `waterfallMaterial`) nutzen custom GLSL-Vertex/Fragment-Shaders. WebGPURenderer in r160 unterstützt das via `GLSLNodeBuilder`, aber unsere Shaders sind nicht NodeMaterial-konform. Im WebGPU-Pfad **scheitern** diese Materials beim Compile — sichtbar als Browser-Console-Errors. Das ist die V10.0-e-Audit-Spur: portiere ShaderMaterial → NodeMaterial/TSL.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle bestehende Bänder grün); audit:strict 0 Failures; Format/Lint sauber. **Direct Browser-Probe via Puppeteer** (im Cloud-Container ohne GPU): `state.rendererKind === "webgl"`, `state.rendererReady === true`, Log: `WebGLRenderer aktiv (navigator.gpu/Adapter nicht verfügbar)` — klarer Fallback-Pfad. **Erwartetes Verhalten beim Schöpfer-Browser (AMD RDNA-3)**: `state.rendererKind === "webgpu"`, kurze Init-Latenz, Log: `WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.` ODER bei ShaderMaterial-Fehler: `WebGPU-Renderer init() scheiterte ... — Hot-Swap zu WebGLRenderer.`
+
+**Was V10.0-e liefern wird**: `hydroSurfaceMaterial` + `waterfallMaterial` → `NodeMaterial`-Port. Three.js r160's TSL (Three Shading Language) ist die Ziel-Sprache — sin/cos/mix/uniforms im Node-Tree statt GLSL-String. ~150-200 Z. WGSL-äquivalente Logik pro Material. Plus eventuell V10.0-f: vollständiger Color-Management + Lights-physically-correct Switch (Bridge-Heilungen entfernen).
+
+---
+
+**Davor — V10.0-c WebGPURenderer-Addon vendoren + global verfügbar machen (substantielle Welle, ~1.5 MB Vendor, ~50 Z. Code-Änderung):**
 
 - **Wurzel-Vision**: V10.0-b legte den ESM-Loading-Pfad für Three.js-Core. V10.0-c ergänzt das WebGPURenderer-Addon + Dependencies — damit kann `anazhRealm.js` in V10.0-d zur Laufzeit `new THREE.WebGPURenderer()` mit Fallback auf `THREE.WebGLRenderer()` instantiieren. Heute noch kein Renderer-Wechsel, nur Verfügbarkeit.
 - **Vendor-Erweiterung** (`vendor/three-addons/`, ~1.5 MB, 238 Files): voller Block aus r160 `examples/jsm/`:
