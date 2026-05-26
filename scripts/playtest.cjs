@@ -10341,7 +10341,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
                     const key = `${cx},${cz}`;
                     if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
                     fresh.add(key);
-                    r._populateVoxelChunkVegetation(cx, cz);
+                    // V9.96 — der Test-Pfad braucht synchrone Spawns (er
+                    // misst gleich danach state.architectures); im echten
+                    // Streaming geht das durch die Per-Frame-Queue.
+                    r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
                 }
             }
             let fbCount = 0;
@@ -13209,6 +13212,286 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
         res.bitIdentical,
         `mismatches=${res.mismatches}, maxDelta=${res.maxDelta}, firstMismatchIdx=${res.firstMismatchIdx}`
     );
+}
+
+// V9.95-a (Welle WebGPU-Compute-Foundation): die Phase-1-Foundation analog zu
+// V9.89-Worker-Foundation. Zwei Modi getestet:
+//   - Headless-Chromium ohne GPU-Adapter: navigator.gpu fehlt → status="unavailable",
+//     graceful (kein Fehler, kein Crash, lastError gesetzt). Die meisten
+//     Invarianten prüfen unconditional die API-Existenz + Status-Maschine.
+//   - Echter Browser mit WebGPU: status="ready", foundationProof.trivialMismatches=0
+//     + determinismMismatches=0 (V9.91-Float32-Cutover-Lehre angewandt).
+//
+// Pflicht-Invarianten (immer geprüft):
+//   (a) `_voxelGpuInit`, `_voxelGpuRunFoundationProof`, `_voxelGpuDispose` existieren
+//   (b) Initial-Status ist "notTried" oder "unavailable" (nicht "pending"/"ready" vor Init)
+//   (c) AnazhRealm.WGSL_TRIVIAL_SQUARE existiert als String
+//   (d) Nach `_voxelGpuInit()`-Aufruf ist Status entweder "ready" oder "unavailable",
+//       nie mehr "pending"
+//   (e) Wenn "unavailable": lastError ist gesetzt (sagt warum)
+//   (f) Wenn "ready": foundationProof existiert mit trivialMismatches=0
+//       UND determinismMismatches=0 (Kern-Invariante — V9.91-Float32-Lehre)
+async function checkBandWelleV995WebGpuFoundation(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r) return { error: "no realm" };
+        const out = {};
+        // (a) API-Existenz
+        out.hasInit = typeof r._voxelGpuInit === "function";
+        out.hasRunProof = typeof r._voxelGpuRunFoundationProof === "function";
+        out.hasDispose = typeof r._voxelGpuDispose === "function";
+        out.hasWgslConst = typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
+        // (b) Initial-Status (kann notTried sein, oder bereits ready/unavailable wenn
+        // Worldgen-State-Sync den GPU-Init schon getriggert hat)
+        out.statusBeforeInit = r.state.voxelGpuStatus;
+        // (c) State-Felder existieren in state
+        out.hasStateFields =
+            "voxelGpuStatus" in r.state &&
+            "voxelGpuAdapter" in r.state &&
+            "voxelGpuDevice" in r.state &&
+            "voxelGpuLimits" in r.state &&
+            "voxelGpuFoundationProof" in r.state &&
+            "voxelGpuLastError" in r.state;
+        // (d) navigator.gpu-Verfügbarkeit (informational)
+        out.hasNavigatorGpu = typeof navigator !== "undefined" && !!navigator.gpu;
+        // (e) Init aufrufen — async, fire-and-await
+        try {
+            await r._voxelGpuInit();
+        } catch (e) {
+            return { ...out, error: "init exception: " + e.message };
+        }
+        out.statusAfterInit = r.state.voxelGpuStatus;
+        out.lastError = r.state.voxelGpuLastError;
+        out.foundationProof = r.state.voxelGpuFoundationProof
+            ? {
+                  n: r.state.voxelGpuFoundationProof.n,
+                  trivialMismatches: r.state.voxelGpuFoundationProof.trivialMismatches,
+                  determinismMismatches: r.state.voxelGpuFoundationProof.determinismMismatches,
+              }
+            : null;
+        out.adapterInfo = r.state.voxelGpuAdapterInfo;
+        out.limits = r.state.voxelGpuLimits;
+        // (f) Init ist idempotent — zweiter Aufruf muss denselben Status liefern
+        try {
+            await r._voxelGpuInit();
+        } catch (e) {
+            return { ...out, error: "second init exception: " + e.message };
+        }
+        out.statusAfterSecondInit = r.state.voxelGpuStatus;
+        return out;
+    });
+    if (res.error) {
+        check("V9.95-a WebGPU-Foundation: Band läuft (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("V9.95-a WebGPU-Foundation: _voxelGpuInit existiert", res.hasInit);
+    check("V9.95-a WebGPU-Foundation: _voxelGpuRunFoundationProof existiert", res.hasRunProof);
+    check("V9.95-a WebGPU-Foundation: _voxelGpuDispose existiert", res.hasDispose);
+    check("V9.95-a WebGPU-Foundation: AnazhRealm.WGSL_TRIVIAL_SQUARE als String exportiert", res.hasWgslConst);
+    check("V9.95-a WebGPU-Foundation: 6 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
+    check(
+        "V9.95-a WebGPU-Foundation: Status nach Init ist 'ready' oder 'unavailable' (nicht 'pending')",
+        res.statusAfterInit === "ready" || res.statusAfterInit === "unavailable",
+        `statusAfterInit=${res.statusAfterInit}, hasNavigatorGpu=${res.hasNavigatorGpu}`
+    );
+    check(
+        "V9.95-a WebGPU-Foundation: Init ist idempotent (zweiter Aufruf gleicher Status)",
+        res.statusAfterInit === res.statusAfterSecondInit,
+        `first=${res.statusAfterInit}, second=${res.statusAfterSecondInit}`
+    );
+    if (res.statusAfterInit === "unavailable") {
+        // Headless-Chromium-Pfad (typisch im CI/Cloud): navigator.gpu fehlt,
+        // lastError sagt warum. Das ist KEIN Fehler — der V9.91-Worker-Pfad
+        // greift als Fallback.
+        check(
+            "V9.95-a WebGPU-Foundation: bei 'unavailable' ist lastError gesetzt (Diagnose-Spur)",
+            !!res.lastError,
+            `lastError=${res.lastError}`
+        );
+    } else if (res.statusAfterInit === "ready") {
+        // Echter-Browser-Pfad: Foundation-Proof muss bestanden sein.
+        check(
+            "V9.95-a WebGPU-Foundation: bei 'ready' ist foundationProof gesetzt",
+            !!res.foundationProof,
+            `foundationProof=${JSON.stringify(res.foundationProof)}`
+        );
+        if (res.foundationProof) {
+            check(
+                "V9.95-a WebGPU-Foundation: Float32-Mismatch GPU vs CPU = 0 (V9.91-Lehre, Kern-Invariante)",
+                res.foundationProof.trivialMismatches === 0,
+                `mismatches=${res.foundationProof.trivialMismatches}/${res.foundationProof.n}`
+            );
+            check(
+                "V9.95-a WebGPU-Foundation: Determinismus innerhalb GPU (zwei Runs bit-identisch) — Kern-Invariante",
+                res.foundationProof.determinismMismatches === 0,
+                `mismatches=${res.foundationProof.determinismMismatches}/${res.foundationProof.n}`
+            );
+        }
+    }
+}
+
+// V9.95-b (Welle WebGPU-Density-Pipeline): die volle Density-Pipeline läuft auf GPU.
+// Im Headless-Cloud-Container fehlt requestAdapter (siehe V9.95-a-Befund) — der Test
+// validiert vor allem die API-Existenz + Eligibility-Gate + Pipeline-Cutover-Verdrahtung.
+// Im echten Browser (Schöpfer-Audit) würde der bonus-Sanity-Test gegen den
+// Worker-Density laufen (|Δ| < 1e-3 erwartet — siehe V9.95-a-Lehre über transzendente
+// Funktionen).
+async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // (a) API-Existenz
+        out.hasEnsurePipeline = typeof r._voxelGpuEnsureDensityPipeline === "function";
+        out.hasUploadWorldState = typeof r._voxelGpuUploadWorldState === "function";
+        out.hasChunkEligible = typeof r._voxelGpuChunkEligible === "function";
+        out.hasComputeDensity = typeof r._voxelGpuComputeDensity === "function";
+        out.hasFetchOrRequest = typeof r._fetchOrRequestChunkDensityGpu === "function";
+        out.hasWgslDensity = typeof AnazhRealm.WGSL_DENSITY_GRID === "string" && AnazhRealm.WGSL_DENSITY_GRID.length > 1000;
+        // (b) State-Felder existieren
+        out.hasStateFields =
+            "voxelGpuDensityPipeline" in r.state &&
+            "voxelGpuPermBuffer" in r.state &&
+            "voxelGpuErosionBuffer" in r.state &&
+            "voxelGpuTarnsBuffer" in r.state &&
+            "voxelGpuParamsBuffer" in r.state &&
+            "voxelGpuWorldUploaded" in r.state &&
+            "voxelGpuDensityCache" in r.state &&
+            "voxelGpuDensityPending" in r.state &&
+            "voxelGpuDispatchCount" in r.state &&
+            "voxelGpuLastDispatchMs" in r.state;
+        // (c) Eligibility-Gate: returnt true wenn KEINE edits + KEIN hydro im footprint
+        // Trockenland-Chunk weit weg vom Welt-Zentrum suchen (Atlas hat dort wahrscheinlich
+        // weder Lake noch River) — alternativ einen fern-Chunk wo nichts ist.
+        out.eligibleNoEdits = r._voxelGpuChunkEligible(100, 100, 1);
+        // (d) Source-Probe: _ensureVoxelChunkAt nutzt jetzt _fetchOrRequestChunkDensityGpu
+        // V9.95-e — Cutover-Source-Probe entfernt: GPU-Pipeline wird im
+        // Streaming-Pfad NICHT mehr gerufen (architektonisch: mapAsync-Stall
+        // > Worker-CPU-Density-Save bei WebGL-Renderer). Pipeline-Code lebt
+        // weiter als Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration.
+        // Source-Probe statt Cutover: V9.95-e hat das _fetchOrRequest...Gpu-
+        // Pattern in `_ensureVoxelChunkAt` entfernt (ehrliche Abklemmung).
+        out.cutoverAbgeklemmt = !/_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
+        out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
+        // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
+        // im Edit-Footprint nicht mehr eligible ist
+        const beforeEdit = r._voxelGpuChunkEligible(0, 0, 0);
+        const editsBackup = (r.state.worldMeta && r.state.worldMeta.voxelEdits) || [];
+        if (r.state.worldMeta) {
+            r.state.worldMeta.voxelEdits = [{ x: 10, y: 0, z: 10, r: 4, strength: 48, mode: "carve" }];
+        }
+        out.afterEditNearby = r._voxelGpuChunkEligible(0, 0, 0); // nahe edit → false
+        out.afterEditFar = r._voxelGpuChunkEligible(100, 100, 0); // weit weg → true
+        if (r.state.worldMeta) r.state.worldMeta.voxelEdits = editsBackup;
+        out.beforeEdit = beforeEdit;
+        // (f) Wenn GPU ready (echter Browser): teste einen Compute-Density-Roundtrip
+        out.gpuStatus = r.state.voxelGpuStatus;
+        if (r.state.voxelGpuStatus === "ready") {
+            try {
+                const cfg = r._voxelChunkConfig(0);
+                const base = r.state.terrainBaseHeight || 0;
+                const ox = 0, oy = base - cfg.floorDrop, oz = 0;
+                // klein: 8×8×8 = 729 vertices
+                const dimX = 8, dimY = 8, dimZ = 8;
+                const gpuGrid = await r._voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, cfg.step);
+                out.gpuLen = gpuGrid.length;
+                out.gpuExpectedLen = (dimX + 1) * (dimY + 1) * (dimZ + 1);
+                out.gpuDispatchCount = r.state.voxelGpuDispatchCount;
+                out.gpuLastDispatchMs = r.state.voxelGpuLastDispatchMs;
+                // Sanity gegen Main: für eligible Chunk (no hydro, no edits)
+                // sollte |Δ| < 1e-3 sein (transzendente Toleranz, V9.95-a-Lehre).
+                const mainGrid = r._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, cfg.step, (x, y, z) =>
+                    r._terrainDensityAt(x, y, z)
+                );
+                let maxDelta = 0;
+                let mismatches = 0;
+                for (let i = 0; i < gpuGrid.length; i++) {
+                    const d = Math.abs(gpuGrid[i] - mainGrid[i]);
+                    if (d > 1e-3) mismatches++;
+                    if (d > maxDelta) maxDelta = d;
+                }
+                out.gpuVsMainMaxDelta = maxDelta;
+                out.gpuVsMainMismatches = mismatches;
+                // Determinismus innerhalb GPU: zweiter Run identisch
+                const gpuGrid2 = await r._voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, cfg.step);
+                let detMismatches = 0;
+                for (let i = 0; i < gpuGrid.length; i++) {
+                    if (gpuGrid[i] !== gpuGrid2[i]) detMismatches++;
+                }
+                out.gpuDeterminismMismatches = detMismatches;
+            } catch (e) {
+                out.gpuComputeError = e.message;
+            }
+        }
+        return out;
+    });
+    if (res.error) {
+        check("V9.95-b Density-Pipeline: Band läuft (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("V9.95-b Density-Pipeline: _voxelGpuEnsureDensityPipeline existiert", res.hasEnsurePipeline);
+    check("V9.95-b Density-Pipeline: _voxelGpuUploadWorldState existiert", res.hasUploadWorldState);
+    check("V9.95-b Density-Pipeline: _voxelGpuChunkEligible existiert", res.hasChunkEligible);
+    check("V9.95-b Density-Pipeline: _voxelGpuComputeDensity existiert", res.hasComputeDensity);
+    check("V9.95-b Density-Pipeline: _fetchOrRequestChunkDensityGpu existiert", res.hasFetchOrRequest);
+    check("V9.95-b Density-Pipeline: AnazhRealm.WGSL_DENSITY_GRID ist substantieller String (>1000 Z)", res.hasWgslDensity);
+    check("V9.95-b Density-Pipeline: 10 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
+    check(
+        "V9.95-b Density-Pipeline: Eligibility-Gate — Trockenland-Chunk ohne Edits/Hydro eligible",
+        res.eligibleNoEdits === true,
+        `result=${res.eligibleNoEdits}`
+    );
+    check(
+        "V9.95-b Density-Pipeline: Eligibility-Gate — Chunk im voxelEdit-Footprint NICHT eligible",
+        res.afterEditNearby === false,
+        `nearby=${res.afterEditNearby}, far=${res.afterEditFar}`
+    );
+    check(
+        "V9.95-b Density-Pipeline: Eligibility-Gate — Chunk WEIT WEG vom voxelEdit eligible",
+        res.afterEditFar === true,
+        `far=${res.afterEditFar}`
+    );
+    check(
+        "V9.95-e: _ensureVoxelChunkAt ruft KEINE GPU-Density mehr (architektonisch abgeklemmt)",
+        res.cutoverAbgeklemmt,
+        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh-Pfad bleibt PRIMARY"
+    );
+    check(
+        "V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache",
+        res.notifyEditClears
+    );
+    // Conditional: echter Browser mit GPU
+    if (res.gpuStatus === "ready" && !res.gpuComputeError) {
+        check(
+            "V9.95-b Density-Pipeline: GPU-Compute-Density returns Float32Array korrekter Länge",
+            res.gpuLen === res.gpuExpectedLen,
+            `gpuLen=${res.gpuLen}, expected=${res.gpuExpectedLen}`
+        );
+        check(
+            "V9.95-b Density-Pipeline: GPU-Dispatch-Counter inkrementiert",
+            res.gpuDispatchCount >= 2,
+            `dispatchCount=${res.gpuDispatchCount}, lastMs=${res.gpuLastDispatchMs}`
+        );
+        check(
+            "V9.95-b Density-Pipeline: GPU-vs-Main-Sanity |Δ| < 1e-3 (V9.95-a-Lehre transzendente Toleranz)",
+            res.gpuVsMainMaxDelta < 1e-3 && res.gpuVsMainMismatches === 0,
+            `maxDelta=${res.gpuVsMainMaxDelta}, mismatches=${res.gpuVsMainMismatches}`
+        );
+        check(
+            "V9.95-b Density-Pipeline: GPU-internal-Determinismus (zwei Runs bit-identisch — Kern-Invariante)",
+            res.gpuDeterminismMismatches === 0,
+            `mismatches=${res.gpuDeterminismMismatches}`
+        );
+    } else if (res.gpuComputeError) {
+        check(
+            "V9.95-b Density-Pipeline: GPU-Compute lief ohne Fehler (echter Browser)",
+            false,
+            `error=${res.gpuComputeError}`
+        );
+    }
+    // Wenn nicht ready: alle conditional-Tests werden geskippt, status klar im Log.
 }
 
 // V9.90 (Welle Perf-3.c Phase 2 — Worker-Density-Cutover): empirischer Beweis
@@ -30805,6 +31088,12 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase2Async(ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
             await checkBandWellePerf3cPhase3FullMesh(ctx);
+            // V9.95-a — WebGPU-Compute-Foundation: API existiert, Init ist idempotent,
+            // bei `ready`-Status Float32-Determinismus + bit-identische zwei-Run-GPU-Runs.
+            await checkBandWelleV995WebGpuFoundation(ctx);
+            // V9.95-b — WebGPU-Density-Pipeline: API + Eligibility-Gate + Cutover.
+            // Bei `ready`: GPU-Compute lief + Sanity gegen Main + Determinismus.
+            await checkBandWelleV995WebGpuDensityPipeline(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).

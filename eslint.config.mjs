@@ -41,10 +41,21 @@ export default [
                 Ammo: "readonly",
                 tf: "readonly",
                 SimplexNoise: "readonly",
+                // WebGPU (V9.95-a Foundation). Global, weil _voxelGpuInit
+                // navigator.gpu nutzt + die BufferUsage-/MapMode-Konstanten
+                // sind im Browser-Global-Scope; ESLint kennt sie nicht
+                // out-of-the-box (mit Eslint v9 + `globals.browser` würden
+                // sie kommen, aber wir pflegen eine explizite Liste).
+                GPUBufferUsage: "readonly",
+                GPUMapMode: "readonly",
+                GPUShaderStage: "readonly",
             },
         },
         rules: {
-            "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+            "no-unused-vars": [
+                "warn",
+                { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+            ],
             "no-empty": ["warn", { allowEmptyCatch: true }],
             "no-prototype-builtins": "off",
             "no-inner-declarations": "off",

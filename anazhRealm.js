@@ -17,6 +17,14 @@ class AnazhRealm {
         this.state = {
             // ### Kern ###
             renderer: null,
+            // V10.0-d/e — Renderer-Auswahl-State. `rendererKind` = "webgpu"
+            // oder "webgl", entscheidet zur Laufzeit in createScene. `ready`
+            // ist false bis WebGPU's async `init()` durch ist (Game-Loop
+            // skipt render bis dahin). `rendererInkompatibel` = true wenn
+            // Hot-Swap zu WebGL passierte (verhindert wiederholte Versuche).
+            rendererKind: "webgl",
+            rendererReady: false,
+            rendererInkompatibel: false,
             scene: null,
             camera: null,
             playerMesh: null,
@@ -246,6 +254,41 @@ class AnazhRealm {
             voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
             voxelMeshPending: null, // Set<"cx,cz,lod">
             voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
+            // V9.95-a (Welle WebGPU-Compute-Foundation): die Phase-1-Foundation
+            // analog zu V9.89-Worker-Foundation. `_voxelGpuInit()` versucht
+            // `navigator.gpu` → adapter → device async lazy zu spawnen. Status-
+            // Maschine: `notTried` → `pending` (Init läuft) → `ready` (adapter+
+            // device verfügbar, trivial-shader hat compiliert + Determinismus-
+            // Run bestanden) ODER `unavailable` (kein navigator.gpu, kein
+            // Adapter, kein Device, oder Trivial-Shader fail). Phase 1 baut
+            // KEINEN Integration-Pfad — V9.95-b liefert WGSL-SimplexNoise +
+            // Density-Compute + Pipeline-Cutover. Hier nur die Foundation +
+            // Determinismus-Test (bit-identische Float32-Resultate zwei Runs
+            // hintereinander, plus Sanity gegen Math.fround-CPU-Referenz).
+            voxelGpuStatus: "notTried", // notTried | pending | ready | unavailable
+            voxelGpuAdapter: null, // GPUAdapter (nur ready-State)
+            voxelGpuDevice: null, // GPUDevice
+            voxelGpuAdapterInfo: null, // {vendor, architecture, device, description}
+            voxelGpuLimits: null, // {maxComputeInvocationsPerWorkgroup, maxStorageBufferBindingSize, maxBufferSize}
+            voxelGpuFoundationProof: null, // {trivialMismatches, determinismMismatches, n} nach erfolg. Init
+            voxelGpuLastError: null, // String, falls Init/Run fehlschlug
+            // V9.95-b (Density-Pipeline): GPU rechnet die Worldgen-Density.
+            // Eligibility-Gate filtert Chunks mit Hydrosphere-Carve/Lake-Mask
+            // ODER voxelEdits aus (die fallen auf den V9.91-Worker-Pfad).
+            voxelGpuDensityPipeline: null, // GPUComputePipeline (lazy)
+            voxelGpuPermBuffer: null, // GPUBuffer (512 u32 permutation, geseeded)
+            voxelGpuErosionBuffer: null, // GPUBuffer (erosion grid, dim*dim f32)
+            voxelGpuErosionSize: 0, // bytes
+            voxelGpuTarnsBuffer: null, // GPUBuffer (tarns packed f32)
+            voxelGpuTarnsSize: 0, // bytes
+            voxelGpuParamsBuffer: null, // GPUBuffer (uniform, scalar world-state)
+            voxelGpuWorldUploaded: false, // wurde Welt-State hochgeladen?
+            voxelGpuWorldStateGen: -1, // stateGen-Stempel der letzten Upload
+            voxelGpuDensityCache: null, // Map<"cx,cz,lod", Float32Array> — one-shot
+            voxelGpuDensityPending: null, // Set<"cx,cz,lod">
+            voxelGpuDensityGenAtRequest: null, // Map<key, stateGen> für Stale-Filter
+            voxelGpuDispatchCount: 0, // Diagnose: Anzahl GPU-Dispatches im Lauf
+            voxelGpuLastDispatchMs: 0, // Diagnose: letzte Dispatch-Dauer
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -865,6 +908,10 @@ class AnazhRealm {
         if (!pool || pool.length === 0) return false;
         const idx = grok.poolIndex[key] % pool.length;
         const text = pool[idx];
+        // V9.95-e (Schöpfer-Browser-Audit-Folge): Defensive — wenn `text`
+        // undefined ist (pool hat sparse-Array-Holes oder corrupted state),
+        // den Sprech-Slot überspringen statt „Grok: undefined" zu loggen.
+        if (typeof text !== "string" || text.length === 0) return false;
         grok.poolIndex[key] = (idx + 1) % pool.length;
         grok.lastSpoke = now;
         if (cfg) cfg.lastFired = now;
@@ -12726,6 +12773,12 @@ class AnazhRealm {
         this.state.voxelWorkerStateGen++;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        // V9.95-b — auch GPU-Density-Cache invalidieren. Edits werden vom
+        // Eligibility-Gate eh gefiltert (Chunks im Edit-Footprint nicht
+        // eligible), aber stale Density außerhalb des Edit-Footprints muss
+        // auch raus, weil voxelWorkerStateGen sich änderte (per-Request-
+        // Stale-Filter triggert state-gen-Verwurf).
+        if (this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache.clear();
         try {
             this.state.voxelWorker.postMessage({
                 type: "state-update",
@@ -12743,6 +12796,11 @@ class AnazhRealm {
     // Density-Requests die fertige Welt sehen. Bumpt state-gen → in-flight
     // Density-Requests vom Pre-Worldgen-Stand werden discarded.
     _voxelWorkerSyncWorldgenState() {
+        // V9.95-c: GPU-Init zuerst — UNABHÄNGIG vom Worker-Status. Vorher war
+        // der GPU-Init INSIDE der Worker-spawn-Check, wenn der Worker nicht
+        // existierte (rare aber möglich), wurde der GPU-Pfad NIE aktiviert.
+        // GPU + Worker sind orthogonale Beschleunigungspfade.
+        this._tryStartVoxelGpuInit();
         if (!this.state.voxelWorker) return;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
@@ -12753,6 +12811,763 @@ class AnazhRealm {
         // weiterhin trustworthy.
         this._voxelWorkerSyncState({ op: "state-set" });
         this.state.voxelWorkerWorldgenSynced = true;
+    }
+
+    // V9.95-c — GPU-Init-Trigger zentralisiert + idempotent. Loggt am
+    // Anfang, damit der Schöpfer bei jedem Browser-Start sieht: „WebGPU-
+    // Init versucht" (selbst wenn dann unavailable). Sichtbarkeit ist
+    // Wahrheit. Fire-and-forget — der Streaming-Pump nutzt den GPU-Pfad
+    // erst nach `_voxelGpuInitPromise.then(ready)`.
+    _tryStartVoxelGpuInit() {
+        if (this.state.voxelGpuStatus === "ready") return; // schon initialisiert
+        if (this.state.voxelGpuStatus === "pending") return; // läuft schon
+        if (this.state.voxelGpuStatus === "unavailable") return; // schon gescheitert
+        if (typeof navigator === "undefined" || !navigator.gpu) {
+            // navigator.gpu existiert nicht — explizit loggen + status setzen,
+            // damit der Schöpfer sieht, was passiert.
+            this.state.voxelGpuStatus = "unavailable";
+            this.state.voxelGpuLastError = "navigator.gpu nicht im Browser verfügbar";
+            this.log(
+                "WebGPU nicht verfügbar — navigator.gpu nicht im Browser (V9.91-Worker-Pfad bleibt PRIMARY)",
+                "INFO"
+            );
+            return;
+        }
+        this.log(`WebGPU-Init startet (navigator.gpu vorhanden) ...`, "INFO");
+        this._voxelGpuInit().catch((e) => {
+            this.log(`WebGPU-Init-Promise-Fehler: ${e.message}`, "ERROR");
+        });
+    }
+
+    // =====================================================================
+    // V9.95-a (Welle WebGPU-Compute-Foundation, 26.05.2026): die Phase-1-
+    // Foundation analog zu V9.89-Worker-Foundation. Spawnt async einen
+    // WebGPU-Device, kompiliert + dispatch'd einen trivialen Compute-Shader
+    // (square × 256 Float32), beweist bit-identische Float32-Determinismus
+    // (zwei Runs identisch, plus Sanity gegen Math.fround-CPU-Referenz).
+    //
+    // V9.95-b (next session) baut WGSL-SimplexNoise + WGSL-Density-Pipeline
+    // (Mirror von `_terrainDensityAt`) + StorageBuffer-Welt-State-Upload +
+    // Cache-First-Lookup `_fetchOrRequestChunkDensityGpu` + Cutover in
+    // `_buildVoxelChunkData` mit GPU als Stufe-0 vor Worker.
+    //
+    // **Lehre V9.94.r** angewandt: WebGPU-Verfügbarkeit ist öffentliche
+    // Wahrheit (Chrome/Edge stable seit v113 Mai 2023, Safari 18+ seit
+    // Sept 2024) — keine Diagnose-Welle nötig. Wenn der Browser kein
+    // navigator.gpu hat, fallbackt der Code stille auf den V9.91-Worker-
+    // Pfad. Defensive 3-stufige Pipeline (GPU → Worker → sync) bleibt.
+    // =====================================================================
+    _voxelGpuInit() {
+        if (this.state.voxelGpuStatus === "ready") return Promise.resolve(true);
+        if (this.state.voxelGpuStatus === "unavailable") return Promise.resolve(false);
+        if (this.state.voxelGpuStatus === "pending" && this._voxelGpuInitPromise) {
+            return this._voxelGpuInitPromise;
+        }
+        this.state.voxelGpuStatus = "pending";
+        this.state.voxelGpuLastError = null;
+        // Defensive: kein navigator.gpu → unavailable, kein Fehler werfen.
+        if (typeof navigator === "undefined" || !navigator.gpu) {
+            this.state.voxelGpuStatus = "unavailable";
+            this.state.voxelGpuLastError = "navigator.gpu nicht vorhanden";
+            return Promise.resolve(false);
+        }
+        this._voxelGpuInitPromise = (async () => {
+            try {
+                const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+                if (!adapter) {
+                    this.state.voxelGpuStatus = "unavailable";
+                    this.state.voxelGpuLastError = "requestAdapter returnt null";
+                    return false;
+                }
+                this.state.voxelGpuAdapter = adapter;
+                // Adapter-Info: in Chrome 131+ ist `adapter.info` eine direkte
+                // Property (synchron), die alte `requestAdapterInfo()`-Methode
+                // wurde deprecated/entfernt. Vor 131: nur die async-Methode.
+                // Wir prüfen beides — direkt-property zuerst (modern), dann
+                // fallback auf die alte Promise-Methode.
+                try {
+                    let info = null;
+                    if (adapter.info && typeof adapter.info === "object") {
+                        info = adapter.info;
+                    } else if (typeof adapter.requestAdapterInfo === "function") {
+                        info = await adapter.requestAdapterInfo();
+                    }
+                    if (info) {
+                        this.state.voxelGpuAdapterInfo = {
+                            vendor: info.vendor || "(unbekannt)",
+                            architecture: info.architecture || "(unbekannt)",
+                            device: info.device || "(unbekannt)",
+                            description: info.description || "(unbekannt)",
+                        };
+                    }
+                } catch (_e) {
+                    // adapterInfo ist optional — Browser-Versionen variieren.
+                }
+                const limits = adapter.limits || {};
+                this.state.voxelGpuLimits = {
+                    maxComputeInvocationsPerWorkgroup: limits.maxComputeInvocationsPerWorkgroup || 0,
+                    maxStorageBufferBindingSize: limits.maxStorageBufferBindingSize || 0,
+                    maxBufferSize: limits.maxBufferSize || 0,
+                };
+                const device = await adapter.requestDevice();
+                if (!device) {
+                    this.state.voxelGpuStatus = "unavailable";
+                    this.state.voxelGpuLastError = "requestDevice returnt null";
+                    return false;
+                }
+                this.state.voxelGpuDevice = device;
+                // Uncaptured-Error-Listener: WGSL-Compile-Failures + Runtime-
+                // Validation-Errors landen hier (nicht im await-throw). Wir
+                // markieren das letzte Fehler-Message für Diagnose.
+                device.addEventListener("uncapturederror", (ev) => {
+                    const msg = ev.error && ev.error.message ? ev.error.message : String(ev.error);
+                    this.state.voxelGpuLastError = "uncapturederror: " + msg;
+                    this.log(`WebGPU uncapturederror: ${msg}`, "ERROR");
+                });
+                // Foundation-Beweis: trivial WGSL + Determinismus + Float32-CPU-Match.
+                const proof = await this._voxelGpuRunFoundationProof(device);
+                if (!proof.ok) {
+                    this.state.voxelGpuStatus = "unavailable";
+                    this.state.voxelGpuLastError = "Foundation-Proof fehlgeschlagen: " + proof.reason;
+                    return false;
+                }
+                this.state.voxelGpuFoundationProof = proof;
+                this.state.voxelGpuStatus = "ready";
+                const a = this.state.voxelGpuAdapterInfo;
+                const tag = a ? `${a.vendor}/${a.architecture}/${a.device}` : "(adapterinfo nicht verfügbar)";
+                this.log(
+                    `WebGPU Foundation bereit: ${tag} — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.`,
+                    "INFO"
+                );
+                return true;
+            } catch (e) {
+                this.state.voxelGpuStatus = "unavailable";
+                this.state.voxelGpuLastError = "Init-Exception: " + e.message;
+                this.log(`WebGPU-Init-Fehler: ${e.message}`, "ERROR");
+                return false;
+            }
+        })();
+        // V9.95-c (Logging-Heilung nach Schöpfer-Browser-Audit V9.95-b): immer
+        // den End-Status loggen, nicht nur bei "ready". Sonst sieht der Schöpfer
+        // gar nichts, wenn navigator.gpu fehlt oder requestAdapter null returnt
+        // — Vision wird unsichtbar, Diagnose unmöglich. „Sichtbarkeit ist
+        // Wahrheit" (V9.94.r-Lehre auf Logging übertragen).
+        return this._voxelGpuInitPromise.then((ok) => {
+            if (!ok && this.state.voxelGpuStatus === "unavailable") {
+                this.log(
+                    `WebGPU nicht verfügbar — ${this.state.voxelGpuLastError || "(kein lastError)"} (V9.91-Worker-Pfad bleibt PRIMARY)`,
+                    "INFO"
+                );
+            }
+            return ok;
+        });
+    }
+
+    // V9.95-a Foundation-Beweis. Trivialer WGSL-Shader `square(x)` über 256
+    // Float32-Eingaben:
+    //   (a) WGSL compiliert ohne Fehler;
+    //   (b) Dispatch + Read-Back via mapAsync funktioniert;
+    //   (c) Resultat bit-identisch zur Math.fround(v*v)-CPU-Referenz
+    //       (V9.91-Float32-Cutover-Lehre: identische Float32-Mathematik
+    //       beidseitig — WGSL `f32 * f32` und JS `Math.fround(v * v)`
+    //       sind per IEEE-754-Spec identisch);
+    //   (d) Zweiter Run bit-identisch zum ersten (Determinismus innerhalb GPU).
+    // Returns {ok, reason?, n, trivialMismatches, determinismMismatches}.
+    async _voxelGpuRunFoundationProof(device) {
+        const N = 256;
+        const inputData = new Float32Array(N);
+        for (let i = 0; i < N; i++) inputData[i] = i * 0.137;
+        const cpuRef = new Float32Array(N);
+        for (let i = 0; i < N; i++) {
+            const v = inputData[i];
+            cpuRef[i] = Math.fround(v * v);
+        }
+        const shaderCode = AnazhRealm.WGSL_TRIVIAL_SQUARE;
+        let module;
+        try {
+            module = device.createShaderModule({ code: shaderCode });
+            const ci = await module.getCompilationInfo();
+            const fatals = ci.messages.filter((m) => m.type === "error");
+            if (fatals.length > 0) {
+                return { ok: false, reason: "WGSL-Compile-Error: " + fatals.map((m) => m.message).join("; ") };
+            }
+        } catch (e) {
+            return { ok: false, reason: "Shader-Modul-Erschaffung: " + e.message };
+        }
+        const inBuf = device.createBuffer({
+            size: inputData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        });
+        device.queue.writeBuffer(inBuf, 0, inputData);
+        const outBuf = device.createBuffer({
+            size: inputData.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+        });
+        const readBuf = device.createBuffer({
+            size: inputData.byteLength,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+        });
+        const pipeline = device.createComputePipeline({
+            layout: "auto",
+            compute: { module, entryPoint: "main" },
+        });
+        const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: inBuf } },
+                { binding: 1, resource: { buffer: outBuf } },
+            ],
+        });
+        const dispatchAndRead = async () => {
+            const enc = device.createCommandEncoder();
+            const pass = enc.beginComputePass();
+            pass.setPipeline(pipeline);
+            pass.setBindGroup(0, bindGroup);
+            pass.dispatchWorkgroups(Math.ceil(N / 64));
+            pass.end();
+            enc.copyBufferToBuffer(outBuf, 0, readBuf, 0, inputData.byteLength);
+            device.queue.submit([enc.finish()]);
+            await readBuf.mapAsync(GPUMapMode.READ);
+            const copy = new Float32Array(readBuf.getMappedRange().slice(0));
+            readBuf.unmap();
+            return copy;
+        };
+        let run1, run2;
+        try {
+            run1 = await dispatchAndRead();
+            run2 = await dispatchAndRead();
+        } catch (e) {
+            try {
+                inBuf.destroy();
+                outBuf.destroy();
+                readBuf.destroy();
+            } catch (_) {
+                /* ignore */
+            }
+            return { ok: false, reason: "Dispatch: " + e.message };
+        }
+        let trivialMismatches = 0;
+        for (let i = 0; i < N; i++) {
+            if (run1[i] !== cpuRef[i]) trivialMismatches++;
+        }
+        let determinismMismatches = 0;
+        for (let i = 0; i < N; i++) {
+            if (run1[i] !== run2[i]) determinismMismatches++;
+        }
+        // Buffers freigeben — die Foundation behält sie nicht.
+        try {
+            inBuf.destroy();
+            outBuf.destroy();
+            readBuf.destroy();
+        } catch (_) {
+            /* ignore */
+        }
+        if (trivialMismatches > 0) {
+            return {
+                ok: false,
+                reason: `Float32-Mismatch GPU vs CPU: ${trivialMismatches}/${N} (V9.91-Lehre verletzt — Float32-strict scheitert)`,
+                n: N,
+                trivialMismatches,
+                determinismMismatches,
+            };
+        }
+        if (determinismMismatches > 0) {
+            return {
+                ok: false,
+                reason: `Determinismus-Bruch: ${determinismMismatches}/${N} Floats unterscheiden sich zwischen zwei identischen GPU-Runs`,
+                n: N,
+                trivialMismatches,
+                determinismMismatches,
+            };
+        }
+        return { ok: true, n: N, trivialMismatches, determinismMismatches };
+    }
+
+    // V9.95-a — räumt die WebGPU-Ressourcen beim Welt-Wechsel oder Dispose.
+    // WebGPU-Devices müssen explizit `destroy()` bekommen, sonst hält der
+    // Browser sie als „dirty" GPU-Slot und der nächste Worldgen kriegt
+    // potentiell einen zweiten Device-Slot (Quota-Limit). Idempotent.
+    _voxelGpuDispose() {
+        // V9.95-b — auch Density-Pipeline-Buffers freigeben
+        const bufs = [
+            this.state.voxelGpuPermBuffer,
+            this.state.voxelGpuErosionBuffer,
+            this.state.voxelGpuTarnsBuffer,
+            this.state.voxelGpuParamsBuffer,
+        ];
+        for (const b of bufs) {
+            if (b && typeof b.destroy === "function") {
+                try {
+                    b.destroy();
+                } catch (_e) {
+                    /* defensive */
+                }
+            }
+        }
+        this.state.voxelGpuPermBuffer = null;
+        this.state.voxelGpuErosionBuffer = null;
+        this.state.voxelGpuErosionSize = 0;
+        this.state.voxelGpuTarnsBuffer = null;
+        this.state.voxelGpuTarnsSize = 0;
+        this.state.voxelGpuParamsBuffer = null;
+        this.state.voxelGpuDensityPipeline = null;
+        this.state.voxelGpuWorldUploaded = false;
+        this.state.voxelGpuWorldStateGen = -1;
+        if (this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache.clear();
+        if (this.state.voxelGpuDensityPending) this.state.voxelGpuDensityPending.clear();
+        if (this.state.voxelGpuDensityGenAtRequest) this.state.voxelGpuDensityGenAtRequest.clear();
+        try {
+            if (this.state.voxelGpuDevice && typeof this.state.voxelGpuDevice.destroy === "function") {
+                this.state.voxelGpuDevice.destroy();
+            }
+        } catch (_e) {
+            // Defensive
+        }
+        this.state.voxelGpuDevice = null;
+        this.state.voxelGpuAdapter = null;
+        this.state.voxelGpuAdapterInfo = null;
+        this.state.voxelGpuLimits = null;
+        this.state.voxelGpuFoundationProof = null;
+        this.state.voxelGpuStatus = "notTried";
+        this._voxelGpuInitPromise = null;
+    }
+
+    // V10.0-d — gemeinsame Renderer-Konfiguration für WebGPU- und WebGL-
+    // Renderer. Beide Klassen erben von einem gemeinsamen Renderer-Interface
+    // (in r160): `setSize`, `setPixelRatio`, `setClearColor`, `shadowMap.*`
+    // funktionieren identisch. Nur die `useLegacyLights`-Bridge ist WebGL-
+    // only (WebGPURenderer ist always physically-correct + r160 hat das
+    // Property auch beim WebGLRenderer noch).
+    _configureRenderer(renderer, kind) {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(1);
+        // V10.0-a — r155+ entfernte useLegacyLights als default true.
+        // r160 hat es noch, r161+ entfernt das Property komplett. Bridge-
+        // Modus aktiv, bis V10.0-e die Lights physically-correct migriert.
+        // WebGPURenderer hat das Property NICHT — wir setzen es defensiv.
+        if ("useLegacyLights" in renderer) {
+            renderer.useLegacyLights = true;
+        }
+        renderer.setClearColor(0x000000, 1);
+        if (kind === "webgl") {
+            // depthTest ist WebGL-spezifisch (WebGPU regelt das per Pipeline-
+            // State). Auf WebGPURenderer gibt's das Property nicht.
+            renderer.depthTest = true;
+        }
+        renderer.shadowMap.enabled = true;
+        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap (4 statt 16
+        // Samples). Konstante existiert in beiden Renderern.
+        renderer.shadowMap.type = THREE.PCFShadowMap;
+    }
+
+    // =====================================================================
+    // V9.95-b — Density-Pipeline (WGSL-Compute statt CPU-noise2D/3D-Calls).
+    // Welt-State (Permutation + Erosion + Tarns + Uniforms) wird beim
+    // Worldgen-Abschluss einmal hochgeladen. Pro Chunk: nur die per-Chunk-
+    // Uniforms (ox/oy/oz/step/nx/ny/nz) + output-Buffer-Allokation +
+    // Dispatch + mapAsync. Eligibility-Gate filtert Chunks mit Hydrosphere
+    // oder voxelEdits aus (die fallen auf den V9.91-Worker-Pfad).
+    // =====================================================================
+
+    // Lazy build der density-Compute-Pipeline. Idempotent.
+    _voxelGpuEnsureDensityPipeline() {
+        if (this.state.voxelGpuDensityPipeline) return this.state.voxelGpuDensityPipeline;
+        const device = this.state.voxelGpuDevice;
+        if (!device) return null;
+        try {
+            const module = device.createShaderModule({ code: AnazhRealm.WGSL_DENSITY_GRID });
+            const pipeline = device.createComputePipeline({
+                layout: "auto",
+                compute: { module, entryPoint: "main" },
+            });
+            this.state.voxelGpuDensityPipeline = pipeline;
+            return pipeline;
+        } catch (e) {
+            this.state.voxelGpuLastError = "Density-Pipeline-Erschaffung: " + e.message;
+            this.log(`WebGPU Density-Pipeline-Fehler: ${e.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Welt-State auf GPU laden: Permutation + Erosion + Tarns. Aufgerufen
+    // beim Worldgen-Abschluss (nach _voxelWorkerSyncWorldgenState). Idempotent
+    // — re-uploaded nur wenn voxelWorkerStateGen sich gegenüber dem letzten
+    // Upload geändert hat. Permutation kommt aus dem SimplexNoise-Vendor mit
+    // demselben Seed wie der Worker (sodass die WGSL-noise2D/3D dieselbe
+    // Permutation sieht — algorithm-äquivalent zum Worker).
+    _voxelGpuUploadWorldState() {
+        if (this.state.voxelGpuStatus !== "ready") return false;
+        const device = this.state.voxelGpuDevice;
+        if (!device) return false;
+        const expectedGen = this.state.voxelWorkerStateGen;
+        if (this.state.voxelGpuWorldUploaded && this.state.voxelGpuWorldStateGen === expectedGen) {
+            return true; // schon up-to-date
+        }
+        try {
+            // 1) Permutation-Table — aus dem SimplexNoise-Vendor (~seed":voxel"
+            // matched den Worker exakt). Wir uploaden die 256-Byte perm-Array
+            // als 256 u32 (1024 Bytes) — die WGSL liest sie als array<u32>.
+            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            const noise = new SimplexNoise(seed + ":voxel");
+            const permU32 = new Uint32Array(256);
+            for (let i = 0; i < 256; i++) permU32[i] = noise.perm[i];
+            if (!this.state.voxelGpuPermBuffer) {
+                this.state.voxelGpuPermBuffer = device.createBuffer({
+                    size: 256 * 4,
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+            }
+            device.queue.writeBuffer(this.state.voxelGpuPermBuffer, 0, permU32);
+
+            // 2) Erosion-Delta — Float32 dim*dim Grid. Wenn nicht vorhanden:
+            // 1×1-Stub-Buffer (WGSL erosion_delta_at returnt 0 wenn erosionHas=0).
+            const e = this.state.erosion;
+            let erosionData;
+            let erosionDim = 0;
+            let erosionOriginX = 0;
+            let erosionOriginZ = 0;
+            let erosionCell = 1;
+            let erosionHas = 0;
+            if (e && e.delta && e.dim > 1) {
+                erosionData = e.delta instanceof Float32Array ? e.delta : new Float32Array(e.delta);
+                erosionDim = e.dim;
+                erosionOriginX = e.originX;
+                erosionOriginZ = e.originZ;
+                erosionCell = e.cell;
+                erosionHas = 1;
+            } else {
+                erosionData = new Float32Array([0]);
+            }
+            const erBytes = erosionData.byteLength;
+            if (!this.state.voxelGpuErosionBuffer || this.state.voxelGpuErosionSize < erBytes) {
+                if (this.state.voxelGpuErosionBuffer) {
+                    try {
+                        this.state.voxelGpuErosionBuffer.destroy();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                }
+                this.state.voxelGpuErosionBuffer = device.createBuffer({
+                    size: Math.max(erBytes, 16), // min 16 für valid binding
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+                this.state.voxelGpuErosionSize = erBytes;
+            }
+            device.queue.writeBuffer(this.state.voxelGpuErosionBuffer, 0, erosionData);
+
+            // 3) Tarns — packed Float32: [x, z, d, reach2, twoSig2] × N.
+            // Wenn keine: 5-Wert-Stub-Buffer (tarnsCount=0 → loop läuft nicht).
+            const tarns = Array.isArray(this.state.tarns) ? this.state.tarns : [];
+            const tarnsData = new Float32Array(Math.max(tarns.length, 1) * 5);
+            for (let i = 0; i < tarns.length; i++) {
+                const t = tarns[i];
+                tarnsData[i * 5 + 0] = t.x;
+                tarnsData[i * 5 + 1] = t.z;
+                tarnsData[i * 5 + 2] = t.d;
+                tarnsData[i * 5 + 3] = t.reach2;
+                tarnsData[i * 5 + 4] = t.twoSig2;
+            }
+            const tnBytes = tarnsData.byteLength;
+            if (!this.state.voxelGpuTarnsBuffer || this.state.voxelGpuTarnsSize < tnBytes) {
+                if (this.state.voxelGpuTarnsBuffer) {
+                    try {
+                        this.state.voxelGpuTarnsBuffer.destroy();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                }
+                this.state.voxelGpuTarnsBuffer = device.createBuffer({
+                    size: Math.max(tnBytes, 16),
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+                this.state.voxelGpuTarnsSize = tnBytes;
+            }
+            device.queue.writeBuffer(this.state.voxelGpuTarnsBuffer, 0, tarnsData);
+
+            // 4) Uniform-Buffer für Welt-State-Scalars (kein per-Chunk-Update
+            // hier — die per-Chunk-Werte ox/oy/oz/step/nx/ny/nz werden bei
+            // jeder Dispatch separat geschrieben). Schreiben wir die Welt-
+            // State-Felder in den uniform-Block direkt mit; per-Chunk-Felder
+            // bleiben in dem gleichen Buffer, wir overwriten bei jeder
+            // Dispatch (writeBuffer mit offset=0 ist nicht-blocking).
+            // Layout: 64 Bytes (16 floats), 16-aligned.
+            if (!this.state.voxelGpuParamsBuffer) {
+                this.state.voxelGpuParamsBuffer = device.createBuffer({
+                    size: 64,
+                    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+                });
+            }
+            // Stash Welt-State für `_voxelGpuComputeDensity` (die per-Chunk-
+            // Dispatch baut den vollen 64-Byte-Block JIT zusammen).
+            this._voxelGpuWorldStateScalars = {
+                baseHeight: this.state.terrainBaseHeight || 0,
+                waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+                erosionOriginX,
+                erosionOriginZ,
+                erosionCell,
+                erosionDim,
+                erosionHas,
+                tarnsCount: tarns.length,
+            };
+            const wasFirstUpload = !this.state.voxelGpuWorldUploaded;
+            this.state.voxelGpuWorldUploaded = true;
+            this.state.voxelGpuWorldStateGen = expectedGen;
+            if (wasFirstUpload) {
+                this.log(
+                    `WebGPU-Density: Welt-State hochgeladen — Permutation (256 u32) + Erosion-Grid (${erosionDim}×${erosionDim} f32, has=${erosionHas}) + Tarns (${tarns.length}). Pipeline scharf für eligible Chunks.`,
+                    "INFO"
+                );
+            }
+            return true;
+        } catch (e) {
+            this.state.voxelGpuLastError = "World-State-Upload: " + e.message;
+            this.log(`WebGPU World-State-Upload-Fehler: ${e.message}`, "ERROR");
+            return false;
+        }
+    }
+
+    // Eligibility-Gate für GPU-Density. Returnt true wenn der Chunk auf GPU
+    // gerechnet werden kann (keine Hydrosphere-Carve im Footprint, keine
+    // Lake-Mask, keine voxelEdits). Sonst muss der Worker-Pfad rechnen
+    // (V9.91), der die Hydrosphere + Edits mitbedenkt.
+    _voxelGpuChunkEligible(cx, cz, lod) {
+        // voxelEdits: irgendein Edit mit xz-Overlap mit Chunk → ineligible
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (Array.isArray(edits) && edits.length > 0) {
+            const cfg = this._voxelChunkConfig(lod);
+            const span = cfg.span;
+            const cox = cx * span;
+            const coz = cz * span;
+            const padding = 4; // edit-Radius-Marge
+            for (let i = 0; i < edits.length; i++) {
+                const ed = edits[i];
+                if (!ed) continue;
+                const r = (ed.r || 0) + padding;
+                if (ed.x + r >= cox && ed.x - r < cox + span && ed.z + r >= coz && ed.z - r < coz + span) {
+                    return false;
+                }
+            }
+        }
+        // Hydrosphere: irgendein Lake-Mask oder River-Bucket im Footprint → ineligible
+        const h = this.state.hydrosphere;
+        if (h && h.ready) {
+            const cfg = this._voxelChunkConfig(lod);
+            const span = cfg.span;
+            const cox = cx * span;
+            const coz = cz * span;
+            const cell = h.cell;
+            const dim = h.dim;
+            if (h.lakeNear) {
+                const ci0 = Math.floor((cox - h.originX) / cell);
+                const cj0 = Math.floor((coz - h.originZ) / cell);
+                const ci1 = Math.floor((cox + span - h.originX) / cell);
+                const cj1 = Math.floor((coz + span - h.originZ) / cell);
+                for (let cj = cj0; cj <= cj1; cj++) {
+                    if (cj < 0 || cj >= dim) continue;
+                    for (let ci = ci0; ci <= ci1; ci++) {
+                        if (ci < 0 || ci >= dim) continue;
+                        if (h.lakeNear[ci + cj * dim]) return false;
+                    }
+                }
+            }
+            if (h.riverBuckets && h.bucketSize && h.bucketsDim) {
+                const bs = h.bucketSize;
+                const bd = h.bucketsDim;
+                const bi0 = Math.floor((cox - h.originX) / bs);
+                const bj0 = Math.floor((coz - h.originZ) / bs);
+                const bi1 = Math.floor((cox + span - h.originX) / bs);
+                const bj1 = Math.floor((coz + span - h.originZ) / bs);
+                for (let bj = bj0; bj <= bj1; bj++) {
+                    if (bj < 0 || bj >= bd) continue;
+                    for (let bi = bi0; bi <= bi1; bi++) {
+                        if (bi < 0 || bi >= bd) continue;
+                        const list = h.riverBuckets[bj * bd + bi];
+                        if (list && list.length > 0) return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    // Density-Grid via WebGPU berechnen. Indizierung identisch zu
+    // `_voxelSampleDensityGrid` (Nx=dimX+1, Ny=dimY+1, Nz=dimZ+1, vertex-
+    // basiert). Returns Promise<Float32Array>. Resolves nach mapAsync-Read.
+    // Diagnose: state.voxelGpuLastDispatchMs für Telemetry, dispatchCount für
+    // Sanity ("läuft der GPU-Pfad überhaupt?").
+    _voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step) {
+        if (this.state.voxelGpuStatus !== "ready") {
+            return Promise.reject(new Error("voxel-gpu not ready"));
+        }
+        const device = this.state.voxelGpuDevice;
+        if (!device) return Promise.reject(new Error("voxel-gpu device gone"));
+        const pipeline = this._voxelGpuEnsureDensityPipeline();
+        if (!pipeline) return Promise.reject(new Error("density pipeline not built"));
+        if (!this._voxelGpuUploadWorldState()) {
+            return Promise.reject(new Error("world-state upload failed"));
+        }
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const total = Nx * Ny * Nz;
+        const outBytes = total * 4;
+
+        // Params-Uniform schreiben (64 Bytes — siehe Params-struct in WGSL).
+        // float32 layout: ox(0) oy(4) oz(8) step(12), nx(16) ny(20) nz(24) _pad(28),
+        //                 baseHeight(32) waterLevel(36) _pad(40) _pad(44),
+        //                 erosionOriginX(48) erosionOriginZ(52) erosionCell(56) erosionDim(60)
+        // uint32-fields nutzen denselben Slot (float-bits reinterpret via DataView).
+        // Letzte 16 Bytes für erosionHas + tarnsCount + 2 pads.
+        const ab = new ArrayBuffer(80);
+        const dv = new DataView(ab);
+        const w = this._voxelGpuWorldStateScalars;
+        dv.setFloat32(0, ox, true);
+        dv.setFloat32(4, oy, true);
+        dv.setFloat32(8, oz, true);
+        dv.setFloat32(12, step, true);
+        dv.setUint32(16, Nx, true);
+        dv.setUint32(20, Ny, true);
+        dv.setUint32(24, Nz, true);
+        dv.setUint32(28, 0, true);
+        dv.setFloat32(32, w.baseHeight, true);
+        dv.setFloat32(36, w.waterLevel, true);
+        dv.setFloat32(40, 0, true);
+        dv.setFloat32(44, 0, true);
+        dv.setFloat32(48, w.erosionOriginX, true);
+        dv.setFloat32(52, w.erosionOriginZ, true);
+        dv.setFloat32(56, w.erosionCell, true);
+        dv.setFloat32(60, w.erosionDim, true);
+        dv.setUint32(64, w.erosionHas, true);
+        dv.setUint32(68, w.tarnsCount, true);
+        dv.setUint32(72, 0, true);
+        dv.setUint32(76, 0, true);
+        // WICHTIG: unser Params-Buffer ist 64 Bytes. Aber Params-struct hat
+        // 20 felder = 80 Bytes (5×16). Wir müssen den Buffer auf 80 Bytes
+        // hochziehen — defensive zuerst prüfen + neu erstellen falls < 80.
+        if (!this.state.voxelGpuParamsBuffer || this.state.voxelGpuParamsBuffer.size < 80) {
+            if (this.state.voxelGpuParamsBuffer) {
+                try {
+                    this.state.voxelGpuParamsBuffer.destroy();
+                } catch (_e) {
+                    /* defensive */
+                }
+            }
+            this.state.voxelGpuParamsBuffer = device.createBuffer({
+                size: 80,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            });
+        }
+        device.queue.writeBuffer(this.state.voxelGpuParamsBuffer, 0, ab);
+
+        // Per-Request Output- + Read-Buffer. Pro chunk ~360 KB für LOD-0,
+        // ~57 KB für LOD-1 — vernachlässigbar.
+        const outBuf = device.createBuffer({
+            size: outBytes,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+        });
+        const readBuf = device.createBuffer({
+            size: outBytes,
+            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+        });
+
+        const bindGroup = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+                { binding: 0, resource: { buffer: this.state.voxelGpuParamsBuffer } },
+                { binding: 1, resource: { buffer: this.state.voxelGpuPermBuffer } },
+                { binding: 2, resource: { buffer: this.state.voxelGpuErosionBuffer } },
+                { binding: 3, resource: { buffer: this.state.voxelGpuTarnsBuffer } },
+                { binding: 4, resource: { buffer: outBuf } },
+            ],
+        });
+
+        const t0 = typeof performance !== "undefined" ? performance.now() : 0;
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginComputePass();
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.dispatchWorkgroups(Math.ceil(total / 64));
+        pass.end();
+        encoder.copyBufferToBuffer(outBuf, 0, readBuf, 0, outBytes);
+        device.queue.submit([encoder.finish()]);
+
+        return readBuf.mapAsync(GPUMapMode.READ).then(() => {
+            const copy = new Float32Array(readBuf.getMappedRange().slice(0));
+            readBuf.unmap();
+            try {
+                outBuf.destroy();
+                readBuf.destroy();
+            } catch (_e) {
+                /* defensive */
+            }
+            const t1 = typeof performance !== "undefined" ? performance.now() : 0;
+            this.state.voxelGpuLastDispatchMs = t1 - t0;
+            this.state.voxelGpuDispatchCount++;
+            // V9.95-d Telemetry: erster Dispatch ist die Vision-Bestätigung
+            // („GPU rechnet WIRKLICH Density"). Danach alle 50 Dispatches eine
+            // ms-Telemetry. Sonst stille Beschleunigung — der Schöpfer sieht
+            // den Win nicht.
+            const n = this.state.voxelGpuDispatchCount;
+            if (n === 1) {
+                this.log(
+                    `WebGPU-Density: erster Dispatch — ${this.state.voxelGpuLastDispatchMs.toFixed(2)} ms für ${copy.length} Float32-Samples. GPU rechnet jetzt die Welt-Density.`,
+                    "INFO"
+                );
+            } else if (n % 50 === 0) {
+                this.log(
+                    `WebGPU-Density: ${n} Dispatches kumuliert — letzter ${this.state.voxelGpuLastDispatchMs.toFixed(2)} ms.`,
+                    "INFO"
+                );
+            }
+            return copy;
+        });
+    }
+
+    // Cache-First-Lookup für den Streaming-Pfad. Drei Rückgabe-Varianten
+    // analog zu `_fetchOrRequestChunkDensity` (V9.90):
+    //   (a) Float32Array — Cache-Hit (one-shot konsumiert)
+    //   (b) null — GPU-Request läuft pending
+    //   (c) undefined — GPU nicht ready ODER chunk nicht eligible
+    _fetchOrRequestChunkDensityGpu(cx, cz, lod) {
+        if (this.state.voxelGpuStatus !== "ready") return undefined;
+        if (!this._voxelGpuChunkEligible(cx, cz, lod)) return undefined;
+        const cfg = this._voxelChunkConfig(lod);
+        const { dim, step, span, dimY, floorDrop } = cfg;
+        const base = this.state.terrainBaseHeight || 0;
+        const ox = cx * span;
+        const oz = cz * span;
+        const oy = base - floorDrop;
+        const cacheKey = `${cx},${cz},${lod}`;
+        if (this.state.voxelGpuDensityCache && this.state.voxelGpuDensityCache.has(cacheKey)) {
+            const cached = this.state.voxelGpuDensityCache.get(cacheKey);
+            this.state.voxelGpuDensityCache.delete(cacheKey);
+            return cached;
+        }
+        if (!this.state.voxelGpuDensityPending) this.state.voxelGpuDensityPending = new Set();
+        if (this.state.voxelGpuDensityPending.has(cacheKey)) return null;
+        if (!this.state.voxelGpuDensityGenAtRequest) this.state.voxelGpuDensityGenAtRequest = new Map();
+        this.state.voxelGpuDensityPending.add(cacheKey);
+        const expectedStateGen = this.state.voxelWorkerStateGen;
+        this.state.voxelGpuDensityGenAtRequest.set(cacheKey, expectedStateGen);
+        // Origin + Sample-Dimensions IDENTISCH zur Main-Thread-Geometry-Calls
+        // (V9.42-d-Pad: ox-step + dim+3 in X/Z, vertikal dimY).
+        this._voxelGpuComputeDensity(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step)
+            .then((density) => {
+                this.state.voxelGpuDensityPending.delete(cacheKey);
+                if (this.state.voxelWorkerStateGen !== expectedStateGen) {
+                    this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
+                    return;
+                }
+                this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
+                if (!this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache = new Map();
+                this.state.voxelGpuDensityCache.set(cacheKey, density);
+            })
+            .catch((err) => {
+                this.state.voxelGpuDensityPending.delete(cacheKey);
+                this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
+                this.log(`Voxel-GPU-Density-Fehler (${cacheKey}): ${err.message}`, "ERROR");
+            });
+        return null;
     }
 
     creatureJump(creature, jumpHeight) {
@@ -14066,7 +14881,10 @@ class AnazhRealm {
     _worldgenComputeErosionAndTarns() {
         try {
             this.state.erosion = this._computeErosion();
-            this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
+            this.log(
+                `V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.iterations} Stream-Power-Iterationen über ${AnazhRealm.EROSION.regionSize}m-Region`,
+                "INFO"
+            );
             const tarns = this._hydroSeedTarns();
             this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
         } catch (e) {
@@ -14124,6 +14942,10 @@ class AnazhRealm {
         try {
             const vspan = this._voxelChunkConfig().span;
             this.state.voxelPopulatedChunks = new Set();
+            // V9.96 — Spawn-Queue beim Worldgen-Reset leeren. Pending-Tasks
+            // aus der alten Welt sind nicht mehr relevant (Atlas + Surface
+            // sind neu generiert, alte Positionen können kollidieren).
+            this.state.pendingVegSpawns = [];
             for (const a of this.state.architectures || []) {
                 if (!a || !a.position) continue;
                 const cx = Math.floor(a.position.x / vspan);
@@ -16217,10 +17039,20 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V9.91 Phase 3 — voller Worker-Mesh-Build (wenn verfügbar + worldgen-
-        // synced). Cache-Hit → BufferGeometry-Konstruktion + Stempel + BVH +
-        // Scene (~30 ms Main). Pending → null (Pump kommt wieder). Undefined →
-        // V9.90-Density-Pfad oder voller Sync-Fallback.
+        // V9.95-b/d — GPU-Density als Stufe-0 NUR bei Cache-Hit. Wenn GPU
+        // pending (Request läuft), fällt der Chunk weiter zum Worker-Mesh-
+        // V9.95-e — EHRLICHE ABKLEMMUNG: GPU-Density-Pfad wird im Streaming
+        // NICHT mehr gerufen. Architektonische Wurzel: WebGPU-Compute mit
+        // WebGL-Renderer braucht IMMER einen CPU-Roundtrip (mapAsync blockt
+        // den Main-Thread bis Read-Back fertig ist). Der ~50ms-Worker-CPU-
+        // Density-Save war billiger als der ~200-300ms GPU+mapAsync-Stall.
+        // Schöpfer-Browser-Audit V9.95-d zeigte: FPS sinkt auf 6-9, Auto-
+        // Optimization triggert mehrfach. Architektonisch falsch verdrahtet.
+        // V9.95-a/b/c/d-Code (Foundation + Pipeline + Telemetry) BLEIBT als
+        // Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration (dann zero-
+        // copy GPU→Mesh möglich). Bis dahin: Worker-Mesh-Pfad ist PRIMARY,
+        // GPU greift NUR ein wo Worker komplett tot ist (rare).
+        // Worker-Mesh-Cache als Stufe-0 (V9.91-Pattern restoriert).
         let workerMesh;
         if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
@@ -16237,11 +17069,11 @@ class AnazhRealm {
         if (workerMesh) {
             fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         } else {
-            // V9.90 Phase 2 — Worker-Density-Fallback (selten — nur wenn der
-            // Mesh-Path explizit `undefined` zurückgab, d.h. Worker komplett
-            // unverfügbar). Zur Sicherheit behalten wir den V9.90-Density-
-            // Cache-Pfad als Stufe-2-Fallback. Sync-Build baut IMMER BVH —
-            // Lazy-BVH ist nur am Worker-Pfad.
+            // V9.95-e — Worker komplett tot (Spawn-Fehler, kein WASM-Worker-Support).
+            // Stufe-2-Fallback: Worker-Density-Cache (V9.90, separater Pfad). Wenn
+            // der auch nicht greift: sync-Build (V9.42-d). GPU-Pipeline ist in
+            // diesem Lauf NICHT der Streaming-Pfad — der mapAsync-Stall ist
+            // architektonisch gegenüber dem Worker-CPU-Density teurer.
             let workerDensity;
             if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
                 workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
@@ -18052,6 +18884,11 @@ class AnazhRealm {
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        // V9.95-c — GPU-Init zweiter Trigger-Punkt: idempotent (early-return
+        // wenn schon ready/pending/unavailable). Garantiert dass GPU bei
+        // jeder Session initialisiert wird, auch wenn das Worldgen-Hook
+        // verpasst wurde (Save-Restore-Pfad ohne fresh Worldgen).
+        if (this.state.voxelGpuStatus === "notTried") this._tryStartVoxelGpuInit();
         const { span, ringRadius } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position
@@ -28853,10 +29690,21 @@ class AnazhRealm {
             const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
             if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
                 const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
-                this.spawnArchitecture(
+                // V9.96 — Spawn-Burst-Heilung: enqueue statt sofort spawnen.
+                // Der Streaming-Pump kann 9+ Chunks öffnen, jeder mit bis zu
+                // 64 sample-Stellen → 30-90 spawnArchitecture in EINEM Frame.
+                // Jeder Spawn ~5-15ms (Builder + Ammo-Body + BlockerAABBs +
+                // remeshVoxelChunksAround) = 200-500ms Frame-Spike. Der echte
+                // FPS-Killer den der Schöpfer im Browser sah (FPS 6-9 beim
+                // Streaming). Mit Queue + 4 spawns/Frame = ~20-25ms pro Frame
+                // verteilt über mehrere Frames, kein einzelner Spike mehr.
+                this._enqueueVegetationSpawn(
                     lmName,
                     { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
-                    { seed: seedForSpawn, silent: true }
+                    {
+                        seed: seedForSpawn,
+                        silent: true,
+                    }
                 );
                 return 1; // an dieser Stelle keine zweite Struktur
             }
@@ -28879,12 +29727,47 @@ class AnazhRealm {
         const chance = BASE_RATE * bestAffinity * bestAffinity;
         if (probe >= chance) return 0;
 
-        this.spawnArchitecture(
+        this._enqueueVegetationSpawn(
             bestName,
             { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
-            { seed: seedForSpawn, silent: true }
+            {
+                seed: seedForSpawn,
+                silent: true,
+            }
         );
         return 1;
+    }
+
+    // V9.96 — Per-Frame-Spawn-Budget. Enqueue eine Vegetations-Spawn-Task
+    // in die FIFO-Queue; `_tickPendingVegSpawns` arbeitet sie ab mit max-
+    // pro-Frame-Limit. Welt-Wechsel/Reload räumt die Queue. Wenn
+    // `this._vegSpawnImmediate === true` (Test/Worldgen-Pfad), wird direkt
+    // synchron gespawnt — bypass der Queue.
+    _enqueueVegetationSpawn(name, position, opts) {
+        if (this._vegSpawnImmediate) {
+            this.spawnArchitecture(name, position, opts);
+            return;
+        }
+        if (!this.state.pendingVegSpawns) this.state.pendingVegSpawns = [];
+        this.state.pendingVegSpawns.push({ name, position, opts });
+    }
+
+    // V9.96 — Per-Frame-Spawn-Worker. Pops bis zu maxPerFrame Tasks aus
+    // der Queue + ruft `spawnArchitecture` für jede. 4 Spawns/Frame =
+    // ~20-25ms Frame-Cost (statt ~200-500ms Burst). Spawns verteilen sich
+    // über ~10-25 Frames bei einem typischen 9-Chunk-Streaming-Ring,
+    // sichtbar als sanftes Vegetations-Wachstum statt FPS-Crash.
+    _tickPendingVegSpawns(maxPerFrame = 4) {
+        const queue = this.state.pendingVegSpawns;
+        if (!queue || queue.length === 0) return 0;
+        let spawned = 0;
+        for (let i = 0; i < maxPerFrame && queue.length > 0; i++) {
+            const task = queue.shift();
+            if (!task) continue;
+            this.spawnArchitecture(task.name, task.position, task.opts);
+            spawned++;
+        }
+        return spawned;
     }
 
     // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
@@ -28895,7 +29778,7 @@ class AnazhRealm {
     // statt `_terrainHeightAtWorld` als Höhenquelle (die Struktur sitzt auf
     // dem Voxel-Boden, nicht auf dem schlafenden Heightfield). Idempotent
     // über `state.voxelPopulatedChunks`. Am Voxel-Chunk-Lifecycle aufgehängt.
-    _populateVoxelChunkVegetation(cx, cz) {
+    _populateVoxelChunkVegetation(cx, cz, opts = {}) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         if (!this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks = new Set();
         const key = `${cx},${cz}`;
@@ -28907,16 +29790,26 @@ class AnazhRealm {
         const oz = cz * span;
         const SAMPLES = 8;
         const step = span / SAMPLES;
+        // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
+        // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
+        // Default: false → Tasks gehen in die Queue + werden per-Frame
+        // gedrosselt (FPS-Burst-Schutz). Test-Anpassung V9.56-i-Pattern.
+        const prevImmediate = this._vegSpawnImmediate || false;
+        this._vegSpawnImmediate = !!opts.immediate;
         let spawned = 0;
-        for (let zi = 0; zi < SAMPLES; zi++) {
-            for (let xi = 0; xi < SAMPLES; xi++) {
-                const sampleX = ox + (xi + 0.5) * step;
-                const sampleZ = oz + (zi + 0.5) * step;
-                const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
-                if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
-                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
-                spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
+        try {
+            for (let zi = 0; zi < SAMPLES; zi++) {
+                for (let xi = 0; xi < SAMPLES; xi++) {
+                    const sampleX = ox + (xi + 0.5) * step;
+                    const sampleZ = oz + (zi + 0.5) * step;
+                    const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
+                    if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+                    const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
+                }
             }
+        } finally {
+            this._vegSpawnImmediate = prevImmediate;
         }
         return spawned;
     }
@@ -36435,24 +37328,88 @@ class AnazhRealm {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const renderer = new THREE.WebGLRenderer({ canvas });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(1);
-        renderer.setClearColor(0x000000, 1);
-        renderer.depthTest = true;
-        renderer.shadowMap.enabled = true;
-        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap. PCFSoft macht 16
-        // Samples pro Fragment (4×4-Kernel-Average), PCF macht 4. Bei der
-        // V8.47-2048er-mapSize + normalBias=1.0 sind die Schatten ohnehin
-        // weich genug positioniert — der zusätzliche 4×4-Filter ist eine
-        // Bandwidth-Investition, die auf Mid-Range-Hardware ~10–20% GPU
-        // kostet, ohne dass der Spieler den Unterschied sieht (V8.47-Bias
-        // dominiert die Soft-Kante). Die V8.47-mapSize=2048 bleibt — die
-        // ist eine bewusste Qualitäts-Investition (schärfere Schatten-Kante),
-        // ihre Rücknahme würde den Bias-Stack neu kalibrieren verlangen.
-        renderer.shadowMap.type = THREE.PCFShadowMap;
+        // V10.0-a (Welle Three.js-Migration r134 → r160): ColorManagement
+        // wurde mit r142+ default ON. Three.js wandelt sRGB-Color-Werte intern
+        // in linearen Space für korrekten Lighting-Math. Bridge-Heilung:
+        // legacy ColorManagement, damit die Welt-Optik identisch zur r134-
+        // Baseline bleibt. V10.0-b/c machen den sauberen Switch (alle
+        // Materials + Lights mit physically-correct + sRGB-textures explizit).
+        if (typeof THREE !== "undefined" && THREE.ColorManagement) {
+            THREE.ColorManagement.enabled = false;
+        }
+        // V10.0-d — Renderer-Auswahl-Logik: WebGPU wenn verfügbar, sonst
+        // klassischer WebGL. WebGPURenderer braucht `await renderer.init()`
+        // vor dem ersten Render (async); wir blockieren den Render-Pfad
+        // mit `state.rendererReady` bis init durch ist. Defensive 2-Stufen-
+        // Fallback: bei JEDEM Fehler (Constructor, init(), Backend) fallen
+        // wir auf WebGLRenderer zurück mit klarer Log-Spur.
+        //
+        // BEKANNTE BEGRENZUNG (V10.0-e holt das nach): unsere zwei
+        // ShaderMaterials (hydroSurfaceMaterial, waterfallMaterial) nutzen
+        // custom GLSL. WebGPURenderer in r160 unterstützt das via
+        // GLSLNodeBuilder, aber unsere Shaders sind nicht NodeMaterial-
+        // konform. Wenn WebGPU rendert + ShaderMaterial fehlschlägt, sieht
+        // der Schöpfer Browser-Console-Errors — das ist die V10.0-e-Audit-
+        // Spur.
+        const wantWebGPU =
+            typeof THREE.WebGPURenderer === "function" &&
+            THREE.WebGPU &&
+            typeof THREE.WebGPU.isAvailable === "function" &&
+            THREE.WebGPU.isAvailable();
+        let renderer = null;
+        let rendererKind = "webgl";
+        if (wantWebGPU) {
+            try {
+                renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+                rendererKind = "webgpu";
+                this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
+            } catch (err) {
+                this.log(
+                    `WebGPU-Renderer-Constructor scheiterte (${err.message}) — Fallback WebGLRenderer.`,
+                    "WARNING"
+                );
+                renderer = null;
+            }
+        }
+        if (!renderer) {
+            renderer = new THREE.WebGLRenderer({ canvas });
+            rendererKind = "webgl";
+            const reason = wantWebGPU ? "WebGPU-Constructor-Fehler" : "navigator.gpu/Adapter nicht verfügbar";
+            this.log(`WebGLRenderer aktiv (${reason})`, "INFO");
+        }
+        this._configureRenderer(renderer, rendererKind);
+        // Default-ready für WebGL; WebGPU setzt true erst nach `init()`.
+        this.state.rendererKind = rendererKind;
+        this.state.rendererReady = rendererKind === "webgl";
+        if (rendererKind === "webgpu") {
+            renderer
+                .init()
+                .then(() => {
+                    this.state.rendererReady = true;
+                    this.log("WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.", "INFO");
+                })
+                .catch((err) => {
+                    this.log(
+                        `WebGPU-Renderer init() scheiterte (${err.message}) — Hot-Swap zu WebGLRenderer.`,
+                        "ERROR"
+                    );
+                    // Dispose WebGPU-Renderer + neuen WebGL erstellen mit
+                    // identischer Konfiguration. Die Scene + Camera sind
+                    // unangetastet, der neue Renderer übernimmt nahtlos.
+                    try {
+                        if (typeof renderer.dispose === "function") renderer.dispose();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                    const fallbackRenderer = new THREE.WebGLRenderer({ canvas });
+                    this._configureRenderer(fallbackRenderer, "webgl");
+                    this.state.renderer = fallbackRenderer;
+                    this.state.rendererKind = "webgl";
+                    this.state.rendererReady = true;
+                });
+        }
         this.state.renderer = renderer;
-        this.log("Renderer initialisiert mit Schattenunterstützung", "INFO");
+        this.log(`Renderer initialisiert mit Schattenunterstützung (${rendererKind})`, "INFO");
         this.state.selfAwareness.components.push("renderer");
 
         const scene = new THREE.Scene();
@@ -37530,6 +38487,9 @@ class AnazhRealm {
         // V9.24-Verdrahtung).
         const playerPos = this.state.playerMesh.position;
         this._tickVoxelChunkStreaming(playerPos);
+        // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
+        // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
+        this._tickPendingVegSpawns(4);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -37701,7 +38661,67 @@ class AnazhRealm {
             this.state.windUniforms.uWindTime.value = currentTime;
             this.state.windUniforms.uWindStrength.value = this.state.weather === "rainy" ? 0.26 : 0.12;
         }
-        this.state.renderer.render(this.state.scene, this.state.camera);
+        // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
+        // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
+        // ready ist (typisch 1-2 Frames bei AMD/Nvidia, 5-10 bei Software-
+        // Fallback). Bei WebGL ist `rendererReady` sofort true im
+        // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
+        // aber unnötige Promise-Rejections im Console-Log vermieden.
+        if (!this.state.rendererReady) return;
+        // V10.0-e — WebGPURenderer.render() ist async; bei inkompatiblen
+        // Materials (unsere `hydroSurfaceMaterial` + `waterfallMaterial`
+        // sind klassische ShaderMaterials, WebGPU in r160 erwartet
+        // NodeMaterial/TSL) wirft `NodeMaterial.fromMaterial` einen
+        // Promise-Reject pro Frame. Schöpfer-Browser-Audit V10.0-d zeigte:
+        // FPS sinkt auf 8 wegen ständig wiederholten Errors. Smart-Hot-
+        // Swap: ersten erkannten ShaderMaterial-Error → Renderer-Wechsel
+        // zu WebGLRenderer (identische Config, dispose WebGPU). Eine-
+        // mal-Operation: `state.rendererInkompatibel`-Flag verhindert
+        // weitere Versuche. V10.0-f portiert dann die zwei Custom-Shaders
+        // zu TSL für echten GPU-Render.
+        const renderResult = this.state.renderer.render(this.state.scene, this.state.camera);
+        if (renderResult && typeof renderResult.catch === "function" && !this.state.rendererInkompatibel) {
+            renderResult.catch((err) => {
+                const msg = err && err.message ? err.message : String(err);
+                if (msg.includes("ShaderMaterial") || msg.includes("not compatible") || msg.includes("NodeMaterial")) {
+                    if (this.state.rendererInkompatibel) return; // schon gemeldet
+                    this.state.rendererInkompatibel = true;
+                    this.log(
+                        `WebGPURenderer-Inkompatibilität (${msg.slice(0, 80)}) — Hot-Swap zu WebGLRenderer. V10.0-f wird die Custom-Shaders zu TSL portieren.`,
+                        "WARNING"
+                    );
+                    this._swapToWebGLRenderer();
+                }
+            });
+        }
+    }
+
+    // V10.0-e — Hot-Swap WebGPU→WebGL bei Render-Inkompatibilität. Dispose
+    // den WebGPURenderer (gibt Device-Slot frei), erstelle frischen
+    // WebGLRenderer mit identischer Konfiguration über `_configureRenderer`,
+    // setze state.renderer + state.rendererKind="webgl". Welt rendert ab
+    // nächstem Frame über WebGL — visuell 1:1 wie vor V10.0-a (die V10.0-a-
+    // Bridge-Heilungen ColorManagement+useLegacyLights bleiben aktiv).
+    _swapToWebGLRenderer() {
+        try {
+            const oldRenderer = this.state.renderer;
+            if (oldRenderer && typeof oldRenderer.dispose === "function") {
+                oldRenderer.dispose();
+            }
+        } catch (_e) {
+            /* defensive */
+        }
+        const canvas = document.getElementById("world-canvas");
+        if (!canvas) {
+            this.log("Hot-Swap fehlgeschlagen: world-canvas fehlt", "ERROR");
+            return;
+        }
+        const fallback = new THREE.WebGLRenderer({ canvas });
+        this._configureRenderer(fallback, "webgl");
+        this.state.renderer = fallback;
+        this.state.rendererKind = "webgl";
+        this.state.rendererReady = true;
+        this.log("Hot-Swap abgeschlossen — WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
     }
 
     // ### Hilfsfunktionen ### V7.56
@@ -37943,7 +38963,337 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.93";
+AnazhRealm.VERSION = "10.0";
+
+// V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
+// als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
+// `f32 * f32` (square) in storage-buffer 1. Workgroup-Size 64, dispatch
+// 4 Workgroups deckt N=256. Per IEEE-754-Spec ist `f32 * f32` deterministisch
+// + bit-identisch zu JS `Math.fround(v * v)` (single-precision multiplication
+// hat keine implementation-defined precision, anders als sin/cos/sqrt).
+// Wer das Pattern für V9.95-b's WGSL-Density-Shader erweitert: Storage-Buffer
+// als read/read_write deklarieren, Uniforms separat, gleicher Dispatch-Stil.
+AnazhRealm.WGSL_TRIVIAL_SQUARE = `
+    @group(0) @binding(0) var<storage, read> inBuf: array<f32>;
+    @group(0) @binding(1) var<storage, read_write> outBuf: array<f32>;
+
+    @compute @workgroup_size(64)
+    fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+        let i = gid.x;
+        if (i < arrayLength(&inBuf)) {
+            let v = inBuf[i];
+            outBuf[i] = v * v;
+        }
+    }
+`;
+
+// V9.95-b (Welle WebGPU-Density-Pipeline) — voller WGSL-Compute-Shader für
+// die Worldgen-Density. Mirror von `_terrainDensityAt` aus `voxel-worker.js`
+// (ohne Hydrosphere-Carve/Lake-Mask + ohne voxelEdits — die fallen durchs
+// JS-Eligibility-Gate auf den V9.91-Worker-Pfad zurück). Was läuft auf GPU:
+//   - SimplexNoise (Stefan-Gustavson-Port, public domain, 2D + 3D)
+//   - terrainMacroSurfaceY (domain-warp + tect + cont + ridges + sub-ocean)
+//   - 3D-Detail-Octaven (zwei 3D-Noise-Schichten)
+//   - Cave-Ridged-Hülle (klemmt sich zwischen base-28 und surf-6)
+//   - Erosion-Delta (bilinear sample aus dem upgeloadeten 64×64-Grid)
+//   - Tarn-Delta (Gauss-Sum über die Tarn-Liste)
+//
+// Bindings: alle in @group(0):
+//   @binding(0) uniform Params (scalar world-state)
+//   @binding(1) storage<read> permTable (512 u32, SimplexNoise-Permutation, geseeded)
+//   @binding(2) storage<read> erosionDelta (Float32, dim × dim, 0-padded wenn keine Erosion)
+//   @binding(3) storage<read> tarnsBuf (Float32 packed [x,z,d,reach2,twoSig2] × tarnsCount)
+//   @binding(4) storage<read_write> outDensity (Float32, Nx*Ny*Nz)
+//
+// Workgroup-Size 64 (typische GPU-Cache-Linie). Dispatch ceil(N/64).
+//
+// **Determinismus-Strategie** (V9.95-a-Lehre): `f32 * f32` ist per IEEE-754
+// bit-identisch zwischen WGSL + JS, ABER `sin/cos/sqrt/exp` haben
+// implementation-defined precision (WGSL §3.6, relativer Fehler ≤ 2^-22).
+// Konsequenz: GPU-Resultat ist GPU-intern bit-deterministisch (zwei Runs
+// identisch), aber GPU-vs-Worker NICHT bit-identisch — Toleranz |Δ| < 1e-3
+// für Density-Werte (Surface-Nets-Smoothing absorbiert das im Mesh).
+AnazhRealm.WGSL_DENSITY_GRID = `
+struct Params {
+    // Sample-Region des Chunks
+    ox: f32, oy: f32, oz: f32, step: f32,
+    nx: u32, ny: u32, nz: u32, _pad0: u32,
+    // World-State Scalars
+    baseHeight: f32, waterLevel: f32, _pad1: f32, _pad2: f32,
+    // Erosion-Grid (alle 0 wenn keine Erosion vorhanden)
+    erosionOriginX: f32, erosionOriginZ: f32, erosionCell: f32, erosionDim: f32,
+    erosionHas: u32, tarnsCount: u32, _pad3: u32, _pad4: u32,
+};
+
+@group(0) @binding(0) var<uniform> params: Params;
+@group(0) @binding(1) var<storage, read> permTable: array<u32>;
+@group(0) @binding(2) var<storage, read> erosionDelta: array<f32>;
+@group(0) @binding(3) var<storage, read> tarnsBuf: array<f32>;
+@group(0) @binding(4) var<storage, read_write> outDensity: array<f32>;
+
+// =========================================================================
+// SimplexNoise 2D + 3D — exakter Mirror der vendor/simplex-noise.js (Stefan-
+// Gustavson). Vendor nutzt grad3 (12 Einträge) für BEIDE 2D und 3D (in 2D
+// wird die z-Komponente ignoriert), plus permMod12 = perm % 12 für gi-Index.
+// Unsere Permutation kommt aus 'new SimplexNoise(seed+":voxel")' im Main +
+// wird hochgeladen — exakt dieselbe perm-Reihe wie der Worker.
+// grad3 ist hier hartcodiert (es ist fest, hängt nicht vom Seed ab).
+//
+// **Determinismus-Achtung** (V9.95-a-Lehre): die Welt-MAKRO-Struktur ist
+// algorithm-äquivalent zum Worker, ABER die transzendenten Sub-Operationen
+// (sqrt im exp via Wachstumsformel, abs, etc.) können in WGSL Float32-Drift
+// gegenüber JS Float64 zeigen (relativer Fehler ≤ 2^-22 pro WGSL §3.6).
+// Sanity: GPU-vs-Worker |Δ| typisch < 1e-3 für Density-Werte — Surface-Nets-
+// Smoothing absorbiert das. GPU-internal-Determinismus (zwei Runs identisch)
+// ist bit-exakt ('+ - * /' sind per IEEE-754 garantiert).
+// =========================================================================
+
+fn perm(i: u32) -> u32 {
+    return permTable[i & 255u];
+}
+
+fn permMod12(i: u32) -> u32 {
+    return perm(i) % 12u;
+}
+
+// grad3: 12 Vektoren als WGSL switch (hartcodiert, vendor-grad3-mirror).
+fn grad3(g: u32) -> vec3<f32> {
+    let h: u32 = g % 12u;
+    switch (h) {
+        case 0u: { return vec3<f32>(1.0, 1.0, 0.0); }
+        case 1u: { return vec3<f32>(-1.0, 1.0, 0.0); }
+        case 2u: { return vec3<f32>(1.0, -1.0, 0.0); }
+        case 3u: { return vec3<f32>(-1.0, -1.0, 0.0); }
+        case 4u: { return vec3<f32>(1.0, 0.0, 1.0); }
+        case 5u: { return vec3<f32>(-1.0, 0.0, 1.0); }
+        case 6u: { return vec3<f32>(1.0, 0.0, -1.0); }
+        case 7u: { return vec3<f32>(-1.0, 0.0, -1.0); }
+        case 8u: { return vec3<f32>(0.0, 1.0, 1.0); }
+        case 9u: { return vec3<f32>(0.0, -1.0, 1.0); }
+        case 10u: { return vec3<f32>(0.0, 1.0, -1.0); }
+        default: { return vec3<f32>(0.0, -1.0, -1.0); }
+    }
+}
+
+// 2D Simplex Noise — vendor-mirror, nutzt grad3 (z ignoriert).
+fn snoise2D(p: vec2<f32>) -> f32 {
+    let F2: f32 = 0.366025403784;  // 0.5 * (sqrt(3) - 1)
+    let G2: f32 = 0.211324865405;  // (3 - sqrt(3)) / 6
+
+    let s: f32 = (p.x + p.y) * F2;
+    let i0: i32 = i32(floor(p.x + s));
+    let j0: i32 = i32(floor(p.y + s));
+    let t: f32 = f32(i0 + j0) * G2;
+    let X0: f32 = f32(i0) - t;
+    let Y0: f32 = f32(j0) - t;
+    let x0: f32 = p.x - X0;
+    let y0: f32 = p.y - Y0;
+
+    var i1: i32; var j1: i32;
+    if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
+
+    let x1: f32 = x0 - f32(i1) + G2;
+    let y1: f32 = y0 - f32(j1) + G2;
+    let x2: f32 = x0 - 1.0 + 2.0 * G2;
+    let y2: f32 = y0 - 1.0 + 2.0 * G2;
+
+    let ii: u32 = u32(i0) & 255u;
+    let jj: u32 = u32(j0) & 255u;
+    let gi0: u32 = permMod12(ii + perm(jj));
+    let gi1: u32 = permMod12(ii + u32(i1) + perm(jj + u32(j1)));
+    let gi2: u32 = permMod12(ii + 1u + perm(jj + 1u));
+    let g0v: vec3<f32> = grad3(gi0);
+    let g1v: vec3<f32> = grad3(gi1);
+    let g2v: vec3<f32> = grad3(gi2);
+
+    var n0: f32 = 0.0; var n1: f32 = 0.0; var n2: f32 = 0.0;
+    let t0: f32 = 0.5 - x0*x0 - y0*y0;
+    if (t0 >= 0.0) { let t02 = t0*t0; n0 = t02*t02 * (g0v.x * x0 + g0v.y * y0); }
+    let t1: f32 = 0.5 - x1*x1 - y1*y1;
+    if (t1 >= 0.0) { let t12 = t1*t1; n1 = t12*t12 * (g1v.x * x1 + g1v.y * y1); }
+    let t2: f32 = 0.5 - x2*x2 - y2*y2;
+    if (t2 >= 0.0) { let t22 = t2*t2; n2 = t22*t22 * (g2v.x * x2 + g2v.y * y2); }
+    return 70.0 * (n0 + n1 + n2);
+}
+
+// 3D Simplex Noise — vendor-mirror, grad3 mit permMod12-index.
+fn snoise3D(p: vec3<f32>) -> f32 {
+    let F3: f32 = 1.0 / 3.0;
+    let G3: f32 = 1.0 / 6.0;
+
+    let s: f32 = (p.x + p.y + p.z) * F3;
+    let i: i32 = i32(floor(p.x + s));
+    let j: i32 = i32(floor(p.y + s));
+    let k: i32 = i32(floor(p.z + s));
+    let t: f32 = f32(i + j + k) * G3;
+    let X0: f32 = f32(i) - t;
+    let Y0: f32 = f32(j) - t;
+    let Z0: f32 = f32(k) - t;
+    let x0: f32 = p.x - X0;
+    let y0: f32 = p.y - Y0;
+    let z0: f32 = p.z - Z0;
+
+    var i1: i32 = 0; var j1: i32 = 0; var k1: i32 = 0;
+    var i2: i32 = 0; var j2: i32 = 0; var k2: i32 = 0;
+    if (x0 >= y0) {
+        if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+        else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
+        else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
+    } else {
+        if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; }
+        else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; }
+        else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
+    }
+
+    let x1: f32 = x0 - f32(i1) + G3;
+    let y1: f32 = y0 - f32(j1) + G3;
+    let z1: f32 = z0 - f32(k1) + G3;
+    let x2: f32 = x0 - f32(i2) + 2.0 * G3;
+    let y2: f32 = y0 - f32(j2) + 2.0 * G3;
+    let z2: f32 = z0 - f32(k2) + 2.0 * G3;
+    let x3: f32 = x0 - 1.0 + 3.0 * G3;
+    let y3: f32 = y0 - 1.0 + 3.0 * G3;
+    let z3: f32 = z0 - 1.0 + 3.0 * G3;
+
+    let ii: u32 = u32(i) & 255u;
+    let jj: u32 = u32(j) & 255u;
+    let kk: u32 = u32(k) & 255u;
+    let gi0: u32 = permMod12(ii + perm(jj + perm(kk)));
+    let gi1: u32 = permMod12(ii + u32(i1) + perm(jj + u32(j1) + perm(kk + u32(k1))));
+    let gi2: u32 = permMod12(ii + u32(i2) + perm(jj + u32(j2) + perm(kk + u32(k2))));
+    let gi3: u32 = permMod12(ii + 1u + perm(jj + 1u + perm(kk + 1u)));
+    let g0v: vec3<f32> = grad3(gi0);
+    let g1v: vec3<f32> = grad3(gi1);
+    let g2v: vec3<f32> = grad3(gi2);
+    let g3v: vec3<f32> = grad3(gi3);
+
+    var n0: f32 = 0.0; var n1: f32 = 0.0; var n2: f32 = 0.0; var n3: f32 = 0.0;
+    let t0: f32 = 0.6 - x0*x0 - y0*y0 - z0*z0;
+    if (t0 >= 0.0) { let t02 = t0*t0; n0 = t02*t02 * (g0v.x*x0 + g0v.y*y0 + g0v.z*z0); }
+    let t1: f32 = 0.6 - x1*x1 - y1*y1 - z1*z1;
+    if (t1 >= 0.0) { let t12 = t1*t1; n1 = t12*t12 * (g1v.x*x1 + g1v.y*y1 + g1v.z*z1); }
+    let t2: f32 = 0.6 - x2*x2 - y2*y2 - z2*z2;
+    if (t2 >= 0.0) { let t22 = t2*t2; n2 = t22*t22 * (g2v.x*x2 + g2v.y*y2 + g2v.z*z2); }
+    let t3: f32 = 0.6 - x3*x3 - y3*y3 - z3*z3;
+    if (t3 >= 0.0) { let t32 = t3*t3; n3 = t32*t32 * (g3v.x*x3 + g3v.y*y3 + g3v.z*z3); }
+    return 32.0 * (n0 + n1 + n2 + n3);
+}
+
+// =========================================================================
+// Welt-State-Functions (mirror voxel-worker.js)
+// =========================================================================
+
+fn erosion_delta_at(x: f32, z: f32) -> f32 {
+    if (params.erosionHas == 0u) { return 0.0; }
+    let dim: f32 = params.erosionDim;
+    let fx: f32 = (x - params.erosionOriginX) / params.erosionCell;
+    let fz: f32 = (z - params.erosionOriginZ) / params.erosionCell;
+    if (fx < 0.0 || fz < 0.0 || fx >= dim - 1.0 || fz >= dim - 1.0) { return 0.0; }
+    let i0: i32 = i32(fx);
+    let j0: i32 = i32(fz);
+    let tx: f32 = fx - f32(i0);
+    let tz: f32 = fz - f32(j0);
+    let idim: u32 = u32(dim);
+    let a: u32 = u32(i0) + u32(j0) * idim;
+    let d00: f32 = erosionDelta[a];
+    let d10: f32 = erosionDelta[a + 1u];
+    let d01: f32 = erosionDelta[a + idim];
+    let d11: f32 = erosionDelta[a + idim + 1u];
+    return (d00 * (1.0 - tx) + d10 * tx) * (1.0 - tz)
+         + (d01 * (1.0 - tx) + d11 * tx) * tz;
+}
+
+fn tarn_delta_at(x: f32, z: f32) -> f32 {
+    var delta: f32 = 0.0;
+    let cnt: u32 = params.tarnsCount;
+    for (var i: u32 = 0u; i < cnt; i = i + 1u) {
+        let base: u32 = i * 5u;
+        let tx: f32 = tarnsBuf[base + 0u];
+        let tz: f32 = tarnsBuf[base + 1u];
+        let td: f32 = tarnsBuf[base + 2u];
+        let reach2: f32 = tarnsBuf[base + 3u];
+        let twoSig2: f32 = tarnsBuf[base + 4u];
+        let dx: f32 = x - tx;
+        let dz: f32 = z - tz;
+        let d2: f32 = dx * dx + dz * dz;
+        if (d2 > reach2) { continue; }
+        delta = delta - td * exp(-d2 / twoSig2);
+    }
+    return delta;
+}
+
+fn terrain_macro_surface_y(x: f32, z: f32) -> f32 {
+    let base: f32 = params.baseHeight;
+    let warpX: f32 = snoise2D(vec2<f32>(x * 0.00026 + 11.3, z * 0.00026 + 4.1)) * 70.0;
+    let warpZ: f32 = snoise2D(vec2<f32>(x * 0.00026 + 41.7, z * 0.00026 + 23.9)) * 70.0;
+    let wx: f32 = x + warpX;
+    let wz: f32 = z + warpZ;
+    let tect: f32 = snoise2D(vec2<f32>(wx * 0.00088, wz * 0.00088)) * 35.0;
+    let cont: f32 = snoise2D(vec2<f32>(wx * 0.0058, wz * 0.0058)) * 34.0;
+    let ero: f32 = snoise2D(vec2<f32>(x * 0.0014, z * 0.0014)) * 0.5 + 0.5;
+    var mtn: f32 = 1.0 - ero;
+    if (mtn < 0.0) { mtn = 0.0; }
+    mtn = mtn * mtn;
+    let ridgeAmp: f32 = 12.0 + 55.0 * mtn;
+    let rN: f32 = snoise2D(vec2<f32>(wx * 0.013, wz * 0.013));
+    let ranges: f32 = (1.0 - abs(rN)) * (1.0 - abs(rN)) * ridgeAmp;
+    let rN2: f32 = snoise2D(vec2<f32>(wx * 0.026 + 5.7, wz * 0.026 - 2.3));
+    let ranges2: f32 = (1.0 - abs(rN2)) * (1.0 - abs(rN2)) * ridgeAmp * 0.5;
+    let detail: f32 = snoise2D(vec2<f32>(x * 0.045, z * 0.045)) * 4.0;
+    let withoutTarn: f32 = base + tect + cont + ranges + ranges2 + detail + erosion_delta_at(x, z);
+    let waterRefSub: f32 = params.waterLevel;
+    let depthBelow: f32 = waterRefSub - withoutTarn;
+    var withoutTarnFinal: f32 = withoutTarn;
+    if (depthBelow > 1.5) {
+        let subMask: f32 = clamp((depthBelow - 3.0) / 6.0, 0.0, 1.0);
+        let slope: f32 = max(0.0, depthBelow - 4.0);
+        let slopeDrop: f32 = -slope * 0.6;
+        let subA: f32 = snoise2D(vec2<f32>(x * 0.019, z * 0.019 + 31.0)) * (3.0 + slope * 0.3);
+        let rBN: f32 = snoise2D(vec2<f32>(x * 0.026 + 17.0, z * 0.026 + 9.0));
+        let subRidge: f32 = ((1.0 - abs(rBN)) * (1.0 - abs(rBN)) - 0.3) * (3.0 + slope * 0.25);
+        let subC: f32 = snoise2D(vec2<f32>(x * 0.062 - 17.0, z * 0.062 + 8.0)) * 1.0;
+        withoutTarnFinal = withoutTarnFinal + slopeDrop + (subA + subRidge + subC) * subMask;
+    }
+    let td: f32 = tarn_delta_at(x, z);
+    if (td == 0.0) { return withoutTarnFinal; }
+    let waterRef: f32 = params.waterLevel;
+    return max(withoutTarnFinal + td, waterRef + 1.0);
+}
+
+fn terrain_density_at(x: f32, y: f32, z: f32) -> f32 {
+    let surf: f32 = terrain_macro_surface_y(x, z);
+    var d: f32 = surf - y;
+    d = d + snoise3D(vec3<f32>(x * 0.05, y * 0.05, z * 0.05)) * 7.0;
+    d = d + snoise3D(vec3<f32>(x * 0.018, y * 0.022, z * 0.018)) * 5.0;
+    // Cave-Hülle: klemmt sich zwischen base-28 (Floor) und surf-6 (Ceil)
+    let base: f32 = params.baseHeight;
+    let caveFloor: f32 = clamp((y - (base - 28.0)) / 8.0, 0.0, 1.0);
+    let caveCeil: f32 = clamp((surf - 6.0 - y) / 8.0, 0.0, 1.0);
+    let caveEnv: f32 = caveFloor * caveCeil;
+    if (caveEnv > 0.0) {
+        let ridge: f32 = 1.0 - abs(snoise3D(vec3<f32>(x * 0.03, y * 0.034, z * 0.03)));
+        let cave: f32 = max(0.0, (ridge - 0.7) / 0.3);
+        d = d - cave * caveEnv * 36.0;
+    }
+    return d;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let total: u32 = params.nx * params.ny * params.nz;
+    let idx: u32 = gid.x;
+    if (idx >= total) { return; }
+    let nx: u32 = params.nx;
+    let ny: u32 = params.ny;
+    let i: u32 = idx % nx;
+    let j: u32 = (idx / nx) % ny;
+    let k: u32 = idx / (nx * ny);
+    let x: f32 = params.ox + f32(i) * params.step;
+    let y: f32 = params.oy + f32(j) * params.step;
+    let z: f32 = params.oz + f32(k) * params.step;
+    outDensity[idx] = terrain_density_at(x, y, z);
+}
+`;
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -38914,7 +40264,22 @@ AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
         lebendig: 2,
     }),
 });
-const anazhRealm = new AnazhRealm();
-// Globale Referenz für DevTools-Debug und automatisierten Playtest.
-if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
-anazhRealm.init();
+// V10.0-c — Three.js ist seit V10.0-b ein ESM-Modul, das via Bootstrap-
+// Module-Script geladen wird. Dieser classic-defer-Script (`anazhRealm.js`)
+// und das Bootstrap-Module sind beide deferred + sollten in document order
+// laufen (WHATWG-Spec), aber das Module-Loading eines 238-File-Addon-
+// Graphen (V10.0-c) kann den Bootstrap länger ausführen lassen als unser
+// defer-Script. Plus: AnazhRealm-Constructor nutzt schon `new THREE.Vector3()`
+// im Top-Level — wir MÜSSEN auf `window.THREE` warten, BEVOR wir den
+// Constructor rufen. Defensiver Polling-Wait alle 10 ms.
+function _bootAnazhRealm() {
+    if (typeof window !== "undefined" && typeof window.THREE === "undefined") {
+        setTimeout(_bootAnazhRealm, 10);
+        return;
+    }
+    const anazhRealm = new AnazhRealm();
+    // Globale Referenz für DevTools-Debug und automatisierten Playtest.
+    if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
+    anazhRealm.init();
+}
+_bootAnazhRealm();
