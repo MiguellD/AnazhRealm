@@ -29,7 +29,7 @@
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-PVTTncmBK0qEPLY5P4aa/TlCk0m4/HzchrjanefKEhw='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v9.93 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
@@ -5704,7 +5704,30 @@
             </div>
         </dialog>
         <!-- Vendored libs (vendor/README.md erklärt Versionen + Update-Befehl) -->
-        <script src="vendor/three.min.js"></script>
+        <!-- V10.0-b: Three.js läuft jetzt als ESM-Modul (r160, vorbereitet für
+             WebGPURenderer-Addon-Loading in V10.0-c). Import-Map mappt das
+             nackte "three"-Specifier auf unseren vendored ESM-Build; ein
+             Inline-Module-Script importiert + setzt window.THREE für den
+             defer-geladenen anazhRealm.js. Module-Scripts laufen vor defer-
+             Scripts in document order (WHATWG-Spec) — Reihenfolge garantiert.
+             V10.0-d wird die WebGPURenderer-Addon-Files dazu vendoren mit
+             "three/addons/" Import-Pattern. UMD `vendor/three.min.js` bleibt
+             als Fallback für sandbox/offline-Welten (wird hier nicht geladen). -->
+        <!-- V10.0-b: Inline-Import-Map mit CSP-SHA256-Hash whitelisted.
+             External-Import-Map (src=) ist noch experimentell; Inline mit
+             Hash ist der stabilste Pfad. WICHTIG: Hash matched genau den
+             Whitespace-exakten Inhalt; bei Änderung muss der CSP-Hash neu
+             berechnet werden (`crypto.createHash('sha256').update(content)
+             .digest('base64')`). V10.0-c wird "three/addons/" hier
+             hinzufügen + neuen Hash setzen. -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "./vendor/three.module.min.js"
+                }
+            }
+        </script>
+        <script type="module" src="vendor/three-bootstrap.js"></script>
         <!-- V9.40-f: ammo-bootstrap.js setzt window.Module mit instantiateWasm-
          Hook (pre-grow Memory auf 256 MB). MUSS vor ammo.js geladen werden.
          Inline-Variante wäre kompakter, ist aber CSP-blockiert (script-src
@@ -5718,6 +5741,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=10.0.0" defer></script>
+        <script src="anazhRealm.js?v=10.0.1" defer></script>
     </body>
 </html>

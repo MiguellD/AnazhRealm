@@ -6,7 +6,28 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V10.0-a, 26.05.2026 — **Three.js r134 → r160 Vendor-Migration**. Erste Sub-Welle des großen V10.0-Bogens „alte Krücken lösen". Three.js seit 2021 vendored, jetzt 2024-stable + WebGPURenderer-fähig. UMD-Build ist DEPRECATED ab r160 (r161+ ist ESM-only), aber r160 funktioniert noch. Color-Management + Lights-Physically-Correct als Bridge gemildert. V10.0-b: ESM-Loading-Pattern für WebGPURenderer-Addon. V10.0-c: WebGPURenderer mit Fallback. V10.0-d: ShaderMaterial → TSL für hydro + waterfall.)
+## Aktueller Stand (V10.0-b, 26.05.2026 — **ESM-Loading-Pattern für Three.js + Import-Map**. Three.js r160 läuft jetzt als ESM-Modul, geladen via Inline-Import-Map mit CSP-SHA256-Hash whitelisted. `vendor/three-bootstrap.js` importiert THREE + setzt es global für den klassisch-geladenen `anazhRealm.js`. Fundament für V10.0-c WebGPURenderer-Addon-Loading offen.)
+
+**V10.0-b — ESM-Loading-Pattern für Three.js (Foundation-Welle, kein Render-Wechsel, ~50 Z. netto):**
+
+- **Wurzel-Vision**: V10.0-a hatte Three.js r160 als UMD-Vendor (`vendor/three.min.js`). Aber: WebGPURenderer in r160 ist NUR als ESM-Addon (`examples/jsm/renderers/webgpu/`) verfügbar, nicht im UMD-Bundle. V10.0-b legt das ESM-Loading-Fundament — V10.0-c kann dann WebGPURenderer-Addon-Files mit-vendoren + via `three/addons/` Import-Map-Pfad laden.
+- **Drei kleine, klar abgegrenzte Bausteine**:
+  1. **`vendor/three.module.min.js`** (~670 KB, r160 ESM-Build): single-File-ESM-Bundle, Drop-in für den UMD `three.min.js`. Hat alle Core-Klassen (THREE.Scene, BufferGeometry, MeshToonMaterial, ShaderMaterial, etc.) — identisch zur UMD r160, nur ESM-export.
+  2. **`vendor/three-bootstrap.js`** (~20 Z.): externes Module-Script. Importiert `THREE` aus dem `"three"` bare-specifier (via Import-Map aufgelöst) + setzt `window.THREE = THREE`. CSP-konform (kein inline-eval).
+  3. **`index.html`-Refactor**: Inline-Import-Map mit `{"imports": {"three": "./vendor/three.module.min.js"}}` + Module-Script-Tag für Bootstrap. UMD `<script src="vendor/three.min.js">` ENTFERNT (Datei bleibt als Fallback liegen). Reihenfolge: Importmap → Bootstrap-Module → ammo-bootstrap → ammo → simplex-noise → anazhRealm.js (defer). WHATWG-Spec garantiert: Module-Scripts laufen vor defer-Scripts in document order → `window.THREE` ist gesetzt wenn anazhRealm.js startet.
+- **CSP-Heilung**: Inline-Import-Map ist ein inline-Script + wurde durch `script-src 'self'` blockiert. Heilung: SHA256-Hash des Importmap-Inhalts (`sha256-PVTTncmBK0qEPLY5P4aa/TlCk0m4/HzchrjanefKEhw=`) in die `script-src`-Direktive der CSP. Hash matched genau den Whitespace-exakten Inhalt; bei Änderung muss er neu berechnet werden (Stamm-Disziplin: `crypto.createHash('sha256').update(content).digest('base64')`).
+- **Was funktioniert**: alle 30+ Three.js-APIs läuft via ESM identisch zum UMD (V10.0-a-Stand). Bridge-Heilungen `ColorManagement.enabled = false` + `useLegacyLights = true` bleiben aktiv. Playtest „Alle Invarianten OK" 1:1.
+- **Was V10.0-c liefern wird**: WebGPURenderer-Addon + Dependencies (~50 Files aus `examples/jsm/renderers/webgpu/*`, `common/*`, `webgl/*`, `capabilities/WebGPU.js`) ins `vendor/three-addons/` Verzeichnis. Import-Map erweitert um `"three/addons/": "./vendor/three-addons/"`. CSP-Hash neu berechnet. Bootstrap importiert WebGPURenderer + hängt ihn an `THREE.WebGPURenderer`. KEIN aktiver Renderer-Wechsel — V10.0-d entscheidet zur Laufzeit GPU vs WebGL.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle bestehende Bänder grün, kein Regress); audit:strict 0 Failures; Format/Lint sauber. Direct Browser-Probe via Puppeteer: `window.THREE` ist `object`, `THREE.REVISION === "160"`, `window.anazhRealm` ist `object`, KEINE Page-Errors. Dateien: `vendor/three.module.min.js` neu (r160 ESM, 670 KB), `vendor/three-bootstrap.js` neu (~20 Z.), `vendor/three-importmap.json` neu (Fallback-Variante, aktuell nicht referenziert), `index.html` Refactor (~+30 Z. Import-Map-Block + CSP-Hash). Version-Bump 10.0.0 → 10.0.1 (Patch-Bump, AnazhRealm.VERSION bleibt "10.0").
+
+**Lehre verdrahtet (CLAUDE.md/Gotchas)**: **ESM-Import-Maps inline brauchen CSP-SHA256-Hash, externe Import-Maps sind noch experimentell** — `<script type="importmap" src="...">` ist W3C-Spec-Status „proposed" und nur hinter Chrome-Flag aktiv (`--enable-blink-features=ExternalImportMaps`). Stabile Cross-Browser-Lösung: Inline-Importmap + CSP-Hash-Whitelist. Pattern: bei jeder Importmap-Änderung den Hash neu berechnen + CSP aktualisieren. SHA256-Hash matched byte-exakt — Whitespace, Tabs, Zeilenumbrüche zählen.
+
+**Was als nächstes — V10.0-c**: WebGPURenderer-Addon-Files vendoren (`examples/jsm/renderers/webgpu/*` + Dependencies, ~50 Files, ~600 KB) ins `vendor/three-addons/`. Import-Map erweitert. Bootstrap importiert + hängt Renderer an `THREE.WebGPURenderer`. Beweis: `window.THREE.WebGPURenderer` existiert.
+
+---
+
+**Davor — V10.0-a Three.js r134 → r160 Vendor-Migration (substantielle Welle, ~1h, klare Bridge-Heilungen):**
 
 **V10.0-a — Three.js r134 → r160 Vendor-Migration (substantielle Welle, ~1h, klare Bridge-Heilungen):**
 
