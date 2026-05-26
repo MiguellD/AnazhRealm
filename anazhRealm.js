@@ -12612,9 +12612,9 @@ class AnazhRealm {
     //   (5) Scene.add(mesh)
     // Returns `{mesh, kind, waterCells, lod}` wie `_buildVoxelChunkData`,
     // oder null bei Collision-OOM.
-    _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData) {
+    _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData, opts = {}) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
-        if (meshData.empty) return { mesh: null, kind: "empty", waterCells: null, lod };
+        if (meshData.empty) return { mesh: null, kind: "empty", waterCells: null, lod, hasBVH: false };
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(meshData.positions, 3));
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
@@ -12625,10 +12625,21 @@ class AnazhRealm {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
-        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
-        if (!collisionBody) {
-            geom.dispose();
-            return null;
+        // V9.92 (Phase 4 — Lazy-BVH): wenn `opts.buildBVH === false`, wird
+        // die teure Ammo-Collision-Allokation (~25-30 ms pro Chunk) übersprungen.
+        // Ferne Chunks (r ≥ 2 vom Spieler) sehen das Mesh ohne Collision —
+        // der Spieler kann sie nicht erreichen ohne Movement. Wenn sie ins
+        // 2-Ring kommen (`_pumpVoxelChunkBVH`) oder der Spieler hineinspringt
+        // (`_ensurePlayerChunkBVH`), wird die BVH nachgereicht.
+        const wantBVH = opts.buildBVH !== false;
+        let hasBVH = false;
+        if (wantBVH) {
+            const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+            if (!collisionBody) {
+                geom.dispose();
+                return null;
+            }
+            hasBVH = true;
         }
         // Architektur-Stempel auf waterCells (Main-only — der Worker kennt
         // keine Architekturen). Nur wenn Cells überhaupt da sind (chunk hat
@@ -12643,7 +12654,65 @@ class AnazhRealm {
             const oy = base - cfg.floorDrop;
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, lod);
         }
-        return { mesh, kind: "filled", waterCells, lod };
+        return { mesh, kind: "filled", waterCells, lod, hasBVH };
+    }
+
+    // V9.92 (Phase 4 — Lazy-BVH): hängt einem Existing-Chunk-Entry seine
+    // BVH-Collision nach. Wird vom `_pumpVoxelChunkBVH`-Helper gerufen
+    // wenn ein ferner (BVH-loser) Chunk ins 2-Ring rückt, ODER vom
+    // `_ensurePlayerChunkBVH`-Safety-Hook wenn der Spieler in einen
+    // BVH-losen Chunk teleportiert. Returns true bei Erfolg, false bei
+    // OOM oder wenn der Chunk schon eine BVH hat / keine Mesh trägt.
+    _upgradeChunkBVH(cx, cz) {
+        if (!this.state.voxelChunks) return false;
+        const key = `${cx},${cz}`;
+        const entry = this.state.voxelChunks.get(key);
+        if (!entry || !entry.mesh || entry.hasBVH || entry.empty) return false;
+        const body = this._buildStaticTriMeshCollision(entry.mesh, { kind: "voxel-chunk", friction: 0.85 });
+        if (!body) return false;
+        entry.hasBVH = true;
+        return true;
+    }
+
+    // V9.92 — pro Streaming-Tick: scant 3×3-Spieler-Nähe + upgraded BVH
+    // für Chunks die zwar im 2-Ring liegen aber noch keine Collision haben.
+    // Rate-limited (max 2 upgrades pro Frame) damit Player-Movement nicht
+    // mehrere BVH-Build-Spikes auf einmal triggert. Kommt der Spieler durch
+    // viel Bewegung in viele neue Chunks, wird das über mehrere Frames
+    // verteilt — keine Spike-Klumpen.
+    _pumpVoxelChunkBVH(pcx, pcz, maxPerFrame = 2) {
+        if (!this.state.voxelChunks) return 0;
+        let upgraded = 0;
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const cx = pcx + dx;
+                const cz = pcz + dz;
+                const key = `${cx},${cz}`;
+                const entry = this.state.voxelChunks.get(key);
+                if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
+                    if (this._upgradeChunkBVH(cx, cz)) {
+                        if (++upgraded >= maxPerFrame) return upgraded;
+                    }
+                }
+            }
+        }
+        return upgraded;
+    }
+
+    // V9.92 — Sicherheits-Wand: stellt sicher dass der Chunk DIREKT UNTER
+    // dem Spieler IMMER eine BVH hat. Wird jeden Frame im Streaming-Tick
+    // gerufen. Wenn der Spieler in einen BVH-losen Chunk teleportiert/
+    // fällt (z.B. via DSL-Op, Welt-Wechsel, Mehrfach-Sprung), würde er
+    // ohne Collision durch den Boden fallen. Sync-Upgrade ist hier
+    // gerechtfertigt — ein einzelner ~25 ms-Spike ist akzeptabel gegen
+    // Spieler-Durchfallen.
+    _ensurePlayerChunkBVH(pcx, pcz) {
+        if (!this.state.voxelChunks) return;
+        const key = `${pcx},${pcz}`;
+        const entry = this.state.voxelChunks.get(key);
+        if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
+            this._upgradeChunkBVH(pcx, pcz);
+        }
     }
 
     // V9.90 — Worker-State-Update bei voxelEdit (Spieler carvt/füllt). Sendet
@@ -15417,6 +15486,27 @@ class AnazhRealm {
         return r >= 2 ? 1 : 0;
     }
 
+    // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH): soll dieser Chunk SOFORT
+    // beim Build seine BVH-Collision bekommen? Profi-Pattern aus Subnautica/
+    // NMS: nur 2-Ring (Spieler-Nähe, r ≤ 1, ≤ 86 m) braucht sofort BVH —
+    // dort steht der Spieler, läuft, kollidiert. Ferne Chunks (r ≥ 2) bauen
+    // erstmal nur Mesh + Cells; BVH wird beim Eintritt ins 2-Ring nachgereicht
+    // (Late-Upgrade in `_pumpVoxelChunkBVH`). Spart ~25-30 ms × 70+ Chunks =
+    // ~2 s Wall-Time beim Erst-Stream. Sicherheits-Wand: der Player-Chunk
+    // bekommt IMMER BVH (`_ensurePlayerChunkBVH` syncbuild jeden Frame).
+    _voxelChunkLazyBVHFor(cx, cz, pcx, pcz) {
+        const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+        return r <= 1;
+    }
+
+    // V9.92 — letzter Spieler-Chunk-Index, zwischengespeichert für die
+    // Lazy-BVH-Distance-Decision in `_ensureVoxelChunkAt`. Update im
+    // Streaming-Tick.
+    _setLastPlayerVoxelChunk(pcx, pcz) {
+        if (!this.state) return;
+        this.state.lastPlayerVoxelChunk = { cx: pcx, cz: pcz };
+    }
+
     // V9.40-b Pre-Build-Pattern: baut einen FRISCHEN Voxel-Chunk in einem
     // isolierten Container (Mesh + Geometry + Material + Kollision), OHNE
     // ihn in die Szene zu hängen oder in der voxelChunks-Map abzulegen.
@@ -16032,7 +16122,10 @@ class AnazhRealm {
             return true;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod: useLod };
+        // V9.92 — _rebuildVoxelChunk nutzt den sync-`_buildVoxelChunkData`-
+        // Pfad, der IMMER BVH baut (edit-driven: immediate physical feedback).
+        // hasBVH=true ist der ehrliche Stempel.
+        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod: useLod, hasBVH: true };
         this.state.voxelChunks.set(key, entry);
         // V9.88 (Welle Perf-3.b): Grass nur auf LOD-0-Nahchunks. Ferne Chunks
         // (LOD 1, > 80 m) zeigen keine Gras-Halme — Detail-Cap < 50 m macht
@@ -16098,14 +16191,22 @@ class AnazhRealm {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
             if (workerMesh === null) return null;
         }
+        // V9.92 Phase 4 — Lazy-BVH-Decision: BVH sofort bauen nur wenn Chunk
+        // im 2-Ring (Spieler-Nähe). Ferne Chunks (r ≥ 2) bekommen erst-mal
+        // nur Mesh + Cells; BVH-Upgrade über `_pumpVoxelChunkBVH` wenn sie
+        // ins 2-Ring rücken. Spart ~25-30 ms × ~70 Chunks beim Erst-Stream.
+        let buildBVH = true;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
         let fresh;
         if (workerMesh) {
-            fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh);
+            fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         } else {
             // V9.90 Phase 2 — Worker-Density-Fallback (selten — nur wenn der
             // Mesh-Path explizit `undefined` zurückgab, d.h. Worker komplett
             // unverfügbar). Zur Sicherheit behalten wir den V9.90-Density-
-            // Cache-Pfad als Stufe-2-Fallback.
+            // Cache-Pfad als Stufe-2-Fallback. Sync-Build baut IMMER BVH —
+            // Lazy-BVH ist nur am Worker-Pfad.
             let workerDensity;
             if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
                 workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
@@ -16140,7 +16241,16 @@ class AnazhRealm {
             return null;
         }
         this.state.scene.add(fresh.mesh);
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod };
+        // V9.92 — `fresh.hasBVH` ist `true` wenn die BVH wirklich gebaut wurde
+        // (Lazy-Decision durch `_buildVoxelChunkDataFromWorkerMesh` mit
+        // `opts.buildBVH`). Beim Sync-Fallback gibt's keine Lazy-BVH-Flag-
+        // Variante — Sync baut immer BVH, also default true.
+        const entry = {
+            mesh: fresh.mesh,
+            waterCells: fresh.waterCells || null,
+            lod,
+            hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
+        };
         this.state.voxelChunks.set(key, entry);
         // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
         // V9.88 — Grass nur auf LOD-0-Nahchunks (s. _rebuildVoxelChunk-Kommentar).
@@ -17911,6 +18021,10 @@ class AnazhRealm {
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
         const { span, ringRadius } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
+        // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position
+        // zwischenspeichern, damit `_ensureVoxelChunkAt` Lazy-BVH-Decision
+        // treffen kann (r ≤ 1 = sofort BVH, r ≥ 2 = lazy).
+        this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
         let built = 0;
         const FRAME_BUDGET_MS = 4;
@@ -17953,6 +18067,15 @@ class AnazhRealm {
             }
         }
         this._pruneDistantVoxelChunks(playerPos);
+        // V9.92 (Phase 4 — Lazy-BVH): Sicherheits-Wand + BVH-Pump.
+        // (a) `_ensurePlayerChunkBVH` baut sync BVH falls der Spieler-Chunk
+        //     noch keine hat (Teleport-Schutz, ~25 ms 1× wenn nötig).
+        // (b) `_pumpVoxelChunkBVH` upgraded BVH für andere 2-Ring-Chunks
+        //     rate-limited (max 2 pro Frame, über mehrere Frames verteilt
+        //     → kein Spike-Klumpen bei Spieler-Bewegung).
+        const pczNow = Math.floor(playerPos.z / span);
+        this._ensurePlayerChunkBVH(pcx, pczNow);
+        this._pumpVoxelChunkBVH(pcx, pczNow);
     }
 
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben + Phase 3b — Aufschütten ###
@@ -37787,7 +37910,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.91";
+AnazhRealm.VERSION = "9.92";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

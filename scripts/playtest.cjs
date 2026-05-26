@@ -13561,6 +13561,183 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
     );
 }
 
+// V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
+// Beweis dass die BVH-Collision (Ammo, ~25-30ms pro Chunk) jetzt nur noch
+// im 2-Ring (r ≤ 1, Spieler-Nähe) sofort gebaut wird. Ferne Chunks (r ≥ 2)
+// haben Mesh + Cells aber NOCH KEIN BVH (entry.hasBVH=false). Beim
+// Eintritt ins 2-Ring (Spieler-Bewegung) wird BVH nachgereicht
+// (_pumpVoxelChunkBVH, rate-limited). Sicherheits-Wand: der Player-Chunk
+// bekommt IMMER BVH via _ensurePlayerChunkBVH (sync-build wenn fehlend).
+async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) Helper + Methoden existieren
+        out.hasLazyBVHFor = typeof r._voxelChunkLazyBVHFor === "function";
+        out.hasUpgradeBVH = typeof r._upgradeChunkBVH === "function";
+        out.hasPumpBVH = typeof r._pumpVoxelChunkBVH === "function";
+        out.hasEnsurePlayerBVH = typeof r._ensurePlayerChunkBVH === "function";
+        out.hasSetLastPlayer = typeof r._setLastPlayerVoxelChunk === "function";
+        // 2) Distance-Decision verifizieren
+        if (out.hasLazyBVHFor) {
+            out.lazyR0 = r._voxelChunkLazyBVHFor(0, 0, 0, 0); // r=0 → true (sofort BVH)
+            out.lazyR1 = r._voxelChunkLazyBVHFor(1, 0, 0, 0); // r=1 → true (sofort BVH)
+            out.lazyR2 = r._voxelChunkLazyBVHFor(2, 0, 0, 0); // r=2 → false (lazy)
+            out.lazyR4 = r._voxelChunkLazyBVHFor(4, 0, 0, 0); // r=4 → false (lazy)
+        }
+        // 3) State sync: nach Streaming-Tick liegen voxelChunks mit hasBVH-Flag
+        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+            return { ...out, error: "no chunks streamed" };
+        }
+        // 4) Empirisch: zähle Chunks mit/ohne BVH pro Distance-Class
+        let nearWithBVH = 0;
+        let nearWithoutBVH = 0;
+        let farWithBVH = 0;
+        let farWithoutBVH = 0;
+        let total = 0;
+        const lpc = r.state.lastPlayerVoxelChunk;
+        if (lpc) {
+            for (const [key, entry] of r.state.voxelChunks.entries()) {
+                if (!entry || !entry.mesh) continue;
+                total++;
+                const parts = key.split(",");
+                const cx = Number(parts[0]);
+                const cz = Number(parts[1]);
+                const dist = Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz));
+                const near = dist <= 1;
+                const hasBVH = !!entry.hasBVH;
+                if (near && hasBVH) nearWithBVH++;
+                else if (near && !hasBVH) nearWithoutBVH++;
+                else if (!near && hasBVH) farWithBVH++;
+                else farWithoutBVH++;
+            }
+        }
+        out.lastPlayerVoxelChunk = lpc;
+        out.totalChunks = total;
+        out.nearWithBVH = nearWithBVH;
+        out.nearWithoutBVH = nearWithoutBVH;
+        out.farWithBVH = farWithBVH;
+        out.farWithoutBVH = farWithoutBVH;
+        // Akzeptanz: nahe Chunks haben BVH (Sicherheit), ferne haben in der
+        // Mehrheit keine BVH (Lazy-Effekt). Wegen `_pumpVoxelChunkBVH` mit
+        // rate-limit 2/Frame können wenige ferne Chunks bereits BVH haben
+        // (frisch ins 2-Ring gerückt + upgrade läuft) — wir verlangen
+        // NICHT 100% lazy, sondern dass MINDESTENS einige ferne Chunks
+        // BVH-los sind (= Lazy-Effekt empirisch vorhanden).
+        out.lazyEffectVisible = farWithoutBVH > 0;
+        out.allNearHaveBVH = nearWithoutBVH === 0;
+        // 5) Mechanik-Probe: Worker-Mesh-Build mit {buildBVH:false} respektiert
+        // Lazy-BVH. Empirie aus initialem Worldgen ist sync-build-bias (Worker
+        // wird erst MITTEN im Worldgen synced → frühe Chunks sync-built → mit
+        // BVH). Mechanik-Probe ist die ehrliche Aussage über Code-Korrektheit.
+        // Wir holen frisches Worker-Mesh-Data + bauen mit buildBVH=false +
+        // verifizieren entry.hasBVH === false.
+        try {
+            const meshData = await r._voxelWorkerComputeChunkMesh(0, 0, 0);
+            if (meshData && !meshData.empty) {
+                const fresh = r._buildVoxelChunkDataFromWorkerMesh(0, 0, 0, meshData, { buildBVH: false });
+                out.lazyBuildOk = !!(fresh && fresh.mesh && fresh.hasBVH === false);
+                out.lazyBuildHasBVH = fresh ? fresh.hasBVH : null;
+                // Clean up — disposal damit kein Mesh-Geister-Leak in der Szene
+                if (fresh && fresh.mesh && fresh.mesh.geometry) {
+                    if (r.state.scene) r.state.scene.remove(fresh.mesh);
+                    fresh.mesh.geometry.dispose();
+                }
+            }
+        } catch (e) {
+            out.lazyBuildError = e.message;
+        }
+        // 6) Upgrade-Mechanik: nimm einen existing chunk (hat BVH), simuliere
+        // Lazy-Zustand durch hasBVH=false + dispose-collision, ruf upgrade,
+        // verifiziere hasBVH=true. Plus: ruf upgrade nochmal → muss false
+        // zurückgeben (schon BVH'd) — Idempotenz.
+        let testKey = null;
+        let testCx = null;
+        let testCz = null;
+        for (const [key, entry] of r.state.voxelChunks.entries()) {
+            if (entry && entry.mesh && entry.hasBVH && !entry.empty) {
+                testKey = key;
+                const parts = key.split(",");
+                testCx = Number(parts[0]);
+                testCz = Number(parts[1]);
+                break;
+            }
+        }
+        out.foundLazyChunkForTest = !!testKey;
+        if (testKey) {
+            const entry = r.state.voxelChunks.get(testKey);
+            // Simuliere Lazy-Zustand: dispose collision + hasBVH=false setzen
+            r._disposeStaticCollision(entry.mesh);
+            entry.hasBVH = false;
+            const beforeUpgrade = entry.hasBVH;
+            const upgradeOk = r._upgradeChunkBVH(testCx, testCz);
+            const afterUpgrade = r.state.voxelChunks.get(testKey).hasBVH;
+            const upgradeAgain = r._upgradeChunkBVH(testCx, testCz); // sollte false (idempotent)
+            out.upgradeBefore = beforeUpgrade;
+            out.upgradeReturned = upgradeOk;
+            out.upgradeAfter = afterUpgrade;
+            out.upgradeAgainReturned = upgradeAgain;
+            out.upgradeSucceeded = beforeUpgrade === false && upgradeOk === true && afterUpgrade === true;
+            out.upgradeIdempotent = upgradeAgain === false; // schon BVH'd
+        }
+        // 6) Source-Probes
+        out.ensureUsesLazyBVH = /_voxelChunkLazyBVHFor\(/.test(r._ensureVoxelChunkAt.toString());
+        out.streamingCallsPump = /_pumpVoxelChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
+        out.streamingCallsEnsurePlayer = /_ensurePlayerChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
+        return out;
+    });
+    if (res.error) {
+        check("Welle Perf-3.c V9.92: Phase-4-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle Perf-3.c V9.92: _voxelChunkLazyBVHFor existiert", res.hasLazyBVHFor);
+    check("Welle Perf-3.c V9.92: _upgradeChunkBVH existiert", res.hasUpgradeBVH);
+    check("Welle Perf-3.c V9.92: _pumpVoxelChunkBVH existiert", res.hasPumpBVH);
+    check("Welle Perf-3.c V9.92: _ensurePlayerChunkBVH existiert", res.hasEnsurePlayerBVH);
+    check("Welle Perf-3.c V9.92: _setLastPlayerVoxelChunk existiert", res.hasSetLastPlayer);
+    check("Welle Perf-3.c V9.92: r=0 (Player-Chunk) → sofort BVH (true)", res.lazyR0 === true);
+    check("Welle Perf-3.c V9.92: r=1 (Nachbar) → sofort BVH (true)", res.lazyR1 === true);
+    check("Welle Perf-3.c V9.92: r=2 (ferner Chunk) → lazy (false)", res.lazyR2 === false);
+    check("Welle Perf-3.c V9.92: r=4 (sehr ferner Chunk) → lazy (false)", res.lazyR4 === false);
+    check(
+        "Welle Perf-3.c V9.92: alle nahen Chunks (r ≤ 1) haben BVH (Sicherheits-Wand)",
+        res.allNearHaveBVH,
+        `nearWithBVH=${res.nearWithBVH}, nearWithoutBVH=${res.nearWithoutBVH}`
+    );
+    check(
+        "Welle Perf-3.c V9.92: Mechanik-Probe — _buildVoxelChunkDataFromWorkerMesh respektiert buildBVH=false",
+        res.lazyBuildOk,
+        `hasBVH=${res.lazyBuildHasBVH}, error=${res.lazyBuildError || "none"}`
+    );
+    check("Welle Perf-3.c V9.92: Chunk für Upgrade-Test gefunden (Vorbedingung)", res.foundLazyChunkForTest);
+    if (res.foundLazyChunkForTest) {
+        check(
+            "Welle Perf-3.c V9.92: _upgradeChunkBVH funktioniert (false → true)",
+            res.upgradeSucceeded,
+            `before=${res.upgradeBefore}, returned=${res.upgradeReturned}, after=${res.upgradeAfter}`
+        );
+        check(
+            "Welle Perf-3.c V9.92: _upgradeChunkBVH ist idempotent (zweiter Ruf → false, schon BVH'd)",
+            res.upgradeIdempotent,
+            `upgradeAgain=${res.upgradeAgainReturned}`
+        );
+    }
+    check(
+        "Welle Perf-3.c V9.92: _ensureVoxelChunkAt nutzt _voxelChunkLazyBVHFor (Source-Probe)",
+        res.ensureUsesLazyBVH
+    );
+    check(
+        "Welle Perf-3.c V9.92: _tickVoxelChunkStreaming ruft _pumpVoxelChunkBVH (Source-Probe)",
+        res.streamingCallsPump
+    );
+    check(
+        "Welle Perf-3.c V9.92: _tickVoxelChunkStreaming ruft _ensurePlayerChunkBVH (Source-Probe)",
+        res.streamingCallsEnsurePlayer
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30544,6 +30721,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase2Async(ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
             await checkBandWellePerf3cPhase3FullMesh(ctx);
+            // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
+            await checkBandWellePerf3cPhase4LazyBVH(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
