@@ -13364,7 +13364,13 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         // weder Lake noch River) — alternativ einen fern-Chunk wo nichts ist.
         out.eligibleNoEdits = r._voxelGpuChunkEligible(100, 100, 1);
         // (d) Source-Probe: _ensureVoxelChunkAt nutzt jetzt _fetchOrRequestChunkDensityGpu
-        out.cutoverWired = /_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
+        // V9.95-e — Cutover-Source-Probe entfernt: GPU-Pipeline wird im
+        // Streaming-Pfad NICHT mehr gerufen (architektonisch: mapAsync-Stall
+        // > Worker-CPU-Density-Save bei WebGL-Renderer). Pipeline-Code lebt
+        // weiter als Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration.
+        // Source-Probe statt Cutover: V9.95-e hat das _fetchOrRequest...Gpu-
+        // Pattern in `_ensureVoxelChunkAt` entfernt (ehrliche Abklemmung).
+        out.cutoverAbgeklemmt = !/_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
         out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
         // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
         // im Edit-Footprint nicht mehr eligible ist
@@ -13445,9 +13451,9 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         `far=${res.afterEditFar}`
     );
     check(
-        "V9.95-b Density-Pipeline: _ensureVoxelChunkAt ruft _fetchOrRequestChunkDensityGpu (Cutover verdrahtet)",
-        res.cutoverWired,
-        "Source-Probe in _ensureVoxelChunkAt.toString()"
+        "V9.95-e: _ensureVoxelChunkAt ruft KEINE GPU-Density mehr (architektonisch abgeklemmt)",
+        res.cutoverAbgeklemmt,
+        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh-Pfad bleibt PRIMARY"
     );
     check(
         "V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache",

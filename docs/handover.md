@@ -359,6 +359,47 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 Aus `CLAUDE.md` ausgelagert am 21.05.2026 (Doc-Konsolidierung). Dies ist die **kanonische, ausführliche Chronik** jeder Welle. Die Teil-Historien weiter oben in dieser Datei (Schnell-Lage, die zehn Rückschau-Sektionen, das Session-Tagebuch) sind Teilmengen hiervon und werden im Konsolidierungs-Schritt hier eingeschmolzen.
 
+**V9.95-e — EHRLICHE ABKLEMMUNG nach Schöpfer-Browser-Audit V9.95-d (26.05.2026, Architektur-Wurzel benannt + saubere Reversion).**
+
+Schöpfer-Browser-Audit V9.95-d brachte die ehrliche Wahrheit. WebGPU-Foundation läuft (AMD RDNA-3, Vendor-Info aufgelöst). ABER:
+
+- **`erster Dispatch — 308.60 ms`** — nicht die erwarteten 5ms. Cold-Start? Würde Telemetry-Logs nach 50/100 Dispatches zeigen. Aber:
+- **`KEINE` 50-Dispatches-Telemetry-Logs erscheinen** — entweder zu wenige eligible Chunks (Eligibility-Gate filtert die meisten aus), ODER GPU-Pfad wird ohnehin nie genug getroffen weil Worker-Mesh schneller war.
+- **FPS sinkt auf 6-9** beim Streaming + Save-Events. „Selbstanalyse: FPS zu niedrig – Optimiere..." triggert mehrfach. Auto-Optimization reduziert Gravitation, anpasst CCD. Spielgefühl: stockend, Steuerung fällt aus, Save lockt Main-Thread.
+
+**Schöpfer-Konfrontation**: „weiss nicht ob das wirklich alles genial und harmonisch durchdacht, aber würde GPU zuerst sauber abschliessen". Er hat recht. Ich habe einen architektonischen Fehler gemacht in V9.95-b.
+
+**Die echte Wurzel — architektonisch nicht algorithmisch**:
+
+WebGPU-Compute liefert die Density-Werte AUF GPU. ABER: das Spiel rendert mit WebGL (`THREE.WebGLRenderer`), nicht WebGPU. Three.js-Mesh wird aus `BufferGeometry` gebaut, das die CPU-Float32Array-Daten braucht für den WebGL-Upload-Pfad. **Konsequenz**: die GPU-Density muss via `readBuf.mapAsync(GPUMapMode.READ)` ZURÜCK auf die CPU geholt werden, BEVOR Three.js sie verarbeiten kann. `mapAsync` blockiert den Main-Thread bis GPU-Compute fertig + Read-Back-Transfer abgeschlossen ist (typisch 100-300ms für 91k Float32-Samples auf einer mittelmäßigen GPU bei Cold-Cache).
+
+Der Worker-CPU-Density-Path (V9.91) macht ~50ms PARALLEL zum Main-Thread (kein Stall, der Worker rennt in eigenem Thread). Der GPU-Pfad macht ~300ms WITH Main-Thread-Stall (mapAsync). **GPU ist im aktuellen Stack langsamer als Worker.**
+
+Das ist eine ARCHITEKTUR-Wurzel, kein WGSL-Bug. Mein V9.95-b-Cutover hat einen Worker-CPU-Pfad (`50ms parallel`) durch einen GPU-Pfad (`300ms blocking`) ersetzt. Folge: dramatische FPS-Verschlechterung beim Streaming, exakt wie der Schöpfer sah.
+
+**Echte Abklemmung — kein Workaround, ehrliche Reversion**:
+
+- **GPU-Pipeline-Cutover in `_ensureVoxelChunkAt` entfernt**. Worker-Mesh-Pfad (V9.91 Phase 3) ist wieder PRIMARY-Stufe-0. Worker-Density (V9.90) bleibt Stufe-2-Fallback. Sync-Build (V9.42-d) ist Stufe-3.
+- **V9.95-a/b/c/d-Code BLEIBT** — Foundation (Adapter/Device/Trivial-Shader/Determinismus-Beweis), WGSL-Density-Shader (280 Z. SimplexNoise + Macro-Surface + Cave-Hülle), JS-Pipeline (`_voxelGpuComputeDensity`, `_voxelGpuChunkEligible`, Cache-First-Lookup), Telemetry-Logs. ALLES als **Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration** — dann wird GPU→Mesh zero-copy möglich (Three.js's WebGPU-Backend kann direkt aus GPU-Buffers rendern, kein mapAsync-Roundtrip nötig).
+- **Source-Probe-Test gewendet**: `playtest.cjs` prüft jetzt dass `_ensureVoxelChunkAt` KEINE `_fetchOrRequestChunkDensityGpu` mehr ruft (Cutover-Abklemmung verdrahtet).
+
+**Bonus-Bug-Heilung**: „Grok: undefined"-Log gefixt. `grokSayFromPool` loggte `${grok.companionName}: ${text}` auch wenn `pool[idx] === undefined` (sparse-Array-Hole im Speech-Pool). Defensive: `if (typeof text !== "string" || text.length === 0) return false;`.
+
+**Lehre permanent verdrahtet (CLAUDE.md/Gotchas)**: **WebGPU-Compute mit WebGL-Renderer = immer CPU-Roundtrip via mapAsync**. Two hops: GPU→CPU (mapAsync, blocking) → CPU→GPU (WebGL-upload). Single-Pass Worker-CPU ist schneller im aktuellen Stack. WebGPU-Compute-Performance-Win ist nur real mit Three.js-WebGPU-Renderer (V10+). Disziplin: VOR jeder Async-Pipeline-Welle (Worker, GPU, WebSocket, IndexedDB) den DATEN-FLUSS skizzieren, alle Roundtrip-Stalls identifizieren, BEVOR der Cutover-Code geschrieben wird. Wenn zwei Hops nötig sind, ist die GPU langsamer als ein single-Pass Worker. Generelles Pattern: **Roundtrip-Topologie zuerst, Code danach**.
+
+**V9.95-Bogen-Bilanz (fünf Sub-Wellen)**:
+- ✅ **V9.95-a Foundation**: Adapter/Device/Trivial-Shader/Determinismus-Beweis. Vorarbeit.
+- ✅ **V9.95-b Density-Pipeline**: 280 Z. WGSL + 600 Z. JS. Vorarbeit für V10+.
+- ✅ **V9.95-c Logging-Heilung**: drei sichtbare End-Pfade. Behält Wert (jeder Init loggt).
+- ✅ **V9.95-d Polish**: moderne adapter.info + Telemetry + WorldUpload-Log. Behält Wert.
+- ✅ **V9.95-e EHRLICHE ABKLEMMUNG**: GPU-Cutover entfernt, Worker-Mesh-Pfad restored. Heilung der Architektur-Wurzel.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (pre-existing C.3-Carve-Race intermittent, durch V9.95-e nicht verursacht — siehe historische CLAUDE.md-Notiz); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` -35 Z. netto (Cutover-Branch entfernt + Grok-Defensive + Kommentar-Update), `scripts/playtest.cjs` Source-Probe-Wendung (V9.56-i-Doku-Sync), `index.html` Cache-Buster 9.95.3 → 9.95.4, `package.json` 9.95.3 → 9.95.4.
+
+**Was als nächstes — V9.96 IndexedDB-Welt-Gedächtnis** (~4-5h, der ECHTE Vision-Pfeiler ohne Architektur-Fallen): gestreamt-besuchte Chunks (Mesh + Cells + BVH-Serialisierung) als Blob in IndexedDB persistieren. Re-Visit lädt in <5ms statt 30-50ms (Disk-Cache statt Worker-Roundtrip). Die Welt wird endlich UND erinnert — jede Architektur, jeder Carve, jeder Wasserfall lebt persistent in der Geometrie, nicht nur im Snapshot. GPU-unabhängig, EHRLICH sichtbarer Win, kein mapAsync-Stall (IndexedDB ist single-async-promise, kein Roundtrip-Doppel).
+
+---
+
 **V9.95-d — Schöpfer-Browser-Audit-Erfolg + Polish-Welle (26.05.2026, ~40 Z. netto).**
 
 Schöpfer-Browser-Audit V9.95-c bestätigte **WebGPU FUNKTIONIERT** auf seiner Windows-Chrome-Maschine. Log:

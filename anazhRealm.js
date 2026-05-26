@@ -900,6 +900,10 @@ class AnazhRealm {
         if (!pool || pool.length === 0) return false;
         const idx = grok.poolIndex[key] % pool.length;
         const text = pool[idx];
+        // V9.95-e (Schöpfer-Browser-Audit-Folge): Defensive — wenn `text`
+        // undefined ist (pool hat sparse-Array-Holes oder corrupted state),
+        // den Sprech-Slot überspringen statt „Grok: undefined" zu loggen.
+        if (typeof text !== "string" || text.length === 0) return false;
         grok.poolIndex[key] = (idx + 1) % pool.length;
         grok.lastSpoke = now;
         if (cfg) cfg.lastFired = now;
@@ -16997,32 +17001,20 @@ class AnazhRealm {
         // Quelle strukturell weg.
         // V9.95-b/d — GPU-Density als Stufe-0 NUR bei Cache-Hit. Wenn GPU
         // pending (Request läuft), fällt der Chunk weiter zum Worker-Mesh-
-        // Pfad — beide Pfade rennen parallel, der erste Cache-Hit gewinnt.
-        // GPU-Pipeline läuft im Hintergrund weiter + bei einem späteren
-        // Streaming-Tick steht das Resultat im Cache; aber für DIESEN Frame
-        // bleibt der Worker-Path verfügbar. Ergebnis: GPU + Worker arbeiten
-        // additiv, keiner blockiert den anderen. Eligibility-Gate filtert
-        // Hydro/Edit-Chunks aus → die nutzen direkt den V9.91-Worker-Pfad.
-        let gpuDensity;
-        if (this.state.voxelGpuStatus === "ready") {
-            const result = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
-            if (result instanceof Float32Array) {
-                gpuDensity = result;
-            }
-            // null (pending) ODER undefined (ineligible) → kein early-return,
-            // Worker-Mesh-Pfad bleibt der Fallback.
-        }
-        // V9.91 Phase 3 — voller Worker-Mesh-Build (wenn verfügbar + worldgen-
-        // synced + GPU-Pfad nicht traf). Cache-Hit → BufferGeometry-Konstruktion
-        // + Stempel + BVH + Scene (~30 ms Main). Pending → null (Pump kommt
-        // wieder). Undefined → V9.90-Density-Pfad oder voller Sync-Fallback.
+        // V9.95-e — EHRLICHE ABKLEMMUNG: GPU-Density-Pfad wird im Streaming
+        // NICHT mehr gerufen. Architektonische Wurzel: WebGPU-Compute mit
+        // WebGL-Renderer braucht IMMER einen CPU-Roundtrip (mapAsync blockt
+        // den Main-Thread bis Read-Back fertig ist). Der ~50ms-Worker-CPU-
+        // Density-Save war billiger als der ~200-300ms GPU+mapAsync-Stall.
+        // Schöpfer-Browser-Audit V9.95-d zeigte: FPS sinkt auf 6-9, Auto-
+        // Optimization triggert mehrfach. Architektonisch falsch verdrahtet.
+        // V9.95-a/b/c/d-Code (Foundation + Pipeline + Telemetry) BLEIBT als
+        // Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration (dann zero-
+        // copy GPU→Mesh möglich). Bis dahin: Worker-Mesh-Pfad ist PRIMARY,
+        // GPU greift NUR ein wo Worker komplett tot ist (rare).
+        // Worker-Mesh-Cache als Stufe-0 (V9.91-Pattern restoriert).
         let workerMesh;
-        if (
-            !gpuDensity &&
-            this.state.voxelWorker &&
-            this.state.voxelWorkerReady &&
-            this.state.voxelWorkerWorldgenSynced
-        ) {
+        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
             if (workerMesh === null) return null;
         }
@@ -17034,21 +17026,14 @@ class AnazhRealm {
         const lpc = this.state.lastPlayerVoxelChunk;
         if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
         let fresh;
-        if (gpuDensity) {
-            // V9.95-b — GPU-Density als preDensity in den Main-Sync-Build.
-            // _buildVoxelChunkData macht Iso+Cells+Colors+BVH; GPU hat den
-            // ~50 ms Density-Sample-Loop ersetzt (~50× speedup auf integrierter
-            // GPU, ~100× auf diskreter). Sync-Build baut IMMER BVH — Lazy-BVH
-            // ist Worker-Mesh-Pfad-only.
-            fresh = this._buildVoxelChunkData(cx, cz, lod, gpuDensity);
-        } else if (workerMesh) {
+        if (workerMesh) {
             fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         } else {
-            // V9.90 Phase 2 — Worker-Density-Fallback (selten — nur wenn der
-            // Mesh-Path explizit `undefined` zurückgab, d.h. Worker komplett
-            // unverfügbar). Zur Sicherheit behalten wir den V9.90-Density-
-            // Cache-Pfad als Stufe-2-Fallback. Sync-Build baut IMMER BVH —
-            // Lazy-BVH ist nur am Worker-Pfad.
+            // V9.95-e — Worker komplett tot (Spawn-Fehler, kein WASM-Worker-Support).
+            // Stufe-2-Fallback: Worker-Density-Cache (V9.90, separater Pfad). Wenn
+            // der auch nicht greift: sync-Build (V9.42-d). GPU-Pipeline ist in
+            // diesem Lauf NICHT der Streaming-Pfad — der mapAsync-Stall ist
+            // architektonisch gegenüber dem Worker-CPU-Density teurer.
             let workerDensity;
             if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
                 workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
