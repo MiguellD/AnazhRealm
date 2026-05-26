@@ -12784,6 +12784,11 @@ class AnazhRealm {
     // Density-Requests die fertige Welt sehen. Bumpt state-gen → in-flight
     // Density-Requests vom Pre-Worldgen-Stand werden discarded.
     _voxelWorkerSyncWorldgenState() {
+        // V9.95-c: GPU-Init zuerst — UNABHÄNGIG vom Worker-Status. Vorher war
+        // der GPU-Init INSIDE der Worker-spawn-Check, wenn der Worker nicht
+        // existierte (rare aber möglich), wurde der GPU-Pfad NIE aktiviert.
+        // GPU + Worker sind orthogonale Beschleunigungspfade.
+        this._tryStartVoxelGpuInit();
         if (!this.state.voxelWorker) return;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
@@ -12794,16 +12799,32 @@ class AnazhRealm {
         // weiterhin trustworthy.
         this._voxelWorkerSyncState({ op: "state-set" });
         this.state.voxelWorkerWorldgenSynced = true;
-        // V9.95-a (Welle WebGPU-Compute-Foundation): nach Worldgen-Abschluss
-        // versuchen wir auch den WebGPU-Adapter zu spawnen + den Foundation-
-        // Proof zu laufen. Fire-and-forget — der Streaming-Pump nutzt den
-        // GPU-Pfad nicht (Phase 1), das kommt mit V9.95-b. Bei navigator.gpu
-        // === undefined bleibt status="unavailable", kein Fehler.
-        if (typeof navigator !== "undefined" && navigator.gpu) {
-            this._voxelGpuInit().catch((e) => {
-                this.log(`WebGPU-Init-Promise-Fehler: ${e.message}`, "ERROR");
-            });
+    }
+
+    // V9.95-c — GPU-Init-Trigger zentralisiert + idempotent. Loggt am
+    // Anfang, damit der Schöpfer bei jedem Browser-Start sieht: „WebGPU-
+    // Init versucht" (selbst wenn dann unavailable). Sichtbarkeit ist
+    // Wahrheit. Fire-and-forget — der Streaming-Pump nutzt den GPU-Pfad
+    // erst nach `_voxelGpuInitPromise.then(ready)`.
+    _tryStartVoxelGpuInit() {
+        if (this.state.voxelGpuStatus === "ready") return; // schon initialisiert
+        if (this.state.voxelGpuStatus === "pending") return; // läuft schon
+        if (this.state.voxelGpuStatus === "unavailable") return; // schon gescheitert
+        if (typeof navigator === "undefined" || !navigator.gpu) {
+            // navigator.gpu existiert nicht — explizit loggen + status setzen,
+            // damit der Schöpfer sieht, was passiert.
+            this.state.voxelGpuStatus = "unavailable";
+            this.state.voxelGpuLastError = "navigator.gpu nicht im Browser verfügbar";
+            this.log(
+                "WebGPU nicht verfügbar — navigator.gpu nicht im Browser (V9.91-Worker-Pfad bleibt PRIMARY)",
+                "INFO"
+            );
+            return;
         }
+        this.log(`WebGPU-Init startet (navigator.gpu vorhanden) ...`, "INFO");
+        this._voxelGpuInit().catch((e) => {
+            this.log(`WebGPU-Init-Promise-Fehler: ${e.message}`, "ERROR");
+        });
     }
 
     // =====================================================================
@@ -12907,7 +12928,20 @@ class AnazhRealm {
                 return false;
             }
         })();
-        return this._voxelGpuInitPromise;
+        // V9.95-c (Logging-Heilung nach Schöpfer-Browser-Audit V9.95-b): immer
+        // den End-Status loggen, nicht nur bei "ready". Sonst sieht der Schöpfer
+        // gar nichts, wenn navigator.gpu fehlt oder requestAdapter null returnt
+        // — Vision wird unsichtbar, Diagnose unmöglich. „Sichtbarkeit ist
+        // Wahrheit" (V9.94.r-Lehre auf Logging übertragen).
+        return this._voxelGpuInitPromise.then((ok) => {
+            if (!ok && this.state.voxelGpuStatus === "unavailable") {
+                this.log(
+                    `WebGPU nicht verfügbar — ${this.state.voxelGpuLastError || "(kein lastError)"} (V9.91-Worker-Pfad bleibt PRIMARY)`,
+                    "INFO"
+                );
+            }
+            return ok;
+        });
     }
 
     // V9.95-a Foundation-Beweis. Trivialer WGSL-Shader `square(x)` über 256
@@ -14777,7 +14811,10 @@ class AnazhRealm {
     _worldgenComputeErosionAndTarns() {
         try {
             this.state.erosion = this._computeErosion();
-            this.log(`V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.droplets} Tropfen simuliert`, "INFO");
+            this.log(
+                `V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.iterations} Stream-Power-Iterationen über ${AnazhRealm.EROSION.regionSize}m-Region`,
+                "INFO"
+            );
             const tarns = this._hydroSeedTarns();
             this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
         } catch (e) {
@@ -18788,6 +18825,11 @@ class AnazhRealm {
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        // V9.95-c — GPU-Init zweiter Trigger-Punkt: idempotent (early-return
+        // wenn schon ready/pending/unavailable). Garantiert dass GPU bei
+        // jeder Session initialisiert wird, auch wenn das Worldgen-Hook
+        // verpasst wurde (Save-Restore-Pfad ohne fresh Worldgen).
+        if (this.state.voxelGpuStatus === "notTried") this._tryStartVoxelGpuInit();
         const { span, ringRadius } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position

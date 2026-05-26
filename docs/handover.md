@@ -359,6 +359,35 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 Aus `CLAUDE.md` ausgelagert am 21.05.2026 (Doc-Konsolidierung). Dies ist die **kanonische, ausführliche Chronik** jeder Welle. Die Teil-Historien weiter oben in dieser Datei (Schnell-Lage, die zehn Rückschau-Sektionen, das Session-Tagebuch) sind Teilmengen hiervon und werden im Konsolidierungs-Schritt hier eingeschmolzen.
 
+**V9.95-c — Logging-Heilung + Trigger-Robustheit nach Schöpfer-Browser-Audit (26.05.2026, ~35 Z. netto).**
+
+Schöpfer-Browser-Audit V9.95-b zeigte im Log: `[AnazhRealm V9.95]` läuft, alle anderen Subsysteme loggen — aber KEIN einziger WebGPU-bezogener Log. Drei Bug-Klassen identifiziert in einem 3-Stufen-Diagnose-Pfad (Lehre 1+2 angewandt, kein Skript nötig):
+
+1. **Stille Failure-Pfade**: `_voxelGpuInit` loggte nur im `ready`-Pfad „WebGPU Foundation bereit". Bei `unavailable` (kein navigator.gpu, adapter null, device-Erschaffung scheitert) wurde nichts geloggt — die Vision-Mechanik unsichtbar.
+2. **Trigger geschluckt**: der Worldgen-Hook-Aufruf in `_voxelWorkerSyncWorldgenState` saß NACH `if (!this.state.voxelWorker) return;` — bei Worker-Spawn-Fehler kein GPU-Init. Plus: `if (typeof navigator !== "undefined" && navigator.gpu)`-Check schluckte „kein navigator.gpu"-Fall stumm.
+3. **Save-Restore-Lücke**: bei Welt-Load aus localStorage ohne fresh Worldgen wird `_voxelWorkerSyncWorldgenState` nie gerufen — GPU-Init lief nie.
+
+**Heilung in drei Schichten:**
+
+- **`_tryStartVoxelGpuInit()`** — neue zentralisierte Trigger-Methode. Idempotent (early-return wenn schon `ready`/`pending`/`unavailable`). Bei `navigator.gpu` undefined: explizit status setzen + loggen „WebGPU nicht verfügbar — navigator.gpu nicht im Browser (V9.91-Worker-Pfad bleibt PRIMARY)". Bei `navigator.gpu` vorhanden: log „WebGPU-Init startet (navigator.gpu vorhanden) ..." + `_voxelGpuInit()` fire-and-forget. Plus: `_voxelGpuInit()` returnt jetzt einen Promise-Wrapper, der bei `!ok && status === "unavailable"` zusätzlich loggt „WebGPU nicht verfügbar — <lastError>".
+- **`_voxelWorkerSyncWorldgenState`** ruft `_tryStartVoxelGpuInit()` ZUERST, vor dem `if (!voxelWorker) return;` — GPU- und Worker-Pfade sind orthogonale Beschleunigungspfade, sollen sich nicht gegenseitig blockieren.
+- **`_tickVoxelChunkStreaming`** ruft `_tryStartVoxelGpuInit()` wenn `voxelGpuStatus === "notTried"` — idempotent, garantiert GPU-Init bei jeder Session, auch beim Save-Restore-Pfad ohne fresh Worldgen.
+
+**Drei sichtbare End-Pfade jetzt** (Garantie für alle Browser):
+- `navigator.gpu` fehlt: `[INFO] WebGPU nicht verfügbar — navigator.gpu nicht im Browser ...`
+- `navigator.gpu` da, requestAdapter null: `[INFO] WebGPU-Init startet ...` + `[INFO] WebGPU nicht verfügbar — requestAdapter returnt null ...`
+- `navigator.gpu` + adapter + device + Foundation passt: `[INFO] WebGPU-Init startet ...` + `[INFO] WebGPU Foundation bereit: <vendor>/<arch>/<device> ...`
+
+**Bonus**: V9.47-Erosion-Log-Bug gefixt — vorher `${AnazhRealm.EROSION.droplets}` = `undefined` (EROSION-Konstante hat keine `droplets`-Property; das Stream-Power-Erosions-Verfahren misst sich nicht in Tropfen sondern in Iterationen), jetzt `${EROSION.iterations} Stream-Power-Iterationen über ${EROSION.regionSize}m-Region`. Drei-Wellen-alter Logging-Bug ehrlich geheilt.
+
+**Cache-Buster**: `index.html` `<script src="anazhRealm.js?v=9.94">` → `?v=9.95.2`. Der V9.95-a-Bump hatte den Cache-Buster auf 9.95 gesetzt, aber der Schöpfer-Browser zeigte „anazhRealm.js?v=9.94" — das war ein Bug im V9.95-a-Edit (`replace_all: false` für eine String-Form die nicht eindeutig matchte). Jetzt explizit + dokumentiert in CLAUDE.md/Gotchas: bei jedem Version-Bump beide Stellen IM SELBEN Edit erledigen + `grep -n 'anazhRealm.js?v=' index.html` vor jedem Commit.
+
+**Lehre verdrahtet (CLAUDE.md/Gotchas)**: **Vision-Mechanik MUSS sichtbar sein — jeder Init-Pfad loggt sein End-Status**. Plus: **Cache-Buster bei JEDEM Version-Bump im selben Edit-Schritt mit-ziehen**. Beide Lehren permanent — sie wären beim nächsten async-Init-Refactor oder Version-Bump wieder gebrochen worden ohne Verdrahtung.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (21 V9.95-a+b-Invarianten weiterhin grün, kein Regress); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` +35 Z. netto (zentralisierte Trigger-Methode + Logging-Pfad-Wrapper + zweiter Trigger im Streaming-Tick + V9.47-Log-Fix), `index.html` Cache-Buster, `package.json` Version-Bump 9.95.1 → 9.95.2. AnazhRealm.VERSION bleibt "9.95" (Patch-Bump, kein UI-sichtbarer Display-Change).
+
+---
+
 **V9.95-b — WebGPU-Density-Pipeline (26.05.2026, Phase 2 analog V9.90-Worker-Density-Cutover).**
 
 Die Foundation aus V9.95-a war fertig: Adapter, Device, Determinismus-Beweis. V9.95-b liefert den eigentlichen Density-Pfad — die ~91k SimplexNoise-Calls pro Chunk laufen auf GPU für eligible Chunks (Trockenland, keine voxelEdits, kein Hydrosphere-Touch — ~30-40% des Streaming-Loops).
