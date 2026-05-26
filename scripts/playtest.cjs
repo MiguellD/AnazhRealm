@@ -12446,9 +12446,13 @@ async function checkBandWelleC1WaterCells(ctx) {
             return { ...out, foundFilledChunk: false };
         }
         out.testKey = testKey;
-        // 4) Konfig + Erwartungen — nach Entry-LOD
+        // 4) Konfig + Erwartungen
+        // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells leben jetzt IMMER auf
+        // LOD 0 (71424 Cells), unabhängig von entry.lod (Terrain-LOD kann
+        // weiterhin LOD 1 sein). Das ist die naht-freie-per-Konstruktion-
+        // Wasserheilung — terrain bleibt LOD-aware, water-cells uniform.
         const entryLod = Number.isFinite(testEntry.lod) ? testEntry.lod : 0;
-        const cfg = r._voxelChunkConfig(entryLod);
+        const cfg = r._voxelChunkConfig(0); // Wasser-Cells immer LOD 0
         const expectedLen = cfg.dim * cfg.dim * cfg.dimY;
         out.expectedLen = expectedLen;
         out.entryLod = entryLod;
@@ -12533,7 +12537,7 @@ async function checkBandWelleC1WaterCells(ctx) {
         if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
         const refreshed = r.state.voxelChunks.get(testKey);
         const reference = refreshed && refreshed.waterCells ? refreshed.waterCells : testEntry.waterCells;
-        const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step, null, entryLod);
+        const second = r._buildVoxelChunkWaterCells(ox, oy, oz, step, null, 0);
         out.secondLen = second.length;
         let driftCount = 0;
         for (let i = 0; i < expectedLen; i++) {
@@ -12799,10 +12803,14 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // Berechnung MUSS die LOD des betreffenden Chunks lesen, sonst greift
         // dim=24/step=1.8 (LOD 0) auf einem LOD-1-Chunk (dim=12/step=3.6) →
         // out-of-bounds-Index. Helper für „config für diesen Chunk".
+        // V9.93 — Wasser-Cells leben jetzt IMMER auf LOD 0 (naht-frei). Der
+        // cfgFor-Helper liest entry.lod nur für Terrain-Berechnungen; für
+        // Cell-Indizierung in waterCells nutze immer cfgFor0 (LOD 0).
         const cfgFor = (chunkEntry) => {
             const lod = chunkEntry && Number.isFinite(chunkEntry.lod) ? chunkEntry.lod : 0;
             return r._voxelChunkConfig(lod);
         };
+        const cfgWater = r._voxelChunkConfig(0); // Wasser-Cells immer LOD 0
         // span ist LOD-invariant (43.2 m), darf aus dem Default gelesen werden.
         const span = r._voxelChunkConfig().span;
         const base = r.state.terrainBaseHeight || 0;
@@ -12831,10 +12839,11 @@ async function checkBandWelleC3CellularReaction(ctx) {
         if (damChunkEntry && damChunkEntry.waterCells) {
             const cells = damChunkEntry.waterCells;
             const aabb = damEntry.blockerAABBs[0];
-            const cfg = cfgFor(damChunkEntry);
+            // V9.93 — waterCells immer LOD 0, daher cfgWater statt cfgFor
+            const cfg = cfgWater;
             const step = cfg.step;
             const oy = base - cfg.floorDrop;
-            // Sample am Damm-Zentrum (Cell-Indizes — LOD-aware)
+            // Sample am Damm-Zentrum (Cell-Indizes)
             const cellI = Math.floor((damPos.x - testCx * span) / step);
             const cellK = Math.floor((damPos.z - testCz * span) / step);
             const cellJ = Math.floor((aabb.topY - oy) / step) - 1; // 1 Cell unter top
@@ -12850,7 +12859,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             if (afterRemoveEntry && afterRemoveEntry.waterCells) {
                 const cells = afterRemoveEntry.waterCells;
                 const aabb_remove_pos = { x: damPos.x, z: damPos.z };
-                const cfg = cfgFor(afterRemoveEntry);
+                // V9.93 — waterCells immer LOD 0
+                const cfg = cfgWater;
                 const step = cfg.step;
                 const oy = base - cfg.floorDrop;
                 const cellI = Math.floor((aabb_remove_pos.x - testCx * span) / step);
@@ -12899,7 +12909,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
             if (carveChunkEntry && carveChunkEntry.waterCells) {
                 const cells = carveChunkEntry.waterCells;
-                const cfg = cfgFor(carveChunkEntry);
+                // V9.93 — waterCells immer LOD 0
+                const cfg = cfgWater;
                 const step = cfg.step;
                 const oy = base - cfg.floorDrop;
                 // Sample am Carve-Zentrum (sollte air oder water sein, nicht solid)
@@ -13066,9 +13077,15 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
     check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
     if (res.lod0CellsLen !== null && res.lod1CellsLen !== null) {
+        // V9.93 (Wasser-LOD-Naht-Heilung) — Wasser-Cells leben jetzt IMMER auf
+        // LOD 0 (71424), unabhängig von der Terrain-LOD des Chunks. Vorher
+        // (V9.88) testeten wir hier LOD1-Cells < LOD0-Cells — das ist seit
+        // V9.93 strukturell falsch. Neue Erwartung: BEIDE haben 71424
+        // (naht-frei per Konstruktion). Terrain-LOD bleibt LOD-aware (s.
+        // separater Terrain-Vertex-Count, das ist V9.88-Mechanik).
         check(
-            "Welle Perf-3.b V9.88: empirisch — LOD-1-Chunk waterCells < LOD-0-Chunk waterCells",
-            res.lod1CellsLen < res.lod0CellsLen,
+            "Welle Perf-3.b V9.88 / V9.93: waterCells gleich-lang (V9.93-Naht-Heilung) — beide LODs LOD-0-Cells",
+            res.lod1CellsLen === res.lod0CellsLen,
             `LOD0=${res.lod0CellsLen}, LOD1=${res.lod1CellsLen}`
         );
     }
@@ -13735,6 +13752,73 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
     check(
         "Welle Perf-3.c V9.92: _tickVoxelChunkStreaming ruft _ensurePlayerChunkBVH (Source-Probe)",
         res.streamingCallsEnsurePlayer
+    );
+}
+
+// V9.93 (Wasser-LOD-Naht-Heilung): empirischer Beweis dass Wasser-Cells
+// jetzt IMMER auf LOD 0 leben, unabhängig vom Terrain-LOD des Chunks.
+// Vor V9.93: LOD-0-Chunks hatten 71424 waterCells, LOD-1-Chunks 8928 →
+// am LOD-Boundary klaffte die Wasser-Iso-Surface visuell (Cell-Center-
+// Position step-abhängig). Heilung: Wasser-Cells uniform LOD 0 → naht-
+// frei per Konstruktion. Terrain bleibt LOD-aware.
+async function checkBandWelle993WaterLodSeam(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        const cfg0 = r._voxelChunkConfig(0);
+        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // 71424
+        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (71424)
+        // egal welcher Terrain-LOD.
+        let totalWithCells = 0;
+        let lod0WithCells = 0;
+        let lod1WithCells = 0;
+        let allCellsAreLod0 = true;
+        let firstMismatchLen = null;
+        for (const [, entry] of r.state.voxelChunks.entries()) {
+            if (!entry || !entry.waterCells) continue;
+            totalWithCells++;
+            const cellLen = entry.waterCells.length;
+            const tlod = Number.isFinite(entry.lod) ? entry.lod : 0;
+            if (tlod === 0) lod0WithCells++;
+            else if (tlod === 1) lod1WithCells++;
+            if (cellLen !== out.expectedCellLen) {
+                allCellsAreLod0 = false;
+                if (firstMismatchLen === null) firstMismatchLen = cellLen;
+            }
+        }
+        out.totalWithCells = totalWithCells;
+        out.lod0WithCells = lod0WithCells;
+        out.lod1WithCells = lod1WithCells;
+        out.allCellsAreLod0 = allCellsAreLod0;
+        out.firstMismatchLen = firstMismatchLen;
+        // Source-Probe: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest
+        const isoSrc = r._buildVoxelChunkWaterIsoSurface.toString();
+        out.isoUsesLod0 = /_voxelChunkConfig\(0\)/.test(isoSrc);
+        // Source-Probe: _buildVoxelChunkData baut waterCells mit lod=0
+        const buildSrc = r._buildVoxelChunkData.toString();
+        out.buildPassesLod0 = /_buildVoxelChunkWaterCells\([^)]*,\s*0\s*\)/.test(buildSrc);
+        return out;
+    });
+    if (res.error) {
+        check("Welle V9.93: Wasser-LOD-Naht-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 71424) — naht-frei per Konstruktion",
+        res.allCellsAreLod0,
+        `expected=${res.expectedCellLen}, firstMismatch=${res.firstMismatchLen}, total=${res.totalWithCells}`
+    );
+    check(
+        "Welle V9.93: ≥1 Chunk mit waterCells gefunden (Vorbedingung)",
+        res.totalWithCells >= 1,
+        `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
+    );
+    check("Welle V9.93: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
+    check(
+        "Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)",
+        res.buildPassesLod0
     );
 }
 
@@ -30723,6 +30807,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase3FullMesh(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
+            // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
+            await checkBandWelle993WaterLodSeam(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

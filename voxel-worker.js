@@ -963,11 +963,40 @@ function buildChunkMesh(cx, cz, lod) {
     // identische Eingangs-Werte für die Color-Mix-Pipeline.
     const positionsF32 = new Float32Array(positions);
     const colors = attachFieldColors(positionsF32);
-    // Water-Cells (Trocken-Gate + Klassifikation + Konnektivitäts-Filter,
-    // OHNE Architektur-Stempel — der bleibt Main-only).
+    // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
+    // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
+    // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für
+    // LOD-1-Chunks samplen wir ein zweites Density-Grid bei LOD 0 (98k
+    // Vertices statt 16k) — Mehrkosten bounded durch V9.87-Atlas-Strict-
+    // Gate (Hochland-LOD-1-Chunks haben kein Wasser, kein Mehraufwand).
     let waterCells;
     if (chunkHasAnyWater(cx, cz, lod)) {
-        waterCells = buildChunkWaterCells(ox, oy, oz, step, lod, density);
+        if (lod === 0) {
+            waterCells = buildChunkWaterCells(ox, oy, oz, step, 0, density);
+        } else {
+            const lod0Cfg = voxelChunkConfig(0);
+            const lod0SampleDimX = lod0Cfg.dim + 3;
+            const lod0SampleDimY = lod0Cfg.dimY;
+            const lod0SampleDimZ = lod0Cfg.dim + 3;
+            const lod0Nx = lod0SampleDimX + 1;
+            const lod0Ny = lod0SampleDimY + 1;
+            const lod0Nz = lod0SampleDimZ + 1;
+            const lod0Density = new Float32Array(lod0Nx * lod0Ny * lod0Nz);
+            const lod0Ox = ox - lod0Cfg.step;
+            const lod0Oz = oz - lod0Cfg.step;
+            for (let k = 0; k < lod0Nz; k++) {
+                for (let j = 0; j < lod0Ny; j++) {
+                    for (let i = 0; i < lod0Nx; i++) {
+                        lod0Density[i + j * lod0Nx + k * lod0Nx * lod0Ny] = terrainDensityAt(
+                            lod0Ox + i * lod0Cfg.step,
+                            oy + j * lod0Cfg.step,
+                            lod0Oz + k * lod0Cfg.step
+                        );
+                    }
+                }
+            }
+            waterCells = buildChunkWaterCells(ox, oy, oz, lod0Cfg.step, 0, lod0Density);
+        }
     } else {
         waterCells = new Uint8Array(0); // sentinel: chunk has no water
     }

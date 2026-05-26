@@ -12643,16 +12643,17 @@ class AnazhRealm {
         }
         // Architektur-Stempel auf waterCells (Main-only — der Worker kennt
         // keine Architekturen). Nur wenn Cells überhaupt da sind (chunk hat
-        // Wasser laut Atlas-Strict-Gate).
+        // Wasser laut Atlas-Strict-Gate). V9.93 — Cells sind IMMER LOD 0,
+        // also Stempel-Indizierung mit lod=0.
         let waterCells = null;
         if (meshData.waterCells && meshData.waterCells.length > 0) {
             waterCells = meshData.waterCells;
-            const cfg = this._voxelChunkConfig(lod);
+            const lod0Cfg = this._voxelChunkConfig(0);
             const base = this.state.terrainBaseHeight || 0;
-            const ox = cx * cfg.span;
-            const oz = cz * cfg.span;
-            const oy = base - cfg.floorDrop;
-            this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, lod);
+            const ox = cx * lod0Cfg.span;
+            const oz = cz * lod0Cfg.span;
+            const oy = base - lod0Cfg.floorDrop;
+            this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
         return { mesh, kind: "filled", waterCells, lod, hasBVH };
     }
@@ -15818,11 +15819,20 @@ class AnazhRealm {
             return null;
         }
         const cells = entry.waterCells;
-        // V9.88 (Welle Perf-3.b): die Iso-Surface muss die LOD des Cell-Feld-
-        // Aufbaus (V9.71/V9.88) respektieren — sonst iteriert sie über dim=24
-        // ein 12×12-Cell-Feld → out-of-bounds und visueller Bruch.
-        const isoLod = Number.isFinite(entry.lod) ? entry.lod : 0;
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(isoLod);
+        // V9.93 (Welle Wasser-LOD-Naht-Heilung): Wasser-Iso-Mesh läuft IMMER
+        // bei LOD 0 (dim=24, step=1.8) — egal welche Terrain-LOD der Chunk
+        // hat. Wurzel des V9.91-Browser-Audits „Wasser hat noch eine Naht am
+        // LOD-Boundary": V9.88-Distance-LOD brachte LOD-spezifische Cell-
+        // Grids; das Wasser-Iso las `entry.lod` → unterschiedliche Step-
+        // Größen pro Chunk → Cell-Center-Iso-Positionen klafften am
+        // Boundary. **Heilung**: Wasser-Cells werden vom Builder IMMER mit
+        // LOD 0 erzeugt (s. `_buildVoxelChunkData`-Heilung), Iso-Mesher
+        // liest sie LOD-0-indiziert → ein-LOD-Wasser-Mesh, naht-frei per
+        // Konstruktion. Terrain-Mesh bleibt LOD-aware (Performance-Win
+        // bleibt erhalten). Atlas-Strict-Gate filtert die meisten LOD-1-
+        // Hochland-Chunks ohnehin (kein Wasser → keine Cells), trade-off
+        // bounded.
+        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(0);
         const base = this.state.terrainBaseHeight || 0;
         const ox = cx * span;
         const oz = cz * span;
@@ -16057,9 +16067,34 @@ class AnazhRealm {
         // dann waterCells = null. `_buildVoxelChunkWaterIsoSurface` skip'pt
         // dann sauber (vorhandener null-check). Big FPS-Win für Hochland-
         // Chunks.
-        const waterCells = this._voxelChunkHasAnyWater(cx, cz)
-            ? this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity, lod)
-            : null;
+        // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER mit LOD 0
+        // bauen, egal welche Terrain-LOD der Chunk hat. Naht-frei per
+        // Konstruktion (s. `_buildVoxelChunkWaterIsoSurface`-Kommentar).
+        // Für LOD-0-Chunks teilen wir `terrainDensity` mit dem Boden-Mesher
+        // (V9.81-Sharing wirkt). Für LOD-1-Chunks samplen wir ein zweites
+        // Density-Grid bei LOD 0 (98k Vertices statt 16k) — Mehrkosten
+        // bounded durch V9.87-Atlas-Strict-Gate (Hochland-LOD-1-Chunks
+        // haben kein Wasser, kein Mehraufwand).
+        let waterCells = null;
+        if (this._voxelChunkHasAnyWater(cx, cz)) {
+            if (lod === 0) {
+                waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity, 0);
+            } else {
+                const lod0Cfg = this._voxelChunkConfig(0);
+                const lod0Sample = (x, y, z) => this._terrainDensityAt(x, y, z);
+                const lod0Density = this._voxelSampleDensityGrid(
+                    ox - lod0Cfg.step,
+                    oy,
+                    oz - lod0Cfg.step,
+                    lod0Cfg.dim + 3,
+                    lod0Cfg.dimY,
+                    lod0Cfg.dim + 3,
+                    lod0Cfg.step,
+                    lod0Sample
+                );
+                waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
+            }
+        }
         return { mesh, kind: "filled", waterCells, lod };
     }
 
@@ -17393,19 +17428,17 @@ class AnazhRealm {
                     if (this._voxelChunkHasAnyWater(cx, cz)) {
                         // V9.88 — die LOD des Eintrags treibt sowohl Cell-
                         // Build als auch Iso-Surface. Worldgen-Finalize lief
-                        // historisch immer auf LOD 0 (Pre-Streaming-Tick); bei
-                        // späterem Streaming-Update kann der Chunk auf LOD 1
-                        // wandern.
-                        const entryLod = Number.isFinite(entry.lod) ? entry.lod : 0;
-                        const { step, span, floorDrop } = this._voxelChunkConfig(entryLod);
+                        // V9.93 — Wasser-Cells IMMER LOD 0 für naht-freie
+                        // Wasseroberflächen über LOD-Boundaries hinweg.
+                        const lod0Cfg = this._voxelChunkConfig(0);
                         const base = this.state.terrainBaseHeight || 0;
                         entry.waterCells = this._buildVoxelChunkWaterCells(
-                            cx * span,
-                            base - floorDrop,
-                            cz * span,
-                            step,
+                            cx * lod0Cfg.span,
+                            base - lod0Cfg.floorDrop,
+                            cz * lod0Cfg.span,
+                            lod0Cfg.step,
                             null,
-                            entryLod
+                            0
                         );
                         this._buildVoxelChunkWaterIsoSurface(cx, cz);
                     } else {
@@ -37910,7 +37943,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.92";
+AnazhRealm.VERSION = "9.93";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
