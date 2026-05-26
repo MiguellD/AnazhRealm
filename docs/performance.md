@@ -171,13 +171,75 @@ Diese Welle muss DIESE Lehren respektieren, sonst wird sie Sand auf Fundament (H
 
 ---
 
-### 4.2 Was Welle Perf-3 explizit NICHT macht
+### 4.2 Was Welle Perf-3 explizit NICHT machte (V9.87-V9.93)
 
 - **Greedy Meshing**: Surface-Nets ist nicht block-voxel-kompatibel (kontinuierliche Iso-Surface, keine diskreten Faces). Eine eigene Architektur-Diskussion — Welle 4+ oder NIE.
-- **GPU-Compute via WebGPU**: würde Welt-Determinismus (Multi-User-Welt-Seeds reproduzierbar) gefährden + ist plattform-fragmentiert (Safari hat kein WebGPU). Backlog.
+- **GPU-Compute via WebGPU**: ~~würde Welt-Determinismus gefährden + Safari hat kein WebGPU. Backlog.~~ **V9.93-REFLEXION (26.05.2026)**: dieses Backlog-Argument ist überholt. Safari hat WebGPU stable seit September 2024; Determinismus ist via Float32-strict lösbar (genau die V9.91-Lehre). WebGPU-Compute kommt JETZT als V9.95 (epochaler Hebel — siehe §5 unten).
 - **Geometry Instancing für Chunks**: jeder Chunk hat eigene Per-Vertex-Farben (worldField-Tint) → InstancedMesh nicht direkt anwendbar. Material-Singleton (V9.84) gibt schon den Hauptanteil.
 - **Shadow-Cascades**: 2048²-Map + V8.47-Bias ist genug für 600 m Sicht. Cascades wären eine zweite Welle für 2 km+ Sicht-Reichweite.
 - **GeometryBuffer-Pooling**: das `BufferGeometry.dispose`/`new` pro Chunk ist Three.js-Standard, kein Bottleneck. Erst angehen wenn Profiler es als TOP-5 ausweist.
+
+---
+
+## 5. Welle Vision-Reset (V9.94-V9.99) — die wahre Bibliothek von Alexandria
+
+**Reflexions-Stand (26.05.2026, nach Schöpfer-Konfrontation):** V9.87-V9.93 (Perf-3-Bogen + Wasser-LOD-Naht) ist solide AAA-Catch-up — wir haben Subnautica/NMS-Standard erreicht. Wir haben sie NICHT alt aussehen lassen. Drei wahre Vision-Pfeiler liegen unberührt:
+
+1. **WebGPU-Compute für Density-Sampling** (50-100× schneller als CPU-Worker). Stale Backlog-Argument (§4.2) ist 2026 hinfällig.
+2. **IndexedDB-Persistent-Chunk-Cache** (Welt-Gedächtnis — jede Architektur, jeder Carve lebt persistent in der Geometrie).
+3. **Predictive Prefetch aus Spieler-Velocity** (Welt atmet ENTGEGEN).
+
+Plus **Geometry-Stitching** als ehrliche Profi-Antwort auf LOD-Naht (V9.93-Workaround ersetzt durch echtes Stitching).
+
+### Welle Vision-Reset — Sub-Wellen-Schnitt
+
+#### V9.94 — WebGPU-Compute-Diagnose (~30 min, kein Code-Change am Stamm)
+
+Schöpfer-Maschinen-Diagnose. Ein kleiner WGSL-Compute-Shader, der eine triviale Density-Berechnung (z.B. `noise2D(x, z) * 35`) auf GPU macht. Verifizieren: `navigator.gpu` verfügbar, Compute-Pipeline compiliert, Output bit-identisch zur CPU-Implementation. Wenn ja → V9.95 frei. Wenn nein (Browser-Stack-Issue) → wir wissen es ehrlich, entscheiden anders.
+
+#### V9.95 — WebGPU-Density-Sampling (~6-8 h, der EPOCHALE Hebel)
+
+Die ~91k Density-Samples pro Chunk laufen auf GPU. WGSL-Compute-Shader implementiert die gesamte `terrainDensityAt`-Pipeline (terrainMacroSurfaceY + erosionDelta + tarnDelta + hydrosphereCarve + hydrosphereLake + voxelEdits). Atlas-State wird als StorageBuffer in GPU-Memory geladen + einmal pro Worldgen aktualisiert. Voxel-Edits als Uniform-Buffer-Delta. Fallback auf Worker (V9.89) für No-WebGPU-Browser.
+
+**Determinismus-Wand**: Float32-strict in WGSL — die V9.91-Lehre wird hier zur Sicherheits-Wand. Bit-identische Density zwischen CPU-Worker und GPU-Compute ist die Kern-Invariante. Determinismus-Test im Playtest verifiziert.
+
+**Erwarteter Sprung**: pro-Chunk-Density-Cost ~50ms (Worker) → <1ms (GPU). Streaming-Pump kann jetzt komplette Ring in <1s füllen statt 5-10s.
+
+#### V9.96 — IndexedDB-Persistent-Chunk-Cache (~4-5 h, VISION-PFEILER „Welt-Gedächtnis")
+
+Gestreamt-besuchte Chunks (positions/normals/indices/colors/waterCells als typed-array-blobs) werden in IndexedDB persistiert. Schlüssel: `{seed, cx, cz, lod}`. Bei Re-Visit: Cache-Hit → BufferGeometry-Konstruktion + BVH (sync ~30ms statt 100-150ms voller Build). Cache-Eviction via LRU (Cap z.B. 500 Chunks = ~50MB). Architektur-State wird ALSO persistiert (separater Cache pro Welt, mit `worldMeta.seed`-Versionierung).
+
+**Vision-Anker**: die Welt wird endlich UND erinnert. Jede Geste des Spielers (Carve, Damm, Architektur) lebt persistent in der Geometrie selbst, nicht nur im JSON-Snapshot. Skyrim/Witcher-Trick auf Browser übertragen.
+
+#### V9.97 — Predictive Prefetch aus Spieler-Velocity (~3 h)
+
+Streaming-Pump statt blinder Ring-Iteration: Velocity-Kegel-priorisiert. Wenn Spieler nach Norden läuft, baut der Pump zuerst Chunks im Norden + neben dem Spieler, ferne Süd-Chunks im Idle-Tick. Begleiter zu V9.95 (GPU macht Compute spottbillig, Pump kann mehr in der gleichen Frame-Time bauen).
+
+#### V9.98 — Geometry-Stitching für LOD-Boundaries (~6 h, ehrliche Naht-Heilung)
+
+V9.93-Workaround („Wasser uniform LOD 0") wird durch echtes Profi-Geometry-Stitching ersetzt. Am LOD-0↔LOD-1-Boundary baut der höher-aufgelöste Chunk explizite Triangle-Fan-Patterns, die seine 24 Boundary-Vertices auf die 12 Nachbar-Vertices abbilden. Beide LODs bleiben aware. Witcher 3, BotW, Nanite — Profi-Standard.
+
+Vorteile gegenüber V9.93: (a) Wasser-Mesh wieder LOD-aware → Performance-Win von V9.88 voll erhalten; (b) das Stitching-Pattern überträgt sich auf jede künftige Geometrie-Schicht; (c) ehrliche Profi-Antwort statt Pragmatic Fix.
+
+#### V9.99 — Per-Column-Atlas-Strict (~2 h, V9.92-Audit-Folge)
+
+Wasserschatten/Hangpfützen an Strukturen strukturell weg. Neuer Helper `_atlasWaterLevelAt(x, z)` returnt `-Infinity` wenn der Atlas an dieser Spalte kein Wasser markiert. `_buildVoxelChunkWaterCells` nutzt diesen statt `state.waterLevel`-Fallback. Mountainside-Cells in Coast-Mischchunks bleiben AIR — der V9.87-Atlas-Strict-Pattern auf die Spalten-Ebene erweitert.
+
+### 5.1 Reihenfolge nach Diagnose-First-Disziplin
+
+1. **V9.94** zuerst (30min): WebGPU-Diagnose. KÜRZESTER Schritt, entscheidet die Pfade.
+2. Falls WebGPU verfügbar → **V9.95** (GPU-Density, der epochale Hebel) → **V9.97** (Predictive Prefetch) → **V9.96** (IndexedDB-Cache) → **V9.98** (Geometry-Stitching, ersetzt V9.93) → **V9.99** (Per-Column-Strict).
+3. Falls WebGPU NICHT verfügbar → V9.96 + V9.97 + V9.98 + V9.99 ohne den GPU-Sprung. Wir sind dann immer noch AAA-Standard mit IndexedDB-Vision-Pfeiler.
+
+### 5.2 Was V9.87-V9.93 trotzdem wert war
+
+KEIN Verwerfen — die Foundation bleibt. Die Lehren leben:
+- V9.87 Atlas-Strict-Gate: ECHTE Wurzel-Heilung (kanonische Quelle vor Heuristik) — bleibt
+- V9.89-V9.91 Worker-Foundation + Float32-Cutover-Lehre: ist die Vorbedingung für GPU-Cutover (V9.95 nutzt die Float32-strict-Disziplin) — bleibt
+- V9.92 Lazy-BVH: Profi-Pattern, Sicherheits-Wand-Lehre — bleibt
+- V9.93 Wasser-LOD=0: bleibt als ZWISCHEN-Lösung bis V9.98 echtes Stitching liefert, dann wird's ersetzt
+
+**Lehre verdrahtet**: ich (Claude) habe meine eigene Vision der „sicheren" Master-Plan-Roadmap untergeordnet, ohne Backlog-Argumente zu prüfen. Backlog ist kein heiliges Dokument — es ist eine Momentaufnahme. Bei jedem Session-Start eine 5-min-Reflexion: was IST der heutige Stand der Backlog-Argumente? Browser-Support ändert sich, Determinismus-Techniken werden gelernt, was 2025 Risiko war kann 2026 gelöst sein.
 
 ---
 

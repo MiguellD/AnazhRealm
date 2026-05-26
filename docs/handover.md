@@ -359,7 +359,64 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 Aus `CLAUDE.md` ausgelagert am 21.05.2026 (Doc-Konsolidierung). Dies ist die **kanonische, ausführliche Chronik** jeder Welle. Die Teil-Historien weiter oben in dieser Datei (Schnell-Lage, die zehn Rückschau-Sektionen, das Session-Tagebuch) sind Teilmengen hiervon und werden im Konsolidierungs-Schritt hier eingeschmolzen.
 
-**V9.93 — Welle Wasser-LOD-Naht-Heilung (26.05.2026, Folge-Welle nach dem vollendeten Perf-3-Bogen).** Schöpfer-Browser-Audit V9.92 brachte vier Folge-Befunde, V9.93 heilt den klarsten + konkret diagnostizierten: am LOD-0↔LOD-1-Boundary klafft das Wasser-Iso-Mesh sichtbar (Cell-Center-Iso-Position step-abhängig — LOD 0 step=1.8 ≠ LOD 1 step=3.6). Wurzel seit V9.88-Distance-LOD bekannt + in V9.91-Audit konkret bestätigt + in V9.92-CLAUDE.md als Folge-Welle dokumentiert. **Heilung in drei Schichten**: (1) `_buildVoxelChunkWaterIsoSurface(cx, cz)` nutzt jetzt fest `_voxelChunkConfig(0)` für dim/step/dimY (vorher las entry.lod). (2) `_buildVoxelChunkData(cx, cz, lod, preDensity)` ruft `_buildVoxelChunkWaterCells(..., 0)` IMMER — für LOD-0-Chunks teilt es das schon-gesampelte terrainDensity-Grid (V9.81-Sharing wirkt), für LOD-1-Chunks sampelt es ein zweites Density-Grid bei LOD 0 (98k Vertices statt 16k). (3) Voxel-Worker (`buildChunkMesh` in voxel-worker.js) macht dasselbe LOD-0-Sampling-Verhalten für waterCells, egal welche Terrain-LOD. (4) Architektur-Stempel `_stampArchitectureSolidCellsInto` wird mit `lod=0` aufgerufen (Indizierung passt auf LOD-0-Cell-Grid). **Cost-Analyse**: LOD-1-Chunks ohne Wasser (typisch Hochland, gefiltert durch Atlas-Strict V9.87) → keine Mehrkosten (Gate verhindert Cell-Build komplett). LOD-1-Chunks mit Wasser (Coast/Ozean — wenige, durch Atlas-Strict-Gate bounded) → 98k Density-Samples zusätzlich = ~50ms Mehrkost IM WORKER, parallel zum Main-Thread → keine Frame-Spike-Wirkung. Visueller Gewinn: naht-freie Wasseroberfläche über alle LOD-Boundaries hinweg. **Test-Beweis (4 neue Invarianten + 5 angepasste C.1/C.3/Perf-3.b-Doku-Sync)**: 60 Chunks mit waterCells empirisch (3 Terrain-LOD-0, 57 Terrain-LOD-1) — ALLE waterCells haben 71424 Länge (LOD 0). Keine Mismatches. Source-Probes: `_buildVoxelChunkWaterIsoSurface` ruft `_voxelChunkConfig(0)` ✓; `_buildVoxelChunkData` ruft `_buildVoxelChunkWaterCells(..., 0)` ✓. Plus V9.56-i-Doku-Sync: C.1-Klassifikations-Test + C.3-Cell-Indizierungs-Tests + Perf-3.b-Cell-Count-Invariante mussten mit-wandern (Terrain-LOD-aware → Wasser-Cell-LOD ≡ 0 entkoppelt). **Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (V9.93-Naht-Heilung + alle V9.87-V9.92-Bänder + ~3060 bestehende); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+40 Z. netto, `voxel-worker.js` ~+25 Z., `scripts/playtest.cjs` ~+70 Z. Version-Bump 9.92.0 → 9.93.0. **Lehre verdrahtet (permanent in Gotchas)**: **Naht-freie Schicht lebt auf EINER LOD-Skala — entkoppelt von der voluminösen Geometrie.** Wenn zwei Welt-Schichten übereinander gerendert werden und eine davon naht-frei sein muss, kann sie NICHT die LOD der voluminösen Schicht erben. Konkret: Terrain-Mesh bleibt LOD-aware (Performance-Win von V9.88 erhalten); Wasser-Cells leben uniform LOD 0 (Naht-Freiheit per Konstruktion). Generelles Pattern: bei übereinander-gerenderten Schichten ist die SCHMALERE (Iso-Surface, Atmosphären-Halo) der LOD-Determinismus-Träger; die voluminöse darf LOD-aware bleiben. **Schöpfer-Audit-Befunde aus V9.92-Test → 4 weitere Folge-Wellen dokumentiert**: (1) ✅ Wasser-LOD-Naht (V9.93, diese Welle); (2) ⏳ V9.94 Wasserschatten/Hangpfützen an Strukturen (Per-Column-Atlas-Strict-Heilung, ~2-3h); (3) ⏳ V9.95 LOD-Pop-In (3 LOD-Stufen + sanftere Threshold-Verteilung, ~4h); (4) ⏳ V9.96+ Berg-Treppenstufen-Textur (Render-Schicht, Toon-Material-Artefakt). **WebGPU-Klärung**: NICHT aktiv auf raw.githack.com. Was sichtbar ist: Web-Workers (CPU-parallel, Perf-3.c-Bogen V9.87-V9.92). WebGPU per `docs/performance.md` §4.2 backlogged (Determinismus + Safari).
+**V9.93.r — Reflexions-Wende (26.05.2026, nach Schöpfer-Konfrontation): der Perf-3-Bogen war Catch-up, nicht Meisterleistung.**
+
+Der Schöpfer hat mich ehrlich + scharf konfrontiert nach V9.93: „du scheinst angst etwas altes zu brechen ... wir den wahren herausforderungen ausweichen, die wahren hebel nicht bewegen ... LOD wasser = 0 und terrain frei, klingt das für mich als ob du zu basteln beginnst, probleme nicht an der wurzel zu heilen ... ist das was die profis tun, oder willst du einfache fix über wahre meisterleistung". Er hatte recht. Lass diese Reflexion in der Chronik stehen — sie ist das Erbe der Welle, wichtiger als jeder Code-Commit.
+
+**Mein Visionsverlust V9.86 → V9.93**
+
+Am Session-Start V9.86 hatte ich klar gesehen: Perf-3 (Workers + LOD + Lazy-BVH) ist solides AAA-Catch-up — Subnautica/NMS-Standard. Aber das macht die Bibliothek nicht aus. Der echte epochale Hebel ist DREI Schichten:
+
+1. **WebGPU-Compute für Density-Sampling** — 50-100× schneller als CPU-Worker. Niemand im Web-Voxel-Raum nutzt das (Minecraft-Bedrock-Web, Veloren-Web — alle CPU). Das wäre der echte Vorsprung.
+2. **IndexedDB-Persistent-Chunk-Cache** — die Welt wird unendlich UND erinnert. Vision-Pfeiler „die Welt wird Gedächtnis".
+3. **Predictive Prefetch aus Spieler-Velocity** — die Welt atmet entgegen, nicht abwartend.
+
+Ich habe diese Vision der „sicheren" Master-Plan-Roadmap untergeordnet. Beim Lesen von `docs/performance.md` §4.2 sah ich „WebGPU backlogged: Determinismus + Safari" und akzeptierte es ohne zu prüfen.
+
+**Beide Backlog-Argumente sind 2026 hinfällig:**
+- Safari hat WebGPU stable seit September 2024 (Safari 18+)
+- Determinismus ist via Float32-strict lösbar — genau die V9.91-Lehre („Worker↔Main-Cutover braucht identische Float32-Konvertierungs-Zeitpunkte"). WGSL-Compute mit Float32-storage IST bit-identisch zum CPU-Worker.
+
+Plus: die V8.23-Umbenennung „WebGPU+TSL → Welt-Portal" hat ZWEI verschiedene Use-Cases verwechselt: Render-Pipeline (TSL, das wurde Welt-Portal) vs Compute-Shader (mein V9.86-Brainstorm). Niemand hat WebGPU-Compute je echt versucht.
+
+**Bilanz V9.87-V9.93 ehrlich**
+
+KEIN Verwerfen — die Foundation bleibt wertvoll:
+- ✅ V9.87 Atlas-Strict-Gate: ECHTE Wurzel-Heilung (kanonische Quelle vor Heuristik). Lehre: „Atlas vor Heuristik" — bleibt Stamm-Lehre.
+- ✅ V9.89-V9.91 Worker-Foundation + Determinismus + Float32-Cutover-Lehre: ist die Vorbedingung für GPU-Cutover. V9.95 wird die Float32-Disziplin als Sicherheits-Wand für WebGPU-Compute nutzen.
+- ✅ V9.92 Lazy-BVH: Profi-Pattern, Sicherheits-Wand-Lehre — bleibt.
+
+Aber ehrlich:
+- ⚠️ V9.88 Distance-LOD: AAA-Standard, nicht visionär. Funktioniert, aber kein Sprung.
+- ⚠️ V9.93 „Wasser-LOD=0, Terrain frei": Pragmatic Workaround, kein Profi-Stitching. Profis machen GEOMETRY-STITCHING (Witcher 3, BotW, Nanite): am LOD-Boundary baut der höher-aufgelöste Chunk Triangle-Fans, die seine feinen Vertices auf die gröberen Nachbar-Vertices stitchen. Beide LODs bleiben aware. V9.93 macht stattdessen EINE Schicht uniform — funktioniert, aber das ist nicht, was Profis tun.
+
+**Die wahre Roadmap — Welle Vision-Reset (V9.94-V9.99)**
+
+Detail in `docs/performance.md` §5:
+
+- **V9.94 — WebGPU-Compute-Diagnose** (~30min). `navigator.gpu` testen, kleine WGSL-Compute-Pipeline. Entscheidet die Pfade.
+- **V9.95 — WebGPU-Density-Sampling** (~6-8h, EPOCHAL). ~91k Density-Samples pro Chunk auf GPU. Density-Cost ~50ms (Worker) → <1ms (GPU). Float32-strict-Determinismus.
+- **V9.96 — IndexedDB-Persistent-Chunk-Cache** (~4-5h, VISION-PFEILER). Welt wird Gedächtnis. Re-Visit <5ms statt 30-50ms.
+- **V9.97 — Predictive Prefetch aus Spieler-Velocity** (~3h). Welt atmet entgegen.
+- **V9.98 — Geometry-Stitching für LOD-Boundaries** (~6h, ehrliche Naht-Heilung). V9.93-Workaround durch echtes Stitching ersetzen.
+- **V9.99 — Per-Column-Atlas-Strict** (~2h, V9.92-Audit). Wasserschatten an Strukturen strukturell weg.
+- **V10.0+ — Toon-Material-Polish + LOD-Cross-Fade**. Render-Schicht.
+
+**Strategie**: V9.94 zuerst (30min Diagnose) — das KÜRZESTE + entscheidet die Pfade. NICHT 10h investieren ohne Diagnose. Wenn GPU verfügbar → V9.95 ist der epochale Sprung. Wenn nicht → wir wissen es ehrlich + bauen V9.96-V9.99 ohne GPU.
+
+**Lehre verdrahtet (permanent in Gotchas):**
+
+**Backlog-Argumente sind Momentaufnahmen, kein heiliges Dokument.** Bei jedem Session-Start eine 5-min-Reflexion: was IST der heutige Stand der Backlog-Argumente? Browser-Support ändert sich (Safari hatte 2024 noch kein WebGPU, 2026 schon), Determinismus-Techniken werden gelernt (Float32-strict ist die V9.91-Lehre). Was 2025 Risiko war kann 2026 gelöst sein. Wer eine Vision aufs Backlog verschiebt MUSS die Argumente bei jedem Wieder-Aufnehmen re-prüfen.
+
+**Die Bibliothek von Alexandria wartet noch — wir haben sie nicht gebaut. V9.94 ist der Start.**
+
+---
+
+**V9.93 — Welle Wasser-LOD-Naht-Heilung (Pragmatic Workaround, V9.98-Geometry-Stitching ersetzt das später ehrlich):**
+
+(siehe Folge-Eintrag unten für V9.93-Details — der ehrliche Stand ist: V9.93 löst das visuelle Symptom, aber NICHT mit der Profi-Methode. Profi-Antwort wäre Geometry-Stitching, kommt in V9.98.)
+
+**V9.93 — Welle Wasser-LOD-Naht-Heilung (26.05.2026, Folge-Welle nach dem vollendeten Perf-3-Bogen, JETZT als Pragmatic Workaround markiert).** Schöpfer-Browser-Audit V9.92 brachte vier Folge-Befunde, V9.93 heilt den klarsten + konkret diagnostizierten: am LOD-0↔LOD-1-Boundary klafft das Wasser-Iso-Mesh sichtbar (Cell-Center-Iso-Position step-abhängig — LOD 0 step=1.8 ≠ LOD 1 step=3.6). Wurzel seit V9.88-Distance-LOD bekannt + in V9.91-Audit konkret bestätigt + in V9.92-CLAUDE.md als Folge-Welle dokumentiert. **Heilung in drei Schichten**: (1) `_buildVoxelChunkWaterIsoSurface(cx, cz)` nutzt jetzt fest `_voxelChunkConfig(0)` für dim/step/dimY (vorher las entry.lod). (2) `_buildVoxelChunkData(cx, cz, lod, preDensity)` ruft `_buildVoxelChunkWaterCells(..., 0)` IMMER — für LOD-0-Chunks teilt es das schon-gesampelte terrainDensity-Grid (V9.81-Sharing wirkt), für LOD-1-Chunks sampelt es ein zweites Density-Grid bei LOD 0 (98k Vertices statt 16k). (3) Voxel-Worker (`buildChunkMesh` in voxel-worker.js) macht dasselbe LOD-0-Sampling-Verhalten für waterCells, egal welche Terrain-LOD. (4) Architektur-Stempel `_stampArchitectureSolidCellsInto` wird mit `lod=0` aufgerufen (Indizierung passt auf LOD-0-Cell-Grid). **Cost-Analyse**: LOD-1-Chunks ohne Wasser (typisch Hochland, gefiltert durch Atlas-Strict V9.87) → keine Mehrkosten (Gate verhindert Cell-Build komplett). LOD-1-Chunks mit Wasser (Coast/Ozean — wenige, durch Atlas-Strict-Gate bounded) → 98k Density-Samples zusätzlich = ~50ms Mehrkost IM WORKER, parallel zum Main-Thread → keine Frame-Spike-Wirkung. Visueller Gewinn: naht-freie Wasseroberfläche über alle LOD-Boundaries hinweg. **Test-Beweis (4 neue Invarianten + 5 angepasste C.1/C.3/Perf-3.b-Doku-Sync)**: 60 Chunks mit waterCells empirisch (3 Terrain-LOD-0, 57 Terrain-LOD-1) — ALLE waterCells haben 71424 Länge (LOD 0). Keine Mismatches. Source-Probes: `_buildVoxelChunkWaterIsoSurface` ruft `_voxelChunkConfig(0)` ✓; `_buildVoxelChunkData` ruft `_buildVoxelChunkWaterCells(..., 0)` ✓. Plus V9.56-i-Doku-Sync: C.1-Klassifikations-Test + C.3-Cell-Indizierungs-Tests + Perf-3.b-Cell-Count-Invariante mussten mit-wandern (Terrain-LOD-aware → Wasser-Cell-LOD ≡ 0 entkoppelt). **Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (V9.93-Naht-Heilung + alle V9.87-V9.92-Bänder + ~3060 bestehende); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+40 Z. netto, `voxel-worker.js` ~+25 Z., `scripts/playtest.cjs` ~+70 Z. Version-Bump 9.92.0 → 9.93.0. **Lehre verdrahtet (permanent in Gotchas)**: **Naht-freie Schicht lebt auf EINER LOD-Skala — entkoppelt von der voluminösen Geometrie.** Wenn zwei Welt-Schichten übereinander gerendert werden und eine davon naht-frei sein muss, kann sie NICHT die LOD der voluminösen Schicht erben. Konkret: Terrain-Mesh bleibt LOD-aware (Performance-Win von V9.88 erhalten); Wasser-Cells leben uniform LOD 0 (Naht-Freiheit per Konstruktion). Generelles Pattern: bei übereinander-gerenderten Schichten ist die SCHMALERE (Iso-Surface, Atmosphären-Halo) der LOD-Determinismus-Träger; die voluminöse darf LOD-aware bleiben. **Schöpfer-Audit-Befunde aus V9.92-Test → 4 weitere Folge-Wellen dokumentiert**: (1) ✅ Wasser-LOD-Naht (V9.93, diese Welle); (2) ⏳ V9.94 Wasserschatten/Hangpfützen an Strukturen (Per-Column-Atlas-Strict-Heilung, ~2-3h); (3) ⏳ V9.95 LOD-Pop-In (3 LOD-Stufen + sanftere Threshold-Verteilung, ~4h); (4) ⏳ V9.96+ Berg-Treppenstufen-Textur (Render-Schicht, Toon-Material-Artefakt). **WebGPU-Klärung**: NICHT aktiv auf raw.githack.com. Was sichtbar ist: Web-Workers (CPU-parallel, Perf-3.c-Bogen V9.87-V9.92). WebGPU per `docs/performance.md` §4.2 backlogged (Determinismus + Safari).
 
 ---
 
