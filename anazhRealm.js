@@ -16305,11 +16305,8 @@ class AnazhRealm {
             return null;
         }
         this._attachVoxelFieldColors(geom);
-        const mat = new THREE.MeshToonMaterial({
-            vertexColors: true,
-            side: THREE.DoubleSide,
-        });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        // V10.0-g — Voxel-Test-Mesh nutzt den ToonNodeMaterial-Helper (WebGPU-kompatibel).
+        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -16862,9 +16859,37 @@ class AnazhRealm {
     // entsprechend nur Geometrie, nicht Material.
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
-        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         this.state.voxelChunkMaterial = mat;
+        return mat;
+    }
+
+    // V10.0-g — Toon-Material-Helper: alle MeshToonMaterial-Instanzen der
+    // Welt (Voxel-Chunks, Architektur-Parts, Inseln, Avatar-Torso, Sonne-
+    // Mond-Glow) wandern auf `THREE.ToonNodeMaterial` (eigene Klasse im
+    // Bootstrap, MeshLambertNodeMaterial + ToonLightingModel mit gradientMap-
+    // Lookup). Damit greift der Hot-Swap nicht mehr — WebGPU rendert
+    // dauerhaft auf GPU. `vertexColors: true` wird ZU `colorNode =
+    // vec4(attribute("color", "vec3"), 1.0)` (V10.0-f-2-Lehre, NodeMaterial
+    // liest das Flag nicht). `gradientMap` aus `state.toonGradientMap`
+    // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
+    // propagiert automatisch zu allen Materials.
+    _buildToonNodeMaterial(opts = {}) {
+        // V10.0-g (WIP): Bootstrap-ToonNodeMaterial-Subclass scheitert mit
+        // einem Three.js-internal "Cannot set properties of undefined (setting
+        // 'value')"-Bug beim Render-Compile (siehe diag-page-error.cjs). Bis
+        // Wurzel geklärt: temporär klassisches MeshToonMaterial — Welt rendert
+        // wieder, Hot-Swap auf WebGL bleibt aktiv für WebGPU-Browser. Plan ist
+        // ein eigener `_buildToon`-Pfad, der MeshBasicNodeMaterial + manuelles
+        // Lighting (sunDir-Uniform + dotN_L + gradientMap-texture) nutzt
+        // (analog zu f-3/f-4-Pattern, wo wir Blinn-Phong-Spec selbst rechnen).
+        const params = { vertexColors: !!opts.vertexColors };
+        if (opts.color !== undefined) params.color = opts.color;
+        if (opts.side !== undefined) params.side = opts.side;
+        if (opts.transparent !== undefined) params.transparent = opts.transparent;
+        if (opts.opacity !== undefined) params.opacity = opts.opacity;
+        const mat = new THREE.MeshToonMaterial(params);
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
         return mat;
     }
 
@@ -25600,10 +25625,9 @@ class AnazhRealm {
         if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
             this._refreshToonGradient();
         }
-        const material = new THREE.MeshToonMaterial({
-            color: 0xc0392b,
-            gradientMap: this.state.toonGradientMap || null,
-        });
+        // V10.0-g — Avatar-Torso auf ToonNodeMaterial (WebGPU-kompatibel).
+        // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
+        const material = this._buildToonNodeMaterial({ color: 0xc0392b });
         const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
         torso.position.y = 0.45;
         torso.castShadow = true;
@@ -27115,8 +27139,9 @@ class AnazhRealm {
             // Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher
             // Himmel-Fill. gradientMap ist geteilt (state.toonGradientMap).
             if (!this.state.toonGradientMap) this._refreshToonGradient();
-            matOpts.gradientMap = this.state.toonGradientMap;
-            const mat = new THREE.MeshToonMaterial(matOpts);
+            // V10.0-g — Architektur-Part auf ToonNodeMaterial (WebGPU-kompatibel).
+            // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
+            const mat = this._buildToonNodeMaterial(matOpts);
             materials.push(mat);
             const mesh = new THREE.Mesh(geom, mat);
             const pos = part.position || { x: 0, y: 0, z: 0 };
@@ -29420,8 +29445,8 @@ class AnazhRealm {
         // Das alte Terrain-ShaderMaterial passte nicht zur Surface-Nets-
         // Geometrie (fehlende aField/uv → kaputtes Rendering, "Löcher").
         this._attachIslandColors(geometry);
-        const material = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) material.gradientMap = this.state.toonGradientMap;
+        // V10.0-g — Insel-Material auf ToonNodeMaterial (WebGPU-kompatibel).
+        const material = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
         island.castShadow = true;
@@ -39204,7 +39229,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-f6";
+AnazhRealm.VERSION = "10.0-g.diag";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

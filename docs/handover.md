@@ -357,6 +357,61 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-g.diag — Diagnose-Welle für MeshToonMaterial-Migration (26.05.2026, ehrlicher Stop nach erstem Versuch, ~70 Z. netto Helper + Diag-Tool + Doku):**
+
+Schöpfer wollte V10.0-g — `MeshToonMaterial → ToonNodeMaterial`. Ehrliche Wahrheit nach erstem Implementations-Versuch: **das ist eine WESENTLICH größere Welle als V10.0-f-1..f-4** — eine eigene Welle-Klasse, nicht eine fünfte f-Sub-Welle.
+
+**Erkenntnis 1**: Three.js r160-Vendor hat KEINE `MeshToonNodeMaterial`. Nur Basic/Lambert/Phong/Standard/Physical/Normal/Points/Sprite als NodeMaterial-Familie. Toon ist Cel-Shading-spezifisch — vendor liefert das nicht out-of-box. Muss als eigene Subclass mit eigenem ToonLightingModel gebaut werden.
+
+**Erkenntnis 2 (der eigentliche Bug)**: erster Versuch — eigene `ToonNodeMaterial`-Klasse extends `MeshLambertNodeMaterial`, eigene `setupLightingModel()` mit `ToonLightingModel(gradientMap)` (`dotNL → texture(gradientMap, vec2(dotNL, 0.5)).r`-Lookup). Welt scheitert beim ersten render() mit Three.js-internal Crash:
+
+```
+TypeError: Cannot set properties of undefined (setting 'value')
+    at Kt (three.module.min.js)
+    at renderBufferDirect (three.module.min.js)
+    at _loopRender → loop
+```
+
+A/B-Tests: gradientMap-Pfad ausschalten + ToonLightingModel auf Lambert-Identität + setDefaultValues weglassen → alle drei Tests crashen identisch. **Wurzel**: der `webgl-legacy/nodes/WebGLNodes.js`-Patch (V10.0-f-1-Hebel, damit NodeMaterial unter klassischem WebGLRenderer kompiliert) handhabt EIGENE NodeMaterial-Subclasses mit `lights=true` NICHT robust. Die Light-Uniform-Pipeline geht auf eine undefined-uniform — irgendein interner Shadow- oder Light-Setup-Schritt fehlt.
+
+**V10.0-g.diag-Aktion** (ehrlicher Stop, keine voreilige Welle):
+
+1. **Eigene ToonNodeMaterial-Klasse im Bootstrap als BAUSTELLE auskommentiert**, klare Diagnose-Spur als Kommentar verdrahtet — drei Heilungs-Pfade dokumentiert:
+   - (a) `outputNode`-Override mit toon-step-mapping NACH dem Standard-Light (modifiziert die fertig-beleuchtete Color nachträglich)
+   - (b) `MeshPhongNodeMaterial` extends statt Lambert — vielleicht handhabt webgl-legacy das robuster
+   - (c) Custom `lightsNode`-Subscription statt `setupLightingModel`-Override (vor der Standard-Light-Pipeline einhängen)
+
+2. **`_buildToonNodeMaterial(opts)`-Helper bleibt in anazhRealm.js etabliert** — fällt aktuell auf klassisches `new THREE.MeshToonMaterial(opts)` zurück. **Schlüssel-Disziplin**: bei künftiger V10.0-g-Resolution ändert sich NUR der Helper-Body — die 5 Call-Sites (Voxel-Chunk-Material, Architektur-Parts, Inseln, Avatar-Torso, Voxel-Test-Diagnostic) bleiben unverändert. Migrations-Vorbereitung steht.
+
+3. **`scripts/diag-page-error.cjs` neu (~50 Z.)**: lokaler HTTP-Server + Puppeteer mit `pageerror`-Listener. Reproduziert den Crash deterministisch — Stack-Trace klar lesbar. Künftige V10.0-g-Welle kann es wieder triggern + die drei Heilungs-Pfade testen ohne sich an den Diag-Workflow neu erinnern zu müssen.
+
+4. **Welt-Rendering bleibt VOLL FUNKTIONAL**: Hot-Swap-Trio V10.0-e/f-5/f-6 greift wie geplant. Schöpfer-Browser sieht weiterhin: WebGPU-Init → MeshToon-Reject → Canvas+Listener+Loop-Migration → WebGLRenderer aktiv → Welt sichtbar. WebGPU-Foundation läuft für Density-Compute (V9.95-Pfad, unabhängig vom Welt-Rendering).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three-bootstrap.js` ~+30 Z. netto (BAUSTELLE-Imports + Diagnose-Spur-Kommentar mit den drei Heilungs-Pfaden), `anazhRealm.js` ~+25 Z. netto (`_buildToonNodeMaterial`-Helper als Wahrheits-Quelle für die 5 Call-Sites; eigentliche MeshToonMaterial-Logik unverändert), `scripts/diag-page-error.cjs` neu (Diagnose-Tool), `scripts/playtest.cjs` +6 Z. (Page-Error-Full-Stack-Logging), `index.html` Cache-Buster 10.0.10 → 10.0.11 + title v10.0-g.diag, `package.json` 10.0.10 → 10.0.11, `AnazhRealm.VERSION` "10.0-f6" → "10.0-g.diag".
+
+**Permanente Gotcha-Lehre verdrahtet**:
+
+**Eigene NodeMaterial-Subclasses mit `lights=true` sind im webgl-legacy/nodes-Pfad NICHT trivial**. Der Patch handhabt zuverlässig nur die eingebauten NodeMaterial-Klassen (`MeshBasicNodeMaterial`, `MeshLambertNodeMaterial`, `MeshPhongNodeMaterial`, `MeshStandardNodeMaterial`, `MeshPhysicalNodeMaterial`, `MeshNormalNodeMaterial`, `PointsNodeMaterial`, `SpriteNodeMaterial`). Custom Subclasses mit eigenem `setupLightingModel()` und `lights=true` triggern beim ersten render() einen Three.js-internal uniform-undefined-Crash. Wer eine Toon/Cel/Outline/Custom-Lighting-Variante baut, MUSS einen der drei dokumentierten Pfade gehen. Plus: ein Diag-Reproducer wie `diag-page-error.cjs` ist Pflicht — der Crash ist im Three.js-internal-Stack, schwer zu diagnostizieren ohne klare Reproduktion.
+
+**Bogen-Bilanz nach V10.0-g.diag**:
+- V10.0-f-1..f-4 portierte die 4 custom ShaderMaterials zu TSL ✓
+- V10.0-f-5/f-6 heilte die Hot-Swap-Wurzeln (Canvas-Context + Animation-Loop) ✓
+- V10.0-g.diag zeigt: MeshToonMaterial-Migration ist eigene Welle-Klasse ✓ (ehrlicher Stop)
+- **Welt rendert dauerhaft sichtbar im Browser** (WebGL via Hot-Swap)
+- WebGPU-Foundation läuft für Density-Compute (V9.95)
+- WebGPU-Welt-Rendering wartet auf V10.0-g (echte Welle, ~3-5h, eigene Session)
+
+**Was V10.0-g (die echte Welle) liefern wird (next session, ~3-5h)**:
+1. Diag-Reproducer `scripts/diag-page-error.cjs` läuft als erste Sanity-Check.
+2. Einer der drei Heilungs-Pfade (a/b/c oben) implementiert + getestet — der Pfad der den Crash heilt + Welt sichtbar lässt.
+3. Plus: gradientMap-Lookup als TSL-`texture()`-Knoten (klassische Cel-Shading-Mathematik).
+4. Plus: vertexColors-Pfad via `attribute("color", "vec3")` (V10.0-f-2-Lehre).
+5. Plus: Shadow-Map-Verifikation — castShadow + receiveShadow MÜSSEN auf dem neuen NodeMaterial funktionieren.
+6. Alle 5 Call-Sites profitieren automatisch durch den `_buildToonNodeMaterial`-Helper.
+7. Nach V10.0-g greift der Hot-Swap NICHT mehr — WebGPU rendert dauerhaft auf GPU. V10.0-f-5/f-6-Heilungen bleiben defensive Sicherung gegen Laufzeit-Device-Lost, aber triggern nicht mehr im Normalbetrieb. **Erst DANN ist der echte V10.0-Bogen vollendet**.
+
+---
+
 **V10.0-f-6 — Hot-Swap-Animation-Loop-Restore nach Schöpfer-Browser-Audit V10.0-f-5 (26.05.2026, zweite Wurzel der Hot-Swap-Welle, ~15 Z. netto):**
 
 Schöpfer-Browser-Audit V10.0-f-5 zeigte: die Canvas-Replacement-Heilung greift mechanisch (Log: „Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber"), aber **das Bild bleibt schwarz**. Der Log lügt — der Renderer-Wechsel ist erfolgreich (Canvas ersetzt, WebGLRenderer instantiiert, Maus-Listener am neuen Canvas funktional), aber NICHTS rendert tatsächlich.

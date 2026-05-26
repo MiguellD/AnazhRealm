@@ -31173,6 +31173,13 @@ async function checkBandRing6Workshop(ctx) {
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
         const pageErrors = errors.filter((e) => e.kind === "pageerror");
+        if (pageErrors.length > 0) {
+            console.error("\n=== PAGE ERRORS (Full Stack) ===");
+            for (const pe of pageErrors.slice(0, 3)) {
+                console.error(pe.stack || pe.text);
+                console.error("---");
+            }
+        }
         check(
             "Keine Script-Exceptions (page.on pageerror)",
             pageErrors.length === 0,
