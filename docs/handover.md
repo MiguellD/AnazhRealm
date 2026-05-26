@@ -357,6 +357,41 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-f-6 — Hot-Swap-Animation-Loop-Restore nach Schöpfer-Browser-Audit V10.0-f-5 (26.05.2026, zweite Wurzel der Hot-Swap-Welle, ~15 Z. netto):**
+
+Schöpfer-Browser-Audit V10.0-f-5 zeigte: die Canvas-Replacement-Heilung greift mechanisch (Log: „Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber"), aber **das Bild bleibt schwarz**. Der Log lügt — der Renderer-Wechsel ist erfolgreich (Canvas ersetzt, WebGLRenderer instantiiert, Maus-Listener am neuen Canvas funktional), aber NICHTS rendert tatsächlich.
+
+**Zweite Wurzel diagnostiziert**: Three.js' `setAnimationLoop` ist **renderer-spezifisch**. V10.0-d hatte `state.renderer.setAnimationLoop(loop)` einmalig auf dem WebGPURenderer registriert (Z38201 im init()-Block). Beim Hot-Swap:
+- `oldRenderer.dispose()` stoppt den `setAnimationLoop`-rAF-Pfad nicht zuverlässig (Three.js-implementation-dependent).
+- Der NEUE WebGLRenderer hatte NIEMALS `setAnimationLoop(callback)` registriert → seine rAF-Schleife wurde nie gestartet.
+- Resultat: `_loopRender` wird nie mehr gerufen → keine `state.renderer.render(scene, camera)`-Calls → schwarzes Bild trotz funktionalem Renderer + funktionaler Scene.
+
+**Heilung in V10.0-f-6** (`_swapToWebGLRenderer` erweitert):
+
+1. **VOR dispose**: `oldRenderer.setAnimationLoop(null)` — stoppt den rAF-Pfad expliziet. Defensive, weil Three.js' dispose() das nicht garantiert macht.
+
+2. **NACH WebGL-Renderer-Init + Listener-Rebind**: `fallback.setAnimationLoop(this._gameLoopTick)`. Der V8.50-exposed `_gameLoopTick` ist die Quelle der Wahrheit (gleiches Callback wie bei init() in V10.0-d). Damit übernimmt der neue Renderer die rAF-Schleife — `_loopRender` wird wieder pro Frame gerufen, `state.renderer.render(scene, camera)` läuft.
+
+3. **Bonus**: `new WebGLRenderer({ canvas, antialias: true })` mit antialias=true (V10.0-d hatte das im init-Pfad gesetzt, der Hot-Swap-Pfad vergaß es).
+
+**Erwartetes Verhalten beim Schöpfer-Reload `?v=10.0.10`**:
+1. WebGPU-Init startet (AMD RDNA-3)
+2. MeshToon-Inkompatibilität → Hot-Swap-Trigger
+3. Canvas ersetzt + WebGLRenderer aktiv + Listener neu gebunden + **Animation-Loop auf neuem Renderer registriert** ✨
+4. `_loopRender` läuft pro Frame → Scene rendert → **Welt SICHTBAR im Browser** ✅
+
+**Verhaltens-Beweis (Headless)**: Playtest „Alle Invarianten OK" (Cloud-Container nutzt direkt WebGL → Hot-Swap-Pfad nicht getriggert, Heilung defensive im Browser); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+15 Z. netto, `index.html` Cache-Buster 10.0.9 → 10.0.10 + title v10.0-f6, `package.json` 10.0.9 → 10.0.10, `AnazhRealm.VERSION` "10.0-f5" → "10.0-f6".
+
+**Lehre verstärkt** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**Three.js' `setAnimationLoop` ist renderer-spezifisch** — wer einen Renderer-Hot-Swap baut, MUSS den alten Loop expliziet stoppen (`oldRenderer.setAnimationLoop(null)`) + den neuen Renderer mit demselben Callback registrieren (`newRenderer.setAnimationLoop(callback)`). Three.js' `dispose()` stoppt den rAF-Pfad nicht zuverlässig. Plus: alle Renderer-Konfigurations-Parameter (antialias, pixelRatio, useLegacyLights, ...) müssen im Hot-Swap-Pfad das Gleiche tun wie der init()-Pfad. Pattern: `_gameLoopTick` als Klassen-Member speichern (V8.50-Loop-Exponierung) → Hot-Swap kann es als Quelle der Wahrheit nutzen.
+
+**V10.0-f-Wellen-Bogen-Vollständigkeit**: f-1/f-2/f-3/f-4 (4 ShaderMaterials portiert zu TSL) + f-5 (Canvas-Replacement im Hot-Swap, V10.0-e-Lüge geheilt) + f-6 (Animation-Loop-Restore im Hot-Swap, V10.0-d-Lücke geheilt). Die zwei f-5/f-6-Heilungen waren strukturelle Bug-Wurzeln in V10.0-e's „Sicherheits-Wand" — durch den Cloud-Container nicht entdeckbar (Headless WebGL direkt, Hot-Swap-Pfad nie getriggert). Erst der echte Schöpfer-Browser-Audit zeigte sie nacheinander auf.
+
+**Was V10.0-g liefern wird (next session, ~2-3h)**: `MeshToonMaterial` → `MeshToonNodeMaterial`. Damit greift der Hot-Swap NICHT mehr (WebGPU rendert direkt) — die V10.0-f-5/f-6-Heilungen bleiben als defensive Sicherung gegen Laufzeit-Device-Lost, aber triggern nicht mehr im Normalbetrieb. Erst nach V10.0-g läuft die Welt WIRKLICH dauerhaft auf WebGPU.
+
+---
+
 **V10.0-f-5 — Hot-Swap-Canvas-Replacement nach Schöpfer-Browser-Audit V10.0-f-4 (26.05.2026, kritische Wurzel-Heilung, ~80 Z. netto):**
 
 Schöpfer-Browser-Audit V10.0-f-4 auf AMD RDNA-3 zeigte: meine „Bogen-Vollendet"-Behauptung war voreilig. Die 4 custom ShaderMaterials sind portiert, ABER eine fünfte Material-Familie wartete übersehen: `MeshToonMaterial` (mit gradientMap + vertexColors) für die Voxel-Welt-Chunks. Plus: V10.0-e's Hot-Swap-Pfad zerschoss sich am Canvas-Context. Welt rendert gar nicht.

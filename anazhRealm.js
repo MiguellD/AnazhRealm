@@ -38857,8 +38857,15 @@ class AnazhRealm {
     // neuen Canvas neu binden (closure-captured-canvas der alten Listener
     // zeigt aufs entfernte Element → tote Pointer-Lock + Maus-Aktionen).
     _swapToWebGLRenderer() {
+        const oldRenderer = this.state.renderer;
+        // V10.0-f-6 — Animation-Loop des alten Renderers explizit stoppen.
+        // `setAnimationLoop(null)` löst den rAF-Pfad. Wenn wir das nicht
+        // machen, läuft die internal rAF-Schleife des WebGPURenderers
+        // möglicherweise weiter + ruft render() auf einem disposed Device.
         try {
-            const oldRenderer = this.state.renderer;
+            if (oldRenderer && typeof oldRenderer.setAnimationLoop === "function") {
+                oldRenderer.setAnimationLoop(null);
+            }
             if (oldRenderer && typeof oldRenderer.dispose === "function") {
                 oldRenderer.dispose();
             }
@@ -38872,7 +38879,7 @@ class AnazhRealm {
         }
         let fallback;
         try {
-            fallback = new THREE.WebGLRenderer({ canvas: newCanvas });
+            fallback = new THREE.WebGLRenderer({ canvas: newCanvas, antialias: true });
         } catch (err) {
             this.log(`Hot-Swap fehlgeschlagen: WebGLRenderer-Constructor scheiterte (${err.message})`, "ERROR");
             return;
@@ -38882,8 +38889,14 @@ class AnazhRealm {
         this.state.rendererKind = "webgl";
         this.state.rendererReady = true;
         this.state.canvas = newCanvas;
-        // Input-Listener am neuen Canvas neu binden (alte zeigen ins Leere).
+        // V10.0-f-6 — Input-Listener am neuen Canvas neu binden (alte zeigen
+        // ins entfernte DOM-Element). Plus: Animation-Loop auf den neuen
+        // Renderer registrieren — sonst läuft die rAF-Schleife nirgendwo
+        // mehr und das Bild bleibt schwarz, obwohl der Renderer existiert.
         this._attachWorldCanvasInputListeners(newCanvas);
+        if (this._gameLoopTick) {
+            fallback.setAnimationLoop(this._gameLoopTick);
+        }
         this.log("Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
     }
 
@@ -39191,7 +39204,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-f5";
+AnazhRealm.VERSION = "10.0-f6";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
