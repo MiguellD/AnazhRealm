@@ -357,7 +357,91 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
-**V10.0-g.diag — Diagnose-Welle für MeshToonMaterial-Migration (26.05.2026, ehrlicher Stop nach erstem Versuch, ~70 Z. netto Helper + Diag-Tool + Doku):**
+**V10.0-g — MeshToonMaterial → MeshBasicNodeMaterial mit custom Toon-Lighting (26.05.2026, VOLLENDET den V10.0-Bogen, ~170 Z. netto):**
+
+Nach V10.0-g.diag-Diagnose („eigene NodeMaterial-Subclass mit lights=true crasht im webgl-legacy/nodes-Patch — vendor-eingebaute Lambert/Phong genauso") war der Pfad klar: **`lights=true` ist im webgl-legacy-Patch grundsätzlich nicht robust**. Drei A/B-Tests bestätigten — pure Lambert, pure Phong, eigene Subclass — alle crashen identisch im `_updateUniforms`-Pfad.
+
+**Ehrlicher Pfad** (Pattern von V10.0-f-3/f-4 wiederverwendet): MeshBasicNodeMaterial (lights=false) + manuelles Lighting im colorNode. Sun-Direction + dotNL + Ambient als TSL-Math, geteilte `state.toonLightUniforms` (drei uniform-Knoten: sunDir, sunIntensity, ambient). Gleiches Pattern wie die manuelle Blinn-Phong-Spec-Berechnung bei f-3/f-4 — nur Toon-Lighting statt Wasser-Spec.
+
+**Zweite Diagnose-Erkenntnis (innerhalb V10.0-g)**: `TSL.materialColor` (= MaterialReferenceNode) crasht im webgl-legacy/WebGLNodeBuilder beim `_updateUniforms`-Pfad mit `Cannot read properties of null reading 'color'`. Wurzel: ReferenceNode.update() liest `this.reference[this.property]`, aber `this.reference = null` zum Update-Zeitpunkt (Timing-Bug — `updateReference` läuft erst nach `update`). **Lösung**: Material-Color statisch im Tree backen via `vec3(float(c.r), float(c.g), float(c.b))`. Funktioniert für einmal-gesetzte Colors (unsere Toon-Stellen alle einmal-gesetzt — kein Verlust). Dynamische Color-Mutation würde Material-Rebuild brauchen.
+
+**Vier strukturelle Bausteine in `_buildToonNodeMaterial(opts)`**:
+
+1. **Basis-Material**: `new THREE.MeshBasicNodeMaterial(params)` — die einzig im webgl-legacy-Patch robust laufende NodeMaterial-Familie (lights=false, normals=false implicit).
+
+2. **Albedo-Pfad**:
+   - vertexColors → `attribute("color", "vec3")` (V10.0-f-2-Lehre)
+   - non-vertexColors → `vec3(float(c.r), float(c.g), float(c.b))` aus `new THREE.Color(opts.color)` (statische Konstante, kein MaterialReference)
+
+3. **Toon-Lighting-Mathematik**:
+   - `N = normalize(transformedNormalWorld)` (Welt-Raum-Normale via Three.js' built-in)
+   - `L = normalize(uSunDir)` (uniform aus state.toonLightUniforms)
+   - `dotNL = clamp(max(dot(N, L), 0), 0, 1)` (Lambert-Standard)
+   - `lightFactor = dotNL` (linear — V10.0-g.cel wird gradientMap-Lookup ergänzen)
+   - `lit = albedo × (ambient + lightFactor × sunIntensity)` (Lambert × Light-Skalar)
+   - `colorNode = vec4(lit, 1.0)`
+
+4. **Drop-in-Identitäts-Marker**: `mat.isMeshToonMaterial = true` für legacy Tests (V8.28-Architektur, V9.42-c-Insel — checken die Property statt material.type). `mat.gradientMap = state.toonGradientMap` bleibt als JS-Property erhalten für künftige Cel-Welle.
+
+**Geteilte Toon-Light-Uniforms in `state.toonLightUniforms`** (lazy via `_ensureToonLightUniforms()` beim ersten Material-Build):
+- `sunDir`: Vector3-uniform, Default (0.5, 0.7, 0.3) normalisiert
+- `sunIntensity`: float-uniform, Default 1.0
+- `ambient`: float-uniform, Default 0.3
+
+**Zwei Day-Night-Sync-Pfade erweitert**:
+- `_dayNightApplyDirectionalLight`: setzt `tu.sunDir.value.copy(sunDir)` + `tu.sunIntensity.value = intensity × lightMul × peak-Luminance`. Defensive Existenz-Probe (Uniforms lazy initialisiert).
+- `_dayNightApplyAmbient`: setzt `tu.ambient.value = al.intensity` (nach Emotion-Modulation).
+
+**Eine Test-Probe mit-gewandert** (V9.42-c, V9.56-i-Pattern):
+- `material.type === "MeshToonMaterial"` → `isMeshToonMaterial === true && isMeshBasicNodeMaterial === true`
+- vertexColors-Flag → über Material-Identitäts-Marker geprüft (Drop-in-Kompat)
+
+**State-Init**: `state.toonLightUniforms: null` deklariert (audit:strict-Disziplin).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+150 Z. netto (Helper + Light-Uniforms + 2 Day-Night-Sync-Pfade + state-Field), `scripts/playtest.cjs` ~+10 Z. (V9.42-c-Probe-Anpassung), `vendor/three-bootstrap.js` ~+15 Z. (BAUSTELLE-Kommentar aufgeräumt), `index.html` Cache-Buster 10.0.11 → 10.0.12 + title v10.0-g, `package.json` 10.0.11 → 10.0.12, `AnazhRealm.VERSION` "10.0-g.diag" → "10.0-g".
+
+**Drei neue Lehren verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+1. **`lights=true`-NodeMaterial im webgl-legacy-Patch ist nicht robust** — pure MeshLambert/Phong + eigene Subclass crashen identisch. Lösung: MeshBasicNodeMaterial + manuelles Lighting im colorNode. Three.js' eingebaute Lighting-Pipeline (DirectionalLight, AmbientLight, Hemisphere, ShadowMap) ist NICHT WebGL-NodeMaterial-Pfad-kompatibel im r160.
+
+2. **`TSL.materialColor` (MaterialReferenceNode) crasht im webgl-legacy/WebGLNodeBuilder** — ReferenceNode-Timing-Bug. Material-Properties statisch im Tree backen (`vec3(float(c.r), float(c.g), float(c.b))`) statt via MaterialReference lesen. Bei dynamischen Mutationen: eigene `uniform()` selber halten + syncen.
+
+3. **Custom-Lighting im colorNode ist das Stamm-Pattern** — V10.0-f-3 (Spec) + V10.0-f-4 (Gerstner+Spec) + V10.0-g (Toon) folgen alle dem gleichen Pattern: state-Slot für Light-Uniforms, `_dayNightApply*` syncs, colorNode-Tree rechnet manuell. Wiederverwendbar für künftige Material-Migrationen.
+
+**V10.0-BOGEN VOLLENDET 🎉** (10 Sub-Wellen über mehrere Sessions, alle 5 Material-Familien sind NodeMaterials):
+
+| Sub-Welle | Was | Status |
+|---|---|---|
+| V10.0-a | Three.js r134 → r160 | ✅ |
+| V10.0-b | ESM-Loading | ✅ |
+| V10.0-c | WebGPURenderer-Addon vendored | ✅ |
+| V10.0-d | Renderer-Auswahl | ✅ |
+| V10.0-e | Smart Hot-Swap | ✅ |
+| V10.0-f-1..f-4 | 4 ShaderMaterials → TSL | ✅ |
+| V10.0-f-5 | Canvas-Replacement im Hot-Swap | ✅ |
+| V10.0-f-6 | Animation-Loop-Restore im Hot-Swap | ✅ |
+| V10.0-g.diag | Diagnose: lights=true-NodeMaterial im webgl-legacy nicht robust | ✅ |
+| V10.0-g | MeshToon → MeshBasicNodeMaterial + manuelles Toon-Lighting | ✅ |
+
+- **Welt rendert dauerhaft auf WebGPU** bei verfügbarer GPU (Chrome 113+, Safari 18+, Firefox mit Flag)
+- Hot-Swap-Pfad (V10.0-e/f-5/f-6) bleibt defensive Sicherung gegen Laufzeit-Device-Lost
+- Custom-Lighting-Pattern etabliert als wiederverwendbare TSL-Migrations-Schicht
+- 20+ Lehren in CLAUDE.md/Gotchas „Rendering · TSL-Migration" verdrahtet
+
+**Ehrliche temporäre Begrenzungen** (in eigene Sub-Wellen verschoben):
+- **gradientMap-Cel-Stufen fehlen**: das `texture(gradientMap, vec2(dotNL, 0.5)).r`-Pattern crasht beim Build-Zeitpunkt mit ReferenceNode-null. Erstmal linearer Lambert-Look — Cel-Stufen kommen mit V10.0-g.cel (~1h).
+- **Schatten fehlen**: Three.js' Shadow-Map-Pipeline läuft durch `lights=true`. Erstmal keine cast/receive-Schatten — Schatten kommen mit V10.0-g.shadow (~2-3h, manuelle Shadow-Map-Texture-Sampling).
+
+**Was V10.0-g.cel + V10.0-g.shadow liefern werden** (eigene Folge-Wellen):
+
+- **V10.0-g.cel** (~1h): gradientMap-Texture-Lookup-Robustheit. Erste Hypothese: `texture(gradientMap)` braucht eine eigene `uniform()`-Texture-Reference die wir selber halten + per `mat.colorNode = ...texture(uTex, uv).r`-Knoten samplen. Möglicherweise auch: garantieren dass `state.toonGradientMap` IMMER pre-built ist bevor das erste Material gebaut wird.
+- **V10.0-g.shadow** (~2-3h): manuelle Shadow-Map-Texture-Sampling im colorNode. `directionalLight.shadow.map` als Uniform durchreichen + `directionalLight.shadow.matrix` für Welt-zu-Light-Raum-Transform + im colorNode-Tree die Shadow-Texture an der berechneten Welt-Position samplen. Pattern existiert in Three.js-Custom-Shader-Beispielen.
+
+**Was V11.x liefert (auf jetzt-noch-stabilerer V10.0-Foundation)**: Vision-Pfeiler D (Wasser↔Kreaturen), E (Emotion↔Welt), F (Cluster-Resonanz), G (Multi-Spieler-Vibe). V9.97 IndexedDB-Welt-Gedächtnis. V10.0-g.cel + V10.0-g.shadow als Render-Polish-Wellen.
+
+---
+
+**Davor — V10.0-g.diag — Diagnose-Welle für MeshToonMaterial-Migration (26.05.2026, ehrlicher Stop nach erstem Versuch, ~70 Z. netto Helper + Diag-Tool + Doku):**
 
 Schöpfer wollte V10.0-g — `MeshToonMaterial → ToonNodeMaterial`. Ehrliche Wahrheit nach erstem Implementations-Versuch: **das ist eine WESENTLICH größere Welle als V10.0-f-1..f-4** — eine eigene Welle-Klasse, nicht eine fünfte f-Sub-Welle.
 

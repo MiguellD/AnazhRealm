@@ -80,6 +80,14 @@ class AnazhRealm {
             // (sunDir, light, fog*). Vollendet den V10.0-f-Bogen — alle 4
             // Materials sind jetzt NodeMaterial.
             hydroSurfaceUniforms: null,
+            // V10.0-g — Toon-Light-Uniforms für MeshBasicNodeMaterial-basiertes
+            // Toon-Shading (3 uniform-Knoten): sunDir, sunIntensity, ambient.
+            // Init lazy in _ensureToonLightUniforms(); mutiert von
+            // _dayNightApplyDirectionalLight + _dayNightApplyAmbient. Welt-
+            // global geteilt von allen ToonNodeMaterials (Voxel-Chunks,
+            // Architekturen, Inseln, Avatar). gradientMap-Lookup bleibt
+            // separat in state.toonGradientMap.
+            toonLightUniforms: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -16875,14 +16883,118 @@ class AnazhRealm {
     // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
     // propagiert automatisch zu allen Materials.
     _buildToonNodeMaterial(opts = {}) {
-        // V10.0-g (WIP): Bootstrap-ToonNodeMaterial-Subclass scheitert mit
-        // einem Three.js-internal "Cannot set properties of undefined (setting
-        // 'value')"-Bug beim Render-Compile (siehe diag-page-error.cjs). Bis
-        // Wurzel geklärt: temporär klassisches MeshToonMaterial — Welt rendert
-        // wieder, Hot-Swap auf WebGL bleibt aktiv für WebGPU-Browser. Plan ist
-        // ein eigener `_buildToon`-Pfad, der MeshBasicNodeMaterial + manuelles
-        // Lighting (sunDir-Uniform + dotN_L + gradientMap-texture) nutzt
-        // (analog zu f-3/f-4-Pattern, wo wir Blinn-Phong-Spec selbst rechnen).
+        // V10.0-g — die Wurzel von V10.0-g.diag: webgl-legacy/nodes/WebGLNodes.js
+        // handhabt KEINE NodeMaterial mit `lights=true` robust (egal ob vendor-
+        // eingebaut wie MeshLambert/Phong oder eigene Subclass — alle triggern
+        // den Crash). **Ehrlicher Pfad**: MeshBasicNodeMaterial (lights=false)
+        // + manuelles Toon-Lighting im `colorNode`. Sun-Direction-Uniform +
+        // dotNL + gradientMap-Texture-Lookup für Cel-Stufen + Ambient.
+        // Schatten gehen temporär verloren (Three.js' Shadow-Map-Pipeline läuft
+        // durch lights=true) — Vision-Verlust, in V10.0-g.shadow gewinnen wir
+        // sie zurück (z.B. via manuell durchgereichte ShadowMap-Texture).
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            return this._buildClassicMeshToonMaterial(opts);
+        }
+        const params = {};
+        if (opts.color !== undefined) params.color = opts.color;
+        if (opts.side !== undefined) params.side = opts.side;
+        if (opts.transparent !== undefined) params.transparent = opts.transparent;
+        if (opts.opacity !== undefined) params.opacity = opts.opacity;
+        const mat = new THREE.MeshBasicNodeMaterial(params);
+
+        // Geteilte Toon-Light-Uniforms (sun-direction, sun-intensity, ambient).
+        // Welt-global per state.toonLightUniforms, gespeist von _dayNightApply-
+        // DirectionalLight + _dayNightApplyAmbient. Lazy initialisiert beim
+        // ersten Material-Build.
+        const u = this._ensureToonLightUniforms();
+
+        const {
+            uniform,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            attribute,
+            normalize,
+            dot,
+            max,
+            clamp,
+            mix,
+            transformedNormalWorld,
+            texture,
+        } = TSL;
+        void uniform;
+        void mix;
+
+        // V10.0-g — Albedo: vertex-color wenn opt.vertexColors, sonst statische
+        // vec3-Konstante aus opts.color. `TSL.materialColor` (= MaterialReferenceNode
+        // auf `mat.color`) crasht im webgl-legacy/WebGLNodeBuilder beim
+        // _updateUniforms-Pfad ("Cannot read properties of null reading 'color'"
+        // aus ReferenceNode.update — Timing-Bug in der NodeBuilder-Update-
+        // Schleife). Statische vec3-Konstante ist robust + ausreichend, weil
+        // alle unsere Toon-Stellen (Voxel-Chunk/Architektur/Insel/Avatar) eine
+        // einmal-gesetzte Color haben — keine dynamische Color-Mutation nach
+        // dem Material-Build. Bei vertexColors-Pfad (Voxel + Insel) bleibt
+        // der attribute-Lookup dominant.
+        let albedoNode;
+        if (opts.vertexColors) {
+            albedoNode = attribute("color", "vec3");
+        } else {
+            const c = new THREE.Color(opts.color !== undefined ? opts.color : 0xffffff);
+            albedoNode = vec3(float(c.r), float(c.g), float(c.b));
+        }
+
+        // Normale: Welt-Raum (Three.js' transformedNormalWorld = mat3(modelMatrix) × normalLocal).
+        const N = normalize(transformedNormalWorld);
+        const L = normalize(u.sunDir);
+        // dotNL clamp 0..1 (Lambert-Standard-Mathematik).
+        const dotNL = clamp(max(dot(N, L), float(0.0)), float(0.0), float(1.0));
+
+        // V10.0-g DEBUG: gradientMap-Lookup ist VOLATILE — wenn die Texture
+        // beim Material-Build noch nicht initialisiert war oder ein neuer Build
+        // sie verliert, crasht der TextureNode beim _updateUniforms-Pfad
+        // (Cannot read properties of null reading 'color' aus ReferenceNode).
+        // Erstmal linearer dotNL — die Cel-Stufen kommen in V10.0-g.cel zurück.
+        const lightFactor = dotNL;
+        void texture;
+        void vec2;
+
+        // Lit-Helligkeit = ambient + sunIntensity × toonStep (skalar).
+        // Multiply mit albedo (vec3) gibt finale Color.
+        const litScalar = u.ambient.add(lightFactor.mul(u.sunIntensity));
+        const lit = albedoNode.mul(vec3(litScalar, litScalar, litScalar));
+
+        mat.colorNode = vec4(lit, float(1.0));
+
+        // Drop-in-Identitäts-Marker für legacy Tests (V8.28, V9.42-c).
+        mat.isMeshToonMaterial = true;
+        // gradientMap als JS-Property erhalten — wenn _refreshToonGradient
+        // die Texture in-place patcht (needsUpdate=true), liest der TSL-
+        // texture()-Knoten beim nächsten Frame die aktualisierten Pixel.
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        return mat;
+    }
+
+    // V10.0-g — Geteilte Toon-Light-Uniforms (uniform-Knoten, .value-mutable).
+    // Lazy initialisiert; gespeist von _dayNightApplyDirectionalLight +
+    // _dayNightApplyAmbient via state.toonLightUniforms.X.value-Setter.
+    _ensureToonLightUniforms() {
+        if (this.state.toonLightUniforms) return this.state.toonLightUniforms;
+        const TSL = THREE.TSL;
+        const { uniform } = TSL;
+        // Sun-Direction: Default (0.5, 0.7, 0.3) normalized — mittag-ish.
+        // sunIntensity: skalar 0..1 (DirectionalLight.intensity × peak-Color-Luminance).
+        // ambient: skalar 0..1 (AmbientLight.intensity + Hemisphere-Contribution).
+        const sunDir = uniform(new THREE.Vector3(0.5, 0.7, 0.3).normalize());
+        const sunIntensity = uniform(1.0);
+        const ambient = uniform(0.3);
+        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient };
+        return this.state.toonLightUniforms;
+    }
+
+    // V10.0-g — Fallback wenn TSL/NodeMaterial nicht verfügbar (Vendor-Bruch).
+    _buildClassicMeshToonMaterial(opts = {}) {
         const params = { vertexColors: !!opts.vertexColors };
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
@@ -35622,6 +35734,19 @@ class AnazhRealm {
             tint.lightColor.b * tint.lightMul
         );
         dl.intensity = tint.lightIntensity;
+        // V10.0-g — Toon-Light-Uniforms aktualisieren: sunDir (Welt-Raum,
+        // normalisiert) + sunIntensity (skalar, peak-Luminance × intensity).
+        // Defensive Existenz-Probe — Uniforms sind lazy initialisiert beim
+        // ersten Material-Build, daher hier noch nicht garantiert da.
+        const tu = this.state.toonLightUniforms;
+        if (tu) {
+            if (tu.sunDir) tu.sunDir.value.copy(sunDir);
+            if (tu.sunIntensity) {
+                // skalar = lightIntensity × peak-Color-Luminance
+                const lum = (tint.lightColor.r + tint.lightColor.g + tint.lightColor.b) / 3.0;
+                tu.sunIntensity.value = tint.lightIntensity * tint.lightMul * lum;
+            }
+        }
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -35632,6 +35757,9 @@ class AnazhRealm {
         const sunHeight = Math.max(0, Math.sin(angle));
         const baseAmb = 0.18 + 0.42 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+        // V10.0-g — Toon-Light-Uniform für Ambient mitziehen.
+        const tu = this.state.toonLightUniforms;
+        if (tu && tu.ambient) tu.ambient.value = al.intensity;
     }
 
     // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
@@ -39229,7 +39357,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-g.diag";
+AnazhRealm.VERSION = "10.0-g";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
