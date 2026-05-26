@@ -6,9 +6,36 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V10.0-e, 26.05.2026 — **Smart Hot-Swap bei Render-Inkompatibilität**. Schöpfer-Browser-Audit V10.0-d bestätigte: WebGPU LÄUFT auf AMD RDNA-3 ✓, ABER unsere zwei custom `ShaderMaterial`s (hydroSurfaceMaterial + waterfallMaterial) sind in WebGPU r160 nicht kompatibel — `NodeMaterial.fromMaterial` wirft Promise-Reject pro Frame, FPS fiel auf 8. V10.0-e: render()-Promise-Reject-Handler erkennt ShaderMaterial-Fehler + triggert Hot-Swap zu WebGLRenderer (identische Config via `_configureRenderer`). Welt rendert visuell 1:1 wie vor V10.0-a. V10.0-f portiert die zwei Custom-Shaders zu TSL für echten WebGPU-Render.)
+## Aktueller Stand (V10.0-e, 26.05.2026 — **V10.0-Bogen Foundation abgeschlossen**, V10.0-f Sub-Wellen-Bogen wartet. Three.js r134 → r160 Migration durch (Vendor + ESM-Loading + WebGPURenderer-Addon vendored + Renderer-Auswahl-Logik + Hot-Swap-Fallback). WebGPU LÄUFT auf AMD RDNA-3 (Schöpfer-Browser-Audit bestätigt), aber die 4 custom ShaderMaterials triggern Hot-Swap zu WebGL. **Welt rendert sauber auf WebGL** mit allen V10.0-a-Bridge-Heilungen aktiv. **V10.0-f-1..f-4 als Multi-Session-Bogen** portiert die 4 ShaderMaterials zu TSL mit voller Qualität, NACH V10.0-f-4 läuft WebGPU dauerhaft + Hot-Swap-Pfad bleibt nur defensive.)
 
-**V10.0-e — Smart Hot-Swap bei Render-Inkompatibilität (~30 Z. netto, ehrliche Diagnose-Folge-Welle nach Schöpfer-Browser-Audit):**
+## Der Pfad voraus (Klare Sub-Wellen-Struktur, Schöpfer-Wahl bestätigt 26.05.2026)
+
+**V10.0-Bogen-Stand**:
+- ✅ **V10.0-a** Three.js r134 → r160 Vendor + Bridge-Heilungen (ColorManagement, useLegacyLights)
+- ✅ **V10.0-b** ESM-Loading-Pattern (Inline-Importmap + CSP-SHA256-Hash + Bootstrap-Module)
+- ✅ **V10.0-c** WebGPURenderer-Addon vendored (~1.5 MB, 238 Files in `vendor/three-addons/`)
+- ✅ **V10.0-d** Renderer-Auswahl-Logik aktiv (WebGPU wenn `isAvailable()`, sonst WebGL, async init mit `rendererReady`-Flag)
+- ✅ **V10.0-e** Smart Hot-Swap bei `ShaderMaterial`-Inkompatibilität (render()-Promise-Reject erkannt, `_swapToWebGLRenderer()`, einmalig pro Session)
+
+**V10.0-f Sub-Wellen-Bogen** (Multi-Session, VOLLE Qualität pro Migration, KEIN Trade-off via vereinfachte Varianten):
+- ⏳ **V10.0-f-1** skyboxMaterial → TSL (~50 Z. GLSL Nebula+Clouds-Noise → ~80 Z. TSL; einfachster der vier; Welt-Optik bleibt identisch)
+- ⏳ **V10.0-f-2** starsMaterial → NodeMaterial (Points mit `aSize`-Attribute + soft round falloff; ~30 Z. GLSL; PointsMaterial-Subklasse möglich)
+- ⏳ **V10.0-f-3** waterfallMaterial → TSL (~119 Z. GLSL, vertikales Wasser-Volume mit Animation)
+- ⏳ **V10.0-f-4** hydroSurfaceMaterial → TSL (~189 Z. GLSL — Gerstner-6-Octaven + Foam-Pattern + Specular + Fresnel + Fog; der KOMPLEXESTE Port, vermutlich eigene Session)
+
+**Nach V10.0-f-4**: WebGPURenderer rendert ALLE Materials, Hot-Swap-Pfad bleibt als defensive Sicherung, läuft aber nicht mehr. Welt rendert dauerhaft auf GPU bei `THREE.WebGPU.isAvailable()`.
+
+**V11.x ZUKUNFT** (auf solider V10.0-Foundation):
+- **Vision-Pfeiler D**: Wasser ↔ Kreaturen (Trinken am Ufer, Schwimmen, Scheuen vor Tiefe)
+- **Vision-Pfeiler E**: Emotion ↔ lokale Welt (Spieler-Aura pulsiert in 30m-Umkreis — Wasser, Ambient, Licht modulieren)
+- **Vision-Pfeiler F**: Hylomorphismus-Cluster-Resonanz (3× lebendig-Bauten = sichtbare Aura, lockt Fauna)
+- **Vision-Pfeiler G**: Multi-Spieler-Vibe (Welt atmet als ein Wesen)
+- Plus V9.93.r-Backlog: V9.97 IndexedDB-Welt-Gedächtnis (GPU-unabhängig, „die Welt erinnert sich"), V9.98 Predictive Prefetch, V9.99 Per-Column-Atlas-Strict
+- Render-Polish: Toon-Material-Treppenstufen weicher, LOD-Cross-Fade
+
+---
+
+**V10.0-e — Smart Hot-Swap bei Render-Inkompatibilität (~30 Z. netto, letzter Schritt der V10.0-Foundation):**
 
 - **Wurzel-Befund aus Schöpfer-Browser-Log V10.0-d** (AMD RDNA-3, Windows Chrome):
   - ✅ `WebGPU Foundation bereit: amd/rdna-3/(unbekannt)` (V9.95-Foundation läuft)
