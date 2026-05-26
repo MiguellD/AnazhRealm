@@ -37292,9 +37292,25 @@ class AnazhRealm {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // V10.0-a (Welle Three.js-Migration r134 → r160): ColorManagement
+        // wurde mit r142+ default ON. Three.js wandelt sRGB-Color-Werte intern
+        // in linearen Space für korrekten Lighting-Math. Bridge-Heilung:
+        // legacy ColorManagement, damit die Welt-Optik identisch zur r134-
+        // Baseline bleibt. V10.0-b/c machen den sauberen Switch (alle
+        // Materials + Lights mit physically-correct + sRGB-textures explizit).
+        if (typeof THREE !== "undefined" && THREE.ColorManagement) {
+            THREE.ColorManagement.enabled = false;
+        }
         const renderer = new THREE.WebGLRenderer({ canvas });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
+        // V10.0-a — r155+ entfernte useLegacyLights als default true. Wir
+        // setzen es explizit für Bridge-Verhalten (intensity-Interpretation
+        // wie in r134). r161+ entfernt das Property komplett, aber r160 hat
+        // es noch — wir nutzen es als Übergangs-Schutz.
+        if ("useLegacyLights" in renderer) {
+            renderer.useLegacyLights = true;
+        }
         renderer.setClearColor(0x000000, 1);
         renderer.depthTest = true;
         renderer.shadowMap.enabled = true;
@@ -38803,7 +38819,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.96";
+AnazhRealm.VERSION = "10.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

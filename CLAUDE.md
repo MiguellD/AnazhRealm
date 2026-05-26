@@ -6,7 +6,36 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V9.96, 26.05.2026 — **Per-Frame-Spawn-Budget heilt FPS-Burst-Spike beim Streaming**. Nach V9.95-Bürokraten-Bogen (GPU-Pfeiler-Foundation gebaut + abgeklemmt) ehrlich gemessen: Schöpfer-Browser-Log zeigte FPS-Crash auf 6-9 beim Streaming KORRELIERT mit „Struktur gebaut (cold)"-Burst. Wurzel: `_populateVoxelChunkVegetation` enqueued bis zu 64 Spawns × 9 Chunks gleichzeitig = 200-500ms Frame-Spike. Heilung: FIFO-Queue + 4 Spawns/Frame → ~25ms verteilt statt Spike. Test-Pfad mit `immediate: true`-Flag bypass.)
+## Aktueller Stand (V10.0-a, 26.05.2026 — **Three.js r134 → r160 Vendor-Migration**. Erste Sub-Welle des großen V10.0-Bogens „alte Krücken lösen". Three.js seit 2021 vendored, jetzt 2024-stable + WebGPURenderer-fähig. UMD-Build ist DEPRECATED ab r160 (r161+ ist ESM-only), aber r160 funktioniert noch. Color-Management + Lights-Physically-Correct als Bridge gemildert. V10.0-b: ESM-Loading-Pattern für WebGPURenderer-Addon. V10.0-c: WebGPURenderer mit Fallback. V10.0-d: ShaderMaterial → TSL für hydro + waterfall.)
+
+**V10.0-a — Three.js r134 → r160 Vendor-Migration (substantielle Welle, ~1h, klare Bridge-Heilungen):**
+
+- **Wurzel-Vision**: Schöpfer-Konfrontation nach V9.95-Bogen — „alten Krücken lösen wäre der weg gewesen". Three.js r134 (2021) ist die alte Krücke. WebGPURenderer existiert nur in r150+. Direkte Migration zur Zukunft.
+- **Vendor-Wechsel**: `vendor/three.min.js` von r134 (Mai 2021, 615 KB) → r160 (Jan 2024, 670 KB). UMD-kompatibel, läuft mit dem bestehenden `<script src="...">`-Pattern.
+- **Bridge-Heilungen in `anazhRealm.js`** (~12 Z. netto, in `createScene` direkt vor `new THREE.WebGLRenderer`):
+  1. **`THREE.ColorManagement.enabled = false`**: r142+ hat ColorManagement default ON (sRGB↔Linear-Konvertierung für korrekte Lighting-Math). Bridge-Modus für visuelle Konstanz mit r134-Baseline.
+  2. **`renderer.useLegacyLights = true`**: r155 hat physically-correct-Lights als default eingeführt (intensity-Interpretation ändert sich). r160 hat das Property noch, r161+ entfernt es. Wir nutzen es als Übergangs-Schutz.
+- **Was funktioniert**: alle 30+ Three.js-APIs (MeshToonMaterial, ShaderMaterial, BufferGeometry, Shadow, Fog, Lights) laufen ohne Code-Anpassung. Playtest „Alle Invarianten OK" 1:1 (vorher 2 Color-Management-Tests rot, nach Bridge grün).
+- **Bekannte temporäre Krücken** (V10.0-b/c/d heilen das):
+  - ColorManagement bleibt disabled — V10.0-c führt sauberen Switch mit Texture-colorSpace-Migration ein
+  - useLegacyLights true bleibt — V10.0-c migriert Light-Intensities zu physically-correct
+  - WebGPURenderer noch nicht aktiv — V10.0-b/c liefern das
+
+**V10.0-Bogen-Plan (multi-session, klare Sub-Wellen)**:
+- ✅ **V10.0-a**: Three.js r134 → r160 Vendor + Bridge-Heilungen (jetzt)
+- ⏳ **V10.0-b**: ESM-Import-Map für WebGPURenderer-Addon (r160 hat den Renderer nur als ESM-Addon, nicht im UMD-Bundle)
+- ⏳ **V10.0-c**: WebGPURenderer mit Fallback zu WebGLRenderer + Color-Management sauber + Lights physically-correct
+- ⏳ **V10.0-d**: ShaderMaterial-Migration (hydroSurfaceMaterial, waterfallMaterial) zu TSL für WebGPU-Pfad. WebGL-Pfad behält GLSL über Material-Compat-Layer.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle bestehende Bänder grün, inkl. V8.27 HemisphereLight-groundColor-Tests die zuvor Color-Management-Drift zeigten); audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three.min.js` ersetzt (r134 → r160, +55 KB), `anazhRealm.js` +12 Z. (zwei Bridge-Heilungen vor Renderer-Init). Version-Bump 9.96.0 → 10.0.0 (MAJOR-Bump — Three.js-Vendor-Wechsel ist breaking-change-Risiko).
+
+**Lehre verdrahtet (CLAUDE.md/Gotchas, permanent)**: **Three.js-Versions-Wechsel ist Multi-Sub-Welle, nicht 1-Antwort-Welle**. Vendor-Bytes austauschen ist 1 Minute; die Breaking-Changes-Heilung (Color-Management, Lights, Textures, Materials, Renderer-API) braucht Sub-Wellen mit Browser-Tests dazwischen. Pattern: erst Vendor + Bridge-Modus → läuft visuell wie vorher → dann saubere Migration in Sub-Wellen. Wer Vendor-Wechsel blind durchzieht ohne Bridge, bricht die Welt-Optik + braucht Stunden für visual-Diff-Korrektur. Disziplin: bei jedem Vendor-Update der Form r134→r160+ MUSS ein Bridge-Modus-Layer dazwischen (legacy-flags), bis die Sub-Wellen sauber alle Schichten umgestellt haben.
+
+**Was als nächstes — V10.0-b**: ESM-Import-Map in `index.html`. WebGPURenderer ist seit r160 nur als ESM-Addon im `examples/jsm/renderers/webgpu/`-Ordner. Wir brauchen einen Loader-Pfad der das Addon mit `import { WebGPURenderer } from "three/addons/renderers/webgpu/WebGPURenderer.js"` lädt + global verfügbar macht. CSP muss `script-src 'self'` für `<script type="module">` erlauben (sollte schon).
+
+---
+
+**Davor — V9.96 Per-Frame-Spawn-Budget heilt FPS-Burst-Spike beim Streaming. Wurzel: `_populateVoxelChunkVegetation` enqueued bis zu 64 Spawns × 9 Chunks gleichzeitig = 200-500ms Frame-Spike. Heilung: FIFO-Queue + 4 Spawns/Frame → ~25ms verteilt statt Spike. Test-Pfad mit `immediate: true`-Flag bypass.
 
 **V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen (ehrlich gezielte Heilung des echten FPS-Killers):**
 
