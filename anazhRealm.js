@@ -223,6 +223,15 @@ class AnazhRealm {
             movementWorker: null,
             movementWorkerUrl: null,
             movementWorkerBusy: false,
+            // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): voxel-worker.js
+            // baut Density-Grids parallel zum Main-Thread. Phase 1 nur Foundation
+            // + Determinismus-Test (kein async Integration-Pfad). Phasen 2-4
+            // bringen die tatsächliche Pipeline-Migration.
+            voxelWorker: null,
+            voxelWorkerReady: false,
+            voxelWorkerNextRequestId: 1,
+            voxelWorkerPending: null, // Map<requestId, {resolve, reject}>
+            voxelWorkerStateGen: 0, // bump bei jedem state-update, für Test-Sync
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -12278,6 +12287,155 @@ class AnazhRealm {
         this.state.movementWorker = worker;
         this.state.movementWorkerUrl = url;
         return worker;
+    }
+
+    // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): spawnt den Voxel-
+    // Density-Worker on-demand. Worker importiert simplex-noise via
+    // importScripts, empfängt State per init-Message + Delta-Updates bei
+    // Welt-Mutationen. **Determinismus-Test-Pflicht**: jede Density-Funktion
+    // hier mit-wandert in `voxel-worker.js` — der Playtest-Band Perf-3.c-P1
+    // verifiziert bit-identische Density-Output zwischen Main + Worker.
+    // **Phase 1 Scope**: Worker existiert, State synced, Density on-demand
+    // berechenbar. KEIN async Integration-Pfad in `_buildVoxelChunkData` —
+    // das ist Phase 2 (V9.90+).
+    _getVoxelWorker() {
+        if (this.state.voxelWorker) return this.state.voxelWorker;
+        if (typeof Worker === "undefined") return null;
+        try {
+            const worker = new Worker("voxel-worker.js");
+            this.state.voxelWorkerPending = new Map();
+            worker.onmessage = (e) => {
+                const msg = e.data;
+                if (!msg || !msg.type) return;
+                if (msg.type === "density-grid-result" && msg.requestId) {
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(new Float32Array(msg.density));
+                    }
+                } else if (msg.type === "ack" && msg.requestId) {
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve(true);
+                    }
+                } else if (msg.type === "error") {
+                    if (msg.requestId) {
+                        const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                        if (pending) {
+                            this.state.voxelWorkerPending.delete(msg.requestId);
+                            pending.reject(new Error(msg.message));
+                        }
+                    }
+                    this.log(`Voxel-Worker-Fehler (${msg.op}): ${msg.message}`, "ERROR");
+                }
+            };
+            worker.onerror = (err) => {
+                this.log(`Voxel-Worker-Fehler: ${err.message}`, "ERROR");
+                this.state.voxelWorkerReady = false;
+            };
+            this.state.voxelWorker = worker;
+            // Sofort State synchronisieren — der Worker ist erst nutzbar, wenn
+            // sein State (Seed + Atlas + Erosion + Tarns + voxelEdits) gesetzt
+            // ist. Verläuft synchron-fire-and-forget; Ready-Flag wird beim
+            // init-ack gesetzt.
+            this._voxelWorkerSyncState({ op: "init" });
+            return worker;
+        } catch (e) {
+            this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
+            return null;
+        }
+    }
+
+    // Sammelt den vollen State-Snapshot für den Worker: Seed, baseHeight,
+    // waterLevel, Hydrosphäre-Atlas (riverBuckets + lakeBedCell + lakeW +
+    // lakeNear), erosion-Grid, tarns, voxelEdits, hydroComputing-Flag,
+    // carveBankSlope-Konstante. Strukturierte Klone — der Worker bekommt
+    // eine eigene Kopie. Typed Arrays werden bei `postMessage` automatisch
+    // kopiert (Transferable wäre billiger, aber wir wollen die Atlas-Daten
+    // im Main-Thread BEHALTEN — copy ist die richtige Wahl).
+    _voxelWorkerSnapshotState() {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const snap = {
+            seed,
+            baseHeight: this.state.terrainBaseHeight || 0,
+            waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+            voxelEdits: this._snapshotVoxelEdits(),
+            hydroComputing: !!this._hydroComputing,
+            carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
+        };
+        const h = this.state.hydrosphere;
+        if (h && h.ready) {
+            snap.hydrosphere = {
+                ready: true,
+                originX: h.originX,
+                originZ: h.originZ,
+                cell: h.cell,
+                dim: h.dim,
+                bucketSize: h.bucketSize,
+                bucketsDim: h.bucketsDim,
+                // riverBuckets ist ein Array of Arrays of segment-Objekten —
+                // strukturierte Klon-Kompatibel ohne weitere Transformation.
+                riverBuckets: h.riverBuckets,
+                lakeBedCell: h.lakeBedCell,
+                lakeW: h.lakeW,
+                lakeNear: h.lakeNear,
+            };
+        } else {
+            snap.hydrosphere = null;
+        }
+        const e = this.state.erosion;
+        if (e) {
+            snap.erosion = { originX: e.originX, originZ: e.originZ, cell: e.cell, dim: e.dim, delta: e.delta };
+        } else {
+            snap.erosion = null;
+        }
+        snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
+        return snap;
+    }
+
+    _snapshotVoxelEdits() {
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!Array.isArray(edits)) return [];
+        return edits.map((ed) => ({ ...ed }));
+    }
+
+    // State-Snapshot zum Worker senden. `op="init"` triggert das erstmalige
+    // Befüllen (setzt voxelWorkerReady=true beim ack); `op="state-set"` ist
+    // ein full re-sync nach Welt-Wechsel oder Worldgen-Abschluss. Returns
+    // Promise<true> wenn ack kommt.
+    _voxelWorkerSyncState(opts = {}) {
+        const worker = this.state.voxelWorker;
+        if (!worker) return Promise.resolve(false);
+        const op = opts.op === "state-set" ? "state-set" : "init";
+        const requestId = this.state.voxelWorkerNextRequestId++;
+        const promise = new Promise((resolve, reject) => {
+            this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+        });
+        worker.postMessage({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
+        return promise.then(() => {
+            this.state.voxelWorkerReady = true;
+            this.state.voxelWorkerStateGen++;
+            return true;
+        });
+    }
+
+    // Density-Grid via Worker berechnen lassen. Returns Promise<Float32Array>
+    // mit (dimX+1)·(dimY+1)·(dimZ+1) Floats — identische Indizierung wie
+    // `_voxelSampleDensityGrid` im Main-Thread. **Test-Pfad**: der Determinismus-
+    // Band ruft das + vergleicht bit-identisch mit Main-Sampling.
+    _voxelWorkerComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "density-grid", ox, oy, oz, dimX, dimY, dimZ, step, requestId });
+            return promise;
+        });
     }
 
     creatureJump(creature, jumpHeight) {
@@ -37301,7 +37459,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.88";
+AnazhRealm.VERSION = "9.89";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

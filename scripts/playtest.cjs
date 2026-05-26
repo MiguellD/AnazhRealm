@@ -13082,6 +13082,118 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     );
 }
 
+// V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
+// der `voxel-worker.js` bit-identische Density-Grids zum Main-Thread liefert.
+// Kern-Invariante der Worker-Migration: jede Density-Funktion im Worker
+// (Mirror) muss EXAKT die Output des Main-Thread-Pendants reproduzieren —
+// sonst entsteht visueller Drift zwischen Worker- + Sync-gebauten Chunks.
+// **Phase 1**: keine async Integration in `_buildVoxelChunkData` — wir
+// rufen den Worker AUSSCHLIESSLICH aus diesem Test heraus. Wenn Phase 2
+// die Pipeline cutovert, ist die bit-Identität die Sicherheits-Wand.
+async function checkBandWellePerf3cWorkerFoundation(ctx) {
+    const { page, check } = ctx;
+    // Worker-Determinismus braucht einen einmaligen async-Roundtrip: Worker
+    // spawnen, State sync, Density computen, mit Main vergleichen.
+    const res = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        // 1) Worker-Helper existieren
+        out.hasGetWorker = typeof r._getVoxelWorker === "function";
+        out.hasSnapshotState = typeof r._voxelWorkerSnapshotState === "function";
+        out.hasSyncState = typeof r._voxelWorkerSyncState === "function";
+        out.hasComputeDensity = typeof r._voxelWorkerComputeDensity === "function";
+        if (!out.hasGetWorker || !out.hasComputeDensity) {
+            return { ...out, error: "voxel-worker helpers missing" };
+        }
+        // 2) Worker spawnen + initial state sync (returns Promise)
+        const worker = r._getVoxelWorker();
+        out.workerSpawned = !!worker;
+        if (!worker) return { ...out, error: "worker not spawned" };
+        // Initial-sync abwarten (returns true bei ack)
+        try {
+            await r._voxelWorkerSyncState({ op: "init" });
+        } catch (e) {
+            return { ...out, error: "init sync failed: " + e.message };
+        }
+        out.workerReady = r.state.voxelWorkerReady;
+        out.stateGen = r.state.voxelWorkerStateGen;
+        // 3) Determinismus-Sample: ein kleines Density-Grid via Worker + Main
+        // berechnen, bit-identisch vergleichen.
+        const cfg = r._voxelChunkConfig(0);
+        const base = r.state.terrainBaseHeight || 0;
+        const ox = 0;
+        const oy = base - cfg.floorDrop;
+        const oz = 0;
+        // Klein gewählt (8·8·8 Cells = 9·9·9 = 729 Vertices) — reicht für
+        // Determinismus-Beweis, hält den Test schnell.
+        const dimX = 8;
+        const dimY = 8;
+        const dimZ = 8;
+        const step = cfg.step;
+        let mainGrid;
+        try {
+            mainGrid = r._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, (x, y, z) =>
+                r._terrainDensityAt(x, y, z)
+            );
+        } catch (e) {
+            return { ...out, error: "main sampling failed: " + e.message };
+        }
+        let workerGrid;
+        try {
+            workerGrid = await r._voxelWorkerComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step);
+        } catch (e) {
+            return { ...out, error: "worker sampling failed: " + e.message };
+        }
+        out.mainLen = mainGrid.length;
+        out.workerLen = workerGrid.length;
+        out.lenMatch = mainGrid.length === workerGrid.length;
+        // Bit-identisch (Float32 — exakte Gleichheit; deterministisch da
+        // Worker + Main denselben Seed + denselben Algorithmus laufen).
+        let mismatches = 0;
+        let maxDelta = 0;
+        let firstMismatchIdx = -1;
+        for (let i = 0; i < mainGrid.length; i++) {
+            const m = mainGrid[i];
+            const w = workerGrid[i];
+            if (m !== w) {
+                if (mismatches === 0) firstMismatchIdx = i;
+                mismatches++;
+                const d = Math.abs(m - w);
+                if (d > maxDelta) maxDelta = d;
+            }
+        }
+        out.mismatches = mismatches;
+        out.maxDelta = maxDelta;
+        out.firstMismatchIdx = firstMismatchIdx;
+        out.bitIdentical = mismatches === 0;
+        // 4) Source-Probe: voxel-worker.js mirror-Funktionen existieren
+        out.workerHasNoise = !!r.state.voxelWorker;
+        return out;
+    });
+    if (res.error) {
+        check("Welle Perf-3.c V9.89: Worker-Foundation-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle Perf-3.c V9.89: _getVoxelWorker existiert", res.hasGetWorker);
+    check("Welle Perf-3.c V9.89: _voxelWorkerSnapshotState existiert", res.hasSnapshotState);
+    check("Welle Perf-3.c V9.89: _voxelWorkerSyncState existiert", res.hasSyncState);
+    check("Welle Perf-3.c V9.89: _voxelWorkerComputeDensity existiert", res.hasComputeDensity);
+    check("Welle Perf-3.c V9.89: Worker spawnt erfolgreich", res.workerSpawned);
+    check("Welle Perf-3.c V9.89: Worker ready nach init-sync", res.workerReady);
+    check("Welle Perf-3.c V9.89: voxelWorkerStateGen wurde inkrementiert", res.stateGen >= 1);
+    check(
+        "Welle Perf-3.c V9.89: Worker + Main Density-Grid haben identische Länge",
+        res.lenMatch,
+        `main=${res.mainLen}, worker=${res.workerLen}`
+    );
+    check(
+        "Welle Perf-3.c V9.89: Worker-Density-Grid ist BIT-IDENTISCH zum Main (Kern-Invariante)",
+        res.bitIdentical,
+        `mismatches=${res.mismatches}, maxDelta=${res.maxDelta}, firstMismatchIdx=${res.firstMismatchIdx}`
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -30059,6 +30171,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleC3CellularReaction(ctx);
             // V9.88 — Welle Perf-3.b Distance-LOD-Beweis.
             await checkBandWellePerf3bDistanceLod(ctx);
+            // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
+            await checkBandWellePerf3cWorkerFoundation(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
