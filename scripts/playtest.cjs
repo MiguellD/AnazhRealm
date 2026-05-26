@@ -17744,9 +17744,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.playerMesh.position.x = 0;
 
         // --- Vision 8: Stern-Feld (V8.28 THREE.Points) folgt Tageszeit
-        // Sterne sind jetzt diskrete Points, nicht mehr Skybox-Noise.
-        const starMat = r.state.starField && r.state.starField.material;
-        const starU = starMat && starMat.uniforms ? starMat.uniforms.uOpacity : null;
+        // V10.0-f-2 Doku-Sync: Stern-Material ist jetzt PointsNodeMaterial,
+        // Opacity-Uniform lebt in state.starFieldUniforms (uniform-Knoten).
+        const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.opacity;
         out.starIntensityExists = !!starU;
         if (starU) {
             r.setTimeOfDay(0.5); // Mittag

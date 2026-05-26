@@ -58,6 +58,10 @@ class AnazhRealm {
             // ApplySkybox und _loopSkyboxPlanets (alle drei lesen aus diesem
             // Slot statt aus dem alten material.uniforms).
             skyboxUniforms: null,
+            // V10.0-f-2 — Live-Uniforms des TSL-Stern-Felds (uniform-Knoten):
+            // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
+            // _buildStarField(); mutiert von _dayNightApplyStarField.
+            starFieldUniforms: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -10000,55 +10004,62 @@ class AnazhRealm {
         geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
         geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
         geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
-        // Custom Points-Shader: per-Stern Groesse + weicher runder Sprite-
-        // Falloff (sonst sind Points harte Quadrate). uOpacity faded das
-        // ganze Feld mit Tag-Nacht (Tag 0, Nacht 1).
-        const starMat = new THREE.ShaderMaterial({
-            uniforms: {
-                uOpacity: { value: 0.5 },
-                uPixelRatio: { value: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1 },
-            },
-            vertexShader: `
-                attribute float aSize;
-                varying vec3 vColor;
-                uniform float uPixelRatio;
-                void main() {
-                    vColor = color;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    // Konstante Pixel-Groesse (sizeAttenuation aus) — Sterne
-                    // sind unendlich weit, duerfen nicht perspektivisch schrumpfen.
-                    gl_PointSize = aSize * uPixelRatio;
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
-            fragmentShader: `
-                varying vec3 vColor;
-                uniform float uOpacity;
-                void main() {
-                    // Weicher runder Falloff vom Sprite-Zentrum
-                    float d = length(gl_PointCoord - vec2(0.5));
-                    float alpha = smoothstep(0.5, 0.08, d);
-                    if (alpha <= 0.01) discard;
-                    gl_FragColor = vec4(vColor, alpha * uOpacity);
-                }
-            `,
-            transparent: true,
-            depthWrite: false,
-            // V8.29.1 — depthTest TRUE: die Sterne testen gegen den Tiefen-
-            // puffer. Terrain + Berge + Strukturen (opak, schreiben Tiefe)
-            // verdecken die Sterne dahinter sauber — vorher (depthTest false)
-            // lagen sie als Overlay über der ganzen Welt. Die Skybox schreibt
-            // keine Tiefe (depthWrite false) → im freien Himmel besteht der
-            // Test, die Sterne bleiben dort sichtbar.
-            depthTest: true,
-            blending: THREE.AdditiveBlending,
-            vertexColors: true,
-        });
+        // V10.0-f-2 — Stern-Feld-Material portiert von ShaderMaterial (GLSL) zu
+        // PointsNodeMaterial (TSL). Welt-Optik 1:1: per-Stern aSize-Punkt-
+        // Größe, konstante Pixel-Größe (kein sizeAttenuation — Sterne sind
+        // unendlich weit), weicher runder Sprite-Falloff vom Center,
+        // additive Blending, depthTest gegen opake Welt-Geometrie.
+        // Läuft nativ auf WebGPURenderer UND klassischem WebGLRenderer via
+        // webgl-legacy/nodes/WebGLNodes.js-Bootstrap-Side-Effect-Patch.
+        //
+        // Zwei Live-Uniforms in state.starFieldUniforms (uniform-Knoten):
+        //  - opacity (Tag/Nacht-Fade in _dayNightApplyStarField)
+        //  - pixelRatio (DPR-Konstante; statisch nach Init, könnte später
+        //    bei DPR-Wechsel via resize-Event aktualisiert werden)
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.PointsNodeMaterial !== "function") {
+            this.log("Stern-Feld-Bau: TSL/PointsNodeMaterial im Bootstrap fehlt", "ERROR");
+            return;
+        }
+        const { uniform, attribute, vec4, vec2, smoothstep, length, pointUV } = TSL;
+
+        const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+        const uOpacity = uniform(0.5);
+        const uPixelRatio = uniform(dpr);
+
+        const starMat = new THREE.PointsNodeMaterial();
+        // sizeNode ersetzt gl_PointSize: aSize × uPixelRatio (konstante Pixel-
+        // Größe, V8.29 mindestens 3 px — Anti-Flacker für Sub-Pixel-Sterne).
+        starMat.sizeNode = attribute("aSize", "float").mul(uPixelRatio);
+        // colorNode ersetzt gl_FragColor: per-Stern vertex-color + weicher
+        // runder Sprite-Falloff. d = Distanz vom Sprite-Center, alpha über
+        // smoothstep(0.5 → 0.08) modulieren = harter Rand außen, weiches
+        // Glow-Center innen. Multiply mit uOpacity für Tag/Nacht-Fade.
+        const d = length(pointUV.sub(vec2(0.5, 0.5)));
+        const alpha = smoothstep(0.5, 0.08, d).mul(uOpacity);
+        starMat.colorNode = vec4(attribute("color", "vec3"), alpha);
+
+        // Material-Properties: identisch zur GLSL-Variante. AlphaTest ersetzt
+        // den `if (alpha <= 0.01) discard;`-GLSL-Pfad (semantisch identisch).
+        starMat.transparent = true;
+        starMat.depthWrite = false;
+        // V8.29.1 — depthTest TRUE: opakes Terrain/Berge/Strukturen verdecken
+        // Sterne dahinter sauber. Skybox schreibt keine Tiefe (depthWrite
+        // false) → im freien Himmel besteht der Test, Sterne bleiben sichtbar.
+        starMat.depthTest = true;
+        starMat.blending = THREE.AdditiveBlending;
+        starMat.alphaTest = 0.01;
+
+        this.state.starFieldUniforms = {
+            opacity: uOpacity,
+            pixelRatio: uPixelRatio,
+        };
+
         const starField = new THREE.Points(geo, starMat);
         starField.frustumCulled = false; // immer rendern (Himmelskoerper)
         this.state.scene.add(starField);
         this.state.starField = starField;
-        this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V8.28)`);
+        this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V10.0-f-2 TSL)`);
     }
 
     // V8.28 6.G4.b D — Welt-Wasser. Eine grosse Wave-Plane bei waterLevel,
@@ -35432,13 +35443,15 @@ class AnazhRealm {
 
     // V8.28 6.G4.b A — Stern-Feld-Opacity. starField (diskrete Points) nur
     // bei Nacht sichtbar: umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
+    // V10.0-f-2: Opacity-Uniform lebt jetzt in state.starFieldUniforms
+    // (uniform-Knoten), nicht mehr in material.uniforms.
     _dayNightApplyStarField(t, skyMul) {
-        if (!this.state.starField || !this.state.starField.material) return;
+        const u = this.state.starFieldUniforms;
+        if (!u || !u.opacity) return;
         const sa = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
-        const su = this.state.starField.material.uniforms.uOpacity;
-        if (su) su.value = nightFactor * skyMul;
+        u.opacity.value = nightFactor * skyMul;
     }
 
     // DirectionalLight: Position folgt dem Spieler (V8.48 — Shadow-Frustum
@@ -39011,7 +39024,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-f1";
+AnazhRealm.VERSION = "10.0-f2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

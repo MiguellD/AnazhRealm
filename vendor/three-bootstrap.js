@@ -35,16 +35,22 @@ import * as THREE from "three";
 import WebGPURenderer from "three/addons/renderers/webgpu/WebGPURenderer.js";
 import WebGPU from "three/addons/capabilities/WebGPU.js";
 import MeshBasicNodeMaterial from "three/addons/nodes/materials/MeshBasicNodeMaterial.js";
+import PointsNodeMaterial from "three/addons/nodes/materials/PointsNodeMaterial.js";
 import * as TSL from "three/addons/nodes/Nodes.js";
 import "three/addons/renderers/webgl-legacy/nodes/WebGLNodes.js";
 
 // `import * as X` liefert einen read-only Module-Namespace. Damit wir
-// `THREE.WebGPURenderer` + die TSL-Helpers hinzufügen können, kopieren wir
-// alle Exports in ein einfaches Object — anazhRealm.js sieht THREE als
-// Plain-Object mit allen Klassen + den Renderer-Addons + dem TSL-Namespace.
+// `THREE.WebGPURenderer` + die TSL-Helpers + die NodeMaterial-Klassen
+// hinzufügen können, kopieren wir alle Exports in ein einfaches Object —
+// anazhRealm.js sieht THREE als Plain-Object mit allen Klassen + den
+// Renderer-Addons + dem TSL-Namespace + den TSL-Material-Klassen.
+//
+// V10.0-f-2: PointsNodeMaterial wird für die Stern-Feld-Migration ergänzt
+// (starsMaterial → PointsNodeMaterial, `sizeNode` + `colorNode` aus TSL).
 const THREE_GLOBAL = { ...THREE };
 THREE_GLOBAL.WebGPURenderer = WebGPURenderer;
 THREE_GLOBAL.WebGPU = WebGPU;
 THREE_GLOBAL.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
+THREE_GLOBAL.PointsNodeMaterial = PointsNodeMaterial;
 THREE_GLOBAL.TSL = TSL;
 window.THREE = THREE_GLOBAL;

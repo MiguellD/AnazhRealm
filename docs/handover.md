@@ -357,6 +357,45 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-f-2 — starsMaterial → PointsNodeMaterial TSL (26.05.2026, zweite Sub-Welle des V10.0-f-Bogens, ~60 Z. netto):**
+
+Nach V10.0-f-1 (skyboxMaterial-Port) ist die TSL-Foundation erprobt — das Bootstrap-Pattern (Side-Effect-Patch + NodeMaterial-Import + `* as TSL`), der `state.X-Uniforms`-Slot, die Test-Sync-Pflicht. V10.0-f-2 zieht den nächst-einfachsten der vier ShaderMaterials.
+
+**Wurzel**: das Stern-Feld-Material (V8.28) ist 2800 diskrete `THREE.Points` mit per-Stern `aSize`-Attribut, konstanter Pixel-Größe (kein sizeAttenuation — Sterne sind unendlich weit), weichem runden Sprite-Falloff vom Center, AdditiveBlending, `uOpacity`-Tag/Nacht-Fade. ~30 Z. GLSL Vertex+Fragment, zwei Uniforms.
+
+**Bausteine**:
+
+1. **`vendor/three-bootstrap.js`** (+3 Z.): `PointsNodeMaterial` aus `three/addons/nodes/materials/PointsNodeMaterial.js` importiert + an `THREE_GLOBAL.PointsNodeMaterial` gehängt. Der WebGLNodes-Side-Effect-Patch (V10.0-f-1) trägt — keine weitere Patcher-Welle nötig.
+
+2. **`_buildStarField` neu** (~50 Z. TSL ersetzt ~40 Z. GLSL):
+   - `THREE.PointsNodeMaterial` (Subklasse von NodeMaterial; default `lights=false, normals=false, transparent=true` — perfekt für Sprite-Stern).
+   - `sizeNode = attribute("aSize", "float").mul(uPixelRatio)` ersetzt `gl_PointSize = aSize * uPixelRatio`. Der `sizeNode`-Slot ist das offizielle PointsNodeMaterial-API für PointSize-Replacement.
+   - `colorNode` als TSL-Tree:
+     - `d = length(pointUV.sub(vec2(0.5, 0.5)))` — Distanz vom Sprite-Center. `pointUV` ist das TSL-Pendant zu `gl_PointCoord` (y-flipped vec2).
+     - `alpha = smoothstep(0.5, 0.08, d).mul(uOpacity)` — weicher runder Falloff, harter Rand außen, weiches Glow-Center innen, multipliziert mit Tag/Nacht-Opacity.
+     - `colorNode = vec4(attribute("color", "vec3"), alpha)` — per-Stern vertex-color + alpha. Bei NodeMaterial muss der Color-Attribute-Lookup EXPLIZIT im Tree sein (alter `vertexColors: true`-Flag wirkt nicht mehr).
+   - **`material.alphaTest = 0.01`** ersetzt den GLSL-`if (alpha <= 0.01) discard;`-Pfad semantisch identisch — das Three.js-Material macht den Discard selbst, kein expliziter Discard-Node nötig (sauberer im TSL-Tree).
+   - Andere Material-Props (`transparent=true`, `depthWrite=false`, `depthTest=true`, `blending=AdditiveBlending`) sind klassische Properties, identisch wie zuvor.
+   - Zwei Uniforms (`opacity`, `pixelRatio`) als `uniform()`-Knoten in `state.starFieldUniforms = { opacity, pixelRatio }` abgelegt.
+
+3. **Mutationspfad umverdrahtet**: `_dayNightApplyStarField` (Z35442) liest jetzt `state.starFieldUniforms.opacity.value` statt `material.uniforms.uOpacity.value`. Defensive Existenz-Probe (`if (!u || !u.opacity) return;`) wie bei f-1. Die `state.starField.position.copy(...)`/`rotation.set(...)`-Mutation in `_loopSkyboxPlanets` (Z38689-38692) bleibt unangetastet — das ist Mesh-Transform, nicht Uniform.
+
+**Test-Probe mit-gewandert** (V9.56-i-Pattern, eine Probe statt der sechs von f-1): Welle-6.G3-V2-Vision-8 (`starIntensityExists` + `starsBrighterAtNight`) liest jetzt `state.starFieldUniforms.opacity` statt `starField.material.uniforms.uOpacity`. Die `starsDepthTest`-Probe (V8.30) bleibt unverändert — `material.depthTest === true` funktioniert weiter, weil PointsNodeMaterial die Property von Material erbt + wir setzen sie explizit.
+
+**State-Init**: `state.starFieldUniforms: null` deklariert.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three-bootstrap.js` +3 Z. (1 Import + 1 Global), `anazhRealm.js` ~+25 Z. netto, `scripts/playtest.cjs` ~+3 Z. netto, `index.html` (Cache-Buster 10.0.5 → 10.0.6 + title v10.0-f1 → v10.0-f2), `package.json` 10.0.5 → 10.0.6, `AnazhRealm.VERSION` "10.0-f1" → "10.0-f2".
+
+**Lehre verstärkt**: das f-1-Pattern (Bootstrap-Patch + `state.X-Uniforms`-Slot + Test-Sync) ist Stamm-Pattern, kein Einzelfall. f-2 brauchte ~1/3 der Edits von f-1, weil die Foundation trägt. **Zwei neue Erkenntnisse für die Gotchas**:
+
+1. **GLSL-`discard` → TSL-`material.alphaTest = epsilon`**: für `if (alpha <= 0.01) discard;` ist `material.alphaTest = 0.01` der saubere TSL-Pfad — das Three.js-Material schluckt `alpha ≤ epsilon` selbst, kein expliziter Discard-Node im colorNode-Tree nötig. Funktioniert auf BEIDEN Renderern (WebGL/WebGPU).
+
+2. **NodeMaterial liest `vertexColors: true` NICHT — Color-Attribute muss EXPLIZIT im colorNode-Tree sein** via `attribute("color", "vec3")`. Das alte Material-Flag (für klassisches StandardMaterial den Color-BufferAttribute-Pfad aktivieren) wirkt bei NodeMaterial nicht. Bei der Migration eines vertexColors-basierten Materials MUSS der Color-Lookup im Tree explizit erscheinen.
+
+**Was V10.0-f-3 liefern wird (next session, ~2-3h)**: `waterfallMaterial` portieren. Vorbedingung mittel (~119 Z. GLSL: vertikales Wasser-Volume mit Animation, Vertex-Displacement via sin/cos, Fragment mit Foam-Streaks + Flow-Direction + Tag/Nacht-Tint). Lookup `_ensureWaterfallMaterial` (Z18730). Zwei TSL-Pfade pro Stage (`positionNode` für Vertex-Wellen-Displacement, `colorNode` für Fragment-Foam). Mutations-Stellen scannen + mit-wandern.
+
+---
+
 **V10.0-f-1 — skyboxMaterial → MeshBasicNodeMaterial TSL (26.05.2026, erste Sub-Welle des V10.0-f-Bogens, ~140 Z. netto):**
 
 Der V10.0-Bogen schloss seine Foundation mit V10.0-e (Hot-Swap defensive). Die WebGPU-Welt-Vision (`alle Materials laufen dauerhaft auf GPU`) verlangt vier Material-Migrationen. V10.0-f-1 zieht den einfachsten zuerst.
