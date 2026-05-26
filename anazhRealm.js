@@ -14906,6 +14906,10 @@ class AnazhRealm {
         try {
             const vspan = this._voxelChunkConfig().span;
             this.state.voxelPopulatedChunks = new Set();
+            // V9.96 — Spawn-Queue beim Worldgen-Reset leeren. Pending-Tasks
+            // aus der alten Welt sind nicht mehr relevant (Atlas + Surface
+            // sind neu generiert, alte Positionen können kollidieren).
+            this.state.pendingVegSpawns = [];
             for (const a of this.state.architectures || []) {
                 if (!a || !a.position) continue;
                 const cx = Math.floor(a.position.x / vspan);
@@ -29650,10 +29654,21 @@ class AnazhRealm {
             const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ);
             if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
                 const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
-                this.spawnArchitecture(
+                // V9.96 — Spawn-Burst-Heilung: enqueue statt sofort spawnen.
+                // Der Streaming-Pump kann 9+ Chunks öffnen, jeder mit bis zu
+                // 64 sample-Stellen → 30-90 spawnArchitecture in EINEM Frame.
+                // Jeder Spawn ~5-15ms (Builder + Ammo-Body + BlockerAABBs +
+                // remeshVoxelChunksAround) = 200-500ms Frame-Spike. Der echte
+                // FPS-Killer den der Schöpfer im Browser sah (FPS 6-9 beim
+                // Streaming). Mit Queue + 4 spawns/Frame = ~20-25ms pro Frame
+                // verteilt über mehrere Frames, kein einzelner Spike mehr.
+                this._enqueueVegetationSpawn(
                     lmName,
                     { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
-                    { seed: seedForSpawn, silent: true }
+                    {
+                        seed: seedForSpawn,
+                        silent: true,
+                    }
                 );
                 return 1; // an dieser Stelle keine zweite Struktur
             }
@@ -29676,12 +29691,47 @@ class AnazhRealm {
         const chance = BASE_RATE * bestAffinity * bestAffinity;
         if (probe >= chance) return 0;
 
-        this.spawnArchitecture(
+        this._enqueueVegetationSpawn(
             bestName,
             { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
-            { seed: seedForSpawn, silent: true }
+            {
+                seed: seedForSpawn,
+                silent: true,
+            }
         );
         return 1;
+    }
+
+    // V9.96 — Per-Frame-Spawn-Budget. Enqueue eine Vegetations-Spawn-Task
+    // in die FIFO-Queue; `_tickPendingVegSpawns` arbeitet sie ab mit max-
+    // pro-Frame-Limit. Welt-Wechsel/Reload räumt die Queue. Wenn
+    // `this._vegSpawnImmediate === true` (Test/Worldgen-Pfad), wird direkt
+    // synchron gespawnt — bypass der Queue.
+    _enqueueVegetationSpawn(name, position, opts) {
+        if (this._vegSpawnImmediate) {
+            this.spawnArchitecture(name, position, opts);
+            return;
+        }
+        if (!this.state.pendingVegSpawns) this.state.pendingVegSpawns = [];
+        this.state.pendingVegSpawns.push({ name, position, opts });
+    }
+
+    // V9.96 — Per-Frame-Spawn-Worker. Pops bis zu maxPerFrame Tasks aus
+    // der Queue + ruft `spawnArchitecture` für jede. 4 Spawns/Frame =
+    // ~20-25ms Frame-Cost (statt ~200-500ms Burst). Spawns verteilen sich
+    // über ~10-25 Frames bei einem typischen 9-Chunk-Streaming-Ring,
+    // sichtbar als sanftes Vegetations-Wachstum statt FPS-Crash.
+    _tickPendingVegSpawns(maxPerFrame = 4) {
+        const queue = this.state.pendingVegSpawns;
+        if (!queue || queue.length === 0) return 0;
+        let spawned = 0;
+        for (let i = 0; i < maxPerFrame && queue.length > 0; i++) {
+            const task = queue.shift();
+            if (!task) continue;
+            this.spawnArchitecture(task.name, task.position, task.opts);
+            spawned++;
+        }
+        return spawned;
     }
 
     // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
@@ -29692,7 +29742,7 @@ class AnazhRealm {
     // statt `_terrainHeightAtWorld` als Höhenquelle (die Struktur sitzt auf
     // dem Voxel-Boden, nicht auf dem schlafenden Heightfield). Idempotent
     // über `state.voxelPopulatedChunks`. Am Voxel-Chunk-Lifecycle aufgehängt.
-    _populateVoxelChunkVegetation(cx, cz) {
+    _populateVoxelChunkVegetation(cx, cz, opts = {}) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         if (!this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks = new Set();
         const key = `${cx},${cz}`;
@@ -29704,16 +29754,26 @@ class AnazhRealm {
         const oz = cz * span;
         const SAMPLES = 8;
         const step = span / SAMPLES;
+        // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
+        // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
+        // Default: false → Tasks gehen in die Queue + werden per-Frame
+        // gedrosselt (FPS-Burst-Schutz). Test-Anpassung V9.56-i-Pattern.
+        const prevImmediate = this._vegSpawnImmediate || false;
+        this._vegSpawnImmediate = !!opts.immediate;
         let spawned = 0;
-        for (let zi = 0; zi < SAMPLES; zi++) {
-            for (let xi = 0; xi < SAMPLES; xi++) {
-                const sampleX = ox + (xi + 0.5) * step;
-                const sampleZ = oz + (zi + 0.5) * step;
-                const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
-                if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
-                const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
-                spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
+        try {
+            for (let zi = 0; zi < SAMPLES; zi++) {
+                for (let xi = 0; xi < SAMPLES; xi++) {
+                    const sampleX = ox + (xi + 0.5) * step;
+                    const sampleZ = oz + (zi + 0.5) * step;
+                    const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
+                    if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+                    const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
+                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
+                }
             }
+        } finally {
+            this._vegSpawnImmediate = prevImmediate;
         }
         return spawned;
     }
@@ -38327,6 +38387,9 @@ class AnazhRealm {
         // V9.24-Verdrahtung).
         const playerPos = this.state.playerMesh.position;
         this._tickVoxelChunkStreaming(playerPos);
+        // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
+        // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
+        this._tickPendingVegSpawns(4);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -38740,7 +38803,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "9.95";
+AnazhRealm.VERSION = "9.96";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

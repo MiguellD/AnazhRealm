@@ -10341,7 +10341,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
                     const key = `${cx},${cz}`;
                     if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
                     fresh.add(key);
-                    r._populateVoxelChunkVegetation(cx, cz);
+                    // V9.96 — der Test-Pfad braucht synchrone Spawns (er
+                    // misst gleich danach state.architectures); im echten
+                    // Streaming geht das durch die Per-Frame-Queue.
+                    r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
                 }
             }
             let fbCount = 0;

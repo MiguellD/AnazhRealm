@@ -6,7 +6,24 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **DIE CHRONIK** (`docs/handover.md`) — die volle Wellen-Historie, jede Welle ein ausführlicher Eintrag, plus „wie du eine Session startest".
 - **DER PLAN** (`docs/roadmap.md`) — was vorwärts kommt. Die Vision in `docs/state-of-realm.md`.
 
-## Aktueller Stand (V9.95-e, 26.05.2026 — **EHRLICHE GPU-Abklemmung** nach Schöpfer-Browser-Audit. WebGPU-Foundation steht als Vorarbeit, aber GPU-Pipeline-Cutover ist abgeklemmt: WebGPU-Compute + WebGL-Renderer braucht IMMER CPU-Roundtrip via mapAsync, der echte Hebel kommt erst mit V10+ Three.js-WebGPU-Renderer-Migration. Worker-Mesh-Pfad (V9.91) ist PRIMARY restored. „Grok: undefined"-Bug + Saubere Abschluss-Welle.)
+## Aktueller Stand (V9.96, 26.05.2026 — **Per-Frame-Spawn-Budget heilt FPS-Burst-Spike beim Streaming**. Nach V9.95-Bürokraten-Bogen (GPU-Pfeiler-Foundation gebaut + abgeklemmt) ehrlich gemessen: Schöpfer-Browser-Log zeigte FPS-Crash auf 6-9 beim Streaming KORRELIERT mit „Struktur gebaut (cold)"-Burst. Wurzel: `_populateVoxelChunkVegetation` enqueued bis zu 64 Spawns × 9 Chunks gleichzeitig = 200-500ms Frame-Spike. Heilung: FIFO-Queue + 4 Spawns/Frame → ~25ms verteilt statt Spike. Test-Pfad mit `immediate: true`-Flag bypass.)
+
+**V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen (ehrlich gezielte Heilung des echten FPS-Killers):**
+
+- **Wurzel-Diagnose aus Schöpfer-Browser-Log** (V9.95-e-Audit): FPS-Drops auf 6-9 KORRELIEREN mit „Struktur gebaut: ... (cold)"-Burst von 20-30 Einträgen. Save-Lock + Nexus-Self-Analysis-Loop sind sekundär. **Density-Sampling ist NICHT der Bottleneck** — V9.95 hat das falsche Problem angegriffen.
+- **Mechanismus**: `_populateVoxelChunkVegetation(cx, cz)` sampelt 64 Stellen pro Chunk, jeder kann `_vegetationSampleSpawn` → `spawnArchitecture` triggern (~5-15ms inkl. Builder + Ammo-Body + BlockerAABBs + _remeshVoxelChunksAround). Bei 9+ Chunks im Streaming-Ring × ~30-50% spawn-Rate = 30-90 spawnArchitecture-Aufrufe in EINEM Frame → 200-500ms Spike.
+- **Heilung**: `_enqueueVegetationSpawn(name, pos, opts)` schickt Tasks in FIFO-Queue (`state.pendingVegSpawns`). Per-Frame-Tick `_tickPendingVegSpawns(maxPerFrame=4)` arbeitet 4 Tasks pro Frame ab — ~25ms Cost verteilt über ~10-25 Frames statt Spike. Hook im Game-Loop nach `_tickVoxelChunkStreaming`. Worldgen-Cleanup leert die Queue.
+- **Test-Pfad-Bypass**: `_populateVoxelChunkVegetation(cx, cz, { immediate: true })` umgeht die Queue (synchrone Spawns). `this._vegSpawnImmediate`-Flag wird im scope von `_populateVoxelChunkVegetation` gesetzt + im `finally` zurückgesetzt (V9.56-i-Test-Sync-Pattern: Test-Aufruf mit-wandern).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (alle bestehende Bänder grün, inkl. W6.G P3 Felsbögen-Spawn-Test der mit `immediate: true` mit-wanderte); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+30 Z. netto (Queue + Tick + Immediate-Flag + try/finally), `scripts/playtest.cjs` 1 Z. (Test-Aufruf mit `{immediate: true}`).
+
+**Lehre verdrahtet (CLAUDE.md/Gotchas, permanent)**: **Per-Frame-Burst-Spikes diagnostiziert man durch Korrelation zwischen Frame-Drop und Synchron-Workload, nicht durch Bauchgefühl-„das könnte teuer sein"**. V9.95 hat 6 Wellen am falschen Ende gewerkelt (Density-Sample auf GPU portiert), weil ich die echten Bottleneck-Logs nicht gelesen habe. V9.96 startete mit dem Browser-Log + fand in 5 Minuten die Wurzel. Disziplin: VOR jeder Performance-Welle die Browser-Console-Logs PARALLEL zu FPS-Drops scannen — die Wurzel ist meist offensichtlich in der Korrelation.
+
+**Was als nächstes**: Schöpfer-Browser-Audit V9.96 — FPS-Verlauf nach Reload. Wenn FPS 60 hält beim Streaming-Burst → V9.96 heilt das echte Problem. Wenn nicht: nächste Diagnose-Schicht (Save-Lock-Async, Nexus-Loop-Throttling). KEINE Spekulation mehr.
+
+---
+
+**Davor — V9.95-e EHRLICHE GPU-Abklemmung (nach Schöpfer-Browser-Audit. WebGPU-Foundation steht als Vorarbeit, aber GPU-Pipeline-Cutover ist abgeklemmt: WebGPU-Compute + WebGL-Renderer braucht IMMER CPU-Roundtrip via mapAsync.)
 
 **V9.95-e — EHRLICHE ABKLEMMUNG nach Schöpfer-Browser-Audit V9.95-d (Architektur-Wurzel klar benannt):**
 
