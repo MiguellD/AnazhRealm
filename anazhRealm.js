@@ -68,6 +68,13 @@ class AnazhRealm {
             // mutiert von _loopSkyboxPlanets (time) + _dayNightApplyWater-
             // Materials (sunDir, light, fog*).
             waterfallUniforms: null,
+            // V10.0-f-4 — Live-Uniforms des TSL-Hydrosphären-Materials (10 uniform-
+            // Knoten): time, flowSpeed, deep/shallow/foam, sunDir, light,
+            // fogColor/Near/Far. Init in _ensureHydroSurfaceMaterial(); mutiert
+            // von _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials
+            // (sunDir, light, fog*). Vollendet den V10.0-f-Bogen — alle 4
+            // Materials sind jetzt NodeMaterial.
+            hydroSurfaceUniforms: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -18481,189 +18488,235 @@ class AnazhRealm {
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
-        const mat = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uFlowSpeed: { value: 0.5 },
-                uDeep: { value: new THREE.Color(0x16364f) },
-                uShallow: { value: new THREE.Color(0x3f88a8) },
-                uFoam: { value: new THREE.Color(0xdff1ff) },
-                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                uLight: { value: 1.0 },
-                fogColor: { value: new THREE.Color(0x88a0c8) },
-                fogNear: { value: 35 },
-                fogFar: { value: 150 },
-            },
-            vertexShader: `
-                attribute vec2 aFlow;
-                attribute float aShore;
-                attribute float aWave;
-                uniform float uTime;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying vec2 vFlow;
-                varying float vShore;
-                varying float vWave;
-                varying float vAWave;
-                varying float vFogDepth;
-                // V9.49-c — eine Gerstner-Welle (aus der V8.33-Meeres-Plane
-                // übernommen): horizontale Stauchung zu den Kämmen + vertikale
-                // Höhe. Sechs Oktaven, davor ein Domain-Warp gegen Periodizität.
-                vec3 gerstnerWave(vec2 xz, vec2 dir, float f, float a, float s, float q) {
-                    vec2 d = normalize(dir);
-                    float phase = dot(xz, d) * f + uTime * s;
-                    return vec3(q * a * d.x * cos(phase), a * sin(phase), q * a * d.y * cos(phase));
-                }
-                vec3 waveDisplace(vec2 xz) {
-                    vec2 warp = vec2(
-                        sin(xz.x * 0.022 + uTime * 0.25) * 7.0,
-                        cos(xz.y * 0.019 - uTime * 0.21) * 7.0
-                    );
-                    vec2 w = xz + warp;
-                    vec3 d = vec3(0.0);
-                    d += gerstnerWave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85, 0.90);
-                    d += gerstnerWave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65, 0.85);
-                    d += gerstnerWave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2, 0.95);
-                    d += gerstnerWave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55, 1.10);
-                    d += gerstnerWave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05, 1.30);
-                    d += gerstnerWave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7, 1.40);
-                    return d;
-                }
-                void main() {
-                    vFlow = aFlow;
-                    vShore = aShore;
-                    vAWave = aWave;
-                    // die Wellen-Verschiebung skaliert mit aWave (Ozean voll,
-                    // See/Fluss still) → kein Riss, wo wogender Ozean an einen
-                    // stillen See grenzt. Welt-verankert (position ist Welt-xz).
-                    vec3 p = position;
-                    vec3 disp = waveDisplace(p.xz) * aWave;
-                    vec3 pd = p + disp;
-                    vWave = disp.y;
-                    // Normale aus den verschobenen Nachbar-Tangenten; bei
-                    // aWave=0 degeneriert das Kreuzprodukt sauber zu (0,1,0).
-                    float e = 1.4;
-                    vec3 px = vec3(p.x + e, p.y, p.z) + waveDisplace(vec2(p.x + e, p.z)) * aWave;
-                    vec3 pz = vec3(p.x, p.y, p.z + e) + waveDisplace(vec2(p.x, p.z + e)) * aWave;
-                    vec3 nrm = normalize(cross(pz - pd, px - pd));
-                    if (nrm.y < 0.0) nrm = -nrm;
-                    vec4 wp = modelMatrix * vec4(pd, 1.0);
-                    vWorldPos = wp.xyz;
-                    vNormal = normalize(mat3(modelMatrix) * nrm);
-                    vec4 mv = viewMatrix * wp;
-                    // V8.45 — radiale Distanz (dreh-invariant) wie Terrain.
-                    vFogDepth = length(mv.xyz);
-                    gl_Position = projectionMatrix * mv;
-                }
-            `,
-            fragmentShader: `
-                uniform float uTime;
-                uniform float uFlowSpeed;
-                uniform vec3 uDeep;
-                uniform vec3 uShallow;
-                uniform vec3 uFoam;
-                uniform vec3 uSunDir;
-                uniform float uLight;
-                uniform vec3 fogColor;
-                uniform float fogNear;
-                uniform float fogFar;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying vec2 vFlow;
-                varying float vShore;
-                varying float vWave;
-                varying float vAWave;
-                varying float vFogDepth;
-                float hash(vec2 p) {
-                    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
-                }
-                float vnoise(vec2 p) {
-                    vec2 i = floor(p);
-                    vec2 f = fract(p);
-                    vec2 u = f * f * (3.0 - 2.0 * f);
-                    return mix(
-                        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-                        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-                        u.y
-                    );
-                }
-                void main() {
-                    vec2 xz = vWorldPos.xz;
-                    // Welt-Raum-Normale, nach oben gezwungen (Lighting).
-                    vec3 n = normalize(vNormal);
-                    if (n.y < 0.0) n = -n;
-                    // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise,
-                    // am Ozean nach Gerstner-Wellenhöhe (der Meer-Look) — über
-                    // aWave gemischt, sodass die Küste weich übergeht.
-                    float baseN = vnoise(xz * 0.05 + uTime * 0.03);
-                    float waveT = clamp(vWave * 0.5 + 0.5, 0.0, 1.0);
-                    float mixT = mix(0.32 + 0.42 * baseN, waveT, vAWave);
-                    vec3 col = mix(uDeep, uShallow, mixT);
-                    // Schaum: für einen Fluss (aFlow != 0) Strähnen, die stromab
-                    // treiben; für einen See (aFlow == 0) ein ruhiges Schimmern.
-                    float fmag = length(vFlow);
-                    float foam;
-                    if (fmag > 0.01) {
-                        // V9.48 — der Betrag von aFlow trägt die Flow-Speed
-                        // nach Gefälle: ein steileres Segment scrollt schneller.
-                        vec2 fdir = vFlow / fmag;
-                        vec2 perp = vec2(-fdir.y, fdir.x);
-                        float along = dot(xz, fdir);
-                        float across = dot(xz, perp);
-                        float scroll = uTime * uFlowSpeed * fmag;
-                        float s = vnoise(vec2(across * 0.55, along * 0.13 - scroll));
-                        s += 0.5 * vnoise(vec2(across * 1.2, along * 0.32 - scroll * 1.7));
-                        foam = clamp((s / 1.5 - 0.42) * 2.4, 0.0, 1.0);
-                    } else {
-                        float rip = vnoise(xz * 0.13 + uTime * 0.05);
-                        foam = clamp((rip - 0.74) * 2.6, 0.0, 1.0) * 0.5;
-                        // V9.48 — Ufer-Schaum: ein lebendiges, wellen-
-                        // pulsierendes Schaum-Band am See-Rand (vShore: 1 an
-                        // der Wasserlinie, 0 im offenen See).
-                        float band = smoothstep(0.04, 0.9, vShore);
-                        float sn = vnoise(xz * 0.34 + uTime * 0.15)
-                            + 0.5 * vnoise(xz * 0.82 - uTime * 0.21);
-                        sn /= 1.5;
-                        float lap = 0.62 + 0.38 * sin(uTime * 0.7 + (xz.x + xz.y) * 0.07);
-                        float shoreFoam = clamp(band * (0.4 + 0.9 * sn) * lap, 0.0, 1.0);
-                        foam = max(foam, shoreFoam);
-                        // V9.49-c — Ozean-Schaumkämme: die Gerstner-Kämme
-                        // tragen Gischt (nur am Ozean, über aWave gegated).
-                        float crest = smoothstep(0.62, 1.0, waveT) * vAWave;
-                        foam = max(foam, crest * 0.6);
-                    }
-                    col = mix(col, uFoam, foam * 0.7);
-                    col *= uLight;
-                    // Sonnen-Glitzern (Blinn-Phong wie Meer + Wasserfall).
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
-                    float spec = pow(max(dot(n, halfV), 0.0), 48.0);
-                    col += vec3(1.0, 0.97, 0.85) * spec * 0.7 * uLight;
-                    // Fog — Custom-Shader erbt THREE.Fog nicht.
-                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
-                    col = mix(col, fogColor, fogF);
-                    // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
-                    float fres = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
-                    float alpha = mix(0.80, 0.97, fres);
-                    gl_FragColor = vec4(col, alpha);
-                }
-            `,
-            transparent: true,
-            // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
-            // also kann nichts mehr durch eine andere Wasserfläche scheinen
-            // (das „gestapelte Sheets"-Bild ist strukturell weg — es gibt nur
-            // EINE Wasserfläche). Die Fresnel-Alpha hält den Grund von oben sichtbar.
-            depthWrite: true,
-            // V9.49-f — polygonOffset: an einer streifenden Schnitt-Linie
-            // (flaches Wasser ⟂ sanft geneigtes Terrain) gewänne sonst mal das
-            // Wasser, mal das Terrain den Tiefen-Test → flimmernde Schnitt-
-            // Splitter. Der Offset schiebt das Wasser minimal in die Tiefe →
-            // das opake Terrain gewinnt jeden Gleichstand, die Uferlinie ist sauber.
-            polygonOffset: true,
-            polygonOffsetFactor: 1,
-            polygonOffsetUnits: 1,
-            side: THREE.DoubleSide,
+        // V10.0-f-4 — hydroSurfaceMaterial portiert von ShaderMaterial (GLSL)
+        // zu MeshBasicNodeMaterial (TSL). Der KOMPLEXESTE der vier Material-
+        // Ports (Vollendung des V10.0-Bogens). Welt-Optik 1:1: Gerstner-6-
+        // Octaven-Wellen-Displacement (mit Domain-Warp gegen Periodizität),
+        // custom Tangenten-Kreuzprodukt-Normale, Fluss-vs-See-Foam-IF-ELSE,
+        // Blinn-Phong-Spec, Fresnel-Alpha, Fog. Drei per-Vertex-Attribute:
+        // aFlow (Fluss-Gefälle-Tangente vec2), aShore (Ufer-Schaum-Band
+        // float), aWave (Ozean-Anteil float, gated die Wellen-Amplitude).
+        //
+        // Läuft jetzt nativ auf WebGPURenderer UND klassischem WebGLRenderer
+        // (via webgl-legacy/nodes/WebGLNodes.js-Bootstrap-Side-Effect-Patch).
+        // Nach V10.0-f-4 läuft die ganze Welt-Optik auf NodeMaterial; der
+        // V10.0-e-Hot-Swap-Pfad bleibt nur als defensive Sicherung.
+        //
+        // Zehn Live-Uniforms in state.hydroSurfaceUniforms (uniform-Knoten):
+        // time, flowSpeed, deep/shallow/foam (Colors), sunDir, light,
+        // fogColor/Near/Far. Mutiert von _loopSkyboxPlanets (time) +
+        // _dayNightApplyWaterMaterials (sunDir, light, fog*). Naming ohne
+        // u-Präfix (TSL-Slot-Convention, V10.0-f-3-Wende).
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            this.log("HydroSurface-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
+            return null;
+        }
+        const {
+            uniform,
+            attribute,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            mat3,
+            positionLocal,
+            modelWorldMatrix,
+            modelNormalMatrix,
+            cameraPosition,
+            sin,
+            cos,
+            dot,
+            length,
+            mix,
+            smoothstep,
+            clamp,
+            fract,
+            floor,
+            max,
+            pow,
+            normalize,
+            cross,
+            cond,
+            tslFn,
+        } = TSL;
+        void mat3; // potenzielle Alternative zu modelNormalMatrix
+
+        // Zehn Live-Uniforms (uniform-Knoten mit .value-Setter)
+        const uTime = uniform(0.0);
+        const uFlowSpeed = uniform(0.5);
+        const uDeep = uniform(new THREE.Color(0x16364f));
+        const uShallow = uniform(new THREE.Color(0x3f88a8));
+        const uFoam = uniform(new THREE.Color(0xdff1ff));
+        const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
+        const uLight = uniform(1.0);
+        const uFogColor = uniform(new THREE.Color(0x88a0c8));
+        const uFogNear = uniform(35.0);
+        const uFogFar = uniform(150.0);
+
+        // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
+        const hash2 = tslFn(([p]) => {
+            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
+        const vnoise = tslFn(([p]) => {
+            const i = floor(p);
+            const f = fract(p);
+            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+            return mix(
+                mix(hash2(i), hash2(i.add(vec2(1.0, 0.0))), u.x),
+                mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
+                u.y
+            );
+        });
+
+        // Eine Gerstner-Welle (V8.33-Meeres-Plane via V9.49-c übernommen):
+        // horizontale Stauchung zu den Kämmen + vertikale Höhe. Sechs Oktaven
+        // davon plus Domain-Warp gegen Periodizität.
+        const gerstnerWave = tslFn(([xz, dir, f, a, s, q]) => {
+            const d = normalize(dir);
+            const phase = dot(xz, d).mul(f).add(uTime.mul(s));
+            return vec3(q.mul(a).mul(d.x).mul(cos(phase)), a.mul(sin(phase)), q.mul(a).mul(d.y).mul(cos(phase)));
+        });
+        const waveDisplace = tslFn(([xz]) => {
+            const warp = vec2(
+                sin(xz.x.mul(0.022).add(uTime.mul(0.25))).mul(7.0),
+                cos(xz.y.mul(0.019).sub(uTime.mul(0.21))).mul(7.0)
+            );
+            const w = xz.add(warp);
+            let d = vec3(0.0, 0.0, 0.0);
+            d = d.add(gerstnerWave(w, vec2(0.86, 0.51), float(0.1), float(0.4), float(0.85), float(0.9)));
+            d = d.add(gerstnerWave(w, vec2(-0.42, 0.91), float(0.075), float(0.3), float(0.65), float(0.85)));
+            d = d.add(gerstnerWave(w, vec2(0.62, -0.78), float(0.19), float(0.18), float(1.2), float(0.95)));
+            d = d.add(gerstnerWave(w, vec2(-0.95, -0.3), float(0.29), float(0.12), float(1.55), float(1.1)));
+            d = d.add(gerstnerWave(w, vec2(0.3, 0.95), float(0.46), float(0.07), float(2.05), float(1.3)));
+            d = d.add(gerstnerWave(w, vec2(0.73, -0.69), float(0.71), float(0.045), float(2.7), float(1.4)));
+            return d;
+        });
+
+        // === VERTEX-STAGE: Gerstner-Wellen-Displacement + Tangenten-Normale.
+        // Drei per-Vertex-Attribute: aFlow/aShore/aWave. aWave gated die
+        // Wellen-Amplitude (Ozean voll, See/Fluss still) → kein Riss am Ufer.
+        const aFlowV = attribute("aFlow", "vec2");
+        const aShoreV = attribute("aShore", "float");
+        const aWaveV = attribute("aWave", "float");
+
+        const p = positionLocal;
+        // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
+        // Vertex-Positionen sind in Welt-Koord. positionLocal.xz = Welt-xz.
+        const disp = waveDisplace(p.xz).mul(aWaveV);
+        const pd = p.add(disp);
+        const vWave = disp.y;
+
+        // Normale aus Tangenten-Kreuzprodukt (3 Samples: pd, px, pz).
+        // Bei aWave=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
+        const e = float(1.4);
+        const pxBase = vec3(p.x.add(e), p.y, p.z);
+        const pzBase = vec3(p.x, p.y, p.z.add(e));
+        const pxPos = pxBase.add(waveDisplace(vec2(p.x.add(e), p.z)).mul(aWaveV));
+        const pzPos = pzBase.add(waveDisplace(vec2(p.x, p.z.add(e))).mul(aWaveV));
+        const nrmRaw = normalize(cross(pzPos.sub(pd), pxPos.sub(pd)));
+        // n.y < 0 → flip (sicherer Up-Vektor) via cond-Knoten.
+        const nrmFlipped = cond(nrmRaw.y.lessThan(0.0), nrmRaw.mul(-1.0), nrmRaw);
+
+        // World-Position des displaced Vertex (für Lighting + Fog).
+        const wp = modelWorldMatrix.mul(vec4(pd, 1.0));
+        const vWorldPos = wp.xyz;
+        // World-Raum-Normale via modelNormalMatrix (mat3 inverse-transpose).
+        // Bei Wasser-Mesh (nur Translation, keine Skalierung) identisch zu
+        // mat3(modelMatrix) — die V8.44-Lehre.
+        const vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped));
+        // V8.45 — radiale Distanz (dreh-invariant) = |worldPos − cameraPos|.
+        const vFogDepth = length(vWorldPos.sub(cameraPosition));
+
+        // === FRAGMENT-STAGE: Wasserfarbe + Foam + Spec + Fog + Fresnel-Alpha.
+        const xz = vWorldPos.xz;
+        // Normale nach oben gezwungen (cond-flip wie Vertex-Pfad).
+        const nUpRaw = normalize(vNormalWorld);
+        const n = cond(nUpRaw.y.lessThan(0.0), nUpRaw.mul(-1.0), nUpRaw);
+
+        // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise, am Ozean
+        // nach Gerstner-Wellenhöhe — über aWave gemischt, weicher Übergang.
+        const baseN = vnoise(xz.mul(0.05).add(uTime.mul(0.03)));
+        const waveT = clamp(vWave.mul(0.5).add(0.5), 0.0, 1.0);
+        const mixT = mix(float(0.32).add(baseN.mul(0.42)), waveT, aWaveV);
+        const baseCol = mix(uDeep, uShallow, mixT);
+
+        // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
+        // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
+        // sonst → See-Schimmer + Ufer-Schaum + Ozean-Schaumkämme.
+        const fmag = length(aFlowV);
+        const isRiver = fmag.greaterThan(0.01);
+
+        // RIVER-PFAD
+        const fdir = aFlowV.div(max(fmag, float(0.0001)));
+        const perp = vec2(fdir.y.mul(-1.0), fdir.x);
+        const along = dot(xz, fdir);
+        const across = dot(xz, perp);
+        const scroll = uTime.mul(uFlowSpeed).mul(fmag);
+        const riverS1 = vnoise(vec2(across.mul(0.55), along.mul(0.13).sub(scroll)));
+        const riverS2 = vnoise(vec2(across.mul(1.2), along.mul(0.32).sub(scroll.mul(1.7))));
+        const riverFoam = clamp(riverS1.add(riverS2.mul(0.5)).div(1.5).sub(0.42).mul(2.4), 0.0, 1.0);
+
+        // LAKE/OCEAN-PFAD
+        const rip = vnoise(xz.mul(0.13).add(uTime.mul(0.05)));
+        const lakeBaseFoam = clamp(rip.sub(0.74).mul(2.6), 0.0, 1.0).mul(0.5);
+        // V9.48 — Ufer-Schaum-Band (vShore: 1 an Wasserlinie, 0 im offenen See)
+        const band = smoothstep(0.04, 0.9, aShoreV);
+        const sn1 = vnoise(xz.mul(0.34).add(uTime.mul(0.15)));
+        const sn2 = vnoise(xz.mul(0.82).sub(uTime.mul(0.21)));
+        const sn = sn1.add(sn2.mul(0.5)).div(1.5);
+        const lap = float(0.62).add(sin(uTime.mul(0.7).add(xz.x.add(xz.y).mul(0.07))).mul(0.38));
+        const shoreFoam = clamp(band.mul(float(0.4).add(sn.mul(0.9))).mul(lap), 0.0, 1.0);
+        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated)
+        const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
+        const lakeFoam = max(max(lakeBaseFoam, shoreFoam), crest.mul(0.6));
+
+        const foam = cond(isRiver, riverFoam, lakeFoam);
+
+        const colWithFoam = mix(baseCol, uFoam, foam.mul(0.7));
+        const lit = colWithFoam.mul(uLight);
+
+        // Sonnen-Glitzern (Blinn-Phong wie Wasserfall, Exponent 48 statt 40).
+        const viewDir = normalize(cameraPosition.sub(vWorldPos));
+        const halfV = normalize(normalize(uSunDir).add(viewDir));
+        const spec = pow(max(dot(n, halfV), 0.0), 48.0);
+        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.7).mul(uLight));
+
+        // Fog — Custom-Shader erbt THREE.Fog nicht.
+        const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
+        const colFogged = mix(withSpec, uFogColor, fogF);
+
+        // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
+        const fres = pow(float(1.0).sub(max(dot(viewDir, n), 0.0)), 3.0);
+        const alpha = mix(float(0.8), float(0.97), fres);
+
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.positionNode = pd;
+        mat.colorNode = vec4(colFogged, alpha);
+        mat.transparent = true;
+        // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
+        // also kann nichts mehr durch eine andere Wasserfläche scheinen.
+        mat.depthWrite = true;
+        // V9.49-f — polygonOffset: an streifender Schnitt-Linie (flaches
+        // Wasser ⟂ sanft geneigtes Terrain) wäre sonst Flimmern → Wasser
+        // minimal in Tiefe schieben, opakes Terrain gewinnt Gleichstände.
+        mat.polygonOffset = true;
+        mat.polygonOffsetFactor = 1;
+        mat.polygonOffsetUnits = 1;
+        mat.side = THREE.DoubleSide;
+
+        this.state.hydroSurfaceUniforms = {
+            time: uTime,
+            flowSpeed: uFlowSpeed,
+            deep: uDeep,
+            shallow: uShallow,
+            foam: uFoam,
+            sunDir: uSunDir,
+            light: uLight,
+            fogColor: uFogColor,
+            fogNear: uFogNear,
+            fogFar: uFogFar,
+        };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
     }
@@ -35634,22 +35687,11 @@ class AnazhRealm {
         const dl = this.state.directionalLight;
         const fog = this.state.fog;
         const lightVal = Math.max(0.22, dl.intensity);
-        // V10.0-f-3 — zwei Update-Pfade nebeneinander, weil hydroSurfaceMaterial
-        // bis V10.0-f-4 noch klassisches ShaderMaterial mit `.uniforms.X.value`
-        // ist, waterfallMaterial aber jetzt TSL mit uniform-Knoten in
-        // state.waterfallUniforms. Nach V10.0-f-4 fällt der applyToShader-
-        // Pfad weg + beide Wasser-Materials nutzen denselben TSL-Slot-Pfad.
-        const applyToShader = (material) => {
-            if (!material || !material.uniforms) return;
-            const u = material.uniforms;
-            if (u.uSunDir) u.uSunDir.value.copy(sunDir);
-            if (u.uLight) u.uLight.value = lightVal;
-            if (fog) {
-                if (u.fogColor) u.fogColor.value.copy(fog.color);
-                if (u.fogNear) u.fogNear.value = fog.near;
-                if (u.fogFar) u.fogFar.value = fog.far;
-            }
-        };
+        // V10.0-f-4 — Dual-Pfad-Architektur AUFGELÖST. Beide Wasser-Materials
+        // (Wasserfall + Hydro-Surface) sind jetzt TSL; Uniforms leben in
+        // state.waterfallUniforms / state.hydroSurfaceUniforms. EINE Closure,
+        // EIN Lookup-Konvention. Der klassische applyToShader-Pfad (V10.0-f-3)
+        // ist gestrichen — der V10.0-f-Bogen ist vollendet.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(sunDir);
@@ -35660,7 +35702,7 @@ class AnazhRealm {
                 if (uniforms.fogFar) uniforms.fogFar.value = fog.far;
             }
         };
-        applyToShader(this.state.hydroSurfaceMaterial);
+        applyToTSL(this.state.hydroSurfaceUniforms);
         applyToTSL(this.state.waterfallUniforms);
     }
 
@@ -38771,8 +38813,9 @@ class AnazhRealm {
         // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
         // + See-Planes) wird zentral animiert; der Flow-Shader scrollt den
         // Schaum stromab je nach per-Vertex-`aFlow`.
-        if (this.state.hydroSurfaceMaterial && this.state.hydroSurfaceMaterial.uniforms) {
-            this.state.hydroSurfaceMaterial.uniforms.uTime.value = currentTime;
+        // V10.0-f-4: time-Uniform ist jetzt uniform-Knoten in state.hydroSurfaceUniforms.
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
+            this.state.hydroSurfaceUniforms.time.value = currentTime;
         }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
@@ -39082,7 +39125,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-f3";
+AnazhRealm.VERSION = "10.0-f4";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

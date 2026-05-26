@@ -18479,21 +18479,24 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.starField.material.depthTest === true
         );
 
-        // Wasser-Shader: diagonale Wellen (wave-Funktion mit
-        // Richtungs-Vektoren) + Sonnen-Glitzern (Spekular).
+        // V10.0-f-4 Doku-Sync: Wasser-Material ist jetzt MeshBasicNodeMaterial.
+        // Die alten vertexShader/fragmentShader-Strings gibt's nicht mehr —
+        // wir scannen die createBuilder-Source nach TSL-Patterns und lesen die
+        // Uniforms aus state.hydroSurfaceUniforms.
         let waterDiagonal = false;
         let waterSpecular = false;
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wMat) {
-            const vs = wMat.vertexShader || "";
-            const fs = wMat.fragmentShader || "";
-            waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
-            waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            // Gerstner-Welle als tslFn-Closure + dot(xz, d) im Vertex-Pfad.
+            waterDiagonal = /gerstnerWave\s*=\s*tslFn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
+            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
+            waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
         }
         out.waterDiagonalWaves = waterDiagonal;
         out.waterSunGlitter = waterSpecular;
-        // Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)
-        out.waterHasSunUniform = !!(wMat && wMat.uniforms && wMat.uniforms.uSunDir);
+        // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
+        out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -18549,12 +18552,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.terrainFogInShader =
                 /vFogDepth/.test(tm.vertexShader || "") && /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
         }
-        // Wasser-Custom-Shader hat Fog + Domain-Warp.
+        // V10.0-f-4 Doku-Sync: Wasser-Uniforms in state.hydroSurfaceUniforms,
+        // Source-Patterns im _ensureHydroSurfaceMaterial-Builder.
         const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wm) {
-            out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
-            out.waterDomainWarp = /waveDisplace/.test(wm.vertexShader || "") && /warp/.test(wm.vertexShader || "");
-            out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
+            out.waterFogUniforms = !!(
+                r.state.hydroSurfaceUniforms &&
+                r.state.hydroSurfaceUniforms.fogColor &&
+                r.state.hydroSurfaceUniforms.fogNear
+            );
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            out.waterDomainWarp = /waveDisplace\s*=\s*tslFn/.test(builderSrc) && /warp/.test(builderSrc);
+            // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
+            out.waterFogInShader = /smoothstep\(uFogNear,\s*uFogFar/.test(builderSrc);
         }
         // Fog-Slider propagiert in die Custom-Shader-Uniforms.
         // playerEyesUnderwater deterministisch ausnullen (sonst
@@ -18623,11 +18633,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
         }
 
-        // Wasser-Shader hat Fresnel-Opazität.
+        // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
         const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wFresMat) {
-            const fs = wFresMat.fragmentShader || "";
-            out.waterFresnel = /fres/.test(fs) && /pow\(1\.0 - max\(dot\(viewDir, n\)/.test(fs);
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            // Fresnel = pow(1 - max(dot(viewDir, n), 0), 3) im colorNode-Tree.
+            out.waterFresnel = /fres\s*=\s*pow/.test(builderSrc) && /max\(dot\(viewDir,\s*n\)/.test(builderSrc);
         }
 
         // Fog-Slider erlaubt bis 300 %.
@@ -18717,15 +18728,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r._disposeSoulGroup(gd);
         }
 
-        // --- Gerstner-Wellen im Wasser-Shader ---
+        // --- Gerstner-Wellen im Wasser-Material (V10.0-f-4 Doku-Sync: TSL).
         const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wGerstMat) {
-            const vs = wGerstMat.vertexShader || "";
-            out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
-            out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
-            out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);
-            out.gerstnerCrossNormal = /cross\(/.test(vs);
-            out.gerstnerKeepsWarp = /warp/.test(vs);
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            // tslFn-Closures statt GLSL-Funktionen, identische Mathematik.
+            out.gerstnerFn = /gerstnerWave\s*=\s*tslFn/.test(builderSrc);
+            out.waveDisplaceVec3 = /waveDisplace\s*=\s*tslFn/.test(builderSrc);
+            // Horizontale Stauchung: q.mul(a).mul(d.x).mul(cos(phase)) — spitze Kämme.
+            out.gerstnerHorizontal = /q\.mul\(a\)\.mul\(d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
+            // Normale aus Kreuzprodukt der Tangenten.
+            out.gerstnerCrossNormal = /cross\(pzPos\.sub\(pd\),\s*pxPos\.sub\(pd\)\)/.test(builderSrc);
+            // Domain-Warp gegen Periodizität (V8.31-Erbe).
+            out.gerstnerKeepsWarp = /const\s+warp\s*=\s*vec2/.test(builderSrc);
         }
 
         return out;

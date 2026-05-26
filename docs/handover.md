@@ -357,6 +357,110 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-f-4 — hydroSurfaceMaterial → MeshBasicNodeMaterial TSL (26.05.2026, vierte + letzte Sub-Welle, der KOMPLEXESTE Port, ~230 Z. netto — der V10.0-BOGEN IST VOLLENDET 🎉):**
+
+Nach f-1 (skybox), f-2 (stars), f-3 (waterfall) bleibt nur noch EIN Material — das Hydrosphären-Material. Das ist EIN Material für ALLE Wasserflächen der Welt (Ozean + See + Fluss aller per-Chunk-Iso-Wasser-Meshes), differenziert über drei per-Vertex-Attribute. ~189 Z. GLSL, 10 Uniforms, Gerstner-6-Octaven, Tangenten-Kreuzprodukt-Normale, Fluss-vs-See-Foam-Trennung, Blinn-Phong-Spec, Fresnel-Alpha, Fog. Der schwerste Port der Welle.
+
+**Wurzel-Vision**: Vision-Anker §1.3 fraktal — EINE Wasser-Sprache, geteilt mit `waterfallMaterial` (selbe deep/shallow/foam-Farben, selbe Sonnen-/Fog-Disziplin). Aber strukturell vielfältiger: drei per-Vertex-Attribute (`aFlow vec2` für Fluss-Gefälle-Tangente, `aShore float` für Ufer-Schaum-Band, `aWave float` für Ozean-Anteil/Wellen-Amplitude) trennen Ozean/See/Fluss innerhalb desselben Materials. Nach f-4 läuft die ganze Welt-Optik auf NodeMaterial — WebGPU rendert dauerhaft auf GPU.
+
+**Drei strukturelle Bausteine**:
+
+1. **`_ensureHydroSurfaceMaterial` neu** (~220 Z. TSL ersetzt ~190 Z. GLSL):
+   - `THREE.MeshBasicNodeMaterial` (no lights — Beleuchtung als manueller Blinn-Phong im colorNode, identisch zu f-3).
+   - **Drei per-Vertex-Attribute via TSL**:
+     - `aFlowV = attribute("aFlow", "vec2")` — Fluss-Flow-Vektor (Gefälle-Tangente).
+     - `aShoreV = attribute("aShore", "float")` — Ufer-Schaum-Band (1 an Wasserlinie, 0 im offenen Wasser).
+     - `aWaveV = attribute("aWave", "float")` — Ozean-Anteil (gated die Wellen-Amplitude, kein Riss am See-Ufer).
+   - **Gerstner-Welle als `tslFn`-Closure** (V8.33-Mathematik 1:1):
+     ```js
+     gerstnerWave(xz, dir, f, a, s, q) =
+       d = normalize(dir);
+       phase = dot(xz, d).mul(f).add(uTime.mul(s));
+       return vec3(q.mul(a).mul(d.x).mul(cos(phase)), a.mul(sin(phase)), q.mul(a).mul(d.y).mul(cos(phase)));
+     ```
+   - **`waveDisplace` als zweite `tslFn`**: Domain-Warp (2 sin/cos-Verschiebungen mit Wellenlängen 0.022/0.019 + Zeit-Drift 0.25/0.21) + 6 Gerstner-Calls mit verschiedenen Wave-Direction-Vektoren + Frequenzen + Amplituden + Speeds + Steepness-Faktoren. Identisch zu V8.33-V9.49-c-GLSL.
+   - **Vertex-Pfad**:
+     - `p = positionLocal` (Wasser-Mesh hat mesh.position=(0,0,0), V9.71 — positionLocal.xz = Welt-xz).
+     - `disp = waveDisplace(p.xz).mul(aWaveV)` — aWave gated die Wellen-Amplitude.
+     - `pd = p.add(disp)` — displaced Vertex.
+     - **Custom Normale via Tangenten-Kreuzprodukt**: drei Sample-Positions (pd selbst, px bei x+1.4, pz bei z+1.4). `nrmRaw = normalize(cross(pzPos.sub(pd), pxPos.sub(pd)))`. Bei aWave=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
+     - `nrmFlipped = cond(nrmRaw.y.lessThan(0.0), nrmRaw.mul(-1.0), nrmRaw)` — TSL-conditional ersetzt GLSL `if (nrm.y < 0.0) nrm = -nrm;`.
+     - `wpDisplaced = modelWorldMatrix.mul(vec4(pd, 1.0)).xyz` — manuell, weil positionWorld aus originalLocal liest.
+     - `vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped))` — V8.44-Welt-Raum-Normale via TSL-built-in modelNormalMatrix (mat3 inverse-transpose des modelMatrix; bei Wasser-Translation identisch zu mat3(modelMatrix)).
+     - `vFogDepth = length(wpDisplaced.sub(cameraPosition))` — view-radiale Distanz.
+     - `mat.positionNode = pd` — TSL-Slot für gl_Position.
+   - **Fragment-Pfad**:
+     - hash2+vnoise als `tslFn` (identisch zu f-3).
+     - n-up-Flip via `cond(nUpRaw.y.lessThan(0), nUpRaw.mul(-1), nUpRaw)`.
+     - Basis-Wasserfarbe: `mix(uDeep, uShallow, mix(0.32+0.42·baseN, waveT, aWaveV))` — Lake/Ozean-Hybridmix über aWave.
+     - **Fluss-vs-See-Foam-Trennung via TSL-`cond`** (statt GLSL-`if/else`):
+       - `isRiver = length(aFlow).greaterThan(0.01)`.
+       - RIVER-Pfad: `fdir = aFlow.div(max(fmag, 0.0001))`, `perp = vec2(-fdir.y, fdir.x)`, `along = dot(xz, fdir)`, `across = dot(xz, perp)`. Zwei `vnoise`-Schichten scrollen entlang `along - scroll` mit `scroll = uTime · uFlowSpeed · fmag`.
+       - LAKE-Pfad: ruhiger Ripple + V9.48-Ufer-Schaum-Band (`band = smoothstep(0.04, 0.9, aShoreV)` + sn-Komposit + `lap = 0.62 + 0.38·sin(uTime·0.7 + (x+z)·0.07)`) + V9.49-c-Ozean-Schaumkämme (`crest = smoothstep(0.62, 1.0, waveT) · aWaveV`).
+       - `foam = cond(isRiver, riverFoam, lakeFoam)`.
+     - `colWithFoam = mix(baseCol, uFoam, foam.mul(0.7))`.
+     - Light-Skalierung: `lit = colWithFoam.mul(uLight)`.
+     - Blinn-Phong-Spec (exp 48 statt f-3's 40, Wasser ist glatter): `pow(max(dot(n, halfV), 0), 48)`. Plus warm-yellow Sonnen-Tint `vec3(1.0, 0.97, 0.85) × spec × 0.7 × uLight`.
+     - Fog: `smoothstep(uFogNear, uFogFar, vFogDepth)` + `mix(withSpec, uFogColor, fogF)`.
+     - **Fresnel-Alpha** (V8.32): `fres = pow(1 - max(dot(viewDir, n), 0), 3)` → `alpha = mix(0.80, 0.97, fres)` — horizont-opak, von oben klarer (Tiefe sichtbar).
+     - `mat.colorNode = vec4(colFogged, alpha)`.
+   - Material-Props: `transparent=true`, `depthWrite=true` (V9.49-c — vereintes Wasser-Mesh schreibt Tiefe), `polygonOffset=true` mit Factor/Units=1 (V9.49-f — sauber an streifender Schnitt-Linie), `side=DoubleSide`.
+   - 10 Uniforms in `state.hydroSurfaceUniforms = { time, flowSpeed, deep, shallow, foam, sunDir, light, fogColor, fogNear, fogFar }`. Naming ohne u-Präfix (f-3-Wende fortgeführt).
+
+2. **DUAL-PFAD AUFGELÖST in `_dayNightApplyWaterMaterials` (Z35591)**:
+   - V10.0-f-3 hatte ZWEI Closures (`applyToShader` für hydroSurfaceMaterial, `applyToTSL` für waterfallUniforms). V10.0-f-4 streicht `applyToShader` — nur noch `applyToTSL`.
+   - Aufruf: `applyToTSL(state.hydroSurfaceUniforms); applyToTSL(state.waterfallUniforms);`. EINE Closure, EIN Lookup-Pattern. Migrations-Hülle weg, ehrliche Schlussform.
+
+3. **`_loopSkyboxPlanets` (Z38809)**: `state.hydroSurfaceUniforms.time.value = currentTime` statt `material.uniforms.uTime.value`. Defensive Existenz-Probe.
+
+**12 Test-Probes mit-gewandert** (V9.56-i-Pattern, vier Bänder V8.30/V8.31/V8.32/V8.33):
+- **V8.30**: `waterDiagonalWaves` scannt `_ensureHydroSurfaceMaterial.toString()` nach `gerstnerWave = tslFn` + `dot(xz, d)`; `waterSunGlitter` nach `pow(max(dot(n, halfV)` + `normalize(uSunDir)`; `waterHasSunUniform` liest `state.hydroSurfaceUniforms.sunDir`.
+- **V8.31**: `waterFogUniforms` liest `state.hydroSurfaceUniforms.fogColor/fogNear`; `waterDomainWarp` scannt Builder nach `waveDisplace = tslFn` + `warp`; `waterFogInShader` nach `smoothstep(uFogNear, uFogFar`.
+- **V8.32**: `waterFresnel` scannt Builder nach `fres = pow` + `max(dot(viewDir, n)`.
+- **V8.33**: alle fünf Gerstner-Probes scannen Builder nach `gerstnerWave = tslFn`, `waveDisplace = tslFn`, `q.mul(a).mul(d.x).mul(cos(phase))`, `cross(pzPos.sub(pd), pxPos.sub(pd))`, `const warp = vec2`.
+
+**State-Init**: `state.hydroSurfaceUniforms: null` deklariert (audit:strict-Disziplin).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (12 mit-gewanderte Probes über vier Bänder grün); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+100 Z. netto (TSL-Tree ersetzt GLSL-String, Dual-Pfad gelöscht, 1 state-Field), `scripts/playtest.cjs` ~+30 Z. netto (12 Probe-Anpassungen), `index.html` (Cache-Buster 10.0.7 → 10.0.8 + title v10.0-f3 → v10.0-f4), `package.json` 10.0.7 → 10.0.8, `AnazhRealm.VERSION` "10.0-f3" → "10.0-f4".
+
+**Drei neue Lehren verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+1. **TSL-`cond(test, a, b)` ersetzt GLSL-`if/else`-Branches im colorNode** — der saubere TSL-Pfad für Fragment-Materials mit varying-abhängigen Branches. BEIDE Branches werden berechnet (kein lazy-evaluate); der `cond`-Knoten wählt das Resultat. Bei billigen Branches (Foam-Komposit) vernachlässigbar, bei teuren (zweite Gerstner-Octave) lieber ein Mix-Faktor.
+
+2. **TSL-`attribute("name", "vec2"/"float"/"vec3")` ist Pflicht für custom per-Vertex-Attribute** — wie bei f-2 (aSize, color) und f-4 (aFlow vec2, aShore float, aWave float). Type-String ist NICHT optional. Drei Attribute über `attribute(...)`-Knoten ersetzen das GLSL-Quartett `attribute vec2 aFlow; attribute float aShore; attribute float aWave;` semantisch identisch.
+
+3. **Custom Vertex-Normale via Tangenten-Kreuzprodukt: World-Transform via `modelNormalMatrix`** — wer eine Normale CUSTOM berechnet (z.B. aus Wellen-Tangenten), kann NICHT `transformedNormalWorld` nutzen (das transformiert `normalLocal`). Stattdessen `modelNormalMatrix.mul(customNrm)`. Pattern für Gerstner-Wellen, Heightfield-Tangenten, prozedurale Normalen. Plus: Up-Vector-Garantie via `cond(nrm.y.lessThan(0), nrm.mul(-1), nrm)` als TSL-Flip.
+
+**V10.0-BOGEN-BILANZ (10 Sub-Wellen über mehrere Sessions)**:
+
+| Sub-Welle | Was | Status |
+|---|---|---|
+| **V10.0-a** | Three.js r134 → r160 Vendor + Bridge-Heilungen | ✅ |
+| **V10.0-b** | ESM-Loading-Pattern (Inline-Importmap + CSP-Hash) | ✅ |
+| **V10.0-c** | WebGPURenderer-Addon vendored (~1.5 MB, 238 Files) | ✅ |
+| **V10.0-d** | Renderer-Auswahl-Logik (WebGPU wenn isAvailable()) | ✅ |
+| **V10.0-e** | Smart Hot-Swap bei ShaderMaterial-Inkompatibilität | ✅ |
+| **V10.0-f-1** | skyboxMaterial → MeshBasicNodeMaterial TSL | ✅ |
+| **V10.0-f-2** | starsMaterial → PointsNodeMaterial TSL | ✅ |
+| **V10.0-f-3** | waterfallMaterial → MeshBasicNodeMaterial TSL | ✅ |
+| **V10.0-f-4** | hydroSurfaceMaterial → MeshBasicNodeMaterial TSL | ✅ |
+
+- Alle vier Welt-Materials sind jetzt NodeMaterial — kein ShaderMaterial mehr in der Welt-Optik.
+- Alle laufen auf WebGPURenderer NATIV UND auf klassischem WebGLRenderer via `webgl-legacy/nodes/WebGLNodes.js`-Side-Effect-Patch. Keine Doppel-Pflege, kein Type-Sniff.
+- Vier State-Slots (`skyboxUniforms` / `starFieldUniforms` / `waterfallUniforms` / `hydroSurfaceUniforms`) tragen die Live-Uniform-Knoten.
+- 17+ neue Lehren in CLAUDE.md/Gotchas „Rendering · TSL-Migration" verdrahtet.
+- Welt rendert dauerhaft auf GPU bei `THREE.WebGPU.isAvailable()`. Hot-Swap-Pfad (V10.0-e) bleibt defensive Sicherung, triggert nicht mehr im Normalbetrieb.
+
+**Was V11.x liefert (auf solider V10.0-Foundation)**:
+- **Vision-Pfeiler D**: Wasser ↔ Kreaturen (Trinken am Ufer, Schwimmen, Scheuen vor Tiefe).
+- **Vision-Pfeiler E**: Emotion ↔ lokale Welt (Spieler-Aura pulsiert in 30m-Umkreis — Wasser, Ambient, Licht modulieren).
+- **Vision-Pfeiler F**: Hylomorphismus-Cluster-Resonanz (3× lebendig-Bauten = sichtbare Aura, lockt Fauna).
+- **Vision-Pfeiler G**: Multi-Spieler-Vibe (Welt atmet als ein Wesen).
+- Plus V9.93.r-Backlog: V9.97 IndexedDB-Welt-Gedächtnis (GPU-unabhängig), V9.98 Predictive Prefetch, V9.99 Per-Column-Atlas-Strict.
+- Render-Polish: Toon-Material-Treppenstufen weicher, LOD-Cross-Fade.
+
+---
+
 **V10.0-f-3 — waterfallMaterial → MeshBasicNodeMaterial TSL (26.05.2026, dritte Sub-Welle, mittel-komplex, ~190 Z. netto):**
 
 Nach f-1 (skybox: colorNode only) + f-2 (stars: sizeNode+colorNode) ist f-3 der erste Material-Port mit BEIDEN Stages (Vertex-Displacement via `positionNode` + Fragment-Komposit via `colorNode`) plus 11 Uniforms statt 2-3. Der TSL-Lerntest für Vertex-Manipulation, bevor f-4 (hydroSurfaceMaterial) mit Gerstner-6-Octaven kommt.
