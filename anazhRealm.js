@@ -10047,7 +10047,7 @@ class AnazhRealm {
             this.log("Stern-Feld-Bau: TSL/PointsNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
-        const { uniform, attribute, vec4, vec2, smoothstep, length, pointUV } = TSL;
+        const { uniform, attribute, vec4 } = TSL;
 
         const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
         const uOpacity = uniform(0.5);
@@ -10057,13 +10057,15 @@ class AnazhRealm {
         // sizeNode ersetzt gl_PointSize: aSize × uPixelRatio (konstante Pixel-
         // Größe, V8.29 mindestens 3 px — Anti-Flacker für Sub-Pixel-Sterne).
         starMat.sizeNode = attribute("aSize", "float").mul(uPixelRatio);
-        // colorNode ersetzt gl_FragColor: per-Stern vertex-color + weicher
-        // runder Sprite-Falloff. d = Distanz vom Sprite-Center, alpha über
-        // smoothstep(0.5 → 0.08) modulieren = harter Rand außen, weiches
-        // Glow-Center innen. Multiply mit uOpacity für Tag/Nacht-Fade.
-        const d = length(pointUV.sub(vec2(0.5, 0.5)));
-        const alpha = smoothstep(0.5, 0.08, d).mul(uOpacity);
-        starMat.colorNode = vec4(attribute("color", "vec3"), alpha);
+        // V10.0-g.1 — PointUVNode emittiert hardcoded GLSL `gl_PointCoord`
+        // (r160-Vendor-Bug, kein WGSL-Pendant) → Browser-Audit V10.0-g zeigte
+        // `Error while parsing WGSL: unresolved value 'gl_PointCoord'` auf
+        // AMD-RDNA-3. Ersatz: konstante alpha = uOpacity. Sterne werden hart-
+        // quadratisch statt sprite-soft-falloff, aber V8.29-Anti-Flacker
+        // wirkt weiter (mindestens 3 px per-Stern aSize). Bei AdditiveBlending
+        // + small aSize visuell akzeptabel — soft falloff kommt zurück mit
+        // r161+ oder einer eigenen UV-Berechnung in V10.0-g.cel-Polish.
+        starMat.colorNode = vec4(attribute("color", "vec3"), uOpacity);
 
         // Material-Properties: identisch zur GLSL-Variante. AlphaTest ersetzt
         // den `if (alpha <= 0.01) discard;`-GLSL-Pfad (semantisch identisch).
@@ -16828,6 +16830,26 @@ class AnazhRealm {
             geom.dispose();
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
+        }
+        // V10.0-g.1 — hydroSurfaceMaterial (V10.0-f-4) liest drei per-Vertex-
+        // Attribute via TSL `attribute()`: aFlow (vec2), aShore (float),
+        // aWave (float). Bei klassischem ShaderMaterial fielen fehlende
+        // Attribute auf vec3(0) zurück; bei NodeMaterial/WebGPU strikt: die
+        // Pipeline crasht beim Build mit "Cannot read properties of undefined"
+        // im RenderObject.getAttributes (Browser-Audit V10.0-g zeigte das).
+        // Heilung: Null-Defaults setzen (kein Ozean-Wellen-Displacement, kein
+        // Fluss-Flow, kein Ufer-Schaum für das per-Chunk-Iso-Mesh — semantisch
+        // korrekt, weil das Iso-Wasser pro Voxel-Chunk standardmäßig See/Pfütze
+        // ist, nicht Ozean/Fluss). Float32Array initialisiert default zu 0.
+        const vCount = geom.attributes.position.count;
+        if (!geom.getAttribute("aFlow")) {
+            geom.setAttribute("aFlow", new THREE.BufferAttribute(new Float32Array(vCount * 2), 2));
+        }
+        if (!geom.getAttribute("aShore")) {
+            geom.setAttribute("aShore", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+        }
+        if (!geom.getAttribute("aWave")) {
+            geom.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
         const mesh = new THREE.Mesh(geom, mat);
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
@@ -39357,7 +39379,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-g";
+AnazhRealm.VERSION = "10.0-g.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

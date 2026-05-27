@@ -357,6 +357,47 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-g.1 — WebGPU-Polish nach Schöpfer-Browser-Audit V10.0-g (26.05.2026, zwei kritische WebGPU-Inkompatibilitäten geheilt, ~30 Z. netto):**
+
+Schöpfer-Audit nach V10.0-g auf AMD-RDNA-3 zeigte: Welt rendert auf WebGPU (Material-Migration durch, Hot-Swap triggert nicht mehr — V10.0-g hat funktioniert), aber drei WebGPU-Inkompatibilitäten spammen die Konsole:
+
+1. **`Error while parsing WGSL: unresolved value 'gl_PointCoord'`** — beim starsMaterial (V10.0-f-2). Three.js r160's `PointUVNode.generate()` (in `vendor/three-addons/nodes/accessors/PointUVNode.js`) emittiert HARDCODED GLSL `gl_PointCoord` ohne WGSL-Pendant. r160-Vendor-Bug, vermutlich in r161+ gefixt. Welt-Effekt: Star-Render-Pipeline scheitert beim WGSL-Compile → Stars unsichtbar + Repeating-Pipeline-Errors pro Frame.
+
+2. **`Instance range (first: 0, count: 3160) requires a larger buffer than the bound buffer size`** — beim Gras-InstancedMesh. count=3160 erwartet, 1918 gebunden (stride=64 = mat4-per-Instance). Vermutung: WebGPU-Pipeline-Cache cached die erste Gras-Chunk-Buffer-Size, andere Gras-Chunks mit größerem `blades.length` trigger den Mismatch. WebGPU-Validation-Warning, kein Render-Crash — der draw-Call wird einfach geskipped, Gras-Chunk unsichtbar.
+
+3. **`Uncaught TypeError: Cannot read properties of undefined (reading 'isInterleavedBufferAttribute')`** — in `Geometries.onDispose → RenderObject.getAttributes` beim `_disposeVoxelChunkWaterIso`. **Wurzel**: das Iso-Wasser-Mesh setzt keine `aFlow`/`aShore`/`aWave`-Attribute, die `hydroSurfaceMaterial` (V10.0-f-4) via TSL `attribute("aFlow", "vec2")` etc. STRIKT erwartet. Bei klassischem ShaderMaterial (vor V10.0-f-4) defaulted fehlende Attribute auf vec3(0) — kein Crash. Bei NodeMaterial unter WebGPU: Pipeline bindet das Material an die Geometry mit drei undefined-Attribute-Slots; beim Dispose iteriert `RenderObject.getAttributes` über die Material-Erwartungen und versucht `attribute.isInterleavedBufferAttribute` auf `undefined` → uncaught TypeError. **Pre-existing Bug** seit V10.0-f-4, nur sichtbar auf WebGPU-Pipeline (WebGL ignoriert fehlende Attribute gnädiger).
+
+**Heilung 1 (pointUV-WGSL-Inkompatibilität)** — `_buildStarField` (Z10050+):
+- `pointUV` aus TSL-Import entfernt
+- `colorNode = vec4(attribute("color", "vec3"), uOpacity)` direkt — konstante alpha, kein Distance-Falloff
+- Sterne werden hart-quadratisch statt sprite-soft-falloff. Visueller Verlust gegenüber V10.0-f-2 (kein Glow-Center), aber V8.29-Anti-Flacker wirkt weiter (per-Stern aSize ≥ 3 px → quadratisch ist visuell akzeptabel bei kleiner Größe + AdditiveBlending).
+- Soft-Falloff kommt zurück mit r161+ (vendor-Upgrade-Welle) ODER via eigene UV-Berechnung aus per-Vertex-Daten.
+
+**Heilung 3 (Iso-Wasser-Mesh fehlende Attribute)** — `_buildVoxelChunkWaterIsoSurface` (Z16826+):
+- Nach `_voxelChunkGeometry`-Call werden drei Null-Default-Attribute auf das Iso-Mesh gesetzt:
+  - `aFlow` als `Float32Array(vCount × 2)` (alle 0 = kein Fluss-Flow)
+  - `aShore` als `Float32Array(vCount)` (alle 0 = kein Ufer-Schaum)
+  - `aWave` als `Float32Array(vCount)` (alle 0 = kein Ozean-Wellen-Displacement)
+- Defensive Existenz-Probe (`if (!geom.getAttribute("X"))`) — Pool/Ribbon-Meshes setzen sie schon selbst, Iso-Mesh nicht.
+- **Semantisch korrekt**: das per-Chunk-Iso-Mesh ist See/Pfütze, kein Ozean (Wellen) oder Fluss (Flow). Null-Defaults bedeuten: keine Wellen-Displacement-Anwendung, kein Foam-Stream-Animation, kein Ufer-Bandförderung — die Wasser-Oberfläche ist statisch ruhig.
+- **Welt-Effekt**: WebGPU-Pipeline-Setup gelingt (Attribute existieren), Dispose-Crash weg, Iso-Wasser rendert toon-shaded.
+
+**Bug 2 (Instance-Buffer-Mismatch beim Gras) bleibt als V10.0-g.2-Backlog** — Warning nicht Page-Error, Welt rendert, einzelne Gras-Chunks unsichtbar bei Count-Mismatch. Heilung kommt in V10.0-g.2 (~1h): vermutlich `instanceMatrix.setUsage(DynamicDrawUsage)` oder explicit `gras.count = blades.length; gras.instanceMatrix.needsUpdate = true` Pattern.
+
+**Verhaltens-Beweis (Headless)**: Playtest „Alle Invarianten OK"; Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+25 Z. netto (5 Z. pointUV-Pfad weg + 15 Z. Iso-Mesh-Attribute + Doku), `index.html` Cache-Buster 10.0.12 → 10.0.13 + title v10.0-g.1, `package.json` 10.0.12 → 10.0.13, `AnazhRealm.VERSION` "10.0-g" → "10.0-g.1".
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**NodeMaterial-Attribute sind STRIKT auf WebGPU**: wer ein NodeMaterial mit `attribute("name", "vec2/vec3/float")` baut, MUSS sicherstellen dass JEDES Mesh, das dieses Material nutzt, ALLE referenzierten Attribute trägt. WebGL-Renderer fallbackt gnädig auf vec3(0) für fehlende Attribute, WebGPU-Pipeline-Setup ist strikt — fehlende Attribute → undefined-Errors beim Build oder Dispose. **Disziplin**: bei jedem Material das per-Vertex-Attribute via `attribute()` liest, ALLE Mesh-Build-Pfade auditieren ob sie die Attribute setzen. Default-Null-Werte (Float32Array(count) initialisiert default zu 0) sind sicher + semantisch oft korrekt (Iso-Mesh ohne Fluss-Flow ist See, nicht Wasserfall).
+
+**Was V10.0-g.2 liefern wird (next, ~1h)**: Gras-InstancedMesh-Buffer-Size-Heilung. Drei Pfade: (a) WebGPU-Pipeline pro Chunk neu erstellen (verschwenderisch), (b) `instanceMatrix` mit max-möglicher Größe pre-allokieren (memory-overhead), (c) untersuchen ob Three.js' WebGPU-Renderer fix vorhanden + einfach `mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)` setzen.
+
+**Was V10.0-g.cel liefern wird (eigene Welle)**: gradientMap-Cel-Stufen via robust Texture-Lookup. ReferenceNode-null-Bug (V10.0-g-Diagnose) muss strukturell geheilt werden — möglicherweise via eigene `uniform()`-Texture-Reference die wir selber halten.
+
+**Was V10.0-g.shadow liefern wird (eigene Welle)**: manuelle Shadow-Map-Sampling im colorNode — `directionalLight.shadow.map` als TSL-`texture()`-Uniform durchreichen, `shadow.matrix` als Uniform für Welt→Light-Raum-Transform, im colorNode-Tree die Shadow-Texture an der berechneten Light-Position samplen.
+
+---
+
 **V10.0-g — MeshToonMaterial → MeshBasicNodeMaterial mit custom Toon-Lighting (26.05.2026, VOLLENDET den V10.0-Bogen, ~170 Z. netto):**
 
 Nach V10.0-g.diag-Diagnose („eigene NodeMaterial-Subclass mit lights=true crasht im webgl-legacy/nodes-Patch — vendor-eingebaute Lambert/Phong genauso") war der Pfad klar: **`lights=true` ist im webgl-legacy-Patch grundsätzlich nicht robust**. Drei A/B-Tests bestätigten — pure Lambert, pure Phong, eigene Subclass — alle crashen identisch im `_updateUniforms`-Pfad.
