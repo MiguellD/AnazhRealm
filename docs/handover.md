@@ -357,7 +357,48 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
-**V10.0-g.2 — Gras-Instance-Buffer-Heilung nach Schöpfer-Browser-Audit V10.0-g.1 (26.05.2026, eine Zeile Code-Change, ~25 Z. netto Doku):**
+**V10.0-g.r — REFLEXIONS-WELLE: ehrlicher Rollback von V10.0-g + V10.0-g.1 + V10.0-g.2 (26.05.2026, ~80 Z. netto Rollback + ehrliche Doku):**
+
+Schöpfer-Browser-Audit V10.0-g.2 zeigte: 502 Issues, 250×/Frame "Instance range requires larger buffer"-Spam (Bug 2 NICHT geheilt durch meine `onBeforeCompile`-Hypothese), FPS 6-8, Welt-Render flackert schwarz auf, Spieler fällt durch Welt. **Schöpfer-Wahrnehmung**: „der Rhythmus, die Harmonie scheint nicht mehr zu passen, vor der Änderung schien alles timingmäßig besser durchdacht? strukturell einige Fäden verloren?"
+
+**Ehrliche Selbstkritik**: V10.0-g + V10.0-g.1 + V10.0-g.2 war ehrgeizig aber Vision-disharmonisch. Drei A/B-Hypothesen-Wellen ohne dass die Wurzel WIRKLICH geheilt wurde:
+- V10.0-g: MeshToonMaterial → MeshBasicNodeMaterial + custom Toon-Lighting. **Verluste**: Cel-Stufen (Ghibli-Look weg, da gradientMap-Lookup crashte), Schatten (MeshBasic hat lights=false).
+- V10.0-g.1: pointUV-Pfad raus (Soft-Sprite-Falloff bei Sternen weg) + Iso-Mesh-Null-Default-Attribute (defensive, ok).
+- V10.0-g.2: onBeforeCompile-Wind-Patch raus (Wind im Gras weg). Hypothese: das fixt Bug 2. **Browser-Audit V10.0-g.2 zeigte: Bug 2 spammt weiter — Hypothese WAR FALSCH**.
+
+**Erkenntnis**: drei r160-Vendor-Bugs sind die echten Wurzeln:
+1. `PointUVNode.generate()` emittiert hardcoded GLSL → WGSL-Compile-Error auf WebGPU
+2. `lights=true`-NodeMaterial unter webgl-legacy-Patch → uniform-undefined-Crash (V10.0-g.diag-Lehre)
+3. WebGPU-Pipeline-Cache-InstanceBuffer-Bind zwischen Meshes → Bug 2 (unklare Wurzel, möglicherweise instanceMatrix-Reuse zwischen shared-material-Meshes)
+
+KEIN Code-Workaround fixt alle drei ohne Visual-Tiefe-Verlust. Die ehrliche Konsequenz: Rollback.
+
+**Rollback in V10.0-g.r** (zurück zur V10.0-f-6-Visual-Wahrheit, Helper-Pattern behalten):
+
+1. **`_buildToonNodeMaterial`** — Body zurück auf klassisches `new THREE.MeshToonMaterial({vertexColors, color, side, transparent, opacity})` mit `mat.gradientMap = state.toonGradientMap`. Cel-Stufen + Schatten + Lights komplett zurück. Helper-Pattern bleibt — bei künftiger WebGPU-Welt-Rendering-Welle ändert sich nur der Body, die 5 Call-Sites (Voxel-Chunk/Architektur/Insel/Avatar/Voxel-Test) bleiben.
+
+2. **`_grassInstanceMat`** — `onBeforeCompile`-Wind-Patch zurück (GLSL-Wind-Vertex-Mathematik). Wind-Animation im Gras zurück auf WebGL.
+
+3. **`_buildStarField`** — pointUV-Soft-Falloff zurück. Sterne sind wieder weiche-runde Sprites statt harter Quadrate.
+
+4. **`_dayNightApplyDirectionalLight` + `_dayNightApplyAmbient`** — `state.toonLightUniforms`-Sync-Pfade entfernt (nicht mehr nötig, weil MeshToonMaterial native Lighting hat).
+
+5. **`_ensureToonLightUniforms`-Methode entfernt** — wurde nur von custom Toon-Lighting-Pfad gebraucht. `state.toonLightUniforms`-Feld bleibt deklariert als Backlog für künftige WebGPU-Welle.
+
+**Behalten aus V10.0-g-Stack** (kein Rollback):
+- **V10.0-f-1..f-4**: 4 ShaderMaterials zu TSL (skybox/stars/waterfall/hydroSurface) — diese laufen auf BEIDEN Renderern via webgl-legacy/nodes-Patch (V10.0-f-1-Lehre). Visuell identisch.
+- **V10.0-f-5/f-6**: Hot-Swap-Canvas-Replacement + Animation-Loop-Restore — defensive Sicherung gegen WebGPU-Inkompatibilität, triggert auf moderne Browser mit WebGPU sauber.
+- **V10.0-g.1 Iso-Mesh-Attribute**: Null-Default-aFlow/aShore/aWave auf Iso-Wasser-Mesh — defensive, kein Visual-Verlust.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK", Page-Errors=0, audit:strict 0 Failures, Format/Lint sauber. Dateien: `anazhRealm.js` ~-80 Z. netto (3 Helper-Bodies rückgewickelt + 2 Day-Night-Sync-Pfade entfernt + onBeforeCompile-Wind zurück + pointUV zurück), `scripts/playtest.cjs` ~-10 Z. (V9.42-c-Test rückgewickelt), `index.html` Cache-Buster 10.0.14 → 10.0.15 + title v10.0-g.r, `package.json` 10.0.14 → 10.0.15, `AnazhRealm.VERSION` "10.0-g.2" → "10.0-g.r".
+
+**Permanente Gotcha-Lehre**: **Rollback ist Disziplin, kein Versagen** — wenn der Schöpfer eine Vision-Disharmonie wahrnimmt + technische Fixes die Wurzel nicht heilen, ist die ehrliche Antwort: zurück zur letzten visuell-harmonischen Welle. Drei A/B-Hypothesen ohne Wurzel-Heilung sind Schuld-Aufbau, nicht Vortschritt. Plus die `r160-Vendor-Bug-Realität` ehrlich dokumentieren (pointUV/lights/onBeforeCompile auf WebGPU nicht trivial) statt mit halbgaren Code-Workarounds zu vertuschen.
+
+**Was die Zukunft liefern kann**: WebGPU-Welt-Rendering wartet auf Three.js r161+ (Vendor-Upgrade-Welle als eigene große Welle). Bis dahin: Welt rendert auf WebGL via Hot-Swap (V10.0-e/f-5/f-6) mit allen Vision-Effekten (Cel-Stufen, Schatten, Wind, Soft-Sprite-Falloff). Plus die V10.0-f-1..f-4-ShaderMaterial-zu-TSL-Migration ist als Foundation für die spätere WebGPU-Welle erhalten — 4 von 5 Material-Familien sind schon NodeMaterial.
+
+---
+
+**Davor — V10.0-g.2 — Gras-Instance-Buffer-Heilung nach Schöpfer-Browser-Audit V10.0-g.1 (26.05.2026, eine Zeile Code-Change, ~25 Z. netto Doku):**
 
 Schöpfer-Audit V10.0-g.1 zeigte: Bug 1 (pointUV) + Bug 3 (Iso-Mesh-Attribute) waren geheilt, ABER Bug 2 spammt 250× pro Frame auf WebGPU. Welt-FPS auf 5.
 
