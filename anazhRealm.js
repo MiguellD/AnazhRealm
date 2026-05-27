@@ -19353,7 +19353,23 @@ class AnazhRealm {
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
         const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), GRASS_MAX_BLADES);
         inst.count = realCount;
-        inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
+        // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
+        // V10.0-j.c löste die echte Wurzel via Uniform-Capacity (alle Chunks
+        // mit konstantem GRASS_MAX_BLADES → Buffer-Layout uniform → keine
+        // Cache-Pollution). Damit ist DynamicDrawUsage nicht nur unnötig,
+        // sondern AKTIV SCHÄDLICH: Three.js' Attributes.update (Z53)
+        // `bufferAttribute.usage === DynamicDrawUsage` triggert
+        // `backend.updateAttribute(attribute)` JEDEN Frame, der
+        // `device.queue.writeBuffer(buffer, 0, array, ...)` aufruft —
+        // unabhängig davon ob `bufferAttribute.needsUpdate` true ist. Wenn
+        // der Buffer via Geometry-Dispose destroyed wird, läuft der per-
+        // Frame-writeBuffer auf den toten Buffer → „WriteBuffer ... while
+        // destroyed"-Crash (16384 bytes = 256 instances × 64 bytes Matrix4
+        // = EXAKT unsere Capacity). StaticDrawUsage (Default) triggert
+        // updateAttribute NUR bei version-bump (needsUpdate=true) → einmal
+        // pro Welt-Build, nie mehr → kein Race mehr mit Geometry-Dispose.
+        // Wir setzen needsUpdate=true einmal nach Matrix-Fill, das reicht.
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
         const pos = new THREE.Vector3();
