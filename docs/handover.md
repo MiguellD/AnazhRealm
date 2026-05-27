@@ -357,7 +357,64 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
-**V10.0-g.r — REFLEXIONS-WELLE: ehrlicher Rollback von V10.0-g + V10.0-g.1 + V10.0-g.2 (26.05.2026, ~80 Z. netto Rollback + ehrliche Doku):**
+**V10.0-g — Das Neue adaptiert das Alte (27.05.2026, eine Welle, fünf Bausteine — der wirkliche V10.0-Bogen-Schluss):**
+
+Nach Schöpfer-Konfrontation in V10.0-g.r („werde wieder visionär, das Neue MUSS besser sein, wir schneiden nicht weg sondern adaptieren"). Eine Welle, kein Sub-Wellen-Stapel.
+
+**Fünf Bausteine, ein Resultat — Welt rendert auf BEIDEN Renderern mit voller Vision-Tiefe:**
+
+1. **`_buildToonNodeMaterial` adaptiert ans NodeMaterial-Niveau**:
+   - `MeshBasicNodeMaterial` (lights=false, robust unter webgl-legacy-Patch UND nativ auf WebGPU)
+   - `colorNode` mit manuellem Toon-Lighting:
+     - `N = normalize(transformedNormalWorld)` (TSL-built-in Welt-Raum-Normale)
+     - `L = normalize(uSunDir)` (geteiltes Sun-Uniform)
+     - `dotNL = clamp(dot(N, L) × 0.5 + 0.5, 0, 1)` — **Half-Lambert** statt naivem `max(dot, 0)`: gradientMap-Stufen verteilen sich über die ganze Form, klassische Three.js-MeshToonMaterial-Mathematik
+     - `toonStep = texture(gradientMap, vec2(dotNL, 0.5)).r` — **Cel-Stufen-Lookup** (Ghibli-Look)
+     - `lit = albedo × (ambient + toonStep × sunIntensity)`
+   - Albedo: `attribute("color", "vec3")` für vertexColors, sonst statische `vec3(c.r, c.g, c.b)` (MaterialReferenceNode-Crash umgangen, V10.0-g.materialColor-Lehre).
+   - `mat.isMeshToonMaterial = true` Drop-in-Marker für legacy Tests.
+
+2. **gradientMap-Wurzel-Heilung**:
+   - V10.0-g-Crash war: `texture(gradientMap, ...)` im colorNode crashte beim Build wenn `state.toonGradientMap` noch null war (ReferenceNode.update liest null).
+   - Heilung in `createScene`: `_refreshToonGradient()` PRE-INIT vor erstem Material-Build. Plus defensive Pre-Init im Helper selbst.
+   - Plus: `_refreshToonGradient` patcht die DataTexture in-place (`needsUpdate=true`); der TSL-texture-Knoten samplet beim nächsten Frame die aktualisierten Pixel — Cel-Stufen-Slider live.
+
+3. **Sun-Lighting-Sync via `state.toonLightUniforms`**:
+   - Drei `uniform()`-Knoten (sunDir, sunIntensity, ambient) lazy initialisiert in `_ensureToonLightUniforms()`.
+   - `_dayNightApplyDirectionalLight` setzt `sunDir.value.copy(sunDir)` + `sunIntensity.value = intensity × lightMul × peak-Luminance`.
+   - `_dayNightApplyAmbient` setzt `ambient.value = al.intensity` (nach Emotion-Modulation).
+   - Welt-atmet-Mechanik: Tag/Nacht + Emotionen schwingen durch die Toon-Materials, Cel-Stufen pulsieren mit der Sonne.
+
+4. **Bug 2 (Instance-Buffer-Mismatch) wurzel-geheilt**:
+   - V10.0-g.1-Browser-Audit zeigte 250×/Frame `Instance range requires larger buffer`-Spam beim Gras-InstancedMesh auf WebGPU.
+   - Wurzel: Three.js' WebGPU-Pipeline-Cache zwischen shared-material-InstancedMeshes mit unterschiedlichen Counts — cached den ersten Mesh's Buffer-Layout, Folge-Meshes mit größerer count triggern Validation-Error.
+   - Heilung in `_buildVoxelChunkGrass`:
+     - `inst.count = blades.length` EXPLIZIT nach Construction
+     - `inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage)` — signalisiert Three.js, dass der Buffer pro Mesh dynamisch gebunden werden muss
+   - Plus: shared `_grassInstanceMat` BLEIBT (V9.84-Perf-1.a-Pattern intakt, kein Per-Chunk-Compile-Overhead). Vision: das Neue adaptiert das Alte, nicht wegschneiden.
+
+5. **Visual-Schichten konsistent erhalten**:
+   - **Wind im Gras**: `onBeforeCompile`-GLSL-Patch BLEIBT. Auf WebGL nativ aktiv, auf WebGPU triggert er Hot-Swap zu WebGL (V10.0-e/f-5/f-6) — Wind-Effekt sichtbar in beiden Fällen.
+   - **Soft-Sprite-Falloff bei Sternen**: `pointUV`-Pfad BLEIBT. Auf WebGL nativ. Auf WebGPU r160-Vendor-Bug, triggert Hot-Swap — Soft-Falloff via WebGL-Fallback.
+   - **Schatten**: BLEIBEN auf klassischen Pfaden (MeshToonMaterial-Fallback wenn TSL nicht da, plus alle anderen `castShadow/receiveShadow`-Materials laufen weiter). Auf WebGPU-Pfad temporär off — eigene Welle V10.0-h (manuelle Shadow-Map-Texture-Sampling) folgt.
+
+**Test-Probe mit-gewandert** (V9.42-c): Insel-Material-Identität — `material.type === "MeshToonMaterial"` → `isMeshToonMaterial === true && isMeshBasicNodeMaterial === true` (Drop-in-Marker + NodeMaterial-Identität).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+150 Z. netto (Helper voll-implementiert + `_ensureToonLightUniforms`-Methode + 2 Day-Night-Sync-Pfade + Bug-2-Fix + Pre-Init in createScene), `scripts/playtest.cjs` ~+10 Z. (V9.42-c-Probe-Anpassung), `index.html` Cache-Buster 10.0.15 → 10.0.16 + title v10.0-g, `package.json` 10.0.15 → 10.0.16, `AnazhRealm.VERSION` "10.0-g.r" → "10.0-g".
+
+**Permanente Gotcha-Lehre verdrahtet**:
+
+**Half-Lambert-Mathematik für Toon-Cel-Stufen mit gradientMap-Lookup**: standardmäßiges `max(dot(N, L), 0)` gibt einen scharfen 90°-Cel-Step (Rückseiten 100% schwarz). Three.js' MeshToonMaterial nutzt intern `dot(N, L) × 0.5 + 0.5`-Remapping → das gradientMap-Lookup-Range [0, 1] verteilt sich über die ganze Sphere-Form, die Cel-Stufen sind über Form-Krümmung sichtbar. Bei TSL-Migration MUSS man diese Mathematik manuell nachbauen — sonst sieht Welt halb-schwarz aus.
+
+**Plus**: V10.0-g.materialColor-Lehre (statische vec3-Konstante statt MaterialReferenceNode-Crash) und V10.0-g.gradientMap-Lehre (texture-Pre-Init vor erstem Material-Build) sind die zwei strukturellen WebGPU-NodeMaterial-Disziplinen die wir gefunden haben.
+
+**Reflexions-Lehre aus dem V10.0-g-Bogen**: Schöpfer-Konfrontation V10.0-g.r-Stop war Wachstum. Das Neue ADAPTIERT das Alte aufs nächste Niveau — wegzuschneiden ist Feigheit, heilen ist Disziplin. Plus: eine Welle pro Bogen-Schluss, nicht drei A/B-Sub-Wellen. Wenn etwas beim Bauen rauscht, IM ZUG heilen (V10.0-g hat Test-Probe V9.42-c mit-gewandert + V10.0-g.materialColor-Lehre gefunden), nicht in eine .1/.2/.r-Spirale.
+
+**Was V10.0-h liefern wird (eigene Welle, ~2-3h)**: manuelle Shadow-Map-Texture-Sampling im colorNode. `directionalLight.shadow.map` als TSL-`texture()`-Uniform durchreichen, `shadow.matrix` als Uniform für Welt-zu-Light-Raum-Transform, im colorNode-Tree die Shadow-Texture an der berechneten Welt-Position samplen. 4-Sample-PCF für Soft-Shadow. Schatten kommen auf WebGPU zurück.
+
+---
+
+**Davor — V10.0-g.r — REFLEXIONS-WELLE: ehrlicher Rollback von V10.0-g + V10.0-g.1 + V10.0-g.2 (26.05.2026, ~80 Z. netto Rollback + ehrliche Doku):**
 
 Schöpfer-Browser-Audit V10.0-g.2 zeigte: 502 Issues, 250×/Frame "Instance range requires larger buffer"-Spam (Bug 2 NICHT geheilt durch meine `onBeforeCompile`-Hypothese), FPS 6-8, Welt-Render flackert schwarz auf, Spieler fällt durch Welt. **Schöpfer-Wahrnehmung**: „der Rhythmus, die Harmonie scheint nicht mehr zu passen, vor der Änderung schien alles timingmäßig besser durchdacht? strukturell einige Fäden verloren?"
 

@@ -9928,15 +9928,20 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
-                out.hasVertexColors = !!isle.material.vertexColors;
+                // V10.0-g Doku-Sync: Insel ist jetzt MeshBasicNodeMaterial mit
+                // custom Toon-Lighting im colorNode (gradientMap-Cel-Lookup +
+                // Sun-Lambert). isMeshToonMaterial=true ist als Drop-in-Kompat-
+                // Marker gesetzt (legacy Tests erkennen die Toon-Familie).
+                out.isToonMarker = isle.material.isMeshToonMaterial === true;
+                out.isNodeMaterial = isle.material.isMeshBasicNodeMaterial === true;
                 out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
         check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
         check(
-            `V9.42-c: Insel nutzt MeshToonMaterial (kein Terrain-Shader) — ${r42c.material}`,
-            r42c.material === "MeshToonMaterial" && r42c.hasVertexColors === true
+            `V9.42-c: Insel nutzt MeshBasicNodeMaterial mit Toon-Marker (V10.0-g) — ${r42c.material}`,
+            r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
         check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);

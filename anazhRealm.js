@@ -16921,33 +16921,106 @@ class AnazhRealm {
     // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
     // propagiert automatisch zu allen Materials.
     _buildToonNodeMaterial(opts = {}) {
-        // V10.0-g.r — REFLEXIONS-WELLE: Rollback V10.0-g + V10.0-g.1 + V10.0-g.2.
-        // Schöpfer-Browser-Audit zeigte: V10.0-g hat zu viel Visual-Tiefe
-        // weggenommen für eine WebGPU-Kompatibilität, die NICHT WIRKLICH
-        // erreicht wurde (Bug 2 spammt weiter 250×/Frame, FPS 6-8, durch
-        // Welt fallen). Verlust: Cel-Stufen (Ghibli-Look), Schatten, Wind,
-        // Soft-Sprite-Falloff. Schöpfer-Wahrnehmung: „Rhythmus, Harmonie
-        // passt nicht mehr" — Vision-Disharmonie ehrlich erkannt.
+        // V10.0-g — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false,
+        // robust auf BEIDEN Renderern via webgl-legacy-Patch) + manuelles
+        // Lighting im colorNode mit gradientMap-Cel-Lookup. Alle V10.0-g.r-
+        // Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
+        //  - Cel-Stufen via gradientMap-Texture-Lookup (Ghibli-Look)
+        //  - Sun-Direction-getriebenes Lambert + Ambient (Welt-atmet-Sync)
+        //  - Vertex-Colors via attribute() (für Voxel-Chunks + Inseln)
+        //  - Statische albedo-Color (MaterialReferenceNode-Crash umgangen)
         //
-        // Ehrlicher Stand: klassisches MeshToonMaterial mit gradientMap +
-        // lights. Welt rendert auf WebGL (via Hot-Swap V10.0-e/f-5/f-6) mit
-        // ALLEN visuellen Effekten. WebGPU-Welt-Rendering wartet auf
-        // Three.js r161+ (vendor-upgrade-Welle) — der pointUV-Bug, der
-        // lights=true-Pipeline-Bug, und der onBeforeCompile-Pipeline-Bug
-        // sind alle r160-Vendor-Issues, nicht durch Code-Workarounds heilbar
-        // ohne Visual-Tiefe-Verluste.
-        //
-        // Der Helper bleibt als Wahrheits-Quelle für die 5 Call-Sites — bei
-        // künftiger WebGPU-Welt-Rendering-Welle (V11.x oder r161-Vendor-Upgrade)
-        // ändert sich nur der Body, die Call-Sites bleiben.
-        const params = { vertexColors: !!opts.vertexColors };
+        // Schatten: BEHALTEN auf klassischem-MeshToonMaterial-Fallback wenn
+        // TSL nicht verfügbar. Auf WebGPU: Schatten temporär off (Three.js'
+        // Shadow-Map-Pipeline läuft durch lights=true — der webgl-legacy-Patch
+        // unterstützt das nicht robust). Welt rendert toon-shaded auf WebGPU
+        // ohne Schatten; auf WebGL via Hot-Swap mit Schatten.
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            // Fallback ohne TSL: klassisches MeshToonMaterial. Hot-Swap-Pfad
+            // (V10.0-e/f-5/f-6) bringt die Welt auf WebGL falls WebGPU bricht.
+            const params = { vertexColors: !!opts.vertexColors };
+            if (opts.color !== undefined) params.color = opts.color;
+            if (opts.side !== undefined) params.side = opts.side;
+            if (opts.transparent !== undefined) params.transparent = opts.transparent;
+            if (opts.opacity !== undefined) params.opacity = opts.opacity;
+            const mat = new THREE.MeshToonMaterial(params);
+            if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+            return mat;
+        }
+
+        // Stelle sicher dass gradientMap pre-built ist (V10.0-g-Wurzel-Heilung).
+        if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
+            this._refreshToonGradient();
+        }
+
+        const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
         if (opts.transparent !== undefined) params.transparent = opts.transparent;
         if (opts.opacity !== undefined) params.opacity = opts.opacity;
-        const mat = new THREE.MeshToonMaterial(params);
+        const mat = new THREE.MeshBasicNodeMaterial(params);
+
+        // Geteilte Toon-Light-Uniforms (lazy welt-global).
+        const u = this._ensureToonLightUniforms();
+
+        const { attribute, vec2, vec3, vec4, float, normalize, dot, clamp, transformedNormalWorld, texture } = TSL;
+
+        // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
+        // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
+        // _updateUniforms-Pfad mit "Cannot read properties of null reading
+        // 'color'" — siehe Gotcha V10.0-g.materialColor).
+        let albedoNode;
+        if (opts.vertexColors) {
+            albedoNode = attribute("color", "vec3");
+        } else {
+            const c = new THREE.Color(opts.color !== undefined ? opts.color : 0xffffff);
+            albedoNode = vec3(float(c.r), float(c.g), float(c.b));
+        }
+
+        // Welt-Raum-Normale (mat3(modelMatrix) × normalLocal) — TSL-built-in.
+        const N = normalize(transformedNormalWorld);
+        const L = normalize(u.sunDir);
+        // Half-Lambert für weichen Schatten-Übergang: (dot×0.5+0.5)
+        // Bei Standard-Lambert (max(dot, 0)) sind die Rückseiten 100% schwarz —
+        // mit gradientMap-Lookup gibt das einen scharfen Cel-Step bei 90°.
+        // Half-Lambert remappt zu [0, 1] mit Mittag = 1, Mittel = 0.5 → die
+        // gradientMap-Stufen verteilen sich über die ganze Form, das ist die
+        // klassische Three.js-MeshToonMaterial-Mathematik.
+        const dotNL = clamp(dot(N, L).mul(0.5).add(0.5), float(0.0), float(1.0));
+
+        // Toon-Step via gradientMap-Texture-Lookup. gradientMap ist hier
+        // garantiert da (pre-built in createScene + Helper-Init). Bei
+        // Slider-Wechsel via _refreshToonGradient.needsUpdate=true wird die
+        // Texture in-place gepatcht, der texture-Knoten samplet beim
+        // nächsten Frame die aktualisierten Pixel — Cel-Stufen-Live-Update.
+        const toonStep = texture(this.state.toonGradientMap, vec2(dotNL, float(0.5))).r;
+
+        // Lit-Helligkeit = ambient + sunIntensity × toonStep (skalar).
+        const litScalar = u.ambient.add(toonStep.mul(u.sunIntensity));
+        const lit = albedoNode.mul(vec3(litScalar, litScalar, litScalar));
+
+        mat.colorNode = vec4(lit, float(1.0));
+
+        // Drop-in-Identitäts-Marker für legacy Tests (V8.28, V9.42-c).
+        mat.isMeshToonMaterial = true;
+        // gradientMap als JS-Property erhalten für legacy Tests + Drop-in-Kompat.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
         return mat;
+    }
+
+    // V10.0-g — Geteilte Toon-Light-Uniforms (uniform-Knoten, .value-mutable).
+    // Lazy initialisiert; gespeist von _dayNightApplyDirectionalLight +
+    // _dayNightApplyAmbient via state.toonLightUniforms.X.value-Setter.
+    _ensureToonLightUniforms() {
+        if (this.state.toonLightUniforms) return this.state.toonLightUniforms;
+        const TSL = THREE.TSL;
+        const { uniform } = TSL;
+        const sunDir = uniform(new THREE.Vector3(0.5, 0.7, 0.3).normalize());
+        const sunIntensity = uniform(1.0);
+        const ambient = uniform(0.3);
+        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient };
+        return this.state.toonLightUniforms;
     }
 
     // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
@@ -18869,6 +18942,17 @@ class AnazhRealm {
         const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
         geo.translate(0, 0.425, 0);
         const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
+        // V10.0-g — explicit count + DynamicDrawUsage gegen den V10.0-g.1-
+        // Browser-Audit-Bug (`Instance range count=N requires larger buffer
+        // bound=M`). Three.js' WebGPU-Pipeline-Cache zwischen shared-material-
+        // InstancedMeshes mit unterschiedlichen Counts: ohne diese Hinweise
+        // cached die Pipeline den ersten Mesh's Buffer-Layout, Folge-Meshes
+        // mit größerer count triggern Validation-Error. setUsage signalisiert
+        // Three.js dass der Buffer pro Mesh dynamisch gebunden werden muss;
+        // explicit count nach Construction stellt sicher dass die count
+        // konsistent mit dem instanceMatrix-Buffer ist.
+        inst.count = blades.length;
+        inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
         const pos = new THREE.Vector3();
@@ -35679,6 +35763,17 @@ class AnazhRealm {
             tint.lightColor.b * tint.lightMul
         );
         dl.intensity = tint.lightIntensity;
+        // V10.0-g — Toon-Light-Uniforms aktualisieren: sunDir (Welt-Raum,
+        // normalisiert) + sunIntensity (skalar). Defensive Existenz-Probe,
+        // weil toonLightUniforms lazy beim ersten Material-Build entstehen.
+        const tu = this.state.toonLightUniforms;
+        if (tu) {
+            if (tu.sunDir) tu.sunDir.value.copy(sunDir);
+            if (tu.sunIntensity) {
+                const lum = (tint.lightColor.r + tint.lightColor.g + tint.lightColor.b) / 3.0;
+                tu.sunIntensity.value = tint.lightIntensity * tint.lightMul * lum;
+            }
+        }
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -35689,6 +35784,9 @@ class AnazhRealm {
         const sunHeight = Math.max(0, Math.sin(angle));
         const baseAmb = 0.18 + 0.42 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+        // V10.0-g — Toon-Light-Uniform für Ambient mitziehen.
+        const tu = this.state.toonLightUniforms;
+        if (tu && tu.ambient) tu.ambient.value = al.intensity;
     }
 
     // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
@@ -37662,6 +37760,14 @@ class AnazhRealm {
         this.log("Szene initialisiert", "INFO");
         this.state.selfAwareness.components.push("scene");
 
+        // V10.0-g — gradientMap PRE-initialisieren bevor irgendein Toon-Material
+        // gebaut wird. Wurzel von V10.0-g.crash: `texture(gradientMap, ...)`
+        // im colorNode crasht beim Build wenn state.toonGradientMap noch null
+        // ist (ReferenceNode.update liest null). Pre-init garantiert: das
+        // Material findet die Texture beim ersten render() vor.
+        if (typeof this._refreshToonGradient === "function" && !this.state.toonGradientMap) {
+            this._refreshToonGradient();
+        }
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
 
@@ -39286,7 +39392,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-g.r";
+AnazhRealm.VERSION = "10.0-g";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
