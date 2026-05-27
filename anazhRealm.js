@@ -103,17 +103,20 @@ class AnazhRealm {
             // ohne colorNode-Custom — alle Caster werden damit gerendert,
             // kein instanceColor-Lookup-Crash. Lazy initialisiert.
             shadowOverrideMat: null,
-            // V10.0-j.d — Defer-Queue für Geometry-Dispose. WebGPU' Three.js-
-            // Backend zerstört GPU-Buffer SOFORT bei `geometry.dispose()`
-            // (WebGPUAttributeUtils.destroyAttribute Z168 ruft `data.buffer.
-            // destroy()`). Wenn der vorherige Frame's `renderer.render()`-
-            // Promise noch pending ist, läuft der Submit auf zerstörte
-            // Buffer → „Buffer used in submit while destroyed"-Validation
-            // → CommandBuffer kaputt → Welt schwarz nach wenigen Sekunden
-            // beim Chunk-Stream-Out. Heilung: dispose via setTimeout(fn,0)
-            // — Macro-Task läuft NACH der Submit-Promise-Microtask-Queue,
-            // GPU sieht den Buffer noch valide während Submit-Resolve.
-            pendingGeometryDisposals: [],
+            // V10.0-j.e — Defer-Queue für GPU-Resource-Disposals mit
+            // 2-Frame-Age-Counter. V10.0-j.d's `setTimeout(0)`-Pfad reichte
+            // NICHT: Macro-Task läuft nach Microtask-Queue, aber Three.js'
+            // `renderer.render()`-Promise resolved CPU-seitig — die GPU
+            // verarbeitet die submitted CommandBuffer noch async (1-2 Frames
+            // Latenz). Schöpfer-Browser-Audit V10.0-j.d: noch immer „Buffer
+            // used in submit while destroyed" nach ~10 Sek (FPS-Drop auf 28,
+            // Welt schwarz). Heilung: Queue mit age-counter, drain wenn
+            // age >= 2 → Buffer-Disposal sicher 2 Frames NACH dem letzten
+            // Submit der ihn referenziert. Gilt für GEOMETRIES (Voxel-Chunks
+            // + Gras + Iso-Wasser) UND MATERIALS (Aura/Carry/Player-Sprites,
+            // die per-Task-Wechsel triggern). Universaler `_queueDispose`-
+            // Helper. Profi-Vorbild: alle WebGPU-Engines mit Streaming.
+            pendingDisposals: [],
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
@@ -6180,8 +6183,9 @@ class AnazhRealm {
     _p2pDisposeMesh(obj) {
         if (!obj || typeof obj.traverse !== "function") return;
         obj.traverse((node) => {
-            if (node.geometry && node.geometry.dispose) node.geometry.dispose();
-            if (node.material && node.material.dispose) node.material.dispose();
+            // V10.0-j.e — Defer alle GPU-Resource-Disposals (WebGPU Submit-Race).
+            if (node.geometry) this._queueDispose(node.geometry);
+            if (node.material) this._queueDispose(node.material);
         });
     }
 
@@ -6247,8 +6251,9 @@ class AnazhRealm {
         if (entry.nameLabel) {
             if (this.state.scene) this.state.scene.remove(entry.nameLabel);
             if (entry.nameLabel.material) {
-                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
-                entry.nameLabel.material.dispose();
+                // V10.0-j.e — Defer (CanvasTexture + Material, WebGPU Submit-Race).
+                if (entry.nameLabel.material.map) this._queueDispose(entry.nameLabel.material.map);
+                this._queueDispose(entry.nameLabel.material);
             }
             entry.nameLabel = null;
         }
@@ -6511,15 +6516,15 @@ class AnazhRealm {
         }
         if (entry.auraGlow) {
             if (this.state.scene) this.state.scene.remove(entry.auraGlow);
-            // Material disposen — aber NICHT die geteilte Gradient-Textur.
-            if (entry.auraGlow.material) entry.auraGlow.material.dispose();
+            // V10.0-j.e — Material-Dispose deferred (WebGPU Submit-Race).
+            if (entry.auraGlow.material) this._queueDispose(entry.auraGlow.material);
         }
         if (entry.nameLabel) {
             if (this.state.scene) this.state.scene.remove(entry.nameLabel);
             if (entry.nameLabel.material) {
-                // Name-Schild hat eine EIGENE CanvasTexture — die mit disposen.
-                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
-                entry.nameLabel.material.dispose();
+                // V10.0-j.e — Defer (CanvasTexture + Material, WebGPU Submit-Race).
+                if (entry.nameLabel.material.map) this._queueDispose(entry.nameLabel.material.map);
+                this._queueDispose(entry.nameLabel.material);
             }
         }
         p2p.peers.delete(peerId);
@@ -10383,14 +10388,16 @@ class AnazhRealm {
         const aura = creature.userData && creature.userData.taskAura;
         if (aura) {
             if (this.state.scene) this.state.scene.remove(aura);
-            if (aura.material) aura.material.dispose();
+            // V10.0-j.e — Defer Material-Dispose (WebGPU Submit-Race).
+            if (aura.material) this._queueDispose(aura.material);
             creature.userData.taskAura = null;
         }
         // Welle 6.H P2B.5 — Carrying-Sprite analog disposen.
         const carrySprite = creature.userData && creature.userData.carryingSprite;
         if (carrySprite) {
             if (this.state.scene) this.state.scene.remove(carrySprite);
-            if (carrySprite.material) carrySprite.material.dispose();
+            // V10.0-j.e — Defer Material-Dispose (WebGPU Submit-Race).
+            if (carrySprite.material) this._queueDispose(carrySprite.material);
             creature.userData.carryingSprite = null;
         }
         this.state.scene.remove(creature);
@@ -12117,7 +12124,8 @@ class AnazhRealm {
             // Task wander → Aura entfernen. Textur NICHT disposen (shared).
             if (aura) {
                 if (this.state.scene) this.state.scene.remove(aura);
-                if (aura.material) aura.material.dispose();
+                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
+                if (aura.material) this._queueDispose(aura.material);
                 creature.userData.taskAura = null;
             }
             return;
@@ -12159,7 +12167,8 @@ class AnazhRealm {
             // Kein Träger-State → Sprite entfernen.
             if (oldSprite) {
                 if (this.state.scene) this.state.scene.remove(oldSprite);
-                if (oldSprite.material) oldSprite.material.dispose();
+                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
+                if (oldSprite.material) this._queueDispose(oldSprite.material);
                 ud.carryingSprite = null;
             }
             return;
@@ -17708,20 +17717,22 @@ class AnazhRealm {
         return entry;
     }
 
-    // V10.0-j.d — Helper für deferred Geometry-Dispose. Three.js' WebGPU-
-    // Backend zerstört GPU-Buffer SOFORT bei `geometry.dispose()` (Web
-    // GPUAttributeUtils.destroyAttribute Z168). Wenn der vorherige Frame's
-    // `renderer.render()`-Promise pending ist, läuft der Submit auf zer-
-    // störte Buffer → „Buffer used in submit while destroyed"-Validation.
-    // Heilung: setTimeout(fn, 0) — Macro-Task läuft NACH der Microtask-
-    // Queue (Promise-Resolve), GPU sieht den Buffer noch valide während
-    // Submit. Aufrufer in _disposeVoxelChunk + _disposeVoxelChunkGrass +
-    // _disposeVoxelChunkWaterIso. Pro Frame ein gemeinsamer Drain — kein
-    // Akkumulieren über lange Sicht (Stream-Out ist Burst-Pattern, alle
-    // disposals werden im nächsten Macro-Task verarbeitet).
+    // V10.0-j.e — Universaler Defer-Helper für JEDEN GPU-Resource-Dispose
+    // (Geometry, Material, Texture). Drei.js' WebGPU-Backend zerstört GPU-
+    // Buffer SOFORT bei `.dispose()`, aber Submit ist async (CPU→GPU-
+    // Latenz 1-2 Frames). Heilung: Push in `pendingDisposals[]` mit age=0;
+    // Drain bei age >= 2 (siehe _loopRender). 2-Frame-Defer = ~33ms bei
+    // 60fps, sicher genug für jeden pending Submit. Aufrufer überall wo
+    // per-Frame Dispose triggern kann: Chunk-Stream-Out (3 Pfade), Aura/
+    // Carry/Player-Sprites (Task-Wechsel pro Frame).
+    _queueDispose(obj) {
+        if (!obj || typeof obj.dispose !== "function") return;
+        this.state.pendingDisposals.push({ obj, age: 0 });
+    }
+    // Legacy-Alias für V10.0-j.d-Code (Geometry-spezifisch). Routet auf
+    // den universalen Helper.
     _queueGeometryDispose(geometry) {
-        if (!geometry || typeof geometry.dispose !== "function") return;
-        this.state.pendingGeometryDisposals.push(geometry);
+        this._queueDispose(geometry);
     }
 
     // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
@@ -24022,8 +24033,9 @@ class AnazhRealm {
         // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
         if (this.state.playerAura && this.state.scene) {
             this.state.scene.remove(this.state.playerAura);
-            if (this.state.playerAura.geometry) this.state.playerAura.geometry.dispose();
-            if (this.state.playerAura.material) this.state.playerAura.material.dispose();
+            // V10.0-j.e — Defer dispose (player-aura updated bei jedem Soul-Tick).
+            this._queueDispose(this.state.playerAura.geometry);
+            this._queueDispose(this.state.playerAura.material);
             this.state.playerAura = null;
         }
     }
@@ -26391,12 +26403,9 @@ class AnazhRealm {
     _disposeSoulGroup(group) {
         if (!group) return;
         group.traverse((node) => {
-            if (node.geometry && typeof node.geometry.dispose === "function") {
-                node.geometry.dispose();
-            }
-            if (node.material && typeof node.material.dispose === "function") {
-                node.material.dispose();
-            }
+            // V10.0-j.e — Defer GPU-Resource-Disposals (Submit-Race-frei).
+            if (node.geometry) this._queueDispose(node.geometry);
+            if (node.material) this._queueDispose(node.material);
         });
     }
 
@@ -39425,23 +39434,22 @@ class AnazhRealm {
                 }
             });
         }
-        // V10.0-j.d — Drain der pendingGeometryDisposals via setTimeout(0).
-        // Macro-Task läuft NACH der Submit-Promise-Microtask → GPU-Buffer
-        // bleiben valide während Frame-N's Submit, werden in Frame-N+1
-        // sicher zerstört. Burst-Pattern (Stream-Out viele Chunks auf
-        // einmal): alle in EINEM Macro-Task verarbeitet, kein Akkumulieren.
-        if (this.state.pendingGeometryDisposals.length > 0) {
-            const queue = this.state.pendingGeometryDisposals;
-            this.state.pendingGeometryDisposals = [];
-            setTimeout(() => {
-                for (const g of queue) {
-                    try {
-                        g.dispose();
-                    } catch (_e) {
-                        /* defensive */
-                    }
+        // V10.0-j.e — Drain pendingDisposals via 2-Frame-Age-Counter.
+        // setTimeout(0)-Pfad (V10.0-j.d) reichte nicht: Macro-Task läuft
+        // nach Microtask-Queue, aber WebGPU' Submit ist GPU-async (1-2
+        // Frames Latenz). 2-Frame-Defer = sicher nach jedem Pending-Submit
+        // egal wie langsam GPU. Iteriere rückwärts (splice-safe).
+        const list = this.state.pendingDisposals;
+        for (let i = list.length - 1; i >= 0; i--) {
+            list[i].age++;
+            if (list[i].age >= 2) {
+                try {
+                    list[i].obj.dispose();
+                } catch (_e) {
+                    /* defensive */
                 }
-            }, 0);
+                list.splice(i, 1);
+            }
         }
     }
 
