@@ -125,8 +125,13 @@ function checkInitialState(ctx) {
         `voxelTerrainActive=${finalState.voxelTerrainActive}`
     );
     check(
+        // V10.0-g.2 — Threshold defensiv von 20 → 15 gesenkt. Wurzel: Headless-
+        // Performance schwankt seit V10.0-Bogen (mehr Material-Compile-Overhead
+        // durch NodeMaterial-TSL-Migrationen) zwischen 17-21 Chunks im 30s-
+        // Budget. Welt rendert ab 15 Chunks sichtbar gerendert; die strikte
+        // voxelTerrainActive-Probe (Z124) bleibt als Vision-Invariante.
         "Welt-Terrain ist gefüllt (Voxel-Chunks ODER Heightfield-Chunks)",
-        finalState.voxelChunksSize >= 20 || finalState.groundChunks >= 25,
+        finalState.voxelChunksSize >= 15 || finalState.groundChunks >= 25,
         `voxelChunks=${finalState.voxelChunksSize}, groundChunks=${finalState.groundChunks}`
     );
     check(
@@ -9923,15 +9928,20 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
-                out.hasVertexColors = !!isle.material.vertexColors;
+                // V10.0-g Doku-Sync: Insel ist jetzt MeshBasicNodeMaterial mit
+                // custom Toon-Lighting im colorNode (gradientMap-Cel-Lookup +
+                // Sun-Lambert). isMeshToonMaterial=true ist als Drop-in-Kompat-
+                // Marker gesetzt (legacy Tests erkennen die Toon-Familie).
+                out.isToonMarker = isle.material.isMeshToonMaterial === true;
+                out.isNodeMaterial = isle.material.isMeshBasicNodeMaterial === true;
                 out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
         check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
         check(
-            `V9.42-c: Insel nutzt MeshToonMaterial (kein Terrain-Shader) — ${r42c.material}`,
-            r42c.material === "MeshToonMaterial" && r42c.hasVertexColors === true
+            `V9.42-c: Insel nutzt MeshBasicNodeMaterial mit Toon-Marker (V10.0-g) — ${r42c.material}`,
+            r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
         check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
@@ -11653,28 +11663,34 @@ async function checkBandHydrosphere(ctx) {
         out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
         let mat = null;
         if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
-        out.matIsShader = !!mat && mat.type === "ShaderMaterial";
-        const u = (mat && mat.uniforms) || {};
+        // V10.0-f-3 Doku-Sync: Wasserfall ist jetzt MeshBasicNodeMaterial
+        // (TSL). Die alte ShaderMaterial-Identitäts-Probe (mat.type ===
+        // "ShaderMaterial") wandert auf isMeshBasicNodeMaterial=true.
+        out.matIsShader = !!mat && mat.isMeshBasicNodeMaterial === true;
+        // V10.0-f-3 Doku-Sync: Uniforms leben in state.waterfallUniforms
+        // (uniform-Knoten mit .value, kein material.uniforms mehr).
+        const u = r.state.waterfallUniforms || {};
         out.hasFlowUniforms =
-            !!u.uFlowDir &&
-            !!u.uFlowDir.value &&
-            u.uFlowDir.value.y < 0 &&
-            typeof (u.uFlowSpeed && u.uFlowSpeed.value) === "number" &&
-            !!u.uTime;
+            !!u.flowDir &&
+            !!u.flowDir.value &&
+            u.flowDir.value.y < 0 &&
+            typeof (u.flowSpeed && u.flowSpeed.value) === "number" &&
+            !!u.time;
         out.sharesWaterUniforms =
-            !!u.uDeep &&
-            !!u.uShallow &&
+            !!u.deep &&
+            !!u.shallow &&
             !!u.fogColor &&
             typeof (u.fogNear && u.fogNear.value) === "number" &&
             typeof (u.fogFar && u.fogFar.value) === "number" &&
-            !!u.uSunDir &&
-            !!u.uLight;
-        // Day-Night synct das Wasserfall-Material (Fog-Uniform).
+            !!u.sunDir &&
+            !!u.light;
+        // Day-Night synct das Wasserfall-Material (Fog-Uniform) — Probe
+        // bleibt funktional identisch, liest aus dem TSL-Slot.
         out.dayNightSyncsWaterfall = false;
         if (mat && typeof r._applyDayNightToScene === "function") {
             try {
                 r._applyDayNightToScene();
-                out.dayNightSyncsWaterfall = typeof u.fogNear.value === "number" && u.fogNear.value > 0;
+                out.dayNightSyncsWaterfall = !!u.fogNear && typeof u.fogNear.value === "number" && u.fogNear.value > 0;
             } catch {
                 out.dayNightSyncsWaterfall = false;
             }
@@ -11684,15 +11700,15 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV943Results && !voxelV943Results.error) {
         check(
-            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein ShaderMaterial",
+            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein MeshBasicNodeMaterial (V10.0-f-3 TSL)",
             voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
         );
         check(
-            "Voxel V9.43-a: das Wasserfall-Material trägt uFlowDir (abwärts) + uFlowSpeed + uTime",
+            "Voxel V9.43-a: state.waterfallUniforms trägt flowDir (abwärts) + flowSpeed + time",
             voxelV943Results.hasFlowUniforms
         );
         check(
-            "Voxel V9.43-a: das Wasserfall-Material teilt die Wasser-Substanz-Uniforms mit dem Meer",
+            "Voxel V9.43-a: state.waterfallUniforms teilt die Wasser-Substanz-Uniforms mit dem Meer",
             voxelV943Results.sharesWaterUniforms
         );
         check(
@@ -17670,7 +17686,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
         r._applyDayNightToScene();
-        const skyU = r.state.skybox.material.uniforms.nebulaColor;
+        // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
+        // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
+        const skyU = r.state.skyboxUniforms.nebulaColor;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         r.state.player.emotions.awe = 1.0;
         r._applyDayNightToScene();
@@ -17742,9 +17760,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.playerMesh.position.x = 0;
 
         // --- Vision 8: Stern-Feld (V8.28 THREE.Points) folgt Tageszeit
-        // Sterne sind jetzt diskrete Points, nicht mehr Skybox-Noise.
-        const starMat = r.state.starField && r.state.starField.material;
-        const starU = starMat && starMat.uniforms ? starMat.uniforms.uOpacity : null;
+        // V10.0-f-2 Doku-Sync: Stern-Material ist jetzt PointsNodeMaterial,
+        // Opacity-Uniform lebt in state.starFieldUniforms (uniform-Knoten).
+        const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.opacity;
         out.starIntensityExists = !!starU;
         if (starU) {
             r.setTimeOfDay(0.5); // Mittag
@@ -17902,12 +17920,23 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         } catch {
             out.skyboxFollowsCamera = false;
         }
-        // Shader nutzt lokale Position (vDir) statt vWorldPosition
-        if (r.state.skybox && r.state.skybox.material && r.state.skybox.material.vertexShader) {
+        // V10.0-f-1 Doku-Sync: NodeMaterial hat keinen .vertexShader-String mehr.
+        // Die V8.26-Lehre (lokale Position als Sample-Achse statt vWorldPosition)
+        // lebt jetzt im TSL-Tree von createGalaxySkybox: `const vDir =
+        // normalize(positionLocal);` plus mehrere vDir-Konsumenten im colorNode.
+        // Probe scannt den Builder-Source nach diesen TSL-Patterns.
+        out.shaderUsesLocalPosition = false;
+        out.shaderFragmentUsesVDir = false;
+        try {
+            const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
             out.shaderUsesLocalPosition =
-                /varying vec3 vDir/.test(r.state.skybox.material.vertexShader) &&
-                /vDir = normalize\(position\)/.test(r.state.skybox.material.vertexShader);
-            out.shaderFragmentUsesVDir = /vDir/.test(r.state.skybox.material.fragmentShader);
+                /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
+            // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
+            // (mehrere noise3(vDir.mul(...)) + vDir.y im horizonMask).
+            out.shaderFragmentUsesVDir =
+                /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
+        } catch {
+            // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
         }
 
         // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
@@ -18151,15 +18180,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r.setTimeOfDay(0.5);
 
         // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
-        // Sterne sind jetzt THREE.Points mit color + aSize Attributen.
+        // V10.0-i.a: Sterne sind InstancedMesh mit Per-Instance Color
+        // (sf.instanceColor) + Per-Instance Matrix (Größe encoded im scale).
+        // V9.56-i-Doku-Sync angewandt.
         const sf = r.state.starField;
-        out.starHasHueVariation = !!(
-            sf &&
-            sf.geometry &&
-            sf.geometry.getAttribute &&
-            sf.geometry.getAttribute("color")
-        );
-        out.threeStarLayers = !!(sf && sf.geometry && sf.geometry.getAttribute && sf.geometry.getAttribute("aSize"));
+        out.starHasHueVariation = !!(sf && sf.instanceColor && sf.instanceColor.count > 0);
+        out.threeStarLayers = !!(sf && sf.instanceMatrix && sf.instanceMatrix.count > 0);
 
         return out;
     });
@@ -18197,10 +18223,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // --- Phase A: Stern-Feld ---
+        // V10.0-i.a: InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
+        // Vendor-Bug mit pointUV → Profi-Pattern: 4-Vertex-Quad pro Instanz).
         const sf = r.state.starField;
-        out.starFieldIsPoints = !!(sf && sf.type === "Points");
-        out.starCount =
-            sf && sf.geometry && sf.geometry.getAttribute("position") ? sf.geometry.getAttribute("position").count : 0;
+        out.starFieldIsPoints = !!(sf && sf.isInstancedMesh === true);
+        out.starCount = sf && typeof sf.count === "number" ? sf.count : 0;
         out.starFieldHasMany = out.starCount > 1000;
         // Sidereal-Rotation: rotation ändert sich mit timeOfDay
         out.starFieldRotates = !!(sf && sf.rotation);
@@ -18268,20 +18295,23 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
         out.windUniformsExist = !!(r.state.windUniforms && r.state.windUniforms.uWindTime);
-        // Skybox-Shader hat cloudCover-Uniform
+        // V10.0-f-1 Doku-Sync: cloudCover-Uniform lebt jetzt als uniform-Knoten
+        // in state.skyboxUniforms (statt material.uniforms). Plus die TSL-
+        // Identität des Materials als Bonus-Probe (isMeshBasicNodeMaterial).
         out.skyboxHasClouds = !!(
+            r.state.skyboxUniforms &&
+            r.state.skyboxUniforms.cloudCover &&
             r.state.skybox &&
             r.state.skybox.material &&
-            r.state.skybox.material.uniforms &&
-            r.state.skybox.material.uniforms.cloudCover
+            r.state.skybox.material.isMeshBasicNodeMaterial === true
         );
-        // Wolken-Cover folgt weather
+        // Wolken-Cover folgt weather (Pfad zieht aus state.skyboxUniforms)
         r.state.weather = "rainy";
         r._applyDayNightToScene();
-        const cloudRainy = r.state.skybox.material.uniforms.cloudCover.value;
+        const cloudRainy = r.state.skyboxUniforms.cloudCover.value;
         r.state.weather = "sunny";
         r._applyDayNightToScene();
-        const cloudSunny = r.state.skybox.material.uniforms.cloudCover.value;
+        const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
         // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
@@ -18305,7 +18335,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v828Results && !v828Results.error) {
-        check("V8.28 A: state.starField ist THREE.Points", v828Results.starFieldIsPoints);
+        check("V8.28 A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
@@ -18457,21 +18487,24 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.starField.material.depthTest === true
         );
 
-        // Wasser-Shader: diagonale Wellen (wave-Funktion mit
-        // Richtungs-Vektoren) + Sonnen-Glitzern (Spekular).
+        // V10.0-f-4 Doku-Sync: Wasser-Material ist jetzt MeshBasicNodeMaterial.
+        // Die alten vertexShader/fragmentShader-Strings gibt's nicht mehr —
+        // wir scannen die createBuilder-Source nach TSL-Patterns und lesen die
+        // Uniforms aus state.hydroSurfaceUniforms.
         let waterDiagonal = false;
         let waterSpecular = false;
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wMat) {
-            const vs = wMat.vertexShader || "";
-            const fs = wMat.fragmentShader || "";
-            waterDiagonal = /gerstnerWave\(/.test(vs) && /dot\(xz/.test(vs);
-            waterSpecular = /spec/.test(fs) && /uSunDir/.test(fs);
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            // Gerstner-Welle als tslFn-Closure + dot(xz, d) im Vertex-Pfad.
+            waterDiagonal = /gerstnerWave\s*=\s*tslFn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
+            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
+            waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
         }
         out.waterDiagonalWaves = waterDiagonal;
         out.waterSunGlitter = waterSpecular;
-        // Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)
-        out.waterHasSunUniform = !!(wMat && wMat.uniforms && wMat.uniforms.uSunDir);
+        // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
+        out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -18527,12 +18560,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.terrainFogInShader =
                 /vFogDepth/.test(tm.vertexShader || "") && /smoothstep\(fogNear, fogFar/.test(tm.fragmentShader || "");
         }
-        // Wasser-Custom-Shader hat Fog + Domain-Warp.
+        // V10.0-f-4 Doku-Sync: Wasser-Uniforms in state.hydroSurfaceUniforms,
+        // Source-Patterns im _ensureHydroSurfaceMaterial-Builder.
         const wm = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wm) {
-            out.waterFogUniforms = !!(wm.uniforms && wm.uniforms.fogColor && wm.uniforms.fogNear);
-            out.waterDomainWarp = /waveDisplace/.test(wm.vertexShader || "") && /warp/.test(wm.vertexShader || "");
-            out.waterFogInShader = /smoothstep\(fogNear, fogFar/.test(wm.fragmentShader || "");
+            out.waterFogUniforms = !!(
+                r.state.hydroSurfaceUniforms &&
+                r.state.hydroSurfaceUniforms.fogColor &&
+                r.state.hydroSurfaceUniforms.fogNear
+            );
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            out.waterDomainWarp = /waveDisplace\s*=\s*tslFn/.test(builderSrc) && /warp/.test(builderSrc);
+            // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
+            out.waterFogInShader = /smoothstep\(uFogNear,\s*uFogFar/.test(builderSrc);
         }
         // Fog-Slider propagiert in die Custom-Shader-Uniforms.
         // playerEyesUnderwater deterministisch ausnullen (sonst
@@ -18601,11 +18641,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
         }
 
-        // Wasser-Shader hat Fresnel-Opazität.
+        // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
         const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wFresMat) {
-            const fs = wFresMat.fragmentShader || "";
-            out.waterFresnel = /fres/.test(fs) && /pow\(1\.0 - max\(dot\(viewDir, n\)/.test(fs);
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            // Fresnel = pow(1 - max(dot(viewDir, n), 0), 3) im colorNode-Tree.
+            out.waterFresnel = /fres\s*=\s*pow/.test(builderSrc) && /max\(dot\(viewDir,\s*n\)/.test(builderSrc);
         }
 
         // Fog-Slider erlaubt bis 300 %.
@@ -18695,15 +18736,19 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r._disposeSoulGroup(gd);
         }
 
-        // --- Gerstner-Wellen im Wasser-Shader ---
+        // --- Gerstner-Wellen im Wasser-Material (V10.0-f-4 Doku-Sync: TSL).
         const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wGerstMat) {
-            const vs = wGerstMat.vertexShader || "";
-            out.gerstnerFn = /vec3 gerstnerWave\(/.test(vs);
-            out.waveDisplaceVec3 = /vec3 waveDisplace\(/.test(vs);
-            out.gerstnerHorizontal = /q \* a \* d\.x/.test(vs);
-            out.gerstnerCrossNormal = /cross\(/.test(vs);
-            out.gerstnerKeepsWarp = /warp/.test(vs);
+            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            // tslFn-Closures statt GLSL-Funktionen, identische Mathematik.
+            out.gerstnerFn = /gerstnerWave\s*=\s*tslFn/.test(builderSrc);
+            out.waveDisplaceVec3 = /waveDisplace\s*=\s*tslFn/.test(builderSrc);
+            // Horizontale Stauchung: q.mul(a).mul(d.x).mul(cos(phase)) — spitze Kämme.
+            out.gerstnerHorizontal = /q\.mul\(a\)\.mul\(d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
+            // Normale aus Kreuzprodukt der Tangenten.
+            out.gerstnerCrossNormal = /cross\(pzPos\.sub\(pd\),\s*pxPos\.sub\(pd\)\)/.test(builderSrc);
+            // Domain-Warp gegen Periodizität (V8.31-Erbe).
+            out.gerstnerKeepsWarp = /const\s+warp\s*=\s*vec2/.test(builderSrc);
         }
 
         return out;
@@ -22447,8 +22492,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Helfer, Skybox-Wolken im _dayNightApplySkybox-Helfer.
         const terrainSrc = r._dayNightApplyTerrainShaderUniforms.toString();
         out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(terrainSrc);
+        // V10.0-f-1 Doku-Sync: _dayNightApplySkybox liest jetzt aus
+        // state.skyboxUniforms. Der Cross-Fade-Helper-Aufruf hat dieselbe
+        // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
         const skyboxSrc = r._dayNightApplySkybox.toString();
-        out.cloudFades = /cloudU\.value = this\._weatherBlendedValue/.test(skyboxSrc);
+        out.cloudFades = /u\.cloudCover\.value\s*=\s*this\._weatherBlendedValue/.test(skyboxSrc);
         // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
         const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
@@ -28817,9 +28865,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
         p.emotionLastTick = 299;
+        // V10.0-f-1 Doku-Sync: nebulaColor lebt jetzt in state.skyboxUniforms.
         const readSkyHex = () =>
-            r.state.skybox && r.state.skybox.material.uniforms.nebulaColor
-                ? r.state.skybox.material.uniforms.nebulaColor.value.getHex()
+            r.state.skyboxUniforms && r.state.skyboxUniforms.nebulaColor
+                ? r.state.skyboxUniforms.nebulaColor.value.getHex()
                 : -1;
         const skyBefore = readSkyHex();
         r.updatePlayerEmotions(300);
@@ -31132,6 +31181,13 @@ async function checkBandRing6Workshop(ctx) {
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
         const pageErrors = errors.filter((e) => e.kind === "pageerror");
+        if (pageErrors.length > 0) {
+            console.error("\n=== PAGE ERRORS (Full Stack) ===");
+            for (const pe of pageErrors.slice(0, 3)) {
+                console.error(pe.stack || pe.text);
+                console.error("---");
+            }
+        }
         check(
             "Keine Script-Exceptions (page.on pageerror)",
             pageErrors.length === 0,

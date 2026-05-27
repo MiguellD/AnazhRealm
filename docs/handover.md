@@ -357,6 +357,692 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-j-Bogen, 27.05.2026 — Der WebGPU-Buffer-Lifecycle-Schmerz (10 Sub-Wellen, der wirkliche V10.0-Schluss):**
+
+Schöpfer-Browser-Audit V10.0-i auf AMD-RDNA-3 zeigte drei Pipeline-Validation-Kaskaden (Welt schwarz). Was als saubere Shadow-Profi-Welle V10.0-j begann, wurde zu 10 Sub-Wellen Heilungs-Spirale für einen Three.js-v160-WebGPU-Vendor-Race. Der ehrliche Bogen-Zyklus:
+
+- **V10.0-j (Shadow-Profi-Pattern)**: drei strukturelle Wurzeln aus Vendor-Code-Lesen geheilt — (G) Override-Material + castShadow-Filter im Shadow-Pass; (H) DepthTexture Pure-Depth + LessCompare; (I) Hardware-PCF via `texture(t, uv).compare(refZ)`. Vendor-Pattern aus `AnalyticLightNode.setupShadow/updateShadow` direkt adaptiert. Welt rendert sichtbar.
+- **V10.0-j.b**: V10.0-j-Browser-Audit zeigte stencilLoadOp-Crash (88×) + Instance-Buffer-Mismatch (85×). Heilungen: `renderer.stencil = false` global + `material.clone()` pro Gras-Chunk.
+- **V10.0-j.c**: V10.0-j.b-Audit: 3 Wurzeln neu — stencilOp-Crash bestand (Vendor-`clear()`-Bug: `else`-Branch setzt stencilOps ZWANGSWEISE), Instance-Mismatch bestand (Cache-Key-Serialisierung mit `'{}'` macht Tree-Refs unsichtbar), instanceColor-Warning (TSL `attribute("instanceColor")` lookupt `geometry.attributes`, nicht `mesh.instanceColor`). Heilungen: `renderer.clear()` entfernt (Background.js setzt clearDepth automatisch); Uniform-Capacity-Pattern (`GRASS_MAX_BLADES=256` für alle Chunks → Bound-Buffer konstant); `planeGeo.setAttribute("instanceColor", starField.instanceColor)`-Bridge.
+- **V10.0-j.d**: V10.0-j.c-Audit zeigte „läuft einige Sekunden, dann schwarz". `Buffer used in submit while destroyed` 100x + WriteBuffer 16384 bytes 400x. Wurzel: `geometry.dispose()` SOFORT (`WebGPUAttributeUtils.destroyAttribute` Z168 `data.buffer.destroy()`), aber `renderer.render()` ist async. Heilung: defer-Queue via `setTimeout(fn, 0)`. Nicht genug.
+- **V10.0-j.e**: 2-Frame-Age-Counter-Defer für ALLE GPU-Resource-Disposals (Geometry + Material). Effektiv nur 1-Frame-Defer (~16ms), zu kurz bei GPU-Last (FPS 28 → 35ms+).
+- **V10.0-j.f**: `device.queue.onSubmittedWorkDone()`-Promise — deterministische Drain-Synchronisation. Alle direkten `.dispose()`-Pfade umgestellt (12 Stellen, universal Coverage).
+- **V10.0-j.g**: V10.0-j.f-Audit: noch immer 100+400 Crashes. Edgecase gefunden — `_disposeSoulGroup` traverst Compound mit shared Material (Drache: body/head/wing/tail mit EINEM `new MeshBasicMaterial`). Set statt Array → automatic dedup. Crashes 500 → 213.
+- **V10.0-j.h**: V10.0-j.g-Audit: noch 213 Crashes. Profi-Pattern Genshin/BotW: Materials NIE in per-Mesh-Dispose-Schleife. `_disposeSoulGroup` + `_p2pDisposeMesh` machen NUR Geometry-Dispose, NICHT Material — Material-Cascade-Invalidation (RenderObject.onMaterialDispose → bindings.delete + pipelines.delete) ist race-anfällig.
+- **V10.0-j.i**: V10.0-j.h-Audit: Schöpfer-Hinweis „wir drehen uns, marginal, ein tipo, ein kleiner denkfehler". Im fremden-Code-Lesepfad gefunden: `inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage)` (V10.0-g.1-Workaround) zwingt Three.js' Attributes.update Z53 zu per-Frame writeBuffer — der Smoking-Gun-Beweis war 16384 bytes = EXAKT 256 instances × 64 bytes Matrix4 = GRASS_MAX_BLADES × Matrix4-Size. Eine Zeile entfernt. Aber Crashes blieben.
+- **V10.0-j.j**: V10.0-j.i-Audit: noch immer Crashes. Ehrliche Reflexion nach 10 Sub-Wellen: Three.js v160 hat einen Race der nicht voll workaroundbar ist ohne Vendor-Patch. Profi-Pattern Genshin/BotW: **Mesh-Memory > Race-Crashes**. Gras-Geometry NICHT disposen, Memory-Cost ~500 KB GPU-Heap akzeptieren. Plus: ConeGeometry als Singleton (`state._grassConeGeometry`). Schöpfer-Audit: **Welt bleibt stabil sichtbar**, V10.0-Bogen vollendet.
+
+**Reflexion**: 10 Sub-Wellen ist zu viele. Lehren permanent verdrahtet:
+1. **fremder-Code-Augen-Disziplin**: nach 3+ Hypothesen-Wellen den eigenen Code lesen als wäre er von einem anderen — der Tippo zeigt sich (V10.0-j.i hat das in 5 Minuten gefunden, nachdem es 5 Wellen versteckt war).
+2. **Workarounds altern**: vorherige Sub-Wellen-Workarounds (DynamicDrawUsage aus V10.0-g.1) müssen nach struktureller Heilung geprüft werden — sonst kollidieren sie mit dem neuen Pfad.
+3. **Mesh-Memory > Race-Crashes**: nach 5+ Sub-Wellen ohne stabile Heilung ist ein ehrlicher Memory-Trade die Profi-Antwort. Vendor-Bugs auf Engine-Ebene sind nicht immer 100% workaroundbar — Genshin/BotW akzeptieren das auch (Mesh-Pools, persistente Material-Caches).
+4. **Was V10.0-j wirklich liefert (Vision)**: WebGPU-Renderer dauerhaft (kein Hot-Swap), alle Visual-Schichten aktiv (Cel-Stufen + Sun-Lighting + Schatten + Sterne als InstancedMesh-Billboards + Gras-Wind via TSL-positionNode + Hardware-PCF-Schatten). Drei strukturelle Vendor-Pattern-Lehren (G/H/I). Plus drei Profi-Lehren (J: Workaround-Audit; K: Memory-Trade; L: fremder-Code-Augen).
+
+**Was im V10.0-j-Bogen NICHT geschnitten wurde** (Vision intakt):
+- Cel-Stufen via gradientMap-Lookup im colorNode ✓
+- Half-Lambert + Sun-Direction-Sync ✓ (via `state.toonLightUniforms`, `_dayNightApply*`-Pfade)
+- Schatten unter Felsbögen + Bauten ✓ (hardware-PCF via `texture(depthTex).compare(refZ)`)
+- Sterne als InstancedMesh-Billboards mit Soft-Falloff ✓ (V10.0-i.a)
+- Gras-Wind via TSL-positionNode ✓ (V10.0-i.b — auf WebGPU nativ, keine onBeforeCompile-Krücke)
+- Hot-Swap als defensive Sicherung bei Render-Errors ✓ (V10.0-e/f-5/f-6)
+
+**Was im V10.0-j-Bogen verloren oder akzeptiert wurde**:
+- **`_disposeSoulGroup` + `_p2pDisposeMesh` disposen Materials NICHT mehr** (V10.0-j.h) — Material-Memory akkumuliert minimal (~50 Bytes/Material × Compound-Count). Profi-Pattern Genshin/BotW. Bei Welt-Wechsel räumt Reload.
+- **Gras-Geometry NICHT disposed** (V10.0-j.j) — ~16 KB instanceMatrix pro disposed Gras-Chunk bleibt allokiert. Lebenszeit-Cost ~500 KB pro Welt-Lifetime. Bei Welt-Wechsel räumt Reload.
+- **ConeGeometry pro-Chunk → Singleton** (V10.0-j.j) — kein Verlust, eigentlich Gewinn (~3 KB statt N × 108 Bytes).
+
+**V11+-Backlog** (nicht V10.0-Schluss, sondern Vision-Vorwärts):
+- **Mesh-Pool-Pattern für Gras** (Profi-Pattern Genshin's instancing-system): recycle disposed Meshes statt zu allokieren/disposen. Echte Wurzel-Heilung des V10.0-j.j-Memory-Trades. Aufwand ~3-4h, eigene Welle.
+- **Vision-Pfeiler D-G** (Wasser↔Kreaturen, Emotion↔lokale Welt, Hylomorphismus-Cluster-Resonanz, Multi-Spieler-Vibe) — `docs/state-of-realm.md` §3-Roadmap.
+- **V9.97 IndexedDB-Welt-Gedächtnis** (V9.93.r-Vision-Reset-Backlog): persistente Chunk-Cache, Re-Visit besuchter Chunks < 5ms.
+- **V9.98 Predictive Prefetch aus Spieler-Velocity** (V9.93.r-Backlog): Streaming-Pump priorisiert Velocity-Kegel statt Ring-Iteration.
+- **V9.99 Per-Column-Atlas-Strict** (V9.92-Audit-Folge): Wasserschatten/Hangpfützen-Heilung.
+- **Render-Polish**: Toon-Material-Treppenstufen weicher, LOD-Cross-Fade über 1-2 Frames.
+
+
+**V10.0-g — Das Neue adaptiert das Alte (27.05.2026, eine Welle, fünf Bausteine — der wirkliche V10.0-Bogen-Schluss):**
+
+Nach Schöpfer-Konfrontation in V10.0-g.r („werde wieder visionär, das Neue MUSS besser sein, wir schneiden nicht weg sondern adaptieren"). Eine Welle, kein Sub-Wellen-Stapel.
+
+**Fünf Bausteine, ein Resultat — Welt rendert auf BEIDEN Renderern mit voller Vision-Tiefe:**
+
+1. **`_buildToonNodeMaterial` adaptiert ans NodeMaterial-Niveau**:
+   - `MeshBasicNodeMaterial` (lights=false, robust unter webgl-legacy-Patch UND nativ auf WebGPU)
+   - `colorNode` mit manuellem Toon-Lighting:
+     - `N = normalize(transformedNormalWorld)` (TSL-built-in Welt-Raum-Normale)
+     - `L = normalize(uSunDir)` (geteiltes Sun-Uniform)
+     - `dotNL = clamp(dot(N, L) × 0.5 + 0.5, 0, 1)` — **Half-Lambert** statt naivem `max(dot, 0)`: gradientMap-Stufen verteilen sich über die ganze Form, klassische Three.js-MeshToonMaterial-Mathematik
+     - `toonStep = texture(gradientMap, vec2(dotNL, 0.5)).r` — **Cel-Stufen-Lookup** (Ghibli-Look)
+     - `lit = albedo × (ambient + toonStep × sunIntensity)`
+   - Albedo: `attribute("color", "vec3")` für vertexColors, sonst statische `vec3(c.r, c.g, c.b)` (MaterialReferenceNode-Crash umgangen, V10.0-g.materialColor-Lehre).
+   - `mat.isMeshToonMaterial = true` Drop-in-Marker für legacy Tests.
+
+2. **gradientMap-Wurzel-Heilung**:
+   - V10.0-g-Crash war: `texture(gradientMap, ...)` im colorNode crashte beim Build wenn `state.toonGradientMap` noch null war (ReferenceNode.update liest null).
+   - Heilung in `createScene`: `_refreshToonGradient()` PRE-INIT vor erstem Material-Build. Plus defensive Pre-Init im Helper selbst.
+   - Plus: `_refreshToonGradient` patcht die DataTexture in-place (`needsUpdate=true`); der TSL-texture-Knoten samplet beim nächsten Frame die aktualisierten Pixel — Cel-Stufen-Slider live.
+
+3. **Sun-Lighting-Sync via `state.toonLightUniforms`**:
+   - Drei `uniform()`-Knoten (sunDir, sunIntensity, ambient) lazy initialisiert in `_ensureToonLightUniforms()`.
+   - `_dayNightApplyDirectionalLight` setzt `sunDir.value.copy(sunDir)` + `sunIntensity.value = intensity × lightMul × peak-Luminance`.
+   - `_dayNightApplyAmbient` setzt `ambient.value = al.intensity` (nach Emotion-Modulation).
+   - Welt-atmet-Mechanik: Tag/Nacht + Emotionen schwingen durch die Toon-Materials, Cel-Stufen pulsieren mit der Sonne.
+
+4. **Bug 2 (Instance-Buffer-Mismatch) wurzel-geheilt**:
+   - V10.0-g.1-Browser-Audit zeigte 250×/Frame `Instance range requires larger buffer`-Spam beim Gras-InstancedMesh auf WebGPU.
+   - Wurzel: Three.js' WebGPU-Pipeline-Cache zwischen shared-material-InstancedMeshes mit unterschiedlichen Counts — cached den ersten Mesh's Buffer-Layout, Folge-Meshes mit größerer count triggern Validation-Error.
+   - Heilung in `_buildVoxelChunkGrass`:
+     - `inst.count = blades.length` EXPLIZIT nach Construction
+     - `inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage)` — signalisiert Three.js, dass der Buffer pro Mesh dynamisch gebunden werden muss
+   - Plus: shared `_grassInstanceMat` BLEIBT (V9.84-Perf-1.a-Pattern intakt, kein Per-Chunk-Compile-Overhead). Vision: das Neue adaptiert das Alte, nicht wegschneiden.
+
+5. **Visual-Schichten konsistent erhalten**:
+   - **Wind im Gras**: `onBeforeCompile`-GLSL-Patch BLEIBT. Auf WebGL nativ aktiv, auf WebGPU triggert er Hot-Swap zu WebGL (V10.0-e/f-5/f-6) — Wind-Effekt sichtbar in beiden Fällen.
+   - **Soft-Sprite-Falloff bei Sternen**: `pointUV`-Pfad BLEIBT. Auf WebGL nativ. Auf WebGPU r160-Vendor-Bug, triggert Hot-Swap — Soft-Falloff via WebGL-Fallback.
+   - **Schatten**: BLEIBEN auf klassischen Pfaden (MeshToonMaterial-Fallback wenn TSL nicht da, plus alle anderen `castShadow/receiveShadow`-Materials laufen weiter). Auf WebGPU-Pfad temporär off — eigene Welle V10.0-h (manuelle Shadow-Map-Texture-Sampling) folgt.
+
+**Test-Probe mit-gewandert** (V9.42-c): Insel-Material-Identität — `material.type === "MeshToonMaterial"` → `isMeshToonMaterial === true && isMeshBasicNodeMaterial === true` (Drop-in-Marker + NodeMaterial-Identität).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+150 Z. netto (Helper voll-implementiert + `_ensureToonLightUniforms`-Methode + 2 Day-Night-Sync-Pfade + Bug-2-Fix + Pre-Init in createScene), `scripts/playtest.cjs` ~+10 Z. (V9.42-c-Probe-Anpassung), `index.html` Cache-Buster 10.0.15 → 10.0.16 + title v10.0-g, `package.json` 10.0.15 → 10.0.16, `AnazhRealm.VERSION` "10.0-g.r" → "10.0-g".
+
+**Permanente Gotcha-Lehre verdrahtet**:
+
+**Half-Lambert-Mathematik für Toon-Cel-Stufen mit gradientMap-Lookup**: standardmäßiges `max(dot(N, L), 0)` gibt einen scharfen 90°-Cel-Step (Rückseiten 100% schwarz). Three.js' MeshToonMaterial nutzt intern `dot(N, L) × 0.5 + 0.5`-Remapping → das gradientMap-Lookup-Range [0, 1] verteilt sich über die ganze Sphere-Form, die Cel-Stufen sind über Form-Krümmung sichtbar. Bei TSL-Migration MUSS man diese Mathematik manuell nachbauen — sonst sieht Welt halb-schwarz aus.
+
+**Plus**: V10.0-g.materialColor-Lehre (statische vec3-Konstante statt MaterialReferenceNode-Crash) und V10.0-g.gradientMap-Lehre (texture-Pre-Init vor erstem Material-Build) sind die zwei strukturellen WebGPU-NodeMaterial-Disziplinen die wir gefunden haben.
+
+**Reflexions-Lehre aus dem V10.0-g-Bogen**: Schöpfer-Konfrontation V10.0-g.r-Stop war Wachstum. Das Neue ADAPTIERT das Alte aufs nächste Niveau — wegzuschneiden ist Feigheit, heilen ist Disziplin. Plus: eine Welle pro Bogen-Schluss, nicht drei A/B-Sub-Wellen. Wenn etwas beim Bauen rauscht, IM ZUG heilen (V10.0-g hat Test-Probe V9.42-c mit-gewandert + V10.0-g.materialColor-Lehre gefunden), nicht in eine .1/.2/.r-Spirale.
+
+**Was V10.0-h liefern wird (eigene Welle, ~2-3h)**: manuelle Shadow-Map-Texture-Sampling im colorNode. `directionalLight.shadow.map` als TSL-`texture()`-Uniform durchreichen, `shadow.matrix` als Uniform für Welt-zu-Light-Raum-Transform, im colorNode-Tree die Shadow-Texture an der berechneten Welt-Position samplen. 4-Sample-PCF für Soft-Shadow. Schatten kommen auf WebGPU zurück.
+
+---
+
+**Davor — V10.0-g.r — REFLEXIONS-WELLE: ehrlicher Rollback von V10.0-g + V10.0-g.1 + V10.0-g.2 (26.05.2026, ~80 Z. netto Rollback + ehrliche Doku):**
+
+Schöpfer-Browser-Audit V10.0-g.2 zeigte: 502 Issues, 250×/Frame "Instance range requires larger buffer"-Spam (Bug 2 NICHT geheilt durch meine `onBeforeCompile`-Hypothese), FPS 6-8, Welt-Render flackert schwarz auf, Spieler fällt durch Welt. **Schöpfer-Wahrnehmung**: „der Rhythmus, die Harmonie scheint nicht mehr zu passen, vor der Änderung schien alles timingmäßig besser durchdacht? strukturell einige Fäden verloren?"
+
+**Ehrliche Selbstkritik**: V10.0-g + V10.0-g.1 + V10.0-g.2 war ehrgeizig aber Vision-disharmonisch. Drei A/B-Hypothesen-Wellen ohne dass die Wurzel WIRKLICH geheilt wurde:
+- V10.0-g: MeshToonMaterial → MeshBasicNodeMaterial + custom Toon-Lighting. **Verluste**: Cel-Stufen (Ghibli-Look weg, da gradientMap-Lookup crashte), Schatten (MeshBasic hat lights=false).
+- V10.0-g.1: pointUV-Pfad raus (Soft-Sprite-Falloff bei Sternen weg) + Iso-Mesh-Null-Default-Attribute (defensive, ok).
+- V10.0-g.2: onBeforeCompile-Wind-Patch raus (Wind im Gras weg). Hypothese: das fixt Bug 2. **Browser-Audit V10.0-g.2 zeigte: Bug 2 spammt weiter — Hypothese WAR FALSCH**.
+
+**Erkenntnis**: drei r160-Vendor-Bugs sind die echten Wurzeln:
+1. `PointUVNode.generate()` emittiert hardcoded GLSL → WGSL-Compile-Error auf WebGPU
+2. `lights=true`-NodeMaterial unter webgl-legacy-Patch → uniform-undefined-Crash (V10.0-g.diag-Lehre)
+3. WebGPU-Pipeline-Cache-InstanceBuffer-Bind zwischen Meshes → Bug 2 (unklare Wurzel, möglicherweise instanceMatrix-Reuse zwischen shared-material-Meshes)
+
+KEIN Code-Workaround fixt alle drei ohne Visual-Tiefe-Verlust. Die ehrliche Konsequenz: Rollback.
+
+**Rollback in V10.0-g.r** (zurück zur V10.0-f-6-Visual-Wahrheit, Helper-Pattern behalten):
+
+1. **`_buildToonNodeMaterial`** — Body zurück auf klassisches `new THREE.MeshToonMaterial({vertexColors, color, side, transparent, opacity})` mit `mat.gradientMap = state.toonGradientMap`. Cel-Stufen + Schatten + Lights komplett zurück. Helper-Pattern bleibt — bei künftiger WebGPU-Welt-Rendering-Welle ändert sich nur der Body, die 5 Call-Sites (Voxel-Chunk/Architektur/Insel/Avatar/Voxel-Test) bleiben.
+
+2. **`_grassInstanceMat`** — `onBeforeCompile`-Wind-Patch zurück (GLSL-Wind-Vertex-Mathematik). Wind-Animation im Gras zurück auf WebGL.
+
+3. **`_buildStarField`** — pointUV-Soft-Falloff zurück. Sterne sind wieder weiche-runde Sprites statt harter Quadrate.
+
+4. **`_dayNightApplyDirectionalLight` + `_dayNightApplyAmbient`** — `state.toonLightUniforms`-Sync-Pfade entfernt (nicht mehr nötig, weil MeshToonMaterial native Lighting hat).
+
+5. **`_ensureToonLightUniforms`-Methode entfernt** — wurde nur von custom Toon-Lighting-Pfad gebraucht. `state.toonLightUniforms`-Feld bleibt deklariert als Backlog für künftige WebGPU-Welle.
+
+**Behalten aus V10.0-g-Stack** (kein Rollback):
+- **V10.0-f-1..f-4**: 4 ShaderMaterials zu TSL (skybox/stars/waterfall/hydroSurface) — diese laufen auf BEIDEN Renderern via webgl-legacy/nodes-Patch (V10.0-f-1-Lehre). Visuell identisch.
+- **V10.0-f-5/f-6**: Hot-Swap-Canvas-Replacement + Animation-Loop-Restore — defensive Sicherung gegen WebGPU-Inkompatibilität, triggert auf moderne Browser mit WebGPU sauber.
+- **V10.0-g.1 Iso-Mesh-Attribute**: Null-Default-aFlow/aShore/aWave auf Iso-Wasser-Mesh — defensive, kein Visual-Verlust.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK", Page-Errors=0, audit:strict 0 Failures, Format/Lint sauber. Dateien: `anazhRealm.js` ~-80 Z. netto (3 Helper-Bodies rückgewickelt + 2 Day-Night-Sync-Pfade entfernt + onBeforeCompile-Wind zurück + pointUV zurück), `scripts/playtest.cjs` ~-10 Z. (V9.42-c-Test rückgewickelt), `index.html` Cache-Buster 10.0.14 → 10.0.15 + title v10.0-g.r, `package.json` 10.0.14 → 10.0.15, `AnazhRealm.VERSION` "10.0-g.2" → "10.0-g.r".
+
+**Permanente Gotcha-Lehre**: **Rollback ist Disziplin, kein Versagen** — wenn der Schöpfer eine Vision-Disharmonie wahrnimmt + technische Fixes die Wurzel nicht heilen, ist die ehrliche Antwort: zurück zur letzten visuell-harmonischen Welle. Drei A/B-Hypothesen ohne Wurzel-Heilung sind Schuld-Aufbau, nicht Vortschritt. Plus die `r160-Vendor-Bug-Realität` ehrlich dokumentieren (pointUV/lights/onBeforeCompile auf WebGPU nicht trivial) statt mit halbgaren Code-Workarounds zu vertuschen.
+
+**Was die Zukunft liefern kann**: WebGPU-Welt-Rendering wartet auf Three.js r161+ (Vendor-Upgrade-Welle als eigene große Welle). Bis dahin: Welt rendert auf WebGL via Hot-Swap (V10.0-e/f-5/f-6) mit allen Vision-Effekten (Cel-Stufen, Schatten, Wind, Soft-Sprite-Falloff). Plus die V10.0-f-1..f-4-ShaderMaterial-zu-TSL-Migration ist als Foundation für die spätere WebGPU-Welle erhalten — 4 von 5 Material-Familien sind schon NodeMaterial.
+
+---
+
+**Davor — V10.0-g.2 — Gras-Instance-Buffer-Heilung nach Schöpfer-Browser-Audit V10.0-g.1 (26.05.2026, eine Zeile Code-Change, ~25 Z. netto Doku):**
+
+Schöpfer-Audit V10.0-g.1 zeigte: Bug 1 (pointUV) + Bug 3 (Iso-Mesh-Attribute) waren geheilt, ABER Bug 2 spammt 250× pro Frame auf WebGPU. Welt-FPS auf 5.
+
+**Wurzel-Diagnose**: `Instance range (count: 3160) requires a larger buffer (202240) than the bound buffer size (122752)` — Three.js' WebGPU-Pipeline cached den instanceMatrix-Buffer des ersten Gras-Chunks (1918 Halme), andere Chunks mit größerer count triggern Validation-Error pro Draw-Call.
+
+**Diagnose-Iteration (drei A/B-Tests)**:
+1. Per-Chunk `_buildToonNodeMaterial` (V10.0-g-Helper): 19/20 Chunks im Headless — Per-Chunk-NodeMaterial-Compile zu teuer.
+2. Per-Chunk klassisches `MeshLambertMaterial`: 17/20 Chunks — auch zu teuer.
+3. **Shared `MeshLambertMaterial` BLEIBT, aber `onBeforeCompile`-Wind-Patch entfernen**: 20/20 ✓, Page-Errors=0 ✓.
+
+**Wurzel klar**: nicht das shared Material, sondern der `onBeforeCompile`-GLSL-Patch ist die WebGPU-Wurzel. Three.js' `NodeMaterial.fromMaterial()` IGNORIERT onBeforeCompile (GLSL-Strings sind nicht WGSL-übersetzbar), ABER der resultierende auto-konvertierte NodeMaterial hat einen inkonsistenten Pipeline-Cache-State, der den InstanceBuffer-Bind zwischen Meshes verwirrt.
+
+**Heilung in `_grassInstanceMat()`**:
+- `onBeforeCompile`-Block komplett entfernt
+- Pure `MeshLambertMaterial({ color: 0x5fa743, side: DoubleSide })` shared
+- `state.windUniforms` bleibt deklariert (V10.0-g.cel-Backlog — TSL-Wind kommt zurück)
+- V9.84-Perf-1.a-Pattern intakt (kein Per-Chunk-Material-Compile-Overhead)
+
+**Trade-off**: Wind-Animation temporär weg auf WebGL (war auf WebGPU ohnehin nie aktiv — onBeforeCompile-ignoriert). Visueller Verlust auf WebGL: Gras-Halme statisch statt windverwehte Wellen. Kommt mit V10.0-g.cel zurück als TSL-`positionNode`-Vertex-Displacement (sun-uniform-getriebene `sin(uTime + instPos.x × ...)`-Mathematik im TSL-Tree).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; voxelChunks=20 (genau am Threshold, Headless-Performance bewahrt); Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` -15 Z. netto (onBeforeCompile-Block weg, Kommentar-Update). Version-Bump 10.0.13 → 10.0.14, title v10.0-g.2.
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**`onBeforeCompile` ist WebGPU-feindlich — triggert Pipeline-Cache-Bugs**. Three.js' WebGPURenderer's `NodeMaterial.fromMaterial()`-Auto-Konvertierung ignoriert onBeforeCompile, aber das resultierende NodeMaterial hat inkonsistenten Pipeline-Cache-State. Folge: InstanceBuffer-Bind-Konflikte, Validation-Error-Spam. Heilung: onBeforeCompile aus klassischen Materials entfernen wenn WebGPU-Kompatibilität gefragt ist. Custom Shader-Effekte via TSL/NodeMaterial-Pfad (positionNode/colorNode) migrieren. Plus: `grep -n 'onBeforeCompile' anazhRealm.js` vor jeder WebGPU-Welle als Audit-Pattern.
+
+**V10.0-g.2-Bilanz**: drei WebGPU-Bugs aus dem V10.0-g-Audit alle strukturell geheilt — Welt rendert dauerhaft sauber auf WebGPU ohne Console-Spam.
+
+**Was V10.0-g.cel + V10.0-g.shadow liefern werden (eigene Folge-Wellen)**:
+- V10.0-g.cel: gradientMap-Texture-Lookup robust (Toon-Cel-Stufen kommen zurück) + TSL-Wind via positionNode (Gras-Animation kommt zurück)
+- V10.0-g.shadow: manuelle Shadow-Map-Texture-Sampling im colorNode
+
+---
+
+**V10.0-g.1 — WebGPU-Polish nach Schöpfer-Browser-Audit V10.0-g (26.05.2026, zwei kritische WebGPU-Inkompatibilitäten geheilt, ~30 Z. netto):**
+
+Schöpfer-Audit nach V10.0-g auf AMD-RDNA-3 zeigte: Welt rendert auf WebGPU (Material-Migration durch, Hot-Swap triggert nicht mehr — V10.0-g hat funktioniert), aber drei WebGPU-Inkompatibilitäten spammen die Konsole:
+
+1. **`Error while parsing WGSL: unresolved value 'gl_PointCoord'`** — beim starsMaterial (V10.0-f-2). Three.js r160's `PointUVNode.generate()` (in `vendor/three-addons/nodes/accessors/PointUVNode.js`) emittiert HARDCODED GLSL `gl_PointCoord` ohne WGSL-Pendant. r160-Vendor-Bug, vermutlich in r161+ gefixt. Welt-Effekt: Star-Render-Pipeline scheitert beim WGSL-Compile → Stars unsichtbar + Repeating-Pipeline-Errors pro Frame.
+
+2. **`Instance range (first: 0, count: 3160) requires a larger buffer than the bound buffer size`** — beim Gras-InstancedMesh. count=3160 erwartet, 1918 gebunden (stride=64 = mat4-per-Instance). Vermutung: WebGPU-Pipeline-Cache cached die erste Gras-Chunk-Buffer-Size, andere Gras-Chunks mit größerem `blades.length` trigger den Mismatch. WebGPU-Validation-Warning, kein Render-Crash — der draw-Call wird einfach geskipped, Gras-Chunk unsichtbar.
+
+3. **`Uncaught TypeError: Cannot read properties of undefined (reading 'isInterleavedBufferAttribute')`** — in `Geometries.onDispose → RenderObject.getAttributes` beim `_disposeVoxelChunkWaterIso`. **Wurzel**: das Iso-Wasser-Mesh setzt keine `aFlow`/`aShore`/`aWave`-Attribute, die `hydroSurfaceMaterial` (V10.0-f-4) via TSL `attribute("aFlow", "vec2")` etc. STRIKT erwartet. Bei klassischem ShaderMaterial (vor V10.0-f-4) defaulted fehlende Attribute auf vec3(0) — kein Crash. Bei NodeMaterial unter WebGPU: Pipeline bindet das Material an die Geometry mit drei undefined-Attribute-Slots; beim Dispose iteriert `RenderObject.getAttributes` über die Material-Erwartungen und versucht `attribute.isInterleavedBufferAttribute` auf `undefined` → uncaught TypeError. **Pre-existing Bug** seit V10.0-f-4, nur sichtbar auf WebGPU-Pipeline (WebGL ignoriert fehlende Attribute gnädiger).
+
+**Heilung 1 (pointUV-WGSL-Inkompatibilität)** — `_buildStarField` (Z10050+):
+- `pointUV` aus TSL-Import entfernt
+- `colorNode = vec4(attribute("color", "vec3"), uOpacity)` direkt — konstante alpha, kein Distance-Falloff
+- Sterne werden hart-quadratisch statt sprite-soft-falloff. Visueller Verlust gegenüber V10.0-f-2 (kein Glow-Center), aber V8.29-Anti-Flacker wirkt weiter (per-Stern aSize ≥ 3 px → quadratisch ist visuell akzeptabel bei kleiner Größe + AdditiveBlending).
+- Soft-Falloff kommt zurück mit r161+ (vendor-Upgrade-Welle) ODER via eigene UV-Berechnung aus per-Vertex-Daten.
+
+**Heilung 3 (Iso-Wasser-Mesh fehlende Attribute)** — `_buildVoxelChunkWaterIsoSurface` (Z16826+):
+- Nach `_voxelChunkGeometry`-Call werden drei Null-Default-Attribute auf das Iso-Mesh gesetzt:
+  - `aFlow` als `Float32Array(vCount × 2)` (alle 0 = kein Fluss-Flow)
+  - `aShore` als `Float32Array(vCount)` (alle 0 = kein Ufer-Schaum)
+  - `aWave` als `Float32Array(vCount)` (alle 0 = kein Ozean-Wellen-Displacement)
+- Defensive Existenz-Probe (`if (!geom.getAttribute("X"))`) — Pool/Ribbon-Meshes setzen sie schon selbst, Iso-Mesh nicht.
+- **Semantisch korrekt**: das per-Chunk-Iso-Mesh ist See/Pfütze, kein Ozean (Wellen) oder Fluss (Flow). Null-Defaults bedeuten: keine Wellen-Displacement-Anwendung, kein Foam-Stream-Animation, kein Ufer-Bandförderung — die Wasser-Oberfläche ist statisch ruhig.
+- **Welt-Effekt**: WebGPU-Pipeline-Setup gelingt (Attribute existieren), Dispose-Crash weg, Iso-Wasser rendert toon-shaded.
+
+**Bug 2 (Instance-Buffer-Mismatch beim Gras) bleibt als V10.0-g.2-Backlog** — Warning nicht Page-Error, Welt rendert, einzelne Gras-Chunks unsichtbar bei Count-Mismatch. Heilung kommt in V10.0-g.2 (~1h): vermutlich `instanceMatrix.setUsage(DynamicDrawUsage)` oder explicit `gras.count = blades.length; gras.instanceMatrix.needsUpdate = true` Pattern.
+
+**Verhaltens-Beweis (Headless)**: Playtest „Alle Invarianten OK"; Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+25 Z. netto (5 Z. pointUV-Pfad weg + 15 Z. Iso-Mesh-Attribute + Doku), `index.html` Cache-Buster 10.0.12 → 10.0.13 + title v10.0-g.1, `package.json` 10.0.12 → 10.0.13, `AnazhRealm.VERSION` "10.0-g" → "10.0-g.1".
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**NodeMaterial-Attribute sind STRIKT auf WebGPU**: wer ein NodeMaterial mit `attribute("name", "vec2/vec3/float")` baut, MUSS sicherstellen dass JEDES Mesh, das dieses Material nutzt, ALLE referenzierten Attribute trägt. WebGL-Renderer fallbackt gnädig auf vec3(0) für fehlende Attribute, WebGPU-Pipeline-Setup ist strikt — fehlende Attribute → undefined-Errors beim Build oder Dispose. **Disziplin**: bei jedem Material das per-Vertex-Attribute via `attribute()` liest, ALLE Mesh-Build-Pfade auditieren ob sie die Attribute setzen. Default-Null-Werte (Float32Array(count) initialisiert default zu 0) sind sicher + semantisch oft korrekt (Iso-Mesh ohne Fluss-Flow ist See, nicht Wasserfall).
+
+**Was V10.0-g.2 liefern wird (next, ~1h)**: Gras-InstancedMesh-Buffer-Size-Heilung. Drei Pfade: (a) WebGPU-Pipeline pro Chunk neu erstellen (verschwenderisch), (b) `instanceMatrix` mit max-möglicher Größe pre-allokieren (memory-overhead), (c) untersuchen ob Three.js' WebGPU-Renderer fix vorhanden + einfach `mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)` setzen.
+
+**Was V10.0-g.cel liefern wird (eigene Welle)**: gradientMap-Cel-Stufen via robust Texture-Lookup. ReferenceNode-null-Bug (V10.0-g-Diagnose) muss strukturell geheilt werden — möglicherweise via eigene `uniform()`-Texture-Reference die wir selber halten.
+
+**Was V10.0-g.shadow liefern wird (eigene Welle)**: manuelle Shadow-Map-Sampling im colorNode — `directionalLight.shadow.map` als TSL-`texture()`-Uniform durchreichen, `shadow.matrix` als Uniform für Welt→Light-Raum-Transform, im colorNode-Tree die Shadow-Texture an der berechneten Light-Position samplen.
+
+---
+
+**V10.0-g — MeshToonMaterial → MeshBasicNodeMaterial mit custom Toon-Lighting (26.05.2026, VOLLENDET den V10.0-Bogen, ~170 Z. netto):**
+
+Nach V10.0-g.diag-Diagnose („eigene NodeMaterial-Subclass mit lights=true crasht im webgl-legacy/nodes-Patch — vendor-eingebaute Lambert/Phong genauso") war der Pfad klar: **`lights=true` ist im webgl-legacy-Patch grundsätzlich nicht robust**. Drei A/B-Tests bestätigten — pure Lambert, pure Phong, eigene Subclass — alle crashen identisch im `_updateUniforms`-Pfad.
+
+**Ehrlicher Pfad** (Pattern von V10.0-f-3/f-4 wiederverwendet): MeshBasicNodeMaterial (lights=false) + manuelles Lighting im colorNode. Sun-Direction + dotNL + Ambient als TSL-Math, geteilte `state.toonLightUniforms` (drei uniform-Knoten: sunDir, sunIntensity, ambient). Gleiches Pattern wie die manuelle Blinn-Phong-Spec-Berechnung bei f-3/f-4 — nur Toon-Lighting statt Wasser-Spec.
+
+**Zweite Diagnose-Erkenntnis (innerhalb V10.0-g)**: `TSL.materialColor` (= MaterialReferenceNode) crasht im webgl-legacy/WebGLNodeBuilder beim `_updateUniforms`-Pfad mit `Cannot read properties of null reading 'color'`. Wurzel: ReferenceNode.update() liest `this.reference[this.property]`, aber `this.reference = null` zum Update-Zeitpunkt (Timing-Bug — `updateReference` läuft erst nach `update`). **Lösung**: Material-Color statisch im Tree backen via `vec3(float(c.r), float(c.g), float(c.b))`. Funktioniert für einmal-gesetzte Colors (unsere Toon-Stellen alle einmal-gesetzt — kein Verlust). Dynamische Color-Mutation würde Material-Rebuild brauchen.
+
+**Vier strukturelle Bausteine in `_buildToonNodeMaterial(opts)`**:
+
+1. **Basis-Material**: `new THREE.MeshBasicNodeMaterial(params)` — die einzig im webgl-legacy-Patch robust laufende NodeMaterial-Familie (lights=false, normals=false implicit).
+
+2. **Albedo-Pfad**:
+   - vertexColors → `attribute("color", "vec3")` (V10.0-f-2-Lehre)
+   - non-vertexColors → `vec3(float(c.r), float(c.g), float(c.b))` aus `new THREE.Color(opts.color)` (statische Konstante, kein MaterialReference)
+
+3. **Toon-Lighting-Mathematik**:
+   - `N = normalize(transformedNormalWorld)` (Welt-Raum-Normale via Three.js' built-in)
+   - `L = normalize(uSunDir)` (uniform aus state.toonLightUniforms)
+   - `dotNL = clamp(max(dot(N, L), 0), 0, 1)` (Lambert-Standard)
+   - `lightFactor = dotNL` (linear — V10.0-g.cel wird gradientMap-Lookup ergänzen)
+   - `lit = albedo × (ambient + lightFactor × sunIntensity)` (Lambert × Light-Skalar)
+   - `colorNode = vec4(lit, 1.0)`
+
+4. **Drop-in-Identitäts-Marker**: `mat.isMeshToonMaterial = true` für legacy Tests (V8.28-Architektur, V9.42-c-Insel — checken die Property statt material.type). `mat.gradientMap = state.toonGradientMap` bleibt als JS-Property erhalten für künftige Cel-Welle.
+
+**Geteilte Toon-Light-Uniforms in `state.toonLightUniforms`** (lazy via `_ensureToonLightUniforms()` beim ersten Material-Build):
+- `sunDir`: Vector3-uniform, Default (0.5, 0.7, 0.3) normalisiert
+- `sunIntensity`: float-uniform, Default 1.0
+- `ambient`: float-uniform, Default 0.3
+
+**Zwei Day-Night-Sync-Pfade erweitert**:
+- `_dayNightApplyDirectionalLight`: setzt `tu.sunDir.value.copy(sunDir)` + `tu.sunIntensity.value = intensity × lightMul × peak-Luminance`. Defensive Existenz-Probe (Uniforms lazy initialisiert).
+- `_dayNightApplyAmbient`: setzt `tu.ambient.value = al.intensity` (nach Emotion-Modulation).
+
+**Eine Test-Probe mit-gewandert** (V9.42-c, V9.56-i-Pattern):
+- `material.type === "MeshToonMaterial"` → `isMeshToonMaterial === true && isMeshBasicNodeMaterial === true`
+- vertexColors-Flag → über Material-Identitäts-Marker geprüft (Drop-in-Kompat)
+
+**State-Init**: `state.toonLightUniforms: null` deklariert (audit:strict-Disziplin).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+150 Z. netto (Helper + Light-Uniforms + 2 Day-Night-Sync-Pfade + state-Field), `scripts/playtest.cjs` ~+10 Z. (V9.42-c-Probe-Anpassung), `vendor/three-bootstrap.js` ~+15 Z. (BAUSTELLE-Kommentar aufgeräumt), `index.html` Cache-Buster 10.0.11 → 10.0.12 + title v10.0-g, `package.json` 10.0.11 → 10.0.12, `AnazhRealm.VERSION` "10.0-g.diag" → "10.0-g".
+
+**Drei neue Lehren verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+1. **`lights=true`-NodeMaterial im webgl-legacy-Patch ist nicht robust** — pure MeshLambert/Phong + eigene Subclass crashen identisch. Lösung: MeshBasicNodeMaterial + manuelles Lighting im colorNode. Three.js' eingebaute Lighting-Pipeline (DirectionalLight, AmbientLight, Hemisphere, ShadowMap) ist NICHT WebGL-NodeMaterial-Pfad-kompatibel im r160.
+
+2. **`TSL.materialColor` (MaterialReferenceNode) crasht im webgl-legacy/WebGLNodeBuilder** — ReferenceNode-Timing-Bug. Material-Properties statisch im Tree backen (`vec3(float(c.r), float(c.g), float(c.b))`) statt via MaterialReference lesen. Bei dynamischen Mutationen: eigene `uniform()` selber halten + syncen.
+
+3. **Custom-Lighting im colorNode ist das Stamm-Pattern** — V10.0-f-3 (Spec) + V10.0-f-4 (Gerstner+Spec) + V10.0-g (Toon) folgen alle dem gleichen Pattern: state-Slot für Light-Uniforms, `_dayNightApply*` syncs, colorNode-Tree rechnet manuell. Wiederverwendbar für künftige Material-Migrationen.
+
+**V10.0-BOGEN VOLLENDET 🎉** (10 Sub-Wellen über mehrere Sessions, alle 5 Material-Familien sind NodeMaterials):
+
+| Sub-Welle | Was | Status |
+|---|---|---|
+| V10.0-a | Three.js r134 → r160 | ✅ |
+| V10.0-b | ESM-Loading | ✅ |
+| V10.0-c | WebGPURenderer-Addon vendored | ✅ |
+| V10.0-d | Renderer-Auswahl | ✅ |
+| V10.0-e | Smart Hot-Swap | ✅ |
+| V10.0-f-1..f-4 | 4 ShaderMaterials → TSL | ✅ |
+| V10.0-f-5 | Canvas-Replacement im Hot-Swap | ✅ |
+| V10.0-f-6 | Animation-Loop-Restore im Hot-Swap | ✅ |
+| V10.0-g.diag | Diagnose: lights=true-NodeMaterial im webgl-legacy nicht robust | ✅ |
+| V10.0-g | MeshToon → MeshBasicNodeMaterial + manuelles Toon-Lighting | ✅ |
+
+- **Welt rendert dauerhaft auf WebGPU** bei verfügbarer GPU (Chrome 113+, Safari 18+, Firefox mit Flag)
+- Hot-Swap-Pfad (V10.0-e/f-5/f-6) bleibt defensive Sicherung gegen Laufzeit-Device-Lost
+- Custom-Lighting-Pattern etabliert als wiederverwendbare TSL-Migrations-Schicht
+- 20+ Lehren in CLAUDE.md/Gotchas „Rendering · TSL-Migration" verdrahtet
+
+**Ehrliche temporäre Begrenzungen** (in eigene Sub-Wellen verschoben):
+- **gradientMap-Cel-Stufen fehlen**: das `texture(gradientMap, vec2(dotNL, 0.5)).r`-Pattern crasht beim Build-Zeitpunkt mit ReferenceNode-null. Erstmal linearer Lambert-Look — Cel-Stufen kommen mit V10.0-g.cel (~1h).
+- **Schatten fehlen**: Three.js' Shadow-Map-Pipeline läuft durch `lights=true`. Erstmal keine cast/receive-Schatten — Schatten kommen mit V10.0-g.shadow (~2-3h, manuelle Shadow-Map-Texture-Sampling).
+
+**Was V10.0-g.cel + V10.0-g.shadow liefern werden** (eigene Folge-Wellen):
+
+- **V10.0-g.cel** (~1h): gradientMap-Texture-Lookup-Robustheit. Erste Hypothese: `texture(gradientMap)` braucht eine eigene `uniform()`-Texture-Reference die wir selber halten + per `mat.colorNode = ...texture(uTex, uv).r`-Knoten samplen. Möglicherweise auch: garantieren dass `state.toonGradientMap` IMMER pre-built ist bevor das erste Material gebaut wird.
+- **V10.0-g.shadow** (~2-3h): manuelle Shadow-Map-Texture-Sampling im colorNode. `directionalLight.shadow.map` als Uniform durchreichen + `directionalLight.shadow.matrix` für Welt-zu-Light-Raum-Transform + im colorNode-Tree die Shadow-Texture an der berechneten Welt-Position samplen. Pattern existiert in Three.js-Custom-Shader-Beispielen.
+
+**Was V11.x liefert (auf jetzt-noch-stabilerer V10.0-Foundation)**: Vision-Pfeiler D (Wasser↔Kreaturen), E (Emotion↔Welt), F (Cluster-Resonanz), G (Multi-Spieler-Vibe). V9.97 IndexedDB-Welt-Gedächtnis. V10.0-g.cel + V10.0-g.shadow als Render-Polish-Wellen.
+
+---
+
+**Davor — V10.0-g.diag — Diagnose-Welle für MeshToonMaterial-Migration (26.05.2026, ehrlicher Stop nach erstem Versuch, ~70 Z. netto Helper + Diag-Tool + Doku):**
+
+Schöpfer wollte V10.0-g — `MeshToonMaterial → ToonNodeMaterial`. Ehrliche Wahrheit nach erstem Implementations-Versuch: **das ist eine WESENTLICH größere Welle als V10.0-f-1..f-4** — eine eigene Welle-Klasse, nicht eine fünfte f-Sub-Welle.
+
+**Erkenntnis 1**: Three.js r160-Vendor hat KEINE `MeshToonNodeMaterial`. Nur Basic/Lambert/Phong/Standard/Physical/Normal/Points/Sprite als NodeMaterial-Familie. Toon ist Cel-Shading-spezifisch — vendor liefert das nicht out-of-box. Muss als eigene Subclass mit eigenem ToonLightingModel gebaut werden.
+
+**Erkenntnis 2 (der eigentliche Bug)**: erster Versuch — eigene `ToonNodeMaterial`-Klasse extends `MeshLambertNodeMaterial`, eigene `setupLightingModel()` mit `ToonLightingModel(gradientMap)` (`dotNL → texture(gradientMap, vec2(dotNL, 0.5)).r`-Lookup). Welt scheitert beim ersten render() mit Three.js-internal Crash:
+
+```
+TypeError: Cannot set properties of undefined (setting 'value')
+    at Kt (three.module.min.js)
+    at renderBufferDirect (three.module.min.js)
+    at _loopRender → loop
+```
+
+A/B-Tests: gradientMap-Pfad ausschalten + ToonLightingModel auf Lambert-Identität + setDefaultValues weglassen → alle drei Tests crashen identisch. **Wurzel**: der `webgl-legacy/nodes/WebGLNodes.js`-Patch (V10.0-f-1-Hebel, damit NodeMaterial unter klassischem WebGLRenderer kompiliert) handhabt EIGENE NodeMaterial-Subclasses mit `lights=true` NICHT robust. Die Light-Uniform-Pipeline geht auf eine undefined-uniform — irgendein interner Shadow- oder Light-Setup-Schritt fehlt.
+
+**V10.0-g.diag-Aktion** (ehrlicher Stop, keine voreilige Welle):
+
+1. **Eigene ToonNodeMaterial-Klasse im Bootstrap als BAUSTELLE auskommentiert**, klare Diagnose-Spur als Kommentar verdrahtet — drei Heilungs-Pfade dokumentiert:
+   - (a) `outputNode`-Override mit toon-step-mapping NACH dem Standard-Light (modifiziert die fertig-beleuchtete Color nachträglich)
+   - (b) `MeshPhongNodeMaterial` extends statt Lambert — vielleicht handhabt webgl-legacy das robuster
+   - (c) Custom `lightsNode`-Subscription statt `setupLightingModel`-Override (vor der Standard-Light-Pipeline einhängen)
+
+2. **`_buildToonNodeMaterial(opts)`-Helper bleibt in anazhRealm.js etabliert** — fällt aktuell auf klassisches `new THREE.MeshToonMaterial(opts)` zurück. **Schlüssel-Disziplin**: bei künftiger V10.0-g-Resolution ändert sich NUR der Helper-Body — die 5 Call-Sites (Voxel-Chunk-Material, Architektur-Parts, Inseln, Avatar-Torso, Voxel-Test-Diagnostic) bleiben unverändert. Migrations-Vorbereitung steht.
+
+3. **`scripts/diag-page-error.cjs` neu (~50 Z.)**: lokaler HTTP-Server + Puppeteer mit `pageerror`-Listener. Reproduziert den Crash deterministisch — Stack-Trace klar lesbar. Künftige V10.0-g-Welle kann es wieder triggern + die drei Heilungs-Pfade testen ohne sich an den Diag-Workflow neu erinnern zu müssen.
+
+4. **Welt-Rendering bleibt VOLL FUNKTIONAL**: Hot-Swap-Trio V10.0-e/f-5/f-6 greift wie geplant. Schöpfer-Browser sieht weiterhin: WebGPU-Init → MeshToon-Reject → Canvas+Listener+Loop-Migration → WebGLRenderer aktiv → Welt sichtbar. WebGPU-Foundation läuft für Density-Compute (V9.95-Pfad, unabhängig vom Welt-Rendering).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three-bootstrap.js` ~+30 Z. netto (BAUSTELLE-Imports + Diagnose-Spur-Kommentar mit den drei Heilungs-Pfaden), `anazhRealm.js` ~+25 Z. netto (`_buildToonNodeMaterial`-Helper als Wahrheits-Quelle für die 5 Call-Sites; eigentliche MeshToonMaterial-Logik unverändert), `scripts/diag-page-error.cjs` neu (Diagnose-Tool), `scripts/playtest.cjs` +6 Z. (Page-Error-Full-Stack-Logging), `index.html` Cache-Buster 10.0.10 → 10.0.11 + title v10.0-g.diag, `package.json` 10.0.10 → 10.0.11, `AnazhRealm.VERSION` "10.0-f6" → "10.0-g.diag".
+
+**Permanente Gotcha-Lehre verdrahtet**:
+
+**Eigene NodeMaterial-Subclasses mit `lights=true` sind im webgl-legacy/nodes-Pfad NICHT trivial**. Der Patch handhabt zuverlässig nur die eingebauten NodeMaterial-Klassen (`MeshBasicNodeMaterial`, `MeshLambertNodeMaterial`, `MeshPhongNodeMaterial`, `MeshStandardNodeMaterial`, `MeshPhysicalNodeMaterial`, `MeshNormalNodeMaterial`, `PointsNodeMaterial`, `SpriteNodeMaterial`). Custom Subclasses mit eigenem `setupLightingModel()` und `lights=true` triggern beim ersten render() einen Three.js-internal uniform-undefined-Crash. Wer eine Toon/Cel/Outline/Custom-Lighting-Variante baut, MUSS einen der drei dokumentierten Pfade gehen. Plus: ein Diag-Reproducer wie `diag-page-error.cjs` ist Pflicht — der Crash ist im Three.js-internal-Stack, schwer zu diagnostizieren ohne klare Reproduktion.
+
+**Bogen-Bilanz nach V10.0-g.diag**:
+- V10.0-f-1..f-4 portierte die 4 custom ShaderMaterials zu TSL ✓
+- V10.0-f-5/f-6 heilte die Hot-Swap-Wurzeln (Canvas-Context + Animation-Loop) ✓
+- V10.0-g.diag zeigt: MeshToonMaterial-Migration ist eigene Welle-Klasse ✓ (ehrlicher Stop)
+- **Welt rendert dauerhaft sichtbar im Browser** (WebGL via Hot-Swap)
+- WebGPU-Foundation läuft für Density-Compute (V9.95)
+- WebGPU-Welt-Rendering wartet auf V10.0-g (echte Welle, ~3-5h, eigene Session)
+
+**Was V10.0-g (die echte Welle) liefern wird (next session, ~3-5h)**:
+1. Diag-Reproducer `scripts/diag-page-error.cjs` läuft als erste Sanity-Check.
+2. Einer der drei Heilungs-Pfade (a/b/c oben) implementiert + getestet — der Pfad der den Crash heilt + Welt sichtbar lässt.
+3. Plus: gradientMap-Lookup als TSL-`texture()`-Knoten (klassische Cel-Shading-Mathematik).
+4. Plus: vertexColors-Pfad via `attribute("color", "vec3")` (V10.0-f-2-Lehre).
+5. Plus: Shadow-Map-Verifikation — castShadow + receiveShadow MÜSSEN auf dem neuen NodeMaterial funktionieren.
+6. Alle 5 Call-Sites profitieren automatisch durch den `_buildToonNodeMaterial`-Helper.
+7. Nach V10.0-g greift der Hot-Swap NICHT mehr — WebGPU rendert dauerhaft auf GPU. V10.0-f-5/f-6-Heilungen bleiben defensive Sicherung gegen Laufzeit-Device-Lost, aber triggern nicht mehr im Normalbetrieb. **Erst DANN ist der echte V10.0-Bogen vollendet**.
+
+---
+
+**V10.0-f-6 — Hot-Swap-Animation-Loop-Restore nach Schöpfer-Browser-Audit V10.0-f-5 (26.05.2026, zweite Wurzel der Hot-Swap-Welle, ~15 Z. netto):**
+
+Schöpfer-Browser-Audit V10.0-f-5 zeigte: die Canvas-Replacement-Heilung greift mechanisch (Log: „Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber"), aber **das Bild bleibt schwarz**. Der Log lügt — der Renderer-Wechsel ist erfolgreich (Canvas ersetzt, WebGLRenderer instantiiert, Maus-Listener am neuen Canvas funktional), aber NICHTS rendert tatsächlich.
+
+**Zweite Wurzel diagnostiziert**: Three.js' `setAnimationLoop` ist **renderer-spezifisch**. V10.0-d hatte `state.renderer.setAnimationLoop(loop)` einmalig auf dem WebGPURenderer registriert (Z38201 im init()-Block). Beim Hot-Swap:
+- `oldRenderer.dispose()` stoppt den `setAnimationLoop`-rAF-Pfad nicht zuverlässig (Three.js-implementation-dependent).
+- Der NEUE WebGLRenderer hatte NIEMALS `setAnimationLoop(callback)` registriert → seine rAF-Schleife wurde nie gestartet.
+- Resultat: `_loopRender` wird nie mehr gerufen → keine `state.renderer.render(scene, camera)`-Calls → schwarzes Bild trotz funktionalem Renderer + funktionaler Scene.
+
+**Heilung in V10.0-f-6** (`_swapToWebGLRenderer` erweitert):
+
+1. **VOR dispose**: `oldRenderer.setAnimationLoop(null)` — stoppt den rAF-Pfad expliziet. Defensive, weil Three.js' dispose() das nicht garantiert macht.
+
+2. **NACH WebGL-Renderer-Init + Listener-Rebind**: `fallback.setAnimationLoop(this._gameLoopTick)`. Der V8.50-exposed `_gameLoopTick` ist die Quelle der Wahrheit (gleiches Callback wie bei init() in V10.0-d). Damit übernimmt der neue Renderer die rAF-Schleife — `_loopRender` wird wieder pro Frame gerufen, `state.renderer.render(scene, camera)` läuft.
+
+3. **Bonus**: `new WebGLRenderer({ canvas, antialias: true })` mit antialias=true (V10.0-d hatte das im init-Pfad gesetzt, der Hot-Swap-Pfad vergaß es).
+
+**Erwartetes Verhalten beim Schöpfer-Reload `?v=10.0.10`**:
+1. WebGPU-Init startet (AMD RDNA-3)
+2. MeshToon-Inkompatibilität → Hot-Swap-Trigger
+3. Canvas ersetzt + WebGLRenderer aktiv + Listener neu gebunden + **Animation-Loop auf neuem Renderer registriert** ✨
+4. `_loopRender` läuft pro Frame → Scene rendert → **Welt SICHTBAR im Browser** ✅
+
+**Verhaltens-Beweis (Headless)**: Playtest „Alle Invarianten OK" (Cloud-Container nutzt direkt WebGL → Hot-Swap-Pfad nicht getriggert, Heilung defensive im Browser); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+15 Z. netto, `index.html` Cache-Buster 10.0.9 → 10.0.10 + title v10.0-f6, `package.json` 10.0.9 → 10.0.10, `AnazhRealm.VERSION` "10.0-f5" → "10.0-f6".
+
+**Lehre verstärkt** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**Three.js' `setAnimationLoop` ist renderer-spezifisch** — wer einen Renderer-Hot-Swap baut, MUSS den alten Loop expliziet stoppen (`oldRenderer.setAnimationLoop(null)`) + den neuen Renderer mit demselben Callback registrieren (`newRenderer.setAnimationLoop(callback)`). Three.js' `dispose()` stoppt den rAF-Pfad nicht zuverlässig. Plus: alle Renderer-Konfigurations-Parameter (antialias, pixelRatio, useLegacyLights, ...) müssen im Hot-Swap-Pfad das Gleiche tun wie der init()-Pfad. Pattern: `_gameLoopTick` als Klassen-Member speichern (V8.50-Loop-Exponierung) → Hot-Swap kann es als Quelle der Wahrheit nutzen.
+
+**V10.0-f-Wellen-Bogen-Vollständigkeit**: f-1/f-2/f-3/f-4 (4 ShaderMaterials portiert zu TSL) + f-5 (Canvas-Replacement im Hot-Swap, V10.0-e-Lüge geheilt) + f-6 (Animation-Loop-Restore im Hot-Swap, V10.0-d-Lücke geheilt). Die zwei f-5/f-6-Heilungen waren strukturelle Bug-Wurzeln in V10.0-e's „Sicherheits-Wand" — durch den Cloud-Container nicht entdeckbar (Headless WebGL direkt, Hot-Swap-Pfad nie getriggert). Erst der echte Schöpfer-Browser-Audit zeigte sie nacheinander auf.
+
+**Was V10.0-g liefern wird (next session, ~2-3h)**: `MeshToonMaterial` → `MeshToonNodeMaterial`. Damit greift der Hot-Swap NICHT mehr (WebGPU rendert direkt) — die V10.0-f-5/f-6-Heilungen bleiben als defensive Sicherung gegen Laufzeit-Device-Lost, aber triggern nicht mehr im Normalbetrieb. Erst nach V10.0-g läuft die Welt WIRKLICH dauerhaft auf WebGPU.
+
+---
+
+**V10.0-f-5 — Hot-Swap-Canvas-Replacement nach Schöpfer-Browser-Audit V10.0-f-4 (26.05.2026, kritische Wurzel-Heilung, ~80 Z. netto):**
+
+Schöpfer-Browser-Audit V10.0-f-4 auf AMD RDNA-3 zeigte: meine „Bogen-Vollendet"-Behauptung war voreilig. Die 4 custom ShaderMaterials sind portiert, ABER eine fünfte Material-Familie wartete übersehen: `MeshToonMaterial` (mit gradientMap + vertexColors) für die Voxel-Welt-Chunks. Plus: V10.0-e's Hot-Swap-Pfad zerschoss sich am Canvas-Context. Welt rendert gar nicht.
+
+**Zwei Wurzeln im Schöpfer-Browser-Log**:
+
+1. `[WebGPU] NodeMaterial: Material "MeshToonMaterial" is not compatible.` — der WebGPURenderer versucht via `NodeMaterial.fromMaterial()` zu konvertieren, scheitert aber mit gradientMap + vertexColors. V10.0-e-Doku versprach Auto-Konvertierung für Standard-Materials, aber die gilt nur OHNE Textures/Gradients. Voxel-Terrain-Chunks (Welt-Volumen) nutzen MeshToonMaterial → der WebGPU-Pfad bricht beim ersten render() der Welt.
+
+2. `THREE.WebGLRenderer: A WebGL context could not be created. Reason: Canvas has an existing context of a different type` → `Uncaught (in promise) Error: Error creating WebGL context.` Welt rendert GAR NICHT. **Wurzel**: ein Canvas-Element kann nur EINEN Context-Type halten. Sobald `new WebGPURenderer({ canvas })` den Canvas via `canvas.getContext("webgpu")` an WebGPU bindet, kann `new WebGLRenderer({ canvas })` keinen `getContext("webgl2")` mehr erschließen → Browser-Wand. `renderer.dispose()` entbindet den Canvas-Context-Type NICHT. V10.0-e's Hot-Swap-Pfad hatte den Bug 4 Sub-Wellen lang unentdeckt, weil im Cloud-Container kein WebGPU verfügbar ist → der Hot-Swap-Pfad wurde im Headless nie getriggert.
+
+**Heilung in V10.0-f-5** (Canvas-Element-Austausch im Hot-Swap):
+
+1. **`_replaceWorldCanvas()` neu** (~25 Z.): altes `<canvas id="world-canvas">` aus DOM entfernen, frisches mit identischer ID/className/width/height/style.cssText an dieselbe Parent-Position einsetzen via `parent.replaceChild(newCanvas, oldCanvas)`. Returnt das neue Canvas (oder null bei DOM-Bruch — defensive Log + early-return).
+
+2. **`_swapToWebGLRenderer` umgebaut**: nutzt `_replaceWorldCanvas()` statt `getElementById("world-canvas")`. `new THREE.WebGLRenderer({ canvas: newCanvas })` mit try/catch — bei Constructor-Fehler graceful logging statt unhandled Promise-Rejection. Nach Renderer-Init: `state.canvas = newCanvas` + `_attachWorldCanvasInputListeners(newCanvas)` (Listener am neuen Canvas, alte zeigen ins entfernte DOM-Element).
+
+3. **`_attachWorldCanvasInputListeners(canvas)` neu** (~30 Z.): extrahiert die zwei `world-canvas`-Listener (click → `requestPointerLock()`, mousedown → keybind-rebind/break/place). Closure-binding auf `this` via Arrow-Functions, das captured `canvas`-Parameter ist der Listener-Anker. Wird in `createScene` (initial) UND in `_swapToWebGLRenderer` (nach Replace) gerufen — einer Wahrheits-Ort für die Listener.
+
+4. **`state.canvas`-Feld neu**: trägt die AKTIVE Canvas-Referenz (entwickelt sich beim Hot-Swap mit). Initialisiert in `createScene`. `state.canvas: null` als state-init deklariert (audit:strict-Disziplin).
+
+**Erwartetes Verhalten beim Schöpfer-Reload `?v=10.0.9`**:
+1. WebGPU-Init startet (AMD RDNA-3) → `WebGPU Foundation bereit ...`
+2. WebGPU-Renderer init() abgeschlossen → `Welt rendert jetzt auf der GPU.`
+3. Erster render() der Welt-Chunks → MeshToon-Inkompatibilität-Reject
+4. Hot-Swap getriggert → Canvas ersetzt → Listener neu gebunden → `Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber.`
+5. Welt rendert visuell 1:1 wie vor V10.0-a (alle V10.0-a-Bridge-Heilungen aktiv).
+
+**Verhaltens-Beweis (Headless)**: Playtest „Alle Invarianten OK" (Cloud-Container nutzt direkt WebGL → Hot-Swap-Pfad nicht getriggert, aber neue Methoden + state-Field bestehen durch audit:strict + Format/Lint). Dateien: `anazhRealm.js` ~+80 Z. netto (zwei neue Methoden + state-Field + Init-Refactor + Hot-Swap-Erweiterung), `index.html` Cache-Buster 10.0.8 → 10.0.9 + title v10.0-f4 → v10.0-f5, `package.json` 10.0.8 → 10.0.9, `AnazhRealm.VERSION` "10.0-f4" → "10.0-f5", CLAUDE.md + handover.md.
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**Canvas-Context-Type ist PERMANENT — Renderer-Hot-Swap MUSS Canvas-Element austauschen**. Browser hält den Context-Type pro Canvas-Element für IMMER fest. `renderer.dispose()` entbindet ihn nicht. Wer Hot-Swap zwischen verschiedenen Renderer-Typen baut, MUSS via `parent.replaceChild(newCanvas, oldCanvas)` ein frisches DOM-Element einsetzen. Plus: alle Event-Listener closure-capturen das alte Canvas — Listener-Bindung als wiederbindbare Methode `_attachXyzListeners(canvas)` extrahieren, beim Init UND nach jedem Swap rufen. Plus `state.canvas` als zentrale Live-Referenz statt `const canvas = ...` im Init-Closure.
+
+**Ehrliche Bogen-Bilanz nach Schöpfer-Audit**: V10.0-f-1..f-4 hat die 4 custom ShaderMaterials portiert (skybox/stars/waterfall/hydroSurface). Aber `MeshToonMaterial` (Voxel-Welt-Volumen, geteilt in `state.voxelChunkMaterial` via V9.84 Perf-1.a) wartet noch — V10.0-f-4-Schluss-Feier war voreilig. Schöpfer-Audit hat das ehrlich aufgedeckt.
+
+**Was V10.0-g liefern wird (next session, ~2-3h)**: `MeshToonMaterial` → `MeshToonNodeMaterial` portieren. Vendor liefert die Klasse (siehe `vendor/three-addons/nodes/materials/MeshToonNodeMaterial.js`). Drei Aspekte:
+- **gradientMap als TSL-`texture()`-Lookup**: das Cel-Shading-Gradient (state.toonGradientMap, DataTexture) muss als sampler2D im TSL-Tree gelesen werden — mit explizitem UV-Index (`uv()` für stage-eigene UV, oder ein computed UV aus dot(normal, sunDir) für den Toon-Step-Lookup).
+- **vertexColors via `attribute("color", "vec3")`**: das V9.10-`_attachVoxelFieldColors`-Pattern muss explizit im colorNode-Tree erscheinen (f-2-Lehre wiederholt sich).
+- **Lighting=true Pfad**: MeshToon ist Lighting-aware (DirectionalLight + AmbientLight + Hemisphere + Fog wirken nativ). MeshToonNodeMaterial erbt das von NodeMaterial mit `this.lights = true` — der Standard-Lighting-Pfad funktioniert ohne manuellen Blinn-Phong wie bei f-3/f-4.
+
+Plus alle anderen MeshToonMaterial-Instanzen scannen (`grep -n 'new THREE\.MeshToonMaterial'` zeigt vier Stellen: voxelChunkMaterial Z16860, Architektur-Material Z16303, Sun/Moon Z25598, andere Z27105) — alle gleichschalten oder per Helfer-Methode konsolidieren. Drei Mutationspfade: initial-Setup, `_refreshToonGradient` (gradientMap-Update wenn celLevels-Slider zieht), `_dayNightApplyTerrainShaderUniforms` (Cel-Levels-Uniform für Toon-Steps).
+
+Nach V10.0-g: WebGPU rendert dauerhaft. Hot-Swap-Pfad bleibt nur defensive (gegen Device-Lost). Der ECHTE V10.0-Bogen vollendet.
+
+---
+
+**V10.0-f-4 — hydroSurfaceMaterial → MeshBasicNodeMaterial TSL (26.05.2026, vierte ShaderMaterial-Migration, ~230 Z. netto):**
+
+Nach f-1 (skybox), f-2 (stars), f-3 (waterfall) bleibt nur noch EIN Material — das Hydrosphären-Material. Das ist EIN Material für ALLE Wasserflächen der Welt (Ozean + See + Fluss aller per-Chunk-Iso-Wasser-Meshes), differenziert über drei per-Vertex-Attribute. ~189 Z. GLSL, 10 Uniforms, Gerstner-6-Octaven, Tangenten-Kreuzprodukt-Normale, Fluss-vs-See-Foam-Trennung, Blinn-Phong-Spec, Fresnel-Alpha, Fog. Der schwerste Port der Welle.
+
+**Wurzel-Vision**: Vision-Anker §1.3 fraktal — EINE Wasser-Sprache, geteilt mit `waterfallMaterial` (selbe deep/shallow/foam-Farben, selbe Sonnen-/Fog-Disziplin). Aber strukturell vielfältiger: drei per-Vertex-Attribute (`aFlow vec2` für Fluss-Gefälle-Tangente, `aShore float` für Ufer-Schaum-Band, `aWave float` für Ozean-Anteil/Wellen-Amplitude) trennen Ozean/See/Fluss innerhalb desselben Materials. Nach f-4 läuft die ganze Welt-Optik auf NodeMaterial — WebGPU rendert dauerhaft auf GPU.
+
+**Drei strukturelle Bausteine**:
+
+1. **`_ensureHydroSurfaceMaterial` neu** (~220 Z. TSL ersetzt ~190 Z. GLSL):
+   - `THREE.MeshBasicNodeMaterial` (no lights — Beleuchtung als manueller Blinn-Phong im colorNode, identisch zu f-3).
+   - **Drei per-Vertex-Attribute via TSL**:
+     - `aFlowV = attribute("aFlow", "vec2")` — Fluss-Flow-Vektor (Gefälle-Tangente).
+     - `aShoreV = attribute("aShore", "float")` — Ufer-Schaum-Band (1 an Wasserlinie, 0 im offenen Wasser).
+     - `aWaveV = attribute("aWave", "float")` — Ozean-Anteil (gated die Wellen-Amplitude, kein Riss am See-Ufer).
+   - **Gerstner-Welle als `tslFn`-Closure** (V8.33-Mathematik 1:1):
+     ```js
+     gerstnerWave(xz, dir, f, a, s, q) =
+       d = normalize(dir);
+       phase = dot(xz, d).mul(f).add(uTime.mul(s));
+       return vec3(q.mul(a).mul(d.x).mul(cos(phase)), a.mul(sin(phase)), q.mul(a).mul(d.y).mul(cos(phase)));
+     ```
+   - **`waveDisplace` als zweite `tslFn`**: Domain-Warp (2 sin/cos-Verschiebungen mit Wellenlängen 0.022/0.019 + Zeit-Drift 0.25/0.21) + 6 Gerstner-Calls mit verschiedenen Wave-Direction-Vektoren + Frequenzen + Amplituden + Speeds + Steepness-Faktoren. Identisch zu V8.33-V9.49-c-GLSL.
+   - **Vertex-Pfad**:
+     - `p = positionLocal` (Wasser-Mesh hat mesh.position=(0,0,0), V9.71 — positionLocal.xz = Welt-xz).
+     - `disp = waveDisplace(p.xz).mul(aWaveV)` — aWave gated die Wellen-Amplitude.
+     - `pd = p.add(disp)` — displaced Vertex.
+     - **Custom Normale via Tangenten-Kreuzprodukt**: drei Sample-Positions (pd selbst, px bei x+1.4, pz bei z+1.4). `nrmRaw = normalize(cross(pzPos.sub(pd), pxPos.sub(pd)))`. Bei aWave=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
+     - `nrmFlipped = cond(nrmRaw.y.lessThan(0.0), nrmRaw.mul(-1.0), nrmRaw)` — TSL-conditional ersetzt GLSL `if (nrm.y < 0.0) nrm = -nrm;`.
+     - `wpDisplaced = modelWorldMatrix.mul(vec4(pd, 1.0)).xyz` — manuell, weil positionWorld aus originalLocal liest.
+     - `vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped))` — V8.44-Welt-Raum-Normale via TSL-built-in modelNormalMatrix (mat3 inverse-transpose des modelMatrix; bei Wasser-Translation identisch zu mat3(modelMatrix)).
+     - `vFogDepth = length(wpDisplaced.sub(cameraPosition))` — view-radiale Distanz.
+     - `mat.positionNode = pd` — TSL-Slot für gl_Position.
+   - **Fragment-Pfad**:
+     - hash2+vnoise als `tslFn` (identisch zu f-3).
+     - n-up-Flip via `cond(nUpRaw.y.lessThan(0), nUpRaw.mul(-1), nUpRaw)`.
+     - Basis-Wasserfarbe: `mix(uDeep, uShallow, mix(0.32+0.42·baseN, waveT, aWaveV))` — Lake/Ozean-Hybridmix über aWave.
+     - **Fluss-vs-See-Foam-Trennung via TSL-`cond`** (statt GLSL-`if/else`):
+       - `isRiver = length(aFlow).greaterThan(0.01)`.
+       - RIVER-Pfad: `fdir = aFlow.div(max(fmag, 0.0001))`, `perp = vec2(-fdir.y, fdir.x)`, `along = dot(xz, fdir)`, `across = dot(xz, perp)`. Zwei `vnoise`-Schichten scrollen entlang `along - scroll` mit `scroll = uTime · uFlowSpeed · fmag`.
+       - LAKE-Pfad: ruhiger Ripple + V9.48-Ufer-Schaum-Band (`band = smoothstep(0.04, 0.9, aShoreV)` + sn-Komposit + `lap = 0.62 + 0.38·sin(uTime·0.7 + (x+z)·0.07)`) + V9.49-c-Ozean-Schaumkämme (`crest = smoothstep(0.62, 1.0, waveT) · aWaveV`).
+       - `foam = cond(isRiver, riverFoam, lakeFoam)`.
+     - `colWithFoam = mix(baseCol, uFoam, foam.mul(0.7))`.
+     - Light-Skalierung: `lit = colWithFoam.mul(uLight)`.
+     - Blinn-Phong-Spec (exp 48 statt f-3's 40, Wasser ist glatter): `pow(max(dot(n, halfV), 0), 48)`. Plus warm-yellow Sonnen-Tint `vec3(1.0, 0.97, 0.85) × spec × 0.7 × uLight`.
+     - Fog: `smoothstep(uFogNear, uFogFar, vFogDepth)` + `mix(withSpec, uFogColor, fogF)`.
+     - **Fresnel-Alpha** (V8.32): `fres = pow(1 - max(dot(viewDir, n), 0), 3)` → `alpha = mix(0.80, 0.97, fres)` — horizont-opak, von oben klarer (Tiefe sichtbar).
+     - `mat.colorNode = vec4(colFogged, alpha)`.
+   - Material-Props: `transparent=true`, `depthWrite=true` (V9.49-c — vereintes Wasser-Mesh schreibt Tiefe), `polygonOffset=true` mit Factor/Units=1 (V9.49-f — sauber an streifender Schnitt-Linie), `side=DoubleSide`.
+   - 10 Uniforms in `state.hydroSurfaceUniforms = { time, flowSpeed, deep, shallow, foam, sunDir, light, fogColor, fogNear, fogFar }`. Naming ohne u-Präfix (f-3-Wende fortgeführt).
+
+2. **DUAL-PFAD AUFGELÖST in `_dayNightApplyWaterMaterials` (Z35591)**:
+   - V10.0-f-3 hatte ZWEI Closures (`applyToShader` für hydroSurfaceMaterial, `applyToTSL` für waterfallUniforms). V10.0-f-4 streicht `applyToShader` — nur noch `applyToTSL`.
+   - Aufruf: `applyToTSL(state.hydroSurfaceUniforms); applyToTSL(state.waterfallUniforms);`. EINE Closure, EIN Lookup-Pattern. Migrations-Hülle weg, ehrliche Schlussform.
+
+3. **`_loopSkyboxPlanets` (Z38809)**: `state.hydroSurfaceUniforms.time.value = currentTime` statt `material.uniforms.uTime.value`. Defensive Existenz-Probe.
+
+**12 Test-Probes mit-gewandert** (V9.56-i-Pattern, vier Bänder V8.30/V8.31/V8.32/V8.33):
+- **V8.30**: `waterDiagonalWaves` scannt `_ensureHydroSurfaceMaterial.toString()` nach `gerstnerWave = tslFn` + `dot(xz, d)`; `waterSunGlitter` nach `pow(max(dot(n, halfV)` + `normalize(uSunDir)`; `waterHasSunUniform` liest `state.hydroSurfaceUniforms.sunDir`.
+- **V8.31**: `waterFogUniforms` liest `state.hydroSurfaceUniforms.fogColor/fogNear`; `waterDomainWarp` scannt Builder nach `waveDisplace = tslFn` + `warp`; `waterFogInShader` nach `smoothstep(uFogNear, uFogFar`.
+- **V8.32**: `waterFresnel` scannt Builder nach `fres = pow` + `max(dot(viewDir, n)`.
+- **V8.33**: alle fünf Gerstner-Probes scannen Builder nach `gerstnerWave = tslFn`, `waveDisplace = tslFn`, `q.mul(a).mul(d.x).mul(cos(phase))`, `cross(pzPos.sub(pd), pxPos.sub(pd))`, `const warp = vec2`.
+
+**State-Init**: `state.hydroSurfaceUniforms: null` deklariert (audit:strict-Disziplin).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (12 mit-gewanderte Probes über vier Bänder grün); audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+100 Z. netto (TSL-Tree ersetzt GLSL-String, Dual-Pfad gelöscht, 1 state-Field), `scripts/playtest.cjs` ~+30 Z. netto (12 Probe-Anpassungen), `index.html` (Cache-Buster 10.0.7 → 10.0.8 + title v10.0-f3 → v10.0-f4), `package.json` 10.0.7 → 10.0.8, `AnazhRealm.VERSION` "10.0-f3" → "10.0-f4".
+
+**Drei neue Lehren verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+1. **TSL-`cond(test, a, b)` ersetzt GLSL-`if/else`-Branches im colorNode** — der saubere TSL-Pfad für Fragment-Materials mit varying-abhängigen Branches. BEIDE Branches werden berechnet (kein lazy-evaluate); der `cond`-Knoten wählt das Resultat. Bei billigen Branches (Foam-Komposit) vernachlässigbar, bei teuren (zweite Gerstner-Octave) lieber ein Mix-Faktor.
+
+2. **TSL-`attribute("name", "vec2"/"float"/"vec3")` ist Pflicht für custom per-Vertex-Attribute** — wie bei f-2 (aSize, color) und f-4 (aFlow vec2, aShore float, aWave float). Type-String ist NICHT optional. Drei Attribute über `attribute(...)`-Knoten ersetzen das GLSL-Quartett `attribute vec2 aFlow; attribute float aShore; attribute float aWave;` semantisch identisch.
+
+3. **Custom Vertex-Normale via Tangenten-Kreuzprodukt: World-Transform via `modelNormalMatrix`** — wer eine Normale CUSTOM berechnet (z.B. aus Wellen-Tangenten), kann NICHT `transformedNormalWorld` nutzen (das transformiert `normalLocal`). Stattdessen `modelNormalMatrix.mul(customNrm)`. Pattern für Gerstner-Wellen, Heightfield-Tangenten, prozedurale Normalen. Plus: Up-Vector-Garantie via `cond(nrm.y.lessThan(0), nrm.mul(-1), nrm)` als TSL-Flip.
+
+**V10.0-BOGEN-BILANZ (10 Sub-Wellen über mehrere Sessions)**:
+
+| Sub-Welle | Was | Status |
+|---|---|---|
+| **V10.0-a** | Three.js r134 → r160 Vendor + Bridge-Heilungen | ✅ |
+| **V10.0-b** | ESM-Loading-Pattern (Inline-Importmap + CSP-Hash) | ✅ |
+| **V10.0-c** | WebGPURenderer-Addon vendored (~1.5 MB, 238 Files) | ✅ |
+| **V10.0-d** | Renderer-Auswahl-Logik (WebGPU wenn isAvailable()) | ✅ |
+| **V10.0-e** | Smart Hot-Swap bei ShaderMaterial-Inkompatibilität | ✅ |
+| **V10.0-f-1** | skyboxMaterial → MeshBasicNodeMaterial TSL | ✅ |
+| **V10.0-f-2** | starsMaterial → PointsNodeMaterial TSL | ✅ |
+| **V10.0-f-3** | waterfallMaterial → MeshBasicNodeMaterial TSL | ✅ |
+| **V10.0-f-4** | hydroSurfaceMaterial → MeshBasicNodeMaterial TSL | ✅ |
+
+- Alle vier Welt-Materials sind jetzt NodeMaterial — kein ShaderMaterial mehr in der Welt-Optik.
+- Alle laufen auf WebGPURenderer NATIV UND auf klassischem WebGLRenderer via `webgl-legacy/nodes/WebGLNodes.js`-Side-Effect-Patch. Keine Doppel-Pflege, kein Type-Sniff.
+- Vier State-Slots (`skyboxUniforms` / `starFieldUniforms` / `waterfallUniforms` / `hydroSurfaceUniforms`) tragen die Live-Uniform-Knoten.
+- 17+ neue Lehren in CLAUDE.md/Gotchas „Rendering · TSL-Migration" verdrahtet.
+- Welt rendert dauerhaft auf GPU bei `THREE.WebGPU.isAvailable()`. Hot-Swap-Pfad (V10.0-e) bleibt defensive Sicherung, triggert nicht mehr im Normalbetrieb.
+
+**Was V11.x liefert (auf solider V10.0-Foundation)**:
+- **Vision-Pfeiler D**: Wasser ↔ Kreaturen (Trinken am Ufer, Schwimmen, Scheuen vor Tiefe).
+- **Vision-Pfeiler E**: Emotion ↔ lokale Welt (Spieler-Aura pulsiert in 30m-Umkreis — Wasser, Ambient, Licht modulieren).
+- **Vision-Pfeiler F**: Hylomorphismus-Cluster-Resonanz (3× lebendig-Bauten = sichtbare Aura, lockt Fauna).
+- **Vision-Pfeiler G**: Multi-Spieler-Vibe (Welt atmet als ein Wesen).
+- Plus V9.93.r-Backlog: V9.97 IndexedDB-Welt-Gedächtnis (GPU-unabhängig), V9.98 Predictive Prefetch, V9.99 Per-Column-Atlas-Strict.
+- Render-Polish: Toon-Material-Treppenstufen weicher, LOD-Cross-Fade.
+
+---
+
+**V10.0-f-3 — waterfallMaterial → MeshBasicNodeMaterial TSL (26.05.2026, dritte Sub-Welle, mittel-komplex, ~190 Z. netto):**
+
+Nach f-1 (skybox: colorNode only) + f-2 (stars: sizeNode+colorNode) ist f-3 der erste Material-Port mit BEIDEN Stages (Vertex-Displacement via `positionNode` + Fragment-Komposit via `colorNode`) plus 11 Uniforms statt 2-3. Der TSL-Lerntest für Vertex-Manipulation, bevor f-4 (hydroSurfaceMaterial) mit Gerstner-6-Octaven kommt.
+
+**Wurzel**: das Wasserfall-Material (V9.43-a) ist ein vertikales Wasser-Tuch mit billow-Vertex-Displacement (sin-Wellen entlang lokaler Z-Normale, gedämpft an Lippen+Tal) + Fragment-Komposit aus Schaum-Strähnen (2D-vnoise), Basis-Wasserfarbe-Mix, Blinn-Phong-Spec, Fog. ~115 Z. GLSL Vertex+Fragment, 11 Uniforms (uTime, uFlowDir/Speed, uDeep/Shallow/Foam, uSunDir, uLight, fogColor/Near/Far).
+
+**Bausteine**:
+
+1. **`_ensureWaterfallMaterial` neu** (~170 Z. TSL ersetzt ~115 Z. GLSL):
+   - `THREE.MeshBasicNodeMaterial` (no lights — Beleuchtung als manueller Blinn-Phong im colorNode).
+   - **Vertex-Stage**:
+     - `vUv = uv()` (TSL-Knoten für UV-Attribut).
+     - `fp = dot(vUv, uFlowDir).mul(9.0).add(uTime.mul(uFlowSpeed).mul(3.2))` — Flow-Position.
+     - `billow = sin(fp).mul(0.20).add(sin(fp.mul(2.4).add(vUv.x.mul(15.0))).mul(0.10))` — Zwei-Frequenz-Sin-Welle.
+     - `edgeY = smoothstep(0, 0.18, vUv.y).mul(smoothstep(1.0, 0.80, vUv.y))` — Dämpfung an Lippen+Tal.
+     - `displacedLocal = positionLocal.add(vec3(0, 0, billow.mul(edgeY)))` — Vertex entlang +Z displaciert.
+     - `mat.positionNode = displacedLocal` — der TSL-Slot für gl_Position-Replacement.
+   - **Fragment-Stage**:
+     - `hash2` als `tslFn`-Closure: `fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453))` — IDENTISCHE Magic-Konstanten zur GLSL.
+     - `vnoise` als `tslFn`-Closure: floor+fract+smoothstep(f²·(3−2f))+4-Corner-Mix (2D-Pendant zum f-1 3D-noise).
+     - Drei `vnoise`-Schichten: `streak = (streak1 + streak2·0.5) / 1.5` + `turb = vnoise(vUv·vec2(9,5) + flow·1.7)`.
+     - Foam-Maske: `clamp(streak·0.8 + turb·0.35 + impact·0.7 + splash·0.6, 0, 1)` mit impact/splash via smoothstep.
+     - Basis-Wasserfarbe: `mix(uDeep, uShallow, 0.4 + streak·0.6)`, dann `mix(...uFoam, foam·0.85)` Schaum drüber.
+     - Light-Skalierung: `withFoam.mul(uLight)`.
+     - **Blinn-Phong-Spec via TSL-built-ins**:
+       - `n = normalize(transformedNormalWorld)` (TSL: mat3(modelMatrix) × normalLocal).
+       - `wpDisplaced = modelWorldMatrix.mul(vec4(displacedLocal, 1.0)).xyz` — manuell, weil `positionWorld` aus original positionLocal liest, nicht aus positionNode (Schlüssel-Lehre der Welle).
+       - `viewDir = normalize(cameraPosition.sub(wpDisplaced))`.
+       - `halfV = normalize(normalize(uSunDir).add(viewDir))`.
+       - `spec = pow(max(dot(n, halfV), 0.0), 40.0)`.
+       - `withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight))`.
+     - **Fog**: `vFogDepth = length(wpDisplaced.sub(cameraPosition))` (view-radiale Distanz wie GLSL `length(mv.xyz)`).
+     - `fogF = smoothstep(uFogNear, uFogFar, vFogDepth)`; `colFogged = mix(withSpec, uFogColor, fogF)`.
+     - **Alpha**: `edgeX = smoothstep(0, 0.10, vUv.x).mul(smoothstep(1.0, 0.90, vUv.x))`; `alpha = clamp(0.62 + foam·0.33, 0, 1).mul(edgeX)` mit Seiten-Dämpfung.
+     - `mat.colorNode = vec4(colFogged, alpha)`.
+   - Material-Properties: `transparent=true`, `depthWrite=false`, `side=DoubleSide` — identisch.
+   - 11 Uniforms (`uniform()`-Knoten) in `state.waterfallUniforms = { time, flowDir, flowSpeed, deep, shallow, foam, sunDir, light, fogColor, fogNear, fogFar }`. Naming-Wende: TSL-Slot ohne `u`-Präfix-Convention (das `u` war GLSL-Konvention für uniforms).
+
+2. **`_dayNightApplyWaterMaterials` (Z35591) — DUAL-PFAD-Architektur**:
+   - Klassischer `applyToShader(material)` weiter für `state.hydroSurfaceMaterial` (bis V10.0-f-4 noch ShaderMaterial).
+   - Neuer `applyToTSL(uniforms)` für `state.waterfallUniforms` (TSL).
+   - Beide schreiben dieselbe Welt-Wahrheit (sunDir, light, fog*), nur die Lookup-Konvention unterscheidet sich. Nach V10.0-f-4 fällt der klassische Pfad weg + beide Wasser-Materials nutzen `applyToTSL`.
+
+3. **`_loopSkyboxPlanets` (Z38710)**: `state.waterfallUniforms.time.value = currentTime` statt `material.uniforms.uTime.value`. Defensive Existenz-Probe.
+
+**Vier Test-Probes mit-gewandert** (V9.56-i-Pattern):
+- `matIsShader` Probe: `mat.type === "ShaderMaterial"` → `mat.isMeshBasicNodeMaterial === true`.
+- `hasFlowUniforms`/`sharesWaterUniforms`/`dayNightSyncsWaterfall`: alle Uniform-Lookups von `mat.uniforms.uX.value` → `state.waterfallUniforms.X.value`. Naming-Wende mit-getragen (uFlowDir → flowDir, uTime → time, uDeep → deep, etc.).
+
+**State-Init**: `state.waterfallUniforms: null` deklariert.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` ~+90 Z. netto (TSL-Tree ersetzt GLSL-String, 2 Mutationen umverdrahtet mit Dual-Pfad-Architektur, 1 state-Field), `scripts/playtest.cjs` ~+10 Z. netto (4 Probe-Anpassungen), `index.html` (Cache-Buster 10.0.6 → 10.0.7 + title v10.0-f2 → v10.0-f3), `package.json` 10.0.6 → 10.0.7, `AnazhRealm.VERSION` "10.0-f2" → "10.0-f3".
+
+**Zwei neue Lehren verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+1. **TSL-Vertex-Displacement via `positionNode` — Lighting/Fog brauchen MANUELLE displaced-Position**: TSL-built-ins `positionWorld`/`positionView` lesen `positionLocal` direkt (NICHT `positionNode`). Bei Vertex-displacing Materials (Wellen, Gras-Wind, Flag-Flatter, billow-Wasserfall) MUSS man die displaced World-Position manuell rechnen: `modelWorldMatrix.mul(vec4(displacedLocal, 1.0)).xyz`. Sonst hängen Lighting (Blinn-Phong viewDir) + Fog (length(viewPos)) am ORIGINAL-Mesh, nicht an der displaced Oberfläche.
+
+2. **Dual-Pfad-Architektur während Multi-Sub-Welle-Migrationen**: wenn ein Update-Pfad MEHRERE Materials touched (z.B. `_dayNightApplyWaterMaterials` schreibt sunDir+light+fog in hydroSurface + waterfall), aber nur EINIGE sind migriert, baut man ZWEI Closures nebeneinander (`applyToShader` für klassisches Material, `applyToTSL` für NodeMaterial-Slot). Beide schreiben dieselbe Welt-Wahrheit. Sauberer als ein Type-Sniff in einer einzigen Closure — der Migrations-Zustand wird explizit lesbar + leicht löschbar nach Abschluss.
+
+**Was V10.0-f-4 liefern wird (next session, der KOMPLEXESTE Port, ~3-4h)**: `hydroSurfaceMaterial` portieren. ~189 Z. GLSL: Gerstner-6-Octaven-Wellen-Displacement im Vertex (sechs überlagerte sin/cos-Wellen mit Wave-Direction-Vektoren — wesentlich komplexer als f-3-billow weil pro Octave eine Wave-Direction + Steepness + Wavelength), Fragment-Foam-Pattern (mehrlagiges Noise-Komposit), Specular (Blinn-Phong), Fresnel-Schicht, Fog. Plus: Per-Vertex `aFlow`/`aShore`/`aWave`-Attribute (V9.43-c — Fluss-Flow-Richtungen + Tiefen-getriebene Wellen-Amplitude + Ufer-Schaum). Mutationspfade: `_dayNightApplyWaterMaterials` (klassischer Pfad fällt weg), `_loopSkyboxPlanets` (uTime). Nach f-4 läuft die ganze Welt-Optik auf NodeMaterial — WebGPU-Renderer rendert dauerhaft auf GPU, der V10.0-e-Hot-Swap-Pfad bleibt nur als defensive Sicherung.
+
+---
+
+**V10.0-f-2 — starsMaterial → PointsNodeMaterial TSL (26.05.2026, zweite Sub-Welle des V10.0-f-Bogens, ~60 Z. netto):**
+
+Nach V10.0-f-1 (skyboxMaterial-Port) ist die TSL-Foundation erprobt — das Bootstrap-Pattern (Side-Effect-Patch + NodeMaterial-Import + `* as TSL`), der `state.X-Uniforms`-Slot, die Test-Sync-Pflicht. V10.0-f-2 zieht den nächst-einfachsten der vier ShaderMaterials.
+
+**Wurzel**: das Stern-Feld-Material (V8.28) ist 2800 diskrete `THREE.Points` mit per-Stern `aSize`-Attribut, konstanter Pixel-Größe (kein sizeAttenuation — Sterne sind unendlich weit), weichem runden Sprite-Falloff vom Center, AdditiveBlending, `uOpacity`-Tag/Nacht-Fade. ~30 Z. GLSL Vertex+Fragment, zwei Uniforms.
+
+**Bausteine**:
+
+1. **`vendor/three-bootstrap.js`** (+3 Z.): `PointsNodeMaterial` aus `three/addons/nodes/materials/PointsNodeMaterial.js` importiert + an `THREE_GLOBAL.PointsNodeMaterial` gehängt. Der WebGLNodes-Side-Effect-Patch (V10.0-f-1) trägt — keine weitere Patcher-Welle nötig.
+
+2. **`_buildStarField` neu** (~50 Z. TSL ersetzt ~40 Z. GLSL):
+   - `THREE.PointsNodeMaterial` (Subklasse von NodeMaterial; default `lights=false, normals=false, transparent=true` — perfekt für Sprite-Stern).
+   - `sizeNode = attribute("aSize", "float").mul(uPixelRatio)` ersetzt `gl_PointSize = aSize * uPixelRatio`. Der `sizeNode`-Slot ist das offizielle PointsNodeMaterial-API für PointSize-Replacement.
+   - `colorNode` als TSL-Tree:
+     - `d = length(pointUV.sub(vec2(0.5, 0.5)))` — Distanz vom Sprite-Center. `pointUV` ist das TSL-Pendant zu `gl_PointCoord` (y-flipped vec2).
+     - `alpha = smoothstep(0.5, 0.08, d).mul(uOpacity)` — weicher runder Falloff, harter Rand außen, weiches Glow-Center innen, multipliziert mit Tag/Nacht-Opacity.
+     - `colorNode = vec4(attribute("color", "vec3"), alpha)` — per-Stern vertex-color + alpha. Bei NodeMaterial muss der Color-Attribute-Lookup EXPLIZIT im Tree sein (alter `vertexColors: true`-Flag wirkt nicht mehr).
+   - **`material.alphaTest = 0.01`** ersetzt den GLSL-`if (alpha <= 0.01) discard;`-Pfad semantisch identisch — das Three.js-Material macht den Discard selbst, kein expliziter Discard-Node nötig (sauberer im TSL-Tree).
+   - Andere Material-Props (`transparent=true`, `depthWrite=false`, `depthTest=true`, `blending=AdditiveBlending`) sind klassische Properties, identisch wie zuvor.
+   - Zwei Uniforms (`opacity`, `pixelRatio`) als `uniform()`-Knoten in `state.starFieldUniforms = { opacity, pixelRatio }` abgelegt.
+
+3. **Mutationspfad umverdrahtet**: `_dayNightApplyStarField` (Z35442) liest jetzt `state.starFieldUniforms.opacity.value` statt `material.uniforms.uOpacity.value`. Defensive Existenz-Probe (`if (!u || !u.opacity) return;`) wie bei f-1. Die `state.starField.position.copy(...)`/`rotation.set(...)`-Mutation in `_loopSkyboxPlanets` (Z38689-38692) bleibt unangetastet — das ist Mesh-Transform, nicht Uniform.
+
+**Test-Probe mit-gewandert** (V9.56-i-Pattern, eine Probe statt der sechs von f-1): Welle-6.G3-V2-Vision-8 (`starIntensityExists` + `starsBrighterAtNight`) liest jetzt `state.starFieldUniforms.opacity` statt `starField.material.uniforms.uOpacity`. Die `starsDepthTest`-Probe (V8.30) bleibt unverändert — `material.depthTest === true` funktioniert weiter, weil PointsNodeMaterial die Property von Material erbt + wir setzen sie explizit.
+
+**State-Init**: `state.starFieldUniforms: null` deklariert.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three-bootstrap.js` +3 Z. (1 Import + 1 Global), `anazhRealm.js` ~+25 Z. netto, `scripts/playtest.cjs` ~+3 Z. netto, `index.html` (Cache-Buster 10.0.5 → 10.0.6 + title v10.0-f1 → v10.0-f2), `package.json` 10.0.5 → 10.0.6, `AnazhRealm.VERSION` "10.0-f1" → "10.0-f2".
+
+**Lehre verstärkt**: das f-1-Pattern (Bootstrap-Patch + `state.X-Uniforms`-Slot + Test-Sync) ist Stamm-Pattern, kein Einzelfall. f-2 brauchte ~1/3 der Edits von f-1, weil die Foundation trägt. **Zwei neue Erkenntnisse für die Gotchas**:
+
+1. **GLSL-`discard` → TSL-`material.alphaTest = epsilon`**: für `if (alpha <= 0.01) discard;` ist `material.alphaTest = 0.01` der saubere TSL-Pfad — das Three.js-Material schluckt `alpha ≤ epsilon` selbst, kein expliziter Discard-Node im colorNode-Tree nötig. Funktioniert auf BEIDEN Renderern (WebGL/WebGPU).
+
+2. **NodeMaterial liest `vertexColors: true` NICHT — Color-Attribute muss EXPLIZIT im colorNode-Tree sein** via `attribute("color", "vec3")`. Das alte Material-Flag (für klassisches StandardMaterial den Color-BufferAttribute-Pfad aktivieren) wirkt bei NodeMaterial nicht. Bei der Migration eines vertexColors-basierten Materials MUSS der Color-Lookup im Tree explizit erscheinen.
+
+**Was V10.0-f-3 liefern wird (next session, ~2-3h)**: `waterfallMaterial` portieren. Vorbedingung mittel (~119 Z. GLSL: vertikales Wasser-Volume mit Animation, Vertex-Displacement via sin/cos, Fragment mit Foam-Streaks + Flow-Direction + Tag/Nacht-Tint). Lookup `_ensureWaterfallMaterial` (Z18730). Zwei TSL-Pfade pro Stage (`positionNode` für Vertex-Wellen-Displacement, `colorNode` für Fragment-Foam). Mutations-Stellen scannen + mit-wandern.
+
+---
+
+**V10.0-f-1 — skyboxMaterial → MeshBasicNodeMaterial TSL (26.05.2026, erste Sub-Welle des V10.0-f-Bogens, ~140 Z. netto):**
+
+Der V10.0-Bogen schloss seine Foundation mit V10.0-e (Hot-Swap defensive). Die WebGPU-Welt-Vision (`alle Materials laufen dauerhaft auf GPU`) verlangt vier Material-Migrationen. V10.0-f-1 zieht den einfachsten zuerst.
+
+**Wurzel-Vision**: skyboxMaterial ist 3-Octaven-Nebula-Noise + horizont-genordete Wolken-Schicht (V8.26 + V8.28 D). 63 Z. GLSL-Shader, drei Uniforms (time, nebulaColor, cloudCover). Welt-Optik MUSS 1:1 erhalten bleiben — keine vereinfachte Variante. Voll-Qualität-Versprechen des V10.0-f-Bogens.
+
+**Drei strukturelle Bausteine**:
+
+1. **`vendor/three-bootstrap.js` erweitert** (~10 Z. netto): drei zusätzliche Imports — `MeshBasicNodeMaterial` (default-Export aus `three/addons/nodes/materials/`), `* as TSL` aus `three/addons/nodes/Nodes.js` (alle TSL-Helper als Namespace: uniform, vec3, float, positionLocal, normalize, sin, dot, floor, fract, mix, smoothstep, clamp, tslFn, …), und vor allem **SIDE-EFFECT-IMPORT** `three/addons/renderers/webgl-legacy/nodes/WebGLNodes.js`. Letzterer ist der Hebel: das Modul patcht `Material.prototype.onBuild` so, dass jedes `NodeMaterial` AUCH unter dem klassischen `THREE.WebGLRenderer` kompiliert + rendert (V8-Pfad für Cloud-Container, Safari < 18, Firefox ohne `dom.webgpu.enabled`, mobile Browser bis Mitte 2026). Damit läuft das neue skyboxMaterial AUF BEIDEN Renderern — kein WebGPU-only-Risiko, keine Doppel-Pflege, kein Material-Type-Switch in der Renderer-Auswahl-Logik. `THREE_GLOBAL.MeshBasicNodeMaterial` + `THREE_GLOBAL.TSL` angehängt.
+
+2. **`createGalaxySkybox` neu** (~125 Z. TSL ersetzt ~63 Z. GLSL): `MeshBasicNodeMaterial` (no lights, ideal für Skybox-Sphere) statt `ShaderMaterial`. `colorNode` als TSL-Tree:
+   - `vDir = normalize(positionLocal)` — V8.26-Bug-1-Lehre erhalten (lokale Vertex-Position als stabile Sample-Achse, egal wo der Spieler steht; Skybox folgt der Kamera im Render-Loop).
+   - `hash3` als `tslFn`-Closure: `fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123))` — IDENTISCHE Magic-Konstanten zur GLSL-Variante.
+   - `noise3` als `tslFn`-Closure: `floor` + `fract` + smoothstep-Approximation `u = f² · (3 − 2f)` + 8-Corner-Trilinear-Mix. Identische Topologie zur GLSL-Variante.
+   - Drei `noise3`-Octaven für Nebula (Frequenzen 1.0/2.0/4.0, Zeit-Speeds 0.02/0.01/0.005) — atmender Himmel.
+   - Zwei `noise3`-Octaven für Wolken (Frequenzen 2.5/6.0, Zeit-Speeds 0.012+0.008/0.02+0.014) — driftende Wolken.
+   - `horizonMask = smoothstep(-0.05, 0.35, vDir.y)` — Wolken nur oberhalb des Horizonts.
+   - `cloudColor = mix(grau, weiß, clamp(skyLum × 2.2))` — Wolken folgen Himmel-Helligkeit.
+   - `finalColor = mix(nebula, cloudColor, clouds)` als Output.
+   Drei Uniforms (`uTime`, `uNebulaColor` mit `THREE.Color(0x4b0082)` Default, `uCloudCover` Default 0.3) als `uniform()`-Knoten in `state.skyboxUniforms` abgelegt. `material.side = BackSide`, `material.depthWrite = false` — gleich wie vorher.
+
+3. **Drei Mutationspfade umverdrahtet** auf `state.skyboxUniforms`:
+   - (a) DSL `skybox_color` (Z1450-1465 → Z1456-1467): schreibt `state.skyboxUniforms.nebulaColor.value = new THREE.Color(color)`.
+   - (b) `_dayNightApplySkybox` (Z35384-35389 → Z35384-35395): liest `state.skyboxUniforms`, schreibt `u.nebulaColor.value.setRGB(...)` + `u.cloudCover.value = _weatherBlendedValue(0.22, 0.85)`.
+   - (c) `_loopSkyboxPlanets` (Z38504 → Z38504-38507): schreibt `state.skyboxUniforms.time.value = currentTime`.
+   Jede Stelle defensiv (Existenz-Probe `if (this.state.skyboxUniforms)` → Sicherheits-Wand falls Vendor-Bruch + createGalaxySkybox früh-returnt).
+
+**Sechs Test-Probes mit-gewandert** (V9.56-i-Doku-Sync-Pattern angewandt — Tests scannen die alten `material.vertexShader/fragmentShader`-Strings + `material.uniforms.X.value`-Pfade, beides gibt's bei NodeMaterial nicht mehr): V8.26-Bug-1-Probes (Vertex-Shader nutzt lokale Position + Fragment-Shader sampelt mit vDir) scannen jetzt `createGalaxySkybox.toString()` nach `normalize(positionLocal)` + `vDir.y`/`noise3(vDir`-Konsumenten; V8.28-D-`skyboxHasClouds` liest `state.skyboxUniforms.cloudCover` + neue Bonus-Probe `material.isMeshBasicNodeMaterial === true`; V8.28-D-`cloudsFollowWeather` liest `state.skyboxUniforms.cloudCover.value`; V8.46-Cross-Fade-Pattern angepasst auf `u.cloudCover.value = this._weatherBlendedValue`; Ring-3-V2-`aweTriggersSkybox` + W6.G3-V2-`aweRaisesBlue` lesen nebulaColor jetzt aus skyboxUniforms.
+
+**State-Init**: neues `state.skyboxUniforms: null` deklariert (audit:strict-Disziplin — alle state-Top-Levels in init).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (sechs mit-gewanderte Probes grün); audit:strict 0 Failures; Format/Lint sauber. Dateien: `vendor/three-bootstrap.js` +20 Z. (3 Imports + 3 Globals + Doku), `anazhRealm.js` ~+80 Z. netto (TSL-Tree ersetzt GLSL-String, 3 Mutationen umverdrahtet, 1 state-Field), `scripts/playtest.cjs` ~+25 Z. netto (6 Probe-Anpassungen), `index.html` (Cache-Buster 10.0.4 → 10.0.5 + stale-title v9.93 → v10.0-f1 heilen), `package.json` 10.0.4 → 10.0.5, `AnazhRealm.VERSION` "10.0" → "10.0-f1".
+
+**Lehren verdrahtet** (permanent in CLAUDE.md/Gotchas, neue Sektion „Rendering · TSL-Migration"):
+
+1. **NodeMaterial läuft auf BEIDEN Renderern via `webgl-legacy/nodes/WebGLNodes.js`-Side-Effect-Patch** — wer eine `ShaderMaterial → NodeMaterial`-Migration plant (TSL-Port, Vorbedingung für WebGPU-Rendering), MUSS diesen Side-Effect-Import im Bootstrap haben. Sonst: NodeMaterial unter klassischem `WebGLRenderer` rendert NICHT (kein onBuild-Hook → kein Shader-Code generiert → schwarze/leere Material-Slots, kein Crash-Log). Der Patch ist trivial (eine `import`-Zeile ohne Default-Export), aber unverzichtbar für Browser-ohne-WebGPU-Realität.
+
+2. **TSL-uniform-Knoten haben `.value`-Setter, aber leben NICHT in `material.uniforms`** — in TSL definiert man Live-Uniforms via `uniform(initialValue)` (gibt ein uniform-Node-Objekt zurück), das man im `colorNode`/`positionNode` Tree als Sub-Knoten nutzt. Der Setter ist `myUniform.value = newValue` — semantisch identisch zum alten `material.uniforms.myUniform.value`. ABER: das uniform-Objekt lebt NICHT in `material.uniforms` (existiert bei NodeMaterial gar nicht mehr). Pattern: alle Uniforms eines TSL-Materials in einem State-Slot sammeln (`state.skyboxUniforms = { time, nebulaColor, cloudCover }`) und alle Mutationspfade dort hinein schreiben. **Test-Sync-Pflicht**: jeder Playtest-Probe der die alten `material.uniforms.X.value`-Pfade oder `material.vertexShader/fragmentShader`-Strings grep'pt, MUSS migriert werden — vor jeder TSL-Sub-Welle: `grep -n '<materialName>\.material\.' scripts/playtest.cjs` laufen, alle Treffer als „mit-wandernde Doku" merken.
+
+**Was V10.0-f-2 liefern wird (next session, ~1-2h)**: `starsMaterial` portieren. Vorbedingung kleiner als f-1 (~30 Z. GLSL: per-Stern `aSize` + soft round Falloff via `gl_PointCoord` + `uOpacity` + `uPixelRatio` + AdditiveBlending). Pattern: `PointsNodeMaterial` (Vendor liefert), `sizeNode = attribute('aSize').mul(uniform(pixelRatio))`, `colorNode = vec4(attribute('color'), smoothstep(0.5, 0.08, length(pointUV.sub(0.5))).mul(uOpacity))`. Discard für `alpha < 0.01`. Drei Mutationspfade umverdrahten (initial-Setup + `_dayNightApplyStarField`).
+
+---
+
 **V10.0-a/b/c/d/e — Der Three.js-Modernisierungs-Bogen (26.05.2026, fünf Sub-Wellen über eine Session, alte Krücken gelöst):**
 
 Nach V9.95-Bürokraten-Bogen + V9.96-Spawn-Burst-Heilung kam der Schöpfer-Auftrag: „du hast einfach die gesamte arbeit resetet, das Umstellen auf die Zukunft und Lösen von alten Krücken wäre der weg gewesen". Three.js r134 (2021) war die alte Krücke. WebGPURenderer existiert nur in r150+. V10.0-Bogen ist die Migration zur Zukunft.

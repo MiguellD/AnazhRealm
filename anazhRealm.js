@@ -25,6 +25,11 @@ class AnazhRealm {
             rendererKind: "webgl",
             rendererReady: false,
             rendererInkompatibel: false,
+            // V10.0-f-5 — aktives Canvas-DOM-Element. Initialisiert in
+            // createScene; nach einem Hot-Swap (`_swapToWebGLRenderer`) durch
+            // `_replaceWorldCanvas` ausgetauscht (das alte Element ist dann
+            // aus dem DOM entfernt, die closure-captured-Referenzen tot).
+            canvas: null,
             scene: null,
             camera: null,
             playerMesh: null,
@@ -52,6 +57,80 @@ class AnazhRealm {
             voxelRebuildAttempts: null,
             terrainPhysicsBody: null,
             skybox: null,
+            // V10.0-f-1 — Live-Uniforms der TSL-Skybox (uniform-Knoten mit
+            // .value-Setter): time, nebulaColor, cloudCover. Initialisiert in
+            // createGalaxySkybox(); mutiert von DSL skybox_color, _dayNight-
+            // ApplySkybox und _loopSkyboxPlanets (alle drei lesen aus diesem
+            // Slot statt aus dem alten material.uniforms).
+            skyboxUniforms: null,
+            // V10.0-f-2 — Live-Uniforms des TSL-Stern-Felds (uniform-Knoten):
+            // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
+            // _buildStarField(); mutiert von _dayNightApplyStarField.
+            starFieldUniforms: null,
+            // V10.0-f-3 — Live-Uniforms des TSL-Wasserfall-Materials (11 uniform-
+            // Knoten): time, flowDir, flowSpeed, deep/shallow/foam, sunDir,
+            // light, fogColor/Near/Far. Init in _ensureWaterfallMaterial();
+            // mutiert von _loopSkyboxPlanets (time) + _dayNightApplyWater-
+            // Materials (sunDir, light, fog*).
+            waterfallUniforms: null,
+            // V10.0-f-4 — Live-Uniforms des TSL-Hydrosphären-Materials (10 uniform-
+            // Knoten): time, flowSpeed, deep/shallow/foam, sunDir, light,
+            // fogColor/Near/Far. Init in _ensureHydroSurfaceMaterial(); mutiert
+            // von _loopSkyboxPlanets (time) + _dayNightApplyWaterMaterials
+            // (sunDir, light, fog*). Vollendet den V10.0-f-Bogen — alle 4
+            // Materials sind jetzt NodeMaterial.
+            hydroSurfaceUniforms: null,
+            // V10.0-g — Toon-Light-Uniforms für MeshBasicNodeMaterial-basiertes
+            // Toon-Shading (3 uniform-Knoten): sunDir, sunIntensity, ambient.
+            // Init lazy in _ensureToonLightUniforms(); mutiert von
+            // _dayNightApplyDirectionalLight + _dayNightApplyAmbient. Welt-
+            // global geteilt von allen ToonNodeMaterials (Voxel-Chunks,
+            // Architekturen, Inseln, Avatar). gradientMap-Lookup bleibt
+            // separat in state.toonGradientMap.
+            toonLightUniforms: null,
+            // V10.0-h — Manueller Shadow-Pass für WebGPU. `shadowRTT` ist das
+            // WebGLRenderTarget mit DepthTexture (2048×2048); `shadowDepthTexture`
+            // ist seine DepthTexture (compareFunction=LessCompare). Beide lazy
+            // initialisiert in _ensureShadowRenderTarget, gefüttert pro Frame
+            // via _renderShadowMapPass. Auf WebGL bleibt es null (Three.js'
+            // WebGLRenderer macht den Shadow-Pass selbst — nicht mehr aktiv
+            // mit MeshBasicNodeMaterial, eine V10.0-h.c-Folge-Welle wäre
+            // den manuellen Pass auch auf WebGL zu aktivieren).
+            shadowRTT: null,
+            shadowDepthTexture: null,
+            // V10.0-j — Override-Material für den manuellen Shadow-Pass
+            // (siehe _renderShadowMapPass). Minimales MeshBasicNodeMaterial
+            // ohne colorNode-Custom — alle Caster werden damit gerendert,
+            // kein instanceColor-Lookup-Crash. Lazy initialisiert.
+            shadowOverrideMat: null,
+            // V10.0-j.g — Defer-Queue für GPU-Resource-Disposals. Set
+            // statt Array — verhindert duplicate dispose() für SHARED
+            // Materials. Edgecase: `_disposeSoulGroup` traversiert ein
+            // Compound (z.B. Drache mit body/head/wing/tail, alle mit
+            // EINEM `new MeshBasicMaterial(...)`-Singleton geshared) →
+            // ohne Set würde dispose() N-mal gerufen → erste dispose()
+            // zerstört Buffer, zweite findet destroyed-buffer → Race +
+            // Three.js' WriteBuffer auf den disposed Uniform-Slot crasht
+            // („Buffer used in submit while destroyed"). Set garantiert
+            // genau EINE dispose-Aufruf pro Resource.
+            //
+            // Drain via `device.queue.onSubmittedWorkDone()` im _loopRender
+            // Ende — Promise resolved exakt wenn GPU alle Submits durch
+            // hat (deterministisch, kein Frame-Counter-Raten).
+            pendingDisposals: new Set(),
+            // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
+            // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
+            // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
+            // das alte `_grassInstanceMat` (MeshLambertMaterial mit GLSL-
+            // onBeforeCompile-Wind-Patch) ist nicht mehr aktiv genutzt —
+            // Gras nutzt jetzt `_buildToonNodeMaterial` pro Chunk. Die Wind-
+            // Uniforms bleiben als state-Slot für V10.0-g.cel-TSL-Wind.
+            windUniforms: null,
+            _grassMat: null,
+            // V10.0-j.j — Singleton-Cache für die ConeGeometry des Gras-
+            // Halmes. Profi-Vorbild Genshin/BotW: shared mesh-geometry für
+            // identische Asset-Kopien. Eine Geometry, viele InstancedMeshes.
+            _grassConeGeometry: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -1448,16 +1527,18 @@ class AnazhRealm {
                 this.state.timeOfDay = c(value, 0, 1);
             },
             skybox_color: ([color]) => {
-                // Die Skybox-Shader hat das Uniform `nebulaColor` (siehe
-                // createGalaxySkybox). Vorher schrieb dieser DSL-Op fälschlich
-                // in ein nicht existierendes `tintColor`-Uniform und war
-                // daher seit Phase 1 ein stiller No-Op — Ring 3 V2 hat das
-                // beim Trigger-Test bemerkt.
+                // V10.0-f-1 — Skybox ist jetzt MeshBasicNodeMaterial (TSL),
+                // Uniforms leben in `state.skyboxUniforms` als uniform-Knoten
+                // mit direkt mutierbarem `.value`. Der alte
+                // `material.uniforms.nebulaColor.value`-Pfad ist weg.
+                // Pre-V10.0-f-1-Lehre (Ring 3 V2): vorher hieß das Uniform
+                // fälschlich `tintColor` und war ein stiller No-Op — der
+                // jetzige Pfad schreibt die kanonische Welt-Wahrheit.
                 if (typeof color !== "string") return;
-                const skybox = this.state.skybox;
-                if (skybox && skybox.material && skybox.material.uniforms && skybox.material.uniforms.nebulaColor) {
+                const uNebula = this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor;
+                if (uNebula) {
                     try {
-                        skybox.material.uniforms.nebulaColor.value = new THREE.Color(color);
+                        uNebula.value = new THREE.Color(color);
                     } catch {
                         // ungültige Farbe ignorieren
                     }
@@ -6106,9 +6187,20 @@ class AnazhRealm {
 
     _p2pDisposeMesh(obj) {
         if (!obj || typeof obj.traverse !== "function") return;
+        // V10.0-j.h — Profi-Pattern (Genshin/BotW): Compound-Disposes disposen
+        // NUR Geometries, NICHT Materials. Wurzel: Three.js' WGSL-Material
+        // hat Uniform-Buffer-Pool-Slots; material.dispose() triggert eine
+        // Cascade-Invalidation (RenderObject.onMaterialDispose → bindings.
+        // delete + pipelines.delete + nodes.delete) die Race-anfällig mit
+        // dem pending Submit ist. Wenn ein Compound 5 Sub-Meshes mit
+        // shared Material hat (Drache: body/head/wing/tail), würde das
+        // dispose 5 RenderObjects auf einmal invalidieren → Pool-Reorganisation
+        // mid-submit → WriteBuffer-Crash auf den disposed Uniform-Slot.
+        // Materials akkumulieren minimal (~50 Bytes pro Material × 100
+        // Compounds = vernachlässigbar), Geometry-Disposes räumen den
+        // GROSSEN Heap-Anteil (Vertex/Index-Buffers).
         obj.traverse((node) => {
-            if (node.geometry && node.geometry.dispose) node.geometry.dispose();
-            if (node.material && node.material.dispose) node.material.dispose();
+            if (node.geometry) this._queueDispose(node.geometry);
         });
     }
 
@@ -6174,8 +6266,9 @@ class AnazhRealm {
         if (entry.nameLabel) {
             if (this.state.scene) this.state.scene.remove(entry.nameLabel);
             if (entry.nameLabel.material) {
-                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
-                entry.nameLabel.material.dispose();
+                // V10.0-j.e — Defer (CanvasTexture + Material, WebGPU Submit-Race).
+                if (entry.nameLabel.material.map) this._queueDispose(entry.nameLabel.material.map);
+                this._queueDispose(entry.nameLabel.material);
             }
             entry.nameLabel = null;
         }
@@ -6438,15 +6531,15 @@ class AnazhRealm {
         }
         if (entry.auraGlow) {
             if (this.state.scene) this.state.scene.remove(entry.auraGlow);
-            // Material disposen — aber NICHT die geteilte Gradient-Textur.
-            if (entry.auraGlow.material) entry.auraGlow.material.dispose();
+            // V10.0-j.e — Material-Dispose deferred (WebGPU Submit-Race).
+            if (entry.auraGlow.material) this._queueDispose(entry.auraGlow.material);
         }
         if (entry.nameLabel) {
             if (this.state.scene) this.state.scene.remove(entry.nameLabel);
             if (entry.nameLabel.material) {
-                // Name-Schild hat eine EIGENE CanvasTexture — die mit disposen.
-                if (entry.nameLabel.material.map) entry.nameLabel.material.map.dispose();
-                entry.nameLabel.material.dispose();
+                // V10.0-j.e — Defer (CanvasTexture + Material, WebGPU Submit-Race).
+                if (entry.nameLabel.material.map) this._queueDispose(entry.nameLabel.material.map);
+                this._queueDispose(entry.nameLabel.material);
             }
         }
         p2p.peers.delete(peerId);
@@ -9769,97 +9862,129 @@ class AnazhRealm {
 
     // ### Skybox ###
     createGalaxySkybox() {
-        // V8.26 Bug 1 — Sternenrauschen-Fix: Shader nutzt LOKALE `position`
-        // (Vertex-Attribut, immer dieselbe Sphere-Geometrie) statt
-        // `vWorldPosition` (= modelMatrix × position). Vorher rauschten die
-        // Sterne beim Gehen weil die modelMatrix-Translation den Sample-
-        // Punkt verschob. Mit der Skybox die der Kamera folgt (im Render-
-        // Loop) + lokaler `position` als Sample-Achse sind die Sterne
-        // ABSOLUT in Welt-Richtung stabil — egal wo der Spieler steht.
-        const vertexShader = `
-        varying vec3 vDir;
-        void main() {
-            vDir = normalize(position);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        // V10.0-f-1 — skyboxMaterial portiert von ShaderMaterial (GLSL) zu
+        // MeshBasicNodeMaterial (TSL). Welt-Optik 1:1 gespiegelt — dieselbe
+        // 3-Octaven-Nebula-Noise + horizont-genordete Wolken-Schicht mit
+        // Identitäts-Hash-Konstanten (12.9898/78.233/45.5432 + 43758.5453).
+        // Läuft jetzt nativ auf WebGPURenderer (kein Hot-Swap-Trigger mehr
+        // für den Skybox-Pfad) UND auf klassischem WebGLRenderer via
+        // `webgl-legacy/nodes/WebGLNodes.js` (Bootstrap-Side-Effect-Patch).
+        //
+        // Vorheriger Bug-Klassen-Schutz (V8.26 Bug 1): vDir = normalize-
+        // (positionLocal) hält den Sample-Punkt absolut in Welt-Richtung,
+        // egal wo der Spieler steht — die Skybox folgt der Kamera im
+        // Render-Loop, lokale Vertex-Position bleibt die stabile Achse.
+        //
+        // Drei Live-Uniforms in `state.skyboxUniforms` (uniform-Knoten),
+        // mit `.value`-Setter mutierbar — drei Konsumenten:
+        //  - DSL skybox_color (setzt nebulaColor.value)
+        //  - _dayNightApplySkybox (setzt nebulaColor + cloudCover.value)
+        //  - _loopSkyboxPlanets (setzt time.value pro Frame)
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            // Sicherheits-Wand: ohne Node-Build fällt nichts in die Szene.
+            // Sollte nie eintreten — der Bootstrap legt beides ab. Defensive
+            // Diagnose-Hilfe falls Vendor-Bruch.
+            this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
+            return;
         }
-    `;
-        const fragmentShader = `
-        uniform float time;
-        uniform vec3 nebulaColor;
-        uniform float cloudCover;
-        varying vec3 vDir;
-    float random(vec3 st) {
-        return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))) * 43758.5453123);
-    }
+        const {
+            uniform,
+            vec3,
+            float,
+            positionLocal,
+            normalize,
+            sin,
+            dot,
+            floor,
+            fract,
+            mix,
+            smoothstep,
+            clamp,
+            tslFn,
+        } = TSL;
 
-    float noise(vec3 st) {
-        vec3 i = floor(st);
-        vec3 f = fract(st);
-        vec3 u = f * f * (3.0 - 2.0 * f);
-        return mix(
-            mix(
-                mix(random(i + vec3(0.0, 0.0, 0.0)), random(i + vec3(1.0, 0.0, 0.0)), u.x),
-                mix(random(i + vec3(0.0, 1.0, 0.0)), random(i + vec3(1.0, 1.0, 0.0)), u.x),
-                u.y
-            ),
-            mix(
-                mix(random(i + vec3(0.0, 0.0, 1.0)), random(i + vec3(1.0, 0.0, 1.0)), u.x),
-                mix(random(i + vec3(0.0, 1.0, 1.0)), random(i + vec3(1.0, 1.0, 1.0)), u.x),
-                u.y
-            ),
-            u.z
-        );
-    }
+        // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
+        // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
+        const uTime = uniform(0.0);
+        const uNebulaColor = uniform(new THREE.Color(0x4b0082)); // Indigofarben
+        const uCloudCover = uniform(0.3);
 
-    void main() {
-        // V8.26 Bug 1 — vDir ist normalize(position), stabil egal wo Spieler steht.
-        // Nebula-Noise SEHR langsam animieren (time × 0.02 statt 0.1) damit
-        // die Wolken atmen ohne zu zappeln.
-        float n1 = noise(vDir * 1.0 + time * 0.02);
-        float n2 = noise(vDir * 2.0 + time * 0.01);
-        float n3 = noise(vDir * 4.0 + time * 0.005);
-        // V8.28 6.G4.b — Sterne sind KEIN Shader-Noise mehr. Prozedurales
-        // Stern-Noise hat keine Pixel-Footprint-Info → flackert bei jeder
-        // Kamera-Rotation (Sub-Pixel-Sample-Aliasing). Echte Sterne sind
-        // jetzt diskrete THREE.Points (siehe _buildStarField) — der
-        // Rasterizer macht echtes Anti-Aliasing, kein Flackern möglich.
-        // Skybox traegt nur noch Nebula-Schimmer + (V8.28 D) Wolken.
-        vec3 color = nebulaColor * (0.5 + 0.5 * (n1 + n2 + n3) / 3.0);
-        // V8.28 6.G4.b D — Wolken-Schicht. Horizont-nahes Noise, weiss
-        // getintet, langsam ziehend. cloudCover emergiert aus weather
-        // (rainy → dichter). Wolken nur oberhalb des Horizonts (vDir.y > 0).
-        float horizonMask = smoothstep(-0.05, 0.35, vDir.y);
-        float cloudN = noise(vDir * 2.5 + vec3(time * 0.012, 0.0, time * 0.008));
-        float cloudN2 = noise(vDir * 6.0 + vec3(time * 0.02, 0.0, time * 0.014));
-        float clouds = smoothstep(0.55, 0.85, cloudN * 0.65 + cloudN2 * 0.35);
-        clouds *= horizonMask * cloudCover;
-        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiss, Nacht dunkelgrau)
-        float skyLum = (nebulaColor.r + nebulaColor.g + nebulaColor.b) / 3.0;
-        vec3 cloudColor = mix(vec3(0.32, 0.34, 0.40), vec3(1.0, 0.98, 0.95), clamp(skyLum * 2.2, 0.0, 1.0));
-        color = mix(color, cloudColor, clouds);
-        gl_FragColor = vec4(color, 1.0);
-    }
-`;
-
-        const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
-        const skyboxMaterial = new THREE.ShaderMaterial({
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            uniforms: {
-                time: { value: 0.0 },
-                nebulaColor: { value: new THREE.Color(0x4b0082) }, // Indigofarben
-                // V8.28 6.G4.b D — Wolken-Deckung (0..1). Aus weather
-                // abgeleitet in _applyDayNightToScene (sunny ~0.25, rainy ~0.85).
-                cloudCover: { value: 0.3 },
-            },
-            side: THREE.BackSide,
-            depthWrite: false,
+        // 3D-Hash-Noise (Vendor-Spiegel der alten GLSL `noise(vec3)`):
+        // dieselben Magic-Konstanten, dieselbe Smoothstep-Kurve, dieselbe
+        // 8-Corner-Trilinear-Mix-Topologie. Bit-Identität ist nicht garantiert
+        // (TSL sin/fract sind implementation-defined precision auf WebGPU,
+        // s. WGSL §3.6), aber das Smoothing absorbiert <1e-4-Drift in die
+        // weichen Wolken-Übergänge — visuell ununterscheidbar.
+        const hash3 = tslFn(([st]) => {
+            return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123));
+        });
+        const noise3 = tslFn(([st]) => {
+            const i = floor(st);
+            const f = fract(st);
+            // smoothstep-Approximation f² · (3 − 2f), identisch zur GLSL-Variante
+            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+            const c000 = hash3(i);
+            const c100 = hash3(i.add(vec3(1.0, 0.0, 0.0)));
+            const c010 = hash3(i.add(vec3(0.0, 1.0, 0.0)));
+            const c110 = hash3(i.add(vec3(1.0, 1.0, 0.0)));
+            const c001 = hash3(i.add(vec3(0.0, 0.0, 1.0)));
+            const c101 = hash3(i.add(vec3(1.0, 0.0, 1.0)));
+            const c011 = hash3(i.add(vec3(0.0, 1.0, 1.0)));
+            const c111 = hash3(i.add(vec3(1.0, 1.0, 1.0)));
+            return mix(
+                mix(mix(c000, c100, u.x), mix(c010, c110, u.x), u.y),
+                mix(mix(c001, c101, u.x), mix(c011, c111, u.x), u.y),
+                u.z
+            );
         });
 
+        // vDir = normalize(positionLocal) — stabile Welt-Achse, V8.26-Bug-Schutz.
+        const vDir = normalize(positionLocal);
+
+        // Drei Octaven Nebula-Noise (sehr langsam animiert, atmender Himmel).
+        const n1 = noise3(vDir.mul(1.0).add(uTime.mul(0.02)));
+        const n2 = noise3(vDir.mul(2.0).add(uTime.mul(0.01)));
+        const n3 = noise3(vDir.mul(4.0).add(uTime.mul(0.005)));
+        const nebulaTint = float(0.5).add(n1.add(n2).add(n3).div(3.0).mul(0.5));
+        const nebula = uNebulaColor.mul(nebulaTint);
+
+        // Wolken-Schicht: horizont-genordet (vDir.y > 0), zwei-Octaven-Noise,
+        // cloudCover-skaliert. Identisch zur GLSL-Variante.
+        const horizonMask = smoothstep(float(-0.05), float(0.35), vDir.y);
+        const cloudN = noise3(vDir.mul(2.5).add(vec3(uTime.mul(0.012), 0.0, uTime.mul(0.008))));
+        const cloudN2 = noise3(vDir.mul(6.0).add(vec3(uTime.mul(0.02), 0.0, uTime.mul(0.014))));
+        const cloudMix = cloudN.mul(0.65).add(cloudN2.mul(0.35));
+        const clouds = smoothstep(float(0.55), float(0.85), cloudMix).mul(horizonMask).mul(uCloudCover);
+
+        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiß, Nacht dunkelgrau).
+        const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
+        const cloudColor = mix(vec3(0.32, 0.34, 0.4), vec3(1.0, 0.98, 0.95), clamp(skyLum.mul(2.2), 0.0, 1.0));
+
+        const finalColor = mix(nebula, cloudColor, clouds);
+
+        const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
+        const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
+        skyboxMaterial.colorNode = finalColor;
+        skyboxMaterial.side = THREE.BackSide;
+        skyboxMaterial.depthWrite = false;
+
+        // Live-Uniforms speichern — DSL/dayNight/loop schreiben hier hinein
+        // statt in das alte `material.uniforms.X.value` (das gibt's bei
+        // NodeMaterial nicht mehr; uniform-Knoten haben .value direkt).
+        this.state.skyboxUniforms = {
+            time: uTime,
+            nebulaColor: uNebulaColor,
+            cloudCover: uCloudCover,
+        };
+
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+        // V10.0-j — Skybox wirft keine Schatten (BackSide-Hülle um die Welt).
+        skybox.castShadow = false;
+        skybox.receiveShadow = false;
         this.state.scene.add(skybox);
         this.state.skybox = skybox;
-        this.log("Galaxy-Skybox erstellt");
+        this.log("Galaxy-Skybox erstellt (V10.0-f-1 TSL)");
 
         // Planeten hinzufügen
         this.state.planets = [];
@@ -9959,59 +10084,112 @@ class AnazhRealm {
             colors[i * 3 + 1] = tmpCol.g * bright;
             colors[i * 3 + 2] = tmpCol.b * bright;
         }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
-        // Custom Points-Shader: per-Stern Groesse + weicher runder Sprite-
-        // Falloff (sonst sind Points harte Quadrate). uOpacity faded das
-        // ganze Feld mit Tag-Nacht (Tag 0, Nacht 1).
-        const starMat = new THREE.ShaderMaterial({
-            uniforms: {
-                uOpacity: { value: 0.5 },
-                uPixelRatio: { value: typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1 },
-            },
-            vertexShader: `
-                attribute float aSize;
-                varying vec3 vColor;
-                uniform float uPixelRatio;
-                void main() {
-                    vColor = color;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    // Konstante Pixel-Groesse (sizeAttenuation aus) — Sterne
-                    // sind unendlich weit, duerfen nicht perspektivisch schrumpfen.
-                    gl_PointSize = aSize * uPixelRatio;
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
-            fragmentShader: `
-                varying vec3 vColor;
-                uniform float uOpacity;
-                void main() {
-                    // Weicher runder Falloff vom Sprite-Zentrum
-                    float d = length(gl_PointCoord - vec2(0.5));
-                    float alpha = smoothstep(0.5, 0.08, d);
-                    if (alpha <= 0.01) discard;
-                    gl_FragColor = vec4(vColor, alpha * uOpacity);
-                }
-            `,
-            transparent: true,
-            depthWrite: false,
-            // V8.29.1 — depthTest TRUE: die Sterne testen gegen den Tiefen-
-            // puffer. Terrain + Berge + Strukturen (opak, schreiben Tiefe)
-            // verdecken die Sterne dahinter sauber — vorher (depthTest false)
-            // lagen sie als Overlay über der ganzen Welt. Die Skybox schreibt
-            // keine Tiefe (depthWrite false) → im freien Himmel besteht der
-            // Test, die Sterne bleiben dort sichtbar.
-            depthTest: true,
-            blending: THREE.AdditiveBlending,
-            vertexColors: true,
-        });
-        const starField = new THREE.Points(geo, starMat);
-        starField.frustumCulled = false; // immer rendern (Himmelskoerper)
+        // V10.0-i.a — Wurzel-Heilung des r160-PointUVNode-Vendor-Bugs (statt
+        // V10.0-h.b-Entfernung des Soft-Falloff): jeder Stern wird ein 4-
+        // Vertex-Quad in einer InstancedMesh. Quad-uv (geometry.uv 0..1) ist
+        // WGSL-konform via TSL `attribute("uv", "vec2")` lesbar — Soft-
+        // Falloff via smoothstep ist auf BEIDEN Renderern bit-identisch.
+        // Profi-Pattern aus Genshin/BotW (Sterne + Funken als instanced
+        // billboard quads). Quad-Normal zeigt zum Sphere-Center (Spieler-
+        // Position bei `starField.position.copy(camera.position)`) → Spieler
+        // sieht die Front-Face mit Falloff.
+        //
+        // Welt-Optik 1:1 wie V10.0-f-2: aSize trägt Per-Stern-Größen-
+        // Variation (V8.29 mindestens 3, max ~6.5), Soft-Sprite-Falloff
+        // (smoothstep 0.5..0.08), AdditiveBlending, depthTest gegen opake
+        // Welt. KEIN pixelRatio-Uniform mehr nötig — die InstancedMesh-
+        // Quad-Größe ist Welt-Einheit (worldSize ≈ aSize × 1.0 bei
+        // RADIUS=480 + FOV=70° + 720p Viewport-Height ergibt ~1 px pro
+        // Welt-Einheit), DPR wirkt automatisch durch die Render-Auflösung.
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            this.log("Stern-Feld-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
+            return;
+        }
+        const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
+
+        const uOpacity = uniform(0.5);
+
+        const planeGeo = new THREE.PlaneGeometry(1, 1);
+
+        const starMat = new THREE.MeshBasicNodeMaterial();
+        // Soft-Falloff vom Quad-Center: smoothstep(0.5, 0.08, dist) ist die
+        // ursprüngliche V8.29-Formel — Quad-uv 0..1 mit Center bei (0.5, 0.5).
+        const uv = attribute("uv", "vec2");
+        const d = length(uv.sub(vec2(float(0.5), float(0.5))));
+        const falloff = smoothstep(float(0.5), float(0.08), d);
+        // Per-Instance Color via Three.js' automatisches `instanceColor`-
+        // Attribute (gesetzt via mesh.setColorAt(i, color), gebunden im
+        // Shader via attribute("instanceColor", "vec3")).
+        const instColor = attribute("instanceColor", "vec3");
+        starMat.colorNode = vec4(instColor, falloff.mul(uOpacity));
+
+        // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
+        starMat.transparent = true;
+        starMat.depthWrite = false;
+        starMat.depthTest = true;
+        starMat.blending = THREE.AdditiveBlending;
+        starMat.alphaTest = 0.01;
+        // DoubleSide: Quad-Normale zeigt zum Sphere-Center; falls die Mesh-
+        // Rotation in _loopRender (V8.28 sidereal) sie kippt, bleibt das
+        // Quad sichtbar.
+        starMat.side = THREE.DoubleSide;
+
+        this.state.starFieldUniforms = {
+            opacity: uOpacity,
+        };
+
+        const starField = new THREE.InstancedMesh(planeGeo, starMat, STAR_COUNT);
+        // Per-Instance Matrix: Translation auf Sphere + Rotation (Quad-Normal
+        // zeigt zum Sphere-Center) + Scale (worldSize aus aSize). Pro Stern
+        // einmal beim Build; keine pro-Frame-Updates nötig (siderale Rotation
+        // läuft via starField.rotation).
+        const tmpPos = new THREE.Vector3();
+        const tmpQuat = new THREE.Quaternion();
+        const tmpScale = new THREE.Vector3();
+        const tmpMatrix = new THREE.Matrix4();
+        const fromVec = new THREE.Vector3(0, 0, 1);
+        const toVec = new THREE.Vector3();
+        for (let i = 0; i < STAR_COUNT; i++) {
+            tmpPos.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+            toVec.copy(tmpPos).negate().normalize();
+            tmpQuat.setFromUnitVectors(fromVec, toVec);
+            const worldSize = sizes[i] * 1.0; // siehe Berechnung im Kommentar oben
+            tmpScale.set(worldSize, worldSize, 1);
+            tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
+            starField.setMatrixAt(i, tmpMatrix);
+            tmpCol.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+            starField.setColorAt(i, tmpCol);
+        }
+        starField.instanceMatrix.needsUpdate = true;
+        if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
+        // V10.0-j.c — instanceColor explicit auf die Geometry binden.
+        // Three.js' setColorAt setzt `mesh.instanceColor` (eine
+        // InstancedBufferAttribute auf der Mesh-Instanz), aber TSL's
+        // `attribute("instanceColor", "vec3")` lookupt in
+        // `geometry.attributes` (AttributeNode.js Z71: `builder.hasGeometry
+        // Attribute(name)` → `builder.geometry.getAttribute(name)`). Ohne
+        // diesen Bridge bleibt der Lookup leer → AttributeNode.js Z94 loggt
+        // „Attribute not found" + emittiert `vec3(0)` als Konstante →
+        // schwarze Sterne. Heilung: das `starField.instanceColor`-
+        // BufferAttribute auch direkt auf planeGeo setzen → geometry.
+        // attributes hat den Eintrag → TSL findet ihn → Per-Instance-Color
+        // wird korrekt im Shader gebunden.
+        if (starField.instanceColor) {
+            planeGeo.setAttribute("instanceColor", starField.instanceColor);
+        }
+        starField.frustumCulled = false;
+        // V10.0-j — Sterne werfen keine Schatten (sind unendlich-far Billboards).
+        // Defensive — setRenderObjectFunction-Filter in _renderShadowMapPass
+        // schließt castShadow=false-Objects ohnehin aus, aber explicit ist
+        // die Wahrheit.
+        starField.castShadow = false;
+        starField.receiveShadow = false;
         this.state.scene.add(starField);
         this.state.starField = starField;
-        this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V8.28)`);
+        this.log(
+            `Stern-Feld erstellt — ${STAR_COUNT} InstancedMesh-Billboards (V10.0-i.a, WGSL-konformer Soft-Falloff)`
+        );
     }
 
     // V8.28 6.G4.b D — Welt-Wasser. Eine grosse Wave-Plane bei waterLevel,
@@ -10094,30 +10272,101 @@ class AnazhRealm {
     _grassInstanceMat() {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            // Fallback (kein TSL verfügbar): klassisches MeshLambertMaterial
+            // OHNE onBeforeCompile-Wind — Wind fehlt, aber Material rendert.
+            this.state._grassMat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
+            return this.state._grassMat;
+        }
+        // V10.0-i.b — Wind-Displacement via TSL-positionNode (WGSL-konform).
+        // Wurzel-Heilung des V10.0-g.r-`onBeforeCompile`-GLSL-Patches: Three.js'
+        // WebGPURenderer ignorierte den Patch (GLSL-Strings sind nicht WGSL-
+        // übersetzbar) → Wind unsichtbar auf WebGPU, plus implizite Pipeline-
+        // Konflikte triggerten Hot-Swap zu WebGL. Heilung: identische Wind-
+        // Mathematik (phase = time × 1.7 + worldX × 0.28 + worldZ × 0.21,
+        // displacement = sin/cos(phase) × strength × heightFactor) als TSL-
+        // Tree im positionNode. Welt-Optik 1:1 auf BEIDEN Renderern. Plus:
+        // colorNode mit manuellem Half-Lambert-Lighting + Toon-Light-Uniforms-
+        // Sync (gleiches Pattern wie _buildToonNodeMaterial V10.0-g) — Gras
+        // atmet mit dem Tag-Nacht-Zyklus, Schatten via V10.0-h-Pipeline.
+        const {
+            uniform,
+            vec3,
+            vec4,
+            float,
+            sin,
+            cos,
+            max,
+            normalize,
+            dot,
+            clamp,
+            mix,
+            transformedNormalWorld,
+            positionLocal,
+            positionWorld,
+            texture,
+        } = TSL;
         if (!this.state.windUniforms) {
             this.state.windUniforms = {
-                uWindTime: { value: 0 },
-                uWindStrength: { value: 0.12 },
+                uWindTime: uniform(0.0),
+                uWindStrength: uniform(0.12),
             };
         }
         const wu = this.state.windUniforms;
-        const mat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
-        mat.onBeforeCompile = (shader) => {
-            shader.uniforms.uWindTime = wu.uWindTime;
-            shader.uniforms.uWindStrength = wu.uWindStrength;
-            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
-            shader.vertexShader = shader.vertexShader.replace(
-                "#include <begin_vertex>",
-                `#include <begin_vertex>
-                {
-                    vec3 instPos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
-                    float phase = uWindTime * 1.7 + instPos.x * 0.28 + instPos.z * 0.21;
-                    float hf = max(0.0, transformed.y);
-                    transformed.x += sin(phase) * uWindStrength * hf * 1.5;
-                    transformed.z += cos(phase * 0.7) * uWindStrength * hf;
-                }`
-            );
-        };
+        const mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
+
+        // Wind-positionNode: Welt-Position via positionWorld lesen (das ist
+        // modelMatrix × instanceMatrix × positionLocal, d.h. enthält die
+        // Instance-Translation für jeden Halm). Phase aus Welt-X+Z + Zeit.
+        // hf = Halm-Höhe (positionLocal.y, da Geometrie auf Wurzel
+        // zentriert ist via geo.translate(0, 0.425, 0)). KEIN onBeforeCompile.
+        const phase = wu.uWindTime
+            .mul(float(1.7))
+            .add(positionWorld.x.mul(float(0.28)))
+            .add(positionWorld.z.mul(float(0.21)));
+        const hf = max(positionLocal.y, float(0.0));
+        const offsetX = sin(phase).mul(wu.uWindStrength).mul(hf).mul(float(1.5));
+        const offsetZ = cos(phase.mul(float(0.7)))
+            .mul(wu.uWindStrength)
+            .mul(hf);
+        mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
+
+        // colorNode: Half-Lambert + Toon-Light-Sync + Shadow-Sampling
+        // (gleiches Pattern wie _buildToonNodeMaterial V10.0-g/h für
+        // einheitliche Welt-Beleuchtung). gradientMap-Lookup brauchen wir
+        // beim Gras nicht (kein Cel-Look auf Halme); direkter Lambert-Mul.
+        const u = this._ensureToonLightUniforms();
+        const baseColor = vec3(float(0x5f / 255), float(0xa7 / 255), float(0x43 / 255));
+        const N = normalize(transformedNormalWorld);
+        const L = normalize(u.sunDir);
+        const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
+        // V10.0-j — Shadow-Sampling identisch zu _buildToonNodeMaterial.
+        // Hardware-PCF via texture(depthTex, uv).compare(refZ). Siehe dort
+        // für Pattern-Begründung.
+        const shadowDepthTex = this.state.shadowDepthTexture;
+        let shadowAttenuation = float(1.0);
+        if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+            const normalBias = float(1.0);
+            const bias = float(-0.0005);
+            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
+            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
+            const sampleUV = projected.xy;
+            const refZ = projected.z.add(bias);
+            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
+            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
+            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
+            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
+            const inFrustumF = inXf.mul(inYf).mul(inZf);
+            const t = inFrustumF.mul(u.shadowEnabled);
+            shadowAttenuation = mix(float(1.0), shadowSample, t);
+        }
+        const litScalar = u.ambient.add(dotNL.mul(u.sunIntensity).mul(shadowAttenuation));
+        const lit = baseColor.mul(vec3(litScalar, litScalar, litScalar));
+        mat.colorNode = vec4(lit, float(1.0));
+        // Drop-in-Identitäts-Marker für legacy Tests.
+        mat.isMeshLambertMaterial = true;
         this.state._grassMat = mat;
         return mat;
     }
@@ -10154,14 +10403,16 @@ class AnazhRealm {
         const aura = creature.userData && creature.userData.taskAura;
         if (aura) {
             if (this.state.scene) this.state.scene.remove(aura);
-            if (aura.material) aura.material.dispose();
+            // V10.0-j.e — Defer Material-Dispose (WebGPU Submit-Race).
+            if (aura.material) this._queueDispose(aura.material);
             creature.userData.taskAura = null;
         }
         // Welle 6.H P2B.5 — Carrying-Sprite analog disposen.
         const carrySprite = creature.userData && creature.userData.carryingSprite;
         if (carrySprite) {
             if (this.state.scene) this.state.scene.remove(carrySprite);
-            if (carrySprite.material) carrySprite.material.dispose();
+            // V10.0-j.e — Defer Material-Dispose (WebGPU Submit-Race).
+            if (carrySprite.material) this._queueDispose(carrySprite.material);
             creature.userData.carryingSprite = null;
         }
         this.state.scene.remove(creature);
@@ -11888,7 +12139,8 @@ class AnazhRealm {
             // Task wander → Aura entfernen. Textur NICHT disposen (shared).
             if (aura) {
                 if (this.state.scene) this.state.scene.remove(aura);
-                if (aura.material) aura.material.dispose();
+                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
+                if (aura.material) this._queueDispose(aura.material);
                 creature.userData.taskAura = null;
             }
             return;
@@ -11930,7 +12182,8 @@ class AnazhRealm {
             // Kein Träger-State → Sprite entfernen.
             if (oldSprite) {
                 if (this.state.scene) this.state.scene.remove(oldSprite);
-                if (oldSprite.material) oldSprite.material.dispose();
+                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
+                if (oldSprite.material) this._queueDispose(oldSprite.material);
                 ud.carryingSprite = null;
             }
             return;
@@ -12683,7 +12936,7 @@ class AnazhRealm {
         if (wantBVH) {
             const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
             if (!collisionBody) {
-                geom.dispose();
+                this._queueDispose(geom);
                 return null;
             }
             hasBVH = true;
@@ -13158,6 +13411,18 @@ class AnazhRealm {
         // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap (4 statt 16
         // Samples). Konstante existiert in beiden Renderern.
         renderer.shadowMap.type = THREE.PCFShadowMap;
+        // V10.0-i.c — Three.js' interner Auto-Shadow-Pass je Renderer:
+        // WebGPU: autoUpdate=false (unser manueller _renderShadowMapPass + colorNode-
+        //   Sampling übernimmt). Three.js' WebGPU-Pass rendert ohnehin nicht
+        //   bei lights=false.
+        // WebGL: autoUpdate=true (Three.js' interner Pass läuft — er rendert
+        //   die Shadow-Map für lights=true-Materials falls vorhanden. Unser
+        //   colorNode-Sampling auf WebGL ist deaktiviert wegen r160-webgl-legacy-
+        //   Codegen-Bug bei texture()-Swizzles. Falls Hot-Swap-Fallback ein
+        //   lights=true-Material zur Scene fügt, läuft Standard-Pipeline.
+        //   Aktuell mit V10.0-g/i kein lights=true-Pendant → kein Shadow auf
+        //   WebGL via NodeMaterial; V10.0-h.c-Backlog für Monkey-Patch).
+        renderer.shadowMap.autoUpdate = kind !== "webgpu";
     }
 
     // =====================================================================
@@ -14814,10 +15079,11 @@ class AnazhRealm {
                 this.state.scene.remove(wall);
                 // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
                 // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial.
-                if (wall.geometry) wall.geometry.dispose();
+                // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+                if (wall.geometry) this._queueDispose(wall.geometry);
                 if (wall.material) {
-                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && m.dispose());
-                    else wall.material.dispose();
+                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && this._queueDispose(m));
+                    else this._queueDispose(wall.material);
                 }
                 const body = wall.userData.physicsBody;
                 if (body) {
@@ -16220,8 +16486,9 @@ class AnazhRealm {
         if (this._voxelTestMesh) {
             this._disposeStaticCollision(this._voxelTestMesh);
             this.state.scene.remove(this._voxelTestMesh);
-            if (this._voxelTestMesh.geometry) this._voxelTestMesh.geometry.dispose();
-            if (this._voxelTestMesh.material) this._voxelTestMesh.material.dispose();
+            // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+            if (this._voxelTestMesh.geometry) this._queueDispose(this._voxelTestMesh.geometry);
+            if (this._voxelTestMesh.material) this._queueDispose(this._voxelTestMesh.material);
             this._voxelTestMesh = null;
         }
         const pm = this.state.playerMesh;
@@ -16239,11 +16506,8 @@ class AnazhRealm {
             return null;
         }
         this._attachVoxelFieldColors(geom);
-        const mat = new THREE.MeshToonMaterial({
-            vertexColors: true,
-            side: THREE.DoubleSide,
-        });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        // V10.0-g — Voxel-Test-Mesh nutzt den ToonNodeMaterial-Helper (WebGPU-kompatibel).
+        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         const mesh = new THREE.Mesh(geom, mat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -16754,9 +17018,29 @@ class AnazhRealm {
         }
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
-            geom.dispose();
+            this._queueDispose(geom);
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
+        }
+        // V10.0-g.1 — hydroSurfaceMaterial (V10.0-f-4) liest drei per-Vertex-
+        // Attribute via TSL `attribute()`: aFlow (vec2), aShore (float),
+        // aWave (float). Bei klassischem ShaderMaterial fielen fehlende
+        // Attribute auf vec3(0) zurück; bei NodeMaterial/WebGPU strikt: die
+        // Pipeline crasht beim Build mit "Cannot read properties of undefined"
+        // im RenderObject.getAttributes (Browser-Audit V10.0-g zeigte das).
+        // Heilung: Null-Defaults setzen (kein Ozean-Wellen-Displacement, kein
+        // Fluss-Flow, kein Ufer-Schaum für das per-Chunk-Iso-Mesh — semantisch
+        // korrekt, weil das Iso-Wasser pro Voxel-Chunk standardmäßig See/Pfütze
+        // ist, nicht Ozean/Fluss). Float32Array initialisiert default zu 0.
+        const vCount = geom.attributes.position.count;
+        if (!geom.getAttribute("aFlow")) {
+            geom.setAttribute("aFlow", new THREE.BufferAttribute(new Float32Array(vCount * 2), 2));
+        }
+        if (!geom.getAttribute("aShore")) {
+            geom.setAttribute("aShore", new THREE.BufferAttribute(new Float32Array(vCount), 1));
+        }
+        if (!geom.getAttribute("aWave")) {
+            geom.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
         const mesh = new THREE.Mesh(geom, mat);
         mesh.renderOrder = 1; // transparent — nach den opaken Objekten
@@ -16781,7 +17065,8 @@ class AnazhRealm {
         const mesh = this.state.voxelChunkWaterIso.get(key);
         if (mesh) {
             if (this.state.scene) this.state.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
+            // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
+            this._queueGeometryDispose(mesh.geometry);
         }
         this.state.voxelChunkWaterIso.delete(key);
     }
@@ -16796,10 +17081,327 @@ class AnazhRealm {
     // entsprechend nur Geometrie, nicht Material.
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
-        const mat = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         this.state.voxelChunkMaterial = mat;
         return mat;
+    }
+
+    // V10.0-g — Toon-Material-Helper: alle MeshToonMaterial-Instanzen der
+    // Welt (Voxel-Chunks, Architektur-Parts, Inseln, Avatar-Torso, Sonne-
+    // Mond-Glow) wandern auf `THREE.ToonNodeMaterial` (eigene Klasse im
+    // Bootstrap, MeshLambertNodeMaterial + ToonLightingModel mit gradientMap-
+    // Lookup). Damit greift der Hot-Swap nicht mehr — WebGPU rendert
+    // dauerhaft auf GPU. `vertexColors: true` wird ZU `colorNode =
+    // vec4(attribute("color", "vec3"), 1.0)` (V10.0-f-2-Lehre, NodeMaterial
+    // liest das Flag nicht). `gradientMap` aus `state.toonGradientMap`
+    // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
+    // propagiert automatisch zu allen Materials.
+    _buildToonNodeMaterial(opts = {}) {
+        // V10.0-g — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false,
+        // robust auf BEIDEN Renderern via webgl-legacy-Patch) + manuelles
+        // Lighting im colorNode mit gradientMap-Cel-Lookup. Alle V10.0-g.r-
+        // Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
+        //  - Cel-Stufen via gradientMap-Texture-Lookup (Ghibli-Look)
+        //  - Sun-Direction-getriebenes Lambert + Ambient (Welt-atmet-Sync)
+        //  - Vertex-Colors via attribute() (für Voxel-Chunks + Inseln)
+        //  - Statische albedo-Color (MaterialReferenceNode-Crash umgangen)
+        //
+        // Schatten: BEHALTEN auf klassischem-MeshToonMaterial-Fallback wenn
+        // TSL nicht verfügbar. Auf WebGPU: Schatten temporär off (Three.js'
+        // Shadow-Map-Pipeline läuft durch lights=true — der webgl-legacy-Patch
+        // unterstützt das nicht robust). Welt rendert toon-shaded auf WebGPU
+        // ohne Schatten; auf WebGL via Hot-Swap mit Schatten.
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            // Fallback ohne TSL: klassisches MeshToonMaterial. Hot-Swap-Pfad
+            // (V10.0-e/f-5/f-6) bringt die Welt auf WebGL falls WebGPU bricht.
+            const params = { vertexColors: !!opts.vertexColors };
+            if (opts.color !== undefined) params.color = opts.color;
+            if (opts.side !== undefined) params.side = opts.side;
+            if (opts.transparent !== undefined) params.transparent = opts.transparent;
+            if (opts.opacity !== undefined) params.opacity = opts.opacity;
+            const mat = new THREE.MeshToonMaterial(params);
+            if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+            return mat;
+        }
+
+        // Stelle sicher dass gradientMap pre-built ist (V10.0-g-Wurzel-Heilung).
+        if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
+            this._refreshToonGradient();
+        }
+
+        const params = {};
+        if (opts.color !== undefined) params.color = opts.color;
+        if (opts.side !== undefined) params.side = opts.side;
+        if (opts.transparent !== undefined) params.transparent = opts.transparent;
+        if (opts.opacity !== undefined) params.opacity = opts.opacity;
+        const mat = new THREE.MeshBasicNodeMaterial(params);
+
+        // Geteilte Toon-Light-Uniforms (lazy welt-global).
+        const u = this._ensureToonLightUniforms();
+
+        const {
+            attribute,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            normalize,
+            dot,
+            clamp,
+            mix,
+            transformedNormalWorld,
+            positionWorld,
+            texture,
+        } = TSL;
+
+        // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
+        // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
+        // _updateUniforms-Pfad mit "Cannot read properties of null reading
+        // 'color'" — siehe Gotcha V10.0-g.materialColor).
+        let albedoNode;
+        if (opts.vertexColors) {
+            albedoNode = attribute("color", "vec3");
+        } else {
+            const c = new THREE.Color(opts.color !== undefined ? opts.color : 0xffffff);
+            albedoNode = vec3(float(c.r), float(c.g), float(c.b));
+        }
+
+        // Welt-Raum-Normale (mat3(modelMatrix) × normalLocal) — TSL-built-in.
+        const N = normalize(transformedNormalWorld);
+        const L = normalize(u.sunDir);
+        // Half-Lambert für weichen Schatten-Übergang: (dot×0.5+0.5)
+        // Bei Standard-Lambert (max(dot, 0)) sind die Rückseiten 100% schwarz —
+        // mit gradientMap-Lookup gibt das einen scharfen Cel-Step bei 90°.
+        // Half-Lambert remappt zu [0, 1] mit Mittag = 1, Mittel = 0.5 → die
+        // gradientMap-Stufen verteilen sich über die ganze Form, das ist die
+        // klassische Three.js-MeshToonMaterial-Mathematik.
+        const dotNL = clamp(dot(N, L).mul(0.5).add(0.5), float(0.0), float(1.0));
+
+        // Toon-Step via gradientMap-Texture-Lookup. gradientMap ist hier
+        // garantiert da (pre-built in createScene + Helper-Init). Bei
+        // Slider-Wechsel via _refreshToonGradient.needsUpdate=true wird die
+        // Texture in-place gepatcht, der texture-Knoten samplet beim
+        // nächsten Frame die aktualisierten Pixel — Cel-Stufen-Live-Update.
+        const toonStep = texture(this.state.toonGradientMap, vec2(dotNL, float(0.5))).r;
+
+        // V10.0-h — Shadow-Sampling im colorNode. Wir spiegeln das Pattern aus
+        // vendor/three-addons/nodes/lighting/AnalyticLightNode.js Z51-149, das
+        // Three.js intern bei lights=true-Materials nutzt. Unser manueller
+        // _renderShadowMapPass füllt das depthTexture pro Frame; shadowMatrix
+        // ist die canonical texcoord×projection×viewInverse-Matrix. Bei
+        // shadowEnabled=0 (WebGL-Pfad ODER Pre-Init) ist der Multiplier 1
+        // (kein Schatten). Hardware-PCF via DepthTexture.compareFunction=
+        // LessCompare in _ensureShadowRenderTarget.
+        // V10.0-j — Hardware-PCF via `texture(depthTex, uv).compare(refZ)`.
+        // Three.js' WGSLNodeBuilder.generateTextureCompare emittiert
+        // `textureSampleCompare(tex, sampler, uv, refZ)` — comparison-sampler
+        // wird automatisch gebunden weil depthTex.compareFunction=LessCompare
+        // (siehe _ensureShadowRenderTarget). Profi-Pattern aus vendor/three-
+        // addons/nodes/lighting/AnalyticLightNode.setupShadow(). Gated auf
+        // rendererKind=webgpu — auf WebGL bleibt der TSL-Knoten ungebaut
+        // (kein Compile-Crash am webgl-legacy-Builder).
+        const shadowDepthTex = this.state.shadowDepthTexture;
+        let shadowAttenuation = float(1.0);
+        if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+            const normalBias = float(1.0);
+            const bias = float(-0.0005);
+            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
+            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
+            // y-flip ist in der shadowMatrix bereits enthalten (NDC.y ist
+            // positiv-oben, Texture-V ist positiv-unten). Vendor-Pattern
+            // nutzt projected.xy direkt, kein manueller oneMinus mehr.
+            const sampleUV = projected.xy;
+            const refZ = projected.z.add(bias);
+            // Hardware-PCF: textureSampleCompare returnt 0..1 (0=Schatten,
+            // 1=lit, GPU rechnet automatisch 2×2-Average bei linear sampler).
+            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
+            // Frustum-Test via step-Multi (float-arithmetic).
+            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
+            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
+            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
+            const inFrustumF = inXf.mul(inYf).mul(inZf);
+            const t = inFrustumF.mul(u.shadowEnabled);
+            shadowAttenuation = mix(float(1.0), shadowSample, t);
+        }
+
+        // Lit-Helligkeit = ambient + (sunIntensity × toonStep × shadow) (skalar).
+        // Ambient bleibt ungedämpft — auch in Schatten kommt indirektes Licht.
+        const litScalar = u.ambient.add(toonStep.mul(u.sunIntensity).mul(shadowAttenuation));
+        const lit = albedoNode.mul(vec3(litScalar, litScalar, litScalar));
+
+        mat.colorNode = vec4(lit, float(1.0));
+
+        // Drop-in-Identitäts-Marker für legacy Tests (V8.28, V9.42-c).
+        mat.isMeshToonMaterial = true;
+        // gradientMap als JS-Property erhalten für legacy Tests + Drop-in-Kompat.
+        if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+        return mat;
+    }
+
+    // V10.0-g — Geteilte Toon-Light-Uniforms (uniform-Knoten, .value-mutable).
+    // Lazy initialisiert; gespeist von _dayNightApplyDirectionalLight +
+    // _dayNightApplyAmbient via state.toonLightUniforms.X.value-Setter.
+    _ensureToonLightUniforms() {
+        if (this.state.toonLightUniforms) return this.state.toonLightUniforms;
+        const TSL = THREE.TSL;
+        const { uniform } = TSL;
+        const sunDir = uniform(new THREE.Vector3(0.5, 0.7, 0.3).normalize());
+        const sunIntensity = uniform(1.0);
+        const ambient = uniform(0.3);
+        // V10.0-h — Shadow-Sampling-Uniforms. shadowMatrix wird pro Frame in
+        // _renderShadowMapPass aus light.shadow.camera neu projiziert; bei
+        // WebGL-Pfad bleibt es auf Identität (Three.js' Renderer macht die
+        // Shadow-Sampling intern via lights=true-Pendant → MeshToonMaterial-
+        // Fallback). shadowEnabled=0 → kein Schatten im colorNode (sicherer
+        // Default vor erstem Render-Pass).
+        const shadowMatrix = uniform(new THREE.Matrix4());
+        const shadowEnabled = uniform(0.0);
+        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient, shadowMatrix, shadowEnabled };
+        return this.state.toonLightUniforms;
+    }
+
+    // V10.0-h — Shadow-Map RenderTarget für den manuellen Shadow-Pass.
+    // Three.js' WebGPURenderer in r160 hat KEINEN automatischen Shadow-Pass
+    // wenn alle Materials lights=false haben (siehe Diag: shadow.map=null im
+    // WebGPU-Pfad obwohl light.castShadow=true + renderer.shadowMap.enabled=
+    // true). Wurzel: r160's Shadow-Pipeline läuft NUR via setupShadow() in
+    // einem konsumierenden NodeMaterial. Heilung: eigenes RenderTarget mit
+    // DepthTexture, manueller Pass aus light.shadow.camera-Sicht VOR dem
+    // main render, depthTexture wird im colorNode der Toon-Materials
+    // gesampelt. Idempotent — wird einmal pro Renderer-Spawn aufgerufen,
+    // disposed im Hot-Swap-Pfad.
+    _ensureShadowRenderTarget() {
+        if (this.state.shadowRTT) return this.state.shadowRTT;
+        if (typeof THREE === "undefined" || !this.state.directionalLight) return null;
+        const W = 2048;
+        const H = 2048;
+        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
+        // AnalyticLightNode.setupShadow(): `new DepthTexture()` ohne Format-
+        // Args (Three.js defaultet auf Pure-Depth, kein Stencil-Aspect-
+        // Konflikt) + `compareFunction = LessCompare` (Three.js' WebGPU-
+        // Backend bindet automatisch einen Comparison-Sampler, der mit
+        // `textureSampleCompare()`-WGSL-Knoten harmoniert — kein Filtering-
+        // Mismatch). V10.0-h.b's Depth24Stencil8-Pfad triggerte „Multiple
+        // aspects (Depth|Stencil)"-Validation, weil WebGPU für Depth-
+        // Bindings eine explicit `aspect: 'depth-only'`-View verlangt; das
+        // Pure-Depth-Format umgeht das. V10.0-h-a's „stencilOp-Default"-
+        // Hypothese war eine Fehldiagnose (Depth16Unorm-spezifisch).
+        const depthTex = new THREE.DepthTexture(W, H);
+        depthTex.minFilter = THREE.NearestFilter;
+        depthTex.magFilter = THREE.NearestFilter;
+        depthTex.compareFunction = THREE.LessCompare;
+        const rtt = new THREE.WebGLRenderTarget(W, H, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            format: THREE.RGBAFormat,
+            depthTexture: depthTex,
+        });
+        this.state.shadowRTT = rtt;
+        this.state.shadowDepthTexture = depthTex;
+        this.state.directionalLight.shadow.map = rtt;
+        return rtt;
+    }
+
+    // V10.0-h — Manueller Shadow-Map-Pass. Pre-render-Hook: rendert die
+    // Scene aus directionalLight.shadow.camera-Sicht in das shadowRTT mit
+    // einem Depth-Override-Material. Danach läuft der normale Render-Pass
+    // gegen die frisch gefüllte Shadow-Map.
+    //
+    // V10.0-i.c — Gate `rendererKind=webgpu` ENTFERNT. Pfad läuft jetzt auf
+    // BEIDEN Renderern. Wurzel: auf WebGL hat Three.js' interner Shadow-Pass
+    // (renderer.shadowMap.enabled) zwar gelaufen, aber er rendert die Map
+    // NUR wenn `lights=true`-Materials sie konsumieren. Unsere V10.0-g
+    // NodeMaterials sind alle lights=false → Three.js' interner Pass hat
+    // intern keine Caster-Material-Pipeline gefunden und nichts geschrieben
+    // (Welt-Schatten verloren beim V10.0-g-Bogen). Heilung: derselbe
+    // manuelle Pass auf BEIDEN Renderern. Plus: `renderer.shadowMap.auto
+    // Update = false` als Sicherung (Three.js' interner Pass läuft nicht
+    // mehr — wir übernehmen komplett).
+    _renderShadowMapPass() {
+        const dl = this.state.directionalLight;
+        const renderer = this.state.renderer;
+        const scene = this.state.scene;
+        if (!dl || !renderer || !scene || !dl.castShadow) return;
+        const rtt = this._ensureShadowRenderTarget();
+        if (!rtt) return;
+        // Shadow-Camera updaten + matrix bauen (canonical Three.js-Pattern
+        // aus WebGLShadowMap.js).
+        dl.shadow.camera.position.copy(dl.position);
+        dl.shadow.camera.lookAt(dl.target.position);
+        dl.shadow.camera.updateMatrixWorld(true);
+        dl.shadow.camera.updateProjectionMatrix();
+        const m = dl.shadow.matrix;
+        m.set(0.5, 0.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0);
+        m.multiply(dl.shadow.camera.projectionMatrix);
+        m.multiply(dl.shadow.camera.matrixWorldInverse);
+        const tu = this.state.toonLightUniforms;
+        if (tu) {
+            if (tu.shadowMatrix) tu.shadowMatrix.value.copy(m);
+            if (tu.shadowEnabled) tu.shadowEnabled.value = 1.0;
+        }
+        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
+        // AnalyticLightNode.updateShadow(). Drei Disziplinen:
+        // (1) scene.overrideMaterial = ein minimales MeshBasicNodeMaterial.
+        //     Alle Caster werden mit ihm gerendert — kein colorNode-Custom,
+        //     kein instanceColor-Lookup, kein WGSL-Compile-Crash. Wenn ein
+        //     Caster-Material einen positionNode hat (Gras-Wind, Welle-
+        //     Displacement), reicht das Override-Material seinen position
+        //     Node durch (Renderer.js Z961-967: override pulls original
+        //     positionNode). Damit displaced sich auch das Shadow-Mesh
+        //     korrekt → kein „Wind-Halme bleiben stehen im Schatten".
+        // (2) setRenderObjectFunction-Filter: nur `castShadow === true`
+        //     Objects werden gerendert. Sterne (default castShadow=false),
+        //     Skybox, Wasser-Iso fallen raus → keine instanceColor-Reads,
+        //     keine Atmosphären-Render-Calls.
+        // (3) Pure-Depth-RTT + LessCompare-DepthTexture → comparison-
+        //     Sampler im colorNode harmoniert mit textureSampleCompare-
+        //     WGSL-Knoten (siehe _buildToonNodeMaterial).
+        if (!this.state.shadowOverrideMat) {
+            if (typeof THREE.MeshBasicNodeMaterial === "function") {
+                this.state.shadowOverrideMat = new THREE.MeshBasicNodeMaterial();
+            } else {
+                return;
+            }
+        }
+        const depthMat = this.state.shadowOverrideMat;
+        const oldOverride = scene.overrideMaterial;
+        const oldRT = renderer.getRenderTarget ? renderer.getRenderTarget() : null;
+        const oldRenderObjectFn =
+            typeof renderer.getRenderObjectFunction === "function" ? renderer.getRenderObjectFunction() : null;
+        scene.overrideMaterial = depthMat;
+        if (typeof renderer.setRenderObjectFunction === "function") {
+            renderer.setRenderObjectFunction((object, ...params) => {
+                if (object.castShadow === true) {
+                    renderer.renderObject(object, ...params);
+                }
+            });
+        }
+        try {
+            renderer.setRenderTarget(rtt);
+            // V10.0-j.c — KEIN expliziter renderer.clear() Aufruf. Three.js'
+            // WebGPUBackend.clear() Z632-643 hat einen Vendor-Bug: im stencil=
+            // false-Branch setzt es ZWANGSWEISE stencilLoadOp+stencilStoreOp
+            // (else-Branch, immer ausgeführt). Auf Pure-Depth-Format crasht
+            // das die WebGPU-Validation. Heilung: weglassen — Three.js'
+            // regulärer Render-Pass-Pfad (Background.js Z119) setzt
+            // `renderContext.clearDepth = autoClearDepth=true` automatisch,
+            // WebGPUBackend Z302 macht dann depthLoadOp=Clear (sauber gated).
+            const result = renderer.render(scene, dl.shadow.camera);
+            if (result && typeof result.catch === "function") {
+                result.catch(() => {});
+            }
+        } catch (_) {
+        } finally {
+            scene.overrideMaterial = oldOverride;
+            renderer.setRenderTarget(oldRT);
+            if (oldRenderObjectFn && typeof renderer.setRenderObjectFunction === "function") {
+                renderer.setRenderObjectFunction(oldRenderObjectFn);
+            } else if (typeof renderer.setRenderObjectFunction === "function") {
+                renderer.setRenderObjectFunction(null);
+            }
+        }
     }
 
     // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
@@ -16876,8 +17478,8 @@ class AnazhRealm {
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
         if (!collisionBody) {
-            geom.dispose();
-            mat.dispose();
+            this._queueDispose(geom);
+            this._queueDispose(mat);
             return null;
         }
         // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) / V9.76 (Welle C.6 — Gate):
@@ -17132,6 +17734,23 @@ class AnazhRealm {
         return entry;
     }
 
+    // V10.0-j.f — Universaler Defer-Helper für JEDEN GPU-Resource-Dispose
+    // (Geometry, Material, Texture). Three.js' WebGPU-Backend zerstört
+    // GPU-Buffer SOFORT bei `.dispose()`, aber Submit ist GPU-async. Push
+    // in flache `pendingDisposals[]`, Drain via `device.queue.on
+    // SubmittedWorkDone()`-Promise im _loopRender Ende. Deterministisch:
+    // Promise resolved exakt wenn GPU alle Submits verarbeitet hat.
+    _queueDispose(obj) {
+        if (!obj || typeof obj.dispose !== "function") return;
+        // V10.0-j.g — Set-Add ist automatic dedup; gleiches Material mehrmals
+        // gequeued (z.B. Compound mit shared Material) wird nur einmal disposed.
+        this.state.pendingDisposals.add(obj);
+    }
+    // Legacy-Alias für V10.0-j.d-Code (Geometry-spezifisch).
+    _queueGeometryDispose(geometry) {
+        this._queueDispose(geometry);
+    }
+
     // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
     // Idempotent.
     _disposeVoxelChunk(key) {
@@ -17140,12 +17759,9 @@ class AnazhRealm {
         if (entry && entry.mesh) {
             this._disposeStaticCollision(entry.mesh);
             if (this.state.scene) this.state.scene.remove(entry.mesh);
-            if (entry.mesh.geometry) entry.mesh.geometry.dispose();
-            // V9.84 Perf-1.a — Material NICHT mehr disposen: `_getVoxelChunkMaterial`
-            // hält ein Singleton (`state.voxelChunkMaterial`), das von ALLEN
-            // Voxel-Chunks geteilt wird. Ein Dispose hier würde alle anderen
-            // Chunks töten (V9.43-c-Lehre vom hydroSurfaceMaterial — geteiltes
-            // Material überlebt jeden Chunk-Disposal). Nur Geometrie räumen.
+            // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
+            this._queueGeometryDispose(entry.mesh.geometry);
+            // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
         this._disposeVoxelChunkGrass(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
@@ -18294,7 +18910,8 @@ class AnazhRealm {
         }
         for (const m of this.state.hydrosphereMeshes) {
             if (this.state.scene) this.state.scene.remove(m);
-            if (m.geometry) m.geometry.dispose();
+            // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+            if (m.geometry) this._queueDispose(m.geometry);
         }
         this.state.hydrosphereMeshes = [];
     }
@@ -18427,189 +19044,235 @@ class AnazhRealm {
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
-        const mat = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uFlowSpeed: { value: 0.5 },
-                uDeep: { value: new THREE.Color(0x16364f) },
-                uShallow: { value: new THREE.Color(0x3f88a8) },
-                uFoam: { value: new THREE.Color(0xdff1ff) },
-                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                uLight: { value: 1.0 },
-                fogColor: { value: new THREE.Color(0x88a0c8) },
-                fogNear: { value: 35 },
-                fogFar: { value: 150 },
-            },
-            vertexShader: `
-                attribute vec2 aFlow;
-                attribute float aShore;
-                attribute float aWave;
-                uniform float uTime;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying vec2 vFlow;
-                varying float vShore;
-                varying float vWave;
-                varying float vAWave;
-                varying float vFogDepth;
-                // V9.49-c — eine Gerstner-Welle (aus der V8.33-Meeres-Plane
-                // übernommen): horizontale Stauchung zu den Kämmen + vertikale
-                // Höhe. Sechs Oktaven, davor ein Domain-Warp gegen Periodizität.
-                vec3 gerstnerWave(vec2 xz, vec2 dir, float f, float a, float s, float q) {
-                    vec2 d = normalize(dir);
-                    float phase = dot(xz, d) * f + uTime * s;
-                    return vec3(q * a * d.x * cos(phase), a * sin(phase), q * a * d.y * cos(phase));
-                }
-                vec3 waveDisplace(vec2 xz) {
-                    vec2 warp = vec2(
-                        sin(xz.x * 0.022 + uTime * 0.25) * 7.0,
-                        cos(xz.y * 0.019 - uTime * 0.21) * 7.0
-                    );
-                    vec2 w = xz + warp;
-                    vec3 d = vec3(0.0);
-                    d += gerstnerWave(w, vec2(0.86, 0.51), 0.10, 0.40, 0.85, 0.90);
-                    d += gerstnerWave(w, vec2(-0.42, 0.91), 0.075, 0.30, 0.65, 0.85);
-                    d += gerstnerWave(w, vec2(0.62, -0.78), 0.19, 0.18, 1.2, 0.95);
-                    d += gerstnerWave(w, vec2(-0.95, -0.30), 0.29, 0.12, 1.55, 1.10);
-                    d += gerstnerWave(w, vec2(0.30, 0.95), 0.46, 0.07, 2.05, 1.30);
-                    d += gerstnerWave(w, vec2(0.73, -0.69), 0.71, 0.045, 2.7, 1.40);
-                    return d;
-                }
-                void main() {
-                    vFlow = aFlow;
-                    vShore = aShore;
-                    vAWave = aWave;
-                    // die Wellen-Verschiebung skaliert mit aWave (Ozean voll,
-                    // See/Fluss still) → kein Riss, wo wogender Ozean an einen
-                    // stillen See grenzt. Welt-verankert (position ist Welt-xz).
-                    vec3 p = position;
-                    vec3 disp = waveDisplace(p.xz) * aWave;
-                    vec3 pd = p + disp;
-                    vWave = disp.y;
-                    // Normale aus den verschobenen Nachbar-Tangenten; bei
-                    // aWave=0 degeneriert das Kreuzprodukt sauber zu (0,1,0).
-                    float e = 1.4;
-                    vec3 px = vec3(p.x + e, p.y, p.z) + waveDisplace(vec2(p.x + e, p.z)) * aWave;
-                    vec3 pz = vec3(p.x, p.y, p.z + e) + waveDisplace(vec2(p.x, p.z + e)) * aWave;
-                    vec3 nrm = normalize(cross(pz - pd, px - pd));
-                    if (nrm.y < 0.0) nrm = -nrm;
-                    vec4 wp = modelMatrix * vec4(pd, 1.0);
-                    vWorldPos = wp.xyz;
-                    vNormal = normalize(mat3(modelMatrix) * nrm);
-                    vec4 mv = viewMatrix * wp;
-                    // V8.45 — radiale Distanz (dreh-invariant) wie Terrain.
-                    vFogDepth = length(mv.xyz);
-                    gl_Position = projectionMatrix * mv;
-                }
-            `,
-            fragmentShader: `
-                uniform float uTime;
-                uniform float uFlowSpeed;
-                uniform vec3 uDeep;
-                uniform vec3 uShallow;
-                uniform vec3 uFoam;
-                uniform vec3 uSunDir;
-                uniform float uLight;
-                uniform vec3 fogColor;
-                uniform float fogNear;
-                uniform float fogFar;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying vec2 vFlow;
-                varying float vShore;
-                varying float vWave;
-                varying float vAWave;
-                varying float vFogDepth;
-                float hash(vec2 p) {
-                    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
-                }
-                float vnoise(vec2 p) {
-                    vec2 i = floor(p);
-                    vec2 f = fract(p);
-                    vec2 u = f * f * (3.0 - 2.0 * f);
-                    return mix(
-                        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-                        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-                        u.y
-                    );
-                }
-                void main() {
-                    vec2 xz = vWorldPos.xz;
-                    // Welt-Raum-Normale, nach oben gezwungen (Lighting).
-                    vec3 n = normalize(vNormal);
-                    if (n.y < 0.0) n = -n;
-                    // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise,
-                    // am Ozean nach Gerstner-Wellenhöhe (der Meer-Look) — über
-                    // aWave gemischt, sodass die Küste weich übergeht.
-                    float baseN = vnoise(xz * 0.05 + uTime * 0.03);
-                    float waveT = clamp(vWave * 0.5 + 0.5, 0.0, 1.0);
-                    float mixT = mix(0.32 + 0.42 * baseN, waveT, vAWave);
-                    vec3 col = mix(uDeep, uShallow, mixT);
-                    // Schaum: für einen Fluss (aFlow != 0) Strähnen, die stromab
-                    // treiben; für einen See (aFlow == 0) ein ruhiges Schimmern.
-                    float fmag = length(vFlow);
-                    float foam;
-                    if (fmag > 0.01) {
-                        // V9.48 — der Betrag von aFlow trägt die Flow-Speed
-                        // nach Gefälle: ein steileres Segment scrollt schneller.
-                        vec2 fdir = vFlow / fmag;
-                        vec2 perp = vec2(-fdir.y, fdir.x);
-                        float along = dot(xz, fdir);
-                        float across = dot(xz, perp);
-                        float scroll = uTime * uFlowSpeed * fmag;
-                        float s = vnoise(vec2(across * 0.55, along * 0.13 - scroll));
-                        s += 0.5 * vnoise(vec2(across * 1.2, along * 0.32 - scroll * 1.7));
-                        foam = clamp((s / 1.5 - 0.42) * 2.4, 0.0, 1.0);
-                    } else {
-                        float rip = vnoise(xz * 0.13 + uTime * 0.05);
-                        foam = clamp((rip - 0.74) * 2.6, 0.0, 1.0) * 0.5;
-                        // V9.48 — Ufer-Schaum: ein lebendiges, wellen-
-                        // pulsierendes Schaum-Band am See-Rand (vShore: 1 an
-                        // der Wasserlinie, 0 im offenen See).
-                        float band = smoothstep(0.04, 0.9, vShore);
-                        float sn = vnoise(xz * 0.34 + uTime * 0.15)
-                            + 0.5 * vnoise(xz * 0.82 - uTime * 0.21);
-                        sn /= 1.5;
-                        float lap = 0.62 + 0.38 * sin(uTime * 0.7 + (xz.x + xz.y) * 0.07);
-                        float shoreFoam = clamp(band * (0.4 + 0.9 * sn) * lap, 0.0, 1.0);
-                        foam = max(foam, shoreFoam);
-                        // V9.49-c — Ozean-Schaumkämme: die Gerstner-Kämme
-                        // tragen Gischt (nur am Ozean, über aWave gegated).
-                        float crest = smoothstep(0.62, 1.0, waveT) * vAWave;
-                        foam = max(foam, crest * 0.6);
-                    }
-                    col = mix(col, uFoam, foam * 0.7);
-                    col *= uLight;
-                    // Sonnen-Glitzern (Blinn-Phong wie Meer + Wasserfall).
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
-                    float spec = pow(max(dot(n, halfV), 0.0), 48.0);
-                    col += vec3(1.0, 0.97, 0.85) * spec * 0.7 * uLight;
-                    // Fog — Custom-Shader erbt THREE.Fog nicht.
-                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
-                    col = mix(col, fogColor, fogF);
-                    // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
-                    float fres = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
-                    float alpha = mix(0.80, 0.97, fres);
-                    gl_FragColor = vec4(col, alpha);
-                }
-            `,
-            transparent: true,
-            // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
-            // also kann nichts mehr durch eine andere Wasserfläche scheinen
-            // (das „gestapelte Sheets"-Bild ist strukturell weg — es gibt nur
-            // EINE Wasserfläche). Die Fresnel-Alpha hält den Grund von oben sichtbar.
-            depthWrite: true,
-            // V9.49-f — polygonOffset: an einer streifenden Schnitt-Linie
-            // (flaches Wasser ⟂ sanft geneigtes Terrain) gewänne sonst mal das
-            // Wasser, mal das Terrain den Tiefen-Test → flimmernde Schnitt-
-            // Splitter. Der Offset schiebt das Wasser minimal in die Tiefe →
-            // das opake Terrain gewinnt jeden Gleichstand, die Uferlinie ist sauber.
-            polygonOffset: true,
-            polygonOffsetFactor: 1,
-            polygonOffsetUnits: 1,
-            side: THREE.DoubleSide,
+        // V10.0-f-4 — hydroSurfaceMaterial portiert von ShaderMaterial (GLSL)
+        // zu MeshBasicNodeMaterial (TSL). Der KOMPLEXESTE der vier Material-
+        // Ports (Vollendung des V10.0-Bogens). Welt-Optik 1:1: Gerstner-6-
+        // Octaven-Wellen-Displacement (mit Domain-Warp gegen Periodizität),
+        // custom Tangenten-Kreuzprodukt-Normale, Fluss-vs-See-Foam-IF-ELSE,
+        // Blinn-Phong-Spec, Fresnel-Alpha, Fog. Drei per-Vertex-Attribute:
+        // aFlow (Fluss-Gefälle-Tangente vec2), aShore (Ufer-Schaum-Band
+        // float), aWave (Ozean-Anteil float, gated die Wellen-Amplitude).
+        //
+        // Läuft jetzt nativ auf WebGPURenderer UND klassischem WebGLRenderer
+        // (via webgl-legacy/nodes/WebGLNodes.js-Bootstrap-Side-Effect-Patch).
+        // Nach V10.0-f-4 läuft die ganze Welt-Optik auf NodeMaterial; der
+        // V10.0-e-Hot-Swap-Pfad bleibt nur als defensive Sicherung.
+        //
+        // Zehn Live-Uniforms in state.hydroSurfaceUniforms (uniform-Knoten):
+        // time, flowSpeed, deep/shallow/foam (Colors), sunDir, light,
+        // fogColor/Near/Far. Mutiert von _loopSkyboxPlanets (time) +
+        // _dayNightApplyWaterMaterials (sunDir, light, fog*). Naming ohne
+        // u-Präfix (TSL-Slot-Convention, V10.0-f-3-Wende).
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            this.log("HydroSurface-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
+            return null;
+        }
+        const {
+            uniform,
+            attribute,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            mat3,
+            positionLocal,
+            modelWorldMatrix,
+            modelNormalMatrix,
+            cameraPosition,
+            sin,
+            cos,
+            dot,
+            length,
+            mix,
+            smoothstep,
+            clamp,
+            fract,
+            floor,
+            max,
+            pow,
+            normalize,
+            cross,
+            cond,
+            tslFn,
+        } = TSL;
+        void mat3; // potenzielle Alternative zu modelNormalMatrix
+
+        // Zehn Live-Uniforms (uniform-Knoten mit .value-Setter)
+        const uTime = uniform(0.0);
+        const uFlowSpeed = uniform(0.5);
+        const uDeep = uniform(new THREE.Color(0x16364f));
+        const uShallow = uniform(new THREE.Color(0x3f88a8));
+        const uFoam = uniform(new THREE.Color(0xdff1ff));
+        const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
+        const uLight = uniform(1.0);
+        const uFogColor = uniform(new THREE.Color(0x88a0c8));
+        const uFogNear = uniform(35.0);
+        const uFogFar = uniform(150.0);
+
+        // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
+        const hash2 = tslFn(([p]) => {
+            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
+        const vnoise = tslFn(([p]) => {
+            const i = floor(p);
+            const f = fract(p);
+            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+            return mix(
+                mix(hash2(i), hash2(i.add(vec2(1.0, 0.0))), u.x),
+                mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
+                u.y
+            );
+        });
+
+        // Eine Gerstner-Welle (V8.33-Meeres-Plane via V9.49-c übernommen):
+        // horizontale Stauchung zu den Kämmen + vertikale Höhe. Sechs Oktaven
+        // davon plus Domain-Warp gegen Periodizität.
+        const gerstnerWave = tslFn(([xz, dir, f, a, s, q]) => {
+            const d = normalize(dir);
+            const phase = dot(xz, d).mul(f).add(uTime.mul(s));
+            return vec3(q.mul(a).mul(d.x).mul(cos(phase)), a.mul(sin(phase)), q.mul(a).mul(d.y).mul(cos(phase)));
+        });
+        const waveDisplace = tslFn(([xz]) => {
+            const warp = vec2(
+                sin(xz.x.mul(0.022).add(uTime.mul(0.25))).mul(7.0),
+                cos(xz.y.mul(0.019).sub(uTime.mul(0.21))).mul(7.0)
+            );
+            const w = xz.add(warp);
+            let d = vec3(0.0, 0.0, 0.0);
+            d = d.add(gerstnerWave(w, vec2(0.86, 0.51), float(0.1), float(0.4), float(0.85), float(0.9)));
+            d = d.add(gerstnerWave(w, vec2(-0.42, 0.91), float(0.075), float(0.3), float(0.65), float(0.85)));
+            d = d.add(gerstnerWave(w, vec2(0.62, -0.78), float(0.19), float(0.18), float(1.2), float(0.95)));
+            d = d.add(gerstnerWave(w, vec2(-0.95, -0.3), float(0.29), float(0.12), float(1.55), float(1.1)));
+            d = d.add(gerstnerWave(w, vec2(0.3, 0.95), float(0.46), float(0.07), float(2.05), float(1.3)));
+            d = d.add(gerstnerWave(w, vec2(0.73, -0.69), float(0.71), float(0.045), float(2.7), float(1.4)));
+            return d;
+        });
+
+        // === VERTEX-STAGE: Gerstner-Wellen-Displacement + Tangenten-Normale.
+        // Drei per-Vertex-Attribute: aFlow/aShore/aWave. aWave gated die
+        // Wellen-Amplitude (Ozean voll, See/Fluss still) → kein Riss am Ufer.
+        const aFlowV = attribute("aFlow", "vec2");
+        const aShoreV = attribute("aShore", "float");
+        const aWaveV = attribute("aWave", "float");
+
+        const p = positionLocal;
+        // Welt-verankert: das Wasser-Mesh hat mesh.position=(0,0,0) (V9.71),
+        // Vertex-Positionen sind in Welt-Koord. positionLocal.xz = Welt-xz.
+        const disp = waveDisplace(p.xz).mul(aWaveV);
+        const pd = p.add(disp);
+        const vWave = disp.y;
+
+        // Normale aus Tangenten-Kreuzprodukt (3 Samples: pd, px, pz).
+        // Bei aWave=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
+        const e = float(1.4);
+        const pxBase = vec3(p.x.add(e), p.y, p.z);
+        const pzBase = vec3(p.x, p.y, p.z.add(e));
+        const pxPos = pxBase.add(waveDisplace(vec2(p.x.add(e), p.z)).mul(aWaveV));
+        const pzPos = pzBase.add(waveDisplace(vec2(p.x, p.z.add(e))).mul(aWaveV));
+        const nrmRaw = normalize(cross(pzPos.sub(pd), pxPos.sub(pd)));
+        // n.y < 0 → flip (sicherer Up-Vektor) via cond-Knoten.
+        const nrmFlipped = cond(nrmRaw.y.lessThan(0.0), nrmRaw.mul(-1.0), nrmRaw);
+
+        // World-Position des displaced Vertex (für Lighting + Fog).
+        const wp = modelWorldMatrix.mul(vec4(pd, 1.0));
+        const vWorldPos = wp.xyz;
+        // World-Raum-Normale via modelNormalMatrix (mat3 inverse-transpose).
+        // Bei Wasser-Mesh (nur Translation, keine Skalierung) identisch zu
+        // mat3(modelMatrix) — die V8.44-Lehre.
+        const vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped));
+        // V8.45 — radiale Distanz (dreh-invariant) = |worldPos − cameraPos|.
+        const vFogDepth = length(vWorldPos.sub(cameraPosition));
+
+        // === FRAGMENT-STAGE: Wasserfarbe + Foam + Spec + Fog + Fresnel-Alpha.
+        const xz = vWorldPos.xz;
+        // Normale nach oben gezwungen (cond-flip wie Vertex-Pfad).
+        const nUpRaw = normalize(vNormalWorld);
+        const n = cond(nUpRaw.y.lessThan(0.0), nUpRaw.mul(-1.0), nUpRaw);
+
+        // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise, am Ozean
+        // nach Gerstner-Wellenhöhe — über aWave gemischt, weicher Übergang.
+        const baseN = vnoise(xz.mul(0.05).add(uTime.mul(0.03)));
+        const waveT = clamp(vWave.mul(0.5).add(0.5), 0.0, 1.0);
+        const mixT = mix(float(0.32).add(baseN.mul(0.42)), waveT, aWaveV);
+        const baseCol = mix(uDeep, uShallow, mixT);
+
+        // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
+        // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
+        // sonst → See-Schimmer + Ufer-Schaum + Ozean-Schaumkämme.
+        const fmag = length(aFlowV);
+        const isRiver = fmag.greaterThan(0.01);
+
+        // RIVER-PFAD
+        const fdir = aFlowV.div(max(fmag, float(0.0001)));
+        const perp = vec2(fdir.y.mul(-1.0), fdir.x);
+        const along = dot(xz, fdir);
+        const across = dot(xz, perp);
+        const scroll = uTime.mul(uFlowSpeed).mul(fmag);
+        const riverS1 = vnoise(vec2(across.mul(0.55), along.mul(0.13).sub(scroll)));
+        const riverS2 = vnoise(vec2(across.mul(1.2), along.mul(0.32).sub(scroll.mul(1.7))));
+        const riverFoam = clamp(riverS1.add(riverS2.mul(0.5)).div(1.5).sub(0.42).mul(2.4), 0.0, 1.0);
+
+        // LAKE/OCEAN-PFAD
+        const rip = vnoise(xz.mul(0.13).add(uTime.mul(0.05)));
+        const lakeBaseFoam = clamp(rip.sub(0.74).mul(2.6), 0.0, 1.0).mul(0.5);
+        // V9.48 — Ufer-Schaum-Band (vShore: 1 an Wasserlinie, 0 im offenen See)
+        const band = smoothstep(0.04, 0.9, aShoreV);
+        const sn1 = vnoise(xz.mul(0.34).add(uTime.mul(0.15)));
+        const sn2 = vnoise(xz.mul(0.82).sub(uTime.mul(0.21)));
+        const sn = sn1.add(sn2.mul(0.5)).div(1.5);
+        const lap = float(0.62).add(sin(uTime.mul(0.7).add(xz.x.add(xz.y).mul(0.07))).mul(0.38));
+        const shoreFoam = clamp(band.mul(float(0.4).add(sn.mul(0.9))).mul(lap), 0.0, 1.0);
+        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated)
+        const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
+        const lakeFoam = max(max(lakeBaseFoam, shoreFoam), crest.mul(0.6));
+
+        const foam = cond(isRiver, riverFoam, lakeFoam);
+
+        const colWithFoam = mix(baseCol, uFoam, foam.mul(0.7));
+        const lit = colWithFoam.mul(uLight);
+
+        // Sonnen-Glitzern (Blinn-Phong wie Wasserfall, Exponent 48 statt 40).
+        const viewDir = normalize(cameraPosition.sub(vWorldPos));
+        const halfV = normalize(normalize(uSunDir).add(viewDir));
+        const spec = pow(max(dot(n, halfV), 0.0), 48.0);
+        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.7).mul(uLight));
+
+        // Fog — Custom-Shader erbt THREE.Fog nicht.
+        const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
+        const colFogged = mix(withSpec, uFogColor, fogF);
+
+        // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
+        const fres = pow(float(1.0).sub(max(dot(viewDir, n), 0.0)), 3.0);
+        const alpha = mix(float(0.8), float(0.97), fres);
+
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.positionNode = pd;
+        mat.colorNode = vec4(colFogged, alpha);
+        mat.transparent = true;
+        // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
+        // also kann nichts mehr durch eine andere Wasserfläche scheinen.
+        mat.depthWrite = true;
+        // V9.49-f — polygonOffset: an streifender Schnitt-Linie (flaches
+        // Wasser ⟂ sanft geneigtes Terrain) wäre sonst Flimmern → Wasser
+        // minimal in Tiefe schieben, opakes Terrain gewinnt Gleichstände.
+        mat.polygonOffset = true;
+        mat.polygonOffsetFactor = 1;
+        mat.polygonOffsetUnits = 1;
+        mat.side = THREE.DoubleSide;
+
+        this.state.hydroSurfaceUniforms = {
+            time: uTime,
+            flowSpeed: uFlowSpeed,
+            deep: uDeep,
+            shallow: uShallow,
+            foam: uFoam,
+            sunDir: uSunDir,
+            light: uLight,
+            fogColor: uFogColor,
+            fogNear: uFogNear,
+            fogFar: uFogFar,
+        };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
     }
@@ -18672,15 +19335,60 @@ class AnazhRealm {
             this.state.voxelChunkGrass.set(key, null);
             return;
         }
-        const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
-        geo.translate(0, 0.425, 0);
-        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
+        // V10.0-j.j — ConeGeometry als Singleton (Profi-Vorbild: shared meshes).
+        // Bisher allokierte jeder Chunk eine eigene ConeGeometry → bei Welt-
+        // Lebensdauer hunderte separate Buffer. Mit Singleton: EIN Buffer
+        // pro Realm-Instanz, alle InstancedMeshes teilen ihn (mit eigenen
+        // instanceMatrix-Buffers). Sparen 100-500 KB GPU-Heap.
+        if (!this.state._grassConeGeometry) {
+            const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
+            geo.translate(0, 0.425, 0);
+            this.state._grassConeGeometry = geo;
+        }
+        const geo = this.state._grassConeGeometry;
+        // V10.0-j.c — Uniform-Capacity-Pattern (Profi-Vorbild Genshin/BotW).
+        // V10.0-j.b's `material.clone()`-Pfad reichte NICHT: Three.js'
+        // RenderObject.getMaterialCacheKey (RenderObject.js Z113-128)
+        // serialisiert Material-Properties mit `typeof value === 'object'
+        // → '{}'` → Tree-Knoten-Referenzen sind unsichtbar im Cache-Key,
+        // zwei Material-Clones mit identischen Properties haben IDENTISCHE
+        // Cache-Keys → Pipeline-Cache teilt den Vertex-Buffer-Binding-Slot
+        // zwischen Chunks → kleinster instanceMatrix-Buffer wird gebunden,
+        // größere Chunks crashen mit „Instance range requires larger buffer".
+        // **Profi-Heilung**: alle Gras-InstancedMeshes mit UNIFORM Capacity
+        // allokieren (GRASS_MAX_BLADES=256). Bound-Buffer ist konstant pro
+        // Pipeline-Cache → kein Mismatch. `inst.count = blades.length` für
+        // die DrawIndexed-Iteration (echte Render-Count). Cap auf 256 falls
+        // ein Chunk extreme blade-Density hätte (typisch 50-200 blades).
+        // Material-Singleton (V9.84 Perf-1.a) bleibt erhalten. Cost: 256 ×
+        // 64 bytes × ~30 Chunks = ~500 KB GPU-Heap, vernachlässigbar.
+        const GRASS_MAX_BLADES = 256;
+        const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
+        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), GRASS_MAX_BLADES);
+        inst.count = realCount;
+        // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
+        // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
+        // V10.0-j.c löste die echte Wurzel via Uniform-Capacity (alle Chunks
+        // mit konstantem GRASS_MAX_BLADES → Buffer-Layout uniform → keine
+        // Cache-Pollution). Damit ist DynamicDrawUsage nicht nur unnötig,
+        // sondern AKTIV SCHÄDLICH: Three.js' Attributes.update (Z53)
+        // `bufferAttribute.usage === DynamicDrawUsage` triggert
+        // `backend.updateAttribute(attribute)` JEDEN Frame, der
+        // `device.queue.writeBuffer(buffer, 0, array, ...)` aufruft —
+        // unabhängig davon ob `bufferAttribute.needsUpdate` true ist. Wenn
+        // der Buffer via Geometry-Dispose destroyed wird, läuft der per-
+        // Frame-writeBuffer auf den toten Buffer → „WriteBuffer ... while
+        // destroyed"-Crash (16384 bytes = 256 instances × 64 bytes Matrix4
+        // = EXAKT unsere Capacity). StaticDrawUsage (Default) triggert
+        // updateAttribute NUR bei version-bump (needsUpdate=true) → einmal
+        // pro Welt-Build, nie mehr → kein Race mehr mit Geometry-Dispose.
+        // Wir setzen needsUpdate=true einmal nach Matrix-Fill, das reicht.
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
         const pos = new THREE.Vector3();
         const scl = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
-        for (let i = 0; i < blades.length; i++) {
+        for (let i = 0; i < realCount; i++) {
             const b = blades[i];
             pos.set(b.x, b.y, b.z);
             q.setFromAxisAngle(up, b.rot);
@@ -18700,7 +19408,20 @@ class AnazhRealm {
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
             if (this.state.scene) this.state.scene.remove(grass);
-            if (grass.geometry) grass.geometry.dispose();
+            // V10.0-j.j — Geometry NICHT disposen. Three.js v160's WebGPU-
+            // Backend hat einen subtilen Lifecycle-Bug zwischen InstancedMesh-
+            // Geometry-Dispose und der Pipeline-Cache-Bind-Group: nach scene.
+            // remove + queueDispose-defer triggert irgendwo per-Frame ein
+            // writeBuffer(16384 bytes) auf den disposed instanceMatrix-Buffer
+            // (256 instances × 64 bytes = 16384). Neun Sub-Wellen (V10.0-j.a
+            // bis V10.0-j.i) haben den Race nicht voll geheilt. Profi-Pattern
+            // (Genshin/BotW): Mesh-Memory akzeptieren statt Race-Crashes.
+            // Geometry bleibt allokiert (ConeGeometry ~108 Bytes × 30 Chunks
+            // Lebensdauer = 3 KB Heap — vernachlässigbar) + instanceMatrix-
+            // Buffer (16 KB × 30 = ~500 KB GPU-Heap, ebenfalls vernachlässigbar).
+            // Bei Welt-Wechsel räumt der Reload alles. EHRLICH ist's: V10.0-j.i
+            // hat den setUsage-Trigger geheilt, aber ein verbleibender Three.js-
+            // Bug bleibt nicht-workaroundbar ohne Mesh-Pool-Refactor (V11-Backlog).
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -18729,119 +19450,154 @@ class AnazhRealm {
     _ensureWaterfallMaterial() {
         if (this.state.waterfallMaterial) return this.state.waterfallMaterial;
         if (typeof THREE === "undefined") return null;
-        const mat = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uFlowDir: { value: new THREE.Vector2(0, -1) },
-                uFlowSpeed: { value: 0.62 },
-                uDeep: { value: new THREE.Color(0x16364f) },
-                uShallow: { value: new THREE.Color(0x3f88a8) },
-                uFoam: { value: new THREE.Color(0xdff1ff) },
-                uSunDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
-                uLight: { value: 1.0 },
-                fogColor: { value: new THREE.Color(0x88a0c8) },
-                fogNear: { value: 35 },
-                fogFar: { value: 150 },
-            },
-            vertexShader: `
-                uniform float uTime;
-                uniform vec2 uFlowDir;
-                uniform float uFlowSpeed;
-                varying vec2 vUv;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying float vFogDepth;
-                void main() {
-                    vUv = uv;
-                    vec3 p = position;
-                    // Billow: das Wasser-Tuch flattert, während es dem Flow
-                    // folgt — ein scrollendes sin-Muster drückt die Fläche
-                    // entlang ihrer lokalen Normale (+z). Am Lippen-Rand
-                    // (uv.y~1) + Tal-Boden (uv.y~0) gedämpft (dort verankert).
-                    float fp = dot(uv, uFlowDir) * 9.0 + uTime * uFlowSpeed * 3.2;
-                    float billow = sin(fp) * 0.20 + sin(fp * 2.4 + uv.x * 15.0) * 0.10;
-                    float edgeY = smoothstep(0.0, 0.18, uv.y) * smoothstep(1.0, 0.80, uv.y);
-                    p.z += billow * edgeY;
-                    vec4 wp = modelMatrix * vec4(p, 1.0);
-                    vWorldPos = wp.xyz;
-                    // V8.44 — Welt-Raum-Normale (mat3(modelMatrix)), nicht
-                    // normalMatrix: die Beleuchtung darf nicht mit der Kamera
-                    // wandern.
-                    vNormal = normalize(mat3(modelMatrix) * normal);
-                    vec4 mv = viewMatrix * wp;
-                    // V8.45 — radiale Distanz (dreh-invariant) wie Terrain + Meer.
-                    vFogDepth = length(mv.xyz);
-                    gl_Position = projectionMatrix * mv;
-                }
-            `,
-            fragmentShader: `
-                uniform float uTime;
-                uniform vec2 uFlowDir;
-                uniform float uFlowSpeed;
-                uniform vec3 uDeep;
-                uniform vec3 uShallow;
-                uniform vec3 uFoam;
-                uniform vec3 uSunDir;
-                uniform float uLight;
-                uniform vec3 fogColor;
-                uniform float fogNear;
-                uniform float fogFar;
-                varying vec2 vUv;
-                varying vec3 vWorldPos;
-                varying vec3 vNormal;
-                varying float vFogDepth;
-                float hash(vec2 p) {
-                    return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5453);
-                }
-                float vnoise(vec2 p) {
-                    vec2 i = floor(p);
-                    vec2 f = fract(p);
-                    vec2 u = f * f * (3.0 - 2.0 * f);
-                    return mix(
-                        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-                        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-                        u.y
-                    );
-                }
-                void main() {
-                    // Flow-Offset — scrollt das Wasser-Muster den Flow entlang.
-                    vec2 flow = uFlowDir * uTime * uFlowSpeed;
-                    vec2 sc = vUv + flow;
-                    // Vertikale Strähnen: hochfrequent quer (uv.x), scrollend
-                    // den Flow hinab.
-                    float streak = vnoise(vec2(vUv.x * 26.0, sc.y * 7.0));
-                    streak += 0.5 * vnoise(vec2(vUv.x * 55.0, sc.y * 15.0 + 3.0));
-                    streak /= 1.5;
-                    // Turbulente Schaum-Ballen, die mit dem Flow hinabtreiben.
-                    float turb = vnoise(vUv * vec2(9.0, 5.0) + flow * 1.7);
-                    // Schaum-Maske: Strähnen + Turbulenz, verstärkt am Aufprall
-                    // (oben) + am Spritzer (unten).
-                    float impact = smoothstep(0.86, 1.0, vUv.y);
-                    float splash = smoothstep(0.22, 0.0, vUv.y);
-                    float foam = clamp(streak * 0.8 + turb * 0.35 + impact * 0.7 + splash * 0.6, 0.0, 1.0);
-                    // Basis-Wasserfarbe, Schaum darüber.
-                    vec3 col = mix(uDeep, uShallow, 0.4 + 0.6 * streak);
-                    col = mix(col, uFoam, foam * 0.85);
-                    col *= uLight;
-                    // Sonnen-Glitzern (Blinn-Phong wie das Meer).
-                    vec3 n = normalize(vNormal);
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-                    vec3 halfV = normalize(normalize(uSunDir) + viewDir);
-                    float spec = pow(max(dot(n, halfV), 0.0), 40.0);
-                    col += vec3(1.0, 0.97, 0.85) * spec * 0.5 * uLight;
-                    // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
-                    float fogF = smoothstep(fogNear, fogFar, vFogDepth);
-                    col = mix(col, fogColor, fogF);
-                    // Alpha: dichter Körper, weiche Seiten-Ränder.
-                    float edgeX = smoothstep(0.0, 0.10, vUv.x) * smoothstep(1.0, 0.90, vUv.x);
-                    float alpha = (0.62 + 0.33 * foam) * edgeX;
-                    gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
-                }
-            `,
-            transparent: true,
-            depthWrite: false,
-            side: THREE.DoubleSide,
+        // V10.0-f-3 — waterfallMaterial portiert von ShaderMaterial (GLSL) zu
+        // MeshBasicNodeMaterial (TSL). Welt-Optik 1:1: vertikales Wasser-
+        // Tuch mit billow-Displacement entlang lokaler Normale (sin-Wellen
+        // entlang Flow-Achse), Schaum-Strähnen via 2D-vnoise, Blinn-Phong
+        // Sonnen-Glitzern, Fog. Drei strukturelle Teile: positionNode
+        // (Vertex-Displacement), colorNode (Fragment-Foam+Spec+Fog),
+        // material.transparent + depthWrite + DoubleSide.
+        //
+        // Elf Uniforms in state.waterfallUniforms (uniform-Knoten mit .value):
+        // time (per-Frame in _loopSkyboxPlanets), flowDir/flowSpeed (statisch,
+        // 0/−1 vertikaler Abwärts-Flow), deep/shallow/foam (Wasser-Farben),
+        // sunDir/light (von _dayNightApplyWaterMaterials), fogColor/Near/Far
+        // (auch dayNight). Vision §1.3 fraktal: dieselbe Wasser-Sprache wie
+        // das Meer (hydroSurfaceMaterial — V10.0-f-4 folgt).
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            this.log("Wasserfall-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
+            return null;
+        }
+        const {
+            uniform,
+            uv,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            positionLocal,
+            transformedNormalWorld,
+            modelWorldMatrix,
+            cameraPosition,
+            sin,
+            dot,
+            length,
+            mix,
+            smoothstep,
+            clamp,
+            fract,
+            floor,
+            max,
+            pow,
+            normalize,
+            tslFn,
+        } = TSL;
+
+        // Elf Live-Uniforms (uniform-Knoten mit .value-Setter)
+        const uTime = uniform(0.0);
+        const uFlowDir = uniform(new THREE.Vector2(0, -1));
+        const uFlowSpeed = uniform(0.62);
+        const uDeep = uniform(new THREE.Color(0x16364f));
+        const uShallow = uniform(new THREE.Color(0x3f88a8));
+        const uFoam = uniform(new THREE.Color(0xdff1ff));
+        const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
+        const uLight = uniform(1.0);
+        const uFogColor = uniform(new THREE.Color(0x88a0c8));
+        const uFogNear = uniform(35.0);
+        const uFogFar = uniform(150.0);
+
+        // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
+        // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
+        const hash2 = tslFn(([p]) => {
+            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
+        const vnoise = tslFn(([p]) => {
+            const i = floor(p);
+            const f = fract(p);
+            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+            return mix(
+                mix(hash2(i), hash2(i.add(vec2(1.0, 0.0))), u.x),
+                mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
+                u.y
+            );
+        });
+
+        const vUv = uv();
+        const flowTime = uTime.mul(uFlowSpeed);
+
+        // === VERTEX-STAGE: billow-Displacement entlang lokaler Z-Normale.
+        // GLSL: p.z += billow * edgeY. Hier auf positionLocal angewandt.
+        const fp = dot(vUv, uFlowDir).mul(9.0).add(flowTime.mul(3.2));
+        const billow = sin(fp)
+            .mul(0.2)
+            .add(sin(fp.mul(2.4).add(vUv.x.mul(15.0))).mul(0.1));
+        const edgeY = smoothstep(0.0, 0.18, vUv.y).mul(smoothstep(1.0, 0.8, vUv.y));
+        const displacedLocal = positionLocal.add(vec3(0.0, 0.0, billow.mul(edgeY)));
+
+        // World-Position des displaced Vertex (für Blinn-Phong-viewDir + Fog).
+        // mat4×vec4-Multiplikation in TSL via .mul().
+        const wp = modelWorldMatrix.mul(vec4(displacedLocal, 1.0));
+        const vWorldPos = wp.xyz;
+        // V8.45 — radiale View-Distanz (dreh-invariant) = length(viewPos),
+        // semantisch identisch zu length(mv.xyz). cameraPosition ist Welt-
+        // Raum; |worldPos − cameraPos| = view-radial Distanz.
+        const vFogDepth = length(vWorldPos.sub(cameraPosition));
+
+        // === FRAGMENT-STAGE: Schaum + Wasserfarbe + Sonnen-Spec + Fog.
+        const flow = uFlowDir.mul(flowTime);
+        const sc = vUv.add(flow);
+        // Vertikale Strähnen (hochfrequent quer, scrollend Flow hinab).
+        const streak1 = vnoise(vec2(vUv.x.mul(26.0), sc.y.mul(7.0)));
+        const streak2 = vnoise(vec2(vUv.x.mul(55.0), sc.y.mul(15.0).add(3.0)));
+        const streak = streak1.add(streak2.mul(0.5)).div(1.5);
+        // Turbulente Schaum-Ballen.
+        const turb = vnoise(vUv.mul(vec2(9.0, 5.0)).add(flow.mul(1.7)));
+        // Aufprall + Spritzer (uv.y-Position-Maskierung).
+        const impact = smoothstep(0.86, 1.0, vUv.y);
+        const splash = smoothstep(0.22, 0.0, vUv.y);
+        const foam = clamp(streak.mul(0.8).add(turb.mul(0.35)).add(impact.mul(0.7)).add(splash.mul(0.6)), 0.0, 1.0);
+
+        // Basis-Wasserfarbe → Foam-Mix → Light-Skalierung.
+        const baseCol = mix(uDeep, uShallow, float(0.4).add(streak.mul(0.6)));
+        const withFoam = mix(baseCol, uFoam, foam.mul(0.85));
+        const lit = withFoam.mul(uLight);
+
+        // Blinn-Phong Sonnen-Glitzern (V8.44-Welt-Raum-Normale).
+        const n = normalize(transformedNormalWorld);
+        const viewDir = normalize(cameraPosition.sub(vWorldPos));
+        const halfV = normalize(normalize(uSunDir).add(viewDir));
+        const spec = pow(max(dot(n, halfV), 0.0), 40.0);
+        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight));
+
+        // Fog — wie Terrain + Meer (Custom-Shader erbt THREE.Fog nicht).
+        const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
+        const colFogged = mix(withSpec, uFogColor, fogF);
+
+        // Alpha: dichter Körper, weiche Seiten-Ränder.
+        const edgeX = smoothstep(0.0, 0.1, vUv.x).mul(smoothstep(1.0, 0.9, vUv.x));
+        const alpha = clamp(float(0.62).add(foam.mul(0.33)).mul(edgeX), 0.0, 1.0);
+
+        const mat = new THREE.MeshBasicNodeMaterial();
+        mat.positionNode = displacedLocal;
+        mat.colorNode = vec4(colFogged, alpha);
+        mat.transparent = true;
+        mat.depthWrite = false;
+        mat.side = THREE.DoubleSide;
+
+        this.state.waterfallUniforms = {
+            time: uTime,
+            flowDir: uFlowDir,
+            flowSpeed: uFlowSpeed,
+            deep: uDeep,
+            shallow: uShallow,
+            foam: uFoam,
+            sunDir: uSunDir,
+            light: uLight,
+            fogColor: uFogColor,
+            fogNear: uFogNear,
+            fogFar: uFogFar,
+        };
         this.state.waterfallMaterial = mat;
         return mat;
     }
@@ -23331,8 +24087,9 @@ class AnazhRealm {
         // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
         if (this.state.playerAura && this.state.scene) {
             this.state.scene.remove(this.state.playerAura);
-            if (this.state.playerAura.geometry) this.state.playerAura.geometry.dispose();
-            if (this.state.playerAura.material) this.state.playerAura.material.dispose();
+            // V10.0-j.e — Defer dispose (player-aura updated bei jedem Soul-Tick).
+            this._queueDispose(this.state.playerAura.geometry);
+            this._queueDispose(this.state.playerAura.material);
             this.state.playerAura = null;
         }
     }
@@ -25453,10 +26210,9 @@ class AnazhRealm {
         if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
             this._refreshToonGradient();
         }
-        const material = new THREE.MeshToonMaterial({
-            color: 0xc0392b,
-            gradientMap: this.state.toonGradientMap || null,
-        });
+        // V10.0-g — Avatar-Torso auf ToonNodeMaterial (WebGPU-kompatibel).
+        // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
+        const material = this._buildToonNodeMaterial({ color: 0xc0392b });
         const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
         torso.position.y = 0.45;
         torso.castShadow = true;
@@ -25700,13 +26456,14 @@ class AnazhRealm {
     // freigeben, damit GPU-Speicher nicht volläuft bei häufigem Wechsel.
     _disposeSoulGroup(group) {
         if (!group) return;
+        // V10.0-j.h — NUR Geometries (Profi-Pattern, siehe _p2pDisposeMesh).
+        // Materials werden NICHT disposed — Compound-Soul-Groups (Drache,
+        // Wolf, Architekturen) teilen häufig EIN Material zwischen Sub-Meshes;
+        // material.dispose() triggert eine Three.js-RenderObject-Cascade-
+        // Invalidation die mit pending Submit racy ist. Materials akkumulieren
+        // minimal — Geometry-Disposes räumen den großen Heap-Anteil.
         group.traverse((node) => {
-            if (node.geometry && typeof node.geometry.dispose === "function") {
-                node.geometry.dispose();
-            }
-            if (node.material && typeof node.material.dispose === "function") {
-                node.material.dispose();
-            }
+            if (node.geometry) this._queueDispose(node.geometry);
         });
     }
 
@@ -26968,8 +27725,9 @@ class AnazhRealm {
             // Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher
             // Himmel-Fill. gradientMap ist geteilt (state.toonGradientMap).
             if (!this.state.toonGradientMap) this._refreshToonGradient();
-            matOpts.gradientMap = this.state.toonGradientMap;
-            const mat = new THREE.MeshToonMaterial(matOpts);
+            // V10.0-g — Architektur-Part auf ToonNodeMaterial (WebGPU-kompatibel).
+            // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
+            const mat = this._buildToonNodeMaterial(matOpts);
             materials.push(mat);
             const mesh = new THREE.Mesh(geom, mat);
             const pos = part.position || { x: 0, y: 0, z: 0 };
@@ -29273,8 +30031,8 @@ class AnazhRealm {
         // Das alte Terrain-ShaderMaterial passte nicht zur Surface-Nets-
         // Geometrie (fehlende aField/uv → kaputtes Rendering, "Löcher").
         this._attachIslandColors(geometry);
-        const material = new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide });
-        if (this.state.toonGradientMap) material.gradientMap = this.state.toonGradientMap;
+        // V10.0-g — Insel-Material auf ToonNodeMaterial (WebGPU-kompatibel).
+        const material = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         const island = new THREE.Mesh(geometry, material);
         island.position.set(x, y, z);
         island.castShadow = true;
@@ -32920,10 +33678,11 @@ class AnazhRealm {
                 // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
                 // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
                 if (obj.isMesh || obj.isLine) {
-                    if (obj.geometry) obj.geometry.dispose();
+                    // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+                    if (obj.geometry) this._queueDispose(obj.geometry);
                     if (obj.material) {
-                        if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-                        else obj.material.dispose();
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
+                        else this._queueDispose(obj.material);
                     }
                 }
             });
@@ -35380,23 +36139,30 @@ class AnazhRealm {
 
     // Skybox-Uniforms: nebulaColor aus skyR/G/B + Wolken-Deckung aus weather
     // (V8.28 6.G4.b D, V8.46 Cross-Fade über Wetter-Transition).
+    // V10.0-f-1: Uniforms leben in `state.skyboxUniforms` (uniform-Knoten),
+    // nicht mehr in `material.uniforms`.
     _dayNightApplySkybox(tint) {
-        if (!this.state.skybox || !this.state.skybox.material || !this.state.skybox.material.uniforms) return;
-        const u = this.state.skybox.material.uniforms.nebulaColor;
-        if (u && u.value) u.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
-        const cloudU = this.state.skybox.material.uniforms.cloudCover;
-        if (cloudU) cloudU.value = this._weatherBlendedValue(0.22, 0.85);
+        const u = this.state.skyboxUniforms;
+        if (!u) return;
+        if (u.nebulaColor && u.nebulaColor.value && u.nebulaColor.value.setRGB) {
+            u.nebulaColor.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+        }
+        if (u.cloudCover) {
+            u.cloudCover.value = this._weatherBlendedValue(0.22, 0.85);
+        }
     }
 
     // V8.28 6.G4.b A — Stern-Feld-Opacity. starField (diskrete Points) nur
     // bei Nacht sichtbar: umgekehrt zur Sonnenhöhe, durch Wetter gedämpft.
+    // V10.0-f-2: Opacity-Uniform lebt jetzt in state.starFieldUniforms
+    // (uniform-Knoten), nicht mehr in material.uniforms.
     _dayNightApplyStarField(t, skyMul) {
-        if (!this.state.starField || !this.state.starField.material) return;
+        const u = this.state.starFieldUniforms;
+        if (!u || !u.opacity) return;
         const sa = t * Math.PI * 2 - Math.PI / 2;
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         const nightFactor = (1 - sunHeight) * 0.5; // Mittag 0 → Mitternacht 1
-        const su = this.state.starField.material.uniforms.uOpacity;
-        if (su) su.value = nightFactor * skyMul;
+        u.opacity.value = nightFactor * skyMul;
     }
 
     // DirectionalLight: Position folgt dem Spieler (V8.48 — Shadow-Frustum
@@ -35443,6 +36209,17 @@ class AnazhRealm {
             tint.lightColor.b * tint.lightMul
         );
         dl.intensity = tint.lightIntensity;
+        // V10.0-g — Toon-Light-Uniforms aktualisieren: sunDir (Welt-Raum,
+        // normalisiert) + sunIntensity (skalar). Defensive Existenz-Probe,
+        // weil toonLightUniforms lazy beim ersten Material-Build entstehen.
+        const tu = this.state.toonLightUniforms;
+        if (tu) {
+            if (tu.sunDir) tu.sunDir.value.copy(sunDir);
+            if (tu.sunIntensity) {
+                const lum = (tint.lightColor.r + tint.lightColor.g + tint.lightColor.b) / 3.0;
+                tu.sunIntensity.value = tint.lightIntensity * tint.lightMul * lum;
+            }
+        }
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -35453,6 +36230,9 @@ class AnazhRealm {
         const sunHeight = Math.max(0, Math.sin(angle));
         const baseAmb = 0.18 + 0.42 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
+        // V10.0-g — Toon-Light-Uniform für Ambient mitziehen.
+        const tu = this.state.toonLightUniforms;
+        if (tu && tu.ambient) tu.ambient.value = al.intensity;
     }
 
     // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
@@ -35537,19 +36317,24 @@ class AnazhRealm {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const fog = this.state.fog;
-        const applyTo = (material) => {
-            if (!material || !material.uniforms) return;
-            const u = material.uniforms;
-            if (u.uSunDir) u.uSunDir.value.copy(sunDir);
-            if (u.uLight) u.uLight.value = Math.max(0.22, dl.intensity);
+        const lightVal = Math.max(0.22, dl.intensity);
+        // V10.0-f-4 — Dual-Pfad-Architektur AUFGELÖST. Beide Wasser-Materials
+        // (Wasserfall + Hydro-Surface) sind jetzt TSL; Uniforms leben in
+        // state.waterfallUniforms / state.hydroSurfaceUniforms. EINE Closure,
+        // EIN Lookup-Konvention. Der klassische applyToShader-Pfad (V10.0-f-3)
+        // ist gestrichen — der V10.0-f-Bogen ist vollendet.
+        const applyToTSL = (uniforms) => {
+            if (!uniforms) return;
+            if (uniforms.sunDir) uniforms.sunDir.value.copy(sunDir);
+            if (uniforms.light) uniforms.light.value = lightVal;
             if (fog) {
-                if (u.fogColor) u.fogColor.value.copy(fog.color);
-                if (u.fogNear) u.fogNear.value = fog.near;
-                if (u.fogFar) u.fogFar.value = fog.far;
+                if (uniforms.fogColor) uniforms.fogColor.value.copy(fog.color);
+                if (uniforms.fogNear) uniforms.fogNear.value = fog.near;
+                if (uniforms.fogFar) uniforms.fogFar.value = fog.far;
             }
         };
-        applyTo(this.state.hydroSurfaceMaterial);
-        applyTo(this.state.waterfallMaterial);
+        applyToTSL(this.state.hydroSurfaceUniforms);
+        applyToTSL(this.state.waterfallUniforms);
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes — visualer Anker des
@@ -37327,6 +38112,10 @@ class AnazhRealm {
         }
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        // V10.0-f-5: state.canvas trägt die aktive Canvas-Referenz. Nach
+        // einem Hot-Swap (`_swapToWebGLRenderer`) ist das DOM-Canvas-Element
+        // ersetzt — Re-Bind-Pfade lesen das aktuelle Canvas aus state.
+        this.state.canvas = canvas;
 
         // V10.0-a (Welle Three.js-Migration r134 → r160): ColorManagement
         // wurde mit r142+ default ON. Three.js wandelt sRGB-Color-Werte intern
@@ -37361,6 +38150,21 @@ class AnazhRealm {
         if (wantWebGPU) {
             try {
                 renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+                // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
+                // Default ist `this.stencil = true` (Renderer.js:56) → bei JEDEM
+                // RenderPass setzt WebGPUBackend stencilLoadOp + stencilStoreOp
+                // (WebGPUBackend.js Z317-332). Bei Pure-Depth-Format (Depth24Plus
+                // ohne Stencil-Aspect, V10.0-j.a Shadow-RTT) wirft WebGPU dann
+                // „stencilLoadOp must not be set if attachment has no stencil
+                // aspect" → CommandEncoder invalidiert → Welt schwarz. WebGPU
+                // Backend Z233-237 hat zwar einen Branch der stencil=false setzt
+                // wenn depthTexture.format===DepthFormat — der greift aber nicht
+                // bei jedem Render-Pfad. Sicherste Heilung: am Renderer stencil
+                // KOMPLETT auf false. Wir nutzen Stencil nirgends (kein Outline-
+                // Effekt, kein Portal-Mask) → kein visueller Verlust. Plus: Main-
+                // Canvas-Depth-Buffer wird damit auch Pure-Depth (Depth24Plus
+                // statt Depth24PlusStencil8) — 4 Bytes/Pixel statt 5, sparsamer.
+                renderer.stencil = false;
                 rendererKind = "webgpu";
                 this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
             } catch (err) {
@@ -37417,6 +38221,14 @@ class AnazhRealm {
         this.log("Szene initialisiert", "INFO");
         this.state.selfAwareness.components.push("scene");
 
+        // V10.0-g — gradientMap PRE-initialisieren bevor irgendein Toon-Material
+        // gebaut wird. Wurzel von V10.0-g.crash: `texture(gradientMap, ...)`
+        // im colorNode crasht beim Build wenn state.toonGradientMap noch null
+        // ist (ReferenceNode.update liest null). Pre-init garantiert: das
+        // Material findet die Texture beim ersten render() vor.
+        if (typeof this._refreshToonGradient === "function" && !this.state.toonGradientMap) {
+            this._refreshToonGradient();
+        }
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
 
@@ -37690,39 +38502,10 @@ class AnazhRealm {
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
-        canvas.addEventListener("click", () => {
-            // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
-            // re-locken. Sonst würde ein Klick neben das Overlay den
-            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
-            if (this.state.inventoryOpen) return;
-            canvas.requestPointerLock();
-        });
-        // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Nur wenn der
-        // Pointer-Lock aktiv ist (Spieler ist „im Spiel", nicht im UI) und
-        // das Inventar nicht offen ist (Drag&Drop hat eigene Listener).
-        // Rebind-Capture: erster Maus-Button im Capture-Modus bindet die
-        // Aktion und schließt — denselben Pfad wie der Keydown-Capture.
-        canvas.addEventListener("mousedown", (event) => {
-            if (this.state.inventoryOpen) return;
-            if (this.state.keybindRebind) {
-                const code = this._eventToBindingCode(event);
-                if (code) {
-                    this._completeKeybindRebind(code);
-                    event.preventDefault();
-                }
-                return;
-            }
-            if (!this.state.isPointerLocked) return;
-            const code = this._eventToBindingCode(event);
-            const action = this._actionForBindingCode(code);
-            if (action === "break") {
-                this.tryMouseBreak();
-                event.preventDefault();
-            } else if (action === "place") {
-                this.tryMousePlace();
-                event.preventDefault();
-            }
-        });
+        // V10.0-f-5 — Maus-Listener-Bindung als wiederrufbare Methode, damit
+        // ein Hot-Swap (`_swapToWebGLRenderer`) das Canvas-DOM-Element
+        // ersetzen + die Listener am neuen Canvas neu binden kann.
+        this._attachWorldCanvasInputListeners(canvas);
         // Welle 6.X.2 B4 (Audit 17.05.2026) — Scrollrad zyklt durch Hotbar-
         // Slots (Minecraft-Konvention). deltaY > 0 → nächster, < 0 → voriger.
         // Modulo 9 erlaubt Rollover am Ende.
@@ -38501,7 +39284,13 @@ class AnazhRealm {
 
     _loopSkyboxPlanets(currentTime) {
         // ### Skybox und Planeten ###
-        this.state.skybox.material.uniforms.time.value = currentTime;
+        // V10.0-f-1: time-Uniform ist jetzt ein uniform-Knoten in
+        // state.skyboxUniforms (statt material.uniforms.time). Defensive
+        // Existenz-Probe weil createGalaxySkybox bei Vendor-Bruch früh
+        // returnen könnte (Sicherheits-Wand im skybox-Builder).
+        if (this.state.skyboxUniforms && this.state.skyboxUniforms.time) {
+            this.state.skyboxUniforms.time.value = currentTime;
+        }
         this.state.planets.forEach((planet) => {
             const theta = currentTime / 10;
             const radius = 400;
@@ -38646,14 +39435,16 @@ class AnazhRealm {
         // V9.43-a — das geteilte Wasserfall-Material wird hier zentral
         // animiert (`uTime`); die Wasserfall-Planes haben keinen eigenen
         // per-Frame-Loop mehr — der Flow-Shader trägt die Bewegung.
-        if (this.state.waterfallMaterial && this.state.waterfallMaterial.uniforms) {
-            this.state.waterfallMaterial.uniforms.uTime.value = currentTime;
+        // V10.0-f-3: time-Uniform ist jetzt uniform-Knoten in state.waterfallUniforms.
+        if (this.state.waterfallUniforms && this.state.waterfallUniforms.time) {
+            this.state.waterfallUniforms.time.value = currentTime;
         }
         // V9.43-c — das geteilte Hydrosphären-Wasser-Material (Fluss-Ribbons
         // + See-Planes) wird zentral animiert; der Flow-Shader scrollt den
         // Schaum stromab je nach per-Vertex-`aFlow`.
-        if (this.state.hydroSurfaceMaterial && this.state.hydroSurfaceMaterial.uniforms) {
-            this.state.hydroSurfaceMaterial.uniforms.uTime.value = currentTime;
+        // V10.0-f-4: time-Uniform ist jetzt uniform-Knoten in state.hydroSurfaceUniforms.
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
+            this.state.hydroSurfaceUniforms.time.value = currentTime;
         }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
@@ -38668,6 +39459,14 @@ class AnazhRealm {
         // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
         // aber unnötige Promise-Rejections im Console-Log vermieden.
         if (!this.state.rendererReady) return;
+        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. V10.0-i.c:
+        // läuft jetzt auf BEIDEN Renderern (Gate `rendererKind=webgpu` entfernt
+        // — siehe _renderShadowMapPass-Doku). Pre-render-Hook füllt das
+        // shadowRTT + updated toonLightUniforms.shadowMatrix, der colorNode
+        // der Toon-Materials sampelt im selben Frame.
+        if (!this.state.rendererInkompatibel) {
+            this._renderShadowMapPass();
+        }
         // V10.0-e — WebGPURenderer.render() ist async; bei inkompatiblen
         // Materials (unsere `hydroSurfaceMaterial` + `waterfallMaterial`
         // sind klassische ShaderMaterials, WebGPU in r160 erwartet
@@ -38694,6 +39493,45 @@ class AnazhRealm {
                 }
             });
         }
+        // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
+        // WorkDone()`. V10.0-j.e's 2-Frame-Age-Counter (`age >= 2`) war
+        // effektiv nur 1-Frame-Defer (push + drain im selben Frame, age=1;
+        // nächster Frame age=2 → dispose) — ~16ms Wartezeit, marginal bei
+        // GPU unter Last (FPS-Drop auf 28 zeigt GPU verarbeitet 35ms+).
+        // `onSubmittedWorkDone()` ist die EINZIGE deterministische API:
+        // Promise resolved exakt wenn GPU alle bisherigen Submits durch
+        // hat. Kein Frame-Counter-Raten. WebGL-Fallback: synchron dispose
+        // (kein async submit-Pfad).
+        if (this.state.pendingDisposals.size > 0) {
+            // V10.0-j.g — Set → Array für stable iteration. Set wird nach
+            // dem Snapshot geleert (neue Disposes pushen für den nächsten
+            // Frame, NICHT in den aktuellen Drain).
+            const queue = Array.from(this.state.pendingDisposals);
+            this.state.pendingDisposals.clear();
+            const backend = this.state.renderer && this.state.renderer.backend;
+            const device = backend && backend.device;
+            const queueObj = device && device.queue;
+            if (queueObj && typeof queueObj.onSubmittedWorkDone === "function") {
+                queueObj.onSubmittedWorkDone().then(() => {
+                    for (const obj of queue) {
+                        try {
+                            obj.dispose();
+                        } catch (_e) {
+                            /* defensive */
+                        }
+                    }
+                });
+            } else {
+                // WebGL: kein async submit → direkt sicher.
+                for (const obj of queue) {
+                    try {
+                        obj.dispose();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                }
+            }
+        }
     }
 
     // V10.0-e — Hot-Swap WebGPU→WebGL bei Render-Inkompatibilität. Dispose
@@ -38702,26 +39540,125 @@ class AnazhRealm {
     // setze state.renderer + state.rendererKind="webgl". Welt rendert ab
     // nächstem Frame über WebGL — visuell 1:1 wie vor V10.0-a (die V10.0-a-
     // Bridge-Heilungen ColorManagement+useLegacyLights bleiben aktiv).
+    // V10.0-f-5 — Hot-Swap-Heilung der V10.0-e-Wurzel: ein Canvas-Element
+    // kann nur EINEN Context-Type halten. Wenn der WebGPURenderer den Canvas
+    // an WebGPU gebunden hat, kann `new WebGLRenderer({ canvas })` keinen
+    // WebGL-Context mehr erschließen → "Canvas has an existing context of a
+    // different type"-Error, Welt rendert gar nicht. V10.0-e dispose'd den
+    // WebGPURenderer, aber das Canvas-Context-Binding bleibt.
+    //
+    // Heilung: das Canvas-Element via `_replaceWorldCanvas` austauschen
+    // (altes raus, neues mit gleicher ID + Größe + Style + Position rein),
+    // dann WebGLRenderer mit dem frischen Canvas. Plus Input-Listener am
+    // neuen Canvas neu binden (closure-captured-canvas der alten Listener
+    // zeigt aufs entfernte Element → tote Pointer-Lock + Maus-Aktionen).
     _swapToWebGLRenderer() {
+        const oldRenderer = this.state.renderer;
+        // V10.0-f-6 — Animation-Loop des alten Renderers explizit stoppen.
+        // `setAnimationLoop(null)` löst den rAF-Pfad. Wenn wir das nicht
+        // machen, läuft die internal rAF-Schleife des WebGPURenderers
+        // möglicherweise weiter + ruft render() auf einem disposed Device.
         try {
-            const oldRenderer = this.state.renderer;
+            if (oldRenderer && typeof oldRenderer.setAnimationLoop === "function") {
+                oldRenderer.setAnimationLoop(null);
+            }
             if (oldRenderer && typeof oldRenderer.dispose === "function") {
                 oldRenderer.dispose();
             }
         } catch (_e) {
             /* defensive */
         }
-        const canvas = document.getElementById("world-canvas");
-        if (!canvas) {
-            this.log("Hot-Swap fehlgeschlagen: world-canvas fehlt", "ERROR");
+        const newCanvas = this._replaceWorldCanvas();
+        if (!newCanvas) {
+            this.log("Hot-Swap fehlgeschlagen: Canvas-Austausch nicht möglich", "ERROR");
             return;
         }
-        const fallback = new THREE.WebGLRenderer({ canvas });
+        let fallback;
+        try {
+            fallback = new THREE.WebGLRenderer({ canvas: newCanvas, antialias: true });
+        } catch (err) {
+            this.log(`Hot-Swap fehlgeschlagen: WebGLRenderer-Constructor scheiterte (${err.message})`, "ERROR");
+            return;
+        }
         this._configureRenderer(fallback, "webgl");
         this.state.renderer = fallback;
         this.state.rendererKind = "webgl";
         this.state.rendererReady = true;
-        this.log("Hot-Swap abgeschlossen — WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
+        this.state.canvas = newCanvas;
+        // V10.0-f-6 — Input-Listener am neuen Canvas neu binden (alte zeigen
+        // ins entfernte DOM-Element). Plus: Animation-Loop auf den neuen
+        // Renderer registrieren — sonst läuft die rAF-Schleife nirgendwo
+        // mehr und das Bild bleibt schwarz, obwohl der Renderer existiert.
+        this._attachWorldCanvasInputListeners(newCanvas);
+        if (this._gameLoopTick) {
+            fallback.setAnimationLoop(this._gameLoopTick);
+        }
+        this.log("Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
+    }
+
+    // V10.0-f-5 — Canvas-Element austauschen: altes vom DOM entfernen, ein
+    // frisches mit identischer ID/Größe/Style/Position einfügen. Notwendig
+    // weil der Canvas-Context-Type (WebGPU vs WebGL) PERMANENT ist —
+    // `new WebGLRenderer({ canvas })` mit WebGPU-gebundenem Canvas wirft.
+    // Returnt das neue Canvas oder null bei DOM-Bruch.
+    _replaceWorldCanvas() {
+        const oldCanvas = this.state.canvas || document.getElementById("world-canvas");
+        if (!oldCanvas || !oldCanvas.parentNode) {
+            this.log("_replaceWorldCanvas: altes Canvas hat keinen DOM-Parent", "ERROR");
+            return null;
+        }
+        const parent = oldCanvas.parentNode;
+        const newCanvas = document.createElement("canvas");
+        newCanvas.id = oldCanvas.id;
+        newCanvas.className = oldCanvas.className;
+        newCanvas.width = oldCanvas.width;
+        newCanvas.height = oldCanvas.height;
+        if (oldCanvas.style && oldCanvas.style.cssText) {
+            newCanvas.style.cssText = oldCanvas.style.cssText;
+        }
+        parent.replaceChild(newCanvas, oldCanvas);
+        return newCanvas;
+    }
+
+    // V10.0-f-5 — Maus-Listener (Pointer-Lock-Click + Mousedown-Action)
+    // als wiederbindbare Methode. Wird beim Init und nach jedem Hot-Swap
+    // gerufen (siehe `_swapToWebGLRenderer`). Listener referenzieren `this`
+    // via Arrow-Closures, nicht das captured Canvas-Element.
+    _attachWorldCanvasInputListeners(canvas) {
+        if (!canvas) return;
+        canvas.addEventListener("click", () => {
+            // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
+            // re-locken. Sonst würde ein Klick neben das Overlay den
+            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
+            if (this.state.inventoryOpen) return;
+            canvas.requestPointerLock();
+        });
+        // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Nur wenn der
+        // Pointer-Lock aktiv ist (Spieler ist „im Spiel", nicht im UI) und
+        // das Inventar nicht offen ist (Drag&Drop hat eigene Listener).
+        // Rebind-Capture: erster Maus-Button im Capture-Modus bindet die
+        // Aktion und schließt — denselben Pfad wie der Keydown-Capture.
+        canvas.addEventListener("mousedown", (event) => {
+            if (this.state.inventoryOpen) return;
+            if (this.state.keybindRebind) {
+                const code = this._eventToBindingCode(event);
+                if (code) {
+                    this._completeKeybindRebind(code);
+                    event.preventDefault();
+                }
+                return;
+            }
+            if (!this.state.isPointerLocked) return;
+            const code = this._eventToBindingCode(event);
+            const action = this._actionForBindingCode(code);
+            if (action === "break") {
+                this.tryMouseBreak();
+                event.preventDefault();
+            } else if (action === "place") {
+                this.tryMousePlace();
+                event.preventDefault();
+            }
+        });
     }
 
     // ### Hilfsfunktionen ### V7.56
@@ -38963,7 +39900,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0";
+AnazhRealm.VERSION = "10.0-j";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
