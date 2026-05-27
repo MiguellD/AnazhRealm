@@ -7223,6 +7223,22 @@ class AnazhRealm {
                 }),
             },
             {
+                example: "trinke",
+                re: /^(?:trink|trinke|trink(?:\s+wasser)?|geh\s+(?:zum|zu)\s+wasser)$/i,
+                build: () => ({
+                    program: ["creature_task_nearest", "drink"],
+                    describe: "die nächste Kreatur sucht Wasser und trinkt",
+                }),
+            },
+            {
+                example: "alle trinken",
+                re: /^(?:alle\s+trinken|alle\s+zum\s+wasser)$/i,
+                build: () => ({
+                    program: ["creature_task_all", "drink"],
+                    describe: "alle Kreaturen trinken am nächsten Ufer",
+                }),
+            },
+            {
                 example: "alle warten",
                 re: /^(?:alle\s+(?:warten|halten|stehen))$/i,
                 build: () => ({
@@ -11460,7 +11476,7 @@ class AnazhRealm {
     }
 
     static get CREATURE_TASKS() {
-        return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
+        return Object.freeze(["wander", "follow_player", "wait", "gather", "build", "drink"]);
     }
     static get CREATURE_TASK_AURA_HUE() {
         return Object.freeze({
@@ -11469,12 +11485,14 @@ class AnazhRealm {
             wait: 40, // bernsteinfarben, "ich harre"
             gather: 200, // cyan, "ich suche"
             build: 280, // violett, "ich erschaffe"
+            drink: 210, // azur, "ich nähre mich am Wasser" (V11.0-d.3)
         });
     }
     // Vision §1.2 — Audio-Antwort auf Beziehungs-Geste. Frequenz je Task:
     // follow_player hell (Begrüßung), wait tiefer (Ruhe), gather mittig
     // (aktiv-konzentriert), build hoch (aufschwingend wie Schöpfungs-Geste),
-    // wander null (Lösen der Bindung darf still sein).
+    // wander null (Lösen der Bindung darf still sein), drink sehr hell A5
+    // (Erfrischung, klare Antwort auf Wasser).
     static get CREATURE_TASK_PING_FREQ() {
         return Object.freeze({
             wander: null,
@@ -11482,7 +11500,21 @@ class AnazhRealm {
             wait: 294, // ~D4, ruhige Antwort
             gather: 392, // ~G4, neutral-aktive Antwort
             build: 587, // ~D5, aufschwingende Schöpfungs-Antwort
+            drink: 880, // ~A5, helle Erfrischungs-Antwort (V11.0-d.3)
         });
+    }
+    // V11.0-d.3 — drink-spezifische Konstanten (Pfeiler D).
+    static get CREATURE_DRINK_HALT_DIST() {
+        return 1.5; // m — am Wasser-Punkt angekommen, beginne Pause
+    }
+    static get CREATURE_DRINK_DURATION_S() {
+        return 2.5; // Sekunden — Pausen-Dauer am Ufer (Trink-Geste sichtbar)
+    }
+    static get CREATURE_DRINK_SEARCH_RADIUS() {
+        return 40; // m — max Suchradius für nächsten Wasser-Punkt
+    }
+    static get CREATURE_DRINK_SPEED() {
+        return 3.0; // m/s — gleich wie gather, sichtbares Bewegen
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
     static get CREATURE_GATHER_HALT_DIST() {
@@ -11748,6 +11780,7 @@ class AnazhRealm {
             wait: "harrt",
             gather: "sucht Material",
             build: "wird zur Schöpferin",
+            drink: "sucht Wasser am Ufer",
         };
         const text = `Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`;
         this.journalAppend("relationship", text, {
@@ -11830,6 +11863,109 @@ class AnazhRealm {
         if (task.name === "follow_player") return this._tickCreatureFollowPlayer(creature, task, emotion);
         if (task.name === "gather") return this._tickCreatureGather(creature, task);
         if (task.name === "build") return this._tickCreatureBuild(creature, task);
+        if (task.name === "drink") return this._tickCreatureDrink(creature, task);
+        return null;
+    }
+
+    // V11.0-d.3 (Pfeiler D — Trinken am Ufer): drei Phasen.
+    //   suchen: kein _target → finde nächsten Wasser-Punkt via Ring-Scan,
+    //           setze als _target. Wenn keiner in 40m Radius → wander
+    //           mit "no_water"-memory + Journal-Eintrag.
+    //   walken: _target gesetzt, Distanz > HALT_DIST → bewege Richtung
+    //           Wasser. Y-Override (V11.0-d.2) macht Schwimm-Surface wenn
+    //           die Kreatur durch eine Wasser-Cell muss.
+    //   trinken: Distanz ≤ HALT_DIST → Pause für DURATION_S Sekunden
+    //           (direction = 0, die Kreatur steht und „trinkt"). Nach
+    //           der Pause: Happiness-Boost (`creatureEmotions[i] = "happy"`),
+    //           "drank"-memory, Journal-Eintrag, zurück zu wander.
+    // Vision §1 Symbiose: das Wasser nährt die Kreatur, die Kreatur fühlt
+    // sich happy — eine spürbare Welt-Antwort, kein Skript-Resultat.
+    _tickCreatureDrink(creature, task) {
+        const out = this._creatureTaskOutDir();
+        const HALT_DIST = AnazhRealm.CREATURE_DRINK_HALT_DIST;
+        const DURATION_S = AnazhRealm.CREATURE_DRINK_DURATION_S;
+        const SEARCH_RADIUS = AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS;
+        const SPEED = AnazhRealm.CREATURE_DRINK_SPEED;
+        const cx = creature.position.x;
+        const cz = creature.position.z;
+        // Phase 1: Wasser-Punkt suchen wenn keiner gesetzt.
+        if (!task.args._target) {
+            const water = this._findNearestWaterPoint(cx, cz, SEARCH_RADIUS);
+            if (!water) {
+                this._creatureRemember(creature, "no_water", { searchedFrom: { x: cx, z: cz } });
+                if (typeof this.journalAppend === "function") {
+                    this.journalAppend("reach", "Eine Kreatur sucht Wasser — aber das nächste Ufer ist zu fern.", {
+                        creatures_total: this.state.creatures.length,
+                    });
+                }
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
+            task.args._target = water;
+        }
+        const tx = task.args._target.x;
+        const tz = task.args._target.z;
+        const dx = tx - cx;
+        const dz = tz - cz;
+        const dist = Math.hypot(dx, dz);
+        // Phase 3: am Wasser angekommen → trinken (Pause + Happiness).
+        if (dist <= HALT_DIST) {
+            const now = performance.now() / 1000;
+            if (!task.args._drinkStart) {
+                task.args._drinkStart = now;
+                // Ping zum Drink-Start (multisensorisch — Vision §1.2).
+                if (typeof this._playCreatureTaskPing === "function") {
+                    this._playCreatureTaskPing("drink");
+                }
+            }
+            if (now - task.args._drinkStart >= DURATION_S) {
+                // Trinken vollendet → Happiness + Erinnerung + wander.
+                const idx = this.state.creatures.indexOf(creature);
+                if (idx >= 0) this.state.creatureEmotions[idx] = "happy";
+                this._creatureRemember(creature, "drank", {
+                    at: { x: tx, z: tz },
+                    durationS: DURATION_S,
+                });
+                if (typeof this.journalAppend === "function") {
+                    const cname = (creature.userData && creature.userData.name) || "Kreatur";
+                    this.journalAppend(
+                        "growth",
+                        `${cname} trank am Ufer — das Wasser nährte sie, sie fühlt sich erfrischt.`,
+                        { creatures_total: this.state.creatures.length }
+                    );
+                }
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
+            // Pausen-Phase — stehen + leichte Bobbing-Animation läuft eh
+            // weiter via floatOffset im updateCreatures-Pfad.
+            return out.set(0, 0, 0);
+        }
+        // Phase 2: walk Richtung Ziel.
+        const nx = dx / dist;
+        const nz = dz / dist;
+        const speed = SPEED * this._creatureBodySpeedMultiplier(creature);
+        return out.set(nx * speed, 0, nz * speed);
+    }
+
+    // V11.0-d.3 — Ring-Scan für den nächsten Wasser-Punkt um (cx, cz).
+    // Returnt {x, z} oder null. Strategie: 8 Himmelsrichtungen × konzentrische
+    // Ringe in 4-m-Schritten bis radius. Erster Treffer (Spalte nicht über
+    // Wasser = `_isAboveWaterAt` false) gewinnt — kürzeste Distanz first
+    // (vom innersten Ring nach außen).
+    _findNearestWaterPoint(cx, cz, radius) {
+        const STEP = 4;
+        const DIRS = 8;
+        for (let r = STEP; r <= radius; r += STEP) {
+            for (let d = 0; d < DIRS; d++) {
+                const angle = (d / DIRS) * Math.PI * 2;
+                const x = cx + Math.cos(angle) * r;
+                const z = cz + Math.sin(angle) * r;
+                if (!this._isAboveWaterAt(x, z, 0.2)) {
+                    return { x, z };
+                }
+            }
+        }
         return null;
     }
 
@@ -12233,6 +12369,7 @@ class AnazhRealm {
         let wait = 0;
         let gather = 0;
         let build = 0;
+        let drink = 0;
         if (Array.isArray(this.state.creatures)) {
             for (const c of this.state.creatures) {
                 const t = this._getCreatureTask(c);
@@ -12241,6 +12378,7 @@ class AnazhRealm {
                 else if (t.name === "wait") wait++;
                 else if (t.name === "gather") gather++;
                 else if (t.name === "build") build++;
+                else if (t.name === "drink") drink++;
             }
         }
         const parts = [];
@@ -12248,6 +12386,7 @@ class AnazhRealm {
         if (wait > 0) parts.push(`${wait} warten`);
         if (gather > 0) parts.push(`${gather} sammeln`);
         if (build > 0) parts.push(`${build} bauen`);
+        if (drink > 0) parts.push(`${drink} trinken`);
         el.textContent = parts.length ? parts.join(" · ") : "—";
     }
 
@@ -32329,6 +32468,8 @@ class AnazhRealm {
             } else if (taskName === "build") {
                 const bp = task && task.args && task.args.blueprint;
                 taskEl.textContent = bp ? `baut ${bp}` : "baut";
+            } else if (taskName === "drink") {
+                taskEl.textContent = "trinkt am Ufer";
             } else {
                 taskEl.textContent = "—";
             }
@@ -40011,7 +40152,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.2";
+AnazhRealm.VERSION = "11.0-d.3";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

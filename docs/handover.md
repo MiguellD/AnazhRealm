@@ -357,6 +357,62 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V11.0-d.3, 27.05.2026 — Pfeiler D atmet: Trinken am Ufer, der erste Symbiose-Akt der V11-Ära:**
+
+Nach D.1-Foundation (Wasser-Kontext-Helper) + D.2 (Tiefen-Scheue + Schwimm-Surface) bekommt die Welt jetzt einen expliziten Beziehungs-Akt zwischen Kreatur und Wasser. Vor V11.0-d.3 konnte eine Kreatur kein „ich brauche Wasser" ausdrücken — sie wanderte, folgte, sammelte, baute, schwamm wenn nass, aber das Wasser war reines Hindernis, nicht Quelle. Jetzt: ein Wasser-Trink-Akt mit Spieler-Befehl ODER autonomer Reaktion (D.4-Backlog).
+
+**Drei Phasen** (`_tickCreatureDrink`, ~80 Z. netto):
+
+1. **suchen** — `_findNearestWaterPoint(cx, cz, 40m)` scant 8 Himmelsrichtungen × konzentrische Ringe in 4-m-Schritten. Erste nasse Cell (Spalte nicht über Wasser, via `_isAboveWaterAt(...) === false`) gewinnt. Wenn keiner in 40m Radius → `"no_water"`-memory + Journal-Eintrag „Eine Kreatur sucht Wasser — aber das nächste Ufer ist zu fern" + wander-Fallback. `task.args._target = {x, z}` speichert den Ziel-Punkt.
+2. **walken** — Direction Richtung _target mit `CREATURE_DRINK_SPEED = 3.0 m/s` (gleich wie gather, sichtbares Bewegen). Speed × `_creatureBodySpeedMultiplier` für Identitäts-Variation. V11.0-d.2-Y-Override kümmert sich um Schwimm-Surface wenn der Pfad durchs Wasser geht.
+3. **trinken** — bei `dist ≤ CREATURE_DRINK_HALT_DIST = 1.5m`: setze `task.args._drinkStart = now`, spiele Ping A5/880Hz (multisensorisch, Vision §1.2). Pause `CREATURE_DRINK_DURATION_S = 2.5s` (direction=0,0,0, Kreatur steht still mit float-Bobbing). Nach Ablauf: `creatureEmotions[idx] = "happy"` (Symbiose-Belohnung), `"drank"`-memory mit Trink-Ort, Journal-Eintrag „X trank am Ufer — das Wasser nährte sie, sie fühlt sich erfrischt", zurück zu wander.
+
+**Vollständige Task-Sprache integriert** (V7.79-Patterns als Vorlage):
+
+- `CREATURE_TASKS` erweitert auf 6 Einträge: `["wander", "follow_player", "wait", "gather", "build", "drink"]`
+- `CREATURE_TASK_AURA_HUE.drink = 210` (azur — „ich nähre mich am Wasser")
+- `CREATURE_TASK_PING_FREQ.drink = 880` (A5, helle Erfrischungs-Antwort, höher als alle anderen Tasks)
+- `_tickCreatureTaskDirection` routet `drink` zu `_tickCreatureDrink`
+- `_journalCreatureTask`-labels.drink = „sucht Wasser am Ufer"
+- `_renderTaskStatusUI` zählt drink-Kreaturen, zeigt „N trinken" in Status-Bar
+- Kreatur-Liste-UI zeigt „trinkt am Ufer" als Task-Label
+
+**Chat-Patterns** (V7.79-Stil, im _chatToDslPatterns-Block):
+
+```
+"trinke" / "trink" / "trink wasser" / "geh zum wasser"  → creature_task_nearest drink
+"alle trinken" / "alle zum wasser"                       → creature_task_all drink
+```
+
+Die nächste Kreatur in Reichweite (oder ALLE bei „alle ...") sucht Wasser und trinkt. DSL-Op `creature_task` akzeptiert „drink" als zweites Arg ohne weitere Anpassung — die existing creature_task-Pipeline trägt das.
+
+**Konstanten als Klassen-Konstanten** (V11.0-d.3-Sprache, alle frozen):
+
+```
+CREATURE_DRINK_HALT_DIST   = 1.5  // m — am Wasser-Punkt angekommen
+CREATURE_DRINK_DURATION_S  = 2.5  // s — Pausen-Dauer am Ufer
+CREATURE_DRINK_SEARCH_RADIUS = 40 // m — max Suchradius
+CREATURE_DRINK_SPEED       = 3.0  // m/s — gleich wie gather
+```
+
+**Test-Band 17 Invarianten** (`checkBandWelleV11D3DrinkTask`):
+
+- API-Existenz: `_tickCreatureDrink` + `_findNearestWaterPoint`
+- 6 Sprache-Felder: CREATURE_TASKS.includes("drink"), Länge=6, AURA_HUE=210, PING_FREQ=880, alle 4 Konstanten korrekt
+- 3 Source-Probes: Routing in `_tickCreatureTaskDirection`, 3-Phasen-Logik (_target + _drinkStart), Happiness-Setter
+- Chat-Parse: „trinke" → `["creature_task_nearest", "drink"]`
+- Empirisch: scan ±100m für Wasser-Cell, dann `_findNearestWaterPoint` von Land-Cell daneben → returnt Wasser-Punkt-Objekt
+- Verhalten: `assignCreatureTask("drink")` akzeptiert, Task-Name nach assign = "drink", nach einem Tick = "drink" wenn Wasser gefunden ODER "wander" (Auto-Fallback bei fernem Ufer)
+- Wieder-Herstellung der Test-Mutationen (Position + Task) — andere Bands unbeeinflusst
+
+**Test-Disziplin-Lehre während des Debuggens**: erste Test-Version nutzte `window.AnazhRealm.CREATURE_TASKS` — crashte, weil die Klasse NICHT als Browser-Global exponiert ist (nur via `window.anazhRealm.constructor`). Heilung: alle 8 statischen-Constants-Lookups auf `r.constructor.X` umgestellt. Generell: in Browser-Tests Klassen-Statics über die Instanz erreichen (`instance.constructor.STATIC`), nicht über vermeintliche Globals.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" — alle 17 V11.0-d.3-Invarianten grün, plus V11.0-d.1+d.2 weiterhin grün (kein Regress). audit:strict 0 Failures; lint + format sauber. Dateien: `anazhRealm.js` ~+135 Z. (4 Konstanten + Routing + 2 Methoden + 2 Chat-Patterns + Sprache-Erweiterungen + UI), `scripts/playtest.cjs` ~+135 Z. (17 Invarianten + Wieder-Herstellung). Version-Bump 11.0.1 → 11.0.2.
+
+**Was V11.0-d.4 liefern wird (next session, ~30min — Browser-Audit + Polish)**: Schöpfer-Browser-Audit auf AMD RDNA-3 — sieht der Trink-Akt sichtbar aus? Plus optionale Polish: (a) **Splash-Audio-Ping** beim Schwimm-Eintritt (V11.0-d.2-Wirkung audio-verstärken, multisensorisch §1.2), (b) **autonome Trink-Geste** — happy-Kreatur in Ufer-Nähe (innerhalb 5m, im Wander-Modus) hat 0.5% Chance pro Frame, spontan einen `drink`-Task zu starten. Sustainable, emergent ohne Spieler-Befehl. (c) Optional D.4-Folge: **Kreatur-Trinken-Animation** über bodyParts (z.B. Kopf-Mesh leichtes Bobbing während Pause).
+
+---
+
 **V11.0-d.2, 27.05.2026 — Pfeiler D wirkt: Tiefen-Scheue + Schwimm-Surface, das erste sichtbare Welt-Atmen zwischen Kreatur und Hydrosphäre:**
 
 Nach V11.0-d.1-Foundation konsumiert jetzt der `updateCreatures`-wander-Loop den Wasser-Kontext-Helper. Das ist die erste echte System-Kopplung der V11-Ära — Kreaturen erkennen Wasser nicht mehr nur in `_isAboveWaterAt`-Spawn-Filter (V9.59), sondern reagieren während ihrer Bewegung.
