@@ -88,6 +88,16 @@ class AnazhRealm {
             // Architekturen, Inseln, Avatar). gradientMap-Lookup bleibt
             // separat in state.toonGradientMap.
             toonLightUniforms: null,
+            // V10.0-h — Manueller Shadow-Pass für WebGPU. `shadowRTT` ist das
+            // WebGLRenderTarget mit DepthTexture (2048×2048); `shadowDepthTexture`
+            // ist seine DepthTexture (compareFunction=LessCompare). Beide lazy
+            // initialisiert in _ensureShadowRenderTarget, gefüttert pro Frame
+            // via _renderShadowMapPass. Auf WebGL bleibt es null (Three.js'
+            // WebGLRenderer macht den Shadow-Pass selbst — nicht mehr aktiv
+            // mit MeshBasicNodeMaterial, eine V10.0-h.c-Folge-Welle wäre
+            // den manuellen Pass auch auf WebGL zu aktivieren).
+            shadowRTT: null,
+            shadowDepthTexture: null,
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
@@ -16964,7 +16974,19 @@ class AnazhRealm {
         // Geteilte Toon-Light-Uniforms (lazy welt-global).
         const u = this._ensureToonLightUniforms();
 
-        const { attribute, vec2, vec3, vec4, float, normalize, dot, clamp, transformedNormalWorld, texture } = TSL;
+        const {
+            attribute,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            normalize,
+            dot,
+            clamp,
+            transformedNormalWorld,
+            positionWorld,
+            texture,
+        } = TSL;
 
         // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
         // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
@@ -16996,8 +17018,46 @@ class AnazhRealm {
         // nächsten Frame die aktualisierten Pixel — Cel-Stufen-Live-Update.
         const toonStep = texture(this.state.toonGradientMap, vec2(dotNL, float(0.5))).r;
 
-        // Lit-Helligkeit = ambient + sunIntensity × toonStep (skalar).
-        const litScalar = u.ambient.add(toonStep.mul(u.sunIntensity));
+        // V10.0-h — Shadow-Sampling im colorNode. Wir spiegeln das Pattern aus
+        // vendor/three-addons/nodes/lighting/AnalyticLightNode.js Z51-149, das
+        // Three.js intern bei lights=true-Materials nutzt. Unser manueller
+        // _renderShadowMapPass füllt das depthTexture pro Frame; shadowMatrix
+        // ist die canonical texcoord×projection×viewInverse-Matrix. Bei
+        // shadowEnabled=0 (WebGL-Pfad ODER Pre-Init) ist der Multiplier 1
+        // (kein Schatten). Hardware-PCF via DepthTexture.compareFunction=
+        // LessCompare in _ensureShadowRenderTarget.
+        const shadowDepthTex = this.state.shadowDepthTexture;
+        let shadowAttenuation = float(1.0);
+        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+            const normalBias = float(1.0); // matched directionalLight.shadow.normalBias
+            const bias = float(-0.0005); // matched directionalLight.shadow.bias
+            // shadowCoord = shadowMatrix × (worldPos + normal × normalBias)
+            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            // Matrix4 × vec3 → vec4 in TSL: shadowMatrix.mul(vec4(pos, 1))
+            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
+            // Perspektive-Divide: xyz / w
+            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
+            // Frustum-Test: [0,1]^3
+            const inX = projected.x.greaterThanEqual(float(0.0)).and(projected.x.lessThanEqual(float(1.0)));
+            const inY = projected.y.greaterThanEqual(float(0.0)).and(projected.y.lessThanEqual(float(1.0)));
+            const inZ = projected.z.lessThanEqual(float(1.0));
+            const inFrustum = inX.and(inY).and(inZ);
+            // WebGPU y-flip + bias-Nudge auf z (Tiefenvergleich gegen Map)
+            const sampleUV = vec2(projected.x, projected.y.oneMinus());
+            const refZ = projected.z.add(bias);
+            // Hardware-PCF: texture(depthTex, uv).compare(refZ) returnt 0/1.
+            // 1 = in light (refZ < gespeicherter Tiefe), 0 = in shadow.
+            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
+            // Außerhalb des Frustums → keine Verdunkelung (multiplier 1).
+            // Innerhalb + shadowEnabled=1 → multiplier = shadowSample.
+            // shadowEnabled=0 (WebGL/Pre-Init) → multiplier ≡ 1.
+            const inShadowRegion = inFrustum.mul(u.shadowEnabled);
+            shadowAttenuation = inShadowRegion.mix(float(1.0), shadowSample);
+        }
+
+        // Lit-Helligkeit = ambient + (sunIntensity × toonStep × shadow) (skalar).
+        // Ambient bleibt ungedämpft — auch in Schatten kommt indirektes Licht.
+        const litScalar = u.ambient.add(toonStep.mul(u.sunIntensity).mul(shadowAttenuation));
         const lit = albedoNode.mul(vec3(litScalar, litScalar, litScalar));
 
         mat.colorNode = vec4(lit, float(1.0));
@@ -17019,8 +17079,113 @@ class AnazhRealm {
         const sunDir = uniform(new THREE.Vector3(0.5, 0.7, 0.3).normalize());
         const sunIntensity = uniform(1.0);
         const ambient = uniform(0.3);
-        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient };
+        // V10.0-h — Shadow-Sampling-Uniforms. shadowMatrix wird pro Frame in
+        // _renderShadowMapPass aus light.shadow.camera neu projiziert; bei
+        // WebGL-Pfad bleibt es auf Identität (Three.js' Renderer macht die
+        // Shadow-Sampling intern via lights=true-Pendant → MeshToonMaterial-
+        // Fallback). shadowEnabled=0 → kein Schatten im colorNode (sicherer
+        // Default vor erstem Render-Pass).
+        const shadowMatrix = uniform(new THREE.Matrix4());
+        const shadowEnabled = uniform(0.0);
+        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient, shadowMatrix, shadowEnabled };
         return this.state.toonLightUniforms;
+    }
+
+    // V10.0-h — Shadow-Map RenderTarget für den manuellen Shadow-Pass.
+    // Three.js' WebGPURenderer in r160 hat KEINEN automatischen Shadow-Pass
+    // wenn alle Materials lights=false haben (siehe Diag: shadow.map=null im
+    // WebGPU-Pfad obwohl light.castShadow=true + renderer.shadowMap.enabled=
+    // true). Wurzel: r160's Shadow-Pipeline läuft NUR via setupShadow() in
+    // einem konsumierenden NodeMaterial. Heilung: eigenes RenderTarget mit
+    // DepthTexture, manueller Pass aus light.shadow.camera-Sicht VOR dem
+    // main render, depthTexture wird im colorNode der Toon-Materials
+    // gesampelt. Idempotent — wird einmal pro Renderer-Spawn aufgerufen,
+    // disposed im Hot-Swap-Pfad.
+    _ensureShadowRenderTarget() {
+        if (this.state.shadowRTT) return this.state.shadowRTT;
+        if (typeof THREE === "undefined" || !this.state.directionalLight) return null;
+        const W = 2048;
+        const H = 2048;
+        const depthTex = new THREE.DepthTexture(W, H);
+        depthTex.format = THREE.DepthFormat;
+        depthTex.type = THREE.UnsignedShortType;
+        depthTex.minFilter = THREE.NearestFilter;
+        depthTex.magFilter = THREE.NearestFilter;
+        // compareFunction = LessCompare → hardware-PCF im Sampler
+        // (texture(depthTex, vec3(uv, refZ)) returnt direkt 0/1 nach Vergleich)
+        depthTex.compareFunction = THREE.LessCompare;
+        const rtt = new THREE.WebGLRenderTarget(W, H, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            format: THREE.RGBAFormat,
+            depthTexture: depthTex,
+        });
+        this.state.shadowRTT = rtt;
+        this.state.shadowDepthTexture = depthTex;
+        // Linke shadow.map auf das RTT — damit ist die Welt-API konsistent
+        // (state.directionalLight.shadow.map.depthTexture). Three.js' WebGL-
+        // Renderer würde das selbst tun beim ersten Render; auf WebGPU
+        // bleibt das null ohne unsere Hilfe.
+        this.state.directionalLight.shadow.map = rtt;
+        return rtt;
+    }
+
+    // V10.0-h — Manueller Shadow-Map-Pass. Pre-render-Hook: rendert die
+    // Scene aus directionalLight.shadow.camera-Sicht in das shadowRTT mit
+    // einem Depth-Override-Material. Danach läuft der normale Render-Pass
+    // gegen die frisch gefüllte Shadow-Map. Auf WebGL ist das redundant
+    // (Three.js' WebGLRenderer macht es selbst) — wir gaten via
+    // rendererKind. shadowMatrix wird update für die colorNode-Sampling.
+    _renderShadowMapPass() {
+        if (this.state.rendererKind !== "webgpu") return; // WebGL macht's selbst
+        const dl = this.state.directionalLight;
+        const renderer = this.state.renderer;
+        const scene = this.state.scene;
+        if (!dl || !renderer || !scene || !dl.castShadow) return;
+        const rtt = this._ensureShadowRenderTarget();
+        if (!rtt) return;
+        // Shadow-Camera-Position folgt dem Light-Target (Spieler, gesetzt in
+        // _dayNightApplyDirectionalLight). Three.js' DirectionalLight-Shadow-
+        // Camera ist relativ zur Light-Position. Sicherstellen dass
+        // matrixWorld + projectionMatrix aktuell sind.
+        dl.shadow.camera.position.copy(dl.position);
+        dl.shadow.camera.lookAt(dl.target.position);
+        dl.shadow.camera.updateMatrixWorld(true);
+        dl.shadow.camera.updateProjectionMatrix();
+        // shadow.matrix = texcoord-transform × projection × viewInverse
+        // Das ist der canonical Three.js-Pattern aus WebGLShadowMap.js.
+        const m = dl.shadow.matrix;
+        m.set(0.5, 0.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0);
+        m.multiply(dl.shadow.camera.projectionMatrix);
+        m.multiply(dl.shadow.camera.matrixWorldInverse);
+        // Toon-Light-Uniforms updaten — der colorNode sampelt mit der
+        // gleichen Matrix.
+        const tu = this.state.toonLightUniforms;
+        if (tu) {
+            if (tu.shadowMatrix) tu.shadowMatrix.value.copy(m);
+            if (tu.shadowEnabled) tu.shadowEnabled.value = 1.0;
+        }
+        // Render-Pass: scene aus shadow.camera-Sicht ins RTT.
+        // overrideMaterial = ein einfaches NodeMaterial das nur Depth schreibt.
+        // Three.js' WebGPURenderer rendert auch ohne explizites Override-
+        // Material in DepthTexture (FBO-Attachment) — wir nutzen den
+        // Default-Pfad und sehen ob das reicht.
+        const oldRT = renderer.getRenderTarget ? renderer.getRenderTarget() : null;
+        try {
+            renderer.setRenderTarget(rtt);
+            renderer.clear(false, true, false); // nur Depth clearen
+            const result = renderer.render(scene, dl.shadow.camera);
+            // WebGPU.render() ist async (Promise). Fire-and-forget — die
+            // gerenderte Shadow-Map ist im nächsten main-Frame verfügbar.
+            // Ein 1-Frame-Lag ist visuell unsichtbar.
+            if (result && typeof result.catch === "function") {
+                result.catch(() => {});
+            }
+        } catch (_) {
+            // Render-Pass-Fehler dürfen den main render nicht blockieren.
+        } finally {
+            renderer.setRenderTarget(oldRT);
+        }
     }
 
     // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
@@ -38998,6 +39163,14 @@ class AnazhRealm {
         // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
         // aber unnötige Promise-Rejections im Console-Log vermieden.
         if (!this.state.rendererReady) return;
+        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. Gated
+        // auf rendererKind=webgpu (WebGL macht's selbst über lights=true-
+        // Pendants beim Hot-Swap-Fallback). Pre-render-Hook füllt das
+        // shadowRTT + updated toonLightUniforms.shadowMatrix, der
+        // colorNode der Toon-Materials sampelt im selben Frame.
+        if (this.state.rendererKind === "webgpu" && !this.state.rendererInkompatibel) {
+            this._renderShadowMapPass();
+        }
         // V10.0-e — WebGPURenderer.render() ist async; bei inkompatiblen
         // Materials (unsere `hydroSurfaceMaterial` + `waterfallMaterial`
         // sind klassische ShaderMaterials, WebGPU in r160 erwartet
@@ -39392,7 +39565,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-g";
+AnazhRealm.VERSION = "10.0-h";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
