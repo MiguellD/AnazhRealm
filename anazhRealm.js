@@ -10132,6 +10132,21 @@ class AnazhRealm {
         }
         starField.instanceMatrix.needsUpdate = true;
         if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
+        // V10.0-j.c — instanceColor explicit auf die Geometry binden.
+        // Three.js' setColorAt setzt `mesh.instanceColor` (eine
+        // InstancedBufferAttribute auf der Mesh-Instanz), aber TSL's
+        // `attribute("instanceColor", "vec3")` lookupt in
+        // `geometry.attributes` (AttributeNode.js Z71: `builder.hasGeometry
+        // Attribute(name)` → `builder.geometry.getAttribute(name)`). Ohne
+        // diesen Bridge bleibt der Lookup leer → AttributeNode.js Z94 loggt
+        // „Attribute not found" + emittiert `vec3(0)` als Konstante →
+        // schwarze Sterne. Heilung: das `starField.instanceColor`-
+        // BufferAttribute auch direkt auf planeGeo setzen → geometry.
+        // attributes hat den Eintrag → TSL findet ihn → Per-Instance-Color
+        // wird korrekt im Shader gebunden.
+        if (starField.instanceColor) {
+            planeGeo.setAttribute("instanceColor", starField.instanceColor);
+        }
         starField.frustumCulled = false;
         // V10.0-j — Sterne werfen keine Schatten (sind unendlich-far Billboards).
         // Defensive — setRenderObjectFunction-Filter in _renderShadowMapPass
@@ -17327,7 +17342,14 @@ class AnazhRealm {
         }
         try {
             renderer.setRenderTarget(rtt);
-            renderer.clear(false, true, false);
+            // V10.0-j.c — KEIN expliziter renderer.clear() Aufruf. Three.js'
+            // WebGPUBackend.clear() Z632-643 hat einen Vendor-Bug: im stencil=
+            // false-Branch setzt es ZWANGSWEISE stencilLoadOp+stencilStoreOp
+            // (else-Branch, immer ausgeführt). Auf Pure-Depth-Format crasht
+            // das die WebGPU-Validation. Heilung: weglassen — Three.js'
+            // regulärer Render-Pass-Pfad (Background.js Z119) setzt
+            // `renderContext.clearDepth = autoClearDepth=true` automatisch,
+            // WebGPUBackend Z302 macht dann depthLoadOp=Clear (sauber gated).
             const result = renderer.render(scene, dl.shadow.camera);
             if (result && typeof result.catch === "function") {
                 result.catch(() => {});
@@ -19262,30 +19284,33 @@ class AnazhRealm {
         }
         const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
         geo.translate(0, 0.425, 0);
-        // V10.0-j.b — Wurzel-Heilung des V10.0-g.1/V10.0-j-Browser-Audit-Bugs
-        // („Instance range count=3160 requires larger buffer bound=1916"). V10.0-g.1
-        // dachte `setUsage(DynamicDrawUsage)` + explicit `inst.count` würde Three.js
-        // zwingen pro Mesh den Buffer neu zu binden — im Cloud-Headless wirkt's,
-        // auf echtem AMD-RDNA-3 bricht's. Wurzel: Three.js' WebGPU-Backend cached
-        // Vertex-Buffer-Bindings zwischen Meshes mit derselben Material-Instanz —
-        // die Pipeline ist per cacheKey (Tree-Hash), aber Bind-Group-Layout per
-        // material.id. Profi-Heilung: pro Chunk seine EIGENE Material-Instanz via
-        // `material.clone()`. NodeMaterial.clone() teilt Tree-Knoten-Referenzen
-        // (windUniforms bleiben geteilt → Wind syncen weiter), aber material.id
-        // ist neu → eigenes Bind-Group → korrekter Instance-Buffer-Size pro Chunk.
-        // WGSL-Source ist cached (cacheKey identisch) → kein Re-Compile-Overhead.
-        // Trade-off: ~400 Bytes Material-Overhead × 81 Chunks = vernachlässigbar.
-        const baseGrassMat = this._grassInstanceMat();
-        const grassMat = baseGrassMat && typeof baseGrassMat.clone === "function" ? baseGrassMat.clone() : baseGrassMat;
-        const inst = new THREE.InstancedMesh(geo, grassMat, blades.length);
-        inst.count = blades.length;
+        // V10.0-j.c — Uniform-Capacity-Pattern (Profi-Vorbild Genshin/BotW).
+        // V10.0-j.b's `material.clone()`-Pfad reichte NICHT: Three.js'
+        // RenderObject.getMaterialCacheKey (RenderObject.js Z113-128)
+        // serialisiert Material-Properties mit `typeof value === 'object'
+        // → '{}'` → Tree-Knoten-Referenzen sind unsichtbar im Cache-Key,
+        // zwei Material-Clones mit identischen Properties haben IDENTISCHE
+        // Cache-Keys → Pipeline-Cache teilt den Vertex-Buffer-Binding-Slot
+        // zwischen Chunks → kleinster instanceMatrix-Buffer wird gebunden,
+        // größere Chunks crashen mit „Instance range requires larger buffer".
+        // **Profi-Heilung**: alle Gras-InstancedMeshes mit UNIFORM Capacity
+        // allokieren (GRASS_MAX_BLADES=256). Bound-Buffer ist konstant pro
+        // Pipeline-Cache → kein Mismatch. `inst.count = blades.length` für
+        // die DrawIndexed-Iteration (echte Render-Count). Cap auf 256 falls
+        // ein Chunk extreme blade-Density hätte (typisch 50-200 blades).
+        // Material-Singleton (V9.84 Perf-1.a) bleibt erhalten. Cost: 256 ×
+        // 64 bytes × ~30 Chunks = ~500 KB GPU-Heap, vernachlässigbar.
+        const GRASS_MAX_BLADES = 256;
+        const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
+        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), GRASS_MAX_BLADES);
+        inst.count = realCount;
         inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
         const pos = new THREE.Vector3();
         const scl = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
-        for (let i = 0; i < blades.length; i++) {
+        for (let i = 0; i < realCount; i++) {
             const b = blades[i];
             pos.set(b.x, b.y, b.z);
             q.setFromAxisAngle(up, b.rot);
