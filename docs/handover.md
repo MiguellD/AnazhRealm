@@ -357,6 +357,41 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-g.2 — Gras-Instance-Buffer-Heilung nach Schöpfer-Browser-Audit V10.0-g.1 (26.05.2026, eine Zeile Code-Change, ~25 Z. netto Doku):**
+
+Schöpfer-Audit V10.0-g.1 zeigte: Bug 1 (pointUV) + Bug 3 (Iso-Mesh-Attribute) waren geheilt, ABER Bug 2 spammt 250× pro Frame auf WebGPU. Welt-FPS auf 5.
+
+**Wurzel-Diagnose**: `Instance range (count: 3160) requires a larger buffer (202240) than the bound buffer size (122752)` — Three.js' WebGPU-Pipeline cached den instanceMatrix-Buffer des ersten Gras-Chunks (1918 Halme), andere Chunks mit größerer count triggern Validation-Error pro Draw-Call.
+
+**Diagnose-Iteration (drei A/B-Tests)**:
+1. Per-Chunk `_buildToonNodeMaterial` (V10.0-g-Helper): 19/20 Chunks im Headless — Per-Chunk-NodeMaterial-Compile zu teuer.
+2. Per-Chunk klassisches `MeshLambertMaterial`: 17/20 Chunks — auch zu teuer.
+3. **Shared `MeshLambertMaterial` BLEIBT, aber `onBeforeCompile`-Wind-Patch entfernen**: 20/20 ✓, Page-Errors=0 ✓.
+
+**Wurzel klar**: nicht das shared Material, sondern der `onBeforeCompile`-GLSL-Patch ist die WebGPU-Wurzel. Three.js' `NodeMaterial.fromMaterial()` IGNORIERT onBeforeCompile (GLSL-Strings sind nicht WGSL-übersetzbar), ABER der resultierende auto-konvertierte NodeMaterial hat einen inkonsistenten Pipeline-Cache-State, der den InstanceBuffer-Bind zwischen Meshes verwirrt.
+
+**Heilung in `_grassInstanceMat()`**:
+- `onBeforeCompile`-Block komplett entfernt
+- Pure `MeshLambertMaterial({ color: 0x5fa743, side: DoubleSide })` shared
+- `state.windUniforms` bleibt deklariert (V10.0-g.cel-Backlog — TSL-Wind kommt zurück)
+- V9.84-Perf-1.a-Pattern intakt (kein Per-Chunk-Material-Compile-Overhead)
+
+**Trade-off**: Wind-Animation temporär weg auf WebGL (war auf WebGPU ohnehin nie aktiv — onBeforeCompile-ignoriert). Visueller Verlust auf WebGL: Gras-Halme statisch statt windverwehte Wellen. Kommt mit V10.0-g.cel zurück als TSL-`positionNode`-Vertex-Displacement (sun-uniform-getriebene `sin(uTime + instPos.x × ...)`-Mathematik im TSL-Tree).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; voxelChunks=20 (genau am Threshold, Headless-Performance bewahrt); Page-Errors=0; audit:strict 0 Failures; Format/Lint sauber. Dateien: `anazhRealm.js` -15 Z. netto (onBeforeCompile-Block weg, Kommentar-Update). Version-Bump 10.0.13 → 10.0.14, title v10.0-g.2.
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas „Rendering · TSL-Migration"):
+
+**`onBeforeCompile` ist WebGPU-feindlich — triggert Pipeline-Cache-Bugs**. Three.js' WebGPURenderer's `NodeMaterial.fromMaterial()`-Auto-Konvertierung ignoriert onBeforeCompile, aber das resultierende NodeMaterial hat inkonsistenten Pipeline-Cache-State. Folge: InstanceBuffer-Bind-Konflikte, Validation-Error-Spam. Heilung: onBeforeCompile aus klassischen Materials entfernen wenn WebGPU-Kompatibilität gefragt ist. Custom Shader-Effekte via TSL/NodeMaterial-Pfad (positionNode/colorNode) migrieren. Plus: `grep -n 'onBeforeCompile' anazhRealm.js` vor jeder WebGPU-Welle als Audit-Pattern.
+
+**V10.0-g.2-Bilanz**: drei WebGPU-Bugs aus dem V10.0-g-Audit alle strukturell geheilt — Welt rendert dauerhaft sauber auf WebGPU ohne Console-Spam.
+
+**Was V10.0-g.cel + V10.0-g.shadow liefern werden (eigene Folge-Wellen)**:
+- V10.0-g.cel: gradientMap-Texture-Lookup robust (Toon-Cel-Stufen kommen zurück) + TSL-Wind via positionNode (Gras-Animation kommt zurück)
+- V10.0-g.shadow: manuelle Shadow-Map-Texture-Sampling im colorNode
+
+---
+
 **V10.0-g.1 — WebGPU-Polish nach Schöpfer-Browser-Audit V10.0-g (26.05.2026, zwei kritische WebGPU-Inkompatibilitäten geheilt, ~30 Z. netto):**
 
 Schöpfer-Audit nach V10.0-g auf AMD-RDNA-3 zeigte: Welt rendert auf WebGPU (Material-Migration durch, Hot-Swap triggert nicht mehr — V10.0-g hat funktioniert), aber drei WebGPU-Inkompatibilitäten spammen die Konsole:

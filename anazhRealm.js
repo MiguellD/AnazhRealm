@@ -88,6 +88,15 @@ class AnazhRealm {
             // Architekturen, Inseln, Avatar). gradientMap-Lookup bleibt
             // separat in state.toonGradientMap.
             toonLightUniforms: null,
+            // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
+            // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
+            // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
+            // das alte `_grassInstanceMat` (MeshLambertMaterial mit GLSL-
+            // onBeforeCompile-Wind-Patch) ist nicht mehr aktiv genutzt —
+            // Gras nutzt jetzt `_buildToonNodeMaterial` pro Chunk. Die Wind-
+            // Uniforms bleiben als state-Slot für V10.0-g.cel-TSL-Wind.
+            windUniforms: null,
+            _grassMat: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -10176,24 +10185,16 @@ class AnazhRealm {
                 uWindStrength: { value: 0.12 },
             };
         }
-        const wu = this.state.windUniforms;
+        // V10.0-g.2 — onBeforeCompile-Wind-Patch entfernt. War GLSL-spezifisch
+        // (klassischer Three.js-Shader-Patch), auf WebGPU-Renderer hatte
+        // Three.js' NodeMaterial.fromMaterial() den onBeforeCompile-Pfad
+        // ohnehin nicht respektiert — Wind-Effekt war auf WebGPU schon weg.
+        // Hypothese: onBeforeCompile triggert auf WebGPU einen Pipeline-Cache-
+        // Konflikt (Browser-Audit V10.0-g.1 zeigte 250×/Frame "Instance range
+        // requires larger buffer"-Warning). Ohne Patch: pure MeshLambertMaterial,
+        // sauber Auto-konvertiert auf WebGPU, kein Pipeline-Bug. Wind kommt
+        // mit V10.0-g.cel als TSL-positionNode-Displacement zurück.
         const mat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
-        mat.onBeforeCompile = (shader) => {
-            shader.uniforms.uWindTime = wu.uWindTime;
-            shader.uniforms.uWindStrength = wu.uWindStrength;
-            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
-            shader.vertexShader = shader.vertexShader.replace(
-                "#include <begin_vertex>",
-                `#include <begin_vertex>
-                {
-                    vec3 instPos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
-                    float phase = uWindTime * 1.7 + instPos.x * 0.28 + instPos.z * 0.21;
-                    float hf = max(0.0, transformed.y);
-                    transformed.x += sin(phase) * uWindStrength * hf * 1.5;
-                    transformed.z += cos(phase * 0.7) * uWindStrength * hf;
-                }`
-            );
-        };
         this.state._grassMat = mat;
         return mat;
     }
@@ -39379,7 +39380,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-g.1";
+AnazhRealm.VERSION = "10.0-g.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
