@@ -12458,6 +12458,40 @@ class AnazhRealm {
                 }
             }
 
+            // V11.0-d.2 (Pfeiler D — Wasser ↔ Kreaturen, Tiefen-Scheue +
+            // Schwimm-Surface): bei nahe-Spieler-Kreaturen den Wasser-
+            // Kontext (V11.0-d.1) lesen. Zwei Schichten:
+            //   (a) Direction-Bias zum Ufer — NUR bei freiem Wandern
+            //       (wander oder kein Task). Spieler-Aufträge (follow/
+            //       gather/build/wait) sind Welt-Wille, der Bias würde
+            //       sie überschreiben → kein Bias dort.
+            //   (b) Y-Override für Schwimm-Surface — für ALLE Tasks.
+            //       Wenn die Spalte nass + tief ist, schwimmt die
+            //       Kreatur knapp unter dem Wasser-Spiegel statt am
+            //       See-Boden zu sitzen (das wäre ertrinken).
+            // Distance-LOD <50 m vom Spieler (V9.84 Perf-1.e-Lehre): wer's
+            // nicht sieht, braucht keinen Per-Frame-Wasser-Lookup. Bei
+            // 120 Kreaturen typisch 20-40 nah, davon meist alle an Land
+            // (Helper-early-Out, < 1 µs/Call), wenige im Wasser kosten
+            // den 16-Sample-Scan (~30 µs/Call) = vernachlässigbar.
+            let waterSurface = null;
+            const distSqToPlayer = creature.position.distanceToSquared(playerPos);
+            if (distSqToPlayer < 2500) {
+                const wctx = this._creatureWaterContextAt(creature);
+                if (wctx.inWater) {
+                    if (wctx.depthBelow > 1.5 && wctx.shoreDir && (!task || task.name === "wander")) {
+                        // shoreDir ist Kardinal-Vector3 (±1 oder 0) — keine
+                        // normalize() nötig. Bias 1.5× Speed gibt Tiefe-Scheue
+                        // klare Vorrang ohne Schwarm-Bewegung zu zerstören.
+                        direction.x += wctx.shoreDir.x * speed * 1.5;
+                        direction.z += wctx.shoreDir.z * speed * 1.5;
+                    }
+                    if (wctx.depthBelow > 0.5) {
+                        waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
+                    }
+                }
+            }
+
             if (hasHit) {
                 direction.x += (Math.random() - 0.5) * 2;
                 direction.z += (Math.random() - 0.5) * 2;
@@ -12476,7 +12510,11 @@ class AnazhRealm {
             // Eine Funktion, alle Höhen-Konsumenten — die Phase-5b-Disziplin
             // ehrlich abgeschlossen.
             const terrainHeight = this.getTerrainHeightAt(creature.position.x, creature.position.z);
-            const baseY = terrainHeight + 0.5;
+            // V11.0-d.2 — wenn die Spalte nass + tief ist, schwebt die Kreatur
+            // 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface, sichtbar als
+            // halb-eingetaucht). Sonst sitzt sie wie bisher 0.5 m über dem
+            // Terrain (V8.49-Floating-Animation-Anker).
+            const baseY = waterSurface !== null ? waterSurface - 0.3 : terrainHeight + 0.5;
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             creature.position.y = baseY + floatOffset;
             // V9.84 Perf-1.e — Visual-Updates (Aura-Position, Carrying-Sprite-
@@ -39973,7 +40011,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.1";
+AnazhRealm.VERSION = "11.0-d.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

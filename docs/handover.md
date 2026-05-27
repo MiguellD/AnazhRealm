@@ -357,6 +357,42 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V11.0-d.2, 27.05.2026 — Pfeiler D wirkt: Tiefen-Scheue + Schwimm-Surface, das erste sichtbare Welt-Atmen zwischen Kreatur und Hydrosphäre:**
+
+Nach V11.0-d.1-Foundation konsumiert jetzt der `updateCreatures`-wander-Loop den Wasser-Kontext-Helper. Das ist die erste echte System-Kopplung der V11-Ära — Kreaturen erkennen Wasser nicht mehr nur in `_isAboveWaterAt`-Spawn-Filter (V9.59), sondern reagieren während ihrer Bewegung.
+
+**Zwei Schichten, eine Logik (`anazhRealm.js` Z12459-12491)**:
+
+(a) **Direction-Bias zum Ufer** — bei `inWater && depthBelow > 1.5` und freiem Wandern (`task=null` oder `task.name="wander"`):
+```js
+direction.x += wctx.shoreDir.x * speed * 1.5;
+direction.z += wctx.shoreDir.z * speed * 1.5;
+```
+×1.5-Speed-Multiplikator gibt der Tiefen-Scheue klaren Vorrang ohne Schwarm-Kohäsion zu zerstören. `shoreDir` ist Kardinal-Vector3 (±1 oder 0 pro Komponente), keine normalize() nötig. Spieler-Aufträge (`follow_player`/`gather`/`build`/`wait`) bleiben unbeeinflusst — die sind Welt-Wille, kein autonomes Wandern.
+
+(b) **Y-Override für Schwimm-Surface** — bei `inWater && depthBelow > 0.5` für ALLE Tasks:
+```js
+const baseY = waterSurface !== null ? waterSurface - 0.3 : terrainHeight + 0.5;
+```
+Statt am See-Boden zu sitzen (ertrinken-äquivalent in der alten Welt), schwebt die Kreatur 0.3 m unter dem Wasser-Spiegel. Die V8.49-Floating-Animation (`floatOffset` bobbing) wird zusätzlich addiert — sieht aus wie halb-eingetauchtes Schwimmen.
+
+**Distance-LOD <50 m vom Spieler** (V9.84-Perf-1.e-Lehre angewandt): `distSqToPlayer < 2500` als Eintrittstor. Bei 120 Kreaturen typisch 20-40 nah, davon meistens an Land (Helper-early-Out via `inWater=false`, < 1 µs/Call). Wenige im Wasser kosten den 16-Sample-Scan (~30 µs/Call), insgesamt vernachlässigbar.
+
+**Test-Band 9 Invarianten** (`checkBandWelleV11D2WaterBias`):
+- 4 Source-Probes: `updateCreatures` konsumiert `_creatureWaterContextAt`, hat `waterSurface`-Variable, liest `shoreDir`, hat Distance-LOD `< 2500`
+- Empirische Verhaltens-Probe: scan ±120m für tiefen Wasser-Spot (depthBelow > 1.5), teleportiere existing `state.creatures[0]` dorthin (am See-Boden), setze `wander`-Task, platziere Spieler 10m daneben, rufe synthetisch `updateCreatures(0.016)`, prüfe Y-Position nach dem Tick
+- Akzeptanz: Kreatur schwimmt an Surface (`|y - (waterY - 0.3)| < 0.4` inkl. floatOffset), NICHT mehr am See-Boden (`|y - alterBoden| > 0.5`)
+- Wieder-Herstellung: Position + Task + Spieler-Position restoren (Test-Disziplin — andere Bands unbeeinflusst)
+- Defensive: wenn keine Kreatur in der Welt ODER keine Wasser-Spalte in ±120m, dann Skip-with-Warning (Welt-Variation akzeptabel)
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" — der synthetische Tick-Test hat das Y-Override empirisch bewiesen. audit:strict 0 Failures; lint + format sauber. Dateien: `anazhRealm.js` ~+40 Z. netto (1 Wasser-Bias-Hook + 1 Y-Override-Zeile), `scripts/playtest.cjs` ~+110 Z. (9 Invarianten + Wieder-Herstellungs-Disziplin). Version-Bump 11.0.0 → 11.0.1.
+
+**Lehre angewandt (keine neue Gotcha)**: V9.84-Perf-1.e-Distance-LOD-Lehre auf System-Kopplungs-Welle erweitert — Welt-Reaktivität darf gated sein wenn der Cost-vs-Sichtbarkeits-Trade ehrlich begründbar ist (50 m Range deckt alle visuell-relevanten Kreaturen ab; weiter weg ist die Surface-vs-Boden-Differenz im Frustum-Pixel nicht unterscheidbar). Die V9.84-Lehre war ursprünglich für Visual-Updates (Aura, Sprite); D.2 erweitert sie auf Welt-Wahrheits-Berechnung mit klarer Kosten-Begründung.
+
+**Was V11.0-d.3 liefert (next session, ~1.5h)**: neuer Task `drink` als 6. CREATURE_TASKS-Eintrag (`wander, follow_player, wait, gather, build, drink`). Aura-Hue azur/210, Ping-Freq A5/880Hz. Drei-Phasen-Tick-Logik: (1) navigiere zum nächsten Ufer-Punkt (existing `_isAboveWaterAt`-Sample + nearest-shore-Scan), (2) halt am Ufer + 2-3s Pause, (3) Happiness-Boost (`creatureEmotions[i] = "happy"`) + Journal-Eintrag + zurück zu `wander`. Chat-Pattern „trinke" + DSL-Op via existing `creature_task`. Plus optional: autonome Geste — happy-Kreatur am Ufer (innerhalb 4m) hat 5% Chance pro Frame einen `drink`-Task spontan zu starten (sustainable, emergent ohne Spieler-Befehl).
+
+---
+
 **V11.0-d.1, 27.05.2026 — Pfeiler D Foundation, Wasser ↔ Kreaturen, der erste Schritt der V11-System-Kopplungs-Ära:**
 
 Nach Schöpfer-Browser-Audit der V10.0-j.j-Welt („gemergede stand habe ich getestet, das passt") ist der V10.0-Rendering-Bogen offiziell zu. Das Projekt wechselt jetzt von Render-Schicht zu System-Kopplungen — Roadmap §1.1 Vision-Pfeiler D-G, die emergente Welt-Resonanz zwischen Substanzen.

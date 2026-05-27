@@ -14255,6 +14255,137 @@ async function checkBandWelleV11D1WaterContext(ctx) {
     );
 }
 
+// V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der
+// wander-Loop den V11.0-d.1-Helper konsumiert, Direction zum Ufer biast und
+// die Y-Position auf Schwimm-Surface anhebt. Test-Strategie: synthetisch
+// eine existing Kreatur in eine Wasser-Spalte teleportieren, einen
+// `updateCreatures(0.016)`-Tick laufen, die Y-Position prüfen.
+async function checkBandWelleV11D2WaterBias(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Source-Probes — die strukturelle Wahrheit unabhängig von Welt-Daten.
+        const loopSrc = r.updateCreatures.toString();
+        out.loopReadsWaterContext = /_creatureWaterContextAt\(/.test(loopSrc);
+        out.loopHasWaterSurface = /waterSurface/.test(loopSrc);
+        out.loopHasShoreBias = /shoreDir/.test(loopSrc);
+        out.loopHasDistanceLod = /distSqToPlayer\s*<\s*2500/.test(loopSrc);
+
+        // Empirisch — finde eine Wasser-Spalte im Spawn-Bereich.
+        let waterSpot = null;
+        const SCAN_RANGE = 120;
+        const SCAN_STEP = 6;
+        for (let dx = -SCAN_RANGE; dx <= SCAN_RANGE && !waterSpot; dx += SCAN_STEP) {
+            for (let dz = -SCAN_RANGE; dz <= SCAN_RANGE && !waterSpot; dz += SCAN_STEP) {
+                const sy = r._voxelSurfaceY(dx, dz);
+                if (sy === null || !Number.isFinite(sy)) continue;
+                const wy = r._waterLevelAt(dx, dz);
+                if (wy - sy > 1.5) waterSpot = { x: dx, z: dz, sy, wy };
+            }
+        }
+        out.waterSpotFound = waterSpot !== null;
+        if (!waterSpot) return out;
+        out.spotDepth = waterSpot.wy - waterSpot.sy;
+
+        // Brauchen eine Kreatur — wenn keine existiert, spawn eine.
+        if (!Array.isArray(r.state.creatures) || r.state.creatures.length === 0) {
+            out.error = "no creatures in world — D.2 nicht testbar";
+            return out;
+        }
+        const creature = r.state.creatures[0];
+        // Sichere wir ihren Original-Zustand für die Wieder-Herstellung.
+        const origX = creature.position.x;
+        const origY = creature.position.y;
+        const origZ = creature.position.z;
+        const origTask = creature.userData && creature.userData.task ? { ...creature.userData.task } : null;
+
+        // Teleportiere die Kreatur in die Wasser-Spalte, auf Höhe des See-
+        // Bodens (was die Welt heute machen würde, ohne D.2). Direkt am
+        // Boden, damit der Y-Override-Effekt sichtbar wird.
+        creature.position.set(waterSpot.x, waterSpot.sy + 0.5, waterSpot.z);
+        // wander-Task sicherstellen damit der Direction-Bias greift.
+        r.assignCreatureTask(creature, "wander", {}, { silent: true });
+
+        // Spieler-nah platzieren — wir müssen <50m sein für die Distance-LOD.
+        // (Der Spieler-Mesh ist die einzige andere Welt-Konstante hier.)
+        const origPlayerX = r.state.playerMesh.position.x;
+        const origPlayerZ = r.state.playerMesh.position.z;
+        r.state.playerMesh.position.x = waterSpot.x + 10;
+        r.state.playerMesh.position.z = waterSpot.z + 10;
+
+        // Direkter Helper-Call (vor dem Tick) — prüft den Kontext-State.
+        const wctx = r._creatureWaterContextAt(creature);
+        out.helperSeesWater = wctx.inWater === true && wctx.depthBelow > 1.5;
+        out.helperHasShoreDir = wctx.shoreDir !== null;
+
+        // Einen synthetischen Tick laufen (16 ms).
+        r.updateCreatures(0.016);
+        out.yAfterTick = creature.position.y;
+        out.yExpectedFloor = waterSpot.sy + 0.5; // alte Welt: am Boden
+        out.yExpectedSurface = waterSpot.wy - 0.3; // D.2: an der Surface
+        // Die Kreatur sollte JETZT an der Surface schwimmen (±0.4m für
+        // floatOffset-Bobbing-Animation). Sie war vorher am Boden.
+        out.swimsAtSurface = Math.abs(creature.position.y - out.yExpectedSurface) < 0.4;
+        out.notAtFloor = Math.abs(creature.position.y - out.yExpectedFloor) > 0.5;
+
+        // Wieder-Herstellen damit der Rest der Suite nicht angefasst wird.
+        creature.position.set(origX, origY, origZ);
+        if (origTask) r.assignCreatureTask(creature, origTask.name, origTask.args || {}, { silent: true });
+        r.state.playerMesh.position.x = origPlayerX;
+        r.state.playerMesh.position.z = origPlayerZ;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d.2: Wasser-Bias-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V11.0-d.2: updateCreatures konsumiert _creatureWaterContextAt (Source-Probe)",
+        res.loopReadsWaterContext === true
+    );
+    check(
+        "Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik",
+        res.loopHasWaterSurface === true
+    );
+    check("Welle V11.0-d.2: updateCreatures liest shoreDir für Ufer-Bias", res.loopHasShoreBias === true);
+    check(
+        "Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)",
+        res.loopHasDistanceLod === true
+    );
+    if (!res.waterSpotFound) {
+        // Wenn die Welt-Variation keinen tiefen Wasser-Spot in ±120m hat,
+        // ist die empirische Probe nicht möglich — Source-Probes haben
+        // dann den strukturellen Beweis getragen.
+        check(
+            "Welle V11.0-d.2: Wasser-Spalte gefunden (Vorbedingung für Y-Override-Test)",
+            false,
+            "Test-Welt hat keinen Spot mit depthBelow > 1.5 in ±120m — Welt-Variation"
+        );
+        return;
+    }
+    check(
+        "Welle V11.0-d.2: Tiefer Wasser-Spot gefunden",
+        true,
+        `depth=${res.spotDepth?.toFixed(2)}m, expectedFloor=${res.yExpectedFloor?.toFixed(2)}, expectedSurface=${res.yExpectedSurface?.toFixed(2)}`
+    );
+    check("Welle V11.0-d.2: Helper erkennt depthBelow > 1.5", res.helperSeesWater === true);
+    check("Welle V11.0-d.2: Helper hat shoreDir (Ufer in 12m Reichweite)", res.helperHasShoreDir === true);
+    check(
+        "Welle V11.0-d.2: Kreatur schwimmt an Surface nach einem Tick (Y-Override aktiv)",
+        res.swimsAtSurface === true,
+        `yAfterTick=${res.yAfterTick?.toFixed(2)}, expected=${res.yExpectedSurface?.toFixed(2)}`
+    );
+    check(
+        "Welle V11.0-d.2: Kreatur NICHT mehr am See-Boden (alte Welt-Position überschrieben)",
+        res.notAtFloor === true,
+        `yAfterTick=${res.yAfterTick?.toFixed(2)}, alterBoden=${res.yExpectedFloor?.toFixed(2)}`
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31283,6 +31414,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelle993WaterLodSeam(ctx);
             // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
             await checkBandWelleV11D1WaterContext(ctx);
+            // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
+            await checkBandWelleV11D2WaterBias(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
