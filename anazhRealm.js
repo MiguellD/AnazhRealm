@@ -103,19 +103,19 @@ class AnazhRealm {
             // ohne colorNode-Custom — alle Caster werden damit gerendert,
             // kein instanceColor-Lookup-Crash. Lazy initialisiert.
             shadowOverrideMat: null,
-            // V10.0-j.e — Defer-Queue für GPU-Resource-Disposals mit
-            // 2-Frame-Age-Counter. V10.0-j.d's `setTimeout(0)`-Pfad reichte
-            // NICHT: Macro-Task läuft nach Microtask-Queue, aber Three.js'
-            // `renderer.render()`-Promise resolved CPU-seitig — die GPU
-            // verarbeitet die submitted CommandBuffer noch async (1-2 Frames
-            // Latenz). Schöpfer-Browser-Audit V10.0-j.d: noch immer „Buffer
-            // used in submit while destroyed" nach ~10 Sek (FPS-Drop auf 28,
-            // Welt schwarz). Heilung: Queue mit age-counter, drain wenn
-            // age >= 2 → Buffer-Disposal sicher 2 Frames NACH dem letzten
-            // Submit der ihn referenziert. Gilt für GEOMETRIES (Voxel-Chunks
-            // + Gras + Iso-Wasser) UND MATERIALS (Aura/Carry/Player-Sprites,
-            // die per-Task-Wechsel triggern). Universaler `_queueDispose`-
-            // Helper. Profi-Vorbild: alle WebGPU-Engines mit Streaming.
+            // V10.0-j.f — Defer-Queue für GPU-Resource-Disposals. Three.js'
+            // WebGPU-Backend zerstört GPU-Buffer SOFORT bei `.dispose()`,
+            // aber Submit ist GPU-async. Race: vorheriger Submit referenziert
+            // den Buffer noch wenn dispose() läuft → „used in submit while
+            // destroyed"-Validation. Heilung: push in flache Liste, drain
+            // via `device.queue.onSubmittedWorkDone()` im _loopRender Ende.
+            // Promise resolved exakt wenn GPU alle Submits durch hat —
+            // deterministisch, kein Frame-Counter-Raten (V10.0-j.e's
+            // age >= 2 war effektiv 1-Frame ~16ms, marginal bei FPS-Drop).
+            // Universaler Helper `_queueDispose(obj)` für Geometry +
+            // Material + Texture. Aufrufer: ALLE per-Frame triggerbaren
+            // dispose-Pfade (Chunk-Stream, Aura/Carry-Sprites, Soul-Groups,
+            // Architektur-Culling).
             pendingDisposals: [],
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
@@ -12921,7 +12921,7 @@ class AnazhRealm {
         if (wantBVH) {
             const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
             if (!collisionBody) {
-                geom.dispose();
+                this._queueDispose(geom);
                 return null;
             }
             hasBVH = true;
@@ -15064,10 +15064,11 @@ class AnazhRealm {
                 this.state.scene.remove(wall);
                 // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
                 // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial.
-                if (wall.geometry) wall.geometry.dispose();
+                // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+                if (wall.geometry) this._queueDispose(wall.geometry);
                 if (wall.material) {
-                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && m.dispose());
-                    else wall.material.dispose();
+                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && this._queueDispose(m));
+                    else this._queueDispose(wall.material);
                 }
                 const body = wall.userData.physicsBody;
                 if (body) {
@@ -16470,8 +16471,9 @@ class AnazhRealm {
         if (this._voxelTestMesh) {
             this._disposeStaticCollision(this._voxelTestMesh);
             this.state.scene.remove(this._voxelTestMesh);
-            if (this._voxelTestMesh.geometry) this._voxelTestMesh.geometry.dispose();
-            if (this._voxelTestMesh.material) this._voxelTestMesh.material.dispose();
+            // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+            if (this._voxelTestMesh.geometry) this._queueDispose(this._voxelTestMesh.geometry);
+            if (this._voxelTestMesh.material) this._queueDispose(this._voxelTestMesh.material);
             this._voxelTestMesh = null;
         }
         const pm = this.state.playerMesh;
@@ -17001,7 +17003,7 @@ class AnazhRealm {
         }
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
-            geom.dispose();
+            this._queueDispose(geom);
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
@@ -17461,8 +17463,8 @@ class AnazhRealm {
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
         const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
         if (!collisionBody) {
-            geom.dispose();
-            mat.dispose();
+            this._queueDispose(geom);
+            this._queueDispose(mat);
             return null;
         }
         // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) / V9.76 (Welle C.6 — Gate):
@@ -17717,20 +17719,17 @@ class AnazhRealm {
         return entry;
     }
 
-    // V10.0-j.e — Universaler Defer-Helper für JEDEN GPU-Resource-Dispose
-    // (Geometry, Material, Texture). Drei.js' WebGPU-Backend zerstört GPU-
-    // Buffer SOFORT bei `.dispose()`, aber Submit ist async (CPU→GPU-
-    // Latenz 1-2 Frames). Heilung: Push in `pendingDisposals[]` mit age=0;
-    // Drain bei age >= 2 (siehe _loopRender). 2-Frame-Defer = ~33ms bei
-    // 60fps, sicher genug für jeden pending Submit. Aufrufer überall wo
-    // per-Frame Dispose triggern kann: Chunk-Stream-Out (3 Pfade), Aura/
-    // Carry/Player-Sprites (Task-Wechsel pro Frame).
+    // V10.0-j.f — Universaler Defer-Helper für JEDEN GPU-Resource-Dispose
+    // (Geometry, Material, Texture). Three.js' WebGPU-Backend zerstört
+    // GPU-Buffer SOFORT bei `.dispose()`, aber Submit ist GPU-async. Push
+    // in flache `pendingDisposals[]`, Drain via `device.queue.on
+    // SubmittedWorkDone()`-Promise im _loopRender Ende. Deterministisch:
+    // Promise resolved exakt wenn GPU alle Submits verarbeitet hat.
     _queueDispose(obj) {
         if (!obj || typeof obj.dispose !== "function") return;
-        this.state.pendingDisposals.push({ obj, age: 0 });
+        this.state.pendingDisposals.push(obj);
     }
-    // Legacy-Alias für V10.0-j.d-Code (Geometry-spezifisch). Routet auf
-    // den universalen Helper.
+    // Legacy-Alias für V10.0-j.d-Code (Geometry-spezifisch).
     _queueGeometryDispose(geometry) {
         this._queueDispose(geometry);
     }
@@ -18894,7 +18893,8 @@ class AnazhRealm {
         }
         for (const m of this.state.hydrosphereMeshes) {
             if (this.state.scene) this.state.scene.remove(m);
-            if (m.geometry) m.geometry.dispose();
+            // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+            if (m.geometry) this._queueDispose(m.geometry);
         }
         this.state.hydrosphereMeshes = [];
     }
@@ -33620,10 +33620,11 @@ class AnazhRealm {
                 // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
                 // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
                 if (obj.isMesh || obj.isLine) {
-                    if (obj.geometry) obj.geometry.dispose();
+                    // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
+                    if (obj.geometry) this._queueDispose(obj.geometry);
                     if (obj.material) {
-                        if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose());
-                        else obj.material.dispose();
+                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
+                        else this._queueDispose(obj.material);
                     }
                 }
             });
@@ -39434,21 +39435,40 @@ class AnazhRealm {
                 }
             });
         }
-        // V10.0-j.e — Drain pendingDisposals via 2-Frame-Age-Counter.
-        // setTimeout(0)-Pfad (V10.0-j.d) reichte nicht: Macro-Task läuft
-        // nach Microtask-Queue, aber WebGPU' Submit ist GPU-async (1-2
-        // Frames Latenz). 2-Frame-Defer = sicher nach jedem Pending-Submit
-        // egal wie langsam GPU. Iteriere rückwärts (splice-safe).
-        const list = this.state.pendingDisposals;
-        for (let i = list.length - 1; i >= 0; i--) {
-            list[i].age++;
-            if (list[i].age >= 2) {
-                try {
-                    list[i].obj.dispose();
-                } catch (_e) {
-                    /* defensive */
+        // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
+        // WorkDone()`. V10.0-j.e's 2-Frame-Age-Counter (`age >= 2`) war
+        // effektiv nur 1-Frame-Defer (push + drain im selben Frame, age=1;
+        // nächster Frame age=2 → dispose) — ~16ms Wartezeit, marginal bei
+        // GPU unter Last (FPS-Drop auf 28 zeigt GPU verarbeitet 35ms+).
+        // `onSubmittedWorkDone()` ist die EINZIGE deterministische API:
+        // Promise resolved exakt wenn GPU alle bisherigen Submits durch
+        // hat. Kein Frame-Counter-Raten. WebGL-Fallback: synchron dispose
+        // (kein async submit-Pfad).
+        if (this.state.pendingDisposals.length > 0) {
+            const queue = this.state.pendingDisposals.slice();
+            this.state.pendingDisposals.length = 0;
+            const backend = this.state.renderer && this.state.renderer.backend;
+            const device = backend && backend.device;
+            const queueObj = device && device.queue;
+            if (queueObj && typeof queueObj.onSubmittedWorkDone === "function") {
+                queueObj.onSubmittedWorkDone().then(() => {
+                    for (const obj of queue) {
+                        try {
+                            obj.dispose();
+                        } catch (_e) {
+                            /* defensive */
+                        }
+                    }
+                });
+            } else {
+                // WebGL: kein async submit → direkt sicher.
+                for (const obj of queue) {
+                    try {
+                        obj.dispose();
+                    } catch (_e) {
+                        /* defensive */
+                    }
                 }
-                list.splice(i, 1);
             }
         }
     }
