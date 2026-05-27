@@ -14121,6 +14121,140 @@ async function checkBandWelle993WaterLodSeam(ctx) {
     );
 }
 
+// V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — Beweis dass der
+// Wasser-Kontext-Helper deterministisch + korrekt arbeitet. D.2/D.3 bauen
+// darauf auf, also MUSS die Foundation grün sein bevor sie geschnitten werden.
+async function checkBandWelleV11D1WaterContext(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const THREE = window.THREE;
+        const out = {};
+        out.fnExists = typeof r._creatureWaterContextAt === "function";
+        if (!out.fnExists) return out;
+
+        // Mock-Kreatur ist EIN Objekt mit `position`-Vector3. Wir wandern es
+        // im 20×20-Grid um Spawn herum und sammeln zwei Stichproben — eine
+        // Land-Spalte (inWater=false), eine Wasser-Spalte (inWater=true).
+        const probe = { position: new THREE.Vector3(0, 5, 0) };
+        let landSample = null;
+        let waterSample = null;
+        const STEP = 8;
+        const RANGE = 80;
+        for (let dx = -RANGE; dx <= RANGE && !(landSample && waterSample); dx += STEP) {
+            for (let dz = -RANGE; dz <= RANGE && !(landSample && waterSample); dz += STEP) {
+                const sy = r._voxelSurfaceY(dx, dz);
+                if (sy === null || !Number.isFinite(sy)) continue;
+                probe.position.set(dx, sy + 0.5, dz);
+                const ctx2 = r._creatureWaterContextAt(probe);
+                if (ctx2.inWater === false && !landSample) landSample = { dx, dz, ctx: ctx2 };
+                else if (ctx2.inWater === true && !waterSample) waterSample = { dx, dz, ctx: ctx2 };
+            }
+        }
+        out.foundLand = landSample !== null;
+        out.foundWater = waterSample !== null;
+
+        // Result-Form-Validierung (immer prüfbar wenn Helper existiert).
+        if (landSample) {
+            const c = landSample.ctx;
+            out.landHasInWater = typeof c.inWater === "boolean";
+            out.landHasDepthBelow = typeof c.depthBelow === "number";
+            out.landHasSubmerged = typeof c.submerged === "boolean";
+            out.landHasDistToShore = typeof c.distToShore === "number";
+            out.landHasShoreDir = c.shoreDir === null;
+            out.landInWaterFalse = c.inWater === false;
+            out.landDistZero = c.distToShore === 0;
+            out.landDepthNonPositive = c.depthBelow <= 0;
+        }
+        if (waterSample) {
+            const c = waterSample.ctx;
+            out.waterInWaterTrue = c.inWater === true;
+            out.waterDepthPositive = c.depthBelow > 0;
+            // shoreDir kann null sein (Mitte-Ozean) oder ein Vector3. Wenn
+            // Vector3: Kardinal-Richtung (±1 oder 0 pro Komponente).
+            out.waterShoreDirOk =
+                c.shoreDir === null ||
+                (c.shoreDir.isVector3 &&
+                    Math.abs(c.shoreDir.x) <= 1 &&
+                    Math.abs(c.shoreDir.z) <= 1 &&
+                    c.shoreDir.y === 0);
+            out.waterDistToShoreFinite = Number.isFinite(c.distToShore) || c.distToShore === Infinity;
+        }
+
+        // Performance-Probe — 200 Calls in der ersten Land-Position (oder
+        // Spawn-Position wenn kein Land gefunden, höchst unwahrscheinlich).
+        // Cap 50ms (= 250µs/Call, sehr großzügig — D.2 wird das im Frame
+        // loopen, Distance-LOD-gated).
+        if (landSample) probe.position.set(landSample.dx, 5, landSample.dz);
+        else probe.position.set(0, 5, 0);
+        const t0 = performance.now();
+        for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe);
+        out.perfMs = performance.now() - t0;
+
+        // Source-Probe: Helper liest aus _voxelSurfaceY + _waterLevelAt +
+        // _isAboveWaterAt (die V9.50/V9.59-Wahrheits-Quellen). Wer einen
+        // separaten Atlas-Lookup einbaut, bricht die EIN-Quelle-Disziplin.
+        const helperSrc = r._creatureWaterContextAt.toString();
+        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(helperSrc);
+        out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
+        out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d.1: Wasser-Kontext-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle V11.0-d.1: _creatureWaterContextAt existiert als Methode", res.fnExists);
+    if (!res.fnExists) return;
+
+    check(
+        "Welle V11.0-d.1: Land-Stichprobe gefunden (≥1 Spalte mit inWater=false)",
+        res.foundLand,
+        "Test-Welt hatte keine Land-Spalte im ±80-m-Spawn-Grid — Spawn-Welt-Variation"
+    );
+    if (res.foundLand) {
+        check("Welle V11.0-d.1: Result hat boolean inWater", res.landHasInWater === true);
+        check("Welle V11.0-d.1: Result hat number depthBelow", res.landHasDepthBelow === true);
+        check("Welle V11.0-d.1: Result hat boolean submerged", res.landHasSubmerged === true);
+        check("Welle V11.0-d.1: Result hat number distToShore", res.landHasDistToShore === true);
+        check("Welle V11.0-d.1: Land-Stichprobe: inWater=false", res.landInWaterFalse === true);
+        check("Welle V11.0-d.1: Land-Stichprobe: distToShore=0", res.landDistZero === true);
+        check(
+            "Welle V11.0-d.1: Land-Stichprobe: depthBelow ≤ 0 (Boden über Wasser)",
+            res.landDepthNonPositive === true
+        );
+        check("Welle V11.0-d.1: Land-Stichprobe: shoreDir = null (kein Bias nötig)", res.landHasShoreDir === true);
+    }
+    if (res.foundWater) {
+        check("Welle V11.0-d.1: Wasser-Stichprobe: inWater=true", res.waterInWaterTrue === true);
+        check("Welle V11.0-d.1: Wasser-Stichprobe: depthBelow > 0", res.waterDepthPositive === true);
+        check(
+            "Welle V11.0-d.1: Wasser-Stichprobe: shoreDir null oder Kardinal-Vector3",
+            res.waterShoreDirOk === true
+        );
+        check(
+            "Welle V11.0-d.1: Wasser-Stichprobe: distToShore endlich oder Infinity",
+            res.waterDistToShoreFinite === true
+        );
+    }
+    check(
+        "Welle V11.0-d.1: 200 Aufrufe im Perf-Budget (< 50 ms)",
+        res.perfMs < 50,
+        `200 calls in ${res.perfMs?.toFixed(1)} ms`
+    );
+    check(
+        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)",
+        res.usesVoxelSurfaceY === true
+    );
+    check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
+    check(
+        "Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)",
+        res.usesIsAboveWaterAt === true
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31147,6 +31281,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
             await checkBandWelle993WaterLodSeam(ctx);
+            // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
+            await checkBandWelleV11D1WaterContext(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

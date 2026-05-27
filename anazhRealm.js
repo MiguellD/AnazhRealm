@@ -18020,6 +18020,79 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
+    // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — eine Wahrheits-
+    // Quelle für jede Kreatur-Wasser-Frage. Vor V11.0-d hatten Kreaturen NULL
+    // Verständnis von der Hydrosphäre: sie marschierten durch Seen, kannten
+    // kein Ufer, ertranken sinnlos in Tiefe. Mit diesem Helper fängt das
+    // Welt-Atmen zwischen Kreatur und Wasser an — D.2 nutzt ihn für Tiefen-
+    // Scheue + Schwimm-Bias, D.3 für den `drink`-Task.
+    //
+    // Returnt:
+    //   - inWater: boolean — die Spalte AN DIESER POSITION ist nass
+    //     (Boden liegt unter Wasser-Spiegel). Welt-Wahrheit aus Atlas,
+    //     unabhängig von der Kreatur-y.
+    //   - depthBelow: number — Wasser-Tiefe an der Spalte (waterY − surfaceY).
+    //     ≤ 0 wenn surface über Wasser. 0 an der Uferlinie.
+    //   - submerged: boolean — die Kreatur-y < waterY (sie schwebt/schwimmt
+    //     im Wasser-Volumen, nicht nur über nasser Spalte).
+    //   - distToShore: number — geschätzte XZ-Distanz zur nächsten Land-Cell
+    //     in 4 Himmelsrichtungen (Cap 12m). Infinity wenn Mitte-Ozean.
+    //   - shoreDir: THREE.Vector3 | null — normalisierter XZ-Vektor RICHTUNG
+    //     Ufer (für D.2 Bias). null wenn kein Ufer in Reichweite.
+    //
+    // Performance: bei Land-Kreatur frühes Out (inWater=false skipt 16 Land-
+    // Scans). Bei nasser Spalte ≤16 _isAboveWaterAt-Calls = 16 × O(see=9)
+    // ≈ 144 Float-Compares. Deutlich unter 100µs im Browser. D.2 wird zudem
+    // Distance-LOD (nur für Kreaturen <50m vom Spieler) anwenden — der Test-
+    // Band misst die Per-Call-Cost separat.
+    _creatureWaterContextAt(creature) {
+        const x = creature.position.x;
+        const z = creature.position.z;
+        const cy = creature.position.y;
+        const surfaceY = this._voxelSurfaceY(x, z);
+        const waterY = this._waterLevelAt(x, z);
+        const surfY = surfaceY === null || !Number.isFinite(surfaceY) ? cy : surfaceY;
+        const depthBelow = waterY - surfY;
+        const inWater = depthBelow > 0;
+        const submerged = cy < waterY - 0.1;
+        if (!inWater) {
+            return { inWater: false, depthBelow, submerged, distToShore: 0, shoreDir: null };
+        }
+        // 4-Himmelsrichtungs-Scan für nächste Land-Cell. Pro Richtung in 3-m-
+        // Schritten bis 12 m (4 Samples pro Richtung × 4 = 16 worst case).
+        // Erste Treffer-Richtung gewinnt; gleichweit-Treffer würden hier
+        // strict Ost/West-Bias bekommen — egal, der Bias ist hilfreich,
+        // jede Richtung führt aus dem Wasser.
+        const STEP = 3;
+        const MAX = 12;
+        let bestDist = Infinity;
+        let bestDx = 0;
+        let bestDz = 0;
+        // dx/dz-Paare inline statt Array-Iteration (eine Allokation gespart).
+        for (let d = 0; d < 4; d++) {
+            const dx = d === 0 ? 1 : d === 1 ? -1 : 0;
+            const dz = d === 2 ? 1 : d === 3 ? -1 : 0;
+            for (let step = STEP; step <= MAX; step += STEP) {
+                if (this._isAboveWaterAt(x + dx * step, z + dz * step, 0.1)) {
+                    if (step < bestDist) {
+                        bestDist = step;
+                        bestDx = dx;
+                        bestDz = dz;
+                    }
+                    break;
+                }
+            }
+        }
+        if (!Number.isFinite(bestDist)) {
+            return { inWater: true, depthBelow, submerged, distToShore: Infinity, shoreDir: null };
+        }
+        const shoreDir = new THREE.Vector3(bestDx, 0, bestDz);
+        // bestDx/bestDz ist immer entweder ±1 oder 0 (Kardinal-Richtung) —
+        // Länge ist genau 1, normalize() wäre tautologisch, hier explizit
+        // für Code-Klarheit: Caller darf nicht über Magnitude überraschen.
+        return { inWater: true, depthBelow, submerged, distToShore: bestDist, shoreDir };
+    }
+
     // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Solid-Klassifikation für
     // Architektur-Parts. Die Regel ist UNIVERSELL: jede solide Geometrie
     // blockiert Wasser, der `damm`-Bauplan ist eine ANWENDUNG, kein Spezial-
@@ -39900,7 +39973,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-j";
+AnazhRealm.VERSION = "11.0-d.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

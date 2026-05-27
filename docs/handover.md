@@ -357,6 +357,45 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V11.0-d.1, 27.05.2026 — Pfeiler D Foundation, Wasser ↔ Kreaturen, der erste Schritt der V11-System-Kopplungs-Ära:**
+
+Nach Schöpfer-Browser-Audit der V10.0-j.j-Welt („gemergede stand habe ich getestet, das passt") ist der V10.0-Rendering-Bogen offiziell zu. Das Projekt wechselt jetzt von Render-Schicht zu System-Kopplungen — Roadmap §1.1 Vision-Pfeiler D-G, die emergente Welt-Resonanz zwischen Substanzen.
+
+**Sub-Wellen-Plan Pfeiler D (4 Sub-Wellen, ~5h gesamt)**:
+- ✅ **D.1** Wasser-Kontext-Foundation (jetzt)
+- ⏳ **D.2** Scheuen vor Tiefe + Schwimm-Bias (~1.5h, wander-Direction reagiert)
+- ⏳ **D.3** Trinken-Task `drink` (~1.5h, 6. Task, Aura azur, Ping A5)
+- ⏳ **D.4** Schöpfer-Browser-Audit + Splash-Ping (~30min)
+
+**V11.0-d.1 — Was gebaut wurde:**
+
+`_creatureWaterContextAt(creature)` als EINE Wahrheits-Quelle für jede Kreatur-Wasser-Frage. Returnt ein einheitliches Result-Objekt:
+- `inWater: boolean` — die Spalte AN DIESER POSITION ist nass (Boden unter Wasser-Spiegel). Welt-Wahrheit aus Atlas.
+- `depthBelow: number` — Wasser-Tiefe (waterY − surfaceY). 0 an Uferlinie, ≤0 wenn Spalte trocken.
+- `submerged: boolean` — die Kreatur-y < waterY (sie schwebt/schwimmt im Wasser-Volumen).
+- `distToShore: number` — XZ-Distanz zur nächsten Land-Cell in 4 Himmelsrichtungen (Cap 12m). Infinity wenn Mitte-Ozean.
+- `shoreDir: THREE.Vector3 | null` — normalisierter XZ-Vektor RICHTUNG Ufer. null wenn kein Ufer in Reichweite ODER bereits auf Land.
+
+**Die drei Wahrheits-Quellen** (V11.0-d.1-Disziplin): der Helper liest AUSSCHLIESSLICH aus den bestehenden Welt-Wahrheits-Quellen — `_voxelSurfaceY(x,z)` (V9.25), `_waterLevelAt(x,z)` (V9.50), `_isAboveWaterAt(x,z,marge)` (V9.59). KEINE eigene Atlas-Logik, KEIN paralleler Lookup. Wenn D.2 (Tiefen-Scheue) und D.3 (Trinken-Task) jeweils ihre eigenen Wasser-Lookups bauen würden, entstehen drei Probleme: (a) doppelter Code mit Inkonsistenz-Risiko, (b) wenn der Atlas-Pfad sich ändert, müssen N Stellen mitziehen, (c) keine zentrale Performance-Optimierung (Distance-LOD im Loop, Caching). Source-Probe im Test-Band als Disziplin-Wand.
+
+**4-Himmelsrichtungs-Ufer-Scan**: bei nasser Spalte scant der Helper Ost/West/Nord/Süd in 3-m-Schritten bis 12m. Erste Treffer-Richtung gewinnt — kein Optimierungs-Versuch (kürzere Distanz aller 4 Richtungen würde 4× mehr Land-Lookups bei jedem Schritt brauchen). Stattdessen: erster Treffer ist „genug", der Bias führt aus dem Wasser. Performance gemessen: 200 Aufrufe < 50ms im Test-Band = ≤250µs/Call. D.2 wird Distance-LOD <50m vom Spieler anwenden (nicht alle 120 Kreaturen pro Frame).
+
+**Test-Band 14 Invarianten** (`checkBandWelleV11D1WaterContext` in `scripts/playtest.cjs`):
+- API-Existenz: `_creatureWaterContextAt` ist function
+- Land-Stichprobe gefunden (Spawn-Grid ±80m, Step 8m) — Result-Form prüfen (5 Felder typkorrekt: inWater boolean, depthBelow number, submerged boolean, distToShore number, shoreDir Vector3|null)
+- Land-Stichprobe-Werte: inWater=false, distToShore=0, depthBelow≤0, shoreDir=null
+- Wasser-Stichprobe (wenn vorhanden): inWater=true, depthBelow>0, shoreDir-Kardinal (±1 oder 0 pro Komponente), distToShore endlich oder Infinity
+- Performance-Cap: 200 Calls < 50ms
+- Drei Source-Probes für die V9.25/V9.50/V9.59-Wahrheits-Quellen
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures; lint + format sauber. Dateien: `anazhRealm.js` +73 Z. (1 Helper-Methode + Header-Kommentar), `scripts/playtest.cjs` +120 Z. (Test-Band + Registrierung). Version-Bump 10.0.29 → 11.0.0 (MAJOR — V10 Bogen abgeschlossen, V11 startet).
+
+**Lehre verdrahtet (CLAUDE.md „Wichtige Gotchas/Terrain + Chunks · Welt-Awareness")**: **Multi-Field-Awareness verlangt EINEN Helper, nicht parallele Lookups**. Wer eine neue Welt-Schicht baut, die MEHRERE Welt-Felder gleichzeitig konsultiert, MUSS einen EINZIGEN Helper bauen, der ALLE Felder aus den BESTEHENDEN Wahrheits-Quellen ableitet. Verallgemeinerung der V9.59-Welt-Awareness-Disziplin („eine Quelle, kein Reflex") auf Multi-Field-Awareness — der HELPER ist die Quelle, nicht die unterliegenden Atlas-Funktionen. Wer ein neues abgeleitetes Feld hinzufügt (z.B. „temperatur" oder „strömungs-richtung"), erweitert den Helper, baut keinen Parallelpfad.
+
+**Was V11.0-d.2 liefert (next session, ~1.5h)**: im `updateCreatures`-wander/happy-Branch (Z12404+) konsultiert die Direction-Berechnung den Wasser-Kontext (Distance-LOD <50m vom Spieler, sonst skip). Wenn `inWater && depthBelow>1.5`: Auftrieb-y-Bias + Ufer-Bias entlang `shoreDir`. Wenn `inWater && submerged`: zusätzlich Y-Push zu waterY (Schwimm-Surface). Wenn `inWater === false`: keine Modifikation (Land-Verhalten unverändert). Test-Band: synthetisch Kreatur in Wasser platzieren, einen Tick laufen lassen, prüfen ob Direction-Vektor Richtung Ufer zeigt.
+
+---
+
 **V10.0-j-Bogen, 27.05.2026 — Der WebGPU-Buffer-Lifecycle-Schmerz (10 Sub-Wellen, der wirkliche V10.0-Schluss):**
 
 Schöpfer-Browser-Audit V10.0-i auf AMD-RDNA-3 zeigte drei Pipeline-Validation-Kaskaden (Welt schwarz). Was als saubere Shadow-Profi-Welle V10.0-j begann, wurde zu 10 Sub-Wellen Heilungs-Spirale für einen Three.js-v160-WebGPU-Vendor-Race. Der ehrliche Bogen-Zyklus:
