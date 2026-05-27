@@ -357,6 +357,31 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**27.05.2026, V11-Wende — Pfeiler D im Kern abgeschlossen, der wahre Weg vor uns (Schöpfer-Reflexion, kein Code):**
+
+Nach V11.0-d.3 hat der Schöpfer im Browser bestätigt: „schwimmen sehe ich" — D.2 wirkt visuell. Sofort danach die Wende:
+
+> **„d ist abgeschlossen, aber nich zu e, e soll in der roadmap bleiben, eigentlich war klar, v11 der weg, die wahre vision, die vollendung, keine halben sachen, bringe alle docs auf den aktuellen stand und dann gehen wir an v11, der wahre weg, oder?"**
+
+Die Wende ist klar: D/E/F/G abzuarbeiten als vier nebeneinander stehende Wellen wäre **Bürokratie**, nicht **Vollendung**. V11 fragt nach einer integrierten Welt-Atmung: alle Schichten sprechen miteinander, die Welt atmet als EIN Wesen.
+
+**Was die Wende konkret bedeutet:**
+- **D Kern erledigt** (D.1+D.2+D.3 mit 40 Test-Invarianten grün + Schöpfer-bestätigt). D.4-Polish (Splash-Ping, autonome Trink-Geste) bleibt im Backlog, NICHT zwingend als nächste Welle.
+- **E/F/G bleiben in der Roadmap** als Pfeiler-Plan, NICHT abgehakt — aber NICHT als Solo-Wellen abgearbeitet. Sie sind Bauteile, nicht der Plan.
+- **V11 ist der Mega-Bogen** — Welt-Vollendung in additiven, klein-fokussierten Wachstumsringen (V9.56-Disziplin), aber mit dem Mut, die Pfeiler INTEGRAL zu denken.
+
+**Doku-Sync 27.05.2026:**
+- CLAUDE.md Stand-Block: V11-Mega-Bogen offen, Pfeiler-Liste als Bauteile, D.4 im Polish-Backlog
+- `docs/roadmap.md` §1.2 NEU: „V11 — der wahre Weg" mit fünf offenen Reflexions-Punkten + V9.51-Disziplin-Erinnerung (keine Meta-Schicht-Versuchung)
+- `docs/roadmap.md` Tabelle: D als „✅ Kern" markiert, V11.x-Zeile umbenannt zu „V11-Mega-Bogen ⏳ Der wahre Weg"
+- `docs/state-of-realm.md` Matrix: V11-Eintrag mit Schöpfer-Auftrag-Wortlaut
+
+**Offene Reflexions-Punkte (siehe `docs/roadmap.md §1.2`)**: welche Schichten sprechen miteinander? Wo lebt der Welt-Atem-Zustand (ohne Meta-Schicht)? Welche multisensorische Sprache? Wie verhindern wir die 19-Modul-Versuchung in akademischer Verpackung? **Was ist die Vollendungs-Geste — woran würde der Schöpfer im Browser SOFORT sehen „ja, V11 ist da, die Welt lebt"?**
+
+Diese fünf Fragen sind die Vorbedingung des ersten V11-Code-Schritts. Sie werden gemeinsam mit dem Schöpfer artikuliert, bevor irgendeine Mechanik gebaut wird. Eine ehrliche Plan-Welle vor der Bau-Welle ist Disziplin, kein Bürokratie-Aufschub — wer „integrale Welt-Atmung" verspricht und dann einfach Pfeiler-E baut, hat den Schöpfer-Auftrag nicht verstanden.
+
+---
+
 **V11.0-d.3, 27.05.2026 — Pfeiler D atmet: Trinken am Ufer, der erste Symbiose-Akt der V11-Ära:**
 
 Nach D.1-Foundation (Wasser-Kontext-Helper) + D.2 (Tiefen-Scheue + Schwimm-Surface) bekommt die Welt jetzt einen expliziten Beziehungs-Akt zwischen Kreatur und Wasser. Vor V11.0-d.3 konnte eine Kreatur kein „ich brauche Wasser" ausdrücken — sie wanderte, folgte, sammelte, baute, schwamm wenn nass, aber das Wasser war reines Hindernis, nicht Quelle. Jetzt: ein Wasser-Trink-Akt mit Spieler-Befehl ODER autonomer Reaktion (D.4-Backlog).
