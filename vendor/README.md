@@ -14,11 +14,22 @@ Drei reasons we host these instead of using a CDN:
 
 | File | Source npm package | Notes |
 |---|---|---|
-| `three.min.js` | `three@0.134.0` (`build/three.min.js`) | UMD build, exposes `THREE` |
+| `three.module.min.js` | `three@0.160.0` (`build/three.module.min.js`) | ESM build (V10.0-b Migration von r134-UMD → r160-ESM), via Inline-Importmap geladen |
+| `three-addons/` | `three@0.160.0` (`examples/jsm/`) | 238 Files, ~1.5 MB — WebGPURenderer-Addon + TSL-NodeBuilder + WGSL/GLSL-Builder. Geladen via `three/addons/`-Import-Map-Pfad (V10.0-c) |
+| `three-bootstrap.js` | own | V10.0-b/c — importiert THREE + WebGPURenderer + TSL aus den ESM-Vendors, hängt sie an `window.THREE` (CSP-konform, kein eval) |
+| `three-importmap.json` | own | Fallback-Variante der Inline-Importmap (V10.0-b, aktuell nicht referenziert) |
 | `ammo.js` | `ammojs3@0.0.11` (`dist/ammo.wasm.js`) | WASM loader; needs `ammo.wasm.wasm` next to it |
 | `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary, V9.40-f-gepatcht (max 64→256 MB) |
 | `ammo-bootstrap.js` | own | V9.40-f pre-grow-Hook — MUSS vor `ammo.js` geladen werden |
 | `simplex-noise.js` | `simplex-noise@2.4.0` | Not minified upstream (only ~17 KB) |
+
+**V10.0-Bogen (Three.js r134 → r160 + WebGPU)** — Migration in vier Schritten:
+- V10.0-a: UMD `three.min.js` r134 → ESM `three.module.min.js` r160 (670 KB ESM-Single-File-Bundle, drop-in Replacement)
+- V10.0-b: Inline-Importmap mit CSP-SHA256-Hash (`sha256-0wZnc3btID51aZv5XxEWftOn3by2Jg2Jjb6FWPNAnyA=` in `script-src`), Bootstrap-Module für ESM→window.THREE-Bridge
+- V10.0-c: 238 Files aus `three@0.160.0/examples/jsm/` vendored (renderers/webgpu, nodes/, capabilities/, objects/, lights/). Import-Map: `"three/addons/": "./vendor/three-addons/"`
+- V10.0-d..j: WebGPURenderer aktiv, alle Material-Familien als NodeMaterials, Welt rendert dauerhaft auf WebGPU
+
+Die alte `three.min.js` r134 ist NICHT mehr im Build-Pfad referenziert (vendor-Datei darf bleiben als Fallback-Reserve).
 
 TensorFlow.js wurde im Mai 2026 entfernt — `playerMovementModel` trainierte
 in eine Sackgasse (kein Konsument von `predictPlayerMove`). Der Lern-Loop läuft
@@ -68,14 +79,13 @@ curl -s -A "Mozilla/5.0" \
 ```sh
 # Pull a fresh copy of each library:
 mkdir -p /tmp/lib-fetch && cd /tmp/lib-fetch && npm init -y
-npm install three@0.134.0 ammojs3@0.0.11 \
-  @tensorflow/tfjs@3.21.0 simplex-noise@2.4.0
+npm install three@0.160.0 ammojs3@0.0.11 simplex-noise@2.4.0
 
-# Copy into the project:
-cp node_modules/three/build/three.min.js              <repo>/vendor/
+# Copy into the project (V10.0-Bogen — ESM + addons):
+cp node_modules/three/build/three.module.min.js       <repo>/vendor/
+cp -r node_modules/three/examples/jsm/                <repo>/vendor/three-addons/
 cp node_modules/ammojs3/dist/ammo.wasm.js             <repo>/vendor/ammo.js
 cp node_modules/ammojs3/dist/ammo.wasm.wasm           <repo>/vendor/
-cp node_modules/@tensorflow/tfjs/dist/tf.min.js       <repo>/vendor/
 cp node_modules/simplex-noise/simplex-noise.js        <repo>/vendor/
 ```
 
