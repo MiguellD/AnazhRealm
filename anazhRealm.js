@@ -98,6 +98,11 @@ class AnazhRealm {
             // den manuellen Pass auch auf WebGL zu aktivieren).
             shadowRTT: null,
             shadowDepthTexture: null,
+            // V10.0-j — Override-Material für den manuellen Shadow-Pass
+            // (siehe _renderShadowMapPass). Minimales MeshBasicNodeMaterial
+            // ohne colorNode-Custom — alle Caster werden damit gerendert,
+            // kein instanceColor-Lookup-Crash. Lazy initialisiert.
+            shadowOverrideMat: null,
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
@@ -9943,6 +9948,9 @@ class AnazhRealm {
         };
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
+        // V10.0-j — Skybox wirft keine Schatten (BackSide-Hülle um die Welt).
+        skybox.castShadow = false;
+        skybox.receiveShadow = false;
         this.state.scene.add(skybox);
         this.state.skybox = skybox;
         this.log("Galaxy-Skybox erstellt (V10.0-f-1 TSL)");
@@ -10125,6 +10133,12 @@ class AnazhRealm {
         starField.instanceMatrix.needsUpdate = true;
         if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
         starField.frustumCulled = false;
+        // V10.0-j — Sterne werfen keine Schatten (sind unendlich-far Billboards).
+        // Defensive — setRenderObjectFunction-Filter in _renderShadowMapPass
+        // schließt castShadow=false-Objects ohnehin aus, aber explicit ist
+        // die Wahrheit.
+        starField.castShadow = false;
+        starField.receiveShadow = false;
         this.state.scene.add(starField);
         this.state.starField = starField;
         this.log(
@@ -10232,7 +10246,6 @@ class AnazhRealm {
         // atmet mit dem Tag-Nacht-Zyklus, Schatten via V10.0-h-Pipeline.
         const {
             uniform,
-            vec2,
             vec3,
             vec4,
             float,
@@ -10282,7 +10295,9 @@ class AnazhRealm {
         const N = normalize(transformedNormalWorld);
         const L = normalize(u.sunDir);
         const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
-        // Shadow-Sampling identisch zu _buildToonNodeMaterial (siehe V10.0-h).
+        // V10.0-j — Shadow-Sampling identisch zu _buildToonNodeMaterial.
+        // Hardware-PCF via texture(depthTex, uv).compare(refZ). Siehe dort
+        // für Pattern-Begründung.
         const shadowDepthTex = this.state.shadowDepthTexture;
         let shadowAttenuation = float(1.0);
         if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
@@ -10291,13 +10306,9 @@ class AnazhRealm {
             const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            const sampleUV = vec2(projected.x, projected.y.oneMinus());
+            const sampleUV = projected.xy;
             const refZ = projected.z.add(bias);
-            // V10.0-i.c — manuelles Compare via step (float-arithmetic),
-            // siehe _buildToonNodeMaterial-Doku.
-            const _shadowSampleVec = texture(shadowDepthTex, sampleUV);
-            const rawDepth = _shadowSampleVec.x.add(float(0.0));
-            const shadowSample = TSL.step(refZ, rawDepth);
+            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
             const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
             const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
             const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
@@ -17129,48 +17140,36 @@ class AnazhRealm {
         // shadowEnabled=0 (WebGL-Pfad ODER Pre-Init) ist der Multiplier 1
         // (kein Schatten). Hardware-PCF via DepthTexture.compareFunction=
         // LessCompare in _ensureShadowRenderTarget.
+        // V10.0-j — Hardware-PCF via `texture(depthTex, uv).compare(refZ)`.
+        // Three.js' WGSLNodeBuilder.generateTextureCompare emittiert
+        // `textureSampleCompare(tex, sampler, uv, refZ)` — comparison-sampler
+        // wird automatisch gebunden weil depthTex.compareFunction=LessCompare
+        // (siehe _ensureShadowRenderTarget). Profi-Pattern aus vendor/three-
+        // addons/nodes/lighting/AnalyticLightNode.setupShadow(). Gated auf
+        // rendererKind=webgpu — auf WebGL bleibt der TSL-Knoten ungebaut
+        // (kein Compile-Crash am webgl-legacy-Builder).
         const shadowDepthTex = this.state.shadowDepthTexture;
         let shadowAttenuation = float(1.0);
         if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
-            const normalBias = float(1.0); // matched directionalLight.shadow.normalBias
-            const bias = float(-0.0005); // matched directionalLight.shadow.bias
-            // shadowCoord = shadowMatrix × (worldPos + normal × normalBias)
+            const normalBias = float(1.0);
+            const bias = float(-0.0005);
             const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
-            // Matrix4 × vec3 → vec4 in TSL: shadowMatrix.mul(vec4(pos, 1))
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
-            // Perspektive-Divide: xyz / w
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            // WebGPU y-flip + bias-Nudge auf z (Tiefenvergleich gegen Map)
-            const sampleUV = vec2(projected.x, projected.y.oneMinus());
+            // y-flip ist in der shadowMatrix bereits enthalten (NDC.y ist
+            // positiv-oben, Texture-V ist positiv-unten). Vendor-Pattern
+            // nutzt projected.xy direkt, kein manueller oneMinus mehr.
+            const sampleUV = projected.xy;
             const refZ = projected.z.add(bias);
-            // V10.0-i.c — Manuelles Compare statt hardware-PCF. WebGL-Legacy-
-            // NodeBuilder hat keine generateTextureCompare → wir lesen die
-            // raw Depth via .r und vergleichen manuell. step(rawDepth, refZ)
-            // returnt 0.0 wenn refZ < rawDepth (lit), 1.0 sonst (Schatten).
-            // Wir invertieren: shadowSample = 1 - step(...) → 1.0 wenn lit,
-            // 0.0 wenn Schatten. Funktioniert auf BEIDEN Renderern bit-
-            // identisch. Kein PCF — V10.0-j-Backlog für 4×4-Sample-Average.
-            // bool→float-Konversion: TSL `bool.mul(1.0)` ergibt dimension-
-            // mismatch im webgl-legacy. Stattdessen `step()` returnt direkt
-            // float. inFrustum-Resultat (bool) wird via step(0.5, count)
-            // gewandelt — `count = sum aller boolean.mul()` ist umständlich,
-            // einfacher: kombiniere die 3 Frustum-Conditions als step-Multi.
-            const _shadowSampleVec = texture(shadowDepthTex, sampleUV);
-            const rawDepth = _shadowSampleVec.x.add(float(0.0));
-            // step(edge, x): 0 wenn x<edge, 1 wenn x>=edge
-            // Wir wollen: refZ < rawDepth → lit (1), refZ >= rawDepth → shadow (0)
-            // shadowSample = step(refZ, rawDepth) → 1 wenn rawDepth >= refZ → lit
-            const shadowSample = TSL.step(refZ, rawDepth);
-            // Frustum-Tests via step (float-arithmetic statt bool.and):
-            // step(0, x) = 1 wenn x>=0. Wir wollen 0..1 → (1-step(1,x)) * step(0,x)
+            // Hardware-PCF: textureSampleCompare returnt 0..1 (0=Schatten,
+            // 1=lit, GPU rechnet automatisch 2×2-Average bei linear sampler).
+            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
+            // Frustum-Test via step-Multi (float-arithmetic).
             const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
             const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
             const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
             const inFrustumF = inXf.mul(inYf).mul(inZf);
             const t = inFrustumF.mul(u.shadowEnabled);
-            // mix(a, b, t): a wenn t=0, b wenn t=1
-            // t=0 (außerhalb/disabled) → shadowAttenuation = 1.0 (lit)
-            // t=1 (innerhalb+enabled) → shadowAttenuation = shadowSample
             shadowAttenuation = mix(float(1.0), shadowSample, t);
         }
 
@@ -17225,29 +17224,21 @@ class AnazhRealm {
         if (typeof THREE === "undefined" || !this.state.directionalLight) return null;
         const W = 2048;
         const H = 2048;
-        // V10.0-h.b — DepthStencilFormat + UnsignedInt248Type → Depth24Stencil8.
-        // WICHTIG: Three.js' WebGPU-Backend setzt stencilLoadOp=Load + stencil
-        // StoreOp=Store als Default für RenderPass-DepthStencilAttachment. Bei
-        // einem reinen Depth16Unorm-Format (V10.0-h-a, ohne Stencil-Aspekt)
-        // wirft WebGPU Validation-Error „stencilLoadOp must not be set if the
-        // attachment has no stencil aspect" → CommandEncoder invalidiert →
-        // Folge-Draws im selben Encoder fallen flach mit „Parent encoder is
-        // already finished". Heilung: ein Format MIT Stencil-Aspekt — die
-        // stencilOps sind dann gültig. Hardware-PCF läuft weiter (compare
-        // Function ignoriert die Stencil-Komponente). Cost: 4 Bytes/Pixel
-        // statt 2 (32 MB statt 16 MB für 2048² — vertretbar).
-        const depthTex = new THREE.DepthTexture(W, H, THREE.UnsignedInt248Type);
-        depthTex.format = THREE.DepthStencilFormat;
+        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
+        // AnalyticLightNode.setupShadow(): `new DepthTexture()` ohne Format-
+        // Args (Three.js defaultet auf Pure-Depth, kein Stencil-Aspect-
+        // Konflikt) + `compareFunction = LessCompare` (Three.js' WebGPU-
+        // Backend bindet automatisch einen Comparison-Sampler, der mit
+        // `textureSampleCompare()`-WGSL-Knoten harmoniert — kein Filtering-
+        // Mismatch). V10.0-h.b's Depth24Stencil8-Pfad triggerte „Multiple
+        // aspects (Depth|Stencil)"-Validation, weil WebGPU für Depth-
+        // Bindings eine explicit `aspect: 'depth-only'`-View verlangt; das
+        // Pure-Depth-Format umgeht das. V10.0-h-a's „stencilOp-Default"-
+        // Hypothese war eine Fehldiagnose (Depth16Unorm-spezifisch).
+        const depthTex = new THREE.DepthTexture(W, H);
         depthTex.minFilter = THREE.NearestFilter;
         depthTex.magFilter = THREE.NearestFilter;
-        // V10.0-i.c — compareFunction NICHT setzen. Hardware-PCF via
-        // `texture(depthTex).compare(refZ)` ist WebGPU-only — der webgl-
-        // legacy-NodeBuilder in r160 hat keine `generateTextureCompare`-
-        // Methode → Material-Compile-Crash auf WebGL. Wir samplen die raw-
-        // Depth via `.r` und vergleichen manuell im colorNode (refZ <
-        // rawDepth ? lit : shadow). Trade-off: kein hardware-PCF auf
-        // beiden Renderern; eine Polish-Welle V10.0-j könnte PCF via
-        // 4×4-manuell-Average nachrüsten. Aber Wandel zuerst, PCF danach.
+        depthTex.compareFunction = THREE.LessCompare;
         const rtt = new THREE.WebGLRenderTarget(W, H, {
             minFilter: THREE.NearestFilter,
             magFilter: THREE.NearestFilter,
@@ -17256,10 +17247,6 @@ class AnazhRealm {
         });
         this.state.shadowRTT = rtt;
         this.state.shadowDepthTexture = depthTex;
-        // Linke shadow.map auf das RTT — damit ist die Welt-API konsistent
-        // (state.directionalLight.shadow.map.depthTexture). Three.js' WebGL-
-        // Renderer würde das selbst tun beim ersten Render; auf WebGPU
-        // bleibt das null ohne unsere Hilfe.
         this.state.directionalLight.shadow.map = rtt;
         return rtt;
     }
@@ -17286,47 +17273,74 @@ class AnazhRealm {
         if (!dl || !renderer || !scene || !dl.castShadow) return;
         const rtt = this._ensureShadowRenderTarget();
         if (!rtt) return;
-        // Shadow-Camera-Position folgt dem Light-Target (Spieler, gesetzt in
-        // _dayNightApplyDirectionalLight). Three.js' DirectionalLight-Shadow-
-        // Camera ist relativ zur Light-Position. Sicherstellen dass
-        // matrixWorld + projectionMatrix aktuell sind.
+        // Shadow-Camera updaten + matrix bauen (canonical Three.js-Pattern
+        // aus WebGLShadowMap.js).
         dl.shadow.camera.position.copy(dl.position);
         dl.shadow.camera.lookAt(dl.target.position);
         dl.shadow.camera.updateMatrixWorld(true);
         dl.shadow.camera.updateProjectionMatrix();
-        // shadow.matrix = texcoord-transform × projection × viewInverse
-        // Das ist der canonical Three.js-Pattern aus WebGLShadowMap.js.
         const m = dl.shadow.matrix;
         m.set(0.5, 0.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0);
         m.multiply(dl.shadow.camera.projectionMatrix);
         m.multiply(dl.shadow.camera.matrixWorldInverse);
-        // Toon-Light-Uniforms updaten — der colorNode sampelt mit der
-        // gleichen Matrix.
         const tu = this.state.toonLightUniforms;
         if (tu) {
             if (tu.shadowMatrix) tu.shadowMatrix.value.copy(m);
             if (tu.shadowEnabled) tu.shadowEnabled.value = 1.0;
         }
-        // Render-Pass: scene aus shadow.camera-Sicht ins RTT.
-        // overrideMaterial = ein einfaches NodeMaterial das nur Depth schreibt.
-        // Three.js' WebGPURenderer rendert auch ohne explizites Override-
-        // Material in DepthTexture (FBO-Attachment) — wir nutzen den
-        // Default-Pfad und sehen ob das reicht.
+        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
+        // AnalyticLightNode.updateShadow(). Drei Disziplinen:
+        // (1) scene.overrideMaterial = ein minimales MeshBasicNodeMaterial.
+        //     Alle Caster werden mit ihm gerendert — kein colorNode-Custom,
+        //     kein instanceColor-Lookup, kein WGSL-Compile-Crash. Wenn ein
+        //     Caster-Material einen positionNode hat (Gras-Wind, Welle-
+        //     Displacement), reicht das Override-Material seinen position
+        //     Node durch (Renderer.js Z961-967: override pulls original
+        //     positionNode). Damit displaced sich auch das Shadow-Mesh
+        //     korrekt → kein „Wind-Halme bleiben stehen im Schatten".
+        // (2) setRenderObjectFunction-Filter: nur `castShadow === true`
+        //     Objects werden gerendert. Sterne (default castShadow=false),
+        //     Skybox, Wasser-Iso fallen raus → keine instanceColor-Reads,
+        //     keine Atmosphären-Render-Calls.
+        // (3) Pure-Depth-RTT + LessCompare-DepthTexture → comparison-
+        //     Sampler im colorNode harmoniert mit textureSampleCompare-
+        //     WGSL-Knoten (siehe _buildToonNodeMaterial).
+        if (!this.state.shadowOverrideMat) {
+            if (typeof THREE.MeshBasicNodeMaterial === "function") {
+                this.state.shadowOverrideMat = new THREE.MeshBasicNodeMaterial();
+            } else {
+                return;
+            }
+        }
+        const depthMat = this.state.shadowOverrideMat;
+        const oldOverride = scene.overrideMaterial;
         const oldRT = renderer.getRenderTarget ? renderer.getRenderTarget() : null;
+        const oldRenderObjectFn =
+            typeof renderer.getRenderObjectFunction === "function" ? renderer.getRenderObjectFunction() : null;
+        scene.overrideMaterial = depthMat;
+        if (typeof renderer.setRenderObjectFunction === "function") {
+            renderer.setRenderObjectFunction((object, ...params) => {
+                if (object.castShadow === true) {
+                    renderer.renderObject(object, ...params);
+                }
+            });
+        }
         try {
             renderer.setRenderTarget(rtt);
-            renderer.clear(false, true, false); // nur Depth clearen
+            renderer.clear(false, true, false);
             const result = renderer.render(scene, dl.shadow.camera);
-            // WebGPU.render() ist async (Promise). Fire-and-forget — die
-            // gerenderte Shadow-Map ist im nächsten main-Frame verfügbar.
-            // Ein 1-Frame-Lag ist visuell unsichtbar.
             if (result && typeof result.catch === "function") {
                 result.catch(() => {});
             }
         } catch (_) {
-            // Render-Pass-Fehler dürfen den main render nicht blockieren.
         } finally {
+            scene.overrideMaterial = oldOverride;
             renderer.setRenderTarget(oldRT);
+            if (oldRenderObjectFn && typeof renderer.setRenderObjectFunction === "function") {
+                renderer.setRenderObjectFunction(oldRenderObjectFn);
+            } else if (typeof renderer.setRenderObjectFunction === "function") {
+                renderer.setRenderObjectFunction(null);
+            }
         }
     }
 
@@ -39707,7 +39721,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-i";
+AnazhRealm.VERSION = "10.0-j";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

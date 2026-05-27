@@ -18180,15 +18180,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r.setTimeOfDay(0.5);
 
         // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
-        // Sterne sind jetzt THREE.Points mit color + aSize Attributen.
+        // V10.0-i.a: Sterne sind InstancedMesh mit Per-Instance Color
+        // (sf.instanceColor) + Per-Instance Matrix (Größe encoded im scale).
+        // V9.56-i-Doku-Sync angewandt.
         const sf = r.state.starField;
-        out.starHasHueVariation = !!(
-            sf &&
-            sf.geometry &&
-            sf.geometry.getAttribute &&
-            sf.geometry.getAttribute("color")
-        );
-        out.threeStarLayers = !!(sf && sf.geometry && sf.geometry.getAttribute && sf.geometry.getAttribute("aSize"));
+        out.starHasHueVariation = !!(sf && sf.instanceColor && sf.instanceColor.count > 0);
+        out.threeStarLayers = !!(sf && sf.instanceMatrix && sf.instanceMatrix.count > 0);
 
         return out;
     });
@@ -18226,10 +18223,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const out = {};
 
         // --- Phase A: Stern-Feld ---
+        // V10.0-i.a: InstancedMesh statt THREE.Points (PointsNodeMaterial-r160-
+        // Vendor-Bug mit pointUV → Profi-Pattern: 4-Vertex-Quad pro Instanz).
         const sf = r.state.starField;
-        out.starFieldIsPoints = !!(sf && sf.type === "Points");
-        out.starCount =
-            sf && sf.geometry && sf.geometry.getAttribute("position") ? sf.geometry.getAttribute("position").count : 0;
+        out.starFieldIsPoints = !!(sf && sf.isInstancedMesh === true);
+        out.starCount = sf && typeof sf.count === "number" ? sf.count : 0;
         out.starFieldHasMany = out.starCount > 1000;
         // Sidereal-Rotation: rotation ändert sich mit timeOfDay
         out.starFieldRotates = !!(sf && sf.rotation);
@@ -18337,7 +18335,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v828Results && !v828Results.error) {
-        check("V8.28 A: state.starField ist THREE.Points", v828Results.starFieldIsPoints);
+        check("V8.28 A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
