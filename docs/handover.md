@@ -357,6 +357,49 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V10.0-j-Bogen, 27.05.2026 — Der WebGPU-Buffer-Lifecycle-Schmerz (10 Sub-Wellen, der wirkliche V10.0-Schluss):**
+
+Schöpfer-Browser-Audit V10.0-i auf AMD-RDNA-3 zeigte drei Pipeline-Validation-Kaskaden (Welt schwarz). Was als saubere Shadow-Profi-Welle V10.0-j begann, wurde zu 10 Sub-Wellen Heilungs-Spirale für einen Three.js-v160-WebGPU-Vendor-Race. Der ehrliche Bogen-Zyklus:
+
+- **V10.0-j (Shadow-Profi-Pattern)**: drei strukturelle Wurzeln aus Vendor-Code-Lesen geheilt — (G) Override-Material + castShadow-Filter im Shadow-Pass; (H) DepthTexture Pure-Depth + LessCompare; (I) Hardware-PCF via `texture(t, uv).compare(refZ)`. Vendor-Pattern aus `AnalyticLightNode.setupShadow/updateShadow` direkt adaptiert. Welt rendert sichtbar.
+- **V10.0-j.b**: V10.0-j-Browser-Audit zeigte stencilLoadOp-Crash (88×) + Instance-Buffer-Mismatch (85×). Heilungen: `renderer.stencil = false` global + `material.clone()` pro Gras-Chunk.
+- **V10.0-j.c**: V10.0-j.b-Audit: 3 Wurzeln neu — stencilOp-Crash bestand (Vendor-`clear()`-Bug: `else`-Branch setzt stencilOps ZWANGSWEISE), Instance-Mismatch bestand (Cache-Key-Serialisierung mit `'{}'` macht Tree-Refs unsichtbar), instanceColor-Warning (TSL `attribute("instanceColor")` lookupt `geometry.attributes`, nicht `mesh.instanceColor`). Heilungen: `renderer.clear()` entfernt (Background.js setzt clearDepth automatisch); Uniform-Capacity-Pattern (`GRASS_MAX_BLADES=256` für alle Chunks → Bound-Buffer konstant); `planeGeo.setAttribute("instanceColor", starField.instanceColor)`-Bridge.
+- **V10.0-j.d**: V10.0-j.c-Audit zeigte „läuft einige Sekunden, dann schwarz". `Buffer used in submit while destroyed` 100x + WriteBuffer 16384 bytes 400x. Wurzel: `geometry.dispose()` SOFORT (`WebGPUAttributeUtils.destroyAttribute` Z168 `data.buffer.destroy()`), aber `renderer.render()` ist async. Heilung: defer-Queue via `setTimeout(fn, 0)`. Nicht genug.
+- **V10.0-j.e**: 2-Frame-Age-Counter-Defer für ALLE GPU-Resource-Disposals (Geometry + Material). Effektiv nur 1-Frame-Defer (~16ms), zu kurz bei GPU-Last (FPS 28 → 35ms+).
+- **V10.0-j.f**: `device.queue.onSubmittedWorkDone()`-Promise — deterministische Drain-Synchronisation. Alle direkten `.dispose()`-Pfade umgestellt (12 Stellen, universal Coverage).
+- **V10.0-j.g**: V10.0-j.f-Audit: noch immer 100+400 Crashes. Edgecase gefunden — `_disposeSoulGroup` traverst Compound mit shared Material (Drache: body/head/wing/tail mit EINEM `new MeshBasicMaterial`). Set statt Array → automatic dedup. Crashes 500 → 213.
+- **V10.0-j.h**: V10.0-j.g-Audit: noch 213 Crashes. Profi-Pattern Genshin/BotW: Materials NIE in per-Mesh-Dispose-Schleife. `_disposeSoulGroup` + `_p2pDisposeMesh` machen NUR Geometry-Dispose, NICHT Material — Material-Cascade-Invalidation (RenderObject.onMaterialDispose → bindings.delete + pipelines.delete) ist race-anfällig.
+- **V10.0-j.i**: V10.0-j.h-Audit: Schöpfer-Hinweis „wir drehen uns, marginal, ein tipo, ein kleiner denkfehler". Im fremden-Code-Lesepfad gefunden: `inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage)` (V10.0-g.1-Workaround) zwingt Three.js' Attributes.update Z53 zu per-Frame writeBuffer — der Smoking-Gun-Beweis war 16384 bytes = EXAKT 256 instances × 64 bytes Matrix4 = GRASS_MAX_BLADES × Matrix4-Size. Eine Zeile entfernt. Aber Crashes blieben.
+- **V10.0-j.j**: V10.0-j.i-Audit: noch immer Crashes. Ehrliche Reflexion nach 10 Sub-Wellen: Three.js v160 hat einen Race der nicht voll workaroundbar ist ohne Vendor-Patch. Profi-Pattern Genshin/BotW: **Mesh-Memory > Race-Crashes**. Gras-Geometry NICHT disposen, Memory-Cost ~500 KB GPU-Heap akzeptieren. Plus: ConeGeometry als Singleton (`state._grassConeGeometry`). Schöpfer-Audit: **Welt bleibt stabil sichtbar**, V10.0-Bogen vollendet.
+
+**Reflexion**: 10 Sub-Wellen ist zu viele. Lehren permanent verdrahtet:
+1. **fremder-Code-Augen-Disziplin**: nach 3+ Hypothesen-Wellen den eigenen Code lesen als wäre er von einem anderen — der Tippo zeigt sich (V10.0-j.i hat das in 5 Minuten gefunden, nachdem es 5 Wellen versteckt war).
+2. **Workarounds altern**: vorherige Sub-Wellen-Workarounds (DynamicDrawUsage aus V10.0-g.1) müssen nach struktureller Heilung geprüft werden — sonst kollidieren sie mit dem neuen Pfad.
+3. **Mesh-Memory > Race-Crashes**: nach 5+ Sub-Wellen ohne stabile Heilung ist ein ehrlicher Memory-Trade die Profi-Antwort. Vendor-Bugs auf Engine-Ebene sind nicht immer 100% workaroundbar — Genshin/BotW akzeptieren das auch (Mesh-Pools, persistente Material-Caches).
+4. **Was V10.0-j wirklich liefert (Vision)**: WebGPU-Renderer dauerhaft (kein Hot-Swap), alle Visual-Schichten aktiv (Cel-Stufen + Sun-Lighting + Schatten + Sterne als InstancedMesh-Billboards + Gras-Wind via TSL-positionNode + Hardware-PCF-Schatten). Drei strukturelle Vendor-Pattern-Lehren (G/H/I). Plus drei Profi-Lehren (J: Workaround-Audit; K: Memory-Trade; L: fremder-Code-Augen).
+
+**Was im V10.0-j-Bogen NICHT geschnitten wurde** (Vision intakt):
+- Cel-Stufen via gradientMap-Lookup im colorNode ✓
+- Half-Lambert + Sun-Direction-Sync ✓ (via `state.toonLightUniforms`, `_dayNightApply*`-Pfade)
+- Schatten unter Felsbögen + Bauten ✓ (hardware-PCF via `texture(depthTex).compare(refZ)`)
+- Sterne als InstancedMesh-Billboards mit Soft-Falloff ✓ (V10.0-i.a)
+- Gras-Wind via TSL-positionNode ✓ (V10.0-i.b — auf WebGPU nativ, keine onBeforeCompile-Krücke)
+- Hot-Swap als defensive Sicherung bei Render-Errors ✓ (V10.0-e/f-5/f-6)
+
+**Was im V10.0-j-Bogen verloren oder akzeptiert wurde**:
+- **`_disposeSoulGroup` + `_p2pDisposeMesh` disposen Materials NICHT mehr** (V10.0-j.h) — Material-Memory akkumuliert minimal (~50 Bytes/Material × Compound-Count). Profi-Pattern Genshin/BotW. Bei Welt-Wechsel räumt Reload.
+- **Gras-Geometry NICHT disposed** (V10.0-j.j) — ~16 KB instanceMatrix pro disposed Gras-Chunk bleibt allokiert. Lebenszeit-Cost ~500 KB pro Welt-Lifetime. Bei Welt-Wechsel räumt Reload.
+- **ConeGeometry pro-Chunk → Singleton** (V10.0-j.j) — kein Verlust, eigentlich Gewinn (~3 KB statt N × 108 Bytes).
+
+**V11+-Backlog** (nicht V10.0-Schluss, sondern Vision-Vorwärts):
+- **Mesh-Pool-Pattern für Gras** (Profi-Pattern Genshin's instancing-system): recycle disposed Meshes statt zu allokieren/disposen. Echte Wurzel-Heilung des V10.0-j.j-Memory-Trades. Aufwand ~3-4h, eigene Welle.
+- **Vision-Pfeiler D-G** (Wasser↔Kreaturen, Emotion↔lokale Welt, Hylomorphismus-Cluster-Resonanz, Multi-Spieler-Vibe) — `docs/state-of-realm.md` §3-Roadmap.
+- **V9.97 IndexedDB-Welt-Gedächtnis** (V9.93.r-Vision-Reset-Backlog): persistente Chunk-Cache, Re-Visit besuchter Chunks < 5ms.
+- **V9.98 Predictive Prefetch aus Spieler-Velocity** (V9.93.r-Backlog): Streaming-Pump priorisiert Velocity-Kegel statt Ring-Iteration.
+- **V9.99 Per-Column-Atlas-Strict** (V9.92-Audit-Folge): Wasserschatten/Hangpfützen-Heilung.
+- **Render-Polish**: Toon-Material-Treppenstufen weicher, LOD-Cross-Fade über 1-2 Frames.
+
+
 **V10.0-g — Das Neue adaptiert das Alte (27.05.2026, eine Welle, fünf Bausteine — der wirkliche V10.0-Bogen-Schluss):**
 
 Nach Schöpfer-Konfrontation in V10.0-g.r („werde wieder visionär, das Neue MUSS besser sein, wir schneiden nicht weg sondern adaptieren"). Eine Welle, kein Sub-Wellen-Stapel.
