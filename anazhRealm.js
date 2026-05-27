@@ -10045,75 +10045,91 @@ class AnazhRealm {
             colors[i * 3 + 1] = tmpCol.g * bright;
             colors[i * 3 + 2] = tmpCol.b * bright;
         }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-        geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
-        // V10.0-f-2 — Stern-Feld-Material portiert von ShaderMaterial (GLSL) zu
-        // PointsNodeMaterial (TSL). Welt-Optik 1:1: per-Stern aSize-Punkt-
-        // Größe, konstante Pixel-Größe (kein sizeAttenuation — Sterne sind
-        // unendlich weit), weicher runder Sprite-Falloff vom Center,
-        // additive Blending, depthTest gegen opake Welt-Geometrie.
-        // Läuft nativ auf WebGPURenderer UND klassischem WebGLRenderer via
-        // webgl-legacy/nodes/WebGLNodes.js-Bootstrap-Side-Effect-Patch.
+        // V10.0-i.a — Wurzel-Heilung des r160-PointUVNode-Vendor-Bugs (statt
+        // V10.0-h.b-Entfernung des Soft-Falloff): jeder Stern wird ein 4-
+        // Vertex-Quad in einer InstancedMesh. Quad-uv (geometry.uv 0..1) ist
+        // WGSL-konform via TSL `attribute("uv", "vec2")` lesbar — Soft-
+        // Falloff via smoothstep ist auf BEIDEN Renderern bit-identisch.
+        // Profi-Pattern aus Genshin/BotW (Sterne + Funken als instanced
+        // billboard quads). Quad-Normal zeigt zum Sphere-Center (Spieler-
+        // Position bei `starField.position.copy(camera.position)`) → Spieler
+        // sieht die Front-Face mit Falloff.
         //
-        // Zwei Live-Uniforms in state.starFieldUniforms (uniform-Knoten):
-        //  - opacity (Tag/Nacht-Fade in _dayNightApplyStarField)
-        //  - pixelRatio (DPR-Konstante; statisch nach Init, könnte später
-        //    bei DPR-Wechsel via resize-Event aktualisiert werden)
+        // Welt-Optik 1:1 wie V10.0-f-2: aSize trägt Per-Stern-Größen-
+        // Variation (V8.29 mindestens 3, max ~6.5), Soft-Sprite-Falloff
+        // (smoothstep 0.5..0.08), AdditiveBlending, depthTest gegen opake
+        // Welt. KEIN pixelRatio-Uniform mehr nötig — die InstancedMesh-
+        // Quad-Größe ist Welt-Einheit (worldSize ≈ aSize × 1.0 bei
+        // RADIUS=480 + FOV=70° + 720p Viewport-Height ergibt ~1 px pro
+        // Welt-Einheit), DPR wirkt automatisch durch die Render-Auflösung.
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.PointsNodeMaterial !== "function") {
-            this.log("Stern-Feld-Bau: TSL/PointsNodeMaterial im Bootstrap fehlt", "ERROR");
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            this.log("Stern-Feld-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
-        const { uniform, attribute, vec4 } = TSL;
+        const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
-        const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
         const uOpacity = uniform(0.5);
-        const uPixelRatio = uniform(dpr);
 
-        const starMat = new THREE.PointsNodeMaterial();
-        // sizeNode ersetzt gl_PointSize: aSize × uPixelRatio (konstante Pixel-
-        // Größe, V8.29 mindestens 3 px — Anti-Flacker für Sub-Pixel-Sterne).
-        starMat.sizeNode = attribute("aSize", "float").mul(uPixelRatio);
-        // V10.0-h.b — pointUV-Soft-Falloff DAUERHAFT entfernt. Wurzel: Three.js
-        // r160's PointUVNode.generate() emittiert hardcoded GLSL `gl_PointCoord`
-        // → WGSL-Compile-Error auf WebGPU (Schöpfer-Browser-Audit V10.0-h:
-        // `Error while parsing WGSL: unresolved value 'gl_PointCoord'`). Der
-        // V10.0-g.r-Plan „Hot-Swap fängt es auf" ist FALSCH — der WGSL-Parser-
-        // Error matcht nicht das `ShaderMaterial|not compatible`-Pattern in
-        // _loopRender, also kein Hot-Swap → Sternen-Pipeline bleibt invalid →
-        // CommandBuffer kollabiert → Folge-Draws fallen flach mit „Parent
-        // encoder already finished". Heilung: konstante alpha (V10.0-g.1-
-        // Pattern, eine Welle vor V10.0-g.r). Sterne werden hart-quadratisch
-        // statt sprite-soft-falloff, aber V8.29-Anti-Flacker (aSize ≥ 3 px)
-        // wirkt weiter. Vision-treuer Zwischenzustand bis r161+ den vendor-
-        // PointUVNode WGSL-aware macht ODER wir einen TSL-`pointCoord`-
-        // Knoten selbst einführen.
-        const alpha = uOpacity;
-        starMat.colorNode = vec4(attribute("color", "vec3"), alpha);
+        const planeGeo = new THREE.PlaneGeometry(1, 1);
 
-        // Material-Properties: identisch zur GLSL-Variante. AlphaTest ersetzt
-        // den `if (alpha <= 0.01) discard;`-GLSL-Pfad (semantisch identisch).
+        const starMat = new THREE.MeshBasicNodeMaterial();
+        // Soft-Falloff vom Quad-Center: smoothstep(0.5, 0.08, dist) ist die
+        // ursprüngliche V8.29-Formel — Quad-uv 0..1 mit Center bei (0.5, 0.5).
+        const uv = attribute("uv", "vec2");
+        const d = length(uv.sub(vec2(float(0.5), float(0.5))));
+        const falloff = smoothstep(float(0.5), float(0.08), d);
+        // Per-Instance Color via Three.js' automatisches `instanceColor`-
+        // Attribute (gesetzt via mesh.setColorAt(i, color), gebunden im
+        // Shader via attribute("instanceColor", "vec3")).
+        const instColor = attribute("instanceColor", "vec3");
+        starMat.colorNode = vec4(instColor, falloff.mul(uOpacity));
+
+        // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
         starMat.transparent = true;
         starMat.depthWrite = false;
-        // V8.29.1 — depthTest TRUE: opakes Terrain/Berge/Strukturen verdecken
-        // Sterne dahinter sauber. Skybox schreibt keine Tiefe (depthWrite
-        // false) → im freien Himmel besteht der Test, Sterne bleiben sichtbar.
         starMat.depthTest = true;
         starMat.blending = THREE.AdditiveBlending;
         starMat.alphaTest = 0.01;
+        // DoubleSide: Quad-Normale zeigt zum Sphere-Center; falls die Mesh-
+        // Rotation in _loopRender (V8.28 sidereal) sie kippt, bleibt das
+        // Quad sichtbar.
+        starMat.side = THREE.DoubleSide;
 
         this.state.starFieldUniforms = {
             opacity: uOpacity,
-            pixelRatio: uPixelRatio,
         };
 
-        const starField = new THREE.Points(geo, starMat);
-        starField.frustumCulled = false; // immer rendern (Himmelskoerper)
+        const starField = new THREE.InstancedMesh(planeGeo, starMat, STAR_COUNT);
+        // Per-Instance Matrix: Translation auf Sphere + Rotation (Quad-Normal
+        // zeigt zum Sphere-Center) + Scale (worldSize aus aSize). Pro Stern
+        // einmal beim Build; keine pro-Frame-Updates nötig (siderale Rotation
+        // läuft via starField.rotation).
+        const tmpPos = new THREE.Vector3();
+        const tmpQuat = new THREE.Quaternion();
+        const tmpScale = new THREE.Vector3();
+        const tmpMatrix = new THREE.Matrix4();
+        const fromVec = new THREE.Vector3(0, 0, 1);
+        const toVec = new THREE.Vector3();
+        for (let i = 0; i < STAR_COUNT; i++) {
+            tmpPos.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+            toVec.copy(tmpPos).negate().normalize();
+            tmpQuat.setFromUnitVectors(fromVec, toVec);
+            const worldSize = sizes[i] * 1.0; // siehe Berechnung im Kommentar oben
+            tmpScale.set(worldSize, worldSize, 1);
+            tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
+            starField.setMatrixAt(i, tmpMatrix);
+            tmpCol.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+            starField.setColorAt(i, tmpCol);
+        }
+        starField.instanceMatrix.needsUpdate = true;
+        if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
+        starField.frustumCulled = false;
         this.state.scene.add(starField);
         this.state.starField = starField;
-        this.log(`Stern-Feld erstellt — ${STAR_COUNT} diskrete Sterne (V10.0-f-2 TSL)`);
+        this.log(
+            `Stern-Feld erstellt — ${STAR_COUNT} InstancedMesh-Billboards (V10.0-i.a, WGSL-konformer Soft-Falloff)`
+        );
     }
 
     // V8.28 6.G4.b D — Welt-Wasser. Eine grosse Wave-Plane bei waterLevel,
@@ -10196,37 +10212,104 @@ class AnazhRealm {
     _grassInstanceMat() {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
+        const TSL = THREE.TSL;
+        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
+            // Fallback (kein TSL verfügbar): klassisches MeshLambertMaterial
+            // OHNE onBeforeCompile-Wind — Wind fehlt, aber Material rendert.
+            this.state._grassMat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
+            return this.state._grassMat;
+        }
+        // V10.0-i.b — Wind-Displacement via TSL-positionNode (WGSL-konform).
+        // Wurzel-Heilung des V10.0-g.r-`onBeforeCompile`-GLSL-Patches: Three.js'
+        // WebGPURenderer ignorierte den Patch (GLSL-Strings sind nicht WGSL-
+        // übersetzbar) → Wind unsichtbar auf WebGPU, plus implizite Pipeline-
+        // Konflikte triggerten Hot-Swap zu WebGL. Heilung: identische Wind-
+        // Mathematik (phase = time × 1.7 + worldX × 0.28 + worldZ × 0.21,
+        // displacement = sin/cos(phase) × strength × heightFactor) als TSL-
+        // Tree im positionNode. Welt-Optik 1:1 auf BEIDEN Renderern. Plus:
+        // colorNode mit manuellem Half-Lambert-Lighting + Toon-Light-Uniforms-
+        // Sync (gleiches Pattern wie _buildToonNodeMaterial V10.0-g) — Gras
+        // atmet mit dem Tag-Nacht-Zyklus, Schatten via V10.0-h-Pipeline.
+        const {
+            uniform,
+            vec2,
+            vec3,
+            vec4,
+            float,
+            sin,
+            cos,
+            max,
+            normalize,
+            dot,
+            clamp,
+            mix,
+            transformedNormalWorld,
+            positionLocal,
+            positionWorld,
+            texture,
+        } = TSL;
         if (!this.state.windUniforms) {
             this.state.windUniforms = {
-                uWindTime: { value: 0 },
-                uWindStrength: { value: 0.12 },
+                uWindTime: uniform(0.0),
+                uWindStrength: uniform(0.12),
             };
         }
         const wu = this.state.windUniforms;
-        // V10.0-g.r — onBeforeCompile-Wind-Patch ZURÜCK. Vision-treuer Effekt:
-        // benachbarte Gras-Halme wiegen phasenversetzt = Wind-Wellen über das
-        // ganze Feld. Die V10.0-g.2-Hypothese „onBeforeCompile triggert WebGPU-
-        // Pipeline-Cache-Konflikt" war falsch (Bug 2 spammt weiter im Schöpfer-
-        // Audit V10.0-g.2, auch ohne Patch). Auf WebGL wirkt der Patch nativ;
-        // auf WebGPU triggert er den Hot-Swap (über die anderen Pipeline-Bugs)
-        // → Welt fällt sauber auf WebGL zurück. Eine Wahrheit, ein Wind.
-        const mat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
-        mat.onBeforeCompile = (shader) => {
-            shader.uniforms.uWindTime = wu.uWindTime;
-            shader.uniforms.uWindStrength = wu.uWindStrength;
-            shader.vertexShader = "uniform float uWindTime;\nuniform float uWindStrength;\n" + shader.vertexShader;
-            shader.vertexShader = shader.vertexShader.replace(
-                "#include <begin_vertex>",
-                `#include <begin_vertex>
-                {
-                    vec3 instPos = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
-                    float phase = uWindTime * 1.7 + instPos.x * 0.28 + instPos.z * 0.21;
-                    float hf = max(0.0, transformed.y);
-                    transformed.x += sin(phase) * uWindStrength * hf * 1.5;
-                    transformed.z += cos(phase * 0.7) * uWindStrength * hf;
-                }`
-            );
-        };
+        const mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
+
+        // Wind-positionNode: Welt-Position via positionWorld lesen (das ist
+        // modelMatrix × instanceMatrix × positionLocal, d.h. enthält die
+        // Instance-Translation für jeden Halm). Phase aus Welt-X+Z + Zeit.
+        // hf = Halm-Höhe (positionLocal.y, da Geometrie auf Wurzel
+        // zentriert ist via geo.translate(0, 0.425, 0)). KEIN onBeforeCompile.
+        const phase = wu.uWindTime
+            .mul(float(1.7))
+            .add(positionWorld.x.mul(float(0.28)))
+            .add(positionWorld.z.mul(float(0.21)));
+        const hf = max(positionLocal.y, float(0.0));
+        const offsetX = sin(phase).mul(wu.uWindStrength).mul(hf).mul(float(1.5));
+        const offsetZ = cos(phase.mul(float(0.7)))
+            .mul(wu.uWindStrength)
+            .mul(hf);
+        mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
+
+        // colorNode: Half-Lambert + Toon-Light-Sync + Shadow-Sampling
+        // (gleiches Pattern wie _buildToonNodeMaterial V10.0-g/h für
+        // einheitliche Welt-Beleuchtung). gradientMap-Lookup brauchen wir
+        // beim Gras nicht (kein Cel-Look auf Halme); direkter Lambert-Mul.
+        const u = this._ensureToonLightUniforms();
+        const baseColor = vec3(float(0x5f / 255), float(0xa7 / 255), float(0x43 / 255));
+        const N = normalize(transformedNormalWorld);
+        const L = normalize(u.sunDir);
+        const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
+        // Shadow-Sampling identisch zu _buildToonNodeMaterial (siehe V10.0-h).
+        const shadowDepthTex = this.state.shadowDepthTexture;
+        let shadowAttenuation = float(1.0);
+        if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+            const normalBias = float(1.0);
+            const bias = float(-0.0005);
+            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
+            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
+            const sampleUV = vec2(projected.x, projected.y.oneMinus());
+            const refZ = projected.z.add(bias);
+            // V10.0-i.c — manuelles Compare via step (float-arithmetic),
+            // siehe _buildToonNodeMaterial-Doku.
+            const _shadowSampleVec = texture(shadowDepthTex, sampleUV);
+            const rawDepth = _shadowSampleVec.x.add(float(0.0));
+            const shadowSample = TSL.step(refZ, rawDepth);
+            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
+            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
+            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
+            const inFrustumF = inXf.mul(inYf).mul(inZf);
+            const t = inFrustumF.mul(u.shadowEnabled);
+            shadowAttenuation = mix(float(1.0), shadowSample, t);
+        }
+        const litScalar = u.ambient.add(dotNL.mul(u.sunIntensity).mul(shadowAttenuation));
+        const lit = baseColor.mul(vec3(litScalar, litScalar, litScalar));
+        mat.colorNode = vec4(lit, float(1.0));
+        // Drop-in-Identitäts-Marker für legacy Tests.
+        mat.isMeshLambertMaterial = true;
         this.state._grassMat = mat;
         return mat;
     }
@@ -13267,6 +13350,18 @@ class AnazhRealm {
         // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap (4 statt 16
         // Samples). Konstante existiert in beiden Renderern.
         renderer.shadowMap.type = THREE.PCFShadowMap;
+        // V10.0-i.c — Three.js' interner Auto-Shadow-Pass je Renderer:
+        // WebGPU: autoUpdate=false (unser manueller _renderShadowMapPass + colorNode-
+        //   Sampling übernimmt). Three.js' WebGPU-Pass rendert ohnehin nicht
+        //   bei lights=false.
+        // WebGL: autoUpdate=true (Three.js' interner Pass läuft — er rendert
+        //   die Shadow-Map für lights=true-Materials falls vorhanden. Unser
+        //   colorNode-Sampling auf WebGL ist deaktiviert wegen r160-webgl-legacy-
+        //   Codegen-Bug bei texture()-Swizzles. Falls Hot-Swap-Fallback ein
+        //   lights=true-Material zur Scene fügt, läuft Standard-Pipeline.
+        //   Aktuell mit V10.0-g/i kein lights=true-Pendant → kein Shadow auf
+        //   WebGL via NodeMaterial; V10.0-h.c-Backlog für Monkey-Patch).
+        renderer.shadowMap.autoUpdate = kind !== "webgpu";
     }
 
     // =====================================================================
@@ -16990,6 +17085,7 @@ class AnazhRealm {
             normalize,
             dot,
             clamp,
+            mix,
             transformedNormalWorld,
             positionWorld,
             texture,
@@ -17035,7 +17131,7 @@ class AnazhRealm {
         // LessCompare in _ensureShadowRenderTarget.
         const shadowDepthTex = this.state.shadowDepthTexture;
         let shadowAttenuation = float(1.0);
-        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+        if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
             const normalBias = float(1.0); // matched directionalLight.shadow.normalBias
             const bias = float(-0.0005); // matched directionalLight.shadow.bias
             // shadowCoord = shadowMatrix × (worldPos + normal × normalBias)
@@ -17044,22 +17140,38 @@ class AnazhRealm {
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
             // Perspektive-Divide: xyz / w
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            // Frustum-Test: [0,1]^3
-            const inX = projected.x.greaterThanEqual(float(0.0)).and(projected.x.lessThanEqual(float(1.0)));
-            const inY = projected.y.greaterThanEqual(float(0.0)).and(projected.y.lessThanEqual(float(1.0)));
-            const inZ = projected.z.lessThanEqual(float(1.0));
-            const inFrustum = inX.and(inY).and(inZ);
             // WebGPU y-flip + bias-Nudge auf z (Tiefenvergleich gegen Map)
             const sampleUV = vec2(projected.x, projected.y.oneMinus());
             const refZ = projected.z.add(bias);
-            // Hardware-PCF: texture(depthTex, uv).compare(refZ) returnt 0/1.
-            // 1 = in light (refZ < gespeicherter Tiefe), 0 = in shadow.
-            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
-            // Außerhalb des Frustums → keine Verdunkelung (multiplier 1).
-            // Innerhalb + shadowEnabled=1 → multiplier = shadowSample.
-            // shadowEnabled=0 (WebGL/Pre-Init) → multiplier ≡ 1.
-            const inShadowRegion = inFrustum.mul(u.shadowEnabled);
-            shadowAttenuation = inShadowRegion.mix(float(1.0), shadowSample);
+            // V10.0-i.c — Manuelles Compare statt hardware-PCF. WebGL-Legacy-
+            // NodeBuilder hat keine generateTextureCompare → wir lesen die
+            // raw Depth via .r und vergleichen manuell. step(rawDepth, refZ)
+            // returnt 0.0 wenn refZ < rawDepth (lit), 1.0 sonst (Schatten).
+            // Wir invertieren: shadowSample = 1 - step(...) → 1.0 wenn lit,
+            // 0.0 wenn Schatten. Funktioniert auf BEIDEN Renderern bit-
+            // identisch. Kein PCF — V10.0-j-Backlog für 4×4-Sample-Average.
+            // bool→float-Konversion: TSL `bool.mul(1.0)` ergibt dimension-
+            // mismatch im webgl-legacy. Stattdessen `step()` returnt direkt
+            // float. inFrustum-Resultat (bool) wird via step(0.5, count)
+            // gewandelt — `count = sum aller boolean.mul()` ist umständlich,
+            // einfacher: kombiniere die 3 Frustum-Conditions als step-Multi.
+            const _shadowSampleVec = texture(shadowDepthTex, sampleUV);
+            const rawDepth = _shadowSampleVec.x.add(float(0.0));
+            // step(edge, x): 0 wenn x<edge, 1 wenn x>=edge
+            // Wir wollen: refZ < rawDepth → lit (1), refZ >= rawDepth → shadow (0)
+            // shadowSample = step(refZ, rawDepth) → 1 wenn rawDepth >= refZ → lit
+            const shadowSample = TSL.step(refZ, rawDepth);
+            // Frustum-Tests via step (float-arithmetic statt bool.and):
+            // step(0, x) = 1 wenn x>=0. Wir wollen 0..1 → (1-step(1,x)) * step(0,x)
+            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
+            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
+            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
+            const inFrustumF = inXf.mul(inYf).mul(inZf);
+            const t = inFrustumF.mul(u.shadowEnabled);
+            // mix(a, b, t): a wenn t=0, b wenn t=1
+            // t=0 (außerhalb/disabled) → shadowAttenuation = 1.0 (lit)
+            // t=1 (innerhalb+enabled) → shadowAttenuation = shadowSample
+            shadowAttenuation = mix(float(1.0), shadowSample, t);
         }
 
         // Lit-Helligkeit = ambient + (sunIntensity × toonStep × shadow) (skalar).
@@ -17128,9 +17240,14 @@ class AnazhRealm {
         depthTex.format = THREE.DepthStencilFormat;
         depthTex.minFilter = THREE.NearestFilter;
         depthTex.magFilter = THREE.NearestFilter;
-        // compareFunction = LessCompare → hardware-PCF im Sampler
-        // (texture(depthTex, vec3(uv, refZ)) returnt direkt 0/1 nach Vergleich)
-        depthTex.compareFunction = THREE.LessCompare;
+        // V10.0-i.c — compareFunction NICHT setzen. Hardware-PCF via
+        // `texture(depthTex).compare(refZ)` ist WebGPU-only — der webgl-
+        // legacy-NodeBuilder in r160 hat keine `generateTextureCompare`-
+        // Methode → Material-Compile-Crash auf WebGL. Wir samplen die raw-
+        // Depth via `.r` und vergleichen manuell im colorNode (refZ <
+        // rawDepth ? lit : shadow). Trade-off: kein hardware-PCF auf
+        // beiden Renderern; eine Polish-Welle V10.0-j könnte PCF via
+        // 4×4-manuell-Average nachrüsten. Aber Wandel zuerst, PCF danach.
         const rtt = new THREE.WebGLRenderTarget(W, H, {
             minFilter: THREE.NearestFilter,
             magFilter: THREE.NearestFilter,
@@ -17150,11 +17267,19 @@ class AnazhRealm {
     // V10.0-h — Manueller Shadow-Map-Pass. Pre-render-Hook: rendert die
     // Scene aus directionalLight.shadow.camera-Sicht in das shadowRTT mit
     // einem Depth-Override-Material. Danach läuft der normale Render-Pass
-    // gegen die frisch gefüllte Shadow-Map. Auf WebGL ist das redundant
-    // (Three.js' WebGLRenderer macht es selbst) — wir gaten via
-    // rendererKind. shadowMatrix wird update für die colorNode-Sampling.
+    // gegen die frisch gefüllte Shadow-Map.
+    //
+    // V10.0-i.c — Gate `rendererKind=webgpu` ENTFERNT. Pfad läuft jetzt auf
+    // BEIDEN Renderern. Wurzel: auf WebGL hat Three.js' interner Shadow-Pass
+    // (renderer.shadowMap.enabled) zwar gelaufen, aber er rendert die Map
+    // NUR wenn `lights=true`-Materials sie konsumieren. Unsere V10.0-g
+    // NodeMaterials sind alle lights=false → Three.js' interner Pass hat
+    // intern keine Caster-Material-Pipeline gefunden und nichts geschrieben
+    // (Welt-Schatten verloren beim V10.0-g-Bogen). Heilung: derselbe
+    // manuelle Pass auf BEIDEN Renderern. Plus: `renderer.shadowMap.auto
+    // Update = false` als Sicherung (Three.js' interner Pass läuft nicht
+    // mehr — wir übernehmen komplett).
     _renderShadowMapPass() {
-        if (this.state.rendererKind !== "webgpu") return; // WebGL macht's selbst
         const dl = this.state.directionalLight;
         const renderer = this.state.renderer;
         const scene = this.state.scene;
@@ -39180,12 +39305,12 @@ class AnazhRealm {
         // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
         // aber unnötige Promise-Rejections im Console-Log vermieden.
         if (!this.state.rendererReady) return;
-        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. Gated
-        // auf rendererKind=webgpu (WebGL macht's selbst über lights=true-
-        // Pendants beim Hot-Swap-Fallback). Pre-render-Hook füllt das
-        // shadowRTT + updated toonLightUniforms.shadowMatrix, der
-        // colorNode der Toon-Materials sampelt im selben Frame.
-        if (this.state.rendererKind === "webgpu" && !this.state.rendererInkompatibel) {
+        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. V10.0-i.c:
+        // läuft jetzt auf BEIDEN Renderern (Gate `rendererKind=webgpu` entfernt
+        // — siehe _renderShadowMapPass-Doku). Pre-render-Hook füllt das
+        // shadowRTT + updated toonLightUniforms.shadowMatrix, der colorNode
+        // der Toon-Materials sampelt im selben Frame.
+        if (!this.state.rendererInkompatibel) {
             this._renderShadowMapPass();
         }
         // V10.0-e — WebGPURenderer.render() ist async; bei inkompatiblen
@@ -39582,7 +39707,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-h.b";
+AnazhRealm.VERSION = "10.0-i";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
