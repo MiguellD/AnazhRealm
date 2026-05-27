@@ -10066,7 +10066,7 @@ class AnazhRealm {
             this.log("Stern-Feld-Bau: TSL/PointsNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
-        const { uniform, attribute, vec4, vec2, smoothstep, length, pointUV } = TSL;
+        const { uniform, attribute, vec4 } = TSL;
 
         const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
         const uOpacity = uniform(0.5);
@@ -10076,14 +10076,21 @@ class AnazhRealm {
         // sizeNode ersetzt gl_PointSize: aSize × uPixelRatio (konstante Pixel-
         // Größe, V8.29 mindestens 3 px — Anti-Flacker für Sub-Pixel-Sterne).
         starMat.sizeNode = attribute("aSize", "float").mul(uPixelRatio);
-        // V10.0-g.r — pointUV-Soft-Falloff ZURÜCK. pointUV ist auf WebGL OK
-        // (klassisches gl_PointCoord). Auf WebGPU triggert es WGSL-Compile-
-        // Error (r160-Vendor-Bug, PointUVNode emittiert hardcoded GLSL),
-        // ABER damit Hot-Swap zu WebGL — und auf WebGL läuft der Soft-Falloff
-        // wie ursprünglich (V8.29). Vision-treuer Zwischenzustand bis r161+
-        // den pointUV-WGSL-Bug heilt.
-        const d = length(pointUV.sub(vec2(0.5, 0.5)));
-        const alpha = smoothstep(0.5, 0.08, d).mul(uOpacity);
+        // V10.0-h.b — pointUV-Soft-Falloff DAUERHAFT entfernt. Wurzel: Three.js
+        // r160's PointUVNode.generate() emittiert hardcoded GLSL `gl_PointCoord`
+        // → WGSL-Compile-Error auf WebGPU (Schöpfer-Browser-Audit V10.0-h:
+        // `Error while parsing WGSL: unresolved value 'gl_PointCoord'`). Der
+        // V10.0-g.r-Plan „Hot-Swap fängt es auf" ist FALSCH — der WGSL-Parser-
+        // Error matcht nicht das `ShaderMaterial|not compatible`-Pattern in
+        // _loopRender, also kein Hot-Swap → Sternen-Pipeline bleibt invalid →
+        // CommandBuffer kollabiert → Folge-Draws fallen flach mit „Parent
+        // encoder already finished". Heilung: konstante alpha (V10.0-g.1-
+        // Pattern, eine Welle vor V10.0-g.r). Sterne werden hart-quadratisch
+        // statt sprite-soft-falloff, aber V8.29-Anti-Flacker (aSize ≥ 3 px)
+        // wirkt weiter. Vision-treuer Zwischenzustand bis r161+ den vendor-
+        // PointUVNode WGSL-aware macht ODER wir einen TSL-`pointCoord`-
+        // Knoten selbst einführen.
+        const alpha = uOpacity;
         starMat.colorNode = vec4(attribute("color", "vec3"), alpha);
 
         // Material-Properties: identisch zur GLSL-Variante. AlphaTest ersetzt
@@ -17106,9 +17113,19 @@ class AnazhRealm {
         if (typeof THREE === "undefined" || !this.state.directionalLight) return null;
         const W = 2048;
         const H = 2048;
-        const depthTex = new THREE.DepthTexture(W, H);
-        depthTex.format = THREE.DepthFormat;
-        depthTex.type = THREE.UnsignedShortType;
+        // V10.0-h.b — DepthStencilFormat + UnsignedInt248Type → Depth24Stencil8.
+        // WICHTIG: Three.js' WebGPU-Backend setzt stencilLoadOp=Load + stencil
+        // StoreOp=Store als Default für RenderPass-DepthStencilAttachment. Bei
+        // einem reinen Depth16Unorm-Format (V10.0-h-a, ohne Stencil-Aspekt)
+        // wirft WebGPU Validation-Error „stencilLoadOp must not be set if the
+        // attachment has no stencil aspect" → CommandEncoder invalidiert →
+        // Folge-Draws im selben Encoder fallen flach mit „Parent encoder is
+        // already finished". Heilung: ein Format MIT Stencil-Aspekt — die
+        // stencilOps sind dann gültig. Hardware-PCF läuft weiter (compare
+        // Function ignoriert die Stencil-Komponente). Cost: 4 Bytes/Pixel
+        // statt 2 (32 MB statt 16 MB für 2048² — vertretbar).
+        const depthTex = new THREE.DepthTexture(W, H, THREE.UnsignedInt248Type);
+        depthTex.format = THREE.DepthStencilFormat;
         depthTex.minFilter = THREE.NearestFilter;
         depthTex.magFilter = THREE.NearestFilter;
         // compareFunction = LessCompare → hardware-PCF im Sampler
@@ -39565,7 +39582,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-h";
+AnazhRealm.VERSION = "10.0-h.b";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
