@@ -6183,10 +6183,20 @@ class AnazhRealm {
 
     _p2pDisposeMesh(obj) {
         if (!obj || typeof obj.traverse !== "function") return;
+        // V10.0-j.h — Profi-Pattern (Genshin/BotW): Compound-Disposes disposen
+        // NUR Geometries, NICHT Materials. Wurzel: Three.js' WGSL-Material
+        // hat Uniform-Buffer-Pool-Slots; material.dispose() triggert eine
+        // Cascade-Invalidation (RenderObject.onMaterialDispose → bindings.
+        // delete + pipelines.delete + nodes.delete) die Race-anfällig mit
+        // dem pending Submit ist. Wenn ein Compound 5 Sub-Meshes mit
+        // shared Material hat (Drache: body/head/wing/tail), würde das
+        // dispose 5 RenderObjects auf einmal invalidieren → Pool-Reorganisation
+        // mid-submit → WriteBuffer-Crash auf den disposed Uniform-Slot.
+        // Materials akkumulieren minimal (~50 Bytes pro Material × 100
+        // Compounds = vernachlässigbar), Geometry-Disposes räumen den
+        // GROSSEN Heap-Anteil (Vertex/Index-Buffers).
         obj.traverse((node) => {
-            // V10.0-j.e — Defer alle GPU-Resource-Disposals (WebGPU Submit-Race).
             if (node.geometry) this._queueDispose(node.geometry);
-            if (node.material) this._queueDispose(node.material);
         });
     }
 
@@ -26405,10 +26415,14 @@ class AnazhRealm {
     // freigeben, damit GPU-Speicher nicht volläuft bei häufigem Wechsel.
     _disposeSoulGroup(group) {
         if (!group) return;
+        // V10.0-j.h — NUR Geometries (Profi-Pattern, siehe _p2pDisposeMesh).
+        // Materials werden NICHT disposed — Compound-Soul-Groups (Drache,
+        // Wolf, Architekturen) teilen häufig EIN Material zwischen Sub-Meshes;
+        // material.dispose() triggert eine Three.js-RenderObject-Cascade-
+        // Invalidation die mit pending Submit racy ist. Materials akkumulieren
+        // minimal — Geometry-Disposes räumen den großen Heap-Anteil.
         group.traverse((node) => {
-            // V10.0-j.e — Defer GPU-Resource-Disposals (Submit-Race-frei).
             if (node.geometry) this._queueDispose(node.geometry);
-            if (node.material) this._queueDispose(node.material);
         });
     }
 
