@@ -103,6 +103,17 @@ class AnazhRealm {
             // ohne colorNode-Custom — alle Caster werden damit gerendert,
             // kein instanceColor-Lookup-Crash. Lazy initialisiert.
             shadowOverrideMat: null,
+            // V10.0-j.d — Defer-Queue für Geometry-Dispose. WebGPU' Three.js-
+            // Backend zerstört GPU-Buffer SOFORT bei `geometry.dispose()`
+            // (WebGPUAttributeUtils.destroyAttribute Z168 ruft `data.buffer.
+            // destroy()`). Wenn der vorherige Frame's `renderer.render()`-
+            // Promise noch pending ist, läuft der Submit auf zerstörte
+            // Buffer → „Buffer used in submit while destroyed"-Validation
+            // → CommandBuffer kaputt → Welt schwarz nach wenigen Sekunden
+            // beim Chunk-Stream-Out. Heilung: dispose via setTimeout(fn,0)
+            // — Macro-Task läuft NACH der Submit-Promise-Microtask-Queue,
+            // GPU sieht den Buffer noch valide während Submit-Resolve.
+            pendingGeometryDisposals: [],
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
@@ -17028,7 +17039,8 @@ class AnazhRealm {
         const mesh = this.state.voxelChunkWaterIso.get(key);
         if (mesh) {
             if (this.state.scene) this.state.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
+            // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
+            this._queueGeometryDispose(mesh.geometry);
         }
         this.state.voxelChunkWaterIso.delete(key);
     }
@@ -17696,6 +17708,22 @@ class AnazhRealm {
         return entry;
     }
 
+    // V10.0-j.d — Helper für deferred Geometry-Dispose. Three.js' WebGPU-
+    // Backend zerstört GPU-Buffer SOFORT bei `geometry.dispose()` (Web
+    // GPUAttributeUtils.destroyAttribute Z168). Wenn der vorherige Frame's
+    // `renderer.render()`-Promise pending ist, läuft der Submit auf zer-
+    // störte Buffer → „Buffer used in submit while destroyed"-Validation.
+    // Heilung: setTimeout(fn, 0) — Macro-Task läuft NACH der Microtask-
+    // Queue (Promise-Resolve), GPU sieht den Buffer noch valide während
+    // Submit. Aufrufer in _disposeVoxelChunk + _disposeVoxelChunkGrass +
+    // _disposeVoxelChunkWaterIso. Pro Frame ein gemeinsamer Drain — kein
+    // Akkumulieren über lange Sicht (Stream-Out ist Burst-Pattern, alle
+    // disposals werden im nächsten Macro-Task verarbeitet).
+    _queueGeometryDispose(geometry) {
+        if (!geometry || typeof geometry.dispose !== "function") return;
+        this.state.pendingGeometryDisposals.push(geometry);
+    }
+
     // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
     // Idempotent.
     _disposeVoxelChunk(key) {
@@ -17704,12 +17732,9 @@ class AnazhRealm {
         if (entry && entry.mesh) {
             this._disposeStaticCollision(entry.mesh);
             if (this.state.scene) this.state.scene.remove(entry.mesh);
-            if (entry.mesh.geometry) entry.mesh.geometry.dispose();
-            // V9.84 Perf-1.a — Material NICHT mehr disposen: `_getVoxelChunkMaterial`
-            // hält ein Singleton (`state.voxelChunkMaterial`), das von ALLEN
-            // Voxel-Chunks geteilt wird. Ein Dispose hier würde alle anderen
-            // Chunks töten (V9.43-c-Lehre vom hydroSurfaceMaterial — geteiltes
-            // Material überlebt jeden Chunk-Disposal). Nur Geometrie räumen.
+            // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
+            this._queueGeometryDispose(entry.mesh.geometry);
+            // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
         this._disposeVoxelChunkGrass(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
@@ -19330,7 +19355,8 @@ class AnazhRealm {
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
             if (this.state.scene) this.state.scene.remove(grass);
-            if (grass.geometry) grass.geometry.dispose();
+            // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
+            this._queueGeometryDispose(grass.geometry);
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -39398,6 +39424,24 @@ class AnazhRealm {
                     this._swapToWebGLRenderer();
                 }
             });
+        }
+        // V10.0-j.d — Drain der pendingGeometryDisposals via setTimeout(0).
+        // Macro-Task läuft NACH der Submit-Promise-Microtask → GPU-Buffer
+        // bleiben valide während Frame-N's Submit, werden in Frame-N+1
+        // sicher zerstört. Burst-Pattern (Stream-Out viele Chunks auf
+        // einmal): alle in EINEM Macro-Task verarbeitet, kein Akkumulieren.
+        if (this.state.pendingGeometryDisposals.length > 0) {
+            const queue = this.state.pendingGeometryDisposals;
+            this.state.pendingGeometryDisposals = [];
+            setTimeout(() => {
+                for (const g of queue) {
+                    try {
+                        g.dispose();
+                    } catch (_e) {
+                        /* defensive */
+                    }
+                }
+            }, 0);
         }
     }
 
