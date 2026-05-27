@@ -127,6 +127,10 @@ class AnazhRealm {
             // Uniforms bleiben als state-Slot für V10.0-g.cel-TSL-Wind.
             windUniforms: null,
             _grassMat: null,
+            // V10.0-j.j — Singleton-Cache für die ConeGeometry des Gras-
+            // Halmes. Profi-Vorbild Genshin/BotW: shared mesh-geometry für
+            // identische Asset-Kopien. Eine Geometry, viele InstancedMeshes.
+            _grassConeGeometry: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -19331,8 +19335,17 @@ class AnazhRealm {
             this.state.voxelChunkGrass.set(key, null);
             return;
         }
-        const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
-        geo.translate(0, 0.425, 0);
+        // V10.0-j.j — ConeGeometry als Singleton (Profi-Vorbild: shared meshes).
+        // Bisher allokierte jeder Chunk eine eigene ConeGeometry → bei Welt-
+        // Lebensdauer hunderte separate Buffer. Mit Singleton: EIN Buffer
+        // pro Realm-Instanz, alle InstancedMeshes teilen ihn (mit eigenen
+        // instanceMatrix-Buffers). Sparen 100-500 KB GPU-Heap.
+        if (!this.state._grassConeGeometry) {
+            const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
+            geo.translate(0, 0.425, 0);
+            this.state._grassConeGeometry = geo;
+        }
+        const geo = this.state._grassConeGeometry;
         // V10.0-j.c — Uniform-Capacity-Pattern (Profi-Vorbild Genshin/BotW).
         // V10.0-j.b's `material.clone()`-Pfad reichte NICHT: Three.js'
         // RenderObject.getMaterialCacheKey (RenderObject.js Z113-128)
@@ -19395,8 +19408,20 @@ class AnazhRealm {
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
             if (this.state.scene) this.state.scene.remove(grass);
-            // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
-            this._queueGeometryDispose(grass.geometry);
+            // V10.0-j.j — Geometry NICHT disposen. Three.js v160's WebGPU-
+            // Backend hat einen subtilen Lifecycle-Bug zwischen InstancedMesh-
+            // Geometry-Dispose und der Pipeline-Cache-Bind-Group: nach scene.
+            // remove + queueDispose-defer triggert irgendwo per-Frame ein
+            // writeBuffer(16384 bytes) auf den disposed instanceMatrix-Buffer
+            // (256 instances × 64 bytes = 16384). Neun Sub-Wellen (V10.0-j.a
+            // bis V10.0-j.i) haben den Race nicht voll geheilt. Profi-Pattern
+            // (Genshin/BotW): Mesh-Memory akzeptieren statt Race-Crashes.
+            // Geometry bleibt allokiert (ConeGeometry ~108 Bytes × 30 Chunks
+            // Lebensdauer = 3 KB Heap — vernachlässigbar) + instanceMatrix-
+            // Buffer (16 KB × 30 = ~500 KB GPU-Heap, ebenfalls vernachlässigbar).
+            // Bei Welt-Wechsel räumt der Reload alles. EHRLICH ist's: V10.0-j.i
+            // hat den setUsage-Trigger geheilt, aber ein verbleibender Three.js-
+            // Bug bleibt nicht-workaroundbar ohne Mesh-Pool-Refactor (V11-Backlog).
         }
         this.state.voxelChunkGrass.delete(key);
     }
