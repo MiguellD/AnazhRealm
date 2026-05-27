@@ -103,20 +103,21 @@ class AnazhRealm {
             // ohne colorNode-Custom — alle Caster werden damit gerendert,
             // kein instanceColor-Lookup-Crash. Lazy initialisiert.
             shadowOverrideMat: null,
-            // V10.0-j.f — Defer-Queue für GPU-Resource-Disposals. Three.js'
-            // WebGPU-Backend zerstört GPU-Buffer SOFORT bei `.dispose()`,
-            // aber Submit ist GPU-async. Race: vorheriger Submit referenziert
-            // den Buffer noch wenn dispose() läuft → „used in submit while
-            // destroyed"-Validation. Heilung: push in flache Liste, drain
-            // via `device.queue.onSubmittedWorkDone()` im _loopRender Ende.
-            // Promise resolved exakt wenn GPU alle Submits durch hat —
-            // deterministisch, kein Frame-Counter-Raten (V10.0-j.e's
-            // age >= 2 war effektiv 1-Frame ~16ms, marginal bei FPS-Drop).
-            // Universaler Helper `_queueDispose(obj)` für Geometry +
-            // Material + Texture. Aufrufer: ALLE per-Frame triggerbaren
-            // dispose-Pfade (Chunk-Stream, Aura/Carry-Sprites, Soul-Groups,
-            // Architektur-Culling).
-            pendingDisposals: [],
+            // V10.0-j.g — Defer-Queue für GPU-Resource-Disposals. Set
+            // statt Array — verhindert duplicate dispose() für SHARED
+            // Materials. Edgecase: `_disposeSoulGroup` traversiert ein
+            // Compound (z.B. Drache mit body/head/wing/tail, alle mit
+            // EINEM `new MeshBasicMaterial(...)`-Singleton geshared) →
+            // ohne Set würde dispose() N-mal gerufen → erste dispose()
+            // zerstört Buffer, zweite findet destroyed-buffer → Race +
+            // Three.js' WriteBuffer auf den disposed Uniform-Slot crasht
+            // („Buffer used in submit while destroyed"). Set garantiert
+            // genau EINE dispose-Aufruf pro Resource.
+            //
+            // Drain via `device.queue.onSubmittedWorkDone()` im _loopRender
+            // Ende — Promise resolved exakt wenn GPU alle Submits durch
+            // hat (deterministisch, kein Frame-Counter-Raten).
+            pendingDisposals: new Set(),
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
@@ -17727,7 +17728,9 @@ class AnazhRealm {
     // Promise resolved exakt wenn GPU alle Submits verarbeitet hat.
     _queueDispose(obj) {
         if (!obj || typeof obj.dispose !== "function") return;
-        this.state.pendingDisposals.push(obj);
+        // V10.0-j.g — Set-Add ist automatic dedup; gleiches Material mehrmals
+        // gequeued (z.B. Compound mit shared Material) wird nur einmal disposed.
+        this.state.pendingDisposals.add(obj);
     }
     // Legacy-Alias für V10.0-j.d-Code (Geometry-spezifisch).
     _queueGeometryDispose(geometry) {
@@ -39444,9 +39447,12 @@ class AnazhRealm {
         // Promise resolved exakt wenn GPU alle bisherigen Submits durch
         // hat. Kein Frame-Counter-Raten. WebGL-Fallback: synchron dispose
         // (kein async submit-Pfad).
-        if (this.state.pendingDisposals.length > 0) {
-            const queue = this.state.pendingDisposals.slice();
-            this.state.pendingDisposals.length = 0;
+        if (this.state.pendingDisposals.size > 0) {
+            // V10.0-j.g — Set → Array für stable iteration. Set wird nach
+            // dem Snapshot geleert (neue Disposes pushen für den nächsten
+            // Frame, NICHT in den aktuellen Drain).
+            const queue = Array.from(this.state.pendingDisposals);
+            this.state.pendingDisposals.clear();
             const backend = this.state.renderer && this.state.renderer.backend;
             const device = backend && backend.device;
             const queueObj = device && device.queue;
