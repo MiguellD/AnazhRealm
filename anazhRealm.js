@@ -19262,16 +19262,22 @@ class AnazhRealm {
         }
         const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
         geo.translate(0, 0.425, 0);
-        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), blades.length);
-        // V10.0-g — explicit count + DynamicDrawUsage gegen den V10.0-g.1-
-        // Browser-Audit-Bug (`Instance range count=N requires larger buffer
-        // bound=M`). Three.js' WebGPU-Pipeline-Cache zwischen shared-material-
-        // InstancedMeshes mit unterschiedlichen Counts: ohne diese Hinweise
-        // cached die Pipeline den ersten Mesh's Buffer-Layout, Folge-Meshes
-        // mit größerer count triggern Validation-Error. setUsage signalisiert
-        // Three.js dass der Buffer pro Mesh dynamisch gebunden werden muss;
-        // explicit count nach Construction stellt sicher dass die count
-        // konsistent mit dem instanceMatrix-Buffer ist.
+        // V10.0-j.b — Wurzel-Heilung des V10.0-g.1/V10.0-j-Browser-Audit-Bugs
+        // („Instance range count=3160 requires larger buffer bound=1916"). V10.0-g.1
+        // dachte `setUsage(DynamicDrawUsage)` + explicit `inst.count` würde Three.js
+        // zwingen pro Mesh den Buffer neu zu binden — im Cloud-Headless wirkt's,
+        // auf echtem AMD-RDNA-3 bricht's. Wurzel: Three.js' WebGPU-Backend cached
+        // Vertex-Buffer-Bindings zwischen Meshes mit derselben Material-Instanz —
+        // die Pipeline ist per cacheKey (Tree-Hash), aber Bind-Group-Layout per
+        // material.id. Profi-Heilung: pro Chunk seine EIGENE Material-Instanz via
+        // `material.clone()`. NodeMaterial.clone() teilt Tree-Knoten-Referenzen
+        // (windUniforms bleiben geteilt → Wind syncen weiter), aber material.id
+        // ist neu → eigenes Bind-Group → korrekter Instance-Buffer-Size pro Chunk.
+        // WGSL-Source ist cached (cacheKey identisch) → kein Re-Compile-Overhead.
+        // Trade-off: ~400 Bytes Material-Overhead × 81 Chunks = vernachlässigbar.
+        const baseGrassMat = this._grassInstanceMat();
+        const grassMat = baseGrassMat && typeof baseGrassMat.clone === "function" ? baseGrassMat.clone() : baseGrassMat;
+        const inst = new THREE.InstancedMesh(geo, grassMat, blades.length);
         inst.count = blades.length;
         inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         const m = new THREE.Matrix4();
@@ -38025,6 +38031,21 @@ class AnazhRealm {
         if (wantWebGPU) {
             try {
                 renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+                // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
+                // Default ist `this.stencil = true` (Renderer.js:56) → bei JEDEM
+                // RenderPass setzt WebGPUBackend stencilLoadOp + stencilStoreOp
+                // (WebGPUBackend.js Z317-332). Bei Pure-Depth-Format (Depth24Plus
+                // ohne Stencil-Aspect, V10.0-j.a Shadow-RTT) wirft WebGPU dann
+                // „stencilLoadOp must not be set if attachment has no stencil
+                // aspect" → CommandEncoder invalidiert → Welt schwarz. WebGPU
+                // Backend Z233-237 hat zwar einen Branch der stencil=false setzt
+                // wenn depthTexture.format===DepthFormat — der greift aber nicht
+                // bei jedem Render-Pfad. Sicherste Heilung: am Renderer stencil
+                // KOMPLETT auf false. Wir nutzen Stencil nirgends (kein Outline-
+                // Effekt, kein Portal-Mask) → kein visueller Verlust. Plus: Main-
+                // Canvas-Depth-Buffer wird damit auch Pure-Depth (Depth24Plus
+                // statt Depth24PlusStencil8) — 4 Bytes/Pixel statt 5, sparsamer.
+                renderer.stencil = false;
                 rendererKind = "webgpu";
                 this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
             } catch (err) {
