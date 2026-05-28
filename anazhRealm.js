@@ -131,6 +131,11 @@ class AnazhRealm {
             // Halmes. Profi-Vorbild Genshin/BotW: shared mesh-geometry für
             // identische Asset-Kopien. Eine Geometry, viele InstancedMeshes.
             _grassConeGeometry: null,
+            // V11.0-a — Pool aus InstancedMesh-Objekten für Gras. `_releaseGrassMesh`
+            // pusht hier rein (mit Cap-Check), `_acquireGrassMesh` poppt raus
+            // oder allokiert neu wenn leer. Bei Welt-Wechsel räumt
+            // `_drainGrassMeshPool` den Pool vollständig (echtes dispose).
+            _grassMeshPool: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -7223,6 +7228,22 @@ class AnazhRealm {
                 }),
             },
             {
+                example: "trinke",
+                re: /^(?:trink|trinke|trink(?:\s+wasser)?|geh\s+(?:zum|zu)\s+wasser)$/i,
+                build: () => ({
+                    program: ["creature_task_nearest", "drink"],
+                    describe: "die nächste Kreatur sucht Wasser und trinkt",
+                }),
+            },
+            {
+                example: "alle trinken",
+                re: /^(?:alle\s+trinken|alle\s+zum\s+wasser)$/i,
+                build: () => ({
+                    program: ["creature_task_all", "drink"],
+                    describe: "alle Kreaturen trinken am nächsten Ufer",
+                }),
+            },
+            {
                 example: "alle warten",
                 re: /^(?:alle\s+(?:warten|halten|stehen))$/i,
                 build: () => ({
@@ -11460,7 +11481,7 @@ class AnazhRealm {
     }
 
     static get CREATURE_TASKS() {
-        return Object.freeze(["wander", "follow_player", "wait", "gather", "build"]);
+        return Object.freeze(["wander", "follow_player", "wait", "gather", "build", "drink"]);
     }
     static get CREATURE_TASK_AURA_HUE() {
         return Object.freeze({
@@ -11469,12 +11490,14 @@ class AnazhRealm {
             wait: 40, // bernsteinfarben, "ich harre"
             gather: 200, // cyan, "ich suche"
             build: 280, // violett, "ich erschaffe"
+            drink: 210, // azur, "ich nähre mich am Wasser" (V11.0-d.3)
         });
     }
     // Vision §1.2 — Audio-Antwort auf Beziehungs-Geste. Frequenz je Task:
     // follow_player hell (Begrüßung), wait tiefer (Ruhe), gather mittig
     // (aktiv-konzentriert), build hoch (aufschwingend wie Schöpfungs-Geste),
-    // wander null (Lösen der Bindung darf still sein).
+    // wander null (Lösen der Bindung darf still sein), drink sehr hell A5
+    // (Erfrischung, klare Antwort auf Wasser).
     static get CREATURE_TASK_PING_FREQ() {
         return Object.freeze({
             wander: null,
@@ -11482,7 +11505,29 @@ class AnazhRealm {
             wait: 294, // ~D4, ruhige Antwort
             gather: 392, // ~G4, neutral-aktive Antwort
             build: 587, // ~D5, aufschwingende Schöpfungs-Antwort
+            drink: 880, // ~A5, helle Erfrischungs-Antwort (V11.0-d.3)
         });
+    }
+    // V11.0-d.3 — drink-spezifische Konstanten (Pfeiler D).
+    static get CREATURE_DRINK_HALT_DIST() {
+        return 1.5; // m — am Wasser-Punkt angekommen, beginne Pause
+    }
+    static get CREATURE_DRINK_DURATION_S() {
+        return 2.5; // Sekunden — Pausen-Dauer am Ufer (Trink-Geste sichtbar)
+    }
+    static get CREATURE_DRINK_SEARCH_RADIUS() {
+        return 40; // m — max Suchradius für nächsten Wasser-Punkt
+    }
+    static get CREATURE_DRINK_SPEED() {
+        return 3.0; // m/s — gleich wie gather, sichtbares Bewegen
+    }
+    // V11.0-a (Pool-Foundation) — Mesh-Pool-Pattern (Genshin Instancing-System
+    // / BotW Geometry-Recycling) als ehrlicher Bogen-Schluss für den V10.0-j.j-
+    // Memory-Workaround. Disposed Gras-Meshes kommen in einen Pool, beim
+    // nächsten Bau wiederverwendet — kein new+dispose, kein Race-Risiko, kein
+    // linear-wachsender Heap.
+    static get GRASS_POOL_CAP() {
+        return 32; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
     static get CREATURE_GATHER_HALT_DIST() {
@@ -11748,6 +11793,7 @@ class AnazhRealm {
             wait: "harrt",
             gather: "sucht Material",
             build: "wird zur Schöpferin",
+            drink: "sucht Wasser am Ufer",
         };
         const text = `Eine Kreatur ${labels[taskName] || "ändert ihren Auftrag"}.`;
         this.journalAppend("relationship", text, {
@@ -11830,6 +11876,109 @@ class AnazhRealm {
         if (task.name === "follow_player") return this._tickCreatureFollowPlayer(creature, task, emotion);
         if (task.name === "gather") return this._tickCreatureGather(creature, task);
         if (task.name === "build") return this._tickCreatureBuild(creature, task);
+        if (task.name === "drink") return this._tickCreatureDrink(creature, task);
+        return null;
+    }
+
+    // V11.0-d.3 (Pfeiler D — Trinken am Ufer): drei Phasen.
+    //   suchen: kein _target → finde nächsten Wasser-Punkt via Ring-Scan,
+    //           setze als _target. Wenn keiner in 40m Radius → wander
+    //           mit "no_water"-memory + Journal-Eintrag.
+    //   walken: _target gesetzt, Distanz > HALT_DIST → bewege Richtung
+    //           Wasser. Y-Override (V11.0-d.2) macht Schwimm-Surface wenn
+    //           die Kreatur durch eine Wasser-Cell muss.
+    //   trinken: Distanz ≤ HALT_DIST → Pause für DURATION_S Sekunden
+    //           (direction = 0, die Kreatur steht und „trinkt"). Nach
+    //           der Pause: Happiness-Boost (`creatureEmotions[i] = "happy"`),
+    //           "drank"-memory, Journal-Eintrag, zurück zu wander.
+    // Vision §1 Symbiose: das Wasser nährt die Kreatur, die Kreatur fühlt
+    // sich happy — eine spürbare Welt-Antwort, kein Skript-Resultat.
+    _tickCreatureDrink(creature, task) {
+        const out = this._creatureTaskOutDir();
+        const HALT_DIST = AnazhRealm.CREATURE_DRINK_HALT_DIST;
+        const DURATION_S = AnazhRealm.CREATURE_DRINK_DURATION_S;
+        const SEARCH_RADIUS = AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS;
+        const SPEED = AnazhRealm.CREATURE_DRINK_SPEED;
+        const cx = creature.position.x;
+        const cz = creature.position.z;
+        // Phase 1: Wasser-Punkt suchen wenn keiner gesetzt.
+        if (!task.args._target) {
+            const water = this._findNearestWaterPoint(cx, cz, SEARCH_RADIUS);
+            if (!water) {
+                this._creatureRemember(creature, "no_water", { searchedFrom: { x: cx, z: cz } });
+                if (typeof this.journalAppend === "function") {
+                    this.journalAppend("reach", "Eine Kreatur sucht Wasser — aber das nächste Ufer ist zu fern.", {
+                        creatures_total: this.state.creatures.length,
+                    });
+                }
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
+            task.args._target = water;
+        }
+        const tx = task.args._target.x;
+        const tz = task.args._target.z;
+        const dx = tx - cx;
+        const dz = tz - cz;
+        const dist = Math.hypot(dx, dz);
+        // Phase 3: am Wasser angekommen → trinken (Pause + Happiness).
+        if (dist <= HALT_DIST) {
+            const now = performance.now() / 1000;
+            if (!task.args._drinkStart) {
+                task.args._drinkStart = now;
+                // Ping zum Drink-Start (multisensorisch — Vision §1.2).
+                if (typeof this._playCreatureTaskPing === "function") {
+                    this._playCreatureTaskPing("drink");
+                }
+            }
+            if (now - task.args._drinkStart >= DURATION_S) {
+                // Trinken vollendet → Happiness + Erinnerung + wander.
+                const idx = this.state.creatures.indexOf(creature);
+                if (idx >= 0) this.state.creatureEmotions[idx] = "happy";
+                this._creatureRemember(creature, "drank", {
+                    at: { x: tx, z: tz },
+                    durationS: DURATION_S,
+                });
+                if (typeof this.journalAppend === "function") {
+                    const cname = (creature.userData && creature.userData.name) || "Kreatur";
+                    this.journalAppend(
+                        "growth",
+                        `${cname} trank am Ufer — das Wasser nährte sie, sie fühlt sich erfrischt.`,
+                        { creatures_total: this.state.creatures.length }
+                    );
+                }
+                this.assignCreatureTask(creature, "wander", {}, { silent: true });
+                return null;
+            }
+            // Pausen-Phase — stehen + leichte Bobbing-Animation läuft eh
+            // weiter via floatOffset im updateCreatures-Pfad.
+            return out.set(0, 0, 0);
+        }
+        // Phase 2: walk Richtung Ziel.
+        const nx = dx / dist;
+        const nz = dz / dist;
+        const speed = SPEED * this._creatureBodySpeedMultiplier(creature);
+        return out.set(nx * speed, 0, nz * speed);
+    }
+
+    // V11.0-d.3 — Ring-Scan für den nächsten Wasser-Punkt um (cx, cz).
+    // Returnt {x, z} oder null. Strategie: 8 Himmelsrichtungen × konzentrische
+    // Ringe in 4-m-Schritten bis radius. Erster Treffer (Spalte nicht über
+    // Wasser = `_isAboveWaterAt` false) gewinnt — kürzeste Distanz first
+    // (vom innersten Ring nach außen).
+    _findNearestWaterPoint(cx, cz, radius) {
+        const STEP = 4;
+        const DIRS = 8;
+        for (let r = STEP; r <= radius; r += STEP) {
+            for (let d = 0; d < DIRS; d++) {
+                const angle = (d / DIRS) * Math.PI * 2;
+                const x = cx + Math.cos(angle) * r;
+                const z = cz + Math.sin(angle) * r;
+                if (!this._isAboveWaterAt(x, z, 0.2)) {
+                    return { x, z };
+                }
+            }
+        }
         return null;
     }
 
@@ -12233,6 +12382,7 @@ class AnazhRealm {
         let wait = 0;
         let gather = 0;
         let build = 0;
+        let drink = 0;
         if (Array.isArray(this.state.creatures)) {
             for (const c of this.state.creatures) {
                 const t = this._getCreatureTask(c);
@@ -12241,6 +12391,7 @@ class AnazhRealm {
                 else if (t.name === "wait") wait++;
                 else if (t.name === "gather") gather++;
                 else if (t.name === "build") build++;
+                else if (t.name === "drink") drink++;
             }
         }
         const parts = [];
@@ -12248,6 +12399,7 @@ class AnazhRealm {
         if (wait > 0) parts.push(`${wait} warten`);
         if (gather > 0) parts.push(`${gather} sammeln`);
         if (build > 0) parts.push(`${build} bauen`);
+        if (drink > 0) parts.push(`${drink} trinken`);
         el.textContent = parts.length ? parts.join(" · ") : "—";
     }
 
@@ -12458,6 +12610,53 @@ class AnazhRealm {
                 }
             }
 
+            // V11.0-d.2 (Pfeiler D — Wasser ↔ Kreaturen, Tiefen-Scheue +
+            // Schwimm-Surface): bei nahe-Spieler-Kreaturen den Wasser-
+            // Kontext (V11.0-d.1) lesen. Zwei Schichten:
+            //   (a) Direction-Bias zum Ufer — NUR bei freiem Wandern
+            //       (wander oder kein Task). Spieler-Aufträge (follow/
+            //       gather/build/wait) sind Welt-Wille, der Bias würde
+            //       sie überschreiben → kein Bias dort.
+            //   (b) Y-Override für Schwimm-Surface — für ALLE Tasks.
+            //       Wenn die Spalte nass + tief ist, schwimmt die
+            //       Kreatur knapp unter dem Wasser-Spiegel statt am
+            //       See-Boden zu sitzen (das wäre ertrinken).
+            // Distance-LOD <50 m vom Spieler (V9.84 Perf-1.e-Lehre): wer's
+            // nicht sieht, braucht keinen Per-Frame-Wasser-Lookup. Bei
+            // 120 Kreaturen typisch 20-40 nah, davon meist alle an Land
+            // (Helper-early-Out, < 1 µs/Call), wenige im Wasser kosten
+            // den 16-Sample-Scan (~30 µs/Call) = vernachlässigbar.
+            let waterSurface = null;
+            // V11.0-d.2.fix — XZ-Distanz statt 3D (Welt-Variations-Flakiness-
+            // Heilung). Original rechnete `distanceToSquared(playerPos)` voll-
+            // 3D. Bei flachen Welten ≈ XZ, aber in Voxel-Welt mit hoher Y-
+            // Variation (Spieler auf Berg 100m, Kreatur am See-Boden -3m =
+            // Δy²=10609) übersteigt die Y-Differenz allein die 2500-Schwelle,
+            // selbst wenn der Spieler horizontal direkt daneben ist. Resultat
+            // war: Y-Override greift in einem Lauf, im nächsten nicht (PRNG-
+            // abhängig wo der Spieler-spawn landet). XZ-Distanz ist außerdem
+            // semantisch korrekter: die V9.84-Perf-1.e-Distance-LOD-Lehre ist
+            // „sichtbare horizontale Nähe", nicht 3D-Kugel — der Spieler sieht
+            // eine Kreatur die seitlich 30 m entfernt ist, unabhängig von y.
+            const dxToPlayer = creature.position.x - playerPos.x;
+            const dzToPlayer = creature.position.z - playerPos.z;
+            const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
+            if (distSqToPlayer < 2500) {
+                const wctx = this._creatureWaterContextAt(creature);
+                if (wctx.inWater) {
+                    if (wctx.depthBelow > 1.5 && wctx.shoreDir && (!task || task.name === "wander")) {
+                        // shoreDir ist Kardinal-Vector3 (±1 oder 0) — keine
+                        // normalize() nötig. Bias 1.5× Speed gibt Tiefe-Scheue
+                        // klare Vorrang ohne Schwarm-Bewegung zu zerstören.
+                        direction.x += wctx.shoreDir.x * speed * 1.5;
+                        direction.z += wctx.shoreDir.z * speed * 1.5;
+                    }
+                    if (wctx.depthBelow > 0.5) {
+                        waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
+                    }
+                }
+            }
+
             if (hasHit) {
                 direction.x += (Math.random() - 0.5) * 2;
                 direction.z += (Math.random() - 0.5) * 2;
@@ -12476,7 +12675,11 @@ class AnazhRealm {
             // Eine Funktion, alle Höhen-Konsumenten — die Phase-5b-Disziplin
             // ehrlich abgeschlossen.
             const terrainHeight = this.getTerrainHeightAt(creature.position.x, creature.position.z);
-            const baseY = terrainHeight + 0.5;
+            // V11.0-d.2 — wenn die Spalte nass + tief ist, schwebt die Kreatur
+            // 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface, sichtbar als
+            // halb-eingetaucht). Sonst sitzt sie wie bisher 0.5 m über dem
+            // Terrain (V8.49-Floating-Animation-Anker).
+            const baseY = waterSurface !== null ? waterSurface - 0.3 : terrainHeight + 0.5;
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             creature.position.y = baseY + floatOffset;
             // V9.84 Perf-1.e — Visual-Updates (Aura-Position, Carrying-Sprite-
@@ -18020,6 +18223,79 @@ class AnazhRealm {
         return surfaceY > waterY + marge;
     }
 
+    // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — eine Wahrheits-
+    // Quelle für jede Kreatur-Wasser-Frage. Vor V11.0-d hatten Kreaturen NULL
+    // Verständnis von der Hydrosphäre: sie marschierten durch Seen, kannten
+    // kein Ufer, ertranken sinnlos in Tiefe. Mit diesem Helper fängt das
+    // Welt-Atmen zwischen Kreatur und Wasser an — D.2 nutzt ihn für Tiefen-
+    // Scheue + Schwimm-Bias, D.3 für den `drink`-Task.
+    //
+    // Returnt:
+    //   - inWater: boolean — die Spalte AN DIESER POSITION ist nass
+    //     (Boden liegt unter Wasser-Spiegel). Welt-Wahrheit aus Atlas,
+    //     unabhängig von der Kreatur-y.
+    //   - depthBelow: number — Wasser-Tiefe an der Spalte (waterY − surfaceY).
+    //     ≤ 0 wenn surface über Wasser. 0 an der Uferlinie.
+    //   - submerged: boolean — die Kreatur-y < waterY (sie schwebt/schwimmt
+    //     im Wasser-Volumen, nicht nur über nasser Spalte).
+    //   - distToShore: number — geschätzte XZ-Distanz zur nächsten Land-Cell
+    //     in 4 Himmelsrichtungen (Cap 12m). Infinity wenn Mitte-Ozean.
+    //   - shoreDir: THREE.Vector3 | null — normalisierter XZ-Vektor RICHTUNG
+    //     Ufer (für D.2 Bias). null wenn kein Ufer in Reichweite.
+    //
+    // Performance: bei Land-Kreatur frühes Out (inWater=false skipt 16 Land-
+    // Scans). Bei nasser Spalte ≤16 _isAboveWaterAt-Calls = 16 × O(see=9)
+    // ≈ 144 Float-Compares. Deutlich unter 100µs im Browser. D.2 wird zudem
+    // Distance-LOD (nur für Kreaturen <50m vom Spieler) anwenden — der Test-
+    // Band misst die Per-Call-Cost separat.
+    _creatureWaterContextAt(creature) {
+        const x = creature.position.x;
+        const z = creature.position.z;
+        const cy = creature.position.y;
+        const surfaceY = this._voxelSurfaceY(x, z);
+        const waterY = this._waterLevelAt(x, z);
+        const surfY = surfaceY === null || !Number.isFinite(surfaceY) ? cy : surfaceY;
+        const depthBelow = waterY - surfY;
+        const inWater = depthBelow > 0;
+        const submerged = cy < waterY - 0.1;
+        if (!inWater) {
+            return { inWater: false, depthBelow, submerged, distToShore: 0, shoreDir: null };
+        }
+        // 4-Himmelsrichtungs-Scan für nächste Land-Cell. Pro Richtung in 3-m-
+        // Schritten bis 12 m (4 Samples pro Richtung × 4 = 16 worst case).
+        // Erste Treffer-Richtung gewinnt; gleichweit-Treffer würden hier
+        // strict Ost/West-Bias bekommen — egal, der Bias ist hilfreich,
+        // jede Richtung führt aus dem Wasser.
+        const STEP = 3;
+        const MAX = 12;
+        let bestDist = Infinity;
+        let bestDx = 0;
+        let bestDz = 0;
+        // dx/dz-Paare inline statt Array-Iteration (eine Allokation gespart).
+        for (let d = 0; d < 4; d++) {
+            const dx = d === 0 ? 1 : d === 1 ? -1 : 0;
+            const dz = d === 2 ? 1 : d === 3 ? -1 : 0;
+            for (let step = STEP; step <= MAX; step += STEP) {
+                if (this._isAboveWaterAt(x + dx * step, z + dz * step, 0.1)) {
+                    if (step < bestDist) {
+                        bestDist = step;
+                        bestDx = dx;
+                        bestDz = dz;
+                    }
+                    break;
+                }
+            }
+        }
+        if (!Number.isFinite(bestDist)) {
+            return { inWater: true, depthBelow, submerged, distToShore: Infinity, shoreDir: null };
+        }
+        const shoreDir = new THREE.Vector3(bestDx, 0, bestDz);
+        // bestDx/bestDz ist immer entweder ±1 oder 0 (Kardinal-Richtung) —
+        // Länge ist genau 1, normalize() wäre tautologisch, hier explizit
+        // für Code-Klarheit: Caller darf nicht über Magnitude überraschen.
+        return { inWater: true, depthBelow, submerged, distToShore: bestDist, shoreDir };
+    }
+
     // V9.65 (Welle A.2) / V9.75 (Welle C.4+5) — Solid-Klassifikation für
     // Architektur-Parts. Die Regel ist UNIVERSELL: jede solide Geometrie
     // blockiert Wasser, der `damm`-Bauplan ist eine ANWENDUNG, kein Spezial-
@@ -19278,6 +19554,106 @@ class AnazhRealm {
     }
 
     // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
+    // V11.0-a (Pool-Foundation) — gibt ein InstancedMesh aus dem Pool ODER
+    // allokiert neu wenn leer. Foundation-Phase: noch nicht im Build-Pfad
+    // verdrahtet (V11.0-b liefert die Verdrahtung). Hier nur die saubere
+    // API + Test-Hook. Voraussetzung: `_grassConeGeometry` und
+    // `_grassInstanceMat()` sind lazy initialisiert (passiert beim ersten
+    // Build-Pfad-Aufruf, also in der typischen Welt-Lifetime sicher da).
+    // Defensive: wenn Geometry/Material noch nicht initialisiert, returnt
+    // null — der Aufrufer fällt auf den klassischen `new InstancedMesh`-
+    // Pfad zurück (V10.0-j.j-Pattern).
+    _acquireGrassMesh() {
+        if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
+        const pool = this.state._grassMeshPool;
+        const GRASS_MAX_BLADES = 256;
+        if (pool.length > 0) {
+            const mesh = pool.pop();
+            mesh.visible = true;
+            mesh.count = 0; // Caller wird via setMatrixAt + count neu beschreiben
+            // V11.0-d.fix.gras-2 (Schöpfer-Browser-Audit-Wurzel: „im ersten
+            // Chunk Halme, alle weiteren nicht") — frischer instanceMatrix-
+            // Buffer beim Pool-Recycle. Three.js v160's WebGPU-Backend hat
+            // stale-Buffer-Cache-Issues beim Mesh-Re-Use (StaticDrawUsage
+            // triggert per-version-bump-writeBuffer NICHT zuverlässig wenn
+            // derselbe Mesh re-rendert wird mit neuen Daten — der vorherige
+            // Frame's Daten bleiben gebunden, neue Positionen werden NICHT
+            // hochgeladen → recycled Chunks rendern an alter Welt-Position
+            // (außerhalb Sichtfeld) → unsichtbar). Heilung: Mesh-Objekt +
+            // Geometry-Singleton + Material-Singleton bleiben recycled (Pool-
+            // Vorteil), aber instanceMatrix.array wird frisch allokiert pro
+            // acquire. 16 KB × Pool-Aktivität — der echte Pool-Gewinn ist
+            // erhalten (kein new InstancedMesh, kein neuer Geometry-Buffer,
+            // kein neues Material). Vendor-Race strukturell weg.
+            mesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(GRASS_MAX_BLADES * 16), 16);
+            return mesh;
+        }
+        // Pool leer — neue Instanz allokieren. Voraussetzungen prüfen.
+        if (!this.state._grassConeGeometry || typeof this._grassInstanceMat !== "function") {
+            return null;
+        }
+        const mat = this._grassInstanceMat();
+        if (!mat) return null;
+        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, mat, GRASS_MAX_BLADES);
+        // Three.js' InstancedMesh-Constructor defaultet count=maxCount → wir
+        // setzen explizit auf 0 (Caller wird via setMatrixAt + count neu
+        // beschreiben). Visible-Default ist true — passt zur acquire-Semantik.
+        inst.count = 0;
+        inst.castShadow = false;
+        inst.receiveShadow = false;
+        return inst;
+    }
+
+    // V11.0-a — gibt ein InstancedMesh zurück an den Pool. Pool-Cap-Disziplin:
+    // wenn ≥ GRASS_POOL_CAP, ältestes Mesh (FIFO am Anfang) wird ECHT
+    // disposed (geometry NICHT — die ist Singleton, geteilt zwischen allen
+    // Pool-Meshes — nur die instanceMatrix-Buffer des verworfenen Mesh werden
+    // freigegeben). Der Spieler-bei-Welt-Reise-Snowball ist damit bounded.
+    _releaseGrassMesh(mesh) {
+        if (!mesh) return;
+        if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
+        const pool = this.state._grassMeshPool;
+        if (this.state.scene) this.state.scene.remove(mesh);
+        mesh.visible = false;
+        mesh.count = 0;
+        const cap = AnazhRealm.GRASS_POOL_CAP;
+        if (pool.length >= cap) {
+            // LRU-Discard: ältestes Mesh raus, echtes dispose des Instance-
+            // Buffers (geometry bleibt, Singleton). instanceMatrix.array ist
+            // ein typedarray pro Mesh — wird mit dem Mesh garbagecollected
+            // wenn keine Refs mehr. Three.js' InstancedMesh hat keinen
+            // dedizierten dispose() für instanceMatrix; das Mesh-Objekt
+            // selbst freizugeben reicht. Material ist Singleton (V9.84
+            // Perf-1.a) — nicht disposen.
+            const oldest = pool.shift();
+            if (oldest && oldest.instanceMatrix && typeof oldest.instanceMatrix.array !== "undefined") {
+                // Defensive: explizit Array-Ref killen damit GC schneller frei wird.
+                oldest.instanceMatrix.array = null;
+            }
+        }
+        pool.push(mesh);
+    }
+
+    // V11.0-a — räumt den Pool vollständig (echtes dispose aller Meshes +
+    // Instance-Buffer-Freigabe). Wird beim Welt-Wechsel + Reload gerufen.
+    // Geometry-Singleton bleibt (von außen geteilt, eigene Cleanup-Disziplin).
+    _drainGrassMeshPool() {
+        // Pool lazy initialisieren falls noch nicht da — semantisch „leer"
+        // bleibt true. Test-deterministisch + sicher gegen frühen Aufruf.
+        if (!this.state._grassMeshPool) {
+            this.state._grassMeshPool = [];
+            return;
+        }
+        const pool = this.state._grassMeshPool;
+        for (const mesh of pool) {
+            if (this.state.scene && mesh.parent) this.state.scene.remove(mesh);
+            if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
+                mesh.instanceMatrix.array = null;
+            }
+        }
+        pool.length = 0;
+    }
+
     // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
     // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
     // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
@@ -19345,26 +19721,33 @@ class AnazhRealm {
             geo.translate(0, 0.425, 0);
             this.state._grassConeGeometry = geo;
         }
-        const geo = this.state._grassConeGeometry;
-        // V10.0-j.c — Uniform-Capacity-Pattern (Profi-Vorbild Genshin/BotW).
-        // V10.0-j.b's `material.clone()`-Pfad reichte NICHT: Three.js'
-        // RenderObject.getMaterialCacheKey (RenderObject.js Z113-128)
-        // serialisiert Material-Properties mit `typeof value === 'object'
-        // → '{}'` → Tree-Knoten-Referenzen sind unsichtbar im Cache-Key,
-        // zwei Material-Clones mit identischen Properties haben IDENTISCHE
-        // Cache-Keys → Pipeline-Cache teilt den Vertex-Buffer-Binding-Slot
-        // zwischen Chunks → kleinster instanceMatrix-Buffer wird gebunden,
-        // größere Chunks crashen mit „Instance range requires larger buffer".
-        // **Profi-Heilung**: alle Gras-InstancedMeshes mit UNIFORM Capacity
-        // allokieren (GRASS_MAX_BLADES=256). Bound-Buffer ist konstant pro
-        // Pipeline-Cache → kein Mismatch. `inst.count = blades.length` für
-        // die DrawIndexed-Iteration (echte Render-Count). Cap auf 256 falls
-        // ein Chunk extreme blade-Density hätte (typisch 50-200 blades).
-        // Material-Singleton (V9.84 Perf-1.a) bleibt erhalten. Cost: 256 ×
-        // 64 bytes × ~30 Chunks = ~500 KB GPU-Heap, vernachlässigbar.
+        // V11.0-b (Mesh-Pool aktiv im Build-Pfad) — wir holen ein
+        // InstancedMesh aus dem Pool (oder allokieren neu wenn leer)
+        // statt jedes Mal `new THREE.InstancedMesh` zu rufen. Pool-Identity
+        // ist garantiert (V11.0-a-Test): bei wiederholtem Streaming +
+        // Despawn der gleichen Welt-Region poppt der Pool dieselben
+        // Mesh-Objekte raus, instanceMatrix wird neu beschrieben —
+        // kein neuer Buffer, kein Race-Risiko.
+        // V10.0-j.c-Uniform-Capacity-Pattern bleibt: GRASS_MAX_BLADES=256
+        // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
+        // Mismatch zwischen Chunks. inst.count = realCount für die
+        // DrawIndexed-Iteration (echte Render-Count).
         const GRASS_MAX_BLADES = 256;
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
-        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), GRASS_MAX_BLADES);
+        // V11.0-d.fix.gras3 — Pool-Pfad TEMPORÄR abgeklemmt nach Schöpfer-
+        // Browser-Audit-Befund („immernoch gleich, im ersten Chunk Halme,
+        // weitere nicht"). Drei Heilungs-Hypothesen (gras1 Bounding-Reset,
+        // gras2 frischer instanceMatrix-Buffer) haben nicht gegriffen — der
+        // Bug ist tiefer als ein einzelner stale-Cache. Three.js v160's
+        // WebGPU-Backend hat strukturelle Issues beim Mesh-Re-Use die OHNE
+        // r184-Vendor-Upgrade nicht voll heilbar sind (V12-Plan). EHRLICHER
+        // Zwischenstand bis V12.0-d: zurück auf V10.0-j.j-Workaround-Pattern
+        // (neuer InstancedMesh pro Chunk, Memory-Trade akzeptieren). Pool-
+        // API (`_acquireGrassMesh`/`_releaseGrassMesh`/`_drainGrassMeshPool`)
+        // BLEIBT im Code für V12-Refactor (33 Test-Invarianten grün, ehrliche
+        // Vorarbeit). Sobald V12.0-vendor r184 trägt + V12.0-d echtes
+        // Recycling beweist, wird der Pool-Pfad wieder aktiviert.
+        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
         // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
@@ -19399,6 +19782,23 @@ class AnazhRealm {
         inst.instanceMatrix.needsUpdate = true;
         inst.castShadow = false;
         inst.receiveShadow = false;
+        // V11.0-d.fix.gras (27.05.2026, Schöpfer-Browser-Audit-Wurzel) — beim
+        // Pool-Recycle hat das Mesh noch den `boundingSphere`-Cache vom alten
+        // Chunk (Position X1/Z1). instanceMatrix wird neu beschrieben mit
+        // Position X2/Z2, aber Three.js' frustum-Culling liest die alte
+        // Sphere → cullt das Mesh fälschlich raus → KEIN GRAS sichtbar.
+        // Heilung: nach setMatrixAt-Loop computeBoundingSphere() neu rufen.
+        // Plus: instanceMatrix.computeBoundingSphere() für die InstancedMesh-
+        // spezifische Bounding-Berechnung (Three.js prüft `instanceMatrix.
+        // boundingSphere` im InstancedMesh-Frustum-Test). Beide null-setzen
+        // erzwingt Re-Compute beim nächsten Render.
+        if (inst.geometry && inst.geometry.boundingSphere === null) {
+            inst.geometry.computeBoundingSphere();
+        }
+        inst.boundingBox = null;
+        inst.boundingSphere = null;
+        if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
+        if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
         this.state.scene.add(inst);
         this.state.voxelChunkGrass.set(key, inst);
     }
@@ -19407,21 +19807,16 @@ class AnazhRealm {
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
+            // V11.0-d.fix.gras3 — Pool-Pfad temporär abgeklemmt. Zurück auf
+            // V10.0-j.j-Workaround: scene.remove, Geometry NICHT disposen
+            // (Three.js v160-WebGPU-Buffer-Lifecycle-Race). ~500 KB GPU-Heap
+            // pro Welt-Lebensdauer akzeptiert als Memory-Trade bis V12.0-d
+            // (r184-Upgrade) den Race strukturell heilt. Pool-API
+            // (`_releaseGrassMesh`) wird hier NICHT mehr gerufen, weil Pool-
+            // Recycling in v160 visuell broken (siehe `_buildVoxelChunkGrass`
+            // V11.0-d.fix.gras3-Kommentar). Pool-Code bleibt im Stamm als
+            // V12-Vorarbeit, aber im Lifecycle deaktiviert.
             if (this.state.scene) this.state.scene.remove(grass);
-            // V10.0-j.j — Geometry NICHT disposen. Three.js v160's WebGPU-
-            // Backend hat einen subtilen Lifecycle-Bug zwischen InstancedMesh-
-            // Geometry-Dispose und der Pipeline-Cache-Bind-Group: nach scene.
-            // remove + queueDispose-defer triggert irgendwo per-Frame ein
-            // writeBuffer(16384 bytes) auf den disposed instanceMatrix-Buffer
-            // (256 instances × 64 bytes = 16384). Neun Sub-Wellen (V10.0-j.a
-            // bis V10.0-j.i) haben den Race nicht voll geheilt. Profi-Pattern
-            // (Genshin/BotW): Mesh-Memory akzeptieren statt Race-Crashes.
-            // Geometry bleibt allokiert (ConeGeometry ~108 Bytes × 30 Chunks
-            // Lebensdauer = 3 KB Heap — vernachlässigbar) + instanceMatrix-
-            // Buffer (16 KB × 30 = ~500 KB GPU-Heap, ebenfalls vernachlässigbar).
-            // Bei Welt-Wechsel räumt der Reload alles. EHRLICH ist's: V10.0-j.i
-            // hat den setUsage-Trigger geheilt, aber ein verbleibender Three.js-
-            // Bug bleibt nicht-workaroundbar ohne Mesh-Pool-Refactor (V11-Backlog).
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -32218,6 +32613,8 @@ class AnazhRealm {
             } else if (taskName === "build") {
                 const bp = task && task.args && task.args.blueprint;
                 taskEl.textContent = bp ? `baut ${bp}` : "baut";
+            } else if (taskName === "drink") {
+                taskEl.textContent = "trinkt am Ufer";
             } else {
                 taskEl.textContent = "—";
             }
@@ -39900,7 +40297,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "10.0-j";
+AnazhRealm.VERSION = "11.0-d.fix.gras3";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

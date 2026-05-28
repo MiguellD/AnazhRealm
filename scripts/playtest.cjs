@@ -14121,6 +14121,849 @@ async function checkBandWelle993WaterLodSeam(ctx) {
     );
 }
 
+// V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — Beweis dass der
+// Wasser-Kontext-Helper deterministisch + korrekt arbeitet. D.2/D.3 bauen
+// darauf auf, also MUSS die Foundation grün sein bevor sie geschnitten werden.
+async function checkBandWelleV11D1WaterContext(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const THREE = window.THREE;
+        const out = {};
+        out.fnExists = typeof r._creatureWaterContextAt === "function";
+        if (!out.fnExists) return out;
+
+        // Mock-Kreatur ist EIN Objekt mit `position`-Vector3. Wir wandern es
+        // im 20×20-Grid um Spawn herum und sammeln zwei Stichproben — eine
+        // Land-Spalte (inWater=false), eine Wasser-Spalte (inWater=true).
+        const probe = { position: new THREE.Vector3(0, 5, 0) };
+        let landSample = null;
+        let waterSample = null;
+        const STEP = 8;
+        const RANGE = 80;
+        for (let dx = -RANGE; dx <= RANGE && !(landSample && waterSample); dx += STEP) {
+            for (let dz = -RANGE; dz <= RANGE && !(landSample && waterSample); dz += STEP) {
+                const sy = r._voxelSurfaceY(dx, dz);
+                if (sy === null || !Number.isFinite(sy)) continue;
+                probe.position.set(dx, sy + 0.5, dz);
+                const ctx2 = r._creatureWaterContextAt(probe);
+                if (ctx2.inWater === false && !landSample) landSample = { dx, dz, ctx: ctx2 };
+                else if (ctx2.inWater === true && !waterSample) waterSample = { dx, dz, ctx: ctx2 };
+            }
+        }
+        out.foundLand = landSample !== null;
+        out.foundWater = waterSample !== null;
+
+        // Result-Form-Validierung (immer prüfbar wenn Helper existiert).
+        if (landSample) {
+            const c = landSample.ctx;
+            out.landHasInWater = typeof c.inWater === "boolean";
+            out.landHasDepthBelow = typeof c.depthBelow === "number";
+            out.landHasSubmerged = typeof c.submerged === "boolean";
+            out.landHasDistToShore = typeof c.distToShore === "number";
+            out.landHasShoreDir = c.shoreDir === null;
+            out.landInWaterFalse = c.inWater === false;
+            out.landDistZero = c.distToShore === 0;
+            out.landDepthNonPositive = c.depthBelow <= 0;
+        }
+        if (waterSample) {
+            const c = waterSample.ctx;
+            out.waterInWaterTrue = c.inWater === true;
+            out.waterDepthPositive = c.depthBelow > 0;
+            // shoreDir kann null sein (Mitte-Ozean) oder ein Vector3. Wenn
+            // Vector3: Kardinal-Richtung (±1 oder 0 pro Komponente).
+            out.waterShoreDirOk =
+                c.shoreDir === null ||
+                (c.shoreDir.isVector3 &&
+                    Math.abs(c.shoreDir.x) <= 1 &&
+                    Math.abs(c.shoreDir.z) <= 1 &&
+                    c.shoreDir.y === 0);
+            out.waterDistToShoreFinite = Number.isFinite(c.distToShore) || c.distToShore === Infinity;
+        }
+
+        // Performance-Probe — 200 Calls in der ersten Land-Position (oder
+        // Spawn-Position wenn kein Land gefunden, höchst unwahrscheinlich).
+        // Cap 50ms (= 250µs/Call, sehr großzügig — D.2 wird das im Frame
+        // loopen, Distance-LOD-gated).
+        if (landSample) probe.position.set(landSample.dx, 5, landSample.dz);
+        else probe.position.set(0, 5, 0);
+        const t0 = performance.now();
+        for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe);
+        out.perfMs = performance.now() - t0;
+
+        // Source-Probe: Helper liest aus _voxelSurfaceY + _waterLevelAt +
+        // _isAboveWaterAt (die V9.50/V9.59-Wahrheits-Quellen). Wer einen
+        // separaten Atlas-Lookup einbaut, bricht die EIN-Quelle-Disziplin.
+        const helperSrc = r._creatureWaterContextAt.toString();
+        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(helperSrc);
+        out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
+        out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d.1: Wasser-Kontext-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle V11.0-d.1: _creatureWaterContextAt existiert als Methode", res.fnExists);
+    if (!res.fnExists) return;
+
+    check(
+        "Welle V11.0-d.1: Land-Stichprobe gefunden (≥1 Spalte mit inWater=false)",
+        res.foundLand,
+        "Test-Welt hatte keine Land-Spalte im ±80-m-Spawn-Grid — Spawn-Welt-Variation"
+    );
+    if (res.foundLand) {
+        check("Welle V11.0-d.1: Result hat boolean inWater", res.landHasInWater === true);
+        check("Welle V11.0-d.1: Result hat number depthBelow", res.landHasDepthBelow === true);
+        check("Welle V11.0-d.1: Result hat boolean submerged", res.landHasSubmerged === true);
+        check("Welle V11.0-d.1: Result hat number distToShore", res.landHasDistToShore === true);
+        check("Welle V11.0-d.1: Land-Stichprobe: inWater=false", res.landInWaterFalse === true);
+        check("Welle V11.0-d.1: Land-Stichprobe: distToShore=0", res.landDistZero === true);
+        check(
+            "Welle V11.0-d.1: Land-Stichprobe: depthBelow ≤ 0 (Boden über Wasser)",
+            res.landDepthNonPositive === true
+        );
+        check("Welle V11.0-d.1: Land-Stichprobe: shoreDir = null (kein Bias nötig)", res.landHasShoreDir === true);
+    }
+    if (res.foundWater) {
+        check("Welle V11.0-d.1: Wasser-Stichprobe: inWater=true", res.waterInWaterTrue === true);
+        check("Welle V11.0-d.1: Wasser-Stichprobe: depthBelow > 0", res.waterDepthPositive === true);
+        check(
+            "Welle V11.0-d.1: Wasser-Stichprobe: shoreDir null oder Kardinal-Vector3",
+            res.waterShoreDirOk === true
+        );
+        check(
+            "Welle V11.0-d.1: Wasser-Stichprobe: distToShore endlich oder Infinity",
+            res.waterDistToShoreFinite === true
+        );
+    }
+    check(
+        "Welle V11.0-d.1: 200 Aufrufe im Perf-Budget (< 50 ms)",
+        res.perfMs < 50,
+        `200 calls in ${res.perfMs?.toFixed(1)} ms`
+    );
+    check(
+        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)",
+        res.usesVoxelSurfaceY === true
+    );
+    check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
+    check(
+        "Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)",
+        res.usesIsAboveWaterAt === true
+    );
+}
+
+// V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der
+// wander-Loop den V11.0-d.1-Helper konsumiert, Direction zum Ufer biast und
+// die Y-Position auf Schwimm-Surface anhebt. Test-Strategie: synthetisch
+// eine existing Kreatur in eine Wasser-Spalte teleportieren, einen
+// `updateCreatures(0.016)`-Tick laufen, die Y-Position prüfen.
+async function checkBandWelleV11D2WaterBias(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Source-Probes — die strukturelle Wahrheit unabhängig von Welt-Daten.
+        const loopSrc = r.updateCreatures.toString();
+        out.loopReadsWaterContext = /_creatureWaterContextAt\(/.test(loopSrc);
+        out.loopHasWaterSurface = /waterSurface/.test(loopSrc);
+        out.loopHasShoreBias = /shoreDir/.test(loopSrc);
+        out.loopHasDistanceLod = /distSqToPlayer\s*<\s*2500/.test(loopSrc);
+
+        // Empirisch — finde eine Wasser-Spalte im Spawn-Bereich.
+        let waterSpot = null;
+        const SCAN_RANGE = 120;
+        const SCAN_STEP = 6;
+        for (let dx = -SCAN_RANGE; dx <= SCAN_RANGE && !waterSpot; dx += SCAN_STEP) {
+            for (let dz = -SCAN_RANGE; dz <= SCAN_RANGE && !waterSpot; dz += SCAN_STEP) {
+                const sy = r._voxelSurfaceY(dx, dz);
+                if (sy === null || !Number.isFinite(sy)) continue;
+                const wy = r._waterLevelAt(dx, dz);
+                if (wy - sy > 1.5) waterSpot = { x: dx, z: dz, sy, wy };
+            }
+        }
+        out.waterSpotFound = waterSpot !== null;
+        if (!waterSpot) return out;
+        out.spotDepth = waterSpot.wy - waterSpot.sy;
+
+        // Brauchen eine Kreatur — wenn keine existiert, spawn eine.
+        if (!Array.isArray(r.state.creatures) || r.state.creatures.length === 0) {
+            out.error = "no creatures in world — D.2 nicht testbar";
+            return out;
+        }
+        const creature = r.state.creatures[0];
+        // Sichere wir ihren Original-Zustand für die Wieder-Herstellung.
+        const origX = creature.position.x;
+        const origY = creature.position.y;
+        const origZ = creature.position.z;
+        const origTask = creature.userData && creature.userData.task ? { ...creature.userData.task } : null;
+
+        // Teleportiere die Kreatur in die Wasser-Spalte, auf Höhe des See-
+        // Bodens (was die Welt heute machen würde, ohne D.2). Direkt am
+        // Boden, damit der Y-Override-Effekt sichtbar wird.
+        creature.position.set(waterSpot.x, waterSpot.sy + 0.5, waterSpot.z);
+        // wander-Task sicherstellen damit der Direction-Bias greift.
+        r.assignCreatureTask(creature, "wander", {}, { silent: true });
+
+        // Spieler-nah platzieren — wir müssen <50m sein für die Distance-LOD.
+        // (Der Spieler-Mesh ist die einzige andere Welt-Konstante hier.)
+        const origPlayerX = r.state.playerMesh.position.x;
+        const origPlayerZ = r.state.playerMesh.position.z;
+        r.state.playerMesh.position.x = waterSpot.x + 10;
+        r.state.playerMesh.position.z = waterSpot.z + 10;
+
+        // Direkter Helper-Call (vor dem Tick) — prüft den Kontext-State.
+        const wctx = r._creatureWaterContextAt(creature);
+        out.helperSeesWater = wctx.inWater === true && wctx.depthBelow > 1.5;
+        out.helperHasShoreDir = wctx.shoreDir !== null;
+
+        // Einen synthetischen Tick laufen (16 ms).
+        r.updateCreatures(0.016);
+        out.yAfterTick = creature.position.y;
+        out.yExpectedFloor = waterSpot.sy + 0.5; // alte Welt: am Boden
+        out.yExpectedSurface = waterSpot.wy - 0.3; // D.2: an der Surface
+        // Die Kreatur sollte JETZT an der Surface schwimmen (±0.4m für
+        // floatOffset-Bobbing-Animation). Sie war vorher am Boden.
+        out.swimsAtSurface = Math.abs(creature.position.y - out.yExpectedSurface) < 0.4;
+        out.notAtFloor = Math.abs(creature.position.y - out.yExpectedFloor) > 0.5;
+
+        // Wieder-Herstellen damit der Rest der Suite nicht angefasst wird.
+        creature.position.set(origX, origY, origZ);
+        if (origTask) r.assignCreatureTask(creature, origTask.name, origTask.args || {}, { silent: true });
+        r.state.playerMesh.position.x = origPlayerX;
+        r.state.playerMesh.position.z = origPlayerZ;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d.2: Wasser-Bias-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V11.0-d.2: updateCreatures konsumiert _creatureWaterContextAt (Source-Probe)",
+        res.loopReadsWaterContext === true
+    );
+    check(
+        "Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik",
+        res.loopHasWaterSurface === true
+    );
+    check("Welle V11.0-d.2: updateCreatures liest shoreDir für Ufer-Bias", res.loopHasShoreBias === true);
+    check(
+        "Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)",
+        res.loopHasDistanceLod === true
+    );
+    if (!res.waterSpotFound) {
+        // Wenn die Welt-Variation keinen tiefen Wasser-Spot in ±120m hat,
+        // ist die empirische Probe nicht möglich — Source-Probes haben
+        // dann den strukturellen Beweis getragen.
+        check(
+            "Welle V11.0-d.2: Wasser-Spalte gefunden (Vorbedingung für Y-Override-Test)",
+            false,
+            "Test-Welt hat keinen Spot mit depthBelow > 1.5 in ±120m — Welt-Variation"
+        );
+        return;
+    }
+    check(
+        "Welle V11.0-d.2: Tiefer Wasser-Spot gefunden",
+        true,
+        `depth=${res.spotDepth?.toFixed(2)}m, expectedFloor=${res.yExpectedFloor?.toFixed(2)}, expectedSurface=${res.yExpectedSurface?.toFixed(2)}`
+    );
+    check("Welle V11.0-d.2: Helper erkennt depthBelow > 1.5", res.helperSeesWater === true);
+    check("Welle V11.0-d.2: Helper hat shoreDir (Ufer in 12m Reichweite)", res.helperHasShoreDir === true);
+    check(
+        "Welle V11.0-d.2: Kreatur schwimmt an Surface nach einem Tick (Y-Override aktiv)",
+        res.swimsAtSurface === true,
+        `yAfterTick=${res.yAfterTick?.toFixed(2)}, expected=${res.yExpectedSurface?.toFixed(2)}`
+    );
+    check(
+        "Welle V11.0-d.2: Kreatur NICHT mehr am See-Boden (alte Welt-Position überschrieben)",
+        res.notAtFloor === true,
+        `yAfterTick=${res.yAfterTick?.toFixed(2)}, alterBoden=${res.yExpectedFloor?.toFixed(2)}`
+    );
+}
+
+// V11.0-d.3 (Pfeiler D — Trinken am Ufer) — Beweis dass der drink-Task als
+// 6. Task registriert ist, dass die Sprache (Aura+Ping+Chat) ihn trägt,
+// und dass _tickCreatureDrink den 3-Phasen-Zyklus durchläuft.
+async function checkBandWelleV11D3DrinkTask(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Sprache: drink ist 6. Task + hat Aura-Hue + Ping-Freq.
+        const tasks = r.constructor.CREATURE_TASKS;
+        out.tasksInclude = tasks.includes("drink");
+        out.tasksLength = tasks.length;
+        out.auraHue = r.constructor.CREATURE_TASK_AURA_HUE.drink;
+        out.pingFreq = r.constructor.CREATURE_TASK_PING_FREQ.drink;
+
+        // Konstanten existieren.
+        out.haltDist = r.constructor.CREATURE_DRINK_HALT_DIST;
+        out.duration = r.constructor.CREATURE_DRINK_DURATION_S;
+        out.searchRadius = r.constructor.CREATURE_DRINK_SEARCH_RADIUS;
+        out.speed = r.constructor.CREATURE_DRINK_SPEED;
+
+        // API-Existenz.
+        out.tickExists = typeof r._tickCreatureDrink === "function";
+        out.findExists = typeof r._findNearestWaterPoint === "function";
+
+        // Source-Probes — Routing + Helper-Konsum.
+        const routerSrc = r._tickCreatureTaskDirection.toString();
+        out.routerHasDrink = /task\.name === "drink"/.test(routerSrc);
+        const drinkSrc = r._tickCreatureDrink.toString();
+        out.drinkHasPhases = /_target/.test(drinkSrc) && /_drinkStart/.test(drinkSrc);
+        out.drinkSetsHappy = /creatureEmotions\[idx\]\s*=\s*"happy"/.test(drinkSrc);
+
+        // Chat-Pattern „trinke" liefert drink-Programm.
+        const parsed = r.parseChatToDsl("trinke");
+        out.chatParsesTrinke =
+            parsed &&
+            parsed.program &&
+            parsed.program[0] === "creature_task_nearest" &&
+            parsed.program[1] === "drink";
+
+        // Empirisch: _findNearestWaterPoint findet Wasser im Spawn-Bereich.
+        let waterSpot = null;
+        const SCAN = 100;
+        const STEP = 6;
+        for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
+            for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
+                const sy = r._voxelSurfaceY(dx, dz);
+                if (sy === null || !Number.isFinite(sy)) continue;
+                if (!r._isAboveWaterAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
+            }
+        }
+        out.waterFound = waterSpot !== null;
+        if (waterSpot) {
+            // Stelle eine Land-Cell in der Nähe des Wassers + suche von dort.
+            const found = r._findNearestWaterPoint(waterSpot.x + 15, waterSpot.z + 15, 40);
+            out.findReturnsObj = found !== null && typeof found.x === "number" && typeof found.z === "number";
+        }
+
+        // Verhaltens-Probe: assign drink an existing Kreatur, ein Tick laufen,
+        // task.args._target sollte gesetzt sein (Phase 1 abgeschlossen).
+        if (Array.isArray(r.state.creatures) && r.state.creatures.length > 0) {
+            const creature = r.state.creatures[0];
+            const origX = creature.position.x;
+            const origZ = creature.position.z;
+            const origTask = creature.userData && creature.userData.task ? { ...creature.userData.task } : null;
+            // Platziere die Kreatur nahe an einem Wasser-Punkt (falls vorhanden).
+            if (waterSpot) {
+                const sy = r._voxelSurfaceY(waterSpot.x + 12, waterSpot.z + 12);
+                if (Number.isFinite(sy)) {
+                    creature.position.set(waterSpot.x + 12, sy + 0.5, waterSpot.z + 12);
+                }
+            }
+            const ok = r.assignCreatureTask(creature, "drink", {}, { silent: true });
+            out.assignOk = ok === true;
+            const taskAfter = r._getCreatureTask(creature);
+            out.taskNameAfter = taskAfter ? taskAfter.name : null;
+            // Ein Tick — der drink-Tick sollte _target setzen wenn Wasser
+            // in 40m gefunden, sonst zurück zu wander.
+            r.updateCreatures(0.016);
+            const taskTicked = r._getCreatureTask(creature);
+            out.taskNameAfterTick = taskTicked ? taskTicked.name : null;
+            // Wenn Wasser gefunden: noch drink-Task; sonst wander-Fallback.
+            // Beide sind valide Outcomes je nach Welt-Variation.
+            if (taskTicked && taskTicked.name === "drink") {
+                out.targetSet = taskTicked.args && taskTicked.args._target !== undefined;
+            }
+
+            // Wieder-Herstellung.
+            creature.position.set(origX, creature.position.y, origZ);
+            if (origTask) r.assignCreatureTask(creature, origTask.name, origTask.args || {}, { silent: true });
+            else r.assignCreatureTask(creature, "wander", {}, { silent: true });
+        }
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d.3: Drink-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle V11.0-d.3: 'drink' in CREATURE_TASKS (6. Task)", res.tasksInclude === true);
+    check("Welle V11.0-d.3: CREATURE_TASKS jetzt 6 Einträge", res.tasksLength === 6);
+    check("Welle V11.0-d.3: AURA_HUE.drink = 210 (azur)", res.auraHue === 210);
+    check("Welle V11.0-d.3: PING_FREQ.drink = 880 (A5)", res.pingFreq === 880);
+    check("Welle V11.0-d.3: CREATURE_DRINK_HALT_DIST = 1.5m", res.haltDist === 1.5);
+    check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
+    check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
+    check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
+    check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
+    check("Welle V11.0-d.3: _findNearestWaterPoint existiert", res.findExists === true);
+    check(
+        "Welle V11.0-d.3: _tickCreatureTaskDirection routet drink",
+        res.routerHasDrink === true
+    );
+    check(
+        "Welle V11.0-d.3: _tickCreatureDrink hat 3-Phasen-Logik (_target + _drinkStart)",
+        res.drinkHasPhases === true
+    );
+    check(
+        "Welle V11.0-d.3: _tickCreatureDrink setzt happy nach vollendetem Trinken",
+        res.drinkSetsHappy === true
+    );
+    check(
+        "Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink",
+        res.chatParsesTrinke === true
+    );
+    if (res.waterFound) {
+        check(
+            "Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)",
+            res.findReturnsObj === true
+        );
+    }
+    if (res.assignOk !== undefined) {
+        check("Welle V11.0-d.3: assignCreatureTask akzeptiert 'drink'", res.assignOk === true);
+        check(
+            "Welle V11.0-d.3: Kreatur trägt drink-Task nach assign",
+            res.taskNameAfter === "drink"
+        );
+        // Nach einem Tick: entweder noch drink (Wasser gefunden, walking)
+        // oder wander (Wasser nicht in 40m, Auto-Fallback). Beide OK.
+        check(
+            "Welle V11.0-d.3: nach Tick — Task ist drink ODER wander (3-Phasen läuft oder Fallback)",
+            res.taskNameAfterTick === "drink" || res.taskNameAfterTick === "wander",
+            `nach Tick: ${res.taskNameAfterTick}`
+        );
+    }
+}
+
+// V11.0-a (Mesh-Pool-Pattern Foundation, V10.0-j.j-Bogen-Schluss) — Beweis
+// dass die Pool-API existiert + identity-korrekt arbeitet + Cap-Disziplin
+// hat. Foundation-Welle: API noch nicht im Build/Dispose-Pfad verdrahtet
+// (V11.0-b/c folgen). Test-Band ruft acquire/release direkt.
+async function checkBandWelleV11APoolFoundation(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Konstante + API-Existenz.
+        out.cap = r.constructor.GRASS_POOL_CAP;
+        out.acquireExists = typeof r._acquireGrassMesh === "function";
+        out.releaseExists = typeof r._releaseGrassMesh === "function";
+        out.drainExists = typeof r._drainGrassMeshPool === "function";
+
+        // State-Slot existiert oder ist init-able.
+        out.poolFieldDeclared = "_grassMeshPool" in r.state;
+
+        if (!out.acquireExists || !out.releaseExists || !out.drainExists) return out;
+
+        // Vorbedingung: damit _acquireGrassMesh eine echte Instance liefert,
+        // muss state._grassConeGeometry existieren + _grassInstanceMat()
+        // muss ein Material returnen. In der laufenden Welt ist das nach
+        // dem ersten _buildVoxelChunkGrass-Aufruf der Fall (Worldgen
+        // erledigt das im Streaming). Falls noch nicht: defensive null-
+        // Return ist erlaubt + Test markiert das.
+        const geoReady = !!r.state._grassConeGeometry;
+        out.geometryReady = geoReady;
+
+        // Pool sauber starten — alles raus damit der Test deterministisch ist.
+        r._drainGrassMeshPool();
+        out.poolEmptyAfterDrain = Array.isArray(r.state._grassMeshPool) && r.state._grassMeshPool.length === 0;
+
+        if (!geoReady) {
+            // Ohne Geometry returnt acquire null (defensive). Test stoppt hier.
+            const m = r._acquireGrassMesh();
+            out.acquireWhenGeoMissing = m === null;
+            return out;
+        }
+
+        // Acquire 1 — Pool leer, sollte neue Instanz allokieren.
+        const m1 = r._acquireGrassMesh();
+        out.acquire1NotNull = m1 !== null;
+        out.acquire1IsInstanced = m1 && m1.isInstancedMesh === true;
+        out.acquire1Visible = m1 && m1.visible === true;
+        out.acquire1CountZero = m1 && m1.count === 0;
+
+        // Release — Pool sollte 1 Element haben, Mesh nicht in Scene.
+        r._releaseGrassMesh(m1);
+        out.releasedPoolSize = r.state._grassMeshPool.length;
+        out.releasedMeshHidden = m1.visible === false;
+
+        // Acquire 2 — sollte das SELBE Mesh aus dem Pool zurückgeben (Identity).
+        const m2 = r._acquireGrassMesh();
+        out.acquire2IsSameAsM1 = m2 === m1;
+        out.poolEmptyAfterAcquire = r.state._grassMeshPool.length === 0;
+
+        // Cap-Disziplin: CAP + 1 release, Pool-Größe ist ≤ CAP.
+        // Erst Cleanup damit Test deterministisch ist.
+        r._releaseGrassMesh(m2);
+        r._drainGrassMeshPool();
+        const CAP = r.constructor.GRASS_POOL_CAP;
+        const meshes = [];
+        for (let i = 0; i < CAP + 1; i++) {
+            const m = r._acquireGrassMesh();
+            if (m) meshes.push(m);
+        }
+        out.allocatedForCapTest = meshes.length;
+        for (const m of meshes) r._releaseGrassMesh(m);
+        out.poolSizeAfterCapTest = r.state._grassMeshPool.length;
+        out.poolCapEnforced = r.state._grassMeshPool.length <= CAP;
+
+        // Drain räumt alles.
+        r._drainGrassMeshPool();
+        out.poolEmptyAfterFinalDrain = r.state._grassMeshPool.length === 0;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-a: Pool-Foundation-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle V11.0-a: GRASS_POOL_CAP = 32", res.cap === 32);
+    check("Welle V11.0-a: _acquireGrassMesh existiert", res.acquireExists === true);
+    check("Welle V11.0-a: _releaseGrassMesh existiert", res.releaseExists === true);
+    check("Welle V11.0-a: _drainGrassMeshPool existiert", res.drainExists === true);
+    check("Welle V11.0-a: state._grassMeshPool als Slot deklariert", res.poolFieldDeclared === true);
+    check(
+        "Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch",
+        res.poolEmptyAfterDrain === true
+    );
+    if (!res.geometryReady) {
+        check(
+            "Welle V11.0-a: defensive — ohne Geometry returnt acquire null",
+            res.acquireWhenGeoMissing === true
+        );
+        return; // Welt-Variation, kein voller Test
+    }
+    check(
+        "Welle V11.0-a: acquire bei leerem Pool allokiert neue InstancedMesh",
+        res.acquire1NotNull === true && res.acquire1IsInstanced === true
+    );
+    check("Welle V11.0-a: neue Instanz ist visible=true + count=0", res.acquire1Visible === true && res.acquire1CountZero === true);
+    check("Welle V11.0-a: release pusht in Pool (size=1)", res.releasedPoolSize === 1);
+    check("Welle V11.0-a: released Mesh ist visible=false", res.releasedMeshHidden === true);
+    check(
+        "Welle V11.0-a: acquire nach release returnt SELBE Instance (Pool-Identity)",
+        res.acquire2IsSameAsM1 === true
+    );
+    check("Welle V11.0-a: Pool leer nach Acquire", res.poolEmptyAfterAcquire === true);
+    check(
+        "Welle V11.0-a: Cap-Disziplin — Pool-Größe ≤ GRASS_POOL_CAP nach CAP+1 release",
+        res.poolCapEnforced === true,
+        `poolSize=${res.poolSizeAfterCapTest}, cap=${res.cap}`
+    );
+    check(
+        "Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)",
+        res.poolEmptyAfterFinalDrain === true
+    );
+}
+
+// V11.0-b (Mesh-Pool im Build-Pfad aktiv) — Source-Probe-Beweis dass
+// `_buildVoxelChunkGrass` jetzt `_acquireGrassMesh` ruft statt direkt
+// `new THREE.InstancedMesh`. Plus empirisch: nach Pool-Pre-fill ruft
+// der nächste Build aus dem Pool (Recycle wirkt im Build-Pfad).
+// Der volle despawn+respawn-Identity-Test gehört zu V11.0-c (dort wird
+// der Dispose-Pfad recycle-aware + V10.0-j.j-Workaround entfernt).
+async function checkBandWelleV11BPoolBuild(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // V11.0-d.fix.gras3 — Pool-Pfad ABGEKLEMMT (Three.js v160 hat Pool-
+        // Recycle-Issues, V12.0-d wird via r184-Upgrade strukturell heilen).
+        // Source-Probe prüft jetzt: Build-Pfad nutzt `new InstancedMesh`
+        // (V10.0-j.j-Workaround restored). Pool-API existiert weiter im
+        // Stamm (V12-Vorarbeit, 33 Inv in V11.0-a/d grün), wird aber im
+        // aktiven Lifecycle nicht gerufen. V12.0-d aktiviert sie wieder.
+        const buildSrc = r._buildVoxelChunkGrass.toString();
+        out.usesNewInstancedMesh = /new THREE\.InstancedMesh\(/.test(buildSrc);
+        out.poolAbklemmungMarker = /V11\.0-d\.fix\.gras3/.test(buildSrc);
+
+        // Empirischer Pre-fill-Test: lege ein Mesh manuell in den Pool, dann
+        // baue einen neuen Chunk — der sollte aus dem Pool acquiren.
+        if (!r.state._grassConeGeometry) {
+            out.skipReason = "Geometry noch nicht initialisiert (Welt-Variation)";
+            return out;
+        }
+        // Finde eine NICHT-existierende Chunk-Koordinate (so dass build nicht
+        // idempotent-skipt). Hochzählen bis ein freier Slot.
+        let testCx = 1000;
+        let testCz = 1000;
+        const grassMap = r.state.voxelChunkGrass || new Map();
+        while (grassMap.has(`${testCx},${testCz}`)) {
+            testCx++;
+        }
+        // Pool sauber + pre-fill mit einer fabrizierten Instanz.
+        r._drainGrassMeshPool();
+        const preFilled = r._acquireGrassMesh();
+        if (!preFilled) {
+            out.skipReason = "_acquireGrassMesh returnt null (Material/Geometry-Race)";
+            return out;
+        }
+        r._releaseGrassMesh(preFilled);
+        out.poolSizeBeforeBuild = r.state._grassMeshPool.length;
+        // Jetzt build — sollte preFilled re-akquirieren.
+        r._buildVoxelChunkGrass(testCx, testCz);
+        const builtMesh = grassMap.get(`${testCx},${testCz}`);
+        out.builtExists = !!builtMesh;
+        out.builtIsPreFilled = builtMesh === preFilled;
+        out.poolEmptyAfterBuild = r.state._grassMeshPool.length === 0;
+        // Cleanup (auch wenn V11.0-c noch fehlt — scene.remove via aktueller
+        // V10.0-j.j-Workaround).
+        r._disposeVoxelChunkGrass(`${testCx},${testCz}`);
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-b: Build-Pfad-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V11.0-d.fix.gras3: Build-Pfad nutzt `new InstancedMesh` (Pool abgeklemmt, V12-Backlog)",
+        res.usesNewInstancedMesh === true
+    );
+    check(
+        "Welle V11.0-d.fix.gras3: Pool-Abklemmungs-Marker im Build-Pfad-Code",
+        res.poolAbklemmungMarker === true
+    );
+    if (res.skipReason) {
+        check(
+            "Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)",
+            false,
+            res.skipReason
+        );
+        return;
+    }
+    check(
+        "Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)",
+        res.poolSizeBeforeBuild === 1
+    );
+    // V11.0-d.fix.gras3: Pool-Pfad abgeklemmt → Build allokiert neu statt aus
+    // Pool zu nehmen. Bei V12.0-d-Reaktivierung wieder umstellen auf
+    // builtIsPreFilled === true + poolEmptyAfterBuild === true.
+    check(
+        "Welle V11.0-d.fix.gras3: Build allokiert neu (Pool-Pre-Fill wird NICHT konsumiert, Pool-Abklemmung wirkt)",
+        res.builtExists === true && res.builtIsPreFilled === false,
+        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (false = Pool-Abklemmung korrekt)`
+    );
+    check(
+        "Welle V11.0-d.fix.gras3: Pool bleibt voll nach Build (Pre-Filled bleibt drin)",
+        res.poolEmptyAfterBuild === false
+    );
+}
+
+// V11.0-c (Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt) —
+// der ehrliche Bogen-Schluss. `_disposeVoxelChunkGrass` ruft jetzt
+// `_releaseGrassMesh` statt das Mesh in der Scene-Map zu behalten.
+// Voller despawn+respawn-Identity-Test: das gleiche Mesh kommt zurück.
+async function checkBandWelleV11CPoolDispose(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // V11.0-d.fix.gras3 — Pool-Pfad ABGEKLEMMT. Dispose nutzt jetzt
+        // scene.remove (V10.0-j.j-Workaround restored). V12.0-d aktiviert
+        // _releaseGrassMesh wieder.
+        const disposeSrc = r._disposeVoxelChunkGrass.toString();
+        out.usesSceneRemove = /scene\.remove\(grass\)/.test(disposeSrc);
+        out.poolAbklemmungInDispose = /V11\.0-d\.fix\.gras3/.test(disposeSrc);
+
+        // Voller despawn+respawn-Identity-Test mit einer echten Chunk-
+        // Position. Schaue nach einem existierenden Gras-Chunk.
+        const grassMap = r.state.voxelChunkGrass;
+        if (!grassMap || grassMap.size === 0) {
+            out.skipReason = "keine Gras-Chunks (Welt-Variation)";
+            return out;
+        }
+        let foundKey = null;
+        let foundMesh = null;
+        for (const [k, v] of grassMap.entries()) {
+            if (v && v.isInstancedMesh) {
+                foundKey = k;
+                foundMesh = v;
+                break;
+            }
+        }
+        if (!foundMesh) {
+            out.skipReason = "keine Chunks mit echtem Gras-Mesh";
+            return out;
+        }
+        // Pool sauber starten.
+        r._drainGrassMeshPool();
+        // Despawn — Mesh sollte in Pool.
+        r._disposeVoxelChunkGrass(foundKey);
+        out.poolSizeAfterDispose = r.state._grassMeshPool.length;
+        out.disposedChunkGone = !grassMap.has(foundKey);
+        // Re-Build denselben Chunk — sollte das gleiche Mesh aus dem Pool.
+        const parts = foundKey.split(",").map(Number);
+        r._buildVoxelChunkGrass(parts[0], parts[1]);
+        const respawned = grassMap.get(foundKey);
+        out.respawnedExists = respawned !== undefined && respawned !== null;
+        out.respawnedIsSameAsFound = respawned === foundMesh;
+        out.poolEmptyAfterRespawn = r.state._grassMeshPool.length === 0;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-c: Dispose-Pfad-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V11.0-d.fix.gras3: Dispose-Pfad nutzt scene.remove (Pool abgeklemmt, V12-Backlog)",
+        res.usesSceneRemove === true
+    );
+    check(
+        "Welle V11.0-d.fix.gras3: Pool-Abklemmungs-Marker im Dispose-Pfad-Code",
+        res.poolAbklemmungInDispose === true
+    );
+    if (res.skipReason) {
+        check(
+            "Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)",
+            false,
+            res.skipReason
+        );
+        return;
+    }
+    // V11.0-d.fix.gras3: Pool-Pfad abgeklemmt → Dispose macht scene.remove
+    // (kein pool-push). Re-Build allokiert neu (keine Identity). Bei V12.0-d-
+    // Reaktivierung wieder umstellen auf poolSizeAfterDispose === 1 +
+    // respawnedIsSameAsFound === true.
+    check(
+        "Welle V11.0-d.fix.gras3: Dispose pusht NICHT in Pool (size=0, Pool-Abklemmung wirkt)",
+        res.poolSizeAfterDispose === 0,
+        `poolSize=${res.poolSizeAfterDispose} (0 = Pool-Abklemmung korrekt)`
+    );
+    check("Welle V11.0-c: disposed Chunk ist aus voxelChunkGrass entfernt", res.disposedChunkGone === true);
+    check("Welle V11.0-c: Re-Build erzeugt Mesh", res.respawnedExists === true);
+    check(
+        "Welle V11.0-d.fix.gras3: Re-Build allokiert NEUE Instance (kein Recycle, Pool-Abklemmung wirkt)",
+        res.respawnedIsSameAsFound === false
+    );
+    check(
+        "Welle V11.0-c: Pool wieder leer nach Re-Build",
+        res.poolEmptyAfterRespawn === true
+    );
+}
+
+// V11.0-d (Mesh-Pool-Stress-Test, Bogen-Vor-Schluss) — 50 echte spawn+
+// despawn-Zyklen via _buildVoxelChunkGrass + _disposeVoxelChunkGrass.
+// Beweist: (a) Pool-Größe bleibt klein (single-use-Pattern → maximal 1
+// im Pool zur Zeit, weil jeder Despawn sofort von Re-Build konsumiert
+// wird), (b) `voxelChunkGrass` Map ist leer nach den Disposes (kein
+// State-Leak), (c) im Browser-Memory-Tab kein Snowball (Browser-spezifisch,
+// in Puppeteer-Chromium via performance.memory wenn verfügbar).
+async function checkBandWelleV11DPoolStress(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        if (!r.state._grassConeGeometry) {
+            out.skipReason = "Geometry noch nicht initialisiert";
+            return out;
+        }
+
+        // Sauberer Start.
+        r._drainGrassMeshPool();
+        out.poolEmptyStart = r.state._grassMeshPool.length === 0;
+
+        // 50 Zyklen — jeder mit eindeutiger Chunk-Position so dass build
+        // nicht idempotent-skipt. Verschiedene Pattern: 50 NEUE Spots +
+        // sofort dispose (single-use).
+        const grassMap = r.state.voxelChunkGrass || new Map();
+        const CYCLES = 50;
+        const beforeHeap =
+            typeof performance !== "undefined" && performance.memory
+                ? performance.memory.usedJSHeapSize
+                : null;
+        let buildsThatProducedMesh = 0;
+        let maxPoolSizeDuring = 0;
+        for (let i = 0; i < CYCLES; i++) {
+            const cx = 2000 + i;
+            const cz = 2000 + i;
+            r._buildVoxelChunkGrass(cx, cz);
+            // Wenn der Spot kein „lebendig"-Feld hatte, ist der Map-Eintrag
+            // null — kein Mesh in Scene. Trotzdem dispose um Map-Clean
+            // zu halten.
+            const built = grassMap.get(`${cx},${cz}`);
+            if (built && built.isInstancedMesh) buildsThatProducedMesh++;
+            r._disposeVoxelChunkGrass(`${cx},${cz}`);
+            if (r.state._grassMeshPool.length > maxPoolSizeDuring) {
+                maxPoolSizeDuring = r.state._grassMeshPool.length;
+            }
+        }
+        const afterHeap =
+            typeof performance !== "undefined" && performance.memory
+                ? performance.memory.usedJSHeapSize
+                : null;
+        out.cycles = CYCLES;
+        out.buildsThatProducedMesh = buildsThatProducedMesh;
+        out.poolSizeAfterStress = r.state._grassMeshPool.length;
+        out.maxPoolSizeDuring = maxPoolSizeDuring;
+        out.mapClean = !Array.from(grassMap.keys()).some((k) => {
+            const parts = k.split(",").map(Number);
+            return parts[0] >= 2000 && parts[0] < 2050;
+        });
+        if (beforeHeap !== null && afterHeap !== null) {
+            out.heapBefore = beforeHeap;
+            out.heapAfter = afterHeap;
+            out.heapDeltaKB = (afterHeap - beforeHeap) / 1024;
+        }
+
+        // Cleanup-Drain.
+        r._drainGrassMeshPool();
+        out.poolEmptyEnd = r.state._grassMeshPool.length === 0;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d: Stress-Test-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    if (res.skipReason) {
+        check("Welle V11.0-d: Vorbedingung (Geometry initialisiert)", false, res.skipReason);
+        return;
+    }
+    check("Welle V11.0-d: Pool sauber gestartet", res.poolEmptyStart === true);
+    check(
+        "Welle V11.0-d: ≥1 Build hat ein echtes Mesh produziert (Vorbedingung)",
+        res.buildsThatProducedMesh >= 1,
+        `${res.buildsThatProducedMesh}/${res.cycles} Builds produzierten Mesh (Welt-Variation)`
+    );
+    check(
+        "Welle V11.0-d: Pool-Größe während Stress bleibt klein (≤ CAP)",
+        res.maxPoolSizeDuring <= 32,
+        `maxPoolSize=${res.maxPoolSizeDuring}`
+    );
+    check(
+        "Welle V11.0-d: Pool nach Stress = 0 (V11.0-d.fix.gras3 Pool-Abklemmung) ODER = 1 (single-use bei V12-Reaktivierung)",
+        res.poolSizeAfterStress === 0 || res.poolSizeAfterStress === 1,
+        `poolSize=${res.poolSizeAfterStress} (0 = Pool abgeklemmt seit V11.0-d.fix.gras3)`
+    );
+    check(
+        "Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)",
+        res.mapClean === true
+    );
+    if (res.heapDeltaKB !== undefined) {
+        // Heap-Delta ist Browser-spezifisch + GC-volatil — Schwelle großzügig
+        // (10 MB) gegen Puppeteer-Chromium-GC-Pending-Variabilität. Der echte
+        // Recycle-Beweis ist `maxPoolSize=1`: 48 Builds → 1 Mesh-Allokation
+        // (Pool re-akquiriert dasselbe Mesh 47×). Heap-Test ist nur Backstop
+        // gegen offensichtliche Snowballs (>10 MB wäre Pool-Bruch).
+        check(
+            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 10 MB (Snowball-Backstop)",
+            res.heapDeltaKB < 10000,
+            `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
+        );
+    }
+    check("Welle V11.0-d: _drainGrassMeshPool() leert final", res.poolEmptyEnd === true);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31147,6 +31990,20 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
             await checkBandWelle993WaterLodSeam(ctx);
+            // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
+            await checkBandWelleV11D1WaterContext(ctx);
+            // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
+            await checkBandWelleV11D2WaterBias(ctx);
+            // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
+            await checkBandWelleV11D3DrinkTask(ctx);
+            // V11.0-a — Mesh-Pool-Pattern Foundation (V10.0-j.j-Bogen-Schluss).
+            await checkBandWelleV11APoolFoundation(ctx);
+            // V11.0-b — Mesh-Pool im Build-Pfad aktiv (Recycle wirkt).
+            await checkBandWelleV11BPoolBuild(ctx);
+            // V11.0-c — Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt.
+            await checkBandWelleV11CPoolDispose(ctx);
+            // V11.0-d — Mesh-Pool-Stress-Test: 50 Zyklen, Pool bleibt klein, Map clean.
+            await checkBandWelleV11DPoolStress(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

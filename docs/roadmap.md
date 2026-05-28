@@ -1,6 +1,6 @@
 # AnazhRealm Roadmap — der Plan
 
-Stand: V10.0-j.j (27.05.2026, **V10.0-Bogen WIRKLICH vollendet — Welt rendert dauerhaft auf WebGPU mit voller Visual-Tiefe**). Der ganze Bogen lief 23 Sub-Wellen lang (V10.0-a..j.j) vom Vendor-Wechsel über WebGPU-Foundation, Material-Migration (4 ShaderMaterials → TSL + MeshToonMaterial → MeshBasicNodeMaterial), Shadow-Profi-Pattern (Override-Material + castShadow-Filter + Pure-Depth-LessCompare + Hardware-PCF) bis zum WebGPU-Buffer-Lifecycle-Race-Workaround (10 Sub-Wellen V10.0-j.a..j.j). **Visual-Bilanz**: alle drei Vision-Schichten aktiv (Cel-Stufen via gradientMap + Half-Lambert + Sun-Direction-Sync + Schatten + Sterne als InstancedMesh-Billboards mit Soft-Falloff + Gras-Wind via TSL-positionNode + Hardware-PCF-Schatten). **Memory-Trade-Ehrlichkeit**: ~500 KB GPU-Heap akzeptiert (Gras-Geometry nicht disposed) gegen einen Three.js-v160-Vendor-Race der nicht voll workaroundbar war ohne Vendor-Patch. **Profi-Pattern Genshin/BotW**: Mesh-Memory > Race-Crashes — wenn ein Vendor-Race nach 5+ Sub-Wellen nicht heilbar ist, ist Memory-Trade die ehrliche Antwort. **V11+-Backlog**: echtes Mesh-Pool-Pattern für Gras (Genshin's instancing-system, ~3-4h, eigene Welle). Davor — V10.0-g MeshToonMaterial → `MeshBasicNodeMaterial` + manuelles Half-Lambert-Toon-Lighting im colorNode. Diese Doc trägt den **Plan vorwärts** — die Ring-Übersicht 0-17, was offen ist, die Meilenstein- und Risiko-Sicht. Die anderen Zeit-Ebenen: der aktuelle Stand + die Gotchas in `CLAUDE.md`, die volle Wellen-Chronik in `docs/handover.md`, die Vision in `docs/state-of-realm.md`.
+Stand: V11.0-d.fix.gras3 (27.05.2026, **V11-Bogen als Hybrid in Three.js v160 EINGEFROREN nach drei gescheiterten Gras-Heilungs-Versuchen — Wurzel ist v160-Vendor-Bug, V12-r184-Upgrade ist der ehrliche Heilungs-Pfad. V11-Pool-API bleibt im Stamm als V12-Vorarbeit, Lifecycle abgeklemmt mit V10.0-j.j-Workaround zurück. V12-Bogen-Plan steht in §1.3 fest. Multi-Session-Bogen ~15-25h. V13+ D/E/F/G nach V12-Fundament-Schliff**). Der ganze Bogen lief 23 Sub-Wellen lang (V10.0-a..j.j) vom Vendor-Wechsel über WebGPU-Foundation, Material-Migration (4 ShaderMaterials → TSL + MeshToonMaterial → MeshBasicNodeMaterial), Shadow-Profi-Pattern (Override-Material + castShadow-Filter + Pure-Depth-LessCompare + Hardware-PCF) bis zum WebGPU-Buffer-Lifecycle-Race-Workaround (10 Sub-Wellen V10.0-j.a..j.j). **Visual-Bilanz**: alle drei Vision-Schichten aktiv (Cel-Stufen via gradientMap + Half-Lambert + Sun-Direction-Sync + Schatten + Sterne als InstancedMesh-Billboards mit Soft-Falloff + Gras-Wind via TSL-positionNode + Hardware-PCF-Schatten). **Memory-Trade-Ehrlichkeit**: ~500 KB GPU-Heap akzeptiert (Gras-Geometry nicht disposed) gegen einen Three.js-v160-Vendor-Race der nicht voll workaroundbar war ohne Vendor-Patch. **Profi-Pattern Genshin/BotW**: Mesh-Memory > Race-Crashes — wenn ein Vendor-Race nach 5+ Sub-Wellen nicht heilbar ist, ist Memory-Trade die ehrliche Antwort. **V11+-Backlog**: echtes Mesh-Pool-Pattern für Gras (Genshin's instancing-system, ~3-4h, eigene Welle). Davor — V10.0-g MeshToonMaterial → `MeshBasicNodeMaterial` + manuelles Half-Lambert-Toon-Lighting im colorNode. Diese Doc trägt den **Plan vorwärts** — die Ring-Übersicht 0-17, was offen ist, die Meilenstein- und Risiko-Sicht. Die anderen Zeit-Ebenen: der aktuelle Stand + die Gotchas in `CLAUDE.md`, die volle Wellen-Chronik in `docs/handover.md`, die Vision in `docs/state-of-realm.md`.
 
 Aufwandsschätzungen in §3 sind realistische Tage für eine fokussierte Claude-Session pro Ring/Phase (linear, ohne Puffer). Diese Roadmap ist ein lebendes Dokument — nach jedem Ring-Abschluss aktualisiert; Pfeile zwischen Ringen sind weiche Abhängigkeiten.
 
@@ -183,9 +183,11 @@ Diese Sektion ordnet die §1-Offenen-Punkte in eine **arbeitbare Reihenfolge** m
 | **Vision-Reset** ⏳ | **Die wahre Bibliothek von Alexandria** (V9.94-V9.99, der epochale Wurf — was V9.86-Brainstorm visionierte, aber V9.87-V9.93 als Catch-up untergrub) | V9.93 ✅ + Schöpfer-Konfrontation 26.05.2026 | ✅ **V9.94** WebGPU-Compute-Diagnose · ⚠️ **V9.94.r** Bürokraten-Reflexion (Lehre 3-Stufen-Hierarchie verdrahtet) · ✅ **V9.95-a** WebGPU-Foundation (Adapter/Device/Trivial-Shader/Determinismus-Beweis) · ✅ **V9.95-b** WGSL-Density-Pipeline · ✅ **V9.95-c** Logging-Heilung · ✅ **V9.95-d** Polish (adapter.info + Telemetry) · ✅ **V9.95-e** EHRLICHE GPU-Abklemmung (Architektur-Wurzel: WebGPU-Compute mit WebGL-Renderer = immer mapAsync-Roundtrip; V11+ Three.js-WebGPU-Renderer-Migration aktiviert das später) | V9.95-Bogen ist abgeschlossen — Foundation steht für V10.0/V11.x. Browser-Audit-Bilanz: WebGPU-Compute funktioniert auf RDNA-3, aber zero-copy-Win erst mit WebGPU-Renderer (V10.0-Bogen). |
 | **Performance-Heilungen** ✅ | **Echter Bottleneck-Fix nach V9.95-Bürokraten-Bogen** (V9.96, gezielt am Spawn-Burst statt am vermeintlichen Density-Hebel) | V9.95-e ✅ + Schöpfer-Konfrontation „du hast einfach die Arbeit resetet" | ✅ **V9.96** Per-Frame-Spawn-Budget (FIFO-Queue + 4 Spawns/Frame); `_populateVoxelChunkVegetation` enqueued statt direkt → 200-500ms Frame-Spike strukturell weg | Lehre verdrahtet: Performance-Welle bei Bauchgefühl-„das könnte teuer sein" ist Bürokratie; Browser-Logs PARALLEL zu FPS-Drops scannen → Wurzel in 5 Minuten. |
 | **Three.js-Modernisierung** ⏳ | **V10.0-Bogen: alte Krücken lösen** (r134 → r160, ESM-Loading, WebGPURenderer-Foundation) | V9.96 ✅ + Schöpfer-Auftrag „Umstellen auf die Zukunft" | ✅ **V10.0-a** Three.js r134 → r160 Vendor + Bridge-Heilungen · ✅ **V10.0-b** ESM-Loading-Pattern (Inline-Importmap + CSP-Hash) · ✅ **V10.0-c** WebGPURenderer-Addon vendored (238 Files, ~1.5 MB) · ✅ **V10.0-d** Renderer-Auswahl-Logik mit Async-init + defensive Fallback · ✅ **V10.0-e** Hot-Swap zu WebGL bei ShaderMaterial-Inkompatibilität · ⏳ **V10.0-f** TSL-Migration der 4 Custom-ShaderMaterials (Multi-Session-Bogen): **V10.0-f-1** skyboxMaterial, **V10.0-f-2** starsMaterial, **V10.0-f-3** waterfallMaterial, **V10.0-f-4** hydroSurfaceMaterial. Erst nach V10.0-f-4 entfällt Hot-Swap-Pfad + WebGPU rendert dauerhaft. | V10.0-a..e ist die solide Foundation. V10.0-f-1..4 = Multi-Session-Bogen mit voller Qualität pro Material (KEIN Trade-off via vereinfachte Varianten). |
-| **V11.x ZUKUNFT** ⏳ | **System-Kopplungs-Vision** (die echte Bibliothek von Alexandria — Welt atmet) | V10.0-Bogen abgeschlossen | Pfeiler D (Wasser ↔ Kreaturen) · Pfeiler E (Emotion ↔ lokale Welt) · Pfeiler F (Hylomorphismus-Cluster-Resonanz) · Pfeiler G (Multi-Spieler-Vibe) · Plus V9.93.r-Roadmap-Reste: V9.97 IndexedDB-Welt-Gedächtnis (4-5h, GPU-unabhängig) · V9.98 Predictive Prefetch (Welt atmet entgegen) · V9.99 Per-Column-Atlas-Strict (Wasserschatten an Strukturen) | Welt fühlt sich erinnert + vorausschauend + emotional reaktiv an. System-Kopplungen sind der Vision-Pfeiler aus state-of-realm.md §1.1. |
+| **V11 Mesh-Pool** ⚠️ Eingefroren | **Mesh-Pool-Pattern als Hybrid eingefroren in Three.js v160** — V11.0-a/b/c/d gebaut + V11.0-d.2.fix Flakiness geheilt. Drei Gras-Visibility-Heilungs-Versuche (gras1/gras2) scheiterten am v160-Vendor-Bug (WebGPU-InstancedMesh-Re-Use-Cache). V11.0-d.fix.gras3 klemmt Pool-Lifecycle ab, V10.0-j.j-Workaround zurück. Pool-API bleibt im Stamm als V12-Vorarbeit (33 Inv grün). | V10.0-j.j ✅ | ✅ V11.0-a/b/c/d Pool-API + Stress · ✅ V11.0-d.2.fix · ❌ V11.0-d.fix.gras1/gras2 (v160-Bug) · ⚠️ V11.0-d.fix.gras3 Pool abgeklemmt | V11-Reaktivierung in V12.0-d nach r184-Upgrade (r182's Bind Group Layout cache system heilt v160's Cache-Bug strukturell). |
+| **V12 Genie-Pfad** ⏳ | **WebGL ehrlich entfernen + Three.js v160 → r184 Vendor-Upgrade + WebGPU-native Code-Audit** (Schöpfer-Vision 27.05.2026: „der wahre weg, die vision, der genieweg, die zukunft, keine halben sachen"). Vollendung der V10.0-Vision die V10.0-j als Workaround dokumentiert hat. r184 hat compileAsync truly non-blocking + Bind Group Layout cache system + Major shadow mapping modernization + PCF Vogel disk + basic reversed depth buffer support — V10.0-j-Race + V11-Pool-Workaround vermutlich BEIDE obsolet. | V11 ✅ Hybrid + Schöpfer-Auftrag | **diag** → **vendor** (r160→r184) → **a** (Renderer-Vereinfachung) → **b** (WebGL-Legacy-Patch raus) → **c** (Conditional Gates streichen) → **d** (Buffer-Lifecycle-Race auf r184 neu prüfen, V11-Pool ggf obsolet) → **e** (WebGPU-Compute aktivieren, GPU→Renderer zero-copy) → **f** (Code-Review jeder Funktion, höhere Ordnung) → **g** (Schöpfer-Browser-Audit). Detail in §1.3. | „nicht zerstört sondern in höherer ordnung bestehend, umgewandelt" — Welt-Synergie zurück, Vendor-Race-Workarounds weg, WebGPU-native Pipeline EINE Sprache. ~15-25h Multi-Session. |
+| **V13+ Vision-Vollendung** ⏳ | **System-Kopplungs-Pfeiler D-G** (NACH V12-Fundament-Schliff, V9.51-Disziplin: Vision kommt nach Fundament). Pfeiler D Kern erledigt; E/F/G als Pfeiler-Plan. | V12 ✅ | Pfeiler D Polish (Splash-Ping, autonome Trink-Geste) · Pfeiler E (Emotion ↔ lokale Welt — `_localEmotionPulseAt(x,z)`, Wasser-Schaum-Tempo + Ambient + Licht lokal moduliert) · Pfeiler F (Hylomorphismus-Cluster-Resonanz — 3× lebendig-Bauten = sichtbare Aura, lockt Fauna) · Pfeiler G (Multi-Spieler-Vibe — gleiche Emotion am gleichen Ort verstärkt E+F-Effekte sichtbar) · Plus V9.93.r-Reste: V9.97 IndexedDB-Welt-Gedächtnis · V9.98 Predictive Prefetch · V9.99 Per-Column-Atlas-Strict. | Welt fühlt sich erinnert + vorausschauend + emotional reaktiv an, atmet als EIN Wesen. JEDE Welle additiv + klein-fokussiert (V9.56-Bogen-Disziplin), keine Meta-Schicht (Heilige Lektion). |
 | **Toon-Polish + LOD-Cross-Fade** ⏳ | **Render-Schicht-Welle** (V11+, V9.92-Audit-Befund „Berg-Treppen-Textur" + „LOD-Pop-In") | V10.0-Bogen ✅ | Toon-Material-Polish, Cross-Fade-Alpha über 1-2 Frames beim LOD-Wechsel, ggf. 3-4 LOD-Stufen statt 2 | Render-Schicht-Welle, separate Diagnose. |
-| **D** | **Wasser ↔ Kreaturen** (klein additiv, derselbe Hydro-Layer) | Perf-1 ✅ (Vision-Wellen kommen NACH Fundament-Schliff) | D1 `_tickCreatureTaskDirection` erkennt Wasser-Nähe via Cell-Feld + `_hydroWaterLevelAt` · D2 Neuer Task „trinken am Ufer" (3 Phasen: gehe-zum-Ufer → halt → trink-Animation, ~3 s Cooldown pro Kreatur) · D3 Scheu-Verhalten: Pfad-Suche meidet WATER-Cells > 2 m tief · D4 Schwimm-Animation aus Player-Soul re-use (Stroke-Pattern) | Eine Kreatur findet ohne Skript-Hilfe Wasser, trinkt sichtbar, schwimmt durch flaches Wasser, scheut tiefes |
+| **D** ✅ Kern | **Wasser ↔ Kreaturen** (klein additiv, derselbe Hydro-Layer — KERN ABGESCHLOSSEN 27.05.2026, Schöpfer-Browser-getestet „schwimmen sehe ich"; D.4-Polish im Backlog) | Perf-1 ✅ + V10.0-Bogen ✅ | ✅ **D.1** `_creatureWaterContextAt(creature)` Foundation (V11.0-d.1, 27.05.2026 — EINE Wahrheits-Quelle für inWater/depthBelow/submerged/distToShore/shoreDir aus den V9.25/V9.50/V9.59-Atlas-Funktionen, 200 Calls < 50ms, 14 Test-Invarianten grün) · ✅ **D.2** Tiefen-Scheue + Schwimm-Surface im wander-Loop (V11.0-d.2, 27.05.2026 — Direction-Bias zum Ufer bei `inWater && depth>1.5`, Y-Override auf `waterY - 0.3` für Schwimmen, Distance-LOD <50m, 9 Test-Invarianten + empirischer Tick-Test grün, Schöpfer-Browser-Bestätigung „schwimmen sehe ich") · ✅ **D.3** `drink`-Task als 6. CREATURE_TASKS (V11.0-d.3, 27.05.2026 — 3 Phasen suchen→walken→trinken-2.5s + Happiness-Boost, Aura azur/210, Ping A5/880Hz, Chat „trinke"/„alle trinken", 17 Test-Invarianten grün, `_findNearestWaterPoint(40m, 8 Richtungen)` als Suche) · ⏳ **D.4 Polish-Backlog** Schöpfer-Browser-Audit D.3 + Splash-Ping bei Wasser-Eintritt (§1.2 multisensorisch) + autonome Trink-Geste (happy+Ufer triggert spontan drink) + optional Kopf-Bobbing-Animation während Pause — NICHT zwingend nächste Welle, wartet auf V11-Integral-Plan | Eine Kreatur findet ohne Skript-Hilfe Wasser, trinkt sichtbar (✅ Kern), schwimmt durch flaches Wasser (✅), scheut tiefes (✅) — Polish-Pflege offen |
 | **E** | **Emotion ↔ lokale Welt** (öffnet den Daten-Pfad für Welle F) | – | E1 `_localEmotionPulseAt(x,z)` — die Daten-Funktion: Spieler-Emotion mit räumlichem Falloff (Gauss, Radius ~30 m), in `state.emotion.localField` · E2 `hydroSurfaceMaterial` bekommt `aLocalEmotion`-Uniform — Wasser-Schaum-Tempo + Tint modulieren · E3 Symphonie-Ambient (Filter-Cutoff + Gain) lokal moduliert · E4 Schöpfer-Audit | Bei `awe`-Spike pulsiert das Wasser im 30-m-Umkreis sichtbar; Ambient verändert sich; Effekt klingt mit Distanz ab |
 | **F** | **Hylomorphismus-Cluster-Resonanz** (unabhängig, Bau-Sprache vertiefen) | – | F1 `_compoundClusterAt(x,z, tag)` — Tag-Cluster-Erkennung (`lebendig`/`magie-geladen`/`weich` etc. in Distanz N) · F2 Aura-Schicht: ein Cluster ≥ 3 Bauten desselben Tags erzeugt einen Pulse-Mesh (semi-transparenter Ring) · F3 Welt-Reaktion: `lebendig`-Cluster lockt Fauna; `magie-geladen`-Cluster modifiziert lokale Tag-Wirkungen · F4 Schöpfer-Audit | Drei `lebendig`-Bauten beieinander erzeugen eine sichtbare Aura; eine Kreatur wandert in den Cluster hinein |
 | **G** | **Multi-Spieler-Vibe-Verstärkung** (braucht E als Wurzel) | Welle E ✅ | G1 `_localEmotionPulseAt` über P2P broadcasten (`vibe-local`-Nachricht, ~1 Hz, peer-id + Position + Emotion) · G2 Empfänger akkumuliert in `state.p2p.peerEmotions` · G3 Aura-Verstärkungs-Pass: zwei Peers mit ähnlicher Emotion am selben Ort → 1.5× Aura-Intensität · G4 Zwei-Browser-Audit (smoke-webrtc erweitern) | Zwei Browser, beide Spieler in 20 m mit `peace`: die Aura ist sichtbar stärker als ein Spieler allein |
@@ -204,6 +206,117 @@ Diese Sektion ordnet die §1-Offenen-Punkte in eine **arbeitbare Reihenfolge** m
 - **Welle B vs. A**: B ist vorbedingungsfrei (`_hydroWaterLevelAt` existiert), könnte VOR A laufen — aber A ist der Schöpfer-Prioritäts-Faden (V9.51-Befund). A zuerst.
 - **Welle D vor C**: D ist unabhängig — aber C öffnet den Daten-Pfad für E. C zuerst, damit E unmittelbar folgen kann (zwei verwandte Wellen am Stück).
 - **Crafting-Tiefe (6.F3/6.F5)** bleibt im Backlog statt sequenziert — V9.51-Schöpfer-Befund priorisiert System-Kopplungen über Crafting-Erweiterungen. Eigene Welle bei explizitem Wunsch.
+
+---
+
+## 1.3 V12 — der wahre Genie-Pfad: WebGL-Removal + r184-Vendor-Upgrade + WebGPU-native Audit (Schöpfer-Vision 27.05.2026)
+
+Nach V11.0-d.fix.gras2 (V11-Mesh-Pool als Hybrid stabilisiert) zeigte der Schöpfer-Browser-Audit: das ist nicht der Endzustand. Die Welt fühlt sich „nicht synergetisch wie zuvor" an — FPS=7, Schatten-Wandern, Pop-In-Strukturen, V11.0-d.fix.gras wirkte nur teilweise. Der Schöpfer hat den ehrlichen Weg artikuliert:
+
+> **„sollten wir nicht beginnen, das alte system zu entfernen (WebGL) und beim entfernen erneut den code prüfen, ob die jeweiligen funktionen und flüsse im webgpu optimal eingepflegt, nicht zerstört sondern in höherer ordnung bestehend, umgewandelt, und so das system endlich ohne ineffiziente umwege fortzufahren, wahre ordnung, oder bin ich da falsch? ist das nicht der weg? die vision? der genieweg, die zukunft?"**
+
+> **„dies scheint wichtig in der planung zu berücksichtigen, sicher klären ob es einen sicheren, stabilen, genialen pfad gibt, was genies, profis hier machen, keine halben sachen"**
+
+Er hat recht. V10.0 hat WebGPU-Renderer gebaut, aber WebGL als Sicherheits-Wand BEHALTEN — Hot-Swap, Legacy-Bridge, conditional Gates. Das Resultat ist Doppel-Pflege + Workarounds (V10.0-j.j-Memory-Trade, V11-Mesh-Pool-Hybrid). Die echte V12-Vision: **WebGL ehrlich entfernen + Three.js v160 → r184 Vendor-Upgrade + WebGPU-native Code-Audit**.
+
+### Why Three.js r184 (Profi-Recherche, github.com/mrdoob/three.js)
+
+V160 ist von Januar 2024 — **24 Releases hinten**. Was r161-r184 in WebGPU verbessert haben (Auszug):
+
+- **r184**: „compileAsync truly non-blocking" — direkter Bezug zu V10.0-j-Buffer-Lifecycle-Race (pending Submits vs. async dispose)
+- **r183**: „Add basic reversed depth buffer support" + WebGPU compatibility improvements
+- **r182**: „Major shadow mapping modernization" + „Improve Bind Group Layout cache system" + „PCF shadow filtering with Vogel disk sampling" — V10.0-h.b/V10.0-j Shadow-Bogen wäre obsolet
+- **r181**: Shadow pipeline fixes for first-frame rendering + GGX VNDF importance sampling
+
+**Genie-Pfad-Erkenntnis**: V10.0-j-Bogen (10 Sub-Wellen am Buffer-Lifecycle-Race) + V11-Mesh-Pool-Workaround sind vermutlich BEIDE obsolet auf r184. Three.js' Vendor-Team hat in 24 Releases die Wurzel-Heilung gemacht — wir haben dagegen kompensiert.
+
+### V12-Bogen-Plan (Multi-Session, ~15-25h)
+
+| Sub-Welle | Was | Aufwand | Akzeptanz |
+|---|---|---|---|
+| **V12.0-diag** | Code-Inventar: `grep -n 'rendererKind' anazhRealm.js`, alle Hot-Swap-Pfade, alle WebGL-Bridge-Patches, alle ShaderMaterial-Reste, alle V10.0-j-Race-Stellen, alle V11-Pool-Stellen. Risiko-Map. | ~1-2h | Klare Liste was wegfällt + was bleibt + welche Stellen Code-Review brauchen |
+| **V12.0-vendor** | Three.js v160 → r184 Vendor-Upgrade. `vendor/three.module.min.js` neu + `vendor/three-addons/` neu. Bridge-Heilungen prüfen (ColorManagement, useLegacyLights ggf entfernt in r170+ — eigene Strategy nötig). Test-Band für API-Kompatibilität (existing TSL-NodeMaterial-Code, WebGPURenderer-Init, Shadow-Pass, Stars-InstancedMesh). | ~2-3h | Welt rendert auf r184 mindestens so wie auf v160. Bridge-Modus wenn nötig kurz, dann r184-native |
+| **V12.0-a** | Renderer-Vereinfachung. `_swapToWebGLRenderer` weg, `_replaceWorldCanvas` weg, `_attachWorldCanvasInputListeners` weg, `state.rendererKind` weg, `state.rendererInkompatibel` weg, `state.rendererReady` weg. Renderer-Auswahl-Logik: WebGPU-only, kein Fallback (Browser ohne WebGPU sehen Warnung statt zerstörter Welt). | ~2h | ~150-200 Z. netto weniger, EIN Pipeline-Pfad |
+| **V12.0-b** | WebGL-Legacy-Patch entfernen. `vendor/three-bootstrap.js` löscht `import "three/addons/renderers/webgl-legacy/nodes/WebGLNodes.js"`. NodeMaterial läuft nativ auf WebGPU. Vendor-Tree kann ggf. webgl-legacy-Ordner ganz raus. | ~1h | Bootstrap-Tree ~5-10 Files weniger, kleinerer Bundle |
+| **V12.0-c** | Conditional Gates streichen. Alle `if rendererKind === "webgpu"`-Blöcke entweder unconditional oder ganz weg. `_renderShadowMapPass` läuft immer, Shadow-Sampling-Block im colorNode unconditional. V10.0-i.c-SplitNode-Bug-Workaround weg (war WebGL-only). | ~2h | ~50-100 Z. netto weniger, Code-Pfad linear |
+| **V12.0-d** | Buffer-Lifecycle-Race neu prüfen auf r184 (compileAsync non-blocking + Bind-Group-Cache). V10.0-j.j-Memory-Trade testen ob noch nötig. V11-Mesh-Pool-Hybrid testen ob noch nötig. Wenn beide obsolet: code-vereinfachen, V10.0-j.j-Geometry-Dispose zurück, V11-Pool als „Vorarbeit V12-archiviert" markieren. | ~3-4h | Race-frei ohne Workaround, Code visualisiert Wurzel-Heilung statt Workaround-Disziplin |
+| **V12.0-e** | WebGPU-Compute aktivieren. V9.95-Density-Pipeline aus Backlog ziehen (`scripts/diag-webgpu.cjs` läuft schon). GPU→Renderer zero-copy (V9.95-e-Abklemmung war WebGL-mapAsync-Roundtrip; WebGPU-Renderer = direkt GPU-Buffer-Lookup). Worker-Density bleibt für ineligible Chunks. | ~3-4h | Chunks bauen 5-10× schneller, Spawn-Burst-Spikes weg |
+| **V12.0-f** | Code-Review jeder berührten Funktion. Höhere Ordnung statt Bridge-Workarounds. Jede `_loopRender`-Phase, jede Material-Update-Funktion, jede Lifecycle-Stelle wird neu durchdacht für WebGPU-native. Profi-Pattern wo möglich (TSL idioms, async dispose, multi-buffer). | ~2-3h | „nicht zerstört sondern in höherer ordnung bestehend, umgewandelt" — der Schöpfer-Wortlaut eingelöst |
+| **V12.0-g** | Schöpfer-Browser-Audit AMD RDNA-3. 10-min Welt-Reise. FPS-Verlauf stabil. Schatten ruhig. Strukturen smooth ohne Pop-In. Memory-Tab kein Snowball. Welt fühlt sich synergetisch an. | ~30min | V12-Bogen offiziell zu, V13+ Vision-Pfeiler-Bogen kann starten |
+
+### Risiken ehrlich
+
+- **Browser ohne WebGPU sehen NICHTS** (kein Fallback). Aber: Chrome stable seit Mai 2023 (~2.5 Jahre), Safari 18+ seit Sept 2024 (~14 Monate), Firefox kommt. Mobile zunehmend supportet. WebGPU IST die Zukunft, wir hängen am alten System aus Verlust-Angst.
+- **r184 könnte neue Bugs haben** die r160 nicht hatte. Diagnose vor jeder Sub-Welle, Test-Band als Wand.
+- **Multi-Session-Bogen** wie V10.0 (23 Sub-Wellen). Aber strukturell klarer weil REMOVAL statt PORT. Code wird WENIGER, nicht mehr.
+- **Vendor-Upgrade r160 → r184** ist 24 Releases. Breaking-Changes erwartet. Bridge-Modus + schrittweise Migration in V12.0-vendor.
+
+### Disziplin (V9.56-Bogen-Lehre + V10.0-Bogen-Reflexion)
+
+- Jede Sub-Welle: klein + fokussiert (≤ ~3h), playtest-grün vor Commit
+- Playtest-Invariante VOR dem Schnitt (Test ist die Akzeptanz)
+- Browser-Audit am Bogen-Schluss (V12.0-g), nicht in der Mitte
+- Sub-Welle = ein git-Commit + Chronik-Eintrag oben in `handover.md`
+- V10.0-Workaround-Markierungen werden in V12.0-d entfernt + durch r184-native-Doku ersetzt
+- **„Keine halben Sachen, was Profis machen"** (Schöpfer-Auftrag) — keine Mid-Air-Kompromisse mehr, der Vendor-Upgrade ist der Anker
+
+### Vorbedingung
+
+V11.0-d.fix.gras2-Browser-Test ZUERST. Wenn Gras kommt → V12.0-diag startet. Wenn nicht → V11 sowieso in V12.0-d neu geprüft (vermutlich obsolet auf r184), kein separater V11-Rollback nötig.
+
+---
+
+## 1.2 V11 — der wahre Weg: Mesh-Pool-Pattern (Schöpfer-Korrektur 27.05.2026)
+
+Nach V11.0-d.3 + Schöpfer-Browser-Bestätigung „schwimmen sehe ich" + initialer Plan-Wende („v11 der weg, die wahre vision, die vollendung, keine halben sachen") schlug ich zunächst einen integrierten D/E/F/G-Pfeiler-Bogen vor — eine Welt-Atem-Vision in fünf additiven Wachstumsringen.
+
+**Der Schöpfer hat korrigiert (ehrlich + scharf):**
+
+> **„dachte mehr an den wahren plan auf der roadmap, scheinst das komplexeste zu weichen, obwohl es essentiell ist, du dies doch bei initialisierung selbst als 1stes erwähnt: V11 Mesh-Pool-Pattern (~6-8h, der ehrliche Bogen-Schluss) — Genshin's instancing-system, BotW's geometry-recycling als echtes Refactor. Disposed Gras-Meshes recyceln statt im Heap halten. V10.0-j.j-Memory-Cost strukturell heilen. Substantiell aber klar — Pattern existiert in der Industrie."**
+
+**Der wahre V11 ist Mesh-Pool-Pattern.** Meine erste Session-Antwort heute hatte das als Option 1 vorgeschlagen. Der Schöpfer wählte „weiter gehts" — ich griff aber zu Pfeiler D (sich-schneller-anfühlende Feature-Welle) statt zur strukturellen Schuld-Heilung. Bürokraten-Sünde: technische Schuld umgehen + neue Features bauen.
+
+### Die Wurzel (V10.0-j.j-Workaround, ehrlich markiert)
+
+V10.0-j.j sagte EXPLIZIT „ein ehrlicher Workaround, kein Endzustand":
+
+- `_disposeVoxelChunkGrass(chunk)` macht `scene.remove(grass)` aber NICHT `geometry.dispose()`.
+- Wurzel: Three.js-v160-WebGPU-Buffer-Lifecycle-Race. `geometry.dispose()` SOFORT (`WebGPUAttributeUtils.destroyAttribute` Z168), aber `renderer.render()` ist async — pending Submits referenzieren den destroyed Buffer → Crash.
+- Memory-Trade akzeptiert: ~500 KB GPU-Heap pro Welt-Lifetime. Mit Streaming-Welt linear-wachsend (unbegrenzt).
+- V10.0-Lehre permanent verdrahtet: „Mesh-Memory > Race-Crashes — wenn ein Vendor-Race nach 5+ Sub-Wellen nicht heilbar ist, ist Memory-Trade die ehrliche Profi-Antwort".
+- ABER: das war Workaround-Disziplin, NICHT Vollendungs-Disziplin. Der ehrliche Bogen-Schluss ist Mesh-Pool.
+
+### Profi-Pattern Genshin/BotW: dispose nie, recycle immer
+
+- **Genshin Instancing-System**: tausende von Gras-Halmen pro Chunk in einer InstancedMesh, beim Chunk-Despawn wird die InstancedMesh nicht zerstört, sondern in einen zentralen Pool zurück. Neuer Chunk: Pool gibt eine ungenutzte InstancedMesh, die Position/Rotation/Count werden neu beschrieben.
+- **BotW Geometry-Recycling**: identisches Pattern, mit Pool-Cap (~32 Meshes) + LRU-Discard bei Überlauf (auf weit-weg-gereiste Spieler trifft das selten, aber bounded).
+- **Was wir bekommen**: Memory bounded statt linear-wachsend, kein Race-Crash (nichts wird disposed, nichts kann racen), bit-identische visuelle Qualität (gleiche Geometry, gleiches Material, neue Instance-Data).
+
+### Sub-Wellen-Plan (~6-8h, jede Sub-Welle ein git-Commit + Chronik-Eintrag)
+
+| Sub-Welle | Was | Aufwand | Akzeptanz |
+|---|---|---|---|
+| **V11.0-a** | Pool-Foundation. `state._grassMeshPool` als Array (InstancedMesh-Objekte). API: `_acquireGrassMesh(maxBlades)` → returns pooled-or-new + cleared instanceMatrix; `_releaseGrassMesh(mesh)` → mesh.visible=false + scene.remove + push pool. Pool-Cap = `GRASS_POOL_CAP = 32` mit LRU-Discard wenn voll (oldest pop + echtes dispose). | ~1.5h | API existiert, acquire/release/acquire returnt das gleiche Mesh (Pool-Identity-Beweis). Test-Band: 50 acquire/release-Zyklen, Pool-Größe konvergiert zu 1 (single-use-pattern). |
+| **V11.0-b** | Build-Pfad recycle-aware. `_buildVoxelChunkGrass(chunk)` ruft `_acquireGrassMesh` statt `new InstancedMesh`. Geometry-Reuse: Singleton `state._grassConeGeometry` bleibt (V10.0-j.j-Pattern korrekt). InstanceMatrix.array wird neu beschrieben + needsUpdate=true. | ~1.5h | Visuelle Identität bit-identisch (gleiche Anzahl Halme, gleiche Positionen, gleiche Farben). Source-Probe: `_buildVoxelChunkGrass.toString()` enthält `_acquireGrassMesh`, NICHT `new THREE.InstancedMesh`. |
+| **V11.0-c** | Dispose-Pfad recycle-aware. `_disposeVoxelChunkGrass(chunk)` ruft `_releaseGrassMesh`. V10.0-j.j-Memory-Workaround entfernt (Geometry darf wieder disposed werden NUR beim Pool-LRU-Discard, weil Mesh sonst im Pool ist + kein late-writeBuffer mehr). Defensive: bei Welt-Wechsel `_drainGrassMeshPool` räumt komplett. | ~1h | Pool-Identity beim normalen Despawn (mesh im Pool wiederfindbar). Welt-Wechsel räumt Pool vollständig. |
+| **V11.0-d** | Test-Band + Memory-Beweis. 50 spawn+despawn-Zyklen (`_buildVoxelChunkGrass`/`_disposeVoxelChunkGrass`), Pool-Größe stabil bei ≤ Cap. `performance.memory.usedJSHeapSize`-Delta unter Toleranz (kein Wachstum). Stress-Test: simuliere Spieler-Teleport-Loop. | ~1h | Pool stagniert, kein Memory-Snowball, alle Source-Probes für Build/Dispose-Recycling. |
+| **V11.0-e** | Schöpfer-Browser-Audit auf AMD RDNA-3. 10-min Welt-Reise, Memory-Tab des Browsers prüfen, FPS-Verlauf. Welt visuell identisch zu V10.0-j.j, kein Race-Crash, kein Memory-Snowball. | ~30min | Bogen offiziell zu. V10.0-Lehre „Mesh-Memory > Race-Crashes" wird zu „Mesh-Pool > Mesh-Memory" — ehrlicher Vollendungs-Schluss. |
+
+### Disziplin (V9.56-Bogen-Lehre angewandt)
+
+- Jede Sub-Welle: klein + fokussiert (≤ ~1.5h), playtest-grün vor dem Commit
+- Playtest-Invariante VOR dem Schnitt (Test ist die Akzeptanz, nicht die Demo)
+- Browser-Audit am Bogen-Schluss (V11.0-e), nicht in der Mitte
+- Jede Sub-Welle ein git-Commit + Chronik-Eintrag oben in `handover.md`
+- V10.0-j.j-Workaround-Markierungen im Code (Kommentare „V10.0-j.j Memory-Trade") werden in V11.0-c entfernt + durch V11.0-Recycling-Doku ersetzt
+
+### Reflexions-Lehre verdrahtet (für nächste Sessions, permanent)
+
+**Bei „weiter gehts" nach mehreren angebotenen Optionen die Reihenfolge der EIGENEN Vorschläge ernst nehmen.** Option 1 war meistens der ehrlichste Plan, bevor die Versuchung kommt, ihn zu weichen (zur Feature-Welle, zur Spektakel-Welle, zum sich-schneller-anfühlenden Pfad). Wenn der Schöpfer nicht aktiv eine andere Option nennt, ist Option 1 die Wahl — sie war meine ehrliche Antwort auf seine Frage „wohin?".
+
+**D/E/F/G-Vision-Pfeiler kommen NACH V11-Fundament-Schliff** (V9.51-Disziplin: Vision-Wellen nach Fundament-Schliff, nicht zwischenein). V12+ wird die System-Kopplungs-Vollendung — aber erst wenn V10.0-j.j-Workaround ehrlich entfernt ist.
+
+**Nächster Schritt: V11.0-a starten** (Pool-Foundation, ~1.5h). Kein weiterer Plan-Reflexions-Schritt nötig — der Plan ist klar.
 
 ---
 
