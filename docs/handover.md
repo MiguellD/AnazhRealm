@@ -357,6 +357,43 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-a, 28.05.2026 — Hot-Swap-Pfad + `rendererKind`-Gates gestrichen, WebGPU-required Bootstrap-Wand:**
+
+Schöpfer-Browser bestätigt V12.0-vendor.4 FPS-Heilung — die strukturelle Welt-Vereinfachung kann starten. V12.0-a streicht die Hot-Swap-Defensiv-Schicht (V10.0-e/f-5/f-6-Bogen) die seit V12.0-vendor.1 funktional obsolet ist (r164's WebGLNodeBuilder-Entfernung macht WebGL-Fallback zu schwarzer Welt).
+
+**Vier-Bausteine-Streich-Welle**:
+
+1. **`_swapToWebGLRenderer` + `_replaceWorldCanvas` Methoden komplett gestrichen** (~85 Z.) — Hot-Swap zu WebGLRenderer war Defense-in-Depth gegen WebGPU-Material-Inkompatibilitäten in r160. Seit r164's WebGLNodeBuilder-Entfernung wäre der Hot-Swap-Ziel-Renderer (WebGLRenderer) für unsere NodeMaterials blind — schwarze Welt statt rettender Fallback. Strukturell tot.
+
+2. **State-Felder `rendererKind` + `rendererInkompatibel` gestrichen** + alle Writes — der Renderer ist seit V12.0-vendor.1 immer WebGPU (oder Bootstrap-throw). Keine Branching-Variable mehr nötig.
+
+3. **Zwei `rendererKind === "webgpu"`-Gates unconditional gemacht** — `_buildToonNodeMaterial`-Shadow-Sampling (Z10355) + `_renderShadowMapPass` (Z17362, früher Doku-Kommentar). Beide laufen jetzt unconditional, sind dieselbe Codepath wie zuvor auf WebGPU.
+
+4. **`_configureRenderer(renderer, kind)` → `_configureRenderer(renderer)`** — kind-Param weg, `if (kind === "webgl")`-Branch (depthTest=true) weg (WebGPU regelt Depth per Pipeline-State), `shadowMap.autoUpdate = kind !== "webgpu"` → `= false` (immer false, unser manueller Pass übernimmt).
+
+**Plus**: WebGPU-required Bootstrap-Wand in `init()` ergänzt. Wenn `navigator.gpu` fehlt:
+- `this.log("AnazhRealm braucht WebGPU. Browser bitte aktualisieren (Chrome/Edge 113+, Safari 18+, Firefox mit dom.webgpu.enabled).", "ERROR")`
+- DOM-Banner (`position:fixed; top:0; ...; background:#3a1a0c; color:#ffd9a8; ...`) für visuelle Klarheit
+- `throw new Error(msg)` — kein stilles weiterlaufen, klarer Bug-Report-Pfad für den Spieler
+
+**Render-Loop**: Promise-Reject-Hot-Swap-Catch (V10.0-e-Pattern) gestrichen. `this.state.renderer.render(scene, camera)` läuft jetzt without catch — pipeline-compile-Failures landen als Console-Error (Browser-Standard), kein Stack-Capture-Storm pro Frame (V12.0-vendor.4-Lehre).
+
+**Bonus: Stage-1-Deprecation-Scan im r184-Vendor (V12.0-vendor.4-Bonus-Lehre angewandt)**: `grep "is deprecated" three.*.min.js` ergab vier deprecated TSL-Symbole:
+- `transformedNormalWorld` → `normalWorld` (V12.0-vendor.4 geheilt) ✓
+- `transformedNormalView` → `normalView` — wir nutzen es NICHT (nur historischer Bootstrap-Kommentar)
+- `transformedClearcoatNormalView` → `clearcoatNormalView` — wir nutzen kein Clearcoat
+- `viewportResolution` → `screenSize` — wir nutzen es nicht
+
+Defensive Vorab-Scan-Pattern wirkt: keine latenten FPS-Bomben in der Codebase. Pattern verdrahtet als Stamm-Diziplin für künftige Vendor-Wellen.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures / 9 Warnings (Method-Smoke-Floor); Format/Lint sauber. Code-Netto: ~150 Z. gestrichen, ~50 Z. neu (User-Banner-Wand + Kommentar-Updates). Version-Bump 12.0.3 → 12.0.4.
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas/„Rendering · TSL-Migration"): **Hot-Swap-Defense-in-Depth ist nur sinnvoll wenn beide Ziele eine valide Welt rendern können**. V10.0-e baute Hot-Swap als Defensive für r160-WebGPU-Material-Inkompatibilitäten — der Fallback (WebGLRenderer) konnte unsere NodeMaterials via webgl-legacy/WebGLNodeBuilder kompilieren. Seit r164 hat der Vendor das entfernt → das Hot-Swap-Ziel ist seit V12.0-vendor.1 strukturell tot. Defensive Wände müssen periodisch geprüft werden: rettet das Ziel noch was? Wenn nein: streichen, eine ehrliche Error-Wand mit User-Message ist sauberer als ein stilles Hot-Swap-Fail-Pfad. Plus: bei jeder Vendor-Welle die EXISTIERENDEN Defensiv-Schichten als „rettet das Ziel noch?"-Frage durchgehen.
+
+**Was bleibt offen**: V12.0-d (V11-Mesh-Pool reaktivieren — r184's „Bind Group Layout cache system" + „compileAsync truly non-blocking" sollten den InstancedMesh-Re-Use-Bug strukturell heilen, V10.0-j.j-Memory-Trade obsolet werden, ~500 KB GPU-Heap pro Welt-Wechsel gespart); V12.0-e (V9.95-Compute aktivieren, zero-copy GPU→Renderer); V12.0-f (MeshToonNodeMaterial existiert in r184 — `_buildToonNodeMaterial`-Workaround obsolet); V12.0-g (final Schöpfer-Browser-Audit).
+
+---
+
 **V12.0-vendor.4, 28.05.2026 — `transformedNormalWorld` → `normalWorld` Rename, FPS-Kollaps geheilt:**
 
 Schöpfer-Browser-Audit V12.0-vendor.3 brachte zwei Befunde gleichzeitig:
