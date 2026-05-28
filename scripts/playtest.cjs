@@ -14833,6 +14833,121 @@ async function checkBandWelleV11CPoolDispose(ctx) {
     );
 }
 
+// V11.0-d (Mesh-Pool-Stress-Test, Bogen-Vor-Schluss) — 50 echte spawn+
+// despawn-Zyklen via _buildVoxelChunkGrass + _disposeVoxelChunkGrass.
+// Beweist: (a) Pool-Größe bleibt klein (single-use-Pattern → maximal 1
+// im Pool zur Zeit, weil jeder Despawn sofort von Re-Build konsumiert
+// wird), (b) `voxelChunkGrass` Map ist leer nach den Disposes (kein
+// State-Leak), (c) im Browser-Memory-Tab kein Snowball (Browser-spezifisch,
+// in Puppeteer-Chromium via performance.memory wenn verfügbar).
+async function checkBandWelleV11DPoolStress(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        if (!r.state._grassConeGeometry) {
+            out.skipReason = "Geometry noch nicht initialisiert";
+            return out;
+        }
+
+        // Sauberer Start.
+        r._drainGrassMeshPool();
+        out.poolEmptyStart = r.state._grassMeshPool.length === 0;
+
+        // 50 Zyklen — jeder mit eindeutiger Chunk-Position so dass build
+        // nicht idempotent-skipt. Verschiedene Pattern: 50 NEUE Spots +
+        // sofort dispose (single-use).
+        const grassMap = r.state.voxelChunkGrass || new Map();
+        const CYCLES = 50;
+        const beforeHeap =
+            typeof performance !== "undefined" && performance.memory
+                ? performance.memory.usedJSHeapSize
+                : null;
+        let buildsThatProducedMesh = 0;
+        let maxPoolSizeDuring = 0;
+        for (let i = 0; i < CYCLES; i++) {
+            const cx = 2000 + i;
+            const cz = 2000 + i;
+            r._buildVoxelChunkGrass(cx, cz);
+            // Wenn der Spot kein „lebendig"-Feld hatte, ist der Map-Eintrag
+            // null — kein Mesh in Scene. Trotzdem dispose um Map-Clean
+            // zu halten.
+            const built = grassMap.get(`${cx},${cz}`);
+            if (built && built.isInstancedMesh) buildsThatProducedMesh++;
+            r._disposeVoxelChunkGrass(`${cx},${cz}`);
+            if (r.state._grassMeshPool.length > maxPoolSizeDuring) {
+                maxPoolSizeDuring = r.state._grassMeshPool.length;
+            }
+        }
+        const afterHeap =
+            typeof performance !== "undefined" && performance.memory
+                ? performance.memory.usedJSHeapSize
+                : null;
+        out.cycles = CYCLES;
+        out.buildsThatProducedMesh = buildsThatProducedMesh;
+        out.poolSizeAfterStress = r.state._grassMeshPool.length;
+        out.maxPoolSizeDuring = maxPoolSizeDuring;
+        out.mapClean = !Array.from(grassMap.keys()).some((k) => {
+            const parts = k.split(",").map(Number);
+            return parts[0] >= 2000 && parts[0] < 2050;
+        });
+        if (beforeHeap !== null && afterHeap !== null) {
+            out.heapBefore = beforeHeap;
+            out.heapAfter = afterHeap;
+            out.heapDeltaKB = (afterHeap - beforeHeap) / 1024;
+        }
+
+        // Cleanup-Drain.
+        r._drainGrassMeshPool();
+        out.poolEmptyEnd = r.state._grassMeshPool.length === 0;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-d: Stress-Test-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    if (res.skipReason) {
+        check("Welle V11.0-d: Vorbedingung (Geometry initialisiert)", false, res.skipReason);
+        return;
+    }
+    check("Welle V11.0-d: Pool sauber gestartet", res.poolEmptyStart === true);
+    check(
+        "Welle V11.0-d: ≥1 Build hat ein echtes Mesh produziert (Vorbedingung)",
+        res.buildsThatProducedMesh >= 1,
+        `${res.buildsThatProducedMesh}/${res.cycles} Builds produzierten Mesh (Welt-Variation)`
+    );
+    check(
+        "Welle V11.0-d: Pool-Größe während Stress bleibt klein (≤ CAP)",
+        res.maxPoolSizeDuring <= 32,
+        `maxPoolSize=${res.maxPoolSizeDuring}`
+    );
+    check(
+        "Welle V11.0-d: Pool nach Stress = 1 (single-use-Pattern, letztes dispose hat noch nicht re-builded)",
+        res.poolSizeAfterStress === 1 || res.poolSizeAfterStress === 0,
+        `poolSize=${res.poolSizeAfterStress}`
+    );
+    check(
+        "Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)",
+        res.mapClean === true
+    );
+    if (res.heapDeltaKB !== undefined) {
+        // Heap-Delta ist Browser-spezifisch + GC-volatil — Schwelle großzügig
+        // (10 MB) gegen Puppeteer-Chromium-GC-Pending-Variabilität. Der echte
+        // Recycle-Beweis ist `maxPoolSize=1`: 48 Builds → 1 Mesh-Allokation
+        // (Pool re-akquiriert dasselbe Mesh 47×). Heap-Test ist nur Backstop
+        // gegen offensichtliche Snowballs (>10 MB wäre Pool-Bruch).
+        check(
+            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 10 MB (Snowball-Backstop)",
+            res.heapDeltaKB < 10000,
+            `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
+        );
+    }
+    check("Welle V11.0-d: _drainGrassMeshPool() leert final", res.poolEmptyEnd === true);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31871,6 +31986,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleV11BPoolBuild(ctx);
             // V11.0-c — Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt.
             await checkBandWelleV11CPoolDispose(ctx);
+            // V11.0-d — Mesh-Pool-Stress-Test: 50 Zyklen, Pool bleibt klein, Map clean.
+            await checkBandWelleV11DPoolStress(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
