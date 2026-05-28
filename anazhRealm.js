@@ -308,6 +308,11 @@ class AnazhRealm {
             // wir nicht doppelt anfordern. Beim voxelEdit wird cache geleert.
             voxelDensityCache: null, // Map<"cx,cz,lod", Float32Array>
             voxelDensityPending: null, // Set<"cx,cz,lod">
+            // V12.0-perf.b — Basis-Terrain-Density-Grid pro Chunk+LOD (OHNE
+            // voxelEdits, worldgen-frozen). Edit-Rebuild legt nur den billigen
+            // Kugel-Delta drauf statt 126 ms neu zu samplen. Geleert bei
+            // Worldgen (neue Welt), distanzbasiert geprunt (Memory bounded).
+            voxelBaseDensityCache: null, // Map<"cx,cz,lod", Float32Array>
             voxelWorkerWorldgenSynced: false, // turns true nach erstem Worldgen-State-Sync
             // V9.91 (Phase 3): voller Chunk-Mesh-Cache (positions/normals/
             // indices/colors/waterCells). Streaming-Pump nutzt diesen
@@ -13173,6 +13178,10 @@ class AnazhRealm {
         // existierte (rare aber möglich), wurde der GPU-Pfad NIE aktiviert.
         // GPU + Worker sind orthogonale Beschleunigungspfade.
         this._tryStartVoxelGpuInit();
+        // V12.0-perf.b — Basis-Density-Cache bei Worldgen leeren (neue Welt =
+        // neue Erosion/Tarn/Noise/Hydro → alte Basis ungültig). Worker-
+        // unabhängig, daher VOR dem Worker-Early-Return.
+        if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
         if (!this.state.voxelWorker) return;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
@@ -15947,7 +15956,14 @@ class AnazhRealm {
     // `_terrainMacroSurfaceY` (worldgen-frozen — das Drainage-Netz ist
     // Welt-Identität, nicht Spieler-Wille; Spieler-Wille lebt im Cell-Feld).
 
-    _terrainDensityAt(x, y, z) {
+    // V12.0-perf.b — Basis-Terrain-Dichte OHNE voxelEdits. Das ist der teure,
+    // worldgen-eingefrorene Teil (Noise + Erosion + Tarn + Hydrosphäre-Carve/
+    // -Lake-Blend) — ~126 ms pro Chunk-Grid. Da Erosion/Tarn/Noise/Hydro nach
+    // dem Worldgen nicht mehr mutieren, ist das Grid pro Chunk+LOD cachebar
+    // (`state.voxelBaseDensityCache`). Der Edit-Rebuild legt nur den billigen
+    // voxelEdit-Kugel-Delta drauf statt 126 ms neu zu samplen. Bit-identisch:
+    // `_terrainDensityAt` = base + edit-delta, exakt wie zuvor.
+    _terrainBaseDensityAt(x, y, z) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
@@ -16002,6 +16018,15 @@ class AnazhRealm {
                 d = d * (1 - lk.w) + flatD * lk.w;
             }
         }
+        return d;
+    }
+
+    // V12.0-perf.b — vollständige Terrain-Dichte = Basis + voxelEdit-Delta.
+    // Punkt-Sample-Pfad (OOB-Live-Compute im Wasser-Iso, `_voxelSurfaceY`,
+    // alle direkten Aufrufer). Der Chunk-Grid-Pfad in `_buildVoxelChunkData`
+    // nutzt stattdessen `_voxelEditedDensityGrid` (base-gecacht + Delta).
+    _terrainDensityAt(x, y, z) {
+        let d = this._terrainBaseDensityAt(x, y, z);
         // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab (carve)
         // oder schüttet auf (fill). Die Edits leben in worldMeta.voxelEdits
         // (persistiert mit der Welt) und gelten ZULETZT — der Spieler-Wille
@@ -16027,6 +16052,69 @@ class AnazhRealm {
             }
         }
         return d;
+    }
+
+    // V12.0-perf.b — der base-gecachte Density-Grid-Pfad. Liefert ein
+    // (dimX+1)·(dimY+1)·(dimZ+1)-Grid identisch zu `_voxelSampleDensityGrid`
+    // mit `_terrainDensityAt`, aber das teure Basis-Grid (Noise+Erosion+Tarn+
+    // Hydro) wird pro Chunk+LOD gecacht. Beim Edit-Rebuild: Basis aus Cache,
+    // nur die voxelEdit-Kugel-Deltas auf eine Kopie legen (~2 ms statt ~126 ms).
+    // Ohne Edits (Erst-Stream, kein Spieler-Wille): die Basis IST das Grid →
+    // read-only-Reuse, kein Copy. Bit-identisch zu `_terrainDensityAt`, weil
+    // base + Σ edit-delta exakt dessen Rechnung ist.
+    _voxelEditedDensityGrid(cacheKey, gox, goy, goz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const expectedLen = Nx * Ny * Nz;
+        if (!this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache = new Map();
+        let baseGrid = this.state.voxelBaseDensityCache.get(cacheKey);
+        if (!baseGrid || baseGrid.length !== expectedLen) {
+            const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
+            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample);
+            this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
+        }
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!edits || !edits.length) return baseGrid; // Basis IST das Grid (read-only)
+        // Edit-Delta auf eine Kopie legen. Nur Vertices im Kugel-Radius werden
+        // berührt (Index-Bounding-Box), der Rest bleibt Basis → billig.
+        const out = new Float32Array(baseGrid);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const r = ed.r;
+            const r2 = r * r;
+            const strength = ed.strength || 48;
+            const isFill = ed.mode === "fill";
+            // Grid-Index-Bounding-Box der Kugel (clamp auf [0, N-1]).
+            const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
+            const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
+            const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
+            for (let k = k0; k <= k1; k++) {
+                const wz = goz + k * step;
+                const dz = wz - ed.z;
+                for (let j = j0; j <= j1; j++) {
+                    const wy = goy + j * step;
+                    const dy = wy - ed.y;
+                    for (let i = i0; i <= i1; i++) {
+                        const wx = gox + i * step;
+                        const dx = wx - ed.x;
+                        const dist2 = dx * dx + dy * dy + dz * dz;
+                        if (dist2 < r2) {
+                            const fall = 1 - Math.sqrt(dist2) / r;
+                            const amt = fall * strength;
+                            const idx = i + j * Nx + k * Nx * Ny;
+                            if (isFill) out[idx] += amt;
+                            else out[idx] -= amt;
+                        }
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     // V9.43-d / V9.45-b — die FLUSS-Bett-Senkung an einer xz-Welt-Position
@@ -17249,18 +17337,24 @@ class AnazhRealm {
         // EXAKT zu Worker-Compute passen — sonst Drift.
         let terrainDensity;
         if (preDensityOverride && preDensityOverride.length === (dim + 4) * (dimY + 1) * (dim + 4)) {
+            // Worker/GPU-Grid: direkt nutzen. NICHT als Basis cachen — GPU-WGSL
+            // hat implementation-defined Präzision für transzendente Funktionen
+            // (CLAUDE.md-Lehre), wäre also nicht bit-identisch zur CPU-Basis.
+            // Der exakte Base-Cache füllt sich aus dem Sync-Pfad (else-Zweig).
             terrainDensity = preDensityOverride;
         } else {
-            const terrainSample = (x, y, z) => this._terrainDensityAt(x, y, z);
-            terrainDensity = this._voxelSampleDensityGrid(
+            // V12.0-perf.b — base-gecachter Sync-Pfad. Statt ~126 ms
+            // `_terrainDensityAt`-Grid-Sample wird die worldgen-frozen Basis
+            // gecacht; nur der billige voxelEdit-Delta wird neu aufgelegt.
+            terrainDensity = this._voxelEditedDensityGrid(
+                `${cx},${cz},${lod}`,
                 ox - step,
                 oy,
                 oz - step,
                 dim + 3,
                 dimY,
                 dim + 3,
-                step,
-                terrainSample
+                step
             );
         }
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
@@ -17322,17 +17416,19 @@ class AnazhRealm {
             if (lod === 0) {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity, 0);
             } else {
+                // V12.0-perf.b — auch das LOD-0-Zweitgrid (Wasser-Cells für
+                // einen LOD-1-Chunk) läuft base-gecacht. Eigener LOD-0-Cache-
+                // Key, damit es nicht mit dem LOD-1-Terrain-Grid kollidiert.
                 const lod0Cfg = this._voxelChunkConfig(0);
-                const lod0Sample = (x, y, z) => this._terrainDensityAt(x, y, z);
-                const lod0Density = this._voxelSampleDensityGrid(
+                const lod0Density = this._voxelEditedDensityGrid(
+                    `${cx},${cz},0`,
                     ox - lod0Cfg.step,
                     oy,
                     oz - lod0Cfg.step,
                     lod0Cfg.dim + 3,
                     lod0Cfg.dimY,
                     lod0Cfg.dim + 3,
-                    lod0Cfg.step,
-                    lod0Sample
+                    lod0Cfg.step
                 );
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
@@ -19648,6 +19744,17 @@ class AnazhRealm {
             if (Math.abs(cx - pcx) > ringRadius + 1 || Math.abs(cz - pcz) > ringRadius + 1) drop.push(key);
         }
         for (const key of drop) this._disposeVoxelChunk(key);
+        // V12.0-perf.b — Basis-Density-Cache distanzbasiert prunen (Memory
+        // bounded). NICHT in `_disposeVoxelChunk` (das ruft der Edit-Rebuild
+        // vor dem Build — würde den Cache aushebeln, den wir gerade nutzen
+        // wollen). Beide LOD-Keys (`,0` und `,1`) räumen.
+        if (this.state.voxelBaseDensityCache) {
+            for (const key of drop) {
+                const [cx, cz] = key.split(",");
+                this.state.voxelBaseDensityCache.delete(`${cx},${cz},0`);
+                this.state.voxelBaseDensityCache.delete(`${cx},${cz},1`);
+            }
+        }
     }
 
     // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
@@ -39800,7 +39907,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-f.2";
+AnazhRealm.VERSION = "12.0-perf.b";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
