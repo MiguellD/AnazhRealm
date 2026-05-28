@@ -14,22 +14,27 @@ Drei reasons we host these instead of using a CDN:
 
 | File | Source npm package | Notes |
 |---|---|---|
-| `three.module.min.js` | `three@0.160.0` (`build/three.module.min.js`) | ESM build (V10.0-b Migration von r134-UMD → r160-ESM), via Inline-Importmap geladen |
-| `three-addons/` | `three@0.160.0` (`examples/jsm/`) | 238 Files, ~1.5 MB — WebGPURenderer-Addon + TSL-NodeBuilder + WGSL/GLSL-Builder. Geladen via `three/addons/`-Import-Map-Pfad (V10.0-c) |
-| `three-bootstrap.js` | own | V10.0-b/c — importiert THREE + WebGPURenderer + TSL aus den ESM-Vendors, hängt sie an `window.THREE` (CSP-konform, kein eval) |
+| `three.core.min.js` | `three@0.184.0` (`build/three.core.min.js`) | Basis-Symbole (Matrix4, Vector3, Material, …), wird von den anderen Bundles via relative path importiert (V12.0-vendor.1 Migration r160 → r184) |
+| `three.module.min.js` | `three@0.184.0` (`build/three.module.min.js`) | Renderer-Pfad (WebGLRenderer, Mesh, Light, Shadow, Fog, Texture) + Re-Exporte aus `three.core.min.js` |
+| `three.webgpu.min.js` | `three@0.184.0` (`build/three.webgpu.min.js`) | WebGPURenderer + alle NodeMaterials (inkl. `MeshToonNodeMaterial` neu in r184) + WebGPU-Capability + alle Lighting-Modelle. Via `three/webgpu` Import-Map-Pfad geladen |
+| `three.tsl.min.js` | `three@0.184.0` (`build/three.tsl.min.js`) | TSL-Helpers (texture, vec2/3/4, float, attribute, uniform, positionLocal, normalWorld, `Fn` (war `tslFn`), `select` (war `cond`)). Via `three/tsl` Import-Map-Pfad geladen |
+| `three-bootstrap.js` | own | V12.0-vendor.1 — importiert THREE + WebGPU-Bundle + TSL-Bundle via neue `three/webgpu` + `three/tsl` Pfade, hängt an `window.THREE` (CSP-konform, kein eval). `webgl-legacy/WebGLNodes.js`-Side-Effect-Import gestrichen (in r164 strukturell entfernt — V12-Bogen-Konsequenz: WebGPU-required, kein WebGL-Fallback für NodeMaterials) |
 | `three-importmap.json` | own | Fallback-Variante der Inline-Importmap (V10.0-b, aktuell nicht referenziert) |
 | `ammo.js` | `ammojs3@0.0.11` (`dist/ammo.wasm.js`) | WASM loader; needs `ammo.wasm.wasm` next to it |
 | `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary, V9.40-f-gepatcht (max 64→256 MB) |
 | `ammo-bootstrap.js` | own | V9.40-f pre-grow-Hook — MUSS vor `ammo.js` geladen werden |
 | `simplex-noise.js` | `simplex-noise@2.4.0` | Not minified upstream (only ~17 KB) |
 
-**V10.0-Bogen (Three.js r134 → r160 + WebGPU)** — Migration in vier Schritten:
-- V10.0-a: UMD `three.min.js` r134 → ESM `three.module.min.js` r160 (670 KB ESM-Single-File-Bundle, drop-in Replacement)
-- V10.0-b: Inline-Importmap mit CSP-SHA256-Hash (`sha256-0wZnc3btID51aZv5XxEWftOn3by2Jg2Jjb6FWPNAnyA=` in `script-src`), Bootstrap-Module für ESM→window.THREE-Bridge
-- V10.0-c: 238 Files aus `three@0.160.0/examples/jsm/` vendored (renderers/webgpu, nodes/, capabilities/, objects/, lights/). Import-Map: `"three/addons/": "./vendor/three-addons/"`
-- V10.0-d..j: WebGPURenderer aktiv, alle Material-Familien als NodeMaterials, Welt rendert dauerhaft auf WebGPU
+**V10.0-Bogen (Three.js r134 → r160 + WebGPU, 26-27.05.2026)** — Migration in vier Schritten: UMD `three.min.js` r134 → ESM r160 + Inline-Importmap mit CSP-SHA256-Hash + 238 Addon-Files aus `examples/jsm/` + WebGPURenderer aktiv mit Hot-Swap-Safety-Net. Welt rendert dauerhaft auf WebGPU.
 
-Die alte `three.min.js` r134 ist NICHT mehr im Build-Pfad referenziert (vendor-Datei darf bleiben als Fallback-Reserve).
+**V12.0-Bogen (r160 → r184, WebGPU-required, 28.05.2026)** — die strukturelle Befreiung:
+- V12.0-vendor.1: r184-Build-Split. Statt 670 KB Single-File + 1.5 MB Addons jetzt 4 ESM-Bundles (core/module/webgpu/tsl, 1.4 MB total — netto ~700 KB Verkleinerung). Import-Map auf `three/webgpu` + `three/tsl` umgestellt, CSP-SHA256-Hash neu (`sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA=`).
+- r164 hat `WebGLNodeBuilder` strukturell entfernt — NodeMaterials laufen NUR auf WebGPURenderer. Konsequenz: Hot-Swap-Pfad gestrichen (V12.0-a), WebGPU-required mit User-Banner-Wand wenn `navigator.gpu` fehlt.
+- TSL-API-Renames in r167-r170: `tslFn` → `Fn`, `cond` → `select`, `transformedNormalWorld` → `normalWorld` (letzteres war FPS-Bombe weil `console.warn()` mit Stack-Capture per Frame pro Material).
+- r184's „Bind Group Layout cache system" + „compileAsync truly non-blocking" heilen den v160-WebGPU-InstancedMesh-Re-Use-Race strukturell — V10.0-j.j-Memory-Trade obsolet, V11-Mesh-Pool aktiv (V12.0-d).
+- V9.95-WebGPU-Compute-Pipeline (Mai 2026 als „Vorarbeit für V10+" abgeklemmt) reaktiviert in V12.0-e — same-device-mapAsync auf WebGPURenderer ist billig (war cross-backend ~200-300 ms auf WebGL-Renderer).
+
+Die alten `three.min.js` r134 + `three-addons/`-Tree sind aus dem Build-Pfad entfernt. Plus `three-addons/`-Ordner ist gestrichen (vendor-Verzeichnis ~700 KB schlanker).
 
 TensorFlow.js wurde im Mai 2026 entfernt — `playerMovementModel` trainierte
 in eine Sackgasse (kein Konsument von `predictPlayerMove`). Der Lern-Loop läuft
@@ -79,14 +84,20 @@ curl -s -A "Mozilla/5.0" \
 ```sh
 # Pull a fresh copy of each library:
 mkdir -p /tmp/lib-fetch && cd /tmp/lib-fetch && npm init -y
-npm install three@0.160.0 ammojs3@0.0.11 simplex-noise@2.4.0
+npm install three@0.184.0 ammojs3@0.0.11 simplex-noise@2.4.0
 
-# Copy into the project (V10.0-Bogen — ESM + addons):
+# Copy into the project (V12.0-vendor — r184 ESM Build-Split):
+cp node_modules/three/build/three.core.min.js         <repo>/vendor/
 cp node_modules/three/build/three.module.min.js       <repo>/vendor/
-cp -r node_modules/three/examples/jsm/                <repo>/vendor/three-addons/
+cp node_modules/three/build/three.webgpu.min.js       <repo>/vendor/
+cp node_modules/three/build/three.tsl.min.js          <repo>/vendor/
 cp node_modules/ammojs3/dist/ammo.wasm.js             <repo>/vendor/ammo.js
 cp node_modules/ammojs3/dist/ammo.wasm.wasm           <repo>/vendor/
 cp node_modules/simplex-noise/simplex-noise.js        <repo>/vendor/
+
+# Bei Vendor-Updates die CSP-SHA256-Hash der Inline-Importmap in
+# index.html neu berechnen wenn der Importmap-Body sich ändert:
+python3 -c "import hashlib,base64; print('sha256-' + base64.b64encode(hashlib.sha256(open('index.html').read().split('<script type=\"importmap\">')[1].split('</script>')[0].encode()).digest()).decode())"
 ```
 
 Bump the versions above when you update.

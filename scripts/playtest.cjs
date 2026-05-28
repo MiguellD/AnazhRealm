@@ -14824,10 +14824,8 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         );
         return;
     }
-    // V11.0-d.fix.gras3: Pool-Pfad abgeklemmt → Dispose macht scene.remove
-    // (kein pool-push). Re-Build allokiert neu (keine Identity). Bei V12.0-d-
-    // Reaktivierung wieder umstellen auf poolSizeAfterDispose === 1 +
-    // respawnedIsSameAsFound === true.
+    // V12.0-d aktiv → Dispose pusht in Pool, Re-Build recycelt das gleiche
+    // Mesh-Objekt (Identity-Beweis für Pool-Recycling auf r184).
     check(
         "Welle V12.0-d: Dispose pusht IN Pool (size=1, echtes Recycling)",
         res.poolSizeAfterDispose === 1,

@@ -9885,9 +9885,8 @@ class AnazhRealm {
         // MeshBasicNodeMaterial (TSL). Welt-Optik 1:1 gespiegelt — dieselbe
         // 3-Octaven-Nebula-Noise + horizont-genordete Wolken-Schicht mit
         // Identitäts-Hash-Konstanten (12.9898/78.233/45.5432 + 43758.5453).
-        // Läuft jetzt nativ auf WebGPURenderer (kein Hot-Swap-Trigger mehr
-        // für den Skybox-Pfad) UND auf klassischem WebGLRenderer via
-        // `webgl-legacy/nodes/WebGLNodes.js` (Bootstrap-Side-Effect-Patch).
+        // Läuft nativ auf WebGPURenderer (V12.0-a: WebGPU-required;
+        // webgl-legacy/WebGLNodeBuilder ist seit r164 strukturell entfernt).
         //
         // Vorheriger Bug-Klassen-Schutz (V8.26 Bug 1): vDir = normalize-
         // (positionLocal) hält den Sample-Punkt absolut in Welt-Richtung,
@@ -17265,10 +17264,10 @@ class AnazhRealm {
     // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
     // propagiert automatisch zu allen Materials.
     _buildToonNodeMaterial(opts = {}) {
-        // V10.0-g — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false,
-        // robust auf BEIDEN Renderern via webgl-legacy-Patch) + manuelles
-        // Lighting im colorNode mit gradientMap-Cel-Lookup. Alle V10.0-g.r-
-        // Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
+        // V10.0-g (in V12.0-f-full backlogged für MeshToonNodeMaterial-Migration)
+        // — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false) +
+        // manuelles Lighting im colorNode mit gradientMap-Cel-Lookup. Alle
+        // V10.0-g.r-Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
         //  - Cel-Stufen via gradientMap-Texture-Lookup (Ghibli-Look)
         //  - Sun-Direction-getriebenes Lambert + Ambient (Welt-atmet-Sync)
         //  - Vertex-Colors via attribute() (für Voxel-Chunks + Inseln)
