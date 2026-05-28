@@ -24091,25 +24091,34 @@ class AnazhRealm {
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
-        // V12.0-f — Anti-Drift pro MATERIAL statt pro Sub-Mesh. Wurzel: der
-        // Avatar teilt EIN Material über alle 6 Körperteile (torso/head/2 Arme/
-        // 2 Beine). Der alte per-Node-`_auraBaseColor`-Cache las für die Parts
-        // 2-6 die bereits-mutierte geteilte Farbe (Part 1 schrieb material.color,
-        // Part 2 cachte die mutierte als „Base") → die Farbe driftete pro Frame
-        // ~64 % Richtung auraColor statt der gewollten 15 % → Avatar wirkte
-        // verwaschen/weiß. Unsichtbar im V10.0-g-Workaround (colorNode-baked,
-        // material.color ignoriert), sichtbar seit dem nativen MeshToonNode-
-        // Material (liest material.color). Heilung: Base pro Material cachen
-        // (echte Anti-Drift-Einheit) + den Tint-Write pro geteiltem Material
-        // EINMAL pro Frame ausführen. node.userData spiegelt den Cache für die
-        // Reflex-3-Proben (V9.56-i-Doku-Sync-Kompat).
+        // V12.0-f.1 hatte einen Anti-Drift-Cache pro MATERIAL eingeführt (gegen
+        // die Shared-Material-Kreuz-Kontamination über die 6 Körperteile). Das
+        // war korrekt, traf aber NICHT die Weiß-Wurzel.
+        // V12.0-f.2 — die ECHTE Wurzel (empirisch via diag-avatar-color.cjs):
+        // ein sRGB↔Linear-Mismatch. Der alte Tint zerlegte den Basis-Hex
+        // (#c0392b) in sRGB-Floats (0.753, 0.224, 0.169) und schrieb sie via
+        // `setRGB(r,g,b)`. Seit V12.0-vendor.3 ist `ColorManagement.enabled =
+        // true` → `setRGB` interpretiert die Werte als LINEAR (workingColorSpace).
+        // sRGB-Magnitude-Zahlen in einen Linear-Slot → beim Display-Convert
+        // (linear→sRGB) werden sie viel heller: das tiefe Rot #c0392b rendert
+        // als blasses Lachsrosa #e47c6e → der Avatar wirkte „weiß/verwaschen".
+        // Unsichtbar bis V12.0-f (V10.0-g-Workaround buk die Farbe statisch in
+        // den colorNode, material.color wurde ignoriert) UND bis V12.0-vendor.3
+        // (ColorManagement war vorher aus → setRGB == sRGB == Display).
+        // Heilung: die Mathematik konsistent über THREE.Color rechnen — `setHex`
+        // (sRGB→working) für die Basis, `multiplyScalar(darken)` + `lerp(aura,
+        // mix)` im selben Arbeitsraum. Formel identisch (base·(1−mix)·darken +
+        // aura·mix), nur farbraum-konsistent. THREE.Color managed sRGB↔Linear.
         const auraMix = 0.15;
         const darken = 0.6 + 0.4 * hpRatio;
+        const baseScratch = this._auraTintBaseScratch || (this._auraTintBaseScratch = new THREE.Color());
         const tintedMats = new Set();
         this.state.playerMesh.traverse((node) => {
             if (!node || !node.isMesh || !node.material || !node.material.color) return;
             const mat = node.material;
             if (mat.userData._auraBaseColor === undefined) {
+                // getHex() liefert sRGB-Hex (Default-ColorSpace) — die ehrliche
+                // Identitäts-Farbe, unabhängig vom internen Linear-Storage.
                 mat.userData._auraBaseColor = mat.color.getHex();
             }
             // Probe-Kompat: node.userData spiegelt den Material-Cache.
@@ -24118,14 +24127,11 @@ class AnazhRealm {
             }
             if (tintedMats.has(mat)) return; // geteiltes Material: nur einmal/Frame
             tintedMats.add(mat);
-            const base = mat.userData._auraBaseColor;
-            const br = ((base >> 16) & 0xff) / 255;
-            const bg = ((base >> 8) & 0xff) / 255;
-            const bb = (base & 0xff) / 255;
-            const r = br * (1 - auraMix) * darken + auraColor.r * auraMix;
-            const g = bg * (1 - auraMix) * darken + auraColor.g * auraMix;
-            const b = bb * (1 - auraMix) * darken + auraColor.b * auraMix;
-            mat.color.setRGB(r, g, b);
+            // setHex(sRGB-Hex) → Basis korrekt in den Arbeitsraum (Linear)
+            // konvertiert. auraColor (aus setHSL) + mat.color leben im selben
+            // Arbeitsraum → darken + lerp sind farbraum-konsistent.
+            baseScratch.setHex(mat.userData._auraBaseColor);
+            mat.color.copy(baseScratch).multiplyScalar(darken).lerp(auraColor, auraMix);
         });
         // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
         if (this.state.playerAura && this.state.scene) {
@@ -39794,7 +39800,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-f.1";
+AnazhRealm.VERSION = "12.0-f.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
