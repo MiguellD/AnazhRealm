@@ -19734,15 +19734,20 @@ class AnazhRealm {
         // DrawIndexed-Iteration (echte Render-Count).
         const GRASS_MAX_BLADES = 256;
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
-        const inst = this._acquireGrassMesh();
-        if (!inst) {
-            // Defensive: Acquire-Fallback (Geometry/Material noch nicht
-            // initialisiert). Sollte nicht passieren weil wir oben
-            // _grassConeGeometry lazy initialisieren — aber defensive
-            // bleibt billig. Chunk bekommt kein Gras diesmal.
-            this.state.voxelChunkGrass.set(key, null);
-            return;
-        }
+        // V11.0-d.fix.gras3 — Pool-Pfad TEMPORÄR abgeklemmt nach Schöpfer-
+        // Browser-Audit-Befund („immernoch gleich, im ersten Chunk Halme,
+        // weitere nicht"). Drei Heilungs-Hypothesen (gras1 Bounding-Reset,
+        // gras2 frischer instanceMatrix-Buffer) haben nicht gegriffen — der
+        // Bug ist tiefer als ein einzelner stale-Cache. Three.js v160's
+        // WebGPU-Backend hat strukturelle Issues beim Mesh-Re-Use die OHNE
+        // r184-Vendor-Upgrade nicht voll heilbar sind (V12-Plan). EHRLICHER
+        // Zwischenstand bis V12.0-d: zurück auf V10.0-j.j-Workaround-Pattern
+        // (neuer InstancedMesh pro Chunk, Memory-Trade akzeptieren). Pool-
+        // API (`_acquireGrassMesh`/`_releaseGrassMesh`/`_drainGrassMeshPool`)
+        // BLEIBT im Code für V12-Refactor (33 Test-Invarianten grün, ehrliche
+        // Vorarbeit). Sobald V12.0-vendor r184 trägt + V12.0-d echtes
+        // Recycling beweist, wird der Pool-Pfad wieder aktiviert.
+        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
         // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
@@ -19802,22 +19807,16 @@ class AnazhRealm {
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
-            // V11.0-c (Mesh-Pool-Vollendung) — disposed Gras-Mesh wandert
-            // in den Pool statt für die Welt-Lebensdauer im Heap zu hängen.
-            // Damit ist der V10.0-j.j-Memory-Workaround ehrlich entfernt:
-            // kein „Geometry nicht disposen", sondern „Mesh nicht zerstören,
-            // recyceln". Geometry-Singleton (`_grassConeGeometry`, V10.0-j.j-
-            // Pattern korrekt) bleibt geteilt zwischen allen Pool-Meshes
-            // und neuen Allokationen — eine Geometry für alle Gras-Halme
-            // der Welt. instanceMatrix-Buffer bleibt am Mesh, wird beim
-            // nächsten acquire+build neu beschrieben (kein neuer Buffer,
-            // kein Race-Risiko: nichts wird disposed solange das Mesh im
-            // Pool sitzt). Bei Pool-Cap-Überlauf (V11.0-a-Disziplin):
-            // _releaseGrassMesh shifteet das älteste raus + nullt dessen
-            // instanceMatrix.array (GC-Hilfe) — auch das ist kein dispose,
-            // nur ein Array-Ref-Drop, kein Three.js-Lifecycle-Crash.
-            // Profi-Pattern Genshin/BotW: dispose nie, recycle immer.
-            this._releaseGrassMesh(grass);
+            // V11.0-d.fix.gras3 — Pool-Pfad temporär abgeklemmt. Zurück auf
+            // V10.0-j.j-Workaround: scene.remove, Geometry NICHT disposen
+            // (Three.js v160-WebGPU-Buffer-Lifecycle-Race). ~500 KB GPU-Heap
+            // pro Welt-Lebensdauer akzeptiert als Memory-Trade bis V12.0-d
+            // (r184-Upgrade) den Race strukturell heilt. Pool-API
+            // (`_releaseGrassMesh`) wird hier NICHT mehr gerufen, weil Pool-
+            // Recycling in v160 visuell broken (siehe `_buildVoxelChunkGrass`
+            // V11.0-d.fix.gras3-Kommentar). Pool-Code bleibt im Stamm als
+            // V12-Vorarbeit, aber im Lifecycle deaktiviert.
+            if (this.state.scene) this.state.scene.remove(grass);
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -40298,7 +40297,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.fix.gras2";
+AnazhRealm.VERSION = "11.0-d.fix.gras3";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
