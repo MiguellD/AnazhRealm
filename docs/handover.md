@@ -357,6 +357,31 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-vendor.4, 28.05.2026 — `transformedNormalWorld` → `normalWorld` Rename, FPS-Kollaps geheilt:**
+
+Schöpfer-Browser-Audit V12.0-vendor.3 brachte zwei Befunde gleichzeitig:
+1. **Vision-Erfolg**: `WebGPU Foundation bereit: amd/rdna-3/(unbekannt) — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.` Echte WebGPU-Hardware-Aktivierung auf AMD RDNA-3 — der V9.95-Foundation-Pfad ist endlich produktiv.
+2. **FPS=5 Wurzel-Frage**: Console flutet mit `THREE.TSL: "transformedNormalWorld" is deprecated. Use "normalWorld" instead.` jeden Frame, jedes Material.
+
+**Wurzel-Diagnose**: r170+ hat das TSL-Symbol `transformedNormalWorld` zu `normalWorld` umbenannt. Beide bleiben in r184 verfügbar (Vendor lebenslang-Kompat), aber `transformedNormalWorld` ist ein **deprecated alias** der bei JEDEM Build-Aufruf einen `console.warn()` mit Stack-Trace-Capture emittiert. Bei der typischen Welt-Pipeline (5+ Materials × 60 fps = 300+ warns/sec) blockiert Console-Formatting + Stack-Capture-Overhead den Render-Thread → FPS-Kollaps auf 5.
+
+**Heilung**: globaler Rename in `anazhRealm.js`:
+- `_buildToonNodeMaterial` Z10315 (Destructure) + Z10351 (normalize) + Z10362 (biased shadow-pos)
+- `_renderShadowMapPass`-related Z17345 (Destructure) + Z17363 + Z17401
+- `_ensureHydroSurfaceMaterial` Z19864 (Destructure) + Z19951 (normalize)
+
+`replace_all` ist sicher weil keines unserer Symbole substring-overlapping ist (`transformedNormalView` haben wir nicht in Code-Pfaden, nur im Bootstrap-Kommentar — V9.56-i-Diszplin: Kommentar bleibt als historische Erklärung).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures / 9 Warnings; Format/Lint sauber. Browser-Audit-Erwartung: keine `transformedNormalWorld`-Warnings mehr, FPS sollte auf RDNA-3-realistischen Werten (60+) laufen.
+
+**Lehre permanent verdrahtet** (CLAUDE.md/Gotchas, „Rendering · TSL-Migration"): **Deprecation-Warnings sind Performance-Bomben, nicht Diag-Hinweise.** Wer eine Vendor-Migration über 10+ Releases macht, MUSS die Browser-Console nach Boot scannen — Three.js' Deprecation-Pfad nutzt `console.warn()` mit Stack-Trace-Capture (das ist Browser-DevTools-Default-Verhalten für Warnings; jeder Warn allokiert einen Error-Object für `.stack`). Bei einer Render-Loop-Schleife mit deprecated Calls pro Frame = exponentieller Stack-Capture-Overhead = FPS-Tod. Mechanischer Selbst-Check: nach jeder Vendor-Welle eine Browser-Console-Scan-Anweisung im Schöpfer-Audit-Brief.
+
+**Bonus-Lehre**: Stage-1-Release-Notes-Scan zeigt API-Renames als „TSL object renames: viewportTopLeft → viewportUV" etc., aber NICHT immer JEDES Symbol. `transformedNormalWorld` war nicht explizit in den Release-Notes meiner V12.0-diag-Welle aufgeführt — der ehrliche Diag-Pfad ist: Vendor-Bytes runterladen + `grep -E "deprecated.*[A-Z][a-z]+" three.core.min.js` für die volle Deprecation-Liste, BEVOR Browser-Audit. Eigenwellen-Vorarbeit für künftige Vendor-Migrationen.
+
+**Was bleibt offen** für die nächste Session: V12.0-a (Hot-Swap-Pfad streichen + rendererKind-Gates weg, sobald Schöpfer-Browser-FPS auf RDNA-3 grün), V12.0-d (V11-Pool reaktivieren), V12.0-e (V9.95-Compute aktivieren), V12.0-f (MeshToonNodeMaterial-Cleanup), V12.0-g (final Audit).
+
+---
+
 **V12.0-vendor.3, 28.05.2026 — ColorManagement re-aktiviert + sRGB-Texture-Tagging:**
 
 Nach V12.0-vendor.2 (useLegacyLights-Clean-Up) zog die V12.0-vendor.3-Welle den substantielleren Teil — die ColorManagement-Bridge (V10.0-a-Erbe) raus + sRGB-Texture-Tagging.

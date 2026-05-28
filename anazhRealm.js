@@ -10312,7 +10312,7 @@ class AnazhRealm {
             dot,
             clamp,
             mix,
-            transformedNormalWorld,
+            normalWorld,
             positionLocal,
             positionWorld,
             texture,
@@ -10348,7 +10348,7 @@ class AnazhRealm {
         // beim Gras nicht (kein Cel-Look auf Halme); direkter Lambert-Mul.
         const u = this._ensureToonLightUniforms();
         const baseColor = vec3(float(0x5f / 255), float(0xa7 / 255), float(0x43 / 255));
-        const N = normalize(transformedNormalWorld);
+        const N = normalize(normalWorld);
         const L = normalize(u.sunDir);
         const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
         // V10.0-j — Shadow-Sampling identisch zu _buildToonNodeMaterial.
@@ -10359,7 +10359,7 @@ class AnazhRealm {
         if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
             const normalBias = float(1.0);
             const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
             const sampleUV = projected.xy;
@@ -17332,20 +17332,8 @@ class AnazhRealm {
         // Geteilte Toon-Light-Uniforms (lazy welt-global).
         const u = this._ensureToonLightUniforms();
 
-        const {
-            attribute,
-            vec2,
-            vec3,
-            vec4,
-            float,
-            normalize,
-            dot,
-            clamp,
-            mix,
-            transformedNormalWorld,
-            positionWorld,
-            texture,
-        } = TSL;
+        const { attribute, vec2, vec3, vec4, float, normalize, dot, clamp, mix, normalWorld, positionWorld, texture } =
+            TSL;
 
         // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
         // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
@@ -17360,7 +17348,7 @@ class AnazhRealm {
         }
 
         // Welt-Raum-Normale (mat3(modelMatrix) × normalLocal) — TSL-built-in.
-        const N = normalize(transformedNormalWorld);
+        const N = normalize(normalWorld);
         const L = normalize(u.sunDir);
         // Half-Lambert für weichen Schatten-Übergang: (dot×0.5+0.5)
         // Bei Standard-Lambert (max(dot, 0)) sind die Rückseiten 100% schwarz —
@@ -17398,7 +17386,7 @@ class AnazhRealm {
         if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
             const normalBias = float(1.0);
             const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
             // y-flip ist in der shadowMatrix bereits enthalten (NDC.y ist
@@ -19861,7 +19849,7 @@ class AnazhRealm {
             vec4,
             float,
             positionLocal,
-            transformedNormalWorld,
+            normalWorld,
             modelWorldMatrix,
             cameraPosition,
             sin,
@@ -19948,7 +19936,7 @@ class AnazhRealm {
         const lit = withFoam.mul(uLight);
 
         // Blinn-Phong Sonnen-Glitzern (V8.44-Welt-Raum-Normale).
-        const n = normalize(transformedNormalWorld);
+        const n = normalize(normalWorld);
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
         const halfV = normalize(normalize(uSunDir).add(viewDir));
         const spec = pow(max(dot(n, halfV), 0.0), 40.0);
@@ -40294,7 +40282,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-vendor.3";
+AnazhRealm.VERSION = "12.0-vendor.4";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
