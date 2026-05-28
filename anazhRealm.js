@@ -12627,7 +12627,20 @@ class AnazhRealm {
             // (Helper-early-Out, < 1 µs/Call), wenige im Wasser kosten
             // den 16-Sample-Scan (~30 µs/Call) = vernachlässigbar.
             let waterSurface = null;
-            const distSqToPlayer = creature.position.distanceToSquared(playerPos);
+            // V11.0-d.2.fix — XZ-Distanz statt 3D (Welt-Variations-Flakiness-
+            // Heilung). Original rechnete `distanceToSquared(playerPos)` voll-
+            // 3D. Bei flachen Welten ≈ XZ, aber in Voxel-Welt mit hoher Y-
+            // Variation (Spieler auf Berg 100m, Kreatur am See-Boden -3m =
+            // Δy²=10609) übersteigt die Y-Differenz allein die 2500-Schwelle,
+            // selbst wenn der Spieler horizontal direkt daneben ist. Resultat
+            // war: Y-Override greift in einem Lauf, im nächsten nicht (PRNG-
+            // abhängig wo der Spieler-spawn landet). XZ-Distanz ist außerdem
+            // semantisch korrekter: die V9.84-Perf-1.e-Distance-LOD-Lehre ist
+            // „sichtbare horizontale Nähe", nicht 3D-Kugel — der Spieler sieht
+            // eine Kreatur die seitlich 30 m entfernt ist, unabhängig von y.
+            const dxToPlayer = creature.position.x - playerPos.x;
+            const dzToPlayer = creature.position.z - playerPos.z;
+            const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
             if (distSqToPlayer < 2500) {
                 const wctx = this._creatureWaterContextAt(creature);
                 if (wctx.inWater) {
@@ -40253,7 +40266,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d";
+AnazhRealm.VERSION = "11.0-d.2.fix";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
