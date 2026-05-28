@@ -19518,21 +19518,14 @@ class AnazhRealm {
             const mesh = pool.pop();
             mesh.visible = true;
             mesh.count = 0; // Caller wird via setMatrixAt + count neu beschreiben
-            // V11.0-d.fix.gras-2 (Schöpfer-Browser-Audit-Wurzel: „im ersten
-            // Chunk Halme, alle weiteren nicht") — frischer instanceMatrix-
-            // Buffer beim Pool-Recycle. Three.js v160's WebGPU-Backend hat
-            // stale-Buffer-Cache-Issues beim Mesh-Re-Use (StaticDrawUsage
-            // triggert per-version-bump-writeBuffer NICHT zuverlässig wenn
-            // derselbe Mesh re-rendert wird mit neuen Daten — der vorherige
-            // Frame's Daten bleiben gebunden, neue Positionen werden NICHT
-            // hochgeladen → recycled Chunks rendern an alter Welt-Position
-            // (außerhalb Sichtfeld) → unsichtbar). Heilung: Mesh-Objekt +
-            // Geometry-Singleton + Material-Singleton bleiben recycled (Pool-
-            // Vorteil), aber instanceMatrix.array wird frisch allokiert pro
-            // acquire. 16 KB × Pool-Aktivität — der echte Pool-Gewinn ist
-            // erhalten (kein new InstancedMesh, kein neuer Geometry-Buffer,
-            // kein neues Material). Vendor-Race strukturell weg.
-            mesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(GRASS_MAX_BLADES * 16), 16);
+            // V12.0-d — ECHTES Pool-Recycling auf r184. Der
+            // V11.0-d.fix.gras-2-Workaround („frischer instanceMatrix-Buffer
+            // pro acquire", 16 KB/acquire) ist obsolet: r184's Bind-Group-
+            // Layout-Cache + writeBuffer-on-needsUpdate-Disziplin heilen den
+            // v160-stale-Buffer-Cache strukturell. Mesh wird mit existierendem
+            // instanceMatrix-Buffer recycled, Caller setzt
+            // `instanceMatrix.needsUpdate = true` nach setMatrixAt-Loop —
+            // Three.js triggert writeBuffer ein einziges Mal pro Chunk-Build.
             return mesh;
         }
         // Pool leer — neue Instanz allokieren. Voraussetzungen prüfen.
@@ -19681,20 +19674,27 @@ class AnazhRealm {
         // DrawIndexed-Iteration (echte Render-Count).
         const GRASS_MAX_BLADES = 256;
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
-        // V11.0-d.fix.gras3 — Pool-Pfad TEMPORÄR abgeklemmt nach Schöpfer-
-        // Browser-Audit-Befund („immernoch gleich, im ersten Chunk Halme,
-        // weitere nicht"). Drei Heilungs-Hypothesen (gras1 Bounding-Reset,
-        // gras2 frischer instanceMatrix-Buffer) haben nicht gegriffen — der
-        // Bug ist tiefer als ein einzelner stale-Cache. Three.js v160's
-        // WebGPU-Backend hat strukturelle Issues beim Mesh-Re-Use die OHNE
-        // r184-Vendor-Upgrade nicht voll heilbar sind (V12-Plan). EHRLICHER
-        // Zwischenstand bis V12.0-d: zurück auf V10.0-j.j-Workaround-Pattern
-        // (neuer InstancedMesh pro Chunk, Memory-Trade akzeptieren). Pool-
-        // API (`_acquireGrassMesh`/`_releaseGrassMesh`/`_drainGrassMeshPool`)
-        // BLEIBT im Code für V12-Refactor (33 Test-Invarianten grün, ehrliche
-        // Vorarbeit). Sobald V12.0-vendor r184 trägt + V12.0-d echtes
-        // Recycling beweist, wird der Pool-Pfad wieder aktiviert.
-        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
+        // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
+        // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
+        // (1) „Improve Bind Group Layout cache system" (r182) — InstancedMesh-
+        //     Re-Use cached Bind-Groups nicht mehr stale zwischen Chunks.
+        // (2) „compileAsync truly non-blocking" (r182) — Pipeline-Compile
+        //     stalls den Render-Loop nicht mehr (V11.0-d.fix.gras-2's
+        //     fresh-instanceMatrix-per-acquire-Workaround obsolet).
+        // (3) Three.js' WebGPU-Backend macht writeBuffer JETZT nur bei
+        //     `instanceMatrix.needsUpdate === true` (DynamicDrawUsage-Race
+        //     der V10.0-j.i-Lehre strukturell geheilt).
+        // V11.0-d.fix.gras-Bogen-Lehre angewandt: Vendor-Bugs durch Upgrade
+        // heilen, nicht workaround'en. `_acquireGrassMesh` poppt einen Pool-
+        // Mesh ODER allokiert neu wenn leer (Geometry-Singleton + Material-
+        // Singleton geteilt). Returnt null wenn Voraussetzungen fehlen →
+        // defensive Fallback auf direkte Allokation.
+        let inst = this._acquireGrassMesh();
+        if (!inst) {
+            inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+        }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
         // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
@@ -19754,16 +19754,16 @@ class AnazhRealm {
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
-            // V11.0-d.fix.gras3 — Pool-Pfad temporär abgeklemmt. Zurück auf
-            // V10.0-j.j-Workaround: scene.remove, Geometry NICHT disposen
-            // (Three.js v160-WebGPU-Buffer-Lifecycle-Race). ~500 KB GPU-Heap
-            // pro Welt-Lebensdauer akzeptiert als Memory-Trade bis V12.0-d
-            // (r184-Upgrade) den Race strukturell heilt. Pool-API
-            // (`_releaseGrassMesh`) wird hier NICHT mehr gerufen, weil Pool-
-            // Recycling in v160 visuell broken (siehe `_buildVoxelChunkGrass`
-            // V11.0-d.fix.gras3-Kommentar). Pool-Code bleibt im Stamm als
-            // V12-Vorarbeit, aber im Lifecycle deaktiviert.
-            if (this.state.scene) this.state.scene.remove(grass);
+            // V12.0-d — Pool-Recycling auf r184. `_releaseGrassMesh` macht
+            // scene.remove + push in den Pool (mit CAP=32-LRU-Disziplin).
+            // V10.0-j.j-Memory-Trade (Geometry nicht disposed, ~500 KB GPU-
+            // Heap pro Welt-Lebensdauer) ist obsolet — Geometry ist
+            // Singleton (`_grassConeGeometry`, geteilt zwischen allen Pool-
+            // Meshes), instanceMatrix wird beim nächsten acquire wieder-
+            // beschrieben. r184's Bind-Group-Layout-Cache + compileAsync-
+            // non-blocking heilen den v160-InstancedMesh-Re-Use-Bug
+            // strukturell (V11.0-d.fix.gras-Bogen-Lehre angewandt).
+            this._releaseGrassMesh(grass);
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -40104,7 +40104,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-a";
+AnazhRealm.VERSION = "12.0-d";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -14671,15 +14671,13 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-        // V11.0-d.fix.gras3 — Pool-Pfad ABGEKLEMMT (Three.js v160 hat Pool-
-        // Recycle-Issues, V12.0-d wird via r184-Upgrade strukturell heilen).
-        // Source-Probe prüft jetzt: Build-Pfad nutzt `new InstancedMesh`
-        // (V10.0-j.j-Workaround restored). Pool-API existiert weiter im
-        // Stamm (V12-Vorarbeit, 33 Inv in V11.0-a/d grün), wird aber im
-        // aktiven Lifecycle nicht gerufen. V12.0-d aktiviert sie wieder.
+        // V12.0-d — Pool-Pfad RE-AKTIVIERT auf r184 (Bind-Group-Layout-Cache
+        // + compileAsync-non-blocking heilen den v160-InstancedMesh-Re-Use-
+        // Bug strukturell). Source-Probe prüft jetzt: Build-Pfad nutzt
+        // `_acquireGrassMesh()`. V11.0-d.fix.gras3-Workaround obsolet.
         const buildSrc = r._buildVoxelChunkGrass.toString();
-        out.usesNewInstancedMesh = /new THREE\.InstancedMesh\(/.test(buildSrc);
-        out.poolAbklemmungMarker = /V11\.0-d\.fix\.gras3/.test(buildSrc);
+        out.usesAcquire = /this\._acquireGrassMesh\(/.test(buildSrc);
+        out.v12dMarker = /V12\.0-d/.test(buildSrc);
 
         // Empirischer Pre-fill-Test: lege ein Mesh manuell in den Pool, dann
         // baue einen neuen Chunk — der sollte aus dem Pool acquiren.
@@ -14721,12 +14719,12 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         return;
     }
     check(
-        "Welle V11.0-d.fix.gras3: Build-Pfad nutzt `new InstancedMesh` (Pool abgeklemmt, V12-Backlog)",
-        res.usesNewInstancedMesh === true
+        "Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)",
+        res.usesAcquire === true
     );
     check(
-        "Welle V11.0-d.fix.gras3: Pool-Abklemmungs-Marker im Build-Pfad-Code",
-        res.poolAbklemmungMarker === true
+        "Welle V12.0-d: V12.0-d-Marker im Build-Pfad-Code (Pool-Reaktivierung dokumentiert)",
+        res.v12dMarker === true
     );
     if (res.skipReason) {
         check(
@@ -14740,17 +14738,16 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         "Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)",
         res.poolSizeBeforeBuild === 1
     );
-    // V11.0-d.fix.gras3: Pool-Pfad abgeklemmt → Build allokiert neu statt aus
-    // Pool zu nehmen. Bei V12.0-d-Reaktivierung wieder umstellen auf
-    // builtIsPreFilled === true + poolEmptyAfterBuild === true.
+    // V12.0-d: Pool-Pfad aktiv → Build konsumiert Pool-Pre-Fill via
+    // `_acquireGrassMesh()`. Mesh-Identity beweist echtes Recycling.
     check(
-        "Welle V11.0-d.fix.gras3: Build allokiert neu (Pool-Pre-Fill wird NICHT konsumiert, Pool-Abklemmung wirkt)",
-        res.builtExists === true && res.builtIsPreFilled === false,
-        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (false = Pool-Abklemmung korrekt)`
+        "Welle V12.0-d: Build konsumiert Pool-Pre-Fill (`builtIsPreFilled === true`, echtes Recycling)",
+        res.builtExists === true && res.builtIsPreFilled === true,
+        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (true = recycelt)`
     );
     check(
-        "Welle V11.0-d.fix.gras3: Pool bleibt voll nach Build (Pre-Filled bleibt drin)",
-        res.poolEmptyAfterBuild === false
+        "Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)",
+        res.poolEmptyAfterBuild === true
     );
 }
 
@@ -14765,12 +14762,12 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-        // V11.0-d.fix.gras3 — Pool-Pfad ABGEKLEMMT. Dispose nutzt jetzt
-        // scene.remove (V10.0-j.j-Workaround restored). V12.0-d aktiviert
-        // _releaseGrassMesh wieder.
+        // V12.0-d — Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push +
+        // scene.remove intern). V11.0-d.fix.gras3-Workaround (direkt
+        // scene.remove) obsolet auf r184.
         const disposeSrc = r._disposeVoxelChunkGrass.toString();
-        out.usesSceneRemove = /scene\.remove\(grass\)/.test(disposeSrc);
-        out.poolAbklemmungInDispose = /V11\.0-d\.fix\.gras3/.test(disposeSrc);
+        out.usesRelease = /this\._releaseGrassMesh\(grass\)/.test(disposeSrc);
+        out.v12dMarker = /V12\.0-d/.test(disposeSrc);
 
         // Voller despawn+respawn-Identity-Test mit einer echten Chunk-
         // Position. Schaue nach einem existierenden Gras-Chunk.
@@ -14813,12 +14810,12 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         return;
     }
     check(
-        "Welle V11.0-d.fix.gras3: Dispose-Pfad nutzt scene.remove (Pool abgeklemmt, V12-Backlog)",
-        res.usesSceneRemove === true
+        "Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)",
+        res.usesRelease === true
     );
     check(
-        "Welle V11.0-d.fix.gras3: Pool-Abklemmungs-Marker im Dispose-Pfad-Code",
-        res.poolAbklemmungInDispose === true
+        "Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code",
+        res.v12dMarker === true
     );
     if (res.skipReason) {
         check(
@@ -14833,18 +14830,19 @@ async function checkBandWelleV11CPoolDispose(ctx) {
     // Reaktivierung wieder umstellen auf poolSizeAfterDispose === 1 +
     // respawnedIsSameAsFound === true.
     check(
-        "Welle V11.0-d.fix.gras3: Dispose pusht NICHT in Pool (size=0, Pool-Abklemmung wirkt)",
-        res.poolSizeAfterDispose === 0,
-        `poolSize=${res.poolSizeAfterDispose} (0 = Pool-Abklemmung korrekt)`
+        "Welle V12.0-d: Dispose pusht IN Pool (size=1, echtes Recycling)",
+        res.poolSizeAfterDispose === 1,
+        `poolSize=${res.poolSizeAfterDispose} (1 = Pool-Push korrekt)`
     );
     check("Welle V11.0-c: disposed Chunk ist aus voxelChunkGrass entfernt", res.disposedChunkGone === true);
     check("Welle V11.0-c: Re-Build erzeugt Mesh", res.respawnedExists === true);
     check(
-        "Welle V11.0-d.fix.gras3: Re-Build allokiert NEUE Instance (kein Recycle, Pool-Abklemmung wirkt)",
-        res.respawnedIsSameAsFound === false
+        "Welle V12.0-d: Re-Build recycelt das gleiche Mesh (Identity-Beweis für Pool-Recycling)",
+        res.respawnedIsSameAsFound === true,
+        `respawnedSameAsFound=${res.respawnedIsSameAsFound}`
     );
     check(
-        "Welle V11.0-c: Pool wieder leer nach Re-Build",
+        "Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)",
         res.poolEmptyAfterRespawn === true
     );
 }
@@ -14941,9 +14939,9 @@ async function checkBandWelleV11DPoolStress(ctx) {
         `maxPoolSize=${res.maxPoolSizeDuring}`
     );
     check(
-        "Welle V11.0-d: Pool nach Stress = 0 (V11.0-d.fix.gras3 Pool-Abklemmung) ODER = 1 (single-use bei V12-Reaktivierung)",
-        res.poolSizeAfterStress === 0 || res.poolSizeAfterStress === 1,
-        `poolSize=${res.poolSizeAfterStress} (0 = Pool abgeklemmt seit V11.0-d.fix.gras3)`
+        "Welle V12.0-d: Pool nach Stress = 1 (echtes Recycling — last release lebt im Pool)",
+        res.poolSizeAfterStress === 1 || res.poolSizeAfterStress === 0,
+        `poolSize=${res.poolSizeAfterStress} (V12.0-d Pool-Reaktivierung)`
     );
     check(
         "Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)",

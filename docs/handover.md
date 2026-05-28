@@ -357,6 +357,56 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-d, 28.05.2026 — V11-Mesh-Pool reaktiviert auf r184, echtes Recycling bewiesen im Headless:**
+
+Nach V12.0-a (Hot-Swap weg, WebGPU-required) ist der V11-Pool-Reaktivierungs-Pfad endlich gangbar. V11.0-d.fix.gras-Bogen (drei v160-Workaround-Hypothesen) wird durch den ehrlichen r184-Vendor-Upgrade-Pfad ersetzt — genau wie die Bogen-Lehre artikulierte: „Vendor-Bugs durch Upgrade heilen, nicht workaround'en".
+
+**Drei chirurgische Edits + Test-Doku-Sync (V9.56-i)**:
+
+1. **`_buildVoxelChunkGrass`** ruft jetzt `this._acquireGrassMesh()` statt `new THREE.InstancedMesh(...)` direkt:
+   - Pool-Pop wenn Pool nicht leer (Mesh-Identity recycelt, alte Geometry+Material+instanceMatrix-Buffer wieder genutzt)
+   - Neu-Allokation wenn Pool leer
+   - Defensive Fallback auf direkte Allokation wenn `_acquireGrassMesh()` null returnt (Material/Geometry-Race-Schutz)
+
+2. **`_disposeVoxelChunkGrass`** ruft jetzt `this._releaseGrassMesh(grass)` statt `scene.remove(grass)` direkt:
+   - Push in Pool (CAP=32-LRU-Disziplin), scene.remove intern
+   - V10.0-j.j-Memory-Trade obsolet — Geometry-Singleton (`_grassConeGeometry`) bleibt geteilt zwischen allen Pool-Meshes, ~500 KB GPU-Heap pro Welt-Wechsel gespart
+
+3. **V11.0-d.fix.gras-2-Workaround im `_acquireGrassMesh` GESTRICHEN**: die fresh-instanceMatrix-Allokation pro acquire (16 KB/Pool-Pop, ein v160-Workaround gegen stale-Buffer-Cache) ist auf r184 obsolet. r184's „Improve Bind Group Layout cache system" (r182) + „compileAsync truly non-blocking" (r182) heilen den v160-stale-Buffer-Cache strukturell. Echtes zero-copy-Pool-Recycling: derselbe instanceMatrix-Buffer wird recycled, neue Daten via setMatrixAt + needsUpdate=true triggern Three.js' writeBuffer ein einziges Mal pro Chunk-Build.
+
+**Test-Doku-Sync (V9.56-i)**: 7 Playtest-Invarianten von „Pool abgeklemmt"-Probes auf „Pool recycelt"-Probes mit-gewandert:
+- `usesNewInstancedMesh` → `usesAcquire` (Source-Probe `_acquireGrassMesh(` in Build-Pfad)
+- `usesSceneRemove` → `usesRelease` (Source-Probe `_releaseGrassMesh(grass)` in Dispose-Pfad)
+- `poolAbklemmungMarker` → `v12dMarker` (Code-Doku-Marker `V12.0-d`)
+- `builtIsPreFilled === false` → `=== true` (Build konsumiert Pool-Pre-Fill — Identity-Beweis)
+- `poolEmptyAfterBuild === false` → `=== true` (Pool wurde geleert durch acquire)
+- `poolSizeAfterDispose === 0` → `=== 1` (Dispose pusht in Pool)
+- `respawnedIsSameAsFound === false` → `=== true` (Re-Build recycelt das gleiche Mesh-Objekt)
+
+**Verhaltens-Beweis (Headless)**:
+- `maxPoolSize=1` während 50-Zyklus-Stress (Pool oszilliert zwischen 0 und 1: acquire→build→release→dispose-Zyklus)
+- `poolSizeAfterStress=1` (last release lebt im Pool)
+- `heapDelta=6890 KB` (war 7776 KB ohne Recycling — kleine Verbesserung schon im headless WebGL2-Fallback; der echte Win kommt am echten WebGPU-Adapter)
+- Pre-Fill-Test grün: ein manuell in den Pool gelegtes Mesh wird beim nächsten Build via `_acquireGrassMesh()` konsumiert (Mesh-Identity bewiesen via `builtMesh === preFilled`)
+- Identity-Test grün: `_disposeVoxelChunkGrass` → `_releaseGrassMesh` → Pool-Push, dann `_buildVoxelChunkGrass` → `_acquireGrassMesh` → Pool-Pop → SAME mesh object (referenz-identisch)
+- Playtest „Alle Invarianten OK", audit:strict 0 Failures / 9 Warnings, Format/Lint sauber
+- Version-Bump 12.0.4 → 12.0.5
+
+**Wartepunkt für Schöpfer-Browser-Audit** (Stage-3-Diziplin): die Code-Korrektheit ist headless bewiesen, aber die ECHTE Wahrheitsprobe ist die VISUELLE Gras-Sichtbarkeit im zweiten Chunk auf echtem AMD-RDNA-3-WebGPU-Adapter. V11.0-d.fix.gras-Bogen-Befund war „im ersten Chunk Halme, weitere nicht" auf v160 — die VIERTE Hypothese am gleichen Bug:
+1. ❌ V11.0-d.fix.gras1 (bounding-cache-reset, v160) — nicht ausreichend
+2. ❌ V11.0-d.fix.gras2 (fresh-instanceMatrix-per-acquire, v160) — nicht ausreichend
+3. ⚠️ V11.0-d.fix.gras3 (Pool abgeklemmt, Memory-Trade, v160) — Hybrid-Workaround
+4. ⏳ V12.0-d (Vendor-Upgrade r184, ehrlicher Pfad) — wartet auf Schöpfer-Browser-Audit
+
+Wenn r184 strukturell heilt: V11.0-d.fix.gras-Bogen-Vision endlich erfüllt + Pool-Vorteil aktiviert.
+Wenn r184 NICHT heilt: V12.0-d zurück auf V11.0-d.fix.gras3-Workaround (Memory-Trade) + V12.0-d.fix als eigene Diag-Welle. Ehrliche Reflexion ist Profi-Disziplin.
+
+**Lehre verstärkt**: V11.0-d.fix.gras-Bogen-Lehre („Vendor-Bugs durch Upgrade heilen") angewandt. Statt eine fünfte v160-Workaround-Hypothese zu bauen, ist V12.0-d der ehrliche r184-Vertrauenspfad. Wenn der Schöpfer-Browser ihn nicht bestätigt, fallen wir auf Memory-Trade zurück — kein weiterer Spiral-Workaround.
+
+**Was bleibt offen**: V12.0-e (V9.95-Compute-Pipeline aktivieren — GPU→Renderer zero-copy auf r184's Three.js-WebGPU-Renderer real möglich, Density-Berechnung wandert von Worker (CPU) auf GPU); V12.0-f (`_buildToonNodeMaterial`-Workaround durch eingebautes `MeshToonNodeMaterial` ersetzen, V10.0-g.diag-Schicht obsolet auf r184); V12.0-g (final Schöpfer-Browser-Audit + V12-Bogen-Bilanz).
+
+---
+
 **V12.0-a, 28.05.2026 — Hot-Swap-Pfad + `rendererKind`-Gates gestrichen, WebGPU-required Bootstrap-Wand:**
 
 Schöpfer-Browser bestätigt V12.0-vendor.4 FPS-Heilung — die strukturelle Welt-Vereinfachung kann starten. V12.0-a streicht die Hot-Swap-Defensiv-Schicht (V10.0-e/f-5/f-6-Bogen) die seit V12.0-vendor.1 funktional obsolet ist (r164's WebGLNodeBuilder-Entfernung macht WebGL-Fallback zu schwarzer Welt).
