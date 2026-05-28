@@ -19693,26 +19693,28 @@ class AnazhRealm {
             geo.translate(0, 0.425, 0);
             this.state._grassConeGeometry = geo;
         }
-        const geo = this.state._grassConeGeometry;
-        // V10.0-j.c — Uniform-Capacity-Pattern (Profi-Vorbild Genshin/BotW).
-        // V10.0-j.b's `material.clone()`-Pfad reichte NICHT: Three.js'
-        // RenderObject.getMaterialCacheKey (RenderObject.js Z113-128)
-        // serialisiert Material-Properties mit `typeof value === 'object'
-        // → '{}'` → Tree-Knoten-Referenzen sind unsichtbar im Cache-Key,
-        // zwei Material-Clones mit identischen Properties haben IDENTISCHE
-        // Cache-Keys → Pipeline-Cache teilt den Vertex-Buffer-Binding-Slot
-        // zwischen Chunks → kleinster instanceMatrix-Buffer wird gebunden,
-        // größere Chunks crashen mit „Instance range requires larger buffer".
-        // **Profi-Heilung**: alle Gras-InstancedMeshes mit UNIFORM Capacity
-        // allokieren (GRASS_MAX_BLADES=256). Bound-Buffer ist konstant pro
-        // Pipeline-Cache → kein Mismatch. `inst.count = blades.length` für
-        // die DrawIndexed-Iteration (echte Render-Count). Cap auf 256 falls
-        // ein Chunk extreme blade-Density hätte (typisch 50-200 blades).
-        // Material-Singleton (V9.84 Perf-1.a) bleibt erhalten. Cost: 256 ×
-        // 64 bytes × ~30 Chunks = ~500 KB GPU-Heap, vernachlässigbar.
+        // V11.0-b (Mesh-Pool aktiv im Build-Pfad) — wir holen ein
+        // InstancedMesh aus dem Pool (oder allokieren neu wenn leer)
+        // statt jedes Mal `new THREE.InstancedMesh` zu rufen. Pool-Identity
+        // ist garantiert (V11.0-a-Test): bei wiederholtem Streaming +
+        // Despawn der gleichen Welt-Region poppt der Pool dieselben
+        // Mesh-Objekte raus, instanceMatrix wird neu beschrieben —
+        // kein neuer Buffer, kein Race-Risiko.
+        // V10.0-j.c-Uniform-Capacity-Pattern bleibt: GRASS_MAX_BLADES=256
+        // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
+        // Mismatch zwischen Chunks. inst.count = realCount für die
+        // DrawIndexed-Iteration (echte Render-Count).
         const GRASS_MAX_BLADES = 256;
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
-        const inst = new THREE.InstancedMesh(geo, this._grassInstanceMat(), GRASS_MAX_BLADES);
+        const inst = this._acquireGrassMesh();
+        if (!inst) {
+            // Defensive: Acquire-Fallback (Geometry/Material noch nicht
+            // initialisiert). Sollte nicht passieren weil wir oben
+            // _grassConeGeometry lazy initialisieren — aber defensive
+            // bleibt billig. Chunk bekommt kein Gras diesmal.
+            this.state.voxelChunkGrass.set(key, null);
+            return;
+        }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
         // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
@@ -40250,7 +40252,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-a";
+AnazhRealm.VERSION = "11.0-b";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -14658,6 +14658,91 @@ async function checkBandWelleV11APoolFoundation(ctx) {
     );
 }
 
+// V11.0-b (Mesh-Pool im Build-Pfad aktiv) — Source-Probe-Beweis dass
+// `_buildVoxelChunkGrass` jetzt `_acquireGrassMesh` ruft statt direkt
+// `new THREE.InstancedMesh`. Plus empirisch: nach Pool-Pre-fill ruft
+// der nächste Build aus dem Pool (Recycle wirkt im Build-Pfad).
+// Der volle despawn+respawn-Identity-Test gehört zu V11.0-c (dort wird
+// der Dispose-Pfad recycle-aware + V10.0-j.j-Workaround entfernt).
+async function checkBandWelleV11BPoolBuild(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Source-Probe: Build-Pfad ruft _acquireGrassMesh.
+        const buildSrc = r._buildVoxelChunkGrass.toString();
+        out.usesAcquire = /_acquireGrassMesh\(/.test(buildSrc);
+        out.noDirectNewInstancedMesh = !/new THREE\.InstancedMesh\(/.test(buildSrc);
+
+        // Empirischer Pre-fill-Test: lege ein Mesh manuell in den Pool, dann
+        // baue einen neuen Chunk — der sollte aus dem Pool acquiren.
+        if (!r.state._grassConeGeometry) {
+            out.skipReason = "Geometry noch nicht initialisiert (Welt-Variation)";
+            return out;
+        }
+        // Finde eine NICHT-existierende Chunk-Koordinate (so dass build nicht
+        // idempotent-skipt). Hochzählen bis ein freier Slot.
+        let testCx = 1000;
+        let testCz = 1000;
+        const grassMap = r.state.voxelChunkGrass || new Map();
+        while (grassMap.has(`${testCx},${testCz}`)) {
+            testCx++;
+        }
+        // Pool sauber + pre-fill mit einer fabrizierten Instanz.
+        r._drainGrassMeshPool();
+        const preFilled = r._acquireGrassMesh();
+        if (!preFilled) {
+            out.skipReason = "_acquireGrassMesh returnt null (Material/Geometry-Race)";
+            return out;
+        }
+        r._releaseGrassMesh(preFilled);
+        out.poolSizeBeforeBuild = r.state._grassMeshPool.length;
+        // Jetzt build — sollte preFilled re-akquirieren.
+        r._buildVoxelChunkGrass(testCx, testCz);
+        const builtMesh = grassMap.get(`${testCx},${testCz}`);
+        out.builtExists = !!builtMesh;
+        out.builtIsPreFilled = builtMesh === preFilled;
+        out.poolEmptyAfterBuild = r.state._grassMeshPool.length === 0;
+        // Cleanup (auch wenn V11.0-c noch fehlt — scene.remove via aktueller
+        // V10.0-j.j-Workaround).
+        r._disposeVoxelChunkGrass(`${testCx},${testCz}`);
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-b: Build-Pfad-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V11.0-b: _buildVoxelChunkGrass ruft _acquireGrassMesh (Source-Probe)",
+        res.usesAcquire === true
+    );
+    check(
+        "Welle V11.0-b: kein direktes `new THREE.InstancedMesh` mehr im Build-Pfad",
+        res.noDirectNewInstancedMesh === true
+    );
+    if (res.skipReason) {
+        check(
+            "Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)",
+            false,
+            res.skipReason
+        );
+        return;
+    }
+    check(
+        "Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)",
+        res.poolSizeBeforeBuild === 1
+    );
+    check(
+        "Welle V11.0-b: Build mit nicht-leerem Pool liefert das gepoolte Mesh (Recycle wirkt)",
+        res.builtExists === true && res.builtIsPreFilled === true,
+        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled}`
+    );
+    check("Welle V11.0-b: Pool leer nach Build (acquire hat es konsumiert)", res.poolEmptyAfterBuild === true);
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31692,6 +31777,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleV11D3DrinkTask(ctx);
             // V11.0-a — Mesh-Pool-Pattern Foundation (V10.0-j.j-Bogen-Schluss).
             await checkBandWelleV11APoolFoundation(ctx);
+            // V11.0-b — Mesh-Pool im Build-Pfad aktiv (Recycle wirkt).
+            await checkBandWelleV11BPoolBuild(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
