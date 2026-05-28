@@ -12648,7 +12648,9 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // 3) Source-Probe: _rebuildVoxelChunk ruft die Build-Methode (mit-
         // wandernde Doku-Probe).
-        out.rebuildCallsBuild = /this\._buildVoxelChunkWaterIsoSurface\(/.test(r._rebuildVoxelChunk.toString());
+        // V12.0-perf.a — Iso-Wasser-Build wanderte in den geteilten Finalize-
+        // Helfer `_finalizeVoxelChunkBuild` (genutzt von Streaming + Rebuild).
+        out.rebuildCallsBuild = /this\._buildVoxelChunkWaterIsoSurface\(/.test(r._finalizeVoxelChunkBuild.toString());
         out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(r._disposeVoxelChunk.toString());
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
         // sollte für jeden gefüllten Chunk einen Eintrag haben (Mesh oder
@@ -13074,14 +13076,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         "Welle Perf-3.b V9.88: LOD 1 Config (dim=12, step=3.6, dimY=62) — 8× weniger Cells",
         res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 62
     );
-    check(
-        "Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)",
-        res.spanInvariant
-    );
-    check(
-        "Welle Perf-3.b V9.88: vertikaler Range invariant (dimY·step = 223.2 m)",
-        res.verticalRangeInvariant
-    );
+    check("Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)", res.spanInvariant);
+    check("Welle Perf-3.b V9.88: vertikaler Range invariant (dimY·step = 223.2 m)", res.verticalRangeInvariant);
     check(
         "Welle Perf-3.b V9.88: LOD 1 hat 8× weniger Cells als LOD 0",
         res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
@@ -13258,7 +13254,8 @@ async function checkBandWelleV995WebGpuFoundation(ctx) {
         out.hasInit = typeof r._voxelGpuInit === "function";
         out.hasRunProof = typeof r._voxelGpuRunFoundationProof === "function";
         out.hasDispose = typeof r._voxelGpuDispose === "function";
-        out.hasWgslConst = typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
+        out.hasWgslConst =
+            typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
         // (b) Initial-Status (kann notTried sein, oder bereits ready/unavailable wenn
         // Worldgen-State-Sync den GPU-Init schon getriggert hat)
         out.statusBeforeInit = r.state.voxelGpuStatus;
@@ -13366,7 +13363,8 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         out.hasChunkEligible = typeof r._voxelGpuChunkEligible === "function";
         out.hasComputeDensity = typeof r._voxelGpuComputeDensity === "function";
         out.hasFetchOrRequest = typeof r._fetchOrRequestChunkDensityGpu === "function";
-        out.hasWgslDensity = typeof AnazhRealm.WGSL_DENSITY_GRID === "string" && AnazhRealm.WGSL_DENSITY_GRID.length > 1000;
+        out.hasWgslDensity =
+            typeof AnazhRealm.WGSL_DENSITY_GRID === "string" && AnazhRealm.WGSL_DENSITY_GRID.length > 1000;
         // (b) State-Felder existieren
         out.hasStateFields =
             "voxelGpuDensityPipeline" in r.state &&
@@ -13389,7 +13387,9 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         // Source-Probe prüft jetzt: `_fetchOrRequestChunkDensityGpu` ist im
         // Streaming-Pfad aufgerufen als Stufe-2-Fallback (Worker-Mesh bleibt
         // Stufe-1 primary).
-        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Kaskade wanderte in `_acquireVoxelChunkBuild` (geteilt
+        // Streaming + Edit-Rebuild). GPU-Cutover lebt jetzt dort.
+        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._acquireVoxelChunkBuild.toString());
         out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
         // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
         // im Edit-Footprint nicht mehr eligible ist
@@ -13408,9 +13408,13 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
             try {
                 const cfg = r._voxelChunkConfig(0);
                 const base = r.state.terrainBaseHeight || 0;
-                const ox = 0, oy = base - cfg.floorDrop, oz = 0;
+                const ox = 0,
+                    oy = base - cfg.floorDrop,
+                    oz = 0;
                 // klein: 8×8×8 = 729 vertices
-                const dimX = 8, dimY = 8, dimZ = 8;
+                const dimX = 8,
+                    dimY = 8,
+                    dimZ = 8;
                 const gpuGrid = await r._voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, cfg.step);
                 out.gpuLen = gpuGrid.length;
                 out.gpuExpectedLen = (dimX + 1) * (dimY + 1) * (dimZ + 1);
@@ -13452,7 +13456,10 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
     check("V9.95-b Density-Pipeline: _voxelGpuChunkEligible existiert", res.hasChunkEligible);
     check("V9.95-b Density-Pipeline: _voxelGpuComputeDensity existiert", res.hasComputeDensity);
     check("V9.95-b Density-Pipeline: _fetchOrRequestChunkDensityGpu existiert", res.hasFetchOrRequest);
-    check("V9.95-b Density-Pipeline: AnazhRealm.WGSL_DENSITY_GRID ist substantieller String (>1000 Z)", res.hasWgslDensity);
+    check(
+        "V9.95-b Density-Pipeline: AnazhRealm.WGSL_DENSITY_GRID ist substantieller String (>1000 Z)",
+        res.hasWgslDensity
+    );
     check("V9.95-b Density-Pipeline: 10 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
     check(
         "V9.95-b Density-Pipeline: Eligibility-Gate — Trockenland-Chunk ohne Edits/Hydro eligible",
@@ -13474,10 +13481,7 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         res.gpuCutoverActive,
         "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh bleibt Stufe-1 primary"
     );
-    check(
-        "V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache",
-        res.notifyEditClears
-    );
+    check("V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache", res.notifyEditClears);
     // Conditional: echter Browser mit GPU
     if (res.gpuStatus === "ready" && !res.gpuComputeError) {
         check(
@@ -13617,7 +13621,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         out.editBumpedStateGen = r.state.voxelWorkerStateGen === beforeStateGen + 1;
         out.editClearedCache = !r.state.voxelDensityCache || r.state.voxelDensityCache.size === 0;
         // 6) Source-Probes
-        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Worker-Density-Stufe lebt in `_acquireVoxelChunkBuild`.
+        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(r._acquireVoxelChunkBuild.toString());
         out.addEditCallsNotify = /_voxelWorkerNotifyEdit\(/.test(r._addVoxelEdit.toString());
         return out;
     });
@@ -13821,7 +13826,8 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         // Clean up
         syncFresh.mesh.geometry.dispose();
         // Source-Probe
-        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Worker-Mesh-Stufe-1 lebt in `_acquireVoxelChunkBuild`.
+        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(r._acquireVoxelChunkBuild.toString());
         return out;
     });
     if (res.error) {
@@ -13999,7 +14005,8 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
             out.upgradeIdempotent = upgradeAgain === false; // schon BVH'd
         }
         // 6) Source-Probes
-        out.ensureUsesLazyBVH = /_voxelChunkLazyBVHFor\(/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Lazy-BVH-Decision lebt in `_acquireVoxelChunkBuild`.
+        out.ensureUsesLazyBVH = /_voxelChunkLazyBVHFor\(/.test(r._acquireVoxelChunkBuild.toString());
         out.streamingCallsPump = /_pumpVoxelChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
         out.streamingCallsEnsurePlayer = /_ensurePlayerChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
         return out;
@@ -14115,10 +14122,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
     check("Welle V9.93: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
-    check(
-        "Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)",
-        res.buildPassesLod0
-    );
+    check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
 // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — Beweis dass der
@@ -14230,10 +14234,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
     if (res.foundWater) {
         check("Welle V11.0-d.1: Wasser-Stichprobe: inWater=true", res.waterInWaterTrue === true);
         check("Welle V11.0-d.1: Wasser-Stichprobe: depthBelow > 0", res.waterDepthPositive === true);
-        check(
-            "Welle V11.0-d.1: Wasser-Stichprobe: shoreDir null oder Kardinal-Vector3",
-            res.waterShoreDirOk === true
-        );
+        check("Welle V11.0-d.1: Wasser-Stichprobe: shoreDir null oder Kardinal-Vector3", res.waterShoreDirOk === true);
         check(
             "Welle V11.0-d.1: Wasser-Stichprobe: distToShore endlich oder Infinity",
             res.waterDistToShoreFinite === true
@@ -14244,15 +14245,9 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         res.perfMs < 50,
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
-    check(
-        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)",
-        res.usesVoxelSurfaceY === true
-    );
+    check("Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)", res.usesVoxelSurfaceY === true);
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
-    check(
-        "Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)",
-        res.usesIsAboveWaterAt === true
-    );
+    check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
 }
 
 // V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der
@@ -14347,15 +14342,9 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         "Welle V11.0-d.2: updateCreatures konsumiert _creatureWaterContextAt (Source-Probe)",
         res.loopReadsWaterContext === true
     );
-    check(
-        "Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik",
-        res.loopHasWaterSurface === true
-    );
+    check("Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik", res.loopHasWaterSurface === true);
     check("Welle V11.0-d.2: updateCreatures liest shoreDir für Ufer-Bias", res.loopHasShoreBias === true);
-    check(
-        "Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)",
-        res.loopHasDistanceLod === true
-    );
+    check("Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)", res.loopHasDistanceLod === true);
     if (!res.waterSpotFound) {
         // Wenn die Welt-Variation keinen tiefen Wasser-Spot in ±120m hat,
         // ist die empirische Probe nicht möglich — Source-Probes haben
@@ -14423,10 +14412,7 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
         out.chatParsesTrinke =
-            parsed &&
-            parsed.program &&
-            parsed.program[0] === "creature_task_nearest" &&
-            parsed.program[1] === "drink";
+            parsed && parsed.program && parsed.program[0] === "creature_task_nearest" && parsed.program[1] === "drink";
 
         // Empirisch: _findNearestWaterPoint findet Wasser im Spawn-Bereich.
         let waterSpot = null;
@@ -14497,34 +14483,19 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
     check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
     check("Welle V11.0-d.3: _findNearestWaterPoint existiert", res.findExists === true);
-    check(
-        "Welle V11.0-d.3: _tickCreatureTaskDirection routet drink",
-        res.routerHasDrink === true
-    );
+    check("Welle V11.0-d.3: _tickCreatureTaskDirection routet drink", res.routerHasDrink === true);
     check(
         "Welle V11.0-d.3: _tickCreatureDrink hat 3-Phasen-Logik (_target + _drinkStart)",
         res.drinkHasPhases === true
     );
-    check(
-        "Welle V11.0-d.3: _tickCreatureDrink setzt happy nach vollendetem Trinken",
-        res.drinkSetsHappy === true
-    );
-    check(
-        "Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink",
-        res.chatParsesTrinke === true
-    );
+    check("Welle V11.0-d.3: _tickCreatureDrink setzt happy nach vollendetem Trinken", res.drinkSetsHappy === true);
+    check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
     if (res.waterFound) {
-        check(
-            "Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)",
-            res.findReturnsObj === true
-        );
+        check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
     }
     if (res.assignOk !== undefined) {
         check("Welle V11.0-d.3: assignCreatureTask akzeptiert 'drink'", res.assignOk === true);
-        check(
-            "Welle V11.0-d.3: Kreatur trägt drink-Task nach assign",
-            res.taskNameAfter === "drink"
-        );
+        check("Welle V11.0-d.3: Kreatur trägt drink-Task nach assign", res.taskNameAfter === "drink");
         // Nach einem Tick: entweder noch drink (Wasser gefunden, walking)
         // oder wander (Wasser nicht in 40m, Auto-Fallback). Beide OK.
         check(
@@ -14624,22 +14595,19 @@ async function checkBandWelleV11APoolFoundation(ctx) {
     check("Welle V11.0-a: _releaseGrassMesh existiert", res.releaseExists === true);
     check("Welle V11.0-a: _drainGrassMeshPool existiert", res.drainExists === true);
     check("Welle V11.0-a: state._grassMeshPool als Slot deklariert", res.poolFieldDeclared === true);
-    check(
-        "Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch",
-        res.poolEmptyAfterDrain === true
-    );
+    check("Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch", res.poolEmptyAfterDrain === true);
     if (!res.geometryReady) {
-        check(
-            "Welle V11.0-a: defensive — ohne Geometry returnt acquire null",
-            res.acquireWhenGeoMissing === true
-        );
+        check("Welle V11.0-a: defensive — ohne Geometry returnt acquire null", res.acquireWhenGeoMissing === true);
         return; // Welt-Variation, kein voller Test
     }
     check(
         "Welle V11.0-a: acquire bei leerem Pool allokiert neue InstancedMesh",
         res.acquire1NotNull === true && res.acquire1IsInstanced === true
     );
-    check("Welle V11.0-a: neue Instanz ist visible=true + count=0", res.acquire1Visible === true && res.acquire1CountZero === true);
+    check(
+        "Welle V11.0-a: neue Instanz ist visible=true + count=0",
+        res.acquire1Visible === true && res.acquire1CountZero === true
+    );
     check("Welle V11.0-a: release pusht in Pool (size=1)", res.releasedPoolSize === 1);
     check("Welle V11.0-a: released Mesh ist visible=false", res.releasedMeshHidden === true);
     check(
@@ -14652,10 +14620,7 @@ async function checkBandWelleV11APoolFoundation(ctx) {
         res.poolCapEnforced === true,
         `poolSize=${res.poolSizeAfterCapTest}, cap=${res.cap}`
     );
-    check(
-        "Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)",
-        res.poolEmptyAfterFinalDrain === true
-    );
+    check("Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)", res.poolEmptyAfterFinalDrain === true);
 }
 
 // V11.0-b (Mesh-Pool im Build-Pfad aktiv) — Source-Probe-Beweis dass
@@ -14718,26 +14683,16 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         check("Welle V11.0-b: Build-Pfad-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)",
-        res.usesAcquire === true
-    );
+    check("Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)", res.usesAcquire === true);
     check(
         "Welle V12.0-d: V12.0-d-Marker im Build-Pfad-Code (Pool-Reaktivierung dokumentiert)",
         res.v12dMarker === true
     );
     if (res.skipReason) {
-        check(
-            "Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)",
-            false,
-            res.skipReason
-        );
+        check("Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)", false, res.skipReason);
         return;
     }
-    check(
-        "Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)",
-        res.poolSizeBeforeBuild === 1
-    );
+    check("Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)", res.poolSizeBeforeBuild === 1);
     // V12.0-d: Pool-Pfad aktiv → Build konsumiert Pool-Pre-Fill via
     // `_acquireGrassMesh()`. Mesh-Identity beweist echtes Recycling.
     check(
@@ -14745,10 +14700,7 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         res.builtExists === true && res.builtIsPreFilled === true,
         `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (true = recycelt)`
     );
-    check(
-        "Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)",
-        res.poolEmptyAfterBuild === true
-    );
+    check("Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)", res.poolEmptyAfterBuild === true);
 }
 
 // V11.0-c (Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt) —
@@ -14809,20 +14761,10 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         check("Welle V11.0-c: Dispose-Pfad-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)",
-        res.usesRelease === true
-    );
-    check(
-        "Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code",
-        res.v12dMarker === true
-    );
+    check("Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)", res.usesRelease === true);
+    check("Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code", res.v12dMarker === true);
     if (res.skipReason) {
-        check(
-            "Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)",
-            false,
-            res.skipReason
-        );
+        check("Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)", false, res.skipReason);
         return;
     }
     // V12.0-d aktiv → Dispose pusht in Pool, Re-Build recycelt das gleiche
@@ -14839,10 +14781,7 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         res.respawnedIsSameAsFound === true,
         `respawnedSameAsFound=${res.respawnedIsSameAsFound}`
     );
-    check(
-        "Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)",
-        res.poolEmptyAfterRespawn === true
-    );
+    check("Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)", res.poolEmptyAfterRespawn === true);
 }
 
 // V11.0-d (Mesh-Pool-Stress-Test, Bogen-Vor-Schluss) — 50 echte spawn+
@@ -14874,9 +14813,7 @@ async function checkBandWelleV11DPoolStress(ctx) {
         const grassMap = r.state.voxelChunkGrass || new Map();
         const CYCLES = 50;
         const beforeHeap =
-            typeof performance !== "undefined" && performance.memory
-                ? performance.memory.usedJSHeapSize
-                : null;
+            typeof performance !== "undefined" && performance.memory ? performance.memory.usedJSHeapSize : null;
         let buildsThatProducedMesh = 0;
         let maxPoolSizeDuring = 0;
         for (let i = 0; i < CYCLES; i++) {
@@ -14894,9 +14831,7 @@ async function checkBandWelleV11DPoolStress(ctx) {
             }
         }
         const afterHeap =
-            typeof performance !== "undefined" && performance.memory
-                ? performance.memory.usedJSHeapSize
-                : null;
+            typeof performance !== "undefined" && performance.memory ? performance.memory.usedJSHeapSize : null;
         out.cycles = CYCLES;
         out.buildsThatProducedMesh = buildsThatProducedMesh;
         out.poolSizeAfterStress = r.state._grassMeshPool.length;
@@ -14941,10 +14876,7 @@ async function checkBandWelleV11DPoolStress(ctx) {
         res.poolSizeAfterStress === 1 || res.poolSizeAfterStress === 0,
         `poolSize=${res.poolSizeAfterStress} (V12.0-d Pool-Reaktivierung)`
     );
-    check(
-        "Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)",
-        res.mapClean === true
-    );
+    check("Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)", res.mapClean === true);
     if (res.heapDeltaKB !== undefined) {
         // Heap-Delta ist Browser-spezifisch + GC-volatil — Schwelle großzügig
         // (10 MB) gegen Puppeteer-Chromium-GC-Pending-Variabilität. Der echte
@@ -18768,12 +18700,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.shaderFragmentUsesVDir = false;
         try {
             const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
-            out.shaderUsesLocalPosition =
-                /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
+            out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
             // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
             // (mehrere noise3(vDir.mul(...)) + vDir.y im horizonMask).
-            out.shaderFragmentUsesVDir =
-                /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
+            out.shaderFragmentUsesVDir = /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
         } catch {
             // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
         }
@@ -18962,7 +18892,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // `convertLinearToSRGB()` — die Semantik der Probe („groundColor's Grün ist
         // hoch in lebendig-Region") bleibt unverändert, nur die Compare-Schwelle
         // referenziert die wahrgenommene Helligkeit, nicht den linearen Roh-Wert.
-        const tmpColor = new (window.THREE.Color)();
+        const tmpColor = new window.THREE.Color();
         tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
         const groundLebendigG = tmpColor.g;
         r.worldFieldAt = function () {

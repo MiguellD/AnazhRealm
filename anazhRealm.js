@@ -17457,23 +17457,102 @@ class AnazhRealm {
     // Wenn null/undefined, übernehmen wir die LOD des Alt-Eintrags
     // (Voxel-Edit-Trigger: gleiche LOD beibehalten) — sonst neu (Streaming-
     // Tick-Trigger: distance-Decision hat sich geändert).
-    _rebuildVoxelChunk(cx, cz, lod = null) {
-        if (!this.state.scene) return false;
-        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+    // V12.0-perf.a — gibt true, wenn der Chunk der ist, in dem der Spieler
+    // gerade steht (aus `state.lastPlayerVoxelChunk`, pro Streaming-Tick
+    // gesetzt). Ein Edit auf diesem Chunk MUSS sync rebuilden (Instant-
+    // Feedback — der Spieler sieht den Carve/Fill am Standort sofort).
+    _voxelChunkIsPlayerChunk(cx, cz) {
+        const lpc = this.state.lastPlayerVoxelChunk;
+        return !!lpc && lpc.cx === cx && lpc.cz === cz;
+    }
+
+    // V12.0-perf.a — DIE geteilte Build-Kaskade für Streaming UND Edit-Rebuild
+    // (V9.82-Pfad-Unifikation eine Stufe höher). Vier Stufen (V12.0-e):
+    //   Stufe 1: Worker-Mesh-Cache (V9.91) — fertiger Mesh vom Worker, Main
+    //     macht nur BufferGeometry + Architektur-Stempel + BVH (~10-15 ms).
+    //   Stufe 2: GPU-Density-Cache (V9.95) — Float32-Density vom GPU, Main
+    //     macht Iso-Mesh (~30-40 ms). Wirkt für pristine Chunks (eligible).
+    //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density, Fallback.
+    //   Stufe 4: Sync-CPU-Build (V9.42-d + V12.0-perf.b base-gecacht).
+    // Rückgabe: "pending" (async-Request läuft), null (Build-Fail/degeneriert),
+    // oder das fresh-Objekt ({mesh, kind, waterCells, lod, hasBVH?}).
+    // `forceSync` (Spieler-Chunk + Test-Naht) überspringt die async-Stufen →
+    // direkt Stufe 4 (immer BVH, kein Worker-Roundtrip → Instant-Feedback).
+    _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
+        if (opts.forceSync === true) {
+            return this._buildVoxelChunkData(cx, cz, lod);
+        }
+        // Stufe 1: Worker-Mesh.
+        let workerMesh;
+        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+            workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
+            if (workerMesh === null) return "pending";
+        }
+        // V9.92 Phase 4 — Lazy-BVH-Decision: BVH sofort nur im 2-Ring.
+        let buildBVH = true;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
+        if (workerMesh) {
+            return this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
+        }
+        // Stufe 2: GPU-Density. Float32 (Hit), null (Pending), undefined (ineligible).
+        let preDensity = null;
+        const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
+        if (gpuDensity === null) return "pending";
+        if (gpuDensity !== undefined) preDensity = gpuDensity;
+        // Stufe 3: Worker-Density (Fallback wenn GPU ineligible/down).
+        if (
+            !preDensity &&
+            this.state.voxelWorker &&
+            this.state.voxelWorkerReady &&
+            this.state.voxelWorkerWorldgenSynced
+        ) {
+            const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
+            if (workerDensity === null) return "pending";
+            preDensity = workerDensity;
+        }
+        // Stufe 4: Sync-CPU-Build (letzter Fallback, base-gecacht V12.0-perf.b).
+        return this._buildVoxelChunkData(cx, cz, lod, preDensity);
+    }
+
+    // V12.0-perf.a — DER geteilte Finalize-Schritt für beide Pfade: Mesh in
+    // die Scene, Entry setzen, Gras + Iso-Wasser + Vegetation. `fresh` muss
+    // ein erfolgreicher Build sein (kein null/pending). Returnt das Entry
+    // (filled) oder null (empty — degenerierte Iso-Fläche, als {empty:true}).
+    _finalizeVoxelChunkBuild(cx, cz, lod, fresh) {
         const key = `${cx},${cz}`;
-        const oldEntry = this.state.voxelChunks.get(key);
-        const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
-        // V9.40-d — Dispose-Before-Build: alter raus aus Heap + physicsWorld
-        // BEVOR der neue allokiert. Verhindert das doppelte Leben.
-        if (oldEntry) this._disposeVoxelChunk(key);
-        const fresh = this._buildVoxelChunkData(cx, cz, useLod);
+        if (fresh.kind === "empty") {
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
+        this.state.scene.add(fresh.mesh);
+        // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
+        // Mesh-Pfad). Sync-Build baut immer BVH → default true.
+        const entry = {
+            mesh: fresh.mesh,
+            waterCells: fresh.waterCells || null,
+            lod,
+            hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
+        };
+        this.state.voxelChunks.set(key, entry);
+        // V9.88 — Grass nur auf LOD-0-Nahchunks. V9.75 — Iso-Wasser ist der
+        // einzige Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
+        // V9.24 — Streu-Strukturen (idempotent, je Chunk einmal).
+        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
+        this._buildVoxelChunkWaterIsoSurface(cx, cz);
+        this._populateVoxelChunkVegetation(cx, cz);
+        return entry;
+    }
+
+    // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei
+    // null (OOM/degeneriert): Retry-Counter (max 3) + re-dirty. Sonst:
+    // Finalize. Returnt true bei aufgelöst (empty ODER filled), false bei Fail.
+    _completeVoxelRebuild(key, cx, cz, lod, fresh) {
         if (fresh === null) {
-            // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-
-            // Counter pflegen — bei 3 fehlgeschlagenen Versuchen geben wir
-            // ehrlich auf + setzen `{empty:true}` (V9.24-Symptom-Geste als
-            // ehrliche letzte Antwort, nicht als Erst-Reaktion). Beim
-            // nächsten Edit auf denselben Chunk-Bereich wird der Counter
-            // zurückgesetzt — der Spieler bekommt jedes Mal 3 Versuche.
+            // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-Counter
+            // pflegen — bei 3 Versuchen ehrlich {empty:true} (V9.24-Symptom-
+            // Geste als letzte Antwort). Beim nächsten Edit auf den Bereich
+            // wird der Counter zurückgesetzt.
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
             const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
             this.state.voxelRebuildAttempts.set(key, attempts);
@@ -17483,35 +17562,49 @@ class AnazhRealm {
                 this.log(`Voxel-Chunk ${key}: 3× OOM, als empty markiert`, "INFO");
                 return false;
             }
-            // Re-markiere dirty für nächsten Tick (Heap-Erholungs-Chance).
             if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
             this.state.dirtyVoxelChunks.add(key);
             return false;
         }
-        // Erfolg — Retry-Counter zurücksetzen.
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
-        if (fresh.kind === "empty") {
-            this.state.voxelChunks.set(key, { empty: true });
-            return true;
-        }
-        this.state.scene.add(fresh.mesh);
-        // V9.92 — _rebuildVoxelChunk nutzt den sync-`_buildVoxelChunkData`-
-        // Pfad, der IMMER BVH baut (edit-driven: immediate physical feedback).
-        // hasBVH=true ist der ehrliche Stempel.
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod: useLod, hasBVH: true };
-        this.state.voxelChunks.set(key, entry);
-        // V9.88 (Welle Perf-3.b): Grass nur auf LOD-0-Nahchunks. Ferne Chunks
-        // (LOD 1, > 80 m) zeigen keine Gras-Halme — Detail-Cap < 50 m macht
-        // sie ohnehin unsichtbar, und 256 Sample-Calls × `_voxelSurfaceY` pro
-        // Chunk sparen wir.
-        if (useLod === 0) this._buildVoxelChunkGrass(cx, cz);
-        // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist
-        // der einzige Wasser-Render-Pfad. Liest entry.waterCells, baut die
-        // Iso-Surface mit dem Surface-Nets-Mesher (gleiche Maschinerie wie
-        // der Boden → naht-frei per Konstruktion).
-        this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        this._populateVoxelChunkVegetation(cx, cz);
+        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh);
         return true;
+    }
+
+    // V12.0-perf.a — Edit-Rebuild erbt die Streaming-Kaskade (V9.82-Unifikation
+    // eine Stufe höher). Spieler-Chunk (Carve/Fill am Standort) + Test-Naht
+    // (`forceSync`) bauen SYNC mit dispose-before-build — kein Loch, da der
+    // Sync-Build im selben Frame fertig wird; Instant-Feedback. Nachbar-/
+    // Skirt-Chunks bauen ASYNC (Worker→GPU→Worker-Density-Offload des ~126-ms-
+    // Density-Sampling): der alte Chunk bleibt SICHTBAR bis der neue fertig ist
+    // (build-before-dispose / atomarer Swap, kein Loch-Frame), Pending → dirty
+    // behalten. Der Skirt-Nachbar-Stale ist sub-cell (nur das Smoothing-Pad)
+    // → imperzeptibel, dafür kein Frame-Spike beim Edit-Cluster.
+    _rebuildVoxelChunk(cx, cz, lod = null, opts = {}) {
+        if (!this.state.scene) return false;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const key = `${cx},${cz}`;
+        const oldEntry = this.state.voxelChunks.get(key);
+        const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
+        const forceSync = opts.forceSync === true || this._voxelChunkIsPlayerChunk(cx, cz);
+        if (forceSync) {
+            // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
+            if (oldEntry) this._disposeVoxelChunk(key);
+            const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
+            return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
+        }
+        // Async: erst bauen/anfordern, NICHT vorher disposen.
+        const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: false });
+        if (fresh === "pending") {
+            // Worker/GPU-Request läuft — alter Chunk bleibt sichtbar, dirty
+            // behalten, der nächste Tick prüft erneut (Cache-Hit → Swap).
+            if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
+            this.state.dirtyVoxelChunks.add(key);
+            return false;
+        }
+        // Build fertig/fail → atomarer Swap: alten erst JETZT disposen.
+        if (oldEntry) this._disposeVoxelChunk(key);
+        return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -17555,67 +17648,16 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V12.0-e — Streaming-Pfad-Hierarchie auf r184 (WebGPURenderer):
-        //   Stufe 1: Worker-Mesh-Cache (V9.91) — fastest, gibt fertigen Mesh
-        //     (positions + indices + normals + colors), Main-Thread macht nur
-        //     BufferGeometry-Konstruktion (~10-15 ms).
-        //   Stufe 2: GPU-Density-Cache (V9.95-Pipeline reaktiviert) — gibt
-        //     Float32Array-Density, Main-Thread macht Iso-Mesh-Konstruktion
-        //     (~30-40 ms). Same-Device-mapAsync auf WebGPURenderer (~5-15 ms
-        //     Read-Back-Stall, war ~200-300 ms auf WebGL-Renderer cross-
-        //     backend in V9.95-e). Wirkt für pristine Streaming-Chunks
-        //     (kein voxelEdit, kein Hydrosphere-Carve — `_voxelGpuChunkEligible`).
-        //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density als
-        //     Fallback wenn GPU ineligible oder unavailable.
-        //   Stufe 4: Sync-CPU-Build (V9.42-d) — letzter Fallback, voller
-        //     Density-Sample-Loop + Iso-Mesh-Konstruktion auf Main-Thread.
-        // Die V9.95-e-Abklemmung (GPU war auf WebGL-Renderer-mapAsync-cross-
-        // backend zu teuer) ist auf r184 strukturell obsolet — gleicher Device,
-        // gleicher Backend → mapAsync ist billig.
-        let workerMesh;
-        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
-            workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
-            if (workerMesh === null) return null;
-        }
-        // V9.92 Phase 4 — Lazy-BVH-Decision: BVH sofort bauen nur wenn Chunk
-        // im 2-Ring (Spieler-Nähe). Ferne Chunks (r ≥ 2) bekommen erst-mal
-        // nur Mesh + Cells; BVH-Upgrade über `_pumpVoxelChunkBVH` wenn sie
-        // ins 2-Ring rücken. Spart ~25-30 ms × ~70 Chunks beim Erst-Stream.
-        let buildBVH = true;
-        const lpc = this.state.lastPlayerVoxelChunk;
-        if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
-        let fresh;
-        if (workerMesh) {
-            fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
-        } else {
-            // Stufe 2: GPU-Density-Cache. `_fetchOrRequestChunkDensityGpu`
-            // gibt Float32Array (Cache-Hit), null (Pending → return null),
-            // undefined (GPU nicht ready oder Chunk ineligible).
-            let preDensity = null;
-            const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
-            if (gpuDensity === null) return null; // GPU-Pending → nächster Frame
-            if (gpuDensity !== undefined) preDensity = gpuDensity;
-            // Stufe 3: Worker-Density-Cache (Fallback wenn GPU ineligible/down).
-            if (
-                !preDensity &&
-                this.state.voxelWorker &&
-                this.state.voxelWorkerReady &&
-                this.state.voxelWorkerWorldgenSynced
-            ) {
-                const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
-                if (workerDensity === null) return null;
-                preDensity = workerDensity;
-            }
-            // Stufe 4: Sync-CPU-Build (letzter Fallback).
-            fresh = this._buildVoxelChunkData(cx, cz, lod, preDensity);
-        }
+        // V12.0-perf.a — der Streaming-Pfad nutzt jetzt DIE geteilte Build-
+        // Kaskade `_acquireVoxelChunkBuild` (vier Stufen Worker-Mesh → GPU →
+        // Worker-Density → Sync, dort dokumentiert), die auch der Edit-Rebuild
+        // erbt. Pending → null (nächster Frame). Fail → Retry-Counter (max 3,
+        // KEIN re-dirty — der Streaming-Tick versucht via has(key)===false
+        // erneut, inzwischen gibt `_pruneDistantVoxelChunks` Heap frei). Erfolg
+        // → geteilter `_finalizeVoxelChunkBuild`.
+        const fresh = this._acquireVoxelChunkBuild(cx, cz, lod, { forceSync: false });
+        if (fresh === "pending") return null;
         if (fresh === null) {
-            // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
-            // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
-            // Versuchen ehrlich {empty:true}. Bei attempts < 3: KEIN
-            // Map-Eintrag → der Streaming-Tick versucht es im nächsten
-            // Frame wieder (has(key)===false), inzwischen räumt
-            // _pruneDistantVoxelChunks ferne Chunks + gibt Heap frei.
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
             const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
             this.state.voxelRebuildAttempts.set(key, attempts);
@@ -17626,38 +17668,8 @@ class AnazhRealm {
             }
             return null;
         }
-        // Erfolg — Retry-Counter zurücksetzen.
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
-        if (fresh.kind === "empty") {
-            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
-            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an
-            // Rand-Chunks.
-            this.state.voxelChunks.set(key, { empty: true });
-            return null;
-        }
-        this.state.scene.add(fresh.mesh);
-        // V9.92 — `fresh.hasBVH` ist `true` wenn die BVH wirklich gebaut wurde
-        // (Lazy-Decision durch `_buildVoxelChunkDataFromWorkerMesh` mit
-        // `opts.buildBVH`). Beim Sync-Fallback gibt's keine Lazy-BVH-Flag-
-        // Variante — Sync baut immer BVH, also default true.
-        const entry = {
-            mesh: fresh.mesh,
-            waterCells: fresh.waterCells || null,
-            lod,
-            hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
-        };
-        this.state.voxelChunks.set(key, entry);
-        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
-        // V9.88 — Grass nur auf LOD-0-Nahchunks (s. _rebuildVoxelChunk-Kommentar).
-        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
-        // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
-        // Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
-        this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
-        // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
-        // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
-        this._populateVoxelChunkVegetation(cx, cz);
-        return entry;
+        return this._finalizeVoxelChunkBuild(cx, cz, lod, fresh);
     }
 
     // V10.0-j.f — Universaler Defer-Helper für JEDEN GPU-Resource-Dispose
@@ -20017,6 +20029,10 @@ class AnazhRealm {
     // (synchron). Für Tests, die direkt nach einem Edit den gerenderten
     // Mesh prüfen. Im normalen Spiel-Pfad NIE gerufen — der Game-Loop-
     // Tick verteilt die Rebuilds gleichmässig über Frames.
+    // V12.0-perf.a — `forceSync: true` erzwingt den synchronen Build-Pfad
+    // (kein Worker/GPU-Async-Roundtrip, kein „pending"). Sonst würde der
+    // Drain im Headless gegen den async Worker-Mesh-Pfad laufen + nichts
+    // bauen (pending) — die Test-Naht braucht den sofortigen Mesh.
     _drainDirtyVoxelChunks() {
         if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return 0;
         const keys = [...this.state.dirtyVoxelChunks];
@@ -20027,7 +20043,7 @@ class AnazhRealm {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            if (this._rebuildVoxelChunk(cx, cz)) built++;
+            if (this._rebuildVoxelChunk(cx, cz, null, { forceSync: true })) built++;
         }
         return built;
     }
@@ -39907,7 +39923,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.b";
+AnazhRealm.VERSION = "12.0-perf.a";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
