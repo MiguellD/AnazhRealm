@@ -6258,6 +6258,8 @@ class AnazhRealm {
             ctx.fillText("✓ " + fingerprint, 128, 67);
         }
         const tex = new THREE.CanvasTexture(canvas);
+        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded (fillStyle="#xxx").
+        tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
         const sprite = new THREE.Sprite(mat);
@@ -12259,6 +12261,8 @@ class AnazhRealm {
         cx.fillStyle = g;
         cx.fillRect(0, 0, 64, 64);
         this._creatureAuraTextureCache = new THREE.CanvasTexture(canvas);
+        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded.
+        this._creatureAuraTextureCache.colorSpace = THREE.SRGBColorSpace;
         return this._creatureAuraTextureCache;
     }
 
@@ -24375,6 +24379,8 @@ class AnazhRealm {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, size, size);
         const tex = new THREE.CanvasTexture(canvas);
+        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded.
+        tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
         this._auraGradientTexture = tex;
         return tex;
@@ -38499,14 +38505,16 @@ class AnazhRealm {
         // ersetzt — Re-Bind-Pfade lesen das aktuelle Canvas aus state.
         this.state.canvas = canvas;
 
-        // V10.0-a (Welle Three.js-Migration r134 → r160): ColorManagement
-        // wurde mit r142+ default ON. Three.js wandelt sRGB-Color-Werte intern
-        // in linearen Space für korrekten Lighting-Math. Bridge-Heilung:
-        // legacy ColorManagement, damit die Welt-Optik identisch zur r134-
-        // Baseline bleibt. V10.0-b/c machen den sauberen Switch (alle
-        // Materials + Lights mit physically-correct + sRGB-textures explizit).
+        // V12.0-vendor.3 — ColorManagement re-aktiviert (default seit r142+).
+        // Three.js wandelt sRGB-Color-Werte intern in linearen Space für
+        // korrekten Lighting-Math. Canvas-Texturen sind in `_buildVibePassSprite`,
+        // `_creatureAuraTextureCache` und `_buildAuraGradient` mit
+        // `colorSpace=SRGBColorSpace` getaggt — Renderer-Output bleibt
+        // visuell konsistent (Round-Trip sRGB→linear→sRGB cancelt). Die
+        // gradientMap (Toon-LUT) bleibt LinearSRGBColorSpace (Default für
+        // DataTexture) — sie ist Brightness-Daten, keine Color.
         if (typeof THREE !== "undefined" && THREE.ColorManagement) {
-            THREE.ColorManagement.enabled = false;
+            THREE.ColorManagement.enabled = true;
         }
         // V10.0-d — Renderer-Auswahl-Logik: WebGPU wenn verfügbar, sonst
         // klassischer WebGL. WebGPURenderer braucht `await renderer.init()`
@@ -40286,7 +40294,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-vendor.2";
+AnazhRealm.VERSION = "12.0-vendor.3";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

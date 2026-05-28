@@ -18960,12 +18960,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
         };
         r._applyDayNightToScene();
-        const groundLebendigG = r.state.hemiLight.groundColor.g;
+        // V12.0-vendor.3 Doku-Sync (V9.56-i): mit `ColorManagement.enabled=true`
+        // speichert THREE.Color die Werte in LINEAR-Space (sRGB→linear-Konvertierung
+        // bei `setHex`/`setRGB`). Wir vergleichen gegen die sRGB-Display-Form via
+        // `convertLinearToSRGB()` — die Semantik der Probe („groundColor's Grün ist
+        // hoch in lebendig-Region") bleibt unverändert, nur die Compare-Schwelle
+        // referenziert die wahrgenommene Helligkeit, nicht den linearen Roh-Wert.
+        const tmpColor = new (window.THREE.Color)();
+        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
+        const groundLebendigG = tmpColor.g;
         r.worldFieldAt = function () {
             return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
         };
         r._applyDayNightToScene();
-        const groundGlutR = r.state.hemiLight.groundColor.r;
+        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
+        const groundGlutR = tmpColor.r;
         // lebendig erhöht Grün, glut erhöht Rot
         out.groundColorFollowsLebendig = groundLebendigG > 0.3;
         out.groundColorFollowsGlut = groundGlutR > 0.5;

@@ -357,6 +357,37 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-vendor.3, 28.05.2026 — ColorManagement re-aktiviert + sRGB-Texture-Tagging:**
+
+Nach V12.0-vendor.2 (useLegacyLights-Clean-Up) zog die V12.0-vendor.3-Welle den substantielleren Teil — die ColorManagement-Bridge (V10.0-a-Erbe) raus + sRGB-Texture-Tagging.
+
+**Per-Texture-Audit** ergab vier color-Texture-Allokationen in `anazhRealm.js`:
+1. Z6260 `_buildVibePassSprite` — Canvas-Text-Label, sRGB
+2. Z12262 `_creatureAuraTextureCache` — radialer Gradient für Kreatur-Aura, sRGB
+3. Z24381 `_buildAuraGradient` — radialer Gradient für Spieler-Aura, sRGB
+4. Z30684 `_refreshToonGradient` — DataTexture für Cel-Shading-LUT, KEINE Color (Brightness-Daten)
+
+Alle drei Canvas-Textures bekommen `tex.colorSpace = THREE.SRGBColorSpace` direkt nach der `new THREE.CanvasTexture()`-Allokation. Die gradientMap-DataTexture bleibt im Default `LinearSRGBColorSpace` — sie ist eine Brightness-LUT, kein RGB-Color (der Toon-Lookup `mix(albedo, gradientMap(dotNL), ...)` erwartet linearen Brightness-Wert, keine Color-Space-Konvertierung).
+
+**ColorManagement re-aktiviert**: `THREE.ColorManagement.enabled = true` (von V10.0-a's `false` zurück auf r184-Default). Three.js wandelt jetzt sRGB-Color-Werte (z.B. `new THREE.Color("#abc")`) intern in linearen Space für Lighting-Math; Renderer-Output wird zurück in sRGB konvertiert für die Display-Pipeline. Das ist ein **Round-Trip sRGB→linear→sRGB** der visuell cancelt — solange jede Color-Quelle (uniforms, texture-samples) konsistent getaggt ist.
+
+**V9.56-i-Test-Doku-Sync wirkt**: V8.27-HemisphereLight-groundColor-Tests las `r.state.hemiLight.groundColor.r/.g` direkt. Diese Werte sind mit ColorManagement-enabled jetzt im LINEAR-Space (sRGB-Werte wurden bei `setHex/setRGB` konvertiert) — die Compare-Schwellen `> 0.3` und `> 0.5` waren auf sRGB-Display-Werte kalibriert. Heilung: `tmpColor.copy(...).convertLinearToSRGB()` vor dem Compare → Probe liest die sRGB-Display-Werte, Semantik bleibt unverändert („groundColor's Grün hoch in lebendig-Region").
+
+**Verhaltens-Beweis**:
+- Playtest „Alle Invarianten OK" (Heap-Delta 7776 KB unter 10 MB-Schwelle, V10.0-j.j-Memory-Trade weiter akzeptiert)
+- audit:strict 0 Failures / 9 Warnings (Method-Smoke-Floor)
+- Format/Lint sauber
+- Diag-Probe: `CM_enabled=true`, scene.children=157, terrainEverGenerated, 0 Page-Errors
+- Version-Bump 12.0.1 → 12.0.2 (Patch — visuelle Mathematik korrekt, sichtbarer Effekt im echten WebGPU-Browser Schöpfer-Audit-Frage)
+
+**Dateien**: `anazhRealm.js` +18 Z. netto (3 Texture-Tags + ColorManagement-Block-Edit), `scripts/playtest.cjs` +10 Z. (V8.27-Doku-Sync mit Helper), CLAUDE.md/Stand-Block, handover.md/Chronik.
+
+**Lehre verstärkt**: **`ColorManagement.enabled=true` ist visuelle Korrektheit, nicht visuelle Identität** — der Round-Trip sRGB→linear→sRGB cancelt am Display ENDPUNKT, aber jeder Vergleich gegen `Color.r/.g/.b` zwischen den beiden Endpunkten sieht linearen Space. Wer Tests gegen Color-Channels schreibt, MUSS `convertLinearToSRGB()` oder die linearen Schwellen-Werte nutzen. Plus: die gradientMap-Disziplin („data, nicht color") ist universell — jede LUT (Look-Up-Table), Höhen-Map, Normalmap, RoughnessMap braucht `LinearSRGBColorSpace`/`NoColorSpace`, nur Albedo-Color-Maps brauchen `SRGBColorSpace`. Vor jeder neuen Texture-Allokation fragen: ist das Color oder Daten?
+
+**Schöpfer-Browser-Audit-Frage**: visuell stimmig auf AMD RDNA-3? Wenn ja, V12.0-a (Hot-Swap-Pfad + rendererKind-Gates weg) startet. Wenn Welt-Optik kippt: einzelne Texture-Tags zurücknehmen, Mismatch-Quelle isolieren.
+
+---
+
 **V12.0-vendor.2, 28.05.2026 — useLegacyLights-Bridge als toter No-Op gestrichen (Clean-Up nach Schöpfer-Browser-Audit grün):**
 
 Schöpfer hat V12.0-vendor.1 im echten Browser geprüft: „passt, kann weiter gehen, nicht schwarz, nicht buggy". Damit ist die strukturelle r184-Foundation visual-bestätigt und V12.0-vendor.2 läuft als Clean-Up-Welle.
