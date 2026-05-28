@@ -19757,21 +19757,22 @@ class AnazhRealm {
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
-            if (this.state.scene) this.state.scene.remove(grass);
-            // V10.0-j.j — Geometry NICHT disposen. Three.js v160's WebGPU-
-            // Backend hat einen subtilen Lifecycle-Bug zwischen InstancedMesh-
-            // Geometry-Dispose und der Pipeline-Cache-Bind-Group: nach scene.
-            // remove + queueDispose-defer triggert irgendwo per-Frame ein
-            // writeBuffer(16384 bytes) auf den disposed instanceMatrix-Buffer
-            // (256 instances × 64 bytes = 16384). Neun Sub-Wellen (V10.0-j.a
-            // bis V10.0-j.i) haben den Race nicht voll geheilt. Profi-Pattern
-            // (Genshin/BotW): Mesh-Memory akzeptieren statt Race-Crashes.
-            // Geometry bleibt allokiert (ConeGeometry ~108 Bytes × 30 Chunks
-            // Lebensdauer = 3 KB Heap — vernachlässigbar) + instanceMatrix-
-            // Buffer (16 KB × 30 = ~500 KB GPU-Heap, ebenfalls vernachlässigbar).
-            // Bei Welt-Wechsel räumt der Reload alles. EHRLICH ist's: V10.0-j.i
-            // hat den setUsage-Trigger geheilt, aber ein verbleibender Three.js-
-            // Bug bleibt nicht-workaroundbar ohne Mesh-Pool-Refactor (V11-Backlog).
+            // V11.0-c (Mesh-Pool-Vollendung) — disposed Gras-Mesh wandert
+            // in den Pool statt für die Welt-Lebensdauer im Heap zu hängen.
+            // Damit ist der V10.0-j.j-Memory-Workaround ehrlich entfernt:
+            // kein „Geometry nicht disposen", sondern „Mesh nicht zerstören,
+            // recyceln". Geometry-Singleton (`_grassConeGeometry`, V10.0-j.j-
+            // Pattern korrekt) bleibt geteilt zwischen allen Pool-Meshes
+            // und neuen Allokationen — eine Geometry für alle Gras-Halme
+            // der Welt. instanceMatrix-Buffer bleibt am Mesh, wird beim
+            // nächsten acquire+build neu beschrieben (kein neuer Buffer,
+            // kein Race-Risiko: nichts wird disposed solange das Mesh im
+            // Pool sitzt). Bei Pool-Cap-Überlauf (V11.0-a-Disziplin):
+            // _releaseGrassMesh shifteet das älteste raus + nullt dessen
+            // instanceMatrix.array (GC-Hilfe) — auch das ist kein dispose,
+            // nur ein Array-Ref-Drop, kein Three.js-Lifecycle-Crash.
+            // Profi-Pattern Genshin/BotW: dispose nie, recycle immer.
+            this._releaseGrassMesh(grass);
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -40252,7 +40253,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-b";
+AnazhRealm.VERSION = "11.0-c";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

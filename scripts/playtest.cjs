@@ -14743,6 +14743,96 @@ async function checkBandWelleV11BPoolBuild(ctx) {
     check("Welle V11.0-b: Pool leer nach Build (acquire hat es konsumiert)", res.poolEmptyAfterBuild === true);
 }
 
+// V11.0-c (Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt) —
+// der ehrliche Bogen-Schluss. `_disposeVoxelChunkGrass` ruft jetzt
+// `_releaseGrassMesh` statt das Mesh in der Scene-Map zu behalten.
+// Voller despawn+respawn-Identity-Test: das gleiche Mesh kommt zurück.
+async function checkBandWelleV11CPoolDispose(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Source-Probe: Dispose-Pfad ruft _releaseGrassMesh + KEIN Hinweis
+        // mehr auf V10.0-j.j-Workaround-Kommentar „Geometry NICHT disposen".
+        const disposeSrc = r._disposeVoxelChunkGrass.toString();
+        out.usesRelease = /_releaseGrassMesh\(/.test(disposeSrc);
+        out.workaroundCommentGone = !/V10\.0-j\.j.*Geometry NICHT disposen/.test(disposeSrc);
+
+        // Voller despawn+respawn-Identity-Test mit einer echten Chunk-
+        // Position. Schaue nach einem existierenden Gras-Chunk.
+        const grassMap = r.state.voxelChunkGrass;
+        if (!grassMap || grassMap.size === 0) {
+            out.skipReason = "keine Gras-Chunks (Welt-Variation)";
+            return out;
+        }
+        let foundKey = null;
+        let foundMesh = null;
+        for (const [k, v] of grassMap.entries()) {
+            if (v && v.isInstancedMesh) {
+                foundKey = k;
+                foundMesh = v;
+                break;
+            }
+        }
+        if (!foundMesh) {
+            out.skipReason = "keine Chunks mit echtem Gras-Mesh";
+            return out;
+        }
+        // Pool sauber starten.
+        r._drainGrassMeshPool();
+        // Despawn — Mesh sollte in Pool.
+        r._disposeVoxelChunkGrass(foundKey);
+        out.poolSizeAfterDispose = r.state._grassMeshPool.length;
+        out.disposedChunkGone = !grassMap.has(foundKey);
+        // Re-Build denselben Chunk — sollte das gleiche Mesh aus dem Pool.
+        const parts = foundKey.split(",").map(Number);
+        r._buildVoxelChunkGrass(parts[0], parts[1]);
+        const respawned = grassMap.get(foundKey);
+        out.respawnedExists = respawned !== undefined && respawned !== null;
+        out.respawnedIsSameAsFound = respawned === foundMesh;
+        out.poolEmptyAfterRespawn = r.state._grassMeshPool.length === 0;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-c: Dispose-Pfad-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check(
+        "Welle V11.0-c: _disposeVoxelChunkGrass ruft _releaseGrassMesh (Source-Probe)",
+        res.usesRelease === true
+    );
+    check(
+        "Welle V11.0-c: V10.0-j.j-Workaround-Kommentar entfernt (Bogen-Schluss-Disziplin)",
+        res.workaroundCommentGone === true
+    );
+    if (res.skipReason) {
+        check(
+            "Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)",
+            false,
+            res.skipReason
+        );
+        return;
+    }
+    check(
+        "Welle V11.0-c: Dispose pusht Mesh in Pool (size=1)",
+        res.poolSizeAfterDispose === 1,
+        `poolSize=${res.poolSizeAfterDispose}`
+    );
+    check("Welle V11.0-c: disposed Chunk ist aus voxelChunkGrass entfernt", res.disposedChunkGone === true);
+    check("Welle V11.0-c: Re-Build erzeugt Mesh", res.respawnedExists === true);
+    check(
+        "Welle V11.0-c: Pool-Identity — Re-Build returnt SELBE Instance (RECYCLE WIRKT)",
+        res.respawnedIsSameAsFound === true
+    );
+    check(
+        "Welle V11.0-c: Pool wieder leer nach Re-Build",
+        res.poolEmptyAfterRespawn === true
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31779,6 +31869,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleV11APoolFoundation(ctx);
             // V11.0-b — Mesh-Pool im Build-Pfad aktiv (Recycle wirkt).
             await checkBandWelleV11BPoolBuild(ctx);
+            // V11.0-c — Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt.
+            await checkBandWelleV11CPoolDispose(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
