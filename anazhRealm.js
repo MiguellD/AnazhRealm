@@ -19566,10 +19566,26 @@ class AnazhRealm {
     _acquireGrassMesh() {
         if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
         const pool = this.state._grassMeshPool;
+        const GRASS_MAX_BLADES = 256;
         if (pool.length > 0) {
             const mesh = pool.pop();
             mesh.visible = true;
             mesh.count = 0; // Caller wird via setMatrixAt + count neu beschreiben
+            // V11.0-d.fix.gras-2 (Schöpfer-Browser-Audit-Wurzel: „im ersten
+            // Chunk Halme, alle weiteren nicht") — frischer instanceMatrix-
+            // Buffer beim Pool-Recycle. Three.js v160's WebGPU-Backend hat
+            // stale-Buffer-Cache-Issues beim Mesh-Re-Use (StaticDrawUsage
+            // triggert per-version-bump-writeBuffer NICHT zuverlässig wenn
+            // derselbe Mesh re-rendert wird mit neuen Daten — der vorherige
+            // Frame's Daten bleiben gebunden, neue Positionen werden NICHT
+            // hochgeladen → recycled Chunks rendern an alter Welt-Position
+            // (außerhalb Sichtfeld) → unsichtbar). Heilung: Mesh-Objekt +
+            // Geometry-Singleton + Material-Singleton bleiben recycled (Pool-
+            // Vorteil), aber instanceMatrix.array wird frisch allokiert pro
+            // acquire. 16 KB × Pool-Aktivität — der echte Pool-Gewinn ist
+            // erhalten (kein new InstancedMesh, kein neuer Geometry-Buffer,
+            // kein neues Material). Vendor-Race strukturell weg.
+            mesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(GRASS_MAX_BLADES * 16), 16);
             return mesh;
         }
         // Pool leer — neue Instanz allokieren. Voraussetzungen prüfen.
@@ -19578,7 +19594,6 @@ class AnazhRealm {
         }
         const mat = this._grassInstanceMat();
         if (!mat) return null;
-        const GRASS_MAX_BLADES = 256;
         const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, mat, GRASS_MAX_BLADES);
         // Three.js' InstancedMesh-Constructor defaultet count=maxCount → wir
         // setzen explizit auf 0 (Caller wird via setMatrixAt + count neu
@@ -40283,7 +40298,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.fix.gras";
+AnazhRealm.VERSION = "11.0-d.fix.gras2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
