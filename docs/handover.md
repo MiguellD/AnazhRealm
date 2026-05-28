@@ -357,6 +357,37 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V11.0-d.fix.gras-Bogen, 27.05.2026 — Drei Heilungs-Versuche am v160-Vendor-Bug, ehrliche Abklemmung, Bürokraten-Lehre verdrahtet:**
+
+Nach V11.0-a/b/c/d-Mesh-Pool gebaut + V11.0-d.2.fix Flakiness geheilt hat der Schöpfer im Browser bestätigt: „im ersten Chunk Halme, alle weiteren nicht" + FPS=7 + Schatten wandern + Strukturen hämmern + „nicht synergetisch wie zuvor". Wurzel der Gras-Unsichtbarkeit ist Three.js v160's WebGPU-Backend, das beim InstancedMesh-Re-Use stale Cache-Bindings hält.
+
+**Drei aufeinander-folgende Heilungs-Hypothesen versucht, alle ungenügend:**
+
+- **V11.0-d.fix.gras1** (Bounding-Cache-Reset): `inst.boundingBox = null; inst.boundingSphere = null; inst.computeBoundingBox(); inst.computeBoundingSphere();` nach setMatrixAt-Loop. Hypothese: stale boundingSphere von vorigem Chunk cullt Mesh raus. Schöpfer-Browser: nicht geheilt.
+- **V11.0-d.fix.gras2** (frischer instanceMatrix-Buffer pro acquire): `mesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(256*16), 16)` beim Pool-Pop. Hypothese: stale buffer-data. Schöpfer-Browser: „immernoch gleich".
+- **V11.0-d.fix.gras3** (Pool-Pfad temporär abgeklemmt): Build allokiert wieder `new THREE.InstancedMesh` direkt (V10.0-j.j-Pattern), Dispose macht nur `scene.remove` (V10.0-j.j-Memory-Workaround zurück, ~500 KB GPU-Heap pro Welt-Lifetime akzeptiert). Pool-API bleibt im Stamm als V12-Vorarbeit.
+
+**Was der Schöpfer schon VOR den drei Versuchen gesagt hatte**: „in v12 ersetzen, wird sich das erledigen". Three.js r184 hat r182's „Improve Bind Group Layout cache system" — der direkte Heilungs-Pfad für v160's InstancedMesh-Re-Use-Bug. Ich habe trotzdem drei Heilungen versucht weil das näher dran fühlte als der substantielle Vendor-Upgrade-Bogen. Das ist Bürokraten-Disziplin-Verletzung.
+
+**Lehre permanent in CLAUDE.md/Gotchas verdrahtet**: „Vendor-Bugs durch Upgrade heilen, nicht workaround'en wenn die Vendor-Heilung im Upgrade artikuliert ist". Mechanischer Selbst-Check: bei Bug-Diagnose die Vendor-Release-Notes der letzten N Versionen scannen — wenn die Heilung explizit gelistet ist, ist Vendor-Upgrade der Profi-Pfad, nicht Workaround. Drei Wellen Workaround-Hypothesen + drei Sessions später r184-Upgrade ist ineffizient — direkter r184-Pfad spart die Wellen.
+
+**V11-Stand eingefroren als Hybrid**:
+- Pool-Foundation-API (`state._grassMeshPool`, `_acquireGrassMesh`, `_releaseGrassMesh`, `_drainGrassMeshPool`, `GRASS_POOL_CAP=32`) bleibt im Stamm
+- Build/Dispose-Lifecycle nutzt V10.0-j.j-Pattern bis V12.0-d Reaktivierung auf r184
+- 33 Pool-Foundation-Test-Invarianten weiter grün (Stress + Cap-Enforcement + LRU)
+- V11.0-b/c Recycle-Tests umgekehrt geschrieben (beweisen empirisch dass Pool abgeklemmt ist)
+
+**Bezug zu V10.0-j-Bogen-Lehren** (die V10.0-Bogen hatte 10 Sub-Wellen am gleichen Buffer-Lifecycle-Race-Pattern + endete mit Memory-Trade): die Lehre „Mesh-Memory > Race-Crashes" (V10.0-j.j) gilt weiter als ehrliche Profi-Antwort im v160. Die V11-Korrektur „Mesh-Pool > Mesh-Memory" war nur in r184+ ehrlich. In v160 ist sie noch nicht heilbar.
+
+**Doku-Konsolidierung 27.05.2026 (vierte Iteration in dieser Session)**:
+- CLAUDE.md Stand-Block: V11 als Hybrid eingefroren, V12-Plan-Detail
+- CLAUDE.md Gotchas: neue „Vendor-Bugs durch Upgrade heilen"-Lehre + bestehende „Option 1 ernst nehmen"-Lehre verdrahtet
+- `docs/handover.md` (diese Stelle): voller gras-Bogen-Chronik-Eintrag mit Lehre
+
+**Nächste Welle**: V12.0-diag (Code-Inventar Vorbereitung) als eigene Session, dann V12.0-vendor (r160 → r184 Vendor-Upgrade). V11-Pool wird in V12.0-d nach r184-Cache-Heilung reaktiviert.
+
+---
+
 **27.05.2026, V12-Plan-Wende — V11 als Hybrid-Stand in Three.js v160, der wahre Genie-Pfad V12 klar artikuliert:**
 
 Nach V11.0-a/b/c/d (Mesh-Pool gebaut, 33 Inv grün) + V11.0-d.2.fix (Welt-Variations-Flakiness wurzel-geheilt) + V11.0-d.fix.gras (Bounding-Cache-Reset, unzureichend) hat der Schöpfer im Browser getestet:
