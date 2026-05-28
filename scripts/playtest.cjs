@@ -14535,6 +14535,129 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     }
 }
 
+// V11.0-a (Mesh-Pool-Pattern Foundation, V10.0-j.j-Bogen-Schluss) — Beweis
+// dass die Pool-API existiert + identity-korrekt arbeitet + Cap-Disziplin
+// hat. Foundation-Welle: API noch nicht im Build/Dispose-Pfad verdrahtet
+// (V11.0-b/c folgen). Test-Band ruft acquire/release direkt.
+async function checkBandWelleV11APoolFoundation(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+
+        // Konstante + API-Existenz.
+        out.cap = r.constructor.GRASS_POOL_CAP;
+        out.acquireExists = typeof r._acquireGrassMesh === "function";
+        out.releaseExists = typeof r._releaseGrassMesh === "function";
+        out.drainExists = typeof r._drainGrassMeshPool === "function";
+
+        // State-Slot existiert oder ist init-able.
+        out.poolFieldDeclared = "_grassMeshPool" in r.state;
+
+        if (!out.acquireExists || !out.releaseExists || !out.drainExists) return out;
+
+        // Vorbedingung: damit _acquireGrassMesh eine echte Instance liefert,
+        // muss state._grassConeGeometry existieren + _grassInstanceMat()
+        // muss ein Material returnen. In der laufenden Welt ist das nach
+        // dem ersten _buildVoxelChunkGrass-Aufruf der Fall (Worldgen
+        // erledigt das im Streaming). Falls noch nicht: defensive null-
+        // Return ist erlaubt + Test markiert das.
+        const geoReady = !!r.state._grassConeGeometry;
+        out.geometryReady = geoReady;
+
+        // Pool sauber starten — alles raus damit der Test deterministisch ist.
+        r._drainGrassMeshPool();
+        out.poolEmptyAfterDrain = Array.isArray(r.state._grassMeshPool) && r.state._grassMeshPool.length === 0;
+
+        if (!geoReady) {
+            // Ohne Geometry returnt acquire null (defensive). Test stoppt hier.
+            const m = r._acquireGrassMesh();
+            out.acquireWhenGeoMissing = m === null;
+            return out;
+        }
+
+        // Acquire 1 — Pool leer, sollte neue Instanz allokieren.
+        const m1 = r._acquireGrassMesh();
+        out.acquire1NotNull = m1 !== null;
+        out.acquire1IsInstanced = m1 && m1.isInstancedMesh === true;
+        out.acquire1Visible = m1 && m1.visible === true;
+        out.acquire1CountZero = m1 && m1.count === 0;
+
+        // Release — Pool sollte 1 Element haben, Mesh nicht in Scene.
+        r._releaseGrassMesh(m1);
+        out.releasedPoolSize = r.state._grassMeshPool.length;
+        out.releasedMeshHidden = m1.visible === false;
+
+        // Acquire 2 — sollte das SELBE Mesh aus dem Pool zurückgeben (Identity).
+        const m2 = r._acquireGrassMesh();
+        out.acquire2IsSameAsM1 = m2 === m1;
+        out.poolEmptyAfterAcquire = r.state._grassMeshPool.length === 0;
+
+        // Cap-Disziplin: CAP + 1 release, Pool-Größe ist ≤ CAP.
+        // Erst Cleanup damit Test deterministisch ist.
+        r._releaseGrassMesh(m2);
+        r._drainGrassMeshPool();
+        const CAP = r.constructor.GRASS_POOL_CAP;
+        const meshes = [];
+        for (let i = 0; i < CAP + 1; i++) {
+            const m = r._acquireGrassMesh();
+            if (m) meshes.push(m);
+        }
+        out.allocatedForCapTest = meshes.length;
+        for (const m of meshes) r._releaseGrassMesh(m);
+        out.poolSizeAfterCapTest = r.state._grassMeshPool.length;
+        out.poolCapEnforced = r.state._grassMeshPool.length <= CAP;
+
+        // Drain räumt alles.
+        r._drainGrassMeshPool();
+        out.poolEmptyAfterFinalDrain = r.state._grassMeshPool.length === 0;
+
+        return out;
+    });
+    if (res.error) {
+        check("Welle V11.0-a: Pool-Foundation-Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("Welle V11.0-a: GRASS_POOL_CAP = 32", res.cap === 32);
+    check("Welle V11.0-a: _acquireGrassMesh existiert", res.acquireExists === true);
+    check("Welle V11.0-a: _releaseGrassMesh existiert", res.releaseExists === true);
+    check("Welle V11.0-a: _drainGrassMeshPool existiert", res.drainExists === true);
+    check("Welle V11.0-a: state._grassMeshPool als Slot deklariert", res.poolFieldDeclared === true);
+    check(
+        "Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch",
+        res.poolEmptyAfterDrain === true
+    );
+    if (!res.geometryReady) {
+        check(
+            "Welle V11.0-a: defensive — ohne Geometry returnt acquire null",
+            res.acquireWhenGeoMissing === true
+        );
+        return; // Welt-Variation, kein voller Test
+    }
+    check(
+        "Welle V11.0-a: acquire bei leerem Pool allokiert neue InstancedMesh",
+        res.acquire1NotNull === true && res.acquire1IsInstanced === true
+    );
+    check("Welle V11.0-a: neue Instanz ist visible=true + count=0", res.acquire1Visible === true && res.acquire1CountZero === true);
+    check("Welle V11.0-a: release pusht in Pool (size=1)", res.releasedPoolSize === 1);
+    check("Welle V11.0-a: released Mesh ist visible=false", res.releasedMeshHidden === true);
+    check(
+        "Welle V11.0-a: acquire nach release returnt SELBE Instance (Pool-Identity)",
+        res.acquire2IsSameAsM1 === true
+    );
+    check("Welle V11.0-a: Pool leer nach Acquire", res.poolEmptyAfterAcquire === true);
+    check(
+        "Welle V11.0-a: Cap-Disziplin — Pool-Größe ≤ GRASS_POOL_CAP nach CAP+1 release",
+        res.poolCapEnforced === true,
+        `poolSize=${res.poolSizeAfterCapTest}, cap=${res.cap}`
+    );
+    check(
+        "Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)",
+        res.poolEmptyAfterFinalDrain === true
+    );
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelP3AndInventory(ctx) {
@@ -31567,6 +31690,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleV11D2WaterBias(ctx);
             // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
             await checkBandWelleV11D3DrinkTask(ctx);
+            // V11.0-a — Mesh-Pool-Pattern Foundation (V10.0-j.j-Bogen-Schluss).
+            await checkBandWelleV11APoolFoundation(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +

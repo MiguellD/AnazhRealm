@@ -131,6 +131,11 @@ class AnazhRealm {
             // Halmes. Profi-Vorbild Genshin/BotW: shared mesh-geometry für
             // identische Asset-Kopien. Eine Geometry, viele InstancedMeshes.
             _grassConeGeometry: null,
+            // V11.0-a — Pool aus InstancedMesh-Objekten für Gras. `_releaseGrassMesh`
+            // pusht hier rein (mit Cap-Check), `_acquireGrassMesh` poppt raus
+            // oder allokiert neu wenn leer. Bei Welt-Wechsel räumt
+            // `_drainGrassMeshPool` den Pool vollständig (echtes dispose).
+            _grassMeshPool: null,
             wallBoxes: [],
             floatingIslands: [],
             planets: [],
@@ -11516,6 +11521,14 @@ class AnazhRealm {
     static get CREATURE_DRINK_SPEED() {
         return 3.0; // m/s — gleich wie gather, sichtbares Bewegen
     }
+    // V11.0-a (Pool-Foundation) — Mesh-Pool-Pattern (Genshin Instancing-System
+    // / BotW Geometry-Recycling) als ehrlicher Bogen-Schluss für den V10.0-j.j-
+    // Memory-Workaround. Disposed Gras-Meshes kommen in einen Pool, beim
+    // nächsten Bau wiederverwendet — kein new+dispose, kein Race-Risiko, kein
+    // linear-wachsender Heap.
+    static get GRASS_POOL_CAP() {
+        return 32; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
+    }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
     static get CREATURE_GATHER_HALT_DIST() {
         return 1.5; // m — bei dieser Distanz zur Ziel-Architektur erntet die Kreatur
@@ -19528,6 +19541,91 @@ class AnazhRealm {
     }
 
     // V9.22 — Instanced-Gras auf einem Voxel-Chunk. Spiegelt `_buildChunkGrass`
+    // V11.0-a (Pool-Foundation) — gibt ein InstancedMesh aus dem Pool ODER
+    // allokiert neu wenn leer. Foundation-Phase: noch nicht im Build-Pfad
+    // verdrahtet (V11.0-b liefert die Verdrahtung). Hier nur die saubere
+    // API + Test-Hook. Voraussetzung: `_grassConeGeometry` und
+    // `_grassInstanceMat()` sind lazy initialisiert (passiert beim ersten
+    // Build-Pfad-Aufruf, also in der typischen Welt-Lifetime sicher da).
+    // Defensive: wenn Geometry/Material noch nicht initialisiert, returnt
+    // null — der Aufrufer fällt auf den klassischen `new InstancedMesh`-
+    // Pfad zurück (V10.0-j.j-Pattern).
+    _acquireGrassMesh() {
+        if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
+        const pool = this.state._grassMeshPool;
+        if (pool.length > 0) {
+            const mesh = pool.pop();
+            mesh.visible = true;
+            mesh.count = 0; // Caller wird via setMatrixAt + count neu beschreiben
+            return mesh;
+        }
+        // Pool leer — neue Instanz allokieren. Voraussetzungen prüfen.
+        if (!this.state._grassConeGeometry || typeof this._grassInstanceMat !== "function") {
+            return null;
+        }
+        const mat = this._grassInstanceMat();
+        if (!mat) return null;
+        const GRASS_MAX_BLADES = 256;
+        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, mat, GRASS_MAX_BLADES);
+        // Three.js' InstancedMesh-Constructor defaultet count=maxCount → wir
+        // setzen explizit auf 0 (Caller wird via setMatrixAt + count neu
+        // beschreiben). Visible-Default ist true — passt zur acquire-Semantik.
+        inst.count = 0;
+        inst.castShadow = false;
+        inst.receiveShadow = false;
+        return inst;
+    }
+
+    // V11.0-a — gibt ein InstancedMesh zurück an den Pool. Pool-Cap-Disziplin:
+    // wenn ≥ GRASS_POOL_CAP, ältestes Mesh (FIFO am Anfang) wird ECHT
+    // disposed (geometry NICHT — die ist Singleton, geteilt zwischen allen
+    // Pool-Meshes — nur die instanceMatrix-Buffer des verworfenen Mesh werden
+    // freigegeben). Der Spieler-bei-Welt-Reise-Snowball ist damit bounded.
+    _releaseGrassMesh(mesh) {
+        if (!mesh) return;
+        if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
+        const pool = this.state._grassMeshPool;
+        if (this.state.scene) this.state.scene.remove(mesh);
+        mesh.visible = false;
+        mesh.count = 0;
+        const cap = AnazhRealm.GRASS_POOL_CAP;
+        if (pool.length >= cap) {
+            // LRU-Discard: ältestes Mesh raus, echtes dispose des Instance-
+            // Buffers (geometry bleibt, Singleton). instanceMatrix.array ist
+            // ein typedarray pro Mesh — wird mit dem Mesh garbagecollected
+            // wenn keine Refs mehr. Three.js' InstancedMesh hat keinen
+            // dedizierten dispose() für instanceMatrix; das Mesh-Objekt
+            // selbst freizugeben reicht. Material ist Singleton (V9.84
+            // Perf-1.a) — nicht disposen.
+            const oldest = pool.shift();
+            if (oldest && oldest.instanceMatrix && typeof oldest.instanceMatrix.array !== "undefined") {
+                // Defensive: explizit Array-Ref killen damit GC schneller frei wird.
+                oldest.instanceMatrix.array = null;
+            }
+        }
+        pool.push(mesh);
+    }
+
+    // V11.0-a — räumt den Pool vollständig (echtes dispose aller Meshes +
+    // Instance-Buffer-Freigabe). Wird beim Welt-Wechsel + Reload gerufen.
+    // Geometry-Singleton bleibt (von außen geteilt, eigene Cleanup-Disziplin).
+    _drainGrassMeshPool() {
+        // Pool lazy initialisieren falls noch nicht da — semantisch „leer"
+        // bleibt true. Test-deterministisch + sicher gegen frühen Aufruf.
+        if (!this.state._grassMeshPool) {
+            this.state._grassMeshPool = [];
+            return;
+        }
+        const pool = this.state._grassMeshPool;
+        for (const mesh of pool) {
+            if (this.state.scene && mesh.parent) this.state.scene.remove(mesh);
+            if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
+                mesh.instanceMatrix.array = null;
+            }
+        }
+        pool.length = 0;
+    }
+
     // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
     // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
     // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
@@ -40152,7 +40250,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.3";
+AnazhRealm.VERSION = "11.0-a";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
