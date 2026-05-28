@@ -24091,22 +24091,41 @@ class AnazhRealm {
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
+        // V12.0-f — Anti-Drift pro MATERIAL statt pro Sub-Mesh. Wurzel: der
+        // Avatar teilt EIN Material über alle 6 Körperteile (torso/head/2 Arme/
+        // 2 Beine). Der alte per-Node-`_auraBaseColor`-Cache las für die Parts
+        // 2-6 die bereits-mutierte geteilte Farbe (Part 1 schrieb material.color,
+        // Part 2 cachte die mutierte als „Base") → die Farbe driftete pro Frame
+        // ~64 % Richtung auraColor statt der gewollten 15 % → Avatar wirkte
+        // verwaschen/weiß. Unsichtbar im V10.0-g-Workaround (colorNode-baked,
+        // material.color ignoriert), sichtbar seit dem nativen MeshToonNode-
+        // Material (liest material.color). Heilung: Base pro Material cachen
+        // (echte Anti-Drift-Einheit) + den Tint-Write pro geteiltem Material
+        // EINMAL pro Frame ausführen. node.userData spiegelt den Cache für die
+        // Reflex-3-Proben (V9.56-i-Doku-Sync-Kompat).
         const auraMix = 0.15;
+        const darken = 0.6 + 0.4 * hpRatio;
+        const tintedMats = new Set();
         this.state.playerMesh.traverse((node) => {
             if (!node || !node.isMesh || !node.material || !node.material.color) return;
-            if (node.userData._auraBaseColor === undefined) {
-                node.userData._auraBaseColor = node.material.color.getHex();
+            const mat = node.material;
+            if (mat.userData._auraBaseColor === undefined) {
+                mat.userData._auraBaseColor = mat.color.getHex();
             }
-            const base = node.userData._auraBaseColor;
+            // Probe-Kompat: node.userData spiegelt den Material-Cache.
+            if (node.userData._auraBaseColor === undefined) {
+                node.userData._auraBaseColor = mat.userData._auraBaseColor;
+            }
+            if (tintedMats.has(mat)) return; // geteiltes Material: nur einmal/Frame
+            tintedMats.add(mat);
+            const base = mat.userData._auraBaseColor;
             const br = ((base >> 16) & 0xff) / 255;
             const bg = ((base >> 8) & 0xff) / 255;
             const bb = (base & 0xff) / 255;
-            // Verletzungs-Dimmer auf Original (0.6..1.0).
-            const darken = 0.6 + 0.4 * hpRatio;
             const r = br * (1 - auraMix) * darken + auraColor.r * auraMix;
             const g = bg * (1 - auraMix) * darken + auraColor.g * auraMix;
             const b = bb * (1 - auraMix) * darken + auraColor.b * auraMix;
-            node.material.color.setRGB(r, g, b);
+            mat.color.setRGB(r, g, b);
         });
         // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
         if (this.state.playerAura && this.state.scene) {
@@ -39775,7 +39794,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-f";
+AnazhRealm.VERSION = "12.0-f.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
