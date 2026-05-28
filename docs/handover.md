@@ -357,6 +357,46 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V11.0-a/b/c/d, 27.05.2026 — Mesh-Pool-Pattern live, V10.0-j.j-Memory-Workaround ehrlich entfernt, RECYCLE WIRKT empirisch:**
+
+Vier Sub-Wellen in einer Session-Folge gebaut + getestet + gepusht. Der V10.0-Bogen-Schluss ist eingelöst — die ~500 KB GPU-Heap pro Welt-Lifetime sind weg, ersetzt durch Genshin/BotW-Profi-Pattern.
+
+**V11.0-a Pool-Foundation** (Z11519-11526 Konstante + Z133-138 State-Slot + Z19553-19625 drei Methoden):
+- `GRASS_POOL_CAP = 32` als Klassen-Konstante
+- `state._grassMeshPool: null` (lazy Array)
+- `_acquireGrassMesh()`: pool.pop() oder `new InstancedMesh(geo, mat, 256)` wenn leer. count=0 + visible=true + castShadow/receiveShadow=false. Defensive null wenn Geometry/Material nicht initialisiert.
+- `_releaseGrassMesh(mesh)`: scene.remove + visible=false + count=0 + push pool. Wenn Cap erreicht: shift (LRU) + null instanceMatrix.array (GC-Hilfe).
+- `_drainGrassMeshPool()`: alle pool-Meshes räumen + Array leeren. Lazy-init wenn Pool null.
+- Test-Band 14 Invarianten: API-Existenz, drain deterministisch, Identity-Beweis (acquire/release/acquire returnt selbe Instance), Cap-Enforcement (33 release → ≤ 32).
+
+**V11.0-b Build-Pfad recycle-aware** (Z19694-19711 im `_buildVoxelChunkGrass`):
+- `const inst = this._acquireGrassMesh();` ersetzt `new THREE.InstancedMesh(geo, mat, 256)`.
+- Defensive Fallback: bei null-Return Chunk bekommt kein Gras (set key, null).
+- V10.0-j.c-Uniform-Capacity-Pattern bleibt (GRASS_MAX_BLADES=256, Bound-Buffer konstant).
+- Test-Band 5 Invarianten: Source-Probes + Pool-Pre-fill-Beweis (Mesh wird re-akquiriert).
+
+**V11.0-c Dispose-Pfad recycle-aware** (Z19759-19772 im `_disposeVoxelChunkGrass`):
+- `this._releaseGrassMesh(grass);` ersetzt den 13-Zeilen-V10.0-j.j-Workaround-Kommentar.
+- Neuer Kommentar (13 Zeilen) erklärt das Recycle-Pattern + warum kein Race-Risiko (nichts wird disposed solange Mesh im Pool sitzt; bei Cap-Überlauf nur Array-Ref-Drop, kein Three.js-Crash).
+- Test-Band 7 Invarianten: Source-Probes (Release-Call, V10.0-j.j-Kommentar ehrlich entfernt) + voller Identity-Test (despawn → pool size=1 → respawn → SELBE Instance, „RECYCLE WIRKT").
+
+**V11.0-d Stress-Test + Memory-Beweis** (`checkBandWelleV11DPoolStress`):
+- 50 echte Spawn+Despawn-Zyklen via `_buildVoxelChunkGrass(2000+i, 2000+i)` + `_disposeVoxelChunkGrass(...)`.
+- Empirisch beobachtet: **48 von 50 Builds produzierten echtes Mesh** (Welt hat viele Gras-Stellen), **maxPoolSize=1 während der ganzen Stress-Welle** (single-use-Pattern: jeder Dispose pusht ins Pool, nächster Build re-akquiriert sofort denselben Mesh).
+- **RECYCLE-Beweis**: 48 effektive Builds → 1 Mesh-Allokation = 48× weniger Heap-Footprint als ohne Pool.
+- Heap-Delta-Probe: 5021 KB für 50 Worldgen-Sample-Operationen (NICHT Mesh-Memory, sondern Worldgen-JS-Allokationen). Backstop bei 10 MB (großzügig wegen Puppeteer-GC-Volatilität).
+- Test-Band 7 Invarianten: alle grün.
+
+**V10.0-j-Bogen-Reflexion eingelöst**: die V10.0-Lehre „Mesh-Memory > Race-Crashes" sagte explizit „ein ehrlicher Workaround, kein Endzustand". V11.0 erfüllt das Versprechen. Die neue Lehre: **„Mesh-Pool > Mesh-Memory"** — wenn ein Vendor-Race nach Sub-Wellen nicht heilbar ist, ist der Pool-Refactor (Genshin/BotW) die ehrliche End-Antwort, nicht der permanente Memory-Trade.
+
+**Reflexions-Lehre permanent verdrahtet (CLAUDE.md/Gotchas)**: **Bei „weiter gehts" Option 1 ernst nehmen — Bürokraten-Schutz**. Wenn ich Optionen vorschlage und Schöpfer „weiter gehts" sagt ohne explizite Wahl, ist Option 1 die Wahl. Ich habe diese Disziplin gebrochen (Mesh-Pool als Option 1, Pfeiler D als Option 2, ich griff zu D), Schöpfer korrigierte: „scheinst das komplexeste zu weichen". Mechanischer Selbst-Check: bei nächstem „weiter gehts" die letzten 3-4 Antworten prüfen — wurde Option 1 jeweils genommen?
+
+**Bekannte Flakiness offen**: V11.0-d.2-Test (Pfeiler-D-Schwimm-Probe) ist Welt-Variations-flaky — yAfterTick zwischen Test-Läufen verschieden bei gleichem Code (anderer Worldgen-PRNG-Pfad findet andere terrainHeight am Spot, weil addScaledVector die Kreatur leicht in Nachbar-Voxel-Cell verschiebt). Statistik der Session: in 5 Test-Läufen 2 grün, 3 rot. NICHT V11.0-Mesh-Pool-Schuld (V11.0-a/b/c/d-Code-Pfade sind deterministisch); eigene Welle V11.0-d.2.fix-Backlog (z.B. Toleranz erweitern, oder mehrere Ticks laufen lassen, oder Test in einer Voxel-Cell-Mitte platzieren statt am Rand).
+
+**Was V11.0-e liefert (next session, Schöpfer-Arbeit)**: Browser-Audit auf AMD RDNA-3. 10-min Welt-Reise spielen, Memory-Tab des Browsers prüfen (Heap-Snowball erwartet ABWESEND), FPS-Verlauf (stabil), visuelle Identität zu V10.0-j.j (Gras sieht identisch aus, keine Pop-Ins, keine Race-Crashes). Bei grünem Audit ist V11-Mesh-Pool-Bogen offiziell zu, dann V12+ System-Kopplungs-Vision (Pfeiler E/F/G).
+
+---
+
 **27.05.2026, V11-Wende — Pfeiler D im Kern abgeschlossen + zwei-stufige Plan-Korrektur durch den Schöpfer:**
 
 Nach V11.0-d.3 hat der Schöpfer im Browser bestätigt: „schwimmen sehe ich" — D.2 wirkt visuell. Sofort danach die erste Wende:
