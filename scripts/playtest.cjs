@@ -13382,14 +13382,13 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         // Trockenland-Chunk weit weg vom Welt-Zentrum suchen (Atlas hat dort wahrscheinlich
         // weder Lake noch River) — alternativ einen fern-Chunk wo nichts ist.
         out.eligibleNoEdits = r._voxelGpuChunkEligible(100, 100, 1);
-        // (d) Source-Probe: _ensureVoxelChunkAt nutzt jetzt _fetchOrRequestChunkDensityGpu
-        // V9.95-e — Cutover-Source-Probe entfernt: GPU-Pipeline wird im
-        // Streaming-Pfad NICHT mehr gerufen (architektonisch: mapAsync-Stall
-        // > Worker-CPU-Density-Save bei WebGL-Renderer). Pipeline-Code lebt
-        // weiter als Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration.
-        // Source-Probe statt Cutover: V9.95-e hat das _fetchOrRequest...Gpu-
-        // Pattern in `_ensureVoxelChunkAt` entfernt (ehrliche Abklemmung).
-        out.cutoverAbgeklemmt = !/_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-e — Cutover REAKTIVIERT auf r184 (WebGPURenderer). Die
+        // V9.95-e-Abklemmung war für WebGL-Renderer (cross-backend-mapAsync-
+        // Stall), auf r184's WebGPURenderer ist same-device-mapAsync billig.
+        // Source-Probe prüft jetzt: `_fetchOrRequestChunkDensityGpu` ist im
+        // Streaming-Pfad aufgerufen als Stufe-2-Fallback (Worker-Mesh bleibt
+        // Stufe-1 primary).
+        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
         out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
         // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
         // im Edit-Footprint nicht mehr eligible ist
@@ -13470,9 +13469,9 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         `far=${res.afterEditFar}`
     );
     check(
-        "V9.95-e: _ensureVoxelChunkAt ruft KEINE GPU-Density mehr (architektonisch abgeklemmt)",
-        res.cutoverAbgeklemmt,
-        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh-Pfad bleibt PRIMARY"
+        "V12.0-e: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensityGpu als Stufe-2-Fallback (GPU-Cutover reaktiviert auf r184)",
+        res.gpuCutoverActive,
+        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh bleibt Stufe-1 primary"
     );
     check(
         "V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache",

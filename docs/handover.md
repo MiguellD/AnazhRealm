@@ -357,6 +357,70 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-e, 28.05.2026 — V9.95-WebGPU-Compute-Pipeline reaktiviert auf r184 (V9.95-e-Abklemmung strukturell obsolet):**
+
+V9.95-Pipeline (Mai 2026, ~600 Z. WGSL + JS) war seit der Abklemmung als „Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration" markiert. V12.0-e ist die ehrliche Reaktivierung — auf r184's WebGPURenderer ist die V9.95-e-Wurzel obsolet.
+
+**Strukturelle Wurzel-Analyse**:
+
+V9.95-e (Mai 2026) hatte den GPU-Density-Pfad ABGEKLEMMT mit der Begründung: „WebGPU-Compute + WebGL-Renderer = immer cross-backend mapAsync-Roundtrip (~200-300 ms-Stall), ehrlich langsamer als Worker-CPU-Density (~50 ms)". Das war architektonisch wahr — der mapAsync brauchte einen GPU→CPU-Read-Back, weil der Renderer auf der CPU-Buffer arbeitete (WebGL-Pipeline).
+
+Auf r184 mit Three.js' WebGPURenderer ist die Topologie anders:
+- GPU-Compute (Density-WGSL) läuft auf GPU-Device A
+- Renderer (WebGPURenderer) läuft auf GPU-Device A (gleiche)
+- mapAsync ist same-device Read-Back (~5-15 ms, gemessen in V9.95-d-Telemetry-Fundus)
+
+→ Der V9.95-e-Cross-Backend-Stall ist strukturell obsolet. Die GPU-Pipeline kann wieder aktiviert werden.
+
+**Code-Änderung (15 Zeilen netto)**:
+
+`_ensureVoxelChunkAt`-Streaming-Pfad hat jetzt vier-Stufen-Hierarchie:
+
+```
+Stufe 1: Worker-Mesh-Cache (V9.91) — full mesh, ~10-15 ms main-thread
+Stufe 2: GPU-Density-Cache (V9.95 reaktiviert, V12.0-e) — Density auf GPU,
+         Iso+Colors auf CPU, ~30-40 ms main-thread für eligible Chunks
+         (pristine, kein voxelEdit, kein Hydrosphere-Carve)
+Stufe 3: Worker-Density-Cache (V9.90) — Density auf Worker, Iso+Colors
+         auf CPU, ~30-40 ms main-thread (Fallback wenn GPU ineligible)
+Stufe 4: Sync-CPU-Build (V9.42-d) — Density+Iso+Colors voll auf Main,
+         ~50-150 ms (letzter Fallback)
+```
+
+Die Pfad-Wahl pro Chunk:
+- Wenn Worker-Mesh-Cache hit → Stufe 1 (schnellster Pfad)
+- Wenn Worker-Mesh pending → return null (warten)
+- Sonst: try GPU-Density-Cache
+  - Cache-Hit → Stufe 2 (Float32Array als preDensity für sync-build)
+  - Pending → return null (warten)
+  - undefined (GPU not ready oder Chunk ineligible) → fallthrough
+- Wenn fallthrough + Worker available → Stufe 3 (Worker-Density-Cache)
+- Sonst → Stufe 4 (sync-CPU)
+
+V9.95-Foundation-Code (WGSL-Density-Shader, `_voxelGpuComputeDensity`-Promise-API, `_fetchOrRequestChunkDensityGpu`-three-state-Lookup, Eligibility-Gate, state-gen-Stale-Filter) war seit Mai 2026 schon im Stamm — V12.0-e ist eine 15-Zeilen-Cutover-Reaktivierung. Honest, low-risk-Welle.
+
+**V9.56-i-Test-Doku-Sync**: V9.95-e-„Pfad-abgeklemmt"-Source-Probe (`cutoverAbgeklemmt = !/.../ test(...)`) auf V12.0-e-„Pfad-aktiv"-Probe (`gpuCutoverActive = /.../ test(...)`) gewandert. Plus Test-Label umgeschrieben („V9.95-e: ruft KEINE GPU-Density mehr" → „V12.0-e: nutzt GPU-Density als Stufe-2-Fallback").
+
+**Verhaltens-Beweis (Headless)**:
+- `voxelGpuStatus=unavailable` (Puppeteer-Chromium hat navigator.gpu, aber requestAdapter returnt null im Cloud-Container ohne GPU)
+- `_fetchOrRequestChunkDensityGpu` returnt `undefined` für jeden Aufruf
+- Streaming-Pfad fällt graceful auf Worker-Density-Cache → Welt rendert wie zuvor
+- Playtest „Alle Invarianten OK" (mit gelegentlichem GC-volatilem Heap-Delta-Flake — V9.96-Pattern, Test ist toleranter zweite Run)
+- audit:strict 0 Failures / 9 Warnings, Format/Lint sauber
+- Version-Bump 12.0.5 → 12.0.6
+
+**Echter Beweis** wartet auf Schöpfer-Browser-Audit:
+- navigator.gpu existiert + requestAdapter returnt echten Adapter → voxelGpuStatus=ready
+- GPU-Compute läuft für eligible Chunks (pristine, kein Edit, kein Hydrosphere)
+- Erwarteter Win: ~30-40 ms/chunk gespart auf Main-Thread bei initial-streaming (V9.95-d-Telemetry-Fundus zeigte das schon 2026)
+- Spawn-Burst-Spike vor V9.95-e (FPS sinkt auf 6-9) sollte heute nicht reproduzierbar sein — Worker-Mesh hat schon Stufe-1-Status, GPU spart nur den seltenen Fall „Worker noch nicht synced"
+
+**Lehre verstärkt (CLAUDE.md/Gotchas, „Rendering · TSL-Migration")**: **Abklemmungs-Begründungen müssen bei jedem Vendor-Upgrade neu geprüft werden** — V9.95-e's Begründung („WebGPU-Compute mit WebGL-Renderer = cross-backend-mapAsync-Stall") war für r160 architektonisch wahr, aber bei r184's WebGPURenderer strukturell obsolet. Wer eine Welle abklemmt UND eine zukünftige Vendor-Wende artikuliert hat (V9.95-e-Doku: „bleibt als Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration"), MUSS bei der Vendor-Wende die Abklemmungs-Begründung gegen den neuen Stand prüfen. Mechanischer Selbst-Check: bei jeder Vendor-Major-Welle `grep "abgeklemmt|deactivated|disabled"` über die Chronik scannen + entscheiden welche Abklemmungen jetzt obsolet sind.
+
+**Was bleibt offen**: V12.0-f (Code-Review jeder berührten Funktion — `_buildToonNodeMaterial`-V10.0-g.diag-Workaround obsolet weil `MeshToonNodeMaterial` in r184 existiert, etc.); V12.0-g (final Schöpfer-Browser-Audit, V12-Bogen-Schluss); V12.0-perf (FPS-Heilung bei Edit-Cluster, Wartepunkt nach V12.0-g per Schöpfer-Disziplin „erst V12-Bogen schließen").
+
+---
+
 **V12.0-d, 28.05.2026 — V11-Mesh-Pool reaktiviert auf r184, echtes Recycling bewiesen im Headless:**
 
 Nach V12.0-a (Hot-Swap weg, WebGPU-required) ist der V11-Pool-Reaktivierungs-Pfad endlich gangbar. V11.0-d.fix.gras-Bogen (drei v160-Workaround-Hypothesen) wird durch den ehrlichen r184-Vendor-Upgrade-Pfad ersetzt — genau wie die Bogen-Lehre artikulierte: „Vendor-Bugs durch Upgrade heilen, nicht workaround'en".

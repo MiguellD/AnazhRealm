@@ -17791,20 +17791,23 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V9.95-b/d — GPU-Density als Stufe-0 NUR bei Cache-Hit. Wenn GPU
-        // pending (Request läuft), fällt der Chunk weiter zum Worker-Mesh-
-        // V9.95-e — EHRLICHE ABKLEMMUNG: GPU-Density-Pfad wird im Streaming
-        // NICHT mehr gerufen. Architektonische Wurzel: WebGPU-Compute mit
-        // WebGL-Renderer braucht IMMER einen CPU-Roundtrip (mapAsync blockt
-        // den Main-Thread bis Read-Back fertig ist). Der ~50ms-Worker-CPU-
-        // Density-Save war billiger als der ~200-300ms GPU+mapAsync-Stall.
-        // Schöpfer-Browser-Audit V9.95-d zeigte: FPS sinkt auf 6-9, Auto-
-        // Optimization triggert mehrfach. Architektonisch falsch verdrahtet.
-        // V9.95-a/b/c/d-Code (Foundation + Pipeline + Telemetry) BLEIBT als
-        // Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration (dann zero-
-        // copy GPU→Mesh möglich). Bis dahin: Worker-Mesh-Pfad ist PRIMARY,
-        // GPU greift NUR ein wo Worker komplett tot ist (rare).
-        // Worker-Mesh-Cache als Stufe-0 (V9.91-Pattern restoriert).
+        // V12.0-e — Streaming-Pfad-Hierarchie auf r184 (WebGPURenderer):
+        //   Stufe 1: Worker-Mesh-Cache (V9.91) — fastest, gibt fertigen Mesh
+        //     (positions + indices + normals + colors), Main-Thread macht nur
+        //     BufferGeometry-Konstruktion (~10-15 ms).
+        //   Stufe 2: GPU-Density-Cache (V9.95-Pipeline reaktiviert) — gibt
+        //     Float32Array-Density, Main-Thread macht Iso-Mesh-Konstruktion
+        //     (~30-40 ms). Same-Device-mapAsync auf WebGPURenderer (~5-15 ms
+        //     Read-Back-Stall, war ~200-300 ms auf WebGL-Renderer cross-
+        //     backend in V9.95-e). Wirkt für pristine Streaming-Chunks
+        //     (kein voxelEdit, kein Hydrosphere-Carve — `_voxelGpuChunkEligible`).
+        //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density als
+        //     Fallback wenn GPU ineligible oder unavailable.
+        //   Stufe 4: Sync-CPU-Build (V9.42-d) — letzter Fallback, voller
+        //     Density-Sample-Loop + Iso-Mesh-Konstruktion auf Main-Thread.
+        // Die V9.95-e-Abklemmung (GPU war auf WebGL-Renderer-mapAsync-cross-
+        // backend zu teuer) ist auf r184 strukturell obsolet — gleicher Device,
+        // gleicher Backend → mapAsync ist billig.
         let workerMesh;
         if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
@@ -17821,17 +17824,26 @@ class AnazhRealm {
         if (workerMesh) {
             fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         } else {
-            // V9.95-e — Worker komplett tot (Spawn-Fehler, kein WASM-Worker-Support).
-            // Stufe-2-Fallback: Worker-Density-Cache (V9.90, separater Pfad). Wenn
-            // der auch nicht greift: sync-Build (V9.42-d). GPU-Pipeline ist in
-            // diesem Lauf NICHT der Streaming-Pfad — der mapAsync-Stall ist
-            // architektonisch gegenüber dem Worker-CPU-Density teurer.
-            let workerDensity;
-            if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
-                workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
+            // Stufe 2: GPU-Density-Cache. `_fetchOrRequestChunkDensityGpu`
+            // gibt Float32Array (Cache-Hit), null (Pending → return null),
+            // undefined (GPU nicht ready oder Chunk ineligible).
+            let preDensity = null;
+            const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
+            if (gpuDensity === null) return null; // GPU-Pending → nächster Frame
+            if (gpuDensity !== undefined) preDensity = gpuDensity;
+            // Stufe 3: Worker-Density-Cache (Fallback wenn GPU ineligible/down).
+            if (
+                !preDensity &&
+                this.state.voxelWorker &&
+                this.state.voxelWorkerReady &&
+                this.state.voxelWorkerWorldgenSynced
+            ) {
+                const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
                 if (workerDensity === null) return null;
+                preDensity = workerDensity;
             }
-            fresh = this._buildVoxelChunkData(cx, cz, lod, workerDensity || null);
+            // Stufe 4: Sync-CPU-Build (letzter Fallback).
+            fresh = this._buildVoxelChunkData(cx, cz, lod, preDensity);
         }
         if (fresh === null) {
             // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
@@ -40104,7 +40116,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-d";
+AnazhRealm.VERSION = "12.0-e";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
