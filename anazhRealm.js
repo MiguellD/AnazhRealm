@@ -19762,6 +19762,23 @@ class AnazhRealm {
         inst.instanceMatrix.needsUpdate = true;
         inst.castShadow = false;
         inst.receiveShadow = false;
+        // V11.0-d.fix.gras (27.05.2026, Schöpfer-Browser-Audit-Wurzel) — beim
+        // Pool-Recycle hat das Mesh noch den `boundingSphere`-Cache vom alten
+        // Chunk (Position X1/Z1). instanceMatrix wird neu beschrieben mit
+        // Position X2/Z2, aber Three.js' frustum-Culling liest die alte
+        // Sphere → cullt das Mesh fälschlich raus → KEIN GRAS sichtbar.
+        // Heilung: nach setMatrixAt-Loop computeBoundingSphere() neu rufen.
+        // Plus: instanceMatrix.computeBoundingSphere() für die InstancedMesh-
+        // spezifische Bounding-Berechnung (Three.js prüft `instanceMatrix.
+        // boundingSphere` im InstancedMesh-Frustum-Test). Beide null-setzen
+        // erzwingt Re-Compute beim nächsten Render.
+        if (inst.geometry && inst.geometry.boundingSphere === null) {
+            inst.geometry.computeBoundingSphere();
+        }
+        inst.boundingBox = null;
+        inst.boundingSphere = null;
+        if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
+        if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
         this.state.scene.add(inst);
         this.state.voxelChunkGrass.set(key, inst);
     }
@@ -40266,7 +40283,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.2.fix";
+AnazhRealm.VERSION = "11.0-d.fix.gras";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
