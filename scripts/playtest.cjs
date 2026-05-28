@@ -9928,19 +9928,20 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
-                // V10.0-g Doku-Sync: Insel ist jetzt MeshBasicNodeMaterial mit
-                // custom Toon-Lighting im colorNode (gradientMap-Cel-Lookup +
-                // Sun-Lambert). isMeshToonMaterial=true ist als Drop-in-Kompat-
-                // Marker gesetzt (legacy Tests erkennen die Toon-Familie).
+                // V12.0-f Doku-Sync: Insel ist jetzt natives MeshToonNodeMaterial
+                // (lights=true, r184) — Three.js managed gradientMap-Cel-Lookup +
+                // DirectionalLight/Ambient/Hemisphere + Schatten. isMeshToonMaterial
+                // === true ist NATIV gesetzt (Toon-Familie); isMeshToonNodeMaterial
+                // === true ist der Node-Pfad-Marker (war V10.0-g: MeshBasicNodeMaterial).
                 out.isToonMarker = isle.material.isMeshToonMaterial === true;
-                out.isNodeMaterial = isle.material.isMeshBasicNodeMaterial === true;
+                out.isNodeMaterial = isle.material.isMeshToonNodeMaterial === true;
                 out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
         check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
         check(
-            `V9.42-c: Insel nutzt MeshBasicNodeMaterial mit Toon-Marker (V10.0-g) — ${r42c.material}`,
+            `V9.42-c: Insel nutzt natives MeshToonNodeMaterial (V12.0-f) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);

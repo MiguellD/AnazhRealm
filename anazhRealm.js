@@ -76,29 +76,11 @@ class AnazhRealm {
             // (sunDir, light, fog*). Vollendet den V10.0-f-Bogen — alle 4
             // Materials sind jetzt NodeMaterial.
             hydroSurfaceUniforms: null,
-            // V10.0-g — Toon-Light-Uniforms für MeshBasicNodeMaterial-basiertes
-            // Toon-Shading (3 uniform-Knoten): sunDir, sunIntensity, ambient.
-            // Init lazy in _ensureToonLightUniforms(); mutiert von
-            // _dayNightApplyDirectionalLight + _dayNightApplyAmbient. Welt-
-            // global geteilt von allen ToonNodeMaterials (Voxel-Chunks,
-            // Architekturen, Inseln, Avatar). gradientMap-Lookup bleibt
-            // separat in state.toonGradientMap.
-            toonLightUniforms: null,
-            // V10.0-h — Manueller Shadow-Pass für WebGPU. `shadowRTT` ist das
-            // WebGLRenderTarget mit DepthTexture (2048×2048); `shadowDepthTexture`
-            // ist seine DepthTexture (compareFunction=LessCompare). Beide lazy
-            // initialisiert in _ensureShadowRenderTarget, gefüttert pro Frame
-            // via _renderShadowMapPass. Auf WebGL bleibt es null (Three.js'
-            // WebGLRenderer macht den Shadow-Pass selbst — nicht mehr aktiv
-            // mit MeshBasicNodeMaterial, eine V10.0-h.c-Folge-Welle wäre
-            // den manuellen Pass auch auf WebGL zu aktivieren).
-            shadowRTT: null,
-            shadowDepthTexture: null,
-            // V10.0-j — Override-Material für den manuellen Shadow-Pass
-            // (siehe _renderShadowMapPass). Minimales MeshBasicNodeMaterial
-            // ohne colorNode-Custom — alle Caster werden damit gerendert,
-            // kein instanceColor-Lookup-Crash. Lazy initialisiert.
-            shadowOverrideMat: null,
+            // V12.0-f — toonLightUniforms + der manuelle Shadow-Pass-Stack
+            // (shadowRTT/shadowDepthTexture/shadowOverrideMat) sind GESTRICHEN.
+            // Die nativen MeshToonNodeMaterials (lights=true, r184) konsumieren
+            // DirectionalLight/Ambient/Hemisphere + die Three.js-WebGPU-Shadow-
+            // Pipeline direkt — kein hand-gebautes Lighting/Shadow-Sampling mehr.
             // V10.0-j.g — Defer-Queue für GPU-Resource-Disposals. Set
             // statt Array — verhindert duplicate dispose() für SHARED
             // Materials. Edgecase: `_disposeSoulGroup` traversiert ein
@@ -117,10 +99,10 @@ class AnazhRealm {
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
-            // das alte `_grassInstanceMat` (MeshLambertMaterial mit GLSL-
-            // onBeforeCompile-Wind-Patch) ist nicht mehr aktiv genutzt —
-            // Gras nutzt jetzt `_buildToonNodeMaterial` pro Chunk. Die Wind-
-            // Uniforms bleiben als state-Slot für V10.0-g.cel-TSL-Wind.
+            // V12.0-f — `_grassInstanceMat` ist ein natives MeshLambertNodeMaterial
+            // (lights=true) mit positionNode-Wind (TSL). Die Wind-Uniforms
+            // (uWindTime/uWindStrength) leben hier als geteilter state-Slot,
+            // pro Frame im Render-Loop aktualisiert.
             windUniforms: null,
             _grassMat: null,
             // V10.0-j.j — Singleton-Cache für die ConeGeometry des Gras-
@@ -10185,9 +10167,9 @@ class AnazhRealm {
         }
         starField.frustumCulled = false;
         // V10.0-j — Sterne werfen keine Schatten (sind unendlich-far Billboards).
-        // Defensive — setRenderObjectFunction-Filter in _renderShadowMapPass
-        // schließt castShadow=false-Objects ohnehin aus, aber explicit ist
-        // die Wahrheit.
+        // castShadow=false → Three.js' native Shadow-Pass (V12.0-f) rendert sie
+        // nicht in die Shadow-Map; receiveShadow=false → kein Schatten auf den
+        // Billboards selbst.
         starField.castShadow = false;
         starField.receiveShadow = false;
         this.state.scene.add(starField);
@@ -10278,40 +10260,23 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            // Fallback (kein TSL verfügbar): klassisches MeshLambertMaterial
-            // OHNE onBeforeCompile-Wind — Wind fehlt, aber Material rendert.
+        if (!TSL || typeof THREE.MeshLambertNodeMaterial !== "function") {
+            // Defensive (Bootstrap-Bruch): klassisches MeshLambertMaterial OHNE
+            // Wind. Im WebGPU-required-Normalbetrieb (V12.0-a) nie erreicht.
             this.state._grassMat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
             return this.state._grassMat;
         }
         // V10.0-i.b — Wind-Displacement via TSL-positionNode (WGSL-konform).
-        // Wurzel-Heilung des V10.0-g.r-`onBeforeCompile`-GLSL-Patches: Three.js'
-        // WebGPURenderer ignorierte den Patch (GLSL-Strings sind nicht WGSL-
-        // übersetzbar) → Wind unsichtbar auf WebGPU, plus implizite Pipeline-
-        // Konflikte triggerten Hot-Swap zu WebGL. Heilung: identische Wind-
-        // Mathematik (phase = time × 1.7 + worldX × 0.28 + worldZ × 0.21,
-        // displacement = sin/cos(phase) × strength × heightFactor) als TSL-
-        // Tree im positionNode. Welt-Optik 1:1 auf BEIDEN Renderern. Plus:
-        // colorNode mit manuellem Half-Lambert-Lighting + Toon-Light-Uniforms-
-        // Sync (gleiches Pattern wie _buildToonNodeMaterial V10.0-g) — Gras
-        // atmet mit dem Tag-Nacht-Zyklus, Schatten via V10.0-h-Pipeline.
-        const {
-            uniform,
-            vec3,
-            vec4,
-            float,
-            sin,
-            cos,
-            max,
-            normalize,
-            dot,
-            clamp,
-            mix,
-            normalWorld,
-            positionLocal,
-            positionWorld,
-            texture,
-        } = TSL;
+        // Identische Wind-Mathematik (phase = time × 1.7 + worldX × 0.28 +
+        // worldZ × 0.21, displacement = sin/cos(phase) × strength × heightFactor)
+        // als TSL-Tree im positionNode. V12.0-f — das Material ist jetzt ein
+        // natives MeshLambertNodeMaterial (lights=true): Three.js' WebGPU-
+        // Lighting-Pipeline rechnet DirectionalLight + Ambient + Hemisphere +
+        // Schatten selbst. Der V10.0-g/h-Workaround (manuelles colorNode-Half-
+        // Lambert + handgebautes Shadow-Sampling) ist obsolet — Gras atmet
+        // nativ mit dem Tag-Nacht-Zyklus. Kein Cel-LUT (kein gradientMap) — die
+        // Halme bleiben smooth-Lambert, nicht Cel-quantisiert (gewollt).
+        const { uniform, vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
         if (!this.state.windUniforms) {
             this.state.windUniforms = {
                 uWindTime: uniform(0.0),
@@ -10319,7 +10284,7 @@ class AnazhRealm {
             };
         }
         const wu = this.state.windUniforms;
-        const mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
+        const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
 
         // Wind-positionNode: Welt-Position via positionWorld lesen (das ist
         // modelMatrix × instanceMatrix × positionLocal, d.h. enthält die
@@ -10337,41 +10302,6 @@ class AnazhRealm {
             .mul(hf);
         mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
 
-        // colorNode: Half-Lambert + Toon-Light-Sync + Shadow-Sampling
-        // (gleiches Pattern wie _buildToonNodeMaterial V10.0-g/h für
-        // einheitliche Welt-Beleuchtung). gradientMap-Lookup brauchen wir
-        // beim Gras nicht (kein Cel-Look auf Halme); direkter Lambert-Mul.
-        const u = this._ensureToonLightUniforms();
-        const baseColor = vec3(float(0x5f / 255), float(0xa7 / 255), float(0x43 / 255));
-        const N = normalize(normalWorld);
-        const L = normalize(u.sunDir);
-        const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
-        // V10.0-j — Shadow-Sampling identisch zu _buildToonNodeMaterial.
-        // Hardware-PCF via texture(depthTex, uv).compare(refZ). Siehe dort
-        // für Pattern-Begründung.
-        const shadowDepthTex = this.state.shadowDepthTexture;
-        let shadowAttenuation = float(1.0);
-        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
-            const normalBias = float(1.0);
-            const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
-            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
-            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            const sampleUV = projected.xy;
-            const refZ = projected.z.add(bias);
-            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
-            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
-            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
-            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
-            const inFrustumF = inXf.mul(inYf).mul(inZf);
-            const t = inFrustumF.mul(u.shadowEnabled);
-            shadowAttenuation = mix(float(1.0), shadowSample, t);
-        }
-        const litScalar = u.ambient.add(dotNL.mul(u.sunIntensity).mul(shadowAttenuation));
-        const lit = baseColor.mul(vec3(litScalar, litScalar, litScalar));
-        mat.colorNode = vec4(lit, float(1.0));
-        // Drop-in-Identitäts-Marker für legacy Tests.
-        mat.isMeshLambertMaterial = true;
         this.state._grassMat = mat;
         return mat;
     }
@@ -13583,13 +13513,14 @@ class AnazhRealm {
         renderer.setClearColor(0x000000, 1);
         renderer.shadowMap.enabled = true;
         // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
-        // Samples — Performance-Win, Soft-Schatten via Hardware-PCF im
-        // manuellen Shadow-Pass).
+        // Samples — Performance-Win).
         renderer.shadowMap.type = THREE.PCFShadowMap;
-        // Unser manueller `_renderShadowMapPass` + colorNode-Sampling
-        // übernimmt; Three.js' interner WebGPU-Pass läuft ohnehin nicht bei
-        // unseren lights=false-NodeMaterials.
-        renderer.shadowMap.autoUpdate = false;
+        // V12.0-f — native Three.js-WebGPU-Shadow-Pipeline. Seit der
+        // MeshToonNodeMaterial-Migration (lights=true) konsumieren unsere
+        // Materials die Shadow-Map nativ; Three.js rendert sie pro Frame
+        // automatisch aus directionalLight.shadow.camera. Der manuelle
+        // _renderShadowMapPass (+ autoUpdate=false) ist gestrichen.
+        renderer.shadowMap.autoUpdate = true;
     }
 
     // =====================================================================
@@ -17253,304 +17184,42 @@ class AnazhRealm {
         return mat;
     }
 
-    // V10.0-g — Toon-Material-Helper: alle MeshToonMaterial-Instanzen der
-    // Welt (Voxel-Chunks, Architektur-Parts, Inseln, Avatar-Torso, Sonne-
-    // Mond-Glow) wandern auf `THREE.ToonNodeMaterial` (eigene Klasse im
-    // Bootstrap, MeshLambertNodeMaterial + ToonLightingModel mit gradientMap-
-    // Lookup). Damit greift der Hot-Swap nicht mehr — WebGPU rendert
-    // dauerhaft auf GPU. `vertexColors: true` wird ZU `colorNode =
-    // vec4(attribute("color", "vec3"), 1.0)` (V10.0-f-2-Lehre, NodeMaterial
-    // liest das Flag nicht). `gradientMap` aus `state.toonGradientMap`
-    // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
-    // propagiert automatisch zu allen Materials.
+    // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
+    // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
+    // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
+    // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
+    // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
+    // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
+    // propagiert automatisch zu allen Materials).
     _buildToonNodeMaterial(opts = {}) {
-        // V10.0-g (in V12.0-f-full backlogged für MeshToonNodeMaterial-Migration)
-        // — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false) +
-        // manuelles Lighting im colorNode mit gradientMap-Cel-Lookup. Alle
-        // V10.0-g.r-Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
-        //  - Cel-Stufen via gradientMap-Texture-Lookup (Ghibli-Look)
-        //  - Sun-Direction-getriebenes Lambert + Ambient (Welt-atmet-Sync)
-        //  - Vertex-Colors via attribute() (für Voxel-Chunks + Inseln)
-        //  - Statische albedo-Color (MaterialReferenceNode-Crash umgangen)
-        //
-        // Schatten: BEHALTEN auf klassischem-MeshToonMaterial-Fallback wenn
-        // TSL nicht verfügbar. Auf WebGPU: Schatten temporär off (Three.js'
-        // Shadow-Map-Pipeline läuft durch lights=true — der webgl-legacy-Patch
-        // unterstützt das nicht robust). Welt rendert toon-shaded auf WebGPU
-        // ohne Schatten; auf WebGL via Hot-Swap mit Schatten.
-        const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            // Fallback ohne TSL: klassisches MeshToonMaterial. Hot-Swap-Pfad
-            // (V10.0-e/f-5/f-6) bringt die Welt auf WebGL falls WebGPU bricht.
-            const params = { vertexColors: !!opts.vertexColors };
-            if (opts.color !== undefined) params.color = opts.color;
-            if (opts.side !== undefined) params.side = opts.side;
-            if (opts.transparent !== undefined) params.transparent = opts.transparent;
-            if (opts.opacity !== undefined) params.opacity = opts.opacity;
-            const mat = new THREE.MeshToonMaterial(params);
-            if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
-            return mat;
-        }
-
-        // Stelle sicher dass gradientMap pre-built ist (V10.0-g-Wurzel-Heilung).
+        // V12.0-f — natives MeshToonNodeMaterial (r184, lights=true). Der
+        // V10.0-g.diag-Workaround (MeshBasicNodeMaterial + manuelles colorNode-
+        // Lighting + handgebauter _renderShadowMapPass) ist gestrichen: r164+
+        // trägt lights=true-NodeMaterials nativ auf WebGPU. Three.js managed
+        // jetzt alle drei Schichten selbst:
+        //  - Cel-Stufen via gradientMap (Ghibli-Look) — nativer Toon-LUT-Lookup
+        //  - DirectionalLight + Ambient + Hemisphere (Welt-atmet-Sync über die
+        //    echten Lights, gefüttert von _dayNightApply*)
+        //  - Schatten via Three.js' WebGPU-Shadow-Pipeline (light.castShadow +
+        //    renderer.shadowMap, mesh.receiveShadow) — kein manueller Pass mehr
+        // vertexColors (Voxel-Chunks/Inseln) + color/opacity/side sind native
+        // Material-Properties; `isMeshToonMaterial === true` ist nativ gesetzt
+        // (Legacy-Test-Marker erfüllt, kein manuelles Flag nötig).
         if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
             this._refreshToonGradient();
         }
-
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
         if (opts.transparent !== undefined) params.transparent = opts.transparent;
         if (opts.opacity !== undefined) params.opacity = opts.opacity;
-        const mat = new THREE.MeshBasicNodeMaterial(params);
-
-        // Geteilte Toon-Light-Uniforms (lazy welt-global).
-        const u = this._ensureToonLightUniforms();
-
-        const { attribute, vec2, vec3, vec4, float, normalize, dot, clamp, mix, normalWorld, positionWorld, texture } =
-            TSL;
-
-        // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
-        // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
-        // _updateUniforms-Pfad mit "Cannot read properties of null reading
-        // 'color'" — siehe Gotcha V10.0-g.materialColor).
-        let albedoNode;
-        if (opts.vertexColors) {
-            albedoNode = attribute("color", "vec3");
-        } else {
-            const c = new THREE.Color(opts.color !== undefined ? opts.color : 0xffffff);
-            albedoNode = vec3(float(c.r), float(c.g), float(c.b));
-        }
-
-        // Welt-Raum-Normale (mat3(modelMatrix) × normalLocal) — TSL-built-in.
-        const N = normalize(normalWorld);
-        const L = normalize(u.sunDir);
-        // Half-Lambert für weichen Schatten-Übergang: (dot×0.5+0.5)
-        // Bei Standard-Lambert (max(dot, 0)) sind die Rückseiten 100% schwarz —
-        // mit gradientMap-Lookup gibt das einen scharfen Cel-Step bei 90°.
-        // Half-Lambert remappt zu [0, 1] mit Mittag = 1, Mittel = 0.5 → die
-        // gradientMap-Stufen verteilen sich über die ganze Form, das ist die
-        // klassische Three.js-MeshToonMaterial-Mathematik.
-        const dotNL = clamp(dot(N, L).mul(0.5).add(0.5), float(0.0), float(1.0));
-
-        // Toon-Step via gradientMap-Texture-Lookup. gradientMap ist hier
-        // garantiert da (pre-built in createScene + Helper-Init). Bei
-        // Slider-Wechsel via _refreshToonGradient.needsUpdate=true wird die
-        // Texture in-place gepatcht, der texture-Knoten samplet beim
-        // nächsten Frame die aktualisierten Pixel — Cel-Stufen-Live-Update.
-        const toonStep = texture(this.state.toonGradientMap, vec2(dotNL, float(0.5))).r;
-
-        // V10.0-h — Shadow-Sampling im colorNode. Wir spiegeln das Pattern aus
-        // vendor/three-addons/nodes/lighting/AnalyticLightNode.js Z51-149, das
-        // Three.js intern bei lights=true-Materials nutzt. Unser manueller
-        // _renderShadowMapPass füllt das depthTexture pro Frame; shadowMatrix
-        // ist die canonical texcoord×projection×viewInverse-Matrix. Bei
-        // shadowEnabled=0 (WebGL-Pfad ODER Pre-Init) ist der Multiplier 1
-        // (kein Schatten). Hardware-PCF via DepthTexture.compareFunction=
-        // LessCompare in _ensureShadowRenderTarget.
-        // V10.0-j — Hardware-PCF via `texture(depthTex, uv).compare(refZ)`.
-        // Three.js' WGSLNodeBuilder.generateTextureCompare emittiert
-        // `textureSampleCompare(tex, sampler, uv, refZ)` — comparison-sampler
-        // wird automatisch gebunden weil depthTex.compareFunction=LessCompare
-        // (siehe _ensureShadowRenderTarget). Profi-Pattern aus vendor/three-
-        // addons/nodes/lighting/AnalyticLightNode.setupShadow().
-        const shadowDepthTex = this.state.shadowDepthTexture;
-        let shadowAttenuation = float(1.0);
-        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
-            const normalBias = float(1.0);
-            const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
-            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
-            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            // y-flip ist in der shadowMatrix bereits enthalten (NDC.y ist
-            // positiv-oben, Texture-V ist positiv-unten). Vendor-Pattern
-            // nutzt projected.xy direkt, kein manueller oneMinus mehr.
-            const sampleUV = projected.xy;
-            const refZ = projected.z.add(bias);
-            // Hardware-PCF: textureSampleCompare returnt 0..1 (0=Schatten,
-            // 1=lit, GPU rechnet automatisch 2×2-Average bei linear sampler).
-            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
-            // Frustum-Test via step-Multi (float-arithmetic).
-            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
-            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
-            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
-            const inFrustumF = inXf.mul(inYf).mul(inZf);
-            const t = inFrustumF.mul(u.shadowEnabled);
-            shadowAttenuation = mix(float(1.0), shadowSample, t);
-        }
-
-        // Lit-Helligkeit = ambient + (sunIntensity × toonStep × shadow) (skalar).
-        // Ambient bleibt ungedämpft — auch in Schatten kommt indirektes Licht.
-        const litScalar = u.ambient.add(toonStep.mul(u.sunIntensity).mul(shadowAttenuation));
-        const lit = albedoNode.mul(vec3(litScalar, litScalar, litScalar));
-
-        mat.colorNode = vec4(lit, float(1.0));
-
-        // Drop-in-Identitäts-Marker für legacy Tests (V8.28, V9.42-c).
-        mat.isMeshToonMaterial = true;
-        // gradientMap als JS-Property erhalten für legacy Tests + Drop-in-Kompat.
+        if (opts.vertexColors) params.vertexColors = true;
+        const mat = new THREE.MeshToonNodeMaterial(params);
+        // gradientMap geteilt (state.toonGradientMap). Der Cel-Levels-Slider
+        // patcht die DataTexture in-place (_refreshToonGradient.needsUpdate),
+        // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
         return mat;
-    }
-
-    // V10.0-g — Geteilte Toon-Light-Uniforms (uniform-Knoten, .value-mutable).
-    // Lazy initialisiert; gespeist von _dayNightApplyDirectionalLight +
-    // _dayNightApplyAmbient via state.toonLightUniforms.X.value-Setter.
-    _ensureToonLightUniforms() {
-        if (this.state.toonLightUniforms) return this.state.toonLightUniforms;
-        const TSL = THREE.TSL;
-        const { uniform } = TSL;
-        const sunDir = uniform(new THREE.Vector3(0.5, 0.7, 0.3).normalize());
-        const sunIntensity = uniform(1.0);
-        const ambient = uniform(0.3);
-        // V10.0-h — Shadow-Sampling-Uniforms. shadowMatrix wird pro Frame in
-        // _renderShadowMapPass aus light.shadow.camera neu projiziert; bei
-        // WebGL-Pfad bleibt es auf Identität (Three.js' Renderer macht die
-        // Shadow-Sampling intern via lights=true-Pendant → MeshToonMaterial-
-        // Fallback). shadowEnabled=0 → kein Schatten im colorNode (sicherer
-        // Default vor erstem Render-Pass).
-        const shadowMatrix = uniform(new THREE.Matrix4());
-        const shadowEnabled = uniform(0.0);
-        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient, shadowMatrix, shadowEnabled };
-        return this.state.toonLightUniforms;
-    }
-
-    // V10.0-h — Shadow-Map RenderTarget für den manuellen Shadow-Pass.
-    // Three.js' WebGPURenderer in r160 hat KEINEN automatischen Shadow-Pass
-    // wenn alle Materials lights=false haben (siehe Diag: shadow.map=null im
-    // WebGPU-Pfad obwohl light.castShadow=true + renderer.shadowMap.enabled=
-    // true). Wurzel: r160's Shadow-Pipeline läuft NUR via setupShadow() in
-    // einem konsumierenden NodeMaterial. Heilung: eigenes RenderTarget mit
-    // DepthTexture, manueller Pass aus light.shadow.camera-Sicht VOR dem
-    // main render, depthTexture wird im colorNode der Toon-Materials
-    // gesampelt. Idempotent — wird einmal pro Renderer-Spawn aufgerufen,
-    // disposed im Hot-Swap-Pfad.
-    _ensureShadowRenderTarget() {
-        if (this.state.shadowRTT) return this.state.shadowRTT;
-        if (typeof THREE === "undefined" || !this.state.directionalLight) return null;
-        const W = 2048;
-        const H = 2048;
-        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
-        // AnalyticLightNode.setupShadow(): `new DepthTexture()` ohne Format-
-        // Args (Three.js defaultet auf Pure-Depth, kein Stencil-Aspect-
-        // Konflikt) + `compareFunction = LessCompare` (Three.js' WebGPU-
-        // Backend bindet automatisch einen Comparison-Sampler, der mit
-        // `textureSampleCompare()`-WGSL-Knoten harmoniert — kein Filtering-
-        // Mismatch). V10.0-h.b's Depth24Stencil8-Pfad triggerte „Multiple
-        // aspects (Depth|Stencil)"-Validation, weil WebGPU für Depth-
-        // Bindings eine explicit `aspect: 'depth-only'`-View verlangt; das
-        // Pure-Depth-Format umgeht das. V10.0-h-a's „stencilOp-Default"-
-        // Hypothese war eine Fehldiagnose (Depth16Unorm-spezifisch).
-        const depthTex = new THREE.DepthTexture(W, H);
-        depthTex.minFilter = THREE.NearestFilter;
-        depthTex.magFilter = THREE.NearestFilter;
-        depthTex.compareFunction = THREE.LessCompare;
-        const rtt = new THREE.WebGLRenderTarget(W, H, {
-            minFilter: THREE.NearestFilter,
-            magFilter: THREE.NearestFilter,
-            format: THREE.RGBAFormat,
-            depthTexture: depthTex,
-        });
-        this.state.shadowRTT = rtt;
-        this.state.shadowDepthTexture = depthTex;
-        this.state.directionalLight.shadow.map = rtt;
-        return rtt;
-    }
-
-    // V10.0-h — Manueller Shadow-Map-Pass. Pre-render-Hook: rendert die
-    // Scene aus directionalLight.shadow.camera-Sicht in das shadowRTT mit
-    // einem Depth-Override-Material. Danach läuft der normale Render-Pass
-    // gegen die frisch gefüllte Shadow-Map.
-    //
-    // Manueller Shadow-Pass: Three.js' interner Shadow-Pass rendert die
-    // Shadow-Map nur wenn `lights=true`-Materials sie konsumieren. Unsere
-    // NodeMaterials sind alle lights=false (eigenes Toon-Lighting im
-    // colorNode) → Three.js' interner Pass schreibt nichts. Heilung:
-    // manueller Pass + `renderer.shadowMap.autoUpdate=false` (wir
-    // übernehmen die Shadow-Pipeline komplett).
-    _renderShadowMapPass() {
-        const dl = this.state.directionalLight;
-        const renderer = this.state.renderer;
-        const scene = this.state.scene;
-        if (!dl || !renderer || !scene || !dl.castShadow) return;
-        const rtt = this._ensureShadowRenderTarget();
-        if (!rtt) return;
-        // Shadow-Camera updaten + matrix bauen (canonical Three.js-Pattern
-        // aus WebGLShadowMap.js).
-        dl.shadow.camera.position.copy(dl.position);
-        dl.shadow.camera.lookAt(dl.target.position);
-        dl.shadow.camera.updateMatrixWorld(true);
-        dl.shadow.camera.updateProjectionMatrix();
-        const m = dl.shadow.matrix;
-        m.set(0.5, 0.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0);
-        m.multiply(dl.shadow.camera.projectionMatrix);
-        m.multiply(dl.shadow.camera.matrixWorldInverse);
-        const tu = this.state.toonLightUniforms;
-        if (tu) {
-            if (tu.shadowMatrix) tu.shadowMatrix.value.copy(m);
-            if (tu.shadowEnabled) tu.shadowEnabled.value = 1.0;
-        }
-        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
-        // AnalyticLightNode.updateShadow(). Drei Disziplinen:
-        // (1) scene.overrideMaterial = ein minimales MeshBasicNodeMaterial.
-        //     Alle Caster werden mit ihm gerendert — kein colorNode-Custom,
-        //     kein instanceColor-Lookup, kein WGSL-Compile-Crash. Wenn ein
-        //     Caster-Material einen positionNode hat (Gras-Wind, Welle-
-        //     Displacement), reicht das Override-Material seinen position
-        //     Node durch (Renderer.js Z961-967: override pulls original
-        //     positionNode). Damit displaced sich auch das Shadow-Mesh
-        //     korrekt → kein „Wind-Halme bleiben stehen im Schatten".
-        // (2) setRenderObjectFunction-Filter: nur `castShadow === true`
-        //     Objects werden gerendert. Sterne (default castShadow=false),
-        //     Skybox, Wasser-Iso fallen raus → keine instanceColor-Reads,
-        //     keine Atmosphären-Render-Calls.
-        // (3) Pure-Depth-RTT + LessCompare-DepthTexture → comparison-
-        //     Sampler im colorNode harmoniert mit textureSampleCompare-
-        //     WGSL-Knoten (siehe _buildToonNodeMaterial).
-        if (!this.state.shadowOverrideMat) {
-            if (typeof THREE.MeshBasicNodeMaterial === "function") {
-                this.state.shadowOverrideMat = new THREE.MeshBasicNodeMaterial();
-            } else {
-                return;
-            }
-        }
-        const depthMat = this.state.shadowOverrideMat;
-        const oldOverride = scene.overrideMaterial;
-        const oldRT = renderer.getRenderTarget ? renderer.getRenderTarget() : null;
-        const oldRenderObjectFn =
-            typeof renderer.getRenderObjectFunction === "function" ? renderer.getRenderObjectFunction() : null;
-        scene.overrideMaterial = depthMat;
-        if (typeof renderer.setRenderObjectFunction === "function") {
-            renderer.setRenderObjectFunction((object, ...params) => {
-                if (object.castShadow === true) {
-                    renderer.renderObject(object, ...params);
-                }
-            });
-        }
-        try {
-            renderer.setRenderTarget(rtt);
-            // V10.0-j.c — KEIN expliziter renderer.clear() Aufruf. Three.js'
-            // WebGPUBackend.clear() Z632-643 hat einen Vendor-Bug: im stencil=
-            // false-Branch setzt es ZWANGSWEISE stencilLoadOp+stencilStoreOp
-            // (else-Branch, immer ausgeführt). Auf Pure-Depth-Format crasht
-            // das die WebGPU-Validation. Heilung: weglassen — Three.js'
-            // regulärer Render-Pass-Pfad (Background.js Z119) setzt
-            // `renderContext.clearDepth = autoClearDepth=true` automatisch,
-            // WebGPUBackend Z302 macht dann depthLoadOp=Clear (sauber gated).
-            const result = renderer.render(scene, dl.shadow.camera);
-            if (result && typeof result.catch === "function") {
-                result.catch(() => {});
-            }
-        } catch (_) {
-        } finally {
-            scene.overrideMaterial = oldOverride;
-            renderer.setRenderTarget(oldRT);
-            if (oldRenderObjectFn && typeof renderer.setRenderObjectFunction === "function") {
-                renderer.setRenderObjectFunction(oldRenderObjectFn);
-            } else if (typeof renderer.setRenderObjectFunction === "function") {
-                renderer.setRenderObjectFunction(null);
-            }
-        }
     }
 
     // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
@@ -36566,17 +36235,9 @@ class AnazhRealm {
             tint.lightColor.b * tint.lightMul
         );
         dl.intensity = tint.lightIntensity;
-        // V10.0-g — Toon-Light-Uniforms aktualisieren: sunDir (Welt-Raum,
-        // normalisiert) + sunIntensity (skalar). Defensive Existenz-Probe,
-        // weil toonLightUniforms lazy beim ersten Material-Build entstehen.
-        const tu = this.state.toonLightUniforms;
-        if (tu) {
-            if (tu.sunDir) tu.sunDir.value.copy(sunDir);
-            if (tu.sunIntensity) {
-                const lum = (tint.lightColor.r + tint.lightColor.g + tint.lightColor.b) / 3.0;
-                tu.sunIntensity.value = tint.lightIntensity * tint.lightMul * lum;
-            }
-        }
+        // V12.0-f — kein toonLightUniforms-Sync mehr. Die nativen
+        // MeshToonNodeMaterials (lights=true) konsumieren dl.color/intensity/
+        // position direkt über Three.js' WebGPU-Lighting-Pipeline.
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -36587,9 +36248,8 @@ class AnazhRealm {
         const sunHeight = Math.max(0, Math.sin(angle));
         const baseAmb = 0.18 + 0.42 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
-        // V10.0-g — Toon-Light-Uniform für Ambient mitziehen.
-        const tu = this.state.toonLightUniforms;
-        if (tu && tu.ambient) tu.ambient.value = al.intensity;
+        // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
+        // Materials konsumieren al.intensity direkt (Three.js-Lighting).
     }
 
     // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
@@ -39778,10 +39438,10 @@ class AnazhRealm {
         // ready ist (typisch 1-2 Frames bei AMD/Nvidia, mehr bei async
         // requestAdapter()-Latenz).
         if (!this.state.rendererReady) return;
-        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. Füllt das
-        // shadowRTT + updated toonLightUniforms.shadowMatrix, der colorNode
-        // der Toon-Materials sampelt im selben Frame.
-        this._renderShadowMapPass();
+        // V12.0-f — kein manueller Shadow-Pass mehr. Three.js' WebGPU-Renderer
+        // rendert die Shadow-Map nativ pro Frame (shadowMap.autoUpdate=true,
+        // directionalLight.castShadow + die lights=true-MeshToonNodeMaterials
+        // konsumieren sie). Der Render-Loop ruft direkt render().
         // V12.0-a — render() ist async. Bei einer Pipeline-Compile-Failure
         // wirft der Promise-Reject — wir loggen, aber kein Hot-Swap mehr
         // (r164 hat WebGLNodeBuilder entfernt, WebGL wäre eine schwarze Welt).
@@ -40115,7 +39775,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-e";
+AnazhRealm.VERSION = "12.0-f";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

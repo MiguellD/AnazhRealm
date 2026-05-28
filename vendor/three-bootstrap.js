@@ -29,14 +29,13 @@
 // Browser-Realität 2026: Chrome 113+ (stable seit Mai 2023), Edge 113+,
 // Safari 18+ (stable seit Sept 2024), Firefox mit dom.webgpu.enabled.
 //
-// V12.0-a/b/c (nächste Wellen): Hot-Swap-Pfad + rendererKind-Gates + WebGL-
-// Bridge-Heilungen werden gestrichen, sobald r184-Boot bewiesen + Schöpfer-
-// Browser-Audit grün ist. Diese Sub-Welle (V12.0-vendor.1) tauscht NUR die
-// Vendor-Bytes + die Bootstrap-Imports — die Code-Vereinfachung in
-// `anazhRealm.js` folgt in eigenen disziplinierten Wellen.
+// V12.0-a (erledigt): Hot-Swap-Pfad + rendererKind-Gates + WebGL-Bridge-
+// Heilungen gestrichen, WebGPU-required-Bootstrap-Wand in init(). V12.0-f
+// (erledigt): der V10.0-g.diag-Toon-Workaround (MeshBasicNodeMaterial +
+// manuelles colorNode-Lighting + handgebauter Shadow-Pass) ist durch native
+// MeshToonNodeMaterial/MeshLambertNodeMaterial (lights=true) ersetzt.
 
 import * as THREE from "three";
-import { MeshToonMaterial } from "three";
 import * as WEBGPU from "three/webgpu";
 import * as TSL from "three/tsl";
 
@@ -55,15 +54,16 @@ const WebGPURenderer = requireWebGPU("WebGPURenderer");
 const MeshBasicNodeMaterial = requireWebGPU("MeshBasicNodeMaterial");
 const PointsNodeMaterial = requireWebGPU("PointsNodeMaterial");
 const MeshLambertNodeMaterial = requireWebGPU("MeshLambertNodeMaterial");
+// V12.0-f — natives MeshToonNodeMaterial (lights=true). Seit r164 tragen
+// lights=true-NodeMaterials nativ auf WebGPU; der V10.0-g.diag-Workaround
+// (`_buildToonNodeMaterial` als MeshBasicNodeMaterial + manuelles colorNode-
+// Lighting + handgebauter Shadow-Pass) ist obsolet. Three.js managed jetzt
+// Cel-gradientMap + DirectionalLight/Ambient/Hemisphere-Lighting + Shadow-
+// Map automatisch. Der tote MeshToonMaterial-Fallback-Import ist gestrichen.
+const MeshToonNodeMaterial = requireWebGPU("MeshToonNodeMaterial");
 // V12.0-vendor.1 — r184 hat den `WebGPU`-Capability-Wrapper entfernt
 // (war r160's `WebGPU.isAvailable()`). Direkt-Lookup via `navigator.gpu`
 // in der Renderer-Auswahl-Logik (anazhRealm.js init()).
-
-// Suppress unused-warnings für Imports, die nur als V10.0-g-Diagnose-Spur
-// existieren (bisher als BAUSTELLE-Kommentar dokumentiert — bleibt für die
-// V12.0-g-Welle als Code-Review-Referenz).
-void MeshToonMaterial;
-void MeshLambertNodeMaterial;
 
 // `import * as X` liefert einen read-only Module-Namespace. Damit wir
 // `THREE.WebGPURenderer` + die TSL-Helpers + die NodeMaterial-Klassen
@@ -73,5 +73,6 @@ THREE_GLOBAL.WebGPURenderer = WebGPURenderer;
 THREE_GLOBAL.MeshBasicNodeMaterial = MeshBasicNodeMaterial;
 THREE_GLOBAL.PointsNodeMaterial = PointsNodeMaterial;
 THREE_GLOBAL.MeshLambertNodeMaterial = MeshLambertNodeMaterial;
+THREE_GLOBAL.MeshToonNodeMaterial = MeshToonNodeMaterial;
 THREE_GLOBAL.TSL = TSL;
 window.THREE = THREE_GLOBAL;
