@@ -19339,8 +19339,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            // Gerstner-Welle als tslFn-Closure + dot(xz, d) im Vertex-Pfad.
-            waterDiagonal = /gerstnerWave\s*=\s*tslFn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
+            // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
+            waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
             waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
         }
@@ -19413,7 +19413,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 r.state.hydroSurfaceUniforms.fogNear
             );
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            out.waterDomainWarp = /waveDisplace\s*=\s*tslFn/.test(builderSrc) && /warp/.test(builderSrc);
+            out.waterDomainWarp = /waveDisplace\s*=\s*Fn/.test(builderSrc) && /warp/.test(builderSrc);
             // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
             out.waterFogInShader = /smoothstep\(uFogNear,\s*uFogFar/.test(builderSrc);
         }
@@ -19583,9 +19583,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wGerstMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            // tslFn-Closures statt GLSL-Funktionen, identische Mathematik.
-            out.gerstnerFn = /gerstnerWave\s*=\s*tslFn/.test(builderSrc);
-            out.waveDisplaceVec3 = /waveDisplace\s*=\s*tslFn/.test(builderSrc);
+            // TSL-Fn-Closures statt GLSL-Funktionen (r167+ Vendor-Rename: tslFn→Fn).
+            out.gerstnerFn = /gerstnerWave\s*=\s*Fn/.test(builderSrc);
+            out.waveDisplaceVec3 = /waveDisplace\s*=\s*Fn/.test(builderSrc);
             // Horizontale Stauchung: q.mul(a).mul(d.x).mul(cos(phase)) — spitze Kämme.
             out.gerstnerHorizontal = /q\.mul\(a\)\.mul\(d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
             // Normale aus Kreuzprodukt der Tangenten.

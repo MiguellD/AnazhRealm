@@ -9909,21 +9909,8 @@ class AnazhRealm {
             this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
-        const {
-            uniform,
-            vec3,
-            float,
-            positionLocal,
-            normalize,
-            sin,
-            dot,
-            floor,
-            fract,
-            mix,
-            smoothstep,
-            clamp,
-            tslFn,
-        } = TSL;
+        const { uniform, vec3, float, positionLocal, normalize, sin, dot, floor, fract, mix, smoothstep, clamp, Fn } =
+            TSL;
 
         // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
         // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
@@ -9937,10 +9924,10 @@ class AnazhRealm {
         // (TSL sin/fract sind implementation-defined precision auf WebGPU,
         // s. WGSL §3.6), aber das Smoothing absorbiert <1e-4-Drift in die
         // weichen Wolken-Übergänge — visuell ununterscheidbar.
-        const hash3 = tslFn(([st]) => {
+        const hash3 = Fn(([st]) => {
             return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123));
         });
-        const noise3 = tslFn(([st]) => {
+        const noise3 = Fn(([st]) => {
             const i = floor(st);
             const f = fract(st);
             // smoothstep-Approximation f² · (3 − 2f), identisch zur GLSL-Variante
@@ -19369,8 +19356,8 @@ class AnazhRealm {
             pow,
             normalize,
             cross,
-            cond,
-            tslFn,
+            select: cond,
+            Fn,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
@@ -19387,10 +19374,10 @@ class AnazhRealm {
         const uFogFar = uniform(150.0);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
-        const hash2 = tslFn(([p]) => {
+        const hash2 = Fn(([p]) => {
             return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
-        const vnoise = tslFn(([p]) => {
+        const vnoise = Fn(([p]) => {
             const i = floor(p);
             const f = fract(p);
             const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
@@ -19404,12 +19391,12 @@ class AnazhRealm {
         // Eine Gerstner-Welle (V8.33-Meeres-Plane via V9.49-c übernommen):
         // horizontale Stauchung zu den Kämmen + vertikale Höhe. Sechs Oktaven
         // davon plus Domain-Warp gegen Periodizität.
-        const gerstnerWave = tslFn(([xz, dir, f, a, s, q]) => {
+        const gerstnerWave = Fn(([xz, dir, f, a, s, q]) => {
             const d = normalize(dir);
             const phase = dot(xz, d).mul(f).add(uTime.mul(s));
             return vec3(q.mul(a).mul(d.x).mul(cos(phase)), a.mul(sin(phase)), q.mul(a).mul(d.y).mul(cos(phase)));
         });
-        const waveDisplace = tslFn(([xz]) => {
+        const waveDisplace = Fn(([xz]) => {
             const warp = vec2(
                 sin(xz.x.mul(0.022).add(uTime.mul(0.25))).mul(7.0),
                 cos(xz.y.mul(0.019).sub(uTime.mul(0.21))).mul(7.0)
@@ -19886,7 +19873,7 @@ class AnazhRealm {
             max,
             pow,
             normalize,
-            tslFn,
+            Fn,
         } = TSL;
 
         // Elf Live-Uniforms (uniform-Knoten mit .value-Setter)
@@ -19904,10 +19891,10 @@ class AnazhRealm {
 
         // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
         // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
-        const hash2 = tslFn(([p]) => {
+        const hash2 = Fn(([p]) => {
             return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
-        const vnoise = tslFn(([p]) => {
+        const vnoise = Fn(([p]) => {
             const i = floor(p);
             const f = fract(p);
             const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
@@ -38537,11 +38524,14 @@ class AnazhRealm {
         // konform. Wenn WebGPU rendert + ShaderMaterial fehlschlägt, sieht
         // der Schöpfer Browser-Console-Errors — das ist die V10.0-e-Audit-
         // Spur.
+        // V12.0-vendor.1 — r184 hat den `THREE.WebGPU`-Capability-Helper
+        // entfernt. `navigator.gpu` ist die direkte Browser-API (WebGPU-Spec):
+        // wenn das Property existiert, hat der Browser einen WebGPU-Adapter-
+        // Pfad. `requestAdapter()` läuft async beim Renderer-init und kann
+        // null returnen (kein Hardware-Adapter im Headless-Container) — das
+        // wird im init().catch() unten gefangen + Hot-Swap-Pfad greift.
         const wantWebGPU =
-            typeof THREE.WebGPURenderer === "function" &&
-            THREE.WebGPU &&
-            typeof THREE.WebGPU.isAvailable === "function" &&
-            THREE.WebGPU.isAvailable();
+            typeof THREE.WebGPURenderer === "function" && typeof navigator !== "undefined" && !!navigator.gpu;
         let renderer = null;
         let rendererKind = "webgl";
         if (wantWebGPU) {
@@ -40297,7 +40287,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.fix.gras3";
+AnazhRealm.VERSION = "12.0-vendor.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
