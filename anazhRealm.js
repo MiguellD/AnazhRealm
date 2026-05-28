@@ -17,18 +17,14 @@ class AnazhRealm {
         this.state = {
             // ### Kern ###
             renderer: null,
-            // V10.0-d/e — Renderer-Auswahl-State. `rendererKind` = "webgpu"
-            // oder "webgl", entscheidet zur Laufzeit in createScene. `ready`
-            // ist false bis WebGPU's async `init()` durch ist (Game-Loop
-            // skipt render bis dahin). `rendererInkompatibel` = true wenn
-            // Hot-Swap zu WebGL passierte (verhindert wiederholte Versuche).
-            rendererKind: "webgl",
+            // V12.0-a — WebGPU-required. `rendererReady` ist false bis
+            // `renderer.init()` async durch ist (Game-Loop skipt render
+            // bis dahin). Wenn navigator.gpu fehlt, throwt Bootstrap mit
+            // klarer User-Message — die V10.0-e-Hot-Swap-Bridge ist seit
+            // r164 strukturell tot (webgl-legacy/WebGLNodeBuilder entfernt,
+            // NodeMaterials rendern nicht auf WebGLRenderer).
             rendererReady: false,
-            rendererInkompatibel: false,
-            // V10.0-f-5 — aktives Canvas-DOM-Element. Initialisiert in
-            // createScene; nach einem Hot-Swap (`_swapToWebGLRenderer`) durch
-            // `_replaceWorldCanvas` ausgetauscht (das alte Element ist dann
-            // aus dem DOM entfernt, die closure-captured-Referenzen tot).
+            // Aktives Canvas-DOM-Element. Initialisiert in createScene.
             canvas: null,
             scene: null,
             camera: null,
@@ -6258,6 +6254,8 @@ class AnazhRealm {
             ctx.fillText("✓ " + fingerprint, 128, 67);
         }
         const tex = new THREE.CanvasTexture(canvas);
+        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded (fillStyle="#xxx").
+        tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
         const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
         const sprite = new THREE.Sprite(mat);
@@ -9887,9 +9885,8 @@ class AnazhRealm {
         // MeshBasicNodeMaterial (TSL). Welt-Optik 1:1 gespiegelt — dieselbe
         // 3-Octaven-Nebula-Noise + horizont-genordete Wolken-Schicht mit
         // Identitäts-Hash-Konstanten (12.9898/78.233/45.5432 + 43758.5453).
-        // Läuft jetzt nativ auf WebGPURenderer (kein Hot-Swap-Trigger mehr
-        // für den Skybox-Pfad) UND auf klassischem WebGLRenderer via
-        // `webgl-legacy/nodes/WebGLNodes.js` (Bootstrap-Side-Effect-Patch).
+        // Läuft nativ auf WebGPURenderer (V12.0-a: WebGPU-required;
+        // webgl-legacy/WebGLNodeBuilder ist seit r164 strukturell entfernt).
         //
         // Vorheriger Bug-Klassen-Schutz (V8.26 Bug 1): vDir = normalize-
         // (positionLocal) hält den Sample-Punkt absolut in Welt-Richtung,
@@ -9909,21 +9906,8 @@ class AnazhRealm {
             this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
-        const {
-            uniform,
-            vec3,
-            float,
-            positionLocal,
-            normalize,
-            sin,
-            dot,
-            floor,
-            fract,
-            mix,
-            smoothstep,
-            clamp,
-            tslFn,
-        } = TSL;
+        const { uniform, vec3, float, positionLocal, normalize, sin, dot, floor, fract, mix, smoothstep, clamp, Fn } =
+            TSL;
 
         // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
         // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
@@ -9937,10 +9921,10 @@ class AnazhRealm {
         // (TSL sin/fract sind implementation-defined precision auf WebGPU,
         // s. WGSL §3.6), aber das Smoothing absorbiert <1e-4-Drift in die
         // weichen Wolken-Übergänge — visuell ununterscheidbar.
-        const hash3 = tslFn(([st]) => {
+        const hash3 = Fn(([st]) => {
             return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123));
         });
-        const noise3 = tslFn(([st]) => {
+        const noise3 = Fn(([st]) => {
             const i = floor(st);
             const f = fract(st);
             // smoothstep-Approximation f² · (3 − 2f), identisch zur GLSL-Variante
@@ -10323,7 +10307,7 @@ class AnazhRealm {
             dot,
             clamp,
             mix,
-            transformedNormalWorld,
+            normalWorld,
             positionLocal,
             positionWorld,
             texture,
@@ -10359,7 +10343,7 @@ class AnazhRealm {
         // beim Gras nicht (kein Cel-Look auf Halme); direkter Lambert-Mul.
         const u = this._ensureToonLightUniforms();
         const baseColor = vec3(float(0x5f / 255), float(0xa7 / 255), float(0x43 / 255));
-        const N = normalize(transformedNormalWorld);
+        const N = normalize(normalWorld);
         const L = normalize(u.sunDir);
         const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
         // V10.0-j — Shadow-Sampling identisch zu _buildToonNodeMaterial.
@@ -10367,10 +10351,10 @@ class AnazhRealm {
         // für Pattern-Begründung.
         const shadowDepthTex = this.state.shadowDepthTexture;
         let shadowAttenuation = float(1.0);
-        if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
             const normalBias = float(1.0);
             const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
             const sampleUV = projected.xy;
@@ -12272,6 +12256,8 @@ class AnazhRealm {
         cx.fillStyle = g;
         cx.fillRect(0, 0, 64, 64);
         this._creatureAuraTextureCache = new THREE.CanvasTexture(canvas);
+        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded.
+        this._creatureAuraTextureCache.colorSpace = THREE.SRGBColorSpace;
         return this._creatureAuraTextureCache;
     }
 
@@ -13588,44 +13574,22 @@ class AnazhRealm {
         this._voxelGpuInitPromise = null;
     }
 
-    // V10.0-d — gemeinsame Renderer-Konfiguration für WebGPU- und WebGL-
-    // Renderer. Beide Klassen erben von einem gemeinsamen Renderer-Interface
-    // (in r160): `setSize`, `setPixelRatio`, `setClearColor`, `shadowMap.*`
-    // funktionieren identisch. Nur die `useLegacyLights`-Bridge ist WebGL-
-    // only (WebGPURenderer ist always physically-correct + r160 hat das
-    // Property auch beim WebGLRenderer noch).
-    _configureRenderer(renderer, kind) {
+    // V12.0-a — WebGPURenderer-Konfiguration. Hot-Swap-WebGL-Fallback weg
+    // (r164 hat webgl-legacy/WebGLNodeBuilder entfernt → NodeMaterials laufen
+    // nur auf WebGPU). `kind`-Param gestrichen.
+    _configureRenderer(renderer) {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
-        // V10.0-a — r155+ entfernte useLegacyLights als default true.
-        // r160 hat es noch, r161+ entfernt das Property komplett. Bridge-
-        // Modus aktiv, bis V10.0-e die Lights physically-correct migriert.
-        // WebGPURenderer hat das Property NICHT — wir setzen es defensiv.
-        if ("useLegacyLights" in renderer) {
-            renderer.useLegacyLights = true;
-        }
         renderer.setClearColor(0x000000, 1);
-        if (kind === "webgl") {
-            // depthTest ist WebGL-spezifisch (WebGPU regelt das per Pipeline-
-            // State). Auf WebGPURenderer gibt's das Property nicht.
-            renderer.depthTest = true;
-        }
         renderer.shadowMap.enabled = true;
-        // V9.84 Perf-1.a — PCFSoftShadowMap → PCFShadowMap (4 statt 16
-        // Samples). Konstante existiert in beiden Renderern.
+        // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
+        // Samples — Performance-Win, Soft-Schatten via Hardware-PCF im
+        // manuellen Shadow-Pass).
         renderer.shadowMap.type = THREE.PCFShadowMap;
-        // V10.0-i.c — Three.js' interner Auto-Shadow-Pass je Renderer:
-        // WebGPU: autoUpdate=false (unser manueller _renderShadowMapPass + colorNode-
-        //   Sampling übernimmt). Three.js' WebGPU-Pass rendert ohnehin nicht
-        //   bei lights=false.
-        // WebGL: autoUpdate=true (Three.js' interner Pass läuft — er rendert
-        //   die Shadow-Map für lights=true-Materials falls vorhanden. Unser
-        //   colorNode-Sampling auf WebGL ist deaktiviert wegen r160-webgl-legacy-
-        //   Codegen-Bug bei texture()-Swizzles. Falls Hot-Swap-Fallback ein
-        //   lights=true-Material zur Scene fügt, läuft Standard-Pipeline.
-        //   Aktuell mit V10.0-g/i kein lights=true-Pendant → kein Shadow auf
-        //   WebGL via NodeMaterial; V10.0-h.c-Backlog für Monkey-Patch).
-        renderer.shadowMap.autoUpdate = kind !== "webgpu";
+        // Unser manueller `_renderShadowMapPass` + colorNode-Sampling
+        // übernimmt; Three.js' interner WebGPU-Pass läuft ohnehin nicht bei
+        // unseren lights=false-NodeMaterials.
+        renderer.shadowMap.autoUpdate = false;
     }
 
     // =====================================================================
@@ -17300,10 +17264,10 @@ class AnazhRealm {
     // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
     // propagiert automatisch zu allen Materials.
     _buildToonNodeMaterial(opts = {}) {
-        // V10.0-g — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false,
-        // robust auf BEIDEN Renderern via webgl-legacy-Patch) + manuelles
-        // Lighting im colorNode mit gradientMap-Cel-Lookup. Alle V10.0-g.r-
-        // Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
+        // V10.0-g (in V12.0-f-full backlogged für MeshToonNodeMaterial-Migration)
+        // — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false) +
+        // manuelles Lighting im colorNode mit gradientMap-Cel-Lookup. Alle
+        // V10.0-g.r-Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
         //  - Cel-Stufen via gradientMap-Texture-Lookup (Ghibli-Look)
         //  - Sun-Direction-getriebenes Lambert + Ambient (Welt-atmet-Sync)
         //  - Vertex-Colors via attribute() (für Voxel-Chunks + Inseln)
@@ -17343,20 +17307,8 @@ class AnazhRealm {
         // Geteilte Toon-Light-Uniforms (lazy welt-global).
         const u = this._ensureToonLightUniforms();
 
-        const {
-            attribute,
-            vec2,
-            vec3,
-            vec4,
-            float,
-            normalize,
-            dot,
-            clamp,
-            mix,
-            transformedNormalWorld,
-            positionWorld,
-            texture,
-        } = TSL;
+        const { attribute, vec2, vec3, vec4, float, normalize, dot, clamp, mix, normalWorld, positionWorld, texture } =
+            TSL;
 
         // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
         // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
@@ -17371,7 +17323,7 @@ class AnazhRealm {
         }
 
         // Welt-Raum-Normale (mat3(modelMatrix) × normalLocal) — TSL-built-in.
-        const N = normalize(transformedNormalWorld);
+        const N = normalize(normalWorld);
         const L = normalize(u.sunDir);
         // Half-Lambert für weichen Schatten-Übergang: (dot×0.5+0.5)
         // Bei Standard-Lambert (max(dot, 0)) sind die Rückseiten 100% schwarz —
@@ -17401,15 +17353,13 @@ class AnazhRealm {
         // `textureSampleCompare(tex, sampler, uv, refZ)` — comparison-sampler
         // wird automatisch gebunden weil depthTex.compareFunction=LessCompare
         // (siehe _ensureShadowRenderTarget). Profi-Pattern aus vendor/three-
-        // addons/nodes/lighting/AnalyticLightNode.setupShadow(). Gated auf
-        // rendererKind=webgpu — auf WebGL bleibt der TSL-Knoten ungebaut
-        // (kein Compile-Crash am webgl-legacy-Builder).
+        // addons/nodes/lighting/AnalyticLightNode.setupShadow().
         const shadowDepthTex = this.state.shadowDepthTexture;
         let shadowAttenuation = float(1.0);
-        if (this.state.rendererKind === "webgpu" && shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
+        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
             const normalBias = float(1.0);
             const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(transformedNormalWorld.mul(normalBias));
+            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
             const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
             const projected = shadowCoord4.xyz.div(shadowCoord4.w);
             // y-flip ist in der shadowMatrix bereits enthalten (NDC.y ist
@@ -17512,16 +17462,12 @@ class AnazhRealm {
     // einem Depth-Override-Material. Danach läuft der normale Render-Pass
     // gegen die frisch gefüllte Shadow-Map.
     //
-    // V10.0-i.c — Gate `rendererKind=webgpu` ENTFERNT. Pfad läuft jetzt auf
-    // BEIDEN Renderern. Wurzel: auf WebGL hat Three.js' interner Shadow-Pass
-    // (renderer.shadowMap.enabled) zwar gelaufen, aber er rendert die Map
-    // NUR wenn `lights=true`-Materials sie konsumieren. Unsere V10.0-g
-    // NodeMaterials sind alle lights=false → Three.js' interner Pass hat
-    // intern keine Caster-Material-Pipeline gefunden und nichts geschrieben
-    // (Welt-Schatten verloren beim V10.0-g-Bogen). Heilung: derselbe
-    // manuelle Pass auf BEIDEN Renderern. Plus: `renderer.shadowMap.auto
-    // Update = false` als Sicherung (Three.js' interner Pass läuft nicht
-    // mehr — wir übernehmen komplett).
+    // Manueller Shadow-Pass: Three.js' interner Shadow-Pass rendert die
+    // Shadow-Map nur wenn `lights=true`-Materials sie konsumieren. Unsere
+    // NodeMaterials sind alle lights=false (eigenes Toon-Lighting im
+    // colorNode) → Three.js' interner Pass schreibt nichts. Heilung:
+    // manueller Pass + `renderer.shadowMap.autoUpdate=false` (wir
+    // übernehmen die Shadow-Pipeline komplett).
     _renderShadowMapPass() {
         const dl = this.state.directionalLight;
         const renderer = this.state.renderer;
@@ -17844,20 +17790,23 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V9.95-b/d — GPU-Density als Stufe-0 NUR bei Cache-Hit. Wenn GPU
-        // pending (Request läuft), fällt der Chunk weiter zum Worker-Mesh-
-        // V9.95-e — EHRLICHE ABKLEMMUNG: GPU-Density-Pfad wird im Streaming
-        // NICHT mehr gerufen. Architektonische Wurzel: WebGPU-Compute mit
-        // WebGL-Renderer braucht IMMER einen CPU-Roundtrip (mapAsync blockt
-        // den Main-Thread bis Read-Back fertig ist). Der ~50ms-Worker-CPU-
-        // Density-Save war billiger als der ~200-300ms GPU+mapAsync-Stall.
-        // Schöpfer-Browser-Audit V9.95-d zeigte: FPS sinkt auf 6-9, Auto-
-        // Optimization triggert mehrfach. Architektonisch falsch verdrahtet.
-        // V9.95-a/b/c/d-Code (Foundation + Pipeline + Telemetry) BLEIBT als
-        // Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration (dann zero-
-        // copy GPU→Mesh möglich). Bis dahin: Worker-Mesh-Pfad ist PRIMARY,
-        // GPU greift NUR ein wo Worker komplett tot ist (rare).
-        // Worker-Mesh-Cache als Stufe-0 (V9.91-Pattern restoriert).
+        // V12.0-e — Streaming-Pfad-Hierarchie auf r184 (WebGPURenderer):
+        //   Stufe 1: Worker-Mesh-Cache (V9.91) — fastest, gibt fertigen Mesh
+        //     (positions + indices + normals + colors), Main-Thread macht nur
+        //     BufferGeometry-Konstruktion (~10-15 ms).
+        //   Stufe 2: GPU-Density-Cache (V9.95-Pipeline reaktiviert) — gibt
+        //     Float32Array-Density, Main-Thread macht Iso-Mesh-Konstruktion
+        //     (~30-40 ms). Same-Device-mapAsync auf WebGPURenderer (~5-15 ms
+        //     Read-Back-Stall, war ~200-300 ms auf WebGL-Renderer cross-
+        //     backend in V9.95-e). Wirkt für pristine Streaming-Chunks
+        //     (kein voxelEdit, kein Hydrosphere-Carve — `_voxelGpuChunkEligible`).
+        //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density als
+        //     Fallback wenn GPU ineligible oder unavailable.
+        //   Stufe 4: Sync-CPU-Build (V9.42-d) — letzter Fallback, voller
+        //     Density-Sample-Loop + Iso-Mesh-Konstruktion auf Main-Thread.
+        // Die V9.95-e-Abklemmung (GPU war auf WebGL-Renderer-mapAsync-cross-
+        // backend zu teuer) ist auf r184 strukturell obsolet — gleicher Device,
+        // gleicher Backend → mapAsync ist billig.
         let workerMesh;
         if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
             workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
@@ -17874,17 +17823,26 @@ class AnazhRealm {
         if (workerMesh) {
             fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         } else {
-            // V9.95-e — Worker komplett tot (Spawn-Fehler, kein WASM-Worker-Support).
-            // Stufe-2-Fallback: Worker-Density-Cache (V9.90, separater Pfad). Wenn
-            // der auch nicht greift: sync-Build (V9.42-d). GPU-Pipeline ist in
-            // diesem Lauf NICHT der Streaming-Pfad — der mapAsync-Stall ist
-            // architektonisch gegenüber dem Worker-CPU-Density teurer.
-            let workerDensity;
-            if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
-                workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
+            // Stufe 2: GPU-Density-Cache. `_fetchOrRequestChunkDensityGpu`
+            // gibt Float32Array (Cache-Hit), null (Pending → return null),
+            // undefined (GPU nicht ready oder Chunk ineligible).
+            let preDensity = null;
+            const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
+            if (gpuDensity === null) return null; // GPU-Pending → nächster Frame
+            if (gpuDensity !== undefined) preDensity = gpuDensity;
+            // Stufe 3: Worker-Density-Cache (Fallback wenn GPU ineligible/down).
+            if (
+                !preDensity &&
+                this.state.voxelWorker &&
+                this.state.voxelWorkerReady &&
+                this.state.voxelWorkerWorldgenSynced
+            ) {
+                const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
                 if (workerDensity === null) return null;
+                preDensity = workerDensity;
             }
-            fresh = this._buildVoxelChunkData(cx, cz, lod, workerDensity || null);
+            // Stufe 4: Sync-CPU-Build (letzter Fallback).
+            fresh = this._buildVoxelChunkData(cx, cz, lod, preDensity);
         }
         if (fresh === null) {
             // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
@@ -19369,8 +19327,8 @@ class AnazhRealm {
             pow,
             normalize,
             cross,
-            cond,
-            tslFn,
+            select: cond,
+            Fn,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
@@ -19387,10 +19345,10 @@ class AnazhRealm {
         const uFogFar = uniform(150.0);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
-        const hash2 = tslFn(([p]) => {
+        const hash2 = Fn(([p]) => {
             return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
-        const vnoise = tslFn(([p]) => {
+        const vnoise = Fn(([p]) => {
             const i = floor(p);
             const f = fract(p);
             const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
@@ -19404,12 +19362,12 @@ class AnazhRealm {
         // Eine Gerstner-Welle (V8.33-Meeres-Plane via V9.49-c übernommen):
         // horizontale Stauchung zu den Kämmen + vertikale Höhe. Sechs Oktaven
         // davon plus Domain-Warp gegen Periodizität.
-        const gerstnerWave = tslFn(([xz, dir, f, a, s, q]) => {
+        const gerstnerWave = Fn(([xz, dir, f, a, s, q]) => {
             const d = normalize(dir);
             const phase = dot(xz, d).mul(f).add(uTime.mul(s));
             return vec3(q.mul(a).mul(d.x).mul(cos(phase)), a.mul(sin(phase)), q.mul(a).mul(d.y).mul(cos(phase)));
         });
-        const waveDisplace = tslFn(([xz]) => {
+        const waveDisplace = Fn(([xz]) => {
             const warp = vec2(
                 sin(xz.x.mul(0.022).add(uTime.mul(0.25))).mul(7.0),
                 cos(xz.y.mul(0.019).sub(uTime.mul(0.21))).mul(7.0)
@@ -19571,21 +19529,14 @@ class AnazhRealm {
             const mesh = pool.pop();
             mesh.visible = true;
             mesh.count = 0; // Caller wird via setMatrixAt + count neu beschreiben
-            // V11.0-d.fix.gras-2 (Schöpfer-Browser-Audit-Wurzel: „im ersten
-            // Chunk Halme, alle weiteren nicht") — frischer instanceMatrix-
-            // Buffer beim Pool-Recycle. Three.js v160's WebGPU-Backend hat
-            // stale-Buffer-Cache-Issues beim Mesh-Re-Use (StaticDrawUsage
-            // triggert per-version-bump-writeBuffer NICHT zuverlässig wenn
-            // derselbe Mesh re-rendert wird mit neuen Daten — der vorherige
-            // Frame's Daten bleiben gebunden, neue Positionen werden NICHT
-            // hochgeladen → recycled Chunks rendern an alter Welt-Position
-            // (außerhalb Sichtfeld) → unsichtbar). Heilung: Mesh-Objekt +
-            // Geometry-Singleton + Material-Singleton bleiben recycled (Pool-
-            // Vorteil), aber instanceMatrix.array wird frisch allokiert pro
-            // acquire. 16 KB × Pool-Aktivität — der echte Pool-Gewinn ist
-            // erhalten (kein new InstancedMesh, kein neuer Geometry-Buffer,
-            // kein neues Material). Vendor-Race strukturell weg.
-            mesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(GRASS_MAX_BLADES * 16), 16);
+            // V12.0-d — ECHTES Pool-Recycling auf r184. Der
+            // V11.0-d.fix.gras-2-Workaround („frischer instanceMatrix-Buffer
+            // pro acquire", 16 KB/acquire) ist obsolet: r184's Bind-Group-
+            // Layout-Cache + writeBuffer-on-needsUpdate-Disziplin heilen den
+            // v160-stale-Buffer-Cache strukturell. Mesh wird mit existierendem
+            // instanceMatrix-Buffer recycled, Caller setzt
+            // `instanceMatrix.needsUpdate = true` nach setMatrixAt-Loop —
+            // Three.js triggert writeBuffer ein einziges Mal pro Chunk-Build.
             return mesh;
         }
         // Pool leer — neue Instanz allokieren. Voraussetzungen prüfen.
@@ -19734,20 +19685,27 @@ class AnazhRealm {
         // DrawIndexed-Iteration (echte Render-Count).
         const GRASS_MAX_BLADES = 256;
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
-        // V11.0-d.fix.gras3 — Pool-Pfad TEMPORÄR abgeklemmt nach Schöpfer-
-        // Browser-Audit-Befund („immernoch gleich, im ersten Chunk Halme,
-        // weitere nicht"). Drei Heilungs-Hypothesen (gras1 Bounding-Reset,
-        // gras2 frischer instanceMatrix-Buffer) haben nicht gegriffen — der
-        // Bug ist tiefer als ein einzelner stale-Cache. Three.js v160's
-        // WebGPU-Backend hat strukturelle Issues beim Mesh-Re-Use die OHNE
-        // r184-Vendor-Upgrade nicht voll heilbar sind (V12-Plan). EHRLICHER
-        // Zwischenstand bis V12.0-d: zurück auf V10.0-j.j-Workaround-Pattern
-        // (neuer InstancedMesh pro Chunk, Memory-Trade akzeptieren). Pool-
-        // API (`_acquireGrassMesh`/`_releaseGrassMesh`/`_drainGrassMeshPool`)
-        // BLEIBT im Code für V12-Refactor (33 Test-Invarianten grün, ehrliche
-        // Vorarbeit). Sobald V12.0-vendor r184 trägt + V12.0-d echtes
-        // Recycling beweist, wird der Pool-Pfad wieder aktiviert.
-        const inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
+        // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
+        // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
+        // (1) „Improve Bind Group Layout cache system" (r182) — InstancedMesh-
+        //     Re-Use cached Bind-Groups nicht mehr stale zwischen Chunks.
+        // (2) „compileAsync truly non-blocking" (r182) — Pipeline-Compile
+        //     stalls den Render-Loop nicht mehr (V11.0-d.fix.gras-2's
+        //     fresh-instanceMatrix-per-acquire-Workaround obsolet).
+        // (3) Three.js' WebGPU-Backend macht writeBuffer JETZT nur bei
+        //     `instanceMatrix.needsUpdate === true` (DynamicDrawUsage-Race
+        //     der V10.0-j.i-Lehre strukturell geheilt).
+        // V11.0-d.fix.gras-Bogen-Lehre angewandt: Vendor-Bugs durch Upgrade
+        // heilen, nicht workaround'en. `_acquireGrassMesh` poppt einen Pool-
+        // Mesh ODER allokiert neu wenn leer (Geometry-Singleton + Material-
+        // Singleton geteilt). Returnt null wenn Voraussetzungen fehlen →
+        // defensive Fallback auf direkte Allokation.
+        let inst = this._acquireGrassMesh();
+        if (!inst) {
+            inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
+            inst.castShadow = false;
+            inst.receiveShadow = false;
+        }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
         // Workaround gegen Instance-Buffer-Mismatch zwischen Chunks gesetzt;
@@ -19807,16 +19765,16 @@ class AnazhRealm {
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
-            // V11.0-d.fix.gras3 — Pool-Pfad temporär abgeklemmt. Zurück auf
-            // V10.0-j.j-Workaround: scene.remove, Geometry NICHT disposen
-            // (Three.js v160-WebGPU-Buffer-Lifecycle-Race). ~500 KB GPU-Heap
-            // pro Welt-Lebensdauer akzeptiert als Memory-Trade bis V12.0-d
-            // (r184-Upgrade) den Race strukturell heilt. Pool-API
-            // (`_releaseGrassMesh`) wird hier NICHT mehr gerufen, weil Pool-
-            // Recycling in v160 visuell broken (siehe `_buildVoxelChunkGrass`
-            // V11.0-d.fix.gras3-Kommentar). Pool-Code bleibt im Stamm als
-            // V12-Vorarbeit, aber im Lifecycle deaktiviert.
-            if (this.state.scene) this.state.scene.remove(grass);
+            // V12.0-d — Pool-Recycling auf r184. `_releaseGrassMesh` macht
+            // scene.remove + push in den Pool (mit CAP=32-LRU-Disziplin).
+            // V10.0-j.j-Memory-Trade (Geometry nicht disposed, ~500 KB GPU-
+            // Heap pro Welt-Lebensdauer) ist obsolet — Geometry ist
+            // Singleton (`_grassConeGeometry`, geteilt zwischen allen Pool-
+            // Meshes), instanceMatrix wird beim nächsten acquire wieder-
+            // beschrieben. r184's Bind-Group-Layout-Cache + compileAsync-
+            // non-blocking heilen den v160-InstancedMesh-Re-Use-Bug
+            // strukturell (V11.0-d.fix.gras-Bogen-Lehre angewandt).
+            this._releaseGrassMesh(grass);
         }
         this.state.voxelChunkGrass.delete(key);
     }
@@ -19872,7 +19830,7 @@ class AnazhRealm {
             vec4,
             float,
             positionLocal,
-            transformedNormalWorld,
+            normalWorld,
             modelWorldMatrix,
             cameraPosition,
             sin,
@@ -19886,7 +19844,7 @@ class AnazhRealm {
             max,
             pow,
             normalize,
-            tslFn,
+            Fn,
         } = TSL;
 
         // Elf Live-Uniforms (uniform-Knoten mit .value-Setter)
@@ -19904,10 +19862,10 @@ class AnazhRealm {
 
         // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
         // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
-        const hash2 = tslFn(([p]) => {
+        const hash2 = Fn(([p]) => {
             return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
         });
-        const vnoise = tslFn(([p]) => {
+        const vnoise = Fn(([p]) => {
             const i = floor(p);
             const f = fract(p);
             const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
@@ -19959,7 +19917,7 @@ class AnazhRealm {
         const lit = withFoam.mul(uLight);
 
         // Blinn-Phong Sonnen-Glitzern (V8.44-Welt-Raum-Normale).
-        const n = normalize(transformedNormalWorld);
+        const n = normalize(normalWorld);
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
         const halfV = normalize(normalize(uSunDir).add(viewDir));
         const spec = pow(max(dot(n, halfV), 0.0), 40.0);
@@ -24390,6 +24348,8 @@ class AnazhRealm {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, size, size);
         const tex = new THREE.CanvasTexture(canvas);
+        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded.
+        tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
         this._auraGradientTexture = tex;
         return tex;
@@ -38509,108 +38469,74 @@ class AnazhRealm {
         }
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        // V10.0-f-5: state.canvas trägt die aktive Canvas-Referenz. Nach
-        // einem Hot-Swap (`_swapToWebGLRenderer`) ist das DOM-Canvas-Element
-        // ersetzt — Re-Bind-Pfade lesen das aktuelle Canvas aus state.
+        // state.canvas trägt die aktive Canvas-Referenz.
         this.state.canvas = canvas;
 
-        // V10.0-a (Welle Three.js-Migration r134 → r160): ColorManagement
-        // wurde mit r142+ default ON. Three.js wandelt sRGB-Color-Werte intern
-        // in linearen Space für korrekten Lighting-Math. Bridge-Heilung:
-        // legacy ColorManagement, damit die Welt-Optik identisch zur r134-
-        // Baseline bleibt. V10.0-b/c machen den sauberen Switch (alle
-        // Materials + Lights mit physically-correct + sRGB-textures explizit).
+        // V12.0-vendor.3 — ColorManagement re-aktiviert (default seit r142+).
+        // Three.js wandelt sRGB-Color-Werte intern in linearen Space für
+        // korrekten Lighting-Math. Canvas-Texturen sind in `_buildVibePassSprite`,
+        // `_creatureAuraTextureCache` und `_buildAuraGradient` mit
+        // `colorSpace=SRGBColorSpace` getaggt — Renderer-Output bleibt
+        // visuell konsistent (Round-Trip sRGB→linear→sRGB cancelt). Die
+        // gradientMap (Toon-LUT) bleibt LinearSRGBColorSpace (Default für
+        // DataTexture) — sie ist Brightness-Daten, keine Color.
         if (typeof THREE !== "undefined" && THREE.ColorManagement) {
-            THREE.ColorManagement.enabled = false;
+            THREE.ColorManagement.enabled = true;
         }
-        // V10.0-d — Renderer-Auswahl-Logik: WebGPU wenn verfügbar, sonst
-        // klassischer WebGL. WebGPURenderer braucht `await renderer.init()`
-        // vor dem ersten Render (async); wir blockieren den Render-Pfad
-        // mit `state.rendererReady` bis init durch ist. Defensive 2-Stufen-
-        // Fallback: bei JEDEM Fehler (Constructor, init(), Backend) fallen
-        // wir auf WebGLRenderer zurück mit klarer Log-Spur.
-        //
-        // BEKANNTE BEGRENZUNG (V10.0-e holt das nach): unsere zwei
-        // ShaderMaterials (hydroSurfaceMaterial, waterfallMaterial) nutzen
-        // custom GLSL. WebGPURenderer in r160 unterstützt das via
-        // GLSLNodeBuilder, aber unsere Shaders sind nicht NodeMaterial-
-        // konform. Wenn WebGPU rendert + ShaderMaterial fehlschlägt, sieht
-        // der Schöpfer Browser-Console-Errors — das ist die V10.0-e-Audit-
-        // Spur.
-        const wantWebGPU =
-            typeof THREE.WebGPURenderer === "function" &&
-            THREE.WebGPU &&
-            typeof THREE.WebGPU.isAvailable === "function" &&
-            THREE.WebGPU.isAvailable();
-        let renderer = null;
-        let rendererKind = "webgl";
-        if (wantWebGPU) {
+        // V12.0-a — WebGPU-required Bootstrap. Seit r164 (Three.js Vendor-
+        // Migration) ist `webgl-legacy/WebGLNodeBuilder` strukturell entfernt
+        // — NodeMaterials rendern AUSSCHLIESSLICH auf WebGPURenderer. WebGL-
+        // Fallback wäre eine schwarze Welt. Browser-Realität 2026: Chrome
+        // 113+ stable, Safari 18+ stable, Edge stable, Firefox mit
+        // dom.webgpu.enabled. Wer kein WebGPU hat sieht klare Error-Meldung,
+        // keine stille leere Welt.
+        if (typeof navigator === "undefined" || !navigator.gpu) {
+            const msg =
+                "AnazhRealm braucht WebGPU. Browser bitte aktualisieren " +
+                "(Chrome/Edge 113+, Safari 18+, Firefox mit dom.webgpu.enabled).";
+            this.log(msg, "ERROR");
             try {
-                renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
-                // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
-                // Default ist `this.stencil = true` (Renderer.js:56) → bei JEDEM
-                // RenderPass setzt WebGPUBackend stencilLoadOp + stencilStoreOp
-                // (WebGPUBackend.js Z317-332). Bei Pure-Depth-Format (Depth24Plus
-                // ohne Stencil-Aspect, V10.0-j.a Shadow-RTT) wirft WebGPU dann
-                // „stencilLoadOp must not be set if attachment has no stencil
-                // aspect" → CommandEncoder invalidiert → Welt schwarz. WebGPU
-                // Backend Z233-237 hat zwar einen Branch der stencil=false setzt
-                // wenn depthTexture.format===DepthFormat — der greift aber nicht
-                // bei jedem Render-Pfad. Sicherste Heilung: am Renderer stencil
-                // KOMPLETT auf false. Wir nutzen Stencil nirgends (kein Outline-
-                // Effekt, kein Portal-Mask) → kein visueller Verlust. Plus: Main-
-                // Canvas-Depth-Buffer wird damit auch Pure-Depth (Depth24Plus
-                // statt Depth24PlusStencil8) — 4 Bytes/Pixel statt 5, sparsamer.
-                renderer.stencil = false;
-                rendererKind = "webgpu";
-                this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
-            } catch (err) {
-                this.log(
-                    `WebGPU-Renderer-Constructor scheiterte (${err.message}) — Fallback WebGLRenderer.`,
-                    "WARNING"
-                );
-                renderer = null;
+                if (typeof document !== "undefined") {
+                    const banner = document.createElement("div");
+                    banner.style.cssText =
+                        "position:fixed;top:0;left:0;right:0;padding:20px;background:#3a1a0c;color:#ffd9a8;font-family:sans-serif;font-size:16px;text-align:center;z-index:99999;border-bottom:2px solid #ff8844;";
+                    banner.textContent = msg;
+                    document.body.appendChild(banner);
+                }
+            } catch (_e) {
+                /* DOM nicht verfügbar (sehr alte Browser) */
             }
+            throw new Error(msg);
         }
-        if (!renderer) {
-            renderer = new THREE.WebGLRenderer({ canvas });
-            rendererKind = "webgl";
-            const reason = wantWebGPU ? "WebGPU-Constructor-Fehler" : "navigator.gpu/Adapter nicht verfügbar";
-            this.log(`WebGLRenderer aktiv (${reason})`, "INFO");
-        }
-        this._configureRenderer(renderer, rendererKind);
-        // Default-ready für WebGL; WebGPU setzt true erst nach `init()`.
-        this.state.rendererKind = rendererKind;
-        this.state.rendererReady = rendererKind === "webgl";
-        if (rendererKind === "webgpu") {
-            renderer
-                .init()
-                .then(() => {
-                    this.state.rendererReady = true;
-                    this.log("WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.", "INFO");
-                })
-                .catch((err) => {
-                    this.log(
-                        `WebGPU-Renderer init() scheiterte (${err.message}) — Hot-Swap zu WebGLRenderer.`,
-                        "ERROR"
-                    );
-                    // Dispose WebGPU-Renderer + neuen WebGL erstellen mit
-                    // identischer Konfiguration. Die Scene + Camera sind
-                    // unangetastet, der neue Renderer übernimmt nahtlos.
-                    try {
-                        if (typeof renderer.dispose === "function") renderer.dispose();
-                    } catch (_e) {
-                        /* defensive */
-                    }
-                    const fallbackRenderer = new THREE.WebGLRenderer({ canvas });
-                    this._configureRenderer(fallbackRenderer, "webgl");
-                    this.state.renderer = fallbackRenderer;
-                    this.state.rendererKind = "webgl";
-                    this.state.rendererReady = true;
-                });
-        }
+        const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
+        // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
+        // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format
+        // (V10.0-j.a Shadow-RTT) wirft WebGPU dann „stencilLoadOp must not
+        // be set if attachment has no stencil aspect" → CommandEncoder
+        // invalidiert → Welt schwarz. Wir nutzen Stencil nirgends → kein
+        // visueller Verlust. Plus: Main-Canvas-Depth-Buffer wird Pure-Depth
+        // (Depth24Plus statt Depth24PlusStencil8) — 4 Bytes/Pixel statt 5.
+        renderer.stencil = false;
+        this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
+        this._configureRenderer(renderer);
+        this.state.rendererReady = false;
+        renderer
+            .init()
+            .then(() => {
+                this.state.rendererReady = true;
+                this.log("WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.", "INFO");
+            })
+            .catch((err) => {
+                this.log(
+                    `WebGPU-Renderer init() scheiterte (${err.message}). ` +
+                        "navigator.gpu existiert aber requestAdapter/requestDevice scheitert — " +
+                        "Hardware-Adapter nicht verfügbar oder Device-Erschaffung blockiert.",
+                    "ERROR"
+                );
+            });
         this.state.renderer = renderer;
-        this.log(`Renderer initialisiert mit Schattenunterstützung (${rendererKind})`, "INFO");
+        this.log("Renderer initialisiert mit Schattenunterstützung (webgpu)", "INFO");
         this.state.selfAwareness.components.push("renderer");
 
         const scene = new THREE.Scene();
@@ -38899,9 +38825,7 @@ class AnazhRealm {
         });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
-        // V10.0-f-5 — Maus-Listener-Bindung als wiederrufbare Methode, damit
-        // ein Hot-Swap (`_swapToWebGLRenderer`) das Canvas-DOM-Element
-        // ersetzen + die Listener am neuen Canvas neu binden kann.
+        // Maus-Listener-Bindung als Methode (initial-Canvas).
         this._attachWorldCanvasInputListeners(canvas);
         // Welle 6.X.2 B4 (Audit 17.05.2026) — Scrollrad zyklt durch Hotbar-
         // Slots (Minecraft-Konvention). deltaY > 0 → nächster, < 0 → voriger.
@@ -39851,45 +39775,18 @@ class AnazhRealm {
         }
         // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
         // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
-        // ready ist (typisch 1-2 Frames bei AMD/Nvidia, 5-10 bei Software-
-        // Fallback). Bei WebGL ist `rendererReady` sofort true im
-        // _configureRenderer-Pfad. KEIN crash wenn render() zu früh läuft —
-        // aber unnötige Promise-Rejections im Console-Log vermieden.
+        // ready ist (typisch 1-2 Frames bei AMD/Nvidia, mehr bei async
+        // requestAdapter()-Latenz).
         if (!this.state.rendererReady) return;
-        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. V10.0-i.c:
-        // läuft jetzt auf BEIDEN Renderern (Gate `rendererKind=webgpu` entfernt
-        // — siehe _renderShadowMapPass-Doku). Pre-render-Hook füllt das
+        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. Füllt das
         // shadowRTT + updated toonLightUniforms.shadowMatrix, der colorNode
         // der Toon-Materials sampelt im selben Frame.
-        if (!this.state.rendererInkompatibel) {
-            this._renderShadowMapPass();
-        }
-        // V10.0-e — WebGPURenderer.render() ist async; bei inkompatiblen
-        // Materials (unsere `hydroSurfaceMaterial` + `waterfallMaterial`
-        // sind klassische ShaderMaterials, WebGPU in r160 erwartet
-        // NodeMaterial/TSL) wirft `NodeMaterial.fromMaterial` einen
-        // Promise-Reject pro Frame. Schöpfer-Browser-Audit V10.0-d zeigte:
-        // FPS sinkt auf 8 wegen ständig wiederholten Errors. Smart-Hot-
-        // Swap: ersten erkannten ShaderMaterial-Error → Renderer-Wechsel
-        // zu WebGLRenderer (identische Config, dispose WebGPU). Eine-
-        // mal-Operation: `state.rendererInkompatibel`-Flag verhindert
-        // weitere Versuche. V10.0-f portiert dann die zwei Custom-Shaders
-        // zu TSL für echten GPU-Render.
-        const renderResult = this.state.renderer.render(this.state.scene, this.state.camera);
-        if (renderResult && typeof renderResult.catch === "function" && !this.state.rendererInkompatibel) {
-            renderResult.catch((err) => {
-                const msg = err && err.message ? err.message : String(err);
-                if (msg.includes("ShaderMaterial") || msg.includes("not compatible") || msg.includes("NodeMaterial")) {
-                    if (this.state.rendererInkompatibel) return; // schon gemeldet
-                    this.state.rendererInkompatibel = true;
-                    this.log(
-                        `WebGPURenderer-Inkompatibilität (${msg.slice(0, 80)}) — Hot-Swap zu WebGLRenderer. V10.0-f wird die Custom-Shaders zu TSL portieren.`,
-                        "WARNING"
-                    );
-                    this._swapToWebGLRenderer();
-                }
-            });
-        }
+        this._renderShadowMapPass();
+        // V12.0-a — render() ist async. Bei einer Pipeline-Compile-Failure
+        // wirft der Promise-Reject — wir loggen, aber kein Hot-Swap mehr
+        // (r164 hat WebGLNodeBuilder entfernt, WebGL wäre eine schwarze Welt).
+        // Bei wiederholten Rejects sieht der Schöpfer den Error im Console-Log.
+        this.state.renderer.render(this.state.scene, this.state.camera);
         // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
         // WorkDone()`. V10.0-j.e's 2-Frame-Age-Counter (`age >= 2`) war
         // effektiv nur 1-Frame-Defer (push + drain im selben Frame, age=1;
@@ -39919,7 +39816,10 @@ class AnazhRealm {
                     }
                 });
             } else {
-                // WebGL: kein async submit → direkt sicher.
+                // Fallback wenn `backend.device.queue` fehlt (z.B. headless
+                // ohne GPU-Adapter — WebGPURenderer's interner WebGL2-Backend
+                // hat keine onSubmittedWorkDone-API). Synchron dispose ist
+                // hier sicher weil WebGL keine async-submit-Race hat.
                 for (const obj of queue) {
                     try {
                         obj.dispose();
@@ -39931,96 +39831,14 @@ class AnazhRealm {
         }
     }
 
-    // V10.0-e — Hot-Swap WebGPU→WebGL bei Render-Inkompatibilität. Dispose
-    // den WebGPURenderer (gibt Device-Slot frei), erstelle frischen
-    // WebGLRenderer mit identischer Konfiguration über `_configureRenderer`,
-    // setze state.renderer + state.rendererKind="webgl". Welt rendert ab
-    // nächstem Frame über WebGL — visuell 1:1 wie vor V10.0-a (die V10.0-a-
-    // Bridge-Heilungen ColorManagement+useLegacyLights bleiben aktiv).
-    // V10.0-f-5 — Hot-Swap-Heilung der V10.0-e-Wurzel: ein Canvas-Element
-    // kann nur EINEN Context-Type halten. Wenn der WebGPURenderer den Canvas
-    // an WebGPU gebunden hat, kann `new WebGLRenderer({ canvas })` keinen
-    // WebGL-Context mehr erschließen → "Canvas has an existing context of a
-    // different type"-Error, Welt rendert gar nicht. V10.0-e dispose'd den
-    // WebGPURenderer, aber das Canvas-Context-Binding bleibt.
-    //
-    // Heilung: das Canvas-Element via `_replaceWorldCanvas` austauschen
-    // (altes raus, neues mit gleicher ID + Größe + Style + Position rein),
-    // dann WebGLRenderer mit dem frischen Canvas. Plus Input-Listener am
-    // neuen Canvas neu binden (closure-captured-canvas der alten Listener
-    // zeigt aufs entfernte Element → tote Pointer-Lock + Maus-Aktionen).
-    _swapToWebGLRenderer() {
-        const oldRenderer = this.state.renderer;
-        // V10.0-f-6 — Animation-Loop des alten Renderers explizit stoppen.
-        // `setAnimationLoop(null)` löst den rAF-Pfad. Wenn wir das nicht
-        // machen, läuft die internal rAF-Schleife des WebGPURenderers
-        // möglicherweise weiter + ruft render() auf einem disposed Device.
-        try {
-            if (oldRenderer && typeof oldRenderer.setAnimationLoop === "function") {
-                oldRenderer.setAnimationLoop(null);
-            }
-            if (oldRenderer && typeof oldRenderer.dispose === "function") {
-                oldRenderer.dispose();
-            }
-        } catch (_e) {
-            /* defensive */
-        }
-        const newCanvas = this._replaceWorldCanvas();
-        if (!newCanvas) {
-            this.log("Hot-Swap fehlgeschlagen: Canvas-Austausch nicht möglich", "ERROR");
-            return;
-        }
-        let fallback;
-        try {
-            fallback = new THREE.WebGLRenderer({ canvas: newCanvas, antialias: true });
-        } catch (err) {
-            this.log(`Hot-Swap fehlgeschlagen: WebGLRenderer-Constructor scheiterte (${err.message})`, "ERROR");
-            return;
-        }
-        this._configureRenderer(fallback, "webgl");
-        this.state.renderer = fallback;
-        this.state.rendererKind = "webgl";
-        this.state.rendererReady = true;
-        this.state.canvas = newCanvas;
-        // V10.0-f-6 — Input-Listener am neuen Canvas neu binden (alte zeigen
-        // ins entfernte DOM-Element). Plus: Animation-Loop auf den neuen
-        // Renderer registrieren — sonst läuft die rAF-Schleife nirgendwo
-        // mehr und das Bild bleibt schwarz, obwohl der Renderer existiert.
-        this._attachWorldCanvasInputListeners(newCanvas);
-        if (this._gameLoopTick) {
-            fallback.setAnimationLoop(this._gameLoopTick);
-        }
-        this.log("Hot-Swap abgeschlossen — Canvas ersetzt, WebGLRenderer aktiv, Welt rendert sauber.", "INFO");
-    }
+    // V12.0-a — `_swapToWebGLRenderer` + `_replaceWorldCanvas` gestrichen.
+    // Seit r164 ist webgl-legacy/WebGLNodeBuilder entfernt, NodeMaterials
+    // rendern AUSSCHLIESSLICH auf WebGPURenderer. WebGL-Fallback wäre eine
+    // schwarze Welt — kein sinnvoller Hot-Swap-Ziel. Wer kein WebGPU hat,
+    // sieht die User-Banner-Message in `createScene` (V12.0-a-Bootstrap-Wand).
 
-    // V10.0-f-5 — Canvas-Element austauschen: altes vom DOM entfernen, ein
-    // frisches mit identischer ID/Größe/Style/Position einfügen. Notwendig
-    // weil der Canvas-Context-Type (WebGPU vs WebGL) PERMANENT ist —
-    // `new WebGLRenderer({ canvas })` mit WebGPU-gebundenem Canvas wirft.
-    // Returnt das neue Canvas oder null bei DOM-Bruch.
-    _replaceWorldCanvas() {
-        const oldCanvas = this.state.canvas || document.getElementById("world-canvas");
-        if (!oldCanvas || !oldCanvas.parentNode) {
-            this.log("_replaceWorldCanvas: altes Canvas hat keinen DOM-Parent", "ERROR");
-            return null;
-        }
-        const parent = oldCanvas.parentNode;
-        const newCanvas = document.createElement("canvas");
-        newCanvas.id = oldCanvas.id;
-        newCanvas.className = oldCanvas.className;
-        newCanvas.width = oldCanvas.width;
-        newCanvas.height = oldCanvas.height;
-        if (oldCanvas.style && oldCanvas.style.cssText) {
-            newCanvas.style.cssText = oldCanvas.style.cssText;
-        }
-        parent.replaceChild(newCanvas, oldCanvas);
-        return newCanvas;
-    }
-
-    // V10.0-f-5 — Maus-Listener (Pointer-Lock-Click + Mousedown-Action)
-    // als wiederbindbare Methode. Wird beim Init und nach jedem Hot-Swap
-    // gerufen (siehe `_swapToWebGLRenderer`). Listener referenzieren `this`
-    // via Arrow-Closures, nicht das captured Canvas-Element.
+    // Maus-Listener (Pointer-Lock-Click + Mousedown-Action) als Methode.
+    // Wird in createScene am initial-Canvas gerufen.
     _attachWorldCanvasInputListeners(canvas) {
         if (!canvas) return;
         canvas.addEventListener("click", () => {
@@ -40297,7 +40115,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "11.0-d.fix.gras3";
+AnazhRealm.VERSION = "12.0-e";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -13382,14 +13382,13 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         // Trockenland-Chunk weit weg vom Welt-Zentrum suchen (Atlas hat dort wahrscheinlich
         // weder Lake noch River) — alternativ einen fern-Chunk wo nichts ist.
         out.eligibleNoEdits = r._voxelGpuChunkEligible(100, 100, 1);
-        // (d) Source-Probe: _ensureVoxelChunkAt nutzt jetzt _fetchOrRequestChunkDensityGpu
-        // V9.95-e — Cutover-Source-Probe entfernt: GPU-Pipeline wird im
-        // Streaming-Pfad NICHT mehr gerufen (architektonisch: mapAsync-Stall
-        // > Worker-CPU-Density-Save bei WebGL-Renderer). Pipeline-Code lebt
-        // weiter als Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration.
-        // Source-Probe statt Cutover: V9.95-e hat das _fetchOrRequest...Gpu-
-        // Pattern in `_ensureVoxelChunkAt` entfernt (ehrliche Abklemmung).
-        out.cutoverAbgeklemmt = !/_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-e — Cutover REAKTIVIERT auf r184 (WebGPURenderer). Die
+        // V9.95-e-Abklemmung war für WebGL-Renderer (cross-backend-mapAsync-
+        // Stall), auf r184's WebGPURenderer ist same-device-mapAsync billig.
+        // Source-Probe prüft jetzt: `_fetchOrRequestChunkDensityGpu` ist im
+        // Streaming-Pfad aufgerufen als Stufe-2-Fallback (Worker-Mesh bleibt
+        // Stufe-1 primary).
+        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
         out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
         // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
         // im Edit-Footprint nicht mehr eligible ist
@@ -13470,9 +13469,9 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         `far=${res.afterEditFar}`
     );
     check(
-        "V9.95-e: _ensureVoxelChunkAt ruft KEINE GPU-Density mehr (architektonisch abgeklemmt)",
-        res.cutoverAbgeklemmt,
-        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh-Pfad bleibt PRIMARY"
+        "V12.0-e: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensityGpu als Stufe-2-Fallback (GPU-Cutover reaktiviert auf r184)",
+        res.gpuCutoverActive,
+        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh bleibt Stufe-1 primary"
     );
     check(
         "V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache",
@@ -14671,15 +14670,13 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-        // V11.0-d.fix.gras3 — Pool-Pfad ABGEKLEMMT (Three.js v160 hat Pool-
-        // Recycle-Issues, V12.0-d wird via r184-Upgrade strukturell heilen).
-        // Source-Probe prüft jetzt: Build-Pfad nutzt `new InstancedMesh`
-        // (V10.0-j.j-Workaround restored). Pool-API existiert weiter im
-        // Stamm (V12-Vorarbeit, 33 Inv in V11.0-a/d grün), wird aber im
-        // aktiven Lifecycle nicht gerufen. V12.0-d aktiviert sie wieder.
+        // V12.0-d — Pool-Pfad RE-AKTIVIERT auf r184 (Bind-Group-Layout-Cache
+        // + compileAsync-non-blocking heilen den v160-InstancedMesh-Re-Use-
+        // Bug strukturell). Source-Probe prüft jetzt: Build-Pfad nutzt
+        // `_acquireGrassMesh()`. V11.0-d.fix.gras3-Workaround obsolet.
         const buildSrc = r._buildVoxelChunkGrass.toString();
-        out.usesNewInstancedMesh = /new THREE\.InstancedMesh\(/.test(buildSrc);
-        out.poolAbklemmungMarker = /V11\.0-d\.fix\.gras3/.test(buildSrc);
+        out.usesAcquire = /this\._acquireGrassMesh\(/.test(buildSrc);
+        out.v12dMarker = /V12\.0-d/.test(buildSrc);
 
         // Empirischer Pre-fill-Test: lege ein Mesh manuell in den Pool, dann
         // baue einen neuen Chunk — der sollte aus dem Pool acquiren.
@@ -14721,12 +14718,12 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         return;
     }
     check(
-        "Welle V11.0-d.fix.gras3: Build-Pfad nutzt `new InstancedMesh` (Pool abgeklemmt, V12-Backlog)",
-        res.usesNewInstancedMesh === true
+        "Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)",
+        res.usesAcquire === true
     );
     check(
-        "Welle V11.0-d.fix.gras3: Pool-Abklemmungs-Marker im Build-Pfad-Code",
-        res.poolAbklemmungMarker === true
+        "Welle V12.0-d: V12.0-d-Marker im Build-Pfad-Code (Pool-Reaktivierung dokumentiert)",
+        res.v12dMarker === true
     );
     if (res.skipReason) {
         check(
@@ -14740,17 +14737,16 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         "Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)",
         res.poolSizeBeforeBuild === 1
     );
-    // V11.0-d.fix.gras3: Pool-Pfad abgeklemmt → Build allokiert neu statt aus
-    // Pool zu nehmen. Bei V12.0-d-Reaktivierung wieder umstellen auf
-    // builtIsPreFilled === true + poolEmptyAfterBuild === true.
+    // V12.0-d: Pool-Pfad aktiv → Build konsumiert Pool-Pre-Fill via
+    // `_acquireGrassMesh()`. Mesh-Identity beweist echtes Recycling.
     check(
-        "Welle V11.0-d.fix.gras3: Build allokiert neu (Pool-Pre-Fill wird NICHT konsumiert, Pool-Abklemmung wirkt)",
-        res.builtExists === true && res.builtIsPreFilled === false,
-        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (false = Pool-Abklemmung korrekt)`
+        "Welle V12.0-d: Build konsumiert Pool-Pre-Fill (`builtIsPreFilled === true`, echtes Recycling)",
+        res.builtExists === true && res.builtIsPreFilled === true,
+        `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (true = recycelt)`
     );
     check(
-        "Welle V11.0-d.fix.gras3: Pool bleibt voll nach Build (Pre-Filled bleibt drin)",
-        res.poolEmptyAfterBuild === false
+        "Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)",
+        res.poolEmptyAfterBuild === true
     );
 }
 
@@ -14765,12 +14761,12 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-        // V11.0-d.fix.gras3 — Pool-Pfad ABGEKLEMMT. Dispose nutzt jetzt
-        // scene.remove (V10.0-j.j-Workaround restored). V12.0-d aktiviert
-        // _releaseGrassMesh wieder.
+        // V12.0-d — Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push +
+        // scene.remove intern). V11.0-d.fix.gras3-Workaround (direkt
+        // scene.remove) obsolet auf r184.
         const disposeSrc = r._disposeVoxelChunkGrass.toString();
-        out.usesSceneRemove = /scene\.remove\(grass\)/.test(disposeSrc);
-        out.poolAbklemmungInDispose = /V11\.0-d\.fix\.gras3/.test(disposeSrc);
+        out.usesRelease = /this\._releaseGrassMesh\(grass\)/.test(disposeSrc);
+        out.v12dMarker = /V12\.0-d/.test(disposeSrc);
 
         // Voller despawn+respawn-Identity-Test mit einer echten Chunk-
         // Position. Schaue nach einem existierenden Gras-Chunk.
@@ -14813,12 +14809,12 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         return;
     }
     check(
-        "Welle V11.0-d.fix.gras3: Dispose-Pfad nutzt scene.remove (Pool abgeklemmt, V12-Backlog)",
-        res.usesSceneRemove === true
+        "Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)",
+        res.usesRelease === true
     );
     check(
-        "Welle V11.0-d.fix.gras3: Pool-Abklemmungs-Marker im Dispose-Pfad-Code",
-        res.poolAbklemmungInDispose === true
+        "Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code",
+        res.v12dMarker === true
     );
     if (res.skipReason) {
         check(
@@ -14828,23 +14824,22 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         );
         return;
     }
-    // V11.0-d.fix.gras3: Pool-Pfad abgeklemmt → Dispose macht scene.remove
-    // (kein pool-push). Re-Build allokiert neu (keine Identity). Bei V12.0-d-
-    // Reaktivierung wieder umstellen auf poolSizeAfterDispose === 1 +
-    // respawnedIsSameAsFound === true.
+    // V12.0-d aktiv → Dispose pusht in Pool, Re-Build recycelt das gleiche
+    // Mesh-Objekt (Identity-Beweis für Pool-Recycling auf r184).
     check(
-        "Welle V11.0-d.fix.gras3: Dispose pusht NICHT in Pool (size=0, Pool-Abklemmung wirkt)",
-        res.poolSizeAfterDispose === 0,
-        `poolSize=${res.poolSizeAfterDispose} (0 = Pool-Abklemmung korrekt)`
+        "Welle V12.0-d: Dispose pusht IN Pool (size=1, echtes Recycling)",
+        res.poolSizeAfterDispose === 1,
+        `poolSize=${res.poolSizeAfterDispose} (1 = Pool-Push korrekt)`
     );
     check("Welle V11.0-c: disposed Chunk ist aus voxelChunkGrass entfernt", res.disposedChunkGone === true);
     check("Welle V11.0-c: Re-Build erzeugt Mesh", res.respawnedExists === true);
     check(
-        "Welle V11.0-d.fix.gras3: Re-Build allokiert NEUE Instance (kein Recycle, Pool-Abklemmung wirkt)",
-        res.respawnedIsSameAsFound === false
+        "Welle V12.0-d: Re-Build recycelt das gleiche Mesh (Identity-Beweis für Pool-Recycling)",
+        res.respawnedIsSameAsFound === true,
+        `respawnedSameAsFound=${res.respawnedIsSameAsFound}`
     );
     check(
-        "Welle V11.0-c: Pool wieder leer nach Re-Build",
+        "Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)",
         res.poolEmptyAfterRespawn === true
     );
 }
@@ -14941,9 +14936,9 @@ async function checkBandWelleV11DPoolStress(ctx) {
         `maxPoolSize=${res.maxPoolSizeDuring}`
     );
     check(
-        "Welle V11.0-d: Pool nach Stress = 0 (V11.0-d.fix.gras3 Pool-Abklemmung) ODER = 1 (single-use bei V12-Reaktivierung)",
-        res.poolSizeAfterStress === 0 || res.poolSizeAfterStress === 1,
-        `poolSize=${res.poolSizeAfterStress} (0 = Pool abgeklemmt seit V11.0-d.fix.gras3)`
+        "Welle V12.0-d: Pool nach Stress = 1 (echtes Recycling — last release lebt im Pool)",
+        res.poolSizeAfterStress === 1 || res.poolSizeAfterStress === 0,
+        `poolSize=${res.poolSizeAfterStress} (V12.0-d Pool-Reaktivierung)`
     );
     check(
         "Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)",
@@ -18960,12 +18955,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
         };
         r._applyDayNightToScene();
-        const groundLebendigG = r.state.hemiLight.groundColor.g;
+        // V12.0-vendor.3 Doku-Sync (V9.56-i): mit `ColorManagement.enabled=true`
+        // speichert THREE.Color die Werte in LINEAR-Space (sRGB→linear-Konvertierung
+        // bei `setHex`/`setRGB`). Wir vergleichen gegen die sRGB-Display-Form via
+        // `convertLinearToSRGB()` — die Semantik der Probe („groundColor's Grün ist
+        // hoch in lebendig-Region") bleibt unverändert, nur die Compare-Schwelle
+        // referenziert die wahrgenommene Helligkeit, nicht den linearen Roh-Wert.
+        const tmpColor = new (window.THREE.Color)();
+        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
+        const groundLebendigG = tmpColor.g;
         r.worldFieldAt = function () {
             return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
         };
         r._applyDayNightToScene();
-        const groundGlutR = r.state.hemiLight.groundColor.r;
+        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
+        const groundGlutR = tmpColor.r;
         // lebendig erhöht Grün, glut erhöht Rot
         out.groundColorFollowsLebendig = groundLebendigG > 0.3;
         out.groundColorFollowsGlut = groundGlutR > 0.5;
@@ -19339,8 +19343,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            // Gerstner-Welle als tslFn-Closure + dot(xz, d) im Vertex-Pfad.
-            waterDiagonal = /gerstnerWave\s*=\s*tslFn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
+            // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
+            waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
             waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
         }
@@ -19413,7 +19417,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 r.state.hydroSurfaceUniforms.fogNear
             );
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            out.waterDomainWarp = /waveDisplace\s*=\s*tslFn/.test(builderSrc) && /warp/.test(builderSrc);
+            out.waterDomainWarp = /waveDisplace\s*=\s*Fn/.test(builderSrc) && /warp/.test(builderSrc);
             // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
             out.waterFogInShader = /smoothstep\(uFogNear,\s*uFogFar/.test(builderSrc);
         }
@@ -19583,9 +19587,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wGerstMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            // tslFn-Closures statt GLSL-Funktionen, identische Mathematik.
-            out.gerstnerFn = /gerstnerWave\s*=\s*tslFn/.test(builderSrc);
-            out.waveDisplaceVec3 = /waveDisplace\s*=\s*tslFn/.test(builderSrc);
+            // TSL-Fn-Closures statt GLSL-Funktionen (r167+ Vendor-Rename: tslFn→Fn).
+            out.gerstnerFn = /gerstnerWave\s*=\s*Fn/.test(builderSrc);
+            out.waveDisplaceVec3 = /waveDisplace\s*=\s*Fn/.test(builderSrc);
             // Horizontale Stauchung: q.mul(a).mul(d.x).mul(cos(phase)) — spitze Kämme.
             out.gerstnerHorizontal = /q\.mul\(a\)\.mul\(d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
             // Normale aus Kreuzprodukt der Tangenten.

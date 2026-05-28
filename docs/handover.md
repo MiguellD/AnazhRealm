@@ -357,6 +357,288 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-e, 28.05.2026 — V9.95-WebGPU-Compute-Pipeline reaktiviert auf r184 (V9.95-e-Abklemmung strukturell obsolet):**
+
+V9.95-Pipeline (Mai 2026, ~600 Z. WGSL + JS) war seit der Abklemmung als „Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration" markiert. V12.0-e ist die ehrliche Reaktivierung — auf r184's WebGPURenderer ist die V9.95-e-Wurzel obsolet.
+
+**Strukturelle Wurzel-Analyse**:
+
+V9.95-e (Mai 2026) hatte den GPU-Density-Pfad ABGEKLEMMT mit der Begründung: „WebGPU-Compute + WebGL-Renderer = immer cross-backend mapAsync-Roundtrip (~200-300 ms-Stall), ehrlich langsamer als Worker-CPU-Density (~50 ms)". Das war architektonisch wahr — der mapAsync brauchte einen GPU→CPU-Read-Back, weil der Renderer auf der CPU-Buffer arbeitete (WebGL-Pipeline).
+
+Auf r184 mit Three.js' WebGPURenderer ist die Topologie anders:
+- GPU-Compute (Density-WGSL) läuft auf GPU-Device A
+- Renderer (WebGPURenderer) läuft auf GPU-Device A (gleiche)
+- mapAsync ist same-device Read-Back (~5-15 ms, gemessen in V9.95-d-Telemetry-Fundus)
+
+→ Der V9.95-e-Cross-Backend-Stall ist strukturell obsolet. Die GPU-Pipeline kann wieder aktiviert werden.
+
+**Code-Änderung (15 Zeilen netto)**:
+
+`_ensureVoxelChunkAt`-Streaming-Pfad hat jetzt vier-Stufen-Hierarchie:
+
+```
+Stufe 1: Worker-Mesh-Cache (V9.91) — full mesh, ~10-15 ms main-thread
+Stufe 2: GPU-Density-Cache (V9.95 reaktiviert, V12.0-e) — Density auf GPU,
+         Iso+Colors auf CPU, ~30-40 ms main-thread für eligible Chunks
+         (pristine, kein voxelEdit, kein Hydrosphere-Carve)
+Stufe 3: Worker-Density-Cache (V9.90) — Density auf Worker, Iso+Colors
+         auf CPU, ~30-40 ms main-thread (Fallback wenn GPU ineligible)
+Stufe 4: Sync-CPU-Build (V9.42-d) — Density+Iso+Colors voll auf Main,
+         ~50-150 ms (letzter Fallback)
+```
+
+Die Pfad-Wahl pro Chunk:
+- Wenn Worker-Mesh-Cache hit → Stufe 1 (schnellster Pfad)
+- Wenn Worker-Mesh pending → return null (warten)
+- Sonst: try GPU-Density-Cache
+  - Cache-Hit → Stufe 2 (Float32Array als preDensity für sync-build)
+  - Pending → return null (warten)
+  - undefined (GPU not ready oder Chunk ineligible) → fallthrough
+- Wenn fallthrough + Worker available → Stufe 3 (Worker-Density-Cache)
+- Sonst → Stufe 4 (sync-CPU)
+
+V9.95-Foundation-Code (WGSL-Density-Shader, `_voxelGpuComputeDensity`-Promise-API, `_fetchOrRequestChunkDensityGpu`-three-state-Lookup, Eligibility-Gate, state-gen-Stale-Filter) war seit Mai 2026 schon im Stamm — V12.0-e ist eine 15-Zeilen-Cutover-Reaktivierung. Honest, low-risk-Welle.
+
+**V9.56-i-Test-Doku-Sync**: V9.95-e-„Pfad-abgeklemmt"-Source-Probe (`cutoverAbgeklemmt = !/.../ test(...)`) auf V12.0-e-„Pfad-aktiv"-Probe (`gpuCutoverActive = /.../ test(...)`) gewandert. Plus Test-Label umgeschrieben („V9.95-e: ruft KEINE GPU-Density mehr" → „V12.0-e: nutzt GPU-Density als Stufe-2-Fallback").
+
+**Verhaltens-Beweis (Headless)**:
+- `voxelGpuStatus=unavailable` (Puppeteer-Chromium hat navigator.gpu, aber requestAdapter returnt null im Cloud-Container ohne GPU)
+- `_fetchOrRequestChunkDensityGpu` returnt `undefined` für jeden Aufruf
+- Streaming-Pfad fällt graceful auf Worker-Density-Cache → Welt rendert wie zuvor
+- Playtest „Alle Invarianten OK" (mit gelegentlichem GC-volatilem Heap-Delta-Flake — V9.96-Pattern, Test ist toleranter zweite Run)
+- audit:strict 0 Failures / 9 Warnings, Format/Lint sauber
+- Version-Bump 12.0.5 → 12.0.6
+
+**Echter Beweis** wartet auf Schöpfer-Browser-Audit:
+- navigator.gpu existiert + requestAdapter returnt echten Adapter → voxelGpuStatus=ready
+- GPU-Compute läuft für eligible Chunks (pristine, kein Edit, kein Hydrosphere)
+- Erwarteter Win: ~30-40 ms/chunk gespart auf Main-Thread bei initial-streaming (V9.95-d-Telemetry-Fundus zeigte das schon 2026)
+- Spawn-Burst-Spike vor V9.95-e (FPS sinkt auf 6-9) sollte heute nicht reproduzierbar sein — Worker-Mesh hat schon Stufe-1-Status, GPU spart nur den seltenen Fall „Worker noch nicht synced"
+
+**Lehre verstärkt (CLAUDE.md/Gotchas, „Rendering · TSL-Migration")**: **Abklemmungs-Begründungen müssen bei jedem Vendor-Upgrade neu geprüft werden** — V9.95-e's Begründung („WebGPU-Compute mit WebGL-Renderer = cross-backend-mapAsync-Stall") war für r160 architektonisch wahr, aber bei r184's WebGPURenderer strukturell obsolet. Wer eine Welle abklemmt UND eine zukünftige Vendor-Wende artikuliert hat (V9.95-e-Doku: „bleibt als Vorarbeit für V10+ Three.js-WebGPU-Renderer-Migration"), MUSS bei der Vendor-Wende die Abklemmungs-Begründung gegen den neuen Stand prüfen. Mechanischer Selbst-Check: bei jeder Vendor-Major-Welle `grep "abgeklemmt|deactivated|disabled"` über die Chronik scannen + entscheiden welche Abklemmungen jetzt obsolet sind.
+
+**Was bleibt offen**: V12.0-f (Code-Review jeder berührten Funktion — `_buildToonNodeMaterial`-V10.0-g.diag-Workaround obsolet weil `MeshToonNodeMaterial` in r184 existiert, etc.); V12.0-g (final Schöpfer-Browser-Audit, V12-Bogen-Schluss); V12.0-perf (FPS-Heilung bei Edit-Cluster, Wartepunkt nach V12.0-g per Schöpfer-Disziplin „erst V12-Bogen schließen").
+
+---
+
+**V12.0-d, 28.05.2026 — V11-Mesh-Pool reaktiviert auf r184, echtes Recycling bewiesen im Headless:**
+
+Nach V12.0-a (Hot-Swap weg, WebGPU-required) ist der V11-Pool-Reaktivierungs-Pfad endlich gangbar. V11.0-d.fix.gras-Bogen (drei v160-Workaround-Hypothesen) wird durch den ehrlichen r184-Vendor-Upgrade-Pfad ersetzt — genau wie die Bogen-Lehre artikulierte: „Vendor-Bugs durch Upgrade heilen, nicht workaround'en".
+
+**Drei chirurgische Edits + Test-Doku-Sync (V9.56-i)**:
+
+1. **`_buildVoxelChunkGrass`** ruft jetzt `this._acquireGrassMesh()` statt `new THREE.InstancedMesh(...)` direkt:
+   - Pool-Pop wenn Pool nicht leer (Mesh-Identity recycelt, alte Geometry+Material+instanceMatrix-Buffer wieder genutzt)
+   - Neu-Allokation wenn Pool leer
+   - Defensive Fallback auf direkte Allokation wenn `_acquireGrassMesh()` null returnt (Material/Geometry-Race-Schutz)
+
+2. **`_disposeVoxelChunkGrass`** ruft jetzt `this._releaseGrassMesh(grass)` statt `scene.remove(grass)` direkt:
+   - Push in Pool (CAP=32-LRU-Disziplin), scene.remove intern
+   - V10.0-j.j-Memory-Trade obsolet — Geometry-Singleton (`_grassConeGeometry`) bleibt geteilt zwischen allen Pool-Meshes, ~500 KB GPU-Heap pro Welt-Wechsel gespart
+
+3. **V11.0-d.fix.gras-2-Workaround im `_acquireGrassMesh` GESTRICHEN**: die fresh-instanceMatrix-Allokation pro acquire (16 KB/Pool-Pop, ein v160-Workaround gegen stale-Buffer-Cache) ist auf r184 obsolet. r184's „Improve Bind Group Layout cache system" (r182) + „compileAsync truly non-blocking" (r182) heilen den v160-stale-Buffer-Cache strukturell. Echtes zero-copy-Pool-Recycling: derselbe instanceMatrix-Buffer wird recycled, neue Daten via setMatrixAt + needsUpdate=true triggern Three.js' writeBuffer ein einziges Mal pro Chunk-Build.
+
+**Test-Doku-Sync (V9.56-i)**: 7 Playtest-Invarianten von „Pool abgeklemmt"-Probes auf „Pool recycelt"-Probes mit-gewandert:
+- `usesNewInstancedMesh` → `usesAcquire` (Source-Probe `_acquireGrassMesh(` in Build-Pfad)
+- `usesSceneRemove` → `usesRelease` (Source-Probe `_releaseGrassMesh(grass)` in Dispose-Pfad)
+- `poolAbklemmungMarker` → `v12dMarker` (Code-Doku-Marker `V12.0-d`)
+- `builtIsPreFilled === false` → `=== true` (Build konsumiert Pool-Pre-Fill — Identity-Beweis)
+- `poolEmptyAfterBuild === false` → `=== true` (Pool wurde geleert durch acquire)
+- `poolSizeAfterDispose === 0` → `=== 1` (Dispose pusht in Pool)
+- `respawnedIsSameAsFound === false` → `=== true` (Re-Build recycelt das gleiche Mesh-Objekt)
+
+**Verhaltens-Beweis (Headless)**:
+- `maxPoolSize=1` während 50-Zyklus-Stress (Pool oszilliert zwischen 0 und 1: acquire→build→release→dispose-Zyklus)
+- `poolSizeAfterStress=1` (last release lebt im Pool)
+- `heapDelta=6890 KB` (war 7776 KB ohne Recycling — kleine Verbesserung schon im headless WebGL2-Fallback; der echte Win kommt am echten WebGPU-Adapter)
+- Pre-Fill-Test grün: ein manuell in den Pool gelegtes Mesh wird beim nächsten Build via `_acquireGrassMesh()` konsumiert (Mesh-Identity bewiesen via `builtMesh === preFilled`)
+- Identity-Test grün: `_disposeVoxelChunkGrass` → `_releaseGrassMesh` → Pool-Push, dann `_buildVoxelChunkGrass` → `_acquireGrassMesh` → Pool-Pop → SAME mesh object (referenz-identisch)
+- Playtest „Alle Invarianten OK", audit:strict 0 Failures / 9 Warnings, Format/Lint sauber
+- Version-Bump 12.0.4 → 12.0.5
+
+**Wartepunkt für Schöpfer-Browser-Audit** (Stage-3-Diziplin): die Code-Korrektheit ist headless bewiesen, aber die ECHTE Wahrheitsprobe ist die VISUELLE Gras-Sichtbarkeit im zweiten Chunk auf echtem AMD-RDNA-3-WebGPU-Adapter. V11.0-d.fix.gras-Bogen-Befund war „im ersten Chunk Halme, weitere nicht" auf v160 — die VIERTE Hypothese am gleichen Bug:
+1. ❌ V11.0-d.fix.gras1 (bounding-cache-reset, v160) — nicht ausreichend
+2. ❌ V11.0-d.fix.gras2 (fresh-instanceMatrix-per-acquire, v160) — nicht ausreichend
+3. ⚠️ V11.0-d.fix.gras3 (Pool abgeklemmt, Memory-Trade, v160) — Hybrid-Workaround
+4. ⏳ V12.0-d (Vendor-Upgrade r184, ehrlicher Pfad) — wartet auf Schöpfer-Browser-Audit
+
+Wenn r184 strukturell heilt: V11.0-d.fix.gras-Bogen-Vision endlich erfüllt + Pool-Vorteil aktiviert.
+Wenn r184 NICHT heilt: V12.0-d zurück auf V11.0-d.fix.gras3-Workaround (Memory-Trade) + V12.0-d.fix als eigene Diag-Welle. Ehrliche Reflexion ist Profi-Disziplin.
+
+**Lehre verstärkt**: V11.0-d.fix.gras-Bogen-Lehre („Vendor-Bugs durch Upgrade heilen") angewandt. Statt eine fünfte v160-Workaround-Hypothese zu bauen, ist V12.0-d der ehrliche r184-Vertrauenspfad. Wenn der Schöpfer-Browser ihn nicht bestätigt, fallen wir auf Memory-Trade zurück — kein weiterer Spiral-Workaround.
+
+**Was bleibt offen**: V12.0-e (V9.95-Compute-Pipeline aktivieren — GPU→Renderer zero-copy auf r184's Three.js-WebGPU-Renderer real möglich, Density-Berechnung wandert von Worker (CPU) auf GPU); V12.0-f (`_buildToonNodeMaterial`-Workaround durch eingebautes `MeshToonNodeMaterial` ersetzen, V10.0-g.diag-Schicht obsolet auf r184); V12.0-g (final Schöpfer-Browser-Audit + V12-Bogen-Bilanz).
+
+---
+
+**V12.0-a, 28.05.2026 — Hot-Swap-Pfad + `rendererKind`-Gates gestrichen, WebGPU-required Bootstrap-Wand:**
+
+Schöpfer-Browser bestätigt V12.0-vendor.4 FPS-Heilung — die strukturelle Welt-Vereinfachung kann starten. V12.0-a streicht die Hot-Swap-Defensiv-Schicht (V10.0-e/f-5/f-6-Bogen) die seit V12.0-vendor.1 funktional obsolet ist (r164's WebGLNodeBuilder-Entfernung macht WebGL-Fallback zu schwarzer Welt).
+
+**Vier-Bausteine-Streich-Welle**:
+
+1. **`_swapToWebGLRenderer` + `_replaceWorldCanvas` Methoden komplett gestrichen** (~85 Z.) — Hot-Swap zu WebGLRenderer war Defense-in-Depth gegen WebGPU-Material-Inkompatibilitäten in r160. Seit r164's WebGLNodeBuilder-Entfernung wäre der Hot-Swap-Ziel-Renderer (WebGLRenderer) für unsere NodeMaterials blind — schwarze Welt statt rettender Fallback. Strukturell tot.
+
+2. **State-Felder `rendererKind` + `rendererInkompatibel` gestrichen** + alle Writes — der Renderer ist seit V12.0-vendor.1 immer WebGPU (oder Bootstrap-throw). Keine Branching-Variable mehr nötig.
+
+3. **Zwei `rendererKind === "webgpu"`-Gates unconditional gemacht** — `_buildToonNodeMaterial`-Shadow-Sampling (Z10355) + `_renderShadowMapPass` (Z17362, früher Doku-Kommentar). Beide laufen jetzt unconditional, sind dieselbe Codepath wie zuvor auf WebGPU.
+
+4. **`_configureRenderer(renderer, kind)` → `_configureRenderer(renderer)`** — kind-Param weg, `if (kind === "webgl")`-Branch (depthTest=true) weg (WebGPU regelt Depth per Pipeline-State), `shadowMap.autoUpdate = kind !== "webgpu"` → `= false` (immer false, unser manueller Pass übernimmt).
+
+**Plus**: WebGPU-required Bootstrap-Wand in `init()` ergänzt. Wenn `navigator.gpu` fehlt:
+- `this.log("AnazhRealm braucht WebGPU. Browser bitte aktualisieren (Chrome/Edge 113+, Safari 18+, Firefox mit dom.webgpu.enabled).", "ERROR")`
+- DOM-Banner (`position:fixed; top:0; ...; background:#3a1a0c; color:#ffd9a8; ...`) für visuelle Klarheit
+- `throw new Error(msg)` — kein stilles weiterlaufen, klarer Bug-Report-Pfad für den Spieler
+
+**Render-Loop**: Promise-Reject-Hot-Swap-Catch (V10.0-e-Pattern) gestrichen. `this.state.renderer.render(scene, camera)` läuft jetzt without catch — pipeline-compile-Failures landen als Console-Error (Browser-Standard), kein Stack-Capture-Storm pro Frame (V12.0-vendor.4-Lehre).
+
+**Bonus: Stage-1-Deprecation-Scan im r184-Vendor (V12.0-vendor.4-Bonus-Lehre angewandt)**: `grep "is deprecated" three.*.min.js` ergab vier deprecated TSL-Symbole:
+- `transformedNormalWorld` → `normalWorld` (V12.0-vendor.4 geheilt) ✓
+- `transformedNormalView` → `normalView` — wir nutzen es NICHT (nur historischer Bootstrap-Kommentar)
+- `transformedClearcoatNormalView` → `clearcoatNormalView` — wir nutzen kein Clearcoat
+- `viewportResolution` → `screenSize` — wir nutzen es nicht
+
+Defensive Vorab-Scan-Pattern wirkt: keine latenten FPS-Bomben in der Codebase. Pattern verdrahtet als Stamm-Diziplin für künftige Vendor-Wellen.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures / 9 Warnings (Method-Smoke-Floor); Format/Lint sauber. Code-Netto: ~150 Z. gestrichen, ~50 Z. neu (User-Banner-Wand + Kommentar-Updates). Version-Bump 12.0.3 → 12.0.4.
+
+**Lehre verdrahtet** (CLAUDE.md/Gotchas/„Rendering · TSL-Migration"): **Hot-Swap-Defense-in-Depth ist nur sinnvoll wenn beide Ziele eine valide Welt rendern können**. V10.0-e baute Hot-Swap als Defensive für r160-WebGPU-Material-Inkompatibilitäten — der Fallback (WebGLRenderer) konnte unsere NodeMaterials via webgl-legacy/WebGLNodeBuilder kompilieren. Seit r164 hat der Vendor das entfernt → das Hot-Swap-Ziel ist seit V12.0-vendor.1 strukturell tot. Defensive Wände müssen periodisch geprüft werden: rettet das Ziel noch was? Wenn nein: streichen, eine ehrliche Error-Wand mit User-Message ist sauberer als ein stilles Hot-Swap-Fail-Pfad. Plus: bei jeder Vendor-Welle die EXISTIERENDEN Defensiv-Schichten als „rettet das Ziel noch?"-Frage durchgehen.
+
+**Was bleibt offen**: V12.0-d (V11-Mesh-Pool reaktivieren — r184's „Bind Group Layout cache system" + „compileAsync truly non-blocking" sollten den InstancedMesh-Re-Use-Bug strukturell heilen, V10.0-j.j-Memory-Trade obsolet werden, ~500 KB GPU-Heap pro Welt-Wechsel gespart); V12.0-e (V9.95-Compute aktivieren, zero-copy GPU→Renderer); V12.0-f (MeshToonNodeMaterial existiert in r184 — `_buildToonNodeMaterial`-Workaround obsolet); V12.0-g (final Schöpfer-Browser-Audit).
+
+---
+
+**V12.0-vendor.4, 28.05.2026 — `transformedNormalWorld` → `normalWorld` Rename, FPS-Kollaps geheilt:**
+
+Schöpfer-Browser-Audit V12.0-vendor.3 brachte zwei Befunde gleichzeitig:
+1. **Vision-Erfolg**: `WebGPU Foundation bereit: amd/rdna-3/(unbekannt) — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.` Echte WebGPU-Hardware-Aktivierung auf AMD RDNA-3 — der V9.95-Foundation-Pfad ist endlich produktiv.
+2. **FPS=5 Wurzel-Frage**: Console flutet mit `THREE.TSL: "transformedNormalWorld" is deprecated. Use "normalWorld" instead.` jeden Frame, jedes Material.
+
+**Wurzel-Diagnose**: r170+ hat das TSL-Symbol `transformedNormalWorld` zu `normalWorld` umbenannt. Beide bleiben in r184 verfügbar (Vendor lebenslang-Kompat), aber `transformedNormalWorld` ist ein **deprecated alias** der bei JEDEM Build-Aufruf einen `console.warn()` mit Stack-Trace-Capture emittiert. Bei der typischen Welt-Pipeline (5+ Materials × 60 fps = 300+ warns/sec) blockiert Console-Formatting + Stack-Capture-Overhead den Render-Thread → FPS-Kollaps auf 5.
+
+**Heilung**: globaler Rename in `anazhRealm.js`:
+- `_buildToonNodeMaterial` Z10315 (Destructure) + Z10351 (normalize) + Z10362 (biased shadow-pos)
+- `_renderShadowMapPass`-related Z17345 (Destructure) + Z17363 + Z17401
+- `_ensureHydroSurfaceMaterial` Z19864 (Destructure) + Z19951 (normalize)
+
+`replace_all` ist sicher weil keines unserer Symbole substring-overlapping ist (`transformedNormalView` haben wir nicht in Code-Pfaden, nur im Bootstrap-Kommentar — V9.56-i-Diszplin: Kommentar bleibt als historische Erklärung).
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures / 9 Warnings; Format/Lint sauber. Browser-Audit-Erwartung: keine `transformedNormalWorld`-Warnings mehr, FPS sollte auf RDNA-3-realistischen Werten (60+) laufen.
+
+**Lehre permanent verdrahtet** (CLAUDE.md/Gotchas, „Rendering · TSL-Migration"): **Deprecation-Warnings sind Performance-Bomben, nicht Diag-Hinweise.** Wer eine Vendor-Migration über 10+ Releases macht, MUSS die Browser-Console nach Boot scannen — Three.js' Deprecation-Pfad nutzt `console.warn()` mit Stack-Trace-Capture (das ist Browser-DevTools-Default-Verhalten für Warnings; jeder Warn allokiert einen Error-Object für `.stack`). Bei einer Render-Loop-Schleife mit deprecated Calls pro Frame = exponentieller Stack-Capture-Overhead = FPS-Tod. Mechanischer Selbst-Check: nach jeder Vendor-Welle eine Browser-Console-Scan-Anweisung im Schöpfer-Audit-Brief.
+
+**Bonus-Lehre**: Stage-1-Release-Notes-Scan zeigt API-Renames als „TSL object renames: viewportTopLeft → viewportUV" etc., aber NICHT immer JEDES Symbol. `transformedNormalWorld` war nicht explizit in den Release-Notes meiner V12.0-diag-Welle aufgeführt — der ehrliche Diag-Pfad ist: Vendor-Bytes runterladen + `grep -E "deprecated.*[A-Z][a-z]+" three.core.min.js` für die volle Deprecation-Liste, BEVOR Browser-Audit. Eigenwellen-Vorarbeit für künftige Vendor-Migrationen.
+
+**Was bleibt offen** für die nächste Session: V12.0-a (Hot-Swap-Pfad streichen + rendererKind-Gates weg, sobald Schöpfer-Browser-FPS auf RDNA-3 grün), V12.0-d (V11-Pool reaktivieren), V12.0-e (V9.95-Compute aktivieren), V12.0-f (MeshToonNodeMaterial-Cleanup), V12.0-g (final Audit).
+
+---
+
+**V12.0-vendor.3, 28.05.2026 — ColorManagement re-aktiviert + sRGB-Texture-Tagging:**
+
+Nach V12.0-vendor.2 (useLegacyLights-Clean-Up) zog die V12.0-vendor.3-Welle den substantielleren Teil — die ColorManagement-Bridge (V10.0-a-Erbe) raus + sRGB-Texture-Tagging.
+
+**Per-Texture-Audit** ergab vier color-Texture-Allokationen in `anazhRealm.js`:
+1. Z6260 `_buildVibePassSprite` — Canvas-Text-Label, sRGB
+2. Z12262 `_creatureAuraTextureCache` — radialer Gradient für Kreatur-Aura, sRGB
+3. Z24381 `_buildAuraGradient` — radialer Gradient für Spieler-Aura, sRGB
+4. Z30684 `_refreshToonGradient` — DataTexture für Cel-Shading-LUT, KEINE Color (Brightness-Daten)
+
+Alle drei Canvas-Textures bekommen `tex.colorSpace = THREE.SRGBColorSpace` direkt nach der `new THREE.CanvasTexture()`-Allokation. Die gradientMap-DataTexture bleibt im Default `LinearSRGBColorSpace` — sie ist eine Brightness-LUT, kein RGB-Color (der Toon-Lookup `mix(albedo, gradientMap(dotNL), ...)` erwartet linearen Brightness-Wert, keine Color-Space-Konvertierung).
+
+**ColorManagement re-aktiviert**: `THREE.ColorManagement.enabled = true` (von V10.0-a's `false` zurück auf r184-Default). Three.js wandelt jetzt sRGB-Color-Werte (z.B. `new THREE.Color("#abc")`) intern in linearen Space für Lighting-Math; Renderer-Output wird zurück in sRGB konvertiert für die Display-Pipeline. Das ist ein **Round-Trip sRGB→linear→sRGB** der visuell cancelt — solange jede Color-Quelle (uniforms, texture-samples) konsistent getaggt ist.
+
+**V9.56-i-Test-Doku-Sync wirkt**: V8.27-HemisphereLight-groundColor-Tests las `r.state.hemiLight.groundColor.r/.g` direkt. Diese Werte sind mit ColorManagement-enabled jetzt im LINEAR-Space (sRGB-Werte wurden bei `setHex/setRGB` konvertiert) — die Compare-Schwellen `> 0.3` und `> 0.5` waren auf sRGB-Display-Werte kalibriert. Heilung: `tmpColor.copy(...).convertLinearToSRGB()` vor dem Compare → Probe liest die sRGB-Display-Werte, Semantik bleibt unverändert („groundColor's Grün hoch in lebendig-Region").
+
+**Verhaltens-Beweis**:
+- Playtest „Alle Invarianten OK" (Heap-Delta 7776 KB unter 10 MB-Schwelle, V10.0-j.j-Memory-Trade weiter akzeptiert)
+- audit:strict 0 Failures / 9 Warnings (Method-Smoke-Floor)
+- Format/Lint sauber
+- Diag-Probe: `CM_enabled=true`, scene.children=157, terrainEverGenerated, 0 Page-Errors
+- Version-Bump 12.0.1 → 12.0.2 (Patch — visuelle Mathematik korrekt, sichtbarer Effekt im echten WebGPU-Browser Schöpfer-Audit-Frage)
+
+**Dateien**: `anazhRealm.js` +18 Z. netto (3 Texture-Tags + ColorManagement-Block-Edit), `scripts/playtest.cjs` +10 Z. (V8.27-Doku-Sync mit Helper), CLAUDE.md/Stand-Block, handover.md/Chronik.
+
+**Lehre verstärkt**: **`ColorManagement.enabled=true` ist visuelle Korrektheit, nicht visuelle Identität** — der Round-Trip sRGB→linear→sRGB cancelt am Display ENDPUNKT, aber jeder Vergleich gegen `Color.r/.g/.b` zwischen den beiden Endpunkten sieht linearen Space. Wer Tests gegen Color-Channels schreibt, MUSS `convertLinearToSRGB()` oder die linearen Schwellen-Werte nutzen. Plus: die gradientMap-Disziplin („data, nicht color") ist universell — jede LUT (Look-Up-Table), Höhen-Map, Normalmap, RoughnessMap braucht `LinearSRGBColorSpace`/`NoColorSpace`, nur Albedo-Color-Maps brauchen `SRGBColorSpace`. Vor jeder neuen Texture-Allokation fragen: ist das Color oder Daten?
+
+**Schöpfer-Browser-Audit-Frage**: visuell stimmig auf AMD RDNA-3? Wenn ja, V12.0-a (Hot-Swap-Pfad + rendererKind-Gates weg) startet. Wenn Welt-Optik kippt: einzelne Texture-Tags zurücknehmen, Mismatch-Quelle isolieren.
+
+---
+
+**V12.0-vendor.2, 28.05.2026 — useLegacyLights-Bridge als toter No-Op gestrichen (Clean-Up nach Schöpfer-Browser-Audit grün):**
+
+Schöpfer hat V12.0-vendor.1 im echten Browser geprüft: „passt, kann weiter gehen, nicht schwarz, nicht buggy". Damit ist die strukturelle r184-Foundation visual-bestätigt und V12.0-vendor.2 läuft als Clean-Up-Welle.
+
+**Diag-Probe als Erstes** (das Werkzeug, nicht die Hypothese): ein ad-hoc Puppeteer-Script las `state.renderer.useLegacyLights` nach Boot. Resultat:
+- `"useLegacyLights" in renderer === false`
+- Prototype-Descriptor: `undefined`
+- DirectionalLight intensity: 0.996 (Tag-Nacht-Sync ~1.0 zur Mittagszeit)
+- Ambient intensity: 0.596
+
+**Konsequenz**: die V10.0-a-Bridge `if ("useLegacyLights" in renderer) renderer.useLegacyLights = true` (eingeführt um r155+ physically-correct-Default-Wechsel abzufangen) war seit dem V12.0-vendor.1-Boot ein stiller No-Op — die Property existiert in r184's WebGPURenderer GAR NICHT mehr. Die Welt hat seit V12.0-vendor.1 bereits mit physically-correct Lights gerendert, und Schöpfer-Browser-Audit zeigt: die Light-Intensitäten (DirectionalLight=1.0, Ambient=0.6, Hemisphere via worldgen) wirken visuell stimmig im physically-correct-Modell — keine Re-Kalibrierung nötig.
+
+**Code-Änderung minimal**:
+- `_configureRenderer(renderer, kind)` Z13584: 5-Zeilen-Bridge-Block + Vor-Kommentar gestrichen, durch frischen V12.0-vendor.2-Doku-Kommentar ersetzt (warum die Bridge weg ist, was die Diag-Probe gezeigt hat)
+- `_swapToWebGLRenderer` Z39927: Kommentar aktualisiert (alte „useLegacyLights bleibt aktiv"-Aussage durch „useLegacyLights gestrichen, ColorManagement bleibt bis V12.0-vendor.3" ersetzt)
+- Version-Bump 12.0.0 → 12.0.1 (Patch — keine breaking-API-Änderung, Welt-Optik visuell identisch)
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures / 9 Warnings (Method-Smoke-Floor); Format/Lint sauber. Diag-Probe bestätigt: scene.children=168, Hydrosphäre + 18 Wasserfälle weiter gerendert.
+
+**Lehre verstärkt**: **Diag-Probe vor Migration ist ehrlicher Pfad** (V9.94.r-Stage-2-Lokal-Probe). Die V10.0-a-Bridge hatte ich im V12.0-vendor.1 als „defensive belassen" weil die Property eventuell noch existieren KÖNNTE — der ehrliche 30-Sekunden-Check via Diag-Probe (3 Zeilen JavaScript in einer puppeteer-evaluate) räumte die Hypothese sofort auf. Wer eine Bridge-Heilung baut, MUSS bei jeder Vendor-Major-Welle einen Diag-Probe-Schritt einlegen: „existiert das Property noch?". Wenn nein: Bridge raus, kein Schuld-Aufschub.
+
+**Bonus-Lehre**: **Clean-Up-Wellen sind echte Wellen** — nicht „lass den toten Code drin, schadet nichts". Toter Bridge-Code in einem Performance-Pfad (`_configureRenderer` läuft pro Renderer-Init + Hot-Swap) ist semantischer Müll, der spätere Wellen verwirrt. V9.81-Density-Grid-Sharing-Lehre („wer ein Density-Grid nutzt, prüft ob das Grid schon existiert") auf Bridge-Code erweitert: nach jedem Vendor-Wechsel die Bridge-Heilungs-Liste durchgehen + entscheiden welche obsolet sind. Clean-Up ist Disziplin, nicht Bonus.
+
+**Was bleibt offen**: V12.0-vendor.3 (ColorManagement.enabled=true + sRGB-Texture-Tagging — substantieller weil per-Texture-Audit), V12.0-a (Hot-Swap-Pfad streichen + WebGPU-required Bootstrap-Wand), V12.0-d (V11-Pool reaktivieren wenn r184-Cache heilt), V12.0-e (V9.95-Compute), V12.0-f (MeshToonNodeMaterial-Cleanup), V12.0-g (Schöpfer-Browser-Audit AMD RDNA-3).
+
+---
+
+**V12.0-vendor.1, 28.05.2026 — Three.js r160 → r184 Vendor-Upgrade vollendet, ehrliche r164-Wende, V12-Bogen startet:**
+
+Nach V12.0-diag (Code-Inventar mit Risiko-Map) + Stage-1-Release-Notes-Scan r161-r184 ist der V12-Bogen losgelaufen. Zwei strukturelle Befunde aus der Release-Notes-Lese-Welle:
+
+- **r164 hat `WebGLNodeBuilder` ENTFERNT** — die Side-Effect-Import-Schicht `webgl-legacy/nodes/WebGLNodes.js` (V10.0-f-1's ganzer Hebel, NodeMaterial unter klassischem WebGLRenderer) existiert ab r164 nicht mehr. WebGL-Fallback ist strukturell tot für NodeMaterial-Rendering. Konsequenz für die Vision: **WebGPU-required**. 2026-Browser-Realität (Chrome 113+ stable seit Mai 2023, Safari 18+ stable seit Sept 2024, Edge stable, Firefox mit dom.webgpu.enabled) macht das akzeptabel — und genau der V10.0-Pfad in höherer Ordnung.
+- **r167 hat die Build-Struktur in drei ESM-Bundles aufgeteilt**: `three.core.min.js` (Basis-Symbole) + `three.module.min.js` (Renderer + Mesh + Light + Texture) + `three.webgpu.min.js` (WebGPURenderer + alle NodeMaterials + Lighting) + `three.tsl.min.js` (TSL-Helpers). Import-Map muss `three/webgpu` + `three/tsl` mappen. Bonus: `vendor/three-addons/`-Verzeichnis (238 Files) komplett obsolet — ~1.5 MB gespart.
+
+**Was V12.0-vendor.1 wirklich gemacht hat (~30 Code-Änderungen, alle chirurgisch)**:
+
+- `vendor/`: r160 → r184 Bytes-Tausch (4 ESM-Bundles, total 1.4 MB), alte `three-addons/`-Hierarchie gestrichen, `vendor/_r160-backup/` als defensive Sicherung für künftige Wellen
+- `vendor/three-bootstrap.js` komplett umgeschrieben: `import * as WEBGPU from "three/webgpu"` + `import * as TSL from "three/tsl"` statt 12 separater Addon-Pfade; defensive `requireWebGPU()`-Probe für jeden konsumierten Export; webgl-legacy Side-Effect-Import GESTRICHEN (r164-Wende)
+- `index.html`: Import-Map auf `three/webgpu` + `three/tsl` umgestellt, CSP-SHA256-Hash byte-exakt neu berechnet (`sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA=`), Cache-Buster + Title auf v12.0-vendor.1
+- `anazhRealm.js` Drei chirurgische API-Renames:
+  - `wantWebGPU`-Check: `THREE.WebGPU.isAvailable()` → `navigator.gpu` (r184 hat den Three.js-WebGPU-Capability-Wrapper entfernt, die Browser-API ist die direkte Wahrheit)
+  - `tslFn` → `Fn` global ersetzt (11 Stellen, r167+ TSL-Vendor-Rename)
+  - `cond` → `select` via Destructure-Alias in `_ensureHydroSurfaceMaterial` (r170+ TSL-Vendor-Rename, lokaler Funktionsname `cond` bleibt)
+- `scripts/playtest.cjs` V9.56-i-Doku-Sync: 4 Source-Probe-Regexes (`/gerstnerWave\s*=\s*tslFn/`, `/waveDisplace\s*=\s*tslFn/`) auf `Fn` migriert — Test-Pattern wandert mit Code-Pattern
+- Version-Bump 11.0.10 → 12.0.0 (Major weil Three.js-Vendor-Versions-Wechsel = breaking-change-Risiko), alle 4 Stempel synchron (package.json, index.html-Title, index.html-Cache-Buster, AnazhRealm.VERSION)
+
+**Defensive Bridge-Heilungen bleiben aktiv** (V10.0-a-Pattern weiter sinnvoll): `useLegacyLights = true` (defensive Probe `"useLegacyLights" in renderer` — Property ist in r184 stillschweigend entfernt aber Probe greift graceful), `ColorManagement.enabled = false` (Property existiert weiter in r184). Beide werden in V12.0-vendor.2 + .3 ehrlich migriert (physically-correct Lighting, Texture-colorSpace-Migration).
+
+**Hot-Swap-Pfad bleibt aktiv** als defensive Wand: WebGPURenderer's interner WebGL2-Fallback fängt headless ohne GPU ab (Console-Log: „WebGPU is not available, running under WebGL2 backend"), Welt rendert sichtbar im Headless. V12.0-a wird den Hot-Swap-Pfad streichen wenn Schöpfer-Browser-Audit grün ist.
+
+**MeshToonNodeMaterial existiert in r184** — die V10.0-g.diag-Workaround-Schicht (eigene `_buildToonNodeMaterial`-Helper mit manuellem Toon-Lighting via `MeshBasicNodeMaterial + colorNode`-Tree) wird in V12.0-f Code-Review obsolet. Plus `ToonOutlinePassNode` existiert für künftige Outline-Effekte.
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK" (vorher V11.0-d.fix.gras3-Stand identisch); audit:strict 0 Failures / 9 Warnings (alle bekannte Method-Smoke-Floor); Format/Lint sauber. Diag-Browser-Probe zeigt: scene.children=168, hydrosphäre gerendert (18 Wasserfälle), worldField populated, terrainEverGenerated=true, REVISION="184". Dateien netto: `anazhRealm.js` +14 Z. (Kommentar + 3 Renames), `vendor/three-bootstrap.js` netto-negativ (~-40 Z. weil 12 Imports → 3), `index.html` 3 Stellen, `scripts/playtest.cjs` 4 Regex-Anpassungen. Vendor: 238 Files gelöscht, 4 neue Bundles, netto-cleanup.
+
+**Bogen-Plan nach V12.0-vendor.1**:
+- ⏳ **V12.0-vendor.2** (~1-2h) useLegacyLights weg, Lights physically-correct kalibrieren — Welt-Optik prüfen (DirectionalLight + AmbientLight + HemisphereLight Intensitäten)
+- ⏳ **V12.0-vendor.3** (~1-2h) ColorManagement + Texture-colorSpace migrieren (gradientMap, Architektur-Textures, instanceColor — `workingToColorSpace`-API-Rename per r177)
+- ⏳ **V12.0-a** (~2h) Hot-Swap-Pfad streichen + `rendererKind`-Gates weg + WebGPU-required Bootstrap-Fehler-Wand sauber loggen
+- ⏳ **V12.0-d** (~3-4h) Buffer-Lifecycle-Race prüfen — V11-Pool reaktivieren wenn r184's Bind-Group-Layout-Cache den InstancedMesh-Re-Use-Bug strukturell heilt (~500 KB GPU-Heap pro Welt-Wechsel gespart)
+- ⏳ **V12.0-e** (~3-4h) V9.95-Compute-Pipeline aktivieren — auf r184's Three.js-WebGPU-Renderer ist GPU→Renderer zero-copy möglich
+- ⏳ **V12.0-f** (~2-3h) Code-Review — `_buildToonNodeMaterial` durch eingebautes `MeshToonNodeMaterial` ersetzen
+- ⏳ **V12.0-g** (~30min) Schöpfer-Browser-Audit AMD RDNA-3
+
+**Drei Lehren verdrahtet (CLAUDE.md/Gotchas — Rendering · TSL-Migration)**:
+
+1. **r184 Vendor-Wechsel-Disziplin: Stage-1-Release-Notes-Scan VOR Code-Änderung** — der Sprung r161-r184 (24 Releases) bringt strukturelle API-Drifts (Build-Split, addon-removals, TSL-Renames). Ein „direkt downloaden + testen" ohne Release-Notes-Scan kostet zwei Wellen Workaround-Sünden. V9.94.r-Bürokraten-Lehre angewandt: Stage-1 öffentliche Wahrheit (caniuse, MDN, Release-Notes) ist der ehrliche Diag-Pfad VOR Stage-3 Maschine-spezifischer Test. Konkret V12.0-vendor.1: Release-Notes-Scan hat r164-`WebGLNodeBuilder`-Entfernung früh sichtbar gemacht → korrigierter Sub-Plan, kein verschwendetes Code-Refactoring auf einer falschen Annahme.
+
+2. **TSL-API-Renames sind Mass-Renames mit Test-Doku-Sync** — `tslFn` → `Fn` (r167+), `cond` → `select` (r170+), `varying` → `toVarying` (r172), `texture.uv` → `texture.sample` (r171). Jeder Rename verlangt: (a) Code-Refactor (global replace_all für eindeutige Symbole, gezielter Edit für überladene wie `cond`), (b) Test-Doku-Sync (V9.56-i-Lehre — Source-Probes scannen Code-Patterns + müssen mit den Patterns wandern). Bei Vendor-Versions-Sprüngen über 10+ Releases: vor dem ersten Code-Edit alle Renames sammeln, dann sequenziell anwenden, nach jedem Rename einen Diag-Boot-Test (NICHT vollen Playtest — schneller mit ad-hoc Diag-Script aus dem Projektordner sodass Puppeteer resolved).
+
+3. **Defensive Property-Probes überleben Vendor-Versions-Drift** — `"useLegacyLights" in renderer ? renderer.useLegacyLights = true : noop` ist ein Pattern, das sowohl r160 (Property existiert) als auch r184 (Property entfernt) graceful handhabt. Kein Crash, kein Refactor nötig. Wer Bridge-Heilungen für Vendor-Migrationen baut, MUSS defensive Probes nutzen — die Property kann zwischen den Versionen entfernt werden ohne explizite Release-Note. Pattern wiederverwendbar für `ColorManagement.enabled`, `shadowMap.autoUpdate`, `depthTest`-Properties.
+
+**Was OFFEN bleibt** für die nächste Session: V12.0-vendor.2 + .3 (useLegacyLights weg, ColorManagement-API-Rename, Texture-colorSpace) + Schöpfer-Browser-Audit auf AMD RDNA-3 mit echtem GPU-Adapter (headless WebGL2-Fallback beweist nur Code-Korrektheit, nicht WebGPU-Performance-Heilung). V11-Pool-Reaktivierung wartet auf V12.0-d nach r184-Cache-Verifikation.
+
+---
+
 **V11.0-d.fix.gras-Bogen, 27.05.2026 — Drei Heilungs-Versuche am v160-Vendor-Bug, ehrliche Abklemmung, Bürokraten-Lehre verdrahtet:**
 
 Nach V11.0-a/b/c/d-Mesh-Pool gebaut + V11.0-d.2.fix Flakiness geheilt hat der Schöpfer im Browser bestätigt: „im ersten Chunk Halme, alle weiteren nicht" + FPS=7 + Schatten wandern + Strukturen hämmern + „nicht synergetisch wie zuvor". Wurzel der Gras-Unsichtbarkeit ist Three.js v160's WebGPU-Backend, das beim InstancedMesh-Re-Use stale Cache-Bindings hält.
