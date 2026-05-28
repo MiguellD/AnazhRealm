@@ -13577,20 +13577,18 @@ class AnazhRealm {
 
     // V10.0-d — gemeinsame Renderer-Konfiguration für WebGPU- und WebGL-
     // Renderer. Beide Klassen erben von einem gemeinsamen Renderer-Interface
-    // (in r160): `setSize`, `setPixelRatio`, `setClearColor`, `shadowMap.*`
-    // funktionieren identisch. Nur die `useLegacyLights`-Bridge ist WebGL-
-    // only (WebGPURenderer ist always physically-correct + r160 hat das
-    // Property auch beim WebGLRenderer noch).
+    // (in r184): `setSize`, `setPixelRatio`, `setClearColor`, `shadowMap.*`
+    // funktionieren identisch auf beiden Renderern.
+    //
+    // V12.0-vendor.2 — useLegacyLights-Bridge gestrichen. r184's WebGPU-
+    // Renderer hat das Property GAR NICHT mehr (Diag-Probe V12.0-vendor.2:
+    // `"useLegacyLights" in renderer === false`); WebGLRenderer hat es
+    // auch seit r170+ entfernt. Die Welt rendert seit V12.0-vendor.1 bereits
+    // mit physically-correct Lights (Schöpfer-Browser bestätigt). Die alte
+    // V10.0-a-Bridge war ein No-Op auf r184 — sauber raus.
     _configureRenderer(renderer, kind) {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
-        // V10.0-a — r155+ entfernte useLegacyLights als default true.
-        // r160 hat es noch, r161+ entfernt das Property komplett. Bridge-
-        // Modus aktiv, bis V10.0-e die Lights physically-correct migriert.
-        // WebGPURenderer hat das Property NICHT — wir setzen es defensiv.
-        if ("useLegacyLights" in renderer) {
-            renderer.useLegacyLights = true;
-        }
         renderer.setClearColor(0x000000, 1);
         if (kind === "webgl") {
             // depthTest ist WebGL-spezifisch (WebGPU regelt das per Pipeline-
@@ -39925,8 +39923,9 @@ class AnazhRealm {
     // den WebGPURenderer (gibt Device-Slot frei), erstelle frischen
     // WebGLRenderer mit identischer Konfiguration über `_configureRenderer`,
     // setze state.renderer + state.rendererKind="webgl". Welt rendert ab
-    // nächstem Frame über WebGL — visuell 1:1 wie vor V10.0-a (die V10.0-a-
-    // Bridge-Heilungen ColorManagement+useLegacyLights bleiben aktiv).
+    // nächstem Frame über WebGL. V12.0-vendor.2: useLegacyLights-Bridge
+    // gestrichen (Property in r184 entfernt); ColorManagement.enabled=false
+    // bleibt bis V12.0-vendor.3.
     // V10.0-f-5 — Hot-Swap-Heilung der V10.0-e-Wurzel: ein Canvas-Element
     // kann nur EINEN Context-Type halten. Wenn der WebGPURenderer den Canvas
     // an WebGPU gebunden hat, kann `new WebGLRenderer({ canvas })` keinen
@@ -40287,7 +40286,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-vendor.1";
+AnazhRealm.VERSION = "12.0-vendor.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

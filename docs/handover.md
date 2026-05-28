@@ -357,6 +357,33 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V12.0-vendor.2, 28.05.2026 — useLegacyLights-Bridge als toter No-Op gestrichen (Clean-Up nach Schöpfer-Browser-Audit grün):**
+
+Schöpfer hat V12.0-vendor.1 im echten Browser geprüft: „passt, kann weiter gehen, nicht schwarz, nicht buggy". Damit ist die strukturelle r184-Foundation visual-bestätigt und V12.0-vendor.2 läuft als Clean-Up-Welle.
+
+**Diag-Probe als Erstes** (das Werkzeug, nicht die Hypothese): ein ad-hoc Puppeteer-Script las `state.renderer.useLegacyLights` nach Boot. Resultat:
+- `"useLegacyLights" in renderer === false`
+- Prototype-Descriptor: `undefined`
+- DirectionalLight intensity: 0.996 (Tag-Nacht-Sync ~1.0 zur Mittagszeit)
+- Ambient intensity: 0.596
+
+**Konsequenz**: die V10.0-a-Bridge `if ("useLegacyLights" in renderer) renderer.useLegacyLights = true` (eingeführt um r155+ physically-correct-Default-Wechsel abzufangen) war seit dem V12.0-vendor.1-Boot ein stiller No-Op — die Property existiert in r184's WebGPURenderer GAR NICHT mehr. Die Welt hat seit V12.0-vendor.1 bereits mit physically-correct Lights gerendert, und Schöpfer-Browser-Audit zeigt: die Light-Intensitäten (DirectionalLight=1.0, Ambient=0.6, Hemisphere via worldgen) wirken visuell stimmig im physically-correct-Modell — keine Re-Kalibrierung nötig.
+
+**Code-Änderung minimal**:
+- `_configureRenderer(renderer, kind)` Z13584: 5-Zeilen-Bridge-Block + Vor-Kommentar gestrichen, durch frischen V12.0-vendor.2-Doku-Kommentar ersetzt (warum die Bridge weg ist, was die Diag-Probe gezeigt hat)
+- `_swapToWebGLRenderer` Z39927: Kommentar aktualisiert (alte „useLegacyLights bleibt aktiv"-Aussage durch „useLegacyLights gestrichen, ColorManagement bleibt bis V12.0-vendor.3" ersetzt)
+- Version-Bump 12.0.0 → 12.0.1 (Patch — keine breaking-API-Änderung, Welt-Optik visuell identisch)
+
+**Verhaltens-Beweis**: Playtest „Alle Invarianten OK"; audit:strict 0 Failures / 9 Warnings (Method-Smoke-Floor); Format/Lint sauber. Diag-Probe bestätigt: scene.children=168, Hydrosphäre + 18 Wasserfälle weiter gerendert.
+
+**Lehre verstärkt**: **Diag-Probe vor Migration ist ehrlicher Pfad** (V9.94.r-Stage-2-Lokal-Probe). Die V10.0-a-Bridge hatte ich im V12.0-vendor.1 als „defensive belassen" weil die Property eventuell noch existieren KÖNNTE — der ehrliche 30-Sekunden-Check via Diag-Probe (3 Zeilen JavaScript in einer puppeteer-evaluate) räumte die Hypothese sofort auf. Wer eine Bridge-Heilung baut, MUSS bei jeder Vendor-Major-Welle einen Diag-Probe-Schritt einlegen: „existiert das Property noch?". Wenn nein: Bridge raus, kein Schuld-Aufschub.
+
+**Bonus-Lehre**: **Clean-Up-Wellen sind echte Wellen** — nicht „lass den toten Code drin, schadet nichts". Toter Bridge-Code in einem Performance-Pfad (`_configureRenderer` läuft pro Renderer-Init + Hot-Swap) ist semantischer Müll, der spätere Wellen verwirrt. V9.81-Density-Grid-Sharing-Lehre („wer ein Density-Grid nutzt, prüft ob das Grid schon existiert") auf Bridge-Code erweitert: nach jedem Vendor-Wechsel die Bridge-Heilungs-Liste durchgehen + entscheiden welche obsolet sind. Clean-Up ist Disziplin, nicht Bonus.
+
+**Was bleibt offen**: V12.0-vendor.3 (ColorManagement.enabled=true + sRGB-Texture-Tagging — substantieller weil per-Texture-Audit), V12.0-a (Hot-Swap-Pfad streichen + WebGPU-required Bootstrap-Wand), V12.0-d (V11-Pool reaktivieren wenn r184-Cache heilt), V12.0-e (V9.95-Compute), V12.0-f (MeshToonNodeMaterial-Cleanup), V12.0-g (Schöpfer-Browser-Audit AMD RDNA-3).
+
+---
+
 **V12.0-vendor.1, 28.05.2026 — Three.js r160 → r184 Vendor-Upgrade vollendet, ehrliche r164-Wende, V12-Bogen startet:**
 
 Nach V12.0-diag (Code-Inventar mit Risiko-Map) + Stage-1-Release-Notes-Scan r161-r184 ist der V12-Bogen losgelaufen. Zwei strukturelle Befunde aus der Release-Notes-Lese-Welle:
