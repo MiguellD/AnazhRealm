@@ -825,6 +825,12 @@ class AnazhRealm {
             // 2Hz halbiert die Latenz auf 500ms.
             architectureCullingTickHz: 2.0,
             architectureCullingLastTick: -Infinity,
+            // V12.0-perf.d (Wurzel B) — max. teure Architektur-Builds (Render +
+            // Ammo-Collision) pro Frame im Culling-Scan. Deckelt den Build-Burst
+            // beim Eintritt in dichte Regionen (FPS-Sturm-Heilung). Cull bleibt
+            // ungedeckelt (billig). 3/Frame × 60 fps = 180 Builds/s → eine dichte
+            // Region füllt sich in <1 s sanft, ohne Frame-Spike.
+            architectureBuildBudgetPerFrame: 3,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
             //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
@@ -31303,19 +31309,32 @@ class AnazhRealm {
     // Damit löst sich das alte Hard-Cap-Problem auf: der Spieler kann
     // unbegrenzt bauen, solange das nicht alles gleichzeitig in Sicht ist.
     tickArchitectureCulling(currentTime) {
-        const tickInterval = 1 / Math.max(0.1, this.state.architectureCullingTickHz);
-        if (currentTime - this.state.architectureCullingLastTick < tickInterval) return;
+        // V12.0-perf.d (Wurzel B) — der Scan läuft jetzt PRO FRAME (315
+        // Distanz-Checks = trivial), aber die teuren Builds (Render +
+        // Ammo-Collision) sind auf `architectureBuildBudgetPerFrame` gedeckelt.
+        // Vorher: 2-Hz-Tick OHNE Budget → beim Eintritt in eine dichte Region
+        // baute EIN Tick alle in-Range-cold-Einträge auf einmal (der FPS-Sturm
+        // 6-9 der perf.c.diag). Jetzt: ≤N Builds/Frame → über mehrere Frames
+        // verteilt, sanftes Pop-In statt Freeze (V9.85/V9.96-Budget-Pattern).
+        // Cull (out-of-range) ist billig (kein Build) → ungedeckelt.
         this.state.architectureCullingLastTick = currentTime;
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
+        const budget = Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
+        let built = 0;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
             if (distSq <= radiusSq) {
-                if (!this._archIsRendered(entry)) this._rebuildArchitectureMesh(entry);
+                if (!this._archIsRendered(entry) && built < budget) {
+                    this._rebuildArchitectureMesh(entry);
+                    built++;
+                }
+                // Budget erschöpft → dieser Eintrag baut in einem der nächsten
+                // Frames (der Scan findet ihn wieder, solange in Reichweite).
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             }
@@ -40381,7 +40400,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.c.2";
+AnazhRealm.VERSION = "12.0-perf.d";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

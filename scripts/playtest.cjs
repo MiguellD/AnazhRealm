@@ -13352,6 +13352,77 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
 }
 
+// V12.0-perf.d (Wurzel B — budgetierter Culling-Build): beweist, dass
+// `tickArchitectureCulling` höchstens `architectureBuildBudgetPerFrame` teure
+// Builds pro Frame macht, statt beim Eintritt in eine dichte Region alle
+// in-Range-cold-Einträge auf einmal zu bauen (der FPS-Sturm der perf.c.diag).
+async function checkBandWellePerfDBudget(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
+        const out = {};
+        out.hasBudgetField = Number.isFinite(r.state.architectureBuildBudgetPerFrame);
+        const budget = r.state.architectureBuildBudgetPerFrame;
+        out.budget = budget;
+        const pp = r.state.playerMesh.position;
+        // 12 cold-in-range Einträge: cullingRadius=0 beim Spawn (cold), dann
+        // restaurieren, sodass sie alle im Render-Radius liegen.
+        const origRadius = r.state.architectureCullingRadius;
+        r.state.architectureCullingRadius = 0;
+        const ids = [];
+        const N = 12;
+        for (let i = 0; i < N; i++) {
+            const e = r.spawnArchitecture(
+                "baum_kiefer",
+                { x: pp.x + 4 + i, y: pp.y, z: pp.z + 4 },
+                { seed: 31000 + i, silent: true }
+            );
+            if (e) ids.push(e.id);
+        }
+        r.state.architectureCullingRadius = Math.max(origRadius, 300);
+        const idSet = new Set(ids);
+        const renderedCount = () => r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
+        out.coldBefore = ids.length - renderedCount();
+        // EIN Tick → höchstens `budget` gebaut.
+        r.tickArchitectureCulling(performance.now());
+        out.builtAfterOneTick = renderedCount();
+        out.respectsBudget = out.builtAfterOneTick <= budget;
+        // Mehrere Ticks → alle gebaut (sanftes Pop-In über Frames).
+        for (let t = 0; t < N + 2; t++) r.tickArchitectureCulling(performance.now());
+        out.builtAfterManyTicks = renderedCount();
+        out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
+        // Cleanup.
+        for (const e of r.state.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
+        r.state.architectureCullingRadius = origRadius;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.d: Budget-Band (realm)", false, res.error);
+        return;
+    }
+    check(
+        "V12.0-perf.d: architectureBuildBudgetPerFrame existiert (≥1)",
+        res.hasBudgetField && res.budget >= 1,
+        `budget=${res.budget}`
+    );
+    check(
+        "V12.0-perf.d: 12 cold-in-range Einträge vor dem ersten Tick",
+        res.coldBefore === 12,
+        `cold=${res.coldBefore}`
+    );
+    check(
+        "V12.0-perf.d: EIN Tick baut höchstens budget (kein Burst)",
+        res.respectsBudget,
+        `gebaut=${res.builtAfterOneTick}, budget=${res.budget}`
+    );
+    check(
+        "V12.0-perf.d: über mehrere Ticks werden ALLE gebaut (sanftes Pop-In)",
+        res.allEventuallyBuilt,
+        `gebaut=${res.builtAfterManyTicks}/12`
+    );
+}
+
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
 // der `voxel-worker.js` bit-identische Density-Grids zum Main-Thread liefert.
 // Kern-Invariante der Worker-Migration: jede Density-Funktion im Worker
@@ -32148,6 +32219,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3bDistanceLod(ctx);
             // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
             await checkBandWellePerfCArchInstancing(ctx);
+            // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
+            await checkBandWellePerfDBudget(ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
             await checkBandWellePerf3cWorkerFoundation(ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
