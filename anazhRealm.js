@@ -19365,10 +19365,15 @@ class AnazhRealm {
         // V13.9 (Schicht 3) — Mindest-Wasser-Dicke fürs pro-Pixel-Cullen des
         // dünnen Wand-Blutens (16-m-Atlas-Spiegel spillt minimal über den Voxel-
         // Grat → ein flaches Blatt). Fragmente mit waterThick < uMinDepth fallen
-        // weg (mat.alphaTest); tiefes Wasser (See/Ozean) bleibt. default 0 =
-        // exakt das alte Bild — über den Atmosphäre-Slider (setWaterCull) live
-        // justiert + aus dem persistierten Wert initialisiert.
-        const uMinDepth = uniform((this.state.atmosphere && this.state.atmosphere.waterCull) || 0.0);
+        // weg (mat.alphaTest); tiefes Wasser (See/Ozean) bleibt. default 0.0025
+        // (Schöpfer-Browser-Befund V13.9.1: „0.0025 war nicht schlecht") — über
+        // den Atmosphäre-Slider (setWaterCull) live justierbar, aus dem
+        // persistierten Wert initialisiert (überlebt Reload).
+        const initMinDepth =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
+                ? this.state.atmosphere.waterCull
+                : 0.0025;
+        const uMinDepth = uniform(initMinDepth);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -20584,7 +20589,10 @@ class AnazhRealm {
             atmosphere: {
                 celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
                 fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
-                waterCull: (this.state.atmosphere && this.state.atmosphere.waterCull) || 0.0,
+                waterCull:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
+                        ? this.state.atmosphere.waterCull
+                        : 0.0025,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -22663,7 +22671,7 @@ class AnazhRealm {
             }
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
             const cl = Number(state.atmosphere.celLevels);
             if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
@@ -31273,7 +31281,7 @@ class AnazhRealm {
     setCelLevels(levels) {
         // V8.41 — Regler-Bereich 2–8 (8 = smooth). V8.40-Reserve 9–16 verworfen.
         const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.celLevels = n;
         this._refreshToonGradient();
         if (typeof this.saveState === "function") this.saveState();
@@ -31287,7 +31295,7 @@ class AnazhRealm {
         // V8.40 — Effekt-Bereich verdreifacht: Label „100%" = mult 3.0 (=
         // heutiger 300%-Fog, neuer Default), Label „300%" = mult 9.0.
         const m = Math.max(0.9, Math.min(9.0, Number(mult) || 3.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
         if (typeof this.saveState === "function") this.saveState();
@@ -31301,7 +31309,7 @@ class AnazhRealm {
     // dünne Wand-/Ufer-Bluten weg ist, tiefes Wasser bleibt. 0 = altes Bild.
     setWaterCull(minDepth) {
         const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterCull = m;
         // Das geteilte Hydro-Surface-Uniform live setzen (lazy initialisiert beim
         // ersten Material-Bau; nur setzen, wenn schon da).
@@ -38072,7 +38080,10 @@ class AnazhRealm {
         const wcS = document.getElementById("slider-watercull");
         const wcVal = document.getElementById("slider-watercull-val");
         if (wcS) {
-            const w0 = (this.state.atmosphere && this.state.atmosphere.waterCull) || 0.0;
+            const w0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
+                    ? this.state.atmosphere.waterCull
+                    : 0.0025;
             wcS.value = String(Math.round(w0 * 10000));
             if (wcVal) wcVal.textContent = w0.toFixed(4);
             wcS.addEventListener("input", () => {
@@ -40819,7 +40830,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.9.1";
+AnazhRealm.VERSION = "13.9.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -19841,13 +19841,21 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
         // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
         out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
-        // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + default 0 + Source-Probe.
+        // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + Default + Source-Probe.
         out.waterMinDepthUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.minDepth);
-        out.waterMinDepthDefaultZero = !!(
+        // V13.9.2: Default ist jetzt 0.0025 (Schöpfer-Browser-Befund „0.0025 war
+        // nicht schlecht"), aus state.atmosphere.waterCull initialisiert. Wir
+        // prüfen: das Uniform trägt einen endlichen, nicht-negativen Wert (der
+        // genaue Default lebt im atmosphere-Slot + ist live justierbar).
+        out.waterMinDepthValueOk = !!(
             r.state.hydroSurfaceUniforms &&
             r.state.hydroSurfaceUniforms.minDepth &&
-            r.state.hydroSurfaceUniforms.minDepth.value === 0
+            Number.isFinite(r.state.hydroSurfaceUniforms.minDepth.value) &&
+            r.state.hydroSurfaceUniforms.minDepth.value >= 0
         );
+        // V13.9.2: der Wert ist live über setWaterCull(minDepth) justierbar +
+        // persistiert in state.atmosphere.waterCull.
+        out.waterCullSetter = typeof r.setWaterCull === "function";
         out.waterMinDepthCull = waterMinDepthCull;
         // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
         // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
@@ -19897,7 +19905,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (viewportLinearDepth)", v830Results.waterDepthShoreline);
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
-        check("V13.9: Min-Depth-Cull default 0 (= exakt das alte Bild)", v830Results.waterMinDepthDefaultZero);
+        check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
+        check("V13.9.2: setWaterCull-Setter (Slider + Persistenz) vorhanden", v830Results.waterCullSetter);
         check(
             "V13.9: Wasser-Shader cullt dünnes Bluten (waterThick<uMinDepth via alphaTest)",
             v830Results.waterMinDepthCull
