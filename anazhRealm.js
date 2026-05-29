@@ -17588,7 +17588,7 @@ class AnazhRealm {
     // die Scene, Entry setzen, Gras + Iso-Wasser + Vegetation. `fresh` muss
     // ein erfolgreicher Build sein (kein null/pending). Returnt das Entry
     // (filled) oder null (empty — degenerierte Iso-Fläche, als {empty:true}).
-    _finalizeVoxelChunkBuild(cx, cz, lod, fresh) {
+    _finalizeVoxelChunkBuild(cx, cz, lod, fresh, syncWater = false) {
         const key = `${cx},${cz}`;
         if (fresh.kind === "empty") {
             this.state.voxelChunks.set(key, { empty: true });
@@ -17611,7 +17611,12 @@ class AnazhRealm {
         // V12.0-perf.h — Wasser-Iso deferred (per-Frame-Queue) statt synchron:
         // der Chunk ist mit Terrain+Boden+Collision sofort fertig, das Wasser
         // (~78 ms Surface-Nets) baut ≤budget/Frame nach → kein Streaming-Spike.
-        this._enqueueWaterIso(cx, cz);
+        // V12.0-perf.h.1 — ABER beim Edit-Rebuild (Spieler platziert/baut ab)
+        // SYNCHRON: sonst verschwindet der Wasser-Iso für 1-2 Frames bis die
+        // Queue ihn rebuildet → sichtbares Flackern der „fliegenden Ebene" am
+        // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
+        if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
+        else this._enqueueWaterIso(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
         return entry;
     }
@@ -17639,7 +17644,10 @@ class AnazhRealm {
             return false;
         }
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
-        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh);
+        // V12.0-perf.h.1 — Edit-Rebuild-Pfad (`_rebuildVoxelChunk` ←
+        // Carve/Fill/Architektur): Wasser-Iso SYNCHRON bauen (kein Flacker am
+        // Edit-Punkt). Nur der Streaming-Pfad (ferne neue Chunks) deferred.
+        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh, true);
         return true;
     }
 
@@ -40565,7 +40573,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.h";
+AnazhRealm.VERSION = "12.0-perf.h.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
