@@ -87,6 +87,16 @@ function printPass(label, p) {
     console.log(
         `     Schatten-Spalten: ${p.shadowColumns.toLocaleString()} / ${p.waterColumns.toLocaleString()} (${p.shadowColPct} %) · davon tief: ${p.shadowColsDeep.toLocaleString()}`
     );
+    console.log("  -- Hang-Schatten-Signatur (atlas-agnostisch: tiefes Wasser >2 Cells, Spiegel >wl+6) --");
+    console.log(
+        `     tiefes Hang-Wasser: ${p.elevDeepTotal.toLocaleString()} (${p.elevDeepPct} %) in ${p.elevDeepCols.toLocaleString()} Spalten`
+    );
+    console.log(
+        `        ├─ in exact-Atlas-Wasser-Spalten (See/Ozean-Footprint auf Hang): ${p.elevDeepAtlasWater.toLocaleString()}`
+    );
+    console.log(
+        `        └─ in Atlas-Land (sollte ~0 nach V13.1):                          ${p.elevDeepAtlasLand.toLocaleString()}`
+    );
 }
 
 (async () => {
@@ -277,6 +287,19 @@ function printPass(label, p) {
             let shadowCellsRim = 0;
             let shadowCellsDeep = 0;
             let shadowColsDeep = 0;
+            // V13.1-Audit (Schöpfer sieht noch Wasser an Hängen): die atlas-
+            // AGNOSTISCHE Schatten-Signatur = tiefes Wasser (>2 Cells) das WEIT
+            // ÜBER dem Meeresspiegel (wl+6) sitzt = Wasser klebt hoch am Hang.
+            // Fängt auch den Fall, den V13.1 NICHT adressiert: exact-Atlas-See/
+            // Ozean-Footprint, der auf Hänge spillt (dort ist Wasser „real" per
+            // Atlas → Depth-Gate exempt → bleibt). Split nach atlas-Quelle.
+            const base = r.state.terrainBaseHeight || 0;
+            const oyCells = base - cfg0.floorDrop;
+            const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+            let elevDeepTotal = 0; // tiefes Wasser hoch am Hang (Cells)
+            let elevDeepAtlasWater = 0; // davon in exact-Atlas-Wasser-Spalten
+            let elevDeepAtlasLand = 0; // davon in Atlas-Land (sollte ~0 nach V13.1)
+            let elevDeepCols = 0;
             const dimSq = dim * dim;
             for (const key of waterKeys) {
                 const e = r.state.voxelChunks.get(key);
@@ -290,8 +313,12 @@ function printPass(label, p) {
                     const wz = oz + (k + 0.5) * step;
                     for (let i = 0; i < dim; i++) {
                         let colWater = 0;
+                        let maxWaterJ = -1;
                         for (let j = 0; j < dimY; j++) {
-                            if (cells[i + k * dim + j * dimSq] === STATE.WATER) colWater++;
+                            if (cells[i + k * dim + j * dimSq] === STATE.WATER) {
+                                colWater++;
+                                maxWaterJ = j;
+                            }
                         }
                         if (colWater === 0) continue;
                         waterColumns++;
@@ -300,6 +327,14 @@ function printPass(label, p) {
                         const kindHere = atlasKindExact(wx, wz);
                         const river = typeof r._hydroRiverAt === "function" ? r._hydroRiverAt(wx, wz) : null;
                         const realExact = kindHere === 1 || kindHere === 2 || !!river;
+                        // atlas-agnostische Hang-Schatten-Signatur:
+                        const maxWaterCy = oyCells + (maxWaterJ + 0.5) * step;
+                        if (colWater > RIM_CELLS && maxWaterCy > wl + 6) {
+                            elevDeepTotal += colWater;
+                            elevDeepCols++;
+                            if (realExact) elevDeepAtlasWater += colWater;
+                            else elevDeepAtlasLand += colWater;
+                        }
                         if (!realExact) {
                             shadowCellsExact += colWater;
                             shadowColumnsExact++;
@@ -314,6 +349,11 @@ function printPass(label, p) {
                     }
                 }
             }
+            out.elevDeepTotal = elevDeepTotal;
+            out.elevDeepAtlasWater = elevDeepAtlasWater;
+            out.elevDeepAtlasLand = elevDeepAtlasLand;
+            out.elevDeepCols = elevDeepCols;
+            out.elevDeepPct = waterCellsTotal > 0 ? +((100 * elevDeepTotal) / waterCellsTotal).toFixed(1) : 0;
             out.waterCellsTotal = waterCellsTotal;
             out.shadowCells = shadowCellsExact;
             out.shadowCellPct = waterCellsTotal > 0 ? +((100 * shadowCellsExact) / waterCellsTotal).toFixed(1) : 0;

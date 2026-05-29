@@ -12771,7 +12771,15 @@ class AnazhRealm {
         if (this.state.voxelWorker) return this.state.voxelWorker;
         if (typeof Worker === "undefined") return null;
         try {
-            const worker = new Worker("voxel-worker.js");
+            // V13.1-Fix — Cache-Buster für den Worker. `index.html` bustet
+            // `anazhRealm.js?v=…`, ABER der Web-Worker lädt `voxel-worker.js`
+            // separat — ohne `?v=` serviert das githack-CDN die STALE alte
+            // Worker-Datei → die Worker-Mesh-Pipeline (im Browser primär) baut
+            // Wasser-Cells mit veralteter Logik (z.B. der V13.1-Atlas-strict-
+            // Mirror erreicht den Browser nie → der Wasserschatten bleibt).
+            // `AnazhRealm.VERSION` bustet bei jedem Bump automatisch mit
+            // (V9.95-c-Lehre: JEDE versionierte Datei bustet, nicht nur die Haupt-JS).
+            const worker = new Worker(`voxel-worker.js?v=${AnazhRealm.VERSION}`);
             this.state.voxelWorkerPending = new Map();
             worker.onmessage = (e) => {
                 const msg = e.data;
