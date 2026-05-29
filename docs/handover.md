@@ -92,7 +92,7 @@ Welle 6 (A-H) + 9 + 10 + 6.G3 + 6.G4 + 11 V3/V4 + 11 ext. + **W12 (Welt-Portal) 
    dem Commit.
 
 **Verlockung zu widerstehen**: gleich in `anazhRealm.js` springen. Die
-Datei ist ~36 000 Zeilen. Ohne Kontext aus der Chronik + den Gotchas
+Datei ist ~42 000 Zeilen. Ohne Kontext aus der Chronik + den Gotchas
 machst du falsche Annahmen.
 
 ---
