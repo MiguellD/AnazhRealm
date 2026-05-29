@@ -314,6 +314,13 @@ class AnazhRealm {
             // Worldgen (neue Welt), distanzbasiert geprunt (Memory bounded).
             voxelBaseDensityCache: null, // Map<"cx,cz,lod", Float32Array>
             voxelWorkerWorldgenSynced: false, // turns true nach erstem Worldgen-State-Sync
+            // V13.10 — maximale Höhe (m), die der 3D-Flood Wasser über den
+            // Terrain-Boden einer NICHT-Quell-Spalte (vom See lateral erreichtes
+            // Ufer-Land) tragen darf. Quell-Spalten (echtes Atlas-Wasser) füllen
+            // frei → tiefe Seen unberührt. Land-Spalten nur bis Boden+climb →
+            // kein Wasser, das die Uferwand hochklettert (Schöpfer-Befund). Live
+            // über den „Wasser-Klettern"-Regler justierbar; Worker-Mirror sync.
+            waterClimbMax: 3.6,
             // V9.91 (Phase 3): voller Chunk-Mesh-Cache (positions/normals/
             // indices/colors/waterCells). Streaming-Pump nutzt diesen
             // (Phase-3-Pfad), Phase-2-Density-Cache ist Legacy aber bleibt
@@ -12862,6 +12869,7 @@ class AnazhRealm {
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
+            waterClimbMax: Number.isFinite(this.state.waterClimbMax) ? this.state.waterClimbMax : 3.6,
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -17077,9 +17085,38 @@ class AnazhRealm {
         const AIR = STATE.AIR;
         const flLevel = new Float64Array(dimSq * dimY);
         const queue = [];
+        // V13.10 — Quelle-und-Gefälle: Wasser darf NICHT die Uferwand hochklettern.
+        // Quell-Spalten (echtes Atlas-Wasser, geseedet) füllen frei → tiefe Seen
+        // unberührt. Land-Spalten, die der Flood lateral erreicht, dürfen nur bis
+        // `Terrain-Boden + waterClimbMax` füllen — sonst entsteht eine Wassersäule,
+        // die an der steilen Uferwand hochklettert (Schöpfer-Befund „wieso klättert
+        // das Wasser"). `colTopSolidY[i,k]` = Oberkante der höchsten SOLID-Zelle der
+        // Spalte (gratis aus der schon klassifizierten Density); `colIsSource` =
+        // diese Spalte wurde direkt geseedet (echte Quelle). Live-justierbar über
+        // state.waterClimbMax (Regler). Mirror in `voxel-worker.js`.
+        const climbMax = Number.isFinite(this.state.waterClimbMax) ? this.state.waterClimbMax : 3.6;
+        const colIsSource = new Uint8Array(dimSq);
+        const colTopSolidY = new Float64Array(dimSq);
+        for (let c = 0; c < dimSq; c++) colTopSolidY[c] = -Infinity;
+        for (let j = 0; j <= jMax; j++) {
+            const baseJ = j * dimSq;
+            const yTop = oy + (j + 1) * step;
+            for (let c = 0; c < dimSq; c++) {
+                if (cells[c + baseJ] === STATE.SOLID) colTopSolidY[c] = yTop;
+            }
+        }
+        // Cap-Spiegel einer Land-Spalte: min(getragener Spiegel, Boden+climbMax).
+        const cappedLevel = (col, lvl) => {
+            if (colIsSource[col]) return lvl;
+            const top = colTopSolidY[col];
+            if (!(top > -Infinity)) return lvl; // kein Terrain-Boden (Höhle/Loch) → frei
+            const cap = top + climbMax;
+            return lvl < cap ? lvl : cap;
+        };
         const seedColumn = (i, k, lvl) => {
             if (!(lvl > -Infinity)) return;
             const baseK = k * dim;
+            colIsSource[i + baseK] = 1; // direkt geseedet = echte Quelle, uncapped
             for (let j = 0; j <= jMax; j++) {
                 const cy = oy + (j + 0.5) * step;
                 if (cy > lvl) break;
@@ -17110,14 +17147,17 @@ class AnazhRealm {
             seedColumn(i, 0, this._atlasWaterLevelAt(cx, oz - 0.5 * step, Infinity));
             seedColumn(i, dim - 1, this._atlasWaterLevelAt(cx, oz + (dim + 0.5) * step, Infinity));
         }
-        // 4) BFS-Flood durch nicht-soliden Raum unter dem getragenen Spiegel.
+        // 4) BFS-Flood durch nicht-soliden Raum unter dem getragenen Spiegel,
+        //    aber pro Land-Spalte auf Boden+climbMax gedeckelt (kein Klettern).
         const pushN = (ni, nk, nj, lvl) => {
             if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
-            if (oy + (nj + 0.5) * step > lvl) return;
-            const nidx = ni + nk * dim + nj * dimSq;
+            const col = ni + nk * dim;
+            const effLvl = cappedLevel(col, lvl);
+            if (oy + (nj + 0.5) * step > effLvl) return;
+            const nidx = col + nj * dimSq;
             if (cells[nidx] === AIR) {
                 cells[nidx] = WATER;
-                flLevel[nidx] = lvl;
+                flLevel[nidx] = effLvl;
                 queue.push(nidx);
             }
         };
@@ -20593,6 +20633,7 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
+                waterClimb: Number.isFinite(this.state.waterClimbMax) ? this.state.waterClimbMax : 3.6,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -22678,6 +22719,10 @@ class AnazhRealm {
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
+            // V13.10 — Ufer-Klettern-Limit (m). Lebt in state.waterClimbMax (vom
+            // Cell-Build gelesen), persistiert im atmosphere-Slot.
+            const wcl = Number(state.atmosphere.waterClimb);
+            if (Number.isFinite(wcl)) this.state.waterClimbMax = Math.max(0.0, Math.min(40.0, wcl));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -31320,6 +31365,36 @@ class AnazhRealm {
         return m;
     }
 
+    // V13.10 — Regler für das maximale Ufer-Klettern (m). Quelle-und-Gefälle:
+    // Wasser fällt/sitzt im Becken, klettert die Uferwand nur bis zu dieser
+    // Höhe über dem Land-Boden. 0 = hartes Becken (Wasser exakt am Atlas-Rand),
+    // groß = das alte unbegrenzte Verhalten. Synct den Worker + rebuildt alle
+    // geladenen Wasser-Chunks (Cell-Klassifikation hängt davon ab), damit der
+    // Regler live wirkt.
+    setWaterClimb(climbM) {
+        const m = Math.max(0.0, Math.min(40.0, Number(climbM)));
+        const v = Number.isFinite(m) ? m : 3.6;
+        this.state.waterClimbMax = v;
+        // Worker-Mirror syncen (sonst bauen Worker-Chunks mit altem climbMax →
+        // Naht). state-set = full re-sync (der Snapshot trägt waterClimbMax).
+        if (this.state.voxelWorker && typeof this._voxelWorkerSyncState === "function") {
+            this._voxelWorkerSyncState({ op: "state-set" });
+        }
+        // Alle geladenen Voxel-Chunks neu bauen (Cell-Feld klassifiziert neu).
+        if (this.state.voxelChunks) {
+            for (const key of [...this.state.voxelChunks.keys()]) {
+                const ci = key.indexOf(",");
+                const cx = Number(key.slice(0, ci));
+                const cz = Number(key.slice(ci + 1));
+                if (typeof this._rebuildVoxelChunk === "function") {
+                    this._rebuildVoxelChunk(cx, cz, null, { forceSync: true });
+                }
+            }
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return v;
+    }
+
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -38092,6 +38167,25 @@ class AnazhRealm {
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
         }
+        // V13.10 — Wasser-Klettern-Regler (state.waterClimbMax). Range 0..200 →
+        // climb 0..20 m (Schritt 0.1 m). Debounced: setWaterClimb rebuildt alle
+        // Chunks (teuer) → erst beim Loslassen (change), Live-Anzeige bei input.
+        const wclS = document.getElementById("slider-waterclimb");
+        const wclVal = document.getElementById("slider-waterclimb-val");
+        if (wclS) {
+            const c0 = Number.isFinite(this.state.waterClimbMax) ? this.state.waterClimbMax : 3.6;
+            wclS.value = String(Math.round(c0 * 10));
+            if (wclVal) wclVal.textContent = `${c0.toFixed(1)} m`;
+            wclS.addEventListener("input", () => {
+                const m = parseInt(wclS.value, 10) / 10;
+                if (wclVal) wclVal.textContent = `${m.toFixed(1)} m`;
+            });
+            wclS.addEventListener("change", () => {
+                const m = parseInt(wclS.value, 10) / 10;
+                const v = this.setWaterClimb(m);
+                if (wclVal) wclVal.textContent = `${v.toFixed(1)} m`;
+            });
+        }
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
@@ -40830,7 +40924,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.9.2";
+AnazhRealm.VERSION = "13.10.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

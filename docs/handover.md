@@ -357,6 +357,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V13.10 — Quelle-und-Gefälle: Wasser klettert nicht mehr die Uferwand hoch (29.05.2026, Playtest „Alle Invarianten OK"):**
+
+Der Schöpfer benannte die Wurzel: „wieso kann das Wasser klättern und nicht nur fallen, welches Prinzip fehlt oder ist falsch verdrahtet?". Plus: Strukturen (Felsbogen/Felsturm/Genesis-Plattform) stehen oft im Wasser + sind nicht mehr solide.
+
+**Befund (gemessen, `diag-water-climb.cjs`).** Das V13.8-3D-Flood trug den Quell-Spiegel lateral durch verbundenen Luftraum — auch auf vom See lateral erreichte Land-Spalten, OHNE Höhen-Limit. Eine Ufer-Land-Spalte, deren Terrain-Boden 20 m unter dem Nachbar-Seespiegel liegt, wurde komplett bis zum Spiegel geflutet → eine Wassersäule, die die steile Uferwand hochklettert. Histogramm: max 21,8 m Klettern, 37 Spalten 7-12 m, 15 >12 m. Das fehlende Prinzip: „maximale Steighöhe über dem Land-Boden" (Quelle+Gefälle+Distanz, wie Minecraft/Hydrologie-Vorbilder — KEINE Fluid-Sim, das wäre die Heilige-Lektion-Sünde).
+
+**Fix.** Der Flood unterscheidet jetzt zwei Spalten-Arten: **Quell-Spalten** (echtes Atlas-Wasser, direkt geseedet → `colIsSource=1`) füllen frei bis zum Spiegel — tiefe Seen/Ozean UNBERÜHRT. **Land-Spalten** (nur lateral vom Flood erreicht) werden auf `Terrain-Boden + waterClimbMax` gedeckelt (`cappedLevel` im `pushN`). `colTopSolidY` = Oberkante der höchsten SOLID-Zelle der Spalte (gratis aus der schon klassifizierten Density, kein `_voxelSurfaceY`-Scan). `state.waterClimbMax` default 3,6 m (2 Voxel; das Diag-Histogramm zeigt den Knick: 198 Spalten ≤1,8 m sind legitimes flaches Ufer).
+
+**Regler.** „Wasser-Klettern" in den Atmosphäre-Einstellungen (neben Fog-Distanz + Wasser-Cull). `setWaterClimb(m)` synct den Worker (`state-set`) + rebuildt alle geladenen Chunks (forceSync, live sichtbar) + persistiert in `state.atmosphere.waterClimb`. Range 0-20 m; 0 = hartes Becken (Wasser exakt am Atlas-Rand), groß = altes unbegrenztes Verhalten.
+
+**Mess-Beweis.** max-Klettern 21,8 m → 6,2 m, 0 Spalten über 7 m (vorher 52). Struktur-Test: Plattform auf Trockenland nahe See löst weiterhin kein neues Wasser aus (Spawn-Pfad war nie die Quelle — das Phantom-/Kletter-Wasser stand schon da, man baute hinein). Worker-Mirror (`voxel-worker.js`) 1:1: `waterClimbMax` im State + Snapshot + identischer Cap im Flood (Determinismus → keine Naht worker/main).
+
+**Die teure Session-Lehre (für CLAUDE.md/Gotchas).** Eine höhenbasierte Headless-Metrik kann „tiefer See" NICHT von „Wand-Bluten" trennen — beide haben großes `WasserOberkante − TerrainBoden`. Ich bin 4× in diese Falle getreten, jedes Mal VOR dem Commit gefangen + zurückgerollt: (1) erste „54%/20m"-Kletter-Metrik verwechselte Seetiefe mit Bluten; (2) „167/437 Phantome" waren ein Origin-Bug in meinem Diag-Code (`cx*span − span/2` statt `cx*span` — der Build nutzt `cx*span`); (3) ein `flowMask`-Reichweiten-Gate blockte 0 reale Spalten (heilte nichts, zurückgenommen); (4) ein Rim-Cap in `_atlasWaterLevelAt` war toter Code, weil der Seed `terrainTopY=Infinity` übergibt. Die Wurzel saß im FLOOD (lateraler Spiegel-Transport), nicht im Seed/Rim. Disziplin: bei Wasser-Höhen-Diagnose die Quell- vs. Land-Spalte trennen (Atlas `waterKind 1/2` = Quelle), und die Origin-Konvention des Build-Pfads (`cx*span`, KEIN `-span/2`) exakt spiegeln. Schöpfer-Konfrontation „du scheinst auszuweichen, war die Lösung nicht gegeben?" war berechtigt — das Prinzip war mehrfach benannt; der Profi-Abschluss ist: Prinzip einbauen, Parameter als Regler, fertig.
+
 **V13.9 — Schicht-3-Cull: dünnes Wand-Bluten pro Pixel ausblenden (29.05.2026, Playtest „Alle Invarianten OK"):**
 
 Der erste der drei offenen V13.8-Browser-Befunde (Schöpfer-Wahl A) — in der richtigen Schicht geheilt.

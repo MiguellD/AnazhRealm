@@ -5308,7 +5308,9 @@
                     Cel-Stufen formen die Licht-Abstufung auf Strukturen — wenig Stufen geben harte gemalte Linien
                     (Studio-Ghibli-Look), viele einen weichen Verlauf. Fog-Distanz regelt, wie nah der Welt-Dunst
                     beginnt. Wasser-Cull blendet dünnes, flaches Wasser pro Pixel aus (0 = alles sichtbar; höher
-                    dreht das dünne Ufer-/Wand-Bluten weg, tiefes Wasser bleibt).
+                    dreht das dünne Ufer-/Wand-Bluten weg, tiefes Wasser bleibt). Wasser-Klettern begrenzt, wie hoch
+                    Wasser an einer Uferwand über das Land steigen darf (klein = Wasser sitzt im Becken und klettert
+                    nicht die Wände hoch; tiefe Seen bleiben unberührt).
                 </p>
                 <div class="slider-row">
                     <label for="slider-cel">Cel-Stufen</label>
@@ -5324,6 +5326,11 @@
                     <label for="slider-watercull">Wasser-Cull</label>
                     <input type="range" id="slider-watercull" min="0" max="200" value="25" />
                     <span class="slider-value" id="slider-watercull-val">0.0025</span>
+                </div>
+                <div class="slider-row">
+                    <label for="slider-waterclimb">Wasser-Klettern</label>
+                    <input type="range" id="slider-waterclimb" min="0" max="200" value="36" />
+                    <span class="slider-value" id="slider-waterclimb-val">3.6 m</span>
                 </div>
             </section>
             <!-- Welle 6.X.4 F1 (Audit 17.05.2026) — Personalisierung der
@@ -5749,6 +5756,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=13.9.2" defer></script>
+        <script src="anazhRealm.js?v=13.10.0" defer></script>
     </body>
 </html>
