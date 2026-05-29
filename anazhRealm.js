@@ -830,6 +830,15 @@ class AnazhRealm {
             // beim Eintritt in dichte Regionen (FPS-Sturm-Heilung). Cull bleibt
             // ungedeckelt (billig). 3/Frame × 60 fps = 180 Builds/s → eine dichte
             // Region füllt sich in <1 s sanft, ohne Frame-Spike.
+            // V12.0-perf.d.2 (Wurzel C) — Lazy-Proxy-Collision: Architekturen
+            // RENDERN bis architectureCullingRadius (150 m), bekommen aber einen
+            // Ammo-Body nur innerhalb dieses kleineren Radius. Ferne Deko ist
+            // sichtbar (instanced) aber physik-frei bis der Spieler herankommt.
+            // 90 m > maximaler collision-prüfender Test-Spawn (~56 m) → test-
+            // sicher; (90/150)² ≈ 36 % der Bodies. AAA-Pattern: Collision für
+            // Interaktion, nicht Dekoration. Bleibt < RMIN (100) des Governors,
+            // also immer < Render-Radius.
+            architectureCollisionRadius: 90,
             architectureBuildBudgetPerFrame: 3,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
@@ -30211,10 +30220,32 @@ class AnazhRealm {
         this.state.archInstanceGroups.clear();
     }
 
+    // V12.0-perf.d.2 — ist der Eintrag innerhalb des Lazy-Collision-Radius?
+    // Ohne Spieler (Worldgen/headless) → true (Collision bauen, Sicherheit).
+    _archWithinCollisionRadius(entry) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm || !entry || !entry.position) return true;
+        const dx = entry.position.x - pm.x;
+        const dz = entry.position.z - pm.z;
+        const r = this.state.architectureCollisionRadius || 90;
+        return dx * dx + dz * dz <= r * r;
+    }
+
+    // V12.0-perf.d.2 — Collision für einen gerenderten Eintrag sicherstellen
+    // (idempotent). Instanced → aus Leaf-AABBs, klassisch → aus entry.mesh.
+    _archEnsureCollision(entry) {
+        if (!entry || entry.collision) return;
+        if (entry.instanced) {
+            this._buildArchitectureCollisionFromLeaves(entry, this._archFlattenBlueprint(entry.type));
+        } else if (entry.mesh) {
+            this._buildArchitectureCollision(entry);
+        }
+    }
+
     // Statische Compound-Kollision aus den Leaf-AABBs (für instanced
     // Einträge, die kein entry.mesh haben). Spiegelt `_buildArchitectureCollision`:
     // pro Leaf eine btBoxShape aus der Welt-AABB, Offset relativ zum
-    // Group-Origin (= entry-World-Translation). perf.d macht das lazy.
+    // Group-Origin (= entry-World-Translation). perf.d.2 baut das lazy (nur nah).
     _buildArchitectureCollisionFromLeaves(entry, flat) {
         if (!entry || !this.state.physicsWorld || !flat || flat.leaves.length === 0) return null;
         const ew = this._archEntryWorldMatrix(entry, new THREE.Matrix4());
@@ -30280,9 +30311,14 @@ class AnazhRealm {
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
         // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
         const flat = this._archFlattenBlueprint(entry.type);
+        // V12.0-perf.d.2 — Collision nur bauen, wenn der Spieler nah genug ist
+        // (Lazy-Proxy-Collision, Wurzel C). Render passiert bis 150 m, Physik
+        // erst ab ~90 m. Der Culling-Tick-Collision-Pass fügt sie hinzu, wenn
+        // der Spieler herankommt, und gibt sie frei, wenn er sich entfernt.
+        const wantCollision = this._archWithinCollisionRadius(entry);
         if (flat.instanceable) {
             this._archInstanceAdd(entry, flat);
-            this._buildArchitectureCollisionFromLeaves(entry, flat);
+            if (wantCollision) this._buildArchitectureCollisionFromLeaves(entry, flat);
             return null;
         }
         const builders = this._architectureBuilders();
@@ -30300,8 +30336,8 @@ class AnazhRealm {
         // eine umschließende Box rund um die Group. Wir pushen NICHT in
         // state.rigidBodies, damit der Sync-Loop die Group-Position nicht
         // anhand des Body-Origin überschreibt — die Position kommt aus
-        // entry.position, der Body ist nur Hitbox.
-        this._buildArchitectureCollision(entry);
+        // entry.position, der Body ist nur Hitbox. V12.0-perf.d.2 — nur nah.
+        if (wantCollision) this._buildArchitectureCollision(entry);
         return group;
     }
 
@@ -31367,6 +31403,12 @@ class AnazhRealm {
         if (!playerPos) return;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
+        // V12.0-perf.d.2 — Lazy-Collision-Radius (Wurzel C): Render bis radius,
+        // Physik-Body nur bis colRadius. Der Pass fügt Collision hinzu, wenn der
+        // Spieler in colRadius kommt, und gibt sie frei, wenn er sich entfernt
+        // (Render bleibt). colRadius < RMIN(100) ≤ radius → immer < Render.
+        const colRadius = this.state.architectureCollisionRadius || 90;
+        const colRadiusSq = colRadius * colRadius;
         const budget = Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
         for (const entry of this.state.architectures) {
@@ -31374,12 +31416,23 @@ class AnazhRealm {
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
             if (distSq <= radiusSq) {
-                if (!this._archIsRendered(entry) && built < budget) {
-                    this._rebuildArchitectureMesh(entry);
-                    built++;
+                if (!this._archIsRendered(entry)) {
+                    if (built < budget) {
+                        this._rebuildArchitectureMesh(entry); // gated Collision intern
+                        built++;
+                    }
+                    // Budget erschöpft → baut in einem der nächsten Frames.
+                } else if (distSq <= colRadiusSq) {
+                    // Gerendert + im Collision-Radius: Body sicherstellen (budgetiert).
+                    if (!entry.collision && built < budget) {
+                        this._archEnsureCollision(entry);
+                        built++;
+                    }
+                } else if (entry.collision) {
+                    // Gerendert aber außerhalb Collision-Radius: Body freigeben
+                    // (Render bleibt). Billig (kein Build) → ungedeckelt.
+                    this._disposeArchitectureCollision(entry);
                 }
-                // Budget erschöpft → dieser Eintrag baut in einem der nächsten
-                // Frames (der Scan findet ihn wieder, solange in Reichweite).
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             }
@@ -40445,7 +40498,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.e";
+AnazhRealm.VERSION = "12.0-perf.d.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -13488,6 +13488,83 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check("V12.0-perf.e: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
 }
 
+// V12.0-perf.d.2 (Wurzel C — Lazy-Proxy-Collision): beweist, dass Architekturen
+// RENDERN bis zum Render-Radius (150 m), aber einen Ammo-Body nur innerhalb des
+// kleineren Collision-Radius (~90 m) bekommen — ferne Deko ist sichtbar aber
+// physik-frei, bis der Spieler herankommt (AAA-Pattern, die 183 Eager-Bodies
+// auf ~36 % reduziert). Der Culling-Pass fügt Collision hinzu/gibt sie frei je
+// Spieler-Distanz.
+async function checkBandWellePerfD2LazyCollision(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
+        const out = {};
+        out.hasColRadius = Number.isFinite(r.state.architectureCollisionRadius);
+        out.colLtRender = r.state.architectureCollisionRadius < 150;
+        const pp = r.state.playerMesh.position;
+        const origRadius = r.state.architectureCullingRadius;
+        const colR = r.state.architectureCollisionRadius || 90;
+        r.state.architectureCullingRadius = 400; // Render deckt fern
+        // FERN (jenseits colRadius, im Render-Radius): gerendert, KEINE Collision.
+        const far = r.spawnArchitecture(
+            "baum_kiefer",
+            { x: pp.x + colR + 40, y: pp.y, z: pp.z },
+            { seed: 41000, silent: true }
+        );
+        out.farRendered = !!(far && r._archIsRendered(far));
+        out.farNoCollision = !!(far && !far.collision);
+        // NAH (innerhalb colRadius): gerendert + Collision.
+        const near = r.spawnArchitecture(
+            "baum_kiefer",
+            { x: pp.x + 10, y: pp.y, z: pp.z },
+            { seed: 41001, silent: true }
+        );
+        out.nearRendered = !!(near && r._archIsRendered(near));
+        out.nearHasCollision = !!(near && near.collision && near.collision.body);
+        // Pass fügt Collision hinzu, wenn der ferne Eintrag in den colRadius rückt.
+        if (far) {
+            far.position.x = pp.x + 10;
+            far.position.z = pp.z + 2;
+            let guard = 0;
+            while (!far.collision && guard < 1000) {
+                r.tickArchitectureCulling(performance.now());
+                guard++;
+            }
+            out.farGotCollisionWhenNear = !!(far.collision && far.collision.body);
+        }
+        // Pass gibt Collision frei, wenn der nahe Eintrag hinaus rückt (Render bleibt).
+        if (near) {
+            near.position.x = pp.x + colR + 40;
+            r.tickArchitectureCulling(performance.now());
+            out.nearLostCollisionWhenFar = !near.collision && r._archIsRendered(near);
+        }
+        // Cleanup.
+        if (far) r.removeArchitecture(far);
+        if (near) r.removeArchitecture(near);
+        r.state.architectureCullingRadius = origRadius;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.d.2: Lazy-Collision-Band (realm)", false, res.error);
+        return;
+    }
+    check(
+        "V12.0-perf.d.2: architectureCollisionRadius existiert + < Render-Radius",
+        res.hasColRadius && res.colLtRender
+    );
+    check(
+        "V12.0-perf.d.2: ferne Architektur gerendert, aber OHNE Collision (lazy)",
+        res.farRendered && res.farNoCollision
+    );
+    check("V12.0-perf.d.2: nahe Architektur gerendert + MIT Collision", res.nearRendered && res.nearHasCollision);
+    check("V12.0-perf.d.2: Pass fügt Collision hinzu, wenn Spieler herankommt", res.farGotCollisionWhenNear);
+    check(
+        "V12.0-perf.d.2: Pass gibt Collision frei, wenn Spieler sich entfernt (Render bleibt)",
+        res.nearLostCollisionWhenFar
+    );
+}
+
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
 // der `voxel-worker.js` bit-identische Density-Grids zum Main-Thread liefert.
 // Kern-Invariante der Worker-Migration: jede Density-Funktion im Worker
@@ -32288,6 +32365,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerfDBudget(ctx);
             // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await checkBandWellePerfENexusGovernor(ctx);
+            // V12.0-perf.d.2 — Lazy-Proxy-Collision (Wurzel C).
+            await checkBandWellePerfD2LazyCollision(ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
             await checkBandWellePerf3cWorkerFoundation(ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
