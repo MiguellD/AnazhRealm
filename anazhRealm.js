@@ -825,6 +825,16 @@ class AnazhRealm {
             // 2Hz halbiert die Latenz auf 500ms.
             architectureCullingTickHz: 2.0,
             architectureCullingLastTick: -Infinity,
+            // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
+            // archFlattenCache: Map<blueprintName, {instanceable, reason,
+            //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
+            //   Leaf-Primitive aufgelöst (nested Blueprints mit komponierter
+            //   Matrix), geteilte Geometrie+Material pro (Bauplan, Leaf).
+            // archInstanceGroups: Map<"name#leafIdx", {mesh:InstancedMesh,
+            //   capacity, count, free:[]}> — eine InstancedMesh je Leaf-Gruppe.
+            //   Lazy initialisiert beim Cutover (perf.c.2).
+            archFlattenCache: null,
+            archInstanceGroups: null,
             // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
             // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
             // gefüllt; eigene Baupläne (Editor 6.6) kommen dazu und werden
@@ -29794,6 +29804,162 @@ class AnazhRealm {
         return map;
     }
 
+    // === V12.0-perf.c — Architektur-Instancing-Foundation ===
+    //
+    // Wurzel A (Diagnose perf.c.diag): jede Architektur ist eine THREE.Group
+    // mit einem eigenen THREE.Mesh PRO Part → 150-m-Feld dicht = hunderte
+    // Draw-Calls/Frame. Der Builder ignoriert den Seed komplett
+    // (`() => _buildFromBlueprint(bp)`), also ist jeder Spawn eines Bauplans
+    // GEOMETRISCH IDENTISCH — nur Position + Scale variieren. Das macht
+    // Instancing sauber: geteilte Geometrie+Material pro (Bauplan, Leaf),
+    // eine Per-Instance-Matrix, KEINE Per-Instance-Color nötig.
+    //
+    // Diese Foundation (perf.c.1) liefert die pure Mathematik + den Gate,
+    // GETESTET (Matrix-Bit-Gleichheit zum klassischen Group-matrixWorld),
+    // ohne den Culling-Pfad umzuhängen — der Cutover folgt in perf.c.2.
+
+    // Die Welt-Matrix eines Architektur-Eintrags (ohne die Leaf-Lokal-
+    // Matrix): T(pos.x, pos.y-0.5, pos.z) × S(scale). Spiegelt exakt, was
+    // `_rebuildArchitectureMesh` der klassischen Group gibt (group.position
+    // = baseY = pos.y-0.5, group.scale = scalar(scale), keine Rotation).
+    _archEntryWorldMatrix(entry, out) {
+        const m = out || new THREE.Matrix4();
+        const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
+        m.makeScale(s, s, s);
+        m.elements[12] = entry.position.x || 0;
+        m.elements[13] = baseY;
+        m.elements[14] = entry.position.z || 0;
+        return m;
+    }
+
+    // Das geteilte Leaf-Material — spiegelt EXAKT die Material-Farb-Logik
+    // aus `_buildFromBlueprint` (V9.89-Worker-Mirror-Disziplin: identische
+    // Mathematik, der Test bewacht Drift). baseColor aus part.color oder
+    // Material-Substanz, Präzisions-Helligkeit 0.6..1.0, Opacity.
+    _archLeafMaterial(part) {
+        let baseColor = typeof part.color === "number" ? part.color : null;
+        if (baseColor === null && typeof part.material === "string") {
+            const matDef = this.state.materials && this.state.materials[part.material];
+            if (matDef && typeof matDef.color === "number") baseColor = matDef.color;
+        }
+        if (baseColor === null) baseColor = 0xffffff;
+        const precision = this.computePartPrecision(part);
+        const brightness = 0.6 + 0.4 * Math.max(0, Math.min(1, precision));
+        const r8 = (baseColor >> 16) & 0xff;
+        const g8 = (baseColor >> 8) & 0xff;
+        const b8 = baseColor & 0xff;
+        const tintedColor =
+            ((Math.round(r8 * brightness) & 0xff) << 16) |
+            ((Math.round(g8 * brightness) & 0xff) << 8) |
+            (Math.round(b8 * brightness) & 0xff);
+        const matOpts = { color: tintedColor };
+        if (Number.isFinite(part.opacity) && part.opacity < 1) {
+            matOpts.transparent = true;
+            matOpts.opacity = part.opacity;
+        }
+        if (!this.state.toonGradientMap) this._refreshToonGradient();
+        return this._buildToonNodeMaterial(matOpts);
+    }
+
+    // Einen Bauplan flach in Leaf-Primitive auflösen (cached). Nested
+    // Blueprints (shape:"blueprint") werden rekursiv mit komponierter
+    // Lokal-Matrix eingebettet. Gate (nicht-instancbar) bei:
+    //   - water_wave-Part (Per-Vertex-Animation, braucht eigenes Mesh)
+    //   - Top-Level-connections (Verbindungs-Linien brauchen eine Group)
+    //   - Tiefe > 4 oder Zyklus (wie _buildFromBlueprint)
+    // Rückgabe: { instanceable, reason, leaves:[{geom, mat, localMatrix}] }.
+    _archFlattenBlueprint(name) {
+        if (!this.state.archFlattenCache) this.state.archFlattenCache = new Map();
+        const cache = this.state.archFlattenCache;
+        if (cache.has(name)) return cache.get(name);
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        const result = { instanceable: false, reason: "", leaves: [] };
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) {
+            result.reason = "no-parts";
+            cache.set(name, result);
+            return result;
+        }
+        if (Array.isArray(bp.connections) && bp.connections.length > 0) {
+            result.reason = "connections";
+            cache.set(name, result);
+            return result;
+        }
+        const MAX_DEPTH = 4;
+        const leaves = [];
+        let blocked = null;
+        // applyScale: nested Sub-Blueprints erben part.scale (wie
+        // `_buildFromBlueprint` der Sub-Group); Leaf-Primitive NICHT —
+        // der klassische Builder setzt mesh.scale NIE (Größe kommt aus
+        // part.size via _makePartGeometry). Für Bit-Gleichheit muss der
+        // Leaf-Pfad part.scale ignorieren.
+        const composePart = (part, applyScale) => {
+            const pos = part.position || {};
+            const tp = new THREE.Vector3(pos.x || 0, pos.y || 0, pos.z || 0);
+            const te = new THREE.Euler(
+                part.rotation ? part.rotation.x || 0 : 0,
+                part.rotation ? part.rotation.y || 0 : 0,
+                part.rotation ? part.rotation.z || 0 : 0
+            );
+            const tq = new THREE.Quaternion().setFromEuler(te);
+            let ts = new THREE.Vector3(1, 1, 1);
+            if (applyScale) {
+                const s = part.scale;
+                if (typeof s === "number" && s > 0) ts.set(s, s, s);
+                else if (s && typeof s === "object") ts.set(s.x || 1, s.y || 1, s.z || 1);
+            }
+            return new THREE.Matrix4().compose(tp, tq, ts);
+        };
+        const recurse = (blueprint, parentMatrix, depth, seen) => {
+            if (blocked) return;
+            if (depth > MAX_DEPTH) {
+                blocked = "depth";
+                return;
+            }
+            if (seen.has(blueprint.name)) {
+                blocked = "cycle";
+                return;
+            }
+            seen.add(blueprint.name);
+            for (const part of blueprint.parts || []) {
+                if (blocked) break;
+                if (part.animate === "water_wave") {
+                    blocked = "water_wave";
+                    break;
+                }
+                if (part.shape === "blueprint" && typeof part.refName === "string") {
+                    const ref = this.state.blueprints && this.state.blueprints[part.refName];
+                    if (!ref) continue;
+                    const childMatrix = new THREE.Matrix4().multiplyMatrices(parentMatrix, composePart(part, true));
+                    recurse(ref, childMatrix, depth + 1, seen);
+                    continue;
+                }
+                const geom = this._makePartGeometry(part);
+                geom.computeBoundingBox();
+                const mat = this._archLeafMaterial(part);
+                const localMatrix = new THREE.Matrix4().multiplyMatrices(parentMatrix, composePart(part, false));
+                leaves.push({ geom, mat, localMatrix });
+            }
+            seen.delete(blueprint.name);
+        };
+        recurse(bp, new THREE.Matrix4(), 0, new Set());
+        if (blocked || leaves.length === 0) {
+            // Unbenutzte Leaf-Ressourcen freigeben (nicht instancbar).
+            for (const l of leaves) {
+                if (l.geom && l.geom.dispose) l.geom.dispose();
+                if (l.mat && l.mat.dispose) l.mat.dispose();
+            }
+            result.reason = blocked || "empty";
+            cache.set(name, result);
+            return result;
+        }
+        result.instanceable = true;
+        result.leaves = leaves;
+        cache.set(name, result);
+        return result;
+    }
+
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
     // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
     // existieren (gepruned, weil zu weit weg) und später wieder einen
@@ -39923,7 +40089,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.c.diag";
+AnazhRealm.VERSION = "12.0-perf.c.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

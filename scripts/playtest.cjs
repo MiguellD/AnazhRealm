@@ -13115,6 +13115,102 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     );
 }
 
+// V12.0-perf.c.1 (Architektur-Instancing-Foundation): beweist die pure
+// Mathematik des HISM-Layers, BEVOR der Culling-Pfad umgehängt wird (perf.c.2).
+// Kern-Invariante: die Per-Leaf-World-Matrix `entryWorldMatrix × leaf.localMatrix`
+// MUSS bit-gleich zum klassischen Group-Child-`matrixWorld` sein — sonst rendert
+// das Instancing die Welt verschoben. Plus: Gate-Korrektheit (water_wave nicht
+// instancbar) + Leaf-Material-Farbe gleich (Mirror-Drift-Wand).
+async function checkBandWellePerfCArchInstancing(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        out.hasFlatten = typeof r._archFlattenBlueprint === "function";
+        out.hasEntryMatrix = typeof r._archEntryWorldMatrix === "function";
+        out.hasLeafMat = typeof r._archLeafMaterial === "function";
+        if (!out.hasFlatten || !out.hasEntryMatrix) return out;
+
+        // Gate: baum_kiefer (flach, 2 Parts) ist instancbar.
+        const flatKiefer = r._archFlattenBlueprint("baum_kiefer");
+        out.kieferInstanceable = flatKiefer.instanceable;
+        out.kieferLeaves = flatKiefer.leaves.length;
+
+        // Gate: waterfall hat einen water_wave-Part → NICHT instancbar.
+        const flatWf = r._archFlattenBlueprint("waterfall");
+        out.waterfallInstanceable = flatWf.instanceable;
+        out.waterfallReason = flatWf.reason;
+
+        // Cache-Identität: zweiter Aufruf liefert dasselbe Objekt (kein
+        // Doppel-Build der Geometrien).
+        out.cacheStable = r._archFlattenBlueprint("baum_kiefer") === flatKiefer;
+
+        // --- Matrix-Bit-Gleichheit: klassische Group vs Instancing-Matrix ---
+        const bp = r.state.blueprints["baum_kiefer"];
+        const entry = { position: { x: 100, y: 50, z: -30 }, scale: 1.5 };
+        const group = r._buildFromBlueprint(bp);
+        const baseY = entry.position.y - 0.5;
+        group.position.set(entry.position.x, baseY, entry.position.z);
+        group.scale.setScalar(entry.scale);
+        group.updateMatrixWorld(true);
+        const entryWorld = r._archEntryWorldMatrix(entry);
+        // Nur Mesh-Children (keine Connection-LineSegments) in Reihenfolge.
+        const meshChildren = group.children.filter((c) => c.isMesh);
+        out.childCount = meshChildren.length;
+        let maxMatrixDelta = 0;
+        let maxColorDelta = 0;
+        const n = Math.min(meshChildren.length, flatKiefer.leaves.length);
+        for (let i = 0; i < n; i++) {
+            const M = entryWorld.clone().multiply(flatKiefer.leaves[i].localMatrix);
+            const cw = meshChildren[i].matrixWorld;
+            for (let e = 0; e < 16; e++) {
+                maxMatrixDelta = Math.max(maxMatrixDelta, Math.abs(M.elements[e] - cw.elements[e]));
+            }
+            const cm = meshChildren[i].material && meshChildren[i].material.color;
+            const lm = flatKiefer.leaves[i].mat && flatKiefer.leaves[i].mat.color;
+            if (cm && lm) {
+                maxColorDelta = Math.max(
+                    maxColorDelta,
+                    Math.abs(cm.r - lm.r) + Math.abs(cm.g - lm.g) + Math.abs(cm.b - lm.b)
+                );
+            }
+        }
+        out.maxMatrixDelta = maxMatrixDelta;
+        out.maxColorDelta = maxColorDelta;
+        if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(group);
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.c.1: Architektur-Instancing-Band (realm)", false, res.error);
+        return;
+    }
+    check("V12.0-perf.c.1: _archFlattenBlueprint existiert", res.hasFlatten);
+    check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
+    check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
+    check(
+        "V12.0-perf.c.1: baum_kiefer instancbar mit 2 Leaves",
+        res.kieferInstanceable === true && res.kieferLeaves === 2,
+        `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
+    );
+    check(
+        "V12.0-perf.c.1: waterfall NICHT instancbar (water_wave-Gate)",
+        res.waterfallInstanceable === false && res.waterfallReason === "water_wave",
+        `reason=${res.waterfallReason}`
+    );
+    check("V12.0-perf.c.1: Flatten-Cache stabil (kein Doppel-Build)", res.cacheStable);
+    check(
+        "V12.0-perf.c.1: Leaf-Matrix bit-gleich zum klassischen Group-matrixWorld",
+        res.maxMatrixDelta < 1e-5,
+        `maxDelta=${res.maxMatrixDelta}`
+    );
+    check(
+        "V12.0-perf.c.1: Leaf-Material-Farbe gleich (Mirror-Drift-Wand)",
+        res.maxColorDelta < 1e-4,
+        `maxColorDelta=${res.maxColorDelta}`
+    );
+}
+
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
 // der `voxel-worker.js` bit-identische Density-Grids zum Main-Thread liefert.
 // Kern-Invariante der Worker-Migration: jede Density-Funktion im Worker
@@ -31909,6 +32005,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleC3CellularReaction(ctx);
             // V9.88 — Welle Perf-3.b Distance-LOD-Beweis.
             await checkBandWellePerf3bDistanceLod(ctx);
+            // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
+            await checkBandWellePerfCArchInstancing(ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
             await checkBandWellePerf3cWorkerFoundation(ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.

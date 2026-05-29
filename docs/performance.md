@@ -328,8 +328,9 @@ Architekturen sind das **persistente Leben der Welt**: Wälder, Kristallfelder, 
 
 | Sub-Welle | Was | Aufwand |
 |---|---|---|
-| **V12.0-perf.c.diag** | Diagnose-Tool: Draw-Call-Zahl + Architektur-Mesh-Zahl + Ammo-Body-Zahl + Culling-Build-Kosten in dichter Region. Sizt den Hebel exakt (V9.96-Disziplin), liefert die Vorher-Zahl. | ~1h |
-| **V12.0-perf.c** | Instancing-Layer für Wiederhol-Architekturen (HISM). Group nach `(blueprint, part-index)`, geteilte Geometrie+Material, Per-Instance-Matrix+Color. Culling-Tick schreibt/löscht Slots. | mehrere Schritte |
+| ✅ **V12.0-perf.c.diag** | `scripts/diag-arch-perf.cjs` — Befund: 762 Sub-Meshes, 183 Ammo-Bodies, Burst 26.5 ms/60-cold, **572 → 40 Instancing-Gruppen = ×14.3 weniger Draw-Calls**. | ~1h ✅ |
+| ✅ **V12.0-perf.c.1** | Instancing-Foundation: `_archFlattenBlueprint` (flatten + Gate) + `_archEntryWorldMatrix` + `_archLeafMaterial`, 8-Invarianten-Test (Leaf-Matrix bit-gleich, maxDelta=0). Builder ignoriert seed → nur Per-Instance-Matrix nötig. KEIN Cutover. | ✅ |
+| **V12.0-perf.c.2** | Cutover: InstancedMesh-Registry (Slot + capacity-doubling), `_rebuildArchitectureMesh`/`tickArchitectureCulling`/`_cullArchitectureMesh`/`removeArchitecture` umhängen, Collision aus Leaf-AABBs, 6 entry.mesh-Konsumenten mitziehen, klassischer Fallback für nicht-instancbare. | mehrere Schritte |
 | **V12.0-perf.d** | Budgetierter Culling-Build + Lazy-Proxy-Collision (~25 m, Sicherheits-Wand am Player-Bereich). | ~2-3h |
 | **V12.0-perf.e** | Nexus → adaptiver Qualitäts-Governor. Pflaster (`gravity *= 0.9`) raus, echter Regler rein. | ~2h |
 | **V12.0-perf.g** | Schöpfer-Browser-Audit RDNA-3 — die FPS-Wahrheit (headless nicht messbar, swiftshader serialisiert). | ~30min |
