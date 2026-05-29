@@ -44,7 +44,6 @@ const state = {
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
     carveBankSlope: 1.4, // Mirror AnazhRealm.HYDROSPHERE.carveBankSlope
-    waterClimbMax: 3.6, // V13.10 Mirror state.waterClimbMax — max. Ufer-Klettern (m)
 };
 
 self.onmessage = function (e) {
@@ -123,7 +122,6 @@ function applyStateSnapshot(snap) {
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
     if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
-    if (typeof snap.waterClimbMax === "number") state.waterClimbMax = snap.waterClimbMax;
 }
 
 function applyStateDelta(delta) {
@@ -874,30 +872,9 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     const AIR = CELL_STATE.AIR;
     const flLevel = new Float64Array(dimSq * dimY);
     const queue = [];
-    // V13.10 — Cap gegen Ufer-Klettern (Mirror von `_buildVoxelChunkWaterCells`):
-    // Quell-Spalten füllen frei (tiefe Seen), Land-Spalten nur bis Boden+climbMax.
-    const climbMax = typeof state.waterClimbMax === "number" ? state.waterClimbMax : 3.6;
-    const colIsSource = new Uint8Array(dimSq);
-    const colTopSolidY = new Float64Array(dimSq);
-    for (let c = 0; c < dimSq; c++) colTopSolidY[c] = -Infinity;
-    for (let j = 0; j <= jMax; j++) {
-        const baseJ = j * dimSq;
-        const yTop = oy + (j + 1) * step;
-        for (let c = 0; c < dimSq; c++) {
-            if (cells[c + baseJ] === CELL_STATE.SOLID) colTopSolidY[c] = yTop;
-        }
-    }
-    const cappedLevel = (col, lvl) => {
-        if (colIsSource[col]) return lvl;
-        const top = colTopSolidY[col];
-        if (!(top > -Infinity)) return lvl;
-        const cap = top + climbMax;
-        return lvl < cap ? lvl : cap;
-    };
     const seedColumn = (i, k, lvl) => {
         if (!(lvl > -Infinity)) return;
         const baseK = k * dim;
-        colIsSource[i + baseK] = 1;
         for (let j = 0; j <= jMax; j++) {
             const cy = oy + (j + 0.5) * step;
             if (cy > lvl) break;
@@ -927,13 +904,11 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     }
     const pushN = (ni, nk, nj, lvl) => {
         if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
-        const col = ni + nk * dim;
-        const effLvl = cappedLevel(col, lvl);
-        if (oy + (nj + 0.5) * step > effLvl) return;
-        const nidx = col + nj * dimSq;
+        if (oy + (nj + 0.5) * step > lvl) return;
+        const nidx = ni + nk * dim + nj * dimSq;
         if (cells[nidx] === AIR) {
             cells[nidx] = WATER;
-            flLevel[nidx] = effLvl;
+            flLevel[nidx] = lvl;
             queue.push(nidx);
         }
     };

@@ -357,7 +357,21 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
-**V13.10 — Quelle-und-Gefälle: Wasser klettert nicht mehr die Uferwand hoch (29.05.2026, Playtest „Alle Invarianten OK"):**
+**V13.11 — Austritt kaschieren: subterrane Höhlen-Wasser-Spiegel verdeckt (29.05.2026, Playtest „Alle Invarianten OK"):**
+
+Schöpfer-Browser-Befund (Screenshot): „Wasserblasen an der Unterseite des Terrains, die in Strukturen hochdrücken, in Seenähe — scheinen aus dem Boden zu drücken und in die Struktur hochzufließen". Plus: der V13.10-Klettern-Cap brauchte 20 m, sonst „komische Löcher an der Küste".
+
+**Befund (gemessen, drei Diag-Tools).** `diag-water-under.cjs`: 11,5 % der WATER-Zellen (429/3731) haben einen SOLID-Deckel direkt darüber = Wasser unter Terrain. `diag-water-lid.cjs`: davon 80 % mit dickem Deckel (5+ Voxel = 9+ m → echte tiefe Höhlen, NICHT dünne Überhang-Spalten). `diag-water-skyopen.cjs`: 75 von 478 Wasser-Oberflächen liegen „unter Deckel" (Höhlenkammer-Spiegel). Der V13.8-3D-Flood flutet diese Höhlen korrekt (lateral mit dem See verbunden + unter Spiegel — das war die GEWOLLTE V13.8-Heilung der „Luftblasen in Höhlen"). Aber wo eine geflutete Höhle seitlich an einen Hang stößt, zeigt der Iso-Mesher den Kammer-Spiegel → es sieht aus wie Wasser, das aus dem Hang/unter Strukturen quillt. (Wichtig: „Wasser IN Architektur-Footprint = 0" — die Strukturen sind sauber gestempelt; das Wasser drückt NEBEN sie, nicht hinein.)
+
+**Schöpfer-Wahl: Höhlen behalten (tauchbar, Subnautica-Vision), Austritt kaschieren.** Fix im Wasser-Iso-Mesher (`_buildVoxelChunkWaterIsoSurface`, main-only — der Worker baut nur Cells): `sampleWater` zählt eine AIR-Zelle nur dann als Luft (→ Wasser-Oberfläche), wenn sie HIMMEL-OFFEN ist: `isSkyOpen(i,k,j) = j > colTopSolidJ(i,k)` (höchste SOLID-Cell der Pad-Spalte, memoisiert via `cellClass` → in-chunk Array-Read, OOB density-cached, seam-frei). Luft unter einem SOLID-Deckel (Höhlenkammer) ist neutral → das Höhlen-Wasser bleibt WATER (Physik/Tauchen unberührt), erzeugt aber keinen Spiegel mehr. Kein Austritt am Hang.
+
+**A/B-Beweis (selber Seed, ein Browser-Lauf).** `state.waterShowSubmerged=true` (Cull aus, altes Verhalten) → 18160 Iso-Vertices; `=false` (Fix, default) → 10097. **8063 Vertices (44,4 %) entfernt** = genau die subterranen Höhlen-Oberflächen. Die himmel-offenen Seen/Flüsse (403 Oberflächen) bleiben. Schalter `state.waterShowSubmerged` (default false) für den, der die Tauchwelt-Spiegel doch sehen will.
+
+**V13.10 (Klettern-Cap) ZURÜCKGENOMMEN.** Der Schöpfer-Befund entlarvte ihn doppelt: (a) er senkte Ufer-Wasser an steilen Spalten unter den Seespiegel → eine Stufe nach unten → Küstenlöcher (darum der 20-m-Workaround); (b) er traf die Wasserblasen gar nicht (die sitzen tief unter dickem Terrain, nicht an der Uferkante). Wurzel: der `colTopSolidY`-Cap kann „tiefes Ufer-Becken (gehört zum See)" nicht von „hohe Kletterwand" unterscheiden — beide haben Boden weit unter Spiegel. Mein V13.10 war ein Fehlschluss aus genau der höhenbasierten-Metrik-Falle. Sauber zurückgerollt (Flood + Worker auf V13.8-Stand, Regler/State/HTML raus), bevor die echte Wurzel (subterraner Austritt) gemessen + geheilt wurde.
+
+**Lehre.** „Wasser drückt in Strukturen" war nicht Klettern und nicht der Spawn-Pfad — es war geflutetes Höhlenwasser, das an Hängen austritt. Die richtige Schicht ist der MESHER (Sichtbarkeit der Oberfläche), nicht die Zell-Wahrheit (das Wasser DARF da sein) und nicht die Geometrie-Höhe. Drei-Schichten-Disziplin: erst fragen „ist das Wasser falsch (Zelle) oder nur falsch SICHTBAR (Mesh)?". Hier: nur sichtbar → Mesher-Cull, Zellen unberührt.
+
+**V13.10 — Quelle-und-Gefälle: Wasser klettert nicht mehr die Uferwand hoch (29.05.2026, ZURÜCKGENOMMEN in V13.11):**
 
 Der Schöpfer benannte die Wurzel: „wieso kann das Wasser klättern und nicht nur fallen, welches Prinzip fehlt oder ist falsch verdrahtet?". Plus: Strukturen (Felsbogen/Felsturm/Genesis-Plattform) stehen oft im Wasser + sind nicht mehr solide.
 
