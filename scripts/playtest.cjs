@@ -12559,70 +12559,33 @@ async function checkBandWelleC1WaterCells(ctx) {
             const cy = oy + (j + 0.5) * step;
             const cxw = ox + (i + 0.5) * step;
             const czw = oz + (k + 0.5) * step;
-            let expected;
-            if (cy > band.top) {
-                // V9.78 — above-band ist AIR (Skip). Aber Architektur-Stempel
-                // läuft danach + kann Cells über bandTop auf SOLID setzen
-                // (Baum-Stamm, hoher Felsblock etc.). Für den Iso sind AIR
-                // und SOLID identisch (beide −1), darum akzeptieren wir
-                // beide oberhalb des Bands.
-                expected = actual === STATE.SOLID ? STATE.SOLID : STATE.AIR;
-            } else {
-                // V9.81 — Build nutzt jetzt 8-Corner-Avg aus dem geteilten
-                // Density-Grid (Trilinear-Interp am Cell-Center). Test muss
-                // mit-wandern und dieselbe Trilinear-Avg berechnen, sonst
-                // Mismatch an Borderline-Cells (d nahe 0).
-                let dSum = 0;
-                for (let dj = 0; dj <= 1; dj++) {
-                    for (let dk = 0; dk <= 1; dk++) {
-                        for (let di = 0; di <= 1; di++) {
-                            dSum += r._terrainDensityAt(
-                                ox + (i + di) * step,
-                                oy + (j + dj) * step,
-                                oz + (k + dk) * step
-                            );
-                        }
+            // V13.8 — die Klassifikation ist jetzt ein 3D-Flood-Fill (verbundenes
+            // Wasser), kein per-Spalten-`cy<=level` mehr. Konnektivität ist nicht
+            // billig nachrechenbar → der Test prüft die INVARIANTEN des Floods statt
+            // exakter Gleichheit: WATER ist NIE solide (Density ≤ 0) und NIE über
+            // dem Hydro-Band (cy ≤ band.top). Verletzung = echter Bug. (SOLID wird
+            // nicht geprüft: der Architektur-Stempel darf nicht-solides Terrain auf
+            // SOLID setzen.) 8-Corner-Avg-Density am Cell-Center wie der Build.
+            let dSum = 0;
+            for (let dj = 0; dj <= 1; dj++) {
+                for (let dk = 0; dk <= 1; dk++) {
+                    for (let di = 0; di <= 1; di++) {
+                        dSum += r._terrainDensityAt(ox + (i + di) * step, oy + (j + dj) * step, oz + (k + dk) * step);
                     }
                 }
-                const d = dSum / 8;
-                // V13.1-Doku-Sync: der Build nutzt jetzt `_atlasWaterLevelAt`
-                // (Atlas-strict + Rand-Tiefen-Gate) statt `_waterLevelAt`. Der
-                // Test muss mit-wandern: dieselbe Terrain-Top-pro-Spalte (aus
-                // dem Density-Grid, cy ≤ bandTop, höchste solide Cell) berechnen
-                // und denselben strikten Spiegel abfragen, sonst Mismatch an
-                // den (jetzt trockenen) Hang-Schatten-Cells.
-                let colTopY = -Infinity;
-                for (let jj = 0; jj < cfg.dimY; jj++) {
-                    const cyj = oy + (jj + 0.5) * step;
-                    if (cyj > band.top) continue;
-                    let ds = 0;
-                    for (let dj = 0; dj <= 1; dj++) {
-                        for (let dk = 0; dk <= 1; dk++) {
-                            for (let di = 0; di <= 1; di++) {
-                                ds += r._terrainDensityAt(ox + (i + di) * step, oy + (jj + dj) * step, oz + (k + dk) * step);
-                            }
-                        }
-                    }
-                    if (ds / 8 > 0 && cyj > colTopY) colTopY = cyj;
-                }
-                const wlCol = r._atlasWaterLevelAt(cxw, czw, colTopY);
-                if (d > 0) expected = STATE.SOLID;
-                else if (cy <= wlCol) expected = STATE.WATER;
-                else expected = STATE.AIR;
             }
-            if (actual !== expected) mismatches++;
+            const d = dSum / 8;
+            if (actual === STATE.WATER && (d > 0 || cy > band.top + 0.01)) mismatches++;
             if (actual === STATE.SOLID) solidCount++;
             else if (actual === STATE.WATER) waterCount++;
             else airCount++;
         }
         out.mismatches = mismatches;
-        // V13.4-Härtung (V12.0-perf.h-Lehre): der Test rechnet colTopY + das
-        // HARTE Rim-Gate (WATER_RIM_BAND_M, V13.1) via Main-`_terrainDensityAt`
-        // nach — der Chunk wird aber evtl. vom Worker gebaut, dessen Density
-        // transzendente Präzisions-Drift gegen Main hat. An einer Borderline-
-        // Cell (d≈0 ODER colTopY am Rim-Schwellwert) flippt die Klassifikation →
-        // 1-2 Drift-Mismatches sind das implementation-defined Rauschen, KEIN
-        // Bug. Ein echter Klassifikations-Bug flippt Dutzende. Toleranz ≤2.
+        // V13.8-Härtung: der Test prüft die Flood-Invariante (WATER nie solide / nie
+        // über dem Band) via Main-`_terrainDensityAt`; der Chunk wird evtl. vom Worker
+        // gebaut, dessen Density transzendente Präzisions-Drift gegen Main hat. An
+        // einer Borderline-Cell (d≈0) flippt die Klassifikation → 1-2 Drift-Mismatches
+        // sind implementation-defined Rauschen, KEIN Bug. Echter Bug flippt Dutzende.
         out.classificationCorrect = mismatches <= 2;
         out.sampleSolidCount = solidCount;
         out.sampleWaterCount = waterCount;
@@ -12997,7 +12960,18 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const x = cx * span + span / 2;
                 const z = cz * span + span / 2;
                 const m = r._terrainMacroSurfaceY(x, z, false);
-                if (Number.isFinite(m) && m > wl + 6 && m < wl + 14) {
+                // V13.7-Härtung: WIRKLICH isolierter Spot — keine Atlas-Wasser-Quelle
+                // im 3×3. Probe mit terrainTop=-Infinity: `_atlasWaterLevelAt` gibt nur
+                // dann -Infinity zurück, wenn KEIN Ozean/See/Fluss in Reichweite ist
+                // (sonst füllt V13.7 die unter-Spiegel-Mulde reaktiv = verbundenes
+                // Wasser, kein Phantom). So bleibt dieser Test der ehrliche Phantom-
+                // Schutz: ein Carve OHNE Quelle bleibt trocken (jede Tiefe).
+                if (
+                    Number.isFinite(m) &&
+                    m > wl + 6 &&
+                    m < wl + 14 &&
+                    !Number.isFinite(r._atlasWaterLevelAt(x, z, -Infinity))
+                ) {
                     carveX = x;
                     carveZ = z;
                     carveMacro = m;
@@ -13081,18 +13055,18 @@ async function checkBandWelleC3CellularReaction(ctx) {
         `macroY=${res.carveSpotFound ? res.carveMacro || "?" : "n/a"}`
     );
     if (res.carveSpotFound) {
-        // V13.1-Doku-Sync + Verhaltens-Wende: vor V13.1 füllte ein Carve im
-        // isolierten Trockenland (6-14 m ÜBER dem Meeresspiegel, kein Wasser-
-        // Körper in der Nähe) mit Wasser — weil `_waterLevelAt` den Ozean-
-        // Spiegel als FLACHEN Default für JEDE Spalte zurückgab. Das war
-        // GENAU der Phantom-/Schatten-Mechanismus (V13.0-Diagnose). Atlas-
-        // strict (`_atlasWaterLevelAt`) heilt das: ohne echte Quelle (Atlas-
-        // Ozean/See/Fluss) entsteht KEIN Wasser → die Pfütze im Hochland-Loch
-        // bleibt trocken. Der reaktive „Pond fließt voll"-Wunsch (Welle-A-
-        // Vision) gehört in eine künftige Flood-Fill-Welle (roadmap §1.4-Anker
-        // „reaktiver Carve-Fill von echter Quelle"), nicht in den Phantom-Default.
+        // V13.7-Doku-Sync: verbundenes Wasser. V13.7 macht den Carve nahe einer
+        // echten Quelle REAKTIV (Ozean/See/Fluss in Reichweite + unter dessen
+        // Spiegel → die Mulde füllt sich = die Welle-A-Vision endlich realisiert).
+        // Der Phantom-Schutz bleibt aber die heilige Invariante: ein Carve OHNE
+        // Wasser-Quelle in Reichweite (der Spot oben ist via `_atlasWaterLevelAt(
+        // x,z,-Infinity)===-Infinity` garantiert quellenfrei) bleibt TROCKEN — jede
+        // Tiefe, kein Phantom. (Vor V13.1 gab `_waterLevelAt` den Ozean-Spiegel als
+        // flachen Default für JEDE Spalte → Phantom überall; V13.1 atlas-strict
+        // heilte das, V13.7 fügt das verbundene reaktive Füllen hinzu, ohne den
+        // Phantom-Default zurückzubringen.)
         check(
-            "Welle V13.1: Carve im isolierten Trockenland bleibt TROCKEN (kein Phantom-Wasser, Atlas-strict)",
+            "Welle V13.7: Carve OHNE Wasser-Quelle bleibt TROCKEN (kein Phantom; verbundenes Wasser füllt NUR mit Quelle)",
             res.carveStaysDry,
             `state=${res.carveCellUnderWL} (0=air erwartet)`
         );
@@ -19845,17 +19819,34 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         let waterDiagonal = false;
         let waterSpecular = false;
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+        let waterDepthShoreline = false;
         if (wMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
             // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
             waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
             waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
+            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
+            waterDepthShoreline = /viewportLinearDepth/.test(builderSrc) && /waterThick/.test(builderSrc);
         }
         out.waterDiagonalWaves = waterDiagonal;
         out.waterSunGlitter = waterSpecular;
+        out.waterDepthShoreline = waterDepthShoreline;
         // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
+        // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
+        out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
+        // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
+        // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
+        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
+        {
+            const isoSrc =
+                typeof r._buildVoxelChunkWaterIsoSurface === "function"
+                    ? r._buildVoxelChunkWaterIsoSurface.toString()
+                    : "";
+            out.waterIsoSynergy =
+                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
+        }
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -19890,6 +19881,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
+        check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (viewportLinearDepth)", v830Results.waterDepthShoreline);
+        check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
+        check(
+            "V13.6: Wasser-Oberfläche ist die Surface-Nets-Iso (Synergie mit Terrain, band-limitiert)",
+            v830Results.waterIsoSynergy
+        );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
     }

@@ -375,8 +375,6 @@ function clamp01(v) {
 // =============================================================================
 
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
-// V13.1 — Mirror von AnazhRealm.WATER_RIM_BAND_M (Wasser-Rand-Tiefen-Gate).
-const WATER_RIM_BAND_M = 3.6;
 
 function voxelChunkConfig(lod) {
     if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 62, floorDrop: 90, lod: 1 };
@@ -505,7 +503,11 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
                         if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
                     }
                 }
-                if (rim > -Infinity && rim - terrainTopY <= WATER_RIM_BAND_M) {
+                // V13.7 — verbundenes Wasser (Mirror von `_atlasWaterLevelAt`): fülle
+                // bis zum Body-Spiegel, wenn Terrain UNTER dem Spiegel liegt (jede
+                // Tiefe, kein 3,6-m-Cap mehr). Heilt die vertikalen Ufer-Wände; kein
+                // Hang-Schatten (Terrain über Spiegel bleibt abgelehnt), kein Phantom.
+                if (rim > -Infinity && terrainTopY < rim) {
                     level = rim;
                 }
             }
@@ -829,104 +831,100 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     const Nx = dim + 4;
     const Ny = dimY + 1;
     const NxNy = Nx * Ny;
-    const colCount = dim * dim;
-    // V13.1 — Terrain-Top pro Spalte aus dem Density-Grid (für das Rand-Gate
-    // in atlasWaterLevelAt). Mirror von `_buildVoxelChunkWaterCells`.
-    const colTopY = new Float64Array(colCount).fill(-Infinity);
-    for (let j = 0; j < dimY; j++) {
-        const cy = oy + (j + 0.5) * step;
-        if (cy > bandTop) continue;
-        const j1 = j;
-        const j2 = j + 1;
+    // V13.8 — verbundenes Wasser via 3D-Flood-Fill (Mirror von `_buildVoxelChunk-
+    // WaterCells`, V9.89-Disziplin). Ersetzt per-Spalten-Klassifikation + airAbove-
+    // Pass: füllt NUR Zellen, die durch nicht-soliden Raum unter dem Body-Spiegel
+    // mit einer echten Atlas-Quelle VERBUNDEN sind → kein Bergwand-Bluten, keine
+    // Unterwasser-Luftblasen. Seeds aus dem globalen Atlas (in-chunk + OOB-Ring) →
+    // seam-frei. Der Architektur-Stempel bleibt Main-only (kein State im Worker).
+    const dimSq = dim * dim;
+    const cellD = (i, j, k) => {
+        const a = j * Nx + (k + 1) * NxNy;
+        const b = (j + 1) * Nx + (k + 1) * NxNy;
+        const c = j * Nx + (k + 2) * NxNy;
+        const e = (j + 1) * Nx + (k + 2) * NxNy;
+        const i1 = i + 1;
+        const i2 = i + 2;
+        return (
+            (density[i1 + a] +
+                density[i2 + a] +
+                density[i1 + b] +
+                density[i2 + b] +
+                density[i1 + c] +
+                density[i2 + c] +
+                density[i1 + e] +
+                density[i2 + e]) *
+            0.125
+        );
+    };
+    let jMax = Math.floor((bandTop - oy) / step);
+    if (jMax >= dimY) jMax = dimY - 1;
+    for (let j = 0; j <= jMax; j++) {
+        const baseJ = j * dimSq;
         for (let k = 0; k < dim; k++) {
-            const col0 = k * dim;
-            const k1 = k + 1;
-            const k2 = k + 2;
-            const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
-            const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
-            const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
-            const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
+            const baseK = k * dim;
             for (let i = 0; i < dim; i++) {
-                const i1 = i + 1;
-                const i2 = i + 2;
-                const d =
-                    (density[i1 + ofs_j1_k1] +
-                        density[i2 + ofs_j1_k1] +
-                        density[i1 + ofs_j2_k1] +
-                        density[i2 + ofs_j2_k1] +
-                        density[i1 + ofs_j1_k2] +
-                        density[i2 + ofs_j1_k2] +
-                        density[i1 + ofs_j2_k2] +
-                        density[i2 + ofs_j2_k2]) *
-                    0.125;
-                if (d > 0) {
-                    const col = i + col0;
-                    if (cy > colTopY[col]) colTopY[col] = cy;
-                }
+                if (cellD(i, j, k) > 0) cells[i + baseK + baseJ] = CELL_STATE.SOLID;
             }
         }
     }
-    // Per-Column STRIKTER Wasser-Spiegel (V13.1 — Atlas-strict + Rand-Gate).
-    const colWaterY = new Float64Array(colCount);
+    const WATER = CELL_STATE.WATER;
+    const AIR = CELL_STATE.AIR;
+    const flLevel = new Float64Array(dimSq * dimY);
+    const queue = [];
+    const seedColumn = (i, k, lvl) => {
+        if (!(lvl > -Infinity)) return;
+        const baseK = k * dim;
+        for (let j = 0; j <= jMax; j++) {
+            const cy = oy + (j + 0.5) * step;
+            if (cy > lvl) break;
+            const cidx = i + baseK + j * dimSq;
+            if (cells[cidx] === AIR) {
+                cells[cidx] = WATER;
+                flLevel[cidx] = lvl;
+                queue.push(cidx);
+            }
+        }
+    };
     for (let k = 0; k < dim; k++) {
         const cz = oz + (k + 0.5) * step;
         for (let i = 0; i < dim; i++) {
-            const cx = ox + (i + 0.5) * step;
-            colWaterY[i + k * dim] = atlasWaterLevelAt(cx, cz, colTopY[i + k * dim]);
+            seedColumn(i, k, atlasWaterLevelAt(ox + (i + 0.5) * step, cz, Infinity));
         }
     }
-    for (let j = 0; j < dimY; j++) {
-        const cy = oy + (j + 0.5) * step;
-        if (cy > bandTop) continue;
-        const baseJ = j * dim * dim;
-        const j1 = j;
-        const j2 = j + 1;
-        for (let k = 0; k < dim; k++) {
-            const baseK = k * dim;
-            const k1 = k + 1;
-            const k2 = k + 2;
-            const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
-            const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
-            const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
-            const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
-            for (let i = 0; i < dim; i++) {
-                const i1 = i + 1;
-                const i2 = i + 2;
-                const d =
-                    (density[i1 + ofs_j1_k1] +
-                        density[i2 + ofs_j1_k1] +
-                        density[i1 + ofs_j2_k1] +
-                        density[i2 + ofs_j2_k1] +
-                        density[i1 + ofs_j1_k2] +
-                        density[i2 + ofs_j1_k2] +
-                        density[i1 + ofs_j2_k2] +
-                        density[i2 + ofs_j2_k2]) *
-                    0.125;
-                let s;
-                if (d > 0) s = CELL_STATE.SOLID;
-                else if (cy <= colWaterY[i + baseK]) s = CELL_STATE.WATER;
-                else s = CELL_STATE.AIR;
-                cells[i + baseK + baseJ] = s;
-            }
-        }
+    for (let k = 0; k < dim; k++) {
+        const cz = oz + (k + 0.5) * step;
+        seedColumn(0, k, atlasWaterLevelAt(ox - 0.5 * step, cz, Infinity));
+        seedColumn(dim - 1, k, atlasWaterLevelAt(ox + (dim + 0.5) * step, cz, Infinity));
     }
-    // V9.86 Konnektivitäts-Filter (Mountain-Mulden weg).
-    const dimSq = dim * dim;
-    const airAbove = new Uint8Array(dimSq);
-    for (let p = 0; p < dimSq; p++) airAbove[p] = 1;
-    for (let j = dimY - 1; j >= 0; j--) {
-        const baseJ = j * dimSq;
-        for (let p = 0; p < dimSq; p++) {
-            const idx = p + baseJ;
-            const s = cells[idx];
-            if (s === CELL_STATE.SOLID) {
-                airAbove[p] = 0;
-            } else if (s === CELL_STATE.AIR) {
-                airAbove[p] = 1;
-            } else {
-                if (airAbove[p] === 0) cells[idx] = CELL_STATE.AIR;
-            }
+    for (let i = 0; i < dim; i++) {
+        const cx = ox + (i + 0.5) * step;
+        seedColumn(i, 0, atlasWaterLevelAt(cx, oz - 0.5 * step, Infinity));
+        seedColumn(i, dim - 1, atlasWaterLevelAt(cx, oz + (dim + 0.5) * step, Infinity));
+    }
+    const pushN = (ni, nk, nj, lvl) => {
+        if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
+        if (oy + (nj + 0.5) * step > lvl) return;
+        const nidx = ni + nk * dim + nj * dimSq;
+        if (cells[nidx] === AIR) {
+            cells[nidx] = WATER;
+            flLevel[nidx] = lvl;
+            queue.push(nidx);
         }
+    };
+    for (let qh = 0; qh < queue.length; qh++) {
+        const cidx = queue[qh];
+        const lvl = flLevel[cidx];
+        const j = (cidx / dimSq) | 0;
+        const rem = cidx - j * dimSq;
+        const k = (rem / dim) | 0;
+        const i = rem - k * dim;
+        pushN(i + 1, k, j, lvl);
+        pushN(i - 1, k, j, lvl);
+        pushN(i, k + 1, j, lvl);
+        pushN(i, k - 1, j, lvl);
+        pushN(i, k, j + 1, lvl);
+        pushN(i, k, j - 1, lvl);
     }
     // ARCHITEKTUR-STEMPEL läuft NICHT im Worker — bleibt Main-only
     // (Architektur-State ist nicht im Worker-Snapshot, soll auch nicht sein).
