@@ -14405,21 +14405,59 @@ class AnazhRealm {
         return value;
     }
 
+    // V12.0-perf.e — adaptiver Qualitäts-Governor (ersetzt das gravity-Pflaster).
+    // Bei FPS-Druck (< low) strafft er Render-Radius + Build-Budget (weniger
+    // Architekturen sichtbar, langsamerer Aufbau → weniger GPU/CPU-Last); bei
+    // Luft (> high) lockert er beide zurück bis zum Maximum. Bounded, ±1 Schritt
+    // pro Analyse (2-s-Debounce) → ruhige, hysterese-arme Selbst-Balance.
+    // Gravitation bleibt UNANGETASTET. Rückgabe: ob sich etwas geändert hat.
+    _nexusAdaptiveQuality(fps) {
+        if (!Number.isFinite(fps) || fps <= 0) return false;
+        const s = this.state;
+        const RMAX = AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
+        const RMIN = AnazhRealm.ARCH_QUALITY_RADIUS_MIN;
+        const BMAX = AnazhRealm.ARCH_QUALITY_BUDGET_MAX;
+        const BMIN = AnazhRealm.ARCH_QUALITY_BUDGET_MIN;
+        let radius = Number.isFinite(s.architectureCullingRadius) ? s.architectureCullingRadius : RMAX;
+        let budget = Number.isFinite(s.architectureBuildBudgetPerFrame) ? s.architectureBuildBudgetPerFrame : 3;
+        if (fps < AnazhRealm.ARCH_QUALITY_FPS_LOW) {
+            radius = Math.max(RMIN, radius - 10);
+            budget = Math.max(BMIN, budget - 1);
+        } else if (fps > AnazhRealm.ARCH_QUALITY_FPS_HIGH) {
+            radius = Math.min(RMAX, radius + 10);
+            budget = Math.min(BMAX, budget + 1);
+        }
+        if (radius === s.architectureCullingRadius && budget === s.architectureBuildBudgetPerFrame) return false;
+        s.architectureCullingRadius = radius;
+        s.architectureBuildBudgetPerFrame = budget;
+        return true;
+    }
+
     selfAwarenessAnalyze() {
         const currentTime = performance.now() / 1000;
         if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
             return; // Strengere Debounce: Nur einmal alle 2 Sekunden analysieren
         }
         this.state.lastSelfAnalysis = currentTime;
-        // FPS-Optimierung
-        if (this.state.fps < 60) {
-            this.recordWeakness("Low FPS");
-            this.log("Selbstanalyse: FPS zu niedrig – Optimiere...");
-            this.state.gravity *= 0.9; // Reduziere Gravitation
-            if (this.state.physicsWorld) {
-                this.state.physicsWorld.setGravity(new Ammo.btVector3(0, this.state.gravity, 0));
-            }
-            this.log("Gravitation reduziert für bessere FPS");
+        // FPS-Governor (V12.0-perf.e) — Wurzel D der perf.c.diag-Diagnose
+        // geheilt. Das alte Pflaster multiplizierte bei FPS<60 die Gravitation
+        // mit Faktor 0.9 pro Zyklus → die Welt schwebte nach 10 Zyklen bei 35%
+        // Gravitation (die spürbare Disharmonie, Schöpfer-Befund). Das heilte
+        // das FALSCHE Ding: die Physik
+        // ist nicht der FPS-Verursacher, die Render-/Build-Last ist es. Die
+        // Idee des Nexus („das System merkt, wenn es kämpft, heilt sich") bleibt
+        // — nur die Handlung wird ehrlich: ein adaptiver Qualitäts-Governor
+        // (AAA-Dynamic-LOD-Pattern) justiert Render-Radius + Build-Budget je
+        // FPS-Druck, NIE die Gravitation. Der „System-das-lernt"-Faden mit
+        // „Welt bei 60 FPS" verbunden. Läuft unconditional (tightent bei
+        // Druck, relaxt bei Luft); recordWeakness bleibt für FPS<60.
+        if (this.state.fps < 60) this.recordWeakness("Low FPS");
+        const qChanged = this._nexusAdaptiveQuality(this.state.fps);
+        if (qChanged) {
+            this.log(
+                `Selbstanalyse: FPS ${Math.round(this.state.fps)} — Welt-Qualität justiert (Render-Radius ${this.state.architectureCullingRadius} m, Build-Budget ${this.state.architectureBuildBudgetPerFrame})`,
+                "INFO"
+            );
         }
 
         // Tunneling-Erkennung
@@ -30090,6 +30128,10 @@ class AnazhRealm {
         const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
         g.mesh.setMatrixAt(slot, z);
         g.mesh.instanceMatrix.needsUpdate = true;
+        // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
+        // (Crosshair-Pick) sphere-cullt gegen die gecachte Bounding; ohne Reset
+        // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
+        g.mesh.boundingSphere = null;
         if (g.slotEntry) g.slotEntry[slot] = null;
         g.free.push(slot);
     }
@@ -30112,6 +30154,8 @@ class AnazhRealm {
             g.mesh.instanceMatrix.needsUpdate = true;
             if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
             if (g.slotEntry) g.slotEntry[slot] = entry;
+            // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
+            g.mesh.boundingSphere = null;
             slots.push({ key: g.key, slot });
         }
         entry.instanced = true;
@@ -30137,6 +30181,7 @@ class AnazhRealm {
             m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
             g.mesh.setMatrixAt(slot, m);
             g.mesh.instanceMatrix.needsUpdate = true;
+            g.mesh.boundingSphere = null; // Raycast-Cull, s. _archGroupFree
         }
     }
 
@@ -40400,7 +40445,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.d";
+AnazhRealm.VERSION = "12.0-perf.e";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
@@ -41456,6 +41501,16 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// V12.0-perf.e — adaptiver Qualitäts-Governor (Nexus). Render-Radius +
+// Build-Budget werden zwischen MIN/MAX justiert je FPS-Druck (NIE Gravitation).
+// RMAX = der Default-Render-Radius; RMIN bleibt > maximaler Test-Spawn-Distanz
+// (~65 m), damit headless-Tightening keine Spawn-Render-Tests bricht.
+AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
+AnazhRealm.ARCH_QUALITY_RADIUS_MIN = 100;
+AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
+AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
+AnazhRealm.ARCH_QUALITY_FPS_LOW = 50; // darunter: Qualität straffen
+AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;

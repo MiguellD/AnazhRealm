@@ -13384,12 +13384,20 @@ async function checkBandWellePerfDBudget(ctx) {
         const idSet = new Set(ids);
         const renderedCount = () => r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
         out.coldBefore = ids.length - renderedCount();
-        // EIN Tick → höchstens `budget` gebaut.
+        // EIN Tick → höchstens `budget` der 12 gebaut (kein Burst).
+        const renderedPre = renderedCount();
         r.tickArchitectureCulling(performance.now());
-        out.builtAfterOneTick = renderedCount();
-        out.respectsBudget = out.builtAfterOneTick <= budget;
-        // Mehrere Ticks → alle gebaut (sanftes Pop-In über Frames).
-        for (let t = 0; t < N + 2; t++) r.tickArchitectureCulling(performance.now());
+        out.builtInOneTick = renderedCount() - renderedPre;
+        out.respectsBudget = out.builtInOneTick <= budget;
+        // Genug Ticks → alle 12 gebaut (sanftes Pop-In). Cap großzügig, weil
+        // das Budget GLOBAL ist (andere cold-Architekturen — z.B. vom Nexus-
+        // Governor gestraffte — konkurrieren um die Build-Slots; Loop bis fertig
+        // statt fixer Tick-Zahl).
+        let guard = 0;
+        while (renderedCount() < ids.length && guard < 1000) {
+            r.tickArchitectureCulling(performance.now());
+            guard++;
+        }
         out.builtAfterManyTicks = renderedCount();
         out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
         // Cleanup.
@@ -13414,13 +13422,70 @@ async function checkBandWellePerfDBudget(ctx) {
     check(
         "V12.0-perf.d: EIN Tick baut höchstens budget (kein Burst)",
         res.respectsBudget,
-        `gebaut=${res.builtAfterOneTick}, budget=${res.budget}`
+        `gebaut=${res.builtInOneTick}, budget=${res.budget}`
     );
     check(
         "V12.0-perf.d: über mehrere Ticks werden ALLE gebaut (sanftes Pop-In)",
         res.allEventuallyBuilt,
         `gebaut=${res.builtAfterManyTicks}/12`
     );
+}
+
+// V12.0-perf.e (Wurzel D — Nexus-Governor): beweist, dass die Nexus-
+// Selbstanalyse bei FPS-Druck die WELT-QUALITÄT justiert (Render-Radius +
+// Build-Budget), NIE die Gravitation. Das alte Pflaster (`gravity *= 0.9`)
+// ließ die Welt schweben — die spürbare Disharmonie.
+async function checkBandWellePerfENexusGovernor(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        out.hasGovernor = typeof r._nexusAdaptiveQuality === "function";
+        if (!out.hasGovernor) return out;
+        out.noGravityPflaster = !/gravity\s*\*=/.test(r.selfAwarenessAnalyze.toString());
+        const sr = r.state.architectureCullingRadius;
+        const sb = r.state.architectureBuildBudgetPerFrame;
+        const sg = r.state.gravity;
+        r.state.architectureCullingRadius = 130;
+        r.state.architectureBuildBudgetPerFrame = 4;
+        const gBefore = r.state.gravity;
+        r._nexusAdaptiveQuality(30);
+        out.tightenedRadius = r.state.architectureCullingRadius < 130;
+        out.tightenedBudget = r.state.architectureBuildBudgetPerFrame < 4;
+        for (let i = 0; i < 50; i++) r._nexusAdaptiveQuality(20);
+        out.radiusFloor = r.state.architectureCullingRadius >= 100 && r.state.architectureCullingRadius < 130;
+        out.budgetFloor = r.state.architectureBuildBudgetPerFrame >= 1;
+        out.gravityUntouchedLow = r.state.gravity === gBefore;
+        for (let i = 0; i < 50; i++) r._nexusAdaptiveQuality(60);
+        out.relaxedRadius = r.state.architectureCullingRadius === 150;
+        out.relaxedBudget = r.state.architectureBuildBudgetPerFrame === 6;
+        out.gravityUntouchedHigh = r.state.gravity === gBefore;
+        const rBefore = r.state.architectureCullingRadius;
+        r._nexusAdaptiveQuality(0);
+        out.zeroFpsNoChange = r.state.architectureCullingRadius === rBefore;
+        r.state.architectureCullingRadius = sr;
+        r.state.architectureBuildBudgetPerFrame = sb;
+        r.state.gravity = sg;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.e: Nexus-Governor-Band (realm)", false, res.error);
+        return;
+    }
+    check("V12.0-perf.e: _nexusAdaptiveQuality existiert", res.hasGovernor);
+    check("V12.0-perf.e: kein `gravity *= 0.9`-Pflaster mehr in selfAwarenessAnalyze", res.noGravityPflaster);
+    check("V12.0-perf.e: FPS-Druck strafft Render-Radius + Build-Budget", res.tightenedRadius && res.tightenedBudget);
+    check("V12.0-perf.e: anhaltender Druck bounded (Radius ≥ MIN 100, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
+    check(
+        "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
+        res.gravityUntouchedLow && res.gravityUntouchedHigh
+    );
+    check(
+        "V12.0-perf.e: FPS-Luft relaxt Qualität zurück zum Maximum (150 m / Budget 6)",
+        res.relaxedRadius && res.relaxedBudget
+    );
+    check("V12.0-perf.e: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
 }
 
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
@@ -32221,6 +32286,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerfCArchInstancing(ctx);
             // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
             await checkBandWellePerfDBudget(ctx);
+            // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
+            await checkBandWellePerfENexusGovernor(ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
             await checkBandWellePerf3cWorkerFoundation(ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
