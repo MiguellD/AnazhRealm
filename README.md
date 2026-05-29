@@ -3,9 +3,9 @@
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
 
-**Stand**: V13.4 (29.05.2026) — **V13-Wasser-Profi-Bogen**: das Voxel-Wasser ist effizient + korrekt wie die Riesen (zell-basiert + reaktiv wie Minecraft, gerendert wie die Giganten). V13.0 Diagnose · V13.1 Klassifikation (Hang-Schatten 51,7 → 0,1 %) · V13.2 Grenzflächen-Meshing (~150 → ~3 ms/Chunk) · V13.3 Flow-Bias-Heilung · V13.4 Wasser-Glättung. Davor durch: der V12-Genie-Bogen (Three.js r184 + WebGPU-required, 119 FPS steady) und der V10.0-NodeMaterial/TSL-Bogen.
+**Stand**: V13.5 (29.05.2026) — **V13-Wasser-Profi-Bogen**: das Voxel-Wasser ist effizient + korrekt wie die Riesen (zell-basiert + reaktiv wie Minecraft, gerendert wie die Giganten), die weichen Übergänge kommen aus dem Tiefenpuffer. V13.0 Diagnose · V13.1 Klassifikation (Hang-Schatten 51,7 → 0,1 %) · V13.2 Grenzflächen-Meshing (~150 → ~3 ms/Chunk) · V13.3 Flow-Bias · V13.4 Glättung · V13.5 Schicht-3-Tiefen-Ufer-Shader (weiche Uferlinie via `viewportLinearDepth` pro-Pixel + Tiefen-Farbe + Emotions-Haken; Geometrie wieder dumm-flach). Davor: V12-Genie-Bogen (Three.js r184 + WebGPU-required, 119 FPS steady) + V10.0-NodeMaterial/TSL-Bogen.
 
-**Nächste Welle: V13.5 — Schicht-3-Tiefen-Ufer-Shader** (weiche Uferlinie via Tiefenpuffer + V13.4-Geometrie-Glättung zurücknehmen; Reflexion: Wasser ist drei Schichten — Wahrheit/Zellen + dumme Geometrie + Shader-Erscheinung). Danach V13.6 Sub-Region-Edit, V13.7 LOD, V13.8 Audit; dann V14 — die lebendige Welt.
+**Nächste Welle: V13.6 — Sub-Region-Edit-Remesh** (nur die berührte Zell-Sektion neu statt des ganzen Chunks). Danach V13.7 LOD, V13.8 Audit; dann V14 — die lebendige Welt (System-Kopplungen E/F/G). Reflexion-Leitsatz: Wasser ist drei Schichten — Wahrheit/Zellen + dumme Geometrie + Shader-Erscheinung.
 
 Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 

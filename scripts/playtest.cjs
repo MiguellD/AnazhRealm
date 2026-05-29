@@ -12599,7 +12599,11 @@ async function checkBandWelleC1WaterCells(ctx) {
                     for (let dj = 0; dj <= 1; dj++) {
                         for (let dk = 0; dk <= 1; dk++) {
                             for (let di = 0; di <= 1; di++) {
-                                ds += r._terrainDensityAt(ox + (i + di) * step, oy + (jj + dj) * step, oz + (k + dk) * step);
+                                ds += r._terrainDensityAt(
+                                    ox + (i + di) * step,
+                                    oy + (jj + dj) * step,
+                                    oz + (k + dk) * step
+                                );
                             }
                         }
                     }
@@ -19845,17 +19849,26 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         let waterDiagonal = false;
         let waterSpecular = false;
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
+        let waterDepthShoreline = false;
         if (wMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
             // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
             waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup.
             waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
+            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
+            waterDepthShoreline = /viewportLinearDepth/.test(builderSrc) && /waterThick/.test(builderSrc);
         }
         out.waterDiagonalWaves = waterDiagonal;
         out.waterSunGlitter = waterSpecular;
+        out.waterDepthShoreline = waterDepthShoreline;
         // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
+        // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
+        out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
+        // V13.5: V13.4-Geometrie-Glättung zurückgenommen — Weld bleibt, Smooth weg.
+        out.waterSmoothingReverted =
+            typeof r._weldWaterBoundary === "function" && typeof r._weldAndSmoothWater !== "function";
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -19890,6 +19903,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
+        check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (viewportLinearDepth)", v830Results.waterDepthShoreline);
+        check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
+        check(
+            "V13.5: V13.4-Geometrie-Glättung zurückgenommen (_weldWaterBoundary, kein _weldAndSmoothWater)",
+            v830Results.waterSmoothingReverted
+        );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
     }

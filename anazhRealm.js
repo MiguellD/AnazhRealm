@@ -17376,14 +17376,14 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // V13.4 — die Boundary-Faces verschweißen + Laplacian-glätten: das V13.2-
-        // Zell-Meshing gab harte 1,8-m-Kanten (Schöpfer-Audit: „unnatürliche
-        // vertikale Wasserkante, würfelartige Flüsse"). Verschweißen verbindet die
-        // Quad-Suppe zu einer Fläche, der Smooth rundet die vertikalen Kanten zu
-        // weichen Ufern + die Würfel-Flüsse zu Kanälen. Chunk-Rand-Vertices sind
-        // gepinnt (kein Seam zum Nachbar-Chunk). Bleibt schnell (~1 ms auf ~500
-        // Dreiecke). Lake-Innenflächen bleiben flach (Smooth einer Ebene = Ebene).
-        const sm = this._weldAndSmoothWater(positions, indices, ox, oz, span);
+        // V13.5 — die Boundary-Faces nur VERSCHWEISSEN (Vertex-Dedup), NICHT mehr
+        // Laplacian-glätten. V13.4 hatte die Positionen geglättet (runde Ufer), aber
+        // die V13.5-Reflexion zeigte: das war eine Schicht-Verwechslung — Geometrie
+        // repariert für ein Erscheinungs-Problem, das Makro wurde dabei schlechter
+        // („komisch, vorhin besser"). Die Geometrie bleibt jetzt DUMM-FLACH am Zell-
+        // Grid; die weichen Übergänge trägt Schicht 3 (der Tiefenpuffer-Shader in
+        // `_ensureHydroSurfaceMaterial`) pro-Pixel, dem Terrain folgend.
+        const sm = this._weldWaterBoundary(positions, indices);
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(sm.positions, 3));
         geom.setIndex(sm.indices);
@@ -17430,16 +17430,17 @@ class AnazhRealm {
         return mesh;
     }
 
-    // V13.4 — Wasser-Boundary-Mesh verschweißen + Laplacian-glätten. Das V13.2-
-    // Grenzflächen-Meshing emittiert pro Quad eigene Vertices (Quad-Suppe) mit
-    // harten 1,8-m-Zell-Kanten. (1) Verschweißen: koinzidente Vertices (quantisiert)
-    // zu einem zusammenführen → verbundene Fläche mit Nachbarschaft. (2) Laplacian-
-    // Smooth (2 Iterationen, λ=0.5) rundet die vertikalen Wasserkanten zu weichen
-    // Ufern + glättet Würfel-Flüsse zu Kanälen. Lake-Innenflächen bleiben flach
-    // (Smooth einer Ebene = Ebene). (3) Chunk-Rand-Vertices (x/z am Chunk-Footprint-
-    // Rand) sind GEPINNT — sie bleiben welt-identisch zum Nachbar-Chunk → kein Naht-
-    // Seam (der Nachbar emittiert dort die gleichen Rand-Vertices, beide ungeglättet).
-    _weldAndSmoothWater(rawPos, rawIdx, ox, oz, span) {
+    // V13.5 — Wasser-Boundary-Mesh nur VERSCHWEISSEN (Vertex-Dedup). Das V13.2-
+    // Grenzflächen-Meshing emittiert pro Quad eigene Vertices (Quad-Suppe); der
+    // Weld führt koinzidente Vertices (quantisiert ×64) zu einem zusammen → eine
+    // verbundene, indizierte Fläche (weniger Vertices, saubere `computeVertexNormals`-
+    // Schattierung an geteilten Kanten). Die V13.4-Laplacian-POSITIONS-Glättung ist
+    // GESTRICHEN (V13.5-Reflexion: Schicht-Verwechslung — sie verschob das Makro).
+    // Die Geometrie bleibt dumm-flach am Zell-Grid; die weichen Übergänge trägt der
+    // Tiefenpuffer-Shader (Schicht 3). Naht-frei bleibt es ohnehin, weil beide
+    // Nachbar-Chunks dieselben welt-identischen Rand-Vertices emittieren (die
+    // `cellClass`-OOB-Klassifikation cullt konsistent — V13.2-Konstruktion).
+    _weldWaterBoundary(rawPos, rawIdx) {
         const weldMap = new Map();
         const pos = [];
         const vcount = rawPos.length / 3;
@@ -17459,58 +17460,6 @@ class AnazhRealm {
         }
         const idx = new Array(rawIdx.length);
         for (let i = 0; i < rawIdx.length; i++) idx[i] = remap[rawIdx[i]];
-        const wv = pos.length / 3;
-        const nbr = new Array(wv);
-        for (let v = 0; v < wv; v++) nbr[v] = new Set();
-        for (let t = 0; t + 2 < idx.length; t += 3) {
-            const a = idx[t];
-            const b = idx[t + 1];
-            const c = idx[t + 2];
-            nbr[a].add(b);
-            nbr[a].add(c);
-            nbr[b].add(a);
-            nbr[b].add(c);
-            nbr[c].add(a);
-            nbr[c].add(b);
-        }
-        const EDGE = 0.02;
-        const x1 = ox + span;
-        const z1 = oz + span;
-        const pinned = new Uint8Array(wv);
-        for (let v = 0; v < wv; v++) {
-            const x = pos[v * 3];
-            const z = pos[v * 3 + 2];
-            if (
-                Math.abs(x - ox) < EDGE ||
-                Math.abs(x - x1) < EDGE ||
-                Math.abs(z - oz) < EDGE ||
-                Math.abs(z - z1) < EDGE
-            ) {
-                pinned[v] = 1;
-            }
-        }
-        const lambda = 0.5;
-        for (let it = 0; it < 2; it++) {
-            const next = pos.slice();
-            for (let v = 0; v < wv; v++) {
-                if (pinned[v]) continue;
-                const s = nbr[v];
-                if (s.size === 0) continue;
-                let sx = 0;
-                let sy = 0;
-                let sz = 0;
-                for (const nv of s) {
-                    sx += pos[nv * 3];
-                    sy += pos[nv * 3 + 1];
-                    sz += pos[nv * 3 + 2];
-                }
-                const inv = 1 / s.size;
-                next[v * 3] = pos[v * 3] + lambda * (sx * inv - pos[v * 3]);
-                next[v * 3 + 1] = pos[v * 3 + 1] + lambda * (sy * inv - pos[v * 3 + 1]);
-                next[v * 3 + 2] = pos[v * 3 + 2] + lambda * (sz * inv - pos[v * 3 + 2]);
-            }
-            for (let i = 0; i < pos.length; i++) pos[i] = next[i];
-        }
         return { positions: pos, indices: idx };
     }
 
@@ -19454,6 +19403,10 @@ class AnazhRealm {
             cross,
             select: cond,
             Fn,
+            // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
+            viewportLinearDepth,
+            linearDepth,
+            depth,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
@@ -19468,6 +19421,13 @@ class AnazhRealm {
         const uFogColor = uniform(new THREE.Color(0x88a0c8));
         const uFogNear = uniform(35.0);
         const uFogFar = uniform(150.0);
+        // V13.5 (Schicht 3) — Tiefenpuffer-getriebene Uferlinie + Tiefen-Farbe.
+        // uShoreWidth/uDepthRange in [0,1]-Lineardepth-Einheiten (über near..far);
+        // im Browser-Audit fein justierbar. uEmotion ist der V14-Kopplungs-Haken
+        // (0 = neutral, exakt das alte Bild; V14 treibt ihn → die Welt atmet im Wasser).
+        const uShoreWidth = uniform(0.0045);
+        const uDepthRange = uniform(0.03);
+        const uEmotion = uniform(0.0);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -19549,12 +19509,27 @@ class AnazhRealm {
         const nUpRaw = normalize(vNormalWorld);
         const n = cond(nUpRaw.y.lessThan(0.0), nUpRaw.mul(-1.0), nUpRaw);
 
+        // === SCHICHT 3 (V13.5): Tiefenpuffer-Uferlinie („Oberflächenspannung").
+        // viewportLinearDepth = Linear-Tiefe des opaken Terrains HINTER diesem
+        // Wasser-Pixel; linearDepth(depth) = Linear-Tiefe dieses Wasser-Fragments.
+        // Ihre Differenz ist die Wasser-„Dicke" in Sicht-Richtung: ~0 genau an der
+        // Uferlinie (Wasser trifft Terrain), wächst zur Tiefe hin. PRO PIXEL → die
+        // weiche Kante folgt dem Terrain exakt, egal wie blockig das 1,8-m-Mesh.
+        const sceneLin = viewportLinearDepth;
+        const fragLin = linearDepth(depth);
+        const waterThick = max(sceneLin.sub(fragLin), float(0.0));
+        const edgeFade = smoothstep(float(0.0), uShoreWidth, waterThick); // 0 an Uferlinie → 1 dahinter
+        const shoreLine = float(1.0).sub(edgeFade); // 1 genau an der Uferlinie
+        const deepen = smoothstep(float(0.0), uDepthRange, waterThick); // 0 flach → 1 tief
+
         // Basis-Wasserfarbe: am See/Fluss sanftes Welt-Raum-Noise, am Ozean
         // nach Gerstner-Wellenhöhe — über aWave gemischt, weicher Übergang.
         const baseN = vnoise(xz.mul(0.05).add(uTime.mul(0.03)));
         const waveT = clamp(vWave.mul(0.5).add(0.5), 0.0, 1.0);
         const mixT = mix(float(0.32).add(baseN.mul(0.42)), waveT, aWaveV);
-        const baseCol = mix(uDeep, uShallow, mixT);
+        // Tiefen-Farbe (Schicht 3): tieferes Wasser zieht zur deep-Farbe → echte
+        // Tiefenwahrnehmung statt flachem Einheits-Blau, dem Terrain folgend.
+        const baseCol = mix(mix(uDeep, uShallow, mixT), uDeep, deepen.mul(0.55));
 
         // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
         // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
@@ -19588,7 +19563,17 @@ class AnazhRealm {
 
         const foam = cond(isRiver, riverFoam, lakeFoam);
 
-        const colWithFoam = mix(baseCol, uFoam, foam.mul(0.7));
+        // Uferlinien-Schaum aus der Tiefe (Schicht 3): ein heller, leicht
+        // rauschender Saum genau am Wasser-Rand — die sichtbare „Oberflächen-
+        // spannung", pro-Pixel dem Terrain folgend. Ersetzt funktional das für
+        // Chunk-Wasser tote aShore-Band.
+        const shoreSparkle = float(0.6).add(vnoise(xz.mul(0.7).add(uTime.mul(0.25))).mul(0.4));
+        const depthFoam = shoreLine.mul(shoreSparkle);
+        // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
+        // im Wasser); default 0 = exakt das alte Bild.
+        const foamD = clamp(max(foam, depthFoam).add(uEmotion.mul(0.25)), 0.0, 1.0);
+
+        const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
         const lit = colWithFoam.mul(uLight);
 
         // Sonnen-Glitzern (Blinn-Phong wie Wasserfall, Exponent 48 statt 40).
@@ -19603,7 +19588,11 @@ class AnazhRealm {
 
         // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
         const fres = pow(float(1.0).sub(max(dot(viewDir, n), 0.0)), 3.0);
-        const alpha = mix(float(0.8), float(0.97), fres);
+        const alpha0 = mix(float(0.8), float(0.97), fres);
+        // Schicht 3: an der Uferlinie ausfaden — ein weicher, durchscheinender
+        // Wasser-Saum statt einer harten Mesh-Kante gegen das Terrain (heilt auch
+        // das streifende Z-Fighting, das V9.49-f mit polygonOffset bekämpfte).
+        const alpha = alpha0.mul(mix(float(0.4), float(1.0), edgeFade));
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = pd;
@@ -19631,6 +19620,10 @@ class AnazhRealm {
             fogColor: uFogColor,
             fogNear: uFogNear,
             fogFar: uFogFar,
+            // V13.5 (Schicht 3) — im Browser-Audit justierbar; emotion ist der V14-Haken.
+            shoreWidth: uShoreWidth,
+            depthRange: uDepthRange,
+            emotion: uEmotion,
         };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
@@ -40838,7 +40831,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.4";
+AnazhRealm.VERSION = "13.5";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
