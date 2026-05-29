@@ -15622,7 +15622,15 @@ class AnazhRealm {
             }
         }
         this.state.tarns = savedTarns; // V9.51 — Tarns wiederhergestellt
-        return { delta, dim, cell: E.cell, originX, originZ, regionSize: E.regionSize };
+        return {
+            delta,
+            dim,
+            cell: E.cell,
+            originX,
+            originZ,
+            regionSize: E.regionSize,
+            flowTo: Int32Array.from(buf.flowTo),
+        };
     }
 
     // V9.47 — eine Stream-Power-Inzisions-Iteration. Vier Phasen auf dem
@@ -15712,18 +15720,33 @@ class AnazhRealm {
                 }
             }
         }
-        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → tiefster filled-Nachbar ---
+        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → steilster GEFÄLLE-Nachbar ---
+        // V13.3 — steilstes GEFÄLLE (drop/Distanz) statt steilster DROP. Der alte
+        // Code wählte den Nachbarn mit dem tiefsten `filled` (absoluter Höhen-
+        // Unterschied), unabhängig von der Distanz. Diagonal-Nachbarn sind aber
+        // √2 weiter → sie haben oft den größeren absoluten Drop → wurden bevorzugt.
+        // Mess-Befund (diag-flow-bias): Diagonalen 65 % statt ~50 %, ↖(-1,-1) 19 %
+        // statt ~12,5 % (zusätzlich der Tie-Break: `<` first-wins ab (-1,-1)). Diese
+        // D8-Metrik-Verzerrung gab der Drainage — und damit der Erosions-Inzision
+        // UND dem Hydrosphäre-Flow — einen Diagonal-Grain in EINE Richtung (der vom
+        // Schöpfer „seit ewig" gesehene Terrain-Treppen-/Wasserschatten-Artefakt).
+        // Heilung: drop/dist (dist=√2 für Diagonalen) → steilstes SLOPE = isotrop.
+        const INV_DIAG = 1 / Math.SQRT2;
         for (let j = 1; j < dim - 1; j++) {
             for (let i = 1; i < dim - 1; i++) {
                 const idx = i + j * dim;
+                const fHere = filled[idx];
                 let best = -1;
-                let bestF = filled[idx];
+                let bestSlope = 0;
                 for (let dj = -1; dj <= 1; dj++) {
                     for (let di = -1; di <= 1; di++) {
                         if (di === 0 && dj === 0) continue;
                         const nb = i + di + (j + dj) * dim;
-                        if (filled[nb] < bestF) {
-                            bestF = filled[nb];
+                        const drop = fHere - filled[nb];
+                        if (drop <= 0) continue; // nur bergab
+                        const slope = di !== 0 && dj !== 0 ? drop * INV_DIAG : drop;
+                        if (slope > bestSlope) {
+                            bestSlope = slope;
                             best = nb;
                         }
                     }
@@ -18645,15 +18668,23 @@ class AnazhRealm {
                 const idx = i + j * dim;
                 const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
                 if (border || isOcean[idx]) continue; // Auslass (Rand/Ozean)
+                // V13.3 — steilstes GEFÄLLE (drop/Distanz) statt steilster DROP.
+                // Spiegelt die Erosions-D8-Heilung: Diagonal-Nachbarn (√2 weiter)
+                // wurden über den absoluten Drop bevorzugt → Diagonal-Drainage-Grain
+                // in eine Richtung. drop/dist (√2-Penalty für Diagonalen) → isotrop.
+                const fHere = filled[idx];
                 let bestN = -1;
-                let bestF = filled[idx];
+                let bestSlope = 0;
                 for (let k = 0; k < 8; k++) {
                     const ni = i + NB[k][0];
                     const nj = j + NB[k][1];
                     if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                     const nidx = ni + nj * dim;
-                    if (filled[nidx] < bestF) {
-                        bestF = filled[nidx];
+                    const drop = fHere - filled[nidx];
+                    if (drop <= 0) continue; // nur bergab
+                    const slope = NB[k][0] !== 0 && NB[k][1] !== 0 ? drop / Math.SQRT2 : drop;
+                    if (slope > bestSlope) {
+                        bestSlope = slope;
                         bestN = nidx;
                     }
                 }
@@ -40721,7 +40752,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.2";
+AnazhRealm.VERSION = "13.3";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
