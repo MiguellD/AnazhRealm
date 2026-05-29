@@ -165,33 +165,48 @@ const server = http.createServer((req, res) => {
         out.clusterSpawned = spawned;
         out.clusterTypes = [...clusterTypes];
 
-        // --- Culling-Build-Burst (Wurzel B): die COLD Cluster-Einträge in
-        //     EINEM tickArchitectureCulling bauen. Radius nur knapp über den
-        //     Cluster (90 m) → baut den Cluster + wenige nahe Naturals,
-        //     nicht hunderte ferne. Das ist exakt der Sturm beim Eintritt
-        //     in eine dichte Region. ---
-        const idSet = new Set(clusterIds);
-        const coldBefore = r.state.architectures.filter((e) => idSet.has(e.id) && !e.mesh).length;
-        r.state.architectureCullingRadius = 90;
-        r.state.architectureCullingLastTick = -1e12;
-        const t0 = performance.now();
-        r.tickArchitectureCulling(performance.now() / 1000);
-        out.cullingBurstMs = +(performance.now() - t0).toFixed(1);
-        out.clusterColdBuilt = coldBefore - r.state.architectures.filter((e) => idSet.has(e.id) && !e.mesh).length;
-
-        // --- Nach dem Burst: Steady-State-Last ---
-        out.afterBurst = countSubMeshes(r.state.architectures);
-        out.afterBurstDraw = drawInfo();
-
-        // --- Instancing-Ziel: distinct (type × part) Gruppen über alle
-        //     gebauten Architekturen = Draw-Calls NACH Instancing. ---
-        let groups = 0;
-        for (const t of new Set(r.state.architectures.filter((e) => e.mesh).map((e) => e.type))) {
-            groups += out.partsPerType[t] || 0;
-        }
-        out.instancingGroups = groups;
-
         r.state.architectureCullingRadius = origRadius;
+
+        // --- Culling-Build-Burst (Wurzel B): die COLD Cluster-Einträge direkt
+        //     bauen (kein Radius-Dance, der hunderte Naturals churnt). Das ist
+        //     exakt der Sturm beim Eintritt in eine dichte Region. ---
+        const idSet = new Set(clusterIds);
+        const cluster = r.state.architectures.filter((e) => idSet.has(e.id));
+        const t0 = performance.now();
+        let built = 0;
+        for (const e of cluster) {
+            if (!r._archIsRendered(e)) {
+                r._rebuildArchitectureMesh(e);
+                built++;
+            }
+        }
+        out.cullingBurstMs = +(performance.now() - t0).toFixed(1);
+        out.clusterColdBuilt = built;
+        out.clusterInstanced = cluster.filter((e) => e.instanced).length;
+
+        // --- Instancing-Last NACH dem Burst: InstancedMesh-Gruppen (=
+        //     Draw-Calls für die instanced Vegetation) statt N Sub-Meshes. ---
+        let groupCount = 0;
+        let groupInstances = 0;
+        if (r.state.archInstanceGroups) {
+            for (const g of r.state.archInstanceGroups.values()) {
+                if (g.mesh && g.mesh.count > 0) {
+                    groupCount++;
+                    groupInstances += g.mesh.count;
+                }
+            }
+        }
+        out.instanceGroups = groupCount;
+        out.instanceCount = groupInstances;
+        // Was die Vegetation OHNE Instancing an Draw-Calls gekostet hätte:
+        // Σ (Leaves je Bauplan × Instanzen) — die kollabierte Last.
+        let wouldBeSubMeshes = 0;
+        for (const e of r.state.architectures) {
+            if (e.instanced && e.instSlots) wouldBeSubMeshes += e.instSlots.length;
+        }
+        out.instancedWouldBeSubMeshes = wouldBeSubMeshes;
+        out.afterBurst = countSubMeshes(r.state.architectures); // nur klassische
+        out.afterBurstDraw = drawInfo();
         return out;
     });
 
@@ -205,25 +220,28 @@ const server = http.createServer((req, res) => {
     console.log("  Ammo-Bodies:              ", report.natural.bodies);
     console.log("  Szene Draw-Calls/Tris:    ", report.baseline.calls, "/", report.baseline.tris);
 
-    console.log("\n--- Culling-Build-Burst (Wurzel B: 60er-Cluster cold → EIN Tick) ---");
+    console.log("\n--- Culling-Build-Burst (Wurzel B: 60er-Cluster cold → direkt gebaut) ---");
     console.log("  Cluster gespawnt:", report.clusterSpawned, "(" + report.clusterTypes.join(", ") + ")");
-    console.log("  davon in EINEM Tick gebaut:", report.clusterColdBuilt);
+    console.log("  davon gebaut:", report.clusterColdBuilt, "| davon instanced:", report.clusterInstanced);
+    console.log(`  Build-Burst: ${report.cullingBurstMs} ms  → ~${fps(report.cullingBurstMs)} FPS in dem Frame`);
+
+    console.log("\n--- Instancing-Last NACH dem Burst (Wurzel A geheilt) ---");
+    console.log("  klassische Sub-Meshes (nicht-instanced):", report.afterBurst.sub);
+    console.log("  InstancedMesh-Gruppen (Vegetation):     ", report.instanceGroups, "Draw-Calls");
+    console.log("  Instanzen darin gesamt:                 ", report.instanceCount);
     console.log(
-        `  tickArchitectureCulling-Burst: ${report.cullingBurstMs} ms  → ~${fps(report.cullingBurstMs)} FPS in dem Frame`
+        "  Szene Draw-Calls/Tris:                  ",
+        report.afterBurstDraw.calls,
+        "/",
+        report.afterBurstDraw.tris
     );
 
-    console.log("\n--- Steady-State NACH dem Burst (Wurzel A: Draw-Call-Last) ---");
-    console.log("  hot Architekturen:        ", report.afterBurst.hot);
-    console.log("  Sub-Meshes (≈ Draw-Calls):", report.afterBurst.sub);
-    console.log("  Ammo-Bodies:              ", report.afterBurst.bodies);
-    console.log("  Szene Draw-Calls/Tris:    ", report.afterBurstDraw.calls, "/", report.afterBurstDraw.tris);
-
-    console.log("\n--- Instancing-Hebel (Wurzel A: das Ziel) ---");
-    console.log("  Sub-Meshes JETZT (1 Draw-Call/Mesh): ", report.afterBurst.sub);
-    console.log("  Instancing-Gruppen (type × part):    ", report.instancingGroups);
-    if (report.instancingGroups > 0) {
+    console.log("\n--- Instancing-Hebel (Wurzel A: der Win) ---");
+    console.log("  Vegetation OHNE Instancing wären:", report.instancedWouldBeSubMeshes, "Sub-Meshes/Draw-Calls");
+    console.log("  MIT Instancing:                  ", report.instanceGroups, "Draw-Calls");
+    if (report.instanceGroups > 0) {
         console.log(
-            `  → Draw-Call-Reduktion: ${report.afterBurst.sub} → ${report.instancingGroups}  (×${(report.afterBurst.sub / report.instancingGroups).toFixed(1)} weniger)`
+            `  → Draw-Call-Reduktion: ${report.instancedWouldBeSubMeshes} → ${report.instanceGroups}  (×${(report.instancedWouldBeSubMeshes / report.instanceGroups).toFixed(1)} weniger)`
         );
     }
 

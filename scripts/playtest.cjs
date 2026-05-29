@@ -7583,9 +7583,28 @@ async function checkBandWelle6APolish(ctx) {
         out.archEntrySpawned = !!entry;
         out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
 
+        // V12.0-perf.c.2 — temple ist jetzt instanced (kein entry.mesh). Die
+        // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
+        // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
+        let topY = null;
         if (entry && entry.mesh) {
-            const box = new THREE.Box3().setFromObject(entry.mesh);
-            const topY = box.max.y;
+            topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
+        } else if (entry && entry.instanced && typeof r._archFlattenBlueprint === "function") {
+            const flat = r._archFlattenBlueprint(entry.type);
+            const ew = r._archEntryWorldMatrix(entry);
+            const wbox = new THREE.Box3();
+            const lbox = new THREE.Box3();
+            const lw = new THREE.Matrix4();
+            wbox.makeEmpty();
+            for (const leaf of flat.leaves) {
+                if (!leaf.geom || !leaf.geom.boundingBox) continue;
+                lw.multiplyMatrices(ew, leaf.localMatrix);
+                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+                wbox.union(lbox);
+            }
+            topY = wbox.isEmpty() ? null : wbox.max.y;
+        }
+        if (entry && topY !== null) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
             r.state.playerMesh.position.set(archX, topY + 50, archZ);
@@ -7707,10 +7726,28 @@ async function checkBandWelle6APolish(ctx) {
         const _beforeArchA3 = r.state.architectures.length;
         const _entryA3 = r.spawnArchitecture("temple", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
         let flatBlueprintNotSteep = false;
+        // V12.0-perf.c.2 — temple instanced: Top-Y aus Flatten-Leaf-AABBs.
+        let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
-            const box = new THREE.Box3().setFromObject(_entryA3.mesh);
+            topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
+        } else if (_entryA3 && _entryA3.instanced && typeof r._archFlattenBlueprint === "function") {
+            const flat = r._archFlattenBlueprint(_entryA3.type);
+            const ew = r._archEntryWorldMatrix(_entryA3);
+            const wbox = new THREE.Box3();
+            const lbox = new THREE.Box3();
+            const lw = new THREE.Matrix4();
+            wbox.makeEmpty();
+            for (const leaf of flat.leaves) {
+                if (!leaf.geom || !leaf.geom.boundingBox) continue;
+                lw.multiplyMatrices(ew, leaf.localMatrix);
+                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+                wbox.union(lbox);
+            }
+            topYA3 = wbox.isEmpty() ? null : wbox.max.y;
+        }
+        if (_entryA3 && topYA3 !== null) {
             // Setze Spieler knapp über die Top-Fläche
-            r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
+            r.state.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);
             r.state._groundedCachedAt = 0;
             r.isPlayerGrounded();
             flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
@@ -9671,7 +9708,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
         // muss eine Compound-Kollision haben.
-        const renderedTree = archTrees.find((a) => a.mesh && a.collision && a.collision.body);
+        // V12.0-perf.c.2 — Bäume sind jetzt instanced (a.instanced, kein
+        // a.mesh); „gerendert in Reichweite" = mesh ODER instanced. Collision
+        // wird in beiden Pfaden gesetzt (aus Leaf-AABBs für instanced).
+        const renderedTree = archTrees.find((a) => (a.mesh || a.instanced) && a.collision && a.collision.body);
         out.treeHasCompoundCollision = !!renderedTree;
 
         // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
@@ -9732,7 +9772,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
-        out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
+        // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
+        // (entry.instanced), nicht via entry.mesh.
+        out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
         out.newTreeHasCollision = !!(
             newTreeArch &&
             newTreeArch.collision &&
@@ -9988,7 +10030,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.treeNotAddedToVegetation
         );
         check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
-        check("Welle 6.G P1.5: neu-gespawnter Baum hat Mesh (in Reichweite)", wave6gResults.newTreeHasMesh);
+        check("Welle 6.G P1.5: neu-gespawnter Baum ist gerendert (Mesh oder instanced)", wave6gResults.newTreeHasMesh);
         check(
             "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
             wave6gResults.newTreeHasCollision
@@ -10305,21 +10347,29 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const pz = pm ? pm.position.z : 0;
         const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
         out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-        out.felsbogenHasMesh = !!(eb && eb.mesh);
+        // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
+        // = instanced ODER klassischer Mesh.
+        out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
         out.felsbogenCompoundChildren =
             eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
         out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
         // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
-        // (0x7a7a7a), NICHT weiss. Vorher fiel _buildFromBlueprint
-        // ohne part.color auf 0xffffff zurück — alle material-
-        // basierten Baupläne waren weiss.
-        if (eb && eb.mesh) {
+        // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
+        // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
+        if (eb) {
             let firstMeshHex = null;
-            eb.mesh.traverse((n) => {
-                if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
-                    firstMeshHex = n.material.color.getHex();
+            if (eb.mesh) {
+                eb.mesh.traverse((n) => {
+                    if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                        firstMeshHex = n.material.color.getHex();
+                    }
+                });
+            } else if (eb.instanced) {
+                const flat = r._archFlattenBlueprint("felsbogen");
+                if (flat.leaves[0] && flat.leaves[0].mat && flat.leaves[0].mat.color) {
+                    firstMeshHex = flat.leaves[0].mat.color.getHex();
                 }
-            });
+            }
             out.felsbogenMeshHex = firstMeshHex;
             // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
             // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
@@ -13179,6 +13229,67 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         out.maxMatrixDelta = maxMatrixDelta;
         out.maxColorDelta = maxColorDelta;
         if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(group);
+
+        // --- perf.c.2 Cutover: instancbarer Spawn geht in die Registry ---
+        if (r.state.playerMesh && typeof r.spawnArchitecture === "function") {
+            const pp = r.state.playerMesh.position;
+            const origRadius = r.state.architectureCullingRadius;
+            r.state.architectureCullingRadius = 500; // in Reichweite → sofort gebaut
+            const e = r.spawnArchitecture(
+                "baum_kiefer",
+                { x: pp.x + 5, y: pp.y, z: pp.z + 5 },
+                { seed: 7777, silent: true }
+            );
+            out.cutoverInstanced = !!(e && e.instanced === true);
+            out.cutoverNoMesh = !!(e && !e.mesh);
+            out.cutoverSlots = e && e.instSlots ? e.instSlots.length : -1;
+            out.cutoverHasCollision = !!(e && e.collision && e.collision.body);
+            out.cutoverGroupExists = !!(r.state.archInstanceGroups && r.state.archInstanceGroups.has("baum_kiefer#0"));
+            // Cull → instanced-Render weg, Daten-Eintrag bleibt.
+            if (e) {
+                r._cullArchitectureMesh(e);
+                out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
+                out.cutoverCulledNoCollision = !e.collision;
+                // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
+                out.cutoverEntryStillListed = r.state.architectures.indexOf(e) >= 0;
+                r.removeArchitecture(e); // sauber raus aus der Test-Welt
+            }
+            r.state.architectureCullingRadius = origRadius;
+
+            // Nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh).
+            const wf = r.spawnArchitecture(
+                "waterfall",
+                { x: pp.x + 7, y: pp.y, z: pp.z + 7 },
+                { seed: 8888, silent: true }
+            );
+            out.waterfallClassic = !!(wf && wf.mesh && !wf.instanced);
+            if (wf) r.removeArchitecture(wf);
+
+            // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
+            //     picken (Spieler-LMB-Harvest muss instancierte Bäume treffen,
+            //     via instanceId → slotEntry). ---
+            if (r.state.camera && typeof r._pickArchitectureAtCrosshair === "function") {
+                const tcx = pp.x + 6;
+                const tcz = pp.z + 6;
+                const pe = r.spawnArchitecture(
+                    "baum_kiefer",
+                    { x: tcx, y: pp.y, z: tcz },
+                    { seed: 9191, silent: true }
+                );
+                const cam = r.state.camera;
+                const savedPos = cam.position.clone();
+                const savedQuat = cam.quaternion.clone();
+                cam.position.set(tcx, pp.y + 1.2, tcz - 6);
+                cam.lookAt(tcx, pp.y + 1.0, tcz);
+                cam.updateMatrixWorld(true);
+                const pick = r._pickArchitectureAtCrosshair();
+                out.instancedPickHits = !!(pick && pick.entry === pe);
+                cam.position.copy(savedPos);
+                cam.quaternion.copy(savedQuat);
+                cam.updateMatrixWorld(true);
+                if (pe) r.removeArchitecture(pe);
+            }
+        }
         return out;
     });
     if (res.error) {
@@ -13194,8 +13305,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
     );
     check(
-        "V12.0-perf.c.1: waterfall NICHT instancbar (water_wave-Gate)",
-        res.waterfallInstanceable === false && res.waterfallReason === "water_wave",
+        "V12.0-perf.c.1: waterfall NICHT instancbar (kein instanced-Flag)",
+        res.waterfallInstanceable === false && res.waterfallReason === "classic-intent",
         `reason=${res.waterfallReason}`
     );
     check("V12.0-perf.c.1: Flatten-Cache stabil (kein Doppel-Build)", res.cacheStable);
@@ -13209,6 +13320,36 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         res.maxColorDelta < 1e-4,
         `maxColorDelta=${res.maxColorDelta}`
     );
+    // perf.c.2 Cutover-Invarianten (nur wenn der Player-Pfad lief).
+    if (res.cutoverInstanced !== undefined) {
+        check(
+            "V12.0-perf.c.2: instancbarer Spawn → entry.instanced=true, kein entry.mesh",
+            res.cutoverInstanced === true && res.cutoverNoMesh === true
+        );
+        check(
+            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 2)",
+            res.cutoverSlots === 2,
+            `slots=${res.cutoverSlots}`
+        );
+        check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
+        check("V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert", res.cutoverGroupExists);
+        check(
+            "V12.0-perf.c.2: Cull gibt Instance-Slots + Collision frei (Daten-Eintrag bleibt)",
+            res.cutoverCulledInstanced === true &&
+                res.cutoverCulledNoCollision === true &&
+                res.cutoverEntryStillListed === true
+        );
+        check(
+            "V12.0-perf.c.2: nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh)",
+            res.waterfallClassic
+        );
+        if (res.instancedPickHits !== undefined) {
+            check(
+                "V12.0-perf.c.2: instancierter Baum per Crosshair-Raycast pickbar (LMB-Harvest-Faden)",
+                res.instancedPickHits
+            );
+        }
+    }
 }
 
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass

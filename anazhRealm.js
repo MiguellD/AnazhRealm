@@ -11189,7 +11189,10 @@ class AnazhRealm {
         let best = null;
         let bestDist = Infinity;
         for (const a of this.state.architectures) {
-            if (!a || !a.mesh) continue;
+            // V12.0-perf.c.2 — gerendert = klassischer Mesh ODER instanced
+            // (Bäume sind jetzt instanced; ohne diesen Fix fände die Kreatur
+            // kein „holz" mehr).
+            if (!a || !this._archIsRendered(a)) continue;
             const bp = this.state.blueprints && this.state.blueprints[a.type];
             if (!bp || !Array.isArray(bp.parts)) continue;
             const hasMaterial = bp.parts.some((p) => p && p.material === materialName);
@@ -22461,10 +22464,16 @@ class AnazhRealm {
     _loadStateRestoreArchitectures(state) {
         if (!Array.isArray(state.architectures) || !this.state.scene) return;
         for (const old of this.state.architectures) {
-            if (old.mesh) {
+            // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei),
+            // nicht nur die mit old.mesh (klassisch).
+            if (old.mesh || old.instanced) {
                 this._cullArchitectureMesh(old);
             }
         }
+        // Saubere Tafel: alle Instancing-Gruppen abbauen (instanceMatrix-
+        // Buffer frei; geteilte Geom/Mat im Flatten-Cache bleiben). Die
+        // Respawn-Schleife baut sie lazy neu.
+        this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
         // V9.75 (Welle C.4+5) — kein `state.blockerIndex`-Reset mehr; das
         // Bucket-Grid ist gestrichen. `spawnArchitecture` setzt
@@ -28571,8 +28580,21 @@ class AnazhRealm {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
-            baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
-            baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
+            // V12.0-perf.c.2 — `instanced: true` deklariert die Render-Absicht:
+            // dieser Bauplan wird vom Worldgen massenhaft gespawnt (Wald/
+            // Kristallfeld) → HISM-Instancing statt einer Group je Spawn (der
+            // 762-Sub-Mesh-Storm der perf.c.diag). Deliberately-placed
+            // Strukturen (village/temple/Werkstätten/stein_block) tragen das
+            // Flag NICHT → klassischer Group-Pfad (1-wenige Instanzen, kein
+            // Win, Spieler-Interaktion via entry.mesh). AAA-Foliage-Pattern.
+            baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, instanced: true, parts: baumEicheParts },
+            baum_kiefer: {
+                name: "baum_kiefer",
+                label: "Kiefer",
+                builtIn: true,
+                instanced: true,
+                parts: baumKieferParts,
+            },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
@@ -28586,12 +28608,19 @@ class AnazhRealm {
                 name: "kristall_geode",
                 label: "Kristall-Geode",
                 builtIn: true,
+                instanced: true,
                 parts: kristallGeodeParts,
             },
-            glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
+            glutbrunnen: {
+                name: "glutbrunnen",
+                label: "Glutbrunnen",
+                builtIn: true,
+                instanced: true,
+                parts: glutbrunnenParts,
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
-            felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, parts: felsbogenParts },
-            felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, parts: felsturmParts },
+            felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
+            felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
             // Welle 9c — Welt-Werkstätten
             esse: {
                 name: "esse",
@@ -29881,8 +29910,32 @@ class AnazhRealm {
             cache.set(name, result);
             return result;
         }
+        // V12.0-perf.c.2 — primärer Gate: nur Baupläne mit `instanced: true`
+        // gehen in die HISM-Registry (Worldgen-Massen-Vegetation). Alle
+        // anderen (Spieler-Bauten, Strukturen, User-Baupläne) bleiben klassisch
+        // → ihr Group-Modell + Interaktion via entry.mesh bleibt unberührt.
+        if (bp.instanced !== true) {
+            result.reason = "classic-intent";
+            cache.set(name, result);
+            return result;
+        }
         if (Array.isArray(bp.connections) && bp.connections.length > 0) {
             result.reason = "connections";
+            cache.set(name, result);
+            return result;
+        }
+        // V12.0-perf.c.2 — Baupläne, deren Affordances `entry.mesh` lesen,
+        // bleiben klassisch: `magnifying` (Brennglas-Raycast in
+        // `_hasMagnifyingInSight`) + `moveable` (Mount-Follow setzt
+        // entry.mesh.position pro Frame). So bleibt der Instancing-Pfad frei
+        // von diesen zwei Fäden — sie sehen NIE einen instanced Eintrag.
+        // Alle anderen Affordances (focusing/radiating/broadcasting/
+        // balancing/lifting) lesen entry.position + affordanceStrength, sind
+        // instancing-safe (Vegetation mit `radiating` o.ä. wird instanced).
+        const aff =
+            typeof this.computeBlueprintAffordances === "function" ? this.computeBlueprintAffordances(bp) : null;
+        if (aff && (aff.magnifying || aff.moveable)) {
+            result.reason = "affordance-needs-mesh";
             cache.set(name, result);
             return result;
         }
@@ -29960,12 +30013,227 @@ class AnazhRealm {
         return result;
     }
 
+    // === V12.0-perf.c.2 — Instancing-Cutover (HISM-Registry) ===
+    //
+    // Eine InstancedMesh je (Bauplan, Leaf-Index). Der Culling-Tick schreibt/
+    // löscht Per-Instance-Matrizen statt Groups zu addieren/entfernen. Draw-
+    // Calls kollabieren von hunderten (1/Sub-Mesh) auf ~(Typen × Parts).
+
+    _archIsRendered(entry) {
+        return !!(entry && (entry.mesh || entry.instanced));
+    }
+
+    // Die InstancedMesh-Gruppe für (Bauplan, Leaf) lazy erzeugen/holen.
+    _archInstanceGroupFor(name, leafIdx, leaf) {
+        if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
+        const key = name + "#" + leafIdx;
+        let g = this.state.archInstanceGroups.get(key);
+        if (g) return g;
+        const capacity = 16;
+        const mesh = new THREE.InstancedMesh(leaf.geom, leaf.mat, capacity);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.count = 0; // noch keine Instanz sichtbar
+        mesh.frustumCulled = false; // Instanzen verteilt → Group-BBox nutzlos
+        mesh.userData.archInstanceKey = key;
+        if (this.state.scene) this.state.scene.add(mesh);
+        // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
+        // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
+        g = { key, mesh, geom: leaf.geom, mat: leaf.mat, capacity, next: 0, free: [], slotEntry: [] };
+        this.state.archInstanceGroups.set(key, g);
+        return g;
+    }
+
+    // Kapazität verdoppeln: neue InstancedMesh, alte Matrizen kopieren.
+    _archInstanceGroupGrow(g) {
+        const newCap = g.capacity * 2;
+        const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
+        next.castShadow = true;
+        next.receiveShadow = true;
+        next.frustumCulled = false;
+        next.userData.archInstanceKey = g.key;
+        const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
+        for (let i = 0; i < g.next; i++) {
+            g.mesh.getMatrixAt(i, tmp);
+            next.setMatrixAt(i, tmp);
+        }
+        next.count = g.next;
+        next.instanceMatrix.needsUpdate = true;
+        if (this.state.scene) {
+            this.state.scene.remove(g.mesh);
+            this.state.scene.add(next);
+        }
+        g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
+        g.mesh = next;
+        g.capacity = newCap;
+    }
+
+    // Einen Slot in der Gruppe belegen (Free-List zuerst, dann frischer Slot,
+    // dann wachsen). Rückgabe: Slot-Index.
+    _archGroupAlloc(g) {
+        if (g.free.length > 0) return g.free.pop();
+        if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
+        return g.next++;
+    }
+
+    // Einen Slot freigeben: Matrix auf Null-Scale (degeneriert → unsichtbar),
+    // Slot in die Free-List. mesh.count bleibt am High-Water (Null-Instanzen
+    // rendern kein Dreieck, sind aber im Draw-Loop — vernachlässigbar; reuse
+    // füllt sie wieder).
+    _archGroupFree(g, slot) {
+        const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
+        g.mesh.setMatrixAt(slot, z);
+        g.mesh.instanceMatrix.needsUpdate = true;
+        if (g.slotEntry) g.slotEntry[slot] = null;
+        g.free.push(slot);
+    }
+
+    // Einen Eintrag als Instanzen in die Registry schreiben (eine Instanz je
+    // Leaf). entry.instSlots merkt sich (key, slot) je Leaf für Cull/Update.
+    _archInstanceAdd(entry, flat) {
+        const ew = this._archEntryWorldMatrix(
+            entry,
+            this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
+        );
+        const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        const slots = [];
+        for (let i = 0; i < flat.leaves.length; i++) {
+            const leaf = flat.leaves[i];
+            const g = this._archInstanceGroupFor(entry.type, i, leaf);
+            const slot = this._archGroupAlloc(g);
+            m.multiplyMatrices(ew, leaf.localMatrix);
+            g.mesh.setMatrixAt(slot, m);
+            g.mesh.instanceMatrix.needsUpdate = true;
+            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
+            if (g.slotEntry) g.slotEntry[slot] = entry;
+            slots.push({ key: g.key, slot });
+        }
+        entry.instanced = true;
+        entry.instSlots = slots;
+    }
+
+    // Die Instanz-Matrizen eines Eintrags neu schreiben (Mount-Follow nutzt
+    // das NICHT — moveable ist vom Instancing ausgeschlossen —, aber der
+    // Helfer hält den Pfad sauber für künftige bewegliche Instanzen).
+    _archInstanceUpdate(entry) {
+        if (!entry.instanced || !entry.instSlots) return;
+        const flat = this._archFlattenBlueprint(entry.type);
+        if (!flat.instanceable) return;
+        const ew = this._archEntryWorldMatrix(
+            entry,
+            this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
+        );
+        const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        for (let i = 0; i < entry.instSlots.length && i < flat.leaves.length; i++) {
+            const { key, slot } = entry.instSlots[i];
+            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+            if (!g) continue;
+            m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
+            g.mesh.setMatrixAt(slot, m);
+            g.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+
+    // Einen Eintrag aus der Registry entfernen (Slots freigeben).
+    _archInstanceRemove(entry) {
+        if (!entry.instSlots) {
+            entry.instanced = false;
+            return;
+        }
+        for (const { key, slot } of entry.instSlots) {
+            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+            if (g) this._archGroupFree(g, slot);
+        }
+        entry.instSlots = null;
+        entry.instanced = false;
+    }
+
+    // Alle Instancing-Gruppen abbauen (Welt-Wechsel/Restore). Geometrie +
+    // Material leben im archFlattenCache (geteilt) → NICHT disposen; nur die
+    // InstancedMesh-Wrapper (instanceMatrix-Buffer) freigeben + Map leeren.
+    _archDisposeAllInstanceGroups() {
+        if (!this.state.archInstanceGroups) return;
+        for (const g of this.state.archInstanceGroups.values()) {
+            if (this.state.scene && g.mesh) this.state.scene.remove(g.mesh);
+            if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
+        }
+        this.state.archInstanceGroups.clear();
+    }
+
+    // Statische Compound-Kollision aus den Leaf-AABBs (für instanced
+    // Einträge, die kein entry.mesh haben). Spiegelt `_buildArchitectureCollision`:
+    // pro Leaf eine btBoxShape aus der Welt-AABB, Offset relativ zum
+    // Group-Origin (= entry-World-Translation). perf.d macht das lazy.
+    _buildArchitectureCollisionFromLeaves(entry, flat) {
+        if (!entry || !this.state.physicsWorld || !flat || flat.leaves.length === 0) return null;
+        const ew = this._archEntryWorldMatrix(entry, new THREE.Matrix4());
+        const groupX = entry.position.x || 0;
+        const groupY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        const groupZ = entry.position.z || 0;
+        const compound = new Ammo.btCompoundShape();
+        const childShapes = [];
+        const lw = new THREE.Matrix4();
+        const wbox = new THREE.Box3();
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        let added = 0;
+        for (const leaf of flat.leaves) {
+            if (!leaf.geom || !leaf.geom.boundingBox) continue;
+            lw.multiplyMatrices(ew, leaf.localMatrix);
+            wbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+            if (wbox.isEmpty()) continue;
+            wbox.getSize(size);
+            wbox.getCenter(center);
+            const hx = Math.max(0.05, size.x / 2);
+            const hy = Math.max(0.05, size.y / 2);
+            const hz = Math.max(0.05, size.z / 2);
+            const childShape = new Ammo.btBoxShape(new Ammo.btVector3(hx, hy, hz));
+            const childTransform = new Ammo.btTransform();
+            childTransform.setIdentity();
+            const offset = new Ammo.btVector3(center.x - groupX, center.y - groupY, center.z - groupZ);
+            childTransform.setOrigin(offset);
+            compound.addChildShape(childTransform, childShape);
+            childShapes.push(childShape);
+            Ammo.destroy(offset);
+            Ammo.destroy(childTransform);
+            added++;
+        }
+        if (added === 0) {
+            Ammo.destroy(compound);
+            return null;
+        }
+        const transform = new Ammo.btTransform();
+        transform.setIdentity();
+        const origin = new Ammo.btVector3(groupX, groupY, groupZ);
+        transform.setOrigin(origin);
+        const motionState = new Ammo.btDefaultMotionState(transform);
+        const localInertia = new Ammo.btVector3(0, 0, 0);
+        const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, compound, localInertia);
+        const body = new Ammo.btRigidBody(rbInfo);
+        body.setFriction(0.8);
+        this.state.physicsWorld.addRigidBody(body);
+        entry.collision = { body, shape: compound, childShapes, motionState, rbInfo };
+        Ammo.destroy(origin);
+        Ammo.destroy(transform);
+        Ammo.destroy(localInertia);
+        return body;
+    }
+
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
     // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
     // existieren (gepruned, weil zu weit weg) und später wieder einen
     // bekommen. Determinismus garantiert: gleiches Seed → gleicher Mesh.
     _rebuildArchitectureMesh(entry) {
         if (!this.state.scene || !entry) return null;
+        // V12.0-perf.c.2 — instancbare Baupläne (Vegetation etc.) gehen in die
+        // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
+        // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
+        const flat = this._archFlattenBlueprint(entry.type);
+        if (flat.instanceable) {
+            this._archInstanceAdd(entry, flat);
+            this._buildArchitectureCollisionFromLeaves(entry, flat);
+            return null;
+        }
         const builders = this._architectureBuilders();
         const builder = builders[entry.type];
         if (!builder) return null;
@@ -30408,7 +30676,15 @@ class AnazhRealm {
     // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
-        if (!entry || !entry.mesh) return;
+        if (!entry) return;
+        // V12.0-perf.c.2 — instancierter Eintrag: Collision freigeben + Slots
+        // zurück in die Registry (Matrix auf Null-Scale, Free-List).
+        if (entry.instanced) {
+            this._disposeArchitectureCollision(entry);
+            this._archInstanceRemove(entry);
+            return;
+        }
+        if (!entry.mesh) return;
         // Erst Kollision freigeben, dann Mesh aus der Szene + Geometrien.
         this._disposeArchitectureCollision(entry);
         if (this.state.scene) this.state.scene.remove(entry.mesh);
@@ -31039,9 +31315,9 @@ class AnazhRealm {
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
             if (distSq <= radiusSq) {
-                if (!entry.mesh) this._rebuildArchitectureMesh(entry);
+                if (!this._archIsRendered(entry)) this._rebuildArchitectureMesh(entry);
             } else {
-                if (entry.mesh) this._cullArchitectureMesh(entry);
+                if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             }
         }
     }
@@ -31459,6 +31735,14 @@ class AnazhRealm {
                 }
             });
         }
+        // V12.0-perf.c.2 — instancierte Architekturen mit-raycasten. Eine
+        // InstancedMesh-Gruppe liefert beim Treffer eine `instanceId`; der
+        // Eintrag kommt aus g.slotEntry[instanceId] (Slot→Entry-Reverse-Map).
+        if (this.state.archInstanceGroups) {
+            for (const g of this.state.archInstanceGroups.values()) {
+                if (g.mesh && g.mesh.count > 0) meshes.push(g.mesh);
+            }
+        }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
         const cp = this.state.camera.position;
@@ -31466,10 +31750,18 @@ class AnazhRealm {
         this._tmpRaycaster.far = 30;
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
         if (!intersects.length) return null;
-        let node = intersects[0].object;
+        const hit = intersects[0];
+        // Instanced-Treffer: instanceId → Eintrag via slotEntry.
+        if (hit.object && hit.object.isInstancedMesh && typeof hit.instanceId === "number") {
+            const key = hit.object.userData && hit.object.userData.archInstanceKey;
+            const g = key && this.state.archInstanceGroups ? this.state.archInstanceGroups.get(key) : null;
+            const entry = g && g.slotEntry ? g.slotEntry[hit.instanceId] : null;
+            return entry ? { entry, point: hit.point } : null;
+        }
+        let node = hit.object;
         while (node && !entryByMesh.has(node)) node = node.parent;
         const entry = node ? entryByMesh.get(node) : null;
-        return entry ? { entry, point: intersects[0].point } : null;
+        return entry ? { entry, point: hit.point } : null;
     }
 
     // === Welle 6.H Phase 2B.5 — Hylomorphismus-Wurzel: harvestArchitecture ===
@@ -40089,7 +40381,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.c.1";
+AnazhRealm.VERSION = "12.0-perf.c.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
