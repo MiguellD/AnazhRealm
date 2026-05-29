@@ -63,13 +63,11 @@ function printPass(label, p) {
         console.log("  !! kein Wasser-Chunk hier — Wasser-Pipeline-Messung übersprungen.");
         return;
     }
-    console.log("  -- Wurzel 1: Mesher (Surface-Nets über Volumen) --");
+    console.log("  -- Wurzel 1: Mesher-Build-Zeit + Output (V13.2: Grenzflächen-Meshing statt Surface-Nets) --");
     console.log(
         `     _buildVoxelChunkWaterIsoSurface: Median ${p.meshMsMedian} ms · Max ${p.meshMsMax} ms (${p.meshSamples.length} Chunks)`
     );
-    console.log(
-        `     verarbeitet ${p.gridCellsPerChunk.toLocaleString()} Grid-Cells → emittiert ~${p.trisAvg.toLocaleString()} Dreiecke/Chunk`
-    );
+    console.log(`     emittiert ~${p.trisAvg.toLocaleString()} Dreiecke/Chunk (Boundary-Faces; vor V13.2 ~7-10k via Surface-Nets über ${p.gridCellsPerChunk.toLocaleString()} Grid-Cells)`);
     console.log("  -- Wurzel 2: Klassifikation (See-Dilatation/Ozean-Default = Wasserschatten) --");
     console.log(`     WATER-Cells: ${p.waterCellsTotal.toLocaleString()}`);
     console.log(
