@@ -19362,6 +19362,12 @@ class AnazhRealm {
         const uShoreWidth = uniform(0.0045);
         const uDepthRange = uniform(0.03);
         const uEmotion = uniform(0.0);
+        // V13.9 (Schicht 3) — Mindest-Wasser-Dicke fürs pro-Pixel-Cullen des
+        // dünnen Wand-Blutens (16-m-Atlas-Spiegel spillt minimal über den Voxel-
+        // Grat → ein flaches Blatt). Fragmente mit waterThick < uMinDepth fallen
+        // weg (mat.alphaTest); tiefes Wasser (See/Ozean) bleibt. default 0 =
+        // exakt das alte Bild — im Browser-Audit live justiert.
+        const uMinDepth = uniform(0.0);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -19527,11 +19533,21 @@ class AnazhRealm {
         // Wasser-Saum statt einer harten Mesh-Kante gegen das Terrain (heilt auch
         // das streifende Z-Fighting, das V9.49-f mit polygonOffset bekämpfte).
         const alpha = alpha0.mul(mix(float(0.4), float(1.0), edgeFade));
+        // V13.9 — dünnes Wand-Bluten pro Pixel cullen: wo die Wasser-Dicke in
+        // Sicht-Richtung (waterThick) unter uMinDepth liegt, Alpha auf 0 → der
+        // Fragment fällt via mat.alphaTest weg (kein Farb-/Tiefen-Schreiben).
+        // step-frei via cond; bei default uMinDepth=0 ist waterThick≥0 nie <0 →
+        // Alpha unverändert = exakt das alte Bild. Das tiefe Wasser bleibt.
+        const alphaCulled = cond(waterThick.lessThan(uMinDepth), float(0.0), alpha);
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = pd;
-        mat.colorNode = vec4(colFogged, alpha);
+        mat.colorNode = vec4(colFogged, alphaCulled);
         mat.transparent = true;
+        // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden
+        // verworfen. 0.0001 liegt weit unter dem minimalen echten Wasser-Alpha
+        // (~0.32), discardet also NUR die gecullten — default-Bild unberührt.
+        mat.alphaTest = 0.0001;
         // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
         // also kann nichts mehr durch eine andere Wasserfläche scheinen.
         mat.depthWrite = true;
@@ -19558,6 +19574,7 @@ class AnazhRealm {
             shoreWidth: uShoreWidth,
             depthRange: uDepthRange,
             emotion: uEmotion,
+            minDepth: uMinDepth,
         };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
@@ -40765,7 +40782,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.8";
+AnazhRealm.VERSION = "13.9";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

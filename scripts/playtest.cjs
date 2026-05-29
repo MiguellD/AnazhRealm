@@ -19820,6 +19820,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         let waterSpecular = false;
         const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         let waterDepthShoreline = false;
+        let waterMinDepthCull = false;
         if (wMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
             // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
@@ -19828,6 +19829,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             waterSpecular = /pow\(max\(dot\(n,\s*halfV\)/.test(builderSrc) && /normalize\(uSunDir\)/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
             waterDepthShoreline = /viewportLinearDepth/.test(builderSrc) && /waterThick/.test(builderSrc);
+            // V13.9 (Schicht 3): dünnes Wand-Bluten pro Pixel cullen — der Builder
+            // nutzt uMinDepth + alphaCulled + discardet via alphaTest.
+            waterMinDepthCull =
+                /uMinDepth/.test(builderSrc) && /alphaCulled/.test(builderSrc) && /alphaTest/.test(builderSrc);
         }
         out.waterDiagonalWaves = waterDiagonal;
         out.waterSunGlitter = waterSpecular;
@@ -19836,6 +19841,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
         // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
         out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
+        // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + default 0 + Source-Probe.
+        out.waterMinDepthUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.minDepth);
+        out.waterMinDepthDefaultZero = !!(
+            r.state.hydroSurfaceUniforms &&
+            r.state.hydroSurfaceUniforms.minDepth &&
+            r.state.hydroSurfaceUniforms.minDepth.value === 0
+        );
+        out.waterMinDepthCull = waterMinDepthCull;
         // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
         // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
         // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
@@ -19883,6 +19896,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
         check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (viewportLinearDepth)", v830Results.waterDepthShoreline);
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
+        check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
+        check("V13.9: Min-Depth-Cull default 0 (= exakt das alte Bild)", v830Results.waterMinDepthDefaultZero);
+        check(
+            "V13.9: Wasser-Shader cullt dünnes Bluten (waterThick<uMinDepth via alphaTest)",
+            v830Results.waterMinDepthCull
+        );
         check(
             "V13.6: Wasser-Oberfläche ist die Surface-Nets-Iso (Synergie mit Terrain, band-limitiert)",
             v830Results.waterIsoSynergy
