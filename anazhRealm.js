@@ -16898,19 +16898,6 @@ class AnazhRealm {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
     }
 
-    // V13.1 — die Tiefen-Schwelle für das Wasser-Rand-Handling. Eine Atlas-Land-
-    // Spalte (kein Ozean/See im exact-Atlas) bekommt den Wasser-Spiegel eines
-    // benachbarten Körpers NUR, wenn das Terrain dort höchstens so viel unter
-    // dem Spiegel liegt = der flache 16-m-Quantisierungs-Rand (MUSS bleiben,
-    // sonst Mesh-Lücken am See-Rand, V9.73). Liegt das Terrain TIEFER (steiler
-    // Hang), war es der V9.73-3×3-See-Dilatations-Bleed = der Wasserschatten,
-    // und die Spalte bleibt trocken. 3.6 m ≈ 2 Voxel-Cells (step 1.8). V13.0-
-    // Diagnose: trennt den tiefen Hang-Schatten (36–52 %) sauber vom flachen
-    // Rand (2–7 %).
-    static get WATER_RIM_BAND_M() {
-        return 3.6;
-    }
-
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
     // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
     // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
@@ -18138,20 +18125,19 @@ class AnazhRealm {
         return level;
     }
 
-    // V13.1 — Atlas-STRIKTE Wasser-Spiegel-Quelle für die Voxel-Cell-
-    // Klassifikation (Wasserschatten-Heilung). `_waterLevelAt` (oben) gibt den
-    // Ozean-`waterLevel` als FLACHEN Default für JEDE Spalte zurück + dilatiert
-    // den See-Spiegel im 3×3 (V9.73) → Hang-Spalten unter diesem Spiegel werden
-    // WATER → Wasser klebt am Hang/um Strukturen (V13.0-Diagnose: 36–52 % aller
-    // WATER-Cells). Diese Variante ist strikt:
+    // V13.1/V13.7 — Wasser-Spiegel-Quelle für die Voxel-Cell-Klassifikation, die
+    // den V13.0-Wasserschatten (`_waterLevelAt`-3×3-Dilatation) vermeidet UND
+    // (V13.7) das Ufer als VERBUNDENES Wasser bis zum Terrain füllt:
     //   - exact-Atlas-Ozean (waterKind 1) / -See (waterKind 2): voller Spiegel,
     //     beliebige Tiefe (das ist das ECHTE Wasser-Körper-Cell).
     //   - Fluss: sein Bett-Profil.
-    //   - Atlas-LAND, aber ein Wasser-Körper im 3×3 (der 16-m-Quantisierungs-
-    //     Rand): der Nachbar-Spiegel NUR, wenn das Terrain dort höchstens
-    //     WATER_RIM_BAND_M unter ihm liegt (flacher Ufer-Rand → MUSS bleiben,
-    //     sonst Mesh-Lücke). Liegt das Terrain tiefer (steiler Hang) → der alte
-    //     Dilatations-Bleed → die Spalte bleibt trocken (-Infinity).
+    //   - Atlas-LAND neben einem Wasser-Körper (3×3): der Body-Spiegel, wenn das
+    //     Terrain UNTER ihm liegt (`terrainTopY < rim`, JEDE Tiefe — V13.7). So
+    //     füllt die Mulde bis zum Terrain (keine vertikale Ufer-Wand). Terrain ÜBER
+    //     dem Spiegel → trocken (-Infinity → kein Hang-Schatten). Die Atlas-priority-
+    //     flood liefert die 2D-Konnektivität (kein Phantom: nur neben echtem Wasser),
+    //     dies ist die Voxel-Verfeinerung des Ufers. (V13.1 hatte hier ein 3,6-m-Cap,
+    //     das tief-unterwasser Ufer-Spalten fälschlich als „Hang" ablehnte → Wände.)
     // `terrainTopY` ist die Terrain-Oberfläche der Spalte (höchste solide Cell);
     // der Aufrufer reicht sie aus seinem Density-Grid (Cell-Build) bzw. via
     // `_voxelSurfaceY` (Iso-OOB) — eine Quelle, kein Parallel-Pfad. Rückgabe
@@ -18172,7 +18158,8 @@ class AnazhRealm {
                     // echter Wasser-Körper an dieser Spalte — voller Spiegel.
                     level = wY[ci + cj * dim];
                 } else {
-                    // Atlas-Land: 16-m-Rand-Kandidat aus dem 3×3, depth-gated.
+                    // Atlas-Land neben einem Wasser-Körper: 16-m-Rand-Kandidat aus
+                    // dem 3×3 (der Body-Spiegel der priority-flood-Konnektivität).
                     let rim = -Infinity;
                     for (let dj = -1; dj <= 1; dj++) {
                         for (let di = -1; di <= 1; di++) {
@@ -18183,7 +18170,18 @@ class AnazhRealm {
                             if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
                         }
                     }
-                    if (rim > -Infinity && rim - terrainTopY <= AnazhRealm.WATER_RIM_BAND_M) {
+                    // V13.7 — verbundenes Wasser: fülle die Spalte bis zum Body-Spiegel,
+                    // wenn ihr Terrain UNTER dem Spiegel liegt — JEDE Tiefe, kein 3,6-m-
+                    // Cap mehr. Das V13.1-Gate (`rim - terrainTopY <= WATER_RIM_BAND_M`)
+                    // verwechselte „tief unter dem Spiegel" mit „steiler Hang" und lehnte
+                    // die tief-unterwasser Ufer-Spalten ab → vertikale Wasser-AIR-Wände
+                    // (Diag V13.6: 30-34 % der Fläche). `terrainTopY < rim` füllt die
+                    // Mulde bis zum Terrain (wie die Riesen). KEIN Hang-Schatten: Terrain
+                    // ÜBER dem Spiegel (`terrainTopY >= rim`) bleibt abgelehnt; KEIN
+                    // Phantom: nur neben echten Atlas-Wasser-Körpern (3×3); die Atlas-
+                    // priority-flood hat die 2D-Konnektivität schon berechnet, dies ist
+                    // die Voxel-Verfeinerung des Ufers.
+                    if (rim > -Infinity && terrainTopY < rim) {
                         level = rim;
                     }
                 }
@@ -40796,7 +40794,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.6";
+AnazhRealm.VERSION = "13.7";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

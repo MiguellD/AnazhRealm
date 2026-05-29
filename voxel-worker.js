@@ -375,8 +375,6 @@ function clamp01(v) {
 // =============================================================================
 
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
-// V13.1 — Mirror von AnazhRealm.WATER_RIM_BAND_M (Wasser-Rand-Tiefen-Gate).
-const WATER_RIM_BAND_M = 3.6;
 
 function voxelChunkConfig(lod) {
     if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 62, floorDrop: 90, lod: 1 };
@@ -505,7 +503,11 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
                         if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
                     }
                 }
-                if (rim > -Infinity && rim - terrainTopY <= WATER_RIM_BAND_M) {
+                // V13.7 — verbundenes Wasser (Mirror von `_atlasWaterLevelAt`): fülle
+                // bis zum Body-Spiegel, wenn Terrain UNTER dem Spiegel liegt (jede
+                // Tiefe, kein 3,6-m-Cap mehr). Heilt die vertikalen Ufer-Wände; kein
+                // Hang-Schatten (Terrain über Spiegel bleibt abgelehnt), kein Phantom.
+                if (rim > -Infinity && terrainTopY < rim) {
                     level = rim;
                 }
             }

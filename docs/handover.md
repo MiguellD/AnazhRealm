@@ -357,6 +357,22 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V13.7 — Verbundenes Wasser: die Ufer-Wände weg, die Mulde füllt bis zum Terrain (30.05.2026, Playtest „Alle Invarianten OK"):**
+
+Eine 1-Zeilen-Wurzel, gemessen statt geraten — und die Realisierung der lange backloggten Welle-A-Vision.
+
+**Der Befund (gemessen).** Schöpfer-Browser-Audit V13.6: an manchen Ufern „schliesst die Oberfläche schon zuvor, vertikal zum Grund" — die Mulde war physikalisch mit Wasser gefüllt, aber die Iso baute eine vertikale Wasser-Luft-Wand statt bis zum Terrain durchzuziehen. Statt zu raten: neues Tool `scripts/diag-water-shore.cjs` (V9.96-Disziplin, headless-tauglich — inspiziert Geometrie + Zellen, keine Pixel). Befund: **~33 % der Wasser-Mesh-Fläche waren vertikale Dreiecke**, 251 Wand-Verursacher-Zellen, 89 atlas-strikt geschnittene Unter-Spiegel-Spalten neben Wasser.
+
+**Der Fehl-Pfad davor (ehrlich).** Erst probierte ich einen Iso-Level-Fill via `_hydroWaterLevelAt` — half nur marginal (See-Ufer blieben, + Phantom-Risiko in Höhlen unter dem Meeresspiegel). Verworfen. Dann gemessen, wo genau die Wände sitzen → die Wurzel war eindeutig die Klassifikation.
+
+**Die Wurzel + Heilung.** Das V13.1-Rim-Gate in `_atlasWaterLevelAt` (`rim − terrainTopY <= WATER_RIM_BAND_M`, 3,6 m) **verwechselte „tief unter dem Spiegel" mit „steiler Hang"**: eine Atlas-Land-Spalte neben einem Wasser-Körper bekam den Spiegel nur, wenn ihr Terrain höchstens 3,6 m darunter lag — die tief-unterwasser Ufer-Spalten (10 m+ unter dem Spiegel) wurden abgelehnt → AIR → vertikale Wasser-Luft-Wand. Fix (main + Worker-Mirror, V9.89): Gate auf **`terrainTopY < rim`** — fülle bis zum Body-Spiegel, JEDE Tiefe, kein Cap. Das nutzt die schon-berechnete Atlas-priority-flood-Konnektivität (kein neuer globaler Flood nötig): in Atlas-Wasser → voller Spiegel; Atlas-Land im 3×3 neben Wasser + Terrain unter dem Spiegel → fülle die Mulde bis zum Terrain.
+
+**Warum das KEINEN alten Bug zurückbringt:** (a) **kein Hang-Schatten** — Terrain ÜBER dem Spiegel (`terrainTopY >= rim`) bleibt abgelehnt (der V13.0-Schatten war die 3×3-Dilatation in `_waterLevelAt`, die den Spiegel auf Hänge HOB; hier wird nichts gehoben); (b) **kein Phantom** — nur neben echten Atlas-Wasser-Körpern (3×3); ein Carve/eine Senke ohne Quelle in Reichweite bleibt trocken.
+
+**Bonus = die Welle-A-Vision realisiert.** Ein Carve nahe einem Wasser-Körper, der unter dessen Spiegel öffnet, **füllt sich jetzt reaktiv** (V13.1 hatte das bewusst abgeschaltet + in den Backlog gelegt — V13.7 ist dieser Backlog). Der V13.1-Test „Carve im isolierten Trockenland bleibt trocken" wanderte mit (V9.56-i): er wählt jetzt einen garantiert quellenfreien Spot (`_atlasWaterLevelAt(x,z,-Infinity)===-Infinity`) und bleibt der ehrliche Phantom-Schutz (Carve OHNE Quelle = trocken, jede Tiefe), während Carves MIT Quelle reaktiv füllen.
+
+**Mess-Beweis (diag, Vorher→Nachher):** tiefe Wände (>3 m Spannweite, der Bug) → **0 %**; Wand-Verursacher-Zellen 251→88; trockene Unter-Spiegel-Spalten 89→12. Die verbleibenden ~32 % „vertikalen" Dreiecke sind alle flach (≤3 m) = die legitime sub-zellige Ufer-Kante der Iso (trägt der Tiefen-Shader). `WATER_RIM_BAND_M` (toter Code) entfernt. **Determinismus:** die Wasser-Zellen ändern sich (mehr Ufer-Wasser), aber die Atlas-Hydrosphäre (Seen/Flüsse/Erosion) ist UNBERÜHRT, byte-stabil reproduzierbar (C.1 mismatches=0, der Test ruft dieselbe `_atlasWaterLevelAt`). Playtest „Alle Invarianten OK", 0 Script-Exceptions. Version 13.6.0 → 13.7.0. **Lehre (CLAUDE.md/Gotchas):** klassifiziere Wasser VERBUNDEN (fülle bis zum Body-Spiegel wenn Terrain darunter), nicht mit fixem Tiefen-Cap — ein Cap verwechselt „unterwasser" mit „Hang". **Ehrliche Grenze:** ein Rest-Phantom an exotischer Geometrie (Senke neben höherem See, <16 m, durch Barriere getrennt) bräuchte echte globale Konnektivität — sonst ist der visuelle Beweis der Browser-Audit. **Nächste Welle: V13.8 — Sub-Region-Edit-Remesh.**
+
 **V13.6 — Wasser-Synergie zurück: die Surface-Nets-Iso wie das Terrain, band-limitiert (30.05.2026, Playtest „Alle Invarianten OK"):**
 
 Eine Schöpfer-Audit-Korrektur, die einen halben Bogen zurücknimmt — und die wichtigste Reflexions-Lektion dieses Wasser-Bogens.

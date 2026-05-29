@@ -13001,7 +13001,18 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const x = cx * span + span / 2;
                 const z = cz * span + span / 2;
                 const m = r._terrainMacroSurfaceY(x, z, false);
-                if (Number.isFinite(m) && m > wl + 6 && m < wl + 14) {
+                // V13.7-Härtung: WIRKLICH isolierter Spot — keine Atlas-Wasser-Quelle
+                // im 3×3. Probe mit terrainTop=-Infinity: `_atlasWaterLevelAt` gibt nur
+                // dann -Infinity zurück, wenn KEIN Ozean/See/Fluss in Reichweite ist
+                // (sonst füllt V13.7 die unter-Spiegel-Mulde reaktiv = verbundenes
+                // Wasser, kein Phantom). So bleibt dieser Test der ehrliche Phantom-
+                // Schutz: ein Carve OHNE Quelle bleibt trocken (jede Tiefe).
+                if (
+                    Number.isFinite(m) &&
+                    m > wl + 6 &&
+                    m < wl + 14 &&
+                    !Number.isFinite(r._atlasWaterLevelAt(x, z, -Infinity))
+                ) {
                     carveX = x;
                     carveZ = z;
                     carveMacro = m;
@@ -13085,18 +13096,18 @@ async function checkBandWelleC3CellularReaction(ctx) {
         `macroY=${res.carveSpotFound ? res.carveMacro || "?" : "n/a"}`
     );
     if (res.carveSpotFound) {
-        // V13.1-Doku-Sync + Verhaltens-Wende: vor V13.1 füllte ein Carve im
-        // isolierten Trockenland (6-14 m ÜBER dem Meeresspiegel, kein Wasser-
-        // Körper in der Nähe) mit Wasser — weil `_waterLevelAt` den Ozean-
-        // Spiegel als FLACHEN Default für JEDE Spalte zurückgab. Das war
-        // GENAU der Phantom-/Schatten-Mechanismus (V13.0-Diagnose). Atlas-
-        // strict (`_atlasWaterLevelAt`) heilt das: ohne echte Quelle (Atlas-
-        // Ozean/See/Fluss) entsteht KEIN Wasser → die Pfütze im Hochland-Loch
-        // bleibt trocken. Der reaktive „Pond fließt voll"-Wunsch (Welle-A-
-        // Vision) gehört in eine künftige Flood-Fill-Welle (roadmap §1.4-Anker
-        // „reaktiver Carve-Fill von echter Quelle"), nicht in den Phantom-Default.
+        // V13.7-Doku-Sync: verbundenes Wasser. V13.7 macht den Carve nahe einer
+        // echten Quelle REAKTIV (Ozean/See/Fluss in Reichweite + unter dessen
+        // Spiegel → die Mulde füllt sich = die Welle-A-Vision endlich realisiert).
+        // Der Phantom-Schutz bleibt aber die heilige Invariante: ein Carve OHNE
+        // Wasser-Quelle in Reichweite (der Spot oben ist via `_atlasWaterLevelAt(
+        // x,z,-Infinity)===-Infinity` garantiert quellenfrei) bleibt TROCKEN — jede
+        // Tiefe, kein Phantom. (Vor V13.1 gab `_waterLevelAt` den Ozean-Spiegel als
+        // flachen Default für JEDE Spalte → Phantom überall; V13.1 atlas-strict
+        // heilte das, V13.7 fügt das verbundene reaktive Füllen hinzu, ohne den
+        // Phantom-Default zurückzubringen.)
         check(
-            "Welle V13.1: Carve im isolierten Trockenland bleibt TROCKEN (kein Phantom-Wasser, Atlas-strict)",
+            "Welle V13.7: Carve OHNE Wasser-Quelle bleibt TROCKEN (kein Phantom; verbundenes Wasser füllt NUR mit Quelle)",
             res.carveStaysDry,
             `state=${res.carveCellUnderWL} (0=air erwartet)`
         );

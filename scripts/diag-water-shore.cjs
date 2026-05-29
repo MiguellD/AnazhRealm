@@ -99,12 +99,15 @@ const server = http.createServer((req, res) => {
             isoMeshes: 0,
             isoTris: 0,
             isoVertTris: 0, // |normal.y| < 0.3 → ~vertikale Wand-Dreiecke
+            isoDeepWallTris: 0, // davon mit >3 m vertikaler Spannweite = echte Wände
             isoVertAreaPct: 0,
+            isoDeepWallAreaPct: 0,
         };
         if (band) out.bandCells = Math.ceil((band.top - band.bottom) / step);
         const idx = (i, k, j) => i + k * dim + j * dim * dim;
 
         let vertArea = 0;
+        let deepWallArea = 0;
         let totArea = 0;
 
         for (const [key, entry] of s.voxelChunks) {
@@ -218,11 +221,18 @@ const server = http.createServer((req, res) => {
                     if (nyAbs < 0.3) {
                         out.isoVertTris++;
                         vertArea += area;
+                        // vertikale Spannweite des Dreiecks: tiefe Wand vs flache Ufer-Kante
+                        const triYspan = Math.max(ay, by, cy) - Math.min(ay, by, cy);
+                        if (triYspan > 3.0) {
+                            out.isoDeepWallTris++;
+                            deepWallArea += area;
+                        }
                     }
                 }
             }
         }
         out.isoVertAreaPct = totArea > 0 ? Math.round((vertArea / totArea) * 1000) / 10 : 0;
+        out.isoDeepWallAreaPct = totArea > 0 ? Math.round((deepWallArea / totArea) * 1000) / 10 : 0;
         return out;
     });
 
@@ -242,7 +252,10 @@ const server = http.createServer((req, res) => {
     console.log("  -- Mesh-Befund (das Symptom) --");
     console.log(`     Iso-Meshes: ${result.isoMeshes} · Dreiecke gesamt: ${result.isoTris.toLocaleString()}`);
     console.log(
-        `     ~vertikale Dreiecke (|n.y|<0.3 = Wände): ${result.isoVertTris.toLocaleString()} = ${result.isoVertAreaPct} % der Fläche`
+        `     ~vertikale Dreiecke (|n.y|<0.3): ${result.isoVertTris.toLocaleString()} = ${result.isoVertAreaPct} % der Fläche`
+    );
+    console.log(
+        `       davon TIEFE WÄNDE (>3 m Spannweite, der Bug): ${result.isoDeepWallTris.toLocaleString()} = ${result.isoDeepWallAreaPct} % der Fläche`
     );
     console.log("");
     console.log("  DEUTUNG: vertikale Iso-Fläche > ~5 % ODER wallCells/wallCols hoch");
