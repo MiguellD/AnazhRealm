@@ -17335,14 +17335,14 @@ class AnazhRealm {
         // Greedy-Mega-Quad hätte nur 4 Eck-Vertices. Output trotzdem ~8× weniger
         // Dreiecke + ~50× schneller als Surface-Nets.
         const positions = [];
-        const normals = [];
         const indices = [];
         const AIR = STATE.AIR;
         const WATER = STATE.WATER;
-        const pushQuad = (ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz, nx, ny, nz) => {
+        // Normalen kommen post-Smooth aus `computeVertexNormals` (V13.4) —
+        // pushQuad braucht keine Face-Normalen mehr.
+        const pushQuad = (ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz) => {
             const b = positions.length / 3;
             positions.push(ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz);
-            for (let n = 0; n < 4; n++) normals.push(nx, ny, nz);
             indices.push(b, b + 1, b + 2, b, b + 2, b + 3);
         };
         for (let j = 0; j < dimY; j++) {
@@ -17360,20 +17360,14 @@ class AnazhRealm {
                     const x0 = ox + i * step;
                     const x1 = ox + (i + 1) * step;
                     // +Y (Oberfläche): die sichtbare Wasserfläche.
-                    if (cellClass(i, k, j + 1) === AIR)
-                        pushQuad(x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0, 0, 1, 0);
+                    if (cellClass(i, k, j + 1) === AIR) pushQuad(x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
                     // -Y (Unterseite — selten, Überhang-Wasser):
-                    if (cellClass(i, k, j - 1) === AIR)
-                        pushQuad(x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, 0, -1, 0);
+                    if (cellClass(i, k, j - 1) === AIR) pushQuad(x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
                     // +X / -X / +Z / -Z (Wasser-Kanten):
-                    if (cellClass(i + 1, k, j) === AIR)
-                        pushQuad(x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0, 1, 0, 0);
-                    if (cellClass(i - 1, k, j) === AIR)
-                        pushQuad(x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1, -1, 0, 0);
-                    if (cellClass(i, k + 1, j) === AIR)
-                        pushQuad(x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, 0, 0, 1);
-                    if (cellClass(i, k - 1, j) === AIR)
-                        pushQuad(x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, 0, 0, -1);
+                    if (cellClass(i + 1, k, j) === AIR) pushQuad(x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0);
+                    if (cellClass(i - 1, k, j) === AIR) pushQuad(x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1);
+                    if (cellClass(i, k + 1, j) === AIR) pushQuad(x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+                    if (cellClass(i, k - 1, j) === AIR) pushQuad(x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);
                 }
             }
         }
@@ -17382,10 +17376,18 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // V13.4 — die Boundary-Faces verschweißen + Laplacian-glätten: das V13.2-
+        // Zell-Meshing gab harte 1,8-m-Kanten (Schöpfer-Audit: „unnatürliche
+        // vertikale Wasserkante, würfelartige Flüsse"). Verschweißen verbindet die
+        // Quad-Suppe zu einer Fläche, der Smooth rundet die vertikalen Kanten zu
+        // weichen Ufern + die Würfel-Flüsse zu Kanälen. Chunk-Rand-Vertices sind
+        // gepinnt (kein Seam zum Nachbar-Chunk). Bleibt schnell (~1 ms auf ~500
+        // Dreiecke). Lake-Innenflächen bleiben flach (Smooth einer Ebene = Ebene).
+        const sm = this._weldAndSmoothWater(positions, indices, ox, oz, span);
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        geom.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-        geom.setIndex(indices);
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(sm.positions, 3));
+        geom.setIndex(sm.indices);
+        geom.computeVertexNormals();
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
             this._queueDispose(geom);
@@ -17426,6 +17428,90 @@ class AnazhRealm {
         this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
+    }
+
+    // V13.4 — Wasser-Boundary-Mesh verschweißen + Laplacian-glätten. Das V13.2-
+    // Grenzflächen-Meshing emittiert pro Quad eigene Vertices (Quad-Suppe) mit
+    // harten 1,8-m-Zell-Kanten. (1) Verschweißen: koinzidente Vertices (quantisiert)
+    // zu einem zusammenführen → verbundene Fläche mit Nachbarschaft. (2) Laplacian-
+    // Smooth (2 Iterationen, λ=0.5) rundet die vertikalen Wasserkanten zu weichen
+    // Ufern + glättet Würfel-Flüsse zu Kanälen. Lake-Innenflächen bleiben flach
+    // (Smooth einer Ebene = Ebene). (3) Chunk-Rand-Vertices (x/z am Chunk-Footprint-
+    // Rand) sind GEPINNT — sie bleiben welt-identisch zum Nachbar-Chunk → kein Naht-
+    // Seam (der Nachbar emittiert dort die gleichen Rand-Vertices, beide ungeglättet).
+    _weldAndSmoothWater(rawPos, rawIdx, ox, oz, span) {
+        const weldMap = new Map();
+        const pos = [];
+        const vcount = rawPos.length / 3;
+        const remap = new Int32Array(vcount);
+        for (let v = 0; v < vcount; v++) {
+            const x = rawPos[v * 3];
+            const y = rawPos[v * 3 + 1];
+            const z = rawPos[v * 3 + 2];
+            const wkey = `${Math.round(x * 64)},${Math.round(y * 64)},${Math.round(z * 64)}`;
+            let wi = weldMap.get(wkey);
+            if (wi === undefined) {
+                wi = pos.length / 3;
+                pos.push(x, y, z);
+                weldMap.set(wkey, wi);
+            }
+            remap[v] = wi;
+        }
+        const idx = new Array(rawIdx.length);
+        for (let i = 0; i < rawIdx.length; i++) idx[i] = remap[rawIdx[i]];
+        const wv = pos.length / 3;
+        const nbr = new Array(wv);
+        for (let v = 0; v < wv; v++) nbr[v] = new Set();
+        for (let t = 0; t + 2 < idx.length; t += 3) {
+            const a = idx[t];
+            const b = idx[t + 1];
+            const c = idx[t + 2];
+            nbr[a].add(b);
+            nbr[a].add(c);
+            nbr[b].add(a);
+            nbr[b].add(c);
+            nbr[c].add(a);
+            nbr[c].add(b);
+        }
+        const EDGE = 0.02;
+        const x1 = ox + span;
+        const z1 = oz + span;
+        const pinned = new Uint8Array(wv);
+        for (let v = 0; v < wv; v++) {
+            const x = pos[v * 3];
+            const z = pos[v * 3 + 2];
+            if (
+                Math.abs(x - ox) < EDGE ||
+                Math.abs(x - x1) < EDGE ||
+                Math.abs(z - oz) < EDGE ||
+                Math.abs(z - z1) < EDGE
+            ) {
+                pinned[v] = 1;
+            }
+        }
+        const lambda = 0.5;
+        for (let it = 0; it < 2; it++) {
+            const next = pos.slice();
+            for (let v = 0; v < wv; v++) {
+                if (pinned[v]) continue;
+                const s = nbr[v];
+                if (s.size === 0) continue;
+                let sx = 0;
+                let sy = 0;
+                let sz = 0;
+                for (const nv of s) {
+                    sx += pos[nv * 3];
+                    sy += pos[nv * 3 + 1];
+                    sz += pos[nv * 3 + 2];
+                }
+                const inv = 1 / s.size;
+                next[v * 3] = pos[v * 3] + lambda * (sx * inv - pos[v * 3]);
+                next[v * 3 + 1] = pos[v * 3 + 1] + lambda * (sy * inv - pos[v * 3 + 1]);
+                next[v * 3 + 2] = pos[v * 3 + 2] + lambda * (sz * inv - pos[v * 3 + 2]);
+            }
+            for (let i = 0; i < pos.length; i++) pos[i] = next[i];
+        }
+        return { positions: pos, indices: idx };
     }
 
     // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,
@@ -40752,7 +40838,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.3";
+AnazhRealm.VERSION = "13.4";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
