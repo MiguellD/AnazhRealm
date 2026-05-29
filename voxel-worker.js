@@ -375,6 +375,8 @@ function clamp01(v) {
 // =============================================================================
 
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
+// V13.1 — Mirror von AnazhRealm.WATER_RIM_BAND_M (Wasser-Rand-Tiefen-Gate).
+const WATER_RIM_BAND_M = 3.6;
 
 function voxelChunkConfig(lod) {
     if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 62, floorDrop: 90, lod: 1 };
@@ -465,6 +467,47 @@ function waterLevelAt(x, z) {
                 if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                 const idx = ni + nj * dim;
                 if (wK[idx] === 2 && wY[idx] > level) level = wY[idx];
+            }
+        }
+    }
+    const river = hydroRiverAt(x, z);
+    if (river && river.surfaceY > level) level = river.surfaceY;
+    return level;
+}
+
+// V13.1 — Mirror von `_atlasWaterLevelAt`: Atlas-strikter Wasser-Spiegel +
+// Rand-Tiefen-Gate (statt des 16-m-See-Dilatations-Bleeds). exact-Ozean/See →
+// voller Spiegel; Atlas-Land im 3×3-Rand → Spiegel nur wenn Terrain ≤ BAND
+// darunter (flacher Ufer-Rand); sonst -Infinity (Hang-Schatten weg). Muss 1:1
+// mit der Main-Thread-Methode wandern (Determinismus-Test ist die Wand).
+function atlasWaterLevelAt(x, z, terrainTopY) {
+    let level = -Infinity;
+    const h = state.hydrosphere;
+    if (h && h.ready && h.water && h.water.waterKind) {
+        const dim = h.dim;
+        const cell = h.cell;
+        const ci = Math.floor((x - h.originX) / cell);
+        const cj = Math.floor((z - h.originZ) / cell);
+        if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
+            const wK = h.water.waterKind;
+            const wY = h.water.waterY;
+            const here = wK[ci + cj * dim];
+            if (here === 1 || here === 2) {
+                level = wY[ci + cj * dim];
+            } else {
+                let rim = -Infinity;
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        const ni = ci + di;
+                        const nj = cj + dj;
+                        if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                        const nk = wK[ni + nj * dim];
+                        if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
+                    }
+                }
+                if (rim > -Infinity && rim - terrainTopY <= WATER_RIM_BAND_M) {
+                    level = rim;
+                }
             }
         }
     }
@@ -781,21 +824,57 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     const dim = cfg.dim;
     const dimY = cfg.dimY;
     const cells = new Uint8Array(dim * dim * dimY);
-    // Per-Column-waterLevelAt-Cache (V9.73-Heilung).
-    const colCount = dim * dim;
-    const colWaterY = new Float64Array(colCount);
-    for (let k = 0; k < dim; k++) {
-        const cz = oz + (k + 0.5) * step;
-        for (let i = 0; i < dim; i++) {
-            const cx = ox + (i + 0.5) * step;
-            colWaterY[i + k * dim] = waterLevelAt(cx, cz);
-        }
-    }
     const band = state.hydroBand;
     const bandTop = band ? band.top : Infinity;
     const Nx = dim + 4;
     const Ny = dimY + 1;
     const NxNy = Nx * Ny;
+    const colCount = dim * dim;
+    // V13.1 — Terrain-Top pro Spalte aus dem Density-Grid (für das Rand-Gate
+    // in atlasWaterLevelAt). Mirror von `_buildVoxelChunkWaterCells`.
+    const colTopY = new Float64Array(colCount).fill(-Infinity);
+    for (let j = 0; j < dimY; j++) {
+        const cy = oy + (j + 0.5) * step;
+        if (cy > bandTop) continue;
+        const j1 = j;
+        const j2 = j + 1;
+        for (let k = 0; k < dim; k++) {
+            const col0 = k * dim;
+            const k1 = k + 1;
+            const k2 = k + 2;
+            const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
+            const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
+            const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
+            const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
+            for (let i = 0; i < dim; i++) {
+                const i1 = i + 1;
+                const i2 = i + 2;
+                const d =
+                    (density[i1 + ofs_j1_k1] +
+                        density[i2 + ofs_j1_k1] +
+                        density[i1 + ofs_j2_k1] +
+                        density[i2 + ofs_j2_k1] +
+                        density[i1 + ofs_j1_k2] +
+                        density[i2 + ofs_j1_k2] +
+                        density[i1 + ofs_j2_k2] +
+                        density[i2 + ofs_j2_k2]) *
+                    0.125;
+                if (d > 0) {
+                    const col = i + col0;
+                    if (cy > colTopY[col]) colTopY[col] = cy;
+                }
+            }
+        }
+    }
+    // Per-Column STRIKTER Wasser-Spiegel (V13.1 — Atlas-strict + Rand-Gate).
+    const colWaterY = new Float64Array(colCount);
+    for (let k = 0; k < dim; k++) {
+        const cz = oz + (k + 0.5) * step;
+        for (let i = 0; i < dim; i++) {
+            const cx = ox + (i + 0.5) * step;
+            colWaterY[i + k * dim] = atlasWaterLevelAt(cx, cz, colTopY[i + k * dim]);
+        }
+    }
     for (let j = 0; j < dimY; j++) {
         const cy = oy + (j + 0.5) * step;
         if (cy > bandTop) continue;

@@ -12771,7 +12771,15 @@ class AnazhRealm {
         if (this.state.voxelWorker) return this.state.voxelWorker;
         if (typeof Worker === "undefined") return null;
         try {
-            const worker = new Worker("voxel-worker.js");
+            // V13.1-Fix — Cache-Buster für den Worker. `index.html` bustet
+            // `anazhRealm.js?v=…`, ABER der Web-Worker lädt `voxel-worker.js`
+            // separat — ohne `?v=` serviert das githack-CDN die STALE alte
+            // Worker-Datei → die Worker-Mesh-Pipeline (im Browser primär) baut
+            // Wasser-Cells mit veralteter Logik (z.B. der V13.1-Atlas-strict-
+            // Mirror erreicht den Browser nie → der Wasserschatten bleibt).
+            // `AnazhRealm.VERSION` bustet bei jedem Bump automatisch mit
+            // (V9.95-c-Lehre: JEDE versionierte Datei bustet, nicht nur die Haupt-JS).
+            const worker = new Worker(`voxel-worker.js?v=${AnazhRealm.VERSION}`);
             this.state.voxelWorkerPending = new Map();
             worker.onmessage = (e) => {
                 const msg = e.data;
@@ -15614,7 +15622,15 @@ class AnazhRealm {
             }
         }
         this.state.tarns = savedTarns; // V9.51 — Tarns wiederhergestellt
-        return { delta, dim, cell: E.cell, originX, originZ, regionSize: E.regionSize };
+        return {
+            delta,
+            dim,
+            cell: E.cell,
+            originX,
+            originZ,
+            regionSize: E.regionSize,
+            flowTo: Int32Array.from(buf.flowTo),
+        };
     }
 
     // V9.47 — eine Stream-Power-Inzisions-Iteration. Vier Phasen auf dem
@@ -15704,18 +15720,33 @@ class AnazhRealm {
                 }
             }
         }
-        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → tiefster filled-Nachbar ---
+        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → steilster GEFÄLLE-Nachbar ---
+        // V13.3 — steilstes GEFÄLLE (drop/Distanz) statt steilster DROP. Der alte
+        // Code wählte den Nachbarn mit dem tiefsten `filled` (absoluter Höhen-
+        // Unterschied), unabhängig von der Distanz. Diagonal-Nachbarn sind aber
+        // √2 weiter → sie haben oft den größeren absoluten Drop → wurden bevorzugt.
+        // Mess-Befund (diag-flow-bias): Diagonalen 65 % statt ~50 %, ↖(-1,-1) 19 %
+        // statt ~12,5 % (zusätzlich der Tie-Break: `<` first-wins ab (-1,-1)). Diese
+        // D8-Metrik-Verzerrung gab der Drainage — und damit der Erosions-Inzision
+        // UND dem Hydrosphäre-Flow — einen Diagonal-Grain in EINE Richtung (der vom
+        // Schöpfer „seit ewig" gesehene Terrain-Treppen-/Wasserschatten-Artefakt).
+        // Heilung: drop/dist (dist=√2 für Diagonalen) → steilstes SLOPE = isotrop.
+        const INV_DIAG = 1 / Math.SQRT2;
         for (let j = 1; j < dim - 1; j++) {
             for (let i = 1; i < dim - 1; i++) {
                 const idx = i + j * dim;
+                const fHere = filled[idx];
                 let best = -1;
-                let bestF = filled[idx];
+                let bestSlope = 0;
                 for (let dj = -1; dj <= 1; dj++) {
                     for (let di = -1; di <= 1; di++) {
                         if (di === 0 && dj === 0) continue;
                         const nb = i + di + (j + dj) * dim;
-                        if (filled[nb] < bestF) {
-                            bestF = filled[nb];
+                        const drop = fHere - filled[nb];
+                        if (drop <= 0) continue; // nur bergab
+                        const slope = di !== 0 && dj !== 0 ? drop * INV_DIAG : drop;
+                        if (slope > bestSlope) {
+                            bestSlope = slope;
                             best = nb;
                         }
                     }
@@ -16867,6 +16898,19 @@ class AnazhRealm {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
     }
 
+    // V13.1 — die Tiefen-Schwelle für das Wasser-Rand-Handling. Eine Atlas-Land-
+    // Spalte (kein Ozean/See im exact-Atlas) bekommt den Wasser-Spiegel eines
+    // benachbarten Körpers NUR, wenn das Terrain dort höchstens so viel unter
+    // dem Spiegel liegt = der flache 16-m-Quantisierungs-Rand (MUSS bleiben,
+    // sonst Mesh-Lücken am See-Rand, V9.73). Liegt das Terrain TIEFER (steiler
+    // Hang), war es der V9.73-3×3-See-Dilatations-Bleed = der Wasserschatten,
+    // und die Spalte bleibt trocken. 3.6 m ≈ 2 Voxel-Cells (step 1.8). V13.0-
+    // Diagnose: trennt den tiefen Hang-Schatten (36–52 %) sauber vom flachen
+    // Rand (2–7 %).
+    static get WATER_RIM_BAND_M() {
+        return 3.6;
+    }
+
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
     // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
     // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
@@ -16983,16 +17027,6 @@ class AnazhRealm {
             const sample = (x, y, z) => this._terrainDensityAt(x, y, z);
             density = this._voxelSampleDensityGrid(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sample);
         }
-        // Pro xz-Spalte das `_waterLevelAt` einmal cachen (V9.73-Heilung).
-        const colCount = dim * dim;
-        const colWaterY = new Float64Array(colCount);
-        for (let k = 0; k < dim; k++) {
-            const cz = oz + (k + 0.5) * step;
-            for (let i = 0; i < dim; i++) {
-                const cx = ox + (i + 0.5) * step;
-                colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
-            }
-        }
         const band = this.state.hydroBand;
         const bandTop = band ? band.top : Infinity;
         // Cell (i, k, j) Center ist Mittelpunkt der 8 Density-Grid-Vertices
@@ -17000,6 +17034,58 @@ class AnazhRealm {
         const Nx = dim + 4;
         const Ny = dimY + 1;
         const NxNy = Nx * Ny;
+        const colCount = dim * dim;
+        // V13.1 — Terrain-Oberfläche pro Spalte (höchste solide Cell): das
+        // Rand-Tiefen-Gate von `_atlasWaterLevelAt` braucht sie. Aus dem schon
+        // gesampelten Density-Grid (gleiche 8-Corner-Mittelung wie die
+        // Klassifikation, kein Noise-Re-Sample). -Infinity = keine solide Cell
+        // → das Rand-Gate (Spiegel − (−∞)) schlägt fehl → keine Rand-Pfütze.
+        const colTopY = new Float64Array(colCount).fill(-Infinity);
+        for (let j = 0; j < dimY; j++) {
+            const cy = oy + (j + 0.5) * step;
+            if (cy > bandTop) continue;
+            const j1 = j;
+            const j2 = j + 1;
+            for (let k = 0; k < dim; k++) {
+                const col0 = k * dim;
+                const k1 = k + 1;
+                const k2 = k + 2;
+                const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
+                const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
+                const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
+                const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
+                for (let i = 0; i < dim; i++) {
+                    const i1 = i + 1;
+                    const i2 = i + 2;
+                    const d =
+                        (density[i1 + ofs_j1_k1] +
+                            density[i2 + ofs_j1_k1] +
+                            density[i1 + ofs_j2_k1] +
+                            density[i2 + ofs_j2_k1] +
+                            density[i1 + ofs_j1_k2] +
+                            density[i2 + ofs_j1_k2] +
+                            density[i1 + ofs_j2_k2] +
+                            density[i2 + ofs_j2_k2]) *
+                        0.125;
+                    if (d > 0) {
+                        const col = i + col0;
+                        if (cy > colTopY[col]) colTopY[col] = cy;
+                    }
+                }
+            }
+        }
+        // Pro xz-Spalte den STRIKTEN Wasser-Spiegel cachen (V13.1 — Atlas-
+        // strict + Rand-Tiefen-Gate statt des 16-m-See-Dilatations-Bleeds von
+        // `_waterLevelAt`). -Infinity wo der Atlas kein Wasser markiert → die
+        // Spalte bleibt trocken (Wasserschatten an Hängen weg).
+        const colWaterY = new Float64Array(colCount);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) {
+                const cx = ox + (i + 0.5) * step;
+                colWaterY[i + k * dim] = this._atlasWaterLevelAt(cx, cz, colTopY[i + k * dim]);
+            }
+        }
         for (let j = 0; j < dimY; j++) {
             const cy = oy + (j + 0.5) * step;
             if (cy > bandTop) {
@@ -17202,75 +17288,106 @@ class AnazhRealm {
         // (Bottom + Underwater-Sides) sowie ohne Wasser (Mountain-Top, der
         // schon vom Terrain-Mesh getragen wird). Nur Mischungen mit
         // WATER+AIR erzeugen Iso → das ist die sichtbare Wasseroberfläche.
+        // V13.1 — OOB-Wasser-Spiegel pro Pad-Spalte cachen. Der Atlas-strikte
+        // Spiegel hängt nur von (i,k) ab (nicht j), aber `cellClass` läuft 8×
+        // pro Grid-Vertex × ~91k Vertices → ohne Cache würde `_voxelSurfaceY`
+        // (ein ~100-Schritt-Density-Scan) millionenfach laufen = Mesher-Kollaps.
+        // Mit Cache: ein `_voxelSurfaceY` je Pad-Spalte (~ein paar hundert).
+        const oobLevelCache = new Map();
         const cellClass = (i, k, j) => {
             if (j < 0 || j >= dimY) return STATE.AIR;
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
                 return cells[i + k * dim + j * dim * dim];
             }
-            // OOB live-compute — identisch zur Cell-Init.
+            // OOB live-compute — identisch zur Cell-Init (V13.1: Atlas-strict
+            // via `_atlasWaterLevelAt` mit `_voxelSurfaceY` als Terrain-Top, der
+            // EINEN Wasser-Spiegel-Quelle wie der Cell-Build → kein Seam am
+            // Chunk-Rand zwischen depth-gated In-Chunk-Cells + Pad).
             const wy = oy + (j + 0.5) * step;
             if (wy > bandTop) return STATE.AIR;
             const wx = ox + (i + 0.5) * step;
             const wz = oz + (k + 0.5) * step;
             if (this._terrainDensityAt(wx, wy, wz) > 0) return STATE.SOLID;
-            return wy <= this._waterLevelAt(wx, wz) ? STATE.WATER : STATE.AIR;
+            const ckey = i + "," + k;
+            let lvl = oobLevelCache.get(ckey);
+            if (lvl === undefined) {
+                const surfY = this._voxelSurfaceY(wx, wz);
+                lvl = this._atlasWaterLevelAt(wx, wz, surfY === null || !Number.isFinite(surfY) ? -Infinity : surfY);
+                oobLevelCache.set(ckey, lvl);
+            }
+            return wy <= lvl ? STATE.WATER : STATE.AIR;
         };
-        const sampleWater = (x, y, z) => {
-            const fi = (x - ox) / step;
-            const fk = (z - oz) / step;
-            const fj = (y - oy) / step;
-            const i = Math.floor(fi);
-            const k = Math.floor(fk);
-            const j = Math.floor(fj);
-            let cWater = 0;
-            let cAir = 0;
-            for (let dj = 0; dj <= 1; dj++) {
-                for (let dk = 0; dk <= 1; dk++) {
-                    for (let di = 0; di <= 1; di++) {
-                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
-                        if (cls === STATE.WATER) cWater++;
-                        else if (cls === STATE.AIR) cAir++;
-                        // SOLID zählt weder als Wasser noch als Luft.
-                    }
+        // V13.2 — Grenzflächen-Meshing (Boundary-Face-Culling) statt Surface-Nets.
+        // Bis V13.1 lief der Wasser-Mesh durch die volle Surface-Nets-Pipeline
+        // (`_voxelChunkGeometry` über das (dim+3)·dimY·(dim+3)-Zell-Grid: ~90k
+        // Density-Samples + Vertex-Extract + Laplacian-Smooth + Crop + Gradient-
+        // Normalen) = ~150 ms/Chunk Main-Thread (V13.0-Diagnose: der dominante
+        // Streaming-Hitch) — nur um eine FLACHE Wasseroberfläche zu finden.
+        // Surface-Nets ist für glatte Iso-VOLUMEN; ein Wasserspiegel ist FLACH.
+        // Die Riesen (Minecraft) meshen die Wasser-Luft-GRENZFLÄCHEN direkt: pro
+        // WATER-Cell ein Quad je Nachbar-Seite, die AIR ist. SOLID-Nachbar → kein
+        // Quad (Terrain verdeckt). WATER-Nachbar → kein Quad (innen). Zell-getrieben
+        // = reaktiv, ~1-paar ms, naht-frei via `cellClass`-OOB (kein Pad+Crop nötig:
+        // beide Nachbar-Chunks cullen gegen dieselbe OOB-Klassifikation → kein
+        // Doppel-Face, keine Lücke; geteilte Boundary-Vertices liegen welt-identisch).
+        // KEIN Greedy-Merge: die ~per-Cell-Vertex-Dichte bleibt erhalten, damit die
+        // V13.4-Gerstner-Wellen (Vertex-Displacement) Interior-Auflösung haben — ein
+        // Greedy-Mega-Quad hätte nur 4 Eck-Vertices. Output trotzdem ~8× weniger
+        // Dreiecke + ~50× schneller als Surface-Nets.
+        const positions = [];
+        const indices = [];
+        const AIR = STATE.AIR;
+        const WATER = STATE.WATER;
+        // Normalen kommen post-Smooth aus `computeVertexNormals` (V13.4) —
+        // pushQuad braucht keine Face-Normalen mehr.
+        const pushQuad = (ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz) => {
+            const b = positions.length / 3;
+            positions.push(ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz);
+            indices.push(b, b + 1, b + 2, b, b + 2, b + 3);
+        };
+        for (let j = 0; j < dimY; j++) {
+            const cyc = oy + (j + 0.5) * step;
+            if (cyc > bandTop) continue; // über dem Band ist alles AIR → kein Wasser
+            const y0 = oy + j * step;
+            const y1 = oy + (j + 1) * step;
+            const baseJ = j * dim * dim;
+            for (let k = 0; k < dim; k++) {
+                const z0 = oz + k * step;
+                const z1 = oz + (k + 1) * step;
+                const baseK = k * dim;
+                for (let i = 0; i < dim; i++) {
+                    if (cells[i + baseK + baseJ] !== WATER) continue;
+                    const x0 = ox + i * step;
+                    const x1 = ox + (i + 1) * step;
+                    // +Y (Oberfläche): die sichtbare Wasserfläche.
+                    if (cellClass(i, k, j + 1) === AIR) pushQuad(x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+                    // -Y (Unterseite — selten, Überhang-Wasser):
+                    if (cellClass(i, k, j - 1) === AIR) pushQuad(x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
+                    // +X / -X / +Z / -Z (Wasser-Kanten):
+                    if (cellClass(i + 1, k, j) === AIR) pushQuad(x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0);
+                    if (cellClass(i - 1, k, j) === AIR) pushQuad(x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1);
+                    if (cellClass(i, k + 1, j) === AIR) pushQuad(x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+                    if (cellClass(i, k - 1, j) === AIR) pushQuad(x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);
                 }
             }
-            // Unterdrücke Wasser-Solid-Iso (Bottom/Underwater-Sides): keine
-            // Luft im Sample → behandle als „tief drinnen" (+1), kein Iso.
-            if (cAir === 0) return 1;
-            // Unterdrücke Iso ohne Wasser (Mountain-Top, Sky): keine Wasser-
-            // Cells → behandle als „außen" (-1), kein Iso. Das Terrain-Mesh
-            // trägt die Mountain-Oberfläche.
-            if (cWater === 0) return -1;
-            // Mischung mit Wasser UND Luft (+ ggf. Solid am Ufer): Standard
-            // Iso bei (cWater - cAir) = 0, geglättet durch das 8-Cell-Average.
-            // Solid-Cells bleiben für die Iso-Position neutral; das Terrain
-            // verdeckt sie ohnehin.
-            return (cWater - cAir) / 8;
-        };
-        // V9.79 (Welle C.9 — die Pad+Crop-Heilung der Oberflächen-Naht):
-        // bis V9.78 baute der Iso-Mesher das Wasser-Mesh nur über die dim·
-        // dimY·dim Cell-Würfel des Chunks (cropMargin=0). Adjacent Chunks
-        // hatten dann unabhängige Meshes mit eigenen Boundary-Vertices —
-        // KEINE shared Vertices, KEINE überlappenden Faces → eine 1-Cell-
-        // Lücke (1.8 m) an der Oberfläche, sichtbar als persistenter Riss
-        // („verbinden im Volumen aber nicht an der Oberfläche", Schöpfer-
-        // Audit V9.78). Heilung übernimmt den V9.42-d-Trick vom Boden-
-        // Mesher: Origin um 1 step verschoben, dim+3 cell-Würfel,
-        // cropMargin=1. Der Mesher smootht das pad-erweiterte Volumen
-        // voll + schneidet den 1-Cell-Pad danach ab. Adjacent Chunks
-        // **OVERLAPPEN** an der Boundary (chunk-A's letzter kept-Cube und
-        // chunk-B's erster kept-Cube belegen dieselbe Welt-Position) →
-        // keine sichtbare Naht. Pad-Cells außerhalb des Chunks werden
-        // via OOB-Live in `cellState` (V9.78) berechnet — beide Nachbar-
-        // Chunks sehen dort identische Density, also auch das Smoothing
-        // läuft deterministisch gleich. Eine Wasser-Sprache, eine Skala,
-        // eine Geometrie-Quelle.
-        const geom = this._voxelChunkGeometry(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sampleWater, 1);
-        if (!geom) {
-            // Kein Wasser im Chunk-Bereich (alle Cells air/solid) → null
+        }
+        if (positions.length === 0) {
+            // Kein Wasser-Luft-Boundary-Face im Chunk → kein Mesh.
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        // V13.4 — die Boundary-Faces verschweißen + Laplacian-glätten: das V13.2-
+        // Zell-Meshing gab harte 1,8-m-Kanten (Schöpfer-Audit: „unnatürliche
+        // vertikale Wasserkante, würfelartige Flüsse"). Verschweißen verbindet die
+        // Quad-Suppe zu einer Fläche, der Smooth rundet die vertikalen Kanten zu
+        // weichen Ufern + die Würfel-Flüsse zu Kanälen. Chunk-Rand-Vertices sind
+        // gepinnt (kein Seam zum Nachbar-Chunk). Bleibt schnell (~1 ms auf ~500
+        // Dreiecke). Lake-Innenflächen bleiben flach (Smooth einer Ebene = Ebene).
+        const sm = this._weldAndSmoothWater(positions, indices, ox, oz, span);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(sm.positions, 3));
+        geom.setIndex(sm.indices);
+        geom.computeVertexNormals();
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
             this._queueDispose(geom);
@@ -17311,6 +17428,90 @@ class AnazhRealm {
         this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
+    }
+
+    // V13.4 — Wasser-Boundary-Mesh verschweißen + Laplacian-glätten. Das V13.2-
+    // Grenzflächen-Meshing emittiert pro Quad eigene Vertices (Quad-Suppe) mit
+    // harten 1,8-m-Zell-Kanten. (1) Verschweißen: koinzidente Vertices (quantisiert)
+    // zu einem zusammenführen → verbundene Fläche mit Nachbarschaft. (2) Laplacian-
+    // Smooth (2 Iterationen, λ=0.5) rundet die vertikalen Wasserkanten zu weichen
+    // Ufern + glättet Würfel-Flüsse zu Kanälen. Lake-Innenflächen bleiben flach
+    // (Smooth einer Ebene = Ebene). (3) Chunk-Rand-Vertices (x/z am Chunk-Footprint-
+    // Rand) sind GEPINNT — sie bleiben welt-identisch zum Nachbar-Chunk → kein Naht-
+    // Seam (der Nachbar emittiert dort die gleichen Rand-Vertices, beide ungeglättet).
+    _weldAndSmoothWater(rawPos, rawIdx, ox, oz, span) {
+        const weldMap = new Map();
+        const pos = [];
+        const vcount = rawPos.length / 3;
+        const remap = new Int32Array(vcount);
+        for (let v = 0; v < vcount; v++) {
+            const x = rawPos[v * 3];
+            const y = rawPos[v * 3 + 1];
+            const z = rawPos[v * 3 + 2];
+            const wkey = `${Math.round(x * 64)},${Math.round(y * 64)},${Math.round(z * 64)}`;
+            let wi = weldMap.get(wkey);
+            if (wi === undefined) {
+                wi = pos.length / 3;
+                pos.push(x, y, z);
+                weldMap.set(wkey, wi);
+            }
+            remap[v] = wi;
+        }
+        const idx = new Array(rawIdx.length);
+        for (let i = 0; i < rawIdx.length; i++) idx[i] = remap[rawIdx[i]];
+        const wv = pos.length / 3;
+        const nbr = new Array(wv);
+        for (let v = 0; v < wv; v++) nbr[v] = new Set();
+        for (let t = 0; t + 2 < idx.length; t += 3) {
+            const a = idx[t];
+            const b = idx[t + 1];
+            const c = idx[t + 2];
+            nbr[a].add(b);
+            nbr[a].add(c);
+            nbr[b].add(a);
+            nbr[b].add(c);
+            nbr[c].add(a);
+            nbr[c].add(b);
+        }
+        const EDGE = 0.02;
+        const x1 = ox + span;
+        const z1 = oz + span;
+        const pinned = new Uint8Array(wv);
+        for (let v = 0; v < wv; v++) {
+            const x = pos[v * 3];
+            const z = pos[v * 3 + 2];
+            if (
+                Math.abs(x - ox) < EDGE ||
+                Math.abs(x - x1) < EDGE ||
+                Math.abs(z - oz) < EDGE ||
+                Math.abs(z - z1) < EDGE
+            ) {
+                pinned[v] = 1;
+            }
+        }
+        const lambda = 0.5;
+        for (let it = 0; it < 2; it++) {
+            const next = pos.slice();
+            for (let v = 0; v < wv; v++) {
+                if (pinned[v]) continue;
+                const s = nbr[v];
+                if (s.size === 0) continue;
+                let sx = 0;
+                let sy = 0;
+                let sz = 0;
+                for (const nv of s) {
+                    sx += pos[nv * 3];
+                    sy += pos[nv * 3 + 1];
+                    sz += pos[nv * 3 + 2];
+                }
+                const inv = 1 / s.size;
+                next[v * 3] = pos[v * 3] + lambda * (sx * inv - pos[v * 3]);
+                next[v * 3 + 1] = pos[v * 3 + 1] + lambda * (sy * inv - pos[v * 3 + 1]);
+                next[v * 3 + 2] = pos[v * 3 + 2] + lambda * (sz * inv - pos[v * 3 + 2]);
+            }
+            for (let i = 0; i < pos.length; i++) pos[i] = next[i];
+        }
+        return { positions: pos, indices: idx };
     }
 
     // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,
@@ -18023,6 +18224,62 @@ class AnazhRealm {
         return level;
     }
 
+    // V13.1 — Atlas-STRIKTE Wasser-Spiegel-Quelle für die Voxel-Cell-
+    // Klassifikation (Wasserschatten-Heilung). `_waterLevelAt` (oben) gibt den
+    // Ozean-`waterLevel` als FLACHEN Default für JEDE Spalte zurück + dilatiert
+    // den See-Spiegel im 3×3 (V9.73) → Hang-Spalten unter diesem Spiegel werden
+    // WATER → Wasser klebt am Hang/um Strukturen (V13.0-Diagnose: 36–52 % aller
+    // WATER-Cells). Diese Variante ist strikt:
+    //   - exact-Atlas-Ozean (waterKind 1) / -See (waterKind 2): voller Spiegel,
+    //     beliebige Tiefe (das ist das ECHTE Wasser-Körper-Cell).
+    //   - Fluss: sein Bett-Profil.
+    //   - Atlas-LAND, aber ein Wasser-Körper im 3×3 (der 16-m-Quantisierungs-
+    //     Rand): der Nachbar-Spiegel NUR, wenn das Terrain dort höchstens
+    //     WATER_RIM_BAND_M unter ihm liegt (flacher Ufer-Rand → MUSS bleiben,
+    //     sonst Mesh-Lücke). Liegt das Terrain tiefer (steiler Hang) → der alte
+    //     Dilatations-Bleed → die Spalte bleibt trocken (-Infinity).
+    // `terrainTopY` ist die Terrain-Oberfläche der Spalte (höchste solide Cell);
+    // der Aufrufer reicht sie aus seinem Density-Grid (Cell-Build) bzw. via
+    // `_voxelSurfaceY` (Iso-OOB) — eine Quelle, kein Parallel-Pfad. Rückgabe
+    // -Infinity heißt „hier nie Wasser" (`cy <= -Infinity` ist immer false).
+    _atlasWaterLevelAt(x, z, terrainTopY) {
+        let level = -Infinity;
+        const h = this.state.hydrosphere;
+        if (h && h.ready && h.water && h.water.waterKind) {
+            const dim = h.dim;
+            const cell = h.cell;
+            const ci = Math.floor((x - h.originX) / cell);
+            const cj = Math.floor((z - h.originZ) / cell);
+            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
+                const wK = h.water.waterKind;
+                const wY = h.water.waterY;
+                const here = wK[ci + cj * dim];
+                if (here === 1 || here === 2) {
+                    // echter Wasser-Körper an dieser Spalte — voller Spiegel.
+                    level = wY[ci + cj * dim];
+                } else {
+                    // Atlas-Land: 16-m-Rand-Kandidat aus dem 3×3, depth-gated.
+                    let rim = -Infinity;
+                    for (let dj = -1; dj <= 1; dj++) {
+                        for (let di = -1; di <= 1; di++) {
+                            const ni = ci + di;
+                            const nj = cj + dj;
+                            if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                            const nk = wK[ni + nj * dim];
+                            if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
+                        }
+                    }
+                    if (rim > -Infinity && rim - terrainTopY <= AnazhRealm.WATER_RIM_BAND_M) {
+                        level = rim;
+                    }
+                }
+            }
+        }
+        const river = this._hydroRiverAt(x, z);
+        if (river && river.surfaceY > level) level = river.surfaceY;
+        return level;
+    }
+
     // V9.59-a — semantische Wurzel der Welt-Awareness: "ist diese Position
     // trockenes Land?". Vergleicht die Voxel-Surface mit dem Wasser-Spiegel,
     // liefert true wenn der Boden mindestens `marge` Meter über dem Wasser
@@ -18497,15 +18754,23 @@ class AnazhRealm {
                 const idx = i + j * dim;
                 const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
                 if (border || isOcean[idx]) continue; // Auslass (Rand/Ozean)
+                // V13.3 — steilstes GEFÄLLE (drop/Distanz) statt steilster DROP.
+                // Spiegelt die Erosions-D8-Heilung: Diagonal-Nachbarn (√2 weiter)
+                // wurden über den absoluten Drop bevorzugt → Diagonal-Drainage-Grain
+                // in eine Richtung. drop/dist (√2-Penalty für Diagonalen) → isotrop.
+                const fHere = filled[idx];
                 let bestN = -1;
-                let bestF = filled[idx];
+                let bestSlope = 0;
                 for (let k = 0; k < 8; k++) {
                     const ni = i + NB[k][0];
                     const nj = j + NB[k][1];
                     if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                     const nidx = ni + nj * dim;
-                    if (filled[nidx] < bestF) {
-                        bestF = filled[nidx];
+                    const drop = fHere - filled[nidx];
+                    if (drop <= 0) continue; // nur bergab
+                    const slope = NB[k][0] !== 0 && NB[k][1] !== 0 ? drop / Math.SQRT2 : drop;
+                    if (slope > bestSlope) {
+                        bestSlope = slope;
                         bestN = nidx;
                     }
                 }
@@ -40573,7 +40838,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.h.1";
+AnazhRealm.VERSION = "13.4";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
