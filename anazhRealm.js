@@ -840,6 +840,9 @@ class AnazhRealm {
             // also immer < Render-Radius.
             architectureCollisionRadius: 90,
             architectureBuildBudgetPerFrame: 3,
+            // V12.0-perf.h — deferred-Queue für den Wasser-Iso-Build (Set von
+            // "cx,cz"-Keys), per-Frame budgetiert (Streaming-Hitch-Heilung).
+            pendingWaterIso: null,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
             //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
@@ -17605,7 +17608,10 @@ class AnazhRealm {
         // einzige Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
         // V9.24 — Streu-Strukturen (idempotent, je Chunk einmal).
         if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
-        this._buildVoxelChunkWaterIsoSurface(cx, cz);
+        // V12.0-perf.h — Wasser-Iso deferred (per-Frame-Queue) statt synchron:
+        // der Chunk ist mit Terrain+Boden+Collision sofort fertig, das Wasser
+        // (~78 ms Surface-Nets) baut ≤budget/Frame nach → kein Streaming-Spike.
+        this._enqueueWaterIso(cx, cz);
         this._populateVoxelChunkVegetation(cx, cz);
         return entry;
     }
@@ -17771,6 +17777,9 @@ class AnazhRealm {
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
         // disposen (einziger Wasser-Render-Pfad; der alte Quad-Pfad ist weg).
         this._disposeVoxelChunkWaterIso(key);
+        // V12.0-perf.h — ausstehenden Wasser-Iso-Build für diesen Chunk
+        // verwerfen (Chunk ist weg, nichts mehr zu bauen).
+        if (this.state.pendingWaterIso) this.state.pendingWaterIso.delete(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -20111,6 +20120,9 @@ class AnazhRealm {
             const cz = parseInt(key.slice(comma + 1), 10);
             if (this._rebuildVoxelChunk(cx, cz, null, { forceSync: true })) built++;
         }
+        // V12.0-perf.h — der Rebuild enqueued den Wasser-Iso (deferred); die
+        // Test-Naht braucht ihn sofort → die Wasser-Iso-Queue mit-drainen.
+        this._drainPendingWaterIso();
         return built;
     }
 
@@ -31229,6 +31241,58 @@ class AnazhRealm {
         return spawned;
     }
 
+    // V12.0-perf.h — Wasser-Iso-Build deferred-Queue. Der Wasser-Iso-Surface-
+    // Build (`_buildVoxelChunkWaterIsoSurface`) ist ~78 ms Main-Thread-Geometrie
+    // (Surface-Nets über die LOD-0-Wasser-Cells + OOB-Live-Density) — der
+    // schwerste Posten im Chunk-Finalize (perf.h.diag). Vorher lief er SYNCHRON
+    // im Finalize → der Streaming-Frame trug Terrain + Wasser-Iso zusammen, und
+    // mehrere Wasser-Chunks im selben Frame stapelten sich (der FPS-Einbruch).
+    // Jetzt: der Chunk finalisiert sofort mit Terrain+Boden+Collision (kein
+    // Loch, kein Durchfallen), der Wasser-Iso wird enqueued + ≤budget/Frame
+    // gebaut → Wasser erscheint ~1 Frame später (imperzeptibel), kein Pile-Up
+    // (V9.96-Queue-Pattern auf die Wasser-Schicht angewandt).
+    _enqueueWaterIso(cx, cz) {
+        if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+        this.state.pendingWaterIso.add(`${cx},${cz}`);
+    }
+
+    _tickPendingWaterIso(maxPerFrame = 2) {
+        const queue = this.state.pendingWaterIso;
+        if (!queue || queue.size === 0) return 0;
+        let built = 0;
+        for (const key of queue) {
+            if (built >= maxPerFrame) break;
+            queue.delete(key);
+            // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
+    // Alle ausstehenden Wasser-Iso-Builds sofort abarbeiten (Test-Naht +
+    // Edit-Instant-Feedback): wer den Wasser-Mesh DIREKT nach einem Build
+    // prüft/braucht, drained die Queue. Im Spiel läuft der per-Frame-Tick.
+    _drainPendingWaterIso() {
+        const queue = this.state.pendingWaterIso;
+        if (!queue || queue.size === 0) return 0;
+        let built = 0;
+        for (const key of [...queue]) {
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
     // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
     // bekommt seine Streu-Strukturen (Wälder/Felsen/Geoden/Glutbrunnen +
     // Felsformationen). Spiegelt populateChunkVegetation — 8×8-Sample-Raster,
@@ -39977,6 +40041,9 @@ class AnazhRealm {
         // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
         // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
         this._tickPendingVegSpawns(4);
+        // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
+        // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
+        this._tickPendingWaterIso(2);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -40498,7 +40565,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-perf.h.diag";
+AnazhRealm.VERSION = "12.0-perf.h";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
