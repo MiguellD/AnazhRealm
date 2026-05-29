@@ -12559,74 +12559,33 @@ async function checkBandWelleC1WaterCells(ctx) {
             const cy = oy + (j + 0.5) * step;
             const cxw = ox + (i + 0.5) * step;
             const czw = oz + (k + 0.5) * step;
-            let expected;
-            if (cy > band.top) {
-                // V9.78 — above-band ist AIR (Skip). Aber Architektur-Stempel
-                // läuft danach + kann Cells über bandTop auf SOLID setzen
-                // (Baum-Stamm, hoher Felsblock etc.). Für den Iso sind AIR
-                // und SOLID identisch (beide −1), darum akzeptieren wir
-                // beide oberhalb des Bands.
-                expected = actual === STATE.SOLID ? STATE.SOLID : STATE.AIR;
-            } else {
-                // V9.81 — Build nutzt jetzt 8-Corner-Avg aus dem geteilten
-                // Density-Grid (Trilinear-Interp am Cell-Center). Test muss
-                // mit-wandern und dieselbe Trilinear-Avg berechnen, sonst
-                // Mismatch an Borderline-Cells (d nahe 0).
-                let dSum = 0;
-                for (let dj = 0; dj <= 1; dj++) {
-                    for (let dk = 0; dk <= 1; dk++) {
-                        for (let di = 0; di <= 1; di++) {
-                            dSum += r._terrainDensityAt(
-                                ox + (i + di) * step,
-                                oy + (j + dj) * step,
-                                oz + (k + dk) * step
-                            );
-                        }
+            // V13.8 — die Klassifikation ist jetzt ein 3D-Flood-Fill (verbundenes
+            // Wasser), kein per-Spalten-`cy<=level` mehr. Konnektivität ist nicht
+            // billig nachrechenbar → der Test prüft die INVARIANTEN des Floods statt
+            // exakter Gleichheit: WATER ist NIE solide (Density ≤ 0) und NIE über
+            // dem Hydro-Band (cy ≤ band.top). Verletzung = echter Bug. (SOLID wird
+            // nicht geprüft: der Architektur-Stempel darf nicht-solides Terrain auf
+            // SOLID setzen.) 8-Corner-Avg-Density am Cell-Center wie der Build.
+            let dSum = 0;
+            for (let dj = 0; dj <= 1; dj++) {
+                for (let dk = 0; dk <= 1; dk++) {
+                    for (let di = 0; di <= 1; di++) {
+                        dSum += r._terrainDensityAt(ox + (i + di) * step, oy + (j + dj) * step, oz + (k + dk) * step);
                     }
                 }
-                const d = dSum / 8;
-                // V13.1-Doku-Sync: der Build nutzt jetzt `_atlasWaterLevelAt`
-                // (Atlas-strict + Rand-Tiefen-Gate) statt `_waterLevelAt`. Der
-                // Test muss mit-wandern: dieselbe Terrain-Top-pro-Spalte (aus
-                // dem Density-Grid, cy ≤ bandTop, höchste solide Cell) berechnen
-                // und denselben strikten Spiegel abfragen, sonst Mismatch an
-                // den (jetzt trockenen) Hang-Schatten-Cells.
-                let colTopY = -Infinity;
-                for (let jj = 0; jj < cfg.dimY; jj++) {
-                    const cyj = oy + (jj + 0.5) * step;
-                    if (cyj > band.top) continue;
-                    let ds = 0;
-                    for (let dj = 0; dj <= 1; dj++) {
-                        for (let dk = 0; dk <= 1; dk++) {
-                            for (let di = 0; di <= 1; di++) {
-                                ds += r._terrainDensityAt(
-                                    ox + (i + di) * step,
-                                    oy + (jj + dj) * step,
-                                    oz + (k + dk) * step
-                                );
-                            }
-                        }
-                    }
-                    if (ds / 8 > 0 && cyj > colTopY) colTopY = cyj;
-                }
-                const wlCol = r._atlasWaterLevelAt(cxw, czw, colTopY);
-                if (d > 0) expected = STATE.SOLID;
-                else if (cy <= wlCol) expected = STATE.WATER;
-                else expected = STATE.AIR;
             }
-            if (actual !== expected) mismatches++;
+            const d = dSum / 8;
+            if (actual === STATE.WATER && (d > 0 || cy > band.top + 0.01)) mismatches++;
             if (actual === STATE.SOLID) solidCount++;
             else if (actual === STATE.WATER) waterCount++;
             else airCount++;
         }
         out.mismatches = mismatches;
-        // V13.4-Härtung (V12.0-perf.h-Lehre): der Test rechnet colTopY + das
-        // HARTE Rim-Gate (WATER_RIM_BAND_M, V13.1) via Main-`_terrainDensityAt`
-        // nach — der Chunk wird aber evtl. vom Worker gebaut, dessen Density
-        // transzendente Präzisions-Drift gegen Main hat. An einer Borderline-
-        // Cell (d≈0 ODER colTopY am Rim-Schwellwert) flippt die Klassifikation →
-        // 1-2 Drift-Mismatches sind das implementation-defined Rauschen, KEIN
-        // Bug. Ein echter Klassifikations-Bug flippt Dutzende. Toleranz ≤2.
+        // V13.8-Härtung: der Test prüft die Flood-Invariante (WATER nie solide / nie
+        // über dem Band) via Main-`_terrainDensityAt`; der Chunk wird evtl. vom Worker
+        // gebaut, dessen Density transzendente Präzisions-Drift gegen Main hat. An
+        // einer Borderline-Cell (d≈0) flippt die Klassifikation → 1-2 Drift-Mismatches
+        // sind implementation-defined Rauschen, KEIN Bug. Echter Bug flippt Dutzende.
         out.classificationCorrect = mismatches <= 2;
         out.sampleSolidCount = solidCount;
         out.sampleWaterCount = waterCount;

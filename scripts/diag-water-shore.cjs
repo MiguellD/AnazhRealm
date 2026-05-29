@@ -95,6 +95,11 @@ const server = http.createServer((req, res) => {
             waterCols: 0, // Spalten mit ≥1 WATER-Cell
             wallCells: 0, // AIR-Cells lateral (4-Nbr) an WATER auf gleicher Höhe = Wand-Verursacher
             wallColsBelowLevel: 0, // dry-Spalten unter dem Chunk-Wasserspiegel neben Wasser
+            // V13.8-Detail-Befunde:
+            bleedCells: 0, // WATER in atlas-LAND-Spalte, hoch über waterLevel = Bergwand-Bluten
+            bleedCellsHigh: 0, // davon >8 m über waterLevel (klares Mountain-Bluten)
+            caveBubbles: 0, // AIR-Cell mit WATER direkt darüber = Luftblase unter Wasser
+            totalWater: 0,
             // Mesh-Befund:
             isoMeshes: 0,
             isoTris: 0,
@@ -181,6 +186,40 @@ const server = http.createServer((req, res) => {
                 }
             }
 
+            // V13.8-Detail-Scan: Bergwand-Bluten + Unterwasser-Luftblasen.
+            const h = s.hydrosphere;
+            const wl = typeof s.waterLevel === "number" ? s.waterLevel : 0;
+            const pc = key.split(",");
+            const ox = Number(pc[0]) * span;
+            const oz = Number(pc[1]) * span;
+            for (let j = 0; j < dimY; j++) {
+                const wy = oyChunk + (j + 0.5) * step;
+                for (let k = 0; k < dim; k++) {
+                    for (let i = 0; i < dim; i++) {
+                        const c = cells[idx(i, k, j)];
+                        if (c === STATE.WATER) {
+                            out.totalWater++;
+                            // atlas waterKind dieser Spalte
+                            let kind = -1;
+                            if (h && h.ready && h.water && h.water.waterKind) {
+                                const aci = Math.floor((ox + (i + 0.5) * step - h.originX) / h.cell);
+                                const acj = Math.floor((oz + (k + 0.5) * step - h.originZ) / h.cell);
+                                if (aci >= 0 && acj >= 0 && aci < h.dim && acj < h.dim)
+                                    kind = h.water.waterKind[aci + acj * h.dim];
+                            }
+                            // Bluten: WATER in atlas-LAND-Spalte (kind 0), über dem Meeresspiegel
+                            if (kind === 0 && wy > wl + 4) {
+                                out.bleedCells++;
+                                if (wy > wl + 8) out.bleedCellsHigh++;
+                            }
+                        } else if (c === STATE.AIR && j + 1 < dimY) {
+                            // Luftblase: AIR mit WATER direkt darüber (eingeschlossen unter Wasser)
+                            if (cells[idx(i, k, j + 1)] === STATE.WATER) out.caveBubbles++;
+                        }
+                    }
+                }
+            }
+
             // Mesh-Inspektion: vertikale Dreiecke im Iso-Mesh.
             const mesh = s.voxelChunkWaterIso && s.voxelChunkWaterIso.get(key);
             if (mesh && mesh.geometry) {
@@ -249,6 +288,9 @@ const server = http.createServer((req, res) => {
     console.log(
         `     dry-Spalten unter dem Spiegel neben Wasser (atlas-strikt geschnitten): ${result.wallColsBelowLevel.toLocaleString()}`
     );
+    console.log("  -- Detail-Befunde (V13.8) --");
+    console.log(`     Bergwand-Bluten (WATER in atlas-Land, >4 m über wl): ${result.bleedCells.toLocaleString()} (davon >8 m: ${result.bleedCellsHigh.toLocaleString()}) von ${result.totalWater.toLocaleString()} WATER`);
+    console.log(`     Unterwasser-Luftblasen (AIR mit WATER darüber): ${result.caveBubbles.toLocaleString()}`);
     console.log("  -- Mesh-Befund (das Symptom) --");
     console.log(`     Iso-Meshes: ${result.isoMeshes} · Dreiecke gesamt: ${result.isoTris.toLocaleString()}`);
     console.log(

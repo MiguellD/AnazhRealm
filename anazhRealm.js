@@ -17021,149 +17021,120 @@ class AnazhRealm {
         const Nx = dim + 4;
         const Ny = dimY + 1;
         const NxNy = Nx * Ny;
-        const colCount = dim * dim;
-        // V13.1 — Terrain-Oberfläche pro Spalte (höchste solide Cell): das
-        // Rand-Tiefen-Gate von `_atlasWaterLevelAt` braucht sie. Aus dem schon
-        // gesampelten Density-Grid (gleiche 8-Corner-Mittelung wie die
-        // Klassifikation, kein Noise-Re-Sample). -Infinity = keine solide Cell
-        // → das Rand-Gate (Spiegel − (−∞)) schlägt fehl → keine Rand-Pfütze.
-        const colTopY = new Float64Array(colCount).fill(-Infinity);
-        for (let j = 0; j < dimY; j++) {
-            const cy = oy + (j + 0.5) * step;
-            if (cy > bandTop) continue;
-            const j1 = j;
-            const j2 = j + 1;
+        // V13.8 — verbundenes Wasser via 3D-Flood-Fill von echten Quellen
+        // (Ozean/See/Fluss). Ersetzt die per-Spalten-Klassifikation + den
+        // V9.86-airAbove-Pass: beide waren 2,5D und ließen (a) Wasser an
+        // Bergwänden „bluten" (eine Wand-Spalte unter einem hohen See-Spiegel im
+        // 16-m-Atlas-Umkreis wurde gefüllt, obwohl die Wand sie vom See trennt —
+        // Diag V13.7: ~37 % der Wasser-Zellen) und (b) Unterwasser-Höhlen als
+        // Luftblasen (per-Spalte: hohe Terrain-Oberfläche → kein Wasser in der
+        // ganzen Säule, auch in der getauchten Höhle). Der Flood füllt NUR Zellen,
+        // die durch nicht-soliden Raum UNTER dem Body-Spiegel mit einer echten
+        // Quelle VERBUNDEN sind → kein Bluten (Wand trennt → nicht erreicht), keine
+        // Luftblase (laterale Verbindung erreicht die Höhle), sauberer Carve-Fluss
+        // (Re-Flood bei Edit). Seam-frei: Seeds aus dem GLOBALEN Atlas (in-chunk +
+        // OOB-Ring), Flood deterministisch über identisches Terrain. Architektur
+        // wird VOR dem Flood gestempelt → ein Damm blockt jetzt den Fluss.
+        const dimSq = dim * dim;
+        const cellD = (i, j, k) => {
+            const a = j * Nx + (k + 1) * NxNy;
+            const b = (j + 1) * Nx + (k + 1) * NxNy;
+            const c = j * Nx + (k + 2) * NxNy;
+            const e = (j + 1) * Nx + (k + 2) * NxNy;
+            const i1 = i + 1;
+            const i2 = i + 2;
+            return (
+                (density[i1 + a] +
+                    density[i2 + a] +
+                    density[i1 + b] +
+                    density[i2 + b] +
+                    density[i1 + c] +
+                    density[i2 + c] +
+                    density[i1 + e] +
+                    density[i2 + e]) *
+                0.125
+            );
+        };
+        let jMax = Math.floor((bandTop - oy) / step);
+        if (jMax >= dimY) jMax = dimY - 1;
+        // 1) SOLID/AIR aus der Density (Wasser kommt erst durch den Flood). Über
+        //    dem Band bleibt alles AIR (Uint8Array-Default 0 = AIR).
+        for (let j = 0; j <= jMax; j++) {
+            const baseJ = j * dimSq;
             for (let k = 0; k < dim; k++) {
-                const col0 = k * dim;
-                const k1 = k + 1;
-                const k2 = k + 2;
-                const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
-                const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
-                const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
-                const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
+                const baseK = k * dim;
                 for (let i = 0; i < dim; i++) {
-                    const i1 = i + 1;
-                    const i2 = i + 2;
-                    const d =
-                        (density[i1 + ofs_j1_k1] +
-                            density[i2 + ofs_j1_k1] +
-                            density[i1 + ofs_j2_k1] +
-                            density[i2 + ofs_j2_k1] +
-                            density[i1 + ofs_j1_k2] +
-                            density[i2 + ofs_j1_k2] +
-                            density[i1 + ofs_j2_k2] +
-                            density[i2 + ofs_j2_k2]) *
-                        0.125;
-                    if (d > 0) {
-                        const col = i + col0;
-                        if (cy > colTopY[col]) colTopY[col] = cy;
-                    }
+                    if (cellD(i, j, k) > 0) cells[i + baseK + baseJ] = STATE.SOLID;
                 }
             }
         }
-        // Pro xz-Spalte den STRIKTEN Wasser-Spiegel cachen (V13.1 — Atlas-
-        // strict + Rand-Tiefen-Gate statt des 16-m-See-Dilatations-Bleeds von
-        // `_waterLevelAt`). -Infinity wo der Atlas kein Wasser markiert → die
-        // Spalte bleibt trocken (Wasserschatten an Hängen weg).
-        const colWaterY = new Float64Array(colCount);
+        // 2) Architektur-Stempel VOR dem Flood — ein Damm blockt jetzt das Fließen.
+        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);
+        // 3) Quell-Spiegel pro Spalte: NUR echtes Atlas-Wasser/Fluss (kein Rim).
+        //    `_atlasWaterLevelAt` mit terrainTop = +Infinity unterdrückt das Rand-
+        //    3×3 (`rim < +∞` ist immer false) → liefert nur den echten Body-Spiegel.
+        const WATER = STATE.WATER;
+        const AIR = STATE.AIR;
+        const flLevel = new Float64Array(dimSq * dimY);
+        const queue = [];
+        const seedColumn = (i, k, lvl) => {
+            if (!(lvl > -Infinity)) return;
+            const baseK = k * dim;
+            for (let j = 0; j <= jMax; j++) {
+                const cy = oy + (j + 0.5) * step;
+                if (cy > lvl) break;
+                const cidx = i + baseK + j * dimSq;
+                if (cells[cidx] === AIR) {
+                    cells[cidx] = WATER;
+                    flLevel[cidx] = lvl;
+                    queue.push(cidx);
+                }
+            }
+        };
+        // In-chunk-Seeds (echte Atlas-Wasser-Spalten).
         for (let k = 0; k < dim; k++) {
             const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) {
-                const cx = ox + (i + 0.5) * step;
-                colWaterY[i + k * dim] = this._atlasWaterLevelAt(cx, cz, colTopY[i + k * dim]);
+                seedColumn(i, k, this._atlasWaterLevelAt(ox + (i + 0.5) * step, cz, Infinity));
             }
         }
-        for (let j = 0; j < dimY; j++) {
-            const cy = oy + (j + 0.5) * step;
-            if (cy > bandTop) {
-                continue;
-            }
-            const baseJ = j * dim * dim;
-            const j1 = j;
-            const j2 = j + 1;
-            for (let k = 0; k < dim; k++) {
-                const baseK = k * dim;
-                const k1 = k + 1;
-                const k2 = k + 2;
-                const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
-                const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
-                const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
-                const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
-                for (let i = 0; i < dim; i++) {
-                    const i1 = i + 1;
-                    const i2 = i + 2;
-                    const d =
-                        (density[i1 + ofs_j1_k1] +
-                            density[i2 + ofs_j1_k1] +
-                            density[i1 + ofs_j2_k1] +
-                            density[i2 + ofs_j2_k1] +
-                            density[i1 + ofs_j1_k2] +
-                            density[i2 + ofs_j1_k2] +
-                            density[i1 + ofs_j2_k2] +
-                            density[i2 + ofs_j2_k2]) *
-                        0.125;
-                    let s;
-                    if (d > 0) s = STATE.SOLID;
-                    else if (cy <= colWaterY[i + baseK]) s = STATE.WATER;
-                    else s = STATE.AIR;
-                    cells[i + baseK + baseJ] = s;
-                }
-            }
+        // OOB-Ring-Seeds: ein Atlas-Wasser-Körper jenseits der Chunk-Grenze flutet
+        // über die Kante herein (seam-frei via globalem Atlas).
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            seedColumn(0, k, this._atlasWaterLevelAt(ox - 0.5 * step, cz, Infinity));
+            seedColumn(dim - 1, k, this._atlasWaterLevelAt(ox + (dim + 0.5) * step, cz, Infinity));
         }
-        // V9.86 Perf-2.c-Refine — Mountain-Mulden-Filter via Atmosphären-
-        // Konnektivität (V9.85 hatte einen einfacheren „SOLID-direkt-darüber"-
-        // Filter, der zu aggressiv war: am Carve-Rand killte er legitime
-        // WATER-Cells, weil eine zufällige Sub-Iso-SOLID-Cell darüber lag
-        // → C.3-Test-Flake auf ~50 %). Neue Frage: „kann diese WATER-Cell
-        // einen Pfad durch AIR/WATER-Cells nach oben zur Atmosphäre
-        // erreichen?" Wenn ja → echtes Wasser (See, Ozean, Spieler-Carve mit
-        // offener Oberseite); wenn nein → eingeschlossene Mountain-/Höhlen-
-        // Mulde → AIR. Top-Down-Pass: für jede xz-Spalte ein `airAbove`-
-        // Flag (Start = 1 = Atmosphäre über bandTop). SOLID setzt Flag=0,
-        // AIR setzt Flag=1, WATER bleibt WATER falls Flag=1 (Pfad oben),
-        // wird AIR falls Flag=0 (eingeschlossen). Heilt Schöpfer-V9.84-
-        // Audit „Wasser in Bergwänden" UND Schöpfer-V9.85-Audit „Wasser
-        // spawnt aus dem Nichts bei Architektur" (potenziell — der dirty-
-        // Pfad respektiert jetzt die Atmosphäre-Wahrheit). Plus: bewahrt
-        // V9.74-Vision (Carve im Hochland → Wasser fließt rein, Pfad nach
-        // oben offen). Pass läuft VOR dem Architektur-Stempel (damm-SOLID-
-        // Cells sind noch nicht da → Damm-Mechanik unverändert).
-        const dimSq = dim * dim;
-        const STATE_AIR = STATE.AIR;
-        const STATE_SOLID = STATE.SOLID;
-        const airAbove = new Uint8Array(dimSq);
-        // Initial: alle Spalten haben Atmosphäre über sich (above-bandTop ist
-        // garantiert AIR, V9.77-globales-Y-Band).
-        for (let p = 0; p < dimSq; p++) airAbove[p] = 1;
-        for (let j = dimY - 1; j >= 0; j--) {
-            const baseJ = j * dimSq;
-            for (let p = 0; p < dimSq; p++) {
-                const idx = p + baseJ;
-                const s = cells[idx];
-                if (s === STATE_SOLID) {
-                    airAbove[p] = 0;
-                } else if (s === STATE_AIR) {
-                    airAbove[p] = 1;
-                } else {
-                    // WATER — wenn kein Air-Pfad nach oben, ist es eine
-                    // eingeschlossene Mulde → AIR. Sonst bleibt WATER und
-                    // schluckt die Air-Brücke durch (WATER ist transparent
-                    // für die Atmosphären-Verbindung — eine WATER-Cell mit
-                    // AIR darüber lässt auch eine WATER-Cell darunter
-                    // „atmen").
-                    if (airAbove[p] === 0) {
-                        cells[idx] = STATE_AIR;
-                    }
-                }
-            }
+        for (let i = 0; i < dim; i++) {
+            const cx = ox + (i + 0.5) * step;
+            seedColumn(i, 0, this._atlasWaterLevelAt(cx, oz - 0.5 * step, Infinity));
+            seedColumn(i, dim - 1, this._atlasWaterLevelAt(cx, oz + (dim + 0.5) * step, Infinity));
         }
-        // V9.74 (Welle C.3) — Architektur-Cell-Stempel: solide Architekturen
-        // (V9.65-Blocker-Index) sind im Cell-Feld direkt zu sehen. Eine Damm-
-        // Stein-Wand stempelt ihre Cells als SOLID; der Iso-Surface-Mesher
-        // (C.2) baut dann das Wasser DRUMHERUM, nicht durch den Damm. Ist
-        // die einlösende Bedeutung der Damm-Vision: die Substanz ist DA,
-        // wo der Spieler sie baut.
-        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);
+        // 4) BFS-Flood durch nicht-soliden Raum unter dem getragenen Spiegel.
+        const pushN = (ni, nk, nj, lvl) => {
+            if (ni < 0 || nk < 0 || ni >= dim || nk >= dim || nj < 0 || nj > jMax) return;
+            if (oy + (nj + 0.5) * step > lvl) return;
+            const nidx = ni + nk * dim + nj * dimSq;
+            if (cells[nidx] === AIR) {
+                cells[nidx] = WATER;
+                flLevel[nidx] = lvl;
+                queue.push(nidx);
+            }
+        };
+        for (let qh = 0; qh < queue.length; qh++) {
+            const cidx = queue[qh];
+            const lvl = flLevel[cidx];
+            const j = (cidx / dimSq) | 0;
+            const rem = cidx - j * dimSq;
+            const k = (rem / dim) | 0;
+            const i = rem - k * dim;
+            pushN(i + 1, k, j, lvl);
+            pushN(i - 1, k, j, lvl);
+            pushN(i, k + 1, j, lvl);
+            pushN(i, k - 1, j, lvl);
+            pushN(i, k, j + 1, lvl);
+            pushN(i, k, j - 1, lvl);
+        }
         return cells;
     }
 
@@ -40794,7 +40765,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.7";
+AnazhRealm.VERSION = "13.8";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
