@@ -19366,8 +19366,9 @@ class AnazhRealm {
         // dünnen Wand-Blutens (16-m-Atlas-Spiegel spillt minimal über den Voxel-
         // Grat → ein flaches Blatt). Fragmente mit waterThick < uMinDepth fallen
         // weg (mat.alphaTest); tiefes Wasser (See/Ozean) bleibt. default 0 =
-        // exakt das alte Bild — im Browser-Audit live justiert.
-        const uMinDepth = uniform(0.0);
+        // exakt das alte Bild — über den Atmosphäre-Slider (setWaterCull) live
+        // justiert + aus dem persistierten Wert initialisiert.
+        const uMinDepth = uniform((this.state.atmosphere && this.state.atmosphere.waterCull) || 0.0);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -20579,9 +20580,11 @@ class AnazhRealm {
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
             // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
+            // V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
                 celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
                 fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
+                waterCull: (this.state.atmosphere && this.state.atmosphere.waterCull) || 0.0,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -22665,6 +22668,8 @@ class AnazhRealm {
             if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
+            const wc = Number(state.atmosphere.waterCull);
+            if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -31289,6 +31294,24 @@ class AnazhRealm {
         return m;
     }
 
+    // V13.9 — Mutations-Pfad für den Wasser-Cull-Slider (uMinDepth). Blendet
+    // dünnes, flaches Wasser pro Pixel aus (waterThick < uMinDepth → Alpha 0,
+    // via mat.alphaTest verworfen). Wert in [0,1]-Lineardepth-Einheiten (über
+    // camera near..far) — der Schöpfer justiert ihn live im Browser, bis das
+    // dünne Wand-/Ufer-Bluten weg ist, tiefes Wasser bleibt. 0 = altes Bild.
+    setWaterCull(minDepth) {
+        const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+        this.state.atmosphere.waterCull = m;
+        // Das geteilte Hydro-Surface-Uniform live setzen (lazy initialisiert beim
+        // ersten Material-Bau; nur setzen, wenn schon da).
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.minDepth) {
+            this.state.hydroSurfaceUniforms.minDepth.value = m;
+        }
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
     // Affinity = wie stark resonieren die Compound-Tags eines Bauplans mit
     // dem Welt-Feld an Position (x, z)? Dot-Product über die 4 Achsen des
     // Welt-Feldes. Resultat 0..1 (sum / 4 da MAX-aggregierte Tags ebenfalls
@@ -38044,6 +38067,20 @@ class AnazhRealm {
                 if (fogVal) fogVal.textContent = `${pct} %`;
             });
         }
+        // V13.9 — Wasser-Cull-Slider (uMinDepth). Range 0..200 → minDepth
+        // 0..0.02 (Schritt 0.0001), feinfühlig im dünnen Lineardepth-Bereich.
+        const wcS = document.getElementById("slider-watercull");
+        const wcVal = document.getElementById("slider-watercull-val");
+        if (wcS) {
+            const w0 = (this.state.atmosphere && this.state.atmosphere.waterCull) || 0.0;
+            wcS.value = String(Math.round(w0 * 10000));
+            if (wcVal) wcVal.textContent = w0.toFixed(4);
+            wcS.addEventListener("input", () => {
+                const raw = parseInt(wcS.value, 10) / 10000;
+                const v = this.setWaterCull(raw);
+                if (wcVal) wcVal.textContent = v.toFixed(4);
+            });
+        }
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
@@ -40782,7 +40819,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.9";
+AnazhRealm.VERSION = "13.9.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
