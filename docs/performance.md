@@ -286,3 +286,54 @@ Diese Welle ist KEIN Selbstzweck — sie ist Vorbereitung für die System-Kopplu
 Die Heilige Lektion warnt vor Komplexität ohne Fundament. Diese Welle ist Fundament-Pflege, nicht neue Komplexität — sie streicht oder pooled, mehr nicht. Das Ergebnis ist EINE Datei mit derselben Vision, schneller.
 
 **V9.93.r-Reflexion (26.05.2026)**: V9.87-V9.93 hat das Fundament gebaut — solide AAA-Catch-up, Workers + LOD + Lazy-BVH + Float32-Determinismus. Was fehlt für die ECHTE Bibliothek von Alexandria liegt in §5 Welle Vision-Reset (V9.94-V9.99): WebGPU-Compute als epochaler Hebel + IndexedDB als Welt-Gedächtnis-Pfeiler + Predictive Prefetch + Geometry-Stitching als Profi-Antwort auf LOD-Naht. Das ist der Pfad nach vorne.
+
+---
+
+## 9. Architektur-Instancing-Bogen — Design (V12.0-perf.c+, 29.05.2026)
+
+Der V12.0-perf-Bogen heilte den **Edit-Rebuild-Freeze** (perf.a Kaskaden-Unifikation, perf.b Basis-Density-Cache). Das ist EIN FPS-Symptom. Der ANDERE — der vom Schöpfer im Browser gesehene Sturm auf FPS 6-9 beim **Laufen in dichte Architektur-Regionen** (Kristallfelder, Wälder) — sitzt im **Architektur-Teilsystem** und hat seine eigenen Wurzeln. Dieser Abschnitt ist das Design für ihre Heilung. Disziplin: **Wurzeln heilen, nicht entfernen** — dem Teilsystem seine verdiente Tiefe + Funktionalität geben, verlorene Fäden verbinden.
+
+### 9.1 Das Teilsystem verstanden — der Lebenszyklus
+
+Architekturen sind das **persistente Leben der Welt**: Wälder, Kristallfelder, Felsformationen, Spieler-Bauten (Dörfer/Tempel/Dämme), Werkstätten. Vision-Pfeiler F (Hylomorphismus-Cluster-Resonanz): die Welt soll **dicht** davon sein, persistent (Daten immer, Mesh gecullt), interaktiv (harvestbar/kollidierbar), emotional resonant (Cluster gleicher Tags verstärken Aura, locken Fauna).
+
+- `spawnArchitecture` → legt einen **Daten-Eintrag** an, berechnet Affordances + `_populateBlockerAABBs`. Baut den Mesh NICHT wenn der Spieler fern ist → **„cold"** (nur Daten). *Das Culling-System existiert also schon — gut gedacht.*
+- `tickArchitectureCulling` (1×/s) → für jeden Eintrag in `architectureCullingRadius` (150 m) ohne Mesh: `_rebuildArchitectureMesh`. Außerhalb: `_cullArchitectureMesh`.
+- `_rebuildArchitectureMesh` → `builder(seed)` → `_buildFromBlueprint` baut eine `THREE.Group` mit **einem separaten `THREE.Mesh` pro Part** (eigene Geometrie via `_makePartGeometry`, eigenes Material) + `_buildArchitectureCollision` (Compound-Ammo-Body, eine `btBoxShape` pro Sub-Mesh).
+
+### 9.2 Die vier Wurzeln (code- + konsolen-belegt)
+
+- **A. Kein Instancing** — `_buildFromBlueprint` baut ein `THREE.Mesh` pro Part, kein Sharing über identische Strukturen. 20 Kiefern = 40 Geometrien + 40 Draw-Calls. 150-m-Feld dicht = **hunderte Draw-Calls jeden Frame** (Steady-State-Killer, nicht nur Build).
+- **B. Culling-Build ohne Budget** — `tickArchitectureCulling` (Z30869) baut JEDEN in-Range-Eintrag ohne Mesh in EINEM Tick, **kein Per-Frame-Cap**. Spieler läuft in dichte Region → Dutzende Mesh-Builds gleichzeitig → der „(cold)→Build"-Burst. V9.96 budgetierte den *Spawn*, vergaß den *Culling-Build*.
+- **C. Eager-Collision für alles in 150 m** — `_rebuildArchitectureMesh` baut immer `_buildArchitectureCollision`. Compound-Ammo-Body für jede Deko-Kiefer in 150 m, die der Spieler nie berührt.
+- **D. Nexus-Pflaster** — die Nexus-Selbstanalyse senkt bei FPS<60 `gravity *= 0.9`. Welt schwebt nach 10 Zyklen bei 35% Gravitation = die spürbare Disharmonie. Heilt das falsche Ding.
+
+### 9.3 Wie die Profis es lösen
+
+- **Unreal HISM / Instanced Static Mesh:** tausende Bäume = ein Draw-Call pro Mesh-Typ, GPU-instanced, hierarchisches Culling + LOD.
+- **Foliage-Systeme (Witcher/Genshin):** instanced Rendering + Impostor-LODs (ferne Bäume → Billboards) + **keine Collision bis nah**.
+- **Spatial Partitioning + Time-Budget:** nie mehr als X ms Build/Frame; nur nahe Buckets betrachtet.
+- **Adaptive Quality (Dynamic Resolution/LOD):** das System merkt FPS-Druck und justiert **Qualität** (LOD-Distanz, Dichte), niemals die Simulation/Physik.
+
+### 9.4 Die nachhaltige Lösung — vier Wurzeln heilen, Fäden verbinden
+
+- **Wurzel A → Instancing als natürliche Form (das Herz).** Architektur-Parts gruppiert nach `(blueprint, part-index)` → alle „Kiefer-Stämme" als EINE `InstancedMesh`, alle „Kronen" als eine, usw. Die Geometrie pro Bauplan-Part ist **fix** (die `parts`-Arrays sind Konstanten), der Seed treibt nur Transform/Tint → instancbar (Per-Instance-Matrix = Group-Transform × Part-Local, Per-Instance-Color via `setColorAt`). Der Culling-Tick **schreibt/löscht Instance-Slots** statt Meshes zu addieren/entfernen. Draw-Calls kollabieren von hunderten auf ~(Typen × Parts). Die V11-Gras-Pool-Lehre auf Architekturen verallgemeinert — r184 trägt es (V12.0-d bewies Gras-Recycling: `maxPoolSize=1` über 50-Zyklus-Stress, echtes Recycling). **Unikate** (ein einzelner Tempel) bleiben klassische Meshes — der Hebel zielt auf die Wiederhol-Typen (Vegetation), die stürmen.
+- **Wurzel B → budgetierter Culling-Build (der Atem).** `tickArchitectureCulling` bekommt ein Per-Frame-Zeit/Count-Budget (V9.85 Chunk-Streaming-Pattern, V9.96 Vegetations-Pattern). Mit Instancing ist der Build fast frei (Matrix-Write), das Budget ist das Sicherheitsnetz.
+- **Wurzel C → Lazy-Proxy-Collision (der Boden).** Wie V9.92-Lazy-BVH: Ammo-Body nur in kleinem Radius (~25 m) um den Spieler, nicht in den vollen 150 m Render-Radius. Ferne Deko ist sichtbar (instanced), aber ohne Physik bis der Spieler herankommt. **Sicherheits-Wand-Lehre (V9.92)**: der Player-aktuelle-Bereich MUSS sofort Collision haben (sync wenn nötig), andere rate-limited late-upgraden. Collision ist für Interaktion, nicht Dekoration.
+- **Wurzel D → den Nexus HEILEN, nicht entfernen (der verlorene Faden).** Die Idee ist schön + Vision-treu (das System, das lernt, sich selbst heilt). Nur die *Handlung* (Gravitation senken) ist die Korruption. Heilung: den FPS-Sinn auf die echten Hebel umleiten → bei FPS-Druck adaptiv `cullingRadius` straffen / Spawn-Budget senken / LOD-Distanz erhöhen, bei Luft wieder lockern. Der Nexus wird ein **ehrlicher adaptiver Qualitäts-Governor** (AAA-Dynamic-LOD-Pattern) — gibt dem Wurzel-Gedanken seine verdiente Tiefe + verbindet „System das lernt" mit „Welt die bei 60 FPS läuft".
+
+**Der verbundene Klang:** Welt füllt sich mit instanced Leben (A, fast frei) → budgetiert gebaut (B, kein Spike) → Collision nur wo der Spieler berührt (C, Physik bleibt leicht) → der Nexus regelt Qualität adaptiv (D). **Dann** ist der Frame frei für Kreaturen die leben, Emotion die pulsiert, den Spieler der entdeckt.
+
+### 9.5 Wellen-Schnitt (jede Sub-Welle: messen → testen → committen)
+
+| Sub-Welle | Was | Aufwand |
+|---|---|---|
+| ✅ **V12.0-perf.c.diag** | `scripts/diag-arch-perf.cjs` — Befund: 762 Sub-Meshes, 183 Ammo-Bodies, Burst 26.5 ms/60-cold, **572 → 40 Instancing-Gruppen = ×14.3 weniger Draw-Calls**. | ~1h ✅ |
+| ✅ **V12.0-perf.c.1** | Instancing-Foundation: `_archFlattenBlueprint` (flatten + Gate) + `_archEntryWorldMatrix` + `_archLeafMaterial`, 8-Invarianten-Test (Leaf-Matrix bit-gleich, maxDelta=0). Builder ignoriert seed → nur Per-Instance-Matrix nötig. KEIN Cutover. | ✅ |
+| ✅ **V12.0-perf.c.2** | Cutover: InstancedMesh-Registry (Slot + capacity-doubling), Vegetation via `instanced: true`-Flag instanced (AAA-Foliage-Pattern), Collision aus Leaf-AABBs, 4 entry.mesh-Fäden geheilt (find-nearest, crosshair-pick via instanceId→slotEntry, collision, grounding-topY). Playtest grün inkl. instancierter LMB-Pick. | ✅ |
+| ✅ **V12.0-perf.d** | Budgetierter Culling-Build (Wurzel B): `tickArchitectureCulling` per-Frame mit `architectureBuildBudgetPerFrame`=3 → kein Build-Burst, sanftes Pop-In. Lazy-Collision (Wurzel C) bewusst zurückgestellt (statische Bodies billig, Budget deckelt Build-Rate, Radius-Gatung würde 6 Tests anfassen für Marginales → perf.d.2 falls Browser-Audit es zeigt). | ✅ |
+| ✅ **V12.0-perf.h** | Streaming-Hitch-Heilung (Schöpfer-Audit-Folge): Wasser-Iso-Build (~78 ms Main-Thread) aus dem synchronen Chunk-Finalize in eine per-Frame-Queue (`_tickPendingWaterIso(2)`, V9.96-Pattern) — Chunk sofort fertig (Terrain+Boden), Wasser ≤2/Frame nach, kein Pile-Up. Diagnose `diag-stream-perf.cjs` (Architektur <1% des Streaming-Frames = Instancing-Bogen wirkt; Wasser ~die Hälfte). Bonus: V9.90/V9.91-Worker-Test von bit-identisch auf epsilon-Toleranz (V9.95-a — transzendente Präzision, ~40%-Flake geheilt). | ✅ |
+| ⏳ **V12.0-perf.h.2** (optional) | Wasser-Iso + Wasser-Density GANZ in den Worker (wie V9.91 Terrain) → Main-Thread ~null Geometrie beim Streaming. Die Queue ist die Dispatch-Vorarbeit. | offen |
+| ✅ **V12.0-perf.d.2** | Lazy-Proxy-Collision (Wurzel C): Render bis 150 m, Ammo-Body nur bis `architectureCollisionRadius`=90 m (~36% der Bodies). Option Y churn-frei (distance-gated build, kein build-then-dispose), per-Frame-Pass fügt/gibt Collision je Spieler-Distanz. Test-sicher (90 > max Test-Spawn 56 m < RMIN 100). | ✅ |
+| ✅ **V12.0-perf.e** | Nexus → adaptiver Qualitäts-Governor (Wurzel D): `_nexusAdaptiveQuality(fps)` justiert Render-Radius + Build-Budget je FPS-Druck, NIE Gravitation. Gravitations-Pflaster raus. Bonus: boundingSphere-Invalidierung heilt einen echten InstancedMesh-Raycast-Pick-Bug. | ✅ |
+| **V12.0-perf.g** | Schöpfer-Browser-Audit RDNA-3 — die FPS-Wahrheit (headless nicht messbar, swiftshader serialisiert). | ~30min |

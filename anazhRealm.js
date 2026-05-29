@@ -76,29 +76,11 @@ class AnazhRealm {
             // (sunDir, light, fog*). Vollendet den V10.0-f-Bogen — alle 4
             // Materials sind jetzt NodeMaterial.
             hydroSurfaceUniforms: null,
-            // V10.0-g — Toon-Light-Uniforms für MeshBasicNodeMaterial-basiertes
-            // Toon-Shading (3 uniform-Knoten): sunDir, sunIntensity, ambient.
-            // Init lazy in _ensureToonLightUniforms(); mutiert von
-            // _dayNightApplyDirectionalLight + _dayNightApplyAmbient. Welt-
-            // global geteilt von allen ToonNodeMaterials (Voxel-Chunks,
-            // Architekturen, Inseln, Avatar). gradientMap-Lookup bleibt
-            // separat in state.toonGradientMap.
-            toonLightUniforms: null,
-            // V10.0-h — Manueller Shadow-Pass für WebGPU. `shadowRTT` ist das
-            // WebGLRenderTarget mit DepthTexture (2048×2048); `shadowDepthTexture`
-            // ist seine DepthTexture (compareFunction=LessCompare). Beide lazy
-            // initialisiert in _ensureShadowRenderTarget, gefüttert pro Frame
-            // via _renderShadowMapPass. Auf WebGL bleibt es null (Three.js'
-            // WebGLRenderer macht den Shadow-Pass selbst — nicht mehr aktiv
-            // mit MeshBasicNodeMaterial, eine V10.0-h.c-Folge-Welle wäre
-            // den manuellen Pass auch auf WebGL zu aktivieren).
-            shadowRTT: null,
-            shadowDepthTexture: null,
-            // V10.0-j — Override-Material für den manuellen Shadow-Pass
-            // (siehe _renderShadowMapPass). Minimales MeshBasicNodeMaterial
-            // ohne colorNode-Custom — alle Caster werden damit gerendert,
-            // kein instanceColor-Lookup-Crash. Lazy initialisiert.
-            shadowOverrideMat: null,
+            // V12.0-f — toonLightUniforms + der manuelle Shadow-Pass-Stack
+            // (shadowRTT/shadowDepthTexture/shadowOverrideMat) sind GESTRICHEN.
+            // Die nativen MeshToonNodeMaterials (lights=true, r184) konsumieren
+            // DirectionalLight/Ambient/Hemisphere + die Three.js-WebGPU-Shadow-
+            // Pipeline direkt — kein hand-gebautes Lighting/Shadow-Sampling mehr.
             // V10.0-j.g — Defer-Queue für GPU-Resource-Disposals. Set
             // statt Array — verhindert duplicate dispose() für SHARED
             // Materials. Edgecase: `_disposeSoulGroup` traversiert ein
@@ -117,10 +99,10 @@ class AnazhRealm {
             // V8.29 — Wind-Uniforms für Gras + zukünftige TSL-Wind-Migration.
             // Aktuell: `_loopRender` schreibt `uWindTime` pro Frame +
             // `uWindStrength` aus weather (rainy = kräftiger). V10.0-g.2:
-            // das alte `_grassInstanceMat` (MeshLambertMaterial mit GLSL-
-            // onBeforeCompile-Wind-Patch) ist nicht mehr aktiv genutzt —
-            // Gras nutzt jetzt `_buildToonNodeMaterial` pro Chunk. Die Wind-
-            // Uniforms bleiben als state-Slot für V10.0-g.cel-TSL-Wind.
+            // V12.0-f — `_grassInstanceMat` ist ein natives MeshLambertNodeMaterial
+            // (lights=true) mit positionNode-Wind (TSL). Die Wind-Uniforms
+            // (uWindTime/uWindStrength) leben hier als geteilter state-Slot,
+            // pro Frame im Render-Loop aktualisiert.
             windUniforms: null,
             _grassMat: null,
             // V10.0-j.j — Singleton-Cache für die ConeGeometry des Gras-
@@ -326,6 +308,11 @@ class AnazhRealm {
             // wir nicht doppelt anfordern. Beim voxelEdit wird cache geleert.
             voxelDensityCache: null, // Map<"cx,cz,lod", Float32Array>
             voxelDensityPending: null, // Set<"cx,cz,lod">
+            // V12.0-perf.b — Basis-Terrain-Density-Grid pro Chunk+LOD (OHNE
+            // voxelEdits, worldgen-frozen). Edit-Rebuild legt nur den billigen
+            // Kugel-Delta drauf statt 126 ms neu zu samplen. Geleert bei
+            // Worldgen (neue Welt), distanzbasiert geprunt (Memory bounded).
+            voxelBaseDensityCache: null, // Map<"cx,cz,lod", Float32Array>
             voxelWorkerWorldgenSynced: false, // turns true nach erstem Worldgen-State-Sync
             // V9.91 (Phase 3): voller Chunk-Mesh-Cache (positions/normals/
             // indices/colors/waterCells). Streaming-Pump nutzt diesen
@@ -838,6 +825,34 @@ class AnazhRealm {
             // 2Hz halbiert die Latenz auf 500ms.
             architectureCullingTickHz: 2.0,
             architectureCullingLastTick: -Infinity,
+            // V12.0-perf.d (Wurzel B) — max. teure Architektur-Builds (Render +
+            // Ammo-Collision) pro Frame im Culling-Scan. Deckelt den Build-Burst
+            // beim Eintritt in dichte Regionen (FPS-Sturm-Heilung). Cull bleibt
+            // ungedeckelt (billig). 3/Frame × 60 fps = 180 Builds/s → eine dichte
+            // Region füllt sich in <1 s sanft, ohne Frame-Spike.
+            // V12.0-perf.d.2 (Wurzel C) — Lazy-Proxy-Collision: Architekturen
+            // RENDERN bis architectureCullingRadius (150 m), bekommen aber einen
+            // Ammo-Body nur innerhalb dieses kleineren Radius. Ferne Deko ist
+            // sichtbar (instanced) aber physik-frei bis der Spieler herankommt.
+            // 90 m > maximaler collision-prüfender Test-Spawn (~56 m) → test-
+            // sicher; (90/150)² ≈ 36 % der Bodies. AAA-Pattern: Collision für
+            // Interaktion, nicht Dekoration. Bleibt < RMIN (100) des Governors,
+            // also immer < Render-Radius.
+            architectureCollisionRadius: 90,
+            architectureBuildBudgetPerFrame: 3,
+            // V12.0-perf.h — deferred-Queue für den Wasser-Iso-Build (Set von
+            // "cx,cz"-Keys), per-Frame budgetiert (Streaming-Hitch-Heilung).
+            pendingWaterIso: null,
+            // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
+            // archFlattenCache: Map<blueprintName, {instanceable, reason,
+            //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
+            //   Leaf-Primitive aufgelöst (nested Blueprints mit komponierter
+            //   Matrix), geteilte Geometrie+Material pro (Bauplan, Leaf).
+            // archInstanceGroups: Map<"name#leafIdx", {mesh:InstancedMesh,
+            //   capacity, count, free:[]}> — eine InstancedMesh je Leaf-Gruppe.
+            //   Lazy initialisiert beim Cutover (perf.c.2).
+            archFlattenCache: null,
+            archInstanceGroups: null,
             // Ring 6.4 — Bauplan-Datenschicht. Map<name, blueprint>.
             // Built-ins werden im Konstruktor-Ende über _defaultBlueprints
             // gefüllt; eigene Baupläne (Editor 6.6) kommen dazu und werden
@@ -10185,9 +10200,9 @@ class AnazhRealm {
         }
         starField.frustumCulled = false;
         // V10.0-j — Sterne werfen keine Schatten (sind unendlich-far Billboards).
-        // Defensive — setRenderObjectFunction-Filter in _renderShadowMapPass
-        // schließt castShadow=false-Objects ohnehin aus, aber explicit ist
-        // die Wahrheit.
+        // castShadow=false → Three.js' native Shadow-Pass (V12.0-f) rendert sie
+        // nicht in die Shadow-Map; receiveShadow=false → kein Schatten auf den
+        // Billboards selbst.
         starField.castShadow = false;
         starField.receiveShadow = false;
         this.state.scene.add(starField);
@@ -10278,40 +10293,23 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            // Fallback (kein TSL verfügbar): klassisches MeshLambertMaterial
-            // OHNE onBeforeCompile-Wind — Wind fehlt, aber Material rendert.
+        if (!TSL || typeof THREE.MeshLambertNodeMaterial !== "function") {
+            // Defensive (Bootstrap-Bruch): klassisches MeshLambertMaterial OHNE
+            // Wind. Im WebGPU-required-Normalbetrieb (V12.0-a) nie erreicht.
             this.state._grassMat = new THREE.MeshLambertMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
             return this.state._grassMat;
         }
         // V10.0-i.b — Wind-Displacement via TSL-positionNode (WGSL-konform).
-        // Wurzel-Heilung des V10.0-g.r-`onBeforeCompile`-GLSL-Patches: Three.js'
-        // WebGPURenderer ignorierte den Patch (GLSL-Strings sind nicht WGSL-
-        // übersetzbar) → Wind unsichtbar auf WebGPU, plus implizite Pipeline-
-        // Konflikte triggerten Hot-Swap zu WebGL. Heilung: identische Wind-
-        // Mathematik (phase = time × 1.7 + worldX × 0.28 + worldZ × 0.21,
-        // displacement = sin/cos(phase) × strength × heightFactor) als TSL-
-        // Tree im positionNode. Welt-Optik 1:1 auf BEIDEN Renderern. Plus:
-        // colorNode mit manuellem Half-Lambert-Lighting + Toon-Light-Uniforms-
-        // Sync (gleiches Pattern wie _buildToonNodeMaterial V10.0-g) — Gras
-        // atmet mit dem Tag-Nacht-Zyklus, Schatten via V10.0-h-Pipeline.
-        const {
-            uniform,
-            vec3,
-            vec4,
-            float,
-            sin,
-            cos,
-            max,
-            normalize,
-            dot,
-            clamp,
-            mix,
-            normalWorld,
-            positionLocal,
-            positionWorld,
-            texture,
-        } = TSL;
+        // Identische Wind-Mathematik (phase = time × 1.7 + worldX × 0.28 +
+        // worldZ × 0.21, displacement = sin/cos(phase) × strength × heightFactor)
+        // als TSL-Tree im positionNode. V12.0-f — das Material ist jetzt ein
+        // natives MeshLambertNodeMaterial (lights=true): Three.js' WebGPU-
+        // Lighting-Pipeline rechnet DirectionalLight + Ambient + Hemisphere +
+        // Schatten selbst. Der V10.0-g/h-Workaround (manuelles colorNode-Half-
+        // Lambert + handgebautes Shadow-Sampling) ist obsolet — Gras atmet
+        // nativ mit dem Tag-Nacht-Zyklus. Kein Cel-LUT (kein gradientMap) — die
+        // Halme bleiben smooth-Lambert, nicht Cel-quantisiert (gewollt).
+        const { uniform, vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
         if (!this.state.windUniforms) {
             this.state.windUniforms = {
                 uWindTime: uniform(0.0),
@@ -10319,7 +10317,7 @@ class AnazhRealm {
             };
         }
         const wu = this.state.windUniforms;
-        const mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
+        const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
 
         // Wind-positionNode: Welt-Position via positionWorld lesen (das ist
         // modelMatrix × instanceMatrix × positionLocal, d.h. enthält die
@@ -10337,41 +10335,6 @@ class AnazhRealm {
             .mul(hf);
         mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
 
-        // colorNode: Half-Lambert + Toon-Light-Sync + Shadow-Sampling
-        // (gleiches Pattern wie _buildToonNodeMaterial V10.0-g/h für
-        // einheitliche Welt-Beleuchtung). gradientMap-Lookup brauchen wir
-        // beim Gras nicht (kein Cel-Look auf Halme); direkter Lambert-Mul.
-        const u = this._ensureToonLightUniforms();
-        const baseColor = vec3(float(0x5f / 255), float(0xa7 / 255), float(0x43 / 255));
-        const N = normalize(normalWorld);
-        const L = normalize(u.sunDir);
-        const dotNL = clamp(dot(N, L).mul(float(0.5)).add(float(0.5)), float(0.0), float(1.0));
-        // V10.0-j — Shadow-Sampling identisch zu _buildToonNodeMaterial.
-        // Hardware-PCF via texture(depthTex, uv).compare(refZ). Siehe dort
-        // für Pattern-Begründung.
-        const shadowDepthTex = this.state.shadowDepthTexture;
-        let shadowAttenuation = float(1.0);
-        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
-            const normalBias = float(1.0);
-            const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
-            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
-            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            const sampleUV = projected.xy;
-            const refZ = projected.z.add(bias);
-            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
-            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
-            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
-            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
-            const inFrustumF = inXf.mul(inYf).mul(inZf);
-            const t = inFrustumF.mul(u.shadowEnabled);
-            shadowAttenuation = mix(float(1.0), shadowSample, t);
-        }
-        const litScalar = u.ambient.add(dotNL.mul(u.sunIntensity).mul(shadowAttenuation));
-        const lit = baseColor.mul(vec3(litScalar, litScalar, litScalar));
-        mat.colorNode = vec4(lit, float(1.0));
-        // Drop-in-Identitäts-Marker für legacy Tests.
-        mat.isMeshLambertMaterial = true;
         this.state._grassMat = mat;
         return mat;
     }
@@ -11244,7 +11207,10 @@ class AnazhRealm {
         let best = null;
         let bestDist = Infinity;
         for (const a of this.state.architectures) {
-            if (!a || !a.mesh) continue;
+            // V12.0-perf.c.2 — gerendert = klassischer Mesh ODER instanced
+            // (Bäume sind jetzt instanced; ohne diesen Fix fände die Kreatur
+            // kein „holz" mehr).
+            if (!a || !this._archIsRendered(a)) continue;
             const bp = this.state.blueprints && this.state.blueprints[a.type];
             if (!bp || !Array.isArray(bp.parts)) continue;
             const hasMaterial = bp.parts.some((p) => p && p.material === materialName);
@@ -13243,6 +13209,10 @@ class AnazhRealm {
         // existierte (rare aber möglich), wurde der GPU-Pfad NIE aktiviert.
         // GPU + Worker sind orthogonale Beschleunigungspfade.
         this._tryStartVoxelGpuInit();
+        // V12.0-perf.b — Basis-Density-Cache bei Worldgen leeren (neue Welt =
+        // neue Erosion/Tarn/Noise/Hydro → alte Basis ungültig). Worker-
+        // unabhängig, daher VOR dem Worker-Early-Return.
+        if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
         if (!this.state.voxelWorker) return;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
@@ -13583,13 +13553,14 @@ class AnazhRealm {
         renderer.setClearColor(0x000000, 1);
         renderer.shadowMap.enabled = true;
         // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
-        // Samples — Performance-Win, Soft-Schatten via Hardware-PCF im
-        // manuellen Shadow-Pass).
+        // Samples — Performance-Win).
         renderer.shadowMap.type = THREE.PCFShadowMap;
-        // Unser manueller `_renderShadowMapPass` + colorNode-Sampling
-        // übernimmt; Three.js' interner WebGPU-Pass läuft ohnehin nicht bei
-        // unseren lights=false-NodeMaterials.
-        renderer.shadowMap.autoUpdate = false;
+        // V12.0-f — native Three.js-WebGPU-Shadow-Pipeline. Seit der
+        // MeshToonNodeMaterial-Migration (lights=true) konsumieren unsere
+        // Materials die Shadow-Map nativ; Three.js rendert sie pro Frame
+        // automatisch aus directionalLight.shadow.camera. Der manuelle
+        // _renderShadowMapPass (+ autoUpdate=false) ist gestrichen.
+        renderer.shadowMap.autoUpdate = true;
     }
 
     // =====================================================================
@@ -14446,21 +14417,59 @@ class AnazhRealm {
         return value;
     }
 
+    // V12.0-perf.e — adaptiver Qualitäts-Governor (ersetzt das gravity-Pflaster).
+    // Bei FPS-Druck (< low) strafft er Render-Radius + Build-Budget (weniger
+    // Architekturen sichtbar, langsamerer Aufbau → weniger GPU/CPU-Last); bei
+    // Luft (> high) lockert er beide zurück bis zum Maximum. Bounded, ±1 Schritt
+    // pro Analyse (2-s-Debounce) → ruhige, hysterese-arme Selbst-Balance.
+    // Gravitation bleibt UNANGETASTET. Rückgabe: ob sich etwas geändert hat.
+    _nexusAdaptiveQuality(fps) {
+        if (!Number.isFinite(fps) || fps <= 0) return false;
+        const s = this.state;
+        const RMAX = AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
+        const RMIN = AnazhRealm.ARCH_QUALITY_RADIUS_MIN;
+        const BMAX = AnazhRealm.ARCH_QUALITY_BUDGET_MAX;
+        const BMIN = AnazhRealm.ARCH_QUALITY_BUDGET_MIN;
+        let radius = Number.isFinite(s.architectureCullingRadius) ? s.architectureCullingRadius : RMAX;
+        let budget = Number.isFinite(s.architectureBuildBudgetPerFrame) ? s.architectureBuildBudgetPerFrame : 3;
+        if (fps < AnazhRealm.ARCH_QUALITY_FPS_LOW) {
+            radius = Math.max(RMIN, radius - 10);
+            budget = Math.max(BMIN, budget - 1);
+        } else if (fps > AnazhRealm.ARCH_QUALITY_FPS_HIGH) {
+            radius = Math.min(RMAX, radius + 10);
+            budget = Math.min(BMAX, budget + 1);
+        }
+        if (radius === s.architectureCullingRadius && budget === s.architectureBuildBudgetPerFrame) return false;
+        s.architectureCullingRadius = radius;
+        s.architectureBuildBudgetPerFrame = budget;
+        return true;
+    }
+
     selfAwarenessAnalyze() {
         const currentTime = performance.now() / 1000;
         if (this.state.lastSelfAnalysis && currentTime - this.state.lastSelfAnalysis < 2.0) {
             return; // Strengere Debounce: Nur einmal alle 2 Sekunden analysieren
         }
         this.state.lastSelfAnalysis = currentTime;
-        // FPS-Optimierung
-        if (this.state.fps < 60) {
-            this.recordWeakness("Low FPS");
-            this.log("Selbstanalyse: FPS zu niedrig – Optimiere...");
-            this.state.gravity *= 0.9; // Reduziere Gravitation
-            if (this.state.physicsWorld) {
-                this.state.physicsWorld.setGravity(new Ammo.btVector3(0, this.state.gravity, 0));
-            }
-            this.log("Gravitation reduziert für bessere FPS");
+        // FPS-Governor (V12.0-perf.e) — Wurzel D der perf.c.diag-Diagnose
+        // geheilt. Das alte Pflaster multiplizierte bei FPS<60 die Gravitation
+        // mit Faktor 0.9 pro Zyklus → die Welt schwebte nach 10 Zyklen bei 35%
+        // Gravitation (die spürbare Disharmonie, Schöpfer-Befund). Das heilte
+        // das FALSCHE Ding: die Physik
+        // ist nicht der FPS-Verursacher, die Render-/Build-Last ist es. Die
+        // Idee des Nexus („das System merkt, wenn es kämpft, heilt sich") bleibt
+        // — nur die Handlung wird ehrlich: ein adaptiver Qualitäts-Governor
+        // (AAA-Dynamic-LOD-Pattern) justiert Render-Radius + Build-Budget je
+        // FPS-Druck, NIE die Gravitation. Der „System-das-lernt"-Faden mit
+        // „Welt bei 60 FPS" verbunden. Läuft unconditional (tightent bei
+        // Druck, relaxt bei Luft); recordWeakness bleibt für FPS<60.
+        if (this.state.fps < 60) this.recordWeakness("Low FPS");
+        const qChanged = this._nexusAdaptiveQuality(this.state.fps);
+        if (qChanged) {
+            this.log(
+                `Selbstanalyse: FPS ${Math.round(this.state.fps)} — Welt-Qualität justiert (Render-Radius ${this.state.architectureCullingRadius} m, Build-Budget ${this.state.architectureBuildBudgetPerFrame})`,
+                "INFO"
+            );
         }
 
         // Tunneling-Erkennung
@@ -16016,7 +16025,14 @@ class AnazhRealm {
     // `_terrainMacroSurfaceY` (worldgen-frozen — das Drainage-Netz ist
     // Welt-Identität, nicht Spieler-Wille; Spieler-Wille lebt im Cell-Feld).
 
-    _terrainDensityAt(x, y, z) {
+    // V12.0-perf.b — Basis-Terrain-Dichte OHNE voxelEdits. Das ist der teure,
+    // worldgen-eingefrorene Teil (Noise + Erosion + Tarn + Hydrosphäre-Carve/
+    // -Lake-Blend) — ~126 ms pro Chunk-Grid. Da Erosion/Tarn/Noise/Hydro nach
+    // dem Worldgen nicht mehr mutieren, ist das Grid pro Chunk+LOD cachebar
+    // (`state.voxelBaseDensityCache`). Der Edit-Rebuild legt nur den billigen
+    // voxelEdit-Kugel-Delta drauf statt 126 ms neu zu samplen. Bit-identisch:
+    // `_terrainDensityAt` = base + edit-delta, exakt wie zuvor.
+    _terrainBaseDensityAt(x, y, z) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
@@ -16071,6 +16087,15 @@ class AnazhRealm {
                 d = d * (1 - lk.w) + flatD * lk.w;
             }
         }
+        return d;
+    }
+
+    // V12.0-perf.b — vollständige Terrain-Dichte = Basis + voxelEdit-Delta.
+    // Punkt-Sample-Pfad (OOB-Live-Compute im Wasser-Iso, `_voxelSurfaceY`,
+    // alle direkten Aufrufer). Der Chunk-Grid-Pfad in `_buildVoxelChunkData`
+    // nutzt stattdessen `_voxelEditedDensityGrid` (base-gecacht + Delta).
+    _terrainDensityAt(x, y, z) {
+        let d = this._terrainBaseDensityAt(x, y, z);
         // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab (carve)
         // oder schüttet auf (fill). Die Edits leben in worldMeta.voxelEdits
         // (persistiert mit der Welt) und gelten ZULETZT — der Spieler-Wille
@@ -16096,6 +16121,69 @@ class AnazhRealm {
             }
         }
         return d;
+    }
+
+    // V12.0-perf.b — der base-gecachte Density-Grid-Pfad. Liefert ein
+    // (dimX+1)·(dimY+1)·(dimZ+1)-Grid identisch zu `_voxelSampleDensityGrid`
+    // mit `_terrainDensityAt`, aber das teure Basis-Grid (Noise+Erosion+Tarn+
+    // Hydro) wird pro Chunk+LOD gecacht. Beim Edit-Rebuild: Basis aus Cache,
+    // nur die voxelEdit-Kugel-Deltas auf eine Kopie legen (~2 ms statt ~126 ms).
+    // Ohne Edits (Erst-Stream, kein Spieler-Wille): die Basis IST das Grid →
+    // read-only-Reuse, kein Copy. Bit-identisch zu `_terrainDensityAt`, weil
+    // base + Σ edit-delta exakt dessen Rechnung ist.
+    _voxelEditedDensityGrid(cacheKey, gox, goy, goz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const expectedLen = Nx * Ny * Nz;
+        if (!this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache = new Map();
+        let baseGrid = this.state.voxelBaseDensityCache.get(cacheKey);
+        if (!baseGrid || baseGrid.length !== expectedLen) {
+            const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
+            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample);
+            this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
+        }
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!edits || !edits.length) return baseGrid; // Basis IST das Grid (read-only)
+        // Edit-Delta auf eine Kopie legen. Nur Vertices im Kugel-Radius werden
+        // berührt (Index-Bounding-Box), der Rest bleibt Basis → billig.
+        const out = new Float32Array(baseGrid);
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const r = ed.r;
+            const r2 = r * r;
+            const strength = ed.strength || 48;
+            const isFill = ed.mode === "fill";
+            // Grid-Index-Bounding-Box der Kugel (clamp auf [0, N-1]).
+            const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
+            const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
+            const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
+            const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
+            const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
+            const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
+            for (let k = k0; k <= k1; k++) {
+                const wz = goz + k * step;
+                const dz = wz - ed.z;
+                for (let j = j0; j <= j1; j++) {
+                    const wy = goy + j * step;
+                    const dy = wy - ed.y;
+                    for (let i = i0; i <= i1; i++) {
+                        const wx = gox + i * step;
+                        const dx = wx - ed.x;
+                        const dist2 = dx * dx + dy * dy + dz * dz;
+                        if (dist2 < r2) {
+                            const fall = 1 - Math.sqrt(dist2) / r;
+                            const amt = fall * strength;
+                            const idx = i + j * Nx + k * Nx * Ny;
+                            if (isFill) out[idx] += amt;
+                            else out[idx] -= amt;
+                        }
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     // V9.43-d / V9.45-b — die FLUSS-Bett-Senkung an einer xz-Welt-Position
@@ -17253,304 +17341,42 @@ class AnazhRealm {
         return mat;
     }
 
-    // V10.0-g — Toon-Material-Helper: alle MeshToonMaterial-Instanzen der
-    // Welt (Voxel-Chunks, Architektur-Parts, Inseln, Avatar-Torso, Sonne-
-    // Mond-Glow) wandern auf `THREE.ToonNodeMaterial` (eigene Klasse im
-    // Bootstrap, MeshLambertNodeMaterial + ToonLightingModel mit gradientMap-
-    // Lookup). Damit greift der Hot-Swap nicht mehr — WebGPU rendert
-    // dauerhaft auf GPU. `vertexColors: true` wird ZU `colorNode =
-    // vec4(attribute("color", "vec3"), 1.0)` (V10.0-f-2-Lehre, NodeMaterial
-    // liest das Flag nicht). `gradientMap` aus `state.toonGradientMap`
-    // wird geteilt — der `_refreshToonGradient`-Pfad (DataTexture.needsUpdate)
-    // propagiert automatisch zu allen Materials.
+    // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
+    // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
+    // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
+    // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
+    // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
+    // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
+    // propagiert automatisch zu allen Materials).
     _buildToonNodeMaterial(opts = {}) {
-        // V10.0-g (in V12.0-f-full backlogged für MeshToonNodeMaterial-Migration)
-        // — Toon-Material via TSL: MeshBasicNodeMaterial (lights=false) +
-        // manuelles Lighting im colorNode mit gradientMap-Cel-Lookup. Alle
-        // V10.0-g.r-Visual-Schichten sind adaptiert ans NodeMaterial-Niveau:
-        //  - Cel-Stufen via gradientMap-Texture-Lookup (Ghibli-Look)
-        //  - Sun-Direction-getriebenes Lambert + Ambient (Welt-atmet-Sync)
-        //  - Vertex-Colors via attribute() (für Voxel-Chunks + Inseln)
-        //  - Statische albedo-Color (MaterialReferenceNode-Crash umgangen)
-        //
-        // Schatten: BEHALTEN auf klassischem-MeshToonMaterial-Fallback wenn
-        // TSL nicht verfügbar. Auf WebGPU: Schatten temporär off (Three.js'
-        // Shadow-Map-Pipeline läuft durch lights=true — der webgl-legacy-Patch
-        // unterstützt das nicht robust). Welt rendert toon-shaded auf WebGPU
-        // ohne Schatten; auf WebGL via Hot-Swap mit Schatten.
-        const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            // Fallback ohne TSL: klassisches MeshToonMaterial. Hot-Swap-Pfad
-            // (V10.0-e/f-5/f-6) bringt die Welt auf WebGL falls WebGPU bricht.
-            const params = { vertexColors: !!opts.vertexColors };
-            if (opts.color !== undefined) params.color = opts.color;
-            if (opts.side !== undefined) params.side = opts.side;
-            if (opts.transparent !== undefined) params.transparent = opts.transparent;
-            if (opts.opacity !== undefined) params.opacity = opts.opacity;
-            const mat = new THREE.MeshToonMaterial(params);
-            if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
-            return mat;
-        }
-
-        // Stelle sicher dass gradientMap pre-built ist (V10.0-g-Wurzel-Heilung).
+        // V12.0-f — natives MeshToonNodeMaterial (r184, lights=true). Der
+        // V10.0-g.diag-Workaround (MeshBasicNodeMaterial + manuelles colorNode-
+        // Lighting + handgebauter _renderShadowMapPass) ist gestrichen: r164+
+        // trägt lights=true-NodeMaterials nativ auf WebGPU. Three.js managed
+        // jetzt alle drei Schichten selbst:
+        //  - Cel-Stufen via gradientMap (Ghibli-Look) — nativer Toon-LUT-Lookup
+        //  - DirectionalLight + Ambient + Hemisphere (Welt-atmet-Sync über die
+        //    echten Lights, gefüttert von _dayNightApply*)
+        //  - Schatten via Three.js' WebGPU-Shadow-Pipeline (light.castShadow +
+        //    renderer.shadowMap, mesh.receiveShadow) — kein manueller Pass mehr
+        // vertexColors (Voxel-Chunks/Inseln) + color/opacity/side sind native
+        // Material-Properties; `isMeshToonMaterial === true` ist nativ gesetzt
+        // (Legacy-Test-Marker erfüllt, kein manuelles Flag nötig).
         if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
             this._refreshToonGradient();
         }
-
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
         if (opts.transparent !== undefined) params.transparent = opts.transparent;
         if (opts.opacity !== undefined) params.opacity = opts.opacity;
-        const mat = new THREE.MeshBasicNodeMaterial(params);
-
-        // Geteilte Toon-Light-Uniforms (lazy welt-global).
-        const u = this._ensureToonLightUniforms();
-
-        const { attribute, vec2, vec3, vec4, float, normalize, dot, clamp, mix, normalWorld, positionWorld, texture } =
-            TSL;
-
-        // Albedo: vertex-color (Voxel/Inseln) oder statische vec3-Konstante
-        // (MaterialReferenceNode crasht im webgl-legacy/WebGLNodeBuilder beim
-        // _updateUniforms-Pfad mit "Cannot read properties of null reading
-        // 'color'" — siehe Gotcha V10.0-g.materialColor).
-        let albedoNode;
-        if (opts.vertexColors) {
-            albedoNode = attribute("color", "vec3");
-        } else {
-            const c = new THREE.Color(opts.color !== undefined ? opts.color : 0xffffff);
-            albedoNode = vec3(float(c.r), float(c.g), float(c.b));
-        }
-
-        // Welt-Raum-Normale (mat3(modelMatrix) × normalLocal) — TSL-built-in.
-        const N = normalize(normalWorld);
-        const L = normalize(u.sunDir);
-        // Half-Lambert für weichen Schatten-Übergang: (dot×0.5+0.5)
-        // Bei Standard-Lambert (max(dot, 0)) sind die Rückseiten 100% schwarz —
-        // mit gradientMap-Lookup gibt das einen scharfen Cel-Step bei 90°.
-        // Half-Lambert remappt zu [0, 1] mit Mittag = 1, Mittel = 0.5 → die
-        // gradientMap-Stufen verteilen sich über die ganze Form, das ist die
-        // klassische Three.js-MeshToonMaterial-Mathematik.
-        const dotNL = clamp(dot(N, L).mul(0.5).add(0.5), float(0.0), float(1.0));
-
-        // Toon-Step via gradientMap-Texture-Lookup. gradientMap ist hier
-        // garantiert da (pre-built in createScene + Helper-Init). Bei
-        // Slider-Wechsel via _refreshToonGradient.needsUpdate=true wird die
-        // Texture in-place gepatcht, der texture-Knoten samplet beim
-        // nächsten Frame die aktualisierten Pixel — Cel-Stufen-Live-Update.
-        const toonStep = texture(this.state.toonGradientMap, vec2(dotNL, float(0.5))).r;
-
-        // V10.0-h — Shadow-Sampling im colorNode. Wir spiegeln das Pattern aus
-        // vendor/three-addons/nodes/lighting/AnalyticLightNode.js Z51-149, das
-        // Three.js intern bei lights=true-Materials nutzt. Unser manueller
-        // _renderShadowMapPass füllt das depthTexture pro Frame; shadowMatrix
-        // ist die canonical texcoord×projection×viewInverse-Matrix. Bei
-        // shadowEnabled=0 (WebGL-Pfad ODER Pre-Init) ist der Multiplier 1
-        // (kein Schatten). Hardware-PCF via DepthTexture.compareFunction=
-        // LessCompare in _ensureShadowRenderTarget.
-        // V10.0-j — Hardware-PCF via `texture(depthTex, uv).compare(refZ)`.
-        // Three.js' WGSLNodeBuilder.generateTextureCompare emittiert
-        // `textureSampleCompare(tex, sampler, uv, refZ)` — comparison-sampler
-        // wird automatisch gebunden weil depthTex.compareFunction=LessCompare
-        // (siehe _ensureShadowRenderTarget). Profi-Pattern aus vendor/three-
-        // addons/nodes/lighting/AnalyticLightNode.setupShadow().
-        const shadowDepthTex = this.state.shadowDepthTexture;
-        let shadowAttenuation = float(1.0);
-        if (shadowDepthTex && u.shadowMatrix && u.shadowEnabled) {
-            const normalBias = float(1.0);
-            const bias = float(-0.0005);
-            const biasedPos = positionWorld.add(normalWorld.mul(normalBias));
-            const shadowCoord4 = u.shadowMatrix.mul(vec4(biasedPos, float(1.0)));
-            const projected = shadowCoord4.xyz.div(shadowCoord4.w);
-            // y-flip ist in der shadowMatrix bereits enthalten (NDC.y ist
-            // positiv-oben, Texture-V ist positiv-unten). Vendor-Pattern
-            // nutzt projected.xy direkt, kein manueller oneMinus mehr.
-            const sampleUV = projected.xy;
-            const refZ = projected.z.add(bias);
-            // Hardware-PCF: textureSampleCompare returnt 0..1 (0=Schatten,
-            // 1=lit, GPU rechnet automatisch 2×2-Average bei linear sampler).
-            const shadowSample = texture(shadowDepthTex, sampleUV).compare(refZ);
-            // Frustum-Test via step-Multi (float-arithmetic).
-            const inXf = TSL.step(float(0.0), projected.x).mul(float(1.0).sub(TSL.step(float(1.0), projected.x)));
-            const inYf = TSL.step(float(0.0), projected.y).mul(float(1.0).sub(TSL.step(float(1.0), projected.y)));
-            const inZf = float(1.0).sub(TSL.step(float(1.0), projected.z));
-            const inFrustumF = inXf.mul(inYf).mul(inZf);
-            const t = inFrustumF.mul(u.shadowEnabled);
-            shadowAttenuation = mix(float(1.0), shadowSample, t);
-        }
-
-        // Lit-Helligkeit = ambient + (sunIntensity × toonStep × shadow) (skalar).
-        // Ambient bleibt ungedämpft — auch in Schatten kommt indirektes Licht.
-        const litScalar = u.ambient.add(toonStep.mul(u.sunIntensity).mul(shadowAttenuation));
-        const lit = albedoNode.mul(vec3(litScalar, litScalar, litScalar));
-
-        mat.colorNode = vec4(lit, float(1.0));
-
-        // Drop-in-Identitäts-Marker für legacy Tests (V8.28, V9.42-c).
-        mat.isMeshToonMaterial = true;
-        // gradientMap als JS-Property erhalten für legacy Tests + Drop-in-Kompat.
+        if (opts.vertexColors) params.vertexColors = true;
+        const mat = new THREE.MeshToonNodeMaterial(params);
+        // gradientMap geteilt (state.toonGradientMap). Der Cel-Levels-Slider
+        // patcht die DataTexture in-place (_refreshToonGradient.needsUpdate),
+        // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
         return mat;
-    }
-
-    // V10.0-g — Geteilte Toon-Light-Uniforms (uniform-Knoten, .value-mutable).
-    // Lazy initialisiert; gespeist von _dayNightApplyDirectionalLight +
-    // _dayNightApplyAmbient via state.toonLightUniforms.X.value-Setter.
-    _ensureToonLightUniforms() {
-        if (this.state.toonLightUniforms) return this.state.toonLightUniforms;
-        const TSL = THREE.TSL;
-        const { uniform } = TSL;
-        const sunDir = uniform(new THREE.Vector3(0.5, 0.7, 0.3).normalize());
-        const sunIntensity = uniform(1.0);
-        const ambient = uniform(0.3);
-        // V10.0-h — Shadow-Sampling-Uniforms. shadowMatrix wird pro Frame in
-        // _renderShadowMapPass aus light.shadow.camera neu projiziert; bei
-        // WebGL-Pfad bleibt es auf Identität (Three.js' Renderer macht die
-        // Shadow-Sampling intern via lights=true-Pendant → MeshToonMaterial-
-        // Fallback). shadowEnabled=0 → kein Schatten im colorNode (sicherer
-        // Default vor erstem Render-Pass).
-        const shadowMatrix = uniform(new THREE.Matrix4());
-        const shadowEnabled = uniform(0.0);
-        this.state.toonLightUniforms = { sunDir, sunIntensity, ambient, shadowMatrix, shadowEnabled };
-        return this.state.toonLightUniforms;
-    }
-
-    // V10.0-h — Shadow-Map RenderTarget für den manuellen Shadow-Pass.
-    // Three.js' WebGPURenderer in r160 hat KEINEN automatischen Shadow-Pass
-    // wenn alle Materials lights=false haben (siehe Diag: shadow.map=null im
-    // WebGPU-Pfad obwohl light.castShadow=true + renderer.shadowMap.enabled=
-    // true). Wurzel: r160's Shadow-Pipeline läuft NUR via setupShadow() in
-    // einem konsumierenden NodeMaterial. Heilung: eigenes RenderTarget mit
-    // DepthTexture, manueller Pass aus light.shadow.camera-Sicht VOR dem
-    // main render, depthTexture wird im colorNode der Toon-Materials
-    // gesampelt. Idempotent — wird einmal pro Renderer-Spawn aufgerufen,
-    // disposed im Hot-Swap-Pfad.
-    _ensureShadowRenderTarget() {
-        if (this.state.shadowRTT) return this.state.shadowRTT;
-        if (typeof THREE === "undefined" || !this.state.directionalLight) return null;
-        const W = 2048;
-        const H = 2048;
-        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
-        // AnalyticLightNode.setupShadow(): `new DepthTexture()` ohne Format-
-        // Args (Three.js defaultet auf Pure-Depth, kein Stencil-Aspect-
-        // Konflikt) + `compareFunction = LessCompare` (Three.js' WebGPU-
-        // Backend bindet automatisch einen Comparison-Sampler, der mit
-        // `textureSampleCompare()`-WGSL-Knoten harmoniert — kein Filtering-
-        // Mismatch). V10.0-h.b's Depth24Stencil8-Pfad triggerte „Multiple
-        // aspects (Depth|Stencil)"-Validation, weil WebGPU für Depth-
-        // Bindings eine explicit `aspect: 'depth-only'`-View verlangt; das
-        // Pure-Depth-Format umgeht das. V10.0-h-a's „stencilOp-Default"-
-        // Hypothese war eine Fehldiagnose (Depth16Unorm-spezifisch).
-        const depthTex = new THREE.DepthTexture(W, H);
-        depthTex.minFilter = THREE.NearestFilter;
-        depthTex.magFilter = THREE.NearestFilter;
-        depthTex.compareFunction = THREE.LessCompare;
-        const rtt = new THREE.WebGLRenderTarget(W, H, {
-            minFilter: THREE.NearestFilter,
-            magFilter: THREE.NearestFilter,
-            format: THREE.RGBAFormat,
-            depthTexture: depthTex,
-        });
-        this.state.shadowRTT = rtt;
-        this.state.shadowDepthTexture = depthTex;
-        this.state.directionalLight.shadow.map = rtt;
-        return rtt;
-    }
-
-    // V10.0-h — Manueller Shadow-Map-Pass. Pre-render-Hook: rendert die
-    // Scene aus directionalLight.shadow.camera-Sicht in das shadowRTT mit
-    // einem Depth-Override-Material. Danach läuft der normale Render-Pass
-    // gegen die frisch gefüllte Shadow-Map.
-    //
-    // Manueller Shadow-Pass: Three.js' interner Shadow-Pass rendert die
-    // Shadow-Map nur wenn `lights=true`-Materials sie konsumieren. Unsere
-    // NodeMaterials sind alle lights=false (eigenes Toon-Lighting im
-    // colorNode) → Three.js' interner Pass schreibt nichts. Heilung:
-    // manueller Pass + `renderer.shadowMap.autoUpdate=false` (wir
-    // übernehmen die Shadow-Pipeline komplett).
-    _renderShadowMapPass() {
-        const dl = this.state.directionalLight;
-        const renderer = this.state.renderer;
-        const scene = this.state.scene;
-        if (!dl || !renderer || !scene || !dl.castShadow) return;
-        const rtt = this._ensureShadowRenderTarget();
-        if (!rtt) return;
-        // Shadow-Camera updaten + matrix bauen (canonical Three.js-Pattern
-        // aus WebGLShadowMap.js).
-        dl.shadow.camera.position.copy(dl.position);
-        dl.shadow.camera.lookAt(dl.target.position);
-        dl.shadow.camera.updateMatrixWorld(true);
-        dl.shadow.camera.updateProjectionMatrix();
-        const m = dl.shadow.matrix;
-        m.set(0.5, 0.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0);
-        m.multiply(dl.shadow.camera.projectionMatrix);
-        m.multiply(dl.shadow.camera.matrixWorldInverse);
-        const tu = this.state.toonLightUniforms;
-        if (tu) {
-            if (tu.shadowMatrix) tu.shadowMatrix.value.copy(m);
-            if (tu.shadowEnabled) tu.shadowEnabled.value = 1.0;
-        }
-        // V10.0-j — Profi-Pattern aus vendor/three-addons/nodes/lighting/
-        // AnalyticLightNode.updateShadow(). Drei Disziplinen:
-        // (1) scene.overrideMaterial = ein minimales MeshBasicNodeMaterial.
-        //     Alle Caster werden mit ihm gerendert — kein colorNode-Custom,
-        //     kein instanceColor-Lookup, kein WGSL-Compile-Crash. Wenn ein
-        //     Caster-Material einen positionNode hat (Gras-Wind, Welle-
-        //     Displacement), reicht das Override-Material seinen position
-        //     Node durch (Renderer.js Z961-967: override pulls original
-        //     positionNode). Damit displaced sich auch das Shadow-Mesh
-        //     korrekt → kein „Wind-Halme bleiben stehen im Schatten".
-        // (2) setRenderObjectFunction-Filter: nur `castShadow === true`
-        //     Objects werden gerendert. Sterne (default castShadow=false),
-        //     Skybox, Wasser-Iso fallen raus → keine instanceColor-Reads,
-        //     keine Atmosphären-Render-Calls.
-        // (3) Pure-Depth-RTT + LessCompare-DepthTexture → comparison-
-        //     Sampler im colorNode harmoniert mit textureSampleCompare-
-        //     WGSL-Knoten (siehe _buildToonNodeMaterial).
-        if (!this.state.shadowOverrideMat) {
-            if (typeof THREE.MeshBasicNodeMaterial === "function") {
-                this.state.shadowOverrideMat = new THREE.MeshBasicNodeMaterial();
-            } else {
-                return;
-            }
-        }
-        const depthMat = this.state.shadowOverrideMat;
-        const oldOverride = scene.overrideMaterial;
-        const oldRT = renderer.getRenderTarget ? renderer.getRenderTarget() : null;
-        const oldRenderObjectFn =
-            typeof renderer.getRenderObjectFunction === "function" ? renderer.getRenderObjectFunction() : null;
-        scene.overrideMaterial = depthMat;
-        if (typeof renderer.setRenderObjectFunction === "function") {
-            renderer.setRenderObjectFunction((object, ...params) => {
-                if (object.castShadow === true) {
-                    renderer.renderObject(object, ...params);
-                }
-            });
-        }
-        try {
-            renderer.setRenderTarget(rtt);
-            // V10.0-j.c — KEIN expliziter renderer.clear() Aufruf. Three.js'
-            // WebGPUBackend.clear() Z632-643 hat einen Vendor-Bug: im stencil=
-            // false-Branch setzt es ZWANGSWEISE stencilLoadOp+stencilStoreOp
-            // (else-Branch, immer ausgeführt). Auf Pure-Depth-Format crasht
-            // das die WebGPU-Validation. Heilung: weglassen — Three.js'
-            // regulärer Render-Pass-Pfad (Background.js Z119) setzt
-            // `renderContext.clearDepth = autoClearDepth=true` automatisch,
-            // WebGPUBackend Z302 macht dann depthLoadOp=Clear (sauber gated).
-            const result = renderer.render(scene, dl.shadow.camera);
-            if (result && typeof result.catch === "function") {
-                result.catch(() => {});
-            }
-        } catch (_) {
-        } finally {
-            scene.overrideMaterial = oldOverride;
-            renderer.setRenderTarget(oldRT);
-            if (oldRenderObjectFn && typeof renderer.setRenderObjectFunction === "function") {
-                renderer.setRenderObjectFunction(oldRenderObjectFn);
-            } else if (typeof renderer.setRenderObjectFunction === "function") {
-                renderer.setRenderObjectFunction(null);
-            }
-        }
     }
 
     // V9.88 (Welle Perf-3.b — Distance-LOD): `lod` (0 oder 1) wählt die
@@ -17580,18 +17406,24 @@ class AnazhRealm {
         // EXAKT zu Worker-Compute passen — sonst Drift.
         let terrainDensity;
         if (preDensityOverride && preDensityOverride.length === (dim + 4) * (dimY + 1) * (dim + 4)) {
+            // Worker/GPU-Grid: direkt nutzen. NICHT als Basis cachen — GPU-WGSL
+            // hat implementation-defined Präzision für transzendente Funktionen
+            // (CLAUDE.md-Lehre), wäre also nicht bit-identisch zur CPU-Basis.
+            // Der exakte Base-Cache füllt sich aus dem Sync-Pfad (else-Zweig).
             terrainDensity = preDensityOverride;
         } else {
-            const terrainSample = (x, y, z) => this._terrainDensityAt(x, y, z);
-            terrainDensity = this._voxelSampleDensityGrid(
+            // V12.0-perf.b — base-gecachter Sync-Pfad. Statt ~126 ms
+            // `_terrainDensityAt`-Grid-Sample wird die worldgen-frozen Basis
+            // gecacht; nur der billige voxelEdit-Delta wird neu aufgelegt.
+            terrainDensity = this._voxelEditedDensityGrid(
+                `${cx},${cz},${lod}`,
                 ox - step,
                 oy,
                 oz - step,
                 dim + 3,
                 dimY,
                 dim + 3,
-                step,
-                terrainSample
+                step
             );
         }
         // V9.42-d — pad-Aufruf: ein Origin-Versatz von einem `step` + dimX/Z
@@ -17653,17 +17485,19 @@ class AnazhRealm {
             if (lod === 0) {
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, step, terrainDensity, 0);
             } else {
+                // V12.0-perf.b — auch das LOD-0-Zweitgrid (Wasser-Cells für
+                // einen LOD-1-Chunk) läuft base-gecacht. Eigener LOD-0-Cache-
+                // Key, damit es nicht mit dem LOD-1-Terrain-Grid kollidiert.
                 const lod0Cfg = this._voxelChunkConfig(0);
-                const lod0Sample = (x, y, z) => this._terrainDensityAt(x, y, z);
-                const lod0Density = this._voxelSampleDensityGrid(
+                const lod0Density = this._voxelEditedDensityGrid(
+                    `${cx},${cz},0`,
                     ox - lod0Cfg.step,
                     oy,
                     oz - lod0Cfg.step,
                     lod0Cfg.dim + 3,
                     lod0Cfg.dimY,
                     lod0Cfg.dim + 3,
-                    lod0Cfg.step,
-                    lod0Sample
+                    lod0Cfg.step
                 );
                 waterCells = this._buildVoxelChunkWaterCells(ox, oy, oz, lod0Cfg.step, lod0Density, 0);
             }
@@ -17692,23 +17526,110 @@ class AnazhRealm {
     // Wenn null/undefined, übernehmen wir die LOD des Alt-Eintrags
     // (Voxel-Edit-Trigger: gleiche LOD beibehalten) — sonst neu (Streaming-
     // Tick-Trigger: distance-Decision hat sich geändert).
-    _rebuildVoxelChunk(cx, cz, lod = null) {
-        if (!this.state.scene) return false;
-        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+    // V12.0-perf.a — gibt true, wenn der Chunk der ist, in dem der Spieler
+    // gerade steht (aus `state.lastPlayerVoxelChunk`, pro Streaming-Tick
+    // gesetzt). Ein Edit auf diesem Chunk MUSS sync rebuilden (Instant-
+    // Feedback — der Spieler sieht den Carve/Fill am Standort sofort).
+    _voxelChunkIsPlayerChunk(cx, cz) {
+        const lpc = this.state.lastPlayerVoxelChunk;
+        return !!lpc && lpc.cx === cx && lpc.cz === cz;
+    }
+
+    // V12.0-perf.a — DIE geteilte Build-Kaskade für Streaming UND Edit-Rebuild
+    // (V9.82-Pfad-Unifikation eine Stufe höher). Vier Stufen (V12.0-e):
+    //   Stufe 1: Worker-Mesh-Cache (V9.91) — fertiger Mesh vom Worker, Main
+    //     macht nur BufferGeometry + Architektur-Stempel + BVH (~10-15 ms).
+    //   Stufe 2: GPU-Density-Cache (V9.95) — Float32-Density vom GPU, Main
+    //     macht Iso-Mesh (~30-40 ms). Wirkt für pristine Chunks (eligible).
+    //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density, Fallback.
+    //   Stufe 4: Sync-CPU-Build (V9.42-d + V12.0-perf.b base-gecacht).
+    // Rückgabe: "pending" (async-Request läuft), null (Build-Fail/degeneriert),
+    // oder das fresh-Objekt ({mesh, kind, waterCells, lod, hasBVH?}).
+    // `forceSync` (Spieler-Chunk + Test-Naht) überspringt die async-Stufen →
+    // direkt Stufe 4 (immer BVH, kein Worker-Roundtrip → Instant-Feedback).
+    _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
+        if (opts.forceSync === true) {
+            return this._buildVoxelChunkData(cx, cz, lod);
+        }
+        // Stufe 1: Worker-Mesh.
+        let workerMesh;
+        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
+            workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
+            if (workerMesh === null) return "pending";
+        }
+        // V9.92 Phase 4 — Lazy-BVH-Decision: BVH sofort nur im 2-Ring.
+        let buildBVH = true;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
+        if (workerMesh) {
+            return this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
+        }
+        // Stufe 2: GPU-Density. Float32 (Hit), null (Pending), undefined (ineligible).
+        let preDensity = null;
+        const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
+        if (gpuDensity === null) return "pending";
+        if (gpuDensity !== undefined) preDensity = gpuDensity;
+        // Stufe 3: Worker-Density (Fallback wenn GPU ineligible/down).
+        if (
+            !preDensity &&
+            this.state.voxelWorker &&
+            this.state.voxelWorkerReady &&
+            this.state.voxelWorkerWorldgenSynced
+        ) {
+            const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
+            if (workerDensity === null) return "pending";
+            preDensity = workerDensity;
+        }
+        // Stufe 4: Sync-CPU-Build (letzter Fallback, base-gecacht V12.0-perf.b).
+        return this._buildVoxelChunkData(cx, cz, lod, preDensity);
+    }
+
+    // V12.0-perf.a — DER geteilte Finalize-Schritt für beide Pfade: Mesh in
+    // die Scene, Entry setzen, Gras + Iso-Wasser + Vegetation. `fresh` muss
+    // ein erfolgreicher Build sein (kein null/pending). Returnt das Entry
+    // (filled) oder null (empty — degenerierte Iso-Fläche, als {empty:true}).
+    _finalizeVoxelChunkBuild(cx, cz, lod, fresh, syncWater = false) {
         const key = `${cx},${cz}`;
-        const oldEntry = this.state.voxelChunks.get(key);
-        const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
-        // V9.40-d — Dispose-Before-Build: alter raus aus Heap + physicsWorld
-        // BEVOR der neue allokiert. Verhindert das doppelte Leben.
-        if (oldEntry) this._disposeVoxelChunk(key);
-        const fresh = this._buildVoxelChunkData(cx, cz, useLod);
+        if (fresh.kind === "empty") {
+            this.state.voxelChunks.set(key, { empty: true });
+            return null;
+        }
+        this.state.scene.add(fresh.mesh);
+        // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
+        // Mesh-Pfad). Sync-Build baut immer BVH → default true.
+        const entry = {
+            mesh: fresh.mesh,
+            waterCells: fresh.waterCells || null,
+            lod,
+            hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
+        };
+        this.state.voxelChunks.set(key, entry);
+        // V9.88 — Grass nur auf LOD-0-Nahchunks. V9.75 — Iso-Wasser ist der
+        // einzige Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
+        // V9.24 — Streu-Strukturen (idempotent, je Chunk einmal).
+        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
+        // V12.0-perf.h — Wasser-Iso deferred (per-Frame-Queue) statt synchron:
+        // der Chunk ist mit Terrain+Boden+Collision sofort fertig, das Wasser
+        // (~78 ms Surface-Nets) baut ≤budget/Frame nach → kein Streaming-Spike.
+        // V12.0-perf.h.1 — ABER beim Edit-Rebuild (Spieler platziert/baut ab)
+        // SYNCHRON: sonst verschwindet der Wasser-Iso für 1-2 Frames bis die
+        // Queue ihn rebuildet → sichtbares Flackern der „fliegenden Ebene" am
+        // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
+        if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
+        else this._enqueueWaterIso(cx, cz);
+        this._populateVoxelChunkVegetation(cx, cz);
+        return entry;
+    }
+
+    // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei
+    // null (OOM/degeneriert): Retry-Counter (max 3) + re-dirty. Sonst:
+    // Finalize. Returnt true bei aufgelöst (empty ODER filled), false bei Fail.
+    _completeVoxelRebuild(key, cx, cz, lod, fresh) {
         if (fresh === null) {
-            // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-
-            // Counter pflegen — bei 3 fehlgeschlagenen Versuchen geben wir
-            // ehrlich auf + setzen `{empty:true}` (V9.24-Symptom-Geste als
-            // ehrliche letzte Antwort, nicht als Erst-Reaktion). Beim
-            // nächsten Edit auf denselben Chunk-Bereich wird der Counter
-            // zurückgesetzt — der Spieler bekommt jedes Mal 3 Versuche.
+            // Build fail (Heap-OOM oder degenerierte Iso-Fläche). Retry-Counter
+            // pflegen — bei 3 Versuchen ehrlich {empty:true} (V9.24-Symptom-
+            // Geste als letzte Antwort). Beim nächsten Edit auf den Bereich
+            // wird der Counter zurückgesetzt.
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
             const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
             this.state.voxelRebuildAttempts.set(key, attempts);
@@ -17718,35 +17639,52 @@ class AnazhRealm {
                 this.log(`Voxel-Chunk ${key}: 3× OOM, als empty markiert`, "INFO");
                 return false;
             }
-            // Re-markiere dirty für nächsten Tick (Heap-Erholungs-Chance).
             if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
             this.state.dirtyVoxelChunks.add(key);
             return false;
         }
-        // Erfolg — Retry-Counter zurücksetzen.
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
-        if (fresh.kind === "empty") {
-            this.state.voxelChunks.set(key, { empty: true });
-            return true;
-        }
-        this.state.scene.add(fresh.mesh);
-        // V9.92 — _rebuildVoxelChunk nutzt den sync-`_buildVoxelChunkData`-
-        // Pfad, der IMMER BVH baut (edit-driven: immediate physical feedback).
-        // hasBVH=true ist der ehrliche Stempel.
-        const entry = { mesh: fresh.mesh, waterCells: fresh.waterCells || null, lod: useLod, hasBVH: true };
-        this.state.voxelChunks.set(key, entry);
-        // V9.88 (Welle Perf-3.b): Grass nur auf LOD-0-Nahchunks. Ferne Chunks
-        // (LOD 1, > 80 m) zeigen keine Gras-Halme — Detail-Cap < 50 m macht
-        // sie ohnehin unsichtbar, und 256 Sample-Calls × `_voxelSurfaceY` pro
-        // Chunk sparen wir.
-        if (useLod === 0) this._buildVoxelChunkGrass(cx, cz);
-        // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist
-        // der einzige Wasser-Render-Pfad. Liest entry.waterCells, baut die
-        // Iso-Surface mit dem Surface-Nets-Mesher (gleiche Maschinerie wie
-        // der Boden → naht-frei per Konstruktion).
-        this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        this._populateVoxelChunkVegetation(cx, cz);
+        // V12.0-perf.h.1 — Edit-Rebuild-Pfad (`_rebuildVoxelChunk` ←
+        // Carve/Fill/Architektur): Wasser-Iso SYNCHRON bauen (kein Flacker am
+        // Edit-Punkt). Nur der Streaming-Pfad (ferne neue Chunks) deferred.
+        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh, true);
         return true;
+    }
+
+    // V12.0-perf.a — Edit-Rebuild erbt die Streaming-Kaskade (V9.82-Unifikation
+    // eine Stufe höher). Spieler-Chunk (Carve/Fill am Standort) + Test-Naht
+    // (`forceSync`) bauen SYNC mit dispose-before-build — kein Loch, da der
+    // Sync-Build im selben Frame fertig wird; Instant-Feedback. Nachbar-/
+    // Skirt-Chunks bauen ASYNC (Worker→GPU→Worker-Density-Offload des ~126-ms-
+    // Density-Sampling): der alte Chunk bleibt SICHTBAR bis der neue fertig ist
+    // (build-before-dispose / atomarer Swap, kein Loch-Frame), Pending → dirty
+    // behalten. Der Skirt-Nachbar-Stale ist sub-cell (nur das Smoothing-Pad)
+    // → imperzeptibel, dafür kein Frame-Spike beim Edit-Cluster.
+    _rebuildVoxelChunk(cx, cz, lod = null, opts = {}) {
+        if (!this.state.scene) return false;
+        if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
+        const key = `${cx},${cz}`;
+        const oldEntry = this.state.voxelChunks.get(key);
+        const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
+        const forceSync = opts.forceSync === true || this._voxelChunkIsPlayerChunk(cx, cz);
+        if (forceSync) {
+            // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
+            if (oldEntry) this._disposeVoxelChunk(key);
+            const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
+            return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
+        }
+        // Async: erst bauen/anfordern, NICHT vorher disposen.
+        const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: false });
+        if (fresh === "pending") {
+            // Worker/GPU-Request läuft — alter Chunk bleibt sichtbar, dirty
+            // behalten, der nächste Tick prüft erneut (Cache-Hit → Swap).
+            if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
+            this.state.dirtyVoxelChunks.add(key);
+            return false;
+        }
+        // Build fertig/fail → atomarer Swap: alten erst JETZT disposen.
+        if (oldEntry) this._disposeVoxelChunk(key);
+        return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
     }
 
     // Baut einen einzelnen Voxel-Chunk an den Chunk-Indizes (cx, cz):
@@ -17790,67 +17728,16 @@ class AnazhRealm {
         // das Cell-Feld nachgereicht → „Wasser lädt erst nach Edit".
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
-        // V12.0-e — Streaming-Pfad-Hierarchie auf r184 (WebGPURenderer):
-        //   Stufe 1: Worker-Mesh-Cache (V9.91) — fastest, gibt fertigen Mesh
-        //     (positions + indices + normals + colors), Main-Thread macht nur
-        //     BufferGeometry-Konstruktion (~10-15 ms).
-        //   Stufe 2: GPU-Density-Cache (V9.95-Pipeline reaktiviert) — gibt
-        //     Float32Array-Density, Main-Thread macht Iso-Mesh-Konstruktion
-        //     (~30-40 ms). Same-Device-mapAsync auf WebGPURenderer (~5-15 ms
-        //     Read-Back-Stall, war ~200-300 ms auf WebGL-Renderer cross-
-        //     backend in V9.95-e). Wirkt für pristine Streaming-Chunks
-        //     (kein voxelEdit, kein Hydrosphere-Carve — `_voxelGpuChunkEligible`).
-        //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density als
-        //     Fallback wenn GPU ineligible oder unavailable.
-        //   Stufe 4: Sync-CPU-Build (V9.42-d) — letzter Fallback, voller
-        //     Density-Sample-Loop + Iso-Mesh-Konstruktion auf Main-Thread.
-        // Die V9.95-e-Abklemmung (GPU war auf WebGL-Renderer-mapAsync-cross-
-        // backend zu teuer) ist auf r184 strukturell obsolet — gleicher Device,
-        // gleicher Backend → mapAsync ist billig.
-        let workerMesh;
-        if (this.state.voxelWorker && this.state.voxelWorkerReady && this.state.voxelWorkerWorldgenSynced) {
-            workerMesh = this._fetchOrRequestChunkMesh(cx, cz, lod);
-            if (workerMesh === null) return null;
-        }
-        // V9.92 Phase 4 — Lazy-BVH-Decision: BVH sofort bauen nur wenn Chunk
-        // im 2-Ring (Spieler-Nähe). Ferne Chunks (r ≥ 2) bekommen erst-mal
-        // nur Mesh + Cells; BVH-Upgrade über `_pumpVoxelChunkBVH` wenn sie
-        // ins 2-Ring rücken. Spart ~25-30 ms × ~70 Chunks beim Erst-Stream.
-        let buildBVH = true;
-        const lpc = this.state.lastPlayerVoxelChunk;
-        if (lpc) buildBVH = this._voxelChunkLazyBVHFor(cx, cz, lpc.cx, lpc.cz);
-        let fresh;
-        if (workerMesh) {
-            fresh = this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
-        } else {
-            // Stufe 2: GPU-Density-Cache. `_fetchOrRequestChunkDensityGpu`
-            // gibt Float32Array (Cache-Hit), null (Pending → return null),
-            // undefined (GPU nicht ready oder Chunk ineligible).
-            let preDensity = null;
-            const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
-            if (gpuDensity === null) return null; // GPU-Pending → nächster Frame
-            if (gpuDensity !== undefined) preDensity = gpuDensity;
-            // Stufe 3: Worker-Density-Cache (Fallback wenn GPU ineligible/down).
-            if (
-                !preDensity &&
-                this.state.voxelWorker &&
-                this.state.voxelWorkerReady &&
-                this.state.voxelWorkerWorldgenSynced
-            ) {
-                const workerDensity = this._fetchOrRequestChunkDensity(cx, cz, lod);
-                if (workerDensity === null) return null;
-                preDensity = workerDensity;
-            }
-            // Stufe 4: Sync-CPU-Build (letzter Fallback).
-            fresh = this._buildVoxelChunkData(cx, cz, lod, preDensity);
-        }
+        // V12.0-perf.a — der Streaming-Pfad nutzt jetzt DIE geteilte Build-
+        // Kaskade `_acquireVoxelChunkBuild` (vier Stufen Worker-Mesh → GPU →
+        // Worker-Density → Sync, dort dokumentiert), die auch der Edit-Rebuild
+        // erbt. Pending → null (nächster Frame). Fail → Retry-Counter (max 3,
+        // KEIN re-dirty — der Streaming-Tick versucht via has(key)===false
+        // erneut, inzwischen gibt `_pruneDistantVoxelChunks` Heap frei). Erfolg
+        // → geteilter `_finalizeVoxelChunkBuild`.
+        const fresh = this._acquireVoxelChunkBuild(cx, cz, lod, { forceSync: false });
+        if (fresh === "pending") return null;
         if (fresh === null) {
-            // V9.24 / V9.40-e — Build-Fail (Heap-OOM oder degenerierte
-            // Geometrie). Retry-Counter pflegen — bei 3 fehlgeschlagenen
-            // Versuchen ehrlich {empty:true}. Bei attempts < 3: KEIN
-            // Map-Eintrag → der Streaming-Tick versucht es im nächsten
-            // Frame wieder (has(key)===false), inzwischen räumt
-            // _pruneDistantVoxelChunks ferne Chunks + gibt Heap frei.
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
             const attempts = (this.state.voxelRebuildAttempts.get(key) || 0) + 1;
             this.state.voxelRebuildAttempts.set(key, attempts);
@@ -17861,38 +17748,8 @@ class AnazhRealm {
             }
             return null;
         }
-        // Erfolg — Retry-Counter zurücksetzen.
         if (this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts.delete(key);
-        if (fresh.kind === "empty") {
-            // Degenerierte Iso-Fläche (ganz fest / ganz Luft) ist KEIN
-            // OOM-Szenario sondern eine ehrliche Welt-Eigenschaft an
-            // Rand-Chunks.
-            this.state.voxelChunks.set(key, { empty: true });
-            return null;
-        }
-        this.state.scene.add(fresh.mesh);
-        // V9.92 — `fresh.hasBVH` ist `true` wenn die BVH wirklich gebaut wurde
-        // (Lazy-Decision durch `_buildVoxelChunkDataFromWorkerMesh` mit
-        // `opts.buildBVH`). Beim Sync-Fallback gibt's keine Lazy-BVH-Flag-
-        // Variante — Sync baut immer BVH, also default true.
-        const entry = {
-            mesh: fresh.mesh,
-            waterCells: fresh.waterCells || null,
-            lod,
-            hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
-        };
-        this.state.voxelChunks.set(key, entry);
-        // V9.22 — der Voxel-Chunk grünt: Instanced-Gras auf seiner Oberfläche.
-        // V9.88 — Grass nur auf LOD-0-Nahchunks (s. _rebuildVoxelChunk-Kommentar).
-        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
-        // V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh ist der einzige
-        // Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
-        this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        // V9.24 — der Voxel-Chunk bekommt seine Streu-Strukturen (Wälder,
-        // Felsen, Geoden, Felsformationen) — auf dem Voxel-Boden, nicht auf
-        // dem schlafenden Heightfield. Idempotent, läuft also je Chunk einmal.
-        this._populateVoxelChunkVegetation(cx, cz);
-        return entry;
+        return this._finalizeVoxelChunkBuild(cx, cz, lod, fresh);
     }
 
     // V10.0-j.f — Universaler Defer-Helper für JEDEN GPU-Resource-Dispose
@@ -17928,6 +17785,9 @@ class AnazhRealm {
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
         // disposen (einziger Wasser-Render-Pfad; der alte Quad-Pfad ist weg).
         this._disposeVoxelChunkWaterIso(key);
+        // V12.0-perf.h — ausstehenden Wasser-Iso-Build für diesen Chunk
+        // verwerfen (Chunk ist weg, nichts mehr zu bauen).
+        if (this.state.pendingWaterIso) this.state.pendingWaterIso.delete(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -19979,6 +19839,17 @@ class AnazhRealm {
             if (Math.abs(cx - pcx) > ringRadius + 1 || Math.abs(cz - pcz) > ringRadius + 1) drop.push(key);
         }
         for (const key of drop) this._disposeVoxelChunk(key);
+        // V12.0-perf.b — Basis-Density-Cache distanzbasiert prunen (Memory
+        // bounded). NICHT in `_disposeVoxelChunk` (das ruft der Edit-Rebuild
+        // vor dem Build — würde den Cache aushebeln, den wir gerade nutzen
+        // wollen). Beide LOD-Keys (`,0` und `,1`) räumen.
+        if (this.state.voxelBaseDensityCache) {
+            for (const key of drop) {
+                const [cx, cz] = key.split(",");
+                this.state.voxelBaseDensityCache.delete(`${cx},${cz},0`);
+                this.state.voxelBaseDensityCache.delete(`${cx},${cz},1`);
+            }
+        }
     }
 
     // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
@@ -20241,6 +20112,10 @@ class AnazhRealm {
     // (synchron). Für Tests, die direkt nach einem Edit den gerenderten
     // Mesh prüfen. Im normalen Spiel-Pfad NIE gerufen — der Game-Loop-
     // Tick verteilt die Rebuilds gleichmässig über Frames.
+    // V12.0-perf.a — `forceSync: true` erzwingt den synchronen Build-Pfad
+    // (kein Worker/GPU-Async-Roundtrip, kein „pending"). Sonst würde der
+    // Drain im Headless gegen den async Worker-Mesh-Pfad laufen + nichts
+    // bauen (pending) — die Test-Naht braucht den sofortigen Mesh.
     _drainDirtyVoxelChunks() {
         if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return 0;
         const keys = [...this.state.dirtyVoxelChunks];
@@ -20251,8 +20126,11 @@ class AnazhRealm {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            if (this._rebuildVoxelChunk(cx, cz)) built++;
+            if (this._rebuildVoxelChunk(cx, cz, null, { forceSync: true })) built++;
         }
+        // V12.0-perf.h — der Rebuild enqueued den Wasser-Iso (deferred); die
+        // Test-Naht braucht ihn sofort → die Wasser-Iso-Queue mit-drainen.
+        this._drainPendingWaterIso();
         return built;
     }
 
@@ -22659,10 +22537,16 @@ class AnazhRealm {
     _loadStateRestoreArchitectures(state) {
         if (!Array.isArray(state.architectures) || !this.state.scene) return;
         for (const old of this.state.architectures) {
-            if (old.mesh) {
+            // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei),
+            // nicht nur die mit old.mesh (klassisch).
+            if (old.mesh || old.instanced) {
                 this._cullArchitectureMesh(old);
             }
         }
+        // Saubere Tafel: alle Instancing-Gruppen abbauen (instanceMatrix-
+        // Buffer frei; geteilte Geom/Mat im Flatten-Cache bleiben). Die
+        // Respawn-Schleife baut sie lazy neu.
+        this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
         // V9.75 (Welle C.4+5) — kein `state.blockerIndex`-Reset mehr; das
         // Bucket-Grid ist gestrichen. `spawnArchitecture` setzt
@@ -24422,22 +24306,47 @@ class AnazhRealm {
         }
         // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
         // bleibt aber das Leuchten in die Materialien hineinwirkt.
+        // V12.0-f.1 hatte einen Anti-Drift-Cache pro MATERIAL eingeführt (gegen
+        // die Shared-Material-Kreuz-Kontamination über die 6 Körperteile). Das
+        // war korrekt, traf aber NICHT die Weiß-Wurzel.
+        // V12.0-f.2 — die ECHTE Wurzel (empirisch via diag-avatar-color.cjs):
+        // ein sRGB↔Linear-Mismatch. Der alte Tint zerlegte den Basis-Hex
+        // (#c0392b) in sRGB-Floats (0.753, 0.224, 0.169) und schrieb sie via
+        // `setRGB(r,g,b)`. Seit V12.0-vendor.3 ist `ColorManagement.enabled =
+        // true` → `setRGB` interpretiert die Werte als LINEAR (workingColorSpace).
+        // sRGB-Magnitude-Zahlen in einen Linear-Slot → beim Display-Convert
+        // (linear→sRGB) werden sie viel heller: das tiefe Rot #c0392b rendert
+        // als blasses Lachsrosa #e47c6e → der Avatar wirkte „weiß/verwaschen".
+        // Unsichtbar bis V12.0-f (V10.0-g-Workaround buk die Farbe statisch in
+        // den colorNode, material.color wurde ignoriert) UND bis V12.0-vendor.3
+        // (ColorManagement war vorher aus → setRGB == sRGB == Display).
+        // Heilung: die Mathematik konsistent über THREE.Color rechnen — `setHex`
+        // (sRGB→working) für die Basis, `multiplyScalar(darken)` + `lerp(aura,
+        // mix)` im selben Arbeitsraum. Formel identisch (base·(1−mix)·darken +
+        // aura·mix), nur farbraum-konsistent. THREE.Color managed sRGB↔Linear.
         const auraMix = 0.15;
+        const darken = 0.6 + 0.4 * hpRatio;
+        const baseScratch = this._auraTintBaseScratch || (this._auraTintBaseScratch = new THREE.Color());
+        const tintedMats = new Set();
         this.state.playerMesh.traverse((node) => {
             if (!node || !node.isMesh || !node.material || !node.material.color) return;
-            if (node.userData._auraBaseColor === undefined) {
-                node.userData._auraBaseColor = node.material.color.getHex();
+            const mat = node.material;
+            if (mat.userData._auraBaseColor === undefined) {
+                // getHex() liefert sRGB-Hex (Default-ColorSpace) — die ehrliche
+                // Identitäts-Farbe, unabhängig vom internen Linear-Storage.
+                mat.userData._auraBaseColor = mat.color.getHex();
             }
-            const base = node.userData._auraBaseColor;
-            const br = ((base >> 16) & 0xff) / 255;
-            const bg = ((base >> 8) & 0xff) / 255;
-            const bb = (base & 0xff) / 255;
-            // Verletzungs-Dimmer auf Original (0.6..1.0).
-            const darken = 0.6 + 0.4 * hpRatio;
-            const r = br * (1 - auraMix) * darken + auraColor.r * auraMix;
-            const g = bg * (1 - auraMix) * darken + auraColor.g * auraMix;
-            const b = bb * (1 - auraMix) * darken + auraColor.b * auraMix;
-            node.material.color.setRGB(r, g, b);
+            // Probe-Kompat: node.userData spiegelt den Material-Cache.
+            if (node.userData._auraBaseColor === undefined) {
+                node.userData._auraBaseColor = mat.userData._auraBaseColor;
+            }
+            if (tintedMats.has(mat)) return; // geteiltes Material: nur einmal/Frame
+            tintedMats.add(mat);
+            // setHex(sRGB-Hex) → Basis korrekt in den Arbeitsraum (Linear)
+            // konvertiert. auraColor (aus setHSL) + mat.color leben im selben
+            // Arbeitsraum → darken + lerp sind farbraum-konsistent.
+            baseScratch.setHex(mat.userData._auraBaseColor);
+            mat.color.copy(baseScratch).multiplyScalar(darken).lerp(auraColor, auraMix);
         });
         // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
         if (this.state.playerAura && this.state.scene) {
@@ -28744,8 +28653,21 @@ class AnazhRealm {
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
-            baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, parts: baumEicheParts },
-            baum_kiefer: { name: "baum_kiefer", label: "Kiefer", builtIn: true, parts: baumKieferParts },
+            // V12.0-perf.c.2 — `instanced: true` deklariert die Render-Absicht:
+            // dieser Bauplan wird vom Worldgen massenhaft gespawnt (Wald/
+            // Kristallfeld) → HISM-Instancing statt einer Group je Spawn (der
+            // 762-Sub-Mesh-Storm der perf.c.diag). Deliberately-placed
+            // Strukturen (village/temple/Werkstätten/stein_block) tragen das
+            // Flag NICHT → klassischer Group-Pfad (1-wenige Instanzen, kein
+            // Win, Spieler-Interaktion via entry.mesh). AAA-Foliage-Pattern.
+            baum_eiche: { name: "baum_eiche", label: "Eiche", builtIn: true, instanced: true, parts: baumEicheParts },
+            baum_kiefer: {
+                name: "baum_kiefer",
+                label: "Kiefer",
+                builtIn: true,
+                instanced: true,
+                parts: baumKieferParts,
+            },
             stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
@@ -28759,12 +28681,19 @@ class AnazhRealm {
                 name: "kristall_geode",
                 label: "Kristall-Geode",
                 builtIn: true,
+                instanced: true,
                 parts: kristallGeodeParts,
             },
-            glutbrunnen: { name: "glutbrunnen", label: "Glutbrunnen", builtIn: true, parts: glutbrunnenParts },
+            glutbrunnen: {
+                name: "glutbrunnen",
+                label: "Glutbrunnen",
+                builtIn: true,
+                instanced: true,
+                parts: glutbrunnenParts,
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
-            felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, parts: felsbogenParts },
-            felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, parts: felsturmParts },
+            felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
+            felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
             // Welle 9c — Welt-Werkstätten
             esse: {
                 name: "esse",
@@ -29977,12 +29906,441 @@ class AnazhRealm {
         return map;
     }
 
+    // === V12.0-perf.c — Architektur-Instancing-Foundation ===
+    //
+    // Wurzel A (Diagnose perf.c.diag): jede Architektur ist eine THREE.Group
+    // mit einem eigenen THREE.Mesh PRO Part → 150-m-Feld dicht = hunderte
+    // Draw-Calls/Frame. Der Builder ignoriert den Seed komplett
+    // (`() => _buildFromBlueprint(bp)`), also ist jeder Spawn eines Bauplans
+    // GEOMETRISCH IDENTISCH — nur Position + Scale variieren. Das macht
+    // Instancing sauber: geteilte Geometrie+Material pro (Bauplan, Leaf),
+    // eine Per-Instance-Matrix, KEINE Per-Instance-Color nötig.
+    //
+    // Diese Foundation (perf.c.1) liefert die pure Mathematik + den Gate,
+    // GETESTET (Matrix-Bit-Gleichheit zum klassischen Group-matrixWorld),
+    // ohne den Culling-Pfad umzuhängen — der Cutover folgt in perf.c.2.
+
+    // Die Welt-Matrix eines Architektur-Eintrags (ohne die Leaf-Lokal-
+    // Matrix): T(pos.x, pos.y-0.5, pos.z) × S(scale). Spiegelt exakt, was
+    // `_rebuildArchitectureMesh` der klassischen Group gibt (group.position
+    // = baseY = pos.y-0.5, group.scale = scalar(scale), keine Rotation).
+    _archEntryWorldMatrix(entry, out) {
+        const m = out || new THREE.Matrix4();
+        const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
+        m.makeScale(s, s, s);
+        m.elements[12] = entry.position.x || 0;
+        m.elements[13] = baseY;
+        m.elements[14] = entry.position.z || 0;
+        return m;
+    }
+
+    // Das geteilte Leaf-Material — spiegelt EXAKT die Material-Farb-Logik
+    // aus `_buildFromBlueprint` (V9.89-Worker-Mirror-Disziplin: identische
+    // Mathematik, der Test bewacht Drift). baseColor aus part.color oder
+    // Material-Substanz, Präzisions-Helligkeit 0.6..1.0, Opacity.
+    _archLeafMaterial(part) {
+        let baseColor = typeof part.color === "number" ? part.color : null;
+        if (baseColor === null && typeof part.material === "string") {
+            const matDef = this.state.materials && this.state.materials[part.material];
+            if (matDef && typeof matDef.color === "number") baseColor = matDef.color;
+        }
+        if (baseColor === null) baseColor = 0xffffff;
+        const precision = this.computePartPrecision(part);
+        const brightness = 0.6 + 0.4 * Math.max(0, Math.min(1, precision));
+        const r8 = (baseColor >> 16) & 0xff;
+        const g8 = (baseColor >> 8) & 0xff;
+        const b8 = baseColor & 0xff;
+        const tintedColor =
+            ((Math.round(r8 * brightness) & 0xff) << 16) |
+            ((Math.round(g8 * brightness) & 0xff) << 8) |
+            (Math.round(b8 * brightness) & 0xff);
+        const matOpts = { color: tintedColor };
+        if (Number.isFinite(part.opacity) && part.opacity < 1) {
+            matOpts.transparent = true;
+            matOpts.opacity = part.opacity;
+        }
+        if (!this.state.toonGradientMap) this._refreshToonGradient();
+        return this._buildToonNodeMaterial(matOpts);
+    }
+
+    // Einen Bauplan flach in Leaf-Primitive auflösen (cached). Nested
+    // Blueprints (shape:"blueprint") werden rekursiv mit komponierter
+    // Lokal-Matrix eingebettet. Gate (nicht-instancbar) bei:
+    //   - water_wave-Part (Per-Vertex-Animation, braucht eigenes Mesh)
+    //   - Top-Level-connections (Verbindungs-Linien brauchen eine Group)
+    //   - Tiefe > 4 oder Zyklus (wie _buildFromBlueprint)
+    // Rückgabe: { instanceable, reason, leaves:[{geom, mat, localMatrix}] }.
+    _archFlattenBlueprint(name) {
+        if (!this.state.archFlattenCache) this.state.archFlattenCache = new Map();
+        const cache = this.state.archFlattenCache;
+        if (cache.has(name)) return cache.get(name);
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        const result = { instanceable: false, reason: "", leaves: [] };
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) {
+            result.reason = "no-parts";
+            cache.set(name, result);
+            return result;
+        }
+        // V12.0-perf.c.2 — primärer Gate: nur Baupläne mit `instanced: true`
+        // gehen in die HISM-Registry (Worldgen-Massen-Vegetation). Alle
+        // anderen (Spieler-Bauten, Strukturen, User-Baupläne) bleiben klassisch
+        // → ihr Group-Modell + Interaktion via entry.mesh bleibt unberührt.
+        if (bp.instanced !== true) {
+            result.reason = "classic-intent";
+            cache.set(name, result);
+            return result;
+        }
+        if (Array.isArray(bp.connections) && bp.connections.length > 0) {
+            result.reason = "connections";
+            cache.set(name, result);
+            return result;
+        }
+        // V12.0-perf.c.2 — Baupläne, deren Affordances `entry.mesh` lesen,
+        // bleiben klassisch: `magnifying` (Brennglas-Raycast in
+        // `_hasMagnifyingInSight`) + `moveable` (Mount-Follow setzt
+        // entry.mesh.position pro Frame). So bleibt der Instancing-Pfad frei
+        // von diesen zwei Fäden — sie sehen NIE einen instanced Eintrag.
+        // Alle anderen Affordances (focusing/radiating/broadcasting/
+        // balancing/lifting) lesen entry.position + affordanceStrength, sind
+        // instancing-safe (Vegetation mit `radiating` o.ä. wird instanced).
+        const aff =
+            typeof this.computeBlueprintAffordances === "function" ? this.computeBlueprintAffordances(bp) : null;
+        if (aff && (aff.magnifying || aff.moveable)) {
+            result.reason = "affordance-needs-mesh";
+            cache.set(name, result);
+            return result;
+        }
+        const MAX_DEPTH = 4;
+        const leaves = [];
+        let blocked = null;
+        // applyScale: nested Sub-Blueprints erben part.scale (wie
+        // `_buildFromBlueprint` der Sub-Group); Leaf-Primitive NICHT —
+        // der klassische Builder setzt mesh.scale NIE (Größe kommt aus
+        // part.size via _makePartGeometry). Für Bit-Gleichheit muss der
+        // Leaf-Pfad part.scale ignorieren.
+        const composePart = (part, applyScale) => {
+            const pos = part.position || {};
+            const tp = new THREE.Vector3(pos.x || 0, pos.y || 0, pos.z || 0);
+            const te = new THREE.Euler(
+                part.rotation ? part.rotation.x || 0 : 0,
+                part.rotation ? part.rotation.y || 0 : 0,
+                part.rotation ? part.rotation.z || 0 : 0
+            );
+            const tq = new THREE.Quaternion().setFromEuler(te);
+            let ts = new THREE.Vector3(1, 1, 1);
+            if (applyScale) {
+                const s = part.scale;
+                if (typeof s === "number" && s > 0) ts.set(s, s, s);
+                else if (s && typeof s === "object") ts.set(s.x || 1, s.y || 1, s.z || 1);
+            }
+            return new THREE.Matrix4().compose(tp, tq, ts);
+        };
+        const recurse = (blueprint, parentMatrix, depth, seen) => {
+            if (blocked) return;
+            if (depth > MAX_DEPTH) {
+                blocked = "depth";
+                return;
+            }
+            if (seen.has(blueprint.name)) {
+                blocked = "cycle";
+                return;
+            }
+            seen.add(blueprint.name);
+            for (const part of blueprint.parts || []) {
+                if (blocked) break;
+                if (part.animate === "water_wave") {
+                    blocked = "water_wave";
+                    break;
+                }
+                if (part.shape === "blueprint" && typeof part.refName === "string") {
+                    const ref = this.state.blueprints && this.state.blueprints[part.refName];
+                    if (!ref) continue;
+                    const childMatrix = new THREE.Matrix4().multiplyMatrices(parentMatrix, composePart(part, true));
+                    recurse(ref, childMatrix, depth + 1, seen);
+                    continue;
+                }
+                const geom = this._makePartGeometry(part);
+                geom.computeBoundingBox();
+                const mat = this._archLeafMaterial(part);
+                const localMatrix = new THREE.Matrix4().multiplyMatrices(parentMatrix, composePart(part, false));
+                leaves.push({ geom, mat, localMatrix });
+            }
+            seen.delete(blueprint.name);
+        };
+        recurse(bp, new THREE.Matrix4(), 0, new Set());
+        if (blocked || leaves.length === 0) {
+            // Unbenutzte Leaf-Ressourcen freigeben (nicht instancbar).
+            for (const l of leaves) {
+                if (l.geom && l.geom.dispose) l.geom.dispose();
+                if (l.mat && l.mat.dispose) l.mat.dispose();
+            }
+            result.reason = blocked || "empty";
+            cache.set(name, result);
+            return result;
+        }
+        result.instanceable = true;
+        result.leaves = leaves;
+        cache.set(name, result);
+        return result;
+    }
+
+    // === V12.0-perf.c.2 — Instancing-Cutover (HISM-Registry) ===
+    //
+    // Eine InstancedMesh je (Bauplan, Leaf-Index). Der Culling-Tick schreibt/
+    // löscht Per-Instance-Matrizen statt Groups zu addieren/entfernen. Draw-
+    // Calls kollabieren von hunderten (1/Sub-Mesh) auf ~(Typen × Parts).
+
+    _archIsRendered(entry) {
+        return !!(entry && (entry.mesh || entry.instanced));
+    }
+
+    // Die InstancedMesh-Gruppe für (Bauplan, Leaf) lazy erzeugen/holen.
+    _archInstanceGroupFor(name, leafIdx, leaf) {
+        if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
+        const key = name + "#" + leafIdx;
+        let g = this.state.archInstanceGroups.get(key);
+        if (g) return g;
+        const capacity = 16;
+        const mesh = new THREE.InstancedMesh(leaf.geom, leaf.mat, capacity);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.count = 0; // noch keine Instanz sichtbar
+        mesh.frustumCulled = false; // Instanzen verteilt → Group-BBox nutzlos
+        mesh.userData.archInstanceKey = key;
+        if (this.state.scene) this.state.scene.add(mesh);
+        // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
+        // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
+        g = { key, mesh, geom: leaf.geom, mat: leaf.mat, capacity, next: 0, free: [], slotEntry: [] };
+        this.state.archInstanceGroups.set(key, g);
+        return g;
+    }
+
+    // Kapazität verdoppeln: neue InstancedMesh, alte Matrizen kopieren.
+    _archInstanceGroupGrow(g) {
+        const newCap = g.capacity * 2;
+        const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
+        next.castShadow = true;
+        next.receiveShadow = true;
+        next.frustumCulled = false;
+        next.userData.archInstanceKey = g.key;
+        const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
+        for (let i = 0; i < g.next; i++) {
+            g.mesh.getMatrixAt(i, tmp);
+            next.setMatrixAt(i, tmp);
+        }
+        next.count = g.next;
+        next.instanceMatrix.needsUpdate = true;
+        if (this.state.scene) {
+            this.state.scene.remove(g.mesh);
+            this.state.scene.add(next);
+        }
+        g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
+        g.mesh = next;
+        g.capacity = newCap;
+    }
+
+    // Einen Slot in der Gruppe belegen (Free-List zuerst, dann frischer Slot,
+    // dann wachsen). Rückgabe: Slot-Index.
+    _archGroupAlloc(g) {
+        if (g.free.length > 0) return g.free.pop();
+        if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
+        return g.next++;
+    }
+
+    // Einen Slot freigeben: Matrix auf Null-Scale (degeneriert → unsichtbar),
+    // Slot in die Free-List. mesh.count bleibt am High-Water (Null-Instanzen
+    // rendern kein Dreieck, sind aber im Draw-Loop — vernachlässigbar; reuse
+    // füllt sie wieder).
+    _archGroupFree(g, slot) {
+        const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
+        g.mesh.setMatrixAt(slot, z);
+        g.mesh.instanceMatrix.needsUpdate = true;
+        // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
+        // (Crosshair-Pick) sphere-cullt gegen die gecachte Bounding; ohne Reset
+        // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
+        g.mesh.boundingSphere = null;
+        if (g.slotEntry) g.slotEntry[slot] = null;
+        g.free.push(slot);
+    }
+
+    // Einen Eintrag als Instanzen in die Registry schreiben (eine Instanz je
+    // Leaf). entry.instSlots merkt sich (key, slot) je Leaf für Cull/Update.
+    _archInstanceAdd(entry, flat) {
+        const ew = this._archEntryWorldMatrix(
+            entry,
+            this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
+        );
+        const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        const slots = [];
+        for (let i = 0; i < flat.leaves.length; i++) {
+            const leaf = flat.leaves[i];
+            const g = this._archInstanceGroupFor(entry.type, i, leaf);
+            const slot = this._archGroupAlloc(g);
+            m.multiplyMatrices(ew, leaf.localMatrix);
+            g.mesh.setMatrixAt(slot, m);
+            g.mesh.instanceMatrix.needsUpdate = true;
+            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
+            if (g.slotEntry) g.slotEntry[slot] = entry;
+            // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
+            g.mesh.boundingSphere = null;
+            slots.push({ key: g.key, slot });
+        }
+        entry.instanced = true;
+        entry.instSlots = slots;
+    }
+
+    // Die Instanz-Matrizen eines Eintrags neu schreiben (Mount-Follow nutzt
+    // das NICHT — moveable ist vom Instancing ausgeschlossen —, aber der
+    // Helfer hält den Pfad sauber für künftige bewegliche Instanzen).
+    _archInstanceUpdate(entry) {
+        if (!entry.instanced || !entry.instSlots) return;
+        const flat = this._archFlattenBlueprint(entry.type);
+        if (!flat.instanceable) return;
+        const ew = this._archEntryWorldMatrix(
+            entry,
+            this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
+        );
+        const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        for (let i = 0; i < entry.instSlots.length && i < flat.leaves.length; i++) {
+            const { key, slot } = entry.instSlots[i];
+            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+            if (!g) continue;
+            m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
+            g.mesh.setMatrixAt(slot, m);
+            g.mesh.instanceMatrix.needsUpdate = true;
+            g.mesh.boundingSphere = null; // Raycast-Cull, s. _archGroupFree
+        }
+    }
+
+    // Einen Eintrag aus der Registry entfernen (Slots freigeben).
+    _archInstanceRemove(entry) {
+        if (!entry.instSlots) {
+            entry.instanced = false;
+            return;
+        }
+        for (const { key, slot } of entry.instSlots) {
+            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+            if (g) this._archGroupFree(g, slot);
+        }
+        entry.instSlots = null;
+        entry.instanced = false;
+    }
+
+    // Alle Instancing-Gruppen abbauen (Welt-Wechsel/Restore). Geometrie +
+    // Material leben im archFlattenCache (geteilt) → NICHT disposen; nur die
+    // InstancedMesh-Wrapper (instanceMatrix-Buffer) freigeben + Map leeren.
+    _archDisposeAllInstanceGroups() {
+        if (!this.state.archInstanceGroups) return;
+        for (const g of this.state.archInstanceGroups.values()) {
+            if (this.state.scene && g.mesh) this.state.scene.remove(g.mesh);
+            if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
+        }
+        this.state.archInstanceGroups.clear();
+    }
+
+    // V12.0-perf.d.2 — ist der Eintrag innerhalb des Lazy-Collision-Radius?
+    // Ohne Spieler (Worldgen/headless) → true (Collision bauen, Sicherheit).
+    _archWithinCollisionRadius(entry) {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm || !entry || !entry.position) return true;
+        const dx = entry.position.x - pm.x;
+        const dz = entry.position.z - pm.z;
+        const r = this.state.architectureCollisionRadius || 90;
+        return dx * dx + dz * dz <= r * r;
+    }
+
+    // V12.0-perf.d.2 — Collision für einen gerenderten Eintrag sicherstellen
+    // (idempotent). Instanced → aus Leaf-AABBs, klassisch → aus entry.mesh.
+    _archEnsureCollision(entry) {
+        if (!entry || entry.collision) return;
+        if (entry.instanced) {
+            this._buildArchitectureCollisionFromLeaves(entry, this._archFlattenBlueprint(entry.type));
+        } else if (entry.mesh) {
+            this._buildArchitectureCollision(entry);
+        }
+    }
+
+    // Statische Compound-Kollision aus den Leaf-AABBs (für instanced
+    // Einträge, die kein entry.mesh haben). Spiegelt `_buildArchitectureCollision`:
+    // pro Leaf eine btBoxShape aus der Welt-AABB, Offset relativ zum
+    // Group-Origin (= entry-World-Translation). perf.d.2 baut das lazy (nur nah).
+    _buildArchitectureCollisionFromLeaves(entry, flat) {
+        if (!entry || !this.state.physicsWorld || !flat || flat.leaves.length === 0) return null;
+        const ew = this._archEntryWorldMatrix(entry, new THREE.Matrix4());
+        const groupX = entry.position.x || 0;
+        const groupY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        const groupZ = entry.position.z || 0;
+        const compound = new Ammo.btCompoundShape();
+        const childShapes = [];
+        const lw = new THREE.Matrix4();
+        const wbox = new THREE.Box3();
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        let added = 0;
+        for (const leaf of flat.leaves) {
+            if (!leaf.geom || !leaf.geom.boundingBox) continue;
+            lw.multiplyMatrices(ew, leaf.localMatrix);
+            wbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+            if (wbox.isEmpty()) continue;
+            wbox.getSize(size);
+            wbox.getCenter(center);
+            const hx = Math.max(0.05, size.x / 2);
+            const hy = Math.max(0.05, size.y / 2);
+            const hz = Math.max(0.05, size.z / 2);
+            const childShape = new Ammo.btBoxShape(new Ammo.btVector3(hx, hy, hz));
+            const childTransform = new Ammo.btTransform();
+            childTransform.setIdentity();
+            const offset = new Ammo.btVector3(center.x - groupX, center.y - groupY, center.z - groupZ);
+            childTransform.setOrigin(offset);
+            compound.addChildShape(childTransform, childShape);
+            childShapes.push(childShape);
+            Ammo.destroy(offset);
+            Ammo.destroy(childTransform);
+            added++;
+        }
+        if (added === 0) {
+            Ammo.destroy(compound);
+            return null;
+        }
+        const transform = new Ammo.btTransform();
+        transform.setIdentity();
+        const origin = new Ammo.btVector3(groupX, groupY, groupZ);
+        transform.setOrigin(origin);
+        const motionState = new Ammo.btDefaultMotionState(transform);
+        const localInertia = new Ammo.btVector3(0, 0, 0);
+        const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, compound, localInertia);
+        const body = new Ammo.btRigidBody(rbInfo);
+        body.setFriction(0.8);
+        this.state.physicsWorld.addRigidBody(body);
+        entry.collision = { body, shape: compound, childShapes, motionState, rbInfo };
+        Ammo.destroy(origin);
+        Ammo.destroy(transform);
+        Ammo.destroy(localInertia);
+        return body;
+    }
+
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
     // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
     // existieren (gepruned, weil zu weit weg) und später wieder einen
     // bekommen. Determinismus garantiert: gleiches Seed → gleicher Mesh.
     _rebuildArchitectureMesh(entry) {
         if (!this.state.scene || !entry) return null;
+        // V12.0-perf.c.2 — instancbare Baupläne (Vegetation etc.) gehen in die
+        // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
+        // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
+        const flat = this._archFlattenBlueprint(entry.type);
+        // V12.0-perf.d.2 — Collision nur bauen, wenn der Spieler nah genug ist
+        // (Lazy-Proxy-Collision, Wurzel C). Render passiert bis 150 m, Physik
+        // erst ab ~90 m. Der Culling-Tick-Collision-Pass fügt sie hinzu, wenn
+        // der Spieler herankommt, und gibt sie frei, wenn er sich entfernt.
+        const wantCollision = this._archWithinCollisionRadius(entry);
+        if (flat.instanceable) {
+            this._archInstanceAdd(entry, flat);
+            if (wantCollision) this._buildArchitectureCollisionFromLeaves(entry, flat);
+            return null;
+        }
         const builders = this._architectureBuilders();
         const builder = builders[entry.type];
         if (!builder) return null;
@@ -29998,8 +30356,8 @@ class AnazhRealm {
         // eine umschließende Box rund um die Group. Wir pushen NICHT in
         // state.rigidBodies, damit der Sync-Loop die Group-Position nicht
         // anhand des Body-Origin überschreibt — die Position kommt aus
-        // entry.position, der Body ist nur Hitbox.
-        this._buildArchitectureCollision(entry);
+        // entry.position, der Body ist nur Hitbox. V12.0-perf.d.2 — nur nah.
+        if (wantCollision) this._buildArchitectureCollision(entry);
         return group;
     }
 
@@ -30425,7 +30783,15 @@ class AnazhRealm {
     // Mesh disposen, Eintrag bleibt als reine Daten erhalten. Fenster für
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
-        if (!entry || !entry.mesh) return;
+        if (!entry) return;
+        // V12.0-perf.c.2 — instancierter Eintrag: Collision freigeben + Slots
+        // zurück in die Registry (Matrix auf Null-Scale, Free-List).
+        if (entry.instanced) {
+            this._disposeArchitectureCollision(entry);
+            this._archInstanceRemove(entry);
+            return;
+        }
+        if (!entry.mesh) return;
         // Erst Kollision freigeben, dann Mesh aus der Szene + Geometrien.
         this._disposeArchitectureCollision(entry);
         if (this.state.scene) this.state.scene.remove(entry.mesh);
@@ -30883,6 +31249,58 @@ class AnazhRealm {
         return spawned;
     }
 
+    // V12.0-perf.h — Wasser-Iso-Build deferred-Queue. Der Wasser-Iso-Surface-
+    // Build (`_buildVoxelChunkWaterIsoSurface`) ist ~78 ms Main-Thread-Geometrie
+    // (Surface-Nets über die LOD-0-Wasser-Cells + OOB-Live-Density) — der
+    // schwerste Posten im Chunk-Finalize (perf.h.diag). Vorher lief er SYNCHRON
+    // im Finalize → der Streaming-Frame trug Terrain + Wasser-Iso zusammen, und
+    // mehrere Wasser-Chunks im selben Frame stapelten sich (der FPS-Einbruch).
+    // Jetzt: der Chunk finalisiert sofort mit Terrain+Boden+Collision (kein
+    // Loch, kein Durchfallen), der Wasser-Iso wird enqueued + ≤budget/Frame
+    // gebaut → Wasser erscheint ~1 Frame später (imperzeptibel), kein Pile-Up
+    // (V9.96-Queue-Pattern auf die Wasser-Schicht angewandt).
+    _enqueueWaterIso(cx, cz) {
+        if (!this.state.pendingWaterIso) this.state.pendingWaterIso = new Set();
+        this.state.pendingWaterIso.add(`${cx},${cz}`);
+    }
+
+    _tickPendingWaterIso(maxPerFrame = 2) {
+        const queue = this.state.pendingWaterIso;
+        if (!queue || queue.size === 0) return 0;
+        let built = 0;
+        for (const key of queue) {
+            if (built >= maxPerFrame) break;
+            queue.delete(key);
+            // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
+    // Alle ausstehenden Wasser-Iso-Builds sofort abarbeiten (Test-Naht +
+    // Edit-Instant-Feedback): wer den Wasser-Mesh DIREKT nach einem Build
+    // prüft/braucht, drained die Queue. Im Spiel läuft der per-Frame-Tick.
+    _drainPendingWaterIso() {
+        const queue = this.state.pendingWaterIso;
+        if (!queue || queue.size === 0) return 0;
+        let built = 0;
+        for (const key of [...queue]) {
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
     // V9.24 — der Voxel-Pendant zu populateChunkVegetation: ein Voxel-Chunk
     // bekommt seine Streu-Strukturen (Wälder/Felsen/Geoden/Glutbrunnen +
     // Felsformationen). Spiegelt populateChunkVegetation — 8×8-Sample-Raster,
@@ -31044,21 +31462,51 @@ class AnazhRealm {
     // Damit löst sich das alte Hard-Cap-Problem auf: der Spieler kann
     // unbegrenzt bauen, solange das nicht alles gleichzeitig in Sicht ist.
     tickArchitectureCulling(currentTime) {
-        const tickInterval = 1 / Math.max(0.1, this.state.architectureCullingTickHz);
-        if (currentTime - this.state.architectureCullingLastTick < tickInterval) return;
+        // V12.0-perf.d (Wurzel B) — der Scan läuft jetzt PRO FRAME (315
+        // Distanz-Checks = trivial), aber die teuren Builds (Render +
+        // Ammo-Collision) sind auf `architectureBuildBudgetPerFrame` gedeckelt.
+        // Vorher: 2-Hz-Tick OHNE Budget → beim Eintritt in eine dichte Region
+        // baute EIN Tick alle in-Range-cold-Einträge auf einmal (der FPS-Sturm
+        // 6-9 der perf.c.diag). Jetzt: ≤N Builds/Frame → über mehrere Frames
+        // verteilt, sanftes Pop-In statt Freeze (V9.85/V9.96-Budget-Pattern).
+        // Cull (out-of-range) ist billig (kein Build) → ungedeckelt.
         this.state.architectureCullingLastTick = currentTime;
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
+        // V12.0-perf.d.2 — Lazy-Collision-Radius (Wurzel C): Render bis radius,
+        // Physik-Body nur bis colRadius. Der Pass fügt Collision hinzu, wenn der
+        // Spieler in colRadius kommt, und gibt sie frei, wenn er sich entfernt
+        // (Render bleibt). colRadius < RMIN(100) ≤ radius → immer < Render.
+        const colRadius = this.state.architectureCollisionRadius || 90;
+        const colRadiusSq = colRadius * colRadius;
+        const budget = Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
+        let built = 0;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
             if (distSq <= radiusSq) {
-                if (!entry.mesh) this._rebuildArchitectureMesh(entry);
+                if (!this._archIsRendered(entry)) {
+                    if (built < budget) {
+                        this._rebuildArchitectureMesh(entry); // gated Collision intern
+                        built++;
+                    }
+                    // Budget erschöpft → baut in einem der nächsten Frames.
+                } else if (distSq <= colRadiusSq) {
+                    // Gerendert + im Collision-Radius: Body sicherstellen (budgetiert).
+                    if (!entry.collision && built < budget) {
+                        this._archEnsureCollision(entry);
+                        built++;
+                    }
+                } else if (entry.collision) {
+                    // Gerendert aber außerhalb Collision-Radius: Body freigeben
+                    // (Render bleibt). Billig (kein Build) → ungedeckelt.
+                    this._disposeArchitectureCollision(entry);
+                }
             } else {
-                if (entry.mesh) this._cullArchitectureMesh(entry);
+                if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             }
         }
     }
@@ -31476,6 +31924,14 @@ class AnazhRealm {
                 }
             });
         }
+        // V12.0-perf.c.2 — instancierte Architekturen mit-raycasten. Eine
+        // InstancedMesh-Gruppe liefert beim Treffer eine `instanceId`; der
+        // Eintrag kommt aus g.slotEntry[instanceId] (Slot→Entry-Reverse-Map).
+        if (this.state.archInstanceGroups) {
+            for (const g of this.state.archInstanceGroups.values()) {
+                if (g.mesh && g.mesh.count > 0) meshes.push(g.mesh);
+            }
+        }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
         const cp = this.state.camera.position;
@@ -31483,10 +31939,18 @@ class AnazhRealm {
         this._tmpRaycaster.far = 30;
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
         if (!intersects.length) return null;
-        let node = intersects[0].object;
+        const hit = intersects[0];
+        // Instanced-Treffer: instanceId → Eintrag via slotEntry.
+        if (hit.object && hit.object.isInstancedMesh && typeof hit.instanceId === "number") {
+            const key = hit.object.userData && hit.object.userData.archInstanceKey;
+            const g = key && this.state.archInstanceGroups ? this.state.archInstanceGroups.get(key) : null;
+            const entry = g && g.slotEntry ? g.slotEntry[hit.instanceId] : null;
+            return entry ? { entry, point: hit.point } : null;
+        }
+        let node = hit.object;
         while (node && !entryByMesh.has(node)) node = node.parent;
         const entry = node ? entryByMesh.get(node) : null;
-        return entry ? { entry, point: intersects[0].point } : null;
+        return entry ? { entry, point: hit.point } : null;
     }
 
     // === Welle 6.H Phase 2B.5 — Hylomorphismus-Wurzel: harvestArchitecture ===
@@ -36566,17 +37030,9 @@ class AnazhRealm {
             tint.lightColor.b * tint.lightMul
         );
         dl.intensity = tint.lightIntensity;
-        // V10.0-g — Toon-Light-Uniforms aktualisieren: sunDir (Welt-Raum,
-        // normalisiert) + sunIntensity (skalar). Defensive Existenz-Probe,
-        // weil toonLightUniforms lazy beim ersten Material-Build entstehen.
-        const tu = this.state.toonLightUniforms;
-        if (tu) {
-            if (tu.sunDir) tu.sunDir.value.copy(sunDir);
-            if (tu.sunIntensity) {
-                const lum = (tint.lightColor.r + tint.lightColor.g + tint.lightColor.b) / 3.0;
-                tu.sunIntensity.value = tint.lightIntensity * tint.lightMul * lum;
-            }
-        }
+        // V12.0-f — kein toonLightUniforms-Sync mehr. Die nativen
+        // MeshToonNodeMaterials (lights=true) konsumieren dl.color/intensity/
+        // position direkt über Three.js' WebGPU-Lighting-Pipeline.
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -36587,9 +37043,8 @@ class AnazhRealm {
         const sunHeight = Math.max(0, Math.sin(angle));
         const baseAmb = 0.18 + 0.42 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
-        // V10.0-g — Toon-Light-Uniform für Ambient mitziehen.
-        const tu = this.state.toonLightUniforms;
-        if (tu && tu.ambient) tu.ambient.value = al.intensity;
+        // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
+        // Materials konsumieren al.intensity direkt (Three.js-Lighting).
     }
 
     // V8.27 6.G4.a — HemisphereLight + Fog synchronisieren. Beide emergieren
@@ -39594,6 +40049,9 @@ class AnazhRealm {
         // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
         // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
         this._tickPendingVegSpawns(4);
+        // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
+        // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
+        this._tickPendingWaterIso(2);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -39778,10 +40236,10 @@ class AnazhRealm {
         // ready ist (typisch 1-2 Frames bei AMD/Nvidia, mehr bei async
         // requestAdapter()-Latenz).
         if (!this.state.rendererReady) return;
-        // V10.0-h — Manueller Shadow-Map-Pass VOR dem main render. Füllt das
-        // shadowRTT + updated toonLightUniforms.shadowMatrix, der colorNode
-        // der Toon-Materials sampelt im selben Frame.
-        this._renderShadowMapPass();
+        // V12.0-f — kein manueller Shadow-Pass mehr. Three.js' WebGPU-Renderer
+        // rendert die Shadow-Map nativ pro Frame (shadowMap.autoUpdate=true,
+        // directionalLight.castShadow + die lights=true-MeshToonNodeMaterials
+        // konsumieren sie). Der Render-Loop ruft direkt render().
         // V12.0-a — render() ist async. Bei einer Pipeline-Compile-Failure
         // wirft der Promise-Reject — wir loggen, aber kein Hot-Swap mehr
         // (r164 hat WebGLNodeBuilder entfernt, WebGL wäre eine schwarze Welt).
@@ -40115,7 +40573,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "12.0-e";
+AnazhRealm.VERSION = "12.0-perf.h.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
@@ -41171,6 +41629,16 @@ AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 // Welt-Reaktion-Konstanten (Welle 10b.3).
 AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// V12.0-perf.e — adaptiver Qualitäts-Governor (Nexus). Render-Radius +
+// Build-Budget werden zwischen MIN/MAX justiert je FPS-Druck (NIE Gravitation).
+// RMAX = der Default-Render-Radius; RMIN bleibt > maximaler Test-Spawn-Distanz
+// (~65 m), damit headless-Tightening keine Spawn-Render-Tests bricht.
+AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
+AnazhRealm.ARCH_QUALITY_RADIUS_MIN = 100;
+AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
+AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
+AnazhRealm.ARCH_QUALITY_FPS_LOW = 50; // darunter: Qualität straffen
+AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;

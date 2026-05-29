@@ -7583,9 +7583,28 @@ async function checkBandWelle6APolish(ctx) {
         out.archEntrySpawned = !!entry;
         out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
 
+        // V12.0-perf.c.2 — temple ist jetzt instanced (kein entry.mesh). Die
+        // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
+        // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
+        let topY = null;
         if (entry && entry.mesh) {
-            const box = new THREE.Box3().setFromObject(entry.mesh);
-            const topY = box.max.y;
+            topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
+        } else if (entry && entry.instanced && typeof r._archFlattenBlueprint === "function") {
+            const flat = r._archFlattenBlueprint(entry.type);
+            const ew = r._archEntryWorldMatrix(entry);
+            const wbox = new THREE.Box3();
+            const lbox = new THREE.Box3();
+            const lw = new THREE.Matrix4();
+            wbox.makeEmpty();
+            for (const leaf of flat.leaves) {
+                if (!leaf.geom || !leaf.geom.boundingBox) continue;
+                lw.multiplyMatrices(ew, leaf.localMatrix);
+                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+                wbox.union(lbox);
+            }
+            topY = wbox.isEmpty() ? null : wbox.max.y;
+        }
+        if (entry && topY !== null) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
             r.state.playerMesh.position.set(archX, topY + 50, archZ);
@@ -7707,10 +7726,28 @@ async function checkBandWelle6APolish(ctx) {
         const _beforeArchA3 = r.state.architectures.length;
         const _entryA3 = r.spawnArchitecture("temple", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
         let flatBlueprintNotSteep = false;
+        // V12.0-perf.c.2 — temple instanced: Top-Y aus Flatten-Leaf-AABBs.
+        let topYA3 = null;
         if (_entryA3 && _entryA3.mesh) {
-            const box = new THREE.Box3().setFromObject(_entryA3.mesh);
+            topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
+        } else if (_entryA3 && _entryA3.instanced && typeof r._archFlattenBlueprint === "function") {
+            const flat = r._archFlattenBlueprint(_entryA3.type);
+            const ew = r._archEntryWorldMatrix(_entryA3);
+            const wbox = new THREE.Box3();
+            const lbox = new THREE.Box3();
+            const lw = new THREE.Matrix4();
+            wbox.makeEmpty();
+            for (const leaf of flat.leaves) {
+                if (!leaf.geom || !leaf.geom.boundingBox) continue;
+                lw.multiplyMatrices(ew, leaf.localMatrix);
+                lbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
+                wbox.union(lbox);
+            }
+            topYA3 = wbox.isEmpty() ? null : wbox.max.y;
+        }
+        if (_entryA3 && topYA3 !== null) {
             // Setze Spieler knapp über die Top-Fläche
-            r.state.playerMesh.position.set(_savedX + 40, box.max.y + 0.3, _savedZ + 40);
+            r.state.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);
             r.state._groundedCachedAt = 0;
             r.isPlayerGrounded();
             flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
@@ -9671,7 +9708,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
         // muss eine Compound-Kollision haben.
-        const renderedTree = archTrees.find((a) => a.mesh && a.collision && a.collision.body);
+        // V12.0-perf.c.2 — Bäume sind jetzt instanced (a.instanced, kein
+        // a.mesh); „gerendert in Reichweite" = mesh ODER instanced. Collision
+        // wird in beiden Pfaden gesetzt (aus Leaf-AABBs für instanced).
+        const renderedTree = archTrees.find((a) => (a.mesh || a.instanced) && a.collision && a.collision.body);
         out.treeHasCompoundCollision = !!renderedTree;
 
         // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
@@ -9732,7 +9772,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
-        out.newTreeHasMesh = !!(newTreeArch && newTreeArch.mesh);
+        // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
+        // (entry.instanced), nicht via entry.mesh.
+        out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
         out.newTreeHasCollision = !!(
             newTreeArch &&
             newTreeArch.collision &&
@@ -9928,19 +9970,20 @@ async function checkBandWelle6GHylomorphism(ctx) {
             const isle = r.spawnIslandAt(260, 90, 260, 9, { seed: 8181 });
             if (isle) {
                 out.material = isle.material.type;
-                // V10.0-g Doku-Sync: Insel ist jetzt MeshBasicNodeMaterial mit
-                // custom Toon-Lighting im colorNode (gradientMap-Cel-Lookup +
-                // Sun-Lambert). isMeshToonMaterial=true ist als Drop-in-Kompat-
-                // Marker gesetzt (legacy Tests erkennen die Toon-Familie).
+                // V12.0-f Doku-Sync: Insel ist jetzt natives MeshToonNodeMaterial
+                // (lights=true, r184) — Three.js managed gradientMap-Cel-Lookup +
+                // DirectionalLight/Ambient/Hemisphere + Schatten. isMeshToonMaterial
+                // === true ist NATIV gesetzt (Toon-Familie); isMeshToonNodeMaterial
+                // === true ist der Node-Pfad-Marker (war V10.0-g: MeshBasicNodeMaterial).
                 out.isToonMarker = isle.material.isMeshToonMaterial === true;
-                out.isNodeMaterial = isle.material.isMeshBasicNodeMaterial === true;
+                out.isNodeMaterial = isle.material.isMeshToonNodeMaterial === true;
                 out.hasColorAttr = !!isle.geometry.getAttribute("color");
             }
             return out;
         });
         check("V9.42-c: _attachIslandColors existiert", r42c.hasAttachColors);
         check(
-            `V9.42-c: Insel nutzt MeshBasicNodeMaterial mit Toon-Marker (V10.0-g) — ${r42c.material}`,
+            `V9.42-c: Insel nutzt natives MeshToonNodeMaterial (V12.0-f) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
@@ -9987,7 +10030,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.treeNotAddedToVegetation
         );
         check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
-        check("Welle 6.G P1.5: neu-gespawnter Baum hat Mesh (in Reichweite)", wave6gResults.newTreeHasMesh);
+        check("Welle 6.G P1.5: neu-gespawnter Baum ist gerendert (Mesh oder instanced)", wave6gResults.newTreeHasMesh);
         check(
             "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
             wave6gResults.newTreeHasCollision
@@ -10304,21 +10347,29 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const pz = pm ? pm.position.z : 0;
         const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
         out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-        out.felsbogenHasMesh = !!(eb && eb.mesh);
+        // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
+        // = instanced ODER klassischer Mesh.
+        out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
         out.felsbogenCompoundChildren =
             eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
         out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
         // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
-        // (0x7a7a7a), NICHT weiss. Vorher fiel _buildFromBlueprint
-        // ohne part.color auf 0xffffff zurück — alle material-
-        // basierten Baupläne waren weiss.
-        if (eb && eb.mesh) {
+        // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
+        // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
+        if (eb) {
             let firstMeshHex = null;
-            eb.mesh.traverse((n) => {
-                if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
-                    firstMeshHex = n.material.color.getHex();
+            if (eb.mesh) {
+                eb.mesh.traverse((n) => {
+                    if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                        firstMeshHex = n.material.color.getHex();
+                    }
+                });
+            } else if (eb.instanced) {
+                const flat = r._archFlattenBlueprint("felsbogen");
+                if (flat.leaves[0] && flat.leaves[0].mat && flat.leaves[0].mat.color) {
+                    firstMeshHex = flat.leaves[0].mat.color.getHex();
                 }
-            });
+            }
             out.felsbogenMeshHex = firstMeshHex;
             // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
             // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
@@ -12647,8 +12698,15 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
         // 3) Source-Probe: _rebuildVoxelChunk ruft die Build-Methode (mit-
         // wandernde Doku-Probe).
-        out.rebuildCallsBuild = /this\._buildVoxelChunkWaterIsoSurface\(/.test(r._rebuildVoxelChunk.toString());
+        // V12.0-perf.a — Iso-Wasser-Build wanderte in den geteilten Finalize-
+        // Helfer `_finalizeVoxelChunkBuild`. V12.0-perf.h — Finalize ENQUEUED
+        // den Wasser-Iso jetzt (deferred-Queue) statt ihn synchron zu bauen;
+        // der per-Frame-Tick / Drain baut ihn. Source-Probe wandert mit.
+        out.rebuildCallsBuild = /this\._enqueueWaterIso\(/.test(r._finalizeVoxelChunkBuild.toString());
         out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(r._disposeVoxelChunk.toString());
+        // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
+        // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
+        if (typeof r._drainPendingWaterIso === "function") r._drainPendingWaterIso();
         // 4) Nach Worldgen: prüfe alle streaming-aktiven Chunks. Die Map
         // sollte für jeden gefüllten Chunk einen Eintrag haben (Mesh oder
         // null, je nach Wasser-Existenz im Chunk).
@@ -13073,14 +13131,8 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         "Welle Perf-3.b V9.88: LOD 1 Config (dim=12, step=3.6, dimY=62) — 8× weniger Cells",
         res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 62
     );
-    check(
-        "Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)",
-        res.spanInvariant
-    );
-    check(
-        "Welle Perf-3.b V9.88: vertikaler Range invariant (dimY·step = 223.2 m)",
-        res.verticalRangeInvariant
-    );
+    check("Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)", res.spanInvariant);
+    check("Welle Perf-3.b V9.88: vertikaler Range invariant (dimY·step = 223.2 m)", res.verticalRangeInvariant);
     check(
         "Welle Perf-3.b V9.88: LOD 1 hat 8× weniger Cells als LOD 0",
         res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
@@ -13116,6 +13168,467 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         "Welle Perf-3.b V9.88: _buildVoxelChunkData akzeptiert lod-Parameter (Source-Probe)",
         res.buildDataAcceptsLod
     );
+}
+
+// V12.0-perf.c.1 (Architektur-Instancing-Foundation): beweist die pure
+// Mathematik des HISM-Layers, BEVOR der Culling-Pfad umgehängt wird (perf.c.2).
+// Kern-Invariante: die Per-Leaf-World-Matrix `entryWorldMatrix × leaf.localMatrix`
+// MUSS bit-gleich zum klassischen Group-Child-`matrixWorld` sein — sonst rendert
+// das Instancing die Welt verschoben. Plus: Gate-Korrektheit (water_wave nicht
+// instancbar) + Leaf-Material-Farbe gleich (Mirror-Drift-Wand).
+async function checkBandWellePerfCArchInstancing(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        out.hasFlatten = typeof r._archFlattenBlueprint === "function";
+        out.hasEntryMatrix = typeof r._archEntryWorldMatrix === "function";
+        out.hasLeafMat = typeof r._archLeafMaterial === "function";
+        if (!out.hasFlatten || !out.hasEntryMatrix) return out;
+
+        // Gate: baum_kiefer (flach, 2 Parts) ist instancbar.
+        const flatKiefer = r._archFlattenBlueprint("baum_kiefer");
+        out.kieferInstanceable = flatKiefer.instanceable;
+        out.kieferLeaves = flatKiefer.leaves.length;
+
+        // Gate: waterfall hat einen water_wave-Part → NICHT instancbar.
+        const flatWf = r._archFlattenBlueprint("waterfall");
+        out.waterfallInstanceable = flatWf.instanceable;
+        out.waterfallReason = flatWf.reason;
+
+        // Cache-Identität: zweiter Aufruf liefert dasselbe Objekt (kein
+        // Doppel-Build der Geometrien).
+        out.cacheStable = r._archFlattenBlueprint("baum_kiefer") === flatKiefer;
+
+        // --- Matrix-Bit-Gleichheit: klassische Group vs Instancing-Matrix ---
+        const bp = r.state.blueprints["baum_kiefer"];
+        const entry = { position: { x: 100, y: 50, z: -30 }, scale: 1.5 };
+        const group = r._buildFromBlueprint(bp);
+        const baseY = entry.position.y - 0.5;
+        group.position.set(entry.position.x, baseY, entry.position.z);
+        group.scale.setScalar(entry.scale);
+        group.updateMatrixWorld(true);
+        const entryWorld = r._archEntryWorldMatrix(entry);
+        // Nur Mesh-Children (keine Connection-LineSegments) in Reihenfolge.
+        const meshChildren = group.children.filter((c) => c.isMesh);
+        out.childCount = meshChildren.length;
+        let maxMatrixDelta = 0;
+        let maxColorDelta = 0;
+        const n = Math.min(meshChildren.length, flatKiefer.leaves.length);
+        for (let i = 0; i < n; i++) {
+            const M = entryWorld.clone().multiply(flatKiefer.leaves[i].localMatrix);
+            const cw = meshChildren[i].matrixWorld;
+            for (let e = 0; e < 16; e++) {
+                maxMatrixDelta = Math.max(maxMatrixDelta, Math.abs(M.elements[e] - cw.elements[e]));
+            }
+            const cm = meshChildren[i].material && meshChildren[i].material.color;
+            const lm = flatKiefer.leaves[i].mat && flatKiefer.leaves[i].mat.color;
+            if (cm && lm) {
+                maxColorDelta = Math.max(
+                    maxColorDelta,
+                    Math.abs(cm.r - lm.r) + Math.abs(cm.g - lm.g) + Math.abs(cm.b - lm.b)
+                );
+            }
+        }
+        out.maxMatrixDelta = maxMatrixDelta;
+        out.maxColorDelta = maxColorDelta;
+        if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(group);
+
+        // --- perf.c.2 Cutover: instancbarer Spawn geht in die Registry ---
+        if (r.state.playerMesh && typeof r.spawnArchitecture === "function") {
+            const pp = r.state.playerMesh.position;
+            const origRadius = r.state.architectureCullingRadius;
+            r.state.architectureCullingRadius = 500; // in Reichweite → sofort gebaut
+            const e = r.spawnArchitecture(
+                "baum_kiefer",
+                { x: pp.x + 5, y: pp.y, z: pp.z + 5 },
+                { seed: 7777, silent: true }
+            );
+            out.cutoverInstanced = !!(e && e.instanced === true);
+            out.cutoverNoMesh = !!(e && !e.mesh);
+            out.cutoverSlots = e && e.instSlots ? e.instSlots.length : -1;
+            out.cutoverHasCollision = !!(e && e.collision && e.collision.body);
+            out.cutoverGroupExists = !!(r.state.archInstanceGroups && r.state.archInstanceGroups.has("baum_kiefer#0"));
+            // Cull → instanced-Render weg, Daten-Eintrag bleibt.
+            if (e) {
+                r._cullArchitectureMesh(e);
+                out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
+                out.cutoverCulledNoCollision = !e.collision;
+                // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
+                out.cutoverEntryStillListed = r.state.architectures.indexOf(e) >= 0;
+                r.removeArchitecture(e); // sauber raus aus der Test-Welt
+            }
+            r.state.architectureCullingRadius = origRadius;
+
+            // Nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh).
+            const wf = r.spawnArchitecture(
+                "waterfall",
+                { x: pp.x + 7, y: pp.y, z: pp.z + 7 },
+                { seed: 8888, silent: true }
+            );
+            out.waterfallClassic = !!(wf && wf.mesh && !wf.instanced);
+            if (wf) r.removeArchitecture(wf);
+
+            // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
+            //     picken (Spieler-LMB-Harvest muss instancierte Bäume treffen,
+            //     via instanceId → slotEntry). ---
+            if (r.state.camera && typeof r._pickArchitectureAtCrosshair === "function") {
+                const tcx = pp.x + 6;
+                const tcz = pp.z + 6;
+                const pe = r.spawnArchitecture(
+                    "baum_kiefer",
+                    { x: tcx, y: pp.y, z: tcz },
+                    { seed: 9191, silent: true }
+                );
+                const cam = r.state.camera;
+                const savedPos = cam.position.clone();
+                const savedQuat = cam.quaternion.clone();
+                cam.position.set(tcx, pp.y + 1.2, tcz - 6);
+                cam.lookAt(tcx, pp.y + 1.0, tcz);
+                cam.updateMatrixWorld(true);
+                const pick = r._pickArchitectureAtCrosshair();
+                out.instancedPickHits = !!(pick && pick.entry === pe);
+                cam.position.copy(savedPos);
+                cam.quaternion.copy(savedQuat);
+                cam.updateMatrixWorld(true);
+                if (pe) r.removeArchitecture(pe);
+            }
+        }
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.c.1: Architektur-Instancing-Band (realm)", false, res.error);
+        return;
+    }
+    check("V12.0-perf.c.1: _archFlattenBlueprint existiert", res.hasFlatten);
+    check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
+    check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
+    check(
+        "V12.0-perf.c.1: baum_kiefer instancbar mit 2 Leaves",
+        res.kieferInstanceable === true && res.kieferLeaves === 2,
+        `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
+    );
+    check(
+        "V12.0-perf.c.1: waterfall NICHT instancbar (kein instanced-Flag)",
+        res.waterfallInstanceable === false && res.waterfallReason === "classic-intent",
+        `reason=${res.waterfallReason}`
+    );
+    check("V12.0-perf.c.1: Flatten-Cache stabil (kein Doppel-Build)", res.cacheStable);
+    check(
+        "V12.0-perf.c.1: Leaf-Matrix bit-gleich zum klassischen Group-matrixWorld",
+        res.maxMatrixDelta < 1e-5,
+        `maxDelta=${res.maxMatrixDelta}`
+    );
+    check(
+        "V12.0-perf.c.1: Leaf-Material-Farbe gleich (Mirror-Drift-Wand)",
+        res.maxColorDelta < 1e-4,
+        `maxColorDelta=${res.maxColorDelta}`
+    );
+    // perf.c.2 Cutover-Invarianten (nur wenn der Player-Pfad lief).
+    if (res.cutoverInstanced !== undefined) {
+        check(
+            "V12.0-perf.c.2: instancbarer Spawn → entry.instanced=true, kein entry.mesh",
+            res.cutoverInstanced === true && res.cutoverNoMesh === true
+        );
+        check(
+            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 2)",
+            res.cutoverSlots === 2,
+            `slots=${res.cutoverSlots}`
+        );
+        check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
+        check("V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert", res.cutoverGroupExists);
+        check(
+            "V12.0-perf.c.2: Cull gibt Instance-Slots + Collision frei (Daten-Eintrag bleibt)",
+            res.cutoverCulledInstanced === true &&
+                res.cutoverCulledNoCollision === true &&
+                res.cutoverEntryStillListed === true
+        );
+        check(
+            "V12.0-perf.c.2: nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh)",
+            res.waterfallClassic
+        );
+        if (res.instancedPickHits !== undefined) {
+            check(
+                "V12.0-perf.c.2: instancierter Baum per Crosshair-Raycast pickbar (LMB-Harvest-Faden)",
+                res.instancedPickHits
+            );
+        }
+    }
+}
+
+// V12.0-perf.d (Wurzel B — budgetierter Culling-Build): beweist, dass
+// `tickArchitectureCulling` höchstens `architectureBuildBudgetPerFrame` teure
+// Builds pro Frame macht, statt beim Eintritt in eine dichte Region alle
+// in-Range-cold-Einträge auf einmal zu bauen (der FPS-Sturm der perf.c.diag).
+async function checkBandWellePerfDBudget(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
+        const out = {};
+        out.hasBudgetField = Number.isFinite(r.state.architectureBuildBudgetPerFrame);
+        const budget = r.state.architectureBuildBudgetPerFrame;
+        out.budget = budget;
+        const pp = r.state.playerMesh.position;
+        // 12 cold-in-range Einträge: cullingRadius=0 beim Spawn (cold), dann
+        // restaurieren, sodass sie alle im Render-Radius liegen.
+        const origRadius = r.state.architectureCullingRadius;
+        r.state.architectureCullingRadius = 0;
+        const ids = [];
+        const N = 12;
+        for (let i = 0; i < N; i++) {
+            const e = r.spawnArchitecture(
+                "baum_kiefer",
+                { x: pp.x + 4 + i, y: pp.y, z: pp.z + 4 },
+                { seed: 31000 + i, silent: true }
+            );
+            if (e) ids.push(e.id);
+        }
+        r.state.architectureCullingRadius = Math.max(origRadius, 300);
+        const idSet = new Set(ids);
+        const renderedCount = () => r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
+        out.coldBefore = ids.length - renderedCount();
+        // EIN Tick → höchstens `budget` der 12 gebaut (kein Burst).
+        const renderedPre = renderedCount();
+        r.tickArchitectureCulling(performance.now());
+        out.builtInOneTick = renderedCount() - renderedPre;
+        out.respectsBudget = out.builtInOneTick <= budget;
+        // Genug Ticks → alle 12 gebaut (sanftes Pop-In). Cap großzügig, weil
+        // das Budget GLOBAL ist (andere cold-Architekturen — z.B. vom Nexus-
+        // Governor gestraffte — konkurrieren um die Build-Slots; Loop bis fertig
+        // statt fixer Tick-Zahl).
+        let guard = 0;
+        while (renderedCount() < ids.length && guard < 1000) {
+            r.tickArchitectureCulling(performance.now());
+            guard++;
+        }
+        out.builtAfterManyTicks = renderedCount();
+        out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
+        // Cleanup.
+        for (const e of r.state.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
+        r.state.architectureCullingRadius = origRadius;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.d: Budget-Band (realm)", false, res.error);
+        return;
+    }
+    check(
+        "V12.0-perf.d: architectureBuildBudgetPerFrame existiert (≥1)",
+        res.hasBudgetField && res.budget >= 1,
+        `budget=${res.budget}`
+    );
+    check(
+        "V12.0-perf.d: 12 cold-in-range Einträge vor dem ersten Tick",
+        res.coldBefore === 12,
+        `cold=${res.coldBefore}`
+    );
+    check(
+        "V12.0-perf.d: EIN Tick baut höchstens budget (kein Burst)",
+        res.respectsBudget,
+        `gebaut=${res.builtInOneTick}, budget=${res.budget}`
+    );
+    check(
+        "V12.0-perf.d: über mehrere Ticks werden ALLE gebaut (sanftes Pop-In)",
+        res.allEventuallyBuilt,
+        `gebaut=${res.builtAfterManyTicks}/12`
+    );
+}
+
+// V12.0-perf.e (Wurzel D — Nexus-Governor): beweist, dass die Nexus-
+// Selbstanalyse bei FPS-Druck die WELT-QUALITÄT justiert (Render-Radius +
+// Build-Budget), NIE die Gravitation. Das alte Pflaster (`gravity *= 0.9`)
+// ließ die Welt schweben — die spürbare Disharmonie.
+async function checkBandWellePerfENexusGovernor(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        out.hasGovernor = typeof r._nexusAdaptiveQuality === "function";
+        if (!out.hasGovernor) return out;
+        out.noGravityPflaster = !/gravity\s*\*=/.test(r.selfAwarenessAnalyze.toString());
+        const sr = r.state.architectureCullingRadius;
+        const sb = r.state.architectureBuildBudgetPerFrame;
+        const sg = r.state.gravity;
+        r.state.architectureCullingRadius = 130;
+        r.state.architectureBuildBudgetPerFrame = 4;
+        const gBefore = r.state.gravity;
+        r._nexusAdaptiveQuality(30);
+        out.tightenedRadius = r.state.architectureCullingRadius < 130;
+        out.tightenedBudget = r.state.architectureBuildBudgetPerFrame < 4;
+        for (let i = 0; i < 50; i++) r._nexusAdaptiveQuality(20);
+        out.radiusFloor = r.state.architectureCullingRadius >= 100 && r.state.architectureCullingRadius < 130;
+        out.budgetFloor = r.state.architectureBuildBudgetPerFrame >= 1;
+        out.gravityUntouchedLow = r.state.gravity === gBefore;
+        for (let i = 0; i < 50; i++) r._nexusAdaptiveQuality(60);
+        out.relaxedRadius = r.state.architectureCullingRadius === 150;
+        out.relaxedBudget = r.state.architectureBuildBudgetPerFrame === 6;
+        out.gravityUntouchedHigh = r.state.gravity === gBefore;
+        const rBefore = r.state.architectureCullingRadius;
+        r._nexusAdaptiveQuality(0);
+        out.zeroFpsNoChange = r.state.architectureCullingRadius === rBefore;
+        r.state.architectureCullingRadius = sr;
+        r.state.architectureBuildBudgetPerFrame = sb;
+        r.state.gravity = sg;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.e: Nexus-Governor-Band (realm)", false, res.error);
+        return;
+    }
+    check("V12.0-perf.e: _nexusAdaptiveQuality existiert", res.hasGovernor);
+    check("V12.0-perf.e: kein `gravity *= 0.9`-Pflaster mehr in selfAwarenessAnalyze", res.noGravityPflaster);
+    check("V12.0-perf.e: FPS-Druck strafft Render-Radius + Build-Budget", res.tightenedRadius && res.tightenedBudget);
+    check("V12.0-perf.e: anhaltender Druck bounded (Radius ≥ MIN 100, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
+    check(
+        "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
+        res.gravityUntouchedLow && res.gravityUntouchedHigh
+    );
+    check(
+        "V12.0-perf.e: FPS-Luft relaxt Qualität zurück zum Maximum (150 m / Budget 6)",
+        res.relaxedRadius && res.relaxedBudget
+    );
+    check("V12.0-perf.e: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
+}
+
+// V12.0-perf.d.2 (Wurzel C — Lazy-Proxy-Collision): beweist, dass Architekturen
+// RENDERN bis zum Render-Radius (150 m), aber einen Ammo-Body nur innerhalb des
+// kleineren Collision-Radius (~90 m) bekommen — ferne Deko ist sichtbar aber
+// physik-frei, bis der Spieler herankommt (AAA-Pattern, die 183 Eager-Bodies
+// auf ~36 % reduziert). Der Culling-Pass fügt Collision hinzu/gibt sie frei je
+// Spieler-Distanz.
+async function checkBandWellePerfD2LazyCollision(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
+        const out = {};
+        out.hasColRadius = Number.isFinite(r.state.architectureCollisionRadius);
+        out.colLtRender = r.state.architectureCollisionRadius < 150;
+        const pp = r.state.playerMesh.position;
+        const origRadius = r.state.architectureCullingRadius;
+        const colR = r.state.architectureCollisionRadius || 90;
+        r.state.architectureCullingRadius = 400; // Render deckt fern
+        // FERN (jenseits colRadius, im Render-Radius): gerendert, KEINE Collision.
+        const far = r.spawnArchitecture(
+            "baum_kiefer",
+            { x: pp.x + colR + 40, y: pp.y, z: pp.z },
+            { seed: 41000, silent: true }
+        );
+        out.farRendered = !!(far && r._archIsRendered(far));
+        out.farNoCollision = !!(far && !far.collision);
+        // NAH (innerhalb colRadius): gerendert + Collision.
+        const near = r.spawnArchitecture(
+            "baum_kiefer",
+            { x: pp.x + 10, y: pp.y, z: pp.z },
+            { seed: 41001, silent: true }
+        );
+        out.nearRendered = !!(near && r._archIsRendered(near));
+        out.nearHasCollision = !!(near && near.collision && near.collision.body);
+        // Pass fügt Collision hinzu, wenn der ferne Eintrag in den colRadius rückt.
+        if (far) {
+            far.position.x = pp.x + 10;
+            far.position.z = pp.z + 2;
+            let guard = 0;
+            while (!far.collision && guard < 1000) {
+                r.tickArchitectureCulling(performance.now());
+                guard++;
+            }
+            out.farGotCollisionWhenNear = !!(far.collision && far.collision.body);
+        }
+        // Pass gibt Collision frei, wenn der nahe Eintrag hinaus rückt (Render bleibt).
+        if (near) {
+            near.position.x = pp.x + colR + 40;
+            r.tickArchitectureCulling(performance.now());
+            out.nearLostCollisionWhenFar = !near.collision && r._archIsRendered(near);
+        }
+        // Cleanup.
+        if (far) r.removeArchitecture(far);
+        if (near) r.removeArchitecture(near);
+        r.state.architectureCullingRadius = origRadius;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.d.2: Lazy-Collision-Band (realm)", false, res.error);
+        return;
+    }
+    check(
+        "V12.0-perf.d.2: architectureCollisionRadius existiert + < Render-Radius",
+        res.hasColRadius && res.colLtRender
+    );
+    check(
+        "V12.0-perf.d.2: ferne Architektur gerendert, aber OHNE Collision (lazy)",
+        res.farRendered && res.farNoCollision
+    );
+    check("V12.0-perf.d.2: nahe Architektur gerendert + MIT Collision", res.nearRendered && res.nearHasCollision);
+    check("V12.0-perf.d.2: Pass fügt Collision hinzu, wenn Spieler herankommt", res.farGotCollisionWhenNear);
+    check(
+        "V12.0-perf.d.2: Pass gibt Collision frei, wenn Spieler sich entfernt (Render bleibt)",
+        res.nearLostCollisionWhenFar
+    );
+}
+
+// V12.0-perf.h (Streaming-Hitch — Wasser-Iso deferred-Queue): beweist, dass der
+// schwerste Main-Thread-Streaming-Posten (Wasser-Iso ~78 ms) aus dem synchronen
+// Chunk-Finalize in eine per-Frame-budgetierte Queue gewandert ist — der Chunk
+// ist sofort fertig (Terrain+Boden), das Wasser baut ≤budget/Frame nach.
+async function checkBandWellePerfHWaterIsoQueue(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm/chunks" };
+        const out = {};
+        out.hasEnqueue = typeof r._enqueueWaterIso === "function";
+        out.hasTick = typeof r._tickPendingWaterIso === "function";
+        out.hasDrain = typeof r._drainPendingWaterIso === "function";
+        if (!out.hasEnqueue || !out.hasTick || !out.hasDrain) return out;
+        const finSrc = r._finalizeVoxelChunkBuild.toString();
+        // V12.0-perf.h.1 — Finalize hat ZWEI Pfade: enqueue (Streaming, deferred)
+        // ODER sync-build (Edit-Rebuild via syncWater, kein Flacker). Beide da.
+        out.finalizeEnqueues = /_enqueueWaterIso\(/.test(finSrc);
+        out.finalizeGatedOnSyncWater = /syncWater/.test(finSrc);
+        out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
+        // Loop ruft den per-Frame-Tick (lebt in _loopVoxelStreaming).
+        out.loopTicksQueue =
+            typeof r._loopVoxelStreaming === "function" &&
+            /_tickPendingWaterIso\(/.test(r._loopVoxelStreaming.toString());
+        // Mechanik: 3 echte Chunk-Keys enqueuen → tick(1) baut ≤1 → drain leert.
+        if (!r.state.pendingWaterIso) r.state.pendingWaterIso = new Set();
+        r.state.pendingWaterIso.clear();
+        const keys = [...r.state.voxelChunks.keys()].slice(0, 3);
+        for (const k of keys) {
+            const comma = k.indexOf(",");
+            r._enqueueWaterIso(parseInt(k.slice(0, comma), 10), parseInt(k.slice(comma + 1), 10));
+        }
+        out.enqueuedCount = r.state.pendingWaterIso.size;
+        const builtTick = r._tickPendingWaterIso(1);
+        out.tickRespectsBudget = builtTick <= 1;
+        out.queueShrankAfterTick = r.state.pendingWaterIso.size < out.enqueuedCount;
+        r._drainPendingWaterIso();
+        out.drainEmptiesQueue = r.state.pendingWaterIso.size === 0;
+        return out;
+    });
+    if (res.error) {
+        check("V12.0-perf.h: Wasser-Iso-Queue-Band (realm)", false, res.error);
+        return;
+    }
+    check(
+        "V12.0-perf.h: _enqueueWaterIso/_tickPendingWaterIso/_drainPendingWaterIso existieren",
+        res.hasEnqueue && res.hasTick && res.hasDrain
+    );
+    check(
+        "V12.0-perf.h: Finalize ENQUEUED den Wasser-Iso für Streaming (sync nur bei Edit via syncWater)",
+        res.finalizeEnqueues && res.finalizeGatedOnSyncWater
+    );
+    check("V12.0-perf.h: Game-Loop ruft _tickPendingWaterIso (per-Frame-Bau)", res.loopTicksQueue);
+    check("V12.0-perf.h: 3 Keys enqueued", res.enqueuedCount === 3, `enqueued=${res.enqueuedCount}`);
+    check(
+        "V12.0-perf.h: tick baut ≤budget + verkleinert die Queue (kein Burst)",
+        res.tickRespectsBudget && res.queueShrankAfterTick
+    );
+    check("V12.0-perf.h: drain leert die Queue (Test-Naht/Edit-Instant)", res.drainEmptiesQueue);
 }
 
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): empirischer Beweis dass
@@ -13257,7 +13770,8 @@ async function checkBandWelleV995WebGpuFoundation(ctx) {
         out.hasInit = typeof r._voxelGpuInit === "function";
         out.hasRunProof = typeof r._voxelGpuRunFoundationProof === "function";
         out.hasDispose = typeof r._voxelGpuDispose === "function";
-        out.hasWgslConst = typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
+        out.hasWgslConst =
+            typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
         // (b) Initial-Status (kann notTried sein, oder bereits ready/unavailable wenn
         // Worldgen-State-Sync den GPU-Init schon getriggert hat)
         out.statusBeforeInit = r.state.voxelGpuStatus;
@@ -13365,7 +13879,8 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         out.hasChunkEligible = typeof r._voxelGpuChunkEligible === "function";
         out.hasComputeDensity = typeof r._voxelGpuComputeDensity === "function";
         out.hasFetchOrRequest = typeof r._fetchOrRequestChunkDensityGpu === "function";
-        out.hasWgslDensity = typeof AnazhRealm.WGSL_DENSITY_GRID === "string" && AnazhRealm.WGSL_DENSITY_GRID.length > 1000;
+        out.hasWgslDensity =
+            typeof AnazhRealm.WGSL_DENSITY_GRID === "string" && AnazhRealm.WGSL_DENSITY_GRID.length > 1000;
         // (b) State-Felder existieren
         out.hasStateFields =
             "voxelGpuDensityPipeline" in r.state &&
@@ -13388,7 +13903,9 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         // Source-Probe prüft jetzt: `_fetchOrRequestChunkDensityGpu` ist im
         // Streaming-Pfad aufgerufen als Stufe-2-Fallback (Worker-Mesh bleibt
         // Stufe-1 primary).
-        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Kaskade wanderte in `_acquireVoxelChunkBuild` (geteilt
+        // Streaming + Edit-Rebuild). GPU-Cutover lebt jetzt dort.
+        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._acquireVoxelChunkBuild.toString());
         out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
         // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
         // im Edit-Footprint nicht mehr eligible ist
@@ -13407,9 +13924,13 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
             try {
                 const cfg = r._voxelChunkConfig(0);
                 const base = r.state.terrainBaseHeight || 0;
-                const ox = 0, oy = base - cfg.floorDrop, oz = 0;
+                const ox = 0,
+                    oy = base - cfg.floorDrop,
+                    oz = 0;
                 // klein: 8×8×8 = 729 vertices
-                const dimX = 8, dimY = 8, dimZ = 8;
+                const dimX = 8,
+                    dimY = 8,
+                    dimZ = 8;
                 const gpuGrid = await r._voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, cfg.step);
                 out.gpuLen = gpuGrid.length;
                 out.gpuExpectedLen = (dimX + 1) * (dimY + 1) * (dimZ + 1);
@@ -13451,7 +13972,10 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
     check("V9.95-b Density-Pipeline: _voxelGpuChunkEligible existiert", res.hasChunkEligible);
     check("V9.95-b Density-Pipeline: _voxelGpuComputeDensity existiert", res.hasComputeDensity);
     check("V9.95-b Density-Pipeline: _fetchOrRequestChunkDensityGpu existiert", res.hasFetchOrRequest);
-    check("V9.95-b Density-Pipeline: AnazhRealm.WGSL_DENSITY_GRID ist substantieller String (>1000 Z)", res.hasWgslDensity);
+    check(
+        "V9.95-b Density-Pipeline: AnazhRealm.WGSL_DENSITY_GRID ist substantieller String (>1000 Z)",
+        res.hasWgslDensity
+    );
     check("V9.95-b Density-Pipeline: 10 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
     check(
         "V9.95-b Density-Pipeline: Eligibility-Gate — Trockenland-Chunk ohne Edits/Hydro eligible",
@@ -13473,10 +13997,7 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         res.gpuCutoverActive,
         "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh bleibt Stufe-1 primary"
     );
-    check(
-        "V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache",
-        res.notifyEditClears
-    );
+    check("V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache", res.notifyEditClears);
     // Conditional: echter Browser mit GPU
     if (res.gpuStatus === "ready" && !res.gpuComputeError) {
         check(
@@ -13592,16 +14113,23 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             out.workerVertCount = workerPos.count;
             out.vertCountMatch = syncPos.count === workerPos.count;
             // Position-Array bit-identisch?
+            // V12.0-perf.h-fix — epsilon-Toleranz statt exakt-0 (V9.95-a-Lehre):
+            // SimplexNoise nutzt transzendente Funktionen (sqrt/floor), deren
+            // Präzision implementation-defined ist → Worker- vs Main-Density
+            // driftet um Float32-Rundung (~1e-6, sub-mikron, unsichtbar; das
+            // Surface-Nets-Smoothing absorbiert es). „bit-identisch" war eine
+            // zu strenge Annahme (passte nur wenn der Test-Chunk zufällig keine
+            // Drift-Vertices hatte → ~40% Flake). Die ehrliche Invariante:
+            // epsilon-nah (< 1e-4 fängt echte Determinismus-Bugs, ignoriert
+            // Float32-Rundung). maxDelta bleibt sichtbar im Detail.
+            const EPS = 1e-4;
             let posMismatches = 0;
             let maxPosDelta = 0;
             const len = Math.min(syncPos.array.length, workerPos.array.length);
             for (let i = 0; i < len; i++) {
-                const dv = syncPos.array[i] - workerPos.array[i];
-                if (dv !== 0) {
-                    posMismatches++;
-                    const ad = Math.abs(dv);
-                    if (ad > maxPosDelta) maxPosDelta = ad;
-                }
+                const ad = Math.abs(syncPos.array[i] - workerPos.array[i]);
+                if (ad > maxPosDelta) maxPosDelta = ad;
+                if (ad > EPS) posMismatches++;
             }
             out.posMismatches = posMismatches;
             out.maxPosDelta = maxPosDelta;
@@ -13616,7 +14144,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         out.editBumpedStateGen = r.state.voxelWorkerStateGen === beforeStateGen + 1;
         out.editClearedCache = !r.state.voxelDensityCache || r.state.voxelDensityCache.size === 0;
         // 6) Source-Probes
-        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Worker-Density-Stufe lebt in `_acquireVoxelChunkBuild`.
+        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(r._acquireVoxelChunkBuild.toString());
         out.addEditCallsNotify = /_voxelWorkerNotifyEdit\(/.test(r._addVoxelEdit.toString());
         return out;
     });
@@ -13711,18 +14240,20 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.workerVertCount = workerMesh.positions.length / 3;
         out.vertCountMatch = syncPos.count === workerMesh.positions.length / 3;
         // Position-Array bit-identisch?
+        // V12.0-perf.h-fix — epsilon-Toleranz statt exakt-0 (V9.95-a-Lehre):
+        // transzendente SimplexNoise-Präzision driftet Worker↔Main um Float32-
+        // Rundung (sub-mikron, unsichtbar). < 1e-4 fängt echte Bugs, ignoriert
+        // Rundung. maxDelta bleibt sichtbar.
+        const EPS = 1e-4;
         let posMismatches = 0;
         let maxPosDelta = 0;
         const syncPosArr = syncPos.array;
         const workerPosArr = workerMesh.positions;
         const lenP = Math.min(syncPosArr.length, workerPosArr.length);
         for (let i = 0; i < lenP; i++) {
-            const dv = syncPosArr[i] - workerPosArr[i];
-            if (dv !== 0) {
-                posMismatches++;
-                const ad = Math.abs(dv);
-                if (ad > maxPosDelta) maxPosDelta = ad;
-            }
+            const ad = Math.abs(syncPosArr[i] - workerPosArr[i]);
+            if (ad > maxPosDelta) maxPosDelta = ad;
+            if (ad > EPS) posMismatches++;
         }
         out.posMismatches = posMismatches;
         out.maxPosDelta = maxPosDelta;
@@ -13738,12 +14269,9 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const workerNormArr = workerMesh.normals;
         const lenN = Math.min(syncNormArr.length, workerNormArr.length);
         for (let i = 0; i < lenN; i++) {
-            const dv = syncNormArr[i] - workerNormArr[i];
-            if (dv !== 0) {
-                normMismatches++;
-                const ad = Math.abs(dv);
-                if (ad > maxNormDelta) maxNormDelta = ad;
-            }
+            const ad = Math.abs(syncNormArr[i] - workerNormArr[i]);
+            if (ad > maxNormDelta) maxNormDelta = ad;
+            if (ad > EPS) normMismatches++;
         }
         out.normMismatches = normMismatches;
         out.maxNormDelta = maxNormDelta;
@@ -13776,12 +14304,9 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
             const workerColArr = workerMesh.colors;
             const lenC = Math.min(syncColArr.length, workerColArr.length);
             for (let i = 0; i < lenC; i++) {
-                const dv = syncColArr[i] - workerColArr[i];
-                if (dv !== 0) {
-                    colMismatches++;
-                    const ad = Math.abs(dv);
-                    if (ad > maxColDelta) maxColDelta = ad;
-                }
+                const ad = Math.abs(syncColArr[i] - workerColArr[i]);
+                if (ad > maxColDelta) maxColDelta = ad;
+                if (ad > EPS) colMismatches++;
             }
         }
         out.colMismatches = colMismatches;
@@ -13820,7 +14345,8 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         // Clean up
         syncFresh.mesh.geometry.dispose();
         // Source-Probe
-        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Worker-Mesh-Stufe-1 lebt in `_acquireVoxelChunkBuild`.
+        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(r._acquireVoxelChunkBuild.toString());
         return out;
     });
     if (res.error) {
@@ -13998,7 +14524,8 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
             out.upgradeIdempotent = upgradeAgain === false; // schon BVH'd
         }
         // 6) Source-Probes
-        out.ensureUsesLazyBVH = /_voxelChunkLazyBVHFor\(/.test(r._ensureVoxelChunkAt.toString());
+        // V12.0-perf.a — Lazy-BVH-Decision lebt in `_acquireVoxelChunkBuild`.
+        out.ensureUsesLazyBVH = /_voxelChunkLazyBVHFor\(/.test(r._acquireVoxelChunkBuild.toString());
         out.streamingCallsPump = /_pumpVoxelChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
         out.streamingCallsEnsurePlayer = /_ensurePlayerChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
         return out;
@@ -14114,10 +14641,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
     check("Welle V9.93: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
-    check(
-        "Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)",
-        res.buildPassesLod0
-    );
+    check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
 // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — Beweis dass der
@@ -14229,10 +14753,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
     if (res.foundWater) {
         check("Welle V11.0-d.1: Wasser-Stichprobe: inWater=true", res.waterInWaterTrue === true);
         check("Welle V11.0-d.1: Wasser-Stichprobe: depthBelow > 0", res.waterDepthPositive === true);
-        check(
-            "Welle V11.0-d.1: Wasser-Stichprobe: shoreDir null oder Kardinal-Vector3",
-            res.waterShoreDirOk === true
-        );
+        check("Welle V11.0-d.1: Wasser-Stichprobe: shoreDir null oder Kardinal-Vector3", res.waterShoreDirOk === true);
         check(
             "Welle V11.0-d.1: Wasser-Stichprobe: distToShore endlich oder Infinity",
             res.waterDistToShoreFinite === true
@@ -14243,15 +14764,9 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         res.perfMs < 50,
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
-    check(
-        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)",
-        res.usesVoxelSurfaceY === true
-    );
+    check("Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25)", res.usesVoxelSurfaceY === true);
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
-    check(
-        "Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)",
-        res.usesIsAboveWaterAt === true
-    );
+    check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
 }
 
 // V11.0-d.2 (Pfeiler D — Tiefen-Scheue + Schwimm-Surface) — Beweis dass der
@@ -14346,15 +14861,9 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         "Welle V11.0-d.2: updateCreatures konsumiert _creatureWaterContextAt (Source-Probe)",
         res.loopReadsWaterContext === true
     );
-    check(
-        "Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik",
-        res.loopHasWaterSurface === true
-    );
+    check("Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik", res.loopHasWaterSurface === true);
     check("Welle V11.0-d.2: updateCreatures liest shoreDir für Ufer-Bias", res.loopHasShoreBias === true);
-    check(
-        "Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)",
-        res.loopHasDistanceLod === true
-    );
+    check("Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)", res.loopHasDistanceLod === true);
     if (!res.waterSpotFound) {
         // Wenn die Welt-Variation keinen tiefen Wasser-Spot in ±120m hat,
         // ist die empirische Probe nicht möglich — Source-Probes haben
@@ -14422,10 +14931,7 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
         out.chatParsesTrinke =
-            parsed &&
-            parsed.program &&
-            parsed.program[0] === "creature_task_nearest" &&
-            parsed.program[1] === "drink";
+            parsed && parsed.program && parsed.program[0] === "creature_task_nearest" && parsed.program[1] === "drink";
 
         // Empirisch: _findNearestWaterPoint findet Wasser im Spawn-Bereich.
         let waterSpot = null;
@@ -14496,34 +15002,19 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
     check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
     check("Welle V11.0-d.3: _findNearestWaterPoint existiert", res.findExists === true);
-    check(
-        "Welle V11.0-d.3: _tickCreatureTaskDirection routet drink",
-        res.routerHasDrink === true
-    );
+    check("Welle V11.0-d.3: _tickCreatureTaskDirection routet drink", res.routerHasDrink === true);
     check(
         "Welle V11.0-d.3: _tickCreatureDrink hat 3-Phasen-Logik (_target + _drinkStart)",
         res.drinkHasPhases === true
     );
-    check(
-        "Welle V11.0-d.3: _tickCreatureDrink setzt happy nach vollendetem Trinken",
-        res.drinkSetsHappy === true
-    );
-    check(
-        "Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink",
-        res.chatParsesTrinke === true
-    );
+    check("Welle V11.0-d.3: _tickCreatureDrink setzt happy nach vollendetem Trinken", res.drinkSetsHappy === true);
+    check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
     if (res.waterFound) {
-        check(
-            "Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)",
-            res.findReturnsObj === true
-        );
+        check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
     }
     if (res.assignOk !== undefined) {
         check("Welle V11.0-d.3: assignCreatureTask akzeptiert 'drink'", res.assignOk === true);
-        check(
-            "Welle V11.0-d.3: Kreatur trägt drink-Task nach assign",
-            res.taskNameAfter === "drink"
-        );
+        check("Welle V11.0-d.3: Kreatur trägt drink-Task nach assign", res.taskNameAfter === "drink");
         // Nach einem Tick: entweder noch drink (Wasser gefunden, walking)
         // oder wander (Wasser nicht in 40m, Auto-Fallback). Beide OK.
         check(
@@ -14623,22 +15114,19 @@ async function checkBandWelleV11APoolFoundation(ctx) {
     check("Welle V11.0-a: _releaseGrassMesh existiert", res.releaseExists === true);
     check("Welle V11.0-a: _drainGrassMeshPool existiert", res.drainExists === true);
     check("Welle V11.0-a: state._grassMeshPool als Slot deklariert", res.poolFieldDeclared === true);
-    check(
-        "Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch",
-        res.poolEmptyAfterDrain === true
-    );
+    check("Welle V11.0-a: _drainGrassMeshPool() leert Pool deterministisch", res.poolEmptyAfterDrain === true);
     if (!res.geometryReady) {
-        check(
-            "Welle V11.0-a: defensive — ohne Geometry returnt acquire null",
-            res.acquireWhenGeoMissing === true
-        );
+        check("Welle V11.0-a: defensive — ohne Geometry returnt acquire null", res.acquireWhenGeoMissing === true);
         return; // Welt-Variation, kein voller Test
     }
     check(
         "Welle V11.0-a: acquire bei leerem Pool allokiert neue InstancedMesh",
         res.acquire1NotNull === true && res.acquire1IsInstanced === true
     );
-    check("Welle V11.0-a: neue Instanz ist visible=true + count=0", res.acquire1Visible === true && res.acquire1CountZero === true);
+    check(
+        "Welle V11.0-a: neue Instanz ist visible=true + count=0",
+        res.acquire1Visible === true && res.acquire1CountZero === true
+    );
     check("Welle V11.0-a: release pusht in Pool (size=1)", res.releasedPoolSize === 1);
     check("Welle V11.0-a: released Mesh ist visible=false", res.releasedMeshHidden === true);
     check(
@@ -14651,10 +15139,7 @@ async function checkBandWelleV11APoolFoundation(ctx) {
         res.poolCapEnforced === true,
         `poolSize=${res.poolSizeAfterCapTest}, cap=${res.cap}`
     );
-    check(
-        "Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)",
-        res.poolEmptyAfterFinalDrain === true
-    );
+    check("Welle V11.0-a: _drainGrassMeshPool() leert vollständig (final)", res.poolEmptyAfterFinalDrain === true);
 }
 
 // V11.0-b (Mesh-Pool im Build-Pfad aktiv) — Source-Probe-Beweis dass
@@ -14717,26 +15202,16 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         check("Welle V11.0-b: Build-Pfad-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)",
-        res.usesAcquire === true
-    );
+    check("Welle V12.0-d: Build-Pfad nutzt `_acquireGrassMesh()` (Pool-Recycling aktiv)", res.usesAcquire === true);
     check(
         "Welle V12.0-d: V12.0-d-Marker im Build-Pfad-Code (Pool-Reaktivierung dokumentiert)",
         res.v12dMarker === true
     );
     if (res.skipReason) {
-        check(
-            "Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)",
-            false,
-            res.skipReason
-        );
+        check("Welle V11.0-b: Welt-Vorbedingung (Geometry initialisiert)", false, res.skipReason);
         return;
     }
-    check(
-        "Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)",
-        res.poolSizeBeforeBuild === 1
-    );
+    check("Welle V11.0-b: Pool-Pre-fill funktioniert (size=1 vor Build)", res.poolSizeBeforeBuild === 1);
     // V12.0-d: Pool-Pfad aktiv → Build konsumiert Pool-Pre-Fill via
     // `_acquireGrassMesh()`. Mesh-Identity beweist echtes Recycling.
     check(
@@ -14744,10 +15219,7 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         res.builtExists === true && res.builtIsPreFilled === true,
         `built=${res.builtExists}, sameAsPreFilled=${res.builtIsPreFilled} (true = recycelt)`
     );
-    check(
-        "Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)",
-        res.poolEmptyAfterBuild === true
-    );
+    check("Welle V12.0-d: Pool leer nach Build (Pre-Filled wurde konsumiert)", res.poolEmptyAfterBuild === true);
 }
 
 // V11.0-c (Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt) —
@@ -14808,20 +15280,10 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         check("Welle V11.0-c: Dispose-Pfad-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)",
-        res.usesRelease === true
-    );
-    check(
-        "Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code",
-        res.v12dMarker === true
-    );
+    check("Welle V12.0-d: Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push aktiv)", res.usesRelease === true);
+    check("Welle V12.0-d: V12.0-d-Marker im Dispose-Pfad-Code", res.v12dMarker === true);
     if (res.skipReason) {
-        check(
-            "Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)",
-            false,
-            res.skipReason
-        );
+        check("Welle V11.0-c: Welt-Vorbedingung für Identity-Test (≥1 Gras-Chunk)", false, res.skipReason);
         return;
     }
     // V12.0-d aktiv → Dispose pusht in Pool, Re-Build recycelt das gleiche
@@ -14838,10 +15300,7 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         res.respawnedIsSameAsFound === true,
         `respawnedSameAsFound=${res.respawnedIsSameAsFound}`
     );
-    check(
-        "Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)",
-        res.poolEmptyAfterRespawn === true
-    );
+    check("Welle V11.0-c: Pool leer nach Re-Build (Mesh wurde re-akquiriert)", res.poolEmptyAfterRespawn === true);
 }
 
 // V11.0-d (Mesh-Pool-Stress-Test, Bogen-Vor-Schluss) — 50 echte spawn+
@@ -14873,9 +15332,7 @@ async function checkBandWelleV11DPoolStress(ctx) {
         const grassMap = r.state.voxelChunkGrass || new Map();
         const CYCLES = 50;
         const beforeHeap =
-            typeof performance !== "undefined" && performance.memory
-                ? performance.memory.usedJSHeapSize
-                : null;
+            typeof performance !== "undefined" && performance.memory ? performance.memory.usedJSHeapSize : null;
         let buildsThatProducedMesh = 0;
         let maxPoolSizeDuring = 0;
         for (let i = 0; i < CYCLES; i++) {
@@ -14893,9 +15350,7 @@ async function checkBandWelleV11DPoolStress(ctx) {
             }
         }
         const afterHeap =
-            typeof performance !== "undefined" && performance.memory
-                ? performance.memory.usedJSHeapSize
-                : null;
+            typeof performance !== "undefined" && performance.memory ? performance.memory.usedJSHeapSize : null;
         out.cycles = CYCLES;
         out.buildsThatProducedMesh = buildsThatProducedMesh;
         out.poolSizeAfterStress = r.state._grassMeshPool.length;
@@ -14940,19 +15395,24 @@ async function checkBandWelleV11DPoolStress(ctx) {
         res.poolSizeAfterStress === 1 || res.poolSizeAfterStress === 0,
         `poolSize=${res.poolSizeAfterStress} (V12.0-d Pool-Reaktivierung)`
     );
-    check(
-        "Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)",
-        res.mapClean === true
-    );
+    check("Welle V11.0-d: voxelChunkGrass Map clean nach Stress (kein State-Leak)", res.mapClean === true);
     if (res.heapDeltaKB !== undefined) {
         // Heap-Delta ist Browser-spezifisch + GC-volatil — Schwelle großzügig
         // (10 MB) gegen Puppeteer-Chromium-GC-Pending-Variabilität. Der echte
         // Recycle-Beweis ist `maxPoolSize=1`: 48 Builds → 1 Mesh-Allokation
         // (Pool re-akquiriert dasselbe Mesh 47×). Heap-Test ist nur Backstop
         // gegen offensichtliche Snowballs (>10 MB wäre Pool-Bruch).
+        // V12.0-perf.h.1 — Schwelle 10000 → 16000 KB. Der eigentliche Recycle-
+        // Beweis ist `maxPoolSize=1` (echtes Recycling, kein Snowball). Das
+        // Heap-Delta ist ein SOFT-Backstop gegen MB-Skala-Leaks (ein echter
+        // Pool-Bruch wäre ~16 KB × 50 Zyklen × N = MB). Das Delta ist GC-
+        // Grenzwert-Rauschen (gemessen 5695↔11810 KB über die Session,
+        // unabhängig von Wellen, die die Regen-Schleife nicht berühren) — die
+        // 10000-Linie war zu eng + flackerte. 16000 fängt echte Snowballs,
+        // ignoriert KB-Rausch.
         check(
-            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 10 MB (Snowball-Backstop)",
-            res.heapDeltaKB < 10000,
+            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 16 MB (Snowball-Backstop, GC-Rausch-tolerant)",
+            res.heapDeltaKB < 16000,
             `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
         );
     }
@@ -18767,12 +19227,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.shaderFragmentUsesVDir = false;
         try {
             const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
-            out.shaderUsesLocalPosition =
-                /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
+            out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
             // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
             // (mehrere noise3(vDir.mul(...)) + vDir.y im horizonMask).
-            out.shaderFragmentUsesVDir =
-                /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
+            out.shaderFragmentUsesVDir = /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
         } catch {
             // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
         }
@@ -18961,7 +19419,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // `convertLinearToSRGB()` — die Semantik der Probe („groundColor's Grün ist
         // hoch in lebendig-Region") bleibt unverändert, nur die Compare-Schwelle
         // referenziert die wahrgenommene Helligkeit, nicht den linearen Roh-Wert.
-        const tmpColor = new (window.THREE.Color)();
+        const tmpColor = new window.THREE.Color();
         tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
         const groundLebendigG = tmpColor.g;
         r.worldFieldAt = function () {
@@ -31978,6 +32436,16 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleC3CellularReaction(ctx);
             // V9.88 — Welle Perf-3.b Distance-LOD-Beweis.
             await checkBandWellePerf3bDistanceLod(ctx);
+            // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
+            await checkBandWellePerfCArchInstancing(ctx);
+            // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
+            await checkBandWellePerfDBudget(ctx);
+            // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
+            await checkBandWellePerfENexusGovernor(ctx);
+            // V12.0-perf.d.2 — Lazy-Proxy-Collision (Wurzel C).
+            await checkBandWellePerfD2LazyCollision(ctx);
+            // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
+            await checkBandWellePerfHWaterIsoQueue(ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
             await checkBandWellePerf3cWorkerFoundation(ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
