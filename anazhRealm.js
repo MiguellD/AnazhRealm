@@ -17317,77 +17317,75 @@ class AnazhRealm {
             }
             return wy <= lvl ? STATE.WATER : STATE.AIR;
         };
-        // V13.2 — Grenzflächen-Meshing (Boundary-Face-Culling) statt Surface-Nets.
-        // Bis V13.1 lief der Wasser-Mesh durch die volle Surface-Nets-Pipeline
-        // (`_voxelChunkGeometry` über das (dim+3)·dimY·(dim+3)-Zell-Grid: ~90k
-        // Density-Samples + Vertex-Extract + Laplacian-Smooth + Crop + Gradient-
-        // Normalen) = ~150 ms/Chunk Main-Thread (V13.0-Diagnose: der dominante
-        // Streaming-Hitch) — nur um eine FLACHE Wasseroberfläche zu finden.
-        // Surface-Nets ist für glatte Iso-VOLUMEN; ein Wasserspiegel ist FLACH.
-        // Die Riesen (Minecraft) meshen die Wasser-Luft-GRENZFLÄCHEN direkt: pro
-        // WATER-Cell ein Quad je Nachbar-Seite, die AIR ist. SOLID-Nachbar → kein
-        // Quad (Terrain verdeckt). WATER-Nachbar → kein Quad (innen). Zell-getrieben
-        // = reaktiv, ~1-paar ms, naht-frei via `cellClass`-OOB (kein Pad+Crop nötig:
-        // beide Nachbar-Chunks cullen gegen dieselbe OOB-Klassifikation → kein
-        // Doppel-Face, keine Lücke; geteilte Boundary-Vertices liegen welt-identisch).
-        // KEIN Greedy-Merge: die ~per-Cell-Vertex-Dichte bleibt erhalten, damit die
-        // V13.4-Gerstner-Wellen (Vertex-Displacement) Interior-Auflösung haben — ein
-        // Greedy-Mega-Quad hätte nur 4 Eck-Vertices. Output trotzdem ~8× weniger
-        // Dreiecke + ~50× schneller als Surface-Nets.
-        const positions = [];
-        const indices = [];
-        const AIR = STATE.AIR;
-        const WATER = STATE.WATER;
-        // Normalen kommen post-Smooth aus `computeVertexNormals` (V13.4) —
-        // pushQuad braucht keine Face-Normalen mehr.
-        const pushQuad = (ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz) => {
-            const b = positions.length / 3;
-            positions.push(ax, ay, az, bx, by, bz, ccx, ccy, ccz, dx, dy, dz);
-            indices.push(b, b + 1, b + 2, b, b + 2, b + 3);
-        };
-        for (let j = 0; j < dimY; j++) {
-            const cyc = oy + (j + 0.5) * step;
-            if (cyc > bandTop) continue; // über dem Band ist alles AIR → kein Wasser
-            const y0 = oy + j * step;
-            const y1 = oy + (j + 1) * step;
-            const baseJ = j * dim * dim;
-            for (let k = 0; k < dim; k++) {
-                const z0 = oz + k * step;
-                const z1 = oz + (k + 1) * step;
-                const baseK = k * dim;
-                for (let i = 0; i < dim; i++) {
-                    if (cells[i + baseK + baseJ] !== WATER) continue;
-                    const x0 = ox + i * step;
-                    const x1 = ox + (i + 1) * step;
-                    // +Y (Oberfläche): die sichtbare Wasserfläche.
-                    if (cellClass(i, k, j + 1) === AIR) pushQuad(x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
-                    // -Y (Unterseite — selten, Überhang-Wasser):
-                    if (cellClass(i, k, j - 1) === AIR) pushQuad(x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
-                    // +X / -X / +Z / -Z (Wasser-Kanten):
-                    if (cellClass(i + 1, k, j) === AIR) pushQuad(x1, y0, z0, x1, y0, z1, x1, y1, z1, x1, y1, z0);
-                    if (cellClass(i - 1, k, j) === AIR) pushQuad(x0, y0, z1, x0, y0, z0, x0, y1, z0, x0, y1, z1);
-                    if (cellClass(i, k + 1, j) === AIR) pushQuad(x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
-                    if (cellClass(i, k - 1, j) === AIR) pushQuad(x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0);
+        // V13.6 — Surface-Nets-Iso über die Wasser-Zellen, band-limitiert (die
+        // SYNERGIE zurück). Schöpfer-Audit V13.5: das V13.2-Grenzflächen-Meshing
+        // (flache Achsen-Quads) hatte die Synergie mit dem Terrain verloren — das
+        // Terrain ist eine glatte Surface-Nets-Iso (fließt, Gradienten-Normalen,
+        // folgt der Landschaft), das Wasser war flach + würfelig + gappy: „selbst
+        // das Terrain hat mehr Flow als das Wasser". Die Riesen-Synergie kommt daher,
+        // dass das Wasser durch DENSELBEN MESHER läuft — eine glatte Iso, deren
+        // Uferlinie als sub-zellige Kurve dem Terrain folgt. V13.6 holt das zurück:
+        // `_voxelChunkGeometry` (derselbe Surface-Nets-Pfad wie der Boden) über die
+        // Wasser-Zellen, Pad+Crop (V9.79, naht-frei). `sampleWater` gibt nur an der
+        // Wasser-LUFT-Grenze Iso (kein Air → tief drinnen +1; kein Water → außen −1;
+        // Mischung → glatte Oberfläche), so dass NUR die obere Wasserfläche entsteht
+        // (Bottom/Sides verdeckt das Terrain). Die V13.0-Perf-Wurzel (~150 ms) war die
+        // VOLLE 124-Zellen-Säule — das Wasser ist aber ein dünnes Oberflächen-Band:
+        // wir beschränken den Y-Bereich aufs GLOBALE `hydroBand` (~28 statt 124 Zellen
+        // → ~4-5×, global = seam-frei nach V9.77), der V12.0-perf.h-Defer-Queue fängt
+        // den Rest. Alle Korrektheits-Siege bleiben: V13.1-strikte Zellen (kein Hang-
+        // Schatten), V13.3-Flow, V13.5-Tiefen-Shader (Schicht 3 oben drauf). Die Zellen
+        // bleiben die reaktive Wahrheit — KEIN Sheet (das war vor V9.49 — nicht
+        // manipulierbar, zwei Skalen, zerbricht an der Naht).
+        const sampleWater = (x, y, z) => {
+            const i = Math.floor((x - ox) / step);
+            const k = Math.floor((z - oz) / step);
+            const j = Math.floor((y - oy) / step);
+            let cWater = 0;
+            let cAir = 0;
+            for (let dj = 0; dj <= 1; dj++) {
+                for (let dk = 0; dk <= 1; dk++) {
+                    for (let di = 0; di <= 1; di++) {
+                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
+                        if (cls === STATE.WATER) cWater++;
+                        else if (cls === STATE.AIR) cAir++;
+                        // SOLID ist neutral (zählt weder) — das Terrain verdeckt es.
+                    }
                 }
             }
-        }
-        if (positions.length === 0) {
-            // Kein Wasser-Luft-Boundary-Face im Chunk → kein Mesh.
+            if (cAir === 0) return 1; // tief drinnen → kein Iso (kein Bottom/Underwater-Side)
+            if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
+            return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
+        };
+        // Y-Bereich aufs globale Wasser-Band beschränken (statt volle dimY = 124).
+        const bBot = band ? band.bottom : oy;
+        const bTopY = band ? band.top : oy + dimY * step;
+        let jBot = Math.floor((bBot - oy) / step);
+        let jTop = Math.ceil((bTopY - oy) / step);
+        if (jBot < 0) jBot = 0;
+        if (jTop > dimY) jTop = dimY;
+        const bandDimY = jTop - jBot;
+        if (bandDimY <= 0) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // V13.5 — die Boundary-Faces nur VERSCHWEISSEN (Vertex-Dedup), NICHT mehr
-        // Laplacian-glätten. V13.4 hatte die Positionen geglättet (runde Ufer), aber
-        // die V13.5-Reflexion zeigte: das war eine Schicht-Verwechslung — Geometrie
-        // repariert für ein Erscheinungs-Problem, das Makro wurde dabei schlechter
-        // („komisch, vorhin besser"). Die Geometrie bleibt jetzt DUMM-FLACH am Zell-
-        // Grid; die weichen Übergänge trägt Schicht 3 (der Tiefenpuffer-Shader in
-        // `_ensureHydroSurfaceMaterial`) pro-Pixel, dem Terrain folgend.
-        const sm = this._weldWaterBoundary(positions, indices);
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(sm.positions, 3));
-        geom.setIndex(sm.indices);
-        geom.computeVertexNormals();
+        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert (Crop schneidet nur X/Z).
+        const geom = this._voxelChunkGeometry(
+            ox - step,
+            oy + jBot * step,
+            oz - step,
+            dim + 3,
+            bandDimY,
+            dim + 3,
+            step,
+            sampleWater,
+            1
+        );
+        if (!geom) {
+            // Kein Wasser-Iso im Band → kein Mesh.
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
             this._queueDispose(geom);
@@ -17428,39 +17426,6 @@ class AnazhRealm {
         this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
-    }
-
-    // V13.5 — Wasser-Boundary-Mesh nur VERSCHWEISSEN (Vertex-Dedup). Das V13.2-
-    // Grenzflächen-Meshing emittiert pro Quad eigene Vertices (Quad-Suppe); der
-    // Weld führt koinzidente Vertices (quantisiert ×64) zu einem zusammen → eine
-    // verbundene, indizierte Fläche (weniger Vertices, saubere `computeVertexNormals`-
-    // Schattierung an geteilten Kanten). Die V13.4-Laplacian-POSITIONS-Glättung ist
-    // GESTRICHEN (V13.5-Reflexion: Schicht-Verwechslung — sie verschob das Makro).
-    // Die Geometrie bleibt dumm-flach am Zell-Grid; die weichen Übergänge trägt der
-    // Tiefenpuffer-Shader (Schicht 3). Naht-frei bleibt es ohnehin, weil beide
-    // Nachbar-Chunks dieselben welt-identischen Rand-Vertices emittieren (die
-    // `cellClass`-OOB-Klassifikation cullt konsistent — V13.2-Konstruktion).
-    _weldWaterBoundary(rawPos, rawIdx) {
-        const weldMap = new Map();
-        const pos = [];
-        const vcount = rawPos.length / 3;
-        const remap = new Int32Array(vcount);
-        for (let v = 0; v < vcount; v++) {
-            const x = rawPos[v * 3];
-            const y = rawPos[v * 3 + 1];
-            const z = rawPos[v * 3 + 2];
-            const wkey = `${Math.round(x * 64)},${Math.round(y * 64)},${Math.round(z * 64)}`;
-            let wi = weldMap.get(wkey);
-            if (wi === undefined) {
-                wi = pos.length / 3;
-                pos.push(x, y, z);
-                weldMap.set(wkey, wi);
-            }
-            remap[v] = wi;
-        }
-        const idx = new Array(rawIdx.length);
-        for (let i = 0; i < rawIdx.length; i++) idx[i] = remap[rawIdx[i]];
-        return { positions: pos, indices: idx };
     }
 
     // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,
@@ -40831,7 +40796,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.5";
+AnazhRealm.VERSION = "13.6";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

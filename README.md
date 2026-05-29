@@ -3,9 +3,9 @@
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
 
-**Stand**: V13.5 (29.05.2026) — **V13-Wasser-Profi-Bogen**: das Voxel-Wasser ist effizient + korrekt wie die Riesen (zell-basiert + reaktiv wie Minecraft, gerendert wie die Giganten), die weichen Übergänge kommen aus dem Tiefenpuffer. V13.0 Diagnose · V13.1 Klassifikation (Hang-Schatten 51,7 → 0,1 %) · V13.2 Grenzflächen-Meshing (~150 → ~3 ms/Chunk) · V13.3 Flow-Bias · V13.4 Glättung · V13.5 Schicht-3-Tiefen-Ufer-Shader (weiche Uferlinie via `viewportLinearDepth` pro-Pixel + Tiefen-Farbe + Emotions-Haken; Geometrie wieder dumm-flach). Davor: V12-Genie-Bogen (Three.js r184 + WebGPU-required, 119 FPS steady) + V10.0-NodeMaterial/TSL-Bogen.
+**Stand**: V13.6 (30.05.2026) — **V13-Wasser-Profi-Bogen**: das Voxel-Wasser ist effizient, korrekt UND in Synergie mit dem Terrain — es teilt den Terrain-Mesher (Surface-Nets-Iso → fließt wie die Landschaft), bleibt aber zell-basiert + reaktiv. V13.1 Klassifikation (Hang-Schatten 51,7 → 0,1 %) · V13.3 Flow-Bias · V13.5 Schicht-3-Tiefen-Ufer-Shader (weiche Uferlinie via `viewportLinearDepth` pro-Pixel + Tiefen-Farbe + Emotions-Haken) · V13.6 Synergie zurück: gemeinsame Surface-Nets-Iso, band-limitiert aufs `hydroBand` (~28 statt 124 Zellen). Davor: V12-Genie-Bogen (Three.js r184 + WebGPU-required, 119 FPS steady) + V10.0-NodeMaterial/TSL-Bogen.
 
-**Nächste Welle: V13.6 — Sub-Region-Edit-Remesh** (nur die berührte Zell-Sektion neu statt des ganzen Chunks). Danach V13.7 LOD, V13.8 Audit; dann V14 — die lebendige Welt (System-Kopplungen E/F/G). Reflexion-Leitsatz: Wasser ist drei Schichten — Wahrheit/Zellen + dumme Geometrie + Shader-Erscheinung.
+**Nächste Welle: V13.7 — Sub-Region-Edit-Remesh** (nur die berührte Zell-Sektion neu statt des ganzen Chunks). Danach V13.8 LOD, V13.9 Audit; dann V14 — die lebendige Welt (System-Kopplungen E/F/G). Reflexion-Leitsatz: Wasser ist drei Schichten — Wahrheit/Zellen + Geometrie (Iso, Synergie) + Shader-Erscheinung; eine Perf-Optimierung darf keine Vision-Qualität wegoptimieren.
 
 Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 

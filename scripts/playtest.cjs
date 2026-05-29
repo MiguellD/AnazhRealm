@@ -19866,9 +19866,17 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
         // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
         out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
-        // V13.5: V13.4-Geometrie-Glättung zurückgenommen — Weld bleibt, Smooth weg.
-        out.waterSmoothingReverted =
-            typeof r._weldWaterBoundary === "function" && typeof r._weldAndSmoothWater !== "function";
+        // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
+        // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
+        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
+        {
+            const isoSrc =
+                typeof r._buildVoxelChunkWaterIsoSurface === "function"
+                    ? r._buildVoxelChunkWaterIsoSurface.toString()
+                    : "";
+            out.waterIsoSynergy =
+                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
+        }
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -19906,8 +19914,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (viewportLinearDepth)", v830Results.waterDepthShoreline);
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check(
-            "V13.5: V13.4-Geometrie-Glättung zurückgenommen (_weldWaterBoundary, kein _weldAndSmoothWater)",
-            v830Results.waterSmoothingReverted
+            "V13.6: Wasser-Oberfläche ist die Surface-Nets-Iso (Synergie mit Terrain, band-limitiert)",
+            v830Results.waterIsoSynergy
         );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
