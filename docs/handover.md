@@ -357,6 +357,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V13.9 — Schicht-3-Cull: dünnes Wand-Bluten pro Pixel ausblenden (29.05.2026, Playtest „Alle Invarianten OK"):**
+
+Der erste der drei offenen V13.8-Browser-Befunde (Schöpfer-Wahl A) — in der richtigen Schicht geheilt.
+
+**Befund.** Schöpfer-Audit V13.8: das Wand-Bluten besteht, aber **DÜNN** — am Tiefenpuffer-Shader erkennbar, dass das die Wand hochkletternde Wasser flach ist. Wurzel: der 16-m-Atlas-Spiegel liegt minimal über dem 1,8-m-Voxel-Grat → ein flaches Wasser-Blatt spillt über den Becken-Rand. Das ist die permanente 16-m-Atlas-vs-1,8-m-Voxel-Granularitäts-Grenze (V13.7–.9-Bogen-Lehre): kein per-Spalten-Fix in Schicht 1/2 gibt gleichzeitig bleed-frei UND sub-zellig-glatt. Die Wahrheit liegt sub-zellig dazwischen.
+
+**Heilung (Schicht 3, Tiefenpuffer-Shader).** Das dünne Blatt ist am `waterThick`-Signal (V13.5: `viewportLinearDepth − linearDepth(depth)` = Wasser-Dicke in Sicht-Richtung) erkennbar — kleine Dicke = flach = Bluten; tiefes See-/Ozean-Wasser = großes `waterThick`. Neues Live-Uniform `uMinDepth` (in `state.hydroSurfaceUniforms.minDepth`, **default 0 = exakt das alte Bild**): im Fragment-Shader `alphaCulled = cond(waterThick < uMinDepth, 0, alpha)` + `mat.alphaTest = 0.0001` → flache Fragmente werden verworfen (kein Farb-/Tiefen-Schreiben), tiefes Wasser bleibt immer. Step-frei via `cond`; bei default 0 ist `waterThick ≥ 0` nie `< 0` → das Alpha unberührt, kein Bild-Regress bis der Schöpfer bewusst dreht.
+
+**Browser-live justierbar:** `realm.state.hydroSurfaceUniforms.minDepth.value = 0.002` (o.ä.) — der Schöpfer dreht die Schwelle hoch, bis das dünne Blatt verschwindet, das tiefe Wasser aber bleibt. **Headless ist pixel-blind** (V13-Meta-Lehre): die 3 neuen Invarianten beweisen nur Uniform-Existenz + default 0 + Source-Probe (`uMinDepth`+`alphaCulled`+`alphaTest`); der wirksame Schwellwert braucht das Schöpfer-Auge → Browser-Sign-off ausstehend.
+
+**Disziplin/Lehre:** der **richtige Schicht-3-Hebel** — Erscheinung im Shader, Geometrie (Schicht 2) + Wahrheit/Zellen (Schicht 1) unangetastet. Exakt die Drei-Schichten-Disziplin (Render-Artefakt → „welche Schicht?"). Offen bleibt V13.8-Befund (2) tiefes Wasser an Strukturen (Turm/Tor — vom `uMinDepth`-Cull NICHT erfasst, großes `waterThick`) + (3) Naht nach Carve → **V13.10**. **Bilanz:** `anazhRealm.js` +1 Uniform + Cull-Knoten + alphaTest; `playtest.cjs` +3 Invarianten. Format/Lint sauber. Version 13.8.0 → 13.9.0 (alle drei Stellen).
+
 **V13.8 — Echtes verbundenes Wasser: 3D-Flood-Fill von Quellen (30.05.2026, Playtest „Alle Invarianten OK"):**
 
 Die Vollendung der Wasser-Wahrheit (Schicht 1) — von 2,5D zu echter 3D-Konnektivität.
