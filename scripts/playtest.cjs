@@ -12299,11 +12299,13 @@ async function checkBandHydrosphere(ctx) {
         out.recomputeStable = JSON.stringify(reHydro.rivers) === JSON.stringify(hydro.rivers);
         // (12) das Suppress-Flag ist nach dem Bau zurückgesetzt
         out.flagClean = !r._hydroComputing;
-        // (13) V9.75 — das Iso-Wasser-Mesh fragt das Wasser-Level-Feld
-        // (`_buildVoxelChunkWaterCells` ruft `_waterLevelAt` pro xz-Spalte).
+        // (13) V13.1 — das Wasser-Cell-Feld fragt jetzt den ATLAS-STRIKTEN
+        // Wasser-Spiegel (`_buildVoxelChunkWaterCells` ruft `_atlasWaterLevelAt`
+        // pro xz-Spalte, statt des dilatierenden `_waterLevelAt` — V13.1-Doku-
+        // Sync, der Wasserschatten-an-Hängen-Fix).
         out.unifiedQueriesRivers =
             typeof r._buildVoxelChunkWaterCells === "function" &&
-            /_waterLevelAt/.test(r._buildVoxelChunkWaterCells.toString());
+            /_atlasWaterLevelAt/.test(r._buildVoxelChunkWaterCells.toString());
         // (14) der Carve ist im Perf-Budget
         const t0 = performance.now();
         const span = hydro.size;
@@ -12347,7 +12349,7 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.43-d: das _hydroComputing-Suppress-Flag ist nach dem Bau zurückgesetzt", d.flagClean);
         check(
-            "Voxel V9.75: das Iso-Wasser-Cell-Feld fragt das Wasser-Level-Feld (`_waterLevelAt`)",
+            "Voxel V13.1: das Wasser-Cell-Feld fragt den Atlas-strikten Spiegel (`_atlasWaterLevelAt`)",
             d.unifiedQueriesRivers
         );
         check(
@@ -12583,7 +12585,27 @@ async function checkBandWelleC1WaterCells(ctx) {
                     }
                 }
                 const d = dSum / 8;
-                const wlCol = r._waterLevelAt(cxw, czw);
+                // V13.1-Doku-Sync: der Build nutzt jetzt `_atlasWaterLevelAt`
+                // (Atlas-strict + Rand-Tiefen-Gate) statt `_waterLevelAt`. Der
+                // Test muss mit-wandern: dieselbe Terrain-Top-pro-Spalte (aus
+                // dem Density-Grid, cy ≤ bandTop, höchste solide Cell) berechnen
+                // und denselben strikten Spiegel abfragen, sonst Mismatch an
+                // den (jetzt trockenen) Hang-Schatten-Cells.
+                let colTopY = -Infinity;
+                for (let jj = 0; jj < cfg.dimY; jj++) {
+                    const cyj = oy + (jj + 0.5) * step;
+                    if (cyj > band.top) continue;
+                    let ds = 0;
+                    for (let dj = 0; dj <= 1; dj++) {
+                        for (let dk = 0; dk <= 1; dk++) {
+                            for (let di = 0; di <= 1; di++) {
+                                ds += r._terrainDensityAt(ox + (i + di) * step, oy + (jj + dj) * step, oz + (k + dk) * step);
+                            }
+                        }
+                    }
+                    if (ds / 8 > 0 && cyj > colTopY) colTopY = cyj;
+                }
+                const wlCol = r._atlasWaterLevelAt(cxw, czw, colTopY);
                 if (d > 0) expected = STATE.SOLID;
                 else if (cy <= wlCol) expected = STATE.WATER;
                 else expected = STATE.AIR;
@@ -12984,6 +13006,12 @@ async function checkBandWelleC3CellularReaction(ctx) {
             const carveCz = Math.floor(carveZ / span);
             const carveChunkKey = `${carveCx},${carveCz}`;
             const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
+            // V13.1: Default „trocken" — kein Wasser-Cell-Feld (Chunk ungestreamt
+            // ODER atlas-strict ohne Wasser-Körper) = keine Phantom-Pfütze. Nur
+            // wenn der gestreamte Chunk eine WATER-Cell an der Carve-Stelle trägt,
+            // wäre das die alte Phantom-Füllung (→ false, Regression-Wächter).
+            out.carveStaysDry = true;
+            out.carveCellUnderWL = carveChunkEntry && carveChunkEntry.waterCells ? "measure" : "no-watercells";
             if (carveChunkEntry && carveChunkEntry.waterCells) {
                 const cells = carveChunkEntry.waterCells;
                 // V9.93 — waterCells immer LOD 0
@@ -12998,9 +13026,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 const idxUnderWL = cellI + cellK * cfg.dim + cellJUnderWL * cfg.dim * cfg.dim;
                 if (cellJUnderWL >= 0 && cellJUnderWL < cfg.dimY) {
                     out.carveCellUnderWL = cells[idxUnderWL];
-                    // Nach Carve sollte cell unter wl WATER sein (Carve hat
-                    // Density gesenkt → not solid → state=water weil cy<=wl)
-                    out.carveCellsBecomeWater = cells[idxUnderWL] === STATE.WATER;
+                    // V13.1: ein Carve im isolierten Hochland bleibt TROCKEN
+                    // (Atlas-strict → keine Phantom-Pfütze ohne echte Quelle).
+                    // In-Page berechnet (STATE lebt nur hier, nicht im Node-Check).
+                    out.carveStaysDry = cells[idxUnderWL] !== STATE.WATER;
                 }
             }
             // Cleanup
@@ -13045,10 +13074,20 @@ async function checkBandWelleC3CellularReaction(ctx) {
         `macroY=${res.carveSpotFound ? res.carveMacro || "?" : "n/a"}`
     );
     if (res.carveSpotFound) {
+        // V13.1-Doku-Sync + Verhaltens-Wende: vor V13.1 füllte ein Carve im
+        // isolierten Trockenland (6-14 m ÜBER dem Meeresspiegel, kein Wasser-
+        // Körper in der Nähe) mit Wasser — weil `_waterLevelAt` den Ozean-
+        // Spiegel als FLACHEN Default für JEDE Spalte zurückgab. Das war
+        // GENAU der Phantom-/Schatten-Mechanismus (V13.0-Diagnose). Atlas-
+        // strict (`_atlasWaterLevelAt`) heilt das: ohne echte Quelle (Atlas-
+        // Ozean/See/Fluss) entsteht KEIN Wasser → die Pfütze im Hochland-Loch
+        // bleibt trocken. Der reaktive „Pond fließt voll"-Wunsch (Welle-A-
+        // Vision) gehört in eine künftige Flood-Fill-Welle (roadmap §1.4-Anker
+        // „reaktiver Carve-Fill von echter Quelle"), nicht in den Phantom-Default.
         check(
-            "Welle C.3 V9.74: Carve unter waterLevel → Cell wird WATER (cellular-Flow-Effekt)",
-            res.carveCellsBecomeWater,
-            `state=${res.carveCellUnderWL}`
+            "Welle V13.1: Carve im isolierten Trockenland bleibt TROCKEN (kein Phantom-Wasser, Atlas-strict)",
+            res.carveStaysDry,
+            `state=${res.carveCellUnderWL} (0=air erwartet)`
         );
     }
     check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);

@@ -73,13 +73,19 @@ function printPass(label, p) {
     console.log("  -- Wurzel 2: Klassifikation (See-Dilatation/Ozean-Default = Wasserschatten) --");
     console.log(`     WATER-Cells: ${p.waterCellsTotal.toLocaleString()}`);
     console.log(
-        `        exact-Atlas-Land (See-Dilatations-Bleed an Hängen): ${p.shadowCells.toLocaleString()} (${p.shadowCellPct} %)`
+        `        exact-Atlas-Land gesamt:                 ${p.shadowCells.toLocaleString()} (${p.shadowCellPct} %)`
     );
     console.log(
-        `        nicht mal im 3×3 (echte Phantom-Pfütze):            ${p.shadowCellsDil.toLocaleString()} (${p.shadowCellDilPct} %)`
+        `          ├─ TIEFER Hang-Schatten (>2 Cells, der Bug): ${p.shadowCellsDeep.toLocaleString()} (${p.shadowCellDeepPct} %)`
     );
     console.log(
-        `     Schatten-Spalten (exact): ${p.shadowColumns.toLocaleString()} / ${p.waterColumns.toLocaleString()} (${p.shadowColPct} %)`
+        `          └─ flacher Ufer-Rand (≤2 Cells, MUSS bleiben): ${p.shadowCellsRim.toLocaleString()} (${p.shadowCellRimPct} %)`
+    );
+    console.log(
+        `        davon nicht mal im 3×3 (Phantom-Pfütze):  ${p.shadowCellsDil.toLocaleString()} (${p.shadowCellDilPct} %)`
+    );
+    console.log(
+        `     Schatten-Spalten: ${p.shadowColumns.toLocaleString()} / ${p.waterColumns.toLocaleString()} (${p.shadowColPct} %) · davon tief: ${p.shadowColsDeep.toLocaleString()}`
     );
 }
 
@@ -260,6 +266,17 @@ function printPass(label, p) {
             let shadowCellsDil = 0; // WATER wo nicht mal im 3×3 + kein Fluss
             let waterColumns = 0;
             let shadowColumnsExact = 0;
+            // V13.1-Vorbereitung: der exact-Atlas-Land-Schatten zerfällt in
+            // FLACHEN Ufer-Rand (1-2 Cells tief = legitime 16-m-Quantisierungs-
+            // Fransen, MUSS bleiben, sonst Mesh-Lücken am See-Rand) und TIEFEN
+            // Hang-Schatten (>RIM_CELLS Cells = Wasser klebt am Hang, der echte
+            // Bug). colWater (Cell-Zahl/Spalte) ≈ Wasser-Tiefe/step. RIM_CELLS=2
+            // → ~3.6 m. V13.1 (Atlas-strict mit Depth-Gate) entfernt NUR den
+            // tiefen Teil; der flache Rand bleibt.
+            const RIM_CELLS = 2;
+            let shadowCellsRim = 0;
+            let shadowCellsDeep = 0;
+            let shadowColsDeep = 0;
             const dimSq = dim * dim;
             for (const key of waterKeys) {
                 const e = r.state.voxelChunks.get(key);
@@ -286,6 +303,12 @@ function printPass(label, p) {
                         if (!realExact) {
                             shadowCellsExact += colWater;
                             shadowColumnsExact++;
+                            if (colWater <= RIM_CELLS) {
+                                shadowCellsRim += colWater;
+                            } else {
+                                shadowCellsDeep += colWater;
+                                shadowColsDeep++;
+                            }
                             if (!inLakeDilation(wx, wz)) shadowCellsDil += colWater;
                         }
                     }
@@ -296,6 +319,11 @@ function printPass(label, p) {
             out.shadowCellPct = waterCellsTotal > 0 ? +((100 * shadowCellsExact) / waterCellsTotal).toFixed(1) : 0;
             out.shadowCellsDil = shadowCellsDil;
             out.shadowCellDilPct = waterCellsTotal > 0 ? +((100 * shadowCellsDil) / waterCellsTotal).toFixed(1) : 0;
+            out.shadowCellsRim = shadowCellsRim;
+            out.shadowCellsDeep = shadowCellsDeep;
+            out.shadowCellRimPct = waterCellsTotal > 0 ? +((100 * shadowCellsRim) / waterCellsTotal).toFixed(1) : 0;
+            out.shadowCellDeepPct = waterCellsTotal > 0 ? +((100 * shadowCellsDeep) / waterCellsTotal).toFixed(1) : 0;
+            out.shadowColsDeep = shadowColsDeep;
             out.waterColumns = waterColumns;
             out.shadowColumns = shadowColumnsExact;
             out.shadowColPct = waterColumns > 0 ? +((100 * shadowColumnsExact) / waterColumns).toFixed(1) : 0;

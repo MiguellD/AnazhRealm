@@ -16867,6 +16867,19 @@ class AnazhRealm {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
     }
 
+    // V13.1 — die Tiefen-Schwelle für das Wasser-Rand-Handling. Eine Atlas-Land-
+    // Spalte (kein Ozean/See im exact-Atlas) bekommt den Wasser-Spiegel eines
+    // benachbarten Körpers NUR, wenn das Terrain dort höchstens so viel unter
+    // dem Spiegel liegt = der flache 16-m-Quantisierungs-Rand (MUSS bleiben,
+    // sonst Mesh-Lücken am See-Rand, V9.73). Liegt das Terrain TIEFER (steiler
+    // Hang), war es der V9.73-3×3-See-Dilatations-Bleed = der Wasserschatten,
+    // und die Spalte bleibt trocken. 3.6 m ≈ 2 Voxel-Cells (step 1.8). V13.0-
+    // Diagnose: trennt den tiefen Hang-Schatten (36–52 %) sauber vom flachen
+    // Rand (2–7 %).
+    static get WATER_RIM_BAND_M() {
+        return 3.6;
+    }
+
     // V9.71 (Welle C.1) — initialisiert das Wasser-Cell-Feld für einen Voxel-
     // Chunk. Pro Cell ein State (0=air, 1=water, 2=solid) via Density-Sample
     // am Cell-Center + waterLevel-Test. Returnt einen Uint8Array der Länge
@@ -16983,16 +16996,6 @@ class AnazhRealm {
             const sample = (x, y, z) => this._terrainDensityAt(x, y, z);
             density = this._voxelSampleDensityGrid(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step, sample);
         }
-        // Pro xz-Spalte das `_waterLevelAt` einmal cachen (V9.73-Heilung).
-        const colCount = dim * dim;
-        const colWaterY = new Float64Array(colCount);
-        for (let k = 0; k < dim; k++) {
-            const cz = oz + (k + 0.5) * step;
-            for (let i = 0; i < dim; i++) {
-                const cx = ox + (i + 0.5) * step;
-                colWaterY[i + k * dim] = this._waterLevelAt(cx, cz);
-            }
-        }
         const band = this.state.hydroBand;
         const bandTop = band ? band.top : Infinity;
         // Cell (i, k, j) Center ist Mittelpunkt der 8 Density-Grid-Vertices
@@ -17000,6 +17003,58 @@ class AnazhRealm {
         const Nx = dim + 4;
         const Ny = dimY + 1;
         const NxNy = Nx * Ny;
+        const colCount = dim * dim;
+        // V13.1 — Terrain-Oberfläche pro Spalte (höchste solide Cell): das
+        // Rand-Tiefen-Gate von `_atlasWaterLevelAt` braucht sie. Aus dem schon
+        // gesampelten Density-Grid (gleiche 8-Corner-Mittelung wie die
+        // Klassifikation, kein Noise-Re-Sample). -Infinity = keine solide Cell
+        // → das Rand-Gate (Spiegel − (−∞)) schlägt fehl → keine Rand-Pfütze.
+        const colTopY = new Float64Array(colCount).fill(-Infinity);
+        for (let j = 0; j < dimY; j++) {
+            const cy = oy + (j + 0.5) * step;
+            if (cy > bandTop) continue;
+            const j1 = j;
+            const j2 = j + 1;
+            for (let k = 0; k < dim; k++) {
+                const col0 = k * dim;
+                const k1 = k + 1;
+                const k2 = k + 2;
+                const ofs_j1_k1 = j1 * Nx + k1 * NxNy;
+                const ofs_j2_k1 = j2 * Nx + k1 * NxNy;
+                const ofs_j1_k2 = j1 * Nx + k2 * NxNy;
+                const ofs_j2_k2 = j2 * Nx + k2 * NxNy;
+                for (let i = 0; i < dim; i++) {
+                    const i1 = i + 1;
+                    const i2 = i + 2;
+                    const d =
+                        (density[i1 + ofs_j1_k1] +
+                            density[i2 + ofs_j1_k1] +
+                            density[i1 + ofs_j2_k1] +
+                            density[i2 + ofs_j2_k1] +
+                            density[i1 + ofs_j1_k2] +
+                            density[i2 + ofs_j1_k2] +
+                            density[i1 + ofs_j2_k2] +
+                            density[i2 + ofs_j2_k2]) *
+                        0.125;
+                    if (d > 0) {
+                        const col = i + col0;
+                        if (cy > colTopY[col]) colTopY[col] = cy;
+                    }
+                }
+            }
+        }
+        // Pro xz-Spalte den STRIKTEN Wasser-Spiegel cachen (V13.1 — Atlas-
+        // strict + Rand-Tiefen-Gate statt des 16-m-See-Dilatations-Bleeds von
+        // `_waterLevelAt`). -Infinity wo der Atlas kein Wasser markiert → die
+        // Spalte bleibt trocken (Wasserschatten an Hängen weg).
+        const colWaterY = new Float64Array(colCount);
+        for (let k = 0; k < dim; k++) {
+            const cz = oz + (k + 0.5) * step;
+            for (let i = 0; i < dim; i++) {
+                const cx = ox + (i + 0.5) * step;
+                colWaterY[i + k * dim] = this._atlasWaterLevelAt(cx, cz, colTopY[i + k * dim]);
+            }
+        }
         for (let j = 0; j < dimY; j++) {
             const cy = oy + (j + 0.5) * step;
             if (cy > bandTop) {
@@ -17202,18 +17257,34 @@ class AnazhRealm {
         // (Bottom + Underwater-Sides) sowie ohne Wasser (Mountain-Top, der
         // schon vom Terrain-Mesh getragen wird). Nur Mischungen mit
         // WATER+AIR erzeugen Iso → das ist die sichtbare Wasseroberfläche.
+        // V13.1 — OOB-Wasser-Spiegel pro Pad-Spalte cachen. Der Atlas-strikte
+        // Spiegel hängt nur von (i,k) ab (nicht j), aber `cellClass` läuft 8×
+        // pro Grid-Vertex × ~91k Vertices → ohne Cache würde `_voxelSurfaceY`
+        // (ein ~100-Schritt-Density-Scan) millionenfach laufen = Mesher-Kollaps.
+        // Mit Cache: ein `_voxelSurfaceY` je Pad-Spalte (~ein paar hundert).
+        const oobLevelCache = new Map();
         const cellClass = (i, k, j) => {
             if (j < 0 || j >= dimY) return STATE.AIR;
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
                 return cells[i + k * dim + j * dim * dim];
             }
-            // OOB live-compute — identisch zur Cell-Init.
+            // OOB live-compute — identisch zur Cell-Init (V13.1: Atlas-strict
+            // via `_atlasWaterLevelAt` mit `_voxelSurfaceY` als Terrain-Top, der
+            // EINEN Wasser-Spiegel-Quelle wie der Cell-Build → kein Seam am
+            // Chunk-Rand zwischen depth-gated In-Chunk-Cells + Pad).
             const wy = oy + (j + 0.5) * step;
             if (wy > bandTop) return STATE.AIR;
             const wx = ox + (i + 0.5) * step;
             const wz = oz + (k + 0.5) * step;
             if (this._terrainDensityAt(wx, wy, wz) > 0) return STATE.SOLID;
-            return wy <= this._waterLevelAt(wx, wz) ? STATE.WATER : STATE.AIR;
+            const ckey = i + "," + k;
+            let lvl = oobLevelCache.get(ckey);
+            if (lvl === undefined) {
+                const surfY = this._voxelSurfaceY(wx, wz);
+                lvl = this._atlasWaterLevelAt(wx, wz, surfY === null || !Number.isFinite(surfY) ? -Infinity : surfY);
+                oobLevelCache.set(ckey, lvl);
+            }
+            return wy <= lvl ? STATE.WATER : STATE.AIR;
         };
         const sampleWater = (x, y, z) => {
             const fi = (x - ox) / step;
@@ -18015,6 +18086,62 @@ class AnazhRealm {
                     if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
                     const idx = ni + nj * dim;
                     if (wK[idx] === 2 && wY[idx] > level) level = wY[idx];
+                }
+            }
+        }
+        const river = this._hydroRiverAt(x, z);
+        if (river && river.surfaceY > level) level = river.surfaceY;
+        return level;
+    }
+
+    // V13.1 — Atlas-STRIKTE Wasser-Spiegel-Quelle für die Voxel-Cell-
+    // Klassifikation (Wasserschatten-Heilung). `_waterLevelAt` (oben) gibt den
+    // Ozean-`waterLevel` als FLACHEN Default für JEDE Spalte zurück + dilatiert
+    // den See-Spiegel im 3×3 (V9.73) → Hang-Spalten unter diesem Spiegel werden
+    // WATER → Wasser klebt am Hang/um Strukturen (V13.0-Diagnose: 36–52 % aller
+    // WATER-Cells). Diese Variante ist strikt:
+    //   - exact-Atlas-Ozean (waterKind 1) / -See (waterKind 2): voller Spiegel,
+    //     beliebige Tiefe (das ist das ECHTE Wasser-Körper-Cell).
+    //   - Fluss: sein Bett-Profil.
+    //   - Atlas-LAND, aber ein Wasser-Körper im 3×3 (der 16-m-Quantisierungs-
+    //     Rand): der Nachbar-Spiegel NUR, wenn das Terrain dort höchstens
+    //     WATER_RIM_BAND_M unter ihm liegt (flacher Ufer-Rand → MUSS bleiben,
+    //     sonst Mesh-Lücke). Liegt das Terrain tiefer (steiler Hang) → der alte
+    //     Dilatations-Bleed → die Spalte bleibt trocken (-Infinity).
+    // `terrainTopY` ist die Terrain-Oberfläche der Spalte (höchste solide Cell);
+    // der Aufrufer reicht sie aus seinem Density-Grid (Cell-Build) bzw. via
+    // `_voxelSurfaceY` (Iso-OOB) — eine Quelle, kein Parallel-Pfad. Rückgabe
+    // -Infinity heißt „hier nie Wasser" (`cy <= -Infinity` ist immer false).
+    _atlasWaterLevelAt(x, z, terrainTopY) {
+        let level = -Infinity;
+        const h = this.state.hydrosphere;
+        if (h && h.ready && h.water && h.water.waterKind) {
+            const dim = h.dim;
+            const cell = h.cell;
+            const ci = Math.floor((x - h.originX) / cell);
+            const cj = Math.floor((z - h.originZ) / cell);
+            if (ci >= 0 && cj >= 0 && ci < dim && cj < dim) {
+                const wK = h.water.waterKind;
+                const wY = h.water.waterY;
+                const here = wK[ci + cj * dim];
+                if (here === 1 || here === 2) {
+                    // echter Wasser-Körper an dieser Spalte — voller Spiegel.
+                    level = wY[ci + cj * dim];
+                } else {
+                    // Atlas-Land: 16-m-Rand-Kandidat aus dem 3×3, depth-gated.
+                    let rim = -Infinity;
+                    for (let dj = -1; dj <= 1; dj++) {
+                        for (let di = -1; di <= 1; di++) {
+                            const ni = ci + di;
+                            const nj = cj + dj;
+                            if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
+                            const nk = wK[ni + nj * dim];
+                            if ((nk === 1 || nk === 2) && wY[ni + nj * dim] > rim) rim = wY[ni + nj * dim];
+                        }
+                    }
+                    if (rim > -Infinity && rim - terrainTopY <= AnazhRealm.WATER_RIM_BAND_M) {
+                        level = rim;
+                    }
                 }
             }
         }
@@ -40573,7 +40700,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.0";
+AnazhRealm.VERSION = "13.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
