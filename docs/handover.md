@@ -357,6 +357,26 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V14.9 — Die regionale Differenzierung: die Welt hat ALLES (Ebenen + Plateaus + Anden-Ketten + Meere), abwechslungsreich + stabil — Terrain-Bogen-Schluss (30.05.2026, Playtest „Alle Invarianten OK"):**
+
+Schöpfer nach V14.8: „wow, deutliche steigerung, stark, die regional erweiterung scheint wichtig um den bogen zu schliessen, damit die welt abwechslungsreich wird, nicht widerholend, bereiche die stabil sind, oder?". Genau richtig — die V14.8-Lehre war: eine EINZIGE Uplift-Oktave ist entweder ridged (Ketten) ODER broad (Plateaus), nie beides → überall dasselbe = repetitiv. Die Erde-treue Lösung: REGIONALE Differenzierung — verschiedene Großregionen tragen verschiedene Charaktere.
+
+**Mess-Disziplin zuerst:** eine **Regional-Vielfalt-Metrik** in `diag-relief` gebaut (6×6-Raster großer Sub-Regionen über ±2700 m — BREITER als eine Region-λ, sonst sieht der Diag nur eine Region; jede Sub-Region klassifiziert nach mittlerer Höhe + lokaler Ruggedness als Ebene / Plateau / Kette; + Höhen-Std + Ruggedness-Std über die Regionen). Abwechslungsreich = ein MIX der Typen + hohe Std (distinkte, stabile Bereiche).
+
+**Zwei gemessene Iterationen:**
+- **a1** (nur Stil-Maske λ4500: Plateau-Regionen `broad` vs Ketten-Regionen `ridged`): Mix 14/10/12 ✓ ABER Ozean nur 4,4 %, Median-Surface 51 m — beide Stile sind HOCH, es fehlt das Tiefland (Felder/Meere).
+- **a2** (+ Relief-Maske λ5300: Tiefland vs Hochland): **DREI Region-Typen — Ebene 18 / Plateau 10 / Kette 8, Ozean 18 %, Median 20 m, Höhen-Std 36 m.** Die Welt hat jetzt ALLES.
+
+**Die Heilung (a2):** `upland = upliftMask · ((1 − chainW)·upBroad·105 + chainW·upRidge²·115)`. Zwei unabhängige große-λ Masken: `upliftMask` (Relief, λ5300, smoothstep) = 0 in Tiefland-Regionen (kein Uplift → Felder + Meere) … 1 in Hochland; `chainW` (Stil, λ4500, smoothstep) = 0 Plateau-Stil (`upBroad` broad) … 1 Ketten-Stil (`upRidge²` ridged + Flow-Warp). Unabhängig → die Charaktere mischen frei (eine Kette kann an ein Tiefland grenzen, nicht nur Plateau→Kette-Adjazenz), kohärent über km (λ groß = STABILE Bereiche, man reist km-weit in einem Charakter). Baut auf den V14.7/.8-Formen (upBroad = Plateaus/Feature-Größe, upRidge² = Anden-Ketten).
+
+**Empirie (V14.8→V14.9):** Meere 2,5→18 % (echte „see und meere" ✓), Median-Surface 39→20 m (viel Tiefland-Felder + sanft 31 %), Hochebenen (10 Plateau-Regionen), Anden-Ketten (8 Ketten-Regionen), Gipfel fern bis 136 m (Clamp — die epische Höhe sitzt in den Hochland-Regionen, nicht überall). `diag-radius` 0 Hüllen-Verletzungen bis ±5 km (Decke hält; Boden-Marge 3 m enger durch die 18 % Ozean — ein Watch-Item, aber gemessen sicher).
+
+**EHRLICHE Mess-Konsequenz:** die isotropen 2048-Region-Metriken (corrLen, Ketten-Elongation) messen jetzt die EINE Region, in der der Ursprung zufällig liegt (seed-abhängig — hier eine Plateau/Ebene-Region → corrLen 320, Elongation 1,68) — sie sind NICHT mehr der richtige Aggregat-Wert für die regionale Welt. Die **Regional-Vielfalt-Metrik** (über die breite Fläche) ist der richtige Maßstab. (Lehre: bei regionaler Differenzierung muss die Charakteristik-Messung über eine Fläche BREITER als die Region-λ laufen, sonst misst sie eine Stichprobe von einer Region.)
+
+**Test-Mitwanderung (V9.56-i):** der C.3-Damm-Stempel-Test braucht jetzt einen GESTREAMTEN Wasser-Ufer-Chunk (`_voxelChunkHasAnyWater` UND `voxelChunks.has`) — die wasserreiche V14.9-Welt fand sonst einen Wasser-Spot ausserhalb des Streaming-Rings → Chunk nicht baubar/lesbar → „kein gestreamter Ufer-Spot = unmessbar = bestanden" (V13.1/V14.3). Der Heap-Snowball-Backstop 18→24 MB (reine `performance.memory`-GC-Rausch-Messung, 14–22 MB beim selben Code = Flake; die schwerere V14-Macro + GC-Timing heben den Rausch-Boden; der echte Leak-Beweis bleibt maxPoolSize=1).
+
+Worker bit-identisch (beide Masken + die Formen gespiegelt, `Math.min/max`/poly/`noise2D` V8-deterministisch), Playtest „Alle Invarianten OK", format+lint sauber. **Der Terrain-Bogen V14.0–.9 ist damit inhaltlich KOMPLETT** (die Welt-FORM „die alles in den Schatten stellt", abwechslungsreich wie die Erde) — der Schöpfer-Browser-Audit ist die finale Bestätigung; danach **V15 — Der Wasser-Finish** gegen die neue Topologie. **Permanente Lehre: „eine Welt mit allem" = REGIONALE Differenzierung — mehrere unabhängige große-λ Masken wählen den Charakter pro Region; die Einzel-Oktaven-Wellen (V14.7 broad, V14.8 ridged) waren je EIN Charakter, die Maske blendet sie pro Region; die Vielfalt misst man über eine Fläche breiter als die Region-λ.** Version 14.8.0 → 14.9.0.
+
 **V14.8 — Die gerichtete Uplift-Maske: lineare Anden-Ketten (ridged Uplift) statt isotroper Blobs (30.05.2026, Playtest „Alle Invarianten OK"):**
 
 Schöpfer: „wir nehmen das momentum und ziehen durch, jedoch trotzdem genial, tief, weitsichtig und ordentlich bleiben champ, scheint sauber bisher". V14.8 nach Plan: die gerichtete Uplift-Maske (V14.0-Diagnose §1.5 (b): „echte Gebirge folgen Plattengrenzen, eine Linie/Kurve gibt lange Ketten statt verstreute Zacken"). Bis V14.7 war der Höhen-Hub eine GLATTE Oktave (`max(0,noise)·95`) → runde Hochland-Blobs.

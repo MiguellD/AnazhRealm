@@ -232,11 +232,19 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     let mtn = 1 - ero;
     if (mtn < 0) mtn = 0;
     mtn *= mtn;
-    // V14.8 (mirror): ridged Uplift bei großer λ → große lineare Anden-Ketten + Flow-Warp
+    // V14.9 (mirror): REGIONALE Differenzierung — Stil-Maske wählt Plateau-Region (broad)
+    // vs Ketten-Region (ridged Anden) pro Großregion → abwechslungsreich + stabil.
+    const reliefN = n.noise2D(wx * 0.00019 + 33.1, wz * 0.00019 + 71.7) * 0.5 + 0.5; // V14.9 (mirror): Relief-Maske
+    let upliftMask = Math.min(1, Math.max(0, (reliefN - 0.42) / 0.2));
+    upliftMask = upliftMask * upliftMask * (3 - 2 * upliftMask);
+    const styleN = n.noise2D(wx * 0.00022 + 91.3, wz * 0.00022 + 5.9) * 0.5 + 0.5; // Stil-Maske Plateau/Kette
+    let chainW = Math.min(1, Math.max(0, (styleN - 0.46) / 0.16));
+    chainW = chainW * chainW * (3 - 2 * chainW);
+    const upBroad = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1));
     const upWarpX = n.noise2D(wx * 0.0002 + 51.7, wz * 0.0002 + 13.1) * 300;
     const upWarpZ = n.noise2D(wx * 0.0002 + 27.3, wz * 0.0002 + 88.9) * 300;
     const upRidge = 1 - Math.abs(n.noise2D((wx + upWarpX) * 0.00028 + 19.3, (wz + upWarpZ) * 0.00028 + 7.1));
-    const upland = upRidge * upRidge * 95;
+    const upland = upliftMask * ((1 - chainW) * upBroad * 105 + chainW * upRidge * upRidge * 115);
     const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn); // V14.7 (mirror): λ172→625
     const ridgeAmp = (5 + 38 * mtn) * (state.terrainSteepness || 1); // V14.7 (mirror): Spitzen-Amp gedämpft 62→38 + terrainSteepness verdrahtet
     const rN = n.noise2D(wx * 0.003, wz * 0.003); // V14.7 (mirror): λ77→333

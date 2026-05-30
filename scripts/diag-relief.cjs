@@ -410,6 +410,55 @@ function histogram(values, bucketSize) {
                 waterLevel: s.waterLevel,
             };
 
+            // (V14.9) Regional-Vielfalt: 6×6-Raster großer Sub-Regionen über ±2700 m
+            // (breiter als eine λ4500-Stil-Region). Pro Sub-Region die mittlere Höhe +
+            // Ruggedness (lokale Hang-Neigung) → Klassifikation (Ebene tief / Plateau
+            // hoch+glatt / Kette hoch+ridged) + die Höhen-/Ruggedness-Std über die
+            // Regionen. Abwechslungsreich = ein MIX der Typen + hohe Std (distinkte,
+            // stabile Bereiche), nicht überall dasselbe (der V14.8→V14.9-Auftrag).
+            const RV = 6;
+            const RVHALF = 2700;
+            const RVSUB = (RVHALF * 2) / RV;
+            const regH = [];
+            const regS = [];
+            for (let rj = 0; rj < RV; rj++) {
+                for (let ri = 0; ri < RV; ri++) {
+                    const cx0 = -RVHALF + (ri + 0.5) * RVSUB;
+                    const cz0 = -RVHALF + (rj + 0.5) * RVSUB;
+                    let hSum = 0;
+                    let slSum = 0;
+                    let nS = 0;
+                    for (let sj = -2; sj <= 2; sj++) {
+                        for (let si = -2; si <= 2; si++) {
+                            const sx = cx0 + si * 100;
+                            const sz = cz0 + sj * 100;
+                            hSum += r._terrainMacroSurfaceY(sx, sz, false);
+                            const dx = (r._terrainMacroSurfaceY(sx + 30, sz, false) - r._terrainMacroSurfaceY(sx - 30, sz, false)) / 60;
+                            const dz = (r._terrainMacroSurfaceY(sx, sz + 30, false) - r._terrainMacroSurfaceY(sx, sz - 30, false)) / 60;
+                            slSum += Math.hypot(dx, dz);
+                            nS++;
+                        }
+                    }
+                    regH.push(hSum / nS);
+                    regS.push(slSum / nS);
+                }
+            }
+            const rMean = regH.reduce((a, b) => a + b, 0) / regH.length;
+            const rStd = Math.sqrt(regH.reduce((acc, v) => acc + (v - rMean) ** 2, 0) / regH.length);
+            const sMean = regS.reduce((a, b) => a + b, 0) / regS.length;
+            const sStd = Math.sqrt(regS.reduce((acc, v) => acc + (v - sMean) ** 2, 0) / regS.length);
+            const rHMed = [...regH].sort((a, b) => a - b)[regH.length >> 1];
+            const rSMed = [...regS].sort((a, b) => a - b)[regS.length >> 1];
+            let plateauReg = 0;
+            let chainReg = 0;
+            let plainReg = 0;
+            for (let i = 0; i < regH.length; i++) {
+                if (regH[i] < rHMed - 4) plainReg++;
+                else if (regS[i] >= rSMed) chainReg++;
+                else plateauReg++;
+            }
+            const regionVariety = { count: regH.length, heightStd: rStd, ruggednessStd: sStd, plateauReg, chainReg, plainReg };
+
             // (f) Decken-Marge — wo sitzt die Voxel-Chunk-Decke relativ zum
             // höchsten Makro-Surface-Sample?
             const cfg = r._voxelChunkConfig();
@@ -424,6 +473,7 @@ function histogram(values, bucketSize) {
                 awareness,
                 topology,
                 terrainChar,
+                regionVariety,
                 macroY: Array.from(macroY),
                 voxelY: Array.from(voxelY),
                 chunkCfg: { dimY: cfg.dimY, step: cfg.step, floorDrop: cfg.floorDrop, ceiling },
@@ -565,6 +615,13 @@ function histogram(values, bucketSize) {
         console.log(`  Hochland-Kohäsion:        ${tc.hiCohesion.toFixed(2)}  (1.0 = lange Ketten/Hochländer, ~0 = isolierte Zacken)`);
         console.log(`  Plateau-Anteil (hoch+flach):${(tc.plateauFrac * 100).toFixed(1)} %  (weite Hochebenen — Ziel: spürbar > 0)`);
         console.log(`  Ketten-Elongation:        ${tc.chainElong.toFixed(2)}  (${tc.chainCompCount} Hochland-Komponenten; ~1.1 = runde Blobs, >2 = lineare Ketten/Anden)`);
+        const rv = data.regionVariety;
+        if (rv) {
+            console.log(
+                `  Regional-Vielfalt (±2700 m, ${rv.count} Sub-Regionen): Ebene ${rv.plainReg} / Plateau ${rv.plateauReg} / Kette ${rv.chainReg}  ` +
+                    `— Höhen-Std ${rv.heightStd.toFixed(1)} m, Ruggedness-Std ${rv.ruggednessStd.toFixed(3)}  (MIX + hohe Std = abwechslungsreich, nicht repetitiv)`
+            );
+        }
         console.log("");
 
         console.log("=== WELT-AWARENESS (V9.59 — kennt die Welt ihr Wasser?) ===");

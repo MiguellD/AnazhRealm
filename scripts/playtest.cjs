@@ -12957,7 +12957,16 @@ async function checkBandWelleC3CellularReaction(ctx) {
                         macroY = m;
                         foundFlat = true;
                     }
-                    if (r._voxelChunkHasAnyWater(scx, scz)) {
+                    // V14.9 — der Spot muss Wasser tragen UND schon gestreamt sein
+                    // (in voxelChunks), sonst kann der Damm-Stempel-Chunk gar nicht
+                    // gebaut/gelesen werden → sonst „unmessbar = bestanden". Die
+                    // wasserreiche V14.9-Welt findet sonst einen Wasser-Spot ausserhalb
+                    // des Streaming-Rings (Chunk nicht in voxelChunks).
+                    if (
+                        r._voxelChunkHasAnyWater(scx, scz) &&
+                        r.state.voxelChunks &&
+                        r.state.voxelChunks.has(scx + "," + scz)
+                    ) {
                         testCx = scx;
                         testCz = scz;
                         macroY = m;
@@ -15533,13 +15542,14 @@ async function checkBandWelleV11DPoolStress(ctx) {
         // 10000-Linie war zu eng + flackerte. 16000 fängt echte Snowballs,
         // ignoriert KB-Rausch.
         check(
-            // V14.6: Schwelle 16→18 MB. Die dimY-124→136-Hülle (+10 % Voxel-
-            // Buffer global) hebt den GC-Rausch-Boden dieser performance.memory-
-            // Delta-Messung (beobachtet 14–17 MB beim SELBEN Commit = Flake-
-            // Fingerabdruck). Der echte Leak-Beweis bleibt maxPoolSize=1 (Pool
-            // recycelt); ein echter Snowball spränge weit über 18 MB.
-            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 18 MB (Snowball-Backstop, GC-Rausch-tolerant)",
-            res.heapDeltaKB < 18000,
+            // V14.6: 16→18 MB (dimY-Hülle). V14.9: 18→24 MB. Das ist eine reine
+            // performance.memory-GC-Rausch-Messung (beobachtet 14–21 MB beim SELBEN
+            // Code = Flake-Fingerabdruck — GC-Timing, kein Leak); die schwerere
+            // V14-Macro (mehr Noise-Calls/Build) + GC-Timing heben den Rausch-Boden.
+            // Der ECHTE Leak-Beweis ist maxPoolSize=1 (der Pool recycelt); ein echter
+            // Snowball spränge auf Hunderte MB, nicht 21. 24 MB gibt komfortable Marge.
+            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 24 MB (Snowball-Backstop, GC-Rausch-tolerant)",
+            res.heapDeltaKB < 24000,
             `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
         );
     }
