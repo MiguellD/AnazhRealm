@@ -357,6 +357,8 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V15.1.1 - Fix: Mikro-Textur schwaerzte die Flach-Farb-Bauten (30.05.2026):** der V15.1-`colorNode` las `attribute(color)` auf allen Toon-Materials; nur Terrain/Inseln tragen das Attribut, auf Bauten (Tor/Dorf/Avatar/Kreaturen) defaultet es auf vec3(0) -> schwarz (+63 Warnungen). Fix: Noise nur auf `opts.vertexColors`-Materials. Lehre: `attribute(X)` im colorNode nur an Geometrien mit X.
+
 **V15.1 - Prozedurale Mikro-Textur (render-only) (30.05.2026):** Nach dem V15.0-Browser-Audit (noch nicht hyperreal, aber geduldig) der zweite Render-Schritt: ein `colorNode` am Terrain-Toon-Material legt zwei Oktaven `mx_noise_float` (Welt-Position, Lambda ~3 m + ~0,6 m, +-13 %) ueber die Vertex-Farbe -> die flachen Farbflaechen bekommen Mikro-Variation/Tiefe. Render-only (kein Worker/Determinismus), `try/catch`-Fallback auf flach. Vertex-AO -> V15.2. Browser-Audit ausstehend.
 
 **V15.0 — Der Render-Bogen „Die lebendige Oberfläche" beginnt: ACES-Filmic-Tone-Mapping (30.05.2026, rendert sauber):**

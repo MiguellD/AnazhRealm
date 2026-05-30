@@ -17765,9 +17765,15 @@ class AnazhRealm {
         // Reine Render-Output-Stufe -> keine Geometrie-/Determinismus-
         // Aenderung, kein Worker-Mirror. try/catch -> faellt sauber auf
         // flach zurueck, falls TSL/mx_noise fehlt; nie ein kaputtes Material.
+        // V15.1-b: NUR auf vertexColors-Materials (Terrain + Inseln) — die
+        // tragen das per-Vertex-`color`-Attribut. Flach-Farb-Strukturen (Tor,
+        // Dorf, Avatar, Kreaturen) haben KEIN `color`-Attribut; ein
+        // `attribute("color")` defaultet dort auf vec3(0) -> die Struktur wird
+        // schwarz (Schoepfer-Befund + 63 AttributeNode-Warnungen). Das Noise
+        // gehoert ans Terrain-Material, nicht an die flachen Bauten.
         try {
             const _T = THREE.TSL;
-            if (_T && _T.mx_noise_float && _T.positionWorld && _T.attribute) {
+            if (opts.vertexColors && _T && _T.mx_noise_float && _T.positionWorld && _T.attribute) {
                 const _vc = _T.attribute("color", "vec3");
                 const _wp = _T.positionWorld;
                 const _n1 = _T.mx_noise_float(_wp.mul(0.33));
@@ -41229,7 +41235,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.1.0";
+AnazhRealm.VERSION = "15.1.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
