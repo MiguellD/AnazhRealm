@@ -17772,7 +17772,7 @@ class AnazhRealm {
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
         if (!TSL || !TSL.uniform || !TSL.vec3) return null;
         this.state.atmoUniforms = {
-            skyColor: TSL.uniform(TSL.vec3(0.55, 0.62, 0.78)),
+            skyColor: TSL.uniform(new THREE.Color(0.55, 0.62, 0.78)),
             density: TSL.uniform(0.0085),
             hazeBase: TSL.uniform(40.0),
             hazeTop: TSL.uniform(150.0),
@@ -37859,14 +37859,13 @@ class AnazhRealm {
             fog.color.setRGB(fogR, fogG, fogB);
             // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy 22..95.
             // Slider 30..200 % via state.atmosphere.fogDistance.
-            // V15.4 — fogMult-Default 3.0 -> 1.6: bei 3.0 lag near=105/far=450 m
-            // weit JENSEITS des ~140-m-Render-Radius, der Fog griff also fast
-            // gar nicht (Schoepfer-Befund "keine Tiefe, harte Fels-Kanten bis
-            // zum Rand"). 1.6 zieht near~56/far~240 in den Sichtbereich -> die
-            // atmosphaerische Tiefe wird sichtbar UND eint Terrain/Gras/Bauten
-            // (alle teilen scene.fog). Slider bleibt voll wirksam.
+            // V15.4.1 — fogMult zurueck auf 3.0 (der V15.4-Pull auf 1.6 war ein
+            // Pflaster: Nebel reinziehen, um flache Ferne zu verdecken, kaempft
+            // gegen die Weite, die der Schoepfer liebt — Weltenring max, Fog
+            // weit, die Ferne entdecken. Tiefe gehoert NICHT aus Nebel-Naehe,
+            // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
-            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.6;
+            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
@@ -37875,7 +37874,9 @@ class AnazhRealm {
             // Ausbleich-Punkt = bedrueckter, tieferer Dunst).
             if (this.state.atmoUniforms) {
                 const au = this.state.atmoUniforms;
-                if (au.skyColor) au.skyColor.value.setRGB(fogR, fogG, fogB);
+                if (au.skyColor && au.skyColor.value && au.skyColor.value.setRGB) {
+                    au.skyColor.value.setRGB(fogR, fogG, fogB);
+                }
                 if (au.density) au.density.value = 0.0085 + rainyMix * 0.006;
                 if (au.hazeTop) au.hazeTop.value = 150 - rainyMix * 55;
             }
@@ -41388,7 +41389,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.4.0";
+AnazhRealm.VERSION = "15.4.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

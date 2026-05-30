@@ -357,6 +357,8 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V15.4.1 - Crash-Fix + Fog-Revert (30.05.2026):** schwarzer Schirm durch `au.skyColor.value.setRGB is not a function` (Uniform war vec3 statt THREE.Color). Fix: `uniform(new THREE.Color(...))` + Setter-Guard. Plus fogMult 1.6->3.0 (der V15.4-Pull war ein Pflaster gegen die geliebte Weite). Gras-Schatten + Aerial-Term bleiben. Lebende-Umgebung-Bogen wird erst geplant.
+
 **V15.4 - Harmonie-Welle (render-only) (30.05.2026):** Schoepfer-Befund: keine Tiefe + Gras/Terrain/Strukturen entkoppelt von Licht/Zeit/Wetter. Wurzel: keine gemeinsame Atmosphaere (Gras receiveShadow=false; Fog near/far jenseits Render-Radius). Heilung: (1) Gras receiveShadow=true (selbes Schatten-System), (2) Aerial Perspective im Terrain-colorNode (hoehen-dominant, Gipfel bleichen zur Sky-Farbe -> Tiefe), (3) fogMult 3.0->1.6 (Fog greift im Sichtbereich). atmoUniforms vom Fog gespeist (EINE Quelle -> tag/nacht/wetter-kohaerent). Werte browser-justierbar.
 
 **V15.3.1 - Wiesen-Boden (weit-auch-Wiese, render-only) (30.05.2026):** Gras lud nur LOD-0-nah (Pop-in) + der Boden darunter war mattes Schlamm-Gruen. Genre-Loesung: der BODEN sieht weit wie Wiese aus (Terrain-colorNode-Wiesen-Term: Veg-Maske aus gruen-Dominanz, sattes Gruen + grossflaechige Feld-Flecken via nieder-freq Noise λ~55 m + Struktur λ~9 m), die nahen Halme sind nur Detail obendrauf -> kein kahl->Gras-Sprung. Render-only, Halm-Dichte unberuehrt. Ehrlich: heilt die Ferne, nicht die Halm-Zahl (-> V15.3-b).
