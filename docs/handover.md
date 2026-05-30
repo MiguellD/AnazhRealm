@@ -357,6 +357,8 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V15.1 - Prozedurale Mikro-Textur (render-only) (30.05.2026):** Nach dem V15.0-Browser-Audit (noch nicht hyperreal, aber geduldig) der zweite Render-Schritt: ein `colorNode` am Terrain-Toon-Material legt zwei Oktaven `mx_noise_float` (Welt-Position, Lambda ~3 m + ~0,6 m, +-13 %) ueber die Vertex-Farbe -> die flachen Farbflaechen bekommen Mikro-Variation/Tiefe. Render-only (kein Worker/Determinismus), `try/catch`-Fallback auf flach. Vertex-AO -> V15.2. Browser-Audit ausstehend.
+
 **V15.0 — Der Render-Bogen „Die lebendige Oberfläche" beginnt: ACES-Filmic-Tone-Mapping (30.05.2026, rendert sauber):**
 
 Schöpfer nach dem V14-Terrain-Bogen (Browser-Screenshot der weite-ufer-Welt): „gibt es noch eine möglichkeit das gelände realer zu machen, hyperreal, aber effizient — die bäume, die wiese, der boden selbst, kaum textur, tiefe, leben… das terrain nimmt form an, doch alles darauf blass… nicht wie die zukunft?". Der Befund ist eine ganz andere Achse als die Terrain-FORM (die ist jetzt gut): die OBERFLÄCHE/das Rendering ist flach.

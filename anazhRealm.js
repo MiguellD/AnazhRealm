@@ -17759,6 +17759,26 @@ class AnazhRealm {
         // patcht die DataTexture in-place (_refreshToonGradient.needsUpdate),
         // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+
+        // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
+        // 3D-Welt-Noise brechen die flache Vertex-Farbe in reiche Variation.
+        // Reine Render-Output-Stufe -> keine Geometrie-/Determinismus-
+        // Aenderung, kein Worker-Mirror. try/catch -> faellt sauber auf
+        // flach zurueck, falls TSL/mx_noise fehlt; nie ein kaputtes Material.
+        try {
+            const _T = THREE.TSL;
+            if (_T && _T.mx_noise_float && _T.positionWorld && _T.attribute) {
+                const _vc = _T.attribute("color", "vec3");
+                const _wp = _T.positionWorld;
+                const _n1 = _T.mx_noise_float(_wp.mul(0.33));
+                const _n2 = _T.mx_noise_float(_wp.mul(1.6));
+                const _det = _n1.mul(0.7).add(_n2.mul(0.3));
+                const _bright = _T.float(1.0).add(_det.mul(0.13));
+                mat.colorNode = _T.vec4(_vc.mul(_bright), 1.0);
+            }
+        } catch {
+            /* TSL/Noise nicht verfuegbar -> flaches Material (Vertex-Farben) */
+        }
         return mat;
     }
 
@@ -41209,7 +41229,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.0.0";
+AnazhRealm.VERSION = "15.1.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
