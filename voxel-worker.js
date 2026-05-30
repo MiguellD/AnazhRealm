@@ -115,6 +115,7 @@ function applyStateSnapshot(snap) {
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
+    if (typeof snap.terrainSteepness === "number") state.terrainSteepness = snap.terrainSteepness; // V14.7: ridgeAmp-Skala
     if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.erosion !== undefined) state.erosion = snap.erosion;
@@ -226,19 +227,20 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     // bit-identisch zum Main-Thread `_terrainMacroSurfaceY` sein (Naht-Schutz).
     const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
     const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3 (mirror)
-    const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
+    const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 45; // V14.7 (mirror)
     const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5; // V14.3 (mirror)
     let mtn = 1 - ero;
     if (mtn < 0) mtn = 0;
     mtn *= mtn;
-    const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * (8 + 28 * mtn); // V14.4 (mirror)
-    const ridgeAmp = 5 + 62 * mtn; // V14.3 (mirror)
-    const rN = n.noise2D(wx * 0.013, wz * 0.013);
+    const upland = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1)) * 95; // V14.7 (mirror): glatter asymmetrischer Höhen-Hub λ2860 → Feature-Größe
+    const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn); // V14.7 (mirror): λ172→625
+    const ridgeAmp = (5 + 38 * mtn) * (state.terrainSteepness || 1); // V14.7 (mirror): Spitzen-Amp gedämpft 62→38 + terrainSteepness verdrahtet
+    const rN = n.noise2D(wx * 0.003, wz * 0.003); // V14.7 (mirror): λ77→333
     const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
-    const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
+    const rN2 = n.noise2D(wx * 0.0075 + 5.7, wz * 0.0075 - 2.3); // V14.7 (mirror): λ38→133
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
-    let withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
     // V14.6 (mirror): sanftes Decken-Limit — cont0 hebt die Surface fern vom
     // Ursprung bis ~235 m über die Voxel-Decke → Löcher. tanh-Clamp komprimiert
     // hohe Surfaces (>110 m) asymptotisch gegen 136 m. MUSS bit-identisch zum

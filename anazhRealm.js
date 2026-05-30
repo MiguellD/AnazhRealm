@@ -10252,8 +10252,9 @@ class AnazhRealm {
                 if (heights.length > 0) {
                     // V9.60-b.1 — waterLevel ABSOLUT statt 35-Perzentil.
                     // Wurzel-Erkenntnis: die Sample-Region (340×340 m) ist
-                    // viel kleiner als die Tektonik-Wellenlänge (7150 m),
-                    // sodass die 169 Samples ALLE denselben tect-Wert sehen.
+                    // viel kleiner als die längste Oktave (cont0, λ~7100 m —
+                    // V14.1; früher trug „tect" diese Rolle, daher der alte Name),
+                    // sodass die 169 Samples ALLE denselben Großstruktur-Wert sehen.
                     // Das 35-Perzentil bedeutet "35% der LOKALEN Welt unter
                     // Wasser" — aber lokal IST die Welt halb-halb verteilt,
                     // also landet waterLevel mitten am Median (V9.59-Diagnose:
@@ -12874,6 +12875,7 @@ class AnazhRealm {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+            terrainSteepness: typeof this.state.terrainSteepness === "number" ? this.state.terrainSteepness : 1, // V14.7: ridgeAmp-Skala (Worker-Mirror)
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
@@ -15201,7 +15203,8 @@ class AnazhRealm {
         // ### Terrain-State ###
         // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight sind in
         // einer Voxel-Welt null bzw. 0; die voxel-gated Konsumenten ignorieren
-        // sie. terrainSteepness moduliert die Voxel-Surface, terrainBaseHeight
+        // sie. terrainSteepness skaliert seit V14.7 die ridged-Amplitude in
+        // `_terrainMacroSurfaceY` (vorher tot — V14.0-Befund); terrainBaseHeight
         // ist die Voxel-Anker-Höhe (Killplane-base, getTerrainHeightAt-Fallback).
         this.state.groundHeightField = heightData;
         this.state.minHeight = minHeight;
@@ -16061,10 +16064,14 @@ class AnazhRealm {
         // (E[cont0]≈+25 m → die Land-Marge bleibt erhalten/steigt, KEIN Ertränken
         // — die V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser).
         const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3: +12 Offset kompensiert die abgesenkten flachen Regionen (Land-Marge)
-        // (0b) tektonische Oktave — die regionale Mittelstruktur. λ~1140 m,
-        // ±35 m (der alte Kommentar "λ~7150 m" war falsch — diese Rolle trägt
-        // jetzt cont0; tect bleibt die km-Region-Variation darunter).
-        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
+        // (0b) tektonische Oktave — V14.7: die DOMINANTE Massiv-Skala (λ~1136 m,
+        // Amp ±35→±60 m). Der V14.0-Leitsatz „die dominante Skala muss die GRÖSSTE
+        // sein" — vorher trug die ridged-`ranges` (λ77 m) das Hauptrelief → spitz,
+        // Feature-Größe nur 176 m; jetzt formt `tect` breite Massive, auf denen die
+        // (gestreckten + gedämpften) ranges als Textur sitzen → Berge bauen sich
+        // „über weite Strecken auf". (Der alte „λ~7150 m"-Kommentar war falsch —
+        // diese km-Skala trägt jetzt cont0.)
+        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 45;
         // (b) Ruggedness-Feld [0,1] — die REGIONALE Terrain-Typ-Maske (V14.3,
         // λ~2000 m). `mtn` quadriert → Tiefland ist der Normalfall, Hochgebirge
         // die Ausnahme. V14.4: sie moduliert ALLE Relief-Oktaven (nicht nur
@@ -16074,25 +16081,39 @@ class AnazhRealm {
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        // (1) kontinentale Oktave (λ~1080 m) — V14.4 mtn-moduliert: in Ebenen
-        // sanft (±8 m), in Gebirgen wellig (±36 m).
-        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * (8 + 28 * mtn);
-        // (2) ridged-Amplitude — Ebenen fast flach (5), Gebirge schroff (67).
-        const ridgeAmp = 5 + 62 * mtn;
-        // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
-        const rN = n.noise2D(wx * 0.013, wz * 0.013);
+        // (b2) V14.7 — der ASYMMETRISCHE Höhen-Hub: eine eigene GLATTE Oktave (λ~2860 m,
+        // freq 0.00035). `max(0,…)·95` hebt nur Hochland-Massive, senkt nie → KEINE
+        // Überflutung (anders als ein symmetrisches tect·90, das 35 % Ozean + Boden-
+        // Durchbruch machte). DAS ist die DOMINANTE Skala (λ2860 → Korr-Länge >400 m,
+        // der V14.0-Leitsatz „dominante Skala = größte"), ein SANFTER Hub (Steilheit
+        // unberührt). Entkoppelt von `mtn` (Ruggedness) → der Mix aus hoch+schroff
+        // (Anden), hoch+flach (Hochebene), tief+flach (epische Felder).
+        const upland = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1)) * 95;
+        // (1) kontinentale Oktave — V14.7: λ~172→~625 m gestreckt (freq 0.0058→
+        // 0.0016) → breite Undulation statt Hügel-Gewimmel. mtn-moduliert (±8..36 m).
+        const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn);
+        // (2) ridged-Amplitude — V14.7: Spitzen-Amp 62→38 gedämpft (Schöpfer-Befund
+        // „spitzig/steil"): Ebenen flach (5), Gebirge schroff aber breiter (max 43).
+        // V14.7 — `terrainSteepness` (DSL-Op `terrain_steepness`, 0.1–2.0, Default 1.0)
+        // ist jetzt VERDRAHTET (vorher ein TOTER Parameter, V14.0-Befund): er skaliert
+        // die ridged-Amplitude → der DSL-Op + der Nexus `terrainFlatten` steuern echte
+        // Ruggedness. Default 1.0 = bit-identisch (kein Welt-Wandel); der V14.6-Clamp
+        // deckelt auch steepness=2.0. MUSS im Worker mit (Snapshot-Feld terrainSteepness).
+        const ridgeAmp = (5 + 38 * mtn) * (this.state.terrainSteepness || 1);
+        // (2a) ridged-Oktave (`(1−|noise|)²` faltet zu Kämmen) — V14.7: λ~77→~333 m
+        // gestreckt (freq 0.013→0.003) → breite Bergrücken statt λ77-Mikro-Cusps.
+        const rN = n.noise2D(wx * 0.003, wz * 0.003);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
-        // (2b) zweite ridged-Oktave (V9.58-b) — λ/2, ½ Amplitude. Multifraktal-
-        // Selbstähnlichkeit echter Gebirge: grosse Kämme tragen kleinere
-        // Sekundär-Kämme, die das Profil körniger machen.
-        const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
+        // (2b) zweite ridged-Oktave (V9.58-b) — V14.7: λ~38→~133 m (freq 0.026→0.0075),
+        // ½ Amp. Multifraktal: grosse Kämme tragen kleinere Sekundär-Kämme.
+        const rN2 = n.noise2D(wx * 0.0075 + 5.7, wz * 0.0075 - 2.3);
         const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4: Ebenen fast glatt (±1), Gebirge körnig (±4)
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        let withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
         // V14.6 — sanftes Decken-Limit (Schöpfer-Befund „nach einiger Zeit in
         // eine Richtung zerfällt die Welt"). Die kontinentale Basis cont0
         // (λ~7100 m) hebt die Surface fern vom Ursprung bis ~235 m (gemessen
@@ -16887,12 +16908,14 @@ class AnazhRealm {
         const pm = this.state.playerMesh;
         const px = pm ? pm.position.x : 0;
         const pz = pm ? pm.position.z : 0;
-        const base = this.state.terrainBaseHeight || 0;
         const dim = 24;
         const stepSize = 1.6;
         const ox = px + 22;
-        const oy = base - 20;
         const oz = pz - dim * stepSize * 0.5;
+        // V14.7 — das vertikale Band straddelt die ECHTE Oberfläche am Chunk-Zentrum
+        // (vorher fix `base-20`; die V14.7-Massive heben surf weit über base → ein
+        // festes Tiefband läge ganz unter Grund → leeres Mesh). Robust für jede Höhe.
+        const oy = Math.round(this._terrainMacroSurfaceY(ox + dim * stepSize * 0.5, oz + dim * stepSize * 0.5)) - 20;
         const geom = this._voxelChunkGeometry(ox, oy, oz, dim, dim, dim, stepSize);
         if (!geom) {
             this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
@@ -41160,7 +41183,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.6.0";
+AnazhRealm.VERSION = "14.7.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
