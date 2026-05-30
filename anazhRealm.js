@@ -16060,7 +16060,7 @@ class AnazhRealm {
         // Asymmetrisch: HEBT Hochländer bis ~+145 m, senkt Becken nur bis −15 m
         // (E[cont0]≈+25 m → die Land-Marge bleibt erhalten/steigt, KEIN Ertränken
         // — die V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser).
-        const cont0 = Math.max(0, cBase) * 130 + cBase * 15;
+        const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3: +12 Offset kompensiert die abgesenkten flachen Regionen (Land-Marge)
         // (0b) tektonische Oktave — die regionale Mittelstruktur. λ~1140 m,
         // ±35 m (der alte Kommentar "λ~7150 m" war falsch — diese Rolle trägt
         // jetzt cont0; tect bleibt die km-Region-Variation darunter).
@@ -16073,14 +16073,14 @@ class AnazhRealm {
         // `mtn` ist die Gebirgs-Neigung (1 = alpin), quadriert → Tiefland
         // ist der Normalfall, Hochgebirge die Ausnahme. Es moduliert die
         // ridged-Amplitude.
-        const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
+        const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5; // V14.3: λ714m→λ2000m (Regionen über ~46 Chunks)
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
         // (V9.58-b) Berg-Amplituden vergrössert: 9+33 → 12+55. Erst durch die
         // V9.58-a-Tektonik + die λ~4500-m-mtn-Streckung sitzen mtn≈1-Spots in
         // weiten Bergregionen — daher lohnt sich die höhere Amplitude.
-        const ridgeAmp = 12 + 55 * mtn;
+        const ridgeAmp = 5 + 62 * mtn; // V14.3: Ebenen flacher (5), Gebirge schroffer (67) → Vielfalt
         // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
         const rN = n.noise2D(wx * 0.013, wz * 0.013);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
@@ -41102,7 +41102,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.2.0";
+AnazhRealm.VERSION = "14.3.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

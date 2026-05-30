@@ -225,14 +225,14 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     // V14.1 — kontinentale Basis (λ~7100 m, leicht nach oben gebiast). MUSS
     // bit-identisch zum Main-Thread `_terrainMacroSurfaceY` sein (Naht-Schutz).
     const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
-    const cont0 = Math.max(0, cBase) * 130 + cBase * 15;
+    const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3 (mirror)
     const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
     const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
-    const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
+    const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5; // V14.3 (mirror)
     let mtn = 1 - ero;
     if (mtn < 0) mtn = 0;
     mtn *= mtn;
-    const ridgeAmp = 12 + 55 * mtn;
+    const ridgeAmp = 5 + 62 * mtn; // V14.3 (mirror)
     const rN = n.noise2D(wx * 0.013, wz * 0.013);
     const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
     const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
