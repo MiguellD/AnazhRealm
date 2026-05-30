@@ -17779,8 +17779,26 @@ class AnazhRealm {
                 const _n1 = _T.mx_noise_float(_wp.mul(0.33));
                 const _n2 = _T.mx_noise_float(_wp.mul(1.6));
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
-                const _bright = _T.float(1.0).add(_det.mul(0.13));
-                mat.colorNode = _T.vec4(_vc.mul(_bright), 1.0);
+                let _shade = _T.float(1.0).add(_det.mul(0.13));
+                // V15.2 - Kavitaets-AO (render-only, der dritte Render-Bogen-
+                // Schritt): Welt-Raum-Kruemmung aus den Fragment-Derivaten.
+                // fwidth(normalWorld).length() / fwidth(positionWorld).length()
+                // = wie schnell die Normale PRO METER kippt -> gross in Falten/
+                // Mulden/Kontaktkanten, ~0 auf glatten Flaechen. Der
+                // /fwidth(positionWorld) macht es aufloesungs- UND distanz-
+                // unabhaengig (fernes Terrain bleibt sauber). Dunkelt
+                // Vertiefungen sanft ab = Tiefe/Kontakt-Schatten. Reine Render-
+                // Output-Stufe -> kein Geometrie-/Determinismus-Eingriff, kein
+                // Worker-Mirror; gegated wie das Noise. EHRLICH: dunkelt ALLE
+                // stark gekruemmten Stellen (Kanten + Mulden), nicht nur
+                // Konkavitaeten (Edge-Tint a la Genshin/BotW). Staerke 1.6 /
+                // Cap 0.45 browser-justierbar.
+                if (_T.fwidth && _T.normalWorld) {
+                    const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                    const _ao = _T.float(1.0).sub(_curv.mul(1.6).clamp(0.0, 0.45));
+                    _shade = _shade.mul(_ao);
+                }
+                mat.colorNode = _T.vec4(_vc.mul(_shade), 1.0);
             }
         } catch {
             /* TSL/Noise nicht verfuegbar -> flaches Material (Vertex-Farben) */
@@ -41235,7 +41253,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.1.1";
+AnazhRealm.VERSION = "15.2.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
