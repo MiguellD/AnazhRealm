@@ -926,6 +926,22 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         pushN(i, k, j + 1, lvl);
         pushN(i, k, j - 1, lvl);
     }
+    // 5) VERTIKAL-OFFEN (V13.12, Mirror von `_buildVoxelChunkWaterCells`):
+    //    pro Spalte von oben scannen; ab dem ersten SOLID ist alles WATER
+    //    darunter „unter Deckel" -> AIR. Nur Wasser mit freier Saeule nach oben
+    //    bleibt (Genre-Modell). MUSS bit-identisch zum Main sein (Determinismus).
+    for (let k = 0; k < dim; k++) {
+        for (let i = 0; i < dim; i++) {
+            const baseIK = i + k * dim;
+            let lidAbove = false;
+            for (let j = jMax; j >= 0; j--) {
+                const idx = baseIK + j * dimSq;
+                const c = cells[idx];
+                if (c === CELL_STATE.SOLID) lidAbove = true;
+                else if (c === WATER && lidAbove) cells[idx] = AIR;
+            }
+        }
+    }
     // ARCHITEKTUR-STEMPEL läuft NICHT im Worker — bleibt Main-only
     // (Architektur-State ist nicht im Worker-Snapshot, soll auch nicht sein).
     return cells;

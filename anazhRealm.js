@@ -17135,6 +17135,28 @@ class AnazhRealm {
             pushN(i, k, j + 1, lvl);
             pushN(i, k, j - 1, lvl);
         }
+        // 5) VERTIKAL-OFFEN (V13.12) — das mentale Modell des Schöpfers: Wasser
+        //    ist eine Oberfläche auf Höhe Y, die das Becken VON OBEN füllt, bis
+        //    es auf festen Boden trifft; darunter bleibt trocken. Der 3D-Flood
+        //    (V13.8) kroch seitlich durch JEDEN verbundenen Luftraum unter dem
+        //    Spiegel — auch unter festem Terrain/Strukturen (→ Blasen unter dem
+        //    Boden, „Wasser-Schatten" an Strukturen). Hier: pro Spalte von oben
+        //    scannen; sobald ein SOLID kommt, ist alles WATER darunter „unter
+        //    Deckel" → zurück zu AIR. So bleibt nur Wasser, das eine freie Säule
+        //    nach oben zur Oberfläche hat (Genre-Standard, Minecraft-Modell).
+        //    Heilt Sub-Terrain-Blasen PHYSISCH (kein Kaschieren mehr nötig).
+        for (let k = 0; k < dim; k++) {
+            for (let i = 0; i < dim; i++) {
+                const baseIK = i + k * dim;
+                let lidAbove = false;
+                for (let j = jMax; j >= 0; j--) {
+                    const idx = baseIK + j * dimSq;
+                    const c = cells[idx];
+                    if (c === STATE.SOLID) lidAbove = true;
+                    else if (c === WATER && lidAbove) cells[idx] = AIR;
+                }
+            }
+        }
         return cells;
     }
 
@@ -40868,7 +40890,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.11.0";
+AnazhRealm.VERSION = "13.12.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
