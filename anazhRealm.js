@@ -10336,6 +10336,36 @@ class AnazhRealm {
             .mul(hf);
         mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
 
+        // V15.3 - Gras-Albedo-Variation (render-only, der vierte Render-Bogen-
+        // Schritt, erster "Leben"-Schritt): die flache uniforme Grün-Färbung
+        // (EIN color 0x5fa743 auf JEDEM Halm = der Schöpfer-Befund "uniform")
+        // bricht auf in (a) einen Spitzen-Gradient (Wurzel dunkler/kühler ->
+        // Spitze heller/wärmer, wie echtes Gras) + (b) per-Clump-Noise (Welt-
+        // Position -> Flecken trockeneren/saftigeren Grases, ~1,6 m Wellenlänge).
+        // `colorNode` ist auf einem lit NodeMaterial die DIFFUSE Albedo -> das
+        // Lambert-Lighting + der Wind + die Tag-Nacht-Sync bleiben voll aktiv,
+        // nur die Grundfarbe wird reicher. KEIN attribute()-Lookup -> die
+        // V15.1-Schwärze-Klasse ist strukturell ausgeschlossen. Render-only:
+        // kein Geometrie-/Determinismus-Eingriff (die Halm-Positionen/Dichte
+        // sind unberührt -> kein Worker/Buffer-Risiko, die GRASS_MAX_BLADES-256-
+        // Buffer-Klasse bleibt unangetastet). try/catch -> Fallback flach-grün.
+        // EHRLICH: das heilt "uniform", NICHT "spärlich" (die Dichte ist der
+        // fragile Buffer-Pfad -> V15.3-b falls der Browser mehr Halme will).
+        try {
+            if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
+                const hfN = TSL.clamp(positionLocal.y.div(float(0.85)), float(0.0), float(1.0));
+                const baseCol = vec3(0.31, 0.55, 0.22);
+                const tipCol = vec3(0.58, 0.8, 0.34);
+                let albedo = TSL.mix(baseCol, tipCol, hfN);
+                const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
+                albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
+                albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
+                mat.colorNode = TSL.vec4(albedo, float(1.0));
+            }
+        } catch {
+            /* TSL/Noise nicht verfuegbar -> flaches Lambert-Grün (Default-color) */
+        }
+
         this.state._grassMat = mat;
         return mat;
     }
@@ -41253,7 +41283,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.2.0";
+AnazhRealm.VERSION = "15.3.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

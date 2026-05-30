@@ -357,6 +357,8 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V15.3 - Gras-Albedo-Variation (render-only) (30.05.2026):** das uniforme Gras-Grün (ein color 0x5fa743 auf jedem Halm) bricht auf in Spitzen-Gradient + per-Clump-mx_noise_float-Variation via colorNode am Gras-Lambert-Material. Lighting/Wind/Tag-Nacht bleiben aktiv (colorNode = Albedo), kein attribute()-Lookup, try/catch-Fallback. Halm-Dichte unberührt (kein Buffer-Eingriff). Ehrlich: heilt uniform, nicht spärlich (Dichte = fragiler Buffer-Pfad -> V15.3-b).
+
 **V15.2 - Kavitaets-AO (render-only) (30.05.2026):** Welt-Raum-Kruemmung aus den Fragment-Derivaten (`fwidth(normalWorld)/fwidth(positionWorld)`) dunkelt Falten/Mulden/Kontaktkanten sanft ab (Staerke 1.6, Cap 0.45) -> Tiefe/Kontakt-Schatten. Im selben Terrain-colorNode, gegated auf vertexColors, distanz-unabhaengig, render-only (kein Worker/Determinismus). Ehrlich: Edge-Tint (alle Kruemmung), nicht concave-only. Gras-/Baum-Leben -> V15.3/.4.
 
 **V15.1.1 - Fix: Mikro-Textur schwaerzte die Flach-Farb-Bauten (30.05.2026):** der V15.1-`colorNode` las `attribute(color)` auf allen Toon-Materials; nur Terrain/Inseln tragen das Attribut, auf Bauten (Tor/Dorf/Avatar/Kreaturen) defaultet es auf vec3(0) -> schwarz (+63 Warnungen). Fix: Noise nur auf `opts.vertexColors`-Materials. Lehre: `attribute(X)` im colorNode nur an Geometrien mit X.
