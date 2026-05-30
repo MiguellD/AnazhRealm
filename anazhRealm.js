@@ -17274,6 +17274,16 @@ class AnazhRealm {
         // (ein ~100-Schritt-Density-Scan) millionenfach laufen = Mesher-Kollaps.
         // Mit Cache: ein `_voxelSurfaceY` je Pad-Spalte (~ein paar hundert).
         const oobLevelCache = new Map();
+        // V13.13 — OOB-Klassen-Memo: der Surface-Nets-Mesher fragt `cellClass`
+        // für DIESELBE Zelle bis zu 8× (benachbarte Grid-Ecken teilen sich die
+        // Eck-Zellen), und der OOB-Pfad rechnete jedes Mal `_terrainDensityAt`
+        // komplett neu → 142k Density-Evals/Chunk = 70 % der Iso-Build-Zeit
+        // (diag-iso-breakdown). Memo der OOB-Klasse pro (i,k,j) → jede Zelle
+        // genau EINMAL berechnet. Reiner Cache einer deterministischen Funktion:
+        // bit-identische Werte → bit-identische Geometrie (Tiefe + Naht 100 %
+        // erhalten, KEIN Mesher-Wechsel wie V13.2). Die in-chunk-Zweige bleiben
+        // billige Array-Lookups (kein Memo nötig). V9.81-Lehre angewandt.
+        const oobClassCache = new Map();
         const cellClass = (i, k, j) => {
             if (j < 0 || j >= dimY) return STATE.AIR;
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
@@ -17285,17 +17295,30 @@ class AnazhRealm {
             // Chunk-Rand zwischen depth-gated In-Chunk-Cells + Pad).
             const wy = oy + (j + 0.5) * step;
             if (wy > bandTop) return STATE.AIR;
+            const cacheKey = i + "," + k + "," + j;
+            const cached = oobClassCache.get(cacheKey);
+            if (cached !== undefined) return cached;
             const wx = ox + (i + 0.5) * step;
             const wz = oz + (k + 0.5) * step;
-            if (this._terrainDensityAt(wx, wy, wz) > 0) return STATE.SOLID;
-            const ckey = i + "," + k;
-            let lvl = oobLevelCache.get(ckey);
-            if (lvl === undefined) {
-                const surfY = this._voxelSurfaceY(wx, wz);
-                lvl = this._atlasWaterLevelAt(wx, wz, surfY === null || !Number.isFinite(surfY) ? -Infinity : surfY);
-                oobLevelCache.set(ckey, lvl);
+            let cls;
+            if (this._terrainDensityAt(wx, wy, wz) > 0) {
+                cls = STATE.SOLID;
+            } else {
+                const ckey = i + "," + k;
+                let lvl = oobLevelCache.get(ckey);
+                if (lvl === undefined) {
+                    const surfY = this._voxelSurfaceY(wx, wz);
+                    lvl = this._atlasWaterLevelAt(
+                        wx,
+                        wz,
+                        surfY === null || !Number.isFinite(surfY) ? -Infinity : surfY
+                    );
+                    oobLevelCache.set(ckey, lvl);
+                }
+                cls = wy <= lvl ? STATE.WATER : STATE.AIR;
             }
-            return wy <= lvl ? STATE.WATER : STATE.AIR;
+            oobClassCache.set(cacheKey, cls);
+            return cls;
         };
         // V13.6 — Surface-Nets-Iso über die Wasser-Zellen, band-limitiert (die
         // SYNERGIE zurück). Schöpfer-Audit V13.5: das V13.2-Grenzflächen-Meshing
@@ -40858,7 +40881,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.12.1";
+AnazhRealm.VERSION = "13.13.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
