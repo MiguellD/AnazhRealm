@@ -17828,7 +17828,39 @@ class AnazhRealm {
                     const _ao = _T.float(1.0).sub(_curv.mul(1.6).clamp(0.0, 0.45));
                     _shade = _shade.mul(_ao);
                 }
-                mat.colorNode = _T.vec4(_vc.mul(_shade), 1.0);
+                let _albedo = _vc.mul(_shade);
+                // V15.3.1 - Wiesen-Boden (render-only, die "weit auch Wiese"-
+                // Illusion): der Schoepfer-Befund war doppelt — Gras laedt nur
+                // nah (kahl dahinter) UND wirkt nicht wie eine Wiese. Wurzel:
+                // der Boden UNTER dem spaerlichen Gras ist ein mattes Schlamm-
+                // Gruen (earth=[0.27,0.49,0.19]); wo keine Halme sind, liest er
+                // sich nicht als Wiese. Genre-Loesung (Witcher/BotW/Genshin):
+                // NICHT Halme bis zum Horizont (fragiler Buffer-Pfad), sondern
+                // der BODEN sieht weit wie Wiese aus -> die nahen Halme sind
+                // nur 3D-Detail obendrauf, kein "kahl -> ploetzlich Gras"-Pop.
+                // Technik: wo die Vertex-Farbe gruen-dominant ist (Gruen >
+                // Rot+Blau-Mittel, also Vegetations-Boden), zu sattem Wiesen-
+                // Gruen aufwerten + grossflaechige Feld-Flecken via nieder-
+                // frequentem Noise (~λ55 m -> ganze Felder, aus der Ferne
+                // sichtbar) + ein zweites feineres (~λ9 m -> Wiesen-Struktur).
+                // Reine Albedo am Terrain-colorNode -> kein Geometrie-/
+                // Determinismus-/Buffer-Eingriff (die Halm-Dichte bleibt wie
+                // sie ist, der Boden traegt jetzt die Wiese). try/catch sicher.
+                if (_T.mix && _T.smoothstep && _T.vec3) {
+                    const _g = _albedo.y;
+                    const _rb = _albedo.x.add(_albedo.z).mul(0.5);
+                    // Vegetations-Maske: 0 auf Fels/Sand/Schnee, 1 auf gruenem Boden.
+                    const _veg = _T.smoothstep(0.0, 0.12, _g.sub(_rb));
+                    // Feld-Flecken (nieder-frequent) + Wiesen-Struktur (mittel).
+                    const _field = _T.mx_noise_float(_wp.mul(0.018)).mul(0.5).add(0.5);
+                    const _blade = _T.mx_noise_float(_wp.mul(0.11)).mul(0.5).add(0.5);
+                    const _dry = _T.vec3(0.42, 0.46, 0.18); // trockenes Feld-Gras
+                    const _lush = _T.vec3(0.26, 0.55, 0.19); // saftige Wiese
+                    let _meadow = _T.mix(_dry, _lush, _field);
+                    _meadow = _meadow.mul(_T.float(0.85).add(_blade.mul(0.3)));
+                    _albedo = _T.mix(_albedo, _meadow.mul(_shade), _veg.mul(0.8));
+                }
+                mat.colorNode = _T.vec4(_albedo, 1.0);
             }
         } catch {
             /* TSL/Noise nicht verfuegbar -> flaches Material (Vertex-Farben) */
@@ -41283,7 +41315,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.3.0";
+AnazhRealm.VERSION = "15.3.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
