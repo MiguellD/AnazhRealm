@@ -17135,7 +17135,120 @@ class AnazhRealm {
             pushN(i, k, j + 1, lvl);
             pushN(i, k, j - 1, lvl);
         }
+        // 5) ROBUSTE 3D-KONNEKTIVITÄT (V13.14, ersetzt den per-Spalten-Trocken-
+        //    Pass V13.12): eine WATER-Zelle ist nur echt, wenn sie durch Wasser
+        //    mit der OFFENEN ATMOSPHÄRE verbunden ist. Der alte per-Spalten-Pass
+        //    fragte „ist SOLID über mir?" und trocknete JEDE Zelle unter einem
+        //    Deckel — auch eine offene Bucht unter einem Ufer-Überhang, die
+        //    lateral mit dem See verbunden ist (Schöpfer-Befund: „am Ufer
+        //    abgebaut, fließt nicht nach bei einem Überhang"). Die WAHRE Frage
+        //    ist nicht „Deckel über mir?" sondern „komme ich zur Oberfläche?".
+        //    Das kann KEINE Spalten-Heuristik beantworten — nur echte 3D-
+        //    Verbindung. Heilt Überhang-Bucht (bleibt, lateral verbunden) UND
+        //    Sub-Terrain-Blase (trocknet, eingeschlossen) mit EINER Regel.
+        this._skyOpenWaterFilter(cells, dim, dimY, jMax);
         return cells;
+    }
+
+    // V13.14 — die EINE robuste Wasser-Regel (ersetzt fünf Heuristiken-Schichten):
+    // Wasser existiert nur, wo es durch nicht-soliden Raum mit der offenen
+    // Atmosphäre verbunden ist. Zwei Floods:
+    //   (A) Sky-Air: AIR-Zellen, die vom offenen Band-Dach (j=jMax, über allem
+    //       Wasser) durch AIR nach unten/seitlich erreichbar sind. Eine Höhle
+    //       unter festem Terrain wird NICHT erreicht (Solid trennt).
+    //   (B) Keep: WATER-Zellen, die an Sky-Air grenzen ODER durch Wasser mit
+    //       einer solchen verbunden sind. Alles übrige WATER → AIR.
+    // Damit: der See bleibt (Oberfläche grenzt an Sky-Air → flutet runter), die
+    // Überhang-Bucht bleibt (lateral durch Wasser mit dem offenen See verbunden),
+    // die Sub-Terrain-Blase trocknet (kein Wasser-Pfad zur Oberfläche), und
+    // „klettern" ist unmöglich (Wasser über dem Hang ist nicht sky-verbunden, es
+    // sei denn es ist echtes offenes Becken-Wasser). EINE physikalische Wahrheit:
+    // ist dieses Wasser mit der Luft verbunden? Worker-Mirror Pflicht (bit-id.).
+    _skyOpenWaterFilter(cells, dimC, dimYC, jMaxC) {
+        const STATE = AnazhRealm.CELL_STATE;
+        const dq = dimC * dimC;
+        // (A) Sky-Air-Flood vom DACH des Chunks (j=dimYC-1, garantiert über dem
+        //     ganzen Wasser-Band → echtes „offener Himmel"). Über jMaxC ist alles
+        //     AIR (die SOLID/WATER-Klassifikation lief nur bis jMax), der Flood
+        //     fällt von dort durch jeden AIR-Raum nach unten/seitlich.
+        const topJ = dimYC - 1;
+        const skyAir = new Uint8Array(dq * dimYC);
+        const stack = [];
+        for (let k = 0; k < dimC; k++) {
+            for (let i = 0; i < dimC; i++) {
+                const idx = i + k * dimC + topJ * dq;
+                if (cells[idx] === STATE.AIR) {
+                    skyAir[idx] = 1;
+                    stack.push(idx);
+                }
+            }
+        }
+        const tryAir = (ni, nk, nj) => {
+            if (ni < 0 || nk < 0 || ni >= dimC || nk >= dimC || nj < 0 || nj >= dimYC) return;
+            const nidx = ni + nk * dimC + nj * dq;
+            if (skyAir[nidx] || cells[nidx] !== STATE.AIR) return;
+            skyAir[nidx] = 1;
+            stack.push(nidx);
+        };
+        while (stack.length) {
+            const idx = stack.pop();
+            const j = (idx / dq) | 0;
+            const rem = idx - j * dq;
+            const k = (rem / dimC) | 0;
+            const i = rem - k * dimC;
+            tryAir(i + 1, k, j);
+            tryAir(i - 1, k, j);
+            tryAir(i, k + 1, j);
+            tryAir(i, k - 1, j);
+            tryAir(i, k, j + 1);
+            tryAir(i, k, j - 1);
+        }
+        // (B) Keep-Flood: WATER, das an Sky-Air grenzt oder durch Wasser damit
+        //     verbunden ist. Seed = WATER mit Sky-Air-Nachbar (die Oberfläche).
+        const keep = new Uint8Array(dq * dimYC);
+        const wstack = [];
+        const hasSkyNbr = (i, k, j, idx) =>
+            (j < topJ && skyAir[idx + dq]) ||
+            (j > 0 && skyAir[idx - dq]) ||
+            (i + 1 < dimC && skyAir[idx + 1]) ||
+            (i > 0 && skyAir[idx - 1]) ||
+            (k + 1 < dimC && skyAir[idx + dimC]) ||
+            (k > 0 && skyAir[idx - dimC]);
+        for (let j = 0; j <= jMaxC; j++) {
+            for (let k = 0; k < dimC; k++) {
+                for (let i = 0; i < dimC; i++) {
+                    const idx = i + k * dimC + j * dq;
+                    if (cells[idx] === STATE.WATER && !keep[idx] && hasSkyNbr(i, k, j, idx)) {
+                        keep[idx] = 1;
+                        wstack.push(idx);
+                    }
+                }
+            }
+        }
+        const tryWater = (ni, nk, nj) => {
+            if (ni < 0 || nk < 0 || ni >= dimC || nk >= dimC || nj < 0 || nj > jMaxC) return;
+            const nidx = ni + nk * dimC + nj * dq;
+            if (keep[nidx] || cells[nidx] !== STATE.WATER) return;
+            keep[nidx] = 1;
+            wstack.push(nidx);
+        };
+        while (wstack.length) {
+            const idx = wstack.pop();
+            const j = (idx / dq) | 0;
+            const rem = idx - j * dq;
+            const k = (rem / dimC) | 0;
+            const i = rem - k * dimC;
+            tryWater(i + 1, k, j);
+            tryWater(i - 1, k, j);
+            tryWater(i, k + 1, j);
+            tryWater(i, k - 1, j);
+            tryWater(i, k, j + 1);
+            tryWater(i, k, j - 1);
+        }
+        // Alles WATER ohne Sky-Verbindung → AIR (eingeschlossene Blase, Phantom).
+        for (let idx = 0; idx < cells.length; idx++) {
+            if (cells[idx] === STATE.WATER && !keep[idx]) cells[idx] = STATE.AIR;
+        }
     }
 
     // V9.74 (Welle C.3) — stempelt solide Architektur-AABBs als state=SOLID
@@ -17246,34 +17359,72 @@ class AnazhRealm {
         // (Bottom + Underwater-Sides) sowie ohne Wasser (Mountain-Top, der
         // schon vom Terrain-Mesh getragen wird). Nur Mischungen mit
         // WATER+AIR erzeugen Iso → das ist die sichtbare Wasseroberfläche.
-        // V13.1 — OOB-Wasser-Spiegel pro Pad-Spalte cachen. Der Atlas-strikte
-        // Spiegel hängt nur von (i,k) ab (nicht j), aber `cellClass` läuft 8×
-        // pro Grid-Vertex × ~91k Vertices → ohne Cache würde `_voxelSurfaceY`
-        // (ein ~100-Schritt-Density-Scan) millionenfach laufen = Mesher-Kollaps.
-        // Mit Cache: ein `_voxelSurfaceY` je Pad-Spalte (~ein paar hundert).
-        const oobLevelCache = new Map();
+        // V13.13.2 — OOB-Klassen-Memo: der Surface-Nets-Mesher fragt `cellClass`
+        // für DIESELBE Zelle bis zu 8× (benachbarte Grid-Ecken teilen sich die
+        // Eck-Zellen). Memo pro (i,k,j) → jede OOB-Zelle genau EINMAL aufgelöst.
+        const oobClassCache = new Map();
         const cellClass = (i, k, j) => {
             if (j < 0 || j >= dimY) return STATE.AIR;
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
                 return cells[i + k * dim + j * dim * dim];
             }
-            // OOB live-compute — identisch zur Cell-Init (V13.1: Atlas-strict
-            // via `_atlasWaterLevelAt` mit `_voxelSurfaceY` als Terrain-Top, der
-            // EINEN Wasser-Spiegel-Quelle wie der Cell-Build → kein Seam am
-            // Chunk-Rand zwischen depth-gated In-Chunk-Cells + Pad).
             const wy = oy + (j + 0.5) * step;
             if (wy > bandTop) return STATE.AIR;
-            const wx = ox + (i + 0.5) * step;
-            const wz = oz + (k + 0.5) * step;
-            if (this._terrainDensityAt(wx, wy, wz) > 0) return STATE.SOLID;
-            const ckey = i + "," + k;
-            let lvl = oobLevelCache.get(ckey);
-            if (lvl === undefined) {
-                const surfY = this._voxelSurfaceY(wx, wz);
-                lvl = this._atlasWaterLevelAt(wx, wz, surfY === null || !Number.isFinite(surfY) ? -Infinity : surfY);
-                oobLevelCache.set(ckey, lvl);
+            const cacheKey = i + "," + k + "," + j;
+            const cached = oobClassCache.get(cacheKey);
+            if (cached !== undefined) return cached;
+            // V13.13.2 — DIE WURZEL des „Wasserschatten/Wandbluten"-Befundes,
+            // gemessen (diag-water-truth): der OOB-Ring (1 Cell um den Chunk,
+            // cropMargin=1) klassifizierte per-Spalte NEU mit `_terrainDensityAt`
+            // + `_atlasWaterLevelAt` — also der 2,5D-Logik, die der V13.8-Flood
+            // GERADE ERSETZT hat. Dadurch injizierte der Mesher an JEDER Chunk-
+            // Grenze Phantom-Wasser, das die Flood-Wahrheit nicht hat (83 Zellen
+            // gemessen, alle am Seam): Wasser in Bergwänden (von der Seite
+            // sichtbar), unter schwebenden Bauten neben Seen, die Rim-Würfel.
+            // **Eine Wahrheit, gelesen statt geraten**: der Nachbar-Chunk hat
+            // seine Flood-Zellen bereits — lies sie. Das ist die V9.82-Lehre
+            // (parallele Code-Pfade sind Bug-Quellen) auf den Mesher angewandt.
+            let ncx = cx;
+            let ncz = cz;
+            let li = i;
+            let lk = k;
+            if (i < 0) {
+                ncx -= 1;
+                li = i + dim;
+            } else if (i >= dim) {
+                ncx += 1;
+                li = i - dim;
             }
-            return wy <= lvl ? STATE.WATER : STATE.AIR;
+            if (k < 0) {
+                ncz -= 1;
+                lk = k + dim;
+            } else if (k >= dim) {
+                ncz += 1;
+                lk = k - dim;
+            }
+            const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
+            let cls;
+            if (nb && nb.waterCells) {
+                // Nachbar geladen + trägt Wasser → seine Flood-Zelle ist exakt.
+                cls = nb.waterCells[li + lk * dim + j * dim * dim];
+            } else if (nb) {
+                // Nachbar geladen, aber TROCKEN (Atlas-Gate: kein Wasser) →
+                // garantiert kein Wasser dort, nur Terrain. Kein Phantom.
+                cls =
+                    this._terrainDensityAt(ox + (i + 0.5) * step, wy, oz + (k + 0.5) * step) > 0
+                        ? STATE.SOLID
+                        : STATE.AIR;
+            } else {
+                // Nachbar noch nicht gestreamt → die eigene Kant-Zelle spiegeln
+                // (nur was der eigene Flood schon hat — KEIN Phantom). Beim Laden
+                // des Nachbarn re-enqueued der Finalize-Pfad dieses Iso → der
+                // Seam heilt exakt gegen die dann-präsente Nachbar-Wahrheit.
+                const ci2 = i < 0 ? 0 : i >= dim ? dim - 1 : i;
+                const ck2 = k < 0 ? 0 : k >= dim ? dim - 1 : k;
+                cls = cells[ci2 + ck2 * dim + j * dim * dim];
+            }
+            oobClassCache.set(cacheKey, cls);
+            return cls;
         };
         // V13.6 — Surface-Nets-Iso über die Wasser-Zellen, band-limitiert (die
         // SYNERGIE zurück). Schöpfer-Audit V13.5: das V13.2-Grenzflächen-Meshing
@@ -17311,6 +17462,12 @@ class AnazhRealm {
                     }
                 }
             }
+            // V13.12 — die Sub-Terrain-Wasser-Zellen sind schon in `waterCells`
+            // getrocknet (Vertikal-offen-Post-Pass) → es gibt kein „Wasser unter
+            // Deckel" mehr, das der Mesher verstecken müsste. Der teure V13.11-
+            // `isSkyOpen`/`colTopSolidJ`-Scan (full-height cellClass pro Pad-Spalte,
+            // OOB-Density-Scan = ~94 ms/Chunk = der 5-FPS-Kollaps) ist damit
+            // redundant + gestrichen. Einfache schnelle Wasser-Luft-Iso (V13.6):
             if (cAir === 0) return 1; // tief drinnen → kein Iso (kein Bottom/Underwater-Side)
             if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
             return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
@@ -17690,6 +17847,20 @@ class AnazhRealm {
         // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
         else this._enqueueWaterIso(cx, cz);
+        // V13.13.2 — der neue Chunk ist jetzt eine präsente Flood-Wahrheit für
+        // seine Nachbarn. Deren Iso wurde evtl. gegen einen ABWESENDEN Nachbarn
+        // (diesen Chunk) gebaut → die Kant-Spiegelung. Re-enqueue der 4 Nachbar-
+        // Iso, damit ihr Seam exakt gegen die jetzt-präsente Wahrheit heilt
+        // (deferred, idempotent über das Set). Nur Wasser-tragende Nachbarn.
+        for (const [nx, nz] of [
+            [cx - 1, cz],
+            [cx + 1, cz],
+            [cx, cz - 1],
+            [cx, cz + 1],
+        ]) {
+            const nb = this.state.voxelChunks.get(`${nx},${nz}`);
+            if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
+        }
         this._populateVoxelChunkVegetation(cx, cz);
         return entry;
     }
@@ -18292,17 +18463,29 @@ class AnazhRealm {
     // ein Spezialfall davon (ein Part mit Material `stein`).
     _blockerComputePartAABB(entry, part) {
         if (!part || !part.size || !part.position) return null;
-        const sx = part.size.x || 1;
-        const sz = part.size.z || 1;
-        const sy = part.size.y || 1;
+        // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden:
+        // dort ist `group.position = (entry.x, entry.y-0.5, entry.z)` + `group.
+        // scale.setScalar(entry.scale)`, also landet ein Part bei lokaler Position
+        // `part.position` in Welt bei `groupOrigin + part.position·scale`, Größe
+        // `part.size·scale`. Der Stempel rechnete OHNE scale → bei worldgen-
+        // skalierten Strukturen (Cluster-Spawn, Save-Restore) saß der SOLID-
+        // Wasser-Stempel an einer anderen Stelle/Größe als die sichtbare Struktur
+        // → das Wasser flutete den sichtbaren, aber ungestempelten Ring = der
+        // „Wasser-Schatten zur Struktur" (Schöpfer-Befund, gemessen mit
+        // diag-scale-stamp: Stempel scale-invariant 4,4×16,8 bei scale 1 UND 2).
+        // Jetzt deckungsgleich mit Mesh + Kollision (die beide skalieren).
+        const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const sx = (part.size.x || 1) * scale;
+        const sz = (part.size.z || 1) * scale;
+        const sy = (part.size.y || 1) * scale;
         const halfMax = Math.max(sx, sz) * 0.5;
-        const cx = entry.position.x + (part.position.x || 0);
-        const cz = entry.position.z + (part.position.z || 0);
+        const cx = entry.position.x + (part.position.x || 0) * scale;
+        const cz = entry.position.z + (part.position.z || 0) * scale;
         // V9.74 (Welle C.3) — botY ergänzt: der Cell-Stempel-Pfad
         // (`_stampArchitectureSolidCellsInto`) braucht beide Y-Grenzen, um
         // die vertikale Höhe der Architektur korrekt im Cell-Feld zu
         // setzen. V9.65 hatte nur topY (Hydrosphäre-Surface-Hebung).
-        const centerY = entry.position.y - 0.5 + (part.position.y || 0);
+        const centerY = entry.position.y - 0.5 + (part.position.y || 0) * scale;
         const topY = centerY + sy * 0.5;
         const botY = centerY - sy * 0.5;
         return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY, botY };
@@ -19362,6 +19545,18 @@ class AnazhRealm {
         const uShoreWidth = uniform(0.0045);
         const uDepthRange = uniform(0.03);
         const uEmotion = uniform(0.0);
+        // V13.9 (Schicht 3) — Mindest-Wasser-Dicke fürs pro-Pixel-Cullen des
+        // dünnen Wand-Blutens (16-m-Atlas-Spiegel spillt minimal über den Voxel-
+        // Grat → ein flaches Blatt). Fragmente mit waterThick < uMinDepth fallen
+        // weg (mat.alphaTest); tiefes Wasser (See/Ozean) bleibt. default 0.0025
+        // (Schöpfer-Browser-Befund V13.9.1: „0.0025 war nicht schlecht") — über
+        // den Atmosphäre-Slider (setWaterCull) live justierbar, aus dem
+        // persistierten Wert initialisiert (überlebt Reload).
+        const initMinDepth =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
+                ? this.state.atmosphere.waterCull
+                : 0.0025;
+        const uMinDepth = uniform(initMinDepth);
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -19527,11 +19722,21 @@ class AnazhRealm {
         // Wasser-Saum statt einer harten Mesh-Kante gegen das Terrain (heilt auch
         // das streifende Z-Fighting, das V9.49-f mit polygonOffset bekämpfte).
         const alpha = alpha0.mul(mix(float(0.4), float(1.0), edgeFade));
+        // V13.9 — dünnes Wand-Bluten pro Pixel cullen: wo die Wasser-Dicke in
+        // Sicht-Richtung (waterThick) unter uMinDepth liegt, Alpha auf 0 → der
+        // Fragment fällt via mat.alphaTest weg (kein Farb-/Tiefen-Schreiben).
+        // step-frei via cond; bei default uMinDepth=0 ist waterThick≥0 nie <0 →
+        // Alpha unverändert = exakt das alte Bild. Das tiefe Wasser bleibt.
+        const alphaCulled = cond(waterThick.lessThan(uMinDepth), float(0.0), alpha);
 
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.positionNode = pd;
-        mat.colorNode = vec4(colFogged, alpha);
+        mat.colorNode = vec4(colFogged, alphaCulled);
         mat.transparent = true;
+        // V13.9 — Cull-Schwelle: Fragmente mit Alpha≈0 (oben gecullt) werden
+        // verworfen. 0.0001 liegt weit unter dem minimalen echten Wasser-Alpha
+        // (~0.32), discardet also NUR die gecullten — default-Bild unberührt.
+        mat.alphaTest = 0.0001;
         // V9.49-c — depthWrite an: das vereinte Wasser-Mesh schreibt Tiefe,
         // also kann nichts mehr durch eine andere Wasserfläche scheinen.
         mat.depthWrite = true;
@@ -19558,6 +19763,7 @@ class AnazhRealm {
             shoreWidth: uShoreWidth,
             depthRange: uDepthRange,
             emotion: uEmotion,
+            minDepth: uMinDepth,
         };
         this.state.hydroSurfaceMaterial = mat;
         return mat;
@@ -20562,9 +20768,14 @@ class AnazhRealm {
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
             // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
+            // V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
                 celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
                 fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
+                waterCull:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
+                        ? this.state.atmosphere.waterCull
+                        : 0.0025,
             },
             // Ring 5: Spieler-Seele (visuelle Form). Beim Load wird sie nach
             // dem playerMesh-Bau angewandt — kein Body-Recreate.
@@ -22643,11 +22854,13 @@ class AnazhRealm {
             }
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
             const cl = Number(state.atmosphere.celLevels);
             if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
             const fd = Number(state.atmosphere.fogDistance);
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
+            const wc = Number(state.atmosphere.waterCull);
+            if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
         }
         if (typeof this._applyDayNightToScene === "function") {
             this._applyDayNightToScene();
@@ -31251,7 +31464,7 @@ class AnazhRealm {
     setCelLevels(levels) {
         // V8.41 — Regler-Bereich 2–8 (8 = smooth). V8.40-Reserve 9–16 verworfen.
         const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.celLevels = n;
         this._refreshToonGradient();
         if (typeof this.saveState === "function") this.saveState();
@@ -31265,9 +31478,27 @@ class AnazhRealm {
         // V8.40 — Effekt-Bereich verdreifacht: Label „100%" = mult 3.0 (=
         // heutiger 300%-Fog, neuer Default), Label „300%" = mult 9.0.
         const m = Math.max(0.9, Math.min(9.0, Number(mult) || 3.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0 };
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
+        if (typeof this.saveState === "function") this.saveState();
+        return m;
+    }
+
+    // V13.9 — Mutations-Pfad für den Wasser-Cull-Slider (uMinDepth). Blendet
+    // dünnes, flaches Wasser pro Pixel aus (waterThick < uMinDepth → Alpha 0,
+    // via mat.alphaTest verworfen). Wert in [0,1]-Lineardepth-Einheiten (über
+    // camera near..far) — der Schöpfer justiert ihn live im Browser, bis das
+    // dünne Wand-/Ufer-Bluten weg ist, tiefes Wasser bleibt. 0 = altes Bild.
+    setWaterCull(minDepth) {
+        const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
+        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        this.state.atmosphere.waterCull = m;
+        // Das geteilte Hydro-Surface-Uniform live setzen (lazy initialisiert beim
+        // ersten Material-Bau; nur setzen, wenn schon da).
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.minDepth) {
+            this.state.hydroSurfaceUniforms.minDepth.value = m;
+        }
         if (typeof this.saveState === "function") this.saveState();
         return m;
     }
@@ -38027,6 +38258,23 @@ class AnazhRealm {
                 if (fogVal) fogVal.textContent = `${pct} %`;
             });
         }
+        // V13.9 — Wasser-Cull-Slider (uMinDepth). Range 0..200 → minDepth
+        // 0..0.02 (Schritt 0.0001), feinfühlig im dünnen Lineardepth-Bereich.
+        const wcS = document.getElementById("slider-watercull");
+        const wcVal = document.getElementById("slider-watercull-val");
+        if (wcS) {
+            const w0 =
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
+                    ? this.state.atmosphere.waterCull
+                    : 0.0025;
+            wcS.value = String(Math.round(w0 * 10000));
+            if (wcVal) wcVal.textContent = w0.toFixed(4);
+            wcS.addEventListener("input", () => {
+                const raw = parseInt(wcS.value, 10) / 10000;
+                const v = this.setWaterCull(raw);
+                if (wcVal) wcVal.textContent = v.toFixed(4);
+            });
+        }
     }
 
     // Welle 6.X.4 F1 (Audit 17.05.2026) — Begleiter-Name + Avatar-Name.
@@ -40765,7 +41013,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.8";
+AnazhRealm.VERSION = "13.14.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
