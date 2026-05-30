@@ -38,16 +38,37 @@ Material) — der Schöpfer spürt zu Recht, dass das nicht die geniale Lösung 
    (Z~41047), stärker bei Regen. Funktioniert, aber per-Halm-periodisch, keine
    großen Wind-Wellen übers Feld, keine Partikel.
 
-**Die Buffer-Narbe (das Haupt-Risiko, hart dokumentiert):**
+**Die Buffer-Geschichte — KORRIGIERT (Schöpfer fragte kritisch nach, zu Recht):**
 
-`GRASS_MAX_BLADES = 256` (Z~20271) ist KEIN willkürlicher Geiz — es ist eine
-GPU-Buffer-Alignment-Grenze (16384 Bytes = 256 × Matrix4-64B), blutig
-erkämpft durch drei Vendor-Bug-Bögen (V10.0-i/j: InstancedMesh-Bind-Group-
-Cache-Stale in r160, der „WriteBuffer while destroyed"-Crash, das
-DynamicDrawUsage-Gift). **Den Cap stur erhöhen = zurück in den Crash-Raum.**
-Die dokumentierte Profi-Antwort: NICHT mehr Halme in den Nah-Ring pressen,
-sondern **mehrere Ringe mit je billiger Technik** (Render-only zuerst,
-Buffer-Resize ZULETZT + nur mit gemessenem Vendor-Support).
+Eine frühere Fehl-Folgerung in dieser Session: „`GRASS_MAX_BLADES = 256` ist
+eine GPU-Hardware-Alignment-Grenze (16384 Bytes)". **Das ist FALSCH.** Die
+Wahrheit aus dem Code + CLAUDE.md Z213/217: `16384 = 256 × 64` ist bloß
+`GRASS_MAX_BLADES × Matrix4-Größe` — die **Crash-SIGNATUR** (die Byte-Zahl, an
+der man den kaputten Buffer im Fehler-Log ERKANNTE), NICHT eine Hardware-
+Schranke. Die 256 ist eine **frei gewählte Konstante.**
+
+Der ursprüngliche Bug hing mit **WebGPU** zusammen — aber NICHT mit „WebGL→
+WebGPU-Übersetzung". Es war ein **Three.js r160 WebGPU-Backend-Bug**: stale
+Bind-Group-Layout-Cache beim InstancedMesh-Recycling + das DynamicDrawUsage-
+writeBuffer-auf-disposed-Buffer-Gift (V10.0-i/j). **Dieser Bug ist seit r184
+strukturell GEHEILT** (V12.0-d, CLAUDE.md-Zitat: „Improve Bind Group Layout
+cache system" r182 + „compileAsync truly non-blocking" r182 + writeBuffer-nur-
+bei-needsUpdate). Das Projekt läuft längst auf r184.
+
+**Korrigierte Lage für diesen Bogen:**
+- Die **256 ist frei änderbar** (z.B. 512/1024) — nur eine Konstante.
+- Die ECHTE Disziplin ist **Uniform-Capacity** (alle Pool-Meshes desselben
+  Pools teilen denselben Cap → kein Cache-Pollution). Das heißt **„konstant",
+  NICHT „klein/256".** Ein neuer Cap ist fein, solange er pool-uniform ist.
+- Der Crash-Vendor-Bug ist geheilt → mehr Instanzen sind auf r184 **kein
+  Crash-Risiko mehr, nur eine FPS-Frage** (mehr Instanzen = mehr GPU-Last).
+
+**Das macht V16.0 (Mess-Diagnose) zum echten Fundament:** sie misst, wie viele
+Instanzen das FPS-Budget WIRKLICH trägt — statt aus alter (falscher) Angst bei
+256 zu bleiben. Mehr Halme/Veg sind erlaubt; die einzige Grenze ist gemessene
+Performance, kein Phantom-Crash. Trotzdem bleibt das Ring-Prinzip (nah 3D, fern
+Billboard/Albedo) der EFFIZIENTE Weg — Billboards sind pro Pixel billiger als
+Voll-3D-Halme, also trägt man die Ferne smarter als mit roher Instanz-Zahl.
 
 ## Das Leitprinzip — die EINE Erkenntnis
 
@@ -115,10 +136,14 @@ camera-facing Quads + Soft-Falloff). Darauf aufbauend:
 
 ## Disziplin für den ganzen Bogen
 
-- **Render-only/sicher zuerst, Buffer zuletzt** (V10.0-i/j-Narbe): jeder neue
-  Instanz-Typ bekommt einen EIGENEN konstanten Cap (Uniform-Capacity-Pattern),
-  NIE den 256-Gras-Cap resizen. Falls je ein Resize nötig: nur mit gemessenem
-  r184+-Support + Pool-Pattern + Workaround-Audit (der DynamicDrawUsage-Geist).
+- **Uniform-Capacity statt „klein"** (V10.0-j.c-Lehre, korrigiert): jeder
+  Instanz-Pool nutzt einen KONSTANTEN Cap (alle Meshes desselben Pools gleich
+  groß → kein Bind-Group-Cache-Pollution). Der Cap darf größer als 256 sein
+  (der r160-Crash-Bug ist seit r184 geheilt, V12.0-d) — er muss nur
+  pool-uniform sein. Mehr Instanzen = FPS-Frage, kein Crash-Risiko → gegen die
+  V16.0-Metrik messen, nicht aus alter Angst klein bleiben. Trotzdem:
+  Billboards (V16.2) sind pro Pixel billiger als Voll-3D-Halme → die Ferne
+  smart tragen, nicht mit roher Instanz-Zahl.
 - **Determinismus**: Streuung nutzt den deterministischen Chunk-rnd (Z~20205),
   damit dieselbe Welt-Region immer dieselbe Vegetation trägt (kein Flackern
   beim Re-Streamen). Playtest-Gate nach jeder Welle.
