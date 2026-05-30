@@ -16177,7 +16177,12 @@ class AnazhRealm {
         // verborgen, durch Graben zu finden) und base-28 — bei base-35 ist
         // caveEnv beweisbar 0, der Chunk-Boden bleibt fest (V9.12-Garantie).
         const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
-        const caveCeil = Math.max(0, Math.min(1, (surf - 6 - y) / 8));
+        // V14.4-Harmonie: die Höhlen-Decke von surf-6 auf surf-16 vertieft. In der
+        // flachen V14-Welt (surf ~12 m) lag surf-6 nur knapp unter einer Oberfläche,
+        // die die 3D-Roughness (±12 m) auf surf-12 drücken kann → die Höhle brach
+        // durch (Löcher + höhenversetzte Kanten). surf-16 hält sie sicher darunter
+        // (Schöpfer-Befund „chunkfehler, löcher, wasser unter der oberfläche").
+        const caveCeil = Math.max(0, Math.min(1, (surf - 16 - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -41125,7 +41130,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.4.0";
+AnazhRealm.VERSION = "14.5.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

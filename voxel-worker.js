@@ -175,7 +175,7 @@ function terrainDensityAt(x, y, z) {
     // Höhlen-Ridged-Hülle.
     const base = state.baseHeight || 0;
     const caveFloor = clamp01((y - (base - 28)) / 8);
-    const caveCeil = clamp01((surf - 6 - y) / 8);
+    const caveCeil = clamp01((surf - 16 - y) / 8); // V14.4-Harmonie (mirror): surf-6→surf-16
     const caveEnv = caveFloor * caveCeil;
     if (caveEnv > 0) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
