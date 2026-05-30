@@ -254,6 +254,11 @@ class AnazhRealm {
             // von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
             hemiLight: null,
             fog: null,
+            // V15.4 - Aerial-Perspective-Uniforms (TSL): skyColor + density +
+            // hazeBase/hazeTop. Lazy initialisiert beim ersten Terrain-Material-
+            // Build (_ensureAtmoUniforms), gespeist von _dayNightApplyHemiAndFog
+            // (EINE Quelle = die Fog-Farbe -> tag/nacht/wetter-kohaerent).
+            atmoUniforms: null,
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
             starField: null,
@@ -17757,6 +17762,24 @@ class AnazhRealm {
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
     // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
+    // V15.4 - Aerial-Perspective-Uniforms (TSL). EIN Satz, geteilt von allen
+    // Terrain-Materials, gespeist von _dayNightApplyHemiAndFog (EINE Quelle =
+    // die Fog-Farbe, also tag/nacht/wetter-kohaerent). density = 1/Sicht-
+    // Tiefe (klein -> Dunst greift erst weit), hazeBase/Top = Hoehen-Band, in
+    // dem Gipfel in den Himmel ausbleichen. Werte browser-justierbar.
+    _ensureAtmoUniforms() {
+        if (this.state.atmoUniforms) return this.state.atmoUniforms;
+        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!TSL || !TSL.uniform || !TSL.vec3) return null;
+        this.state.atmoUniforms = {
+            skyColor: TSL.uniform(TSL.vec3(0.55, 0.62, 0.78)),
+            density: TSL.uniform(0.0085),
+            hazeBase: TSL.uniform(40.0),
+            hazeTop: TSL.uniform(150.0),
+        };
+        return this.state.atmoUniforms;
+    }
+
     // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
     // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
     // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
@@ -17789,6 +17812,10 @@ class AnazhRealm {
         // patcht die DataTexture in-place (_refreshToonGradient.needsUpdate),
         // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+
+        // V15.4 - Aerial-Perspective-Uniforms sicherstellen (lazy, EIN Satz
+        // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
+        this._ensureAtmoUniforms();
 
         // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
         // 3D-Welt-Noise brechen die flache Vertex-Farbe in reiche Variation.
@@ -17859,6 +17886,36 @@ class AnazhRealm {
                     let _meadow = _T.mix(_dry, _lush, _field);
                     _meadow = _meadow.mul(_T.float(0.85).add(_blade.mul(0.3)));
                     _albedo = _T.mix(_albedo, _meadow.mul(_shade), _veg.mul(0.8));
+                }
+                // V15.4 - Aerial Perspective (der "brutale Tiefe aus simplem
+                // System"-Hebel): ferne UND hohe Flaechen verschleiern
+                // exponentiell zur Himmelsfarbe. EIN Term, den die ganze Szene
+                // teilt (Terrain hier, Gras/Strukturen via scene.fog) -> alles
+                // schmilzt in DIESELBE atmosphaerische Stimmung = Tiefe + die
+                // Harmonie, die der Schoepfer vermisste. Distanz aus
+                // positionView.length() (Kamera-Abstand), Hoehen-Term laesst
+                // Gipfel in den Himmel ausbleichen (Berg-Silhouetten statt
+                // harter Fels-Kanten). Die Sky-Farbe + Dichte kommen aus
+                // state.atmoUniforms (vom Tag-Nacht-Wetter-Sync gespeist, EINE
+                // Quelle = die Fog-Farbe) -> tag/nacht/wetter-kohaerent. Reine
+                // Render-Albedo, try/catch-sicher. WICHTIG: scene.fog deckt
+                // schon die DISTANZ-Haze ab (alle Materials teilen sie). Dieser
+                // Term ist HOEHEN-DOMINANT — er ergaenzt, was scene.fog NICHT
+                // kann: hohe Gipfel bleichen in den Himmel aus (Berg-Silhouette
+                // statt harter Fels-Kante) + ein dezenter Distanz-Anteil fuer
+                // die Form-Aufloesung. Kein Doppel-Fog (nur der Hoehen-Teil ist
+                // stark), darum kein Ueber-Abdunkeln.
+                if (_T.positionView && _T.exp && this.state.atmoUniforms) {
+                    const _au = this.state.atmoUniforms;
+                    const _viewDist = _T.positionView.length();
+                    const _distHaze = _T
+                        .float(1.0)
+                        .sub(_T.exp(_viewDist.mul(_au.density).negate()))
+                        .clamp(0.0, 1.0)
+                        .mul(0.35);
+                    const _heightHaze = _T.smoothstep(_au.hazeBase, _au.hazeTop, _wp.y);
+                    const _haze = _distHaze.add(_heightHaze.mul(0.6)).clamp(0.0, 0.85);
+                    _albedo = _T.mix(_albedo, _au.skyColor, _haze);
                 }
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
@@ -20079,7 +20136,7 @@ class AnazhRealm {
         // beschreiben). Visible-Default ist true — passt zur acquire-Semantik.
         inst.count = 0;
         inst.castShadow = false;
-        inst.receiveShadow = false;
+        inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         return inst;
     }
 
@@ -20232,7 +20289,7 @@ class AnazhRealm {
         if (!inst) {
             inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
             inst.castShadow = false;
-            inst.receiveShadow = false;
+            inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
@@ -20267,7 +20324,7 @@ class AnazhRealm {
         }
         inst.instanceMatrix.needsUpdate = true;
         inst.castShadow = false;
-        inst.receiveShadow = false;
+        inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         // V11.0-d.fix.gras (27.05.2026, Schöpfer-Browser-Audit-Wurzel) — beim
         // Pool-Recycle hat das Mesh noch den `boundingSphere`-Cache vom alten
         // Chunk (Position X1/Z1). instanceMatrix wird neu beschrieben mit
@@ -37802,10 +37859,26 @@ class AnazhRealm {
             fog.color.setRGB(fogR, fogG, fogB);
             // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy 22..95.
             // Slider 30..200 % via state.atmosphere.fogDistance.
+            // V15.4 — fogMult-Default 3.0 -> 1.6: bei 3.0 lag near=105/far=450 m
+            // weit JENSEITS des ~140-m-Render-Radius, der Fog griff also fast
+            // gar nicht (Schoepfer-Befund "keine Tiefe, harte Fels-Kanten bis
+            // zum Rand"). 1.6 zieht near~56/far~240 in den Sichtbereich -> die
+            // atmosphaerische Tiefe wird sichtbar UND eint Terrain/Gras/Bauten
+            // (alle teilen scene.fog). Slider bleibt voll wirksam.
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
-            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
+            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 1.6;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
+            // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
+            // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
+            // hazeTop folgen Wetter (rainy = dichter + niedrigerer Gipfel-
+            // Ausbleich-Punkt = bedrueckter, tieferer Dunst).
+            if (this.state.atmoUniforms) {
+                const au = this.state.atmoUniforms;
+                if (au.skyColor) au.skyColor.value.setRGB(fogR, fogG, fogB);
+                if (au.density) au.density.value = 0.0085 + rainyMix * 0.006;
+                if (au.hazeTop) au.hazeTop.value = 150 - rainyMix * 55;
+            }
             if (this.state.playerEyesUnderwater) {
                 // V8.32 — Tauch-Trübung ist fest, ignoriert fogDistance-Slider.
                 fog.color.setRGB(0.06, 0.19, 0.32);
@@ -41315,7 +41388,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.3.1";
+AnazhRealm.VERSION = "15.4.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
