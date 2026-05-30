@@ -357,6 +357,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V15.0 — Der Render-Bogen „Die lebendige Oberfläche" beginnt: ACES-Filmic-Tone-Mapping (30.05.2026, rendert sauber):**
+
+Schöpfer nach dem V14-Terrain-Bogen (Browser-Screenshot der weite-ufer-Welt): „gibt es noch eine möglichkeit das gelände realer zu machen, hyperreal, aber effizient — die bäume, die wiese, der boden selbst, kaum textur, tiefe, leben… das terrain nimmt form an, doch alles darauf blass… nicht wie die zukunft?". Der Befund ist eine ganz andere Achse als die Terrain-FORM (die ist jetzt gut): die OBERFLÄCHE/das Rendering ist flach.
+
+**Diagnose (Code gelesen, die Lehre „erst verstehen"):** der Renderer ist NACKT — `grep` für `toneMapping`/`PostProcessing`/`ao`/`bloom` = 0 Treffer. Kein Tone-Mapping, kein Post-Processing, kein Ambient-Occlusion. Die Materialien sind flach-`MeshToonNodeMaterial` (nativ, lights=true) + Vertex-Farben ohne Mikro-Textur. Die Vegetation spärlich/uniform. ABER: die Szene-Lichter sind schon HDR — `sunLight = DirectionalLight(0xfff2e0, 2.4)`, `ambientLight = DirectionalLight(.., 0.5)`, `hemi = HemisphereLight(sky, ground, 0.55)`. Ohne Tone-Mapping klemmt diese HDR-Beleuchtung bei 1,0 → ausgewaschen = genau das „blass".
+
+**Schöpfer-Wahl:** „alle drei als ein bogen" — den vollen Render-Bogen (Tiefe → Textur → Leben → Politur) als Sequenz kleiner gemessener Wellen, jede mit Vorher/Nachher (Browser-Audit), durchziehen wie den Terrain-Bogen.
+
+**V15.0 (die billigste, größte Wurzel zuerst):** `renderer.toneMapping = THREE.ACESFilmicToneMapping` + `toneMappingExposure = 1.05` direkt nach dem `new THREE.WebGPURenderer(...)`-Aufbau (Z. 39601–39602). Die HDR-Lichter werden filmisch abgerollt → reiche Highlights, satte Mitten, tiefere Schatten. Eine Render-Output-Stufe → KEINE Geometrie-/Daten-/Determinismus-Änderung (der Playtest-Data-Layer + die Vertex-Farben sind unberührt), ~0 FPS-Kosten, kein Worker-Mirror. Headless rendert sauber (`diag-relief` EXIT 0, keine Exception — die ACES-Konstante ist gültig); format+lint sauber.
+
+**EHRLICHE Grenze:** die echte Render-Qualität ist NICHT headless beweisbar (Headless = WebGL2-Fallback + swiftshader, pixel-blind — die V13-Lehre). Der Schöpfer-Browser-Reload ist das Vorher/Nachher. **Watch:** Himmel + Wasser werden mit-tone-gemappt — falls sie kippen (LDR-authored → ACES verschiebt), `toneMapped=false` auf sky/water als V15.0-b.
+
+**Plan-Folge:** der Render-Bogen V15 verschiebt den Wasser-Finish → V16 und die System-Kopplung (Pfeiler E/F/G) → V17. Rest des Bogens: V15.1 Vertex-AO (Kontakt-Schatten), V15.2 prozedurale Mikro-Textur, V15.3/.4 Gras-/Baum-Leben, V15.5 Bloom/Grading, V15.6 Browser-Audit. **Permanente Lehre: Tone-Mapping ist die VORAUSSETZUNG für jeden HDR-Licht-Gewinn (ohne ACES klemmt HDR flach); „hyperreal aber effizient" = die billigen next-gen-Techniken (Tone-Map, Vertex-AO, prozedurale Textur, reiches Leben), NICHT foto-PBR-Texturen.** Version 14.9.0 → 15.0.0.
+
 **V14.9 — Die regionale Differenzierung: die Welt hat ALLES (Ebenen + Plateaus + Anden-Ketten + Meere), abwechslungsreich + stabil — Terrain-Bogen-Schluss (30.05.2026, Playtest „Alle Invarianten OK"):**
 
 Schöpfer nach V14.8: „wow, deutliche steigerung, stark, die regional erweiterung scheint wichtig um den bogen zu schliessen, damit die welt abwechslungsreich wird, nicht widerholend, bereiche die stabil sind, oder?". Genau richtig — die V14.8-Lehre war: eine EINZIGE Uplift-Oktave ist entweder ridged (Ketten) ODER broad (Plateaus), nie beides → überall dasselbe = repetitiv. Die Erde-treue Lösung: REGIONALE Differenzierung — verschiedene Großregionen tragen verschiedene Charaktere.

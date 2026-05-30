@@ -39593,6 +39593,13 @@ class AnazhRealm {
             throw new Error(msg);
         }
         const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR
+        // (Sonne 2.4 + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei
+        // 1.0 = ausgewaschen/blass. ACES rollt die HDR-Lichter filmisch ab
+        // (reiche Highlights, satte Mitten, tiefere Schatten). Reine Render-
+        // Output-Stufe -> keine Geometrie-/Daten-/Determinismus-Aenderung.
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
         // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format
@@ -41202,7 +41209,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.9.0";
+AnazhRealm.VERSION = "15.0.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
