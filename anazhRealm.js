@@ -18343,17 +18343,29 @@ class AnazhRealm {
     // ein Spezialfall davon (ein Part mit Material `stein`).
     _blockerComputePartAABB(entry, part) {
         if (!part || !part.size || !part.position) return null;
-        const sx = part.size.x || 1;
-        const sz = part.size.z || 1;
-        const sy = part.size.y || 1;
+        // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden:
+        // dort ist `group.position = (entry.x, entry.y-0.5, entry.z)` + `group.
+        // scale.setScalar(entry.scale)`, also landet ein Part bei lokaler Position
+        // `part.position` in Welt bei `groupOrigin + part.position·scale`, Größe
+        // `part.size·scale`. Der Stempel rechnete OHNE scale → bei worldgen-
+        // skalierten Strukturen (Cluster-Spawn, Save-Restore) saß der SOLID-
+        // Wasser-Stempel an einer anderen Stelle/Größe als die sichtbare Struktur
+        // → das Wasser flutete den sichtbaren, aber ungestempelten Ring = der
+        // „Wasser-Schatten zur Struktur" (Schöpfer-Befund, gemessen mit
+        // diag-scale-stamp: Stempel scale-invariant 4,4×16,8 bei scale 1 UND 2).
+        // Jetzt deckungsgleich mit Mesh + Kollision (die beide skalieren).
+        const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const sx = (part.size.x || 1) * scale;
+        const sz = (part.size.z || 1) * scale;
+        const sy = (part.size.y || 1) * scale;
         const halfMax = Math.max(sx, sz) * 0.5;
-        const cx = entry.position.x + (part.position.x || 0);
-        const cz = entry.position.z + (part.position.z || 0);
+        const cx = entry.position.x + (part.position.x || 0) * scale;
+        const cz = entry.position.z + (part.position.z || 0) * scale;
         // V9.74 (Welle C.3) — botY ergänzt: der Cell-Stempel-Pfad
         // (`_stampArchitectureSolidCellsInto`) braucht beide Y-Grenzen, um
         // die vertikale Höhe der Architektur korrekt im Cell-Feld zu
         // setzen. V9.65 hatte nur topY (Hydrosphäre-Surface-Hebung).
-        const centerY = entry.position.y - 0.5 + (part.position.y || 0);
+        const centerY = entry.position.y - 0.5 + (part.position.y || 0) * scale;
         const topY = centerY + sy * 0.5;
         const botY = centerY - sy * 0.5;
         return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY, botY };
@@ -40881,7 +40893,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.13.0";
+AnazhRealm.VERSION = "13.13.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
