@@ -926,25 +926,101 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         pushN(i, k, j + 1, lvl);
         pushN(i, k, j - 1, lvl);
     }
-    // 5) VERTIKAL-OFFEN (V13.12, Mirror von `_buildVoxelChunkWaterCells`):
-    //    pro Spalte von oben scannen; ab dem ersten SOLID ist alles WATER
-    //    darunter „unter Deckel" -> AIR. Nur Wasser mit freier Saeule nach oben
-    //    bleibt (Genre-Modell). MUSS bit-identisch zum Main sein (Determinismus).
-    for (let k = 0; k < dim; k++) {
-        for (let i = 0; i < dim; i++) {
-            const baseIK = i + k * dim;
-            let lidAbove = false;
-            for (let j = jMax; j >= 0; j--) {
-                const idx = baseIK + j * dimSq;
-                const c = cells[idx];
-                if (c === CELL_STATE.SOLID) lidAbove = true;
-                else if (c === WATER && lidAbove) cells[idx] = AIR;
-            }
-        }
-    }
+    // 5) ROBUSTE 3D-KONNEKTIVITÄT (V13.14, Mirror von `_skyOpenWaterFilter`):
+    //    Wasser existiert nur, wo es durch Wasser mit der offenen Atmosphäre
+    //    verbunden ist. Ersetzt den per-Spalten-Trocken-Pass (V13.12), der
+    //    Überhang-Buchten fälschlich trocknete. MUSS bit-identisch zum Main
+    //    sein (Determinismus → keine Naht worker/main).
+    skyOpenWaterFilter(cells, dim, dimY, jMax);
     // ARCHITEKTUR-STEMPEL läuft NICHT im Worker — bleibt Main-only
     // (Architektur-State ist nicht im Worker-Snapshot, soll auch nicht sein).
     return cells;
+}
+
+// V13.14 — Worker-Mirror von `_skyOpenWaterFilter` (bit-identisch). Siehe den
+// ausführlichen Kommentar in anazhRealm.js. Zwei Floods: (A) Sky-Air vom Dach,
+// (B) Keep = WATER an Sky-Air oder durch Wasser damit verbunden; Rest -> AIR.
+function skyOpenWaterFilter(cells, dimC, dimYC, jMaxC) {
+    const AIR = CELL_STATE.AIR;
+    const WATER = CELL_STATE.WATER;
+    const SOLID = CELL_STATE.SOLID;
+    const dq = dimC * dimC;
+    const topJ = dimYC - 1;
+    const skyAir = new Uint8Array(dq * dimYC);
+    const stack = [];
+    for (let k = 0; k < dimC; k++) {
+        for (let i = 0; i < dimC; i++) {
+            const idx = i + k * dimC + topJ * dq;
+            if (cells[idx] === AIR) {
+                skyAir[idx] = 1;
+                stack.push(idx);
+            }
+        }
+    }
+    const tryAir = (ni, nk, nj) => {
+        if (ni < 0 || nk < 0 || ni >= dimC || nk >= dimC || nj < 0 || nj >= dimYC) return;
+        const nidx = ni + nk * dimC + nj * dq;
+        if (skyAir[nidx] || cells[nidx] !== AIR) return;
+        skyAir[nidx] = 1;
+        stack.push(nidx);
+    };
+    while (stack.length) {
+        const idx = stack.pop();
+        const j = (idx / dq) | 0;
+        const rem = idx - j * dq;
+        const k = (rem / dimC) | 0;
+        const i = rem - k * dimC;
+        tryAir(i + 1, k, j);
+        tryAir(i - 1, k, j);
+        tryAir(i, k + 1, j);
+        tryAir(i, k - 1, j);
+        tryAir(i, k, j + 1);
+        tryAir(i, k, j - 1);
+    }
+    const keep = new Uint8Array(dq * dimYC);
+    const wstack = [];
+    const hasSkyNbr = (i, k, j, idx) =>
+        (j < topJ && skyAir[idx + dq]) ||
+        (j > 0 && skyAir[idx - dq]) ||
+        (i + 1 < dimC && skyAir[idx + 1]) ||
+        (i > 0 && skyAir[idx - 1]) ||
+        (k + 1 < dimC && skyAir[idx + dimC]) ||
+        (k > 0 && skyAir[idx - dimC]);
+    for (let j = 0; j <= jMaxC; j++) {
+        for (let k = 0; k < dimC; k++) {
+            for (let i = 0; i < dimC; i++) {
+                const idx = i + k * dimC + j * dq;
+                if (cells[idx] === WATER && !keep[idx] && hasSkyNbr(i, k, j, idx)) {
+                    keep[idx] = 1;
+                    wstack.push(idx);
+                }
+            }
+        }
+    }
+    const tryWater = (ni, nk, nj) => {
+        if (ni < 0 || nk < 0 || ni >= dimC || nk >= dimC || nj < 0 || nj > jMaxC) return;
+        const nidx = ni + nk * dimC + nj * dq;
+        if (keep[nidx] || cells[nidx] !== WATER) return;
+        keep[nidx] = 1;
+        wstack.push(nidx);
+    };
+    while (wstack.length) {
+        const idx = wstack.pop();
+        const j = (idx / dq) | 0;
+        const rem = idx - j * dq;
+        const k = (rem / dimC) | 0;
+        const i = rem - k * dimC;
+        tryWater(i + 1, k, j);
+        tryWater(i - 1, k, j);
+        tryWater(i, k + 1, j);
+        tryWater(i, k - 1, j);
+        tryWater(i, k, j + 1);
+        tryWater(i, k, j - 1);
+    }
+    for (let idx = 0; idx < cells.length; idx++) {
+        if (cells[idx] === WATER && !keep[idx]) cells[idx] = AIR;
+    }
+    void SOLID;
 }
 
 // Trocken-Gate-Mirror (Atlas-Strict, V9.87). Wenn false → keine Cells nötig.

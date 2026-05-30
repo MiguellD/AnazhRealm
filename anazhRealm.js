@@ -17135,29 +17135,120 @@ class AnazhRealm {
             pushN(i, k, j + 1, lvl);
             pushN(i, k, j - 1, lvl);
         }
-        // 5) VERTIKAL-OFFEN (V13.12) — das mentale Modell des Schöpfers: Wasser
-        //    ist eine Oberfläche auf Höhe Y, die das Becken VON OBEN füllt, bis
-        //    es auf festen Boden trifft; darunter bleibt trocken. Der 3D-Flood
-        //    (V13.8) kroch seitlich durch JEDEN verbundenen Luftraum unter dem
-        //    Spiegel — auch unter festem Terrain/Strukturen (→ Blasen unter dem
-        //    Boden, „Wasser-Schatten" an Strukturen). Hier: pro Spalte von oben
-        //    scannen; sobald ein SOLID kommt, ist alles WATER darunter „unter
-        //    Deckel" → zurück zu AIR. So bleibt nur Wasser, das eine freie Säule
-        //    nach oben zur Oberfläche hat (Genre-Standard, Minecraft-Modell).
-        //    Heilt Sub-Terrain-Blasen PHYSISCH (kein Kaschieren mehr nötig).
-        for (let k = 0; k < dim; k++) {
-            for (let i = 0; i < dim; i++) {
-                const baseIK = i + k * dim;
-                let lidAbove = false;
-                for (let j = jMax; j >= 0; j--) {
-                    const idx = baseIK + j * dimSq;
-                    const c = cells[idx];
-                    if (c === STATE.SOLID) lidAbove = true;
-                    else if (c === WATER && lidAbove) cells[idx] = AIR;
+        // 5) ROBUSTE 3D-KONNEKTIVITÄT (V13.14, ersetzt den per-Spalten-Trocken-
+        //    Pass V13.12): eine WATER-Zelle ist nur echt, wenn sie durch Wasser
+        //    mit der OFFENEN ATMOSPHÄRE verbunden ist. Der alte per-Spalten-Pass
+        //    fragte „ist SOLID über mir?" und trocknete JEDE Zelle unter einem
+        //    Deckel — auch eine offene Bucht unter einem Ufer-Überhang, die
+        //    lateral mit dem See verbunden ist (Schöpfer-Befund: „am Ufer
+        //    abgebaut, fließt nicht nach bei einem Überhang"). Die WAHRE Frage
+        //    ist nicht „Deckel über mir?" sondern „komme ich zur Oberfläche?".
+        //    Das kann KEINE Spalten-Heuristik beantworten — nur echte 3D-
+        //    Verbindung. Heilt Überhang-Bucht (bleibt, lateral verbunden) UND
+        //    Sub-Terrain-Blase (trocknet, eingeschlossen) mit EINER Regel.
+        this._skyOpenWaterFilter(cells, dim, dimY, jMax);
+        return cells;
+    }
+
+    // V13.14 — die EINE robuste Wasser-Regel (ersetzt fünf Heuristiken-Schichten):
+    // Wasser existiert nur, wo es durch nicht-soliden Raum mit der offenen
+    // Atmosphäre verbunden ist. Zwei Floods:
+    //   (A) Sky-Air: AIR-Zellen, die vom offenen Band-Dach (j=jMax, über allem
+    //       Wasser) durch AIR nach unten/seitlich erreichbar sind. Eine Höhle
+    //       unter festem Terrain wird NICHT erreicht (Solid trennt).
+    //   (B) Keep: WATER-Zellen, die an Sky-Air grenzen ODER durch Wasser mit
+    //       einer solchen verbunden sind. Alles übrige WATER → AIR.
+    // Damit: der See bleibt (Oberfläche grenzt an Sky-Air → flutet runter), die
+    // Überhang-Bucht bleibt (lateral durch Wasser mit dem offenen See verbunden),
+    // die Sub-Terrain-Blase trocknet (kein Wasser-Pfad zur Oberfläche), und
+    // „klettern" ist unmöglich (Wasser über dem Hang ist nicht sky-verbunden, es
+    // sei denn es ist echtes offenes Becken-Wasser). EINE physikalische Wahrheit:
+    // ist dieses Wasser mit der Luft verbunden? Worker-Mirror Pflicht (bit-id.).
+    _skyOpenWaterFilter(cells, dimC, dimYC, jMaxC) {
+        const STATE = AnazhRealm.CELL_STATE;
+        const dq = dimC * dimC;
+        // (A) Sky-Air-Flood vom DACH des Chunks (j=dimYC-1, garantiert über dem
+        //     ganzen Wasser-Band → echtes „offener Himmel"). Über jMaxC ist alles
+        //     AIR (die SOLID/WATER-Klassifikation lief nur bis jMax), der Flood
+        //     fällt von dort durch jeden AIR-Raum nach unten/seitlich.
+        const topJ = dimYC - 1;
+        const skyAir = new Uint8Array(dq * dimYC);
+        const stack = [];
+        for (let k = 0; k < dimC; k++) {
+            for (let i = 0; i < dimC; i++) {
+                const idx = i + k * dimC + topJ * dq;
+                if (cells[idx] === STATE.AIR) {
+                    skyAir[idx] = 1;
+                    stack.push(idx);
                 }
             }
         }
-        return cells;
+        const tryAir = (ni, nk, nj) => {
+            if (ni < 0 || nk < 0 || ni >= dimC || nk >= dimC || nj < 0 || nj >= dimYC) return;
+            const nidx = ni + nk * dimC + nj * dq;
+            if (skyAir[nidx] || cells[nidx] !== STATE.AIR) return;
+            skyAir[nidx] = 1;
+            stack.push(nidx);
+        };
+        while (stack.length) {
+            const idx = stack.pop();
+            const j = (idx / dq) | 0;
+            const rem = idx - j * dq;
+            const k = (rem / dimC) | 0;
+            const i = rem - k * dimC;
+            tryAir(i + 1, k, j);
+            tryAir(i - 1, k, j);
+            tryAir(i, k + 1, j);
+            tryAir(i, k - 1, j);
+            tryAir(i, k, j + 1);
+            tryAir(i, k, j - 1);
+        }
+        // (B) Keep-Flood: WATER, das an Sky-Air grenzt oder durch Wasser damit
+        //     verbunden ist. Seed = WATER mit Sky-Air-Nachbar (die Oberfläche).
+        const keep = new Uint8Array(dq * dimYC);
+        const wstack = [];
+        const hasSkyNbr = (i, k, j, idx) =>
+            (j < topJ && skyAir[idx + dq]) ||
+            (j > 0 && skyAir[idx - dq]) ||
+            (i + 1 < dimC && skyAir[idx + 1]) ||
+            (i > 0 && skyAir[idx - 1]) ||
+            (k + 1 < dimC && skyAir[idx + dimC]) ||
+            (k > 0 && skyAir[idx - dimC]);
+        for (let j = 0; j <= jMaxC; j++) {
+            for (let k = 0; k < dimC; k++) {
+                for (let i = 0; i < dimC; i++) {
+                    const idx = i + k * dimC + j * dq;
+                    if (cells[idx] === STATE.WATER && !keep[idx] && hasSkyNbr(i, k, j, idx)) {
+                        keep[idx] = 1;
+                        wstack.push(idx);
+                    }
+                }
+            }
+        }
+        const tryWater = (ni, nk, nj) => {
+            if (ni < 0 || nk < 0 || ni >= dimC || nk >= dimC || nj < 0 || nj > jMaxC) return;
+            const nidx = ni + nk * dimC + nj * dq;
+            if (keep[nidx] || cells[nidx] !== STATE.WATER) return;
+            keep[nidx] = 1;
+            wstack.push(nidx);
+        };
+        while (wstack.length) {
+            const idx = wstack.pop();
+            const j = (idx / dq) | 0;
+            const rem = idx - j * dq;
+            const k = (rem / dimC) | 0;
+            const i = rem - k * dimC;
+            tryWater(i + 1, k, j);
+            tryWater(i - 1, k, j);
+            tryWater(i, k + 1, j);
+            tryWater(i, k - 1, j);
+            tryWater(i, k, j + 1);
+            tryWater(i, k, j - 1);
+        }
+        // Alles WATER ohne Sky-Verbindung → AIR (eingeschlossene Blase, Phantom).
+        for (let idx = 0; idx < cells.length; idx++) {
+            if (cells[idx] === STATE.WATER && !keep[idx]) cells[idx] = STATE.AIR;
+        }
     }
 
     // V9.74 (Welle C.3) — stempelt solide Architektur-AABBs als state=SOLID
@@ -40922,7 +41013,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.13.2";
+AnazhRealm.VERSION = "13.14.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
