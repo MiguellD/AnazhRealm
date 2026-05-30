@@ -17268,54 +17268,69 @@ class AnazhRealm {
         // (Bottom + Underwater-Sides) sowie ohne Wasser (Mountain-Top, der
         // schon vom Terrain-Mesh getragen wird). Nur Mischungen mit
         // WATER+AIR erzeugen Iso → das ist die sichtbare Wasseroberfläche.
-        // V13.1 — OOB-Wasser-Spiegel pro Pad-Spalte cachen. Der Atlas-strikte
-        // Spiegel hängt nur von (i,k) ab (nicht j), aber `cellClass` läuft 8×
-        // pro Grid-Vertex × ~91k Vertices → ohne Cache würde `_voxelSurfaceY`
-        // (ein ~100-Schritt-Density-Scan) millionenfach laufen = Mesher-Kollaps.
-        // Mit Cache: ein `_voxelSurfaceY` je Pad-Spalte (~ein paar hundert).
-        const oobLevelCache = new Map();
-        // V13.13 — OOB-Klassen-Memo: der Surface-Nets-Mesher fragt `cellClass`
+        // V13.13.2 — OOB-Klassen-Memo: der Surface-Nets-Mesher fragt `cellClass`
         // für DIESELBE Zelle bis zu 8× (benachbarte Grid-Ecken teilen sich die
-        // Eck-Zellen), und der OOB-Pfad rechnete jedes Mal `_terrainDensityAt`
-        // komplett neu → 142k Density-Evals/Chunk = 70 % der Iso-Build-Zeit
-        // (diag-iso-breakdown). Memo der OOB-Klasse pro (i,k,j) → jede Zelle
-        // genau EINMAL berechnet. Reiner Cache einer deterministischen Funktion:
-        // bit-identische Werte → bit-identische Geometrie (Tiefe + Naht 100 %
-        // erhalten, KEIN Mesher-Wechsel wie V13.2). Die in-chunk-Zweige bleiben
-        // billige Array-Lookups (kein Memo nötig). V9.81-Lehre angewandt.
+        // Eck-Zellen). Memo pro (i,k,j) → jede OOB-Zelle genau EINMAL aufgelöst.
         const oobClassCache = new Map();
         const cellClass = (i, k, j) => {
             if (j < 0 || j >= dimY) return STATE.AIR;
             if (i >= 0 && k >= 0 && i < dim && k < dim) {
                 return cells[i + k * dim + j * dim * dim];
             }
-            // OOB live-compute — identisch zur Cell-Init (V13.1: Atlas-strict
-            // via `_atlasWaterLevelAt` mit `_voxelSurfaceY` als Terrain-Top, der
-            // EINEN Wasser-Spiegel-Quelle wie der Cell-Build → kein Seam am
-            // Chunk-Rand zwischen depth-gated In-Chunk-Cells + Pad).
             const wy = oy + (j + 0.5) * step;
             if (wy > bandTop) return STATE.AIR;
             const cacheKey = i + "," + k + "," + j;
             const cached = oobClassCache.get(cacheKey);
             if (cached !== undefined) return cached;
-            const wx = ox + (i + 0.5) * step;
-            const wz = oz + (k + 0.5) * step;
+            // V13.13.2 — DIE WURZEL des „Wasserschatten/Wandbluten"-Befundes,
+            // gemessen (diag-water-truth): der OOB-Ring (1 Cell um den Chunk,
+            // cropMargin=1) klassifizierte per-Spalte NEU mit `_terrainDensityAt`
+            // + `_atlasWaterLevelAt` — also der 2,5D-Logik, die der V13.8-Flood
+            // GERADE ERSETZT hat. Dadurch injizierte der Mesher an JEDER Chunk-
+            // Grenze Phantom-Wasser, das die Flood-Wahrheit nicht hat (83 Zellen
+            // gemessen, alle am Seam): Wasser in Bergwänden (von der Seite
+            // sichtbar), unter schwebenden Bauten neben Seen, die Rim-Würfel.
+            // **Eine Wahrheit, gelesen statt geraten**: der Nachbar-Chunk hat
+            // seine Flood-Zellen bereits — lies sie. Das ist die V9.82-Lehre
+            // (parallele Code-Pfade sind Bug-Quellen) auf den Mesher angewandt.
+            let ncx = cx;
+            let ncz = cz;
+            let li = i;
+            let lk = k;
+            if (i < 0) {
+                ncx -= 1;
+                li = i + dim;
+            } else if (i >= dim) {
+                ncx += 1;
+                li = i - dim;
+            }
+            if (k < 0) {
+                ncz -= 1;
+                lk = k + dim;
+            } else if (k >= dim) {
+                ncz += 1;
+                lk = k - dim;
+            }
+            const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
             let cls;
-            if (this._terrainDensityAt(wx, wy, wz) > 0) {
-                cls = STATE.SOLID;
+            if (nb && nb.waterCells) {
+                // Nachbar geladen + trägt Wasser → seine Flood-Zelle ist exakt.
+                cls = nb.waterCells[li + lk * dim + j * dim * dim];
+            } else if (nb) {
+                // Nachbar geladen, aber TROCKEN (Atlas-Gate: kein Wasser) →
+                // garantiert kein Wasser dort, nur Terrain. Kein Phantom.
+                cls =
+                    this._terrainDensityAt(ox + (i + 0.5) * step, wy, oz + (k + 0.5) * step) > 0
+                        ? STATE.SOLID
+                        : STATE.AIR;
             } else {
-                const ckey = i + "," + k;
-                let lvl = oobLevelCache.get(ckey);
-                if (lvl === undefined) {
-                    const surfY = this._voxelSurfaceY(wx, wz);
-                    lvl = this._atlasWaterLevelAt(
-                        wx,
-                        wz,
-                        surfY === null || !Number.isFinite(surfY) ? -Infinity : surfY
-                    );
-                    oobLevelCache.set(ckey, lvl);
-                }
-                cls = wy <= lvl ? STATE.WATER : STATE.AIR;
+                // Nachbar noch nicht gestreamt → die eigene Kant-Zelle spiegeln
+                // (nur was der eigene Flood schon hat — KEIN Phantom). Beim Laden
+                // des Nachbarn re-enqueued der Finalize-Pfad dieses Iso → der
+                // Seam heilt exakt gegen die dann-präsente Nachbar-Wahrheit.
+                const ci2 = i < 0 ? 0 : i >= dim ? dim - 1 : i;
+                const ck2 = k < 0 ? 0 : k >= dim ? dim - 1 : k;
+                cls = cells[ci2 + ck2 * dim + j * dim * dim];
             }
             oobClassCache.set(cacheKey, cls);
             return cls;
@@ -17741,6 +17756,20 @@ class AnazhRealm {
         // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
         else this._enqueueWaterIso(cx, cz);
+        // V13.13.2 — der neue Chunk ist jetzt eine präsente Flood-Wahrheit für
+        // seine Nachbarn. Deren Iso wurde evtl. gegen einen ABWESENDEN Nachbarn
+        // (diesen Chunk) gebaut → die Kant-Spiegelung. Re-enqueue der 4 Nachbar-
+        // Iso, damit ihr Seam exakt gegen die jetzt-präsente Wahrheit heilt
+        // (deferred, idempotent über das Set). Nur Wasser-tragende Nachbarn.
+        for (const [nx, nz] of [
+            [cx - 1, cz],
+            [cx + 1, cz],
+            [cx, cz - 1],
+            [cx, cz + 1],
+        ]) {
+            const nb = this.state.voxelChunks.get(`${nx},${nz}`);
+            if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
+        }
         this._populateVoxelChunkVegetation(cx, cz);
         return entry;
     }
@@ -40893,7 +40922,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.13.1";
+AnazhRealm.VERSION = "13.13.2";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

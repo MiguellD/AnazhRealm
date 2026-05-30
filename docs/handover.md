@@ -401,6 +401,26 @@ Der Schöpfer benannte die Wurzel: „wieso kann das Wasser klättern und nicht 
 
 **V13.9 — Schicht-3-Cull: dünnes Wand-Bluten pro Pixel ausblenden (29.05.2026, Playtest „Alle Invarianten OK"):**
 
+**V13.13.2 — Die Wurzel des „Wasserschatten/Wandbluten": der Iso-Mesher RIET die Wasser-Wahrheit neu, statt sie zu LESEN (30.05.2026, Playtest „Alle Invarianten OK"):**
+
+Eine end-to-end-Messung, die 4 Symptome auf EINE Wurzel zurückführt — und der Beweis, dass es KEIN neuer Bug war, sondern der alte 2,5D-Re-Guess durch eine Hintertür.
+
+**Schöpfer-Befund (nach V13.13.1).** „Berge haben noch Wasser im Inneren (durch den Cull unterdrückt beim Draufschauen, aber seitlich sichtbar); Gebäude immernoch unter Wasser; wenn der Nexus ein Gebäude in der Luft über einem See spawnt, hat es Wasser darunter; ein riesiger Wasserwürfel über Bergen, daneben Würfel die langsam auf See-Höhe gehen. Wir haben Quellen — wie kann Wasser überall sprießen, unter jedem Berg? Wo ist das Genie?"
+
+**Die Messung (statt raten).** `diag-water-truth.cjs` (reine Topologie, keine Pixel) maß die WAHRHEIT (Cells) GETRENNT vom Mesher: **(A) die Cells sind KORREKT** — under-lid WATER = 0, WATER >3m über echter Quelle = 0. Der V13.8-Flood + V13.12-Vertikal-offen funktionieren: in der Wahrheit gibt es KEIN Wasser in Bergen, KEINE Sub-Terrain-Blasen. **(B) der Iso-Mesher injiziert Phantom-Wasser am Chunk-Rand** — 83 Zellen, wo der OOB-Ring WATER sagt, der Flood aber AIR/SOLID (Disagreement 0,40 %, ALLE am Seam).
+
+**Die Wurzel (V9.82-Lehre: parallele Code-Pfade).** Der Iso-Mesher braucht einen 1-Cell-OOB-Ring um den Chunk (`cropMargin=1`, V9.79-Naht-Pad). Dieser Ring klassifizierte per-Spalte NEU mit `_terrainDensityAt`+`_atlasWaterLevelAt` — also EXAKT der 2,5D-Logik, die der V13.8-Flood ersetzt hatte. Der Mesher war ein zweiter Konsument der Wasser-Wahrheit, der sie nicht LAS, sondern parallel NACHRECHNETE → garantierter Drift. Das erklärt ALLE vier Symptome auf einmal: Berg-Innenwasser = Seam-Faces an Bergketten; Wasser unter Gebäuden/schwebenden Bauten neben Seen = der OOB-Re-Guess sieht den See-Spiegel im 3×3-Atlas und injiziert ihn; die Würfel über Bergen = derselbe Rim-Re-Guess. Es war NIE ein neuer Bug — es war der alte Re-Guess durch die OOB-Hintertür.
+
+**Die Heilung (das Genie: eine Wahrheit, gelesen statt geraten).** `cellClass` OOB liest jetzt die ECHTEN `waterCells` des Nachbar-Chunks (`state.voxelChunks.get(nx,nz).waterCells[li + lk·dim + j·dim²]`) — exakt, seam-frei per Konstruktion. Trockener Nachbar (Atlas-Gate: kein Wasser) → reine Terrain-Density (kein Phantom). Noch nicht gestreamter Nachbar → eigene Kant-Zelle spiegeln (nur was der eigene Flood hat, KEIN Phantom), und `_finalizeVoxelChunkBuild` re-enqueued die 4 Nachbar-Iso → sobald der Nachbar lädt, heilt sein Seam gegen die dann-präsente Wahrheit. Der V13.13.0-Memo-Cache bleibt — er ersetzt jetzt den teuren Re-Guess vollständig (ein Nachbar-Array-Read statt `_terrainDensityAt`-Scan). Iso ist main-only (der Worker baut nur Cells via `extractSurfaceVertices` fürs Terrain) → kein Worker-Mirror nötig.
+
+**Mess-Beweis.** Phantom-Wasser am +x-Seam: ALT (per-column re-guess) 83 → NEU (neighbor-read) **0**. Cells unverändert korrekt (under-lid=0). Playtest „Alle Invarianten OK", Format/Lint grün. Version 13.13.1 → 13.13.2. **Permanente Lehre (CLAUDE.md/Gotchas): der Iso-Mesher ist ein ZWEITER Konsument der Wasser-Wahrheit — er MUSS die Flood-Zellen LESEN, nie per-Spalte neu raten.** Ehrliche Grenze: der visuelle Beweis (Berge trocken, Gebäude trocken, keine Würfel) braucht den Schöpfer-Browser-Audit — Headless liest keine Pixel, aber die Topologie-Messung (83→0) ist hart.
+
+**V13.13.1 — Wasserschatten-Teilfix: Architektur-Stempel skaliert mit `entry.scale`.** `_blockerComputePartAABB` ignorierte `entry.scale` (Mesh+Kollision skalieren via `group.scale.setScalar`) → bei worldgen-skalierten Strukturen saß der SOLID-Stempel an anderer Stelle/Größe als die Struktur. Gemessen (diag-scale-stamp): Stempel scale-invariant 4,4×16,8 bei scale 1 UND 2 → nach Fix 8,8×33,6 = Mesh. NÖTIG, aber NICHT die Hauptwurzel (das war V13.13.2).
+
+**V13.13.0 — Iso-Build-Speedup: `cellClass`-OOB-Memo (−61 %, bit-identisch).** Der ~80-ms-Iso-Build rief `_terrainDensityAt` 80.065×/Chunk (70 %), weil der Mesher dieselbe OOB-Zelle 8× fragte. Memo pro (i,k,j) → Build-Zeit 74,5→44,2 ms, Vertices + Positions-Checksum bit-identisch (kein Mesher-Wechsel wie V13.2).
+
+**V13.9 — Schicht-3-Cull (`uMinDepth`):**
+
 Der erste der drei offenen V13.8-Browser-Befunde (Schöpfer-Wahl A) — in der richtigen Schicht geheilt.
 
 **Befund.** Schöpfer-Audit V13.8: das Wand-Bluten besteht, aber **DÜNN** — am Tiefenpuffer-Shader erkennbar, dass das die Wand hochkletternde Wasser flach ist. Wurzel: der 16-m-Atlas-Spiegel liegt minimal über dem 1,8-m-Voxel-Grat → ein flaches Wasser-Blatt spillt über den Becken-Rand. Das ist die permanente 16-m-Atlas-vs-1,8-m-Voxel-Granularitäts-Grenze (V13.7–.9-Bogen-Lehre): kein per-Spalten-Fix in Schicht 1/2 gibt gleichzeitig bleed-frei UND sub-zellig-glatt. Die Wahrheit liegt sub-zellig dazwischen.
