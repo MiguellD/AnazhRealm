@@ -17297,36 +17297,6 @@ class AnazhRealm {
             }
             return wy <= lvl ? STATE.WATER : STATE.AIR;
         };
-        // V13.11 — „Austritt kaschieren": eine WATER→AIR-Oberfläche erzeugt nur
-        // Iso, wenn die Luft darüber HIMMEL-OFFEN ist (kein SOLID höher in der
-        // Spalte). Wasser in einer Höhlenkammer (SOLID-Deckel drüber) bleibt
-        // WATER (tauchbar, V13.8-Höhlen-Flutung erhalten), zeigt aber keinen
-        // Spiegel — sonst quillt er an Hängen/unter Strukturen aus dem Terrain
-        // (Schöpfer-Befund „Wasserblasen drücken in Strukturen"; Diag V13.11:
-        // 75 von 478 Oberflächen unter Deckel). `colTopSolidJ` = höchste SOLID-
-        // Cell der Pad-Spalte (memoisiert über cellClass → in-chunk Array-Read,
-        // OOB density-cached; seam-frei, weil beide Chunks denselben Atlas/Density
-        // sehen). Eine Cell (i,k,j) ist himmel-offen ⇔ j > colTopSolidJ.
-        const colTopSolidJCache = new Map();
-        const colTopSolidJ = (i, k) => {
-            const ckey = i + "," + k;
-            let v = colTopSolidJCache.get(ckey);
-            if (v !== undefined) return v;
-            v = -1;
-            for (let j = dimY - 1; j >= 0; j--) {
-                if (cellClass(i, k, j) === STATE.SOLID) {
-                    v = j;
-                    break;
-                }
-            }
-            colTopSolidJCache.set(ckey, v);
-            return v;
-        };
-        // state.waterShowSubmerged === true hebelt den Cull aus (jede Luft zählt,
-        // = altes V13.10-Verhalten) — für A/B-Beweis + falls die Tauchwelt-
-        // Spiegel doch gewünscht sind. Default false (Austritt kaschiert).
-        const showSubmerged = this.state.waterShowSubmerged === true;
-        const isSkyOpen = (i, k, j) => showSubmerged || j > colTopSolidJ(i, k);
         // V13.6 — Surface-Nets-Iso über die Wasser-Zellen, band-limitiert (die
         // SYNERGIE zurück). Schöpfer-Audit V13.5: das V13.2-Grenzflächen-Meshing
         // (flache Achsen-Quads) hatte die Synergie mit dem Terrain verloren — das
@@ -17356,22 +17326,20 @@ class AnazhRealm {
             for (let dj = 0; dj <= 1; dj++) {
                 for (let dk = 0; dk <= 1; dk++) {
                     for (let di = 0; di <= 1; di++) {
-                        const ci = i - 1 + di;
-                        const ck = k - 1 + dk;
-                        const cj = j - 1 + dj;
-                        const cls = cellClass(ci, ck, cj);
+                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
                         if (cls === STATE.WATER) cWater++;
-                        else if (cls === STATE.AIR) {
-                            // V13.11 — nur HIMMEL-OFFENE Luft zählt als Oberfläche.
-                            // Luft unter einem SOLID-Deckel (Höhlenkammer) ist neutral
-                            // → das Höhlen-Wasser bleibt WATER, zeigt aber keinen
-                            // Spiegel (kein Austritt am Hang). SOLID ist ohnehin neutral.
-                            if (isSkyOpen(ci, ck, cj)) cAir++;
-                        }
+                        else if (cls === STATE.AIR) cAir++;
+                        // SOLID ist neutral (zählt weder) — das Terrain verdeckt es.
                     }
                 }
             }
-            if (cAir === 0) return 1; // tief drinnen / unter Deckel → kein Iso
+            // V13.12 — die Sub-Terrain-Wasser-Zellen sind schon in `waterCells`
+            // getrocknet (Vertikal-offen-Post-Pass) → es gibt kein „Wasser unter
+            // Deckel" mehr, das der Mesher verstecken müsste. Der teure V13.11-
+            // `isSkyOpen`/`colTopSolidJ`-Scan (full-height cellClass pro Pad-Spalte,
+            // OOB-Density-Scan = ~94 ms/Chunk = der 5-FPS-Kollaps) ist damit
+            // redundant + gestrichen. Einfache schnelle Wasser-Luft-Iso (V13.6):
+            if (cAir === 0) return 1; // tief drinnen → kein Iso (kein Bottom/Underwater-Side)
             if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
             return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
         };
@@ -40890,7 +40858,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.12.0";
+AnazhRealm.VERSION = "13.12.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
