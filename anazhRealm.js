@@ -11394,7 +11394,19 @@ class AnazhRealm {
             slopeExp: 1.0, // n — Exponent des Gefälles S
             maxIncisionPerPass: 1.1, // m — Klemme je Iteration (Stabilität)
             edgeTaper: 10, // Zellen — das Delta wird zum Region-Rand auf 0 getapert
-            maxDelta: 18, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle)
+            maxDelta: 26, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle).
+            // V14.2 von 18 auf 26 erhöht: die thermische Talus-Glättung trägt
+            // Steilwände stärker ab als die Inzision allein; eine zu enge Klemme
+            // liesse 60°-Cusps stehen. 26 m hält die Decken-Marge (Surface-Max
+            // ~110 m, Decke 133 m) noch komfortabel.
+            // V14.2 — thermische Erosion (Angle-of-Repose / Talus). Die Stream-
+            // Power-Inzision SCHÄRFT (Täler tief, Grate scharf); der Talus-Pass
+            // GLÄTTET: Hänge steiler als der Ruhewinkel tragen Material ab, das
+            // im Tal deponiert → natürliche Talus-Flanken statt 60°-Cusps (der
+            // Schöpfer-HAUPTBEFUND „spitzig/steil"). Beide ko-evolvieren je
+            // Iteration (World-Machine/Gaea-Pattern: hydraulisch + thermisch).
+            talusAngle: 25, // ° — Ruhewinkel; Hänge darüber fliessen ab
+            talusFactor: 0.55, // Anteil des Überschuss-Transports je Iteration
         });
     }
 
@@ -11420,7 +11432,10 @@ class AnazhRealm {
             // wollen wir grosszügiger sein; ~60 % der Spots passen).
             radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
             radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
-            depthMin: 28, // m — Mulden-Tiefe (V9.58-c von 22 auf 28 angehoben:
+            depthMin: 34, // m — Mulden-Tiefe (V14.2 von 28 auf 34: die thermische
+            // Erosion glättet die Tarn-Umgebung, flachere Mulden schliessen sonst
+            // nicht mehr zum See — die V9.51-Co-Tuning-Kopplung Erosion↔Tarn).
+            // (V9.58-c von 22 auf 28 angehoben:
             // tiefere Mulden für die V9.58-b-Welt, wo das Hochland 60-120 m
             // hoch sitzt → Wasser-Spiegel klar weit über dem Meeresspiegel.
             // Nicht weiter erhöht, sonst klemmt `maxAllowed = surf − waterRef
@@ -15600,10 +15615,16 @@ class AnazhRealm {
             order: new Int32Array(n),
             hpK: new Float64Array(n),
             hpV: new Int32Array(n),
+            thermalDelta: new Float64Array(n), // V14.2 Talus-Akkumulator
+            thNbIdx: new Int32Array(8), // V14.2 niedrigere Nachbarn (pro Zelle)
+            thNbExc: new Float64Array(8), // V14.2 deren Überschuss
         };
-        // (3) Terrain + Drainage ko-evolvieren lassen.
+        // (3) Terrain + Drainage ko-evolvieren lassen: Inzision SCHÄRFT (fluviale
+        // Täler), der Talus-Pass GLÄTTET (Hänge auf den Ruhewinkel) — zusammen
+        // ergeben sie natürliche Berge mit Talus-Flanken statt 60°-Cusps.
         for (let it = 0; it < E.iterations; it++) {
             this._erosionIncisionPass(h, dim, buf, E);
+            this._thermalErosionPass(h, dim, buf, E);
         }
         // (4) Delta = erodiert − roh, geklemmt + zum Region-Rand auf 0 getapert
         // (sonst klaffte eine Stufe zum un-erodierten Umland jenseits der Region).
@@ -15793,6 +15814,62 @@ class AnazhRealm {
             if (inc > room) inc = room;
             h[c] -= inc;
         }
+    }
+
+    // V14.2 — ein thermischer Erosions-Pass (Angle-of-Repose / Talus). Jede
+    // Nicht-Rand-Zelle, die steiler als der Ruhewinkel zu niedrigeren Nachbarn
+    // abfällt, gibt einen Teil ihres Überschuss-Materials an genau diese
+    // Nachbarn ab (mass-conserving: was hier abgetragen wird, deponiert dort).
+    // Über die Iterationen konvergieren die Hänge zum Ruhewinkel → glatte
+    // Talus-Flanken statt 60°-Cusps. Der Transport wird in einen SEPARATEN
+    // Akkumulator (`thermalDelta`) geschrieben, nicht in-place auf `h` — sonst
+    // hinge das Ergebnis von der Scan-Reihenfolge ab (Determinismus-Bruch).
+    _thermalErosionPass(h, dim, buf, E) {
+        const n = dim * dim;
+        const td = buf.thermalDelta;
+        td.fill(0);
+        // max stabile Höhendifferenz = tan(Ruhewinkel) · Zell-Distanz; der
+        // Diagonal-Nachbar ist √2 weiter → höhere Schwelle (sonst Achsen-Grid-
+        // Bias wie der V13.3-D8-Flow-Befund).
+        const talusT = Math.tan((E.talusAngle * Math.PI) / 180) * E.cell;
+        const talusD = talusT * Math.SQRT2;
+        const factor = E.talusFactor;
+        const nbIdx = buf.thNbIdx;
+        const nbExc = buf.thNbExc;
+        for (let j = 1; j < dim - 1; j++) {
+            for (let i = 1; i < dim - 1; i++) {
+                const idx = i + j * dim;
+                const hc = h[idx];
+                let cnt = 0;
+                let sumExc = 0;
+                let maxExc = 0;
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        if (di === 0 && dj === 0) continue;
+                        const nb = i + di + (j + dj) * dim;
+                        const T = di !== 0 && dj !== 0 ? talusD : talusT;
+                        const diff = hc - h[nb] - T;
+                        if (diff > 0) {
+                            nbIdx[cnt] = nb;
+                            nbExc[cnt] = diff;
+                            cnt++;
+                            sumExc += diff;
+                            if (diff > maxExc) maxExc = diff;
+                        }
+                    }
+                }
+                if (sumExc > 0) {
+                    // Bewege einen Bruchteil des GRÖSSTEN Überschusses, proportional
+                    // auf die instabilen Nachbarn verteilt (Musgrave-Thermal-Modell).
+                    const move = factor * maxExc * 0.5;
+                    td[idx] -= move;
+                    for (let p = 0; p < cnt; p++) {
+                        td[nbIdx[p]] += move * (nbExc[p] / sumExc);
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < n; i++) h[i] += td[i];
     }
 
     // V9.47 — das Erosions-Delta an einer xz-Welt-Position (bilinear aus dem
@@ -41025,7 +41102,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.1.0";
+AnazhRealm.VERSION = "14.2.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

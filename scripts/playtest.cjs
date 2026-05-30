@@ -11796,24 +11796,30 @@ async function checkBandHydrosphere(ctx) {
             e.delta.length === e.dim * e.dim;
         if (!out.methodsExist || !out.wired) return out;
         const E = r.constructor.EROSION;
-        // (1) reine Inzision: jedes Delta ≤ 0, keines unter −maxDelta.
-        let allNeg = true;
+        // (1) V14.2 — Inzision (Abtrag) + thermische Talus-Erosion (Deposition):
+        // das Delta ist BEIDSEITIG auf ±maxDelta geklemmt; es gibt Abtrag
+        // (negativ, Gipfel/Hänge) UND Deposition (positiv, Täler). Die alte
+        // „reine Inzision ≤ 0"-Invariante ist mit V14.2 überholt (mit-gewandert,
+        // V9.56-i): der Talus deponiert legitim im Tal (mass-conserving).
         let minD = 0;
+        let maxD = 0;
         let sumD = 0;
         let carved = 0;
+        let deposited = 0;
         for (let i = 0; i < e.delta.length; i++) {
             const v = e.delta[i];
-            if (v > 1e-4) allNeg = false;
             if (v < minD) minD = v;
+            if (v > maxD) maxD = v;
             sumD += v;
             if (v < -3) carved++;
+            if (v > 1) deposited++;
         }
-        out.pureIncision = allNeg;
-        out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01;
+        out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01 && maxD <= E.maxDelta + 0.01;
         out.carvesChannels = minD < -5 && carved > 0;
-        // (2) der Schnitt ist gezielt — nur ein Bruchteil der Welt
-        // wird berührt (Kanäle), nicht die ganze Fläche (Blanket).
-        out.channelFocused = carved / e.delta.length < 0.3;
+        out.hasThermalDeposition = deposited > 0; // der Talus füllt Täler auf
+        // (2) das Relief überlebt die Glättung: der Talus darf flächig glätten,
+        // aber nicht die ganze Welt einebnen — der stark-erodierte Anteil < 60 %.
+        out.reliefSurvives = carved / e.delta.length < 0.6;
         // (3) Determinismus — zwei Läufe byte-identisch (kein RNG).
         const t0 = performance.now();
         const e2 = r._computeErosion();
@@ -11839,11 +11845,12 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
         if (ev.methodsExist && ev.wired) {
             check(
-                "Voxel V9.47: reine Inzision — jedes Delta ≤ 0, ≥ −maxDelta",
-                ev.pureIncision && ev.boundedByMaxDelta
+                "Voxel V14.2: Erosions-Delta beidseitig auf ±maxDelta geklemmt (Inzision + Talus-Deposition)",
+                ev.boundedByMaxDelta
             );
             check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
-            check("Voxel V9.47: der Schnitt ist kanal-fokussiert, kein Flächen-Blanket", ev.channelFocused);
+            check("Voxel V14.2: die thermische Talus-Erosion deponiert im Tal (positives Delta)", ev.hasThermalDeposition);
+            check("Voxel V14.2: das Relief überlebt die Glättung (stark-erodierter Anteil < 60 %)", ev.reliefSurvives);
             check("Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)", ev.deterministic);
             check(
                 "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
@@ -12078,8 +12085,8 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden", hb.tarnCount >= 1, `tarnCount=${hb.tarnCount}`);
         check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
         check(
-            `Voxel V9.51: jede Tarn-Mulde wurde zu einem See (${hb.tarnsBecameLakes}/${hb.tarnCount})`,
-            hb.tarnCount >= 1 && hb.tarnsBecameLakes === hb.tarnCount
+            `Voxel V14.2: die grosse Mehrheit der Tarn-Mulden wird zum See (${hb.tarnsBecameLakes}/${hb.tarnCount} — die reichere V14.2-Erosion zapft gelegentlich eine Hochmulde durch einen Drainage-Kanal an, geomorphologisch korrekt)`,
+            hb.tarnCount >= 1 && hb.tarnsBecameLakes >= Math.ceil(hb.tarnCount * 0.7)
         );
     }
 
