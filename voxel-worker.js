@@ -238,7 +238,12 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
-    const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    let withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    // V14.6 (mirror): sanftes Decken-Limit — cont0 hebt die Surface fern vom
+    // Ursprung bis ~235 m über die Voxel-Decke → Löcher. tanh-Clamp komprimiert
+    // hohe Surfaces (>110 m) asymptotisch gegen 136 m. MUSS bit-identisch zum
+    // Main-Thread `_terrainMacroSurfaceY` sein (Naht-/Determinismus-Schutz).
+    if (withoutTarn > 110) withoutTarn = 110 + 26 * Math.tanh((withoutTarn - 110) / 26);
     const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
     const depthBelow = waterRefSub - withoutTarn;
     let withoutTarnFinal = withoutTarn;
@@ -381,8 +386,9 @@ function clamp01(v) {
 const CELL_STATE = { AIR: 0, WATER: 1, SOLID: 2 };
 
 function voxelChunkConfig(lod) {
-    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 62, floorDrop: 90, lod: 1 };
-    return { dim: 24, step: 1.8, span: 43.2, dimY: 124, floorDrop: 90, lod: 0 };
+    // V14.6 (mirror): dimY 62→68 / 124→136 — höhere Hülle für die cont0-Welt.
+    if ((lod | 0) >= 1) return { dim: 12, step: 3.6, span: 43.2, dimY: 68, floorDrop: 90, lod: 1 };
+    return { dim: 24, step: 1.8, span: 43.2, dimY: 136, floorDrop: 90, lod: 0 };
 }
 
 // Lazy-Init der 5 worldField-Noises (separate Seeds für unkorrelierte Kanäle).

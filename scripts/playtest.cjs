@@ -13191,15 +13191,15 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         return;
     }
     check(
-        "Welle Perf-3.b V9.88: LOD 0 Config (dim=24, step=1.8, dimY=124)",
-        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 124
+        "Welle Perf-3.b V9.88 / V14.6: LOD 0 Config (dim=24, step=1.8, dimY=136)",
+        res.lod0Dim === 24 && Math.abs(res.lod0Step - 1.8) < 0.001 && res.lod0DimY === 136
     );
     check(
-        "Welle Perf-3.b V9.88: LOD 1 Config (dim=12, step=3.6, dimY=62) — 8× weniger Cells",
-        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 62
+        "Welle Perf-3.b V9.88 / V14.6: LOD 1 Config (dim=12, step=3.6, dimY=68) — 8× weniger Cells",
+        res.lod1Dim === 12 && Math.abs(res.lod1Step - 3.6) < 0.001 && res.lod1DimY === 68
     );
     check("Welle Perf-3.b V9.88: span invariant über LOD (43.2 m, Chunks world-aligned)", res.spanInvariant);
-    check("Welle Perf-3.b V9.88: vertikaler Range invariant (dimY·step = 223.2 m)", res.verticalRangeInvariant);
+    check("Welle Perf-3.b V9.88 / V14.6: vertikaler Range invariant (dimY·step = 244.8 m)", res.verticalRangeInvariant);
     check(
         "Welle Perf-3.b V9.88: LOD 1 hat 8× weniger Cells als LOD 0",
         res.lod1CellsLess && Math.abs(res.cellsRatio - 8) < 0.01,
@@ -13964,15 +13964,17 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         // Trockenland-Chunk weit weg vom Welt-Zentrum suchen (Atlas hat dort wahrscheinlich
         // weder Lake noch River) — alternativ einen fern-Chunk wo nichts ist.
         out.eligibleNoEdits = r._voxelGpuChunkEligible(100, 100, 1);
-        // V12.0-e — Cutover REAKTIVIERT auf r184 (WebGPURenderer). Die
-        // V9.95-e-Abklemmung war für WebGL-Renderer (cross-backend-mapAsync-
-        // Stall), auf r184's WebGPURenderer ist same-device-mapAsync billig.
-        // Source-Probe prüft jetzt: `_fetchOrRequestChunkDensityGpu` ist im
-        // Streaming-Pfad aufgerufen als Stufe-2-Fallback (Worker-Mesh bleibt
-        // Stufe-1 primary).
-        // V12.0-perf.a — Kaskade wanderte in `_acquireVoxelChunkBuild` (geteilt
-        // Streaming + Edit-Rebuild). GPU-Cutover lebt jetzt dort.
-        out.gpuCutoverActive = /_fetchOrRequestChunkDensityGpu/.test(r._acquireVoxelChunkBuild.toString());
+        // V14.6 — GPU-Density-Stufe-2 DEAKTIVIERT (V9.82 parallele-Pfade-Lehre).
+        // V12.0-e hatte den Cutover auf r184 reaktiviert, ABER der WGSL-Density-
+        // Shader (`WGSL_DENSITY_GRID`) wurde nie auf V14.1+ nachgezogen: ihm
+        // fehlt die kontinentale cont0-Oktave, er nutzt alte Oktaven + die alte
+        // Höhlen-Decke surf-6. Der reaktivierte Pfad baute also pre-V14-Terrain
+        // bis ~157 m unter der Worker-Wahrheit → höhenversetzte Nähte (V14.4-
+        // Restbefund). Statt einen dritten Makro-Mirror zu pflegen, wird der
+        // Pfad abgeklemmt; der Worker (Stufe 3) + Sync-CPU (Stufe 4) decken
+        // alles korrekt ab. Source-Probe: `_fetchOrRequestChunkDensityGpu` darf
+        // NICHT mehr in der Build-Kaskade aufgerufen werden.
+        out.gpuStufe2Disabled = !/_fetchOrRequestChunkDensityGpu/.test(r._acquireVoxelChunkBuild.toString());
         out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
         // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
         // im Edit-Footprint nicht mehr eligible ist
@@ -14060,9 +14062,9 @@ async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
         `far=${res.afterEditFar}`
     );
     check(
-        "V12.0-e: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensityGpu als Stufe-2-Fallback (GPU-Cutover reaktiviert auf r184)",
-        res.gpuCutoverActive,
-        "Source-Probe in _ensureVoxelChunkAt.toString() — Worker-Mesh bleibt Stufe-1 primary"
+        "V14.6: GPU-Density-Stufe-2 abgeklemmt — stale WGSL (kein cont0/surf-6) baute höhenversetzte Nähte (V9.82)",
+        res.gpuStufe2Disabled,
+        "Source-Probe: _fetchOrRequestChunkDensityGpu darf NICHT in _acquireVoxelChunkBuild aufgerufen sein"
     );
     check("V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache", res.notifyEditClears);
     // Conditional: echter Browser mit GPU
@@ -14660,8 +14662,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
-        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // 71424
-        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (71424)
+        out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // V14.6: 24·24·136 = 78336
+        // Empirisch: alle Chunks mit waterCells haben gleiche Länge (78336)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
         let lod0WithCells = 0;
@@ -14698,7 +14700,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         return;
     }
     check(
-        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 71424) — naht-frei per Konstruktion",
+        "Welle V9.93: Wasser-Cells alle gleich-lang (LOD 0 = 78336, V14.6) — naht-frei per Konstruktion",
         res.allCellsAreLod0,
         `expected=${res.expectedCellLen}, firstMismatch=${res.firstMismatchLen}, total=${res.totalWithCells}`
     );
@@ -15478,8 +15480,13 @@ async function checkBandWelleV11DPoolStress(ctx) {
         // 10000-Linie war zu eng + flackerte. 16000 fängt echte Snowballs,
         // ignoriert KB-Rausch.
         check(
-            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 16 MB (Snowball-Backstop, GC-Rausch-tolerant)",
-            res.heapDeltaKB < 16000,
+            // V14.6: Schwelle 16→18 MB. Die dimY-124→136-Hülle (+10 % Voxel-
+            // Buffer global) hebt den GC-Rausch-Boden dieser performance.memory-
+            // Delta-Messung (beobachtet 14–17 MB beim SELBEN Commit = Flake-
+            // Fingerabdruck). Der echte Leak-Beweis bleibt maxPoolSize=1 (Pool
+            // recycelt); ein echter Snowball spränge weit über 18 MB.
+            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 18 MB (Snowball-Backstop, GC-Rausch-tolerant)",
+            res.heapDeltaKB < 18000,
             `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
         );
     }

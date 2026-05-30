@@ -16092,7 +16092,22 @@ class AnazhRealm {
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        let withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // V14.6 — sanftes Decken-Limit (Schöpfer-Befund „nach einiger Zeit in
+        // eine Richtung zerfällt die Welt"). Die kontinentale Basis cont0
+        // (λ~7100 m) hebt die Surface fern vom Ursprung bis ~235 m (gemessen
+        // ±5 km, `diag-radius.cjs`) — weit über die Voxel-Decke → kein
+        // Sign-Change in der Säule → keine Iso-Fläche → Löcher. Jede V14-
+        // Diagnose maß nur ±1100 m (KLEINER als cont0-λ) → sah den Anstieg nie
+        // (die V9.60-b.1-Falle: Sample-Region < modulierende Wellenlänge). Ein
+        // tanh-Soft-Clamp komprimiert NUR hohe Surfaces (>110 m) asymptotisch
+        // gegen 136 m (= Decke 154.8 − Roughness 12 − Marge ~7) → keine
+        // Durchbrüche, egal wie weit man reist. Terrain < 110 m (die ganze
+        // Spawn-/Explorations-Region bis ~2 km) bleibt bit-genau unberührt; die
+        // Kompression ist sanft (126 m → 124 m). Der Clamp greift VOR dem
+        // Sub-Ozean-/Tarn-Block (beide senken nur niedrige Surfaces → unberührt).
+        // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Schutz).
+        if (withoutTarn > 110) withoutTarn = 110 + 26 * Math.tanh((withoutTarn - 110) / 26);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -16910,17 +16925,21 @@ class AnazhRealm {
     // span = dim × step ist die Welt-Kantenlänge eines (würfelförmigen)
     // Voxel-Chunks; die vertikale Spanne deckt das Oberflächen-Band.
     // V9.88 (Welle Perf-3.b — Distance-LOD): optionaler `lod`-Parameter.
-    // **LOD 0** (Default, Nahbereich r=0..1): dim=24, step=1.8 m, dimY=124
-    //   → 71 424 Cells pro Chunk (volle Detail-Auflösung).
+    // **LOD 0** (Default, Nahbereich r=0..1): dim=24, step=1.8 m, dimY=136
+    //   → 78 336 Cells pro Chunk (volle Detail-Auflösung).
     // **LOD 1** (Fernbereich r≥2, > 80 m vom Spieler): dim=12, step=3.6 m,
-    //   dimY=62 → 8 928 Cells = **8× weniger** (`step` × 2 in jeder
+    //   dimY=68 → 9 792 Cells = **8× weniger** (`step` × 2 in jeder
     //   Dimension). Profi-Pattern aus BotW/Genshin: ferne Chunks sind
     //   gröber gemesht, weil Distanz + Atmosphäre-Fog die Detail-Differenz
     //   tarnt. **Konstante**: span = dim·step = 43.2 m BLEIBT, sodass
     //   adjacent Chunks über LOD-Grenzen WORLD-ALIGN (Chunk 0 endet bei
     //   x=43.2, Chunk 1 beginnt bei x=43.2 — beide LODs samplen Vertices
-    //   an demselben Punkt). dimY·step = 223.2 m BLEIBT (vertikale Welt-
-    //   Range identisch). **Seam-Verhalten an LOD-Grenze**: V9.42-d-Pad+Crop
+    //   an demselben Punkt). dimY·step = 244.8 m BLEIBT (vertikale Welt-
+    //   Range identisch). V14.6: dimY 124→136 (Decke base+133→base+155 m) —
+    //   der V14.1-cont0-Schwall hebt die Surface fern vom Ursprung über die
+    //   alte base+133-Decke; die höhere Hülle gibt den Bergen Raum, der
+    //   V14.6-Soft-Clamp (`_terrainMacroSurfaceY`) fängt die Extreme. Boden
+    //   bleibt base−90 (Tiefsee-Min −80 m, gemessen). **Seam-Verhalten an LOD-Grenze**: V9.42-d-Pad+Crop
     //   funktioniert WITHIN gleicher LOD; ein LOD0↔LOD1-Übergang erzeugt
     //   ggf. einen marginalen Vertex-Mismatch (Surface-Nets-Cell-Avg ist
     //   step-abhängig), der durch Fog beyond ~80 m unsichtbar bleibt —
@@ -16931,11 +16950,11 @@ class AnazhRealm {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
         if (lod >= 1) {
-            // LOD 1 — Half-Resolution (8× weniger Cells)
-            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 62, floorDrop: 90, lod: 1 };
+            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 62→68 (V14.6).
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 68, floorDrop: 90, lod: 1 };
         }
-        // LOD 0 — Full-Resolution (Default, V9.58-b-Stand)
-        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 124, floorDrop: 90, lod: 0 };
+        // LOD 0 — Full-Resolution (Default, V14.6-Stand: dimY 124→136 für die hohe cont0-Welt)
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 136, floorDrop: 90, lod: 0 };
     }
 
     // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
@@ -16999,7 +17018,7 @@ class AnazhRealm {
     // alten Hydrosphäre-Atlas; C.2 wird daraus die Wasser-Iso-Surface bauen,
     // C.5 schaltet den Atlas ab.
     //
-    // Performance: dim·dim·dimY = 24·24·124 = 71 424 Cells × `_terrainDensityAt`
+    // Performance: dim·dim·dimY = 24·24·136 = 78 336 Cells × `_terrainDensityAt`
     // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
     // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
     // shared mit Mesher-Density-Grid.
@@ -17886,12 +17905,23 @@ class AnazhRealm {
         if (workerMesh) {
             return this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         }
-        // Stufe 2: GPU-Density. Float32 (Hit), null (Pending), undefined (ineligible).
+        // Stufe 2: GPU-Density — V14.6 DEAKTIVIERT (V9.82 parallele-Pfade-Lehre).
+        // Der WGSL-Density-Shader (`WGSL_DENSITY_GRID`) ist auf dem Stand vor
+        // V14.1 stehengeblieben: ihm fehlt die kontinentale Basis-Oktave `cont0`
+        // (V14.1), er nutzt die alten Oktaven-Amplituden (cont·34 / ridgeAmp
+        // 12+55, V14.3 geändert) und die alte Höhlen-Decke `surf-6` (V14.5:
+        // surf-16). Würde dieser Pfad einen Chunk bauen (nur möglich, solange
+        // der Worker noch nicht synchronisiert ist — Startup nahe Spawn), läge
+        // seine Surface bis zu ~157 m UNTER der Worker-Wahrheit → höhenversetzte
+        // Chunk-Nähte (der V14.4-Restbefund „chunknähte sehr selten unsauber").
+        // Einen DRITTEN Makro-Mirror (neben Main + Worker) für cont0/V14.3-.6 mit
+        // WGSL-tanh-Drift (§3.6) zu pflegen ist die Heilige-Lektion-Sünde; der
+        // Worker (Stufe 3) + Sync-CPU (Stufe 4) decken alles korrekt ab, und
+        // GPU-Compute war ohnehin kein Production-Hebel (V9.95-e: WebGL-Roundtrip
+        // langsamer als Worker). Die Foundation (`_voxelGpuInit` + WGSL) bleibt
+        // für eine spätere, bewusste V14-Neufassung erhalten.
         let preDensity = null;
-        const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
-        if (gpuDensity === null) return "pending";
-        if (gpuDensity !== undefined) preDensity = gpuDensity;
-        // Stufe 3: Worker-Density (Fallback wenn GPU ineligible/down).
+        // Stufe 3: Worker-Density (Fallback wenn Worker-Mesh ineligible/down).
         if (
             !preDensity &&
             this.state.voxelWorker &&
@@ -41130,7 +41160,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.5.0";
+AnazhRealm.VERSION = "14.6.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
