@@ -350,6 +350,46 @@ function histogram(values, bucketSize) {
                     }
                 }
             }
+            // (V14.8) Ketten-Elongation: Connected-Components (4-Nachbar) der
+            // Top-15%-Zellen; je Komponente Elongation = max(bboxW,bboxH)/sqrt(area),
+            // flächengewichtet. Eine lineare Kette (Anden) → hoch (~sqrt(Länge)); ein
+            // runder Blob (isotropes Noise) → ~1.1. Misst „lineare Ketten vs Flecken".
+            const hiMask = new Uint8Array(GDIM * GDIM);
+            for (let q = 0; q < gh.length; q++) hiMask[q] = gh[q] >= hiThresh ? 1 : 0;
+            const labelSeen = new Uint8Array(GDIM * GDIM);
+            let elongWeightedSum = 0;
+            let elongAreaSum = 0;
+            let chainCompCount = 0;
+            const ccStack = [];
+            for (let q0 = 0; q0 < GDIM * GDIM; q0++) {
+                if (!hiMask[q0] || labelSeen[q0]) continue;
+                ccStack.length = 0;
+                ccStack.push(q0);
+                labelSeen[q0] = 1;
+                let minI = GDIM;
+                let maxI = 0;
+                let minJ = GDIM;
+                let maxJ = 0;
+                let area = 0;
+                while (ccStack.length) {
+                    const q = ccStack.pop();
+                    const qi = q % GDIM;
+                    const qj = (q / GDIM) | 0;
+                    area++;
+                    if (qi < minI) minI = qi;
+                    if (qi > maxI) maxI = qi;
+                    if (qj < minJ) minJ = qj;
+                    if (qj > maxJ) maxJ = qj;
+                    const nbs = [qi > 0 ? q - 1 : -1, qi < GDIM - 1 ? q + 1 : -1, qj > 0 ? q - GDIM : -1, qj < GDIM - 1 ? q + GDIM : -1];
+                    for (const nq of nbs) if (nq >= 0 && hiMask[nq] && !labelSeen[nq]) { labelSeen[nq] = 1; ccStack.push(nq); }
+                }
+                if (area >= 4) {
+                    const elong = Math.max(maxI - minI + 1, maxJ - minJ + 1) / Math.sqrt(area);
+                    elongWeightedSum += elong * area;
+                    elongAreaSum += area;
+                    chainCompCount++;
+                }
+            }
             const terrainChar = {
                 slopeMedianDeg: toDeg(slopeAt(0.5)),
                 slopeP90Deg: toDeg(slopeAt(0.9)),
@@ -358,6 +398,8 @@ function histogram(values, bucketSize) {
                 corrLenM: corrLenCells * GSTEP,
                 hiCohesion: hiCount > 0 ? hiCohesive / hiCount : 0,
                 plateauFrac: plateauCount / ((GDIM - 2) * (GDIM - 2)),
+                chainElong: elongAreaSum > 0 ? elongWeightedSum / elongAreaSum : 0,
+                chainCompCount,
             };
 
             // (e) Welt-Meta
@@ -522,6 +564,7 @@ function histogram(values, bucketSize) {
         console.log(`  Feature-Grösse (Korr-Län):${tc.corrLenM.toFixed(0)} m  ${tc.corrLenM > 400 ? "✓ kontinental" : "⚠ Alpen-Miniatur (Ziel >400 m)"}`);
         console.log(`  Hochland-Kohäsion:        ${tc.hiCohesion.toFixed(2)}  (1.0 = lange Ketten/Hochländer, ~0 = isolierte Zacken)`);
         console.log(`  Plateau-Anteil (hoch+flach):${(tc.plateauFrac * 100).toFixed(1)} %  (weite Hochebenen — Ziel: spürbar > 0)`);
+        console.log(`  Ketten-Elongation:        ${tc.chainElong.toFixed(2)}  (${tc.chainCompCount} Hochland-Komponenten; ~1.1 = runde Blobs, >2 = lineare Ketten/Anden)`);
         console.log("");
 
         console.log("=== WELT-AWARENESS (V9.59 — kennt die Welt ihr Wasser?) ===");

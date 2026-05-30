@@ -16081,14 +16081,27 @@ class AnazhRealm {
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        // (b2) V14.7 — der ASYMMETRISCHE Höhen-Hub: eine eigene GLATTE Oktave (λ~2860 m,
-        // freq 0.00035). `max(0,…)·95` hebt nur Hochland-Massive, senkt nie → KEINE
-        // Überflutung (anders als ein symmetrisches tect·90, das 35 % Ozean + Boden-
-        // Durchbruch machte). DAS ist die DOMINANTE Skala (λ2860 → Korr-Länge >400 m,
-        // der V14.0-Leitsatz „dominante Skala = größte"), ein SANFTER Hub (Steilheit
-        // unberührt). Entkoppelt von `mtn` (Ruggedness) → der Mix aus hoch+schroff
-        // (Anden), hoch+flach (Hochebene), tief+flach (epische Felder).
-        const upland = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1)) * 95;
+        // (b2) V14.7/V14.8 — der ASYMMETRISCHE Höhen-Hub, die DOMINANTE Skala (λ~2860 m).
+        // V14.7 war ein GLATTER Blob-Hub (`max(0,noise)·95`) → runde Massive (Elongation
+        // 1,82). **V14.8 — gerichtete Uplift-Maske:** RIDGED `(1−|noise|)²` → lineare
+        // Gebirgs-KETTEN (Anden) entlang der Noise-Nullfläche (eine zusammenhängende
+        // gewundene Kammlinie), statt isotroper Blobs. Eine FLOW-Warp (λ~5000, ±300)
+        // krümmt die Ketten (fliessend statt grid). Asymmetrisch (ridged ≥0 → KEINE
+        // Flutung), sanft (λ2860 → ~8° Hang, nicht spitzig). Entkoppelt von `mtn`
+        // (Ruggedness) → der Mix aus hoch+schroff/hoch+flach/tief+flach.
+        // RIDGED `(1−|noise|)²` bei GROSSER λ (~3570 m, freq 0.00028) → lineare
+        // Gebirgs-KETTEN (Anden) entlang der Noise-Nullfläche (zusammenhängende,
+        // gewundene Kammlinien), statt der V14.7-Blobs (Elongation 1,82→2,28). Eine
+        // FLOW-Warp (λ~5000, ±300) krümmt die Ketten (fliessend, nicht grid).
+        // Asymmetrisch (ridged ≥0 → keine Flutung), sanft (λ3570 → ~7° Hang); die
+        // Täler zwischen den Ketten geben Tieftal-Kontrast (Median-Surface sinkt 50→39).
+        // Trade-off (ehrlich, V14.9-Browser-justierbar): isotrope Feature-Größe (corrLen)
+        // sinkt 464→336 — ABER das ist ein Anisotropie-Artefakt (Ketten sind quer dünn,
+        // längs lang; die isotrope corrLen unterschätzt sie); Plateau 14,8→9,8 %.
+        const upWarpX = n.noise2D(wx * 0.0002 + 51.7, wz * 0.0002 + 13.1) * 300;
+        const upWarpZ = n.noise2D(wx * 0.0002 + 27.3, wz * 0.0002 + 88.9) * 300;
+        const upRidge = 1 - Math.abs(n.noise2D((wx + upWarpX) * 0.00028 + 19.3, (wz + upWarpZ) * 0.00028 + 7.1));
+        const upland = upRidge * upRidge * 95;
         // (1) kontinentale Oktave — V14.7: λ~172→~625 m gestreckt (freq 0.0058→
         // 0.0016) → breite Undulation statt Hügel-Gewimmel. mtn-moduliert (±8..36 m).
         const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn);
@@ -41183,7 +41196,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.7.0";
+AnazhRealm.VERSION = "14.8.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

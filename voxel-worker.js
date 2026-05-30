@@ -232,7 +232,11 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     let mtn = 1 - ero;
     if (mtn < 0) mtn = 0;
     mtn *= mtn;
-    const upland = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1)) * 95; // V14.7 (mirror): glatter asymmetrischer Höhen-Hub λ2860 → Feature-Größe
+    // V14.8 (mirror): ridged Uplift bei großer λ → große lineare Anden-Ketten + Flow-Warp
+    const upWarpX = n.noise2D(wx * 0.0002 + 51.7, wz * 0.0002 + 13.1) * 300;
+    const upWarpZ = n.noise2D(wx * 0.0002 + 27.3, wz * 0.0002 + 88.9) * 300;
+    const upRidge = 1 - Math.abs(n.noise2D((wx + upWarpX) * 0.00028 + 19.3, (wz + upWarpZ) * 0.00028 + 7.1));
+    const upland = upRidge * upRidge * 95;
     const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn); // V14.7 (mirror): λ172→625
     const ridgeAmp = (5 + 38 * mtn) * (state.terrainSteepness || 1); // V14.7 (mirror): Spitzen-Amp gedämpft 62→38 + terrainSteepness verdrahtet
     const rN = n.noise2D(wx * 0.003, wz * 0.003); // V14.7 (mirror): λ77→333

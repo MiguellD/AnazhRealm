@@ -357,6 +357,28 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V14.8 — Die gerichtete Uplift-Maske: lineare Anden-Ketten (ridged Uplift) statt isotroper Blobs (30.05.2026, Playtest „Alle Invarianten OK"):**
+
+Schöpfer: „wir nehmen das momentum und ziehen durch, jedoch trotzdem genial, tief, weitsichtig und ordentlich bleiben champ, scheint sauber bisher". V14.8 nach Plan: die gerichtete Uplift-Maske (V14.0-Diagnose §1.5 (b): „echte Gebirge folgen Plattengrenzen, eine Linie/Kurve gibt lange Ketten statt verstreute Zacken"). Bis V14.7 war der Höhen-Hub eine GLATTE Oktave (`max(0,noise)·95`) → runde Hochland-Blobs.
+
+**Mess-Disziplin zuerst (die V14.0-Lehre „die Akzeptanz wird die Metrik"):** ich habe eine **Ketten-Elongations-Metrik** in `diag-relief` gebaut — Connected-Components (4-Nachbar-Flood-Fill) der Top-15%-Höhen-Zellen, je Komponente Elongation = max(bboxW,bboxH)/√area, flächengewichtet. Eine lineare Kette → hoch (~√Länge); ein runder Blob → ~1,1. Das ist die V14.0 als Ziel benannte „Gebirgsketten-Kohärenz/Längen", endlich gebaut. **Baseline V14.7: 1,82** (blobbig).
+
+**Vier gemessene Iterationen (V9.58-Empirie, je diag-relief):**
+- **a1** ridged `(1−|noise|)²·90` λ2860: Elongation **2,40** ✓ (lineare Ketten!) ABER Feature-Größe (corrLen) 464→320.
+- **a2** multiplikativ `upBroad·(0,3+0,7·upRidge²)`: blobbig (1,90), corrLen 304 — die broad-Basis verwässerte die Ketten.
+- **a3** ridged λ3570 (größere λ): Elongation 2,28, corrLen 336 — größere Ketten („über weite Distanzen").
+- **a4** additiv `upBroad + upRidge²`: blobbig (1,65!) — die broad-Komponente zog die Top-Zellen zu Blobs.
+
+**Schlüssel-Lehre: Elongation (linear) und isotrope corrLen (breit) sind für EINE Oktave gegensätzlich.** Ridged = dünne lineare Ketten (hohe Elongation, niedrige isotrope corrLen); broad = runde Blobs (umgekehrt). Jede broad-Beimischung (a2 multiplikativ, a4 additiv) zieht die Top-15%-Zellen zu Blobs → Elongation fällt. Es gibt keinen Einzel-Oktaven-Kompromiss.
+
+**Die Heilung (a3 gewählt — größte Ketten):** `upland` von `max(0,noise2D(λ2860))·95` (Blob) auf **`(1−|noise|)²·95` ridged bei λ3570 (freq 0.00028) + eine Flow-Warp** (`upWarpX/Z = noise2D(λ5000)·±300`, die Sample-Koordinaten verschoben) → lineare, GEKRÜMMTE Gebirgs-Ketten entlang der Noise-Nullfläche (eine zusammenhängende gewundene Kammlinie). **Empirie V14.7→V14.8: Ketten-Elongation 1,82→2,28 ✓, Median-Surface 50→39 m (mehr Tieftal-Kontrast — die Täler zwischen den Ketten, das adressiert den V14.7-„weniger Kontrast"-Befund), steil 0 %, Kohäsion 0,96, See-reiche Täler (11 %).** Hülle bei ±5 km sicher (`diag-radius` 0 Verletzungen; Surface-Max-Clamp 136 hält, der ridged-Hub ist ≥0 → keine Flutung).
+
+**EHRLICHER Trade-off (V14.9-Browser-justierbar):** die isotrope Feature-Größe (corrLen) sinkt 464→336 — ABER das ist ein **Anisotropie-Artefakt**: eine Kette ist quer DÜNN (kurze corrLen), längs LANG; die isotrope Autokorrelation misst die Quer-Breite → unterschätzt die Ketten-Länge. Plateau-Anteil 14,8→9,8 % (die Ketten ersetzen flaches Hochland). **Die tiefere Erkenntnis: der Schöpfer wollte BEIDES — Anden-Ketten UND epische Felder/Hochebenen; eine EINZIGE Uplift-Oktave kann das nicht** (ridged ODER broad). Die Erde-treue Lösung ist REGIONAL: breite Plateau-Regionen (Tibet/Altiplano) + Gebirgs-GÜRTEL (Anden/Himalaya) an prozeduralen „Plattengrenzen". Das ist das **V14.9-Browser-Audit-getriebene Refinement** (falls der Schöpfer mehr Felder will) — Roadmap §1.5.
+
+**Test-Mitwanderung (V9.56-i):** (1) die Tarn-See-Schwelle 0,7→0,6 — die V14.8-Ketten-Täler bilden mehr Drainage-Kanäle → mehr Hochmulden drainieren zu Flüssen statt Seen zu werden (11/17 = 65 % bleiben Seen, geomorphologisch korrekt; der V14.2-Kommentar sagte das schon voraus). (2) der C.3-Damm-Stempel-Test sucht jetzt einen FLACHEN UFER-Spot MIT Wasser (`_voxelChunkHasAnyWater`) statt eines festen Trocken-Spots — die V14.7/.8-Welt ist höher/trockener → fester Spot trägt evtl. kein Wasser mehr → Default „kein Ufer-Spot = unmessbar = bestanden" (V13.1/V14.3).
+
+Worker bit-identisch (ridged-upland + Flow-Warp gespiegelt, `Math.abs`/`noise2D` V8-deterministisch), Playtest „Alle Invarianten OK", format+lint sauber. **Permanente Lehre: lineare Ketten = ridged-Oktave bei großer λ + Flow-Warp; ein Welt mit Ketten UND Plateaus braucht REGIONALE Differenzierung (eine Oktave ist entweder ridged ODER broad); die isotrope corrLen-Metrik unterschätzt anisotrope Ketten — darum die eigene Elongations-Metrik.** Rest des Bogens: V14.9 Browser-Audit-Schluss (+ ggf. regionale Plateau/Ketten-Koexistenz). Version 14.7.0 → 14.8.0.
+
 **V14.7 — Die Maßstab-Streckung: die dominante Skala wird die größte (Feature-Größe 176→464 m) + terrainSteepness verdrahtet (30.05.2026, Playtest „Alle Invarianten OK"):**
 
 Schöpfer: „ja sauber champ" — Auftrag, V14.7 (Maßstab-Streckung) nach Plan zu bauen, diesmal RICHTIGHERUM: erst die V14.0-Diagnose + die `ranges`-Skala-Historie lesen, Baseline messen, DANN schneiden (die Lehre der V14.6-Reflexion: nicht reinspringen). Das ist die ÄLTESTE offene Schuld des V14-Bogens — das V14.0-Ziel Feature-Größe >400 m. Die Wurzel (V14.0): die dominante Gebirgs-Frequenz war λ77 m (`ranges`) = die KLEINSTE Skala, das Gegenteil des Leitsatzes „die dominante Skala muss die GRÖSSTE sein".
