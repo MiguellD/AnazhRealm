@@ -159,3 +159,40 @@ Kein 3D-Fluid, kein Foto-PBR, keine Engine-Neuschreibung (Heilige Lektion).
 Es ist Worldgen-Streuung aus einem schon-fraktalen Feld + Genre-erprobte
 Instanz-/Billboard-/Wind-Technik. Simpel, effizient, emergent — der Riese
 schläft schon in `worldFieldAt`, wir wecken ihn.
+
+---
+
+## V16.0 — Mess-Diagnose (ERLEDIGT, Stufe-1-Code-Analyse, kein Browser)
+
+Nach der V9.94.r-Disziplin (Stufe 1: Frage durch Code-Lesen beantwortbar?) —
+die Streu-Mathematik steht im Code, kein Puppeteer nötig. Harte Zahlen aus
+den Konstanten (span=43.2 m, chunkRingRadius default 4):
+
+### Befund 1 — der 256-Cap ist DIE Enge (nicht die Streuung)
+- Gras: 16×16=256 Zellen/Chunk, Dichte `floor(lebendig·14 + rnd·2)`.
+- Bei dichter Wiese (lebendig≈1): ~3840 Halme erzeugt, aber `GRASS_MAX_BLADES
+  =256` rendert nur 256 → **93 % weggeworfen**. Schon EINE volle Zelle sprengt
+  den Cap. **Das** macht es spärlich, nicht die Streu-Logik.
+- Korrigiert (Schöpfer-Nachfrage): der Cap ist frei erhöhbar, der r160-Crash
+  ist seit r184 geheilt → nur eine FPS-Frage.
+
+### Befund 2 — Gras deckt nur 11 % der Sichtfläche
+- Sicht-Ring 9×9 Chunks (389 m breit), Gras NUR im 3×3-LOD-0-Kern (130 m).
+- **89 % der Sicht ist per Konstruktion grasfrei** → der „weiter weg sehr
+  kahl"-Befund, exakt erklärt. (V15.3.1-Wiesen-Boden mildert das optisch, aber
+  echte Halme/Detail fehlen jenseits 65 m.)
+
+### Befund 3 — Vegetation doppelt gedrosselt
+- 8×8=64 Stellen/Chunk, `chance = 0.4·affinität²`.
+- Selbst perfekte Affinität → nur 40 % Spawn; mittlere (0,5) → nur 10 %.
+- ~6 Veg-Objekte/Chunk → die Welt ist absichtlich sehr licht.
+
+### Die drei Stellschrauben (gemessen, für V16.1+)
+1. **Gras-Cap 256 → höher** (z.B. 512/1024, FPS-gemessen im Browser).
+2. **Gras-Ring 3×3 → weiter** + Fern-Ring (Billboards, V16.2).
+3. **Veg-`chance`-Kurve großzügiger** + GPU-instanzierte Klein-Vegetation.
+
+### Was NUR der Browser messen kann (offen, Schöpfer-Auge)
+- FPS-Kurve vs Halm-Zahl (welcher Cap trägt 60 FPS auf der Schöpfer-GPU?).
+- Visuelle Dichte-Wirkung (wann „liest" es sich als echte Wiese?).
+- → diese justieren wir im Browser-Loop, nicht headless (V13-Render-Lehre).
