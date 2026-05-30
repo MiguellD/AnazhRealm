@@ -175,7 +175,7 @@ function terrainDensityAt(x, y, z) {
     // Höhlen-Ridged-Hülle.
     const base = state.baseHeight || 0;
     const caveFloor = clamp01((y - (base - 28)) / 8);
-    const caveCeil = clamp01((surf - 6 - y) / 8);
+    const caveCeil = clamp01((surf - 16 - y) / 8); // V14.4-Harmonie (mirror): surf-6→surf-16
     const caveEnv = caveFloor * caveCeil;
     if (caveEnv > 0) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -222,19 +222,23 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
     const wx = x + warpX;
     const wz = z + warpZ;
+    // V14.1 — kontinentale Basis (λ~7100 m, leicht nach oben gebiast). MUSS
+    // bit-identisch zum Main-Thread `_terrainMacroSurfaceY` sein (Naht-Schutz).
+    const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
+    const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3 (mirror)
     const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
-    const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
-    const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
+    const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5; // V14.3 (mirror)
     let mtn = 1 - ero;
     if (mtn < 0) mtn = 0;
     mtn *= mtn;
-    const ridgeAmp = 12 + 55 * mtn;
+    const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * (8 + 28 * mtn); // V14.4 (mirror)
+    const ridgeAmp = 5 + 62 * mtn; // V14.3 (mirror)
     const rN = n.noise2D(wx * 0.013, wz * 0.013);
     const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
     const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
-    const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
-    const withoutTarn = base + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
+    const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
     const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
     const depthBelow = waterRefSub - withoutTarn;
     let withoutTarnFinal = withoutTarn;

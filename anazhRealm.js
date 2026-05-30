@@ -11394,7 +11394,19 @@ class AnazhRealm {
             slopeExp: 1.0, // n — Exponent des Gefälles S
             maxIncisionPerPass: 1.1, // m — Klemme je Iteration (Stabilität)
             edgeTaper: 10, // Zellen — das Delta wird zum Region-Rand auf 0 getapert
-            maxDelta: 18, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle)
+            maxDelta: 26, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle).
+            // V14.2 von 18 auf 26 erhöht: die thermische Talus-Glättung trägt
+            // Steilwände stärker ab als die Inzision allein; eine zu enge Klemme
+            // liesse 60°-Cusps stehen. 26 m hält die Decken-Marge (Surface-Max
+            // ~110 m, Decke 133 m) noch komfortabel.
+            // V14.2 — thermische Erosion (Angle-of-Repose / Talus). Die Stream-
+            // Power-Inzision SCHÄRFT (Täler tief, Grate scharf); der Talus-Pass
+            // GLÄTTET: Hänge steiler als der Ruhewinkel tragen Material ab, das
+            // im Tal deponiert → natürliche Talus-Flanken statt 60°-Cusps (der
+            // Schöpfer-HAUPTBEFUND „spitzig/steil"). Beide ko-evolvieren je
+            // Iteration (World-Machine/Gaea-Pattern: hydraulisch + thermisch).
+            talusAngle: 25, // ° — Ruhewinkel; Hänge darüber fliessen ab
+            talusFactor: 0.55, // Anteil des Überschuss-Transports je Iteration
         });
     }
 
@@ -11420,7 +11432,10 @@ class AnazhRealm {
             // wollen wir grosszügiger sein; ~60 % der Spots passen).
             radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
             radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
-            depthMin: 28, // m — Mulden-Tiefe (V9.58-c von 22 auf 28 angehoben:
+            depthMin: 34, // m — Mulden-Tiefe (V14.2 von 28 auf 34: die thermische
+            // Erosion glättet die Tarn-Umgebung, flachere Mulden schliessen sonst
+            // nicht mehr zum See — die V9.51-Co-Tuning-Kopplung Erosion↔Tarn).
+            // (V9.58-c von 22 auf 28 angehoben:
             // tiefere Mulden für die V9.58-b-Welt, wo das Hochland 60-120 m
             // hoch sitzt → Wasser-Spiegel klar weit über dem Meeresspiegel.
             // Nicht weiter erhöht, sonst klemmt `maxAllowed = surf − waterRef
@@ -15600,10 +15615,16 @@ class AnazhRealm {
             order: new Int32Array(n),
             hpK: new Float64Array(n),
             hpV: new Int32Array(n),
+            thermalDelta: new Float64Array(n), // V14.2 Talus-Akkumulator
+            thNbIdx: new Int32Array(8), // V14.2 niedrigere Nachbarn (pro Zelle)
+            thNbExc: new Float64Array(8), // V14.2 deren Überschuss
         };
-        // (3) Terrain + Drainage ko-evolvieren lassen.
+        // (3) Terrain + Drainage ko-evolvieren lassen: Inzision SCHÄRFT (fluviale
+        // Täler), der Talus-Pass GLÄTTET (Hänge auf den Ruhewinkel) — zusammen
+        // ergeben sie natürliche Berge mit Talus-Flanken statt 60°-Cusps.
         for (let it = 0; it < E.iterations; it++) {
             this._erosionIncisionPass(h, dim, buf, E);
+            this._thermalErosionPass(h, dim, buf, E);
         }
         // (4) Delta = erodiert − roh, geklemmt + zum Region-Rand auf 0 getapert
         // (sonst klaffte eine Stufe zum un-erodierten Umland jenseits der Region).
@@ -15795,6 +15816,62 @@ class AnazhRealm {
         }
     }
 
+    // V14.2 — ein thermischer Erosions-Pass (Angle-of-Repose / Talus). Jede
+    // Nicht-Rand-Zelle, die steiler als der Ruhewinkel zu niedrigeren Nachbarn
+    // abfällt, gibt einen Teil ihres Überschuss-Materials an genau diese
+    // Nachbarn ab (mass-conserving: was hier abgetragen wird, deponiert dort).
+    // Über die Iterationen konvergieren die Hänge zum Ruhewinkel → glatte
+    // Talus-Flanken statt 60°-Cusps. Der Transport wird in einen SEPARATEN
+    // Akkumulator (`thermalDelta`) geschrieben, nicht in-place auf `h` — sonst
+    // hinge das Ergebnis von der Scan-Reihenfolge ab (Determinismus-Bruch).
+    _thermalErosionPass(h, dim, buf, E) {
+        const n = dim * dim;
+        const td = buf.thermalDelta;
+        td.fill(0);
+        // max stabile Höhendifferenz = tan(Ruhewinkel) · Zell-Distanz; der
+        // Diagonal-Nachbar ist √2 weiter → höhere Schwelle (sonst Achsen-Grid-
+        // Bias wie der V13.3-D8-Flow-Befund).
+        const talusT = Math.tan((E.talusAngle * Math.PI) / 180) * E.cell;
+        const talusD = talusT * Math.SQRT2;
+        const factor = E.talusFactor;
+        const nbIdx = buf.thNbIdx;
+        const nbExc = buf.thNbExc;
+        for (let j = 1; j < dim - 1; j++) {
+            for (let i = 1; i < dim - 1; i++) {
+                const idx = i + j * dim;
+                const hc = h[idx];
+                let cnt = 0;
+                let sumExc = 0;
+                let maxExc = 0;
+                for (let dj = -1; dj <= 1; dj++) {
+                    for (let di = -1; di <= 1; di++) {
+                        if (di === 0 && dj === 0) continue;
+                        const nb = i + di + (j + dj) * dim;
+                        const T = di !== 0 && dj !== 0 ? talusD : talusT;
+                        const diff = hc - h[nb] - T;
+                        if (diff > 0) {
+                            nbIdx[cnt] = nb;
+                            nbExc[cnt] = diff;
+                            cnt++;
+                            sumExc += diff;
+                            if (diff > maxExc) maxExc = diff;
+                        }
+                    }
+                }
+                if (sumExc > 0) {
+                    // Bewege einen Bruchteil des GRÖSSTEN Überschusses, proportional
+                    // auf die instabilen Nachbarn verteilt (Musgrave-Thermal-Modell).
+                    const move = factor * maxExc * 0.5;
+                    td[idx] -= move;
+                    for (let p = 0; p < cnt; p++) {
+                        td[nbIdx[p]] += move * (nbExc[p] / sumExc);
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < n; i++) h[i] += td[i];
+    }
+
     // V9.47 — das Erosions-Delta an einer xz-Welt-Position (bilinear aus dem
     // `state.erosion.delta`-Raster; 0 ausserhalb der Region ODER solange das
     // Raster noch nicht gebaut ist). `_terrainMacroSurfaceY` addiert es → die
@@ -15970,28 +16047,38 @@ class AnazhRealm {
         const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
         const wx = x + warpX;
         const wz = z + warpZ;
-        // (0) tektonische Oktave — die SEHR niederfrequente Grossstruktur
-        // (V9.58-a). λ~7150 m, ±35 m. Hebt ganze Regionen (mehrere km breit)
-        // zu Hochland, in denen die ridged-Oktave dann ihre Gipfel setzt.
-        // Heilt den V9.57-Diagnose-Befund: Gebirge waren bisher räumlich
-        // punktuell, nicht "über weite phasen aufbauend".
+        // (0a) V14.1 — die KONTINENTALE BASIS: die fehlende niederfrequente
+        // Grossstruktur (λ~7100 m). Leicht nach oben gebiast — Hochländer
+        // heben bis +130 m, Becken sinken nur bis −55 m (epische Felder +
+        // Sockel statt mehr Ozean, die Land-Marge bleibt erhalten). DIE
+        // dominante Skala: hebt die Feature-Grösse von ~112 m (Alpen-Miniatur,
+        // V14.0-Baseline) auf kontinental → das Gelände baut sich "über weite
+        // Strecken auf" (Schöpfer-Befund). tect/cont/ranges setzen darauf ihre
+        // Mittel- und Gipfel-Strukturen (die DOMINANTE Skala ist jetzt die
+        // GRÖSSTE, nicht mehr die kleinste).
+        const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
+        // Asymmetrisch: HEBT Hochländer bis ~+145 m, senkt Becken nur bis −15 m
+        // (E[cont0]≈+25 m → die Land-Marge bleibt erhalten/steigt, KEIN Ertränken
+        // — die V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser).
+        const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3: +12 Offset kompensiert die abgesenkten flachen Regionen (Land-Marge)
+        // (0b) tektonische Oktave — die regionale Mittelstruktur. λ~1140 m,
+        // ±35 m (der alte Kommentar "λ~7150 m" war falsch — diese Rolle trägt
+        // jetzt cont0; tect bleibt die km-Region-Variation darunter).
         const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
-        // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
-        // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
-        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
-        // (b) Erosions-Feld [0,1] — REGIONAL (V9.58-a: λ von ~1850 m auf
-        // ~4500 m gestreckt → ganze Berg-Regionen statt einzelner Spots);
-        // `mtn` ist die Gebirgs-Neigung (1 = alpin), quadriert → Tiefland
-        // ist der Normalfall, Hochgebirge die Ausnahme. Es moduliert die
-        // ridged-Amplitude.
-        const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
+        // (b) Ruggedness-Feld [0,1] — die REGIONALE Terrain-Typ-Maske (V14.3,
+        // λ~2000 m). `mtn` quadriert → Tiefland ist der Normalfall, Hochgebirge
+        // die Ausnahme. V14.4: sie moduliert ALLE Relief-Oktaven (nicht nur
+        // ridgeAmp, sondern auch cont + detail) → echte FLACHE Ebenen statt
+        // überall-hügelig (Schöpfer-Befund „finde keine ebenen bereiche").
+        const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        // (V9.58-b) Berg-Amplituden vergrössert: 9+33 → 12+55. Erst durch die
-        // V9.58-a-Tektonik + die λ~4500-m-mtn-Streckung sitzen mtn≈1-Spots in
-        // weiten Bergregionen — daher lohnt sich die höhere Amplitude.
-        const ridgeAmp = 12 + 55 * mtn;
+        // (1) kontinentale Oktave (λ~1080 m) — V14.4 mtn-moduliert: in Ebenen
+        // sanft (±8 m), in Gebirgen wellig (±36 m).
+        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * (8 + 28 * mtn);
+        // (2) ridged-Amplitude — Ebenen fast flach (5), Gebirge schroff (67).
+        const ridgeAmp = 5 + 62 * mtn;
         // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
         const rN = n.noise2D(wx * 0.013, wz * 0.013);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
@@ -16001,11 +16088,11 @@ class AnazhRealm {
         const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
         const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
-        const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
+        const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4: Ebenen fast glatt (±1), Gebirge körnig (±4)
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        const withoutTarn = base + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -16090,7 +16177,12 @@ class AnazhRealm {
         // verborgen, durch Graben zu finden) und base-28 — bei base-35 ist
         // caveEnv beweisbar 0, der Chunk-Boden bleibt fest (V9.12-Garantie).
         const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
-        const caveCeil = Math.max(0, Math.min(1, (surf - 6 - y) / 8));
+        // V14.4-Harmonie: die Höhlen-Decke von surf-6 auf surf-16 vertieft. In der
+        // flachen V14-Welt (surf ~12 m) lag surf-6 nur knapp unter einer Oberfläche,
+        // die die 3D-Roughness (±12 m) auf surf-12 drücken kann → die Höhle brach
+        // durch (Löcher + höhenversetzte Kanten). surf-16 hält sie sicher darunter
+        // (Schöpfer-Befund „chunkfehler, löcher, wasser unter der oberfläche").
+        const caveCeil = Math.max(0, Math.min(1, (surf - 16 - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
@@ -31687,11 +31779,36 @@ class AnazhRealm {
         this.state.pendingWaterIso.add(`${cx},${cz}`);
     }
 
-    _tickPendingWaterIso(maxPerFrame = 2) {
+    _tickPendingWaterIso(maxPerFrame = 4) {
         const queue = this.state.pendingWaterIso;
         if (!queue || queue.size === 0) return 0;
+        // V14.4 — nach Spieler-Distanz PRIORISIEREN: die SICHTBAREN (nahen)
+        // See-Oberflächen zuerst bauen. Sonst staut die Queue (jeder Chunk-Build
+        // enqueued 4 Nachbarn für die Seam-Heilung, aber nur `maxPerFrame` werden
+        // gebaut) → nahe Seen verlieren „nach einer Weile" ihr Iso-Mesh, obwohl
+        // die Cells (Physik) längst da sind (Schöpfer-Befund: See blau beim
+        // Schwimmen, aber keine sichtbare Oberfläche). Plus: Chunks weit ausser-
+        // halb des Sicht-Rings aus der Queue WERFEN (sie werden ohnehin gepruned)
+        // → die Queue wächst nicht unbegrenzt.
+        const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
+        const span = this._voxelChunkConfig(0).span;
+        let keys = [...queue];
+        if (pm) {
+            const pcx = Math.floor((pm.x + span / 2) / span);
+            const pcz = Math.floor((pm.z + span / 2) / span);
+            const ring = (this.state.chunkRingRadius || 4) + 2;
+            const distOf = (k) => {
+                const ci = k.indexOf(",");
+                const kx = parseInt(k.slice(0, ci), 10);
+                const kz = parseInt(k.slice(ci + 1), 10);
+                return Math.max(Math.abs(kx - pcx), Math.abs(kz - pcz));
+            };
+            // ferne (jenseits Sicht-Ring) verwerfen, Rest nach Distanz sortieren.
+            for (const k of keys) if (distOf(k) > ring) queue.delete(k);
+            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+        }
         let built = 0;
-        for (const key of queue) {
+        for (const key of keys) {
             if (built >= maxPerFrame) break;
             queue.delete(key);
             // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
@@ -40491,7 +40608,7 @@ class AnazhRealm {
         this._tickPendingVegSpawns(4);
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
-        this._tickPendingWaterIso(2);
+        this._tickPendingWaterIso(4);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -41013,7 +41130,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "13.14.0";
+AnazhRealm.VERSION = "14.5.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
