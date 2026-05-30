@@ -16065,22 +16065,20 @@ class AnazhRealm {
         // ±35 m (der alte Kommentar "λ~7150 m" war falsch — diese Rolle trägt
         // jetzt cont0; tect bleibt die km-Region-Variation darunter).
         const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
-        // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
-        // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
-        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
-        // (b) Erosions-Feld [0,1] — REGIONAL (V9.58-a: λ von ~1850 m auf
-        // ~4500 m gestreckt → ganze Berg-Regionen statt einzelner Spots);
-        // `mtn` ist die Gebirgs-Neigung (1 = alpin), quadriert → Tiefland
-        // ist der Normalfall, Hochgebirge die Ausnahme. Es moduliert die
-        // ridged-Amplitude.
-        const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5; // V14.3: λ714m→λ2000m (Regionen über ~46 Chunks)
+        // (b) Ruggedness-Feld [0,1] — die REGIONALE Terrain-Typ-Maske (V14.3,
+        // λ~2000 m). `mtn` quadriert → Tiefland ist der Normalfall, Hochgebirge
+        // die Ausnahme. V14.4: sie moduliert ALLE Relief-Oktaven (nicht nur
+        // ridgeAmp, sondern auch cont + detail) → echte FLACHE Ebenen statt
+        // überall-hügelig (Schöpfer-Befund „finde keine ebenen bereiche").
+        const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        // (V9.58-b) Berg-Amplituden vergrössert: 9+33 → 12+55. Erst durch die
-        // V9.58-a-Tektonik + die λ~4500-m-mtn-Streckung sitzen mtn≈1-Spots in
-        // weiten Bergregionen — daher lohnt sich die höhere Amplitude.
-        const ridgeAmp = 5 + 62 * mtn; // V14.3: Ebenen flacher (5), Gebirge schroffer (67) → Vielfalt
+        // (1) kontinentale Oktave (λ~1080 m) — V14.4 mtn-moduliert: in Ebenen
+        // sanft (±8 m), in Gebirgen wellig (±36 m).
+        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * (8 + 28 * mtn);
+        // (2) ridged-Amplitude — Ebenen fast flach (5), Gebirge schroff (67).
+        const ridgeAmp = 5 + 62 * mtn;
         // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
         const rN = n.noise2D(wx * 0.013, wz * 0.013);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
@@ -16090,7 +16088,7 @@ class AnazhRealm {
         const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
         const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
-        const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
+        const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4: Ebenen fast glatt (±1), Gebirge körnig (±4)
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
@@ -31776,11 +31774,36 @@ class AnazhRealm {
         this.state.pendingWaterIso.add(`${cx},${cz}`);
     }
 
-    _tickPendingWaterIso(maxPerFrame = 2) {
+    _tickPendingWaterIso(maxPerFrame = 4) {
         const queue = this.state.pendingWaterIso;
         if (!queue || queue.size === 0) return 0;
+        // V14.4 — nach Spieler-Distanz PRIORISIEREN: die SICHTBAREN (nahen)
+        // See-Oberflächen zuerst bauen. Sonst staut die Queue (jeder Chunk-Build
+        // enqueued 4 Nachbarn für die Seam-Heilung, aber nur `maxPerFrame` werden
+        // gebaut) → nahe Seen verlieren „nach einer Weile" ihr Iso-Mesh, obwohl
+        // die Cells (Physik) längst da sind (Schöpfer-Befund: See blau beim
+        // Schwimmen, aber keine sichtbare Oberfläche). Plus: Chunks weit ausser-
+        // halb des Sicht-Rings aus der Queue WERFEN (sie werden ohnehin gepruned)
+        // → die Queue wächst nicht unbegrenzt.
+        const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
+        const span = this._voxelChunkConfig(0).span;
+        let keys = [...queue];
+        if (pm) {
+            const pcx = Math.floor((pm.x + span / 2) / span);
+            const pcz = Math.floor((pm.z + span / 2) / span);
+            const ring = (this.state.chunkRingRadius || 4) + 2;
+            const distOf = (k) => {
+                const ci = k.indexOf(",");
+                const kx = parseInt(k.slice(0, ci), 10);
+                const kz = parseInt(k.slice(ci + 1), 10);
+                return Math.max(Math.abs(kx - pcx), Math.abs(kz - pcz));
+            };
+            // ferne (jenseits Sicht-Ring) verwerfen, Rest nach Distanz sortieren.
+            for (const k of keys) if (distOf(k) > ring) queue.delete(k);
+            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+        }
         let built = 0;
-        for (const key of queue) {
+        for (const key of keys) {
             if (built >= maxPerFrame) break;
             queue.delete(key);
             // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
@@ -40580,7 +40603,7 @@ class AnazhRealm {
         this._tickPendingVegSpawns(4);
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
-        this._tickPendingWaterIso(2);
+        this._tickPendingWaterIso(4);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -41102,7 +41125,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.3.0";
+AnazhRealm.VERSION = "14.4.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
