@@ -15970,11 +15970,23 @@ class AnazhRealm {
         const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
         const wx = x + warpX;
         const wz = z + warpZ;
-        // (0) tektonische Oktave — die SEHR niederfrequente Grossstruktur
-        // (V9.58-a). λ~7150 m, ±35 m. Hebt ganze Regionen (mehrere km breit)
-        // zu Hochland, in denen die ridged-Oktave dann ihre Gipfel setzt.
-        // Heilt den V9.57-Diagnose-Befund: Gebirge waren bisher räumlich
-        // punktuell, nicht "über weite phasen aufbauend".
+        // (0a) V14.1 — die KONTINENTALE BASIS: die fehlende niederfrequente
+        // Grossstruktur (λ~7100 m). Leicht nach oben gebiast — Hochländer
+        // heben bis +130 m, Becken sinken nur bis −55 m (epische Felder +
+        // Sockel statt mehr Ozean, die Land-Marge bleibt erhalten). DIE
+        // dominante Skala: hebt die Feature-Grösse von ~112 m (Alpen-Miniatur,
+        // V14.0-Baseline) auf kontinental → das Gelände baut sich "über weite
+        // Strecken auf" (Schöpfer-Befund). tect/cont/ranges setzen darauf ihre
+        // Mittel- und Gipfel-Strukturen (die DOMINANTE Skala ist jetzt die
+        // GRÖSSTE, nicht mehr die kleinste).
+        const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
+        // Asymmetrisch: HEBT Hochländer bis ~+145 m, senkt Becken nur bis −15 m
+        // (E[cont0]≈+25 m → die Land-Marge bleibt erhalten/steigt, KEIN Ertränken
+        // — die V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser).
+        const cont0 = Math.max(0, cBase) * 130 + cBase * 15;
+        // (0b) tektonische Oktave — die regionale Mittelstruktur. λ~1140 m,
+        // ±35 m (der alte Kommentar "λ~7150 m" war falsch — diese Rolle trägt
+        // jetzt cont0; tect bleibt die km-Region-Variation darunter).
         const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
         // (1) kontinentale Oktave — die grosse Landmasse. λ~1080 m (V9.45-a
         // von ~1500 m gesenkt → sie variiert INNERHALB einer Welt sichtbar).
@@ -16005,7 +16017,7 @@ class AnazhRealm {
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        const withoutTarn = base + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -41013,7 +41025,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.0.0";
+AnazhRealm.VERSION = "14.1.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

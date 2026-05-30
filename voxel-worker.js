@@ -222,6 +222,10 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
     const wx = x + warpX;
     const wz = z + warpZ;
+    // V14.1 — kontinentale Basis (λ~7100 m, leicht nach oben gebiast). MUSS
+    // bit-identisch zum Main-Thread `_terrainMacroSurfaceY` sein (Naht-Schutz).
+    const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
+    const cont0 = Math.max(0, cBase) * 130 + cBase * 15;
     const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
     const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * 34;
     const ero = n.noise2D(x * 0.0014, z * 0.0014) * 0.5 + 0.5;
@@ -234,7 +238,7 @@ function terrainMacroSurfaceY(x, z, includeDetail) {
     const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
     const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
     const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * 4 : 0;
-    const withoutTarn = base + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
+    const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
     const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
     const depthBelow = waterRefSub - withoutTarn;
     let withoutTarnFinal = withoutTarn;
