@@ -357,6 +357,8 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V16.1 - Gras-Riese geweckt (Lebende-Umgebung-Bogen) (30.05.2026):** V16.0-Diagnose: Cap 256 warf ~93 % der Halme weg, Gras deckte nur 11 % der Sicht. V16.1: Cap 256->1024, Ring 3x3->5x5 (~30 %), Pool 32->48. maxPoolSize=1 (kein Leck) in jedem Lauf gruen; C.3/Heap/Perf als container-flaky bestaetigt, Test-Schwellen mitgewandert (Pool 48, Heap 30 MB). Artenreiche Streuung -> V16.1-b, Billboards -> V16.2.
+
 **V15.4.1 - Crash-Fix + Fog-Revert (30.05.2026):** schwarzer Schirm durch `au.skyColor.value.setRGB is not a function` (Uniform war vec3 statt THREE.Color). Fix: `uniform(new THREE.Color(...))` + Setter-Guard. Plus fogMult 1.6->3.0 (der V15.4-Pull war ein Pflaster gegen die geliebte Weite). Gras-Schatten + Aerial-Term bleiben. Lebende-Umgebung-Bogen wird erst geplant.
 
 **V15.4 - Harmonie-Welle (render-only) (30.05.2026):** Schoepfer-Befund: keine Tiefe + Gras/Terrain/Strukturen entkoppelt von Licht/Zeit/Wetter. Wurzel: keine gemeinsame Atmosphaere (Gras receiveShadow=false; Fog near/far jenseits Render-Radius). Heilung: (1) Gras receiveShadow=true (selbes Schatten-System), (2) Aerial Perspective im Terrain-colorNode (hoehen-dominant, Gipfel bleichen zur Sky-Farbe -> Tiefe), (3) fogMult 3.0->1.6 (Fog greift im Sichtbereich). atmoUniforms vom Fog gespeist (EINE Quelle -> tag/nacht/wetter-kohaerent). Werte browser-justierbar.

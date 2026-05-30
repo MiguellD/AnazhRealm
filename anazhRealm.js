@@ -11528,7 +11528,10 @@ class AnazhRealm {
     // nächsten Bau wiederverwendet — kein new+dispose, kein Race-Risiko, kein
     // linear-wachsender Heap.
     static get GRASS_POOL_CAP() {
-        return 32; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
+        // V16.1 — 32→48: der Gras-Ring wuchs von 3×3 (9 Chunks) auf 5×5
+        // (25 Chunks); der Pool braucht Headroom über die Ring-Größe, sonst
+        // LRU-Thrashing (ständig disposen/neu-allokieren beim Laufen).
+        return 48; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
     static get CREATURE_GATHER_HALT_DIST() {
@@ -18164,7 +18167,20 @@ class AnazhRealm {
         // V9.88 — Grass nur auf LOD-0-Nahchunks. V9.75 — Iso-Wasser ist der
         // einzige Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
         // V9.24 — Streu-Strukturen (idempotent, je Chunk einmal).
-        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
+        // V16.1 — Gras-Ring von 3×3 (LOD 0, ~130 m, 11 % der Sicht) auf 5×5
+        // (Chunk-Distanz ≤ 2, ~216 m, ~30 % der Sicht) geweitet — der "weiter
+        // weg kahl"-Befund. NICHT der ganze 9×9-Sicht-Ring (81 Chunks × 1024 =
+        // zu großer FPS-Sprung für einen sicheren ersten Schritt); die FERNE
+        // trägt der Wiesen-Boden (V15.3.1) + später Billboards (V16.2). span
+        // ist über beide LODs gleich (43.2 m) → die Streuung ist distanz-
+        // unabhängig, derselbe Build trägt LOD 0 und LOD 1. Cap 1024 fängt die
+        // dichtere Wiese (256 warf ~93 % weg). FPS-Wahrheit = Browser-Audit.
+        {
+            const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
+            const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
+            const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
+            if (_gr <= 2) this._buildVoxelChunkGrass(cx, cz);
+        }
         // V12.0-perf.h — Wasser-Iso deferred (per-Frame-Queue) statt synchron:
         // der Chunk ist mit Terrain+Boden+Collision sofort fertig, das Wasser
         // (~78 ms Surface-Nets) baut ≤budget/Frame nach → kein Streaming-Spike.
@@ -20109,7 +20125,7 @@ class AnazhRealm {
     _acquireGrassMesh() {
         if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
         const pool = this.state._grassMeshPool;
-        const GRASS_MAX_BLADES = 256;
+        const GRASS_MAX_BLADES = 1024; // V16.1 — Cap 256->1024 (r184-geheilt, kein Crash; FPS-Frage). 256 warf bei dichter Wiese ~93% der Halme weg.
         if (pool.length > 0) {
             const mesh = pool.pop();
             mesh.visible = true;
@@ -20268,7 +20284,7 @@ class AnazhRealm {
         // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
         // Mismatch zwischen Chunks. inst.count = realCount für die
         // DrawIndexed-Iteration (echte Render-Count).
-        const GRASS_MAX_BLADES = 256;
+        const GRASS_MAX_BLADES = 1024; // V16.1 — Cap 256->1024 (r184-geheilt, kein Crash; FPS-Frage). 256 warf bei dichter Wiese ~93% der Halme weg.
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
         // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
         // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
@@ -41389,7 +41405,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "15.4.1";
+AnazhRealm.VERSION = "16.1.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -15240,7 +15240,7 @@ async function checkBandWelleV11APoolFoundation(ctx) {
         check("Welle V11.0-a: Pool-Foundation-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle V11.0-a: GRASS_POOL_CAP = 32", res.cap === 32);
+    check("Welle V11.0-a: GRASS_POOL_CAP = 48 (V16.1 — Gras-Ring 3×3→5×5)", res.cap === 48);
     check("Welle V11.0-a: _acquireGrassMesh existiert", res.acquireExists === true);
     check("Welle V11.0-a: _releaseGrassMesh existiert", res.releaseExists === true);
     check("Welle V11.0-a: _drainGrassMeshPool existiert", res.drainExists === true);
@@ -15542,14 +15542,16 @@ async function checkBandWelleV11DPoolStress(ctx) {
         // 10000-Linie war zu eng + flackerte. 16000 fängt echte Snowballs,
         // ignoriert KB-Rausch.
         check(
-            // V14.6: 16→18 MB (dimY-Hülle). V14.9: 18→24 MB. Das ist eine reine
-            // performance.memory-GC-Rausch-Messung (beobachtet 14–21 MB beim SELBEN
-            // Code = Flake-Fingerabdruck — GC-Timing, kein Leak); die schwerere
-            // V14-Macro (mehr Noise-Calls/Build) + GC-Timing heben den Rausch-Boden.
-            // Der ECHTE Leak-Beweis ist maxPoolSize=1 (der Pool recycelt); ein echter
-            // Snowball spränge auf Hunderte MB, nicht 21. 24 MB gibt komfortable Marge.
-            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 24 MB (Snowball-Backstop, GC-Rausch-tolerant)",
-            res.heapDeltaKB < 24000,
+            // V14.6: 16→18 MB (dimY-Hülle). V14.9: 18→24 MB. V16.1: 24→30 MB.
+            // Das ist eine reine performance.memory-GC-Rausch-Messung (beobachtet
+            // 14–26 MB beim SELBEN Code = Flake-Fingerabdruck — GC-Timing, kein
+            // Leak). V16.1 hob den Gras-Cap 256→1024 + Pool-Cap 32→48 (Gras-Ring
+            // 3×3→5×5) → mehr Gras-Instanzen pro Stress-Zyklus = legitim höherer,
+            // BOUNDED Rausch-Boden (gemessen 26,5 MB). Der ECHTE Leak-Beweis bleibt
+            // maxPoolSize=1 (der Pool recycelt EIN Mesh über alle 50 Zyklen); ein
+            // echter Snowball spränge auf Hunderte MB, nicht 26. 30 MB gibt Marge.
+            "Welle V11.0-d: Heap-Delta nach 50 Zyklen < 30 MB (Snowball-Backstop, GC-Rausch-tolerant)",
+            res.heapDeltaKB < 30000,
             `heapDelta=${res.heapDeltaKB.toFixed(1)} KB (echter Recycle-Beweis: maxPoolSize=${res.maxPoolSizeDuring})`
         );
     }
