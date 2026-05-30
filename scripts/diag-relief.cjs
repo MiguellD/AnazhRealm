@@ -266,6 +266,100 @@ function histogram(values, bucketSize) {
                 landMargin,
             };
 
+            // (V14.0) Terrain-Charakteristik — die "episch vs. spitz"-Metriken.
+            // Ein regelmässiges Makro-Höhen-Grid (Steigung + Kohärenz brauchen
+            // Nachbar-Beziehungen, anders als die Random-Stichprobe oben).
+            // Beantwortet den Schöpfer-Befund "spitzig/steil, nicht über weite
+            // Strecken aufbauend": misst Hang-Neigung, die charakteristische
+            // Feature-Grösse (Autokorrelation), Ketten-Kohärenz, Plateau-Anteil.
+            const GDIM = 128; // 128×128 über 2048 m = 16 m Auflösung
+            const GSTEP = REGION / GDIM;
+            const gh = new Float64Array(GDIM * GDIM);
+            for (let j = 0; j < GDIM; j++) {
+                for (let i = 0; i < GDIM; i++) {
+                    const gx = -HALF + (i + 0.5) * GSTEP;
+                    const gz = -HALF + (j + 0.5) * GSTEP;
+                    gh[i + j * GDIM] = r._terrainMacroSurfaceY(gx, gz, true);
+                }
+            }
+            // Steigung pro Zelle (zentrale Differenz, dimensionslos m/m → Grad).
+            const slopes = [];
+            for (let j = 1; j < GDIM - 1; j++) {
+                for (let i = 1; i < GDIM - 1; i++) {
+                    const ddx = (gh[i + 1 + j * GDIM] - gh[i - 1 + j * GDIM]) / (2 * GSTEP);
+                    const ddz = (gh[i + (j + 1) * GDIM] - gh[i + (j - 1) * GDIM]) / (2 * GSTEP);
+                    slopes.push(Math.hypot(ddx, ddz));
+                }
+            }
+            slopes.sort((a, b) => a - b);
+            const slopeAt = (p) => slopes[Math.floor(slopes.length * p)] || 0;
+            const toDeg = (s2) => (Math.atan(s2) * 180) / Math.PI;
+            const steepFrac = slopes.filter((v) => v > 1).length / slopes.length; // >45°
+            const gentleFrac = slopes.filter((v) => v < 0.2).length / slopes.length; // <11°
+            // Höhen-Autokorrelation entlang x: über welche Distanz sinkt die
+            // Korrelation auf 1/e (0.3679)? = charakteristische Feature-Grösse.
+            // Klein (~80 m) = Alpen-Miniatur; gross (>500 m) = kontinentale Weite.
+            const ghMean = gh.reduce((a, b) => a + b, 0) / gh.length;
+            let ghVar = 0;
+            for (const v of gh) ghVar += (v - ghMean) ** 2;
+            ghVar /= gh.length;
+            const autocorr = (lag) => {
+                let acc = 0;
+                let n = 0;
+                for (let j = 0; j < GDIM; j++) {
+                    for (let i = 0; i < GDIM - lag; i++) {
+                        acc += (gh[i + j * GDIM] - ghMean) * (gh[i + lag + j * GDIM] - ghMean);
+                        n++;
+                    }
+                }
+                return ghVar > 0 ? acc / n / ghVar : 0;
+            };
+            let corrLenCells = GDIM;
+            for (let lag = 1; lag < GDIM; lag++) {
+                if (autocorr(lag) < 0.3679) {
+                    corrLenCells = lag;
+                    break;
+                }
+            }
+            // Hochland-Kohäsion: von den Top-15%-Höhen-Zellen, welcher Anteil hat
+            // >=4 von 8 Nachbarn ebenfalls im Top-15%? (1.0 = zusammenhängende
+            // Ketten/Hochländer, ~0 = isolierte Zacken). Plus Plateau-Anteil:
+            // hoch (>p70) UND flach (<0.25 Steigung) = weite Hochebene.
+            const sortedGh = Array.from(gh).sort((a, b) => a - b);
+            const hiThresh = sortedGh[Math.floor(sortedGh.length * 0.85)];
+            const p70h = sortedGh[Math.floor(sortedGh.length * 0.7)];
+            let hiCount = 0;
+            let hiCohesive = 0;
+            let plateauCount = 0;
+            for (let j = 1; j < GDIM - 1; j++) {
+                for (let i = 1; i < GDIM - 1; i++) {
+                    const h = gh[i + j * GDIM];
+                    const ddx = (gh[i + 1 + j * GDIM] - gh[i - 1 + j * GDIM]) / (2 * GSTEP);
+                    const ddz = (gh[i + (j + 1) * GDIM] - gh[i + (j - 1) * GDIM]) / (2 * GSTEP);
+                    const sl = Math.hypot(ddx, ddz);
+                    if (h > p70h && sl < 0.25) plateauCount++;
+                    if (h >= hiThresh) {
+                        hiCount++;
+                        let hiN = 0;
+                        for (let dj = -1; dj <= 1; dj++)
+                            for (let di = -1; di <= 1; di++) {
+                                if (di === 0 && dj === 0) continue;
+                                if (gh[i + di + (j + dj) * GDIM] >= hiThresh) hiN++;
+                            }
+                        if (hiN >= 4) hiCohesive++;
+                    }
+                }
+            }
+            const terrainChar = {
+                slopeMedianDeg: toDeg(slopeAt(0.5)),
+                slopeP90Deg: toDeg(slopeAt(0.9)),
+                steepFrac,
+                gentleFrac,
+                corrLenM: corrLenCells * GSTEP,
+                hiCohesion: hiCount > 0 ? hiCohesive / hiCount : 0,
+                plateauFrac: plateauCount / ((GDIM - 2) * (GDIM - 2)),
+            };
+
             // (e) Welt-Meta
             const meta = {
                 seed: s.worldMeta && s.worldMeta.seed,
@@ -287,6 +381,7 @@ function histogram(values, bucketSize) {
                 lakes,
                 awareness,
                 topology,
+                terrainChar,
                 macroY: Array.from(macroY),
                 voxelY: Array.from(voxelY),
                 chunkCfg: { dimY: cfg.dimY, step: cfg.step, floorDrop: cfg.floorDrop, ceiling },
@@ -416,6 +511,17 @@ function histogram(values, bucketSize) {
         console.log(`  Davon kurze (<100m):      ${tp.rivers.shortCount}`);
         console.log(`  See-Hoehen Std-Abw:       ${tp.lakeLevelStdDev.toFixed(1)} m  (${tp.lakeLevelStdDev > 8 ? "✓ differenziert" : "⚠ zu uniform"})`);
         console.log(`  Uferlinien-Index:         ${tp.coastIndex.toFixed(2)} (Kreis ~3.5, Buchten >5, fraktale Kueste >7)`);
+        console.log("");
+
+        console.log("=== TERRAIN-CHARAKTERISTIK (V14.0 — episch vs. spitz) ===");
+        const tc = data.terrainChar;
+        console.log(`  Hang-Neigung Median:      ${tc.slopeMedianDeg.toFixed(1)}°  (sanfte Welt < ~12°, alpin > ~25°)`);
+        console.log(`  Hang-Neigung p90:         ${tc.slopeP90Deg.toFixed(1)}°  (die steilsten 10 %)`);
+        console.log(`  Anteil steil (>45°):      ${(tc.steepFrac * 100).toFixed(1)} %  ${tc.steepFrac < 0.05 ? "✓" : "⚠ viele Steilwände/Cusps"}`);
+        console.log(`  Anteil sanft (<11°):      ${(tc.gentleFrac * 100).toFixed(1)} %  (epische Weite braucht viel sanftes Land)`);
+        console.log(`  Feature-Grösse (Korr-Län):${tc.corrLenM.toFixed(0)} m  ${tc.corrLenM > 400 ? "✓ kontinental" : "⚠ Alpen-Miniatur (Ziel >400 m)"}`);
+        console.log(`  Hochland-Kohäsion:        ${tc.hiCohesion.toFixed(2)}  (1.0 = lange Ketten/Hochländer, ~0 = isolierte Zacken)`);
+        console.log(`  Plateau-Anteil (hoch+flach):${(tc.plateauFrac * 100).toFixed(1)} %  (weite Hochebenen — Ziel: spürbar > 0)`);
         console.log("");
 
         console.log("=== WELT-AWARENESS (V9.59 — kennt die Welt ihr Wasser?) ===");
