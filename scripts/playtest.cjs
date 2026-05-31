@@ -20028,6 +20028,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.skyboxHasSunDir = !!(sd && sd.value && typeof sd.value.x === "number");
         const skySrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
         out.skyboxCloudFbm = skySrc.includes("fbm") && skySrc.includes("sunGlow") && skySrc.includes("cloudShade");
+        // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
+        // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
+        const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
+        out.degrayPresent = ppSrc.includes("degrayStrength") && ppSrc.includes("greyness") && ppSrc.includes("warm");
         // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
@@ -20071,6 +20075,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
         check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
+        check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
     } else {

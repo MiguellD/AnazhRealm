@@ -41822,7 +41822,7 @@ class AnazhRealm {
                 );
                 return null;
             }
-            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV } = TSL;
+            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
             const pp = new THREE.PostProcessing(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
             // API-korrekt: der sampelbare Textur-Node kommt aus
@@ -41836,6 +41836,11 @@ class AnazhRealm {
                 bloomRadius: uniform(2.2),
                 gradeSat: uniform(1.18),
                 gradeContrast: uniform(1.06),
+                // V17.3 — Entgrauen: desaturierte (graue) Pixel warm anheben.
+                // degrayStrength = wie stark, degrayRange = bis zu welcher
+                // Saettigung ein Pixel als "grau" zaehlt. Browser-justierbar.
+                degrayStrength: uniform(0.35),
+                degrayRange: uniform(0.16),
             };
             this.state.postProcessingUniforms = u;
 
@@ -41875,7 +41880,22 @@ class AnazhRealm {
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
             const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
-            const graded = contrasted.max(vec3(0, 0, 0));
+
+            // --- V17.3 Entgrauen: Ghibli hat NICHTS Graues. Desaturierte (graue)
+            // Pixel — graue Tuerme/Waende/Felsen — werden warm angehoben; satte
+            // Pixel (Himmel-Blau, Gras-Gruen, Wasser) bleiben unberuehrt. Der
+            // warm-Stein-Ton ist luminanz-erhaltend (nur Hue-Shift, kein
+            // Aufhellen: R hoch, G gehalten, B runter um die Helligkeit). Die
+            // Saettigung steuert die Maske -> nur Graues kippt. Render-only,
+            // browser-justierbar (degrayStrength/degrayRange).
+            const gMax = max(max(contrasted.r, contrasted.g), contrasted.b);
+            const gMin = min(min(contrasted.r, contrasted.g), contrasted.b);
+            const gSat = gMax.sub(gMin);
+            const greyness = smoothstep(u.degrayRange, float(0.0), gSat);
+            const gLum = luminance(contrasted);
+            const warm = vec3(gLum.mul(float(1.14)), gLum.mul(float(1.0)), gLum.mul(float(0.82)));
+            const degrayed = mix(contrasted, warm, greyness.mul(u.degrayStrength));
+            const graded = degrayed.max(vec3(0, 0, 0));
 
             pp.outputNode = graded;
             this.state.postProcessing = pp;
@@ -42285,7 +42305,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.2.0";
+AnazhRealm.VERSION = "17.3.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
