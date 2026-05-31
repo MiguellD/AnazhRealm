@@ -11780,29 +11780,6 @@ class AnazhRealm {
                 color2: [1.0, 0.82, 0.5],
                 geom: "spore",
             },
-            // V17.6 — lebendig → der instanzierte WALD: low-poly Bäume, dicht +
-            // billig im Mittel-Ring (ring 2 ~216 m). Reine Deko (keine Physik —
-            // die teuren Compound-Bäume bleiben die „Helden" mit Kollision). Die
-            // Antwort auf „riesige Wälder ohne Lags" (Minecraft = Instanzen, nicht
-            // Einzel-Meshes). Sanftes Wipfel-Wiegen (wind + windScale 0.2). Cap
-            // 224, größerer Pool (ring 2 = bis 25 Chunks). Cliff-Skip (V17.5) gilt.
-            {
-                name: "baum",
-                field: "lebendig",
-                floor: 0.42,
-                perCell: 0.7,
-                cap: 224,
-                ring: 2,
-                pool: 32,
-                wind: true,
-                windScale: 0.2,
-                emissive: false,
-                yOff: 0,
-                scale: [1.0, 1.7],
-                color: [0.18, 0.38, 0.16],
-                color2: [0.34, 0.56, 0.26],
-                geom: "baum",
-            },
         ];
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
@@ -20896,50 +20873,6 @@ class AnazhRealm {
                 tri(top, a, b, c, c2, c);
                 tri(bot, b, a, c, c, c2);
             }
-        } else if (species.geom === "baum") {
-            // V17.6 — Low-Poly-Baum (Studio-Ghibli-Silhouette): 4-seitiger,
-            // leicht verjüngter Stamm + DREI gestapelte 6-seitige Laub-Kegel.
-            // Basis ~3 m hoch (per-Instance 1.0-1.7× skaliert → 3-5 m Bäume).
-            // c/c2 = Laub-Gradient (Sockel dunkler → Spitze heller). Reine Deko
-            // (keine Physik) — der instanzierte Wald, billig + dicht (die teuren
-            // Compound-Bäume bleiben die „Helden" mit Kollision). NON-INDEXED →
-            // flat-shaded toon. Wurzel y=0 (Wind nutzt positionLocal.y, windScale
-            // dämpft → sanftes Wipfel-Wiegen, kein Gras-Peitschen).
-            const cTrunk = [0.32, 0.22, 0.13];
-            const tw0 = 0.16;
-            const tw1 = 0.11;
-            const th = 1.0;
-            const ring4 = (w, y) => [
-                [w, y, w],
-                [-w, y, w],
-                [-w, y, -w],
-                [w, y, -w],
-            ];
-            const r0 = ring4(tw0, 0);
-            const r1 = ring4(tw1, th);
-            for (let i = 0; i < 4; i++) {
-                const a = r0[i];
-                const b = r0[(i + 1) % 4];
-                const d = r1[(i + 1) % 4];
-                const e = r1[i];
-                tri(a, b, d, cTrunk);
-                tri(a, d, e, cTrunk);
-            }
-            const cone = (cy, rad, apexY) => {
-                const apex = [0, apexY, 0];
-                const S = 6;
-                for (let i = 0; i < S; i++) {
-                    const a0 = (i / S) * Math.PI * 2;
-                    const a1 = ((i + 1) / S) * Math.PI * 2;
-                    const p0 = [Math.cos(a0) * rad, cy, Math.sin(a0) * rad];
-                    const p1 = [Math.cos(a1) * rad, cy, Math.sin(a1) * rad];
-                    tri(apex, p0, p1, c2, c, c);
-                    tri([0, cy - 0.05, 0], p1, p0, c, c, c);
-                }
-            };
-            cone(0.8, 0.85, 1.7);
-            cone(1.45, 0.66, 2.35);
-            cone(2.05, 0.42, 3.0);
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
@@ -32894,7 +32827,23 @@ class AnazhRealm {
 
         // Bernoulli-Probe via deterministischer noise2D (Multi-User-safe).
         const probe = rng ? (rng.noise2D(sampleX * 0.31, sampleZ * 0.31) + 1) / 2 : Math.random();
-        const chance = BASE_RATE * bestAffinity * bestAffinity;
+        // V17.9 — Wald-Dichte (die WURZEL-Heilung des Schöpfer-Befundes „Bäume
+        // spärlich, nicht vereint"): Bäume (baum_eiche/baum_kiefer) sind in
+        // üppigen (lebendig-hohen) Regionen VIEL wahrscheinlicher → echte Wälder
+        // aus den BESTEHENDEN, abbaubaren Bäumen. KEIN paralleles Deko-System
+        // (der V17.6-Scatter-`baum` ist entfernt — er war redundant + entkoppelt
+        // von Ernte/Kollision). Die Dichte füttert die SCHON vorhandene Effizienz-
+        // Maschinerie: HISM-Instancing (rendert N gleiche Bäume in EINEM Draw-
+        // Call), Lazy-Collision (Ammo-Bodies nur < 40 m, V9.92-Pattern), Distanz-
+        // Mesh-Culling (< 150 m). Felsen/Geoden/Glutbrunnen bleiben spärliche
+        // Landmarken (nur Bäume werden zum Wald). Werte browser-justierbar (FPS).
+        const isTree = bestName === "baum_eiche" || bestName === "baum_kiefer";
+        let chance = BASE_RATE * bestAffinity * bestAffinity;
+        if (isTree) {
+            const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
+            const lebendig = f ? f.lebendig : 0;
+            chance = Math.min(0.8, BASE_RATE * bestAffinity * (0.5 + lebendig * 1.5));
+        }
         if (probe >= chance) return 0;
 
         this._enqueueVegetationSpawn(
@@ -42485,7 +42434,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.8.0";
+AnazhRealm.VERSION = "17.9.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

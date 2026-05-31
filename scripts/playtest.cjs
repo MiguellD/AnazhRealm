@@ -15796,7 +15796,6 @@ async function checkBandV171Scatter(ctx) {
     check("V17.1 Scatter: KLEIN_VEGETATION_SPECIES ist ein Array", res.registryArray === true);
     check("V17.1 Scatter: ≥5 Biom-Stimmen (Arten) registriert", res.speciesCount >= 5);
     check("V17.4: Pollen-Partikel-Art (emissive + drift, lebendig)", res.hasPollen === true);
-    check("V17.6: instanzierter Wald — baum-Art (ring 2, windScale, lebendig)", res.hasBaum === true);
     check("V17.4: kohärente Böen-Welle im Gras + Scatter-Wind (gust + drift)", res.gustWave === true);
     check("V17.1 Scatter: jede Art hat gültiges Feld + konstanten Cap + Skala", res.allFieldsValid === true);
     check("V17.1 Scatter: alle vier worldFieldAt-Felder werden als Stimme genutzt", res.allFourVoices === true);
