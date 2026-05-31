@@ -9966,6 +9966,16 @@ class AnazhRealm {
             pow,
             Fn,
         } = TSL;
+        // V17.10 — die Wolken-Wurzel-Heilung: der Himmel nutzt jetzt DIESELBE
+        // Noise-Sprache wie Terrain (V15.1) + Vegetation (V17.1) — das vendored
+        // `mx_noise_float`/`mx_fractal_noise_float` (MaterialX-Simplex, glatt,
+        // bandbegrenzt, für die ganze Domäne präzisions-stabil). Der alte
+        // hash3=fract(sin(dot·43758))-Wert-Noise kippte bei großen Sample-
+        // Koordinaten (vDir·k + Zeit-Drift) in Float-Präzisions-Chaos → das
+        // „Interferieren/Flackern, nicht sauber" (Schöpfer-Befund). EINE
+        // Noise-Sprache im ganzen Projekt = die fehlende Harmonie.
+        const mxNoise = TSL.mx_noise_float || null;
+        const mxFractal = TSL.mx_fractal_noise_float || null;
 
         // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
         // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
@@ -10009,11 +10019,15 @@ class AnazhRealm {
         // vDir = normalize(positionLocal) — stabile Welt-Achse, V8.26-Bug-Schutz.
         const vDir = normalize(positionLocal);
 
-        // Drei Octaven Nebula-Noise (sehr langsam animiert, atmender Himmel).
-        const n1 = noise3(vDir.mul(1.0).add(uTime.mul(0.02)));
-        const n2 = noise3(vDir.mul(2.0).add(uTime.mul(0.01)));
-        const n3 = noise3(vDir.mul(4.0).add(uTime.mul(0.005)));
-        const nebulaTint = float(0.5).add(n1.add(n2).add(n3).div(3.0).mul(0.5));
+        // V17.10 — Nebula-Tint aus mx_noise (statt dem gerasterten hash3-noise3).
+        // mx_noise_float liefert [-1,1]; auf [0,1] remappen. Drei Oktaven von
+        // Hand (mx_fractal nimmt nur eine Position, wir wollen die Zeit-Drift pro
+        // Oktave verschieden) — aber JEDE Oktave ist jetzt sauberes Simplex.
+        // V17.10-perf: 2 Nebula-Oktaven statt 3 (Skybox-Fragment-Budget).
+        const _nebN = (p) => (mxNoise ? mxNoise(p).mul(0.5).add(0.5) : noise3(p));
+        const n1 = _nebN(vDir.mul(1.0).add(uTime.mul(0.02)));
+        const n2 = _nebN(vDir.mul(2.0).add(uTime.mul(0.01)));
+        const nebulaTint = float(0.5).add(n1.add(n2).div(2.0).mul(0.5));
         const nebula = uNebulaColor.mul(nebulaTint);
 
         // V17.2 — WOLKEN: der flache 2-Octaven-Layer wird ein GEMALTER Ghibli-
@@ -10025,21 +10039,35 @@ class AnazhRealm {
         // browser-justierbar. Volumetrische Billboard-Türme mit Parallaxe wären
         // V17.2-b (falls der Browser-Audit mehr Plastik will).
         const tC = uTime.mul(0.012);
-        // Domain-Warp: ein erstes Noise knetet die Sample-Koordinate → organische
-        // Wolken-Ränder statt gerasterter Blobs.
-        const warp = noise3(vDir.mul(1.6).add(vec3(tC, float(0.0), tC.mul(0.5))))
-            .sub(0.5)
-            .mul(0.7);
+        // V17.10 — Domain-Warp + FBM aus mx-Simplex (sauber, präzisions-stabil).
+        // Der Warp knetet die Sample-Koordinate (organische Ränder); mx_fractal
+        // macht die Oktaven INTERN (billiger + bauschiger als 4 Hand-Oktaven).
+        // V17.10-perf: EIN Warp-Sample (skalar, isotrop angewandt) statt drei —
+        // 7 mx_noise/Fragment waren zu teuer (Warmup-Streaming-Regression
+        // gemessen 16→10 Chunks). Ein skalarer Warp gibt organische Ränder fast
+        // gleich gut, kostet 1 statt 3 Calls.
+        const _wn = (p) => (mxNoise ? mxNoise(p) : noise3(p).sub(0.5).mul(2.0));
+        const warp = _wn(vDir.mul(1.7).add(vec3(tC, tC.mul(0.4), float(0.0)))).mul(0.4);
         const cp = vDir
-            .mul(2.3)
+            .mul(2.6)
             .add(vec3(tC, tC.mul(0.3), tC.mul(0.7)))
             .add(warp);
-        // 4-Octaven-FBM (normalisiert ~[0,1]) — die Cumulus-Fülle.
-        const o1 = noise3(cp);
-        const o2 = noise3(cp.mul(2.03)).mul(0.5);
-        const o3 = noise3(cp.mul(4.01)).mul(0.25);
-        const o4 = noise3(cp.mul(8.05)).mul(0.125);
-        const fbm = o1.add(o2).add(o3).add(o4).div(1.875);
+        // 3-Oktaven-FBM aus mx_noise_float (API-sicher: nur position-Arg). 3
+        // statt 4 Oktaven (Perf); jede Oktave sauberes, stabiles Simplex (kein
+        // hash3-Präzisions-Chaos). Fallback: der alte noise3-Pfad.
+        let fbm;
+        if (mxNoise) {
+            const o1 = mxNoise(cp);
+            const o2 = mxNoise(cp.mul(2.03)).mul(0.5);
+            const o3 = mxNoise(cp.mul(4.01)).mul(0.25);
+            fbm = o1.add(o2).add(o3).div(1.75).mul(0.5).add(0.5);
+        } else {
+            const o1 = noise3(cp);
+            const o2 = noise3(cp.mul(2.03)).mul(0.5);
+            const o3 = noise3(cp.mul(4.01)).mul(0.25);
+            const o4 = noise3(cp.mul(8.05)).mul(0.125);
+            fbm = o1.add(o2).add(o3).add(o4).div(1.875);
+        }
         // cloudCover senkt die Schwelle → mehr Deckung (Wetter moduliert weiter):
         // klar (~0.32) → thr 0.53 (verstreute Cumulus), Regen (~0.9) → thr 0.28
         // (Overcast). Weiche Kanten über 0.2 Breite.
@@ -42439,7 +42467,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.9.0";
+AnazhRealm.VERSION = "17.10.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

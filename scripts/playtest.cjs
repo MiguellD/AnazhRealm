@@ -19643,8 +19643,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
             out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
             // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
-            // (mehrere noise3(vDir.mul(...)) + vDir.y im horizonMask).
-            out.shaderFragmentUsesVDir = /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
+            // → Stern-/Wolken-Stabilität bei Spieler-Bewegung. V17.10: der
+            // Noise-Kern ist von hash3-`noise3` auf `mx_noise_float` gewechselt
+            // (die Pattern-Probe wandert mit, V9.56-i-Lehre) — die INTENTION
+            // (Fragment sampelt mit vDir, nicht World-Position) gilt weiter:
+            // vDir fließt in _nebN(vDir...)/_wn(vDir...)/cp + vDir.y im band.
+            out.shaderFragmentUsesVDir = /\bvDir\.(mul|y)\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
         } catch {
             // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
         }
@@ -20037,6 +20041,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.skyboxHasSunDir = !!(sd && sd.value && typeof sd.value.x === "number");
         const skySrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
         out.skyboxCloudFbm = skySrc.includes("fbm") && skySrc.includes("sunGlow") && skySrc.includes("cloudShade");
+        // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
+        // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
+        out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
         const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
@@ -20084,6 +20091,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
         check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
+        check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
         check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
