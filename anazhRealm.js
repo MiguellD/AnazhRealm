@@ -44,6 +44,19 @@ class AnazhRealm {
             voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
+            // V17.1 — FÜLLE/DICHTE: die artenreiche, GPU-instanzierte Klein-
+            // Vegetation (Blüten/Farne/Glut-Gestrüpp/Fels-Brocken/Leucht-Sporen)
+            // aus den VIER worldFieldAt-Feldern. Reine Deko (keine Physik) wie
+            // das Gras, am Voxel-Chunk-Lifecycle aufgehängt, pro Art ein eigener
+            // konstanter Cap (Uniform-Capacity, r184-geheilt) + Distanz-LOD.
+            // `voxelChunkScatter` = Map<chunkKey, InstancedMesh[]> (alle Arten
+            // eines Chunks), `_scatterMeshPools` = Map<artName, mesh[]> (Recycling
+            // wie der Gras-Pool), `_scatterMats` = Map<artName, NodeMaterial>,
+            // `_scatterGeoms` = Map<artName, BufferGeometry-Singleton>.
+            voxelChunkScatter: null,
+            _scatterMeshPools: null,
+            _scatterMats: null,
+            _scatterGeoms: null,
             // V9.75 (Welle C.4+5) — das Wasser-Iso-Surface-Mesh pro Voxel-Chunk
             // ist seit jetzt der EINZIGE Wasser-Render-Pfad. Gebaut aus
             // `entry.waterCells` via Surface-Nets-Mesher (gleiche Maschinerie
@@ -854,6 +867,11 @@ class AnazhRealm {
             // V12.0-perf.h — deferred-Queue für den Wasser-Iso-Build (Set von
             // "cx,cz"-Keys), per-Frame budgetiert (Streaming-Hitch-Heilung).
             pendingWaterIso: null,
+            // V17.1 — deferred-Queue für die Klein-Vegetation (Set von Chunk-
+            // Keys). Wie der Wasser-Iso: der Chunk finalisiert sofort, das
+            // Streuen (worldFieldAt + Surface-Scan pro Zelle) läuft ≤budget/
+            // Frame nach → kein Streaming-Hitch, kein CI-Warmup-Druck (V9.83).
+            pendingScatter: null,
             // V12.0-perf.c — Architektur-Instancing-Registry (HISM-Pattern).
             // archFlattenCache: Map<blueprintName, {instanceable, reason,
             //   leaves:[{geom, mat, localMatrix}]}> — ein Bauplan flach in
@@ -11556,6 +11574,114 @@ class AnazhRealm {
         // LRU-Thrashing (ständig disposen/neu-allokieren beim Laufen).
         return 48; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
     }
+    // V17.1 — FÜLLE/DICHTE: die Arten-Registry der GPU-instanzierten Klein-
+    // Vegetation. Die VIER worldFieldAt-Felder werden hier zu FÜNF Biom-Stimmen
+    // (lebendig → Blüten + Farne; dichte → Fels-Brocken; glut → Glut-Gestrüpp;
+    // magieleitung → Leucht-Sporen). Daten-getrieben (Heilige Lektion: EIN
+    // Streu-Mechanismus `_buildVoxelChunkScatter`, die Arten sind Daten — kein
+    // Parallelcode). Jede Art: ein eigener KONSTANTER `cap` (Uniform-Capacity-
+    // Pattern, alle Pool-Meshes derselben Art gleich groß → kein Bind-Group-
+    // Cache-Pollution; r184-geheilt, kein 256-Crash mehr). `field`/`floor`
+    // gaten WO die Art wächst, `perCell` die Dichte, `ring` den Distanz-LOD
+    // (Chunk-Distanz ≤ ring; teurere/seltenere Arten näher), `pool` die Anzahl
+    // recycelbarer Mesh-Objekte (≥ Ring-Chunk-Zahl + Headroom). `wind` = weich
+    // (teilt die Gras-Wind-positionNode), `emissive` = leuchtet (speist V17.0-
+    // Bloom). `yOff` hebt schwebende Arten (Sporen). Alle Werte browser-
+    // justierbar (die Dichte-/FPS-Wahrheit ist der Schöpfer-Browser, V13-Lehre).
+    static get KLEIN_VEGETATION_SPECIES() {
+        return [
+            // lebendig → Wiesen-Blüten: bunte Farb-Tupfer, der „randvolle Wiese"-
+            // Kern. Dicht + nah, weich im Wind. Cap 512 fängt die dichte Wiese.
+            {
+                name: "blume",
+                field: "lebendig",
+                floor: 0.5,
+                perCell: 3.2,
+                cap: 512,
+                ring: 1,
+                pool: 16,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.5, 1.0],
+                color: [0.86, 0.32, 0.46],
+                color2: [0.95, 0.82, 0.3],
+                geom: "blume",
+            },
+            // lebendig (niedrigerer Floor → breiter) → Farn-Tuffs: sattes grünes
+            // Unterholz, füllt zwischen den Blüten. Weich im Wind.
+            {
+                name: "farn",
+                field: "lebendig",
+                floor: 0.32,
+                perCell: 2.4,
+                cap: 448,
+                ring: 1,
+                pool: 16,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.6, 1.2],
+                color: [0.22, 0.46, 0.2],
+                color2: [0.34, 0.6, 0.26],
+                geom: "farn",
+            },
+            // glut → trockenes Glut-Gestrüpp: rötlich-braune steife Zweige in
+            // heißen/trockenen Regionen. Leicht im Wind.
+            {
+                name: "gestruepp",
+                field: "glut",
+                floor: 0.5,
+                perCell: 1.8,
+                cap: 320,
+                ring: 1,
+                pool: 16,
+                wind: true,
+                emissive: false,
+                yOff: 0,
+                scale: [0.6, 1.3],
+                color: [0.55, 0.3, 0.16],
+                color2: [0.68, 0.42, 0.2],
+                geom: "gestruepp",
+            },
+            // dichte → Fels-Brocken/Kiesel: graubraune Low-Poly-Steine, steinige
+            // Regionen. Statisch (kein Wind), empfängt Schatten, weiter sichtbar.
+            {
+                name: "fels",
+                field: "dichte",
+                floor: 0.46,
+                perCell: 1.4,
+                cap: 256,
+                ring: 2,
+                pool: 32,
+                wind: false,
+                emissive: false,
+                yOff: -0.05,
+                scale: [0.4, 1.4],
+                color: [0.4, 0.38, 0.36],
+                color2: [0.5, 0.47, 0.43],
+                geom: "fels",
+            },
+            // magieleitung → Leucht-Sporen: kleine schwebende leuchtende Motes in
+            // magischen Regionen. Emissive → speist das V17.0-Bloom (Synergie).
+            {
+                name: "spore",
+                field: "magieleitung",
+                floor: 0.62,
+                perCell: 1.6,
+                cap: 224,
+                ring: 1,
+                pool: 16,
+                wind: false,
+                emissive: true,
+                yOff: 0.5,
+                scale: [0.4, 0.9],
+                color: [0.5, 0.85, 1.0],
+                color2: [0.75, 0.6, 1.0],
+                geom: "spore",
+            },
+        ];
+    }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
     static get CREATURE_GATHER_HALT_DIST() {
         return 1.5; // m — bei dieser Distanz zur Ziel-Architektur erntet die Kreatur
@@ -15475,6 +15601,8 @@ class AnazhRealm {
             // aus der alten Welt sind nicht mehr relevant (Atlas + Surface
             // sind neu generiert, alte Positionen können kollidieren).
             this.state.pendingVegSpawns = [];
+            // V17.1 — auch die Scatter-Queue leeren (alte Chunk-Keys ungültig).
+            this.state.pendingScatter = new Set();
             for (const a of this.state.architectures || []) {
                 if (!a || !a.position) continue;
                 const cx = Math.floor(a.position.x / vspan);
@@ -18204,6 +18332,14 @@ class AnazhRealm {
             const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
             if (_gr <= 2) this._buildVoxelChunkGrass(cx, cz);
         }
+        // V17.1 — FÜLLE/DICHTE: die artenreiche Klein-Vegetation (Blüten/Farne/
+        // Gestrüpp/Fels/Sporen) aus den vier worldFieldAt-Feldern. DEFERRED (wie
+        // der Wasser-Iso): enqueue statt sofort streuen → der Chunk finalisiert
+        // ohne den Surface-Scan-Aufwand im kritischen Streaming-Frame (V9.83-CI-
+        // Warmup-Disziplin). Der Tick streut ≤budget/Frame nach, nahe zuerst.
+        // Erscheint beim Näherkommen über denselben LOD-Rebuild wie das Gras.
+        // Reine Deko, kein Determinismus-/Buffer-/Physik-Eingriff.
+        this._enqueueScatter(cx, cz);
         // V12.0-perf.h — Wasser-Iso deferred (per-Frame-Queue) statt synchron:
         // der Chunk ist mit Terrain+Boden+Collision sofort fertig, das Wasser
         // (~78 ms Surface-Nets) baut ≤budget/Frame nach → kein Streaming-Spike.
@@ -18392,12 +18528,16 @@ class AnazhRealm {
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
         this._disposeVoxelChunkGrass(key);
+        // V17.1 — die Klein-Vegetation des Chunks zurück in die Art-Pools.
+        this._disposeVoxelChunkScatter(key);
         // V9.72 (Welle C.2) / V9.75 (Welle C.4+5) — das Iso-Wasser-Mesh
         // disposen (einziger Wasser-Render-Pfad; der alte Quad-Pfad ist weg).
         this._disposeVoxelChunkWaterIso(key);
         // V12.0-perf.h — ausstehenden Wasser-Iso-Build für diesen Chunk
         // verwerfen (Chunk ist weg, nichts mehr zu bauen).
         if (this.state.pendingWaterIso) this.state.pendingWaterIso.delete(key);
+        // V17.1 — ausstehenden Scatter-Build für diesen Chunk verwerfen.
+        if (this.state.pendingScatter) this.state.pendingScatter.delete(key);
         this.state.voxelChunks.delete(key);
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
@@ -20463,6 +20603,475 @@ class AnazhRealm {
         this.state.voxelChunkGrass.delete(key);
     }
 
+    // ===================================================================
+    // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation
+    // ===================================================================
+    // Der schlafende Riese: `worldFieldAt` liefert VIER fraktale Felder, aber
+    // nur das Gras weckte EINES (lebendig). V17.1 macht alle vier zu Biom-
+    // Stimmen — Blüten/Farne (lebendig), Fels-Brocken (dichte), Glut-Gestrüpp
+    // (glut), Leucht-Sporen (magieleitung). Reine Deko (KEINE Physik/Kollision/
+    // Remesh — der Effizienz-Schlüssel; das unterscheidet sie von den teuren
+    // Architektur-Spawns), am Voxel-Chunk-Lifecycle wie das Gras, GPU-
+    // instanziert mit eigenen konstanten Caps (Uniform-Capacity, r184-geheilt),
+    // Distanz-LOD-gestaffelt (per-Art-`ring`), deterministisch gestreut (stabil
+    // beim Re-Streamen). Die Lehre der Riesen (Ghost of Tsushima): FÜLLE + Licht
+    // + Bewegung > Foto-PBR. Die Werte sind browser-justierbar (FPS-Wahrheit =
+    // Schöpfer-Browser, V13-Render-Lehre).
+
+    // Geometrie-Singleton pro Art (gecacht in state._scatterGeoms). Non-indexed
+    // (jedes Dreieck eigene Vertices) + computeVertexNormals → flat-shaded toon-
+    // Look. Vertex-Farben gebacken aus species.color/color2 (zwei-Ton: Stiel/
+    // Spitze, Sockel/Sonnenseite) — das Material liest `attribute("color")`
+    // (V10.0-f-2-Lehre: NodeMaterial liest `vertexColors:true` NICHT). Wurzel
+    // bei y=0, damit die Wind-positionNode `positionLocal.y` als Höhen-Faktor
+    // nutzt. Alle Formen bewusst low-poly (FPS).
+    _scatterSpeciesGeometry(species) {
+        if (!this.state._scatterGeoms) this.state._scatterGeoms = new Map();
+        const cache = this.state._scatterGeoms;
+        if (cache.has(species.name)) return cache.get(species.name);
+        if (typeof THREE === "undefined") return null;
+        const P = [];
+        const C = [];
+        const c = species.color;
+        const c2 = species.color2 || species.color;
+        // Vertex-Push-Helfer: v(point, color), tri(a,b,d, ca[,cb,cd]).
+        const v = (p, col) => {
+            P.push(p[0], p[1], p[2]);
+            C.push(col[0], col[1], col[2]);
+        };
+        const tri = (a, b, d, ca, cb, cd) => {
+            v(a, ca);
+            v(b, cb || ca);
+            v(d, cd || ca);
+        };
+        // Ein schmales, zur Spitze verjüngtes, nach vorn gebogenes Blatt/Zweig
+        // (für Blüten-Stiel, Farn-Wedel, Gestrüpp-Zweig). rot = Fächer-Winkel,
+        // h = Höhe, w0 = Wurzelbreite, lean = Biegung, cBase/cTip = Farben.
+        const strip = (rot, h, w0, lean, cBase, cTip, seg) => {
+            const cr = Math.cos(rot);
+            const sr = Math.sin(rot);
+            const S = seg || 3;
+            const ringPts = [];
+            for (let s = 0; s <= S; s++) {
+                const t = s / S;
+                ringPts.push({ w: w0 * (1 - t * 0.82), y: t * h, bend: lean * t * t });
+            }
+            const pt = (e, r) => {
+                const lx = e * r.w * 0.5;
+                const lz = r.bend;
+                return [lx * cr - lz * sr, r.y, lx * sr + lz * cr];
+            };
+            for (let s = 0; s < S; s++) {
+                const A = ringPts[s];
+                const B = ringPts[s + 1];
+                const tA = s / S;
+                const tB = (s + 1) / S;
+                const colA = [
+                    cBase[0] + (cTip[0] - cBase[0]) * tA,
+                    cBase[1] + (cTip[1] - cBase[1]) * tA,
+                    cBase[2] + (cTip[2] - cBase[2]) * tA,
+                ];
+                const colB = [
+                    cBase[0] + (cTip[0] - cBase[0]) * tB,
+                    cBase[1] + (cTip[1] - cBase[1]) * tB,
+                    cBase[2] + (cTip[2] - cBase[2]) * tB,
+                ];
+                const a0 = pt(-1, A);
+                const a1 = pt(1, A);
+                const b0 = pt(-1, B);
+                const b1 = pt(1, B);
+                tri(a0, a1, b1, colA, colA, colB);
+                tri(a0, b1, b0, colA, colB, colB);
+            }
+        };
+        if (species.geom === "blume") {
+            // Stiel (grün) + 5-Blütenblatt-Schale (Spitze color2/innen, color/außen).
+            const stemG = [0.2, 0.4, 0.16];
+            strip(0.0, 0.16, 0.022, 0.02, stemG, [0.28, 0.5, 0.22], 2);
+            strip(1.6, 0.15, 0.02, 0.02, stemG, [0.28, 0.5, 0.22], 2);
+            const top = [0, 0.205, 0];
+            const r = 0.085;
+            const yTip = 0.155;
+            const N = 5;
+            for (let i = 0; i < N; i++) {
+                const a0 = (i / N) * Math.PI * 2;
+                const a1 = ((i + 1) / N) * Math.PI * 2;
+                const p0 = [Math.cos(a0) * r, yTip, Math.sin(a0) * r];
+                const p1 = [Math.cos(a1) * r, yTip, Math.sin(a1) * r];
+                tri(top, p0, p1, c2, c, c);
+            }
+        } else if (species.geom === "farn") {
+            // 4 breite, gebogene Wedel, fächerförmig — sattes Unterholz-Grün.
+            strip(0.0, 0.42, 0.07, 0.16, c, c2, 3);
+            strip(1.57, 0.4, 0.065, 0.18, c, c2, 3);
+            strip(3.14, 0.44, 0.07, 0.15, c, c2, 3);
+            strip(4.71, 0.38, 0.06, 0.2, c, c2, 3);
+        } else if (species.geom === "gestruepp") {
+            // 5 steife, dünne Zweige, leicht auseinander — trockenes Gestrüpp.
+            for (let i = 0; i < 5; i++) {
+                const rot = (i / 5) * Math.PI * 2 + 0.3;
+                strip(rot, 0.26 + (i % 2) * 0.06, 0.022, 0.05 + (i % 3) * 0.03, c, c2, 2);
+            }
+        } else if (species.geom === "fels") {
+            // Low-Poly-Brocken: gejitterter Oktaeder (6 Ecken, 8 Flächen).
+            const top = [0, 0.34, 0];
+            const bot = [0, 0, 0];
+            const mid = [
+                [0.22, 0.13, 0.05],
+                [0.04, 0.15, 0.24],
+                [-0.24, 0.12, 0.02],
+                [-0.03, 0.14, -0.23],
+            ];
+            const cTop = c2;
+            const cBot = [c[0] * 0.7, c[1] * 0.7, c[2] * 0.7];
+            for (let i = 0; i < 4; i++) {
+                const a = mid[i];
+                const b = mid[(i + 1) % 4];
+                tri(top, a, b, cTop, c, c);
+                tri(bot, b, a, cBot, c, c);
+            }
+        } else if (species.geom === "spore") {
+            // Winziger leuchtender Oktaeder (emissive → speist V17.0-Bloom).
+            const R = 0.06;
+            const top = [0, R * 1.4, 0];
+            const bot = [0, -R * 1.4, 0];
+            const mid = [
+                [R, 0, 0],
+                [0, 0, R],
+                [-R, 0, 0],
+                [0, 0, -R],
+            ];
+            for (let i = 0; i < 4; i++) {
+                const a = mid[i];
+                const b = mid[(i + 1) % 4];
+                tri(top, a, b, c, c2, c);
+                tri(bot, b, a, c, c, c2);
+            }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
+        geo.computeVertexNormals();
+        geo.computeBoundingSphere();
+        cache.set(species.name, geo);
+        return geo;
+    }
+
+    // Node-Material pro Art (gecacht in state._scatterMats). Weiche Arten
+    // (wind:true) teilen die Gras-Wind-positionNode (höhen-gewichtetes Wiegen);
+    // Sporen (emissive) bekommen ein sanftes Schweben + sind UNLIT (Basic) und
+    // hell → das V17.0-Bloom lässt sie glühen. Sonst lit Lambert (empfängt
+    // Schatten, atmet mit dem Tag-Nacht-Zyklus). Albedo = gebackene Vertex-
+    // Farbe + Welt-Noise-Variation (kein zwei identische Tupfen). Defensive:
+    // ohne TSL klassisches Lambert mit der Sockel-Farbe.
+    _scatterMaterial(species) {
+        if (!this.state._scatterMats) this.state._scatterMats = new Map();
+        const cache = this.state._scatterMats;
+        if (cache.has(species.name)) return cache.get(species.name);
+        if (typeof THREE === "undefined") return null;
+        const TSL = THREE.TSL;
+        const c = species.color;
+        const fallbackHex =
+            (Math.round(Math.min(1, c[0]) * 255) << 16) |
+            (Math.round(Math.min(1, c[1]) * 255) << 8) |
+            Math.round(Math.min(1, c[2]) * 255);
+        let mat = null;
+        try {
+            if (species.emissive && TSL && typeof THREE.MeshBasicNodeMaterial === "function") {
+                mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
+                const { vec4, float, attribute } = TSL;
+                const vcol = attribute("color", "vec3");
+                mat.colorNode = vec4(vcol.mul(float(1.7)), float(1.0));
+                this._applyScatterMotion(mat, species, TSL);
+            } else if (TSL && typeof THREE.MeshLambertNodeMaterial === "function") {
+                mat = new THREE.MeshLambertNodeMaterial({
+                    side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
+                });
+                const { vec4, vec3, float, attribute, max } = TSL;
+                const vcol = attribute("color", "vec3");
+                let albedo = vcol;
+                if (TSL.mx_noise_float && TSL.positionWorld) {
+                    const bn = TSL.mx_noise_float(TSL.positionWorld.mul(float(0.5)));
+                    albedo = albedo.mul(float(1.0).add(bn.mul(float(0.16))));
+                    albedo = max(albedo, vec3(0, 0, 0));
+                }
+                mat.colorNode = vec4(albedo, float(1.0));
+                if (species.wind) this._applyScatterMotion(mat, species, TSL);
+            } else {
+                mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
+            }
+        } catch {
+            mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
+        }
+        cache.set(species.name, mat);
+        return mat;
+    }
+
+    // Wind/Schweben als TSL-positionNode. Weiche Arten: höhen-gewichtetes
+    // Wiegen (dieselbe Mathematik + dieselben windUniforms wie das Gras → EINE
+    // Wind-Quelle, der Loop synct uWindTime/uWindStrength schon). Sporen:
+    // sanftes vertikales Schweben (ganzkörper, nicht höhen-gewichtet).
+    _applyScatterMotion(mat, species, TSL) {
+        if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
+            // windUniforms wird beim ersten Gras-Material erzeugt — sicherstellen.
+            this._grassInstanceMat();
+        }
+        const wu = this.state.windUniforms;
+        if (!wu) return;
+        const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
+        if (species.emissive) {
+            const bob = sin(wu.uWindTime.mul(float(2.0)).add(positionWorld.x.mul(float(0.6))))
+                .mul(float(0.5))
+                .add(float(0.5))
+                .mul(float(0.16));
+            mat.positionNode = positionLocal.add(vec3(float(0.0), bob, float(0.0)));
+            return;
+        }
+        const phase = wu.uWindTime
+            .mul(float(1.7))
+            .add(positionWorld.x.mul(float(0.28)))
+            .add(positionWorld.z.mul(float(0.21)));
+        const hf = max(positionLocal.y, float(0.0));
+        const offX = sin(phase).mul(wu.uWindStrength).mul(hf).mul(float(1.2));
+        const offZ = cos(phase.mul(float(0.7)))
+            .mul(wu.uWindStrength)
+            .mul(hf);
+        mat.positionNode = positionLocal.add(vec3(offX, float(0.0), offZ));
+    }
+
+    // Pool-Recycling pro Art (mirror des Gras-Pools, V11.0-a-Pattern). Jede
+    // Art hat einen eigenen Pool (`state._scatterMeshPools` = Map<name, mesh[]>)
+    // mit eigenem `pool`-Cap; Geometry + Material sind Art-Singletons, geteilt.
+    // Uniform-Capacity: alle Meshes einer Art haben denselben `cap` → kein
+    // Bind-Group-Cache-Pollution (r184-geheilt, kein Crash).
+    _acquireScatterMesh(species) {
+        if (!this.state._scatterMeshPools) this.state._scatterMeshPools = new Map();
+        let pool = this.state._scatterMeshPools.get(species.name);
+        if (!pool) {
+            pool = [];
+            this.state._scatterMeshPools.set(species.name, pool);
+        }
+        if (pool.length > 0) {
+            const m = pool.pop();
+            m.visible = true;
+            m.count = 0;
+            return m;
+        }
+        const geo = this._scatterSpeciesGeometry(species);
+        const mat = this._scatterMaterial(species);
+        if (!geo || !mat) return null;
+        const inst = new THREE.InstancedMesh(geo, mat, species.cap);
+        inst.count = 0;
+        inst.castShadow = false;
+        inst.receiveShadow = !species.emissive;
+        return inst;
+    }
+
+    _releaseScatterMesh(species, mesh) {
+        if (!mesh) return;
+        if (!this.state._scatterMeshPools) this.state._scatterMeshPools = new Map();
+        let pool = this.state._scatterMeshPools.get(species.name);
+        if (!pool) {
+            pool = [];
+            this.state._scatterMeshPools.set(species.name, pool);
+        }
+        if (this.state.scene) this.state.scene.remove(mesh);
+        mesh.visible = false;
+        mesh.count = 0;
+        const cap = species.pool || 16;
+        if (pool.length >= cap) {
+            const oldest = pool.shift();
+            if (oldest && oldest.instanceMatrix && typeof oldest.instanceMatrix.array !== "undefined") {
+                oldest.instanceMatrix.array = null;
+            }
+        }
+        pool.push(mesh);
+    }
+
+    _drainScatterMeshPools() {
+        if (!this.state._scatterMeshPools) {
+            this.state._scatterMeshPools = new Map();
+            return;
+        }
+        for (const pool of this.state._scatterMeshPools.values()) {
+            for (const mesh of pool) {
+                if (this.state.scene && mesh.parent) this.state.scene.remove(mesh);
+                if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
+                    mesh.instanceMatrix.array = null;
+                }
+            }
+            pool.length = 0;
+        }
+    }
+
+    // Der Streu-Mechanismus (EINE Funktion für alle Arten — Heilige Lektion).
+    // Sampelt jede Zelle EINMAL (worldFieldAt + Surface + Wasser, geteilt über
+    // alle Arten — kein 5×-Resampling), streut dann pro Art deterministisch aus
+    // ihrem Feld. Gegated per-Art auf `ringDist ≤ species.ring` (Distanz-LOD).
+    // Idempotent (Map-Guard); der LOD-Rebuild (Ring 1↔2) ruft dispose→build neu,
+    // sodass die Vegetation beim Näherkommen erscheint (das Gras-Lifecycle).
+    _buildVoxelChunkScatter(cx, cz) {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (typeof this.worldFieldAt !== "function" || typeof this._voxelSurfaceY !== "function") return;
+        if (!this.state.voxelChunkScatter) this.state.voxelChunkScatter = new Map();
+        const key = `${cx},${cz}`;
+        if (this.state.voxelChunkScatter.has(key)) return;
+        // Ring-Distanz zum Spieler (wie das Gras) — gated den Distanz-LOD.
+        const lpc = this.state.lastPlayerVoxelChunk;
+        const pcx = lpc ? lpc.cx : cx;
+        const pcz = lpc ? lpc.cz : cz;
+        const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
+        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
+        const maxRing = species.reduce((m, s) => Math.max(m, s.ring), 0);
+        if (ringDist > maxRing) return; // fern: nichts zu streuen (FPS)
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        // 8×8 Sample-Raster (wie der Vegetations-Populator) — jede Zelle ein
+        // worldFieldAt + _voxelSurfaceY (Dichte-Scan); 8² hält die Per-Chunk-
+        // Wall-Time niedrig (FPS + CI-Warmup-Disziplin, V9.83-Lehre), die Dichte
+        // trägt das Cluster-Streuen pro Zelle (perCell × ±step Jitter).
+        const SAMPLES = 8;
+        const step = span / SAMPLES;
+        // Pro Art ein deterministischer rng-Strom (dekorreliert via Art-Index,
+        // stabil beim Re-Streamen → kein Flackern). Mulberry32-Stil wie das Gras.
+        const buckets = species.map(() => []);
+        const rngs = species.map((sp, si) => {
+            let rs = ((cx * 73856093) ^ (cz * 19349663) ^ ((si + 1) * 0x85ebca6b)) >>> 0 || 1;
+            return () => {
+                rs = (rs + 0x6d2b79f5) >>> 0;
+                let t = rs;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        });
+        for (let zi = 0; zi < SAMPLES; zi++) {
+            for (let xi = 0; xi < SAMPLES; xi++) {
+                const bx = ox + (xi + 0.5) * step;
+                const bz = oz + (zi + 0.5) * step;
+                const f = this.worldFieldAt(bx, bz);
+                if (!f) continue;
+                const surfY = this._voxelSurfaceY(bx, bz);
+                if (surfY === null || !Number.isFinite(surfY)) continue;
+                // Nicht unter Wasser (0.1 m Marge wie das Gras).
+                const waterY = this._waterLevelAt(bx, bz);
+                if (surfY < waterY + 0.1) continue;
+                for (let si = 0; si < species.length; si++) {
+                    const sp = species[si];
+                    if (ringDist > sp.ring) continue;
+                    if (buckets[si].length >= sp.cap) continue;
+                    const fv = f[sp.field] || 0;
+                    if (fv < sp.floor) continue;
+                    const norm = (fv - sp.floor) / Math.max(0.001, 1 - sp.floor);
+                    const rnd = rngs[si];
+                    const count = Math.floor(sp.perCell * (0.4 + 0.6 * norm) + rnd() * 0.8);
+                    const sMin = sp.scale[0];
+                    const sMax = sp.scale[1];
+                    for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
+                        buckets[si].push({
+                            x: bx + (rnd() - 0.5) * step,
+                            y: surfY + sp.yOff,
+                            z: bz + (rnd() - 0.5) * step,
+                            rot: rnd() * Math.PI * 2,
+                            scale: sMin + rnd() * (sMax - sMin),
+                        });
+                    }
+                }
+            }
+        }
+        const meshes = [];
+        const m = new THREE.Matrix4();
+        const q = new THREE.Quaternion();
+        const pos = new THREE.Vector3();
+        const scl = new THREE.Vector3();
+        const up = new THREE.Vector3(0, 1, 0);
+        for (let si = 0; si < species.length; si++) {
+            const items = buckets[si];
+            if (items.length === 0) continue;
+            const sp = species[si];
+            const inst = this._acquireScatterMesh(sp);
+            if (!inst) continue;
+            inst.count = items.length;
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+                pos.set(it.x, it.y, it.z);
+                q.setFromAxisAngle(up, it.rot);
+                scl.set(it.scale, it.scale, it.scale);
+                m.compose(pos, q, scl);
+                inst.setMatrixAt(i, m);
+            }
+            inst.instanceMatrix.needsUpdate = true;
+            // Frustum-Cull-Cache nach Pool-Recycle neu rechnen (die
+            // V11.0-d.fix.gras-Wurzel: stale boundingSphere cullt das Mesh raus).
+            if (inst.geometry && inst.geometry.boundingSphere === null) inst.geometry.computeBoundingSphere();
+            inst.boundingBox = null;
+            inst.boundingSphere = null;
+            if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
+            if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
+            this.state.scene.add(inst);
+            meshes.push({ name: sp.name, mesh: inst });
+        }
+        this.state.voxelChunkScatter.set(key, meshes);
+    }
+
+    _disposeVoxelChunkScatter(key) {
+        if (!this.state.voxelChunkScatter) return;
+        const list = this.state.voxelChunkScatter.get(key);
+        if (list && list.length) {
+            const reg = AnazhRealm.KLEIN_VEGETATION_SPECIES;
+            for (const it of list) {
+                const sp = reg.find((s) => s.name === it.name);
+                if (sp) this._releaseScatterMesh(sp, it.mesh);
+                else if (this.state.scene) this.state.scene.remove(it.mesh);
+            }
+        }
+        this.state.voxelChunkScatter.delete(key);
+    }
+
+    // V17.1 — deferred-Queue (Set von Chunk-Keys). Der Finalize enqueued; der
+    // per-Frame-Tick streut nach. Hält den teuren Surface-Scan aus dem
+    // kritischen Streaming-Frame (das Wasser-Iso-Pattern, V12.0-perf.h).
+    _enqueueScatter(cx, cz) {
+        if (!this.state.pendingScatter) this.state.pendingScatter = new Set();
+        this.state.pendingScatter.add(`${cx},${cz}`);
+    }
+
+    // Per-Frame-Tick: streut ≤maxPerFrame Chunks, NAHE zuerst (priorisiert wie
+    // der Wasser-Iso-Tick), ferne (jenseits maxRing — dort baut die Streuung
+    // ohnehin nichts) aus der Queue werfen → kein unbegrenztes Wachstum.
+    _tickPendingScatter(maxPerFrame = 2) {
+        const queue = this.state.pendingScatter;
+        if (!queue || queue.size === 0) return 0;
+        const lpc = this.state.lastPlayerVoxelChunk;
+        const species = AnazhRealm.KLEIN_VEGETATION_SPECIES;
+        const maxRing = species.reduce((m, s) => Math.max(m, s.ring), 0);
+        let keys = [...queue];
+        if (lpc) {
+            const distOf = (k) => {
+                const ci = k.indexOf(",");
+                const kx = parseInt(k.slice(0, ci), 10);
+                const kz = parseInt(k.slice(ci + 1), 10);
+                return Math.max(Math.abs(kx - lpc.cx), Math.abs(kz - lpc.cz));
+            };
+            for (const k of keys) if (distOf(k) > maxRing) queue.delete(k);
+            keys = [...queue].sort((a, b) => distOf(a) - distOf(b));
+        }
+        let built = 0;
+        for (const key of keys) {
+            if (built >= maxPerFrame) break;
+            queue.delete(key);
+            if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
+            if (this.state.voxelChunkScatter && this.state.voxelChunkScatter.has(key)) continue;
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            this._buildVoxelChunkScatter(cx, cz);
+            built++;
+        }
+        return built;
+    }
+
     // V9.75 (Welle C.4+5) — `_buildVoxelChunkWater`, `_disposeVoxelChunkWater`,
     // `_voxelChunkTouchesWater` sind gestrichen. Der alte per-Chunk-Quad-Mesh
     // (V9.50-b) war die zweite Wasser-Sprache — 16-m-Drainage-Atlas + 1.8-m-
@@ -20750,6 +21359,10 @@ class AnazhRealm {
         const pczNow = Math.floor(playerPos.z / span);
         this._ensurePlayerChunkBVH(pcx, pczNow);
         this._pumpVoxelChunkBVH(pcx, pczNow);
+        // V17.1 — die Bau-Zahl dieses Frames zurückgeben, damit der Loop die
+        // Klein-Vegetation NUR streut, wenn der Ring sich gesetzt hat (Terrain-
+        // Priorität, wie ein Profi-Engine: erst das Gelände, dann die Deko).
+        return built;
     }
 
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben + Phase 3b — Aufschütten ###
@@ -40966,13 +41579,23 @@ class AnazhRealm {
         // dem V8.X-Sicht-Ring-Regler `state.chunkRingRadius` folgt —
         // V9.24-Verdrahtung).
         const playerPos = this.state.playerMesh.position;
-        this._tickVoxelChunkStreaming(playerPos);
+        const chunksBuilt = this._tickVoxelChunkStreaming(playerPos);
         // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
         // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
         this._tickPendingVegSpawns(4);
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
         this._tickPendingWaterIso(4);
+        // V17.1 — Klein-Vegetation deferred streuen (≤2/Frame, nahe zuerst):
+        // der Surface-Scan pro Zelle ist aus dem Streaming-Frame verlagert. NUR
+        // wenn das Streaming diesen Frame NICHTS baute (Ring gesetzt) → Terrain
+        // hat strikte Priorität (Profi-Engine-Pattern: erst Gelände, dann Deko).
+        // Im echten Spiel ist der Ring meist gesetzt → Deko streut normal; nur
+        // beim Chunk-Grenz-Übertritt wartet sie 1 Frame (imperzeptibel). Heilt
+        // den CI-Warmup-Druck (V9.83): der Warmup-Pump läuft Ticks back-to-back
+        // ohne Idle, da darf die Deko nicht mit dem Streaming um Wall-Clock
+        // konkurrieren (gemessen: Baseline 18 Chunks, ungated 12-14).
+        if (!chunksBuilt) this._tickPendingScatter(2);
         // V9.40-c — Async-Rebuild der dirty Voxel-Chunks (pro Frame max 1,
         // nächste-am-Spieler zuerst). Heilt das Schöpfer-V9.39-„Ruckeln
         // bei häufigen Edits" — ein Edit triggert ~9 Skirt-Nachbarn, vor
@@ -41596,7 +42219,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.0.0";
+AnazhRealm.VERSION = "17.1.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
