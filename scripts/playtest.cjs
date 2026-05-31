@@ -10230,6 +10230,40 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
         const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
         out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
+        // V17.17 — Affinitäts-Tag-Wächter (die Wurzel-Lehre des V17.16-Reverts).
+        // Die Parts-Liste einer spawnbaren Architektur erfüllt ZWEI Funktionen:
+        // (1) WO sie spawnt (computeCompoundTags × worldField in
+        // spawnAffinityForBlueprint) und (2) WIE sie aussieht. Eine Optik-
+        // Anreicherung DARF die 4 Affinitäts-Achsen-Tags NICHT verschieben — sonst
+        // kippt der Winner-take-all in _vegetationSampleSpawn (V17.16: glutbrunnen
+        // 8→229, Bäume→0, weil glut von einer sphere [brennbar-Aktivierung 0] auf
+        // einen cylinder [brennbar-Aktivierung 1] wanderte → gluts brennbar 1.0
+        // wurde entfesselt). KEIN Crash war im Spiel — eine emergente Affinitäts-
+        // Verzerrung. Dieser Wächter friert die GEMESSENE V17.15-Baseline ein:
+        // jede künftige Architektur-Anreicherung, die einen Spawn-Tag verschiebt,
+        // wird hier ROT (deterministisch, kein Warmup, kein Flake). Wer einen Tag
+        // BEWUSST ändert (echte Rebalance), zieht die Baseline hier nach.
+        out.archAffinityTags = {};
+        if (typeof r.computeCompoundTags === "function") {
+            const AFF_AXES = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            const spawnable = [
+                "baum_eiche",
+                "baum_kiefer",
+                "stein_block",
+                "kristall_geode",
+                "glutbrunnen",
+                "felsbogen",
+                "felsturm",
+            ];
+            for (const n of spawnable) {
+                const bp = bps[n];
+                if (!bp) continue;
+                const tags = r.computeCompoundTags(bp) || {};
+                const slim = {};
+                for (const a of AFF_AXES) slim[a] = Math.round((tags[a] || 0) * 1e6) / 1e6;
+                out.archAffinityTags[n] = slim;
+            }
+        }
         return out;
     });
 
@@ -10296,6 +10330,39 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
         check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
+        // V17.17 — Affinitäts-Tag-Stabilitäts-Wächter (siehe Block im evaluate
+        // oben). Gefrorene, GEMESSENE V17.15-Baseline der 4 Affinitäts-Achsen je
+        // spawnbarer Architektur. Verschiebt eine Optik-Anreicherung einen Tag,
+        // verschiebt sich der Spawn-Ort (Winner-take-all) → Bäume können verdrängt
+        // werden (V17.16-Regression). Dieser Wächter fängt GENAU das ab.
+        const AFF_BASELINE = {
+            baum_eiche: { lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 },
+            baum_kiefer: { lebendig: 1.4, dichte: 0.8, brennbar: 0.85, magieleitung: 0.7 },
+            stein_block: { lebendig: 0, dichte: 2.55, brennbar: 0, magieleitung: 0 },
+            kristall_geode: { lebendig: 0, dichte: 1.95, brennbar: 0, magieleitung: 2.55 },
+            glutbrunnen: { lebendig: 1, dichte: 1.7, brennbar: 0, magieleitung: 1.5 },
+            felsbogen: { lebendig: 0, dichte: 2.55, brennbar: 0, magieleitung: 0 },
+            felsturm: { lebendig: 0, dichte: 1.7, brennbar: 0, magieleitung: 0 },
+        };
+        const measuredTags = wave6gP2Results.archAffinityTags || {};
+        for (const name of Object.keys(AFF_BASELINE)) {
+            const exp = AFF_BASELINE[name];
+            const got = measuredTags[name];
+            let ok = !!got;
+            let detail = "";
+            if (got) {
+                for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
+                    if (Math.abs((got[a] || 0) - exp[a]) > 1e-4) {
+                        ok = false;
+                        detail = `${a}: erwartet ${exp[a]}, gemessen ${got[a]}`;
+                        break;
+                    }
+                }
+            } else {
+                detail = "Bauplan fehlt oder keine Tags gemessen";
+            }
+            check(`V17.17: Affinitäts-Tags von '${name}' stabil (Spawn-Ort unverschoben)`, ok, detail);
+        }
     }
 
     // ### W6.G P3 Phase 1 — Felsformationen ###

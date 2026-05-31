@@ -30325,42 +30325,108 @@ class AnazhRealm {
         // unter dem Sturz hindurch. Ein Überhang, ohne ein einziges Voxel.
         // Alle Pfeiler/Sturz achsen-parallel — die Box-Kollision ist damit
         // exakt, die Lücke unmissverständlich.
+        //
+        // V17.17 — verwittertes Trilithon (Schöpfer-Audit „spawnende Strukturen
+        // aufwerten"; Neuanlauf nach dem V17.16-Revert). REINE DATEN, nur
+        // „stein" → bleibt EINE InstancedMesh-Familie. Die KOLLISIONS-kritischen
+        // Teile (2 Pfeiler + Sturz, achsen-parallel, die begehbare Lücke) bleiben
+        // an Position/Größe UNVERÄNDERT (V7.73-Durchgang heilig). Nur DEKO ergänzt.
+        //
+        // AFFINITÄTS-DISZIPLIN (die V17.16-Wurzel-Lehre): die Anreicherung ist
+        // TAG-NEUTRAL — `stein` hat unter den 4 Affinitäts-Achsen (lebendig/
+        // dichte/brennbar/magieleitung) NUR dichte>0; box gibt den dichte-MAX
+        // (dichte-Aktivierung 3 → 2.55), die hinzugefügten octahedron (dichte 2)
+        // liegen darunter → `computeCompoundTags` bleibt {dichte 2.55} EXAKT wie
+        // V17.15 → der Spawn-Ort verschiebt sich NICHT (verifiziert via
+        // diag-arch-tags + Wächter checkBandArchAffinityStability). Plus: stein
+        // hat keinen Antrieb (magieleitung/stromleitung = 0) → `_isMoveable`
+        // strukturell unmöglich → Instancing bleibt sauber.
         const felsbogenParts = [
+            // Pfeiler-Sockel links (verwittert breiterer Fuß — Deko, octahedron-
+            // frei, box-dichte 3 = bestehender MAX → tag-neutral).
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -2.6, y: 0.5, z: 0 },
+                size: { x: 2.4, y: 1.0, z: 2.5 },
+                rotation: { x: 0, y: 0.05, z: 0 },
+            },
+            // Pfeiler links (KOLLISION — unverändert)
             {
                 shape: "box",
                 material: "stein",
                 position: { x: -2.6, y: 2.5, z: 0 },
                 size: { x: 1.8, y: 5, z: 2.0 },
             },
+            // Pfeiler-Sockel rechts
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 2.6, y: 0.5, z: 0 },
+                size: { x: 2.4, y: 1.0, z: 2.5 },
+                rotation: { x: 0, y: -0.04, z: 0 },
+            },
+            // Pfeiler rechts (KOLLISION — unverändert)
             {
                 shape: "box",
                 material: "stein",
                 position: { x: 2.6, y: 2.5, z: 0 },
                 size: { x: 1.8, y: 5, z: 2.0 },
             },
-            // Der Sturz — spannt über beide Pfeiler, Unterkante bei y=4.9
-            // (gut 4.9 m Durchgangshöhe, der Spieler-Hitbox-Würfel ist 1 m).
+            // Der Sturz (KOLLISION — unverändert, Unterkante y=4.9, Durchgang frei)
             {
                 shape: "box",
                 material: "stein",
                 position: { x: 0, y: 5.7, z: 0 },
                 size: { x: 8.4, y: 1.6, z: 2.2 },
             },
-            // Ein verwitterter Fels-Aufsatz — bricht die Tür-Rahmen-Silhouette
-            // auf, rein dekorativ (sitzt oben, berührt die Durchgang-Lücke nicht).
+            // Schlussstein (Keystone) — sitzt OBEN auf dem Sturz-Scheitel, mittig.
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 6.7, z: 0 },
+                size: { x: 1.6, y: 1.2, z: 2.4 },
+                rotation: { x: 0, y: 0, z: 0.04 },
+            },
+            // Verwitterte Fels-Aufsätze (asymmetrisch, brechen die Tür-Rahmen-
+            // Silhouette auf; sitzen oben, berühren die Durchgang-Lücke nicht).
             {
                 shape: "octahedron",
                 material: "stein",
-                position: { x: 1.4, y: 6.9, z: 0.2 },
-                size: { x: 1.7, y: 1.5, z: 1.7 },
+                position: { x: 2.2, y: 7.0, z: 0.2 },
+                size: { x: 1.6, y: 1.4, z: 1.6 },
                 rotation: { x: 0.2, y: 0.5, z: 0.15 },
+            },
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: -2.4, y: 6.9, z: -0.3 },
+                size: { x: 1.3, y: 1.1, z: 1.3 },
+                rotation: { x: -0.15, y: -0.4, z: 0.2 },
             },
         ];
         // felsturm: ein verwitterter Fels-Turm — ein vertikaler Akzent, der
         // einer Region die Klippen-/Nadel-Dramatik gibt, die ein glattes
         // Heightfield nie hat. Ein Stapel sich verjüngender Stein-Zylinder
         // mit leichtem Versatz (verwittert, nicht perfekt lotrecht).
+        //
+        // V17.17 — reichere verwitterte Nadel (Schöpfer-Audit; Neuanlauf nach
+        // dem V17.16-Revert). REINE DATEN, nur „stein". Die 3 tragenden Zylinder-
+        // Segmente + die Spitze bleiben (die Silhouette), ergänzt um Erosions-
+        // Absatz-Ringe an den Übergängen + anliegende Fels-Brocken (asymmetrisch)
+        // → die glatte Stapel-Optik bricht auf.
+        //
+        // AFFINITÄTS-DISZIPLIN (V17.16-Wurzel-Lehre, verifiziert): TAG-NEUTRAL —
+        // `stein` aktiviert unter den Affinitäts-Achsen nur dichte; cylinder gibt
+        // den dichte-MAX (Aktivierung 2 → 1.7). Die neuen octahedron tragen
+        // dichte-Aktivierung 2 (= cylinder, NICHT darüber) → `computeCompoundTags`
+        // bleibt {dichte 1.7} EXAKT wie V17.15. WICHTIG: KEINE `box` hinzufügen
+        // (box-dichte-Aktivierung 3 → würde dichte auf 2.55 heben = Spawn-Shift!);
+        // die octahedron sind der sichere „gebrochener Fels"-Akzent. magieleitung
+        // bleibt 0 (stein.magieleitung = 0 nullt octahedrons magie-Aktivierung 3)
+        // → kein Antrieb → `_isMoveable` unmöglich → Instancing sauber.
         const felsturmParts = [
+            // Basis-Segment
             {
                 shape: "cylinder",
                 material: "stein",
@@ -30368,6 +30434,23 @@ class AnazhRealm {
                 size: { x: 4.4, y: 6, z: 4.4 },
                 segments: 10,
             },
+            // Absatz-Ring 1 (Erosions-Stufe am Übergang Basis → Mitte)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.15, y: 6.2, z: 0.1 },
+                size: { x: 3.8, y: 0.5, z: 3.8 },
+                segments: 10,
+            },
+            // Anliegender Brocken am Fuß (asymmetrisch, gebrochener Fels)
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: 2.0, y: 1.6, z: 0.6 },
+                size: { x: 1.8, y: 2.2, z: 1.8 },
+                rotation: { x: 0.2, y: 0.6, z: 0.15 },
+            },
+            // Mittel-Segment
             {
                 shape: "cylinder",
                 material: "stein",
@@ -30375,6 +30458,23 @@ class AnazhRealm {
                 size: { x: 3.0, y: 5, z: 3.0 },
                 segments: 9,
             },
+            // Absatz-Ring 2 (Übergang Mitte → oberes Segment)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.1, y: 10.7, z: 0.3 },
+                size: { x: 2.5, y: 0.4, z: 2.5 },
+                segments: 9,
+            },
+            // Anliegender Brocken Mitte
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: -1.6, y: 9.0, z: -0.5 },
+                size: { x: 1.3, y: 1.6, z: 1.3 },
+                rotation: { x: -0.2, y: 0.4, z: 0.25 },
+            },
+            // Oberes Segment
             {
                 shape: "cylinder",
                 material: "stein",
@@ -30382,6 +30482,7 @@ class AnazhRealm {
                 size: { x: 1.9, y: 3, z: 1.9 },
                 segments: 8,
             },
+            // Spitze (verwitterter Gipfel)
             {
                 shape: "cone",
                 material: "stein",
@@ -42810,7 +42911,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.16.2";
+AnazhRealm.VERSION = "17.17.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
