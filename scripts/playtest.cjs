@@ -15630,6 +15630,13 @@ async function checkBandV171Scatter(ctx) {
             );
         // Alle vier Felder kommen als Stimme vor (die vier Biom-Stimmen).
         out.allFourVoices = out.registryArray && validFields.every((f) => species.some((s) => s.field === f));
+        // V17.4 — Pollen-Partikel-Art (emissive + drift, lebendig-gated).
+        const pollen = out.registryArray ? species.find((s) => s.name === "pollen") : null;
+        out.hasPollen = !!(pollen && pollen.emissive === true && pollen.drift === true && pollen.field === "lebendig");
+        // V17.4 — kohärente Böen-Welle (Source-Probe in Gras- + Scatter-Wind).
+        const grassSrc = r._grassInstanceMat ? r._grassInstanceMat.toString() : "";
+        const motionSrc = r._applyScatterMotion ? r._applyScatterMotion.toString() : "";
+        out.gustWave = grassSrc.includes("gust") && motionSrc.includes("gust") && motionSrc.includes("drift");
 
         // (2) Methoden existieren.
         out.buildExists = typeof r._buildVoxelChunkScatter === "function";
@@ -15778,7 +15785,9 @@ async function checkBandV171Scatter(ctx) {
         return;
     }
     check("V17.1 Scatter: KLEIN_VEGETATION_SPECIES ist ein Array", res.registryArray === true);
-    check("V17.1 Scatter: 5 Biom-Stimmen (Arten) registriert", res.speciesCount === 5);
+    check("V17.1 Scatter: ≥5 Biom-Stimmen (Arten) registriert", res.speciesCount >= 5);
+    check("V17.4: Pollen-Partikel-Art (emissive + drift, lebendig)", res.hasPollen === true);
+    check("V17.4: kohärente Böen-Welle im Gras + Scatter-Wind (gust + drift)", res.gustWave === true);
     check("V17.1 Scatter: jede Art hat gültiges Feld + konstanten Cap + Skala", res.allFieldsValid === true);
     check("V17.1 Scatter: alle vier worldFieldAt-Felder werden als Stimme genutzt", res.allFourVoices === true);
     check(

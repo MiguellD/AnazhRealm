@@ -10420,9 +10420,22 @@ class AnazhRealm {
             .add(positionWorld.x.mul(float(0.28)))
             .add(positionWorld.z.mul(float(0.21)));
         const hf = max(positionLocal.y, float(0.0));
-        const offsetX = sin(phase).mul(wu.uWindStrength).mul(hf).mul(float(1.5));
+        // V17.4 — kohärente Böen-Welle: eine nieder-frequente, übers Feld
+        // WANDERNDE Modulation der Wind-Stärke (`-worldX·k` über die Zeit = die
+        // Welle läuft) → ein sichtbares Wogen sweept durch die Wiese, statt nur
+        // per-Halm-Periodik. λ~210 m, Periode ~16 s. Faktor [0.25, 1.15].
+        const gust = sin(
+            wu.uWindTime
+                .mul(float(0.4))
+                .sub(positionWorld.x.mul(float(0.03)))
+                .sub(positionWorld.z.mul(float(0.024)))
+        )
+            .mul(float(0.45))
+            .add(float(0.7));
+        const windEff = wu.uWindStrength.mul(gust);
+        const offsetX = sin(phase).mul(windEff).mul(hf).mul(float(1.5));
         const offsetZ = cos(phase.mul(float(0.7)))
-            .mul(wu.uWindStrength)
+            .mul(windEff)
             .mul(hf);
         mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
 
@@ -11736,6 +11749,28 @@ class AnazhRealm {
                 scale: [0.4, 0.9],
                 color: [0.5, 0.85, 1.0],
                 color2: [0.75, 0.6, 1.0],
+                geom: "spore",
+            },
+            // V17.4 — lebendig → Pollen-Partikel: warme, weich leuchtende Motes,
+            // die in üppigen Zonen über der Wiese schweben (`drift` = sanftes
+            // Treiben in der Luft, entkoppelte Frequenzen). Weicher Boost (1.15)
+            // → warmes Schweben in Sonnenstrahlen, kein Glühwurm. Reine Deko.
+            {
+                name: "pollen",
+                field: "lebendig",
+                floor: 0.55,
+                perCell: 1.3,
+                cap: 200,
+                ring: 1,
+                pool: 16,
+                wind: false,
+                emissive: true,
+                emissiveBoost: 1.15,
+                drift: true,
+                yOff: 1.3,
+                scale: [0.45, 0.9],
+                color: [1.0, 0.93, 0.66],
+                color2: [1.0, 0.82, 0.5],
                 geom: "spore",
             },
         ];
@@ -20839,7 +20874,9 @@ class AnazhRealm {
                 mat = new THREE.MeshBasicNodeMaterial({ side: THREE.DoubleSide });
                 const { vec4, float, attribute } = TSL;
                 const vcol = attribute("color", "vec3");
-                mat.colorNode = vec4(vcol.mul(float(1.7)), float(1.0));
+                // V17.4 — per-Art-Boost: Magie-Sporen leuchten stark (1.7),
+                // Pollen weich (1.15) → Pollen ist warmes Schweben, kein Glühwurm.
+                mat.colorNode = vec4(vcol.mul(float(species.emissiveBoost || 1.7)), float(1.0));
                 this._applyScatterMotion(mat, species, TSL);
             } else if (TSL && typeof THREE.MeshLambertNodeMaterial === "function") {
                 mat = new THREE.MeshLambertNodeMaterial({
@@ -20878,6 +20915,20 @@ class AnazhRealm {
         if (!wu) return;
         const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
         if (species.emissive) {
+            if (species.drift) {
+                // V17.4 — Pollen schwebt: sanfter horizontaler + vertikaler Drift
+                // (entkoppelte Frequenzen → organisches Treiben, kein Gleichtakt).
+                // Reine Deko-Bewegung in der Luft, gegated auf lebendig-Zonen.
+                const ph = positionWorld.x.mul(float(0.5)).add(positionWorld.z.mul(float(0.4)));
+                const dx = sin(wu.uWindTime.mul(float(0.7)).add(ph)).mul(float(0.25));
+                const dy = sin(wu.uWindTime.mul(float(1.1)).add(ph.mul(float(1.3))))
+                    .mul(float(0.5))
+                    .add(float(0.5))
+                    .mul(float(0.32));
+                const dz = cos(wu.uWindTime.mul(float(0.55)).add(ph)).mul(float(0.22));
+                mat.positionNode = positionLocal.add(vec3(dx, dy, dz));
+                return;
+            }
             const bob = sin(wu.uWindTime.mul(float(2.0)).add(positionWorld.x.mul(float(0.6))))
                 .mul(float(0.5))
                 .add(float(0.5))
@@ -20890,9 +20941,20 @@ class AnazhRealm {
             .add(positionWorld.x.mul(float(0.28)))
             .add(positionWorld.z.mul(float(0.21)));
         const hf = max(positionLocal.y, float(0.0));
-        const offX = sin(phase).mul(wu.uWindStrength).mul(hf).mul(float(1.2));
+        // V17.4 — dieselbe kohärente Böen-Welle wie das Gras (geteilte
+        // windUniforms) → Gras + weiche Klein-Vegetation wogen IM GLEICHTAKT.
+        const gust = sin(
+            wu.uWindTime
+                .mul(float(0.4))
+                .sub(positionWorld.x.mul(float(0.03)))
+                .sub(positionWorld.z.mul(float(0.024)))
+        )
+            .mul(float(0.45))
+            .add(float(0.7));
+        const windEff = wu.uWindStrength.mul(gust);
+        const offX = sin(phase).mul(windEff).mul(hf).mul(float(1.2));
         const offZ = cos(phase.mul(float(0.7)))
-            .mul(wu.uWindStrength)
+            .mul(windEff)
             .mul(hf);
         mat.positionNode = positionLocal.add(vec3(offX, float(0.0), offZ));
     }
@@ -42305,7 +42367,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.3.0";
+AnazhRealm.VERSION = "17.4.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
