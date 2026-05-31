@@ -29871,71 +29871,206 @@ class AnazhRealm {
             const radius = 7.5;
             const hx = Math.cos(angle) * radius;
             const hz = Math.sin(angle) * radius;
-            // Körper
+            const bodyRot = -angle + Math.PI;
+            // V17.15 — die Hütten bekommen Binnen-Struktur (Schöpfer-Audit
+            // „Dorf kaum Strukturen in sich"). Reine DATEN (mehr Parts), kein
+            // neuer Code-Pfad; village ist NICHT instanziert (Group-Pfad, selten
+            // platziert) → Part-Zahl unkritisch. Pro Hütte: Stein-Fundament +
+            // Körper + Tür + Fenster + Dach mit Überstand (eaves) + Schornstein.
+            // Tür/Fenster sitzen auf der zum Dorf-Zentrum gewandten Fassade
+            // (inward), via bodyRot mit der Wand ausgerichtet. Leichte per-Hütte-
+            // Größen-/Höhen-Variation (i-deterministisch) → organisches Dorf.
+            const ix = -Math.cos(angle); // Richtung zum Zentrum (Fassade)
+            const iz = -Math.sin(angle);
+            const sx = -Math.sin(angle); // seitlich (für Fenster/Schornstein)
+            const sz = Math.cos(angle);
+            const sv = 0.85 + ((i * 5) % 3) * 0.13; // 0.85 / 0.98 / 1.11
+            const bw = 2.0 * sv;
+            const bh = 1.5 * sv;
+            const bd = 2.4 * sv;
+            const bodyY = 0.36 + bh / 2;
+            const roofBaseY = bodyY + bh / 2;
+            // Stein-Fundament (etwas breiter, niedrig)
+            villageParts.push({
+                shape: "box",
+                color: 0x6a6258,
+                position: { x: hx, y: 0.18, z: hz },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: bw + 0.5, y: 0.36, z: bd + 0.5 },
+            });
+            // Körper (Lehm/Holz)
             villageParts.push({
                 shape: "box",
                 color: 0x6e3a14,
-                position: { x: hx, y: 0.8, z: hz },
-                rotation: { x: 0, y: -angle + Math.PI, z: 0 },
-                size: { x: 2.0, y: 1.6, z: 2.4 },
+                position: { x: hx, y: bodyY, z: hz },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: bw, y: bh, z: bd },
+            });
+            // Tür (dunkle Nische auf der Zentrums-Fassade)
+            villageParts.push({
+                shape: "box",
+                color: 0x32200f,
+                position: { x: hx + ix * (bd / 2 + 0.05), y: bodyY - bh * 0.18, z: hz + iz * (bd / 2 + 0.05) },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: 0.62, y: bh * 0.62, z: 0.22 },
+            });
+            // Fenster (warm leuchtend, seitlich versetzt)
+            villageParts.push({
+                shape: "box",
+                color: 0xe2b667,
+                position: {
+                    x: hx + ix * (bd / 2 + 0.04) + sx * 0.62,
+                    y: bodyY + bh * 0.12,
+                    z: hz + iz * (bd / 2 + 0.04) + sz * 0.62,
+                },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: 0.42, y: 0.42, z: 0.18 },
+            });
+            // Dach-Überstand (eaves) — dünner breiter Kranz am Dachfuß
+            villageParts.push({
+                shape: "box",
+                color: 0x4a2810,
+                position: { x: hx, y: roofBaseY + 0.04, z: hz },
+                rotation: { x: 0, y: bodyRot, z: 0 },
+                size: { x: bw + 0.7, y: 0.18, z: bd + 0.7 },
             });
             // Dach
             villageParts.push({
                 shape: "pyramid",
                 color: 0x8b2a1e,
-                position: { x: hx, y: 2.2, z: hz },
-                rotation: { x: 0, y: -angle + Math.PI + Math.PI / 4, z: 0 },
-                size: { x: 3.4, y: 1.2, z: 3.4 },
+                position: { x: hx, y: roofBaseY + 0.7, z: hz },
+                rotation: { x: 0, y: bodyRot + Math.PI / 4, z: 0 },
+                size: { x: (bw + 1.2) * 1.0, y: 1.2 * sv, z: (bd + 1.2) * 1.0 },
+            });
+            // Schornstein (seitlich auf dem Dach)
+            villageParts.push({
+                shape: "box",
+                color: 0x55504a,
+                position: { x: hx + sx * (bw * 0.3), y: roofBaseY + 1.0, z: hz + sz * (bw * 0.3) },
+                size: { x: 0.32, y: 1.0, z: 0.32 },
             });
         }
-        // Lagerplatz
+        // Dorf-Brunnen im Zentrum (statt der flachen Platte): Stein-Ring +
+        // dunkles Wasser innen + zwei Pfosten + Dach-Andeutung.
         villageParts.push({
             shape: "cylinder",
-            color: 0x707070,
-            position: { x: 0, y: 0.05, z: 0 },
-            size: { x: 4.4, y: 0.15, z: 4.4 },
+            color: 0x787068,
+            position: { x: 0, y: 0.5, z: 0 },
+            size: { x: 2.4, y: 1.0, z: 2.4 },
             segments: 12,
+        });
+        villageParts.push({
+            shape: "cylinder",
+            color: 0x21323a,
+            position: { x: 0, y: 1.02, z: 0 },
+            size: { x: 1.7, y: 0.1, z: 1.7 },
+            segments: 12,
+        });
+        villageParts.push({
+            shape: "box",
+            color: 0x5a3a1c,
+            position: { x: -1.0, y: 1.9, z: 0 },
+            size: { x: 0.2, y: 2.0, z: 0.2 },
+        });
+        villageParts.push({
+            shape: "box",
+            color: 0x5a3a1c,
+            position: { x: 1.0, y: 1.9, z: 0 },
+            size: { x: 0.2, y: 2.0, z: 0.2 },
+        });
+        villageParts.push({
+            shape: "pyramid",
+            color: 0x6e3a14,
+            position: { x: 0, y: 3.1, z: 0 },
+            size: { x: 2.8, y: 0.7, z: 1.4 },
         });
 
         const templeParts = [];
         const pillarCount = 6;
         const pillarRadius = 3.2;
         const pillarHeight = 4.0;
+        // V17.15 — der Tempel bekommt Binnen-Struktur (Schöpfer-Audit „Strukturen
+        // kaum Struktur in sich"). Reine DATEN; temple ist NICHT instanziert.
+        // Gestufte Stein-Plattform (3 Stufen, abnehmend) → klassischer Unterbau.
+        const stepBaseColor = 0xb8b09a;
+        const steps = [
+            { r: pillarRadius + 1.7, y: 0.2, h: 0.4 },
+            { r: pillarRadius + 1.2, y: 0.55, h: 0.35 },
+            { r: pillarRadius + 0.8, y: 0.85, h: 0.3 },
+        ];
+        for (const st of steps) {
+            templeParts.push({
+                shape: "cylinder",
+                color: stepBaseColor,
+                position: { x: 0, y: st.y, z: 0 },
+                size: { x: st.r * 2, y: st.h, z: st.r * 2 },
+                segments: 16,
+            });
+        }
+        const pillarBaseY = 1.0; // auf der obersten Stufe
         for (let i = 0; i < pillarCount; i++) {
             const angle = (i / pillarCount) * Math.PI * 2;
+            const px = Math.cos(angle) * pillarRadius;
+            const pz = Math.sin(angle) * pillarRadius;
+            // Säulen-Sockel (breiter Block unten)
+            templeParts.push({
+                shape: "box",
+                color: 0xd0c8b0,
+                position: { x: px, y: pillarBaseY + 0.2, z: pz },
+                size: { x: 0.95, y: 0.4, z: 0.95 },
+            });
+            // Säulen-Schaft
             templeParts.push({
                 shape: "cylinder",
                 color: 0xc8c0a8,
-                position: {
-                    x: Math.cos(angle) * pillarRadius,
-                    y: pillarHeight / 2,
-                    z: Math.sin(angle) * pillarRadius,
-                },
+                position: { x: px, y: pillarBaseY + 0.4 + pillarHeight / 2, z: pz },
                 size: { x: 0.6, y: pillarHeight, z: 0.7 },
-                segments: 8,
+                segments: 10,
+            });
+            // Säulen-Kapitell (breiter Block oben)
+            templeParts.push({
+                shape: "box",
+                color: 0xd0c8b0,
+                position: { x: px, y: pillarBaseY + 0.4 + pillarHeight + 0.2, z: pz },
+                size: { x: 0.95, y: 0.4, z: 0.95 },
             });
         }
-        // Dach
+        const entabY = pillarBaseY + 0.4 + pillarHeight + 0.4;
+        // Architrav/Gesims (Ring unter dem Dach)
         templeParts.push({
             shape: "cylinder",
-            color: 0xc8c0a8,
-            position: { x: 0, y: pillarHeight + 0.2, z: 0 },
-            size: { x: (pillarRadius + 0.6) * 2, y: 0.4, z: (pillarRadius + 0.6) * 2 },
-            segments: 8,
+            color: 0xbfb79f,
+            position: { x: 0, y: entabY + 0.25, z: 0 },
+            size: { x: (pillarRadius + 0.9) * 2, y: 0.5, z: (pillarRadius + 0.9) * 2 },
+            segments: 16,
         });
-        // Altar
+        // Dach (flacher Kegel statt flacher Scheibe → Tempel-Silhouette)
+        templeParts.push({
+            shape: "cone",
+            color: 0xc8c0a8,
+            position: { x: 0, y: entabY + 0.5 + 0.9, z: 0 },
+            size: { x: (pillarRadius + 1.1) * 2, y: 1.8, z: (pillarRadius + 1.1) * 2 },
+            segments: 16,
+        });
+        // Altar-Sockel + Altar (auf der Plattform-Mitte)
+        templeParts.push({
+            shape: "box",
+            color: 0x8a7a9a,
+            position: { x: 0, y: 1.2, z: 0 },
+            size: { x: 1.6, y: 0.5, z: 1.6 },
+        });
         templeParts.push({
             shape: "box",
             color: 0x6a4a8a,
-            position: { x: 0, y: 0.45, z: 0 },
-            size: { x: 1.2, y: 0.9, z: 1.2 },
+            position: { x: 0, y: 1.75, z: 0 },
+            size: { x: 1.1, y: 0.8, z: 1.1 },
         });
-        // Kristall-Spitze
+        // Kristall-Spitze (schwebt über dem Altar)
         templeParts.push({
             shape: "octahedron",
             color: 0xd9a3ff,
-            position: { x: 0, y: 1.4, z: 0 },
-            size: { x: 0.9, y: 0.9, z: 0.9 },
+            position: { x: 0, y: 2.7, z: 0 },
+            size: { x: 0.9, y: 1.1, z: 0.9 },
         });
 
         const waterfallParts = [
@@ -42675,7 +42810,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.14.0";
+AnazhRealm.VERSION = "17.15.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
