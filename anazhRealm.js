@@ -9950,14 +9950,32 @@ class AnazhRealm {
             this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
-        const { uniform, vec3, float, positionLocal, normalize, sin, dot, floor, fract, mix, smoothstep, clamp, Fn } =
-            TSL;
+        const {
+            uniform,
+            vec3,
+            float,
+            positionLocal,
+            normalize,
+            sin,
+            dot,
+            floor,
+            fract,
+            mix,
+            smoothstep,
+            clamp,
+            pow,
+            Fn,
+        } = TSL;
 
         // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
         // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
         const uTime = uniform(0.0);
         const uNebulaColor = uniform(new THREE.Color(0x4b0082)); // Indigofarben
         const uCloudCover = uniform(0.3);
+        // V17.2 — Sonnen-Richtung für den Wolken-Glow (golden-hour-Rand zur
+        // Sonne hin). EINE Quelle: derselbe sunDir, der DirectionalLight + das
+        // Gras-Gegenlicht speist (`_dayNightApplyDirectionalLight`-Sync).
+        const uSunDir = uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize());
 
         // 3D-Hash-Noise (Vendor-Spiegel der alten GLSL `noise(vec3)`):
         // dieselben Magic-Konstanten, dieselbe Smoothstep-Kurve, dieselbe
@@ -9998,19 +10016,58 @@ class AnazhRealm {
         const nebulaTint = float(0.5).add(n1.add(n2).add(n3).div(3.0).mul(0.5));
         const nebula = uNebulaColor.mul(nebulaTint);
 
-        // Wolken-Schicht: horizont-genordet (vDir.y > 0), zwei-Octaven-Noise,
-        // cloudCover-skaliert. Identisch zur GLSL-Variante.
-        const horizonMask = smoothstep(float(-0.05), float(0.35), vDir.y);
-        const cloudN = noise3(vDir.mul(2.5).add(vec3(uTime.mul(0.012), 0.0, uTime.mul(0.008))));
-        const cloudN2 = noise3(vDir.mul(6.0).add(vec3(uTime.mul(0.02), 0.0, uTime.mul(0.014))));
-        const cloudMix = cloudN.mul(0.65).add(cloudN2.mul(0.35));
-        const clouds = smoothstep(float(0.55), float(0.85), cloudMix).mul(horizonMask).mul(uCloudCover);
-
-        // Wolken-Farbe folgt der Himmel-Helligkeit (Tag weiß, Nacht dunkelgrau).
+        // V17.2 — WOLKEN: der flache 2-Octaven-Layer wird ein GEMALTER Ghibli-
+        // Himmel. Der Befund (ghibli-tiefe-diagnose): der Himmel ist die halbe
+        // epische Wirkung, aber `cloudCover` war EIN flacher Wert. Heilung (render-
+        // only, kein Buffer/Determinismus): 4-Octaven-FBM (bauschige Cumulus-Formen)
+        // mit Domain-Warp, vertikale Band-Formung, Fake-Selbstschattierung (helle
+        // Kerne / weiche graue Ränder) + Sonnen-Glow (golden-hour-Rand). Werte
+        // browser-justierbar. Volumetrische Billboard-Türme mit Parallaxe wären
+        // V17.2-b (falls der Browser-Audit mehr Plastik will).
+        const tC = uTime.mul(0.012);
+        // Domain-Warp: ein erstes Noise knetet die Sample-Koordinate → organische
+        // Wolken-Ränder statt gerasterter Blobs.
+        const warp = noise3(vDir.mul(1.6).add(vec3(tC, float(0.0), tC.mul(0.5))))
+            .sub(0.5)
+            .mul(0.7);
+        const cp = vDir
+            .mul(2.3)
+            .add(vec3(tC, tC.mul(0.3), tC.mul(0.7)))
+            .add(warp);
+        // 4-Octaven-FBM (normalisiert ~[0,1]) — die Cumulus-Fülle.
+        const o1 = noise3(cp);
+        const o2 = noise3(cp.mul(2.03)).mul(0.5);
+        const o3 = noise3(cp.mul(4.01)).mul(0.25);
+        const o4 = noise3(cp.mul(8.05)).mul(0.125);
+        const fbm = o1.add(o2).add(o3).add(o4).div(1.875);
+        // cloudCover senkt die Schwelle → mehr Deckung (Wetter moduliert weiter):
+        // klar (~0.32) → thr 0.53 (verstreute Cumulus), Regen (~0.9) → thr 0.28
+        // (Overcast). Weiche Kanten über 0.2 Breite.
+        const thr = float(0.66).sub(uCloudCover.mul(0.42));
+        const density = smoothstep(thr, thr.add(float(0.2)), fbm);
+        // Vertikale Band-Formung: Wolken steigen knapp über dem Horizont an und
+        // dünnen zum Zenit sanft aus (Cumulus-Band statt Voll-Overcast-Teppich) —
+        // der Spieler blickt meist horizontnah, dort sind sie am dichtesten.
+        const band = smoothstep(float(-0.04), float(0.18), vDir.y).mul(smoothstep(float(1.3), float(0.42), vDir.y));
+        const cloudAmt = clamp(density.mul(band), float(0.0), float(1.0));
+        // Fake-Volumen: helle Kerne (hohes fbm = Cumulus-Top), weiche graue Ränder
+        // (nahe der Schwelle = ausgedünnte Fetzen) → der „plastische" Eindruck.
+        const lit = smoothstep(thr, float(1.0), fbm);
+        const cloudShade = mix(float(0.7), float(1.05), lit);
+        // Sonnen-Glow: nahe der Sonnen-Richtung ein warmer heller Rand (golden hour).
+        const sunDot = clamp(dot(vDir, normalize(uSunDir)), float(0.0), float(1.0));
+        const sunGlow = pow(sunDot, float(5.0));
+        // Wolken-Grundfarbe folgt der Himmel-Helligkeit (Nacht graublau → Tag warm-
+        // weiß) + additive Sonnen-Wärme am Glow-Rand.
         const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
-        const cloudColor = mix(vec3(0.32, 0.34, 0.4), vec3(1.0, 0.98, 0.95), clamp(skyLum.mul(2.2), 0.0, 1.0));
+        const baseCloud = mix(
+            vec3(0.4, 0.43, 0.52),
+            vec3(1.0, 0.99, 0.96),
+            clamp(skyLum.mul(2.2), float(0.0), float(1.0))
+        );
+        const cloudColor = baseCloud.mul(cloudShade).add(vec3(1.0, 0.82, 0.55).mul(sunGlow.mul(0.55)));
 
-        const finalColor = mix(nebula, cloudColor, clouds);
+        const finalColor = mix(nebula, cloudColor, cloudAmt);
 
         const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
         const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
@@ -10025,6 +10082,7 @@ class AnazhRealm {
             time: uTime,
             nebulaColor: uNebulaColor,
             cloudCover: uCloudCover,
+            sunDir: uSunDir,
         };
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
@@ -38456,7 +38514,10 @@ class AnazhRealm {
             u.nebulaColor.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
         }
         if (u.cloudCover) {
-            u.cloudCover.value = this._weatherBlendedValue(0.22, 0.85);
+            // V17.2 — klar 0.32 (verstreute Cumulus statt kahler Himmel), Regen
+            // 0.9 (Overcast). Der neue FBM-Wolken-Layer liest den Wert als
+            // Schwellen-Senker (mehr Deckung = mehr Wolken). Browser-justierbar.
+            u.cloudCover.value = this._weatherBlendedValue(0.32, 0.9);
         }
     }
 
@@ -38525,6 +38586,11 @@ class AnazhRealm {
         // Quelle: derselbe sunDir, der die DirectionalLight-Position speist.
         if (this.state.windUniforms && this.state.windUniforms.uSunDir) {
             this.state.windUniforms.uSunDir.value.copy(sunDir).normalize();
+        }
+        // V17.2 — derselbe sunDir speist den Wolken-Glow im Skybox-Shader
+        // (golden-hour-Rand zur Sonne hin). EINE Quelle, drei Konsumenten.
+        if (this.state.skyboxUniforms && this.state.skyboxUniforms.sunDir) {
+            this.state.skyboxUniforms.sunDir.value.copy(sunDir).normalize();
         }
     }
 
@@ -42219,7 +42285,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.1.0";
+AnazhRealm.VERSION = "17.2.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
