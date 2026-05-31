@@ -30313,76 +30313,67 @@ class AnazhRealm {
                 opacity: 0.9,
             },
         ];
-        // V17.16 — Kristall-Geode von 4 zu einem reichen radialen Kristall-Cluster
-        // (Schöpfer-Audit). Reine DATEN, NUR „quarz" (1 InstancedMesh). Eine
-        // aufgebrochene Stein-freie Quarz-Basis + ein zentraler Haupt-Kristall +
-        // mehrere RADIAL nach außen wachsende Splitter verschiedener Größe/Neigung
-        // (wie eine echte Druse). WICHTIG (Funktions-Beachtung): die Splitter sind
-        // RADIAL um das Zentrum verteilt, NICHT auf einer Achse → kein `magnifying`
-        // (das bräche das Instancing, Quarz ist transparent). Die radiale Streuung
-        // kann emergent `radiating` triggern (resoniert) — das ist instancing-SAFE
-        // (Gate lehnt nur moveable/magnifying ab) + thematisch perfekt für eine
-        // Magie-Geode. Verifiziert via Reproducer.
+        // V17.16 — Kristall-Geode von 4 zu einer reichen Druse (Schöpfer-Audit).
+        // Reine DATEN, NUR „quarz" (1 InstancedMesh).
+        //
+        // V17.16-fix (die kritische Funktions-Beachtung — gemessen, nicht geraten):
+        // die radialen Splitter MÜSSEN ALLE ÜBER der bbox-Midline sitzen, sodass
+        // NUR die Basis-Sphere darunter liegt (1 Part < minSupportParts=2). Sonst
+        // liest `_isMoveable` die radial-gespreizten Splitter unter der Midline als
+        // Trag-Basis (≥2 gespreizte Stütz-Parts) + Quarz-magieleitung (Antrieb) →
+        // moveable=true → das Instancing-Gate lehnt ab (`affordance-needs-mesh`,
+        // die exakte Baum-Falle). Die alte 4-Part-Geode war instanzierbar, WEIL nur
+        // die Basis-Sphere unter der Midline lag — diese Invariante wird bewahrt.
+        // bbox: Basis-Sphere unten (~−0.05) bis Haupt-Kristall oben (~2.8) →
+        // Midline ~1.4; alle Splitter bei y≥1.6 → über der Midline. Radial in x/z
+        // verteilt (kein magnifying); `radiating` (resoniert) ist instancing-safe.
         const kristallGeodeParts = [
-            // Basis-Kuppel (die aufgebrochene Geoden-Schale)
+            // Basis-Kuppel (die aufgebrochene Geoden-Schale) — der EINZIGE Part
+            // unter der Midline.
             {
                 shape: "sphere",
                 material: "quarz",
                 position: { x: 0, y: 0.7, z: 0 },
-                size: { x: 1.9, y: 1.5, z: 1.9 },
+                size: { x: 2.0, y: 1.5, z: 2.0 },
                 opacity: 0.8,
             },
             // Zentraler Haupt-Kristall (aufrecht, der „Herzkristall")
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: 0, y: 2.0, z: 0 },
-                size: { x: 0.9, y: 1.6, z: 0.9 },
+                position: { x: 0, y: 2.1, z: 0 },
+                size: { x: 0.95, y: 1.7, z: 0.95 },
             },
-            // Radiale Splitter (rundum nach außen geneigt, verschiedene Größen) —
-            // bewusst NICHT axial gestapelt (sonst magnifying).
+            // Radiale Splitter — ALLE bei y≥1.6 (über der Midline), aus der
+            // Kuppel-Oberseite nach außen geneigt, verschiedene Größen. Radial in
+            // x/z (keine axiale Teleskop-Linie → kein magnifying).
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: 0.85, y: 1.4, z: 0.3 },
-                size: { x: 0.55, y: 1.0, z: 0.55 },
-                rotation: { x: 0.2, y: 0.4, z: 0.55 },
-            },
-            {
-                shape: "octahedron",
-                material: "quarz",
-                position: { x: -0.7, y: 1.3, z: -0.6 },
-                size: { x: 0.6, y: 1.1, z: 0.6 },
-                rotation: { x: -0.3, y: -0.3, z: -0.5 },
+                position: { x: 0.8, y: 1.75, z: 0.3 },
+                size: { x: 0.55, y: 1.1, z: 0.55 },
+                rotation: { x: 0.15, y: 0.4, z: 0.5 },
             },
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: -0.3, y: 1.2, z: 0.85 },
-                size: { x: 0.45, y: 0.85, z: 0.45 },
-                rotation: { x: 0.5, y: 0.2, z: 0.2 },
+                position: { x: -0.65, y: 1.7, z: -0.55 },
+                size: { x: 0.6, y: 1.2, z: 0.6 },
+                rotation: { x: -0.25, y: -0.3, z: -0.45 },
             },
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: 0.5, y: 1.25, z: -0.75 },
-                size: { x: 0.5, y: 0.9, z: 0.5 },
-                rotation: { x: -0.45, y: 0.3, z: 0.25 },
-            },
-            // Kleine Boden-Splitter (Streu rund um die Basis)
-            {
-                shape: "octahedron",
-                material: "quarz",
-                position: { x: 1.3, y: 0.45, z: -0.4 },
-                size: { x: 0.4, y: 0.5, z: 0.4 },
-                rotation: { x: 0.3, y: 0.5, z: 0.3 },
+                position: { x: -0.35, y: 1.65, z: 0.8 },
+                size: { x: 0.45, y: 0.9, z: 0.45 },
+                rotation: { x: 0.45, y: 0.2, z: 0.2 },
             },
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: -1.1, y: 0.4, z: 0.6 },
-                size: { x: 0.35, y: 0.45, z: 0.35 },
-                rotation: { x: -0.2, y: -0.4, z: 0.2 },
+                position: { x: 0.5, y: 1.7, z: -0.7 },
+                size: { x: 0.5, y: 1.0, z: 0.5 },
+                rotation: { x: -0.4, y: 0.3, z: 0.25 },
             },
         ];
         // V17.16 — Glutbrunnen von 2 zu einem gestuften Vulkan-Anker (Schöpfer-
@@ -30848,7 +30839,17 @@ class AnazhRealm {
                 instanced: true,
                 parts: baumKieferParts,
             },
-            stein_block: { name: "stein_block", label: "Felsblock", builtIn: true, parts: steinBlockParts },
+            // V17.16 — stein_block instanziert (war classic): es ist ein häufiger
+            // Felsen-Region-Spawn; mit jetzt 6 Parts wäre der Group-Pfad 6×N
+            // Sub-Meshes. `balancing` (dichte) ist instancing-safe (das Gate lehnt
+            // nur moveable/magnifying ab) → 1 InstancedMesh (nur „stein"-Material).
+            stein_block: {
+                name: "stein_block",
+                label: "Felsblock",
+                builtIn: true,
+                instanced: true,
+                parts: steinBlockParts,
+            },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
             start_plattform: {
@@ -43035,7 +43036,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.16.0";
+AnazhRealm.VERSION = "17.16.1";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
