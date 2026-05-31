@@ -10044,11 +10044,18 @@ class AnazhRealm {
         // klar (~0.32) → thr 0.53 (verstreute Cumulus), Regen (~0.9) → thr 0.28
         // (Overcast). Weiche Kanten über 0.2 Breite.
         const thr = float(0.66).sub(uCloudCover.mul(0.42));
-        const density = smoothstep(thr, thr.add(float(0.2)), fbm);
-        // Vertikale Band-Formung: Wolken steigen knapp über dem Horizont an und
-        // dünnen zum Zenit sanft aus (Cumulus-Band statt Voll-Overcast-Teppich) —
-        // der Spieler blickt meist horizontnah, dort sind sie am dichtesten.
-        const band = smoothstep(float(-0.04), float(0.18), vDir.y).mul(smoothstep(float(1.3), float(0.42), vDir.y));
+        // V17.5 — weichere Dichte-Kante (0.28 statt 0.2) → sanfter „vereint",
+        // keine harten Wolken-Ränder (Schöpfer-Audit „nicht sauber vereint").
+        const density = smoothstep(thr, thr.add(float(0.28)), fbm);
+        // V17.5 — Horizont-Dunst-Formung (KEIN schmaler Höhen-Ring mehr): die
+        // alte `·smoothstep(1.3,0.42)`-Zenit-Dämpfung konzentrierte die Wolken
+        // in einem schmalen Band ~10-25° überm Horizont → wo der Blick zentral
+        // hinfiel (Horizont/hoch), war KEIN Band → „im Zentrum verschwinden die
+        // Wolken, seitlich sind sie" (der Schöpfer-„Filter"-Befund). Heilung:
+        // die Wolken füllen den GANZEN Himmel über dem Horizont, nur ein sanfter
+        // Dunst-Anstieg knapp über dem Horizont (kein Zenit-Cut). Die FBM-Lücken
+        // (Cumulus) geben die Struktur, nicht das Band.
+        const band = smoothstep(float(-0.1), float(0.1), vDir.y);
         const cloudAmt = clamp(density.mul(band), float(0.0), float(1.0));
         // Fake-Volumen: helle Kerne (hohes fbm = Cumulus-Top), weiche graue Ränder
         // (nahe der Schwelle = ausgedünnte Fetzen) → der „plastische" Eindruck.
@@ -20559,10 +20566,18 @@ class AnazhRealm {
                 // Zelle, nicht pro Blade (16×16=256 Samples pro Chunk).
                 const waterY = this._waterLevelAt(baseX, baseZ);
                 if (surfY < waterY + 0.1) continue;
+                // V17.5 — Cliff-Skip (Schöpfer-Audit „Halme schweben an Kanten,
+                // verschmelzen nicht"): die Halme sitzen auf der ZELL-Höhe, aber
+                // gejittert ±step landen sie an Klippen-Kanten in der Luft. Cheap
+                // Macro-Referenz (kein Density-Scan); ein Halm, dessen Macro-Höhe
+                // > 1.2 m unter der Zell-Höhe liegt (über einem Abbruch), wird
+                // übersprungen → kahle Klippen-Kante statt schwebender Halm.
+                const cellMacro = this._terrainMacroSurfaceY(baseX, baseZ, false);
                 const count = Math.floor(lebendig * 14 + rnd() * 2);
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
+                    if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
                     blades.push({
                         x: gx,
                         y: surfY,
@@ -21077,6 +21092,12 @@ class AnazhRealm {
                 // Nicht unter Wasser (0.1 m Marge wie das Gras).
                 const waterY = this._waterLevelAt(bx, bz);
                 if (surfY < waterY + 0.1) continue;
+                // V17.5 — Cliff-Skip (Schöpfer-Audit „Steine schweben an Kanten,
+                // aufgesetzt, verschmelzen nicht"): cheap Macro-Referenz der Zelle
+                // (kein Density-Scan); ein gejittertes Item über einem Abbruch
+                // (> 1.2 m unter der Zell-Macro) wird übersprungen → kahle Kante
+                // statt schwebender Stein/Blüte. Gilt für alle Arten.
+                const cellMacro = this._terrainMacroSurfaceY(bx, bz, false);
                 for (let si = 0; si < species.length; si++) {
                     const sp = species[si];
                     if (ringDist > sp.ring) continue;
@@ -21089,13 +21110,12 @@ class AnazhRealm {
                     const sMin = sp.scale[0];
                     const sMax = sp.scale[1];
                     for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
-                        buckets[si].push({
-                            x: bx + (rnd() - 0.5) * step,
-                            y: surfY + sp.yOff,
-                            z: bz + (rnd() - 0.5) * step,
-                            rot: rnd() * Math.PI * 2,
-                            scale: sMin + rnd() * (sMax - sMin),
-                        });
+                        const gx = bx + (rnd() - 0.5) * step;
+                        const gz = bz + (rnd() - 0.5) * step;
+                        const sclK = sMin + rnd() * (sMax - sMin);
+                        const rotK = rnd() * Math.PI * 2;
+                        if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
+                        buckets[si].push({ x: gx, y: surfY + sp.yOff, z: gz, rot: rotK, scale: sclK });
                     }
                 }
             }
@@ -42367,7 +42387,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.4.0";
+AnazhRealm.VERSION = "17.5.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
