@@ -18129,7 +18129,12 @@ class AnazhRealm {
                 // Cap 0.45 browser-justierbar.
                 if (_T.fwidth && _T.normalWorld) {
                     const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
-                    const _ao = _T.float(1.0).sub(_curv.mul(1.6).clamp(0.0, 0.45));
+                    // V17.8 - sanfter (1.6/0.45 → 1.0/0.3): Schöpfer-Audit
+                    // „Treppen/Linien". Die `fwidth(normalWorld)` spitzt an jeder
+                    // Surface-Nets-Facetten-Kante → harte Grid-Linien. Schwächer +
+                    // tiefer gekappt → die Kontakt-Schatten bleiben, die Facetten-
+                    // Linien verblassen (die volle Glättung wäre Geometrie-Arbeit).
+                    const _ao = _T.float(1.0).sub(_curv.mul(1.0).clamp(0.0, 0.3));
                     _shade = _shade.mul(_ao);
                 }
                 let _albedo = _vc.mul(_shade);
@@ -18163,6 +18168,19 @@ class AnazhRealm {
                     let _meadow = _T.mix(_dry, _lush, _field);
                     _meadow = _meadow.mul(_T.float(0.85).add(_blade.mul(0.3)));
                     _albedo = _T.mix(_albedo, _meadow.mul(_shade), _veg.mul(0.8));
+                }
+                // V17.8 - malerische FARB-Variation (Befund F „mehr Mikro-Detail/
+                // malerisch"): grossflaechige warm/kuehl-Patches (mx_noise λ~25 m)
+                // + ein feiner Layer (λ~6 m) brechen die uniforme Boden-Palette in
+                // eine GEMALTE Variation — nicht nur Helligkeit (V15.1), sondern
+                // Farbton (warm bei +Noise, kuehl bei −). Subtil (±0.05), render-
+                // only, gegated wie der Rest. Das mildert auch die Facetten-Optik
+                // (E): die Farb-Patches brechen die flachen Trapez-Flaechen auf.
+                if (_T.vec3) {
+                    const _tintLo = _T.mx_noise_float(_wp.mul(0.04));
+                    const _tintHi = _T.mx_noise_float(_wp.mul(0.17));
+                    const _tintN = _tintLo.mul(0.7).add(_tintHi.mul(0.3));
+                    _albedo = _albedo.add(_T.vec3(0.055, 0.015, -0.04).mul(_tintN));
                 }
                 // V15.4 - Aerial Perspective (der "brutale Tiefe aus simplem
                 // System"-Hebel): ferne UND hohe Flaechen verschleiern
@@ -42467,7 +42485,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.7.0";
+AnazhRealm.VERSION = "17.8.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
