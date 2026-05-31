@@ -9691,21 +9691,26 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
         const bps = r.state.blueprints || {};
+        // V17.11 — die Bäume sind jetzt Multi-Part (Ghibli-Silhouette): Stamm-
+        // Segmente (holz) + mehrere Laub-Massen. Der Test wandert mit (V9.56-i):
+        // ≥2 Parts, Stamm[0]=cylinder/holz, ein Laub-Krone-Part existiert (statt
+        // fix parts[1]). Die Intention (holz-Stamm + laub-Krone, abbaubar) hält.
         out.hasBaumEiche = !!(
             bps.baum_eiche &&
             Array.isArray(bps.baum_eiche.parts) &&
-            bps.baum_eiche.parts.length === 2
+            bps.baum_eiche.parts.length >= 2
         );
         out.hasBaumKiefer = !!(
             bps.baum_kiefer &&
             Array.isArray(bps.baum_kiefer.parts) &&
-            bps.baum_kiefer.parts.length === 2
+            bps.baum_kiefer.parts.length >= 2
         );
         out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
         const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
-        const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
+        const eichenKrone =
+            bps.baum_eiche && bps.baum_eiche.parts.find((p) => p.material === "laub" && p.shape === "sphere");
         out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
-        out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
+        out.eichenKroneLaub = !!eichenKrone;
         out.hasLaubMaterial = !!(
             r.state.materials &&
             r.state.materials.laub &&
@@ -10008,8 +10013,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
             wave6gResults.parallelSpawnTreeAtRemoved
         );
-        check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert mit 2 parts", wave6gResults.hasBaumEiche);
-        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert mit 2 parts", wave6gResults.hasBaumKiefer);
+        check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumEiche);
+        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
@@ -13457,8 +13462,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
     check(
-        "V12.0-perf.c.1: baum_kiefer instancbar mit 2 Leaves",
-        res.kieferInstanceable === true && res.kieferLeaves === 2,
+        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11 Multi-Part)",
+        res.kieferInstanceable === true && res.kieferLeaves === 5,
         `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
     );
     check(
@@ -13484,8 +13489,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverInstanced === true && res.cutoverNoMesh === true
         );
         check(
-            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 2)",
-            res.cutoverSlots === 2,
+            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 5, V17.11 Multi-Part)",
+            res.cutoverSlots === 5,
             `slots=${res.cutoverSlots}`
         );
         check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);

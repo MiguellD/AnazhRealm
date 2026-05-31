@@ -28526,15 +28526,48 @@ class AnazhRealm {
     // moveable — bewegliches Compound (Fahrzeug-Signatur).
     // Vision-rein: KEINE Form-Whitelist. Was das Compound bewegt:
     //   1. Stütz-Konfiguration: ≥2 Parts in unterer bbox-Hälfte (relativ!)
-    //   2. Trägheit: Compound trägt dichte-Tag über Schwelle
-    //   3. Antrieb: magieleitung ODER stromleitung über Schwelle
+    //   2. die Stütz-Parts SPREIZEN sich horizontal (Trag-Basis — Räder/Beine/
+    //      Kufen breiten sich aus), NICHT als schmale vertikale Säule gestapelt
+    //   3. Trägheit: Compound trägt dichte-Tag über Schwelle
+    //   4. Antrieb: magieleitung ODER stromleitung über Schwelle
     // Ein Schlitten mit dichten Steinen unten + leitfähigem Magie-Kristall
     // oben rollt genauso wie ein Wagen mit Rad-Cylindern — die räumliche
     // Geste „Stütze + Antrieb" zählt, nicht der Shape-Name.
+    //
+    // V17.11 — die horizontale Spreizung (2) schärft die Geste emergent: ein
+    // Reittier/Fahrzeug hat eine TRAG-Fläche (die Stütz-Parts spreizen quer),
+    // ein BAUM eine schmale vertikale Säule (Stamm-Segmente übereinander auf
+    // ~derselben x/z-Position). Ohne dieses Kriterium las `_isMoveable` jeden
+    // hohen Baum mit magieleitendem Laub als Reittier (false-positive) → das
+    // Instancing lehnte ihn ab. Mit der Spreizungs-Prüfung ist ein Baum
+    // emergent NIE moveable — kein Bauplan-Flag, die Logik wird für ALLE
+    // Compounds korrekter (ein echtes Fahrzeug spreizt seine Stütze).
     _isMoveable(bp) {
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.moveable;
         const support = this._partsBelowMidline(bp, T.midlineFactor);
         if (support.length < T.minSupportParts) return false;
+        // Horizontale Spreizung der Stütz-Parts: die quer-Ausdehnung (x/z) ihrer
+        // Mittelpunkte relativ zur Compound-Breite. Eine Säule (Stamm-Stapel)
+        // hat ~0 Spreizung; eine Trag-Basis (Räder/Beine) spreizt sich.
+        const bbox = this._compoundBBox(bp);
+        if (bbox) {
+            let sMinX = Infinity,
+                sMaxX = -Infinity,
+                sMinZ = Infinity,
+                sMaxZ = -Infinity;
+            for (const p of support) {
+                const pos = p.position || { x: 0, y: 0, z: 0 };
+                const px = pos.x || 0;
+                const pz = pos.z || 0;
+                if (px < sMinX) sMinX = px;
+                if (px > sMaxX) sMaxX = px;
+                if (pz < sMinZ) sMinZ = pz;
+                if (pz > sMaxZ) sMaxZ = pz;
+            }
+            const compW = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z, 0.001);
+            const spread = Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW;
+            if (spread < T.supportSpreadMin) return false; // schmale Säule (Baum) → kein Fahrzeug
+        }
         const tags = this.computeCompoundTags(bp) || {};
         if ((tags.dichte || 0) < T.dichteMin) return false;
         const antrieb = Math.max(tags.magieleitung || 0, tags.stromleitung || 0);
@@ -29865,34 +29898,100 @@ class AnazhRealm {
         // Spieler-Sphäre 0.5m musste der Aufprall sonst exakt zentral
         // sein um den Stamm zu fühlen — jetzt 1.8m breiter Kollisions-
         // Korridor, fühlt sich solid an.
+        // V17.11 — die Bäume neu erschaffen (Schöpfer-Audit „nicht lebendig,
+        // nicht genial, kaum Steigerung"). Die Wurzel war die GEOMETRIE: Eiche
+        // war EIN Zylinder + EINE Kugel. Jetzt eine echte Ghibli-Silhouette aus
+        // mehr Parts — reine DATEN-Änderung, KEIN neuer Code-Pfad (Heilige
+        // Lektion). Das HISM-Instancing (Explore-verifiziert) trägt Multi-Part-
+        // Groups: eine InstancedMesh pro (Bauplan, Leaf) → die Draw-Calls
+        // skalieren mit der MATERIAL-Zahl, NICHT der Part-Zahl. Darum bewusst NUR
+        // holz + laub (2 Materialien = 2 InstancedMeshes global, egal wie viele
+        // Bäume). `color`-Overrides geben Krone-Tiefe ohne neues Material.
+        // Eiche: 2-segmentiger Stamm + 4 überlappende asymmetrische Laub-Kugeln
+        // (bauschige Krone) + Farb-Gradient (Sockel dunkel → Spitze hell). Pro-
+        // Part-AABB (V9.65): nur der Stamm ist solid (dichte holz>0.3), das Laub
+        // durchlässig → harvestArchitecture liefert weiterhin holz+laub.
         const baumEicheParts = [
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 2.5, z: 0 },
-                size: { x: 0.8, y: 5, z: 0.8 },
-                segments: 8,
+                position: { x: 0, y: 1.5, z: 0 },
+                size: { x: 0.85, y: 3.2, z: 0.85 },
+                segments: 7,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0.15, y: 3.6, z: 0.1 },
+                size: { x: 0.6, y: 2.0, z: 0.6 },
+                segments: 6,
             },
             {
                 shape: "sphere",
                 material: "laub",
-                position: { x: 0, y: 5.5, z: 0 },
-                size: { x: 2.4, y: 2.4, z: 2.4 },
+                color: 0x4a7a2f,
+                position: { x: 0, y: 4.7, z: 0 },
+                size: { x: 2.9, y: 2.6, z: 2.9 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x5f9438,
+                position: { x: -1.4, y: 4.4, z: 0.6 },
+                size: { x: 2.0, y: 1.9, z: 2.0 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x568a34,
+                position: { x: 1.3, y: 4.6, z: -0.7 },
+                size: { x: 2.1, y: 2.0, z: 2.1 },
+            },
+            {
+                shape: "sphere",
+                material: "laub",
+                color: 0x6fa848,
+                position: { x: 0.2, y: 6.0, z: 0.3 },
+                size: { x: 1.9, y: 1.8, z: 1.9 },
             },
         ];
+        // Kiefer: schlanker 2-segmentiger Stamm + 3 gestapelte Kegel abnehmender
+        // Größe (klassische Tannen-Silhouette) + Farb-Gradient zur Spitze.
         const baumKieferParts = [
             {
                 shape: "cylinder",
                 material: "holz",
-                position: { x: 0, y: 3, z: 0 },
-                size: { x: 0.55, y: 6, z: 0.55 },
-                segments: 8,
+                position: { x: 0, y: 1.6, z: 0 },
+                size: { x: 0.6, y: 3.4, z: 0.6 },
+                segments: 6,
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 0, y: 4.2, z: 0 },
+                size: { x: 0.4, y: 2.2, z: 0.4 },
+                segments: 6,
             },
             {
                 shape: "cone",
                 material: "laub",
-                position: { x: 0, y: 6.5, z: 0 },
-                size: { x: 2, y: 3, z: 2 },
+                color: 0x356b2e,
+                position: { x: 0, y: 4.4, z: 0 },
+                size: { x: 2.6, y: 2.6, z: 2.6 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x437f38,
+                position: { x: 0, y: 5.9, z: 0 },
+                size: { x: 2.0, y: 2.4, z: 2.0 },
+            },
+            {
+                shape: "cone",
+                material: "laub",
+                color: 0x559442,
+                position: { x: 0, y: 7.3, z: 0 },
+                size: { x: 1.3, y: 2.0, z: 1.3 },
             },
         ];
 
@@ -42467,7 +42566,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.10.0";
+AnazhRealm.VERSION = "17.11.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
@@ -43417,6 +43516,9 @@ AnazhRealm.AFFORDANCE_THRESHOLDS = Object.freeze({
     moveable: Object.freeze({
         minSupportParts: 2, // ≥2 Parts in unterer bbox-Hälfte
         midlineFactor: 0.5, // unten = unter bbox-Mitte (relativ!)
+        supportSpreadMin: 0.35, // V17.11 — Stütz-Parts spreizen ≥35 % der Breite
+        //   (Trag-Basis: Räder/Beine quer) — eine schmale Säule (Baum-Stamm-
+        //   Stapel, Spreizung ~0) ist KEIN Fahrzeug. Emergent, kein Form-Flag.
         dichteMin: 0.3, // Compound muss Trägheit haben
         antriebTagMin: 0.3, // magieleitung ODER stromleitung
     }),
