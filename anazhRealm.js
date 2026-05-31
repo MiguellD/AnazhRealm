@@ -11780,6 +11780,29 @@ class AnazhRealm {
                 color2: [1.0, 0.82, 0.5],
                 geom: "spore",
             },
+            // V17.6 — lebendig → der instanzierte WALD: low-poly Bäume, dicht +
+            // billig im Mittel-Ring (ring 2 ~216 m). Reine Deko (keine Physik —
+            // die teuren Compound-Bäume bleiben die „Helden" mit Kollision). Die
+            // Antwort auf „riesige Wälder ohne Lags" (Minecraft = Instanzen, nicht
+            // Einzel-Meshes). Sanftes Wipfel-Wiegen (wind + windScale 0.2). Cap
+            // 224, größerer Pool (ring 2 = bis 25 Chunks). Cliff-Skip (V17.5) gilt.
+            {
+                name: "baum",
+                field: "lebendig",
+                floor: 0.42,
+                perCell: 0.7,
+                cap: 224,
+                ring: 2,
+                pool: 32,
+                wind: true,
+                windScale: 0.2,
+                emissive: false,
+                yOff: 0,
+                scale: [1.0, 1.7],
+                color: [0.18, 0.38, 0.16],
+                color2: [0.34, 0.56, 0.26],
+                geom: "baum",
+            },
         ];
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
@@ -20855,6 +20878,50 @@ class AnazhRealm {
                 tri(top, a, b, c, c2, c);
                 tri(bot, b, a, c, c, c2);
             }
+        } else if (species.geom === "baum") {
+            // V17.6 — Low-Poly-Baum (Studio-Ghibli-Silhouette): 4-seitiger,
+            // leicht verjüngter Stamm + DREI gestapelte 6-seitige Laub-Kegel.
+            // Basis ~3 m hoch (per-Instance 1.0-1.7× skaliert → 3-5 m Bäume).
+            // c/c2 = Laub-Gradient (Sockel dunkler → Spitze heller). Reine Deko
+            // (keine Physik) — der instanzierte Wald, billig + dicht (die teuren
+            // Compound-Bäume bleiben die „Helden" mit Kollision). NON-INDEXED →
+            // flat-shaded toon. Wurzel y=0 (Wind nutzt positionLocal.y, windScale
+            // dämpft → sanftes Wipfel-Wiegen, kein Gras-Peitschen).
+            const cTrunk = [0.32, 0.22, 0.13];
+            const tw0 = 0.16;
+            const tw1 = 0.11;
+            const th = 1.0;
+            const ring4 = (w, y) => [
+                [w, y, w],
+                [-w, y, w],
+                [-w, y, -w],
+                [w, y, -w],
+            ];
+            const r0 = ring4(tw0, 0);
+            const r1 = ring4(tw1, th);
+            for (let i = 0; i < 4; i++) {
+                const a = r0[i];
+                const b = r0[(i + 1) % 4];
+                const d = r1[(i + 1) % 4];
+                const e = r1[i];
+                tri(a, b, d, cTrunk);
+                tri(a, d, e, cTrunk);
+            }
+            const cone = (cy, rad, apexY) => {
+                const apex = [0, apexY, 0];
+                const S = 6;
+                for (let i = 0; i < S; i++) {
+                    const a0 = (i / S) * Math.PI * 2;
+                    const a1 = ((i + 1) / S) * Math.PI * 2;
+                    const p0 = [Math.cos(a0) * rad, cy, Math.sin(a0) * rad];
+                    const p1 = [Math.cos(a1) * rad, cy, Math.sin(a1) * rad];
+                    tri(apex, p0, p1, c2, c, c);
+                    tri([0, cy - 0.05, 0], p1, p0, c, c, c);
+                }
+            };
+            cone(0.8, 0.85, 1.7);
+            cone(1.45, 0.66, 2.35);
+            cone(2.05, 0.42, 3.0);
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
@@ -20966,7 +21033,11 @@ class AnazhRealm {
         )
             .mul(float(0.45))
             .add(float(0.7));
-        const windEff = wu.uWindStrength.mul(gust);
+        // V17.6 — windScale dämpft pro Art: Bäume wiegen sanft im Wipfel
+        // (windScale ~0.2), Gras/Blüten voll (1.0). Die hf-Gewichtung (Höhe)
+        // bleibt → bei Bäumen wiegt nur das Laub (hohes y), der Stamm steht.
+        const windScale = float(typeof species.windScale === "number" ? species.windScale : 1.0);
+        const windEff = wu.uWindStrength.mul(gust).mul(windScale);
         const offX = sin(phase).mul(windEff).mul(hf).mul(float(1.2));
         const offZ = cos(phase.mul(float(0.7)))
             .mul(windEff)
@@ -42387,7 +42458,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.5.0";
+AnazhRealm.VERSION = "17.6.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
