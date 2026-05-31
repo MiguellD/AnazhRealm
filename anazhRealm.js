@@ -17,6 +17,12 @@ class AnazhRealm {
         this.state = {
             // ### Kern ###
             renderer: null,
+            // V17.0 — Post-Processing-Pipeline (TSL PostProcessing-Objekt +
+            // Bloom + Color-Grading). Lazy nach rendererReady gebaut
+            // (_ensurePostProcessing). Im Loop: postProcessing.renderAsync()
+            // statt renderer.render(), mit Fallback auf den direkten Pfad.
+            postProcessing: null,
+            postProcessingFailed: false,
             // V12.0-a — WebGPU-required. `rendererReady` ist false bis
             // `renderer.init()` async durch ist (Game-Loop skipt render
             // bis dahin). Wenn navigator.gpu fehlt, throwt Bootstrap mit
@@ -41106,6 +41112,93 @@ class AnazhRealm {
         }
     }
 
+    // V17.0 — Post-Processing-Pipeline (Render-Realismus-Bogen). Baut EIN
+    // THREE.PostProcessing-Objekt mit (a) Bloom (helle Stellen leuchten -
+    // Wasser-Glanz, Sonne, Highlights) + (b) Color-Grading (Saettigung +
+    // Kontrast -> satt statt blass). Mit den vorhandenen TSL-Primitiven
+    // selbst gebaut (kein Vendor-Bloom-Addon-Risiko; die Awwwards-Profis
+    // schreiben Custom-Post-FX fuer Kontrolle, statt Defaults). Lazy: erst
+    // nach rendererReady. Bei JEDEM Fehler -> postProcessingFailed=true, der
+    // Loop faellt auf renderer.render() zurueck (NIE ein schwarzer Schirm).
+    // Werte (Bloom-Schwelle/Staerke, Grading) browser-justierbar.
+    _ensurePostProcessing() {
+        if (this.state.postProcessing || this.state.postProcessingFailed) return this.state.postProcessing;
+        try {
+            const TSL = THREE.TSL;
+            if (!TSL || typeof THREE.PostProcessing !== "function" || !TSL.pass) {
+                this.state.postProcessingFailed = true;
+                this.log(
+                    "Post-Processing nicht verfuegbar (PostProcessing/pass fehlt) — direkter Render-Pfad.",
+                    "INFO"
+                );
+                return null;
+            }
+            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV } = TSL;
+            const pp = new THREE.PostProcessing(this.state.renderer);
+            const scenePass = pass(this.state.scene, this.state.camera);
+            // API-korrekt: der sampelbare Textur-Node kommt aus
+            // getTextureNode() (PassNode != TextureNode — .sample() lebt am
+            // TextureNode). Das ist das offizielle MRT/pass-Muster.
+            const sceneColor = typeof scenePass.getTextureNode === "function" ? scenePass.getTextureNode() : scenePass;
+
+            const u = {
+                bloomThreshold: uniform(0.72),
+                bloomStrength: uniform(0.55),
+                bloomRadius: uniform(2.2),
+                gradeSat: uniform(1.18),
+                gradeContrast: uniform(1.06),
+            };
+            this.state.postProcessingUniforms = u;
+
+            // --- Bloom: helle Stellen (luminance > Schwelle) isolieren, weich
+            // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
+            // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
+            // Szene-Textur-Node an versetzter UV.
+            const bright = (uv) => {
+                const c = sceneColor.sample(uv).rgb;
+                const l = luminance(c);
+                const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
+                return c.mul(m);
+            };
+            const px = float(0.0018).mul(u.bloomRadius);
+            const taps = [
+                [0, 0, 0.227],
+                [1, 0, 0.094],
+                [-1, 0, 0.094],
+                [0, 1, 0.094],
+                [0, -1, 0.094],
+                [1, 1, 0.056],
+                [-1, 1, 0.056],
+                [1, -1, 0.056],
+                [-1, -1, 0.056],
+            ];
+            let acc = bright(screenUV).mul(float(taps[0][2]));
+            for (let i = 1; i < taps.length; i++) {
+                const [dx, dy, w] = taps[i];
+                const uvT = screenUV.add(vec2(px.mul(float(dx)), px.mul(float(dy))));
+                acc = acc.add(bright(uvT).mul(float(w)));
+            }
+            const bloom = acc.mul(u.bloomStrength);
+
+            // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
+            const base = sceneColor.rgb;
+            const combined = base.add(bloom);
+            const lum = luminance(combined);
+            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
+            const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
+            const graded = contrasted.max(vec3(0, 0, 0));
+
+            pp.outputNode = graded;
+            this.state.postProcessing = pp;
+            this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
+            return pp;
+        } catch (err) {
+            this.state.postProcessingFailed = true;
+            this.log(`Post-Processing-Aufbau scheiterte (${err && err.message}) — direkter Render-Pfad.`, "INFO");
+            return null;
+        }
+    }
+
     _loopRender(currentTime) {
         // ### Rendering ###
         // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
@@ -41159,7 +41252,22 @@ class AnazhRealm {
         // wirft der Promise-Reject — wir loggen, aber kein Hot-Swap mehr
         // (r164 hat WebGLNodeBuilder entfernt, WebGL wäre eine schwarze Welt).
         // Bei wiederholten Rejects sieht der Schöpfer den Error im Console-Log.
-        this.state.renderer.render(this.state.scene, this.state.camera);
+        // V17.0 — Post-Processing-Pfad: wenn die Pipeline steht (Bloom +
+        // Grading), rendert sie die Szene durch den Full-Screen-Pass. Bei
+        // Aufbau-/Render-Fehler (postProcessingFailed) faellt es auf den
+        // direkten renderer.render() zurueck — NIE ein schwarzer Schirm.
+        const pp = this._ensurePostProcessing();
+        if (pp && !this.state.postProcessingFailed) {
+            try {
+                pp.renderAsync();
+            } catch (err) {
+                this.state.postProcessingFailed = true;
+                this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
+                this.state.renderer.render(this.state.scene, this.state.camera);
+            }
+        } else {
+            this.state.renderer.render(this.state.scene, this.state.camera);
+        }
         // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
         // WorkDone()`. V10.0-j.e's 2-Frame-Age-Counter (`age >= 2`) war
         // effektiv nur 1-Frame-Defer (push + drain im selben Frame, age=1;
@@ -41488,7 +41596,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "16.2.0";
+AnazhRealm.VERSION = "17.0.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
