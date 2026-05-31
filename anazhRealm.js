@@ -32842,7 +32842,7 @@ class AnazhRealm {
         if (isTree) {
             const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
             const lebendig = f ? f.lebendig : 0;
-            chance = Math.min(0.8, BASE_RATE * bestAffinity * (0.5 + lebendig * 1.5));
+            chance = Math.min(0.6, BASE_RATE * bestAffinity * (0.4 + lebendig * 1.3));
         }
         if (probe >= chance) return 0;
 
@@ -41777,7 +41777,15 @@ class AnazhRealm {
         const chunksBuilt = this._tickVoxelChunkStreaming(playerPos);
         // V9.96 — Per-Frame-Spawn-Budget für Vegetations-Architekturen.
         // Bändigt den Streaming-Burst-Spike (FPS 6-9 → ~60 erwartet).
-        this._tickPendingVegSpawns(4);
+        // V17.9 — terrain-priorisiert (wie der Scatter-Tick, V17.1-Lehre): NUR
+        // wenn das Streaming diesen Frame nichts baute. Die V17.9-Wald-Dichte
+        // füllt die Spawn-Queue stark; ungated konkurrierten 4 schwere
+        // spawnArchitecture/Frame mit dem Chunk-Streaming → der Warmup-Chunk-
+        // Count fiel unter den Threshold (gemessen 18→12). Gegatet baut der Ring
+        // zuerst, dann besiedeln die Bäume (sie WARTEN in der Queue, werden NICHT
+        // verworfen → „Substanz nicht Deko" gewahrt). Im echten Spiel ist der
+        // Ring meist gesetzt → Bäume spawnen normal.
+        if (!chunksBuilt) this._tickPendingVegSpawns(4);
         // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
         this._tickPendingWaterIso(4);
