@@ -357,6 +357,8 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+**V16.2 - Grasblatt-Form + Gegenlicht-Translucency (Genie-Weg, render-only) (31.05.2026):** Schoepfer fragte ob "mehr Halme" der Profi-Weg ist - nein (Ghost-of-Tsushima: Form+Licht+Bewegung > Menge). Der Halm war ein Spitzkegel (Stachel=Bartstoppel). V16.2: (1) Bueschel-Geometrie (_grassBladeTuftGeometry, 5 gebogene Blaetter) statt Kegel; (2) Gegenlicht-Translucency im Gras-colorNode (pow(dot(viewDir,-sunDir),3), uSunDir vom DirectionalLight-Sync). Render-/geometrie-only, kein Buffer-Eingriff, Playtest gruen (maxPoolSize=1). Wind-Welle+Partikel -> V16.3.
+
 **V16.1 - Gras-Riese geweckt (Lebende-Umgebung-Bogen) (30.05.2026):** V16.0-Diagnose: Cap 256 warf ~93 % der Halme weg, Gras deckte nur 11 % der Sicht. V16.1: Cap 256->1024, Ring 3x3->5x5 (~30 %), Pool 32->48. maxPoolSize=1 (kein Leck) in jedem Lauf gruen; C.3/Heap/Perf als container-flaky bestaetigt, Test-Schwellen mitgewandert (Pool 48, Heap 30 MB). Artenreiche Streuung -> V16.1-b, Billboards -> V16.2.
 
 **V15.4.1 - Crash-Fix + Fog-Revert (30.05.2026):** schwarzer Schirm durch `au.skyColor.value.setRGB is not a function` (Uniform war vec3 statt THREE.Color). Fix: `uniform(new THREE.Color(...))` + Setter-Guard. Plus fogMult 1.6->3.0 (der V15.4-Pull war ein Pflaster gegen die geliebte Weite). Gras-Schatten + Aerial-Term bleiben. Lebende-Umgebung-Bogen wird erst geplant.

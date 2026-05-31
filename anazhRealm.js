@@ -10320,6 +10320,9 @@ class AnazhRealm {
             this.state.windUniforms = {
                 uWindTime: uniform(0.0),
                 uWindStrength: uniform(0.12),
+                // V16.2 — Sonnen-Richtung für Gegenlicht-Translucency (vom
+                // _dayNightApplyDirectionalLight-Sync gespeist, EINE Quelle).
+                uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
             };
         }
         const wu = this.state.windUniforms;
@@ -10365,6 +10368,20 @@ class AnazhRealm {
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
                 albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
                 albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
+                // V16.2 - Gegenlicht-Translucency (der Ghost-of-Tsushima-Magie-
+                // Moment): wenn die Sonne HINTER dem Gras steht (Blickrichtung
+                // ~entgegengesetzt zur Sonne), leuchten die Halme golden-grün
+                // durch (Subsurface-Scattering, billig approximiert). wrap =
+                // pow(max(dot(viewDir, -sunDir), 0), k) -> stark nur im
+                // Gegenlicht. Höhen-gewichtet (Spitzen leuchten mehr) + nur
+                // additive Wärme, kein Verdunkeln. Das ist DER "es lebt"-Term.
+                if (TSL.normalize && TSL.dot && TSL.pow && wu.uSunDir) {
+                    const viewDir = TSL.normalize(positionWorld.sub(TSL.cameraPosition));
+                    const sunBack = TSL.normalize(wu.uSunDir).mul(float(-1.0));
+                    const wrap = TSL.pow(max(TSL.dot(viewDir, sunBack), float(0.0)), float(3.0));
+                    const glow = vec3(0.45, 0.5, 0.2).mul(wrap).mul(hfN).mul(float(0.9));
+                    albedo = albedo.add(glow);
+                }
                 mat.colorNode = TSL.vec4(albedo, float(1.0));
             }
         } catch {
@@ -20209,6 +20226,64 @@ class AnazhRealm {
     // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
     // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
     // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
+    // V16.2 — Grasblatt-Büschel-Geometrie (ersetzt den Spitzkegel-"Stachel").
+    // Mehrere schmale, leicht gebogene Blätter, fächerförmig rotiert → liest
+    // sich als Gras-Tuff, nicht als Bartstoppel. Singleton (einmal pro Realm,
+    // von allen InstancedMeshes geteilt). Jedes Blatt: 4 Höhen-Segmente, zur
+    // Spitze schmaler + nach vorn gebogen. Wurzel bei y=0 (die Wind-positionNode-
+    // Math nutzt positionLocal.y als Höhen-Faktor). KEINE Physik, reine Deko.
+    _grassBladeTuftGeometry() {
+        const positions = [];
+        const normals = [];
+        const SEG = 4;
+        const H = 0.85;
+        const blade = (rot, lean, w0) => {
+            const cr = Math.cos(rot);
+            const sr = Math.sin(rot);
+            const ring = [];
+            for (let s = 0; s <= SEG; s++) {
+                const t = s / SEG;
+                ring.push({ w: w0 * (1 - t * 0.85), y: t * H, bend: lean * t * t });
+            }
+            const nx = sr * 0.3;
+            const nz = -cr * 0.3;
+            const nrm = [nx, 0.95, nz];
+            const pt = (e, r) => {
+                const lx = e * r.w * 0.5;
+                const lz = r.bend;
+                return [lx * cr - lz * sr, r.y, lx * sr + lz * cr];
+            };
+            for (let s = 0; s < SEG; s++) {
+                const a = ring[s];
+                const b = ring[s + 1];
+                const a0 = pt(-1, a);
+                const a1 = pt(1, a);
+                const b0 = pt(-1, b);
+                const b1 = pt(1, b);
+                const push = (p) => {
+                    positions.push(p[0], p[1], p[2]);
+                    normals.push(nrm[0], nrm[1], nrm[2]);
+                };
+                push(a0);
+                push(a1);
+                push(b1);
+                push(a0);
+                push(b1);
+                push(b0);
+            }
+        };
+        blade(0.0, 0.12, 0.085);
+        blade(1.05, 0.16, 0.07);
+        blade(2.1, 0.1, 0.075);
+        blade(3.4, 0.18, 0.065);
+        blade(4.7, 0.13, 0.08);
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        geo.computeBoundingSphere();
+        return geo;
+    }
+
     // voxel-basierte Welt grünt damit wie eine Heightfield-Welt.
     _buildVoxelChunkGrass(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return;
@@ -20268,10 +20343,12 @@ class AnazhRealm {
         // Lebensdauer hunderte separate Buffer. Mit Singleton: EIN Buffer
         // pro Realm-Instanz, alle InstancedMeshes teilen ihn (mit eigenen
         // instanceMatrix-Buffers). Sparen 100-500 KB GPU-Heap.
+        // V16.2 — Halm-FORM: der 3-seitige Spitzkegel (ein "Stachel" =
+        // Bartstoppel-Befund) wird ein BÜSCHEL aus gebogenen Grasblättern
+        // (_grassBladeTuftGeometry). Heilt die "keine Wiese"-Wurzel an der
+        // Geometrie, nicht an der Zahl. Singleton wie bisher.
         if (!this.state._grassConeGeometry) {
-            const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
-            geo.translate(0, 0.425, 0);
-            this.state._grassConeGeometry = geo;
+            this.state._grassConeGeometry = this._grassBladeTuftGeometry();
         }
         // V11.0-b (Mesh-Pool aktiv im Build-Pfad) — wir holen ein
         // InstancedMesh aus dem Pool (oder allokieren neu wenn leer)
@@ -37824,6 +37901,12 @@ class AnazhRealm {
         // V12.0-f — kein toonLightUniforms-Sync mehr. Die nativen
         // MeshToonNodeMaterials (lights=true) konsumieren dl.color/intensity/
         // position direkt über Three.js' WebGPU-Lighting-Pipeline.
+        // V16.2 — Gras-Translucency braucht die Sonnen-Richtung als eigene
+        // Uniform (das Gras-colorNode rechnet Gegenlicht-Durchscheinen). EINE
+        // Quelle: derselbe sunDir, der die DirectionalLight-Position speist.
+        if (this.state.windUniforms && this.state.windUniforms.uSunDir) {
+            this.state.windUniforms.uSunDir.value.copy(sunDir).normalize();
+        }
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -41405,7 +41488,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "16.1.0";
+AnazhRealm.VERSION = "16.2.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
