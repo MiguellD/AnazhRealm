@@ -15633,15 +15633,6 @@ async function checkBandV171Scatter(ctx) {
         // V17.4 — Pollen-Partikel-Art (emissive + drift, lebendig-gated).
         const pollen = out.registryArray ? species.find((s) => s.name === "pollen") : null;
         out.hasPollen = !!(pollen && pollen.emissive === true && pollen.drift === true && pollen.field === "lebendig");
-        // V17.6 — der instanzierte Wald: „baum"-Art (ring 2, wind+windScale).
-        const baum = out.registryArray ? species.find((s) => s.name === "baum") : null;
-        out.hasBaum = !!(
-            baum &&
-            baum.geom === "baum" &&
-            baum.ring === 2 &&
-            baum.field === "lebendig" &&
-            typeof baum.windScale === "number"
-        );
         // V17.4 — kohärente Böen-Welle (Source-Probe in Gras- + Scatter-Wind).
         const grassSrc = r._grassInstanceMat ? r._grassInstanceMat.toString() : "";
         const motionSrc = r._applyScatterMotion ? r._applyScatterMotion.toString() : "";
