@@ -350,6 +350,46 @@ function histogram(values, bucketSize) {
                     }
                 }
             }
+            // (V14.8) Ketten-Elongation: Connected-Components (4-Nachbar) der
+            // Top-15%-Zellen; je Komponente Elongation = max(bboxW,bboxH)/sqrt(area),
+            // flächengewichtet. Eine lineare Kette (Anden) → hoch (~sqrt(Länge)); ein
+            // runder Blob (isotropes Noise) → ~1.1. Misst „lineare Ketten vs Flecken".
+            const hiMask = new Uint8Array(GDIM * GDIM);
+            for (let q = 0; q < gh.length; q++) hiMask[q] = gh[q] >= hiThresh ? 1 : 0;
+            const labelSeen = new Uint8Array(GDIM * GDIM);
+            let elongWeightedSum = 0;
+            let elongAreaSum = 0;
+            let chainCompCount = 0;
+            const ccStack = [];
+            for (let q0 = 0; q0 < GDIM * GDIM; q0++) {
+                if (!hiMask[q0] || labelSeen[q0]) continue;
+                ccStack.length = 0;
+                ccStack.push(q0);
+                labelSeen[q0] = 1;
+                let minI = GDIM;
+                let maxI = 0;
+                let minJ = GDIM;
+                let maxJ = 0;
+                let area = 0;
+                while (ccStack.length) {
+                    const q = ccStack.pop();
+                    const qi = q % GDIM;
+                    const qj = (q / GDIM) | 0;
+                    area++;
+                    if (qi < minI) minI = qi;
+                    if (qi > maxI) maxI = qi;
+                    if (qj < minJ) minJ = qj;
+                    if (qj > maxJ) maxJ = qj;
+                    const nbs = [qi > 0 ? q - 1 : -1, qi < GDIM - 1 ? q + 1 : -1, qj > 0 ? q - GDIM : -1, qj < GDIM - 1 ? q + GDIM : -1];
+                    for (const nq of nbs) if (nq >= 0 && hiMask[nq] && !labelSeen[nq]) { labelSeen[nq] = 1; ccStack.push(nq); }
+                }
+                if (area >= 4) {
+                    const elong = Math.max(maxI - minI + 1, maxJ - minJ + 1) / Math.sqrt(area);
+                    elongWeightedSum += elong * area;
+                    elongAreaSum += area;
+                    chainCompCount++;
+                }
+            }
             const terrainChar = {
                 slopeMedianDeg: toDeg(slopeAt(0.5)),
                 slopeP90Deg: toDeg(slopeAt(0.9)),
@@ -358,6 +398,8 @@ function histogram(values, bucketSize) {
                 corrLenM: corrLenCells * GSTEP,
                 hiCohesion: hiCount > 0 ? hiCohesive / hiCount : 0,
                 plateauFrac: plateauCount / ((GDIM - 2) * (GDIM - 2)),
+                chainElong: elongAreaSum > 0 ? elongWeightedSum / elongAreaSum : 0,
+                chainCompCount,
             };
 
             // (e) Welt-Meta
@@ -367,6 +409,55 @@ function histogram(values, bucketSize) {
                 terrainSteepness: s.terrainSteepness,
                 waterLevel: s.waterLevel,
             };
+
+            // (V14.9) Regional-Vielfalt: 6×6-Raster großer Sub-Regionen über ±2700 m
+            // (breiter als eine λ4500-Stil-Region). Pro Sub-Region die mittlere Höhe +
+            // Ruggedness (lokale Hang-Neigung) → Klassifikation (Ebene tief / Plateau
+            // hoch+glatt / Kette hoch+ridged) + die Höhen-/Ruggedness-Std über die
+            // Regionen. Abwechslungsreich = ein MIX der Typen + hohe Std (distinkte,
+            // stabile Bereiche), nicht überall dasselbe (der V14.8→V14.9-Auftrag).
+            const RV = 6;
+            const RVHALF = 2700;
+            const RVSUB = (RVHALF * 2) / RV;
+            const regH = [];
+            const regS = [];
+            for (let rj = 0; rj < RV; rj++) {
+                for (let ri = 0; ri < RV; ri++) {
+                    const cx0 = -RVHALF + (ri + 0.5) * RVSUB;
+                    const cz0 = -RVHALF + (rj + 0.5) * RVSUB;
+                    let hSum = 0;
+                    let slSum = 0;
+                    let nS = 0;
+                    for (let sj = -2; sj <= 2; sj++) {
+                        for (let si = -2; si <= 2; si++) {
+                            const sx = cx0 + si * 100;
+                            const sz = cz0 + sj * 100;
+                            hSum += r._terrainMacroSurfaceY(sx, sz, false);
+                            const dx = (r._terrainMacroSurfaceY(sx + 30, sz, false) - r._terrainMacroSurfaceY(sx - 30, sz, false)) / 60;
+                            const dz = (r._terrainMacroSurfaceY(sx, sz + 30, false) - r._terrainMacroSurfaceY(sx, sz - 30, false)) / 60;
+                            slSum += Math.hypot(dx, dz);
+                            nS++;
+                        }
+                    }
+                    regH.push(hSum / nS);
+                    regS.push(slSum / nS);
+                }
+            }
+            const rMean = regH.reduce((a, b) => a + b, 0) / regH.length;
+            const rStd = Math.sqrt(regH.reduce((acc, v) => acc + (v - rMean) ** 2, 0) / regH.length);
+            const sMean = regS.reduce((a, b) => a + b, 0) / regS.length;
+            const sStd = Math.sqrt(regS.reduce((acc, v) => acc + (v - sMean) ** 2, 0) / regS.length);
+            const rHMed = [...regH].sort((a, b) => a - b)[regH.length >> 1];
+            const rSMed = [...regS].sort((a, b) => a - b)[regS.length >> 1];
+            let plateauReg = 0;
+            let chainReg = 0;
+            let plainReg = 0;
+            for (let i = 0; i < regH.length; i++) {
+                if (regH[i] < rHMed - 4) plainReg++;
+                else if (regS[i] >= rSMed) chainReg++;
+                else plateauReg++;
+            }
+            const regionVariety = { count: regH.length, heightStd: rStd, ruggednessStd: sStd, plateauReg, chainReg, plainReg };
 
             // (f) Decken-Marge — wo sitzt die Voxel-Chunk-Decke relativ zum
             // höchsten Makro-Surface-Sample?
@@ -382,6 +473,7 @@ function histogram(values, bucketSize) {
                 awareness,
                 topology,
                 terrainChar,
+                regionVariety,
                 macroY: Array.from(macroY),
                 voxelY: Array.from(voxelY),
                 chunkCfg: { dimY: cfg.dimY, step: cfg.step, floorDrop: cfg.floorDrop, ceiling },
@@ -522,6 +614,14 @@ function histogram(values, bucketSize) {
         console.log(`  Feature-Grösse (Korr-Län):${tc.corrLenM.toFixed(0)} m  ${tc.corrLenM > 400 ? "✓ kontinental" : "⚠ Alpen-Miniatur (Ziel >400 m)"}`);
         console.log(`  Hochland-Kohäsion:        ${tc.hiCohesion.toFixed(2)}  (1.0 = lange Ketten/Hochländer, ~0 = isolierte Zacken)`);
         console.log(`  Plateau-Anteil (hoch+flach):${(tc.plateauFrac * 100).toFixed(1)} %  (weite Hochebenen — Ziel: spürbar > 0)`);
+        console.log(`  Ketten-Elongation:        ${tc.chainElong.toFixed(2)}  (${tc.chainCompCount} Hochland-Komponenten; ~1.1 = runde Blobs, >2 = lineare Ketten/Anden)`);
+        const rv = data.regionVariety;
+        if (rv) {
+            console.log(
+                `  Regional-Vielfalt (±2700 m, ${rv.count} Sub-Regionen): Ebene ${rv.plainReg} / Plateau ${rv.plateauReg} / Kette ${rv.chainReg}  ` +
+                    `— Höhen-Std ${rv.heightStd.toFixed(1)} m, Ruggedness-Std ${rv.ruggednessStd.toFixed(3)}  (MIX + hohe Std = abwechslungsreich, nicht repetitiv)`
+            );
+        }
         console.log("");
 
         console.log("=== WELT-AWARENESS (V9.59 — kennt die Welt ihr Wasser?) ===");

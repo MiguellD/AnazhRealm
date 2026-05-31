@@ -17,6 +17,12 @@ class AnazhRealm {
         this.state = {
             // ### Kern ###
             renderer: null,
+            // V17.0 — Post-Processing-Pipeline (TSL PostProcessing-Objekt +
+            // Bloom + Color-Grading). Lazy nach rendererReady gebaut
+            // (_ensurePostProcessing). Im Loop: postProcessing.renderAsync()
+            // statt renderer.render(), mit Fallback auf den direkten Pfad.
+            postProcessing: null,
+            postProcessingFailed: false,
             // V12.0-a — WebGPU-required. `rendererReady` ist false bis
             // `renderer.init()` async durch ist (Game-Loop skipt render
             // bis dahin). Wenn navigator.gpu fehlt, throwt Bootstrap mit
@@ -254,6 +260,11 @@ class AnazhRealm {
             // von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
             hemiLight: null,
             fog: null,
+            // V15.4 - Aerial-Perspective-Uniforms (TSL): skyColor + density +
+            // hazeBase/hazeTop. Lazy initialisiert beim ersten Terrain-Material-
+            // Build (_ensureAtmoUniforms), gespeist von _dayNightApplyHemiAndFog
+            // (EINE Quelle = die Fog-Farbe -> tag/nacht/wetter-kohaerent).
+            atmoUniforms: null,
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
             starField: null,
@@ -10252,8 +10263,9 @@ class AnazhRealm {
                 if (heights.length > 0) {
                     // V9.60-b.1 — waterLevel ABSOLUT statt 35-Perzentil.
                     // Wurzel-Erkenntnis: die Sample-Region (340×340 m) ist
-                    // viel kleiner als die Tektonik-Wellenlänge (7150 m),
-                    // sodass die 169 Samples ALLE denselben tect-Wert sehen.
+                    // viel kleiner als die längste Oktave (cont0, λ~7100 m —
+                    // V14.1; früher trug „tect" diese Rolle, daher der alte Name),
+                    // sodass die 169 Samples ALLE denselben Großstruktur-Wert sehen.
                     // Das 35-Perzentil bedeutet "35% der LOKALEN Welt unter
                     // Wasser" — aber lokal IST die Welt halb-halb verteilt,
                     // also landet waterLevel mitten am Median (V9.59-Diagnose:
@@ -10314,6 +10326,9 @@ class AnazhRealm {
             this.state.windUniforms = {
                 uWindTime: uniform(0.0),
                 uWindStrength: uniform(0.12),
+                // V16.2 — Sonnen-Richtung für Gegenlicht-Translucency (vom
+                // _dayNightApplyDirectionalLight-Sync gespeist, EINE Quelle).
+                uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
             };
         }
         const wu = this.state.windUniforms;
@@ -10334,6 +10349,50 @@ class AnazhRealm {
             .mul(wu.uWindStrength)
             .mul(hf);
         mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
+
+        // V15.3 - Gras-Albedo-Variation (render-only, der vierte Render-Bogen-
+        // Schritt, erster "Leben"-Schritt): die flache uniforme Grün-Färbung
+        // (EIN color 0x5fa743 auf JEDEM Halm = der Schöpfer-Befund "uniform")
+        // bricht auf in (a) einen Spitzen-Gradient (Wurzel dunkler/kühler ->
+        // Spitze heller/wärmer, wie echtes Gras) + (b) per-Clump-Noise (Welt-
+        // Position -> Flecken trockeneren/saftigeren Grases, ~1,6 m Wellenlänge).
+        // `colorNode` ist auf einem lit NodeMaterial die DIFFUSE Albedo -> das
+        // Lambert-Lighting + der Wind + die Tag-Nacht-Sync bleiben voll aktiv,
+        // nur die Grundfarbe wird reicher. KEIN attribute()-Lookup -> die
+        // V15.1-Schwärze-Klasse ist strukturell ausgeschlossen. Render-only:
+        // kein Geometrie-/Determinismus-Eingriff (die Halm-Positionen/Dichte
+        // sind unberührt -> kein Worker/Buffer-Risiko, die GRASS_MAX_BLADES-256-
+        // Buffer-Klasse bleibt unangetastet). try/catch -> Fallback flach-grün.
+        // EHRLICH: das heilt "uniform", NICHT "spärlich" (die Dichte ist der
+        // fragile Buffer-Pfad -> V15.3-b falls der Browser mehr Halme will).
+        try {
+            if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
+                const hfN = TSL.clamp(positionLocal.y.div(float(0.85)), float(0.0), float(1.0));
+                const baseCol = vec3(0.31, 0.55, 0.22);
+                const tipCol = vec3(0.58, 0.8, 0.34);
+                let albedo = TSL.mix(baseCol, tipCol, hfN);
+                const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
+                albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
+                albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
+                // V16.2 - Gegenlicht-Translucency (der Ghost-of-Tsushima-Magie-
+                // Moment): wenn die Sonne HINTER dem Gras steht (Blickrichtung
+                // ~entgegengesetzt zur Sonne), leuchten die Halme golden-grün
+                // durch (Subsurface-Scattering, billig approximiert). wrap =
+                // pow(max(dot(viewDir, -sunDir), 0), k) -> stark nur im
+                // Gegenlicht. Höhen-gewichtet (Spitzen leuchten mehr) + nur
+                // additive Wärme, kein Verdunkeln. Das ist DER "es lebt"-Term.
+                if (TSL.normalize && TSL.dot && TSL.pow && wu.uSunDir) {
+                    const viewDir = TSL.normalize(positionWorld.sub(TSL.cameraPosition));
+                    const sunBack = TSL.normalize(wu.uSunDir).mul(float(-1.0));
+                    const wrap = TSL.pow(max(TSL.dot(viewDir, sunBack), float(0.0)), float(3.0));
+                    const glow = vec3(0.45, 0.5, 0.2).mul(wrap).mul(hfN).mul(float(0.9));
+                    albedo = albedo.add(glow);
+                }
+                mat.colorNode = TSL.vec4(albedo, float(1.0));
+            }
+        } catch {
+            /* TSL/Noise nicht verfuegbar -> flaches Lambert-Grün (Default-color) */
+        }
 
         this.state._grassMat = mat;
         return mat;
@@ -11492,7 +11551,10 @@ class AnazhRealm {
     // nächsten Bau wiederverwendet — kein new+dispose, kein Race-Risiko, kein
     // linear-wachsender Heap.
     static get GRASS_POOL_CAP() {
-        return 32; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
+        // V16.1 — 32→48: der Gras-Ring wuchs von 3×3 (9 Chunks) auf 5×5
+        // (25 Chunks); der Pool braucht Headroom über die Ring-Größe, sonst
+        // LRU-Thrashing (ständig disposen/neu-allokieren beim Laufen).
+        return 48; // max InstancedMesh-Objekte im Pool. LRU-Discard wenn voll.
     }
     // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
     static get CREATURE_GATHER_HALT_DIST() {
@@ -12874,6 +12936,7 @@ class AnazhRealm {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
+            terrainSteepness: typeof this.state.terrainSteepness === "number" ? this.state.terrainSteepness : 1, // V14.7: ridgeAmp-Skala (Worker-Mirror)
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
@@ -15201,7 +15264,8 @@ class AnazhRealm {
         // ### Terrain-State ###
         // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight sind in
         // einer Voxel-Welt null bzw. 0; die voxel-gated Konsumenten ignorieren
-        // sie. terrainSteepness moduliert die Voxel-Surface, terrainBaseHeight
+        // sie. terrainSteepness skaliert seit V14.7 die ridged-Amplitude in
+        // `_terrainMacroSurfaceY` (vorher tot — V14.0-Befund); terrainBaseHeight
         // ist die Voxel-Anker-Höhe (Killplane-base, getTerrainHeightAt-Fallback).
         this.state.groundHeightField = heightData;
         this.state.minHeight = minHeight;
@@ -16061,10 +16125,14 @@ class AnazhRealm {
         // (E[cont0]≈+25 m → die Land-Marge bleibt erhalten/steigt, KEIN Ertränken
         // — die V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser).
         const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3: +12 Offset kompensiert die abgesenkten flachen Regionen (Land-Marge)
-        // (0b) tektonische Oktave — die regionale Mittelstruktur. λ~1140 m,
-        // ±35 m (der alte Kommentar "λ~7150 m" war falsch — diese Rolle trägt
-        // jetzt cont0; tect bleibt die km-Region-Variation darunter).
-        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 35;
+        // (0b) tektonische Oktave — V14.7: die DOMINANTE Massiv-Skala (λ~1136 m,
+        // Amp ±35→±60 m). Der V14.0-Leitsatz „die dominante Skala muss die GRÖSSTE
+        // sein" — vorher trug die ridged-`ranges` (λ77 m) das Hauptrelief → spitz,
+        // Feature-Größe nur 176 m; jetzt formt `tect` breite Massive, auf denen die
+        // (gestreckten + gedämpften) ranges als Textur sitzen → Berge bauen sich
+        // „über weite Strecken auf". (Der alte „λ~7150 m"-Kommentar war falsch —
+        // diese km-Skala trägt jetzt cont0.)
+        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 45;
         // (b) Ruggedness-Feld [0,1] — die REGIONALE Terrain-Typ-Maske (V14.3,
         // λ~2000 m). `mtn` quadriert → Tiefland ist der Normalfall, Hochgebirge
         // die Ausnahme. V14.4: sie moduliert ALLE Relief-Oktaven (nicht nur
@@ -16074,25 +16142,73 @@ class AnazhRealm {
         let mtn = 1 - ero;
         if (mtn < 0) mtn = 0;
         mtn *= mtn;
-        // (1) kontinentale Oktave (λ~1080 m) — V14.4 mtn-moduliert: in Ebenen
-        // sanft (±8 m), in Gebirgen wellig (±36 m).
-        const cont = n.noise2D(wx * 0.0058, wz * 0.0058) * (8 + 28 * mtn);
-        // (2) ridged-Amplitude — Ebenen fast flach (5), Gebirge schroff (67).
-        const ridgeAmp = 5 + 62 * mtn;
-        // (2a) ridged-Oktave (`(1−|noise|)²` faltet die Oberfläche zu Kämmen).
-        const rN = n.noise2D(wx * 0.013, wz * 0.013);
+        // (b2) V14.9 — REGIONALE Differenzierung (Terrain-Bogen-Schluss): eine GROSSE-λ
+        // Stil-Maske (λ~4500 m) wählt PRO Großregion den Charakter → KETTEN-Regionen
+        // (ridged → lineare Anden) und PLATEAU-Regionen (broad → weite Hochebenen)
+        // wechseln sich ab. So ist die Welt ABWECHSLUNGSREICH (verschiedene Charaktere
+        // wie auf der Erde) + STABIL (man reist km-weit in einem Charakter, λ groß =
+        // kohärente Regionen), nicht überall dasselbe — der V14.8-Befund: eine EINZIGE
+        // Oktave ist entweder ridged ODER broad, nie beides. Ebenen/Felder entstehen,
+        // wo die jeweilige Form niedrig ist + in den cont0-Becken. Baut auf den
+        // V14.7/.8-Formen: upBroad (Plateaus, Feature-Größe) + upRidge² (Anden-Ketten,
+        // Flow-gewarpt für gekrümmte Kämme).
+        // ZWEI unabhängige große-λ Masken → DREI Region-Typen: (1) Relief-Maske
+        // (λ~5300) = Tiefland (kein Uplift → Felder/Wasser) vs Hochland; (2) Stil-Maske
+        // (λ~4500) = Plateau (broad) vs Kette (ridged) im Hochland. Unabhängig → die
+        // Charaktere mischen frei (eine Kette kann an ein Tiefland grenzen) → die Welt
+        // hat ALLES (Ebenen, Hochebenen, Anden-Ketten, Wasser), abwechslungsreich +
+        // stabil (große λ = kohärente km-Regionen), nicht überall dasselbe.
+        const reliefN = n.noise2D(wx * 0.00019 + 33.1, wz * 0.00019 + 71.7) * 0.5 + 0.5; // λ~5300, [0,1]
+        let upliftMask = Math.min(1, Math.max(0, (reliefN - 0.42) / 0.2));
+        upliftMask = upliftMask * upliftMask * (3 - 2 * upliftMask); // 0 = Tiefland-Region (Felder/Wasser)
+        const styleN = n.noise2D(wx * 0.00022 + 91.3, wz * 0.00022 + 5.9) * 0.5 + 0.5; // λ~4500, [0,1]
+        let chainW = Math.min(1, Math.max(0, (styleN - 0.46) / 0.16));
+        chainW = chainW * chainW * (3 - 2 * chainW); // 0 = Plateau-Stil, 1 = Ketten-Stil
+        const upBroad = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1)); // [0,1] broad-Plateau-Form
+        const upWarpX = n.noise2D(wx * 0.0002 + 51.7, wz * 0.0002 + 13.1) * 300;
+        const upWarpZ = n.noise2D(wx * 0.0002 + 27.3, wz * 0.0002 + 88.9) * 300;
+        const upRidge = 1 - Math.abs(n.noise2D((wx + upWarpX) * 0.00028 + 19.3, (wz + upWarpZ) * 0.00028 + 7.1));
+        const upland = upliftMask * ((1 - chainW) * upBroad * 105 + chainW * upRidge * upRidge * 115);
+        // (1) kontinentale Oktave — V14.7: λ~172→~625 m gestreckt (freq 0.0058→
+        // 0.0016) → breite Undulation statt Hügel-Gewimmel. mtn-moduliert (±8..36 m).
+        const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn);
+        // (2) ridged-Amplitude — V14.7: Spitzen-Amp 62→38 gedämpft (Schöpfer-Befund
+        // „spitzig/steil"): Ebenen flach (5), Gebirge schroff aber breiter (max 43).
+        // V14.7 — `terrainSteepness` (DSL-Op `terrain_steepness`, 0.1–2.0, Default 1.0)
+        // ist jetzt VERDRAHTET (vorher ein TOTER Parameter, V14.0-Befund): er skaliert
+        // die ridged-Amplitude → der DSL-Op + der Nexus `terrainFlatten` steuern echte
+        // Ruggedness. Default 1.0 = bit-identisch (kein Welt-Wandel); der V14.6-Clamp
+        // deckelt auch steepness=2.0. MUSS im Worker mit (Snapshot-Feld terrainSteepness).
+        const ridgeAmp = (5 + 38 * mtn) * (this.state.terrainSteepness || 1);
+        // (2a) ridged-Oktave (`(1−|noise|)²` faltet zu Kämmen) — V14.7: λ~77→~333 m
+        // gestreckt (freq 0.013→0.003) → breite Bergrücken statt λ77-Mikro-Cusps.
+        const rN = n.noise2D(wx * 0.003, wz * 0.003);
         const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
-        // (2b) zweite ridged-Oktave (V9.58-b) — λ/2, ½ Amplitude. Multifraktal-
-        // Selbstähnlichkeit echter Gebirge: grosse Kämme tragen kleinere
-        // Sekundär-Kämme, die das Profil körniger machen.
-        const rN2 = n.noise2D(wx * 0.026 + 5.7, wz * 0.026 - 2.3);
+        // (2b) zweite ridged-Oktave (V9.58-b) — V14.7: λ~38→~133 m (freq 0.026→0.0075),
+        // ½ Amp. Multifraktal: grosse Kämme tragen kleinere Sekundär-Kämme.
+        const rN2 = n.noise2D(wx * 0.0075 + 5.7, wz * 0.0075 - 2.3);
         const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
         // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
         const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4: Ebenen fast glatt (±1), Gebirge körnig (±4)
         // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
         // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
         // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        const withoutTarn = base + cont0 + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
+        // V14.6 — sanftes Decken-Limit (Schöpfer-Befund „nach einiger Zeit in
+        // eine Richtung zerfällt die Welt"). Die kontinentale Basis cont0
+        // (λ~7100 m) hebt die Surface fern vom Ursprung bis ~235 m (gemessen
+        // ±5 km, `diag-radius.cjs`) — weit über die Voxel-Decke → kein
+        // Sign-Change in der Säule → keine Iso-Fläche → Löcher. Jede V14-
+        // Diagnose maß nur ±1100 m (KLEINER als cont0-λ) → sah den Anstieg nie
+        // (die V9.60-b.1-Falle: Sample-Region < modulierende Wellenlänge). Ein
+        // tanh-Soft-Clamp komprimiert NUR hohe Surfaces (>110 m) asymptotisch
+        // gegen 136 m (= Decke 154.8 − Roughness 12 − Marge ~7) → keine
+        // Durchbrüche, egal wie weit man reist. Terrain < 110 m (die ganze
+        // Spawn-/Explorations-Region bis ~2 km) bleibt bit-genau unberührt; die
+        // Kompression ist sanft (126 m → 124 m). Der Clamp greift VOR dem
+        // Sub-Ozean-/Tarn-Block (beide senken nur niedrige Surfaces → unberührt).
+        // MUSS bit-identisch im Worker (`voxel-worker.js`, Naht-Schutz).
+        if (withoutTarn > 110) withoutTarn = 110 + 26 * Math.tanh((withoutTarn - 110) / 26);
         // V9.60-c.2 — Riesen-Lehre vertieft: Continental Slope + Mid-Ocean
         // Ridge + tiefen-skalierte Variation. Schöpfer-Befund nach V9.60-c.1:
         // "see und meere immernoch sehr flach, nicht natürlich". Vor-Versuch
@@ -16872,12 +16988,14 @@ class AnazhRealm {
         const pm = this.state.playerMesh;
         const px = pm ? pm.position.x : 0;
         const pz = pm ? pm.position.z : 0;
-        const base = this.state.terrainBaseHeight || 0;
         const dim = 24;
         const stepSize = 1.6;
         const ox = px + 22;
-        const oy = base - 20;
         const oz = pz - dim * stepSize * 0.5;
+        // V14.7 — das vertikale Band straddelt die ECHTE Oberfläche am Chunk-Zentrum
+        // (vorher fix `base-20`; die V14.7-Massive heben surf weit über base → ein
+        // festes Tiefband läge ganz unter Grund → leeres Mesh). Robust für jede Höhe.
+        const oy = Math.round(this._terrainMacroSurfaceY(ox + dim * stepSize * 0.5, oz + dim * stepSize * 0.5)) - 20;
         const geom = this._voxelChunkGeometry(ox, oy, oz, dim, dim, dim, stepSize);
         if (!geom) {
             this.log("Voxel-Test: das Dichte-Feld war hier leer.", "INFO");
@@ -16910,17 +17028,21 @@ class AnazhRealm {
     // span = dim × step ist die Welt-Kantenlänge eines (würfelförmigen)
     // Voxel-Chunks; die vertikale Spanne deckt das Oberflächen-Band.
     // V9.88 (Welle Perf-3.b — Distance-LOD): optionaler `lod`-Parameter.
-    // **LOD 0** (Default, Nahbereich r=0..1): dim=24, step=1.8 m, dimY=124
-    //   → 71 424 Cells pro Chunk (volle Detail-Auflösung).
+    // **LOD 0** (Default, Nahbereich r=0..1): dim=24, step=1.8 m, dimY=136
+    //   → 78 336 Cells pro Chunk (volle Detail-Auflösung).
     // **LOD 1** (Fernbereich r≥2, > 80 m vom Spieler): dim=12, step=3.6 m,
-    //   dimY=62 → 8 928 Cells = **8× weniger** (`step` × 2 in jeder
+    //   dimY=68 → 9 792 Cells = **8× weniger** (`step` × 2 in jeder
     //   Dimension). Profi-Pattern aus BotW/Genshin: ferne Chunks sind
     //   gröber gemesht, weil Distanz + Atmosphäre-Fog die Detail-Differenz
     //   tarnt. **Konstante**: span = dim·step = 43.2 m BLEIBT, sodass
     //   adjacent Chunks über LOD-Grenzen WORLD-ALIGN (Chunk 0 endet bei
     //   x=43.2, Chunk 1 beginnt bei x=43.2 — beide LODs samplen Vertices
-    //   an demselben Punkt). dimY·step = 223.2 m BLEIBT (vertikale Welt-
-    //   Range identisch). **Seam-Verhalten an LOD-Grenze**: V9.42-d-Pad+Crop
+    //   an demselben Punkt). dimY·step = 244.8 m BLEIBT (vertikale Welt-
+    //   Range identisch). V14.6: dimY 124→136 (Decke base+133→base+155 m) —
+    //   der V14.1-cont0-Schwall hebt die Surface fern vom Ursprung über die
+    //   alte base+133-Decke; die höhere Hülle gibt den Bergen Raum, der
+    //   V14.6-Soft-Clamp (`_terrainMacroSurfaceY`) fängt die Extreme. Boden
+    //   bleibt base−90 (Tiefsee-Min −80 m, gemessen). **Seam-Verhalten an LOD-Grenze**: V9.42-d-Pad+Crop
     //   funktioniert WITHIN gleicher LOD; ein LOD0↔LOD1-Übergang erzeugt
     //   ggf. einen marginalen Vertex-Mismatch (Surface-Nets-Cell-Avg ist
     //   step-abhängig), der durch Fog beyond ~80 m unsichtbar bleibt —
@@ -16931,11 +17053,11 @@ class AnazhRealm {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
         const ringRadius = Math.max(1, Math.min(8, this.state.chunkRingRadius || 4));
         if (lod >= 1) {
-            // LOD 1 — Half-Resolution (8× weniger Cells)
-            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 62, floorDrop: 90, lod: 1 };
+            // LOD 1 — Half-Resolution (8× weniger Cells). dimY 62→68 (V14.6).
+            return { dim: 12, step: 3.6, span: 43.2, ringRadius, dimY: 68, floorDrop: 90, lod: 1 };
         }
-        // LOD 0 — Full-Resolution (Default, V9.58-b-Stand)
-        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 124, floorDrop: 90, lod: 0 };
+        // LOD 0 — Full-Resolution (Default, V14.6-Stand: dimY 124→136 für die hohe cont0-Welt)
+        return { dim: 24, step: 1.8, span: 43.2, ringRadius, dimY: 136, floorDrop: 90, lod: 0 };
     }
 
     // V9.88 (Welle Perf-3.b) — distance-basierte LOD-Entscheidung pro Chunk.
@@ -16999,7 +17121,7 @@ class AnazhRealm {
     // alten Hydrosphäre-Atlas; C.2 wird daraus die Wasser-Iso-Surface bauen,
     // C.5 schaltet den Atlas ab.
     //
-    // Performance: dim·dim·dimY = 24·24·124 = 71 424 Cells × `_terrainDensityAt`
+    // Performance: dim·dim·dimY = 24·24·136 = 78 336 Cells × `_terrainDensityAt`
     // ≈ ~350 ms pro Chunk im V8 ohne JIT (Headless), schneller im Browser.
     // Wenn Bottleneck im aktiven Streaming-Ring (81 Chunks), später lazy oder
     // shared mit Mesher-Density-Grid.
@@ -17666,6 +17788,24 @@ class AnazhRealm {
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
     // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
+    // V15.4 - Aerial-Perspective-Uniforms (TSL). EIN Satz, geteilt von allen
+    // Terrain-Materials, gespeist von _dayNightApplyHemiAndFog (EINE Quelle =
+    // die Fog-Farbe, also tag/nacht/wetter-kohaerent). density = 1/Sicht-
+    // Tiefe (klein -> Dunst greift erst weit), hazeBase/Top = Hoehen-Band, in
+    // dem Gipfel in den Himmel ausbleichen. Werte browser-justierbar.
+    _ensureAtmoUniforms() {
+        if (this.state.atmoUniforms) return this.state.atmoUniforms;
+        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!TSL || !TSL.uniform || !TSL.vec3) return null;
+        this.state.atmoUniforms = {
+            skyColor: TSL.uniform(new THREE.Color(0.55, 0.62, 0.78)),
+            density: TSL.uniform(0.0085),
+            hazeBase: TSL.uniform(40.0),
+            hazeTop: TSL.uniform(150.0),
+        };
+        return this.state.atmoUniforms;
+    }
+
     // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
     // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
     // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
@@ -17698,6 +17838,116 @@ class AnazhRealm {
         // patcht die DataTexture in-place (_refreshToonGradient.needsUpdate),
         // alle Materials samplen die aktualisierten Pixel beim nächsten Frame.
         if (this.state.toonGradientMap) mat.gradientMap = this.state.toonGradientMap;
+
+        // V15.4 - Aerial-Perspective-Uniforms sicherstellen (lazy, EIN Satz
+        // fuer alle Terrain-Materials, vom Tag-Nacht-Wetter-Sync gespeist).
+        this._ensureAtmoUniforms();
+
+        // V15.1 - prozedurale Mikro-Textur (render-only): zwei Oktaven
+        // 3D-Welt-Noise brechen die flache Vertex-Farbe in reiche Variation.
+        // Reine Render-Output-Stufe -> keine Geometrie-/Determinismus-
+        // Aenderung, kein Worker-Mirror. try/catch -> faellt sauber auf
+        // flach zurueck, falls TSL/mx_noise fehlt; nie ein kaputtes Material.
+        // V15.1-b: NUR auf vertexColors-Materials (Terrain + Inseln) — die
+        // tragen das per-Vertex-`color`-Attribut. Flach-Farb-Strukturen (Tor,
+        // Dorf, Avatar, Kreaturen) haben KEIN `color`-Attribut; ein
+        // `attribute("color")` defaultet dort auf vec3(0) -> die Struktur wird
+        // schwarz (Schoepfer-Befund + 63 AttributeNode-Warnungen). Das Noise
+        // gehoert ans Terrain-Material, nicht an die flachen Bauten.
+        try {
+            const _T = THREE.TSL;
+            if (opts.vertexColors && _T && _T.mx_noise_float && _T.positionWorld && _T.attribute) {
+                const _vc = _T.attribute("color", "vec3");
+                const _wp = _T.positionWorld;
+                const _n1 = _T.mx_noise_float(_wp.mul(0.33));
+                const _n2 = _T.mx_noise_float(_wp.mul(1.6));
+                const _det = _n1.mul(0.7).add(_n2.mul(0.3));
+                let _shade = _T.float(1.0).add(_det.mul(0.13));
+                // V15.2 - Kavitaets-AO (render-only, der dritte Render-Bogen-
+                // Schritt): Welt-Raum-Kruemmung aus den Fragment-Derivaten.
+                // fwidth(normalWorld).length() / fwidth(positionWorld).length()
+                // = wie schnell die Normale PRO METER kippt -> gross in Falten/
+                // Mulden/Kontaktkanten, ~0 auf glatten Flaechen. Der
+                // /fwidth(positionWorld) macht es aufloesungs- UND distanz-
+                // unabhaengig (fernes Terrain bleibt sauber). Dunkelt
+                // Vertiefungen sanft ab = Tiefe/Kontakt-Schatten. Reine Render-
+                // Output-Stufe -> kein Geometrie-/Determinismus-Eingriff, kein
+                // Worker-Mirror; gegated wie das Noise. EHRLICH: dunkelt ALLE
+                // stark gekruemmten Stellen (Kanten + Mulden), nicht nur
+                // Konkavitaeten (Edge-Tint a la Genshin/BotW). Staerke 1.6 /
+                // Cap 0.45 browser-justierbar.
+                if (_T.fwidth && _T.normalWorld) {
+                    const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
+                    const _ao = _T.float(1.0).sub(_curv.mul(1.6).clamp(0.0, 0.45));
+                    _shade = _shade.mul(_ao);
+                }
+                let _albedo = _vc.mul(_shade);
+                // V15.3.1 - Wiesen-Boden (render-only, die "weit auch Wiese"-
+                // Illusion): der Schoepfer-Befund war doppelt — Gras laedt nur
+                // nah (kahl dahinter) UND wirkt nicht wie eine Wiese. Wurzel:
+                // der Boden UNTER dem spaerlichen Gras ist ein mattes Schlamm-
+                // Gruen (earth=[0.27,0.49,0.19]); wo keine Halme sind, liest er
+                // sich nicht als Wiese. Genre-Loesung (Witcher/BotW/Genshin):
+                // NICHT Halme bis zum Horizont (fragiler Buffer-Pfad), sondern
+                // der BODEN sieht weit wie Wiese aus -> die nahen Halme sind
+                // nur 3D-Detail obendrauf, kein "kahl -> ploetzlich Gras"-Pop.
+                // Technik: wo die Vertex-Farbe gruen-dominant ist (Gruen >
+                // Rot+Blau-Mittel, also Vegetations-Boden), zu sattem Wiesen-
+                // Gruen aufwerten + grossflaechige Feld-Flecken via nieder-
+                // frequentem Noise (~λ55 m -> ganze Felder, aus der Ferne
+                // sichtbar) + ein zweites feineres (~λ9 m -> Wiesen-Struktur).
+                // Reine Albedo am Terrain-colorNode -> kein Geometrie-/
+                // Determinismus-/Buffer-Eingriff (die Halm-Dichte bleibt wie
+                // sie ist, der Boden traegt jetzt die Wiese). try/catch sicher.
+                if (_T.mix && _T.smoothstep && _T.vec3) {
+                    const _g = _albedo.y;
+                    const _rb = _albedo.x.add(_albedo.z).mul(0.5);
+                    // Vegetations-Maske: 0 auf Fels/Sand/Schnee, 1 auf gruenem Boden.
+                    const _veg = _T.smoothstep(0.0, 0.12, _g.sub(_rb));
+                    // Feld-Flecken (nieder-frequent) + Wiesen-Struktur (mittel).
+                    const _field = _T.mx_noise_float(_wp.mul(0.018)).mul(0.5).add(0.5);
+                    const _blade = _T.mx_noise_float(_wp.mul(0.11)).mul(0.5).add(0.5);
+                    const _dry = _T.vec3(0.42, 0.46, 0.18); // trockenes Feld-Gras
+                    const _lush = _T.vec3(0.26, 0.55, 0.19); // saftige Wiese
+                    let _meadow = _T.mix(_dry, _lush, _field);
+                    _meadow = _meadow.mul(_T.float(0.85).add(_blade.mul(0.3)));
+                    _albedo = _T.mix(_albedo, _meadow.mul(_shade), _veg.mul(0.8));
+                }
+                // V15.4 - Aerial Perspective (der "brutale Tiefe aus simplem
+                // System"-Hebel): ferne UND hohe Flaechen verschleiern
+                // exponentiell zur Himmelsfarbe. EIN Term, den die ganze Szene
+                // teilt (Terrain hier, Gras/Strukturen via scene.fog) -> alles
+                // schmilzt in DIESELBE atmosphaerische Stimmung = Tiefe + die
+                // Harmonie, die der Schoepfer vermisste. Distanz aus
+                // positionView.length() (Kamera-Abstand), Hoehen-Term laesst
+                // Gipfel in den Himmel ausbleichen (Berg-Silhouetten statt
+                // harter Fels-Kanten). Die Sky-Farbe + Dichte kommen aus
+                // state.atmoUniforms (vom Tag-Nacht-Wetter-Sync gespeist, EINE
+                // Quelle = die Fog-Farbe) -> tag/nacht/wetter-kohaerent. Reine
+                // Render-Albedo, try/catch-sicher. WICHTIG: scene.fog deckt
+                // schon die DISTANZ-Haze ab (alle Materials teilen sie). Dieser
+                // Term ist HOEHEN-DOMINANT — er ergaenzt, was scene.fog NICHT
+                // kann: hohe Gipfel bleichen in den Himmel aus (Berg-Silhouette
+                // statt harter Fels-Kante) + ein dezenter Distanz-Anteil fuer
+                // die Form-Aufloesung. Kein Doppel-Fog (nur der Hoehen-Teil ist
+                // stark), darum kein Ueber-Abdunkeln.
+                if (_T.positionView && _T.exp && this.state.atmoUniforms) {
+                    const _au = this.state.atmoUniforms;
+                    const _viewDist = _T.positionView.length();
+                    const _distHaze = _T
+                        .float(1.0)
+                        .sub(_T.exp(_viewDist.mul(_au.density).negate()))
+                        .clamp(0.0, 1.0)
+                        .mul(0.35);
+                    const _heightHaze = _T.smoothstep(_au.hazeBase, _au.hazeTop, _wp.y);
+                    const _haze = _distHaze.add(_heightHaze.mul(0.6)).clamp(0.0, 0.85);
+                    _albedo = _T.mix(_albedo, _au.skyColor, _haze);
+                }
+                mat.colorNode = _T.vec4(_albedo, 1.0);
+            }
+        } catch {
+            /* TSL/Noise nicht verfuegbar -> flaches Material (Vertex-Farben) */
+        }
         return mat;
     }
 
@@ -17886,12 +18136,23 @@ class AnazhRealm {
         if (workerMesh) {
             return this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         }
-        // Stufe 2: GPU-Density. Float32 (Hit), null (Pending), undefined (ineligible).
+        // Stufe 2: GPU-Density — V14.6 DEAKTIVIERT (V9.82 parallele-Pfade-Lehre).
+        // Der WGSL-Density-Shader (`WGSL_DENSITY_GRID`) ist auf dem Stand vor
+        // V14.1 stehengeblieben: ihm fehlt die kontinentale Basis-Oktave `cont0`
+        // (V14.1), er nutzt die alten Oktaven-Amplituden (cont·34 / ridgeAmp
+        // 12+55, V14.3 geändert) und die alte Höhlen-Decke `surf-6` (V14.5:
+        // surf-16). Würde dieser Pfad einen Chunk bauen (nur möglich, solange
+        // der Worker noch nicht synchronisiert ist — Startup nahe Spawn), läge
+        // seine Surface bis zu ~157 m UNTER der Worker-Wahrheit → höhenversetzte
+        // Chunk-Nähte (der V14.4-Restbefund „chunknähte sehr selten unsauber").
+        // Einen DRITTEN Makro-Mirror (neben Main + Worker) für cont0/V14.3-.6 mit
+        // WGSL-tanh-Drift (§3.6) zu pflegen ist die Heilige-Lektion-Sünde; der
+        // Worker (Stufe 3) + Sync-CPU (Stufe 4) decken alles korrekt ab, und
+        // GPU-Compute war ohnehin kein Production-Hebel (V9.95-e: WebGL-Roundtrip
+        // langsamer als Worker). Die Foundation (`_voxelGpuInit` + WGSL) bleibt
+        // für eine spätere, bewusste V14-Neufassung erhalten.
         let preDensity = null;
-        const gpuDensity = this._fetchOrRequestChunkDensityGpu(cx, cz, lod);
-        if (gpuDensity === null) return "pending";
-        if (gpuDensity !== undefined) preDensity = gpuDensity;
-        // Stufe 3: Worker-Density (Fallback wenn GPU ineligible/down).
+        // Stufe 3: Worker-Density (Fallback wenn Worker-Mesh ineligible/down).
         if (
             !preDensity &&
             this.state.voxelWorker &&
@@ -17929,7 +18190,20 @@ class AnazhRealm {
         // V9.88 — Grass nur auf LOD-0-Nahchunks. V9.75 — Iso-Wasser ist der
         // einzige Wasser-Render-Pfad (Cell-Feld via Surface-Nets, naht-frei).
         // V9.24 — Streu-Strukturen (idempotent, je Chunk einmal).
-        if (lod === 0) this._buildVoxelChunkGrass(cx, cz);
+        // V16.1 — Gras-Ring von 3×3 (LOD 0, ~130 m, 11 % der Sicht) auf 5×5
+        // (Chunk-Distanz ≤ 2, ~216 m, ~30 % der Sicht) geweitet — der "weiter
+        // weg kahl"-Befund. NICHT der ganze 9×9-Sicht-Ring (81 Chunks × 1024 =
+        // zu großer FPS-Sprung für einen sicheren ersten Schritt); die FERNE
+        // trägt der Wiesen-Boden (V15.3.1) + später Billboards (V16.2). span
+        // ist über beide LODs gleich (43.2 m) → die Streuung ist distanz-
+        // unabhängig, derselbe Build trägt LOD 0 und LOD 1. Cap 1024 fängt die
+        // dichtere Wiese (256 warf ~93 % weg). FPS-Wahrheit = Browser-Audit.
+        {
+            const _pcx = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cx : cx;
+            const _pcz = this.state.lastPlayerVoxelChunk ? this.state.lastPlayerVoxelChunk.cz : cz;
+            const _gr = Math.max(Math.abs(cx - _pcx), Math.abs(cz - _pcz));
+            if (_gr <= 2) this._buildVoxelChunkGrass(cx, cz);
+        }
         // V12.0-perf.h — Wasser-Iso deferred (per-Frame-Queue) statt synchron:
         // der Chunk ist mit Terrain+Boden+Collision sofort fertig, das Wasser
         // (~78 ms Surface-Nets) baut ≤budget/Frame nach → kein Streaming-Spike.
@@ -19874,7 +20148,7 @@ class AnazhRealm {
     _acquireGrassMesh() {
         if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
         const pool = this.state._grassMeshPool;
-        const GRASS_MAX_BLADES = 256;
+        const GRASS_MAX_BLADES = 1024; // V16.1 — Cap 256->1024 (r184-geheilt, kein Crash; FPS-Frage). 256 warf bei dichter Wiese ~93% der Halme weg.
         if (pool.length > 0) {
             const mesh = pool.pop();
             mesh.visible = true;
@@ -19901,7 +20175,7 @@ class AnazhRealm {
         // beschreiben). Visible-Default ist true — passt zur acquire-Semantik.
         inst.count = 0;
         inst.castShadow = false;
-        inst.receiveShadow = false;
+        inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         return inst;
     }
 
@@ -19958,6 +20232,64 @@ class AnazhRealm {
     // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
     // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
     // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
+    // V16.2 — Grasblatt-Büschel-Geometrie (ersetzt den Spitzkegel-"Stachel").
+    // Mehrere schmale, leicht gebogene Blätter, fächerförmig rotiert → liest
+    // sich als Gras-Tuff, nicht als Bartstoppel. Singleton (einmal pro Realm,
+    // von allen InstancedMeshes geteilt). Jedes Blatt: 4 Höhen-Segmente, zur
+    // Spitze schmaler + nach vorn gebogen. Wurzel bei y=0 (die Wind-positionNode-
+    // Math nutzt positionLocal.y als Höhen-Faktor). KEINE Physik, reine Deko.
+    _grassBladeTuftGeometry() {
+        const positions = [];
+        const normals = [];
+        const SEG = 4;
+        const H = 0.85;
+        const blade = (rot, lean, w0) => {
+            const cr = Math.cos(rot);
+            const sr = Math.sin(rot);
+            const ring = [];
+            for (let s = 0; s <= SEG; s++) {
+                const t = s / SEG;
+                ring.push({ w: w0 * (1 - t * 0.85), y: t * H, bend: lean * t * t });
+            }
+            const nx = sr * 0.3;
+            const nz = -cr * 0.3;
+            const nrm = [nx, 0.95, nz];
+            const pt = (e, r) => {
+                const lx = e * r.w * 0.5;
+                const lz = r.bend;
+                return [lx * cr - lz * sr, r.y, lx * sr + lz * cr];
+            };
+            for (let s = 0; s < SEG; s++) {
+                const a = ring[s];
+                const b = ring[s + 1];
+                const a0 = pt(-1, a);
+                const a1 = pt(1, a);
+                const b0 = pt(-1, b);
+                const b1 = pt(1, b);
+                const push = (p) => {
+                    positions.push(p[0], p[1], p[2]);
+                    normals.push(nrm[0], nrm[1], nrm[2]);
+                };
+                push(a0);
+                push(a1);
+                push(b1);
+                push(a0);
+                push(b1);
+                push(b0);
+            }
+        };
+        blade(0.0, 0.12, 0.085);
+        blade(1.05, 0.16, 0.07);
+        blade(2.1, 0.1, 0.075);
+        blade(3.4, 0.18, 0.065);
+        blade(4.7, 0.13, 0.08);
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        geo.computeBoundingSphere();
+        return geo;
+    }
+
     // voxel-basierte Welt grünt damit wie eine Heightfield-Welt.
     _buildVoxelChunkGrass(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return;
@@ -20017,10 +20349,12 @@ class AnazhRealm {
         // Lebensdauer hunderte separate Buffer. Mit Singleton: EIN Buffer
         // pro Realm-Instanz, alle InstancedMeshes teilen ihn (mit eigenen
         // instanceMatrix-Buffers). Sparen 100-500 KB GPU-Heap.
+        // V16.2 — Halm-FORM: der 3-seitige Spitzkegel (ein "Stachel" =
+        // Bartstoppel-Befund) wird ein BÜSCHEL aus gebogenen Grasblättern
+        // (_grassBladeTuftGeometry). Heilt die "keine Wiese"-Wurzel an der
+        // Geometrie, nicht an der Zahl. Singleton wie bisher.
         if (!this.state._grassConeGeometry) {
-            const geo = new THREE.ConeGeometry(0.075, 0.85, 3);
-            geo.translate(0, 0.425, 0);
-            this.state._grassConeGeometry = geo;
+            this.state._grassConeGeometry = this._grassBladeTuftGeometry();
         }
         // V11.0-b (Mesh-Pool aktiv im Build-Pfad) — wir holen ein
         // InstancedMesh aus dem Pool (oder allokieren neu wenn leer)
@@ -20033,7 +20367,7 @@ class AnazhRealm {
         // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
         // Mismatch zwischen Chunks. inst.count = realCount für die
         // DrawIndexed-Iteration (echte Render-Count).
-        const GRASS_MAX_BLADES = 256;
+        const GRASS_MAX_BLADES = 1024; // V16.1 — Cap 256->1024 (r184-geheilt, kein Crash; FPS-Frage). 256 warf bei dichter Wiese ~93% der Halme weg.
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
         // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
         // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
@@ -20054,7 +20388,7 @@ class AnazhRealm {
         if (!inst) {
             inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
             inst.castShadow = false;
-            inst.receiveShadow = false;
+            inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
@@ -20089,7 +20423,7 @@ class AnazhRealm {
         }
         inst.instanceMatrix.needsUpdate = true;
         inst.castShadow = false;
-        inst.receiveShadow = false;
+        inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         // V11.0-d.fix.gras (27.05.2026, Schöpfer-Browser-Audit-Wurzel) — beim
         // Pool-Recycle hat das Mesh noch den `boundingSphere`-Cache vom alten
         // Chunk (Position X1/Z1). instanceMatrix wird neu beschrieben mit
@@ -37573,6 +37907,12 @@ class AnazhRealm {
         // V12.0-f — kein toonLightUniforms-Sync mehr. Die nativen
         // MeshToonNodeMaterials (lights=true) konsumieren dl.color/intensity/
         // position direkt über Three.js' WebGPU-Lighting-Pipeline.
+        // V16.2 — Gras-Translucency braucht die Sonnen-Richtung als eigene
+        // Uniform (das Gras-colorNode rechnet Gegenlicht-Durchscheinen). EINE
+        // Quelle: derselbe sunDir, der die DirectionalLight-Position speist.
+        if (this.state.windUniforms && this.state.windUniforms.uSunDir) {
+            this.state.windUniforms.uSunDir.value.copy(sunDir).normalize();
+        }
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -37624,10 +37964,27 @@ class AnazhRealm {
             fog.color.setRGB(fogR, fogG, fogB);
             // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy 22..95.
             // Slider 30..200 % via state.atmosphere.fogDistance.
+            // V15.4.1 — fogMult zurueck auf 3.0 (der V15.4-Pull auf 1.6 war ein
+            // Pflaster: Nebel reinziehen, um flache Ferne zu verdecken, kaempft
+            // gegen die Weite, die der Schoepfer liebt — Weltenring max, Fog
+            // weit, die Ferne entdecken. Tiefe gehoert NICHT aus Nebel-Naehe,
+            // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
             const rainyMix = this.state.weather === "rainy" ? 1 : 0;
             const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
             fog.near = (35 - rainyMix * 13) * fogMult;
             fog.far = (150 - rainyMix * 55) * fogMult;
+            // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
+            // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
+            // hazeTop folgen Wetter (rainy = dichter + niedrigerer Gipfel-
+            // Ausbleich-Punkt = bedrueckter, tieferer Dunst).
+            if (this.state.atmoUniforms) {
+                const au = this.state.atmoUniforms;
+                if (au.skyColor && au.skyColor.value && au.skyColor.value.setRGB) {
+                    au.skyColor.value.setRGB(fogR, fogG, fogB);
+                }
+                if (au.density) au.density.value = 0.0085 + rainyMix * 0.006;
+                if (au.hazeTop) au.hazeTop.value = 150 - rainyMix * 55;
+            }
             if (this.state.playerEyesUnderwater) {
                 // V8.32 — Tauch-Trübung ist fest, ignoriert fogDistance-Slider.
                 fog.color.setRGB(0.06, 0.19, 0.32);
@@ -39521,6 +39878,13 @@ class AnazhRealm {
             throw new Error(msg);
         }
         const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR
+        // (Sonne 2.4 + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei
+        // 1.0 = ausgewaschen/blass. ACES rollt die HDR-Lichter filmisch ab
+        // (reiche Highlights, satte Mitten, tiefere Schatten). Reine Render-
+        // Output-Stufe -> keine Geometrie-/Daten-/Determinismus-Aenderung.
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
         // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format
@@ -40748,6 +41112,93 @@ class AnazhRealm {
         }
     }
 
+    // V17.0 — Post-Processing-Pipeline (Render-Realismus-Bogen). Baut EIN
+    // THREE.PostProcessing-Objekt mit (a) Bloom (helle Stellen leuchten -
+    // Wasser-Glanz, Sonne, Highlights) + (b) Color-Grading (Saettigung +
+    // Kontrast -> satt statt blass). Mit den vorhandenen TSL-Primitiven
+    // selbst gebaut (kein Vendor-Bloom-Addon-Risiko; die Awwwards-Profis
+    // schreiben Custom-Post-FX fuer Kontrolle, statt Defaults). Lazy: erst
+    // nach rendererReady. Bei JEDEM Fehler -> postProcessingFailed=true, der
+    // Loop faellt auf renderer.render() zurueck (NIE ein schwarzer Schirm).
+    // Werte (Bloom-Schwelle/Staerke, Grading) browser-justierbar.
+    _ensurePostProcessing() {
+        if (this.state.postProcessing || this.state.postProcessingFailed) return this.state.postProcessing;
+        try {
+            const TSL = THREE.TSL;
+            if (!TSL || typeof THREE.PostProcessing !== "function" || !TSL.pass) {
+                this.state.postProcessingFailed = true;
+                this.log(
+                    "Post-Processing nicht verfuegbar (PostProcessing/pass fehlt) — direkter Render-Pfad.",
+                    "INFO"
+                );
+                return null;
+            }
+            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV } = TSL;
+            const pp = new THREE.PostProcessing(this.state.renderer);
+            const scenePass = pass(this.state.scene, this.state.camera);
+            // API-korrekt: der sampelbare Textur-Node kommt aus
+            // getTextureNode() (PassNode != TextureNode — .sample() lebt am
+            // TextureNode). Das ist das offizielle MRT/pass-Muster.
+            const sceneColor = typeof scenePass.getTextureNode === "function" ? scenePass.getTextureNode() : scenePass;
+
+            const u = {
+                bloomThreshold: uniform(0.72),
+                bloomStrength: uniform(0.55),
+                bloomRadius: uniform(2.2),
+                gradeSat: uniform(1.18),
+                gradeContrast: uniform(1.06),
+            };
+            this.state.postProcessingUniforms = u;
+
+            // --- Bloom: helle Stellen (luminance > Schwelle) isolieren, weich
+            // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
+            // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
+            // Szene-Textur-Node an versetzter UV.
+            const bright = (uv) => {
+                const c = sceneColor.sample(uv).rgb;
+                const l = luminance(c);
+                const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
+                return c.mul(m);
+            };
+            const px = float(0.0018).mul(u.bloomRadius);
+            const taps = [
+                [0, 0, 0.227],
+                [1, 0, 0.094],
+                [-1, 0, 0.094],
+                [0, 1, 0.094],
+                [0, -1, 0.094],
+                [1, 1, 0.056],
+                [-1, 1, 0.056],
+                [1, -1, 0.056],
+                [-1, -1, 0.056],
+            ];
+            let acc = bright(screenUV).mul(float(taps[0][2]));
+            for (let i = 1; i < taps.length; i++) {
+                const [dx, dy, w] = taps[i];
+                const uvT = screenUV.add(vec2(px.mul(float(dx)), px.mul(float(dy))));
+                acc = acc.add(bright(uvT).mul(float(w)));
+            }
+            const bloom = acc.mul(u.bloomStrength);
+
+            // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
+            const base = sceneColor.rgb;
+            const combined = base.add(bloom);
+            const lum = luminance(combined);
+            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
+            const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
+            const graded = contrasted.max(vec3(0, 0, 0));
+
+            pp.outputNode = graded;
+            this.state.postProcessing = pp;
+            this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
+            return pp;
+        } catch (err) {
+            this.state.postProcessingFailed = true;
+            this.log(`Post-Processing-Aufbau scheiterte (${err && err.message}) — direkter Render-Pfad.`, "INFO");
+            return null;
+        }
+    }
+
     _loopRender(currentTime) {
         // ### Rendering ###
         // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
@@ -40801,7 +41252,22 @@ class AnazhRealm {
         // wirft der Promise-Reject — wir loggen, aber kein Hot-Swap mehr
         // (r164 hat WebGLNodeBuilder entfernt, WebGL wäre eine schwarze Welt).
         // Bei wiederholten Rejects sieht der Schöpfer den Error im Console-Log.
-        this.state.renderer.render(this.state.scene, this.state.camera);
+        // V17.0 — Post-Processing-Pfad: wenn die Pipeline steht (Bloom +
+        // Grading), rendert sie die Szene durch den Full-Screen-Pass. Bei
+        // Aufbau-/Render-Fehler (postProcessingFailed) faellt es auf den
+        // direkten renderer.render() zurueck — NIE ein schwarzer Schirm.
+        const pp = this._ensurePostProcessing();
+        if (pp && !this.state.postProcessingFailed) {
+            try {
+                pp.renderAsync();
+            } catch (err) {
+                this.state.postProcessingFailed = true;
+                this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
+                this.state.renderer.render(this.state.scene, this.state.camera);
+            }
+        } else {
+            this.state.renderer.render(this.state.scene, this.state.camera);
+        }
         // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
         // WorkDone()`. V10.0-j.e's 2-Frame-Age-Counter (`age >= 2`) war
         // effektiv nur 1-Frame-Defer (push + drain im selben Frame, age=1;
@@ -41130,7 +41596,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "14.5.0";
+AnazhRealm.VERSION = "17.0.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
