@@ -443,6 +443,33 @@ V10.0-j.j sagte EXPLIZIT „ein ehrlicher Workaround, kein Endzustand":
 
 ---
 
+## 1.6 — Der Schönheits-/Tiefe-Plan (V17 Render-Realismus-Bogen, AKTIV) — die wichtigste offene Arbeit
+
+> **Dies ist die Sektion, die zukünftige Agenten ZUERST lesen, wenn der Schöpfer „mehr Tiefe / realer / lebendiger" sagt.** Sie hält die GEMESSENE Diagnose + den konkreten Wellen-Plan, damit nicht wieder „die Oberfläche gekratzt" wird. Volldetails: `docs/render-realismus-diagnose.md` + `docs/ghibli-tiefe-diagnose.md` + `docs/lebende-umgebung.md`.
+
+**Die Kern-Wahrheit (gemessen + von den Three.js-Riesen gelernt):** AnazhRealm ist **Toon/Ghibli-Stil, NICHT Fotorealismus** — und das ist gut so (ein Browser-Tab erreicht physisch nie Unreal: Nanite/Lumen/GB-Foto-Texturen/native GPU). Die Ghibli-Referenzen des Schöpfers begeistern NICHT wegen Textur-Realismus — sie sind GEMALT. **PBR ist ein HOLZWEG** (zerstört den Stil, sieht ohne GB-Texturen schlechter aus, bringt das Tiling-/Naht-Problem, das der Schöpfer instinktiv nannte). Der brillante Weg ist **stilisierte FÜLLE + Licht + gemalte Farbe**, energieeffizient durch GPU-Instancing + LOD.
+
+**Die vier Realismus-Hebel (Bruno-Simon-„Realistic-Render"-Rezept) — Stand:**
+
+| #   | Hebel                                       | Status                                          | Welle                  |
+| --- | ------------------------------------------- | ----------------------------------------------- | ---------------------- |
+| 1   | **ACES-Tone-Mapping**                       | ✅ V15.0                                        | erledigt               |
+| 2   | **Post-Processing** (Bloom + Color-Grading) | ✅ V17.0 (Browser-Audit pendent)                | erledigt, Tuning offen |
+| 3   | **Fülle/Dichte** (die „fraktale Tiefe")     | 🔄 V16.1/.2 begonnen, NICHT fertig              | **V17.1**              |
+| 4   | **IBL/PBR**                                 | ❌ VERWORFEN (Stil-Bruch, wirkt nicht auf Toon) | —                      |
+
+**Der konkrete Wellen-Plan (jede Welle = MINOR, erst fertig bei Browser-110%-Sign-off):**
+
+- **V17.1 — FÜLLE/DICHTE (der größte „es lebt"-Hebel, die wahre „fraktale Tiefe").** Die Ghibli-Wiese ist RANDVOLL; unsere ist spärlich. Den V16-Vegetations-Streuer voll aufdrehen: Gras dichter + **artenreiche Klein-Vegetation aus `worldFieldAt`** (Blüten/Farne/Büsche/Kiesel/Felsbrocken) als **GPU-Instanzen mit eigenen konstanten Caps** (r184 trägt das, kein 256-Crash). `lebendig`→Blumen, `glut`→Gestrüpp, `magieleitung`→Sporen, `dichte`→Steine = die vier Felder werden vier Biom-Stimmen. **MUSS instanziert + Distanz-LOD-gestaffelt sein** (FPS-Disziplin: V17 fiel auf 23 in dichter Region). Direkte Antwort auf „wilder, dichter, natürlicher".
+- **V17.2 — WOLKEN (die andere Hälfte des epischen Eindrucks).** Der Himmel ist flach (`cloudCover` = EIN Wert). Volumetrische/geschichtete Wolken (Noise-Wolken-Schicht im Skybox-Shader ODER Billboard-Wolken-Bank), gemalt-weich, stil-treu. Die Ghibli-Bilder sind zur Hälfte Himmel.
+- **V17.3 — FARBE (kein Grau).** Strukturen/Türme sind grau — Ghibli hat nichts Graues. Stein warm tönen, Materialien harmonisch, V17.0-Grading feinjustieren.
+- **V17.4 — Bewegung/Leben.** Kohärente Wind-Welle übers ganze Feld (statt per-Halm-Sinus) + Partikel (Pollen/Schmetterlinge) in lebendigen Zonen.
+- **V17.5 — Browser-Audit + Tuning des ganzen Bogens** → erst dann ist V17 ein abgeschlossener, MAJOR-würdiger Bogen.
+
+**Die permanente Lehre (V17, gegen „nur die Oberfläche kratzen"):** vor jeder Schönheits-Welle die obige Tabelle prüfen — welcher Hebel ist dran? Eine Welle ist erst fertig, wenn der Browser-Audit „110 %, stellt das Bestehende in den Schatten" bestätigt — NICHT wenn sie kompiliert. Render-Qualität wird NUR im Schöpfer-Browser justiert (headless ist GPU-blind, V13-Lehre).
+
+**Nach V17 (Reihenfolge):** **V18 — Wasser-Finish** (die drei Render-Sync-Wurzeln + Berg-Innenwasser + Sub-Region-Edit + die ±1024-Wasser-Region gegen die neue Topologie; Detail §1.4). **V19 — die lebendige Welt** (Pfeiler D-G: Emotion ↔ Welt, Cluster-Resonanz, Multi-Spieler-Vibe). Reihenfolge-Disziplin: Fundament (Terrain ✅ + Wasser) + Schönheit (V17) VOR Vision-Vollendung (V9.51-Lehre).
+
 ## 2. Pfad-D Übersicht (Ringe 0-11+)
 
 | Ring     | Pfeiler                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Aufwand                                    | Vorbed.                 |
