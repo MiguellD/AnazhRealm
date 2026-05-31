@@ -1,4 +1,12 @@
-# Der Tiefe-Bogen — Plan (V17.10–V17.13)
+# Der Tiefe-Bogen — Plan (V17.10–V17.13) — ✅ ALLE 4 WURZELN DURCH (Browser-Audit offen)
+
+> **STATUS (31.05.2026): alle vier Wurzeln gebaut + verifiziert + gepusht.**
+> V17.10 Wolken (mx_noise) · V17.11 Bäume (Ghibli-Geometrie + Affordance-
+> Schärfung) · V17.12 Terrain-Makrotextur (triplanar) · V17.13 Strukturen-
+> Kontrast (Post-FX-Unsharp). Zwei Schöpfer-Korrekturen unterwegs: (a) der
+> `staticDecor`-Hardcode-Versuch gestoppt → emergente `_isMoveable`-Schärfung;
+> (b) die Geometrie-Glättung als Fehlpfad für „Treppen" gestoppt → triplanar-
+> TEXTUR. Der Browser-Audit des ganzen Stapels ist der Schluss.
 
 > **Schöpfer-Befund (zweiter V17-Audit, 31.05.2026):** „V17.8 immernoch nur die
 > Oberfläche, war tiefer geplant. Bäume nicht lebendig/genial — du hast das

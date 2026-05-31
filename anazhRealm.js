@@ -42163,6 +42163,12 @@ class AnazhRealm {
                 // Saettigung ein Pixel als "grau" zaehlt. Browser-justierbar.
                 degrayStrength: uniform(0.35),
                 degrayRange: uniform(0.16),
+                // V17.13 — lokaler Kontrast (Unsharp-Mask): hebt Binnen-Kontraste
+                // + Kanten auf ALLEN Oberflaechen → Strukturen/Bauten wirken
+                // plastisch statt pappig (Schoepfer „kaum Kontraste, basic"). Wirkt
+                // global im Post-FX (kein Material angefasst → bricht keine
+                // dynamischen Farben). Browser-justierbar.
+                localContrast: uniform(0.5),
             };
             this.state.postProcessingUniforms = u;
 
@@ -42198,7 +42204,23 @@ class AnazhRealm {
 
             // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
             const base = sceneColor.rgb;
-            const combined = base.add(bloom);
+            const bloomed = base.add(bloom);
+            // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
+            // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
+            // Umgebung verstaerkt → Binnen-Kontraste + Kanten treten hervor
+            // (Strukturen/Bauten plastisch statt pappig). Wirkt global pro Pixel,
+            // kein Material angefasst → dynamische Farben unberuehrt. Der Offset
+            // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
+            const lcPx = float(0.0026);
+            const lumAt = (uv) => luminance(sceneColor.sample(uv).rgb);
+            const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
+                .add(lumAt(screenUV.add(vec2(lcPx.negate(), float(0.0)))))
+                .add(lumAt(screenUV.add(vec2(float(0.0), lcPx))))
+                .add(lumAt(screenUV.add(vec2(float(0.0), lcPx.negate()))))
+                .mul(float(0.25));
+            const selfLum = luminance(bloomed);
+            const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
+            const combined = bloomed.add(bloomed.mul(detail.mul(u.localContrast)));
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
             const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
@@ -42627,7 +42649,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.12.0";
+AnazhRealm.VERSION = "17.13.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:

@@ -20063,6 +20063,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
         const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
         out.degrayPresent = ppSrc.includes("degrayStrength") && ppSrc.includes("greyness") && ppSrc.includes("warm");
+        // V17.13 — lokaler Kontrast-Hebel (Unsharp-Mask) im Post-FX (Source-Probe,
+        // Post-FX headless nicht baubar — schuetzt gegen versehentliches Loeschen).
+        out.localContrastPresent =
+            ppSrc.includes("localContrast") && ppSrc.includes("localAvg") && ppSrc.includes("detail");
         // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
@@ -20112,6 +20116,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.terrainColorNodeBuilds === true
         );
         check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
+        check(
+            "V17.13: Post-FX hat den lokalen Kontrast-Hebel (Unsharp-Mask: localContrast + localAvg)",
+            v828Results.localContrastPresent
+        );
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
     } else {
