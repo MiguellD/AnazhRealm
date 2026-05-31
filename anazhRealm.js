@@ -30222,12 +30222,61 @@ class AnazhRealm {
         // stein_block: dichte+härte hoch → Felsen-Felder
         // kristall_geode: magieleitung+resoniert hoch → Magie-Zonen
         // glutbrunnen: brennbar+wärmeleitung hoch → Vulkan-Anker
+        // V17.16 — Felsblock vom EINEN Würfel zu einem verwitterten Findling-
+        // Cluster (Schöpfer-Audit „spawnende Strukturen aufwerten"). Reine DATEN,
+        // NUR Material „stein" → bleibt EINE InstancedMesh (Draw-Calls ∝ Material,
+        // nicht Part-Zahl). Ein großer leicht gekippter Kern + 3 anliegende
+        // Brocken verschiedener Größe + 1 Octaeder-Splitter (gebrochener Fels) +
+        // ein flacher Sockel-Stein → bricht die Würfel-Silhouette auf. KEINE
+        // Affordance (stein hat zu niedrige resoniert/magieleitung-Tags; Brocken
+        // radial, nicht axial → kein magnifying; nicht gespreizt-tragend → kein
+        // moveable). Verifiziert via Reproducer.
         const steinBlockParts = [
+            // Kern (leicht gekippt → kein lotrechter Würfel)
             {
                 shape: "box",
                 material: "stein",
-                position: { x: 0, y: 1.2, z: 0 },
-                size: { x: 2.4, y: 2.4, z: 2.4 },
+                position: { x: 0, y: 1.15, z: 0 },
+                size: { x: 2.3, y: 2.3, z: 2.5 },
+                rotation: { x: 0.08, y: 0.5, z: 0.06 },
+            },
+            // Anliegende Brocken (verschiedene Größen, asymmetrisch)
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 1.5, y: 0.7, z: 0.4 },
+                size: { x: 1.3, y: 1.4, z: 1.2 },
+                rotation: { x: 0.15, y: 0.9, z: 0.1 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -1.3, y: 0.6, z: -0.5 },
+                size: { x: 1.1, y: 1.2, z: 1.4 },
+                rotation: { x: 0.1, y: -0.6, z: 0.18 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0.3, y: 2.4, z: -0.6 },
+                size: { x: 1.0, y: 0.9, z: 1.0 },
+                rotation: { x: 0.3, y: 0.4, z: 0.2 },
+            },
+            // Gebrochener Fels-Splitter (Octaeder → kantige Bruchkante)
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: -0.7, y: 2.1, z: 0.7 },
+                size: { x: 1.2, y: 1.0, z: 1.2 },
+                rotation: { x: 0.2, y: 0.3, z: -0.15 },
+            },
+            // Flacher Sockel-Stein am Fuß (Verwitterungs-Schutt)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.2, y: 0.18, z: 0.1 },
+                size: { x: 3.4, y: 0.36, z: 3.0 },
+                segments: 7,
             },
         ];
         // V9.64 (Welle A.1) — Damm-Bauplan: ein Stein-Wall, der das Wasser
@@ -30264,51 +30313,143 @@ class AnazhRealm {
                 opacity: 0.9,
             },
         ];
+        // V17.16 — Kristall-Geode von 4 zu einem reichen radialen Kristall-Cluster
+        // (Schöpfer-Audit). Reine DATEN, NUR „quarz" (1 InstancedMesh). Eine
+        // aufgebrochene Stein-freie Quarz-Basis + ein zentraler Haupt-Kristall +
+        // mehrere RADIAL nach außen wachsende Splitter verschiedener Größe/Neigung
+        // (wie eine echte Druse). WICHTIG (Funktions-Beachtung): die Splitter sind
+        // RADIAL um das Zentrum verteilt, NICHT auf einer Achse → kein `magnifying`
+        // (das bräche das Instancing, Quarz ist transparent). Die radiale Streuung
+        // kann emergent `radiating` triggern (resoniert) — das ist instancing-SAFE
+        // (Gate lehnt nur moveable/magnifying ab) + thematisch perfekt für eine
+        // Magie-Geode. Verifiziert via Reproducer.
         const kristallGeodeParts = [
+            // Basis-Kuppel (die aufgebrochene Geoden-Schale)
             {
                 shape: "sphere",
                 material: "quarz",
-                position: { x: 0, y: 0.8, z: 0 },
-                size: { x: 1.6, y: 1.6, z: 1.6 },
-                opacity: 0.85,
+                position: { x: 0, y: 0.7, z: 0 },
+                size: { x: 1.9, y: 1.5, z: 1.9 },
+                opacity: 0.8,
+            },
+            // Zentraler Haupt-Kristall (aufrecht, der „Herzkristall")
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 0.9, y: 1.6, z: 0.9 },
+            },
+            // Radiale Splitter (rundum nach außen geneigt, verschiedene Größen) —
+            // bewusst NICHT axial gestapelt (sonst magnifying).
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 0.85, y: 1.4, z: 0.3 },
+                size: { x: 0.55, y: 1.0, z: 0.55 },
+                rotation: { x: 0.2, y: 0.4, z: 0.55 },
             },
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: 0, y: 2.2, z: 0 },
-                size: { x: 0.8, y: 0.8, z: 0.8 },
+                position: { x: -0.7, y: 1.3, z: -0.6 },
+                size: { x: 0.6, y: 1.1, z: 0.6 },
+                rotation: { x: -0.3, y: -0.3, z: -0.5 },
             },
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: 0.7, y: 1.8, z: 0.3 },
-                size: { x: 0.5, y: 0.5, z: 0.5 },
-                rotation: { x: 0.3, y: 0.4, z: 0.2 },
+                position: { x: -0.3, y: 1.2, z: 0.85 },
+                size: { x: 0.45, y: 0.85, z: 0.45 },
+                rotation: { x: 0.5, y: 0.2, z: 0.2 },
             },
             {
                 shape: "octahedron",
                 material: "quarz",
-                position: { x: -0.5, y: 1.6, z: -0.6 },
-                size: { x: 0.6, y: 0.6, z: 0.6 },
-                rotation: { x: -0.2, y: -0.3, z: 0.1 },
+                position: { x: 0.5, y: 1.25, z: -0.75 },
+                size: { x: 0.5, y: 0.9, z: 0.5 },
+                rotation: { x: -0.45, y: 0.3, z: 0.25 },
+            },
+            // Kleine Boden-Splitter (Streu rund um die Basis)
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: 1.3, y: 0.45, z: -0.4 },
+                size: { x: 0.4, y: 0.5, z: 0.4 },
+                rotation: { x: 0.3, y: 0.5, z: 0.3 },
+            },
+            {
+                shape: "octahedron",
+                material: "quarz",
+                position: { x: -1.1, y: 0.4, z: 0.6 },
+                size: { x: 0.35, y: 0.45, z: 0.35 },
+                rotation: { x: -0.2, y: -0.4, z: 0.2 },
             },
         ];
+        // V17.16 — Glutbrunnen von 2 zu einem gestuften Vulkan-Anker (Schöpfer-
+        // Audit). Reine DATEN, nur stein + glut (2 InstancedMeshes). Ein breiter
+        // Steinsockel + verjüngter Rand-Ring (Schale) + größerer Glut-Pool + ein
+        // hellerer Glut-Kern + 3 aufsteigende Glut-Brocken (Funken/Lava-Spritzer,
+        // radial). `radiating` (glut resoniert/wärmeleitung) ist instancing-safe.
+        // KEIN moveable (glut nicht dicht-tragend gespreizt), kein magnifying
+        // (glut nicht transparent-axial). Verifiziert via Reproducer.
         const glutbrunnenParts = [
-            // Steinrand (Schale)
+            // Breiter Stein-Sockel (Fundament)
             {
                 shape: "cylinder",
                 material: "stein",
-                position: { x: 0, y: 0.4, z: 0 },
-                size: { x: 1.8, y: 0.8, z: 1.8 },
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 2.6, y: 0.4, z: 2.6 },
                 segments: 12,
             },
-            // Glut-Kern (mittig, halb-transparent für Glüh-Eindruck)
+            // Rand-Ring (verjüngte Schale)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0, y: 0.6, z: 0 },
+                size: { x: 2.0, y: 0.7, z: 2.0 },
+                segments: 12,
+            },
+            // Glut-Pool (breit, im Becken)
+            {
+                shape: "cylinder",
+                material: "glut",
+                position: { x: 0, y: 0.78, z: 0 },
+                size: { x: 1.5, y: 0.2, z: 1.5 },
+                segments: 12,
+                opacity: 0.8,
+            },
+            // Glut-Kern (heller, gewölbt)
             {
                 shape: "sphere",
                 material: "glut",
-                position: { x: 0, y: 0.8, z: 0 },
-                size: { x: 1.2, y: 1.2, z: 1.2 },
+                position: { x: 0, y: 1.0, z: 0 },
+                size: { x: 1.1, y: 0.9, z: 1.1 },
+                opacity: 0.7,
+            },
+            // Aufsteigende Glut-Brocken (Lava-Spritzer, radial)
+            {
+                shape: "octahedron",
+                material: "glut",
+                position: { x: 0.5, y: 1.5, z: 0.2 },
+                size: { x: 0.4, y: 0.5, z: 0.4 },
+                rotation: { x: 0.3, y: 0.4, z: 0.2 },
+                opacity: 0.8,
+            },
+            {
+                shape: "octahedron",
+                material: "glut",
+                position: { x: -0.4, y: 1.7, z: -0.3 },
+                size: { x: 0.3, y: 0.4, z: 0.3 },
+                rotation: { x: -0.2, y: 0.3, z: 0.4 },
                 opacity: 0.75,
+            },
+            {
+                shape: "octahedron",
+                material: "glut",
+                position: { x: 0.1, y: 1.9, z: 0.4 },
+                size: { x: 0.25, y: 0.35, z: 0.25 },
+                rotation: { x: 0.4, y: 0.2, z: -0.2 },
+                opacity: 0.7,
             },
         ];
 
@@ -30325,42 +30466,91 @@ class AnazhRealm {
         // unter dem Sturz hindurch. Ein Überhang, ohne ein einziges Voxel.
         // Alle Pfeiler/Sturz achsen-parallel — die Box-Kollision ist damit
         // exakt, die Lücke unmissverständlich.
+        // V17.16 — Felsbogen (Steintor) von 4 zu einem reicheren verwitterten
+        // Trilithon (Schöpfer-Audit). Reine DATEN, nur „stein" (1 InstancedMesh).
+        // Die KOLLISIONS-kritischen Teile (2 Pfeiler + Sturz, achsen-parallel, die
+        // begehbare Lücke) bleiben UNVERÄNDERT an Position/Größe — die Per-Box-
+        // Kollision + der Durchgang sind heilig (V7.73-Lehre). Nur DEKO ergänzt:
+        // Pfeiler-Sockel (verbreitert den Fuß), Schlussstein (Keystone mittig
+        // unterm Sturz-Scheitel), Verwitterungs-Brocken. Octaeder/leicht gekippt
+        // → keine axiale Teleskop-Linie (kein magnifying); stein-Tags zu niedrig
+        // für radiating. Verifiziert via Reproducer.
         const felsbogenParts = [
+            // Pfeiler-Sockel links (verwittert breiter Fuß)
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -2.6, y: 0.5, z: 0 },
+                size: { x: 2.4, y: 1.0, z: 2.5 },
+                rotation: { x: 0, y: 0.05, z: 0 },
+            },
+            // Pfeiler links (KOLLISION — unverändert)
             {
                 shape: "box",
                 material: "stein",
                 position: { x: -2.6, y: 2.5, z: 0 },
                 size: { x: 1.8, y: 5, z: 2.0 },
             },
+            // Pfeiler-Sockel rechts
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 2.6, y: 0.5, z: 0 },
+                size: { x: 2.4, y: 1.0, z: 2.5 },
+                rotation: { x: 0, y: -0.04, z: 0 },
+            },
+            // Pfeiler rechts (KOLLISION — unverändert)
             {
                 shape: "box",
                 material: "stein",
                 position: { x: 2.6, y: 2.5, z: 0 },
                 size: { x: 1.8, y: 5, z: 2.0 },
             },
-            // Der Sturz — spannt über beide Pfeiler, Unterkante bei y=4.9
-            // (gut 4.9 m Durchgangshöhe, der Spieler-Hitbox-Würfel ist 1 m).
+            // Der Sturz (KOLLISION — unverändert, Unterkante y=4.9, Durchgang frei)
             {
                 shape: "box",
                 material: "stein",
                 position: { x: 0, y: 5.7, z: 0 },
                 size: { x: 8.4, y: 1.6, z: 2.2 },
             },
-            // Ein verwitterter Fels-Aufsatz — bricht die Tür-Rahmen-Silhouette
-            // auf, rein dekorativ (sitzt oben, berührt die Durchgang-Lücke nicht).
+            // Schlussstein (Keystone) — sitzt OBEN auf dem Sturz-Scheitel
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 6.7, z: 0 },
+                size: { x: 1.6, y: 1.2, z: 2.4 },
+                rotation: { x: 0, y: 0, z: 0.04 },
+            },
+            // Verwitterte Fels-Aufsätze (asymmetrisch, brechen die Silhouette)
             {
                 shape: "octahedron",
                 material: "stein",
-                position: { x: 1.4, y: 6.9, z: 0.2 },
-                size: { x: 1.7, y: 1.5, z: 1.7 },
+                position: { x: 2.2, y: 7.0, z: 0.2 },
+                size: { x: 1.6, y: 1.4, z: 1.6 },
                 rotation: { x: 0.2, y: 0.5, z: 0.15 },
+            },
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: -2.4, y: 6.9, z: -0.3 },
+                size: { x: 1.3, y: 1.1, z: 1.3 },
+                rotation: { x: -0.15, y: -0.4, z: 0.2 },
             },
         ];
         // felsturm: ein verwitterter Fels-Turm — ein vertikaler Akzent, der
         // einer Region die Klippen-/Nadel-Dramatik gibt, die ein glattes
         // Heightfield nie hat. Ein Stapel sich verjüngender Stein-Zylinder
         // mit leichtem Versatz (verwittert, nicht perfekt lotrecht).
+        // V17.16 — Felsturm (Turm) von 4 zu einer reicheren verwitterten Nadel
+        // (Schöpfer-Audit). Reine DATEN, nur „stein" (1 InstancedMesh). Die 3
+        // Haupt-Zylinder-Segmente + Spitze bleiben (die tragende Silhouette), aber
+        // mit verwitterten Absatz-Ringen an den Übergängen (Erosions-Stufen) +
+        // anliegenden Fels-Brocken (radial, asymmetrisch) → die glatte Stapel-
+        // Optik bricht auf. Vertikal axial, aber stein-Tags zu niedrig für
+        // broadcasting; Brocken radial → kein magnifying. Verifiziert via
+        // Reproducer.
         const felsturmParts = [
+            // Basis-Segment
             {
                 shape: "cylinder",
                 material: "stein",
@@ -30368,6 +30558,23 @@ class AnazhRealm {
                 size: { x: 4.4, y: 6, z: 4.4 },
                 segments: 10,
             },
+            // Absatz-Ring 1 (Erosions-Stufe, etwas breiter als das obere Segment)
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.15, y: 6.2, z: 0.1 },
+                size: { x: 3.8, y: 0.5, z: 3.8 },
+                segments: 10,
+            },
+            // Anliegender Brocken am Fuß (asymmetrisch)
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: 2.0, y: 1.6, z: 0.6 },
+                size: { x: 1.8, y: 2.2, z: 1.8 },
+                rotation: { x: 0.2, y: 0.6, z: 0.15 },
+            },
+            // Mittel-Segment
             {
                 shape: "cylinder",
                 material: "stein",
@@ -30375,6 +30582,23 @@ class AnazhRealm {
                 size: { x: 3.0, y: 5, z: 3.0 },
                 segments: 9,
             },
+            // Absatz-Ring 2
+            {
+                shape: "cylinder",
+                material: "stein",
+                position: { x: 0.1, y: 10.7, z: 0.3 },
+                size: { x: 2.5, y: 0.4, z: 2.5 },
+                segments: 9,
+            },
+            // Anliegender Brocken Mitte
+            {
+                shape: "octahedron",
+                material: "stein",
+                position: { x: -1.6, y: 9.0, z: -0.5 },
+                size: { x: 1.3, y: 1.6, z: 1.3 },
+                rotation: { x: -0.2, y: 0.4, z: 0.25 },
+            },
+            // Oberes Segment
             {
                 shape: "cylinder",
                 material: "stein",
@@ -30382,6 +30606,7 @@ class AnazhRealm {
                 size: { x: 1.9, y: 3, z: 1.9 },
                 segments: 8,
             },
+            // Spitze (verwitterter Gipfel)
             {
                 shape: "cone",
                 material: "stein",
@@ -42810,7 +43035,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.15.0";
+AnazhRealm.VERSION = "17.16.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
