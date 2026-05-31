@@ -9691,21 +9691,26 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
         const bps = r.state.blueprints || {};
+        // V17.11 — die Bäume sind jetzt Multi-Part (Ghibli-Silhouette): Stamm-
+        // Segmente (holz) + mehrere Laub-Massen. Der Test wandert mit (V9.56-i):
+        // ≥2 Parts, Stamm[0]=cylinder/holz, ein Laub-Krone-Part existiert (statt
+        // fix parts[1]). Die Intention (holz-Stamm + laub-Krone, abbaubar) hält.
         out.hasBaumEiche = !!(
             bps.baum_eiche &&
             Array.isArray(bps.baum_eiche.parts) &&
-            bps.baum_eiche.parts.length === 2
+            bps.baum_eiche.parts.length >= 2
         );
         out.hasBaumKiefer = !!(
             bps.baum_kiefer &&
             Array.isArray(bps.baum_kiefer.parts) &&
-            bps.baum_kiefer.parts.length === 2
+            bps.baum_kiefer.parts.length >= 2
         );
         out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
         const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
-        const eichenKrone = bps.baum_eiche && bps.baum_eiche.parts[1];
+        const eichenKrone =
+            bps.baum_eiche && bps.baum_eiche.parts.find((p) => p.material === "laub" && p.shape === "sphere");
         out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
-        out.eichenKroneLaub = !!(eichenKrone && eichenKrone.material === "laub" && eichenKrone.shape === "sphere");
+        out.eichenKroneLaub = !!eichenKrone;
         out.hasLaubMaterial = !!(
             r.state.materials &&
             r.state.materials.laub &&
@@ -10008,8 +10013,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
             "Welle 6.G P1.5: spawnTreeAt-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
             wave6gResults.parallelSpawnTreeAtRemoved
         );
-        check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert mit 2 parts", wave6gResults.hasBaumEiche);
-        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert mit 2 parts", wave6gResults.hasBaumKiefer);
+        check("Welle 6.G P1.5: Bauplan 'baum_eiche' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumEiche);
+        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);
@@ -13457,8 +13462,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
     check(
-        "V12.0-perf.c.1: baum_kiefer instancbar mit 2 Leaves",
-        res.kieferInstanceable === true && res.kieferLeaves === 2,
+        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11 Multi-Part)",
+        res.kieferInstanceable === true && res.kieferLeaves === 5,
         `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
     );
     check(
@@ -13484,8 +13489,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverInstanced === true && res.cutoverNoMesh === true
         );
         check(
-            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 2)",
-            res.cutoverSlots === 2,
+            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 5, V17.11 Multi-Part)",
+            res.cutoverSlots === 5,
             `slots=${res.cutoverSlots}`
         );
         check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
@@ -15592,6 +15597,239 @@ async function checkBandWelleV11DPoolStress(ctx) {
         );
     }
     check("Welle V11.0-d: _drainGrassMeshPool() leert final", res.poolEmptyEnd === true);
+}
+
+// V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation aus den
+// vier worldFieldAt-Feldern. Prüft: (1) die Arten-Registry (5 Biom-Stimmen,
+// gültige Felder + konstante Caps); (2) Geometrie-Singleton trägt das Vertex-
+// Farb-Attribut (das Material liest `attribute("color")`); (3) das Material
+// baut; (4) der Streu-Mechanismus setzt einen Scatter-Eintrag + echte Instanzen
+// in einer lebendig-reichen Region; (5) Determinismus (selbe Region → selbe
+// Instanz-Zahl, stabil beim Re-Streamen); (6) Pool-Recycling (acquire/release/
+// drain pro Art, Cap-Disziplin); (7) Dispose gibt die Meshes zurück in die Pools.
+// Render-Qualität (Dichte-Gefühl, FPS) ist Browser-Audit (headless ist pixel-
+// blind, V13-Lehre) — hier nur die Datenstruktur-Wahrheit.
+async function checkBandV171Scatter(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        const Ctor = r.constructor;
+        const species = Ctor.KLEIN_VEGETATION_SPECIES;
+
+        // (1) Registry.
+        out.registryArray = Array.isArray(species);
+        out.speciesCount = out.registryArray ? species.length : 0;
+        const validFields = ["lebendig", "dichte", "glut", "magieleitung"];
+        out.allFieldsValid =
+            out.registryArray &&
+            species.every(
+                (s) =>
+                    typeof s.name === "string" &&
+                    validFields.includes(s.field) &&
+                    typeof s.cap === "number" &&
+                    s.cap > 0 &&
+                    typeof s.floor === "number" &&
+                    Array.isArray(s.scale)
+            );
+        // Alle vier Felder kommen als Stimme vor (die vier Biom-Stimmen).
+        out.allFourVoices = out.registryArray && validFields.every((f) => species.some((s) => s.field === f));
+        // V17.4 — Pollen-Partikel-Art (emissive + drift, lebendig-gated).
+        const pollen = out.registryArray ? species.find((s) => s.name === "pollen") : null;
+        out.hasPollen = !!(pollen && pollen.emissive === true && pollen.drift === true && pollen.field === "lebendig");
+        // V17.4 — kohärente Böen-Welle (Source-Probe in Gras- + Scatter-Wind).
+        const grassSrc = r._grassInstanceMat ? r._grassInstanceMat.toString() : "";
+        const motionSrc = r._applyScatterMotion ? r._applyScatterMotion.toString() : "";
+        out.gustWave = grassSrc.includes("gust") && motionSrc.includes("gust") && motionSrc.includes("drift");
+
+        // (2) Methoden existieren.
+        out.buildExists = typeof r._buildVoxelChunkScatter === "function";
+        out.disposeExists = typeof r._disposeVoxelChunkScatter === "function";
+        out.acquireExists = typeof r._acquireScatterMesh === "function";
+        out.releaseExists = typeof r._releaseScatterMesh === "function";
+        out.drainExists = typeof r._drainScatterMeshPools === "function";
+        out.geomExists = typeof r._scatterSpeciesGeometry === "function";
+        out.matExists = typeof r._scatterMaterial === "function";
+        if (!out.buildExists || !out.geomExists || !out.matExists) return out;
+
+        // (3) Geometrie trägt Vertex-Farbe; Material baut.
+        const g0 = r._scatterSpeciesGeometry(species[0]);
+        out.geomHasColor = !!(g0 && g0.getAttribute && g0.getAttribute("color") && g0.getAttribute("color").count > 0);
+        out.geomHasPosition = !!(
+            g0 &&
+            g0.getAttribute &&
+            g0.getAttribute("position") &&
+            g0.getAttribute("position").count > 0
+        );
+        const m0 = r._scatterMaterial(species[0]);
+        out.matBuilt = !!m0;
+        // Geometrie ist Singleton (zweiter Aufruf → selbe Instanz).
+        out.geomSingleton = r._scatterSpeciesGeometry(species[0]) === g0;
+
+        // (4) Streu-Build in einer lebendig-reichen, trockenen Region. Scanne
+        // Chunk-Zentren nach dem höchsten lebendig über Land.
+        const span = r._voxelChunkConfig().span;
+        let best = null;
+        let bestVal = -1;
+        for (let cx = -8; cx <= 8 && bestVal < 0.85; cx++) {
+            for (let cz = -8; cz <= 8; cz++) {
+                const wx = (cx + 0.5) * span;
+                const wz = (cz + 0.5) * span;
+                const f = r.worldFieldAt(wx, wz);
+                if (!f) continue;
+                const surfY = r._voxelSurfaceY(wx, wz);
+                if (surfY === null || !Number.isFinite(surfY)) continue;
+                const waterY = r._waterLevelAt(wx, wz);
+                if (surfY < waterY + 0.2) continue;
+                const score = Math.max(f.lebendig, f.dichte, f.glut, f.magieleitung);
+                if (score > bestVal) {
+                    bestVal = score;
+                    best = { cx, cz };
+                }
+            }
+        }
+        out.foundSpot = !!best;
+        out.bestFieldVal = bestVal;
+        if (!best) {
+            // Keine trockene Feld-reiche Region im Scan-Fenster — unmessbar =
+            // bestanden (V13.1-Default; in einer wasserreichen Welt möglich).
+            out.scatterUnmeasurable = true;
+            return out;
+        }
+
+        // Spieler-Chunk auf den Spot setzen (ringDist=0 → alle Arten bauen).
+        const prevLpc = r.state.lastPlayerVoxelChunk;
+        r.state.lastPlayerVoxelChunk = { cx: best.cx, cz: best.cz };
+        const key = `${best.cx},${best.cz}`;
+        // Sauberer Start.
+        r._disposeVoxelChunkScatter(key);
+        r._drainScatterMeshPools();
+
+        r._buildVoxelChunkScatter(best.cx, best.cz);
+        const list1 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
+        out.scatterEntrySet = Array.isArray(list1);
+        const countMeshes = (list) =>
+            Array.isArray(list) ? list.reduce((s, it) => s + (it.mesh ? it.mesh.count : 0), 0) : 0;
+        const total1 = countMeshes(list1);
+        out.totalInstances1 = total1;
+        out.hasInstances = total1 > 0;
+        out.meshesAreInstanced =
+            Array.isArray(list1) && list1.every((it) => it.mesh && it.mesh.isInstancedMesh === true);
+        // Caps respektiert (count ≤ species.cap pro Art).
+        out.capsRespected =
+            Array.isArray(list1) &&
+            list1.every((it) => {
+                const sp = species.find((s) => s.name === it.name);
+                return sp && it.mesh.count <= sp.cap;
+            });
+
+        // (5) Determinismus: dispose → rebuild → identische Gesamt-Instanzzahl.
+        r._disposeVoxelChunkScatter(key);
+        out.entryGoneAfterDispose = !(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
+        r._buildVoxelChunkScatter(best.cx, best.cz);
+        const list2 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
+        const total2 = countMeshes(list2);
+        out.totalInstances2 = total2;
+        out.deterministic = total1 === total2;
+
+        // (6) Pool-Recycling: nach Dispose sind die Meshes im Art-Pool, ein
+        // erneuter Build poppt dieselben Mesh-Objekte (Identity).
+        const firstMesh = Array.isArray(list2) && list2[0] ? list2[0].mesh : null;
+        const firstName = Array.isArray(list2) && list2[0] ? list2[0].name : null;
+        r._disposeVoxelChunkScatter(key);
+        const poolForFirst = firstName && r.state._scatterMeshPools ? r.state._scatterMeshPools.get(firstName) : null;
+        out.poolHasReleased = Array.isArray(poolForFirst) && poolForFirst.includes(firstMesh);
+        r._buildVoxelChunkScatter(best.cx, best.cz);
+        const list3 = r.state.voxelChunkScatter ? r.state.voxelChunkScatter.get(key) : null;
+        const reMesh = Array.isArray(list3) && list3.find((it) => it.name === firstName);
+        out.poolRecycledIdentity = !!(reMesh && reMesh.mesh === firstMesh);
+
+        // (7) Cap-Disziplin des Pools: viele Build/Dispose-Zyklen → Pool bounded.
+        let maxPool = 0;
+        for (let i = 0; i < 40; i++) {
+            r._disposeVoxelChunkScatter(key);
+            r._buildVoxelChunkScatter(best.cx, best.cz);
+            for (const pool of r.state._scatterMeshPools.values()) {
+                if (pool.length > maxPool) maxPool = pool.length;
+            }
+        }
+        const maxCap = Math.max(...species.map((s) => s.pool || 16));
+        out.poolBounded = maxPool <= maxCap;
+
+        // (8) Deferred-Queue: enqueue → tick baut (Wasser-Iso-Pattern). Der Tick
+        // baut nur, wenn der Chunk in voxelChunks präsent ist — für den Test
+        // einen Stub injizieren, falls die Region nicht gestreamt ist.
+        out.queueApiExists = typeof r._enqueueScatter === "function" && typeof r._tickPendingScatter === "function";
+        r._disposeVoxelChunkScatter(key);
+        r._drainScatterMeshPools();
+        let injectedStub = false;
+        if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
+        if (!r.state.voxelChunks.has(key)) {
+            r.state.voxelChunks.set(key, { mesh: null, lod: 0, stub: true });
+            injectedStub = true;
+        }
+        r._enqueueScatter(best.cx, best.cz);
+        out.enqueued = !!(r.state.pendingScatter && r.state.pendingScatter.has(key));
+        const builtN = r._tickPendingScatter(8);
+        out.tickBuiltAtLeastOne = builtN >= 1;
+        out.queueBuiltScatter = !!(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
+        r._disposeVoxelChunkScatter(key);
+        if (injectedStub) r.state.voxelChunks.delete(key);
+
+        // Aufräumen + Spieler-Chunk restaurieren.
+        r._disposeVoxelChunkScatter(key);
+        r._drainScatterMeshPools();
+        r.state.lastPlayerVoxelChunk = prevLpc;
+        out.cleanedUp = !(r.state.voxelChunkScatter && r.state.voxelChunkScatter.has(key));
+        return out;
+    });
+
+    if (res.error) {
+        check("V17.1 Scatter: Band (realm verfügbar)", false, res.error);
+        return;
+    }
+    check("V17.1 Scatter: KLEIN_VEGETATION_SPECIES ist ein Array", res.registryArray === true);
+    check("V17.1 Scatter: ≥5 Biom-Stimmen (Arten) registriert", res.speciesCount >= 5);
+    check("V17.4: Pollen-Partikel-Art (emissive + drift, lebendig)", res.hasPollen === true);
+    check("V17.4: kohärente Böen-Welle im Gras + Scatter-Wind (gust + drift)", res.gustWave === true);
+    check("V17.1 Scatter: jede Art hat gültiges Feld + konstanten Cap + Skala", res.allFieldsValid === true);
+    check("V17.1 Scatter: alle vier worldFieldAt-Felder werden als Stimme genutzt", res.allFourVoices === true);
+    check(
+        "V17.1 Scatter: _buildVoxelChunkScatter + _disposeVoxelChunkScatter existieren",
+        res.buildExists === true && res.disposeExists === true
+    );
+    check(
+        "V17.1 Scatter: Pool-API (acquire/release/drain) existiert",
+        res.acquireExists === true && res.releaseExists === true && res.drainExists === true
+    );
+    check(
+        "V17.1 Scatter: Geometrie-Singleton trägt Vertex-Farb-Attribut",
+        res.geomHasColor === true && res.geomHasPosition === true
+    );
+    check("V17.1 Scatter: Geometrie ist ein Singleton (gecacht pro Art)", res.geomSingleton === true);
+    check("V17.1 Scatter: Material baut (NodeMaterial oder Fallback)", res.matBuilt === true);
+    if (res.scatterUnmeasurable) {
+        check("V17.1 Scatter: keine trockene Feld-reiche Region im Scan — unmessbar = bestanden", true);
+        return;
+    }
+    check("V17.1 Scatter: lebendig-reiche Region gefunden (Streu-Spot)", res.foundSpot === true);
+    check("V17.1 Scatter: Build setzt einen Scatter-Eintrag (Array)", res.scatterEntrySet === true);
+    check("V17.1 Scatter: echte GPU-Instanzen gestreut (> 0)", res.hasInstances === true);
+    check("V17.1 Scatter: alle Meshes sind InstancedMesh", res.meshesAreInstanced === true);
+    check("V17.1 Scatter: Instanz-Zahl je Art respektiert den konstanten Cap", res.capsRespected === true);
+    check("V17.1 Scatter: deterministisch (selbe Region → selbe Instanz-Zahl)", res.deterministic === true);
+    check("V17.1 Scatter: Dispose entfernt den Scatter-Eintrag", res.entryGoneAfterDispose === true);
+    check("V17.1 Scatter: Dispose gibt Mesh in den Art-Pool zurück", res.poolHasReleased === true);
+    check("V17.1 Scatter: Pool recycelt dasselbe Mesh-Objekt (Identity)", res.poolRecycledIdentity === true);
+    check("V17.1 Scatter: Pool bleibt bounded über 40 Build/Dispose-Zyklen", res.poolBounded === true);
+    check("V17.1 Scatter: deferred-Queue-API (enqueue/tick) existiert", res.queueApiExists === true);
+    check("V17.1 Scatter: _enqueueScatter reiht den Chunk ein", res.enqueued === true);
+    check(
+        "V17.1 Scatter: _tickPendingScatter baut den eingereihten Chunk",
+        res.tickBuiltAtLeastOne === true && res.queueBuiltScatter === true
+    );
+    check("V17.1 Scatter: Aufräumen vollständig (kein Scene-/Map-Leck)", res.cleanedUp === true);
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P3/P3b/P3c (3D-Graben + Aufschütten + Material-Kreis) + Welle 6.C1/C2 (Inventar + Spielmodi + DragDrop)).
@@ -19410,8 +19648,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
             out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
             // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
-            // (mehrere noise3(vDir.mul(...)) + vDir.y im horizonMask).
-            out.shaderFragmentUsesVDir = /noise3\(\s*vDir\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
+            // → Stern-/Wolken-Stabilität bei Spieler-Bewegung. V17.10: der
+            // Noise-Kern ist von hash3-`noise3` auf `mx_noise_float` gewechselt
+            // (die Pattern-Probe wandert mit, V9.56-i-Lehre) — die INTENTION
+            // (Fragment sampelt mit vDir, nicht World-Position) gilt weiter:
+            // vDir fließt in _nebN(vDir...)/_wn(vDir...)/cp + vDir.y im band.
+            out.shaderFragmentUsesVDir = /\bvDir\.(mul|y)\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
         } catch {
             // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
         }
@@ -19799,6 +20041,32 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r._applyDayNightToScene();
         const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
+        // V17.2 — der gemalte Wolkenhimmel: sunDir-Uniform (Glow) + FBM-Struktur.
+        const sd = r.state.skyboxUniforms.sunDir;
+        out.skyboxHasSunDir = !!(sd && sd.value && typeof sd.value.x === "number");
+        const skySrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
+        out.skyboxCloudFbm = skySrc.includes("fbm") && skySrc.includes("sunGlow") && skySrc.includes("cloudShade");
+        // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
+        // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
+        out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
+        // V17.12 — der Terrain-colorNode (triplanar-Textur + Wiese + Aerial) baut
+        // OHNE geschluckte Exception. Wurzel-Schutz: ein still gefangener Fehler
+        // (V17.12: nacktes `float(` statt `_T.float(`) ließe die ganze Render-
+        // Schicht lautlos verschwinden — der Playtest-grün verdeckt das sonst.
+        // `window.__toonColorNodeError` ist der Diagnose-Marker (null = sauber).
+        window.__toonColorNodeError = null;
+        const _terrMat =
+            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
+        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
+        out.terrainColorNodeError = window.__toonColorNodeError || null;
+        // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
+        // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
+        const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
+        out.degrayPresent = ppSrc.includes("degrayStrength") && ppSrc.includes("greyness") && ppSrc.includes("warm");
+        // V17.13 — lokaler Kontrast-Hebel (Unsharp-Mask) im Post-FX (Source-Probe,
+        // Post-FX headless nicht baubar — schuetzt gegen versehentliches Loeschen).
+        out.localContrastPresent =
+            ppSrc.includes("localContrast") && ppSrc.includes("localAvg") && ppSrc.includes("detail");
         // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
@@ -19840,6 +20108,18 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
+        check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
+        check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
+        check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
+        check(
+            `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
+            v828Results.terrainColorNodeBuilds === true
+        );
+        check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
+        check(
+            "V17.13: Post-FX hat den lokalen Kontrast-Hebel (Unsharp-Mask: localContrast + localAvg)",
+            v828Results.localContrastPresent
+        );
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
     } else {
@@ -32708,6 +32988,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWelleV11CPoolDispose(ctx);
             // V11.0-d — Mesh-Pool-Stress-Test: 50 Zyklen, Pool bleibt klein, Map clean.
             await checkBandWelleV11DPoolStress(ctx);
+            // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
+            await checkBandV171Scatter(ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
