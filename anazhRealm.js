@@ -38753,7 +38753,13 @@ class AnazhRealm {
         const al = this.state.ambientLight;
         if (!al) return;
         const sunHeight = Math.max(0, Math.sin(angle));
-        const baseAmb = 0.18 + 0.42 * sunHeight;
+        // V17.7 — Nacht-Floor gehoben (0.18→0.24): Schöpfer-Audit „Strukturen
+        // nachts quasi schwarz". Wurzel: das Terrain trägt die V15.4-Aerial-
+        // Perspektive (blendet zur Sky-Farbe), die Flach-Farb-Bauten NICHT → sie
+        // fielen ins Schwarz. Ein moderater Ambient-Lift hebt sie über Null,
+        // ohne die dynamischen Avatar-/Kreatur-Farben zu berühren (reines Licht,
+        // kein colorNode). Mittag bleibt ~gleich (0.24+0.38=0.62 vs 0.18+0.42=0.60).
+        const baseAmb = 0.24 + 0.38 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -38786,7 +38792,10 @@ class AnazhRealm {
             }
             hl.groundColor.copy(earth);
             const sunHeight = Math.max(0, Math.sin(angle));
-            hl.intensity = (0.25 + 0.35 * sunHeight) * tint.lightMul;
+            // V17.7 — Hemisphere-Nacht-Floor gehoben (0.25→0.32) zusammen mit dem
+            // Ambient-Lift: der Himmel-Fill hebt die Bauten nachts über Schwarz
+            // (Mittag ~gleich: 0.32+0.28=0.60 vs 0.25+0.35=0.60).
+            hl.intensity = (0.32 + 0.28 * sunHeight) * tint.lightMul;
         }
         if (fog) {
             const gMix = 0.15;
@@ -42458,7 +42467,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.6.0";
+AnazhRealm.VERSION = "17.7.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
