@@ -76,7 +76,19 @@ function startSaveServer() {
                 const aff = {};
                 for (const a of AXES) aff[a] = Math.round((tags[a] || 0) * 1e4) / 1e4;
                 const moveable = typeof r._isMoveable === "function" ? r._isMoveable(bp) : null;
-                out[n] = { parts: bp.parts.length, instanced: !!bp.instanced, affinityTags: aff, moveable };
+                // Volle Affordanz-Liste (was tut die Architektur?) — broadcasting/
+                // moveable/magnifying/radiating/... So sieht man auf einen Blick, ob
+                // eine Material-/Geometrie-Änderung eine Affordanz kippt (V17.18).
+                const affordances =
+                    typeof r.computeBlueprintAffordances === "function" ? r.computeBlueprintAffordances(bp) : null;
+                out[n] = {
+                    parts: bp.parts.length,
+                    instanced: !!bp.instanced,
+                    affinityTags: aff,
+                    resoniert: Math.round((tags.resoniert || 0) * 1e4) / 1e4,
+                    moveable,
+                    affordances,
+                };
             }
             return out;
         });

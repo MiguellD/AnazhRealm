@@ -30407,86 +30407,93 @@ class AnazhRealm {
         ];
         // felsturm: ein verwitterter Fels-Turm — ein vertikaler Akzent, der
         // einer Region die Klippen-/Nadel-Dramatik gibt, die ein glattes
-        // Heightfield nie hat. Ein Stapel sich verjüngender Stein-Zylinder
-        // mit leichtem Versatz (verwittert, nicht perfekt lotrecht).
+        // Heightfield nie hat. Ein Stapel sich verjüngender Zylinder mit
+        // leichtem Versatz (verwittert, nicht perfekt lotrecht).
         //
-        // V17.17 — reichere verwitterte Nadel (Schöpfer-Audit; Neuanlauf nach
-        // dem V17.16-Revert). REINE DATEN, nur „stein". Die 3 tragenden Zylinder-
-        // Segmente + die Spitze bleiben (die Silhouette), ergänzt um Erosions-
-        // Absatz-Ringe an den Übergängen + anliegende Fels-Brocken (asymmetrisch)
-        // → die glatte Stapel-Optik bricht auf.
+        // V17.18 — der Turm wird ein EISEN-Mast (Schöpfer-Vision „der Turm war
+        // doch eine Antenne"). Material stein → eisen: eisen trägt
+        // `stromleitung 0.85` → das aktiviert die `broadcasting`-Affordanz (ein
+        // leitfähiger, aufrechter Mast = ein RELAIS). `_tickRadiatingAffordances`
+        // nutzt das: ein broadcasting-Mast in 18 m eines `radiating`-Strahlers
+        // (Kristall-Geode, resoniert ≥1.5) MULTIPLIZIERT dessen Resonanz-Reichweite
+        // (bis 2×, 14→28 m) → der Turm trägt die Kristall-Resonanz weiter in die
+        // Welt. Die Form (hoher, y-axialer Mast) ist der broadcasting-Archetyp; nur
+        // die Materie fehlte (stein leitet 0). Hylomorphismus: Form × Materie.
         //
-        // AFFINITÄTS-DISZIPLIN (V17.16-Wurzel-Lehre, verifiziert): TAG-NEUTRAL —
-        // `stein` aktiviert unter den Affinitäts-Achsen nur dichte; cylinder gibt
-        // den dichte-MAX (Aktivierung 2 → 1.7). Die neuen octahedron tragen
-        // dichte-Aktivierung 2 (= cylinder, NICHT darüber) → `computeCompoundTags`
-        // bleibt {dichte 1.7} EXAKT wie V17.15. WICHTIG: KEINE `box` hinzufügen
-        // (box-dichte-Aktivierung 3 → würde dichte auf 2.55 heben = Spawn-Shift!);
-        // die octahedron sind der sichere „gebrochener Fels"-Akzent. magieleitung
-        // bleibt 0 (stein.magieleitung = 0 nullt octahedrons magie-Aktivierung 3)
-        // → kein Antrieb → `_isMoveable` unmöglich → Instancing sauber.
+        // ZWEI gekoppelte Folgen (GEMESSEN, nicht geraten — V17.16-Lehre):
+        // (1) moveable-FALLE + ihre vision-reine Heilung: eisens stromleitung 0.85
+        //     füllt JETZT den `_isMoveable`-Antrieb (max(magieleitung,stromleitung)
+        //     ≥ 0.3), der bei stein immer 0 war → die letzte moveable-Bedingung
+        //     fällt; ab da entscheidet die Trag-Basis-SPREIZUNG. `_compoundBBox`
+        //     misst NUR Part-POSITIONEN → die compW eines schlanken Masts ist
+        //     winzig; die V17.17-„verwitterten" Versätze (0.15/0.3) + Fuß-Brocken
+        //     ergaben Spreizung 0.45 ≥ 0.35 → moveable=true (gemessen). KEIN Flag
+        //     (das wäre Hardcode) — die Wurzel ist die Geste: ein Antennen-MAST ist
+        //     eine SCHMALE AXIALE SÄULE (V17.11), genau der broadcasting-Archetyp.
+        //     Eisen ist GESCHMIEDET, nicht verwittertes Gestein → die Fels-Brocken
+        //     sind raus, die tragenden Segmente sitzen achs-zentriert (x=z=0) →
+        //     Spreizung 0 → moveable strukturell unmöglich, UND y-axial → die
+        //     broadcasting-Ausrichtung (≥60 % auf der y-Achse) passt. magnifying
+        //     ausgeschlossen (eisen nicht transparent). Via diag-arch-tags
+        //     verifiziert: broadcasting=true, moveable=false.
+        // (2) Spawn-Affinität: eisen dichte 0.9 (stein 0.85) → felsturm dichte-Tag
+        //     1.7 → 1.8 (cylinder-Aktivierung 2). magieleitung bleibt 0 → keine
+        //     Magie-Zone, keine Verdrängung. Bewusster, gemessener Shift; der
+        //     Affinitäts-Wächter trägt die neue 1.8-Baseline. felsturm spawnt nur
+        //     über den seltenen Landmark-Pass (nicht den Winner-take-all) → der
+        //     dichte-Nudge ändert die Verteilung praktisch nicht.
+        // Nebeneffekt: eisen resoniert 0.6 → felsturm resoniert 1.2 (> mild 0.7,
+        // < stark 1.5) → der Mast KLINGT beim Abbau (Abschied-Ping), ist aber
+        // selbst KEIN Musik-Resonator (das bleibt der Kristall) — stimmig: Eisen
+        // klingt (Relais), Kristall singt (Strahler).
         const felsturmParts = [
-            // Basis-Segment
+            // Geschmiedeter Eisen-Mast: ein klarer, sich verjüngender vertikaler
+            // Stapel (Basis → Spitze), achs-zentriert (x=z=0 → schmale Säule, kein
+            // Fahrzeug; y-axial → sendet). Die Absatz-Ringe (Kragen) geben Rhythmus.
             {
                 shape: "cylinder",
-                material: "stein",
+                material: "eisen",
                 position: { x: 0, y: 3, z: 0 },
                 size: { x: 4.4, y: 6, z: 4.4 },
                 segments: 10,
             },
-            // Absatz-Ring 1 (Erosions-Stufe am Übergang Basis → Mitte)
+            // Kragen-Ring 1 (Übergang Basis → Mitte)
             {
                 shape: "cylinder",
-                material: "stein",
-                position: { x: 0.15, y: 6.2, z: 0.1 },
+                material: "eisen",
+                position: { x: 0, y: 6.2, z: 0 },
                 size: { x: 3.8, y: 0.5, z: 3.8 },
                 segments: 10,
-            },
-            // Anliegender Brocken am Fuß (asymmetrisch, gebrochener Fels)
-            {
-                shape: "octahedron",
-                material: "stein",
-                position: { x: 2.0, y: 1.6, z: 0.6 },
-                size: { x: 1.8, y: 2.2, z: 1.8 },
-                rotation: { x: 0.2, y: 0.6, z: 0.15 },
             },
             // Mittel-Segment
             {
                 shape: "cylinder",
-                material: "stein",
-                position: { x: 0.3, y: 8.4, z: 0.2 },
+                material: "eisen",
+                position: { x: 0, y: 8.4, z: 0 },
                 size: { x: 3.0, y: 5, z: 3.0 },
                 segments: 9,
             },
-            // Absatz-Ring 2 (Übergang Mitte → oberes Segment)
+            // Kragen-Ring 2 (Übergang Mitte → oben)
             {
                 shape: "cylinder",
-                material: "stein",
-                position: { x: 0.1, y: 10.7, z: 0.3 },
+                material: "eisen",
+                position: { x: 0, y: 10.7, z: 0 },
                 size: { x: 2.5, y: 0.4, z: 2.5 },
                 segments: 9,
-            },
-            // Anliegender Brocken Mitte
-            {
-                shape: "octahedron",
-                material: "stein",
-                position: { x: -1.6, y: 9.0, z: -0.5 },
-                size: { x: 1.3, y: 1.6, z: 1.3 },
-                rotation: { x: -0.2, y: 0.4, z: 0.25 },
             },
             // Oberes Segment
             {
                 shape: "cylinder",
-                material: "stein",
-                position: { x: -0.2, y: 12.3, z: 0.4 },
+                material: "eisen",
+                position: { x: 0, y: 12.3, z: 0 },
                 size: { x: 1.9, y: 3, z: 1.9 },
                 segments: 8,
             },
-            // Spitze (verwitterter Gipfel)
+            // Spitze (die sendende Nadel)
             {
                 shape: "cone",
-                material: "stein",
-                position: { x: 0.1, y: 15.3, z: 0.3 },
+                material: "eisen",
+                position: { x: 0, y: 15.3, z: 0 },
                 size: { x: 1.7, y: 3, z: 1.7 },
                 segments: 8,
             },
@@ -42911,7 +42918,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.17.0";
+AnazhRealm.VERSION = "17.18.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
