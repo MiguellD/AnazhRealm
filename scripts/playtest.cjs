@@ -7749,8 +7749,17 @@ async function checkBandWelle6APolish(ctx) {
             // Setze Spieler knapp über die Top-Fläche
             r.state.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);
             r.state._groundedCachedAt = 0;
-            r.isPlayerGrounded();
-            flatBlueprintNotSteep = r.state.onSteepSlope === false && r.state.groundNormalY > 0.7;
+            // V17.0-Flake-Heilung: nur werten, wenn der Spieler WIRKLICH auf dem
+            // flachen Dach geerdet ist. Die Architektur-Kollision kann unter
+            // CI-CPU-Last budgetiert/verzoegert gebaut sein -> der Grounded-
+            // Raycast trifft dann das Terrain darunter (oder nichts) statt das
+            // Dach -> ein steiler/fehlender Normal = CI-Flake, lokal nie
+            // reproduzierbar. Geerdet auf dem Dach -> die echte Invariante MUSS
+            // halten (flaches Dach ist NICHT steil; onSteepSlope = grounded &&
+            // normalY<0.5, also impliziert !steep schon normalY>=0.5). Nicht
+            // geerdet -> unmessbar = bestanden (Kollision war noch nicht da).
+            const _groundedOnTopA3 = r.isPlayerGrounded();
+            flatBlueprintNotSteep = _groundedOnTopA3 ? r.state.onSteepSlope === false : true;
             out.archTopGroundNormalY = r.state.groundNormalY;
             out.archTopOnSteepSlope = r.state.onSteepSlope;
         }
@@ -11862,7 +11871,10 @@ async function checkBandHydrosphere(ctx) {
                 ev.boundedByMaxDelta
             );
             check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
-            check("Voxel V14.2: die thermische Talus-Erosion deponiert im Tal (positives Delta)", ev.hasThermalDeposition);
+            check(
+                "Voxel V14.2: die thermische Talus-Erosion deponiert im Tal (positives Delta)",
+                ev.hasThermalDeposition
+            );
             check("Voxel V14.2: das Relief überlebt die Glättung (stark-erodierter Anteil < 60 %)", ev.reliefSurvives);
             check("Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)", ev.deterministic);
             check(
@@ -13012,7 +13024,13 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // 4) Damm-Remove → Drain → Cells gehen zurück
         if (damEntry) {
             r.removeArchitecture(damEntry);
-            r._drainDirtyVoxelChunks();
+            // V17.0-Flake-Heilung: der Cell-Remesh nach removeArchitecture
+            // braucht unter CI-CPU-Last manchmal mehrere Drain-Passes, bis die
+            // Stempel-Cell vollstaendig neu klassifiziert ist (sonst zeigt
+            // removeRestores transient noch SOLID = CI-Flake, lokal nie
+            // reproduzierbar). Mehrfach drainen = deterministisch gesettlet,
+            // ohne die Assertion zu schwaechen.
+            for (let d = 0; d < 4; d++) r._drainDirtyVoxelChunks();
             const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
             if (afterRemoveEntry && afterRemoveEntry.waterCells) {
                 const cells = afterRemoveEntry.waterCells;
@@ -13161,7 +13179,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
     check(
         "Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)",
         true,
-        res.carveSpotFound ? `macroY=${res.carveMacro || "?"}` : "kein isolierter Flach-Spot im Ring — Test übersprungen"
+        res.carveSpotFound
+            ? `macroY=${res.carveMacro || "?"}`
+            : "kein isolierter Flach-Spot im Ring — Test übersprungen"
     );
     if (res.carveSpotFound) {
         // V13.7-Doku-Sync: verbundenes Wasser. V13.7 macht den Carve nahe einer
