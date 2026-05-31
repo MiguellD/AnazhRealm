@@ -1,10 +1,15 @@
 # Der „Lebende Umgebung"-Bogen — Plan (V16)
 
-> **Status: PLAN (kein Code an der Welt). Stand 30.05.2026, nach V15.4.1.**
-> Dieses Dokument ist der Schöpfer-Entscheidungs-Anker für den Vegetations-/
-> Leben-Bogen. Es wird Ring für Ring abgearbeitet, jeder Ring ein
-> Schöpfer-Browser-Audit. Geschrieben NACH einer gründlichen Code-Diagnose
-> (Zeilennummern unten), nicht geraten.
+> **Status: LÄUFT. Stand 31.05.2026, nach V16.2.** V16.0 (Diagnose) ✅ ·
+> V16.1 (Gras-Riese: Cap 256→1024, Ring 3×3→5×5, Pool 32→48) ✅ · V16.2 (der
+> Genie-Weg: Grasblatt-Form statt Spitzkegel + Gegenlicht-Translucency) ✅ ·
+> **V16.3 (Wind-Welle + Partikel) als Nächstes** — ODER der parallele
+> Render-Realismus-Bogen (Post-FX + IBL, `docs/render-realismus-diagnose.md`).
+> Dieses Dokument ist der Schöpfer-Entscheidungs-Anker. Ring für Ring, jeder
+> mit Schöpfer-Browser-Audit. Geschrieben NACH gründlicher Code-Diagnose, nicht
+> geraten. **Schlüssel-Korrektur (V16.2-Lehre): „mehr Halme" ist ein Holzweg —
+> die Riesen (Ghost of Tsushima) lösen Wiese mit FORM + LICHT + BEWEGUNG, nicht
+> Menge; siehe V16.2 unten.**
 
 ## Der Schöpfer-Wunsch (wörtlich, V15.3.1–V15.4)
 
@@ -56,6 +61,7 @@ cache system" r182 + „compileAsync truly non-blocking" r182 + writeBuffer-nur-
 bei-needsUpdate). Das Projekt läuft längst auf r184.
 
 **Korrigierte Lage für diesen Bogen:**
+
 - Die **256 ist frei änderbar** (z.B. 512/1024) — nur eine Konstante.
 - Die ECHTE Disziplin ist **Uniform-Capacity** (alle Pool-Meshes desselben
   Pools teilen denselben Cap → kein Cache-Pollution). Das heißt **„konstant",
@@ -86,6 +92,7 @@ WECKEN und reicher machen.
 ## Der Bogen — vier Ringe
 
 ### V16.0 — Mess-Diagnose + dieser Plan (Vorbedingung, kein Welt-Eingriff)
+
 Ein `scripts/diag-vegetation.cjs` (Stamm-Muster wie `diag-relief`): misst über
 einen Radius (±200 m, gebinnt) — wie viele Gras-Halme + Veg-Objekte laden in
 welchem Distanz-Ring? Wo sind die kahlen Zonen? FPS-Budget pro Veg-Schicht?
@@ -94,7 +101,9 @@ Plus: Veg-Dichte vs `lebendig`-Feld (greift der Floor 0.22 zu hart?).
 Lehre: „die Akzeptanz wird die Metrik"). Risiko: null (read-only Skript).
 
 ### V16.1 — Den fraktalen Streuer wecken (der größte sichtbare Hebel)
+
 `_vegetationSampleSpawn` + `_populateVoxelChunkVegetation` reicher + dichter:
+
 - Kandidaten-Liste erweitern um **GPU-instanzierbare Klein-Vegetation**:
   Blüten-Cluster, Farne, Büsche, Gräser-Tuffs, kleine Steine — als
   **InstancedMesh-Typen** (NICHT als teure Compound-Mesh-mit-Physik wie Bäume).
@@ -110,8 +119,10 @@ Lehre: „die Akzeptanz wird die Metrik"). Risiko: null (read-only Skript).
   nötig (Streuung ist main-only, wie die heutige Veg). Playtest-Gate Pflicht.
 
 ### V16.2 — Der Fern-Ring: Billboard-Impostoren (Wiese bis weit, ohne Buffer-Risiko)
+
 Das **Stern-Billboard-Pattern existiert schon** (Z~10207: InstancedMesh +
 camera-facing Quads + Soft-Falloff). Darauf aufbauend:
+
 - Für den mittleren/fernen Ring (jenseits ~86 m, wo heute LOD 1 + nichts ist):
   **Vegetations-Billboards** — flache, camera-facing Quads mit Gras-/Busch-
   Textur, GPU-instanziert, viel billiger als 3D-Halme → tragen die Wiese
@@ -124,6 +135,7 @@ camera-facing Quads + Soft-Falloff). Darauf aufbauend:
   den Nebel/die Weite (anders als das V15.4-Fog-Pflaster).
 
 ### V16.3 — Bewegung/Leben: die Welt atmet
+
 - **Wind-Wellen übers ganze Feld**: statt per-Halm-Periodik eine große,
   langsame Böen-Welle (ein zweites, nieder-frequentes `uWind`-Feld), die
   sichtbar über die Wiese läuft → „der Wind geht durchs Gras".
@@ -169,30 +181,35 @@ die Streu-Mathematik steht im Code, kein Puppeteer nötig. Harte Zahlen aus
 den Konstanten (span=43.2 m, chunkRingRadius default 4):
 
 ### Befund 1 — der 256-Cap ist DIE Enge (nicht die Streuung)
+
 - Gras: 16×16=256 Zellen/Chunk, Dichte `floor(lebendig·14 + rnd·2)`.
 - Bei dichter Wiese (lebendig≈1): ~3840 Halme erzeugt, aber `GRASS_MAX_BLADES
-  =256` rendert nur 256 → **93 % weggeworfen**. Schon EINE volle Zelle sprengt
+=256` rendert nur 256 → **93 % weggeworfen**. Schon EINE volle Zelle sprengt
   den Cap. **Das** macht es spärlich, nicht die Streu-Logik.
 - Korrigiert (Schöpfer-Nachfrage): der Cap ist frei erhöhbar, der r160-Crash
   ist seit r184 geheilt → nur eine FPS-Frage.
 
 ### Befund 2 — Gras deckt nur 11 % der Sichtfläche
+
 - Sicht-Ring 9×9 Chunks (389 m breit), Gras NUR im 3×3-LOD-0-Kern (130 m).
 - **89 % der Sicht ist per Konstruktion grasfrei** → der „weiter weg sehr
   kahl"-Befund, exakt erklärt. (V15.3.1-Wiesen-Boden mildert das optisch, aber
   echte Halme/Detail fehlen jenseits 65 m.)
 
 ### Befund 3 — Vegetation doppelt gedrosselt
+
 - 8×8=64 Stellen/Chunk, `chance = 0.4·affinität²`.
 - Selbst perfekte Affinität → nur 40 % Spawn; mittlere (0,5) → nur 10 %.
 - ~6 Veg-Objekte/Chunk → die Welt ist absichtlich sehr licht.
 
 ### Die drei Stellschrauben (gemessen, für V16.1+)
+
 1. **Gras-Cap 256 → höher** (z.B. 512/1024, FPS-gemessen im Browser).
 2. **Gras-Ring 3×3 → weiter** + Fern-Ring (Billboards, V16.2).
 3. **Veg-`chance`-Kurve großzügiger** + GPU-instanzierte Klein-Vegetation.
 
 ### Was NUR der Browser messen kann (offen, Schöpfer-Auge)
+
 - FPS-Kurve vs Halm-Zahl (welcher Cap trägt 60 FPS auf der Schöpfer-GPU?).
 - Visuelle Dichte-Wirkung (wann „liest" es sich als echte Wiese?).
 - → diese justieren wir im Browser-Loop, nicht headless (V13-Render-Lehre).
