@@ -20049,6 +20049,16 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
         // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
         out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
+        // V17.12 — der Terrain-colorNode (triplanar-Textur + Wiese + Aerial) baut
+        // OHNE geschluckte Exception. Wurzel-Schutz: ein still gefangener Fehler
+        // (V17.12: nacktes `float(` statt `_T.float(`) ließe die ganze Render-
+        // Schicht lautlos verschwinden — der Playtest-grün verdeckt das sonst.
+        // `window.__toonColorNodeError` ist der Diagnose-Marker (null = sauber).
+        window.__toonColorNodeError = null;
+        const _terrMat =
+            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
+        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
+        out.terrainColorNodeError = window.__toonColorNodeError || null;
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
         const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
@@ -20097,6 +20107,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
         check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
         check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
+        check(
+            `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
+            v828Results.terrainColorNodeBuilds === true
+        );
         check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);

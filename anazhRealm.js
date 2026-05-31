@@ -18143,6 +18143,59 @@ class AnazhRealm {
                     _shade = _shade.mul(_ao);
                 }
                 let _albedo = _vc.mul(_shade);
+                // V17.12 - TRIPLANAR Fels-/Boden-Mikrotextur (Befund E+F „treppen/
+                // trapeze/linien, wenig mikrostruktur, malerisch"). Die wahre
+                // Wurzel der „trapeze": die per-Vertex-Farbe (`_vc`) wird über die
+                // großen Surface-Nets-Dreiecke LINEAR interpoliert → man sieht die
+                // Dreiecks-Flächen als Farb-Trapeze. Heilung: eine PRO-PIXEL
+                // prozedurale Oberflächen-Textur, die die interpolierten Flächen
+                // überdeckt — triplanar projiziert (von 3 Welt-Achsen gewichtet
+                // nach `normalWorld`, KEIN UV-Stretching an Hängen), je nach
+                // Hangneigung Fels-Schraffur (steil) ODER Boden-Körnung (flach).
+                // Render-only (kein Geometrie-/Determinismus-Eingriff), try/catch.
+                if (_T.normalWorld && _T.abs && _T.pow && _T.max && _T.vec3) {
+                    // Triplanar-Gewichte: |Normale| pro Achse, geschärft (pow 4)
+                    // + normalisiert → die dominante Fläche gewinnt, weiche Mischung
+                    // an den Kanten (kein hartes Umschalten).
+                    const _nW = _T.normalWorld;
+                    const _an = _T.abs(_nW);
+                    let _wx = _T.pow(_an.x, _T.float(4.0));
+                    let _wy = _T.pow(_an.y, _T.float(4.0));
+                    let _wz = _T.pow(_an.z, _T.float(4.0));
+                    const _wSum = _wx.add(_wy).add(_wz).add(_T.float(0.0001));
+                    _wx = _wx.div(_wSum);
+                    _wy = _wy.div(_wSum);
+                    _wz = _wz.div(_wSum);
+                    // FELS-SCHRAFFUR (vertikale Flächen, x/z-projiziert): geschichtete
+                    // Sediment-Bänder — ein nieder-frequentes Noise in Welt-Y gibt
+                    // horizontale Gesteins-Schichten, ein feineres die Körnung.
+                    const _strataY = _T.mx_noise_float(_T.vec3(_wp.x.mul(0.04), _wp.y.mul(0.6), _wp.z.mul(0.04)));
+                    const _rockGrainX = _T.mx_noise_float(_T.vec3(_wp.y.mul(0.9), _wp.z.mul(0.9), _wp.x.mul(0.12)));
+                    const _rockGrainZ = _T.mx_noise_float(_T.vec3(_wp.x.mul(0.9), _wp.y.mul(0.9), _wp.z.mul(0.12)));
+                    // pro Achse die passende Projektion; y-Wände nutzen die Strata.
+                    const _rockDetail = _strataY.mul(0.6).add(_rockGrainX.mul(_wx).add(_rockGrainZ.mul(_wz)).mul(0.7));
+                    // BODEN-KÖRNUNG (horizontale Flächen, xz-projiziert): zwei
+                    // Oktaven feinkörniges Noise → Erd-/Gras-Struktur.
+                    const _soilA = _T.mx_noise_float(_T.vec3(_wp.x.mul(0.7), _wp.z.mul(0.7), _wp.y.mul(0.2)));
+                    const _soilB = _T.mx_noise_float(_T.vec3(_wp.x.mul(2.3), _wp.z.mul(2.3), _T.float(7.0)));
+                    const _soilDetail = _soilA.mul(0.65).add(_soilB.mul(0.35));
+                    // Mischung nach Hangneigung: _wy hoch = flacher Boden (Körnung),
+                    // _wy niedrig = Wand (Fels-Schraffur). `_surf` ∈ [0,1].
+                    const _surf = _wy;
+                    const _detailN = _T.mix(_rockDetail, _soilDetail, _surf);
+                    // Moduliert HELLIGKEIT (kräftig genug, um die Trapeze zu
+                    // überdecken) — ±18 % statt der mutlosen V17.8-±5 %. Plus eine
+                    // sanfte Sättigungs-Spreizung (Täler/Spitzen der Textur leicht
+                    // satter/matter) → gemalte Tiefe statt flacher Fläche.
+                    const _texShade = _T.float(1.0).add(_detailN.mul(0.18));
+                    _albedo = _albedo.mul(_texShade);
+                    // Fels-Flächen bekommen zusätzlich einen kühlen Stein-Stich in
+                    // den Schraffur-Tälern (Schattenfugen zwischen den Schichten).
+                    const _crevice = _T
+                        .smoothstep(_T.float(-0.2), _T.float(-0.7), _strataY)
+                        .mul(_T.float(1.0).sub(_surf));
+                    _albedo = _albedo.mul(_T.float(1.0).sub(_crevice.mul(0.22)));
+                }
                 // V15.3.1 - Wiesen-Boden (render-only, die "weit auch Wiese"-
                 // Illusion): der Schoepfer-Befund war doppelt — Gras laedt nur
                 // nah (kahl dahinter) UND wirkt nicht wie eine Wiese. Wurzel:
@@ -18174,18 +18227,19 @@ class AnazhRealm {
                     _meadow = _meadow.mul(_T.float(0.85).add(_blade.mul(0.3)));
                     _albedo = _T.mix(_albedo, _meadow.mul(_shade), _veg.mul(0.8));
                 }
-                // V17.8 - malerische FARB-Variation (Befund F „mehr Mikro-Detail/
-                // malerisch"): grossflaechige warm/kuehl-Patches (mx_noise λ~25 m)
-                // + ein feiner Layer (λ~6 m) brechen die uniforme Boden-Palette in
-                // eine GEMALTE Variation — nicht nur Helligkeit (V15.1), sondern
-                // Farbton (warm bei +Noise, kuehl bei −). Subtil (±0.05), render-
-                // only, gegated wie der Rest. Das mildert auch die Facetten-Optik
-                // (E): die Farb-Patches brechen die flachen Trapez-Flaechen auf.
+                // V17.12 - grossraeumige malerische FARBTON-Variation (über die
+                // triplanar-Mikrotextur gelegt): warm/kuehl-Patches (mx_noise
+                // λ~25 m) verschieben den Farbton ganzer Hügel → gemalte Palette
+                // (Ghibli), nicht nur Helligkeit. Kräftiger als V17.8 (±0.09 statt
+                // ±0.05) — zusammen mit der triplanar-Textur bricht das die
+                // interpolierten Vertex-Trapeze sichtbar auf.
                 if (_T.vec3) {
                     const _tintLo = _T.mx_noise_float(_wp.mul(0.04));
-                    const _tintHi = _T.mx_noise_float(_wp.mul(0.17));
-                    const _tintN = _tintLo.mul(0.7).add(_tintHi.mul(0.3));
-                    _albedo = _albedo.add(_T.vec3(0.055, 0.015, -0.04).mul(_tintN));
+                    const _tintN = _tintLo.mul(0.5).add(0.5);
+                    _albedo = _albedo.add(_T.vec3(0.09, 0.025, -0.07).mul(_tintLo));
+                    // leichte Saettigungs-Spreizung nach dem grossraeumigen Noise.
+                    const _lumA = _albedo.x.mul(0.3).add(_albedo.y.mul(0.59)).add(_albedo.z.mul(0.11));
+                    _albedo = _T.mix(_T.vec3(_lumA, _lumA, _lumA), _albedo, _T.float(0.9).add(_tintN.mul(0.25)));
                 }
                 // V15.4 - Aerial Perspective (der "brutale Tiefe aus simplem
                 // System"-Hebel): ferne UND hohe Flaechen verschleiern
@@ -18219,8 +18273,15 @@ class AnazhRealm {
                 }
                 mat.colorNode = _T.vec4(_albedo, 1.0);
             }
-        } catch {
-            /* TSL/Noise nicht verfuegbar -> flaches Material (Vertex-Farben) */
+        } catch (_e) {
+            // V17.12 — der colorNode-Bau ist still gefangen (Fallback: flache
+            // Vertex-Farbe, nie ein kaputtes Material). ABER: ein still
+            // geschluckter Fehler verdeckt eine ganze Render-Schicht (V17.12:
+            // ein nacktes `float(` statt `_T.float(` ließ die ganze triplanar-
+            // Textur lautlos verschwinden). Der Diagnose-Marker macht das
+            // sichtbar (V9.95-c-Lehre „Vision-Mechanik muss sichtbar sein") —
+            // ein Reproducer/Browser-Console liest `window.__toonColorNodeError`.
+            if (typeof window !== "undefined") window.__toonColorNodeError = (_e && _e.message) || String(_e);
         }
         return mat;
     }
@@ -42566,7 +42627,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.11.0";
+AnazhRealm.VERSION = "17.12.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
