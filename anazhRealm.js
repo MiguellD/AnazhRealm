@@ -18134,12 +18134,14 @@ class AnazhRealm {
                 // Cap 0.45 browser-justierbar.
                 if (_T.fwidth && _T.normalWorld) {
                     const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
-                    // V17.8 - sanfter (1.6/0.45 → 1.0/0.3): Schöpfer-Audit
-                    // „Treppen/Linien". Die `fwidth(normalWorld)` spitzt an jeder
-                    // Surface-Nets-Facetten-Kante → harte Grid-Linien. Schwächer +
-                    // tiefer gekappt → die Kontakt-Schatten bleiben, die Facetten-
-                    // Linien verblassen (die volle Glättung wäre Geometrie-Arbeit).
-                    const _ao = _T.float(1.0).sub(_curv.mul(1.0).clamp(0.0, 0.3));
+                    // V17.14 - weiter gedämpft (1.0/0.3 → 0.6/0.18): der Tag-Rest
+                    // der „Treppenstufen" (Schöpfer-Audit) ist die `fwidth(normal
+                    // World)`-AO, die JEDE Surface-Nets-Facetten-Kante als Linie
+                    // nachzeichnet — tags (mehr Kontrast) sichtbarer. Die V17.12-
+                    // triplanar-Textur trägt jetzt die Oberflächen-Tiefe, darum
+                    // darf die AO schwächer sein: die Facetten-Linien verblassen,
+                    // ein Hauch Kontakt-Schatten in echten Mulden bleibt.
+                    const _ao = _T.float(1.0).sub(_curv.mul(0.6).clamp(0.0, 0.18));
                     _shade = _shade.mul(_ao);
                 }
                 let _albedo = _vc.mul(_shade);
@@ -20685,12 +20687,27 @@ class AnazhRealm {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
                     if (this._terrainMacroSurfaceY(gx, gz, false) < cellMacro - 1.2) continue;
+                    // V17.14 — Halm-Variation gegen den „Lauchstängel"-Eindruck
+                    // (Schöpfer-Audit „immer gleiche Länge, Höhe + Position nicht
+                    // überzeugend"). Drei entkoppelte Achsen statt EINEM uniformen
+                    // scale: (a) Breite + Höhe GETRENNT (manche kurz+breit, manche
+                    // hoch+schmal — `r1²` macht kurze Halme häufiger = natürliche
+                    // Verteilung); (b) Neigung (tilt) → kein steifes Senkrecht-
+                    // Stehen; (c) Tilt-Richtung zufällig. Die Wind-positionNode
+                    // wiegt sie zusätzlich (V16.2).
+                    const r1 = rnd();
+                    const r2 = rnd();
+                    const sXZ = 0.65 + r2 * 0.6; // Breite [0.65, 1.25]
+                    const sY = 0.5 + r1 * r1 * 1.3; // Höhe [0.5, 1.8], kurze häufiger
                     blades.push({
                         x: gx,
                         y: surfY,
                         z: gz,
                         rot: rnd() * Math.PI * 2,
-                        scale: 0.7 + rnd() * 0.7,
+                        sXZ,
+                        sY,
+                        tilt: (rnd() - 0.5) * 0.5, // ±0.25 rad Neigung
+                        tiltDir: rnd() * Math.PI * 2,
                     });
                 }
             }
@@ -20765,14 +20782,23 @@ class AnazhRealm {
         // Wir setzen needsUpdate=true einmal nach Matrix-Fill, das reicht.
         const m = new THREE.Matrix4();
         const q = new THREE.Quaternion();
+        const qYaw = new THREE.Quaternion();
+        const qTilt = new THREE.Quaternion();
         const pos = new THREE.Vector3();
         const scl = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
+        const tiltAxis = new THREE.Vector3();
         for (let i = 0; i < realCount; i++) {
             const b = blades[i];
             pos.set(b.x, b.y, b.z);
-            q.setFromAxisAngle(up, b.rot);
-            scl.set(b.scale, b.scale, b.scale);
+            // V17.14 — Yaw (rot um y) + Tilt (Neigung um eine horizontale Achse)
+            // kombiniert → die Halme stehen nicht mehr alle steif senkrecht.
+            qYaw.setFromAxisAngle(up, b.rot);
+            tiltAxis.set(Math.cos(b.tiltDir || 0), 0, Math.sin(b.tiltDir || 0));
+            qTilt.setFromAxisAngle(tiltAxis, b.tilt || 0);
+            q.multiplyQuaternions(qTilt, qYaw);
+            // Breite (x/z) + Höhe (y) entkoppelt → keine uniform-Lauchstängel.
+            scl.set(b.sXZ || 1, b.sY || 1, b.sXZ || 1);
             m.compose(pos, q, scl);
             inst.setMatrixAt(i, m);
         }
@@ -42649,7 +42675,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.13.0";
+AnazhRealm.VERSION = "17.14.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
