@@ -1591,7 +1591,12 @@ class AnazhRealm {
                     const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
                     const sx = pos.x + Math.cos(ang) * rad;
                     const sz = pos.z + Math.sin(ang) * rad;
-                    this.spawnCreatureAt(sx, pos.y, sz, e);
+                    const born = this.spawnCreatureAt(sx, pos.y, sz, e);
+                    // V17.29 — diese Kreatur ist INTENTIONAL getragen (Nexus/Chat/
+                    // DSL): sie TENDET das Feld (träufelt Leben, wo sie wohnt, s.
+                    // _tickCreatureLifeTrickle). Die ambiente Fauna bekommt das Flag
+                    // NICHT → sie bleibt die FOLGE des Feldes (kein Runaway).
+                    if (born && born.userData) born.userData.tendsLife = true;
                     // V17.27 — eine Geburt TRÄGT Leben ins Feld (die Schreib-Seite):
                     // sie hebt lebendig an der Wiege → schließt den at_field_need-
                     // Loop (der Mangel sinkt, der Nexus zieht weiter) + die Region
@@ -12903,11 +12908,15 @@ class AnazhRealm {
             }
             bucket.push(j);
         }
+        const lifeTrickleNow = performance.now() / 1000;
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
             const speed = emotion === "happy" ? 2 : 1;
             const jumpHeight = emotion === "happy" ? 1.2 : 0.8;
+            // V17.29 — tendende Kreatur (Nexus/Spieler-getragen) träufelt Leben
+            // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
+            this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
 
             // Prüfe, ob die Kreatur im Sichtfeld ist (nur für Rendering)
             const inFrustum = this.isInFrustum(creature);
@@ -32493,6 +32502,21 @@ class AnazhRealm {
         }
     }
 
+    // V17.29 — der Kreatur-Trickle: eine tendende Kreatur (Nexus/Spieler-getragen,
+    // userData.tendsLife) träufelt sanft Leben in ihre Zelle — Leben sustainiert
+    // sich, wo es wohnt. Rate-limitiert per Kreatur (trickleEverySec); da
+    // Kreaturen WANDERN, wird daraus ein zarter, decayender Lebens-Pfad, der die
+    // getendete Region erhält, statt zu verblassen. NUR tendsLife — die ambiente
+    // Fauna (die FOLGE des Feldes) träufelt NICHT (kein positives Feedback-
+    // Runaway in üppigen Regionen, V17.27-Disziplin). Pro Frame aus updateCreatures.
+    _tickCreatureLifeTrickle(creature, now) {
+        if (!creature || !creature.userData || !creature.userData.tendsLife || !creature.position) return;
+        const last = creature.userData.lastLifeTrickle ?? -Infinity;
+        if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
+        creature.userData.lastLifeTrickle = now;
+        this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+    }
+
     // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
     // Der Terrain-Shader liest worldFieldAt (lebendig/dichte/glut/magie) und
     // leitet daraus die Grundfarbe ab — dieselbe Sprache wie die Architektur-
@@ -42504,7 +42528,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.28.0";
+AnazhRealm.VERSION = "17.29.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43404,6 +43428,13 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
     pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+    // V17.29 — der Kreatur-Trickle: Leben sustainiert sich, wo es wohnt. NUR
+    // Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln — die ambiente
+    // Fauna ist die FOLGE des Feldes (kein Runaway, V17.27-Disziplin). Sanft +
+    // rate-limitiert; Kreaturen wandern → ein zarter Lebens-Pfad, der die
+    // getendete Region erhält (nicht ein Einzel-Puls, der verblasst).
+    trickle: 0.05, // pro Trickle-Deposit (klein — ein Garten wird gepflegt, nicht geflutet)
+    trickleEverySec: 3, // jede tendende Kreatur träufelt höchstens alle 3 s
 });
 
 // V17.28 — „der Ort, an dem ich stehe, ist besetzt" (Schöpfer-Befund: GROSSE

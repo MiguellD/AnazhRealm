@@ -1182,6 +1182,56 @@ async function checkBandV1728SpawnClearance(ctx) {
     );
 }
 
+// V17.29 — der Kreatur-Trickle: NUR Nexus/Spieler-getragene Kreaturen (tendsLife)
+// traeufeln Leben in ihre Zelle (Leben sustainiert, wo es wohnt) → die getendete
+// Region erhaelt sich, statt nach dem Geburts-Puls zu verblassen. Die ambiente
+// Fauna traeufelt NICHT (kein Runaway). Rate-limitiert. So wird der V17.27-
+// Schreib-Loop eine echte, stabile Oekologie.
+async function checkBandV1729CreatureTrickle(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const cfg = r.constructor.LIFE_FIELD;
+        out.hasConsts = typeof cfg.trickle === "number" && typeof cfg.trickleEverySec === "number";
+        out.spawnTagsTends = /tendsLife/.test(r.dslEffects.spawn_creature.toString());
+        out.updateTrickles = /_tickCreatureLifeTrickle/.test(r.updateCreatures.toString());
+        if (r.state.lifeField) r.state.lifeField.clear();
+        // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
+        const X = 23456,
+            Z = -8765;
+        const tending = { position: { x: X, z: Z }, userData: { tendsLife: true } };
+        const key = r._lifeCellKey(X, Z);
+        const before = r._lifeOverlayAt(X, Z);
+        r._tickCreatureLifeTrickle(tending, 1000);
+        const after = r._lifeOverlayAt(X, Z);
+        out.tendingDeposits = after > before;
+        // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit. Die
+        // GESPEICHERTE Menge `a` prüfen (nicht den decayten Lese-Wert — der driftet
+        // real-time pro Lesung; nur ein Deposit ändert `a`).
+        const aStored = r.state.lifeField.get(key).a;
+        r._tickCreatureLifeTrickle(tending, 1000);
+        out.rateLimited = r.state.lifeField.get(key).a === aStored;
+        // (3) nach dem Intervall → traeufelt wieder (lastLifeTrickle wandert)
+        r._tickCreatureLifeTrickle(tending, 1000 + cfg.trickleEverySec + 1);
+        out.tickedAgain = tending.userData.lastLifeTrickle > 1000;
+        // (4) eine AMBIENTE Kreatur (kein tendsLife) traeufelt NICHT (kein Runaway)
+        r.state.lifeField.clear();
+        const ambient = { position: { x: 34567, z: -9876 }, userData: { tendsLife: false } };
+        r._tickCreatureLifeTrickle(ambient, 2000);
+        out.ambientInert = r._lifeOverlayAt(34567, -9876) === 0;
+        if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
+        return out;
+    });
+    check("V17.29 Trickle: LIFE_FIELD.trickle/trickleEverySec verdrahtet", res.hasConsts);
+    check("V17.29 Trickle: spawn_creature taggt getragene Kreaturen (tendsLife, Source-Probe)", res.spawnTagsTends);
+    check("V17.29 Trickle: updateCreatures ruft _tickCreatureLifeTrickle (Source-Probe)", res.updateTrickles);
+    check("V17.29 Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
+    check("V17.29 Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
+    check("V17.29 Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
+    check("V17.29 Trickle: ambiente Fauna traeufelt NICHT (kein Feedback-Runaway, V17.27-Disziplin)", res.ambientInert);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -33171,6 +33221,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1726FieldDirection(ctx);
             await checkBandV1727WritableField(ctx);
             await checkBandV1728SpawnClearance(ctx);
+            await checkBandV1729CreatureTrickle(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
