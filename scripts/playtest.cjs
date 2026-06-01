@@ -10230,6 +10230,50 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
         const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
         out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
+        // V17.17 — Affinitäts-Tag-Wächter (die Wurzel-Lehre des V17.16-Reverts).
+        // Die Parts-Liste einer spawnbaren Architektur erfüllt ZWEI Funktionen:
+        // (1) WO sie spawnt (computeCompoundTags × worldField in
+        // spawnAffinityForBlueprint) und (2) WIE sie aussieht. Eine Optik-
+        // Anreicherung DARF die 4 Affinitäts-Achsen-Tags NICHT verschieben — sonst
+        // kippt der Winner-take-all in _vegetationSampleSpawn (V17.16: glutbrunnen
+        // 8→229, Bäume→0, weil glut von einer sphere [brennbar-Aktivierung 0] auf
+        // einen cylinder [brennbar-Aktivierung 1] wanderte → gluts brennbar 1.0
+        // wurde entfesselt). KEIN Crash war im Spiel — eine emergente Affinitäts-
+        // Verzerrung. Dieser Wächter friert die GEMESSENE V17.15-Baseline ein:
+        // jede künftige Architektur-Anreicherung, die einen Spawn-Tag verschiebt,
+        // wird hier ROT (deterministisch, kein Warmup, kein Flake). Wer einen Tag
+        // BEWUSST ändert (echte Rebalance), zieht die Baseline hier nach.
+        out.archAffinityTags = {};
+        out.archResoniert = {};
+        out.archBroadcasting = {};
+        if (typeof r.computeCompoundTags === "function") {
+            // 4 Spawn-Affinitäts-Achsen + resoniert (die MUSIK-Achse — V17-Lehre:
+            // resoniert ist NICHT in der Spawn-Affinität, treibt aber den Resonator/
+            // Abschied-Ping; eine Optik-Anreicherung kann sie über FORM_TAG_ACTIVATION
+            // genauso unbemerkt verschieben wie die Spawn-Tags).
+            const AFF_AXES = ["lebendig", "dichte", "brennbar", "magieleitung"];
+            const spawnable = [
+                "baum_eiche",
+                "baum_kiefer",
+                "stein_block",
+                "kristall_geode",
+                "glutbrunnen",
+                "felsbogen",
+                "felsturm",
+            ];
+            for (const n of spawnable) {
+                const bp = bps[n];
+                if (!bp) continue;
+                const tags = r.computeCompoundTags(bp) || {};
+                const slim = {};
+                for (const a of AFF_AXES) slim[a] = Math.round((tags[a] || 0) * 1e6) / 1e6;
+                out.archAffinityTags[n] = slim;
+                out.archResoniert[n] = Math.round((tags.resoniert || 0) * 1e6) / 1e6;
+                const aff =
+                    typeof r.computeBlueprintAffordances === "function" ? r.computeBlueprintAffordances(bp) : {};
+                out.archBroadcasting[n] = !!(aff && aff.broadcasting);
+            }
+        }
         return out;
     });
 
@@ -10296,6 +10340,54 @@ async function checkBandWelle6GHylomorphism(ctx) {
         );
         check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
         check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
+        // V17.17 — Affinitäts-Tag-Stabilitäts-Wächter (siehe Block im evaluate
+        // oben). Gefrorene, GEMESSENE V17.15-Baseline der 4 Affinitäts-Achsen je
+        // spawnbarer Architektur. Verschiebt eine Optik-Anreicherung einen Tag,
+        // verschiebt sich der Spawn-Ort (Winner-take-all) → Bäume können verdrängt
+        // werden (V17.16-Regression). Dieser Wächter fängt GENAU das ab.
+        // V17.18 — die Baseline trägt jetzt auch `resoniert` (Musik-Achse): eine
+        // Optik-Anreicherung kann sie genauso unbemerkt verschieben wie die Spawn-
+        // Tags (welcher Bauwerk singt/klingt). felsturm: dichte 1.7→1.8 + resoniert
+        // 0.6→1.2 = der BEWUSSTE eisen-Mast-Shift (Antenne), Baseline nachgezogen.
+        const AFF_BASELINE = {
+            baum_eiche: { lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7, resoniert: 1.35 },
+            baum_kiefer: { lebendig: 1.4, dichte: 0.8, brennbar: 0.85, magieleitung: 0.7, resoniert: 1.0 },
+            stein_block: { lebendig: 0, dichte: 2.55, brennbar: 0, magieleitung: 0, resoniert: 0 },
+            kristall_geode: { lebendig: 0, dichte: 1.95, brennbar: 0, magieleitung: 2.55, resoniert: 2.7 },
+            glutbrunnen: { lebendig: 1, dichte: 1.7, brennbar: 0, magieleitung: 1.5, resoniert: 1.95 },
+            felsbogen: { lebendig: 0, dichte: 2.55, brennbar: 0, magieleitung: 0, resoniert: 0.6 },
+            felsturm: { lebendig: 0, dichte: 1.8, brennbar: 0, magieleitung: 0, resoniert: 1.2 },
+        };
+        const measuredTags = wave6gP2Results.archAffinityTags || {};
+        const measuredReson = wave6gP2Results.archResoniert || {};
+        for (const name of Object.keys(AFF_BASELINE)) {
+            const exp = AFF_BASELINE[name];
+            const got = measuredTags[name];
+            let ok = !!got;
+            let detail = "";
+            if (got) {
+                for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
+                    if (Math.abs((got[a] || 0) - exp[a]) > 1e-4) {
+                        ok = false;
+                        detail = `${a}: erwartet ${exp[a]}, gemessen ${got[a]}`;
+                        break;
+                    }
+                }
+                if (ok && Math.abs((measuredReson[name] || 0) - exp.resoniert) > 1e-4) {
+                    ok = false;
+                    detail = `resoniert: erwartet ${exp.resoniert}, gemessen ${measuredReson[name]}`;
+                }
+            } else {
+                detail = "Bauplan fehlt oder keine Tags gemessen";
+            }
+            check(`V17.18: Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
+        }
+        // V17.18 — der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
+        // Relais): sichert die neue Funktion ab (geht sie verloren, war's eine
+        // Regression). Gegenprobe: felsbogen (stein, nicht leitfähig) ist es NICHT.
+        const bc = wave6gP2Results.archBroadcasting || {};
+        check("V17.18: felsturm ist broadcasting (eisen-Mast = Antenne/Relais)", bc.felsturm === true);
+        check("V17.18: felsbogen ist NICHT broadcasting (stein, nicht leitfähig)", bc.felsbogen === false);
     }
 
     // ### W6.G P3 Phase 1 — Felsformationen ###
