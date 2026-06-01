@@ -1565,6 +1565,13 @@ class AnazhRealm {
             ttlSec,
             born: now,
             _sig: sig,
+            // V17.35 Phase C — per-Regel-Fitness-Akkumulatoren (über das Lebens-
+            // Fenster gesammelt, am ttl-Ende ausgewertet → erneuern/verfallen):
+            // costMsSum = Σ Effekt-Wallzeit (Kosten), errors = Effekt-Exceptions,
+            // fires = Engagement (eine inerte Regel, die nie feuert, verfällt).
+            costMsSum: 0,
+            errors: 0,
+            fitness: 0,
         };
         rules.push(rule);
         return rule;
@@ -1610,12 +1617,25 @@ class AnazhRealm {
         for (let i = 0; i < n; i++) {
             const r = rules[i];
             if (!r) continue;
-            // TTL: abgelaufene markieren (Compaction unten, allokationsfrei im
-            // Normalfall — nur wenn wirklich etwas verfiel).
+            // TTL-Ende: das Lebens-Fenster einer EPHEMEREN (Nexus-)Regel ist um.
+            // V17.35 Phase C — BEWERTEN statt blind entfernen: gut bewährt (Fitness
+            // ≥ renewFitness, hat gefeuert) → ERNEUERN (born=jetzt, Akkus zurück →
+            // nächstes Fenster); schlecht/inert → VERFALLEN. So lernt die Welt,
+            // welche Regeln sie behält. Mensch-Regeln (ttlSec=null) sind permanent
+            // → überspringen diesen Zweig (ihr Gesetz steht, keine Fitness-Prüfung).
             if (r.ttlSec != null && currentTime - r.born >= r.ttlSec) {
-                rules[i] = null;
-                expired = true;
-                continue;
+                r.fitness = this._worldRuleFitness(r);
+                if (r.fitness >= cfg.renewFitness && (r.fires || 0) > 0) {
+                    r.born = currentTime; // erneuern
+                    r.fires = 0;
+                    r.costMsSum = 0;
+                    r.errors = 0;
+                    // kein continue → die erneuerte Regel darf diesen Frame normal feuern
+                } else {
+                    rules[i] = null; // verfallen (Compaction unten, allokationsfrei im Normalfall)
+                    expired = true;
+                    continue;
+                }
             }
             if (budget <= 0) continue; // Budget erschöpft → nächsten Frame
             if (currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
@@ -1630,11 +1650,16 @@ class AnazhRealm {
             budget--;
             r.lastFired = currentTime;
             r.fires = (r.fires || 0) + 1;
+            // V17.35 — die Effekt-Wallzeit ist das attributierbare Kosten-Signal der
+            // per-Regel-Fitness (ein FPS-Hog wird so gepruned, die 119 FPS bleiben heilig).
+            const t0 = performance.now();
             try {
                 this.dslEval(r.effect, ctx);
             } catch (err) {
+                r.errors = (r.errors || 0) + 1;
                 ctx.log.push({ event: "rule_effect_exception", message: err.message });
             }
+            r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
         }
         if (expired) {
             const kept = [];
@@ -1673,6 +1698,25 @@ class AnazhRealm {
             h = Math.imul(h, 16777619) >>> 0;
         }
         return h >>> 0 || 1;
+    }
+
+    // V17.35 Phase C — die per-Regel-Fitness über das Lebens-Fenster. EHRLICH +
+    // ATTRIBUTIERBAR (kein Passagier-Signal, V17.31-Lehre): drei Achsen, alle der
+    // Regel SELBST zuordenbar — Engagement (sie feuert überhaupt → relevant für die
+    // Welt; eine nie-feuernde inerte Regel = 0 → verfällt, macht Platz), Kosten
+    // (Effekt-Wallzeit billig → die FPS bleiben heilig) und Erfolg (keine
+    // Exceptions/Budget-Brüche). NICHT die globale Emotion-Trend (die ist nicht
+    // sauber EINER Regel unter 64 zuzuschreiben → das wäre der Passagier-Trugschluss;
+    // die tiefere „macht die Regel den Spieler glücklicher"-Attribution ist eine
+    // ehrliche spätere Vertiefung). Selektion: gut → erneuern, schlecht/inert → weg.
+    _worldRuleFitness(rule) {
+        const fires = rule.fires || 0;
+        if (fires === 0) return 0; // inert (Bedingung nie wahr) → verfallen, Platz schaffen
+        const cfg = AnazhRealm.WORLD_RULES;
+        const avgMs = (rule.costMsSum || 0) / fires;
+        const costScore = Math.max(0, Math.min(1, 1 - avgMs / cfg.costBudgetMs));
+        const successScore = Math.max(0, 1 - (rule.errors || 0) / fires);
+        return Number((0.4 * costScore + 0.6 * successScore).toFixed(3));
     }
 
     // ### Op-Tabellen ###
@@ -3066,6 +3110,92 @@ class AnazhRealm {
             { w: 1, build: () => ["time_passed", Number((5 + rng() * 30).toFixed(2))] },
         ];
         return this.dslWeightedPick(choices, rng);
+    }
+
+    // === V17.35 Phase C — der Nexus komponiert REGELN (nicht nur Gesten) ===
+    // Eine komponierte Regel LIEST das Feld (dslComposeRuleCondition) und SCHREIBT
+    // es (dslComposeRuleEffect) — der V17.26-„trag-Leben-in-den-Mangel"-Gedanke wird
+    // ein EVOLVIERTER Regelkreis statt Hardcode (der wahre Norden). Resonant: die
+    // lokale Aura biast Achse + Farbe. EPHEMER (ttlSec) → die Fitness erneuert oder
+    // verfällt sie (Selektion). Nur reaktiv-sichere Effekte (kein frozen Worldgen).
+    dslComposeRule(rng) {
+        const cfg = AnazhRealm.WORLD_RULES;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.x, pm.z) : null;
+        const cond = this.dslComposeRuleCondition(rng, aura);
+        const effect = this.dslComposeRuleEffect(rng, aura);
+        const everySec = Number((cfg.ruleEverySecMin + rng() * (cfg.ruleEverySecMax - cfg.ruleEverySecMin)).toFixed(1));
+        const ttlSec = Math.round(cfg.ruleTtlMin + rng() * (cfg.ruleTtlMax - cfg.ruleTtlMin));
+        return ["rule", cond, effect, { everySec, ttlSec }];
+    }
+
+    // Die Bedingung einer Nexus-Regel — der Kern: Regeln LESEN das lebendige Feld
+    // (field_below/field_above), resonant zur lokalen Aura, plus Zustands-Bedingungen.
+    dslComposeRuleCondition(rng, aura) {
+        const emoAxis = ["sorrow", "joy", "awe", "hope"][Math.floor(rng() * 4)];
+        const strongField =
+            aura && aura.glut > 0.5 ? "glut" : aura && aura.magieleitung > 0.5 ? "magieleitung" : "lebendig";
+        const choices = [
+            // Feld-Mangel (der Heilungs-Auslöser, V17.26 als Regel): „wo Leben fehlt"
+            { w: 5, build: () => ["field_below", "lebendig", Number((0.2 + rng() * 0.3).toFixed(2))] },
+            // Feld-Fülle (resonant zur stärksten lokalen Achse)
+            { w: 3, build: () => ["field_above", strongField, Number((0.4 + rng() * 0.4).toFixed(2))] },
+            // räumliche Emotion am Ort (das Gedächtnis des Ortes)
+            { w: 2, build: () => ["field_above", emoAxis, Number((0.3 + rng() * 0.3).toFixed(2))] },
+            // Zustands-Bedingungen (reuse)
+            { w: 3, build: () => ["random_chance", Number((0.3 + rng() * 0.4).toFixed(2))] },
+            { w: 2, build: () => ["weather_is", rng() < 0.5 ? "rainy" : "sunny"] },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    // Der Effekt einer Nexus-Regel — der Kern: Regeln SCHREIBEN das Feld
+    // (deposit_life/deposit_emotion, die V17.34-Effekte) + leichte reaktive Effekte.
+    // BEWUSST nur der reaktiv-sichere Satz (kein terrain_*/voxel_*/spawn_village…) →
+    // der Nexus pflügt die Welt nicht um (Determinismus + §8-Scope, by construction).
+    dslComposeRuleEffect(rng, aura) {
+        const posNeed = rng() < 0.6 ? ["at_field_need", Number((30 + rng() * 50).toFixed(1))] : ["at_player"];
+        const joyAxis = ["joy", "hope", "peace", "awe"][Math.floor(rng() * 4)];
+        const choices = [
+            // Feld-SCHREIB-Effekte (der Star: die Welt reguliert sich selbst per Regel)
+            { w: 6, build: () => ["deposit_life", posNeed] },
+            { w: 3, build: () => ["deposit_emotion", joyAxis, Number((0.3 + rng() * 0.5).toFixed(2)), ["at_player"]] },
+            // leichte reaktive Effekte (reuse, alle billig + reaktiv-sicher)
+            { w: 3, build: () => ["weather", rng() < 0.5 ? "sunny" : "rainy"] },
+            { w: 3, build: () => ["creatures_emotion", rng() < 0.6 ? "happy" : "sad"] },
+            { w: 2, build: () => ["creatures_color", this.dslComposeFieldColor(rng, aura)] },
+            {
+                w: 2,
+                build: () => [
+                    "spawn_creature",
+                    rng() < 0.5 ? ["at_field_need"] : ["at_player"],
+                    1 + Math.floor(rng() * 2),
+                    rng() < 0.6 ? "happy" : "sad",
+                ],
+            },
+        ];
+        return this.dslWeightedPick(choices, rng);
+    }
+
+    // Eine neue Nexus-Regel: mit mutateSurvivorProb ein MUTIERTER NACHKOMME eines
+    // bewährten Überlebenden (hohe Fitness, hat gefeuert) — so descend neue Regeln
+    // von erfolgreichen (Heredität → echte Evolution, nicht nur Selektion); sonst
+    // frisch komponiert. dslMutate ist robust: eine ungültig mutierte Regel feuert
+    // nie/harmlos → die Fitness pruned sie (kein Crash, eval ist try/catch-gewandet).
+    _composeNexusRule(rng) {
+        const cfg = AnazhRealm.WORLD_RULES;
+        const survivors = (this.state.worldRules || []).filter(
+            (r) => r.source === "nexus" && (r.fires || 0) > 0 && (r.fitness || 0) >= cfg.renewFitness
+        );
+        if (survivors.length > 0 && rng() < cfg.mutateSurvivorProb) {
+            const parent = survivors[Math.floor(rng() * survivors.length)];
+            const prog = ["rule", parent.cond, parent.effect, { everySec: parent.everySec, ttlSec: parent.ttlSec }];
+            const mutated = this.dslMutate(prog, rng);
+            // dslMutate hält den "rule"-Kopf (der Fallback ersetzt nur einen chain-Kopf)
+            // → ein Nachkomme bleibt eine Regel; sicherheitshalber prüfen.
+            return Array.isArray(mutated) && mutated[0] === "rule" ? mutated : prog;
+        }
+        return this.dslComposeRule(rng);
     }
 
     dslComposeColor(rng) {
@@ -14602,7 +14732,13 @@ class AnazhRealm {
         // Komponiert ein zufälliges DSL-Programm. Dynamische Code-Generierung
         // ist seit Phase 5 vollständig entfernt — der einzige Pfad für neue
         // Effekte ist die DSL.
-        const program = this.dslCompose();
+        // V17.35 Phase C — mit composeRuleProb ist die Evolution eine stehende
+        // REGEL (statt einer einmaligen Geste): der Nexus governt die Welt jetzt
+        // auch mit Regelkreisen, nicht nur mit Pokes. Die Regel fließt durch
+        // denselben dslRun-Pfad → der `rule`-Op registriert sie in state.worldRules.
+        const rng = Math.random;
+        const program =
+            rng() < AnazhRealm.WORLD_RULES.composeRuleProb ? this._composeNexusRule(rng) : this.dslCompose();
         return {
             name: `evo_${this.state.dsl.nextEntryId++}`,
             program,
@@ -41820,6 +41956,16 @@ class AnazhRealm {
             const evolution = this.state.nexusEvolutionQueue.shift();
             if (Array.isArray(evolution.program)) {
                 const result = this.dslRun(evolution.program, { source: evolution.source || "nexus" });
+                // V17.35 Phase C — eine REGEL-Evolution registriert (über den rule-Op)
+                // eine stehende Regel in state.worldRules; ihre Fitness läuft über das
+                // Lebens-Fenster DORT (_worldRuleFitness → erneuern/verfallen), NICHT
+                // über den 5-s-Gesten-Finalizer. Darum NICHT in pendingOutcomes/Gesten-
+                // History (das misst die Registrierung, nicht die Wirkung über Zeit).
+                if (evolution.program[0] === "rule") {
+                    this.log(`Nexus-Evolution (Regel) registriert: ${evolution.name}`, "INFO");
+                    this.grokSpeak("nexus");
+                    return;
+                }
                 // Schicht 1 — Initiale Fitness aus FPS allein. Endgültiger
                 // Wert kommt vom Finalizer 5 s später (Emotion + Activity).
                 const fpsDmg = Math.max(0, result.outcome.fpsBefore - result.outcome.fpsAfter);
@@ -42962,7 +43108,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.34.0";
+AnazhRealm.VERSION = "17.35.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -42970,11 +43116,26 @@ AnazhRealm.VERSION = "17.34.0";
 //   budgetPerFrame — max Regel-EFFEKTE pro Frame (die 119 FPS bleiben heilig)
 //   defaultEverySec— Default-Feuer-Intervall einer Regel
 //   minEverySec    — Floor → verhindert Per-Frame-Feuern (Performance + Determinismus)
+// V17.35 Phase C — der Nexus EVOLVIERT Regeln: zusätzliche Stellschrauben für
+// Komposition (composeRuleProb/ruleEverySec*/ruleTtl*) + die per-Regel-Fitness
+// über ein Lebens-Fenster (costBudgetMs/renewFitness/mutateSurvivorProb). Eine
+// Nexus-Regel ist EPHEMER (ttlSec) — am Lebens-Ende bewertet: gut → erneuern,
+// schlecht/inert → verfallen. So lernt die Welt ihre eigene Logik (Selektion).
 AnazhRealm.WORLD_RULES = Object.freeze({
     cap: 64,
     budgetPerFrame: 4,
     defaultEverySec: 2,
     minEverySec: 0.5,
+    // Phase C — Komposition
+    composeRuleProb: 0.35, // Anteil der Nexus-Evolutionen, die eine REGEL sind (statt einer Geste)
+    ruleEverySecMin: 1, // komponierte Regeln feuern alle 1–5 s
+    ruleEverySecMax: 5,
+    ruleTtlMin: 30, // Lebens-Fenster einer Nexus-Regel (30–90 s; Fitness erneuert sie)
+    ruleTtlMax: 90,
+    mutateSurvivorProb: 0.4, // P(eine neue Nexus-Regel ist ein mutierter Nachkomme eines Überlebenden)
+    // Phase C — Fitness (per-Regel, attributierbar: Kosten + Erfolg + Engagement)
+    costBudgetMs: 4, // ein Regel-Effekt sollte < ~4 ms kosten (sonst Cost-Penalty)
+    renewFitness: 0.5, // ab dieser Fitness wird eine Nexus-Regel am ttl-Ende erneuert
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({

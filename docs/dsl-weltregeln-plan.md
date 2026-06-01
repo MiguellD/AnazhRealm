@@ -276,9 +276,23 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
 ["deposit_life", ["at_player"]], {everySec:3}]` → an einem kargen Ort steigt
   lebendig über die Zeit; an einem üppigen feuert sie nicht (Bedingung false).
 
-### Phase C — Der Nexus EVOLVIERT Regeln (die Welt wächst ihre eigene Logik)
+### Phase C — Der Nexus EVOLVIERT Regeln (die Welt wächst ihre eigene Logik) — ✅ GEBAUT (V17.35)
 
 **Die bestehende Generator/Mutate/Fitness-Maschinerie auf Regeln anwenden.**
+
+> **Status (V17.35, 01.06.2026):** vollständig gebaut + gemessen. `dslComposeRule` +
+> `dslComposeRuleCondition` (Feld-LESE-Bedingungen, resonant) + `dslComposeRuleEffect`
+> (Feld-SCHREIB-Effekte `deposit_life`/`deposit_emotion`, nur reaktiv-sicherer Pool) ·
+> `generateEvolution` mit `composeRuleProb` (Regel statt Geste) · `_loopNexusUpdate`
+> trennt Regel-Evolutionen ab (Fitness in worldRules, nicht im Gesten-Finalizer) ·
+> **per-Regel-Fitness** `_worldRuleFitness` (Engagement+Kosten+Erfolg, attributierbar —
+> NICHT die globale Emotion-Trend, das wäre der Passagier-Trugschluss) · Lifecycle im
+> `_tickWorldRules`-TTL-Zweig (gut → erneuern, schlecht/inert → verfallen) · Heredity via
+> `_composeNexusRule` (mutierter Nachkomme eines Überlebenden, `dslMutate` robust).
+> GEMESSEN: `checkBandV1735NexusEvolvesRules` (11 grün). **EHRLICH:** die Fitness selektiert
+> für cheap+working+ENGAGED (relevant) Regeln; die tiefere „macht-die-Regel-glücklicher"-
+> Attribution ist eine spätere Vertiefung (braucht kontrollierte per-Regel-Attribution).
+> **Nächst: Phase D.**
 
 - **`dslComposeAtomic`** bekommt einen neuen gewichteten Eintrag: baue eine `rule`
   (komponiere cond aus `dslConditions` + die Feld-Bedingungen, effect aus dem
@@ -386,13 +400,17 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    `deposit_emotion`, schreibt die V17.27/.32-Overlays) → Lesen und Schreiben sind
    DASSELBE Substrat. Abnahme erfüllt: `checkBandV1734FieldRules` (7 grün, inkl. der
    Heilungs-Regel-Loop).
-3. **Phase C** (der Nexus evolviert Regeln) ist jetzt der nächste Schritt —
-   `dslComposeAtomic` bekommt einen `rule`-Atom-Typ (würfelt Regeln, nicht nur Gesten),
-   `dslMutate` mutiert Regeln (fällt aus dem AST-Walk), und die Fitness läuft über ein
-   ZEIT-FENSTER (30–60 s statt 5 s — eine Regel WIRKT über Zeit): niedrige Fitness →
-   die Regel zerfällt (`ttlSec`, der Phase-A-Hook), hohe → der Nexus erneuert sie. Dann
-   D (Mensch-Regeln per Chat), E (Persistenz + Bibliothek-Merge).
-4. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
+3. ~~**Phase C** (der Nexus evolviert Regeln)~~ — ✅ **GEBAUT (V17.35)**: `dslComposeRule`
+   (würfelt Regeln aus Feld-LESE-Bedingungen + Feld-SCHREIB-Effekten, resonant),
+   `_composeNexusRule` (Nachkomme eines Überlebenden via `dslMutate`), per-Regel-Fitness
+   über das Lebens-Fenster (`ttlSec`, der Phase-A-Hook): gut → erneuern, schlecht/inert →
+   zerfallen. Abnahme erfüllt: `checkBandV1735NexusEvolvesRules` (11 grün).
+4. **Phase D** (Mensch → Regeln) ist jetzt der nächste Schritt — der Chat-Parser lernt
+   die Regel-Form („wann immer/immer wenn X, dann Y" → `["rule", cond, effect]`) + ein
+   Welt-Regeln-Panel zeigt die aktiven Gesetze menschen-lesbar (`describeProgram` um `rule`
+   erweitern) + HIER wird der Caveat „Regel-Effekt-Whitelist für MENSCH-Regeln" relevant
+   (der Nexus ist schon by-construction sicher). Dann E (Persistenz + Bibliothek-Merge).
+5. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`
 ist (z. B. emotion→wetter), ist sie ein Kandidat, eine REGEL zu werden — das ist der

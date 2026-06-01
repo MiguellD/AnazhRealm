@@ -1770,6 +1770,208 @@ async function checkBandV1734FieldRules(ctx) {
     check("V17.34 Feld-Regeln: invalide emotion-Achse → no-op (kein throw, kein Feld-Schreiben)", res.invalidAxisNoop);
 }
 
+// V17.35 Phase C (DSL-Weltregeln-Bogen) — der Nexus EVOLVIERT Regeln: die Welt
+// waechst + bewertet ihre eigene Logik. Der Nexus KOMPONIERT Regeln (aus Feld-
+// Bedingungen + Feld-Effekten, resonant zur Aura, ephemer per ttlSec) UND BEWERTET
+// sie ueber ein Lebens-Fenster (per-Regel-Fitness = Engagement + Kosten + Erfolg,
+// alles attributierbar — kein Passagier): gut bewaehrt → ERNEUERN, schlecht/inert →
+// VERFALLEN (Selektion); neue Regeln descend von Ueberlebenden (Heredity → Evolution).
+// "Regelkreise statt Hardcode": der V17.26-Heilungs-Gedanke ist jetzt ein evolvierter
+// Regelkreis. Gemessen (§6-C): Komposition (Struktur, Feld-Read/Write), der
+// generateEvolution-Hook (Misch aus Regel+Geste), Fitness, Erneuerung, Verfall
+// (inert + erroring), dslMutate haelt die Regel-Form, _composeNexusRule.
+async function checkBandV1735NexusEvolvesRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const cfg = K.WORLD_RULES;
+        const rng = r.dslCtx({ seed: 777 }).rng; // deterministischer LCG fuer die Komposition
+
+        // --- Verdrahtung + Konstanten ---
+        out.cfgWired =
+            typeof cfg.composeRuleProb === "number" &&
+            typeof cfg.renewFitness === "number" &&
+            typeof cfg.costBudgetMs === "number" &&
+            typeof r.dslComposeRule === "function" &&
+            typeof r._worldRuleFitness === "function" &&
+            typeof r._composeNexusRule === "function";
+
+        // --- (A) dslComposeRule: gueltige Regel-Struktur ---
+        const prog = r.dslComposeRule(rng);
+        out.composeStruct =
+            Array.isArray(prog) &&
+            prog[0] === "rule" &&
+            Array.isArray(prog[1]) &&
+            Array.isArray(prog[2]) &&
+            prog[3] &&
+            prog[3].everySec >= cfg.ruleEverySecMin &&
+            prog[3].everySec <= cfg.ruleEverySecMax &&
+            prog[3].ttlSec >= cfg.ruleTtlMin &&
+            prog[3].ttlSec <= cfg.ruleTtlMax;
+
+        // --- (B) der Nexus SCHREIBT das Feld: deposit_life + deposit_emotion erscheinen ---
+        const effHeads = new Set();
+        const condHeads = new Set();
+        for (let i = 0; i < 80; i++) {
+            effHeads.add(r.dslComposeRuleEffect(rng, null)[0]);
+            condHeads.add(r.dslComposeRuleCondition(rng, null)[0]);
+        }
+        out.effWritesField = effHeads.has("deposit_life") && effHeads.has("deposit_emotion");
+        // --- (C) der Nexus LIEST das Feld: field_below/field_above erscheinen ---
+        out.condReadsField = condHeads.has("field_below") || condHeads.has("field_above");
+
+        // --- (D) generateEvolution: Misch aus Regeln + Gesten ---
+        const savedNextId = r.state.dsl.nextEntryId;
+        let ruleCount = 0;
+        const N = 80;
+        for (let i = 0; i < N; i++) {
+            const evo = r.generateEvolution();
+            if (Array.isArray(evo.program) && evo.program[0] === "rule") ruleCount++;
+        }
+        out.evoMix = ruleCount > 2 && ruleCount < N - 2; // Misch (prob ~0.35 → ~28)
+        out.ruleCount = ruleCount;
+        r.state.dsl.nextEntryId = savedNextId; // den Zaehler zuruecksetzen (kein Seiteneffekt)
+
+        // ===== Fitness/Lifecycle: kontrollierte Regeln auf sauberem Registry =====
+        const savedRules = r.state.worldRules.slice();
+        const savedEmo = r.state.emotionField ? new Map(r.state.emotionField) : null;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+
+        // --- (E) Fitness: eine billige, feuernde Regel → hohe Fitness ---
+        r.state.worldRules.length = 0;
+        r.dslRun(
+            [
+                "rule",
+                ["random_chance", 1],
+                ["deposit_emotion", "joy", 0.1, ["at_player"]],
+                { everySec: 0.5, ttlSec: 1000 },
+            ],
+            {
+                source: "nexus",
+            }
+        );
+        const ruleE = r.state.worldRules[0];
+        for (let i = 0; i < 3; i++) {
+            ruleE.lastFired = -Infinity;
+            r._tickWorldRules(now());
+        }
+        out.fitnessFires = (ruleE.fires || 0) >= 1;
+        out.fitnessHigh = r._worldRuleFitness(ruleE) >= cfg.renewFitness;
+        out.fitnessVal = r._worldRuleFitness(ruleE);
+
+        // --- (F) Erneuerung: gut bewaehrte Regel ueberlebt das ttl-Ende ---
+        const idE = ruleE.id;
+        ruleE.born = now() - ruleE.ttlSec - 1; // ttl ueberschritten
+        r._tickWorldRules(now());
+        const stillThere = r.state.worldRules.find((x) => x.id === idE);
+        out.renewSurvives = !!stillThere && now() - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
+
+        // --- (G) Verfall: eine inerte (nie feuernde) Regel verfaellt ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 0], ["deposit_life", ["at_player"]], { everySec: 0.5, ttlSec: 1000 }], {
+            source: "nexus",
+        });
+        const ruleG = r.state.worldRules[0];
+        const idG = ruleG.id;
+        ruleG.born = now() - ruleG.ttlSec - 1;
+        r._tickWorldRules(now());
+        out.inertExpires = !r.state.worldRules.find((x) => x.id === idG);
+
+        // --- (H) Verfall: eine fehlerhafte Regel (100% errors) verfaellt ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 0], ["weather", "sunny"], { everySec: 0.5, ttlSec: 1000 }], {
+            source: "nexus",
+        });
+        const ruleH = r.state.worldRules[0];
+        const idH = ruleH.id;
+        ruleH.fires = 5;
+        ruleH.errors = 5;
+        ruleH.costMsSum = 2;
+        ruleH.born = now() - ruleH.ttlSec - 1;
+        out.erroringFitness = r._worldRuleFitness(ruleH); // ~0.36 < renewFitness
+        r._tickWorldRules(now());
+        out.erroringExpires = !r.state.worldRules.find((x) => x.id === idH);
+
+        // --- (I) dslMutate haelt die Regel-Form (kein throw) ---
+        let mutOk = true;
+        try {
+            for (let i = 0; i < 8; i++) {
+                const m = r.dslMutate(
+                    ["rule", ["random_chance", 0.5], ["weather", "sunny"], { everySec: 2, ttlSec: 60 }],
+                    rng
+                );
+                if (!Array.isArray(m) || m[0] !== "rule") mutOk = false;
+            }
+        } catch {
+            mutOk = false;
+        }
+        out.mutateKeepsRule = mutOk;
+
+        // --- (J) _composeNexusRule liefert immer eine gueltige Regel ---
+        let composeOk = true;
+        for (let i = 0; i < 5; i++) {
+            const p = r._composeNexusRule(rng);
+            if (!Array.isArray(p) || p[0] !== "rule") composeOk = false;
+        }
+        out.composeNexusRule = composeOk;
+
+        // restore
+        r.state.worldRules = savedRules;
+        if (r.state.emotionField) {
+            r.state.emotionField.clear();
+            if (savedEmo) for (const [k, v] of savedEmo) r.state.emotionField.set(k, v);
+        }
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.35 Nexus-Regeln: Konfig + dslComposeRule + _worldRuleFitness + _composeNexusRule verdrahtet",
+        res.cfgWired
+    );
+    check(
+        "V17.35 Nexus-Regeln: dslComposeRule liefert eine gueltige Regel (cond+effect+everySec+ttl in Spanne)",
+        res.composeStruct
+    );
+    check(
+        "V17.35 Nexus-Regeln: der Nexus SCHREIBT das Feld (deposit_life + deposit_emotion komponiert)",
+        res.effWritesField
+    );
+    check("V17.35 Nexus-Regeln: der Nexus LIEST das Feld (field_below/field_above komponiert)", res.condReadsField);
+    check(
+        "V17.35 Nexus-Regeln: generateEvolution mischt Regeln + Gesten (der composeRuleProb-Hook)",
+        res.evoMix,
+        `rules=${res.ruleCount}/80`
+    );
+    check(
+        "V17.35 Nexus-Regeln: per-Regel-Fitness — eine billige, feuernde Regel ist hoch-fit",
+        res.fitnessFires && res.fitnessHigh,
+        `fit=${res.fitnessVal}`
+    );
+    check(
+        "V17.35 Nexus-Regeln: Erneuerung — eine bewaehrte Regel ueberlebt das ttl-Ende (Selektion+)",
+        res.renewSurvives
+    );
+    check("V17.35 Nexus-Regeln: Verfall — eine inerte (nie feuernde) Regel verfaellt am ttl-Ende", res.inertExpires);
+    check(
+        "V17.35 Nexus-Regeln: Verfall — eine fehlerhafte Regel (100% errors) verfaellt",
+        res.erroringExpires,
+        `fit=${res.erroringFitness}`
+    );
+    check(
+        "V17.35 Nexus-Regeln: dslMutate haelt die Regel-Form (Nachkomme bleibt eine Regel, kein throw)",
+        res.mutateKeepsRule
+    );
+    check(
+        "V17.35 Nexus-Regeln: _composeNexusRule liefert immer eine gueltige Regel (frisch oder Nachkomme)",
+        res.composeNexusRule
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -20328,6 +20530,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             if (x < 0) return { lebendig: 0.95, dichte: 0.1, glut: 0.1, magieleitung: 0.1 };
             return { lebendig: 0.1, dichte: 0.95, glut: 0.1, magieleitung: 0.1 };
         };
+        // V17.35: das Phase-C-Overlay isolieren. _currentFaunaTarget liest auraAt =
+        // frozen-Mock + Leben-Overlay; der Nexus deponiert jetzt AKTIV Leben (deposit_
+        // life-Regeln) → ein Deposit nahe der kargen Testzelle würde den frozen-Mock
+        // verfälschen (targetKarg > 6). Wir testen die frozen→Fauna-Abbildung isoliert
+        // (V17.34-Konsumenten-Migration, wie die V17.31/.32-Bänder das emotionField clearen).
+        if (r.state.lifeField) r.state.lifeField.clear();
         r.state.playerMesh.position.x = -100;
         const targetLiv = r._currentFaunaTarget();
         r.state.playerMesh.position.x = 100;
@@ -33826,6 +34034,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1732SpatialEmotion(ctx);
             await checkBandV1733WorldRules(ctx);
             await checkBandV1734FieldRules(ctx);
+            await checkBandV1735NexusEvolvesRules(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
