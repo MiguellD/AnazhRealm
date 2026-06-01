@@ -38620,9 +38620,10 @@ class AnazhRealm {
         let lightIntensity = stop.intensity * lightMul;
         // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler)
         const pm = this.state.playerMesh;
-        if (pm && typeof this.auraAt === "function") {
-            const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (die living Lese-API)
-            if (field) {
+        const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.position.x, pm.position.z) : null;
+        if (aura) {
+            const field = aura; // §5 (V17.25): via auraAt (die living Lese-API)
+            {
                 const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
                 const glut = Math.max(0, Math.min(1, field.glut || 0));
                 const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
@@ -38645,8 +38646,12 @@ class AnazhRealm {
                 }
             }
         }
-        // Schicht 3 — Emotion-Tint
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        // Schicht 3 — Emotion-Tint (V17.31: liest die emotion-ACHSE des Feldes
+        // [`aura.emotion`], nicht mehr `player.emotions` direkt → die Achse ist
+        // jetzt ein echter Leser, kein Passagier. Wird emotion künftig RÄUMLICH
+        // (lokal deponiert wie lebendig), färbt der Welt-Tint automatisch mit.
+        // Fallback auf den Vektor, wenn kein playerMesh [Aura null].)
+        const emotions = (aura && aura.emotion) || (this.state.player && this.state.player.emotions) || {};
         const joy = Math.max(0, Math.min(1, emotions.joy || 0));
         const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
         const awe = Math.max(0, Math.min(1, emotions.awe || 0));
@@ -42232,6 +42237,24 @@ class AnazhRealm {
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
             this.state.hydroSurfaceUniforms.time.value = currentTime;
         }
+        // V17.31 — der tote V14-Emotions-Haken am Wasser wird endlich GEFÜTTERT:
+        // die Welt-Materie atmet mit der Stimmung (`uEmotion` hebt den Schaum,
+        // s. `_ensureHydroSurfaceMaterial`). Positive Gefühle beleben das Wasser,
+        // Trauer dämpft. Bis hier blieb der Uniform auf 0.0 (deklariert, im Shader
+        // benutzt, nie zugewiesen) — ein stummer Haken; jetzt ein echter Leser.
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
+            const em = this.state.player && this.state.player.emotions;
+            const vital = em
+                ? Math.max(
+                      0,
+                      Math.min(
+                          1,
+                          (em.joy || 0) * 0.6 + (em.peace || 0) * 0.5 + (em.hope || 0) * 0.3 - (em.sorrow || 0) * 0.5
+                      )
+                  )
+                : 0;
+            this.state.hydroSurfaceUniforms.emotion.value = vital;
+        }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
@@ -42595,7 +42618,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.30.0";
+AnazhRealm.VERSION = "17.31.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

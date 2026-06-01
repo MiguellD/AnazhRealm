@@ -1295,6 +1295,59 @@ async function checkBandV1730EmotionFromBeing(ctx) {
     check("V17.30 Zustand: niedrige HP driftet sorrow/chaos (die Wund-Dread)", res.hpChannel);
 }
 
+// V17.31 — die Reflexion deckte ZWEI tote Haken auf: (a) die `emotion`-Achse von
+// `auraAt` war ein PASSAGIER (V17.21 hinzugefuegt, NIEMAND las sie — die Welt-
+// Konsumenten lasen `player.emotions` direkt); (b) der Wasser-`uEmotion`-Haken
+// (V14) blieb auf 0.0 (deklariert, im Shader benutzt, NIE gefuettert). Beide
+// geheilt: der Welt-Tint liest jetzt `aura.emotion` (die Achse ist ein echter
+// Leser), das Wasser wird gefuettert. Diese Welle prueft KONSUM, nicht blosse
+// Existenz (die V17.21-Probe pruefte nur, dass die Achse DA ist — der Passagier-
+// Trugschluss). So treibt die Emotion die Welt KONTINUIERLICH (Licht + Wasser).
+async function checkBandV1731EmotionDrivesWorld(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const tintSrc = r._dayNightComputeTint.toString();
+        out.tintReadsAuraEmotion = /aura\.emotion/.test(tintSrc); // de-passengered: liest die Feld-Achse
+        const renderSrc = r._loopRender.toString();
+        out.waterFed = /hydroSurfaceUniforms\.emotion/.test(renderSrc) && /em\.joy/.test(renderSrc); // toter Haken gefuettert
+        // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
+        const e = r.state.player.emotions;
+        const saved = Object.assign({}, e);
+        const THREE = window.THREE;
+        if (THREE && THREE.Color) {
+            const mkStop = () => ({
+                sky: new THREE.Color(0.4, 0.5, 0.7),
+                light: new THREE.Color(1, 1, 1),
+                intensity: 1,
+            });
+            for (const k of Object.keys(e)) e[k] = 0;
+            const cold = r._dayNightComputeTint(mkStop());
+            for (const k of Object.keys(e)) e[k] = 0;
+            e.joy = 0.9;
+            const warm = r._dayNightComputeTint(mkStop());
+            out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
+            out.coldR = cold.skyColor.r;
+            out.warmR = warm.skyColor.r;
+        } else {
+            out.joyWarmsWorld = true; // THREE nicht erreichbar — Source-Probe traegt
+        }
+        for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
+        return out;
+    });
+    check(
+        "V17.31 Emotion→Welt: der Welt-Tint liest die emotion-ACHSE des Feldes (kein Passagier mehr)",
+        res.tintReadsAuraEmotion
+    );
+    check("V17.31 Emotion→Welt: der tote V14-Wasser-Haken wird gefuettert (uEmotion aus der Stimmung)", res.waterFed);
+    check(
+        "V17.31 Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
+        res.joyWarmsWorld,
+        `cold.r=${res.coldR} warm.r=${res.warmR}`
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -33286,6 +33339,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1728SpawnClearance(ctx);
             await checkBandV1729CreatureTrickle(ctx);
             await checkBandV1730EmotionFromBeing(ctx);
+            await checkBandV1731EmotionDrivesWorld(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
