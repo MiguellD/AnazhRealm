@@ -983,6 +983,45 @@ async function checkBandV1725FieldReaders(ctx) {
     );
 }
 
+// V17.26 — Dem Nexus die FELD-RICHTUNG: er trägt Leben zum erkannten BEDARF
+// (at_field_need = der ärmste Punkt im Ring) statt nur die lebendige Region zu
+// verstärken — „die Welt versteht sich selbst und heilt sich". Beweis:
+// at_field_need-Resolver findet das lebendig-Minimum + dslComposeAtomic nutzt ihn.
+async function checkBandV1726FieldDirection(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
+        out.composeUsesNeed = /at_field_need/.test(r.dslComposeAtomic.toString());
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm && out.hasResolver) {
+            const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
+            const need = r.dslPositions.at_field_need([50], ctx2);
+            const needLeb = r.auraAt(need.x, need.z).lebendig;
+            let minLeb = Infinity;
+            for (let i = 0; i < 8; i++) {
+                const ang = (i / 8) * Math.PI * 2;
+                const leb = r.auraAt(pm.x + Math.cos(ang) * 50, pm.z + Math.sin(ang) * 50).lebendig;
+                if (leb < minLeb) minLeb = leb;
+            }
+            out.needIsMin = Math.abs(needLeb - minLeb) < 1e-9; // der Bedarf-Punkt IST das Ring-Minimum
+            out.onRing = Math.abs(Math.hypot(need.x - pm.x, need.z - pm.z) - 50) < 1.0; // liegt auf dem Ring
+            out.needLeb = needLeb;
+            out.minLeb = minLeb;
+        }
+        return out;
+    });
+    check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
+    check("V17.26 Feld-Richtung: dslComposeAtomic trägt Leben zum Bedarf (at_field_need)", res.composeUsesNeed);
+    check(
+        "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
+        res.needIsMin,
+        `needLeb=${res.needLeb} == min=${res.minLeb}`
+    );
+    check("V17.26 Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring (Radius 50)", res.onRing);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -32969,6 +33008,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1722NexusEyes(ctx);
             await checkBandV1723Harmony(ctx);
             await checkBandV1725FieldReaders(ctx);
+            await checkBandV1726FieldDirection(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

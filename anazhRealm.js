@@ -2380,6 +2380,30 @@ class AnazhRealm {
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 return { x: p.x, y: p.y, z: p.z };
             },
+            // V17.26 — die Welt heilt sich: der Punkt des größten BEDARFS
+            // (niedrigste `lebendig`) in einem 8-Punkt-Ring um den Spieler. Der
+            // Nexus trägt Leben DORTHIN, wo es FEHLT (eine sterbende/karge
+            // Region), statt nur die lebendige zu verstärken — fraktales
+            // Wachstum aus Verständnis: die Welt liest ihren eigenen Mangel +
+            // füllt ihn. Liest auraAt (die living Lese-API). Default-Radius 50 m.
+            at_field_need: ([radius], ctx) => {
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                if (typeof this.auraAt !== "function") return { x: p.x, y: p.y, z: p.z };
+                const r = c(radius, 10, 120) || 50;
+                let best = null;
+                let bestLeb = Infinity;
+                for (let i = 0; i < 8; i++) {
+                    const ang = (i / 8) * Math.PI * 2;
+                    const sx = p.x + Math.cos(ang) * r;
+                    const sz = p.z + Math.sin(ang) * r;
+                    const leb = this.auraAt(sx, sz).lebendig;
+                    if (leb < bestLeb) {
+                        bestLeb = leb;
+                        best = { x: sx, z: sz };
+                    }
+                }
+                return best ? { x: best.x, y: p.y, z: best.z } : { x: p.x, y: p.y, z: p.z };
+            },
             // Welle 6.X.3 C1 (Audit 17.05.2026) — Spawn-Position vor dem
             // Spieler statt im Spieler. Vision §11: die Welt-Geste wirkt
             // selbst-entschieden („ich stelle hier was hin", nicht „ich werde
@@ -2694,7 +2718,15 @@ class AnazhRealm {
                 w: Math.round(12 * (0.6 + fLebendig * 0.8)),
                 build: () => [
                     "spawn_creature",
-                    this.dslComposePosition(rng),
+                    // V17.26 — die Welt heilt sich (Feld-RICHTUNG): ~50 % der
+                    // Nexus-Kreaturen gehen zum Punkt des größten BEDARFS
+                    // (at_field_need = niedrigste lebendig im Ring 30–80 m) →
+                    // Leben in sterbende/karge Regionen tragen, nicht nur die
+                    // lebendige verstärken. Die andere Hälfte erkundet frei
+                    // (dslComposePosition) — Balance aus Heilen + Erkunden.
+                    rng() < 0.5
+                        ? ["at_field_need", Number((30 + rng() * 50).toFixed(1))]
+                        : this.dslComposePosition(rng),
                     1 + Math.floor(rng() * 5),
                     rng() < happyBias ? "happy" : "sad",
                 ],
@@ -42291,7 +42323,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.25.0";
+AnazhRealm.VERSION = "17.26.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
