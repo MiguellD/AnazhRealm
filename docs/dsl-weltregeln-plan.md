@@ -313,9 +313,19 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
 - **Gemessen:** über N Nexus-Zyklen steigt die mittlere Regel-Fitness; eine FPS-
   schädliche Regel wird gepruned; eine emotion-hebende überlebt.
 
-### Phase D — Mensch → Regeln (der Schöpfer gibt der Welt Gesetze)
+### Phase D — Mensch → Regeln (der Schöpfer gibt der Welt Gesetze) — ✅ GEBAUT (V17.36)
 
 **Der Chat-Parser lernt die Regel-Form.**
+
+> **Status (V17.36, 01.06.2026):** vollständig gebaut + gemessen. `_chatTryRuleCommand`
+> matcht „wann immer/immer wenn/jedes mal wenn/sobald X (,|dann) Y" → `["rule", cond,
+> effect, {everySec:3}]` (Mensch-Regel, permanent). Synergie: der EFFEKT (Y) über
+> `_parseChatEffect` (reuse `chatDslPatterns`), die BEDINGUNG (X) über `_parseChatCondition`
+> (Sprache → Feld/Stimmung-Bedingung). Whitelist-Wand `RULE_FORBIDDEN_EFFECT_OPS` +
+> `_isRuleEffectAllowed` (der V17.33-Caveat: Mensch-Regel darf den frozen Worldgen nicht
+> anfassen). Sichtbarkeit: „zeige regeln" (via `describeProgram(rule)`) + „vergiss regeln".
+> GEMESSEN: `checkBandV1736HumanRules` (11 grün). **EHRLICH:** ein immer-sichtbares HUD-Panel
+> (statt des Chat-Befehls) ist optionaler Browser-Audit-Schliff (D-2). **Nächst: Phase E.**
 
 - **Neue `chatDslPatterns`:** „wann immer/immer wenn <Bedingung>, dann <Effekt>" →
   `["rule", cond, effect]`. Beispiele: „immer wenn es Nacht wird, spawne Glühwürmchen",
@@ -405,12 +415,17 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    `_composeNexusRule` (Nachkomme eines Überlebenden via `dslMutate`), per-Regel-Fitness
    über das Lebens-Fenster (`ttlSec`, der Phase-A-Hook): gut → erneuern, schlecht/inert →
    zerfallen. Abnahme erfüllt: `checkBandV1735NexusEvolvesRules` (11 grün).
-4. **Phase D** (Mensch → Regeln) ist jetzt der nächste Schritt — der Chat-Parser lernt
-   die Regel-Form („wann immer/immer wenn X, dann Y" → `["rule", cond, effect]`) + ein
-   Welt-Regeln-Panel zeigt die aktiven Gesetze menschen-lesbar (`describeProgram` um `rule`
-   erweitern) + HIER wird der Caveat „Regel-Effekt-Whitelist für MENSCH-Regeln" relevant
-   (der Nexus ist schon by-construction sicher). Dann E (Persistenz + Bibliothek-Merge).
-5. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
+4. ~~**Phase D** (Mensch → Regeln)~~ — ✅ **GEBAUT (V17.36)**: `_chatTryRuleCommand`
+   („wann immer X, dann Y" → Mensch-Regel; der Effekt via reuse `_parseChatEffect`, die
+   Bedingung via `_parseChatCondition`), die Whitelist-Wand `_isRuleEffectAllowed` (der
+   MENSCH-Caveat), „zeige/vergiss regeln". Abnahme erfüllt: `checkBandV1736HumanRules`
+   (11 grün). Offen (optional): ein immer-sichtbares HUD-Panel statt des Chat-Befehls (D-2).
+5. **Phase E** (Persistenz + Bibliothek) ist jetzt der letzte Schritt des Substrats —
+   `state.worldRules` (+ `state.dsl.nextRuleId`) in `buildStateSnapshot`/`loadState`
+   (die Gesetze überleben Reload), dann `mergeWorlds`/`fuseWorlds` vereinigt die Regel-Sätze
+   zweier Welten (Dedup über die `_sig`-Signatur) → eine Welt IST ihr Regel-Satz. Danach die
+   KÜR: die KI (LLM) als Regel-Schreiberin (sie bekommt die Regel-Grammatik als Werkzeug).
+6. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`
 ist (z. B. emotion→wetter), ist sie ein Kandidat, eine REGEL zu werden — das ist der

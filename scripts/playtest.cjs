@@ -1972,6 +1972,153 @@ async function checkBandV1735NexusEvolvesRules(ctx) {
     );
 }
 
+// V17.36 Phase D (DSL-Weltregeln-Bogen) — der SCHÖPFER gibt der Welt GESETZE: per
+// Chat „wann immer X, dann Y" → eine stehende Mensch-Regel. Synergie: der Effekt (Y)
+// wird über die BESTEHENDEN Chat-Patterns geparst (jeder Chat-Effekt wird Regel-fähig),
+// die Bedingung (X) über _parseChatCondition (liest Feld + Stimmung). Whitelist-Wand:
+// eine Mensch-Regel darf den frozen Worldgen NICHT anfassen (der V17.33-Caveat).
+// „zeige regeln" macht die Gesetze sichtbar, „vergiss regeln" widerruft sie. Gemessen
+// (§6-D): Parser (cond+effect), Whitelist, end-to-end Regel-Erstellung + Feuern,
+// describeProgram(rule), Liste, Vergessen, unsicherer Effekt abgelehnt, unbekannte cond.
+async function checkBandV1736HumanRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const mkSink = () => {
+            const msgs = [];
+            return { input: { value: "x" }, append: (s) => msgs.push(String(s)), msgs };
+        };
+
+        // --- Verdrahtung ---
+        out.wired =
+            typeof r._chatTryRuleCommand === "function" &&
+            typeof r._chatTryRulesListCommand === "function" &&
+            typeof r._parseChatCondition === "function" &&
+            typeof r._parseChatEffect === "function" &&
+            typeof r._isRuleEffectAllowed === "function" &&
+            K.RULE_FORBIDDEN_EFFECT_OPS instanceof Set;
+
+        // --- (2) _parseChatCondition: Sprache → DSL-Bedingung ---
+        const cRain = r._parseChatCondition("es regnet");
+        const cSad = r._parseChatCondition("du bist traurig");
+        const cKarg = r._parseChatCondition("wenig Leben hier");
+        out.condParse =
+            JSON.stringify(cRain) === JSON.stringify(["weather_is", "rainy"]) &&
+            Array.isArray(cSad) &&
+            cSad[0] === "emotion_above" &&
+            cSad[1] === "sorrow" &&
+            Array.isArray(cKarg) &&
+            cKarg[0] === "field_below" &&
+            cKarg[1] === "lebendig" &&
+            r._parseChatCondition("völliger unsinn xyz") === null;
+
+        // --- (3) _parseChatEffect: reuse der Chat-Patterns ---
+        const eW = r._parseChatEffect("setze wetter sunny");
+        const eK = r._parseChatEffect("spawne kreaturen 3");
+        out.effParse =
+            JSON.stringify(eW) === JSON.stringify(["weather", "sunny"]) &&
+            Array.isArray(eK) &&
+            r._parseChatEffect("völliger unsinn xyz") === null;
+
+        // --- (4) _isRuleEffectAllowed: Whitelist-Wand ---
+        out.whitelist =
+            r._isRuleEffectAllowed(["weather", "sunny"]) === true &&
+            r._isRuleEffectAllowed(["deposit_life", ["at_player"]]) === true &&
+            r._isRuleEffectAllowed(["spawn_creature", ["at_player"], 1, "happy"]) === true &&
+            r._isRuleEffectAllowed(["terrain_steepness", 2]) === false &&
+            r._isRuleEffectAllowed(["voxel_carve", 0, 0, 0, 3]) === false &&
+            r._isRuleEffectAllowed(["spawn_village", ["at_player"]]) === false;
+
+        // Save world state
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+
+        // --- (5) End-to-end: „wann immer X, dann Y" erstellt eine Mensch-Regel ---
+        r.state.worldRules.length = 0;
+        const s1 = mkSink();
+        const handled = r._chatTryRuleCommand("wann immer es regnet, dann setze wetter sunny", s1.input, s1.append);
+        const rule = r.state.worldRules.find((x) => x.source === "human" && x.cond && x.cond[0] === "weather_is");
+        out.ruleCreated =
+            handled === true &&
+            !!rule &&
+            JSON.stringify(rule.effect) === JSON.stringify(["weather", "sunny"]) &&
+            s1.msgs.some((m) => /Gesetz aufgestellt/.test(m));
+
+        // --- (6) die Mensch-Regel FEUERT (über den Welt-Tick) ---
+        r.state.weather = "rainy";
+        if (rule) rule.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.ruleFires = r.state.weather === "sunny";
+
+        // --- (7) describeProgram(rule) menschen-lesbar ---
+        const desc = r.describeProgram(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }]);
+        out.describeReadable = /wann immer/i.test(desc) && /Wetter/i.test(desc);
+        out.descSample = desc;
+
+        // --- (8) „zeige regeln" listet die Gesetze ---
+        const s2 = mkSink();
+        const listed = r._chatTryRulesListCommand("zeige regeln", s2.input, s2.append);
+        out.rulesListed = listed === true && s2.msgs.some((m) => /wann immer/i.test(m) && /von du/.test(m));
+
+        // --- (10) unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel ---
+        const beforeUnsafe = r.state.worldRules.length;
+        const s3 = mkSink();
+        const h3 = r._chatTryRuleCommand("wann immer es regnet, dann setze terrain steilheit 2", s3.input, s3.append);
+        out.unsafeRejected =
+            h3 === true &&
+            r.state.worldRules.length === beforeUnsafe &&
+            s3.msgs.some((m) => /keine stehende Welt-Regel/.test(m));
+
+        // --- (11) unbekannte Bedingung → sanftes Feedback, keine Regel ---
+        const s4 = mkSink();
+        const h4 = r._chatTryRuleCommand("wann immer blubb xyz, dann setze wetter sunny", s4.input, s4.append);
+        out.unknownCond = h4 === true && s4.msgs.some((m) => /verstehe die Bedingung/.test(m));
+
+        // --- (9) „vergiss regeln" widerruft die Mensch-Gesetze ---
+        const s5 = mkSink();
+        const forgot = r._chatTryRulesListCommand("vergiss regeln", s5.input, s5.append);
+        out.rulesForgotten = forgot === true && !r.state.worldRules.some((x) => x.source === "human");
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.36 Mensch-Regeln: _chatTryRuleCommand/_parseChatCondition/_parseChatEffect/Whitelist verdrahtet",
+        res.wired
+    );
+    check(
+        "V17.36 Mensch-Regeln: _parseChatCondition übersetzt Sprache → DSL-Bedingung (Wetter/Stimmung/Feld)",
+        res.condParse
+    );
+    check(
+        "V17.36 Mensch-Regeln: _parseChatEffect reuse der bestehenden Chat-Patterns (jeder Effekt wird Regel-fähig)",
+        res.effParse
+    );
+    check("V17.36 Mensch-Regeln: Whitelist-Wand — reaktive Effekte erlaubt, frozen Worldgen abgelehnt", res.whitelist);
+    check(
+        'V17.36 Mensch-Regeln: „wann immer X, dann Y" erstellt eine Mensch-Regel (source=human, permanent)',
+        res.ruleCreated
+    );
+    check("V17.36 Mensch-Regeln: die Mensch-Regel FEUERT über den Welt-Tick (rainy → sunny)", res.ruleFires);
+    check("V17.36 Mensch-Regeln: describeProgram(rule) ist menschen-lesbar", res.describeReadable, res.descSample);
+    check('V17.36 Mensch-Regeln: „zeige regeln" listet die aktiven Gesetze (von wem)', res.rulesListed);
+    check(
+        "V17.36 Mensch-Regeln: ein unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel",
+        res.unsafeRejected
+    );
+    check("V17.36 Mensch-Regeln: eine unbekannte Bedingung → sanftes Feedback, keine Regel", res.unknownCond);
+    check('V17.36 Mensch-Regeln: „vergiss regeln" widerruft die Mensch-Gesetze', res.rulesForgotten);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34035,6 +34182,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1733WorldRules(ctx);
             await checkBandV1734FieldRules(ctx);
             await checkBandV1735NexusEvolvesRules(ctx);
+            await checkBandV1736HumanRules(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

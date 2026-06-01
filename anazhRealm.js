@@ -1351,8 +1351,59 @@ class AnazhRealm {
         return false;
     }
 
-    // Welle 6.H Phase 2E V3 — inverse Op-Whitelist-Validation für Kreatur-
-    // Vorschläge. Walks rekursiv, prüft jedes Op (head jedes Sub-Arrays)
+    // V17.36 Phase D — die Mensch-Regel-Effekt-Whitelist (der V17.33-Caveat, jetzt
+    // relevant: ein MENSCH kann per Chat eine stehende Regel aufstellen). Eine
+    // Welt-Regel governt NUR die reaktive Welt (Wetter/Leben/Emotion/Kreaturen) —
+    // sie darf NICHT den frozen Worldgen umpflügen (Determinismus/Multi-User-Seed)
+    // noch schwere Struktur-Spawns/Identitäts-Ops wiederholt feuern. Blocklist (wie
+    // NON_BROADCASTABLE_OPS): enthält der Effekt-AST IRGENDWO einen davon → abgelehnt.
+    // (Der Nexus ist schon by-construction sicher — sein Effekt-Pool kennt diese gar
+    // nicht; diese Wand ist für die MENSCH-Geste, die jeden Chat-Effekt parsen kann.)
+    static get RULE_FORBIDDEN_EFFECT_OPS() {
+        return new Set([
+            // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
+            "terrain_steepness",
+            "terrain_base_height",
+            "modify_terrain",
+            "voxel_carve",
+            "voxel_fill",
+            // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
+            "spawn_village",
+            "spawn_temple",
+            "spawn_waterfall",
+            "spawn_fractal",
+            "spawn_blueprint",
+            "spawn_island",
+            "spawn_ufo",
+            "spawn_tree",
+            "remove_architecture",
+            // Identität / Definitionen / Werkzeuge / Welt-Beziehung / Portale / Physik
+            "define_blueprint",
+            "define_material",
+            "define_ability",
+            "register_tool",
+            "set_tool_meta",
+            "player_soul",
+            "set_portal",
+            "set_mode",
+            "gravity",
+            "apply_op",
+            "apply_connection",
+        ]);
+    }
+
+    // Ein Mensch-Regel-Effekt ist erlaubt, wenn sein AST KEINEN verbotenen Op
+    // enthält (reuse _dslContainsAnyOp). Reaktive Effekte (weather/creatures_*/
+    // deposit_*/spawn_creature/say/skybox_color/time_of_day) passieren; der frozen
+    // Worldgen + schwere/Identitäts-Ops werden geblockt.
+    _isRuleEffectAllowed(node) {
+        return (
+            Array.isArray(node) &&
+            node.length > 0 &&
+            !this._dslContainsAnyOp(node, AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS)
+        );
+    }
+
     // gegen CREATURE_PROPOSED_OPS. Liefert {ok, forbiddenOp?}.
     _isCreatureProposalAllowed(node) {
         if (!Array.isArray(node) || node.length === 0) return { ok: false, reason: "empty" };
@@ -7833,6 +7884,59 @@ class AnazhRealm {
                     this.log(`Chat→DSL build-Fehler für '${p.example}': ${err.message}`, "ERROR");
                     return null;
                 }
+            }
+        }
+        return null;
+    }
+
+    // V17.36 Phase D — Mensch→Regeln: der Bedingungs-Parser. Natürliche Sprache
+    // (X in „wann immer X, dann Y") → eine DSL-Bedingung. Eine fokussierte Surface-
+    // Grammatik (die SPRACHE des Parsers, nicht das Verhalten der Welt — das Verhalten
+    // ist die stehende Regel). Unbekannt → null (der Regel-Pfad gibt dann sanftes
+    // Feedback). Liest das lebendige Feld (field_*) UND die Stimmung (emotion_above).
+    _parseChatCondition(text) {
+        const t = String(text || "")
+            .toLowerCase()
+            .trim();
+        if (!t) return null;
+        // Wetter
+        if (/\bregn|\bregen\b|regnet|rainy|nass/.test(t)) return ["weather_is", "rainy"];
+        if (/\bsonn|sunny|klar\b|heiter/.test(t)) return ["weather_is", "sunny"];
+        // Stimmung (globale Spieler-Emotion)
+        if (/traurig|trauer|sorrow|kummer|weinst/.test(t)) return ["emotion_above", "sorrow", 0.5];
+        if (/fröhlich|froehlich|glücklich|gluecklich|freude|\bjoy\b|froh\b/.test(t))
+            return ["emotion_above", "joy", 0.5];
+        if (/staun|ehrfurcht|\bawe\b|ehrfürchtig/.test(t)) return ["emotion_above", "awe", 0.5];
+        if (/hoffnung|hoffst|\bhope\b/.test(t)) return ["emotion_above", "hope", 0.5];
+        if (/frieden|friedlich|\bruhe\b|\bpeace\b|gelassen/.test(t)) return ["emotion_above", "peace", 0.5];
+        if (/\bchaos\b|\bwut\b|zorn|aufgewühlt|aufgewuehlt/.test(t)) return ["emotion_above", "chaos", 0.5];
+        // lebendiges Feld am Ort
+        if (/(wenig|kaum|kein).{0,12}(leben|lebendig)|\bkarg|\böde|\boede|\btot\b|verdorrt|wüst|wuest/.test(t))
+            return ["field_below", "lebendig", 0.3];
+        if (/(viel|voll).{0,12}(leben|lebendig)|üppig|ueppig|blüh|blueh|grünt|gruent|fruchtbar/.test(t))
+            return ["field_above", "lebendig", 0.6];
+        if (/\bglut\b|feuer|glüh|glueh|lava|vulkan/.test(t)) return ["field_above", "glut", 0.5];
+        if (/magie|magisch|zauber/.test(t)) return ["field_above", "magieleitung", 0.5];
+        // Welt-Zustand
+        if (/viele?\s+(kreatur|wesen|tier)/.test(t)) return ["creatures_count_above", 5];
+        if (/manchmal|zufäll|zufaell|ab und zu|gelegentlich/.test(t)) return ["random_chance", 0.3];
+        return null;
+    }
+
+    // Der Effekt-Parser: reuse die BESTEHENDEN Chat-Patterns (Synergie — jeder
+    // Chat-Effekt „setze wetter sunny" / „spawne kreaturen 3" wird Regel-fähig,
+    // ohne neue Effekt-Grammatik). Liefert das DSL-Programm oder null.
+    _parseChatEffect(text) {
+        const t = String(text || "").trim();
+        if (!t) return null;
+        for (const p of this.chatDslPatterns) {
+            const m = t.match(p.re);
+            if (!m) continue;
+            try {
+                const built = p.build(m);
+                if (built && Array.isArray(built.program)) return built.program;
+            } catch {
+                return null;
             }
         }
         return null;
@@ -14451,6 +14555,12 @@ class AnazhRealm {
         if (op === "when") {
             return `wenn ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}`;
         }
+        // V17.36 Phase D — eine stehende Welt-Regel menschen-lesbar.
+        if (op === "rule") {
+            const opts = args[2] && typeof args[2] === "object" && !Array.isArray(args[2]) ? args[2] : {};
+            const every = opts.everySec ? ` (alle ${opts.everySec} s)` : "";
+            return `wann immer ${this._describeDslCondition(args[0])}, dann ${this.describeProgram(args[1])}${every}`;
+        }
         if (op === "repeat") return `${args[0]}× ${this.describeProgram(args[1])}`;
         if (op === "delay") return `nach ${args[0]} s ${this.describeProgram(args[1])}`;
         if (op === "say") return `sagt „${args[0]}"`;
@@ -14486,6 +14596,11 @@ class AnazhRealm {
         if (op === "creatures_count_above") return `mehr als ${a[0]} Kreaturen da sind`;
         if (op === "compound_has_tag") return `„${a[0]}" das Tag ${a[1]} ≥ ${a[2]} hat`;
         if (op === "compound_has_spatial_tag") return `„${a[0]}" räumlich ${a[1]} ≥ ${a[2]} hat`;
+        // V17.34/.36 — die Feld-Bedingungen (Regeln lesen das lebendige Feld am Ort)
+        if (op === "field_above") return `${a[0]} am Ort hoch ist (>${a[1]})`;
+        if (op === "field_below") return `${a[0]} am Ort niedrig ist (<${a[1]})`;
+        if (op === "and") return a.map((c) => this._describeDslCondition(c)).join(" und ");
+        if (op === "or") return a.map((c) => this._describeDslCondition(c)).join(" oder ");
         if (op === "not") return `nicht (${this._describeDslCondition(a[0])})`;
         return `etwas (${op})`;
     }
@@ -14501,6 +14616,8 @@ class AnazhRealm {
             voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
             time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
+            deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
+            deposit_emotion: (a) => `prägt „${a[0]}" ins Feld ${pos(a[2])}`,
             spawn_creature: (a) =>
                 `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
             spawn_tree: (a) => `pflanzt ${a[1] || 1} Baum${(a[1] || 1) !== 1 ? "äume" : ""} ${pos(a[0])}`,
@@ -14791,6 +14908,11 @@ class AnazhRealm {
         if (this._chatTryVoxelDebugCommand(command)) return;
         // Portal-Route + DSL-Parse räumen chatInput selbst auf.
         if (this._chatTryPortalRoute(command, chatInput, appendChatOutput)) return;
+        // V17.36 Phase D — der Schöpfer gibt der Welt GESETZE: „wann immer X, dann Y"
+        // → eine stehende Regel; „zeige regeln" / „vergiss regeln" verwalten sie.
+        // VOR dem generischen DSL-Parse (eigene Grammatik + reicheres Feedback).
+        if (this._chatTryRuleCommand(command, chatInput, appendChatOutput)) return;
+        if (this._chatTryRulesListCommand(command, chatInput, appendChatOutput)) return;
         if (this._chatTryDslParse(command, chatInput, appendChatOutput)) return;
         // Legacy-Themen-Dispatch + Cleanup am Ende (Original-Fall-Through).
         this._chatDispatchLegacyCommand(command, parts, appendChatOutput);
@@ -14866,6 +14988,94 @@ class AnazhRealm {
         }
         chatInput.value = "";
         return true;
+    }
+
+    // V17.36 Phase D — „wann immer X, dann Y" → eine stehende Mensch-Regel. Der
+    // Effekt (Y) wird über die BESTEHENDEN Chat-Patterns geparst (Synergie), die
+    // Bedingung (X) über _parseChatCondition. Reicheres Feedback als der Pattern-
+    // Tabellen-Pfad (deshalb ein eigener Zweig). Die Regel läuft durch denselben
+    // dslRun(source:"human")-Pfad → der `rule`-Op registriert sie PERMANENT (kein
+    // ttl → Mensch-Gesetz, von Eviction + Fitness-Prune geschützt). Whitelist-Wand:
+    // der Effekt darf den frozen Worldgen nicht anfassen (_isRuleEffectAllowed).
+    _chatTryRuleCommand(command, chatInput, appendChatOutput) {
+        const m = command.match(
+            /^(?:wann\s+immer|immer\s+wenn|jedes\s*mal\s+wenn|sobald)\s+(.+?)(?:\s*,\s*(?:dann\s+|so\s+)?|\s+dann\s+)(.+?)\s*$/i
+        );
+        if (!m) return false;
+        const condText = m[1].trim();
+        const effText = m[2].trim();
+        const cond = this._parseChatCondition(condText);
+        if (!cond) {
+            appendChatOutput(
+                `Ich verstehe die Bedingung „${condText}" noch nicht. Versuch z. B. „es regnet", „du bist traurig", „wenig Leben hier".`
+            );
+            chatInput.value = "";
+            return true;
+        }
+        const effect = this._parseChatEffect(effText);
+        if (!effect) {
+            appendChatOutput(
+                `Ich verstehe die Reaktion „${effText}" noch nicht. Versuch z. B. „setze wetter sunny" oder „spawne kreaturen 3".`
+            );
+            chatInput.value = "";
+            return true;
+        }
+        if (!this._isRuleEffectAllowed(effect)) {
+            appendChatOutput(
+                `„${effText}" darf keine stehende Welt-Regel sein — eine Regel berührt nur die reaktive Welt (Wetter, Leben, Stimmung, Kreaturen), nicht das feste Gelände.`
+            );
+            chatInput.value = "";
+            return true;
+        }
+        const program = ["rule", cond, effect, { everySec: 3 }];
+        const result = this.dslRun(program, { source: "human" });
+        if (result.ok) {
+            appendChatOutput(`Gesetz aufgestellt — ${this.describeProgram(program)}.`);
+        } else {
+            appendChatOutput("Die Regel ließ sich nicht aufstellen (siehe Log).");
+        }
+        chatInput.value = "";
+        return true;
+    }
+
+    // V17.36 Phase D — die Welt-Gesetze sichtbar machen: „zeige regeln" listet die
+    // aktiven Welt-Regeln menschen-lesbar (via describeProgram); „vergiss regeln"
+    // widerruft die eigenen (Mensch-)Gesetze (Nexus-Regeln verfallen selbst per ttl).
+    _chatTryRulesListCommand(command, chatInput, appendChatOutput) {
+        const c = command.trim();
+        if (/^(?:zeige|welche|liste|welt[-\s]*)?\s*(?:welt[-\s]*)?(?:regeln|gesetze)\??\s*$/i.test(c)) {
+            const rules = this.state.worldRules || [];
+            if (rules.length === 0) {
+                appendChatOutput('Noch keine Welt-Regeln. Sag z. B. „wann immer es regnet, dann setze wetter sunny".');
+                chatInput.value = "";
+                return true;
+            }
+            appendChatOutput(`${rules.length} Welt-Regel${rules.length !== 1 ? "n" : ""}:`);
+            for (const r of rules) {
+                const who = r.source === "human" ? "du" : r.source === "nexus" ? "der Nexus" : r.source;
+                appendChatOutput(`• ${this.describeProgram(["rule", r.cond, r.effect])} (von ${who})`);
+            }
+            chatInput.value = "";
+            return true;
+        }
+        if (
+            /^(?:vergiss|lösche|loesche|entferne|widerrufe)\s+(?:alle\s+)?(?:meine\s+)?(?:welt[-\s]*)?(?:regeln|gesetze)\s*$/i.test(
+                c
+            )
+        ) {
+            const rules = this.state.worldRules || [];
+            const before = rules.length;
+            this.state.worldRules = rules.filter((r) => r.source !== "human");
+            const removed = before - this.state.worldRules.length;
+            appendChatOutput(
+                removed > 0
+                    ? `${removed} deiner Gesetz${removed !== 1 ? "e" : ""} vergessen.`
+                    : "Du hattest keine eigenen Gesetze."
+            );
+            chatInput.value = "";
+            return true;
+        }
+        return false;
     }
 
     // Ring 2 Phase 3 — DSL-First. Wenn der Befehl in DSL übersetzbar ist,
@@ -43108,7 +43318,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.35.0";
+AnazhRealm.VERSION = "17.36.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
