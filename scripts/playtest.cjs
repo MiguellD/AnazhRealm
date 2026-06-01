@@ -16,11 +16,13 @@ const path = require("path");
 const puppeteer = require("puppeteer");
 
 // V17.32-Heilung (GEMESSEN): der Warmup-Pump finalisiert die Voxel-Chunks
-// (Cold-Start, async Worker + Main-BVH) mit ~0,5–0,8 Chunks/s; in 20 s landet
-// `voxelChunks` bei 10–16 — GENAU am `>= 15`-Schwellen-Rand → „seit Versionen rot".
-// 30 s gibt dem Cold-Start Luft (gemessen: voxelChunks=16 ✓) — DESHALB nutzt die
-// CI längst 30 s (`.github/workflows/check.yml`). Der lokale Default zieht jetzt
-// nach (kein Weichspülen: die Welt BAUT, sie braucht die Cold-Start-Zeit).
+// (Cold-Start, async Worker + Main-BVH) mit ~0,5–0,8 Chunks/s; unter CI-Last
+// landet `voxelChunks` gelegentlich unter dem `>= 15`-Threshold → „seit
+// Versionen rot" (derselbe Commit rot+grün je nach Runner). DURATION_MS ist
+// jetzt nur noch der MINDEST-Warmup (Floor) für die zeit-getriebenen Systeme;
+// die eigentliche Robustheit gegen die Last liefert der count-BASIERTE Pump
+// unten (pumpt, bis die Welt die Ziel-Chunks WIRKLICH gebaut hat, statt bis
+// ein Timer abläuft). Default 30 s = CI-Wert (`.github/workflows/check.yml`).
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
@@ -33399,12 +33401,34 @@ async function checkBandRing6Workshop(ctx) {
             // also läuft der Pump CPU-gebunden statt frame-gebunden.
             // Damit wird Streaming + Tick-Logik deterministisch unabhängig
             // von CPU-Last (CI-Flake-Wurzel der V9.82-Iso-Mesh-Welle).
-            while (performance.now() - start < durationMs) {
+            // V17.32-Folge — count-BASIERTER Warmup (robust gegen CPU-Last,
+            // die Wurzel des „voxelChunks-Schwellen-Flakes"). Der alte feste
+            // Wall-Clock-Pump (`while elapsed < durationMs`) baute unter CI-Last
+            // zu wenige Chunks: jeder Tick streamt zeit-budgetiert
+            // (FRAME_BUDGET_MS), und unter Last laufen weniger Ticks/s → in 30 s
+            // landet voxelChunks gelegentlich unter dem >=15-Threshold (derselbe
+            // Commit rot+grün je nach Runner — der gemessene CI-Flake). Die CI
+            // lief schon mit 30 s; mehr Wall-Clock ist nur ein größeres Magic-
+            // Number, kein Fix. Jetzt: MINDESTENS durationMs pumpen (damit zeit-
+            // getriebene Systeme wie gehabt laufen — keine Regression auf der
+            // schnellen Maschine, sie exitet exakt bei durationMs), danach NUR
+            // weiter, solange die Welt noch unter dem Ziel-Chunk-Count ist, bis
+            // zu einem großzügigen Cap (gegen einen hängenden Build). Die
+            // Invariante prüft WELT-ZUSTAND, nicht Wall-Clock-vs-CPU-Speed →
+            // deterministisch auf jedem Runner.
+            const TARGET_VOXEL_CHUNKS = 18; // Marge über der >=15-Invariante
+            const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
+            for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {
                     // Ein einzelner Tick-Fehler darf den Warmup nicht
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
+                }
+                const elapsed = performance.now() - start;
+                const built = r.state && r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                if (elapsed >= durationMs && (built >= TARGET_VOXEL_CHUNKS || elapsed >= HARD_CAP_MS)) {
+                    break;
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
