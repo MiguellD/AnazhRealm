@@ -22158,6 +22158,18 @@ class AnazhRealm {
             worldMeta: { ...this.state.worldMeta },
             dslAbilities: this.state.dsl.abilities.slice(-200),
             dslHistory: this.state.dsl.history.slice(-this.state.dsl.historyCap),
+            // V17.38 Phase E — die stehenden Welt-Regeln persistieren: die Gesetze
+            // (Mensch + Nexus) überleben einen Reload. NUR die DEFINIERENDEN Felder
+            // (cond/effect/everySec/source/ttlSec) — die Laufzeit-Akkus (fires/born/
+            // _sig/costMsSum) werden beim Restore frisch gesetzt. So IST eine Welt
+            // ihr Regel-Satz (auch über das Welt-Bündel/den Merge).
+            worldRules: (this.state.worldRules || []).slice(0, AnazhRealm.WORLD_RULES.cap).map((r) => ({
+                cond: r.cond,
+                effect: r.effect,
+                everySec: r.everySec,
+                source: r.source,
+                ttlSec: r.ttlSec,
+            })),
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
             dslPatternMemory: this.state.dsl.patternMemory || {},
@@ -24129,6 +24141,7 @@ class AnazhRealm {
         this._loadStateRestoreArchitectures(state);
         this._loadStateRestoreHotbarAndInventory(state);
         this._loadStateRestoreEmotionsAndDsl(state);
+        this._loadStateRestoreWorldRules(state);
         this._loadStateRestoreMiscState(state);
         if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
@@ -24444,6 +24457,51 @@ class AnazhRealm {
                     .slice(0, this.state.dsl.patternMemoryCapPerKey || 8);
             }
         }
+    }
+
+    // V17.38 Phase E — die persistierten Welt-Regeln wiederherstellen. Jede Regel
+    // wird FRISCH registriert (born=jetzt, fires=0, _sig neu berechnet) → die
+    // Laufzeit-Akkus sind sauber, das ttl-Fenster einer Nexus-Regel startet neu.
+    // Dedup über die Signatur (wie _registerWorldRule) + Cap. Mutiert
+    // `state.worldRules` feldweise (kein Wholesale-Replace des state) — robust über
+    // jeden Load (auch ein alter Save ohne `worldRules` → state bleibt das leere []).
+    _loadStateRestoreWorldRules(state) {
+        if (!Array.isArray(state.worldRules)) return;
+        const cfg = AnazhRealm.WORLD_RULES;
+        const now = performance.now() / 1000;
+        const restored = [];
+        for (const s of state.worldRules) {
+            if (
+                !s ||
+                !Array.isArray(s.cond) ||
+                s.cond.length === 0 ||
+                !Array.isArray(s.effect) ||
+                s.effect.length === 0
+            )
+                continue;
+            if (restored.length >= cfg.cap) break;
+            const source = typeof s.source === "string" ? s.source : "unknown";
+            const everySec = this.dslClamp(s.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
+            const ttlSec = Number.isFinite(Number(s.ttlSec)) && Number(s.ttlSec) > 0 ? Number(s.ttlSec) : null;
+            const sig = source + "|" + JSON.stringify(s.cond) + "|" + JSON.stringify(s.effect);
+            if (restored.some((r) => r._sig === sig)) continue;
+            restored.push({
+                id: this.state.dsl.nextRuleId++,
+                cond: s.cond,
+                effect: s.effect,
+                everySec,
+                lastFired: -Infinity,
+                fires: 0,
+                source,
+                ttlSec,
+                born: now,
+                _sig: sig,
+                costMsSum: 0,
+                errors: 0,
+                fitness: 0,
+            });
+        }
+        this.state.worldRules = restored;
     }
 
     // Pfad-Buckets (defensiver Merge — fremde Keys ignoriert), Welt-Journal
@@ -25240,6 +25298,7 @@ class AnazhRealm {
         const mergedHistory = this._fusionMergeDslHistory(saveA, saveB, strategy);
         const mergedPatternMemory = this._fusionMergePatternMemory(saveA, saveB);
         const mergedAbilities = this._fusionMergeAbilities(saveA, saveB);
+        const mergedWorldRules = this._fusionMergeWorldRules(saveA, saveB);
         const mergedPathBuckets = this._fusionMergePathBuckets(saveA, saveB);
         const fusedEntries = this._fusionBuildJournalEntries(saveA, saveB, idA, idB, identity, strategy);
 
@@ -25280,6 +25339,11 @@ class AnazhRealm {
             },
             dslAbilities: mergedAbilities,
             dslHistory: mergedHistory,
+            // V17.38 Phase E — die VEREINIGUNG der Regel-Sätze: eine fusionierte
+            // Welt IST die Union der Gesetze beider Eltern (Dedup über die Signatur).
+            // Das ist die Bibliothek von Alexandria im tiefen Sinn — zwei Regel-
+            // Sätze werden einer, weil sie dieselbe Sprache sprechen.
+            worldRules: mergedWorldRules,
             dslPatternMemory: mergedPatternMemory,
             playerPathBuckets: mergedPathBuckets,
             worldJournal: { entries: fusedEntries, seen: { genesis: true } },
@@ -25449,6 +25513,31 @@ class AnazhRealm {
             }
         }
         return mergedAbilities;
+    }
+
+    // V17.38 Phase E — die Regel-Sätze zweier Welten VEREINIGEN (Union + Dedup über
+    // die Signatur Quelle|cond|effect, wie _registerWorldRule). Eine fusionierte Welt
+    // IST die Vereinigung der Gesetze beider Eltern — die Bibliothek von Alexandria
+    // im tiefen Sinn (Welt-LOGIK ist merge-bar, weil sie dieselbe Sprache spricht).
+    // Nur die definierenden Felder (der Restore setzt die Laufzeit-Akkus frisch). Cap.
+    _fusionMergeWorldRules(saveA, saveB) {
+        const rulesA = Array.isArray(saveA.worldRules) ? saveA.worldRules : [];
+        const rulesB = Array.isArray(saveB.worldRules) ? saveB.worldRules : [];
+        const seen = new Set();
+        const merged = [];
+        const cap = AnazhRealm.WORLD_RULES.cap;
+        for (const list of [rulesA, rulesB]) {
+            for (const r of list) {
+                if (!r || !Array.isArray(r.cond) || !Array.isArray(r.effect)) continue;
+                const source = typeof r.source === "string" ? r.source : "unknown";
+                const sig = source + "|" + JSON.stringify(r.cond) + "|" + JSON.stringify(r.effect);
+                if (seen.has(sig)) continue;
+                seen.add(sig);
+                merged.push({ cond: r.cond, effect: r.effect, everySec: r.everySec, source, ttlSec: r.ttlSec });
+                if (merged.length >= cap) return merged;
+            }
+        }
+        return merged;
     }
 
     // Pfad-Buckets — Mittelung pro Achse (oder einseitiger Wert wenn nur eine
@@ -43409,7 +43498,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.37.0";
+AnazhRealm.VERSION = "17.38.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

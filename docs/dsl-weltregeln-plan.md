@@ -344,9 +344,18 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
   Nexus-Regeln → ein Regel-Satz, zwei Autoren (der Co-Schöpfer-Kreis, Pfeiler 1).
   `source` unterscheidet sie (für Fitness/Persistenz/Broadcast).
 
-### Phase E — Persistenz + die Bibliothek wird WAHR (eine Welt IST ihr Regel-Satz)
+### Phase E — Persistenz + die Bibliothek wird WAHR (eine Welt IST ihr Regel-Satz) — ✅ GEBAUT (V17.38)
 
 **Der Regel-Satz wird Welt-Identität.**
+
+> **Status (V17.38, 01.06.2026):** vollständig gebaut + gemessen — DER BOGEN (A–E) IST
+> KOMPLETT. `buildStateSnapshot` serialisiert `state.worldRules` (nur definierende Felder) ·
+> `_loadStateRestoreWorldRules` stellt sie frisch her (born/fires/_sig neu, Dedup, Cap;
+> alter Save ohne worldRules → no-op) · `_fusionMergeWorldRules` vereinigt die Regel-Sätze
+> beim Fusionieren (Union + Dedup, in `fuseWorlds` verdrahtet). Der signaling-server relayt
+> den world-snapshot opak → worldRules reist peer-to-peer mit. GEMESSEN:
+> `checkBandV1738RulePersistence` (7 grün). **KÜR danach (Backlog): die KI/das LLM als
+> Regel-Schreiberin (§3.4); Spieler-Pflege als zweiter Feld-Schreibpfad.**
 
 - **Persistenz:** `state.worldRules` in `buildStateSnapshot` + `loadState` (mit festem
   Feld-Satz, V8.59-Disziplin) — ABER nur Mensch/persistente Regeln (Nexus-Experimente
@@ -427,12 +436,14 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    (11 grün). **D-2 ✅ GEBAUT (V17.37):** die „Gesetze"-Sektion fusioniert in die BESTEHENDE
    Fähigkeiten-UI (kein Parallel-Panel — Heilige Lektion; Fähigkeit=invoke-once mit ▶,
    Regel=stehend mit ✕; beide Sektionen einklappbar; `checkBandV1737RulesUI` 7 grün).
-5. **Phase E** (Persistenz + Bibliothek) ist jetzt der letzte Schritt des Substrats —
-   `state.worldRules` (+ `state.dsl.nextRuleId`) in `buildStateSnapshot`/`loadState`
-   (die Gesetze überleben Reload), dann `mergeWorlds`/`fuseWorlds` vereinigt die Regel-Sätze
-   zweier Welten (Dedup über die `_sig`-Signatur) → eine Welt IST ihr Regel-Satz. Danach die
-   KÜR: die KI (LLM) als Regel-Schreiberin (sie bekommt die Regel-Grammatik als Werkzeug).
-6. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
+5. ~~**Phase E** (Persistenz + Bibliothek)~~ — ✅ **GEBAUT (V17.38)**: `worldRules` in
+   `buildStateSnapshot`/`_loadStateRestoreWorldRules` (Gesetze überleben Reload) +
+   `_fusionMergeWorldRules` in `fuseWorlds` (zwei Welten = die Union ihrer Gesetze).
+   Abnahme erfüllt: `checkBandV1738RulePersistence` (7 grün). **DER BOGEN A–E IST KOMPLETT.**
+6. **KÜR (Backlog, nach dem Substrat):** die KI (LLM) als Regel-Schreiberin — Grok bekommt
+   die Regel-Grammatik als Werkzeug + schlägt Regeln vor (durch dieselbe Sandbox + Whitelist
+   + Fitness); der letzte Pfeiler §3.4 „der KI-Schöpfer schreibt". Plus: Spieler-Pflege.
+7. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`
 ist (z. B. emotion→wetter), ist sie ein Kandidat, eine REGEL zu werden — das ist der

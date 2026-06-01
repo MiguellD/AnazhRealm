@@ -2210,6 +2210,130 @@ async function checkBandV1737RulesUI(ctx) {
     );
 }
 
+// V17.38 Phase E — Persistenz + Bibliothek: die stehenden Welt-Regeln ueberleben
+// einen Reload (buildStateSnapshot/loadState) UND der Regel-Satz zweier Welten wird
+// beim Fusionieren VEREINIGT (fuseWorlds) — eine Welt IST ihr Regel-Satz, die
+// Bibliothek von Alexandria im tiefen Sinn (Welt-LOGIK ist merge-bar). Gemessen:
+// Snapshot serialisiert (definierende Felder), Restore (frische Akkus, dedup, cap),
+// eine restaurierte Regel FEUERT, alter Save ohne worldRules → no-op, Merge unioniert.
+async function checkBandV1738RulePersistence(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        out.wired =
+            typeof r._loadStateRestoreWorldRules === "function" && typeof r._fusionMergeWorldRules === "function";
+
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+
+        // --- (1) buildStateSnapshot serialisiert worldRules (definierende Felder) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const snap = r.buildStateSnapshot();
+        out.snapSerializes =
+            Array.isArray(snap.worldRules) &&
+            snap.worldRules.length === 2 &&
+            JSON.stringify(snap.worldRules[0].cond) === JSON.stringify(["weather_is", "rainy"]) &&
+            snap.worldRules[0].source === "human" &&
+            snap.worldRules[1].source === "nexus" &&
+            // NUR definierende Felder, KEINE Laufzeit-Akkus
+            snap.worldRules[0].fires === undefined &&
+            snap.worldRules[0]._sig === undefined &&
+            snap.worldRules[0].born === undefined;
+
+        // --- (2) loadState-Restore: frische Akkus, korrekte Felder ---
+        r.state.worldRules.length = 0;
+        r._loadStateRestoreWorldRules(snap);
+        const rr = r.state.worldRules;
+        out.restoreWorks =
+            rr.length === 2 &&
+            JSON.stringify(rr[0].cond) === JSON.stringify(["weather_is", "rainy"]) &&
+            rr[0].source === "human" &&
+            rr[0].fires === 0 &&
+            typeof rr[0]._sig === "string" &&
+            now() - rr[0].born < 5 &&
+            rr[0].ttlSec == null && // Mensch-Regel: permanent
+            rr[1].ttlSec === 60; // Nexus-Regel: ttl erhalten
+
+        // --- (3) eine RESTAURIERTE Regel feuert (sie ist voll funktional) ---
+        // Isoliert auf die Mensch-Regel (rainy→sunny) — sonst überschriebe die
+        // mit-restaurierte Nexus-Regel (random_chance→rainy) das Ergebnis im Tick.
+        r.state.worldRules = [rr[0]];
+        r.state.weather = "rainy";
+        rr[0].lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.restoredFires = r.state.weather === "sunny";
+
+        // --- (4) Dedup beim Restore (zweimal dieselbe Regel → ein Eintrag) ---
+        const dupSnap = {
+            worldRules: [
+                {
+                    cond: ["weather_is", "rainy"],
+                    effect: ["weather", "sunny"],
+                    everySec: 3,
+                    source: "human",
+                    ttlSec: null,
+                },
+                {
+                    cond: ["weather_is", "rainy"],
+                    effect: ["weather", "sunny"],
+                    everySec: 3,
+                    source: "human",
+                    ttlSec: null,
+                },
+            ],
+        };
+        r._loadStateRestoreWorldRules(dupSnap);
+        out.restoreDedup = r.state.worldRules.length === 1;
+
+        // --- (5) alter Save ohne worldRules → no-op (state bleibt) ---
+        r.state.worldRules = [{ id: 999, cond: ["x"], effect: ["y"], source: "human" }];
+        r._loadStateRestoreWorldRules({}); // kein worldRules-Feld
+        out.oldSaveNoop = r.state.worldRules.length === 1 && r.state.worldRules[0].id === 999;
+
+        // --- (6) fuseWorlds: die Regel-Saetze werden VEREINIGT (Union + Dedup) ---
+        const ruleX = { cond: ["weather_is", "rainy"], effect: ["weather", "sunny"], everySec: 3, source: "human" };
+        const ruleY = {
+            cond: ["field_below", "lebendig", 0.3],
+            effect: ["deposit_life", ["at_player"]],
+            everySec: 3,
+            source: "human",
+        };
+        const saveA = { worldRules: [ruleX] };
+        const saveB = { worldRules: [ruleY, ruleX] }; // ruleX ist Duplikat
+        const merged = r._fusionMergeWorldRules(saveA, saveB);
+        out.mergeUnions =
+            merged.length === 2 && // X + Y, das doppelte X dedupt
+            merged.some((m) => JSON.stringify(m.cond) === JSON.stringify(["weather_is", "rainy"])) &&
+            merged.some((m) => JSON.stringify(m.cond) === JSON.stringify(["field_below", "lebendig", 0.3]));
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        return out;
+    });
+
+    check("V17.38 Persistenz: _loadStateRestoreWorldRules + _fusionMergeWorldRules verdrahtet", res.wired);
+    check(
+        "V17.38 Persistenz: buildStateSnapshot serialisiert worldRules (nur definierende Felder, keine Akkus)",
+        res.snapSerializes
+    );
+    check("V17.38 Persistenz: loadState-Restore stellt die Regeln her (frische Akkus, ttl erhalten)", res.restoreWorks);
+    check("V17.38 Persistenz: eine RESTAURIERTE Regel ist voll funktional (feuert rainy → sunny)", res.restoredFires);
+    check("V17.38 Persistenz: der Restore dedupt (zweimal dieselbe Regel → ein Eintrag)", res.restoreDedup);
+    check("V17.38 Persistenz: ein alter Save OHNE worldRules → no-op (state bleibt)", res.oldSaveNoop);
+    check(
+        "V17.38 Bibliothek: fuseWorlds VEREINIGT die Regel-Saetze (Union + Dedup — eine Welt IST ihr Regel-Satz)",
+        res.mergeUnions
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34275,6 +34399,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1735NexusEvolvesRules(ctx);
             await checkBandV1736HumanRules(ctx);
             await checkBandV1737RulesUI(ctx);
+            await checkBandV1738RulePersistence(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
