@@ -2119,6 +2119,97 @@ async function checkBandV1736HumanRules(ctx) {
     check('V17.36 Mensch-Regeln: „vergiss regeln" widerruft die Mensch-Gesetze', res.rulesForgotten);
 }
 
+// V17.37 D-2 — die Gesetze-Sektion in der BESTEHENDEN Faehigkeiten-UI (kein
+// Parallel-Panel, die Heilige Lektion): state.worldRules wird im selben Drawer
+// gelistet wie die Faehigkeiten (gleiches ability-row-Pattern via describeProgram),
+// aber eine Regel STEHT (kein ▶) → statt Run ein ✕ (vergiss, nur Mensch-Regeln) +
+// ein aktiv/ruht-Indikator; beide Sektionen sind einklappbar (wie die Einstellungen).
+// Gemessen: DOM-Host, renderWorldRulesList (Mensch-Regel mit ✕, Nexus-Regel ohne),
+// der ✕-Klick vergisst die Regel, der Empty-State, das Collapsible verdrahtet.
+async function checkBandV1737RulesUI(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const host = document.getElementById("status-worldrules");
+        out.domHost = !!host && r._statusRefs && r._statusRefs.worldrules === host;
+        out.renderWired = typeof r.renderWorldRulesList === "function";
+        out.collapsibleWired = typeof r._initCollapsibleDrawer === "function";
+
+        // Save state
+        const savedRules = r.state.worldRules.slice();
+        const forceRender = () => {
+            r._statusRefs.worldrulesSignature = ""; // Signature-Diff zuruecksetzen → echtes Re-Render
+            r.renderWorldRulesList();
+        };
+
+        // --- Empty-State ---
+        r.state.worldRules.length = 0;
+        forceRender();
+        out.emptyState = /Noch keine Gesetze/.test(host.textContent);
+
+        // --- Mensch-Regel: Row mit describeProgram + ✕ ---
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
+        const humanRule = r.state.worldRules.find((x) => x.source === "human");
+        forceRender();
+        const humanBtn = host.querySelector("button[data-forget-rule]");
+        out.humanRow =
+            !!host.querySelector(".ability-row.source-human") &&
+            /wann immer/i.test(host.textContent) &&
+            !!humanBtn &&
+            humanBtn.getAttribute("data-forget-rule") === String(humanRule.id);
+
+        // --- Nexus-Regel: KEIN ✕ (sie verfaellt selbst), aber gelistet ---
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        forceRender();
+        const nexusRow = host.querySelector(".ability-row.source-nexus");
+        out.nexusRow = !!nexusRow && !nexusRow.querySelector("button[data-forget-rule]");
+
+        // --- der ✕-Klick vergisst die Mensch-Regel (echte Event-Delegation) ---
+        const idBefore = humanRule.id;
+        const btn = host.querySelector(`button[data-forget-rule="${idBefore}"]`);
+        if (btn) btn.click();
+        out.forgetWorks = !r.state.worldRules.some((x) => x.id === idBefore);
+        // die Nexus-Regel bleibt (nur Mensch-Regeln tragen ✕)
+        out.nexusSurvives = r.state.worldRules.some((x) => x.source === "nexus");
+
+        // --- Collapsible: die Faehigkeiten-Drawer-Sektionen sind verdrahtet ---
+        const secs = document.querySelectorAll('.drawer[data-drawer="faehigkeiten"] section.section');
+        out.collapsibleHeaders =
+            secs.length >= 2 && Array.from(secs).every((s) => s.querySelector("h3.collapsible-header"));
+
+        // restore
+        r.state.worldRules = savedRules;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check(
+        "V17.37 Gesetze-UI: #status-worldrules existiert im Faehigkeiten-Drawer + ist als Status-Ref verdrahtet",
+        res.domHost
+    );
+    check(
+        "V17.37 Gesetze-UI: renderWorldRulesList + _initCollapsibleDrawer existieren",
+        res.renderWired && res.collapsibleWired
+    );
+    check("V17.37 Gesetze-UI: Empty-State zeigt den Hinweis", res.emptyState);
+    check(
+        "V17.37 Gesetze-UI: eine Mensch-Regel rendert als Row (describeProgram) mit ✕ (data-forget-rule)",
+        res.humanRow
+    );
+    check("V17.37 Gesetze-UI: eine Nexus-Regel ist gelistet, traegt aber KEIN ✕ (sie verfaellt selbst)", res.nexusRow);
+    check(
+        "V17.37 Gesetze-UI: der ✕-Klick vergisst die Mensch-Regel (Event-Delegation), Nexus bleibt",
+        res.forgetWorks && res.nexusSurvives
+    );
+    check(
+        "V17.37 Gesetze-UI: beide Sektionen (Faehigkeiten + Gesetze) sind einklappbar (collapsible-header)",
+        res.collapsibleHeaders
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34183,6 +34274,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1734FieldRules(ctx);
             await checkBandV1735NexusEvolvesRules(ctx);
             await checkBandV1736HumanRules(ctx);
+            await checkBandV1737RulesUI(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

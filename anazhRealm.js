@@ -9261,6 +9261,9 @@ class AnazhRealm {
             emotions: emotionRefs,
             abilities: document.getElementById("status-abilities"),
             abilitiesSignature: "",
+            // V17.37 D-2 — die Gesetze-Sektion (Welt-Regeln) in der Fähigkeiten-UI
+            worldrules: document.getElementById("status-worldrules"),
+            worldrulesSignature: "",
             lastTick: -Infinity,
         };
 
@@ -9273,6 +9276,23 @@ class AnazhRealm {
                 const name = target.getAttribute("data-run-ability");
                 if (name && this.state.abilities[name]) {
                     this.state.abilities[name]();
+                }
+            });
+        }
+        // V17.37 D-2 — Gesetze-Container: ✕ vergisst eine Mensch-Regel (per id).
+        // Nexus-Regeln verfallen selbst per ttl → sie tragen kein ✕.
+        const worldrulesContainer = this._statusRefs.worldrules;
+        if (worldrulesContainer) {
+            worldrulesContainer.addEventListener("click", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) return;
+                const idStr = target.getAttribute("data-forget-rule");
+                if (idStr == null) return;
+                const id = Number(idStr);
+                const rules = this.state.worldRules || [];
+                const rule = rules.find((x) => x.id === id);
+                if (rule && rule.source === "human") {
+                    this.state.worldRules = rules.filter((x) => x.id !== id);
                 }
             });
         }
@@ -9713,6 +9733,7 @@ class AnazhRealm {
             r.emotions[axis].value.textContent = v.toFixed(2);
         }
         this.renderAbilitiesList();
+        this.renderWorldRulesList();
     }
 
     // Abilities-Liste re-rendern, aber nur wenn sich Name/Source-Set
@@ -9779,6 +9800,68 @@ class AnazhRealm {
                 desc.textContent = ability.description;
                 row.appendChild(desc);
             }
+            container.appendChild(row);
+        }
+    }
+
+    // V17.37 D-2 — die Gesetze-Sektion: listet state.worldRules in DERSELBEN
+    // Fähigkeiten-UI (kein Parallel-Panel — Heilige Lektion), gleiches Row-Pattern
+    // wie die Fähigkeiten, ABER: eine Regel wird nicht invoked (kein ▶), sie STEHT
+    // → statt ▶ ein ✕ (vergiss, nur für Mensch-Regeln; Nexus-Regeln verfallen per
+    // ttl) + ein „⚡ aktiv / ruht"-Indikator (hat sie schon gefeuert). describeProgram
+    // macht jede Regel menschen-lesbar. Signature-Diff hält den Re-Render billig.
+    renderWorldRulesList() {
+        const r = this._statusRefs;
+        if (!r || !r.worldrules) return;
+        const rules = this.state.worldRules || [];
+        const signature =
+            rules.length +
+            ":" +
+            rules.map((x) => `${x.id}:${x.source || "?"}:${(x.fires || 0) > 0 ? "f" : "_"}`).join("|");
+        if (signature === r.worldrulesSignature) return;
+        r.worldrulesSignature = signature;
+        const container = r.worldrules;
+        container.innerHTML = "";
+        if (rules.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "ability-empty";
+            empty.textContent = 'Noch keine Gesetze. Sag z. B. „wann immer es regnet, dann setze wetter sunny".';
+            container.appendChild(empty);
+            return;
+        }
+        for (const rule of rules) {
+            const src = rule.source === "human" ? "human" : rule.source === "nexus" ? "nexus" : "unknown";
+            const row = document.createElement("div");
+            row.className = `ability-row source-${src}`;
+            const head = document.createElement("div");
+            head.className = "ability-head";
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
+            const source = document.createElement("span");
+            source.className = "source";
+            source.textContent = src === "human" ? "du" : src === "nexus" ? "Nexus" : src;
+            head.appendChild(name);
+            head.appendChild(source);
+            // Eine Regel wird nicht ausgeführt — sie steht. Mensch-Gesetz: ✕ zum
+            // Vergessen (Nexus-Regeln verfallen selbst, tragen kein ✕).
+            if (rule.source === "human") {
+                const forget = document.createElement("button");
+                forget.type = "button";
+                forget.textContent = "✕";
+                forget.setAttribute("data-forget-rule", String(rule.id));
+                forget.setAttribute("aria-label", "Gesetz vergessen");
+                head.appendChild(forget);
+            }
+            row.appendChild(head);
+            const desc = document.createElement("div");
+            desc.className = "ability-desc";
+            try {
+                desc.textContent = this.describeProgram(["rule", rule.cond, rule.effect]);
+            } catch {
+                desc.textContent = "eine Welt-Regel";
+            }
+            row.appendChild(desc);
             container.appendChild(row);
         }
     }
@@ -38942,12 +39025,20 @@ class AnazhRealm {
     // der Schöpfer faltet selbst, was er nicht braucht. Idempotent: ein
     // schon verdrahteter Header (.collapsible-header) wird übersprungen.
     _initCollapsibleSettings() {
+        // V17.37 D-2 — generisch: dasselbe Falt-Muster für die Einstellungen UND
+        // die Fähigkeiten-UI (deren zwei Sektionen Fähigkeiten + Gesetze einklappbar
+        // werden, wie der Schöpfer es wünschte — intuitive Untertabs).
+        this._initCollapsibleDrawer("einstellungen", "anazh.settings.collapsed");
+        this._initCollapsibleDrawer("faehigkeiten", "anazh.faehigkeiten.collapsed");
+    }
+
+    _initCollapsibleDrawer(drawerName, storageKey) {
         if (typeof document === "undefined") return;
-        const drawer = document.querySelector('.drawer[data-drawer="einstellungen"]');
+        const drawer = document.querySelector(`.drawer[data-drawer="${drawerName}"]`);
         if (!drawer) return;
         let stored = {};
         try {
-            stored = JSON.parse(localStorage.getItem("anazh.settings.collapsed") || "{}") || {};
+            stored = JSON.parse(localStorage.getItem(storageKey) || "{}") || {};
         } catch {
             stored = {};
         }
@@ -38955,7 +39046,7 @@ class AnazhRealm {
         sections.forEach((sec, i) => {
             const header = sec.querySelector("h3");
             if (!header || header.classList.contains("collapsible-header")) return;
-            const key = sec.id || `settings-sec-${i}`;
+            const key = sec.id || `${drawerName}-sec-${i}`;
             header.classList.add("collapsible-header");
             header.setAttribute("role", "button");
             header.setAttribute("tabindex", "0");
@@ -38964,7 +39055,7 @@ class AnazhRealm {
                 sec.classList.toggle("collapsed");
                 stored[key] = sec.classList.contains("collapsed");
                 try {
-                    localStorage.setItem("anazh.settings.collapsed", JSON.stringify(stored));
+                    localStorage.setItem(storageKey, JSON.stringify(stored));
                 } catch {
                     /* quota / private mode → silent */
                 }
@@ -43318,7 +43409,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.36.0";
+AnazhRealm.VERSION = "17.37.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

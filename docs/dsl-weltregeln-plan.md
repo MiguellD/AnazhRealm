@@ -424,8 +424,9 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    („wann immer X, dann Y" → Mensch-Regel; der Effekt via reuse `_parseChatEffect`, die
    Bedingung via `_parseChatCondition`), die Whitelist-Wand `_isRuleEffectAllowed` (der
    MENSCH-Caveat), „zeige/vergiss regeln". Abnahme erfüllt: `checkBandV1736HumanRules`
-   (11 grün). Offen (optional, D-2): eine „Gesetze"-Sektion in der BESTEHENDEN Fähigkeiten-
-   UI (kein Parallel-Panel — Heilige Lektion; Fähigkeit=invoke-once mit ▶, Regel=stehend mit ✕).
+   (11 grün). **D-2 ✅ GEBAUT (V17.37):** die „Gesetze"-Sektion fusioniert in die BESTEHENDE
+   Fähigkeiten-UI (kein Parallel-Panel — Heilige Lektion; Fähigkeit=invoke-once mit ▶,
+   Regel=stehend mit ✕; beide Sektionen einklappbar; `checkBandV1737RulesUI` 7 grün).
 5. **Phase E** (Persistenz + Bibliothek) ist jetzt der letzte Schritt des Substrats —
    `state.worldRules` (+ `state.dsl.nextRuleId`) in `buildStateSnapshot`/`loadState`
    (die Gesetze überleben Reload), dann `mergeWorlds`/`fuseWorlds` vereinigt die Regel-Sätze

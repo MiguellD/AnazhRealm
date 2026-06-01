@@ -4839,10 +4839,16 @@
         </aside>
         <aside class="drawer" data-drawer="faehigkeiten" aria-label="Fähigkeiten-Panel" hidden>
             <button class="drawer-close" type="button" data-drawer-close aria-label="Schließen">×</button>
-            <h2>Fähigkeiten</h2>
-            <section class="section">
-                <h3>Erlernt + Komponiert</h3>
+            <h2>Fähigkeiten &amp; Gesetze</h2>
+            <section class="section" id="faehigkeiten-abilities">
+                <h3>Fähigkeiten · erlernt + komponiert</h3>
+                <p class="drawer-hint">Benannte Gesten — ▶ wirkt sie einmal.</p>
                 <div id="status-abilities"></div>
+            </section>
+            <section class="section" id="faehigkeiten-gesetze">
+                <h3>Gesetze · Welt-Regeln</h3>
+                <p class="drawer-hint">Stehende „wann immer X, dann Y" — sie feuern von selbst. Im Chat: „wann immer es regnet, dann setze wetter sunny".</p>
+                <div id="status-worldrules"></div>
             </section>
         </aside>
         <aside class="drawer" data-drawer="werkstatt" aria-label="Werkstatt-Panel" hidden>
@@ -5749,6 +5755,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.36.0" defer></script>
+        <script src="anazhRealm.js?v=17.37.0" defer></script>
     </body>
 </html>
