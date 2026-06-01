@@ -324,8 +324,13 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
 > (Sprache → Feld/Stimmung-Bedingung). Whitelist-Wand `RULE_FORBIDDEN_EFFECT_OPS` +
 > `_isRuleEffectAllowed` (der V17.33-Caveat: Mensch-Regel darf den frozen Worldgen nicht
 > anfassen). Sichtbarkeit: „zeige regeln" (via `describeProgram(rule)`) + „vergiss regeln".
-> GEMESSEN: `checkBandV1736HumanRules` (11 grün). **EHRLICH:** ein immer-sichtbares HUD-Panel
-> (statt des Chat-Befehls) ist optionaler Browser-Audit-Schliff (D-2). **Nächst: Phase E.**
+> GEMESSEN: `checkBandV1736HumanRules` (11 grün). **EHRLICH (D-2, Schöpfer-Klärung):** die
+> immer-sichtbare Anzeige der Gesetze ist KEIN Parallel-Panel, sondern eine „Gesetze"-
+> SEKTION in der BESTEHENDEN Fähigkeiten-UI (`renderAbilitiesList`/`#status-abilities`) —
+> dasselbe describeProgram-Row-Pattern, aber statt ▶ (Fähigkeit = invoke-once-Geste) ein
+> „vergiss"-✕ + ein aktiv/feuert-Indikator (Regel = stehendes Gesetz). Heilige Lektion:
+> eine Fläche für die DSL-Logik der Welt, zwei Naturen. Optionaler Browser-Audit-Schliff.
+> **Nächst: Phase E.**
 
 - **Neue `chatDslPatterns`:** „wann immer/immer wenn <Bedingung>, dann <Effekt>" →
   `["rule", cond, effect]`. Beispiele: „immer wenn es Nacht wird, spawne Glühwürmchen",
@@ -419,7 +424,8 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    („wann immer X, dann Y" → Mensch-Regel; der Effekt via reuse `_parseChatEffect`, die
    Bedingung via `_parseChatCondition`), die Whitelist-Wand `_isRuleEffectAllowed` (der
    MENSCH-Caveat), „zeige/vergiss regeln". Abnahme erfüllt: `checkBandV1736HumanRules`
-   (11 grün). Offen (optional): ein immer-sichtbares HUD-Panel statt des Chat-Befehls (D-2).
+   (11 grün). Offen (optional, D-2): eine „Gesetze"-Sektion in der BESTEHENDEN Fähigkeiten-
+   UI (kein Parallel-Panel — Heilige Lektion; Fähigkeit=invoke-once mit ▶, Regel=stehend mit ✕).
 5. **Phase E** (Persistenz + Bibliothek) ist jetzt der letzte Schritt des Substrats —
    `state.worldRules` (+ `state.dsl.nextRuleId`) in `buildStateSnapshot`/`loadState`
    (die Gesetze überleben Reload), dann `mergeWorlds`/`fuseWorlds` vereinigt die Regel-Sätze
