@@ -15,7 +15,13 @@ const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 
-const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 20) * 1000;
+// V17.32-Heilung (GEMESSEN): der Warmup-Pump finalisiert die Voxel-Chunks
+// (Cold-Start, async Worker + Main-BVH) mit ~0,5–0,8 Chunks/s; in 20 s landet
+// `voxelChunks` bei 10–16 — GENAU am `>= 15`-Schwellen-Rand → „seit Versionen rot".
+// 30 s gibt dem Cold-Start Luft (gemessen: voxelChunks=16 ✓) — DESHALB nutzt die
+// CI längst 30 s (`.github/workflows/check.yml`). Der lokale Default zieht jetzt
+// nach (kein Weichspülen: die Welt BAUT, sie braucht die Cold-Start-Zeit).
+const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
@@ -19345,6 +19351,22 @@ async function checkBandWelle6XAudit(ctx) {
 
         // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
         r.setGameMode("pfad");
+        // V17.32-Heilung (GEMESSEN-Wurzel, `scripts/diag-soul-jump.cjs`): der Test
+        // prüft die INTRINSISCHE Seelen-Eigenschaft („Drache rutscht, dichte HOCH").
+        // `_canSoulJumpFromSlope` liest `statTags`, die in `computePlayerStats`
+        // NACH dem Soul-Clamp noch die AKTIVEN BOOSTS addieren (Emotion/Welt-
+        // Resonanz, im Warmup positions-/stimmungs-abhängig aufgebaut). GEMESSEN:
+        // die intrinsische Drachen-Seele hat lebendig=0.82 (wund) → score
+        // 0.7·0.82−0.3·0.72 = 0.358 < 0.4 → kann NICHT springen (stated intent ✓);
+        // ein +lebendig-Welt-Boost (lebendiges Feld) hebt lebendig auf 0.92 →
+        // score 0.428 ≥ 0.4 → kann springen → der Test kippte am 0.4-Grat („seit
+        // Versionen rot"). Die Boosts sind ein transienter Konfounder, kein
+        // Seelen-Merkmal → für die intrinsische Messung leeren (V17.31-Disziplin:
+        // die Eigenschaft testen, nicht den Drift des Welt-Zustands). Robust per
+        // Konstruktion: mit geleerten Boosts gilt für JEDE Wund-Intensität w∈[0,1]
+        // Drache-score = 0.4−0.05w (immer < 0.4) und Phönix-score = 0.475−0.05w
+        // (immer ≥ 0.4) — der Wund-Term verschiebt beide gleich, kippt nie.
+        if (r.state.player) r.state.player.boosts = [];
         r.applyPlayerSoul("phoenix");
         r.recomputePlayerStats && r.recomputePlayerStats();
         out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
@@ -22155,6 +22177,16 @@ async function checkBandW12WorldPortal(ctx) {
         out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
 
         // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
+        // V17.32-Heilung (GEMESSEN-Wurzel): die zwischenzeitlichen _gameLoopTick
+        // (Physik) lassen den Spieler aus PORTAL_REACH (4,5 m, 3D inkl. y — er
+        // settlet auf den Boden, weg von der Portal-Spawn-y) driften → „seit
+        // Versionen rot", auch bei voll gebauter Welt. Das Feature prüft „Spieler
+        // AM Portal → Prompt"; den Spieler an die Portal-Position zu setzen ist
+        // die korrekte, deterministische Test-Vorbedingung (V17.31-Disziplin:
+        // KONSUM/Intent testen, nicht den Drift einer Setup-Physik).
+        if (portalEntry && pm && pm.set) {
+            pm.set(portalEntry.position.x, portalEntry.position.y, portalEntry.position.z);
+        }
         r._tickPortalAffordance();
         const promptEl = document.getElementById("portal-prompt");
         out.promptShownNearPortal =
