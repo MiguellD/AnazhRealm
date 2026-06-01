@@ -7421,6 +7421,35 @@ class AnazhRealm {
             }
         }
 
+        // === Das lebendige Feld — der Kreis schließt sich (Welt→Spieler) ===
+        // Die lokale Aura unter dem Spieler nährt sanft seine Emotion: eine
+        // lebendige Lichtung gibt Frieden + Hoffnung, eine Glut-Ödnis Unruhe +
+        // Ehrfurcht, eine magie-leitende Zone Staunen. EIN Feld-Read (auraAt),
+        // generisch über AnazhRealm.FIELD_TO_EMOTION — kein Sonderfall-Pflaster,
+        // kein neues _tickX (docs/das-lebendige-feld.md §3.2: „eine friedliche
+        // Lichtung gibt Frieden" war der fehlende Rückweg). Drift NUR Richtung
+        // ZIEL und nur HEBEND (die Decay oben senkt) → wo das Feld schwach ist,
+        // bleibt „idle → 0"; wo es stark ist, spürt der Spieler die Region,
+        // ohne dass sie je selbst die 0.7-Trigger-Schwelle erreicht.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm && delta > 0) {
+            const aura = this.auraAt(pm.x, pm.z, currentTime);
+            const driftRate = 0.03; // pro Sekunde (sanft, Halbwertszeit ~23 s)
+            const map = AnazhRealm.FIELD_TO_EMOTION;
+            for (const fieldAxis of Object.keys(map)) {
+                const strength = aura[fieldAxis] || 0;
+                if (strength <= 0.05) continue;
+                const targets = map[fieldAxis];
+                for (const emo of Object.keys(targets)) {
+                    const target = targets[emo] * strength; // 0 .. < 0.7
+                    const cur = p.emotions[emo] || 0;
+                    if (target > cur) {
+                        p.emotions[emo] = Math.min(1, cur + (target - cur) * driftRate * delta);
+                    }
+                }
+            }
+        }
+
         const trigger = (axis, program) => {
             if (p.emotions[axis] < p.emotionThreshold) return;
             const last = p.emotionLastApply[axis] ?? -Infinity;
@@ -32199,6 +32228,28 @@ class AnazhRealm {
         };
     }
 
+    // === Das lebendige Feld — die LESE-Seite (docs/das-lebendige-feld.md §2) ===
+    // auraAt(x, z, t) ist die EINE Lese-Schnittstelle des Feldes: das
+    // worldgen-eingefrorene Substrat (worldFieldAt — lebendig/dichte/glut/
+    // magieleitung) ist der Kern, darüber die DYNAMISCHE Achse `emotion` (die
+    // gegenwärtige Stimmung, für Welt-Leser) + die Zeit `t`. EIN Feld, viele
+    // Leser (Hylomorphismus eine Ebene höher). Performance: identisch zu
+    // worldFieldAt + ein flacher Objekt-Aufbau; nicht pro-Frame-pro-Entity neu
+    // erfunden. Wer eine „lebendige Welt"-Wirkung baut, LIEST hier (kein _tickX).
+    // `emotion` ist die Live-Referenz (read-only Konvention — nicht mutieren).
+    auraAt(x, z, t = 0) {
+        const f = this.worldFieldAt(x, z);
+        const e = (this.state.player && this.state.player.emotions) || {};
+        return {
+            lebendig: f.lebendig,
+            dichte: f.dichte,
+            glut: f.glut,
+            magieleitung: f.magieleitung,
+            emotion: e,
+            t,
+        };
+    }
+
     // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
     // Der Terrain-Shader liest worldFieldAt (lebendig/dichte/glut/magie) und
     // leitet daraus die Grundfarbe ab — dieselbe Sprache wie die Architektur-
@@ -42157,7 +42208,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.20.0";
+AnazhRealm.VERSION = "17.21.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43020,6 +43071,19 @@ AnazhRealm.FOCUSING_IGNITE_THRESHOLD = 1.0; // Schwelle bei der ignite ausgelös
 AnazhRealm.BRENNBAR_TAG_MIN = 0.5; // Architektur gilt als brennbar ab diesem Tag-Wert
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
+// === Das lebendige Feld — die Welt→Spieler-Rückkopplung (der Kreis) ===
+// Welche Feld-Achse welche Emotion-Achse nährt: ZIEL-Niveau bei voller Achse
+// (1.0). Generisch — die Tabelle IST die Regel (Hylomorphismus-Stil), kein
+// Sonderfall-Code. Die Ziele bleiben UNTER der Trigger-Schwelle (0.7) → die
+// Aura allein löst nie einen Welt-Effekt aus, sie STIMMT den Spieler; seine
+// eigenen Taten entscheiden. Browser-justierbar (docs/das-lebendige-feld.md §3.2).
+AnazhRealm.FIELD_TO_EMOTION = Object.freeze({
+    lebendig: { peace: 0.45, hope: 0.3 }, // lebendige Wildnis: Ruhe + Hoffnung
+    glut: { chaos: 0.45, awe: 0.25 }, // Glut/Feuer: Unruhe + Ehrfurcht
+    magieleitung: { awe: 0.45, hope: 0.2 }, // Magie: Staunen
+    // dichte: neutral — Fels/Dichte trägt keine Stimmung
+});
+
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
     resonance_strong: 1.5,

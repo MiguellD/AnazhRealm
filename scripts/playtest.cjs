@@ -741,6 +741,91 @@ async function checkBandRing2Extended(ctx) {
     }
 }
 
+// V17.21 — Das lebendige Feld, Welle 1: auraAt (die Lese-Seite) + der
+// geschlossene Kreis (Welt→Spieler via FIELD_TO_EMOTION). Beweist: auraAt
+// umhüllt das eingefrorene worldFieldAt + die lokale Aura HEBT die Emotion
+// (lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
+// Save/Restore von Position + Emotionen → kein State-Leak in Folge-Bänder.
+async function checkBandV1721LivingFieldAura(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.hasAuraAt = typeof r.auraAt === "function";
+        const a = r.auraAt(0, 0, 1.5);
+        out.auraShape =
+            !!a &&
+            typeof a.lebendig === "number" &&
+            typeof a.dichte === "number" &&
+            typeof a.glut === "number" &&
+            typeof a.magieleitung === "number" &&
+            a.emotion &&
+            typeof a.emotion === "object" &&
+            a.t === 1.5;
+        const wf = r.worldFieldAt(123, -456);
+        const au = r.auraAt(123, -456);
+        out.auraWrapsField =
+            au.lebendig === wf.lebendig &&
+            au.glut === wf.glut &&
+            au.dichte === wf.dichte &&
+            au.magieleitung === wf.magieleitung;
+        // class AnazhRealm {} ist ein lexikalisches Global (wie let) — bare
+        // `AnazhRealm`, NICHT window.AnazhRealm; r.constructor ist am robustesten.
+        const M = r.constructor && r.constructor.FIELD_TO_EMOTION;
+        out.hasMap = !!M && Object.isFrozen(M) && M.lebendig && typeof M.lebendig.peace === "number";
+        // Der Kreis: finde den lebendigsten Spot in einem weiten Raster, setze
+        // den Spieler dorthin, ticke updatePlayerEmotions → peace steigt.
+        let spot = null,
+            best = -1;
+        for (let gx = -2000; gx <= 2000; gx += 100) {
+            for (let gz = -2000; gz <= 2000; gz += 100) {
+                const l = r.worldFieldAt(gx, gz).lebendig;
+                if (l > best) {
+                    best = l;
+                    spot = { x: gx, z: gz, lebendig: l };
+                }
+            }
+        }
+        out.bestLebendig = best;
+        if (spot && r.state.playerMesh && r.state.player && r.state.player.emotions) {
+            const origPos = r.state.playerMesh.position.clone();
+            const origEmo = { ...r.state.player.emotions };
+            const origTick = r.state.player.emotionLastTick;
+            r.state.playerMesh.position.set(spot.x, origPos.y, spot.z);
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            r.state.player.emotionLastTick = -Infinity;
+            let t = 1000;
+            r.updatePlayerEmotions(t); // delta=0 (prev=-Inf): kein Effekt
+            for (let i = 0; i < 40; i++) {
+                t += 2;
+                r.updatePlayerEmotions(t);
+            }
+            out.peaceVal = r.state.player.emotions.peace;
+            out.peaceRose = out.peaceVal > 0.04; // die Aura hat peace gehoben
+            out.peaceBelowTrigger = out.peaceVal < 0.7; // nie selbst-auslösend
+            // Restore — kein State-Leak in Folge-Bänder.
+            r.state.playerMesh.position.copy(origPos);
+            for (const k of Object.keys(origEmo)) r.state.player.emotions[k] = origEmo[k];
+            r.state.player.emotionLastTick = origTick;
+        }
+        return out;
+    });
+    check("V17.21 lebendiges Feld: auraAt(x,z,t) existiert", res.hasAuraAt);
+    check("V17.21 lebendiges Feld: auraAt-Shape (4 Feld-Achsen + emotion + t)", res.auraShape);
+    check("V17.21 lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
+    check("V17.21 lebendiges Feld: FIELD_TO_EMOTION ist frozen + verdrahtet", res.hasMap);
+    check(
+        "V17.21 lebendiges Feld: eine lebendige Region HEBT peace (der Kreis schließt sich)",
+        res.peaceRose,
+        `bestLebendig=${res.bestLebendig}, peace=${res.peaceVal}`
+    );
+    check(
+        "V17.21 lebendiges Feld: die Aura bleibt UNTER der 0.7-Trigger-Schwelle (stimmt, löst nie selbst aus)",
+        res.peaceBelowTrigger,
+        `peace=${res.peaceVal}`
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -32723,6 +32808,7 @@ async function checkBandRing6Workshop(ctx) {
             // (Ziel: ~25-35 Band-Funktionen total, NICHT per-Sektion).
             await checkBandRing2Extended(ctx);
             await checkBandWaves1to3(ctx);
+            await checkBandV1721LivingFieldAura(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
