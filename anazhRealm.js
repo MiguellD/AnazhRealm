@@ -302,10 +302,13 @@ class AnazhRealm {
             weatherTransition: null,
             // V17.23 Sky-Harmonie — die DSL/Mood-Himmelsfarbe ist eine TÖNUNG,
             // die parallel zur Tag-Nacht-Farbe BLENDET (nicht überschreibt) +
-            // smooth fadet. skyTint = Ziel-Farbe (THREE.Color | null),
-            // skyTintStrength = aktuelle Blend-Stärke (rampt), skyTintTarget =
-            // Ziel-Stärke (skybox_color hebt sie, sie decayt langsam).
+            // smooth fadet — in BEIDEN Achsen: skyTint = die AKTUELL gezeigte
+            // Tönung (lerpt Richtung skyTintTo → Farb-Cross-Fade, kein Sprung beim
+            // Farbwechsel, V17.24), skyTintTo = die Ziel-Farbe (skybox_color setzt
+            // sie); skyTintStrength = aktuelle Blend-Stärke (rampt), skyTintTarget
+            // = Ziel-Stärke (skybox_color hebt sie, decayt langsam).
             skyTint: null,
+            skyTintTo: null,
             skyTintStrength: 0,
             skyTintTarget: 0,
             // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
@@ -1553,7 +1556,13 @@ class AnazhRealm {
                 // durch, ohne die Tageszeit zu killen — Synergie statt Snap.
                 if (typeof color !== "string") return;
                 try {
-                    this.state.skyTint = new THREE.Color(color);
+                    const c = new THREE.Color(color);
+                    // V17.24 — die ZIEL-Farbe setzen; die gezeigte skyTint lerpt in
+                    // _dayNightApplySkybox sanft dorthin (Farb-Cross-Fade, kein
+                    // Sprung). Beim ersten Mal startet skyTint direkt am Ziel (dann
+                    // fadet nur die Stärke ein).
+                    this.state.skyTintTo = c;
+                    if (!this.state.skyTint) this.state.skyTint = c.clone();
                     this.state.skyTintTarget = AnazhRealm.SKY_TINT_MAX;
                 } catch {
                     // ungültige Farbe ignorieren
@@ -38441,6 +38450,9 @@ class AnazhRealm {
             // approximativ (smooth genug, kein exakter Delta nötig).
             const st = this.state;
             if (st.skyTint) {
+                // V17.24 — Farb-Cross-Fade: die gezeigte Tönung lerpt sanft zur
+                // Ziel-Farbe (ein Farbwechsel springt nicht mehr, er fadet).
+                if (st.skyTintTo) st.skyTint.lerp(st.skyTintTo, 0.08);
                 st.skyTintStrength += (st.skyTintTarget - st.skyTintStrength) * 0.12; // smooth ramp (kein Snap)
                 st.skyTintTarget = Math.max(0, st.skyTintTarget - 0.001); // langsamer Decay (~60 s) → fadet aus
                 if (st.skyTintStrength > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength);
@@ -42274,7 +42286,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.23.0";
+AnazhRealm.VERSION = "17.24.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

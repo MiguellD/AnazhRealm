@@ -886,6 +886,23 @@ async function checkBandV1723Harmony(ctx) {
             out.skyRamped = r.state.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
             out.skyDecays = r.state.skyTintTarget < t0; // Ziel fadet
             r.state.skyTint = null; // Restore — kein Leak
+            r.state.skyTintTo = null;
+            r.state.skyTintTarget = 0;
+            r.state.skyTintStrength = 0;
+        }
+        // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
+        // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
+        // bleibt rot), dann ticken → skyTint wandert Richtung blau.
+        if (typeof r._dayNightApplySkybox === "function") {
+            r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
+            r.dslRun(["skybox_color", "#0000ff"], { source: "test" });
+            const beforeHex = r.state.skyTint.getHex();
+            for (let i = 0; i < 25; i++) r._dayNightApplySkybox({ skyR: 0.2, skyG: 0.3, skyB: 0.5 });
+            const afterHex = r.state.skyTint.getHex();
+            out.colorCrossFades =
+                (afterHex & 0xff) > (beforeHex & 0xff) && ((afterHex >> 16) & 0xff) < ((beforeHex >> 16) & 0xff);
+            r.state.skyTint = null; // Restore
+            r.state.skyTintTo = null;
             r.state.skyTintTarget = 0;
             r.state.skyTintStrength = 0;
         }
@@ -901,6 +918,7 @@ async function checkBandV1723Harmony(ctx) {
     check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht nebulaColor", res.skyTintSet);
     check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
     check("V17.23 Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
+    check("V17.24 Harmonie: die Sky-FARBE cross-fadet (Farbwechsel springt nicht, er fadet)", res.colorCrossFades);
     check("V17.23 Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)", res.spawnRings);
 }
 
