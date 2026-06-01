@@ -300,6 +300,14 @@ class AnazhRealm {
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
             // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
             weatherTransition: null,
+            // V17.23 Sky-Harmonie — die DSL/Mood-Himmelsfarbe ist eine TÖNUNG,
+            // die parallel zur Tag-Nacht-Farbe BLENDET (nicht überschreibt) +
+            // smooth fadet. skyTint = Ziel-Farbe (THREE.Color | null),
+            // skyTintStrength = aktuelle Blend-Stärke (rampt), skyTintTarget =
+            // Ziel-Stärke (skybox_color hebt sie, sie decayt langsam).
+            skyTint: null,
+            skyTintStrength: 0,
+            skyTintTarget: 0,
             // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
             // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
             // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
@@ -1537,27 +1545,32 @@ class AnazhRealm {
                 this.state.timeOfDay = c(value, 0, 1);
             },
             skybox_color: ([color]) => {
-                // V10.0-f-1 — Skybox ist jetzt MeshBasicNodeMaterial (TSL),
-                // Uniforms leben in `state.skyboxUniforms` als uniform-Knoten
-                // mit direkt mutierbarem `.value`. Der alte
-                // `material.uniforms.nebulaColor.value`-Pfad ist weg.
-                // Pre-V10.0-f-1-Lehre (Ring 3 V2): vorher hieß das Uniform
-                // fälschlich `tintColor` und war ein stiller No-Op — der
-                // jetzige Pfad schreibt die kanonische Welt-Wahrheit.
+                // V17.23 Sky-Harmonie — die Farbe SNAPPT nicht mehr nebulaColor
+                // (wo _dayNightApplySkybox sie eh jeden Frame überschrieb = zwei
+                // Kräfte, die sich gegenseitig überschreiben). Stattdessen setzt
+                // sie eine TÖNUNG, die der Tag-Nacht-Himmel parallel BLENDET + die
+                // smooth fadet (s. _dayNightApplySkybox). Die Stimmung scheint
+                // durch, ohne die Tageszeit zu killen — Synergie statt Snap.
                 if (typeof color !== "string") return;
-                const uNebula = this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor;
-                if (uNebula) {
-                    try {
-                        uNebula.value = new THREE.Color(color);
-                    } catch {
-                        // ungültige Farbe ignorieren
-                    }
+                try {
+                    this.state.skyTint = new THREE.Color(color);
+                    this.state.skyTintTarget = AnazhRealm.SKY_TINT_MAX;
+                } catch {
+                    // ungültige Farbe ignorieren
                 }
             },
             spawn_creature: ([positionNode, count, emotion], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const n = c(count, 1, 20);
                 const e = emotion === "sad" || emotion === "happy" ? emotion : "happy";
+                // === Spawn-Harmonie (V17.23): der Ort, an dem ICH STEHE, ist
+                // besetzt — Kreaturen erscheinen im RING um den Ziel-Punkt, nie
+                // gestapelt + nie AUF dem Spieler (sonst clippt/buggt es, Schöpfer-
+                // Befund). Liegt der Ziel-Punkt auf dem Spieler (at_player), wird
+                // der Ring nach außen geschoben. ctx.rng → deterministisch +
+                // broadcast-konsistent (wie die Position-Resolver).
+                const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
+                const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
                 let spawned = 0;
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
@@ -1565,7 +1578,9 @@ class AnazhRealm {
                         break;
                     }
                     ctx.budget.spawnsLeft--;
-                    this.spawnCreatureAt(pos.x, pos.y, pos.z, e);
+                    const ang = ctx.rng() * Math.PI * 2;
+                    const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
+                    this.spawnCreatureAt(pos.x + Math.cos(ang) * rad, pos.y, pos.z + Math.sin(ang) * rad, e);
                     spawned++;
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
@@ -2636,25 +2651,32 @@ class AnazhRealm {
         // Bias ist sanft (max ±0.3 von der 0.5-Mitte) — Komposition bleibt
         // erkundend, der Nexus „spürt" den Menschen, ohne ihn zu spiegeln.
         const e = (this.state.player && this.state.player.emotions) || {};
-        // Mood-Bias bleibt EMOTION-ONLY (joy→sunny, sorrow→rainy): die explizite
-        // Spieler-Emotion dominiert das Wetter — das Feld biast die Stimmung
-        // NICHT (sonst überstimmt eine adverse Region den klaren Spieler-Willen;
-        // Wetter ist der Spieler→Welt-Schreibpfad, nicht der ambiente Read).
-        const sunnyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
-        const happyBias = sunnyBias;
         // === Der Nexus bekommt Augen (docs/das-lebendige-feld.md §2/§3.1) ===
         // Er war BLIND: würfelte Atome aus einer fixen Liste, nur emotion-gebiast
         // — er spürte nicht „dieser Wald lebt / hier glüht es / hier resoniert
         // Magie" (der Drift „am weitesten von fraktalem Wachstum weg"). Jetzt
         // LIEST er das lokale Feld (auraAt am Spieler) und komponiert RESONANT:
         // er nährt MEHR Leben, wo das Feld lebt (spawn_creature-Gewicht ∝
-        // lebendig), und färbt resonant (magie→Lila, glut→Feuer, lebendig→Grün,
-        // s. dslComposeFieldColor). Der Kreis des Verstehens schließt sich — der
-        // Nexus wächst aus dem, was er liest, statt blind zu würfeln. Ohne
-        // playerMesh = neutrales Feld (fLebendig=0.5) = backward-compatible.
+        // lebendig), färbt resonant (s. dslComposeFieldColor) UND stimmt das
+        // Wetter mit (s.u.). Ohne playerMesh = neutrales Feld = backward-compatible.
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.x, pm.z) : null;
         const fLebendig = aura ? aura.lebendig : 0.5;
+        const fGlut = aura ? aura.glut : 0;
+        // === HARMONIE statt Überschreiben (Schöpfer-Lehre 01.06.2026) ===
+        // Emotion UND Feld formen die Wetter-Stimmung PARALLEL — aber der
+        // explizite Spieler-Wille FÜHRT. emoSignal = die Stärke des Willens
+        // (|joy−sorrow|, 0..1): wo der Spieler stark fühlt (→1), WEICHT das Feld
+        // zurück (×(1−emoSignal) → 0); wo er ruhig ist (→0), füllt die ambiente
+        // Region die Stimmung. So überschreibt NIE eine Kraft die andere:
+        // joy=1 → Feld-Anteil 0 → sunny dominiert (die Invariante hält per
+        // KONSTRUKTION, nicht per Wegnahme); idle → die Region scheint durch.
+        // Das ist Synergie statt Revert — zwei Kräfte verschmelzen, keine kämpft.
+        const emoTerm = (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3;
+        const emoSignal = Math.min(1, Math.abs((e.joy || 0) - (e.sorrow || 0)));
+        const fieldMood = ((fLebendig - 0.5) * 0.4 - fGlut * 0.3) * (1 - emoSignal);
+        const sunnyBias = Math.max(0.05, Math.min(0.95, 0.5 + emoTerm + fieldMood));
+        const happyBias = sunnyBias;
         const choices = [
             { w: 15, build: () => ["weather", rng() < sunnyBias ? "sunny" : "rainy"] },
             {
@@ -38413,6 +38435,16 @@ class AnazhRealm {
         if (!u) return;
         if (u.nebulaColor && u.nebulaColor.value && u.nebulaColor.value.setRGB) {
             u.nebulaColor.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+            // === Sky-Harmonie (V17.23): die DSL/Mood-Tönung überschreibt die
+            // Tag-Nacht-Farbe NICHT — sie BLENDET parallel + FADET. Diese Methode
+            // läuft ~10 Hz (Tag-Nacht-Throttle); die Schritte sind raten-
+            // approximativ (smooth genug, kein exakter Delta nötig).
+            const st = this.state;
+            if (st.skyTint) {
+                st.skyTintStrength += (st.skyTintTarget - st.skyTintStrength) * 0.12; // smooth ramp (kein Snap)
+                st.skyTintTarget = Math.max(0, st.skyTintTarget - 0.001); // langsamer Decay (~60 s) → fadet aus
+                if (st.skyTintStrength > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength);
+            }
         }
         if (u.cloudCover) {
             // V17.2 — klar 0.32 (verstreute Cumulus statt kahler Himmel), Regen
@@ -42242,7 +42274,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.22.0";
+AnazhRealm.VERSION = "17.23.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43117,6 +43149,11 @@ AnazhRealm.FIELD_TO_EMOTION = Object.freeze({
     magieleitung: { awe: 0.45, hope: 0.2 }, // Magie: Staunen
     // dichte: neutral — Fels/Dichte trägt keine Stimmung
 });
+
+// V17.23 Sky-Harmonie — die maximale Blend-Stärke der DSL/Mood-Himmels-Tönung
+// gegen die Tag-Nacht-Farbe (0.6 = die Tönung bis 60 %, der Tag-Nacht-Himmel
+// bleibt zu 40 % sichtbar → die Tageszeit überlebt). Browser-justierbar.
+AnazhRealm.SKY_TINT_MAX = 0.6;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,

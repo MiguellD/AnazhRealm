@@ -860,6 +860,50 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
+// V17.23 — Harmonie statt Revert (Schöpfer-Lehre): drei Kräfte verschmelzen
+// PARALLEL, ohne zu überschreiben, und faden. (1) Wetter: Feld + Emotion, das
+// Feld weicht dem starken Willen (×(1−emoSignal)); (2) Sky: die DSL-Tönung
+// blendet mit Tag-Nacht + fadet (snappt/überschreibt nicht); (3) Spawn: Ring
+// um den Spieler statt AUF ihm. Sky-Fade behavioral (mit Restore), Rest Source-
+// Probe (kein State-Leak durch echtes Spawnen).
+async function checkBandV1723Harmony(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const atomicSrc = r.dslComposeAtomic.toString();
+        out.weatherYields = /emoSignal/.test(atomicSrc) && /1 - emoSignal/.test(atomicSrc);
+        out.skyTintMax = r.constructor.SKY_TINT_MAX === 0.6;
+        r.state.skyTint = null;
+        r.state.skyTintTarget = 0;
+        r.state.skyTintStrength = 0;
+        r.dslRun(["skybox_color", "#d4a3ff"], { source: "test" });
+        out.skyTintSet = !!r.state.skyTint && r.state.skyTintTarget > 0;
+        if (typeof r._dayNightApplySkybox === "function") {
+            const t0 = r.state.skyTintTarget;
+            const tint = { skyR: 0.2, skyG: 0.3, skyB: 0.5 };
+            for (let i = 0; i < 10; i++) r._dayNightApplySkybox(tint);
+            out.skyRamped = r.state.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
+            out.skyDecays = r.state.skyTintTarget < t0; // Ziel fadet
+            r.state.skyTint = null; // Restore — kein Leak
+            r.state.skyTintTarget = 0;
+            r.state.skyTintStrength = 0;
+        }
+        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? r.dslEffects.spawn_creature.toString() : "";
+        out.spawnRings = /onPlayer/.test(spawnSrc) && /Math\.cos\(ang\)/.test(spawnSrc) && /rad/.test(spawnSrc);
+        return out;
+    });
+    check(
+        "V17.23 Harmonie: Wetter weicht dem starken Willen (Feld ×(1−emoSignal), kein Überschreiben)",
+        res.weatherYields
+    );
+    check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
+    check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht nebulaColor", res.skyTintSet);
+    check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
+    check("V17.23 Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
+    check("V17.23 Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)", res.spawnRings);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -30604,15 +30648,15 @@ async function checkBandEarlyRingsAndUi(ctx) {
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
         p.emotionLastTick = 299;
-        // V10.0-f-1 Doku-Sync: nebulaColor lebt jetzt in state.skyboxUniforms.
-        const readSkyHex = () =>
-            r.state.skyboxUniforms && r.state.skyboxUniforms.nebulaColor
-                ? r.state.skyboxUniforms.nebulaColor.value.getHex()
-                : -1;
-        const skyBefore = readSkyHex();
+        // V17.23 Doku-Sync (Sky-Harmonie): skybox_color setzt jetzt eine fadende
+        // state.skyTint-Tönung (die in den Tag-Nacht-Himmel BLENDET), snappt
+        // nicht mehr nebulaColor (das _dayNightApplySkybox eh überschrieb). Der
+        // awe-Trigger feuert ["skybox_color","#d4a3ff"] → setzt skyTint +
+        // skyTintTarget > 0.
+        r.state.skyTint = null;
+        r.state.skyTintTarget = 0;
         r.updatePlayerEmotions(300);
-        const skyAfter = readSkyHex();
-        out.aweTriggersSkybox = skyAfter !== skyBefore && skyBefore !== -1;
+        out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
         // (b) hope > 0.7 → wetter sunny + kreaturen happy
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
@@ -32844,6 +32888,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWaves1to3(ctx);
             await checkBandV1721LivingFieldAura(ctx);
             await checkBandV1722NexusEyes(ctx);
+            await checkBandV1723Harmony(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

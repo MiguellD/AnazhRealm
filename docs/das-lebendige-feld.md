@@ -198,3 +198,11 @@ sondern die **konzeptionelle Lücke** (Feld lebendig machen) + die **toten Glied
    das Fundament + die DSL-Tiefe. Performance + Determinismus bleiben heilig.
 5. **Miss, rate nicht** (die durchgängige Projekt-Lehre): Reproducer mit Output-Lesen,
    vorher/nachher messen, der Schöpfer-Browser ist die visuelle Wahrheit.
+6. **Harmonie statt Revert** (V17.23-Schöpfer-Lehre): wenn das Feld eine Sache
+   beeinflusst, die schon eine andere Kraft formt (Emotion → Wetter, Tag-Nacht →
+   Himmel), und ein Test bricht — nimm das Feld NICHT wieder heraus (das ist
+   oberflächlich). Die Wurzel ist fehlende Harmonie: heile in eine **nachgebende
+   Hierarchie** — der intentionale Wille (Spieler) FÜHRT, das ambiente Feld WEICHT
+   wo der Wille stark ist (×`(1−emoSignal)`) + FÜLLT wo er schweigt; nie
+   überschreiben, immer verschmelzen, immer FADEN (kein Snap). Frage bei jeder
+   Feld-Kraft: harmonisch oder abrupt? überschreibt sie oder verschmilzt sie?
