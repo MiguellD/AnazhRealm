@@ -751,6 +751,7 @@ async function checkBandV1721LivingFieldAura(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
+        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
         out.hasAuraAt = typeof r.auraAt === "function";
         const a = r.auraAt(0, 0, 1.5);
         out.auraShape =
@@ -931,6 +932,7 @@ async function checkBandV1725FieldReaders(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
+        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
         out.faunaReadsAura =
             /auraAt/.test(r._currentFaunaTarget.toString()) && /glut/.test(r._currentFaunaTarget.toString());
         out.faunaMaxReadsAura =
@@ -992,6 +994,7 @@ async function checkBandV1726FieldDirection(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
+        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
         out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
         out.composeUsesNeed = /at_field_need/.test(r.dslComposeAtomic.toString());
         const pm = r.state.playerMesh && r.state.playerMesh.position;
@@ -1020,6 +1023,79 @@ async function checkBandV1726FieldDirection(ctx) {
         `needLeb=${res.needLeb} == min=${res.minLeb}`
     );
     check("V17.26 Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring (Radius 50)", res.onRing);
+}
+
+// V17.27 — die SCHREIB-Seite des lebendigen Feldes: eine Geburt deponiert Leben,
+// das den frozen lebendig-Kern HEBT (auraAt blendet, nie überschreiben), langsam
+// zurück zerfällt (Homöostase), bei max sättigt — und der at_field_need-LOOP
+// schließt sich ECHT: Leben am ärmsten Punkt → er ist nicht mehr der ärmste →
+// ein ANDERER wird es (Leben spreizt, kein Abladen). Plus backward-compatible
+// (leerer Overlay == frozen) + die Geburt im spawn_creature-Pfad deponiert.
+async function checkBandV1727WritableField(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const cfg = r.constructor.LIFE_FIELD;
+        out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
+        out.auraReadsOverlay = /_lifeOverlayAt/.test(r.auraAt.toString());
+        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? r.dslEffects.spawn_creature.toString() : "";
+        out.spawnDeposits = /_depositLife/.test(spawnSrc); // die Geburt trägt Leben ins Feld
+        // sauberer Start
+        if (r.state.lifeField) r.state.lifeField.clear();
+        const X = 12345,
+            Z = -6789; // ein fester, vom Spieler entfernter Test-Ort
+        const frozen = r.worldFieldAt(X, Z).lebendig;
+        // (1) backward-compatible: leerer Overlay → auraAt == worldFieldAt
+        out.emptyEqualsFrozen = r.auraAt(X, Z).lebendig === frozen;
+        // (2) Deposit HEBT lebendig (min(frozen + pulse, 1))
+        r._depositLife(X, Z);
+        const afterDeposit = r.auraAt(X, Z).lebendig;
+        out.depositRaises = afterDeposit > frozen;
+        out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
+        // (3) Decay senkt zurück zum Substrat (t zurückdrehen = ~120 s vergangen)
+        const cell = r.state.lifeField.get(r._lifeCellKey(X, Z));
+        const beforeDecay = r.auraAt(X, Z).lebendig;
+        cell.t -= 120; // λ=0.008 → ×e^(−0.96) ≈ 0.38
+        const afterDecay = r.auraAt(X, Z).lebendig;
+        out.decayLowers = afterDecay < beforeDecay && afterDecay > frozen;
+        // (4) Sättigung: viele Deposits → Overlay kappt exakt bei max
+        r.state.lifeField.clear();
+        for (let i = 0; i < 20; i++) r._depositLife(X, Z);
+        out.saturates = Math.abs(r.state.lifeField.get(r._lifeCellKey(X, Z)).a - cfg.max) < 1e-6;
+        // (5) DER LOOP SCHLIESST SICH: Deposit am ärmsten Ring-Punkt → ein
+        // ANDERER wird der ärmste (Leben spreizt in die Welt, kein Abladen)
+        r.state.lifeField.clear();
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm && r.dslPositions && typeof r.dslPositions.at_field_need === "function") {
+            const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
+            const p1 = r.dslPositions.at_field_need([50], ctx2);
+            for (let i = 0; i < 6; i++) r._depositLife(p1.x, p1.z); // sättigen am alten Minimum
+            const p2 = r.dslPositions.at_field_need([50], ctx2);
+            out.loopSpreads = Math.abs(p2.x - p1.x) > 1 || Math.abs(p2.z - p1.z) > 1;
+            out.p1Raised = r.auraAt(p1.x, p1.z).lebendig > r.auraAt(p2.x, p2.z).lebendig;
+        } else {
+            out.loopSpreads = true;
+            out.p1Raised = true;
+        }
+        if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
+        return out;
+    });
+    check("V17.27 Schreib-Feld: LIFE_FIELD-Konstante existiert (cell/decay/pulse/max)", res.hasConst);
+    check("V17.27 Schreib-Feld: auraAt blendet das Leben-Overlay (_lifeOverlayAt)", res.auraReadsOverlay);
+    check("V17.27 Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
+    check("V17.27 Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
+    check(
+        "V17.27 Schreib-Feld: ein Deposit HEBT lebendig über dem frozen Kern (frozen + pulse)",
+        res.depositRaises && res.depositExact
+    );
+    check("V17.27 Schreib-Feld: Decay senkt zurück zum Substrat (Homöostase, ein Garten will Pflege)", res.decayLowers);
+    check("V17.27 Schreib-Feld: Sättigung kappt exakt bei LIFE_FIELD.max (nie über die Wurzel hinaus)", res.saturates);
+    check(
+        "V17.27 Schreib-Feld: der at_field_need-LOOP schließt sich — Leben spreizt, der alte Bedarf weicht",
+        res.loopSpreads
+    );
+    check("V17.27 Schreib-Feld: der alte Bedarf-Punkt ist gehoben (der Mangel sinkt wirklich)", res.p1Raised);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -33009,6 +33085,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1723Harmony(ctx);
             await checkBandV1725FieldReaders(ctx);
             await checkBandV1726FieldDirection(ctx);
+            await checkBandV1727WritableField(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

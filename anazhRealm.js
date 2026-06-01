@@ -1589,7 +1589,18 @@ class AnazhRealm {
                     ctx.budget.spawnsLeft--;
                     const ang = ctx.rng() * Math.PI * 2;
                     const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
-                    this.spawnCreatureAt(pos.x + Math.cos(ang) * rad, pos.y, pos.z + Math.sin(ang) * rad, e);
+                    const sx = pos.x + Math.cos(ang) * rad;
+                    const sz = pos.z + Math.sin(ang) * rad;
+                    this.spawnCreatureAt(sx, pos.y, sz, e);
+                    // V17.27 — eine Geburt TRÄGT Leben ins Feld (die Schreib-Seite):
+                    // sie hebt lebendig an der Wiege → schließt den at_field_need-
+                    // Loop (der Mangel sinkt, der Nexus zieht weiter) + die Region
+                    // ergrünt (Fauna-Ziel + Emotion-Drift lesen das gehobene
+                    // lebendig via auraAt). NUR dieser INTENTIONALE Spawn-Pfad
+                    // (Nexus/Chat/DSL) deponiert — die ambiente Fauna (sie ist die
+                    // FOLGE des Feldes) + Restore tun es bewusst NICHT (kein
+                    // positives Feedback-Runaway in üppigen Regionen).
+                    this._depositLife(sx, sz);
                     spawned++;
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
@@ -7517,6 +7528,11 @@ class AnazhRealm {
                 p.emotions[k] = Math.max(0, p.emotions[k] - dec);
             }
         }
+
+        // V17.27 — das Leben-Overlay (die Schreib-Seite des Feldes) bounded
+        // halten: rate-limiteter Prune zerfallener Zellen (alle ~5 s). Lazy-
+        // Decay läuft beim Lesen; dies räumt nur die toten Zellen aus der Map.
+        this._pruneLifeField();
 
         // === Das lebendige Feld — der Kreis schließt sich (Welt→Spieler) ===
         // Die lokale Aura unter dem Spieler nährt sanft seine Emotion: eine
@@ -32337,14 +32353,88 @@ class AnazhRealm {
     auraAt(x, z, t = 0) {
         const f = this.worldFieldAt(x, z);
         const e = (this.state.player && this.state.player.emotions) || {};
+        // V17.27 — die SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem
+        // frozen Substrat (min(., 1), nie Überschreiben — V17.23-Harmonie).
+        // Leerer Overlay → lebendig == frozen (backward-compatible: alle frozen-
+        // Feld-Leser/-Tests unberührt). Macht den at_field_need-Loop geschlossen
+        // (er liest auraAt.lebendig) + speist via FIELD_TO_EMOTION (V17.21) das
+        // Welt-ERLEBEN in die Emotion — beides für umsonst, weil sie auraAt lesen.
+        const overlay = this._lifeOverlayAt(x, z);
         return {
-            lebendig: f.lebendig,
+            lebendig: overlay > 0 ? Math.min(1, f.lebendig + overlay) : f.lebendig,
             dichte: f.dichte,
             glut: f.glut,
             magieleitung: f.magieleitung,
             emotion: e,
             t,
         };
+    }
+
+    // === Das lebendige Feld — die SCHREIB-Seite (V17.27) ===
+    // Das Overlay ist eine sparse Map: Schlüssel "cx,cz" = die 16-m-Zelle,
+    // Wert { a, t } = Overlay-Menge + Zeitstempel (Sekunden). Der Decay läuft
+    // LAZY beim Lesen (a · e^(−λ·Δt)) — KEIN globaler per-Frame-Sweep (Effizienz:
+    // O(1)/Lese, O(1)/Deposit, ein billiger Prune ~alle 5 s). Nur intentionale
+    // Spawns (Nexus/Chat/DSL via spawn_creature) deponieren — die ambiente
+    // Fauna ist die FOLGE des Feldes (kein positives Feedback-Runaway), Restore
+    // auch nicht. Nicht persistiert (reaktive Schicht wie Wetter — V9.67).
+    _lifeCellKey(x, z) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        return Math.floor(x / cs) + "," + Math.floor(z / cs);
+    }
+
+    // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle.
+    _lifeOverlayAt(x, z) {
+        const lf = this.state.lifeField;
+        if (!lf || lf.size === 0) return 0;
+        const e = lf.get(this._lifeCellKey(x, z));
+        if (!e) return 0;
+        const dt = Math.max(0, performance.now() / 1000 - e.t);
+        return dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
+    }
+
+    // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
+    // geklemmt auf LIFE_FIELD.max (Sättigung → der Nexus zieht weiter). Die EINE
+    // Schreib-API — wer Leben in die Welt trägt (Geburt heute; später Spieler-
+    // Pflege, Kreatur-Trickle) ruft sie. Harmonisch: sie HEBT nur, der Decay
+    // senkt → nie Überschreiben (V17.23/V17.21-Prinzip, jetzt im Feld selbst).
+    _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
+        if (!(amount > 0)) return;
+        if (!this.state.lifeField) this.state.lifeField = new Map();
+        const lf = this.state.lifeField;
+        const cfg = AnazhRealm.LIFE_FIELD;
+        const now = performance.now() / 1000;
+        const cx = Math.floor(x / cfg.cell);
+        const cz = Math.floor(z / cfg.cell);
+        const neighborAmount = amount * (cfg.pulseNeighbor / cfg.pulseCenter);
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const add = dx === 0 && dz === 0 ? amount : neighborAmount;
+                const key = cx + dx + "," + (cz + dz);
+                const e = lf.get(key);
+                let cur = 0;
+                if (e) {
+                    const dt = Math.max(0, now - e.t);
+                    cur = e.a * Math.exp(-cfg.decayPerSec * dt);
+                }
+                lf.set(key, { a: Math.min(cfg.max, cur + add), t: now });
+            }
+        }
+    }
+
+    // Billiger Prune (rate-limited via updatePlayerEmotions): Zellen unter
+    // epsilon raus → die Map bleibt bounded (nur aktiv getendete Regionen leben).
+    _pruneLifeField() {
+        const lf = this.state.lifeField;
+        if (!lf || lf.size === 0) return;
+        const cfg = AnazhRealm.LIFE_FIELD;
+        const now = performance.now() / 1000;
+        if (now - (this.state.lifeFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
+        this.state.lifeFieldLastPrune = now;
+        for (const [key, e] of lf) {
+            const dt = Math.max(0, now - e.t);
+            if (e.a * Math.exp(-cfg.decayPerSec * dt) < cfg.epsilon) lf.delete(key);
+        }
     }
 
     // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
@@ -42323,7 +42413,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.26.0";
+AnazhRealm.VERSION = "17.27.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43203,6 +43293,27 @@ AnazhRealm.FIELD_TO_EMOTION = Object.freeze({
 // gegen die Tag-Nacht-Farbe (0.6 = die Tönung bis 60 %, der Tag-Nacht-Himmel
 // bleibt zu 40 % sichtbar → die Tageszeit überlebt). Browser-justierbar.
 AnazhRealm.SKY_TINT_MAX = 0.6;
+
+// V17.27 — das lebendige Feld bekommt seine SCHREIB-Seite (die „schreiben"-
+// Hälfte des wahren Nordens: EIN Feld, das alle lesen UND schreiben). Über dem
+// FROZEN worldFieldAt.lebendig-Kern liegt ein sparse, langsam zerfallendes
+// Overlay: eine GEBURT (Kreatur) deponiert Leben → hebt lebendig lokal; es
+// zerfällt zurück zum Substrat (Homöostase — ein Garten will gepflegt werden).
+// auraAt blendet (min(frozen+overlay, 1)) — NIE überschreiben (V17.23-Harmonie),
+// leerer Overlay → lebendig == frozen (backward-compatible). Schließt den
+// at_field_need-Loop ECHT: Leben in den Mangel → lebendig steigt → der Mangel
+// sinkt → der Nexus zieht zum nächsten kargen Ort (kein rich-get-richer, kein
+// ewiges Abladen) + speist via FIELD_TO_EMOTION (V17.21) das Welt-ERLEBEN in
+// die Emotion. Region-Skala (16-m-Zelle), kein per-Vertex. Browser-justierbar.
+AnazhRealm.LIFE_FIELD = Object.freeze({
+    cell: 16, // m — das Hydrosphäre/Voxel-Raster (Region-Skala)
+    decayPerSec: 0.008, // Halbwertszeit ~87 s (getendete Region lingert, verwaiste verblasst)
+    pulseCenter: 0.25, // eine Geburt hebt die Zelle (sparse ~0.1 → ~0.35, nicht mehr Minimum)
+    pulseNeighbor: 0.1, // 3×3-Kernel-Rand (weiche räumliche Ausbreitung, kein Block)
+    max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
+    epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
+    pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+});
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
