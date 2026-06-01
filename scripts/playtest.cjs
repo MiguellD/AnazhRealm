@@ -1443,6 +1443,175 @@ async function checkBandV1732SpatialEmotion(ctx) {
     );
 }
 
+// V17.33 Phase A (DSL-Weltregeln-Bogen) — DAS rule-PRIMITIV: ein `when`, das
+// NICHT verfaellt. Statt die Bedingung→Effekt EINMAL auszufuehren, REGISTRIERT
+// `rule` sie als stehende Regel in state.worldRules; der Welt-Tick
+// (_tickWorldRules) prueft sie fortlaufend. Damit ist die Welt zum ersten Mal
+// REGEL-getrieben statt nur durch Gesten gepoked. Gemessen (§6-A): Verdrahtung,
+// Registrierung (kein Sofort-Effekt), Feuern bei Bedingung, everySec-Gate,
+// Bedingung-false, TTL-Entfernung, Frame-Budget, Dedup, Cap+Eviction,
+// Re-Entrancy (kein Same-Tick-Kaskade), deterministische Regel-RNG.
+async function checkBandV1733WorldRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        // --- Verdrahtung ---
+        out.cfgWired =
+            !!K.WORLD_RULES &&
+            K.WORLD_RULES.cap === 64 &&
+            K.WORLD_RULES.budgetPerFrame === 4 &&
+            typeof K.WORLD_RULES.minEverySec === "number";
+        out.registryArray = Array.isArray(r.state.worldRules);
+        out.ruleOp = typeof r.dslEffects.rule === "function";
+        out.tickDefined = typeof r._tickWorldRules === "function";
+        out.tickWired = /this\._tickWorldRules\(currentTime\)/.test(r.startEternalLoop.toString());
+
+        // Save world state we mutate
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+
+        // --- (1) Registrierung statt Sofort-Effekt ---
+        r.state.worldRules.length = 0;
+        r.state.weather = "sunny";
+        for (const k of Object.keys(e)) e[k] = 0;
+        e.sorrow = 0.8;
+        const reg = r.dslRun(["rule", ["emotion_above", "sorrow", 0.5], ["weather", "rainy"], { everySec: 0.5 }], {
+            source: "human",
+        });
+        out.regOk = reg.ok === true;
+        out.registeredOne = r.state.worldRules.length === 1;
+        out.notFiredOnRegister = r.state.weather === "sunny"; // registriert, Effekt NICHT sofort
+
+        // --- (2) Feuern bei wahrer Bedingung ---
+        const t1 = now();
+        r._tickWorldRules(t1);
+        out.firesWhenTrue = r.state.weather === "rainy";
+
+        // --- (3) everySec-Gate: sofortiger Re-Tick feuert nicht erneut ---
+        r.state.weather = "sunny"; // wuerde wieder rainy, falls die Regel erneut feuerte
+        r._tickWorldRules(t1); // gleicher Zeitpunkt < everySec nach lastFired
+        out.everySecGate = r.state.weather === "sunny";
+
+        // --- (4) Bedingung false → feuert nicht ---
+        e.sorrow = 0.0;
+        r.state.worldRules[0].lastFired = -Infinity; // Gate oeffnen → NUR die Bedingung entscheidet
+        r._tickWorldRules(now());
+        out.skipsWhenFalse = r.state.weather === "sunny";
+
+        // --- (5) TTL entfernt die Regel ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { ttlSec: 1 }], { source: "nexus" });
+        out.ttlRegistered = r.state.worldRules.length === 1;
+        r.state.worldRules[0].born = now() - 5; // 5 s alt, ttl 1 s → abgelaufen
+        r._tickWorldRules(now());
+        out.ttlRemoves = r.state.worldRules.length === 0;
+
+        // --- (6) Budget kappt Effekte/Frame ---
+        r.state.worldRules.length = 0;
+        const N = K.WORLD_RULES.budgetPerFrame + 3; // mehr eligible als Budget
+        for (let i = 0; i < N; i++) {
+            // distinct cond (Dedup-frei) + immer true (rng < 1+ε); everySec klein
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 0.5 }], {
+                source: "nexus",
+            });
+        }
+        out.budgetRegistered = r.state.worldRules.length === N;
+        const tB = now();
+        r._tickWorldRules(tB);
+        const firedCount = r.state.worldRules.filter((x) => x.lastFired === tB).length;
+        out.budgetCaps = firedCount === K.WORLD_RULES.budgetPerFrame;
+        out.firedCount = firedCount;
+
+        // --- (7) Dedup: dieselbe Regel zweimal → ein Eintrag ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"]], { source: "human" });
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"]], { source: "human" });
+        out.dedup = r.state.worldRules.length === 1;
+
+        // --- (8) Cap + Eviction (Mensch ueberlebt die Nexus-Flut) ---
+        r.state.worldRules.length = 0;
+        // eine Mensch-Regel zuerst (aelteste — darf NICHT verdraengt werden)
+        r.dslRun(["rule", ["emotion_above", "joy", 0.99], ["weather", "rainy"], { everySec: 99 }], { source: "human" });
+        for (let i = 0; i < K.WORLD_RULES.cap + 5; i++) {
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "sunny"], { everySec: 99 }], {
+                source: "nexus",
+            });
+        }
+        out.capHolds = r.state.worldRules.length <= K.WORLD_RULES.cap;
+        out.humanSurvives = r.state.worldRules.some((x) => x.source === "human");
+
+        // --- (9) Re-Entrancy: ein Regel-Effekt, der eine Regel registriert,
+        //         feuert die NEUE nicht im selben Tick ---
+        r.state.worldRules.length = 0;
+        r.state.weather = "sunny";
+        r.dslRun(
+            ["rule", ["random_chance", 1], ["rule", ["random_chance", 1], ["weather", "rainy"]], { everySec: 0.5 }],
+            {
+                source: "human",
+            }
+        );
+        const tR = now();
+        r._tickWorldRules(tR); // meta feuert → registriert child; child NICHT same-tick
+        out.reentrancyNoCascade = r.state.weather === "sunny";
+        out.childRegistered = r.state.worldRules.length === 2;
+        r.state.worldRules[1].lastFired = -Infinity; // naechster Frame: child darf feuern
+        r._tickWorldRules(now() + 1);
+        out.childFiresNextFrame = r.state.weather === "rainy";
+
+        // --- (10) deterministische Regel-RNG ---
+        const fake = { id: 4242, fires: 0, source: "human" };
+        const s0a = r._worldRuleSeed(fake, 0);
+        const s0b = r._worldRuleSeed(fake, 0);
+        const s1 = r._worldRuleSeed(fake, 1);
+        out.seedStable = s0a === s0b;
+        out.seedVariesPerFire = s0a !== s1;
+        out.rngDeterministic = r.dslCtx({ seed: s0a }).rng() === r.dslCtx({ seed: s0b }).rng();
+
+        // restore world state
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.33 Welt-Regeln: WORLD_RULES-Konfig + Registry + rule-Op + Tick verdrahtet (im Loop)",
+        res.cfgWired && res.registryArray && res.ruleOp && res.tickDefined && res.tickWired
+    );
+    check(
+        "V17.33 Welt-Regeln: `rule` REGISTRIERT (statt den Effekt SOFORT auszufuehren)",
+        res.regOk && res.registeredOne && res.notFiredOnRegister
+    );
+    check("V17.33 Welt-Regeln: die Regel FEUERT, wenn die Bedingung wahr wird (sorrow>0.5 → rainy)", res.firesWhenTrue);
+    check("V17.33 Welt-Regeln: das everySec-Gate verhindert Per-Frame-Feuern", res.everySecGate);
+    check("V17.33 Welt-Regeln: bei falscher Bedingung feuert die Regel nicht", res.skipsWhenFalse);
+    check("V17.33 Welt-Regeln: ttlSec entfernt die abgelaufene Regel", res.ttlRegistered && res.ttlRemoves);
+    check(
+        "V17.33 Welt-Regeln: das Frame-Budget kappt die Effekte/Frame",
+        res.budgetRegistered && res.budgetCaps,
+        `fired=${res.firedCount} budget=4`
+    );
+    check("V17.33 Welt-Regeln: Dedup — dieselbe Regel zweimal bleibt EIN Eintrag", res.dedup);
+    check(
+        "V17.33 Welt-Regeln: Cap haelt (Runaway-Schutz), Mensch-Regel ueberlebt die Nexus-Flut",
+        res.capHolds && res.humanSurvives
+    );
+    check(
+        "V17.33 Welt-Regeln: Re-Entrancy — eine vom Effekt erzeugte Regel feuert nicht im selben Tick",
+        res.reentrancyNoCascade && res.childRegistered && res.childFiresNextFrame
+    );
+    check(
+        "V17.33 Welt-Regeln: deterministische Regel-RNG (stabil pro fireIndex, variiert ueber die Zeit)",
+        res.seedStable && res.seedVariesPerFire && res.rngDeterministic
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -33497,6 +33666,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1730EmotionFromBeing(ctx);
             await checkBandV1731EmotionDrivesWorld(ctx);
             await checkBandV1732SpatialEmotion(ctx);
+            await checkBandV1733WorldRules(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

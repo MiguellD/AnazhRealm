@@ -200,9 +200,19 @@ eine Abhängigkeitskette: A ist das Fundament, B macht es lebendig (Feld-Kopplun
 macht es selbst-wachsend (Nexus), D gibt dem Menschen die Feder, E macht es zur Welt-
 Identität (Bibliothek).
 
-### Phase A — Das `rule`-Primitiv + Registry + Welt-Tick (die Geste wird Gesetz)
+### Phase A — Das `rule`-Primitiv + Registry + Welt-Tick (die Geste wird Gesetz) — ✅ GEBAUT (V17.33)
 
 **Das kleinste kohärente Stück: ein `when`, das steht.**
+
+> **Status (V17.33, 01.06.2026):** vollständig gebaut + gemessen wie unten geplant.
+> `state.worldRules` (Registry) · der `rule`-Effekt-Op (`_registerWorldRule` mit Cap
+> 64 + Dedup + `_evictWorldRule`) · `_tickWorldRules` (Budget 4/Frame, `everySec`-Gate,
+> TTL-Compaction, Re-Entrancy via Längen-Erfassung) · `_worldRuleCtx`/`_worldRuleSeed`
+> (deterministische Regel-RNG aus `worldId+ruleId+fireIndex`) · `AnazhRealm.WORLD_RULES`
+> (frozen Config-Static). Verdrahtet im Loop nach `dslTick`. GEMESSEN:
+> `checkBandV1733WorldRules` (11 Invarianten grün — alle §6-A-Abnahmepunkte). Die vier
+> harten Probleme (Performance/Determinismus/Runaway/Re-Entrancy) sind an der Wurzel
+> gelöst (siehe CLAUDE.md-Gotcha „stehende Welt-Regel"). **Nächst: Phase B.**
 
 - **Daten:** `state.worldRules = []` — jede Regel `{id, cond, effect, everySec,
 lastFired, source, ttlSec?, born}`. (`cond`/`effect` sind DSL-AST-Knoten.)
@@ -358,11 +368,14 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
 
 ## 9. Reihenfolge + Abnahme (der konkrete nächste Schritt)
 
-1. **Phase A** (das `rule`-Primitiv + Registry + Tick) ist der nächste Schritt — das
-   kleinste Stück, das die Welt von „gepoked" zu „regel-getrieben" hebt. Abnahme: die
-   gemessenen Invarianten in §6-A (Regel feuert bei Bedingung, Budget kappt, TTL
-   entfernt, Determinismus).
-2. Dann B (Feld-Kopplung), C (Nexus evolviert), D (Mensch-Regeln), E (Bibliothek).
+1. ~~**Phase A** (das `rule`-Primitiv + Registry + Tick)~~ — ✅ **GEBAUT (V17.33)**: die
+   Welt ist von „gepoked" zu „regel-getrieben" gehoben. Abnahme erfüllt: alle §6-A-
+   Invarianten grün (`checkBandV1733WorldRules`, 11 — Regel feuert bei Bedingung, Budget
+   kappt, TTL entfernt, Dedup, Cap+Eviction, Re-Entrancy, Determinismus).
+2. **Phase B** (Feld-Kopplung) ist jetzt der nächste Schritt — Feld-Bedingungen
+   (`field_above`/`field_below`, liest `auraAt`) + Feld-Effekte (`deposit_life`/
+   `deposit_emotion`, schreibt die V17.27/.32-Overlays) → Lesen und Schreiben werden
+   DASSELBE Substrat. Dann C (Nexus evolviert), D (Mensch-Regeln), E (Bibliothek).
 3. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`

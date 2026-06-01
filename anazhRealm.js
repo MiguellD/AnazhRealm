@@ -446,6 +446,10 @@ class AnazhRealm {
             dsl: {
                 pending: [],
                 nextEntryId: 1,
+                // V17.33 Phase A — eigener ID-Strom für stehende Welt-Regeln
+                // (Geschwister zu nextEntryId; jede Regel braucht eine stabile
+                // ID für die deterministische Regel-RNG, siehe _worldRuleSeed).
+                nextRuleId: 1,
                 abilities: [],
                 history: [],
                 historyCap: 500,
@@ -467,6 +471,15 @@ class AnazhRealm {
                 pendingOutcomes: [],
                 outcomeFinalizationDelay: 5.0,
             },
+            // V17.33 Phase A (DSL-Weltregeln-Bogen) — das stehende Regel-Registry.
+            // Jede Regel ist eine `Bedingung → Effekt`-Bindung, die NICHT verfällt:
+            // {id, cond, effect, everySec, lastFired, fires, source, ttlSec?, born}
+            // (cond/effect sind DSL-AST-Knoten). `_tickWorldRules` prüft sie
+            // fortlaufend. Damit wird die Welt zum ersten Mal REGEL-getrieben, nicht
+            // nur durch einmalige Gesten gepoked. Reaktive Schicht (nicht im frozen
+            // Worldgen) — Persistenz/Bibliothek ist Phase E. Siehe
+            // docs/dsl-weltregeln-plan.md.
+            worldRules: [],
             // Schicht 2 — Optionale LLM-Stimme. Vier Provider wählbar:
             //   anthropic  → Claude (kostet, klügste Antworten)
             //   google     → Gemini (großzügiges Free-Tier, Browser-CORS offen)
@@ -1467,6 +1480,175 @@ class AnazhRealm {
         this.state.dsl.pending.push({ runAt, program, ctx });
     }
 
+    // ### Welt-Regeln (V17.33 Phase A — die Geste wird Gesetz) ###
+    // Eine stehende `Bedingung → Effekt`-Regel = ein `when`, das nicht verfällt.
+    // Der `rule`-Effekt registriert sie hier (statt sie einmal auszuführen);
+    // `_tickWorldRules` evaluiert sie fortlaufend. Mensch UND Nexus stellen
+    // Regeln über DENSELBEN DSL-Pfad auf. Siehe docs/dsl-weltregeln-plan.md §6-A.
+
+    // Registriert eine Regel in state.worldRules. Dedup (Quelle+cond+effect)
+    // → eine re-issued Mensch-/wiederholte Nexus-Regel bleibt EIN Eintrag
+    // (kein Runaway). Cap mit Verdrängung des ältesten NICHT-Mensch-Eintrags.
+    _registerWorldRule(condNode, effectNode, opts, ctx) {
+        if (
+            !Array.isArray(condNode) ||
+            condNode.length === 0 ||
+            !Array.isArray(effectNode) ||
+            effectNode.length === 0
+        ) {
+            ctx.log.push({ event: "invalid_rule", program_id: ctx.programId });
+            return null;
+        }
+        const rules = this.state.worldRules;
+        const cfg = AnazhRealm.WORLD_RULES;
+        const o = opts && typeof opts === "object" && !Array.isArray(opts) ? opts : {};
+        const everySec = this.dslClamp(o.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
+        const ttlSec = Number.isFinite(Number(o.ttlSec)) && Number(o.ttlSec) > 0 ? Number(o.ttlSec) : null;
+        const source = ctx.source || "unknown";
+        const now = performance.now() / 1000;
+        // Dedup: dieselbe Regel nicht doppelt — refresh (TTL-Fenster + Raten)
+        // statt push. Die Signatur ist billig (Registrierung ist selten, nie
+        // pro Frame).
+        const sig = source + "|" + JSON.stringify(condNode) + "|" + JSON.stringify(effectNode);
+        for (const r of rules) {
+            if (r._sig === sig) {
+                r.everySec = everySec;
+                r.ttlSec = ttlSec;
+                r.born = now;
+                return r;
+            }
+        }
+        // Cap (Runaway-Schutz): bei vollem Registry den ältesten verdrängbaren
+        // Eintrag entfernen. Bleibt es voll (alle Mensch + Notbremse griff
+        // nicht), die Registrierung ablehnen.
+        if (rules.length >= cfg.cap) {
+            this._evictWorldRule(rules);
+            if (rules.length >= cfg.cap) {
+                ctx.log.push({ event: "rule_cap_reached", program_id: ctx.programId });
+                return null;
+            }
+        }
+        const rule = {
+            id: this.state.dsl.nextRuleId++,
+            cond: condNode,
+            effect: effectNode,
+            everySec,
+            lastFired: -Infinity, // V8-Sentinel: noch nie gefeuert (nicht 0!)
+            fires: 0,
+            source,
+            ttlSec,
+            born: now,
+            _sig: sig,
+        };
+        rules.push(rule);
+        return rule;
+    }
+
+    // Verdrängt den ältesten NICHT-Mensch-Eintrag (Nexus-Experimente sind
+    // ephemer — sie verfallen ohnehin per Fitness in Phase C). Sind alle
+    // Mensch-Regeln, den ältesten überhaupt (Notbremse, hält das Cap hart).
+    _evictWorldRule(rules) {
+        let victim = -1;
+        let oldest = Infinity;
+        for (let i = 0; i < rules.length; i++) {
+            if (rules[i].source === "human") continue;
+            if (rules[i].born < oldest) {
+                oldest = rules[i].born;
+                victim = i;
+            }
+        }
+        if (victim < 0) {
+            for (let i = 0; i < rules.length; i++) {
+                if (rules[i].born < oldest) {
+                    oldest = rules[i].born;
+                    victim = i;
+                }
+            }
+        }
+        if (victim >= 0) rules.splice(victim, 1);
+    }
+
+    // Der Welt-Tick: EINMAL pro Frame (im Loop nach dslTick). Prüft jede Regel,
+    // feuert sie, wenn `everySec` verstrichen + die Bedingung wahr ist — bis zu
+    // einem globalen Budget/Frame (Performance). TTL-abgelaufene werden entfernt.
+    _tickWorldRules(currentTime) {
+        const rules = this.state.worldRules;
+        if (!rules || rules.length === 0) return;
+        const cfg = AnazhRealm.WORLD_RULES;
+        // Re-Entrancy: nur die JETZT vorhandenen Regeln werden geprüft. Feuert
+        // ein Effekt eine NEUE Regel (rule-Op), landet sie am Array-Ende und
+        // wird FRÜHESTENS nächsten Frame geprüft — kein Same-Tick-Kaskade.
+        const n = rules.length;
+        let budget = cfg.budgetPerFrame;
+        let expired = false;
+        for (let i = 0; i < n; i++) {
+            const r = rules[i];
+            if (!r) continue;
+            // TTL: abgelaufene markieren (Compaction unten, allokationsfrei im
+            // Normalfall — nur wenn wirklich etwas verfiel).
+            if (r.ttlSec != null && currentTime - r.born >= r.ttlSec) {
+                rules[i] = null;
+                expired = true;
+                continue;
+            }
+            if (budget <= 0) continue; // Budget erschöpft → nächsten Frame
+            if (currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
+            const ctx = this._worldRuleCtx(r);
+            let condTrue = false;
+            try {
+                condTrue = this.dslEvalCond(r.cond, ctx);
+            } catch {
+                condTrue = false;
+            }
+            if (!condTrue) continue;
+            budget--;
+            r.lastFired = currentTime;
+            r.fires = (r.fires || 0) + 1;
+            try {
+                this.dslEval(r.effect, ctx);
+            } catch (err) {
+                ctx.log.push({ event: "rule_effect_exception", message: err.message });
+            }
+        }
+        if (expired) {
+            const kept = [];
+            for (const r of rules) if (r) kept.push(r);
+            this.state.worldRules = kept;
+        }
+    }
+
+    // Ein eigener Ctx pro Regel-Lauf: deterministische Regel-RNG + reduziertes
+    // Budget (ein Regel-Effekt ist klein). Die Quelle wird zu `rule:<urspr.>`
+    // gestempelt (für Journal/Fitness in Phase C).
+    _worldRuleCtx(rule) {
+        return this.dslCtx({
+            seed: this._worldRuleSeed(rule, rule.fires || 0),
+            source: `rule:${rule.source || "unknown"}`,
+            budget: this._worldRuleBudget(),
+            programId: `rule_${rule.id}`,
+        });
+    }
+
+    _worldRuleBudget() {
+        return { spawnsLeft: 8, depthLeft: 6, maxRuntimeMs: 20, delayedSteps: 8, startedAt: performance.now() };
+    }
+
+    // Deterministische Regel-RNG (FNV-1a über worldId + ruleId + fireIndex):
+    // zwei Peers mit DEMSELBEN Regel-Satz sehen denselben N-ten Lauf (modulo
+    // Float, akzeptabel für die reaktive Schicht). Der fireIndex variiert pro
+    // Feuern → random_chance/random_position bleiben über die Zeit lebendig
+    // statt eingefroren, ohne den Cross-Peer-Determinismus zu brechen.
+    _worldRuleSeed(rule, fireIndex) {
+        const wid = (this.state.worldMeta && this.state.worldMeta.worldId) || this.state.worldId || "realm";
+        const s = `${wid}:rule:${rule.id}:${fireIndex || 0}`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        return h >>> 0 || 1;
+    }
+
     // ### Op-Tabellen ###
     get dslEffects() {
         if (this._dslEffectsCache) return this._dslEffectsCache;
@@ -2387,6 +2569,15 @@ class AnazhRealm {
             when: ([condition, thenBranch, elseBranch], ctx) => {
                 if (this.dslEvalCond(condition, ctx)) this.dslEval(thenBranch, ctx);
                 else if (elseBranch) this.dslEval(elseBranch, ctx);
+            },
+            // V17.33 Phase A — DAS rule-PRIMITIV: ein `when`, das nicht verfällt.
+            // Statt die Bedingung→Effekt EINMAL auszuführen (wie `when`),
+            // REGISTRIERT `rule` sie als stehende Regel in state.worldRules; der
+            // Welt-Tick (_tickWorldRules) prüft sie fortlaufend. So wird „eine
+            // Regel aufstellen" selbst ein DSL-Akt — Mensch + Nexus governen die
+            // Welt über DENSELBEN Pfad. ["rule", cond, effect, {everySec?, ttlSec?}].
+            rule: ([condNode, effectNode, opts], ctx) => {
+                this._registerWorldRule(condNode, effectNode, opts, ctx);
             },
             parallel: (args, ctx) => {
                 for (const sub of args) this.dslEval(sub, ctx);
@@ -41409,6 +41600,12 @@ class AnazhRealm {
             // ### Nexus-DSL Scheduler (Ring 2) ###
             this.dslTick(currentTime);
 
+            // ### Welt-Regeln (V17.33 Phase A) ###
+            // Die stehenden Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet).
+            // Nach dslTick, damit eine soeben geplante Geste noch vor den Regeln
+            // läuft; die Welt ist hier zum ersten Mal regel-getrieben.
+            this._tickWorldRules(currentTime);
+
             // ### Player-Emotionen (Ring 3) ###
             this.updatePlayerEmotions(currentTime);
 
@@ -42701,7 +42898,20 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.32.0";
+AnazhRealm.VERSION = "17.33.0";
+
+// V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
+// EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
+//   cap            — max stehende Regeln (Runaway-Schutz; Verdrängung in _evictWorldRule)
+//   budgetPerFrame — max Regel-EFFEKTE pro Frame (die 119 FPS bleiben heilig)
+//   defaultEverySec— Default-Feuer-Intervall einer Regel
+//   minEverySec    — Floor → verhindert Per-Frame-Feuern (Performance + Determinismus)
+AnazhRealm.WORLD_RULES = Object.freeze({
+    cap: 64,
+    budgetPerFrame: 4,
+    defaultEverySec: 2,
+    minEverySec: 0.5,
+});
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
