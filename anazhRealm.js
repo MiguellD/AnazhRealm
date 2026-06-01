@@ -2636,12 +2636,31 @@ class AnazhRealm {
         // Bias ist sanft (max ±0.3 von der 0.5-Mitte) — Komposition bleibt
         // erkundend, der Nexus „spürt" den Menschen, ohne ihn zu spiegeln.
         const e = (this.state.player && this.state.player.emotions) || {};
+        // Mood-Bias bleibt EMOTION-ONLY (joy→sunny, sorrow→rainy): die explizite
+        // Spieler-Emotion dominiert das Wetter — das Feld biast die Stimmung
+        // NICHT (sonst überstimmt eine adverse Region den klaren Spieler-Willen;
+        // Wetter ist der Spieler→Welt-Schreibpfad, nicht der ambiente Read).
         const sunnyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
-        const happyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
+        const happyBias = sunnyBias;
+        // === Der Nexus bekommt Augen (docs/das-lebendige-feld.md §2/§3.1) ===
+        // Er war BLIND: würfelte Atome aus einer fixen Liste, nur emotion-gebiast
+        // — er spürte nicht „dieser Wald lebt / hier glüht es / hier resoniert
+        // Magie" (der Drift „am weitesten von fraktalem Wachstum weg"). Jetzt
+        // LIEST er das lokale Feld (auraAt am Spieler) und komponiert RESONANT:
+        // er nährt MEHR Leben, wo das Feld lebt (spawn_creature-Gewicht ∝
+        // lebendig), und färbt resonant (magie→Lila, glut→Feuer, lebendig→Grün,
+        // s. dslComposeFieldColor). Der Kreis des Verstehens schließt sich — der
+        // Nexus wächst aus dem, was er liest, statt blind zu würfeln. Ohne
+        // playerMesh = neutrales Feld (fLebendig=0.5) = backward-compatible.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.x, pm.z) : null;
+        const fLebendig = aura ? aura.lebendig : 0.5;
         const choices = [
             { w: 15, build: () => ["weather", rng() < sunnyBias ? "sunny" : "rainy"] },
             {
-                w: 12,
+                // Der Nexus nährt Leben, wo das Feld lebt: das Gewicht wächst mit
+                // lebendig (~7 in karger, 12 bei neutral, ~17 in üppiger Region).
+                w: Math.round(12 * (0.6 + fLebendig * 0.8)),
                 build: () => [
                     "spawn_creature",
                     this.dslComposePosition(rng),
@@ -2650,8 +2669,8 @@ class AnazhRealm {
                 ],
             },
             { w: 10, build: () => ["creatures_emotion", rng() < happyBias ? "happy" : "sad"] },
-            { w: 8, build: () => ["creatures_color", this.dslComposeColor(rng)] },
-            { w: 8, build: () => ["skybox_color", this.dslComposeColor(rng)] },
+            { w: 8, build: () => ["creatures_color", this.dslComposeFieldColor(rng, aura)] },
+            { w: 8, build: () => ["skybox_color", this.dslComposeFieldColor(rng, aura)] },
             { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
             { w: 7, build: () => ["player_speed", Number((4 + rng() * 8).toFixed(2))] },
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
@@ -2711,6 +2730,21 @@ class AnazhRealm {
     dslComposeColor(rng) {
         const palette = ["#ff7a59", "#7bd389", "#5ec0eb", "#d4a3ff", "#f7d358", "#e94c89", "#88e1e1", "#a89070"];
         return palette[Math.floor(rng() * palette.length)];
+    }
+
+    // Der Nexus bekommt Augen für die Farbe (docs/das-lebendige-feld.md §3.1):
+    // wenn eine Feld-Achse den Ort deutlich prägt (> 0.6), wählt er resonant —
+    // magie-leitend → magisches Lila, glühend → warmes Feuer, lebendig →
+    // frisches Grün; sonst die freie Palette (erkundend). Die rng-Schwelle macht
+    // es weich (nicht jeder Pick resoniert, nur wahrscheinlicher je stärker die
+    // Achse). aura kann null sein (kein playerMesh) → freie Palette wie bisher.
+    dslComposeFieldColor(rng, aura) {
+        if (aura) {
+            if (aura.magieleitung > 0.6 && rng() < aura.magieleitung) return "#d4a3ff";
+            if (aura.glut > 0.6 && rng() < aura.glut) return "#ff7a59";
+            if (aura.lebendig > 0.6 && rng() < aura.lebendig) return "#7bd389";
+        }
+        return this.dslComposeColor(rng);
     }
 
     dslComposeSayMessage(rng) {
@@ -42208,7 +42242,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.21.0";
+AnazhRealm.VERSION = "17.22.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

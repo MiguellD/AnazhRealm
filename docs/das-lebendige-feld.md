@@ -5,7 +5,7 @@
 > als Co-Schöpfer" arbeiten willst.** Es hält das Verständnis fest, das der Schöpfer
 > und der Agent in der Reflexion vom 01.06.2026 erarbeitet haben — damit der nächste
 > Agent NICHT wieder ein Pflaster-System baut, sondern das Vorhandene zu EINEM
-> lebendigen Feld verdichtet. Stand: nach V17.21 — die Heilung ist DURCH (V17.19 Werkstatt-Auge, V17.20 tote Glieder), und das Feld hat BEGONNEN: `auraAt(x,z,t)` (die Lese-Seite) + der erste geschlossene Kreis (Welt→Spieler-Emotion via `FIELD_TO_EMOTION`) sind gebaut. §3.2/§3.3 sind also nicht mehr ganz offen — der Rückweg existiert, jetzt folgen die weiteren Leser + die Nexus-Augen.
+> lebendigen Feld verdichtet. Stand: nach V17.21 — die Heilung ist DURCH (V17.19 Werkstatt-Auge, V17.20 tote Glieder), und das Feld hat BEGONNEN: `auraAt(x,z,t)` (die Lese-Seite) + der erste geschlossene Kreis (Welt→Spieler-Emotion via `FIELD_TO_EMOTION`) sind gebaut. §3.2/§3.3 sind also nicht mehr ganz offen — der Rückweg existiert. Und §3.1 (der blinde Nexus) ist angegangen: seit V17.22 LIEST der Nexus das Feld (`dslComposeAtomic` → `auraAt`) und komponiert resonant (nährt Leben wo es lebt, färbt nach dem Ort). Jetzt folgen die weiteren Leser (§5) + dem Nexus die Feld-RICHTUNG (er spawnt am erkannten Bedarf, nicht nur am Spieler).
 
 Verwandte Anker: `state-of-realm.md` (die Vision/Testamente), `world-portal.md`
 (die Bibliothek von Alexandria — das Fern-Ziel), `archiv/nexus-dsl.md` (das alte

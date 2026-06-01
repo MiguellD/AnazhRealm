@@ -826,6 +826,40 @@ async function checkBandV1721LivingFieldAura(ctx) {
     );
 }
 
+// V17.22 — Das lebendige Feld, Welle 2: dem Nexus Augen geben. dslComposeAtomic
+// liest jetzt auraAt am Spieler + komponiert resonant zum lokalen Feld (der
+// Kreis des Verstehens, docs/das-lebendige-feld.md §2/§3.1). Beweis: die
+// Feld-resonante Farbwahl (kontrollierte rng → deterministisch) + dass
+// dslComposeAtomic das Feld LIEST + weiter valide DSL komponiert.
+async function checkBandV1722NexusEyes(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.hasFieldColor = typeof r.dslComposeFieldColor === "function";
+        const lo = () => 0.0; // kontrollierte rng (< jede Achsen-Stärke → resoniert)
+        out.magieColor = r.dslComposeFieldColor(lo, { magieleitung: 1, glut: 0, lebendig: 0 }) === "#d4a3ff";
+        out.glutColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 1, lebendig: 0 }) === "#ff7a59";
+        out.lebendigColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 1 }) === "#7bd389";
+        const neutral = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 0 });
+        out.neutralPalette = typeof neutral === "string" && neutral.startsWith("#") && neutral !== "#d4a3ff";
+        out.atomicReadsField = /auraAt/.test(r.dslComposeAtomic.toString());
+        const prog = r.dslComposeAtomic(() => 0.5);
+        out.composesValid = Array.isArray(prog) && typeof prog[0] === "string";
+        return out;
+    });
+    check("V17.22 Nexus-Augen: dslComposeFieldColor existiert", res.hasFieldColor);
+    check("V17.22 Nexus-Augen: magie-leitender Ort → magisches Lila", res.magieColor);
+    check("V17.22 Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
+    check("V17.22 Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
+    check("V17.22 Nexus-Augen: neutrales Feld → freie erkundende Palette", res.neutralPalette);
+    check(
+        "V17.22 Nexus-Augen: dslComposeAtomic LIEST das Feld (auraAt) — der Kreis des Verstehens",
+        res.atomicReadsField
+    );
+    check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -32809,6 +32843,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandRing2Extended(ctx);
             await checkBandWaves1to3(ctx);
             await checkBandV1721LivingFieldAura(ctx);
+            await checkBandV1722NexusEyes(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
