@@ -1098,6 +1098,90 @@ async function checkBandV1727WritableField(ctx) {
     check("V17.27 Schreib-Feld: der alte Bedarf-Punkt ist gehoben (der Mangel sinkt wirklich)", res.p1Raised);
 }
 
+// V17.28 — „der Ort, an dem ich stehe, ist besetzt": GROSSE Strukturen (Dorf/
+// Tempel/Wasserfall) spawnen nicht mehr AUF dem Spieler (sie remeshten seinen
+// Chunk + ueberlappten ihn → Fall-durch-den-Boden), kleine Platzierungen bleiben
+// unberuehrt; plus ein Void-Boden, der den Spieler aus jedem Durchfall zurueckholt.
+async function checkBandV1728SpawnClearance(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const MIN = r.constructor.STRUCTURE_CLEAR_MIN_FOOTPRINT;
+        const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        out.hasConsts =
+            typeof MIN === "number" && typeof MARGIN === "number" && typeof r.constructor.PLAYER_VOID_Y === "number";
+        // Footprint-Radius: Dorf gross (>= MIN), Felsblock klein (< MIN)
+        const fpVillage = r._blueprintFootprintRadius("village");
+        const fpBlock = r._blueprintFootprintRadius("stein_block");
+        out.villageBig = fpVillage >= MIN;
+        out.blockSmall = fpBlock < MIN;
+        out.villageEffectUsesClear = /_structureSpawnPos/.test(r.dslEffects.spawn_village.toString());
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm) {
+            const px = pm.x,
+                py = pm.y,
+                pz = pm.z;
+            const ctx2 = { state: r.state, rng: () => 0.5 };
+            // (1) Dorf AUF dem Spieler → wird auf >= clearance geschoben
+            const onPlayer = { x: px, y: py, z: pz };
+            const cleared = r._structureSpawnPos("village", onPlayer, ctx2);
+            const dist = Math.hypot(cleared.x - px, cleared.z - pz);
+            out.villagePushed = dist >= fpVillage + MARGIN - 0.01;
+            // (2) Felsblock AUF dem Spieler → bleibt (klein = intentional)
+            const blockCleared = r._structureSpawnPos("stein_block", { x: px, y: py, z: pz }, ctx2);
+            out.blockUntouched = Math.abs(blockCleared.x - px) < 1e-6 && Math.abs(blockCleared.z - pz) < 1e-6;
+            // (3) Dorf WEIT weg → unberuehrt (schon ausserhalb der clearance)
+            const farPos = { x: px + 200, y: py, z: pz };
+            const farCleared = r._structureSpawnPos("village", farPos, ctx2);
+            out.farUntouched = Math.abs(farCleared.x - (px + 200)) < 1e-6;
+            // (4) Void-Rettung: faellt der Spieler durch, kommt er an die Oberflaeche
+            const bodyT = r.state.tmpTransform;
+            pm.set ? pm.set(px, -200, pz) : (pm.y = -200);
+            r.state.playerMesh.position.set(px, -200, pz);
+            r._rescuePlayerFromVoid();
+            const rescuedY = r.state.playerMesh.position.y;
+            out.voidRescued = rescuedY > r.constructor.PLAYER_VOID_Y && rescuedY > -90;
+            out.rescuedY = rescuedY;
+            // Restore Spieler-Position (Mesh + Body) — kein Seiteneffekt fuer Folge-Bands
+            r.state.playerMesh.position.set(px, py, pz);
+            if (r.state.playerBody && bodyT) {
+                bodyT.setIdentity();
+                bodyT.setOrigin(
+                    r.setVec(
+                        r.state.tmpVec1,
+                        px / r.state.scaleFactor,
+                        py / r.state.scaleFactor,
+                        pz / r.state.scaleFactor
+                    )
+                );
+                r.state.playerBody.setWorldTransform(bodyT);
+                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                r.state.playerBody.activate(true);
+            }
+        }
+        return out;
+    });
+    check("V17.28 Spawn-Clearance: Konstanten verdrahtet (MIN/MARGIN/PLAYER_VOID_Y)", res.hasConsts);
+    check("V17.28 Spawn-Clearance: Dorf-Footprint gross (>= MIN, wird geschoben)", res.villageBig);
+    check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
+    check("V17.28 Spawn-Clearance: spawn_village nutzt _structureSpawnPos (Source-Probe)", res.villageEffectUsesClear);
+    check(
+        "V17.28 Spawn-Clearance: ein Dorf AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
+        res.villagePushed
+    );
+    check(
+        "V17.28 Spawn-Clearance: ein Felsblock AUF dem Spieler bleibt (kleine Platzierung unberuehrt)",
+        res.blockUntouched
+    );
+    check("V17.28 Spawn-Clearance: eine weit entfernte Struktur bleibt unberuehrt", res.farUntouched);
+    check(
+        "V17.28 Void-Boden: faellt der Spieler durch, kommt er an die Oberflaeche zurueck",
+        res.voidRescued,
+        `y=${res.rescuedY}`
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -33086,6 +33170,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1725FieldReaders(ctx);
             await checkBandV1726FieldDirection(ctx);
             await checkBandV1727WritableField(ctx);
+            await checkBandV1728SpawnClearance(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

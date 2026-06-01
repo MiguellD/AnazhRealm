@@ -1699,7 +1699,9 @@ class AnazhRealm {
             // Beim Broadcast embed der Sender das verwendete Seed, damit
             // der Empfänger DIESELBEN Häuser sieht, nicht eigene.
             spawn_village: ([positionNode, seed], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
+                // V17.28 — eine GROSSE Struktur nie AUF den Spieler (Fall-durch-
+                // den-Boden): footprint-bewusst aus seinem Bereich schieben.
+                const pos = this._structureSpawnPos("village", this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -1710,7 +1712,7 @@ class AnazhRealm {
                 ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_temple: ([positionNode, seed], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
+                const pos = this._structureSpawnPos("temple", this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -1721,7 +1723,7 @@ class AnazhRealm {
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
+                const pos = this._structureSpawnPos("waterfall", this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -32199,6 +32201,60 @@ class AnazhRealm {
     }
 
     // Eine Struktur zur Welt hinzufügen. Position kommt aus DSL (oder Save-
+    // V17.28 — der horizontale Footprint-Radius eines Bauplans (von seinem
+    // Zentrum bis zum äußersten soliden Part-Rand), VOR dem Spawn berechnet
+    // (entry.blockerAABBs entsteht erst NACH dem Spawn). Dient der Spawn-
+    // Clearance: wie weit eine Struktur vom Spieler weg muss, damit ihr
+    // Footprint ihn nicht verschluckt. Reine Daten aus bp.parts (size+position).
+    _blueprintFootprintRadius(type, scale = 1) {
+        const bp = this.state.blueprints && this.state.blueprints[type];
+        if (!bp || !Array.isArray(bp.parts)) return 0;
+        let r = 0;
+        for (const part of bp.parts) {
+            if (!part || !part.size || !part.position) continue;
+            const reach =
+                Math.hypot(part.position.x || 0, part.position.z || 0) +
+                Math.max(part.size.x || 0, part.size.z || 0) * 0.5;
+            if (reach > r) r = reach;
+        }
+        return r * (Number.isFinite(scale) && scale > 0 ? scale : 1);
+    }
+
+    // V17.28 — „der Ort, an dem ich stehe, ist besetzt": schiebt die Spawn-
+    // Position einer GROSSEN Struktur footprint-bewusst aus dem Spieler-Bereich
+    // (liegt sie näher als footprint+Margin, wandert sie nach außen entlang
+    // Spieler→Ziel, oder Blickrichtung wenn ~auf dem Spieler — der at_player_
+    // forward-Geist). Eine KLEINE Struktur (footprint < MIN) bleibt unangetastet
+    // (intentionale Platzierung). Y wird am neuen Ort neu bestimmt (gleiche
+    // Fußhöhe über Grund wie der Spieler → spawnArchitectures 0.5-Kalibrierung
+    // greift identisch). Die Kreatur-Ring-Logik (V17.23) ist das kleine Pendant.
+    _structureSpawnPos(type, pos, ctx, scale = 1) {
+        const pp = ctx && ctx.state && ctx.state.playerMesh ? ctx.state.playerMesh.position : null;
+        if (!pp || !pos) return pos;
+        const footprint = this._blueprintFootprintRadius(type, scale);
+        if (footprint < AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT) return pos; // klein → intentional
+        const clearance = footprint + AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        let dx = pos.x - pp.x;
+        let dz = pos.z - pp.z;
+        let d = Math.hypot(dx, dz);
+        if (d >= clearance) return pos; // schon weit genug — unberührt
+        if (d < 1e-3) {
+            // ~auf dem Spieler → vor ihn (Blickrichtung; yaw=0 → Blick nach −z/−x)
+            const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : ctx.rng ? ctx.rng() * Math.PI * 2 : 0;
+            dx = -Math.sin(yaw);
+            dz = -Math.cos(yaw);
+            d = 1;
+        }
+        const nx = pp.x + (dx / d) * clearance;
+        const nz = pp.z + (dz / d) * clearance;
+        // gleiche Fußhöhe über Grund wie der Spieler am neuen Ort bewahren
+        const surfPlayer = this.getTerrainHeightAt(pp.x, pp.z);
+        const surfNew = this.getTerrainHeightAt(nx, nz);
+        const feetOffset = Number.isFinite(surfPlayer) ? pp.y - surfPlayer : 0;
+        const ny = Number.isFinite(surfNew) ? surfNew + feetOffset : pos.y;
+        return { x: nx, y: ny, z: nz };
+    }
+
     // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
     // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
     spawnArchitecture(type, position, opts = {}) {
@@ -41239,6 +41295,10 @@ class AnazhRealm {
             // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
             this._loopPhysicsSync(delta, currentTime);
 
+            // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
+            // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
+            this._rescuePlayerFromVoid();
+
             // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
             this._loopPlayerMovement(currentTime);
 
@@ -41415,6 +41475,37 @@ class AnazhRealm {
                 }
             });
         }
+    }
+
+    // V17.28 — der Boden unter dem Boden. Fällt der Spieler unter den Voxel-
+    // Boden (AnazhRealm.PLAYER_VOID_Y, klar unter base−floorDrop ≈ −90 m), holt
+    // ihn das an die Terrain-Oberfläche an seinem (x,z) zurück — selbe Fußhöhe,
+    // Geschwindigkeit genullt, Body geweckt (Headless-Teleport-Falle V13.0:
+    // setWorldTransform reaktiviert nicht von allein → activate(true)). Generelle
+    // Robustheit (jede Fall-Ursache), nicht nur der Struktur-Spawn-Fall.
+    _rescuePlayerFromVoid() {
+        const pm = this.state.playerMesh;
+        if (!pm || pm.position.y > AnazhRealm.PLAYER_VOID_Y) return;
+        const surf = this.getTerrainHeightAt(pm.position.x, pm.position.z);
+        const safeY = (Number.isFinite(surf) ? surf : this.state.terrainBaseHeight || 0) + 2.0;
+        pm.position.set(pm.position.x, safeY, pm.position.z);
+        const body = this.state.playerBody;
+        if (body && this.state.tmpTransform) {
+            const t = this.state.tmpTransform;
+            t.setIdentity();
+            t.setOrigin(
+                this.setVec(
+                    this.state.tmpVec1,
+                    pm.position.x / this.state.scaleFactor,
+                    safeY / this.state.scaleFactor,
+                    pm.position.z / this.state.scaleFactor
+                )
+            );
+            body.setWorldTransform(t);
+            body.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+            body.activate(true);
+        }
+        this.log(`Spieler fiel durch die Welt — zurück an die Oberfläche (y=${safeY.toFixed(1)})`, "WARNING");
     }
 
     _loopPhysicsSync(delta, currentTime) {
@@ -42413,7 +42504,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.27.0";
+AnazhRealm.VERSION = "17.28.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43314,6 +43405,18 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
     pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
 });
+
+// V17.28 — „der Ort, an dem ich stehe, ist besetzt" (Schöpfer-Befund: GROSSE
+// Strukturen spawnen manchmal AUF dem Spieler → er fällt durch den Boden, weil
+// ihr Spawn seinen Voxel-Chunk remesht [Boden-Kollision kurz weg] + solide Parts
+// ihn überlappen). Eine große Struktur wird footprint-bewusst aus dem Spieler-
+// Bereich geschoben; eine kleine (intentionale Platzierung) bleibt unangetastet.
+AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
+AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
+// Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
+// fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
+// an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
+AnazhRealm.PLAYER_VOID_Y = -120;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
