@@ -1451,6 +1451,32 @@ class AnazhRealm {
         }
     }
 
+    // V17.34 Phase B — die Feld-DSL-Helfer (genutzt von den Feld-Bedingungen
+    // field_above/field_below + den Feld-Effekten deposit_life/deposit_emotion).
+    // Eine Feld-Op ohne Ort meint „wo der Spieler ist" → Default at_player (NICHT
+    // der Welt-Ursprung wie dslEvalPos bei leerem Node). Reuse dslEvalPos 1:1.
+    _dslRulePos(posNode, ctx) {
+        return Array.isArray(posNode) && posNode.length > 0
+            ? this.dslEvalPos(posNode, ctx)
+            : this.dslEvalPos(["at_player"], ctx);
+    }
+
+    // Liest EINE Feld-Achse an einer Position über auraAt (die living Lese-API):
+    // die vier frozen Achsen (lebendig/dichte/glut/magieleitung) ODER eine der
+    // sechs räumlichen emotion-Achsen (joy/awe/sorrow/hope/peace/chaos). So
+    // werden Lesen (field_above) und Schreiben (deposit_life/emotion) DASSELBE
+    // Substrat — der wahre Norden. Unbekannte Achse → null (Bedingung false).
+    _dslFieldAxisAt(axis, posNode, ctx) {
+        if (typeof axis !== "string" || typeof this.auraAt !== "function") return null;
+        const pos = this._dslRulePos(posNode, ctx);
+        const aura = this.auraAt(pos.x, pos.z);
+        if (axis === "lebendig" || axis === "dichte" || axis === "glut" || axis === "magieleitung") {
+            return aura[axis];
+        }
+        if (aura.emotion && typeof aura.emotion[axis] === "number") return aura.emotion[axis];
+        return null;
+    }
+
     dslClamp(v, lo, hi) {
         const n = Number(v);
         if (!Number.isFinite(n)) return lo;
@@ -2529,6 +2555,28 @@ class AnazhRealm {
                 this.grokSpeak("dslSay");
             },
 
+            // V17.34 Phase B — die FELD-SCHREIB-Effekte: eine Regel (oder Geste)
+            // trägt Leben/Emotion ins lebendige Feld. `deposit_life([posNode?,
+            // amount?])` → _depositLife; `deposit_emotion([axis, amount, posNode?])`
+            // → _depositEmotion. Damit SCHREIBT eine Regel, was eine andere über
+            // field_above/field_below LIEST — der Feld-Kreis schließt sich INNERHALB
+            // der Sprache (lesen+schreiben = dasselbe Substrat, der wahre Norden).
+            // Sie schreiben NUR die reaktive Overlay-Schicht (V17.27/.32), nie den
+            // frozen Worldgen → deterministisch-/multi-user-sicher. Default at_player.
+            deposit_life: ([positionNode, amount], ctx) => {
+                const pos = this._dslRulePos(positionNode, ctx);
+                const amt =
+                    amount != null ? c(amount, 0, AnazhRealm.LIFE_FIELD.max) : AnazhRealm.LIFE_FIELD.pulseCenter;
+                this._depositLife(pos.x, pos.z, amt);
+            },
+            deposit_emotion: ([axis, amount, positionNode], ctx) => {
+                if (typeof axis !== "string" || !AnazhRealm.EMOTION_AXES.includes(axis)) return;
+                const amt = c(amount, 0, 1); // Tat-Intensität; _depositEmotion skaliert mit imprintScale
+                if (!(amt > 0)) return;
+                const pos = this._dslRulePos(positionNode, ctx);
+                this._depositEmotion(pos.x, pos.z, { [axis]: amt });
+            },
+
             // Control-Flow
             chain: (args, ctx) => {
                 for (const sub of args) this.dslEval(sub, ctx);
@@ -2680,6 +2728,22 @@ class AnazhRealm {
                 const e = ctx.state.player && ctx.state.player.emotions;
                 if (!e || typeof e[name] !== "number") return false;
                 return e[name] > Number(threshold);
+            },
+            // V17.34 Phase B — die FELD-Bedingungen: eine Regel LIEST das lebendige
+            // Feld an einem Ort (Default at_player). `field_above([axis, value,
+            // posNode?])` / `field_below(...)` über auraAt — die vier frozen Achsen
+            // (lebendig/dichte/glut/magieleitung) ODER eine räumliche emotion-Achse
+            // (joy/awe/sorrow/hope/peace/chaos; das emotionale Gedächtnis des Ortes,
+            // ANDERS als das globale emotion_above). Unbekannte Achse → false.
+            // Damit wird der V17.26-„trag Leben in den Mangel"-Gedanke als REGEL
+            // ausdrückbar (field_below lebendig → deposit_life), statt hardcodiert.
+            field_above: ([axis, value, posNode], ctx) => {
+                const v = this._dslFieldAxisAt(axis, posNode, ctx);
+                return v !== null && v > Number(value);
+            },
+            field_below: ([axis, value, posNode], ctx) => {
+                const v = this._dslFieldAxisAt(axis, posNode, ctx);
+                return v !== null && v < Number(value);
             },
             // Welle 4 Phase 2 — Compound-Tags als DSL-sichtbare Bedingung.
             // `compound_has_tag(blueprintName, tagName, threshold)`. Aktivierte
@@ -42898,7 +42962,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.33.0";
+AnazhRealm.VERSION = "17.34.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

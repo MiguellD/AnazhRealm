@@ -1612,6 +1612,164 @@ async function checkBandV1733WorldRules(ctx) {
     );
 }
 
+// V17.34 Phase B (DSL-Weltregeln-Bogen) — die FELD-Kopplung: Regeln LESEN das
+// lebendige Feld (field_above/field_below ueber auraAt — die frozen Achsen +
+// die raeumliche emotion) und SCHREIBEN es (deposit_life/deposit_emotion → die
+// V17.27/.32-Overlays). Damit schliesst sich der Feld-Kreis INNERHALB der Sprache:
+// eine Regel schreibt, was eine andere liest — lesen+schreiben sind DASSELBE
+// Substrat (der wahre Norden, das-lebendige-feld.md §2). Der V17.26-„trag Leben in
+// den Mangel"-Gedanke wird als REGEL ausdrueckbar statt hardcodiert. Gemessen
+// (§6-B): Verdrahtung, field-read (frozen + emotion raeumlich), deposit-write→
+// read-back, Default at_player, die HEILUNGS-Regel (der Loop schliesst sich:
+// field_below lebendig → deposit_life → lebendig steigt → die Regel stoppt),
+// invalide Achse → no-op.
+async function checkBandV1734FieldRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const mkCtx = () => r.dslCtx({ source: "test" });
+
+        // --- Verdrahtung ---
+        out.condsWired =
+            typeof r.dslConditions.field_above === "function" && typeof r.dslConditions.field_below === "function";
+        out.effectsWired =
+            typeof r.dslEffects.deposit_life === "function" && typeof r.dslEffects.deposit_emotion === "function";
+
+        // Save world state
+        const savedLife = r.state.lifeField ? new Map(r.state.lifeField) : null;
+        const savedEmo = r.state.emotionField ? new Map(r.state.emotionField) : null;
+        const e = r.state.player.emotions;
+        const savedEmotions = Object.assign({}, e);
+        const savedRules = r.state.worldRules.slice();
+
+        // clean slates
+        if (r.state.lifeField) r.state.lifeField.clear();
+        if (r.state.emotionField) r.state.emotionField.clear();
+        for (const k of Object.keys(e)) e[k] = 0;
+        r.state.worldRules.length = 0;
+
+        // Scanne einen KARGEN Ort (niedrigste frozen lebendig) — so ist die
+        // Heilungs-Regel robust (sie kann nur an einem Ort < Schwelle feuern).
+        let A = { x: 40000, z: -30000 };
+        let lebMin = Infinity;
+        for (let i = 0; i < 16; i++) {
+            const x = 40000 + i * 2000;
+            const z = -30000 - i * 1700;
+            const leb = r.auraAt(x, z).lebendig;
+            if (leb < lebMin) {
+                lebMin = leb;
+                A = { x, z };
+            }
+        }
+        const B = { x: -99999, z: 88888 };
+        const posA = ["at", A.x, 0, A.z];
+        const posB = ["at", B.x, 0, B.z];
+
+        // --- (2) field_above/below liest die frozen lebendig-Achse ---
+        const lebA = r.auraAt(A.x, A.z).lebendig;
+        out.fieldRead =
+            r.dslEvalCond(["field_above", "lebendig", lebA - 0.01, posA], mkCtx()) === true &&
+            r.dslEvalCond(["field_above", "lebendig", lebA + 0.5, posA], mkCtx()) === false &&
+            r.dslEvalCond(["field_below", "lebendig", lebA + 0.01, posA], mkCtx()) === true;
+
+        // --- (4) deposit_life SCHREIBT → auraAt liest es zurueck ---
+        const leb0 = r.auraAt(A.x, A.z).lebendig;
+        r.dslEval(["deposit_life", posA], mkCtx());
+        out.depositLifeReadBack = r.auraAt(A.x, A.z).lebendig > leb0;
+
+        // --- (5) deposit_emotion SCHREIBT → field_above(emotion) liest es zurueck, RAEUMLICH ---
+        r.state.emotionField.clear();
+        r.dslEval(["deposit_emotion", "sorrow", 1.0, posB], mkCtx());
+        out.depositEmotionReadBack = r.dslEvalCond(["field_above", "sorrow", 0.05, posB], mkCtx()) === true;
+        out.depositEmotionSpatial = r.dslEvalCond(["field_above", "sorrow", 0.05, posA], mkCtx()) === false;
+        out.emoSorrowB = r.auraAt(B.x, B.z).emotion.sorrow;
+
+        // --- (6) Default-Position einer Feld-Op = at_player (nicht der Ursprung) ---
+        r.state.lifeField.clear();
+        const pm = r.state.playerMesh.position;
+        const lebPlayer0 = r.auraAt(pm.x, pm.z).lebendig;
+        r.dslEval(["deposit_life"], mkCtx()); // KEIN posNode → at_player
+        out.defaultAtPlayer = r.auraAt(pm.x, pm.z).lebendig > lebPlayer0;
+
+        // --- (7) DIE HEILUNGS-REGEL: der Feld-Loop schliesst sich ---
+        r.state.lifeField.clear();
+        r.state.worldRules.length = 0;
+        const lebSeed = r.auraAt(A.x, A.z).lebendig; // frozen (overlay geleert)
+        const T = Math.min(lebSeed + 0.3, 0.95); // erreichbar (overlay max 0.7), > lebSeed → field_below initial true
+        r.dslRun(["rule", ["field_below", "lebendig", T, posA], ["deposit_life", posA], { everySec: 0.5 }], {
+            source: "human",
+        });
+        const ruleObj = r.state.worldRules[0];
+        let rose = false;
+        let stopped = false;
+        let prevLeb = lebSeed;
+        for (let i = 0; i < 6; i++) {
+            ruleObj.lastFired = -Infinity; // Gate oeffnen → nur die Bedingung entscheidet
+            r._tickWorldRules(now());
+            const lebNow = r.auraAt(A.x, A.z).lebendig;
+            if (lebNow > prevLeb + 1e-6) rose = true;
+            if (lebNow >= T) {
+                ruleObj.lastFired = -Infinity; // ein weiterer Tick darf NICHT mehr heben (Bedingung jetzt false)
+                r._tickWorldRules(now());
+                stopped = Math.abs(r.auraAt(A.x, A.z).lebendig - lebNow) < 1e-3;
+                break;
+            }
+            prevLeb = lebNow;
+        }
+        out.healRose = rose;
+        out.healStopped = stopped;
+        out.healT = T;
+        out.healSeed = lebSeed;
+
+        // --- (8) invalide emotion-Achse → no-op, kein throw ---
+        r.state.emotionField.clear();
+        let threw = false;
+        try {
+            r.dslEval(["deposit_emotion", "bogus", 1.0, posA], mkCtx());
+        } catch {
+            threw = true;
+        }
+        out.invalidAxisNoop = !threw && r.state.emotionField.size === 0;
+
+        // restore
+        r.state.worldRules = savedRules;
+        if (r.state.lifeField) {
+            r.state.lifeField.clear();
+            if (savedLife) for (const [k, v] of savedLife) r.state.lifeField.set(k, v);
+        }
+        if (r.state.emotionField) {
+            r.state.emotionField.clear();
+            if (savedEmo) for (const [k, v] of savedEmo) r.state.emotionField.set(k, v);
+        }
+        for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
+        return out;
+    });
+
+    check(
+        "V17.34 Feld-Regeln: field_above/field_below + deposit_life/deposit_emotion verdrahtet",
+        res.condsWired && res.effectsWired
+    );
+    check("V17.34 Feld-Regeln: field_above/below LIEST die frozen lebendig-Achse korrekt", res.fieldRead);
+    check(
+        "V17.34 Feld-Regeln: deposit_life SCHREIBT → auraAt liest es zurueck (write→read im Feld)",
+        res.depositLifeReadBack
+    );
+    check(
+        "V17.34 Feld-Regeln: deposit_emotion → field_above(emotion) liest es zurueck, RAEUMLICH (A != B)",
+        res.depositEmotionReadBack && res.depositEmotionSpatial,
+        `sorrowB=${res.emoSorrowB}`
+    );
+    check("V17.34 Feld-Regeln: Default-Position einer Feld-Op ist at_player (nicht der Ursprung)", res.defaultAtPlayer);
+    check(
+        "V17.34 Feld-Regeln: die HEILUNGS-Regel schliesst den Loop (field_below lebendig → deposit_life → steigt → stoppt)",
+        res.healRose && res.healStopped,
+        `T=${res.healT} seed=${res.healSeed}`
+    );
+    check("V17.34 Feld-Regeln: invalide emotion-Achse → no-op (kein throw, kein Feld-Schreiben)", res.invalidAxisNoop);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -33667,6 +33825,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1731EmotionDrivesWorld(ctx);
             await checkBandV1732SpatialEmotion(ctx);
             await checkBandV1733WorldRules(ctx);
+            await checkBandV1734FieldRules(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

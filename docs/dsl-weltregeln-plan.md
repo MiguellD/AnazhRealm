@@ -245,9 +245,18 @@ everySec` UND `dslEvalCond(cond)` → `dslEval(effect, ruleCtx)`; `lastFired` se
   das Budget kappt die Effekte/Frame; Determinismus (zwei Läufe gleicher Seed gleich).
 - **Damit ist die Welt zum ersten Mal REGEL-getrieben, nicht nur gepoked.**
 
-### Phase B — Feld-Bedingungen + Feld-Effekte (Lesen und Schreiben werden DASSELBE)
+### Phase B — Feld-Bedingungen + Feld-Effekte (Lesen und Schreiben werden DASSELBE) — ✅ GEBAUT (V17.34)
 
 **Die Regeln greifen ans lebendige Feld — der geniale Twist wird Code.**
+
+> **Status (V17.34, 01.06.2026):** vollständig gebaut + gemessen wie unten geplant.
+> Bedingungen `field_above`/`field_below` (`_dslFieldAxisAt` liest `auraAt` — 4 frozen
+> Achsen + 6 räumliche emotion-Achsen) · Effekte `deposit_life`/`deposit_emotion`
+> (rufen `_depositLife`/`_depositEmotion`) · `_dslRulePos` (Default `at_player`).
+> GEMESSEN: `checkBandV1734FieldRules` (7 grün — inkl. der HEILUNGS-Regel, die den
+> Loop schließt: field_below lebendig → deposit_life → steigt → stoppt bei Sättigung).
+> Der V17.26-„trag-Leben-in-den-Mangel"-Gedanke ist jetzt als Regel ausdrückbar
+> (`field_below lebendig` → `deposit_life at_field_need`). **Nächst: Phase C.**
 
 - **Neue Bedingungen** (`dslConditions`): `field_above([axis, value, posNode?])` /
   `field_below(...)` — liest `auraAt(pos).<axis>` (lebendig/glut/magie/emotion-Achsen).
@@ -372,11 +381,18 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    Welt ist von „gepoked" zu „regel-getrieben" gehoben. Abnahme erfüllt: alle §6-A-
    Invarianten grün (`checkBandV1733WorldRules`, 11 — Regel feuert bei Bedingung, Budget
    kappt, TTL entfernt, Dedup, Cap+Eviction, Re-Entrancy, Determinismus).
-2. **Phase B** (Feld-Kopplung) ist jetzt der nächste Schritt — Feld-Bedingungen
+2. ~~**Phase B** (Feld-Kopplung)~~ — ✅ **GEBAUT (V17.34)**: Feld-Bedingungen
    (`field_above`/`field_below`, liest `auraAt`) + Feld-Effekte (`deposit_life`/
-   `deposit_emotion`, schreibt die V17.27/.32-Overlays) → Lesen und Schreiben werden
-   DASSELBE Substrat. Dann C (Nexus evolviert), D (Mensch-Regeln), E (Bibliothek).
-3. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
+   `deposit_emotion`, schreibt die V17.27/.32-Overlays) → Lesen und Schreiben sind
+   DASSELBE Substrat. Abnahme erfüllt: `checkBandV1734FieldRules` (7 grün, inkl. der
+   Heilungs-Regel-Loop).
+3. **Phase C** (der Nexus evolviert Regeln) ist jetzt der nächste Schritt —
+   `dslComposeAtomic` bekommt einen `rule`-Atom-Typ (würfelt Regeln, nicht nur Gesten),
+   `dslMutate` mutiert Regeln (fällt aus dem AST-Walk), und die Fitness läuft über ein
+   ZEIT-FENSTER (30–60 s statt 5 s — eine Regel WIRKT über Zeit): niedrige Fitness →
+   die Regel zerfällt (`ttlSec`, der Phase-A-Hook), hohe → der Nexus erneuert sie. Dann
+   D (Mensch-Regeln per Chat), E (Persistenz + Bibliothek-Merge).
+4. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`
 ist (z. B. emotion→wetter), ist sie ein Kandidat, eine REGEL zu werden — das ist der
