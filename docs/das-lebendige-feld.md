@@ -124,6 +124,15 @@ Regel-Programme, real ist es ein hardcodierter Kern + Seed + dünne DSL-Gesten-S
 Die Welt wird aus einem Seed GENERIERT (fixe Funktionen), aber sie WÄCHST/EVOLVIERT
 nicht. (Warum die DSL bewusst dünn blieb: Performance + Determinismus + die Heilige
 Lektion — siehe §6.)
+**→ VOLL GEPLANT (01.06.2026): `docs/dsl-weltregeln-plan.md`** — der Weg von der
+Gesten-Sprache zu stehenden `Bedingung→Effekt`-WELT-REGELN, die das (jetzt
+schreibbare, V17.27/.32) Feld lesen+schreiben. Der geniale Leap ist EIN Primitiv:
+ein `rule` = ein `when`, das nicht verfällt (im Registry steht, im Welt-Tick
+fortlaufend geprüft). Eine Welt = ihr Regel-Satz + Seed → die Bibliothek wird wahr
+(merge = Vereinigung der Regel-Sätze). Der V17-Feld-Bogen schuf den fehlenden Stein:
+einen deterministisch-sicheren Schreib-Raum (die reaktiven Overlays), in den Regeln
+schreiben, ohne den Seed zu brechen. Fünf Phasen (A–E), reine Verdichtung, kein
+Urknall. **Vor der DSL-Arbeit den Plan ZUERST lesen.**
 
 ---
 
