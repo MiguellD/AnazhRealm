@@ -440,9 +440,13 @@ evolviert. Der Mensch gibt Gesetze. Die Welt versteht + definiert sich selbst.
    `buildStateSnapshot`/`_loadStateRestoreWorldRules` (Gesetze überleben Reload) +
    `_fusionMergeWorldRules` in `fuseWorlds` (zwei Welten = die Union ihrer Gesetze).
    Abnahme erfüllt: `checkBandV1738RulePersistence` (7 grün). **DER BOGEN A–E IST KOMPLETT.**
-6. **KÜR (Backlog, nach dem Substrat):** die KI (LLM) als Regel-Schreiberin — Grok bekommt
-   die Regel-Grammatik als Werkzeug + schlägt Regeln vor (durch dieselbe Sandbox + Whitelist
-   + Fitness); der letzte Pfeiler §3.4 „der KI-Schöpfer schreibt". Plus: Spieler-Pflege.
+6. ~~**KÜR — die KI (LLM) als Regel-Schreiberin**~~ — ✅ **GEBAUT (V17.40)**: der letzte
+   Pfeiler §3.4 „der KI-Schöpfer schreibt". Grok kennt jetzt die Regel-Grammatik
+   (`llmBuildSystemPrompt`) + schlägt stehende Gesetze vor; die Effekt-Whitelist wurde
+   UNIVERSELL (`_registerWorldRule` — jede Quelle gesichert); LLM-Regeln sind ephemer
+   (fitness-getestet + adoptierbar), in der Console als „Grok" gelabelt.
+   `checkBandV1740LlmRules` (6 grün). **DAMIT SCHREIBEN MENSCH · NEXUS · KI AM SELBEN
+   REGEL-SATZ — der ganze Bogen ist vollendet.** Offen (Backlog): Spieler-Pflege.
 7. Jede Phase: node-check/format/lint + Playtest-Band + Schöpfer-Browser für das Gefühl.
 
 **Faustregel:** wenn eine Welt-Reaktion heute ein hand-codierter `trigger()`/`_tickX`

@@ -2071,6 +2071,10 @@
             .drawer .ability-row.source-restored .source {
                 color: var(--brass-2);
             }
+            /* V17.40 — die KI (Grok) als Regel-Schreiberin: eigene Farbe (azur). */
+            .drawer .ability-row.source-llm .source {
+                color: #2f7e9e;
+            }
             .drawer .ability-row button {
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
                 color: var(--parch-ink);
@@ -5774,6 +5778,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.39.0" defer></script>
+        <script src="anazhRealm.js?v=17.40.0" defer></script>
     </body>
 </html>

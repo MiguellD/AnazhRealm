@@ -2479,6 +2479,83 @@ async function checkBandV1739RulesUX(ctx) {
     );
 }
 
+// V17.40 — die KI/das LLM als Regel-Schreiberin (der letzte Pfeiler §3.4): Mensch ·
+// Nexus · LLM schreiben am SELBEN Regel-Satz. Das LLM produzierte schon DSL-Programme
+// (dslRun source:"llm:grok") — jetzt kennt es die Regel-Grammatik (Prompt) + ist
+// abgesichert: die Effekt-Whitelist lebt jetzt an der EINEN Registrierungs-Stelle
+// (_registerWorldRule) → JEDE Quelle (auch LLM) darf nur die reaktive Welt berühren.
+// Eine LLM-Regel ist EPHEMER (fitness-getestet + adoptierbar) + im Gesetze-Console.
+async function checkBandV1740LlmRules(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+
+        // --- (1) die UNIVERSELLE Whitelist (in _registerWorldRule): eine LLM-Regel
+        //         mit frozen-Worldgen-Effekt wird abgelehnt, ein reaktiver passiert ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["terrain_steepness", 2]], { source: "llm:grok" });
+        out.unsafeRejected = !r.state.worldRules.some((x) => x.source === "llm:grok");
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "llm:grok" });
+        const llmRule = r.state.worldRules.find((x) => x.source === "llm:grok");
+        out.safeRegistered = !!llmRule;
+
+        // --- (2) eine LLM-Regel ist EPHEMER per Default (fitness-getestet, adoptierbar) ---
+        out.llmEphemeral = !!llmRule && typeof llmRule.ttlSec === "number" && llmRule.ttlSec > 0;
+
+        // --- (3) die LLM-Regel ist voll funktional (feuert) ---
+        if (llmRule) {
+            r.state.worldRules = [llmRule];
+            r.state.weather = "rainy";
+            llmRule.lastFired = -Infinity;
+            r._tickWorldRules(now());
+        }
+        out.llmFires = r.state.weather === "sunny";
+
+        // --- (4) der LLM-Prompt KENNT die Regel-Grammatik (rule-Op + Feld-Bedingung) ---
+        const prompt = r.llmBuildSystemPrompt();
+        out.promptGrammar = /\["rule"/.test(prompt) && /field_below/.test(prompt) && /STEHENDES GESETZ/i.test(prompt);
+
+        // --- (5) die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "llm:grok" });
+        r._statusRefs.worldrulesSignature = "";
+        r.renderWorldRulesList();
+        const host = document.getElementById("status-worldrules");
+        const llmRow = host.querySelector(".ability-row.source-llm");
+        out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
+
+        // --- (6) der LLM-Reply-Pfad trennt Regel-Programme ab (nicht der Gesten-Finalizer) ---
+        out.replySeparatesRules = /reply\.program\[0\] === "rule"/.test(r.maybeAnswerWithLlm.toString());
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check(
+        "V17.40 KI-Regeln: die UNIVERSELLE Whitelist (in _registerWorldRule) — LLM-Regel mit frozen-Effekt abgelehnt, reaktiver passiert",
+        res.unsafeRejected && res.safeRegistered
+    );
+    check(
+        "V17.40 KI-Regeln: eine LLM-Regel ist EPHEMER per Default (fitness-getestet + adoptierbar)",
+        res.llmEphemeral
+    );
+    check("V17.40 KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
+    check("V17.40 KI-Regeln: der LLM-Prompt kennt die Regel-Grammatik (rule-Op + Feld-Bedingung)", res.promptGrammar);
+    check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
+    check(
+        "V17.40 KI-Regeln: der LLM-Reply-Pfad trennt Regel-Programme ab (Fitness in worldRules)",
+        res.replySeparatesRules
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34546,6 +34623,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1737RulesUI(ctx);
             await checkBandV1738RulePersistence(ctx);
             await checkBandV1739RulesUX(ctx);
+            await checkBandV1740LlmRules(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

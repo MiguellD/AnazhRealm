@@ -1578,10 +1578,26 @@ class AnazhRealm {
         }
         const rules = this.state.worldRules;
         const cfg = AnazhRealm.WORLD_RULES;
+        const source = ctx.source || "unknown";
+        // V17.40 — die UNIVERSELLE Effekt-Whitelist an der EINEN Registrierungs-Stelle:
+        // JEDE Regel-Quelle (Mensch/Nexus/LLM/remote) darf nur die reaktive Welt
+        // berühren, nie den frozen Worldgen. Der Nexus ist by-construction sicher
+        // (sein Pool kennt die verbotenen Ops nicht → passt durch); die Mensch-Geste
+        // wird zusätzlich im Chat-Pfad mit reicherem Feedback geprüft; die LLM-Geste
+        // (die KI als Regel-Schreiberin) ist HIER gesichert. Defense-in-Depth.
+        if (!this._isRuleEffectAllowed(effectNode)) {
+            ctx.log.push({ event: "rule_effect_forbidden", program_id: ctx.programId });
+            return null;
+        }
         const o = opts && typeof opts === "object" && !Array.isArray(opts) ? opts : {};
         const everySec = this.dslClamp(o.everySec, cfg.minEverySec, 600) || cfg.defaultEverySec;
-        const ttlSec = Number.isFinite(Number(o.ttlSec)) && Number(o.ttlSec) > 0 ? Number(o.ttlSec) : null;
-        const source = ctx.source || "unknown";
+        let ttlSec = Number.isFinite(Number(o.ttlSec)) && Number(o.ttlSec) > 0 ? Number(o.ttlSec) : null;
+        // V17.40 — eine LLM-vorgeschlagene Regel ist EPHEMER per Default (sie wird per
+        // Fitness getestet + ist vom Schöpfer adoptierbar, wie eine Nexus-Regel), NICHT
+        // ein permanentes Mensch-Gesetz. Gibt das LLM selbst ein ttlSec, gilt das.
+        if (ttlSec == null && source.startsWith("llm")) {
+            ttlSec = Math.round((cfg.ruleTtlMin + cfg.ruleTtlMax) / 2);
+        }
         const now = performance.now() / 1000;
         // Dedup: dieselbe Regel nicht doppelt — refresh (TTL-Fenster + Raten)
         // statt push. Die Signatur ist billig (Registrierung ist selten, nie
@@ -3962,6 +3978,13 @@ class AnazhRealm {
             'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
             '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
             `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
+            "",
+            "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
+            '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
+            'Bedingungen LESEN die Welt: ["weather_is","rainy"], ["emotion_above","joy",0.5], ["field_below","lebendig",0.3] (wenig Leben am Ort), ["field_above","glut",0.5].',
+            'Effekte SCHREIBEN die reaktive Welt — u.a. ["deposit_life",["at_field_need"]] (trägt Leben dorthin, wo es fehlt), ["deposit_emotion","hope",0.5], ["weather","sunny"], ["creatures_emotion","happy"].',
+            'Beispiel-Gesetz: ["rule",["field_below","lebendig",0.3],["deposit_life",["at_field_need"]],{"everySec":3}] — heilt karge Regionen von selbst.',
+            "Ein Gesetz darf NUR die reaktive Welt berühren (Wetter, Leben, Stimmung, Kreaturen), NIE das feste Gelände (kein terrain/voxel/Bau). Schlage ein Gesetz nur vor, wenn eine DAUERHAFTE Welt-Reaktion gemeint ist; sonst eine einmalige Geste.",
             "Halte Programme klein (Tiefe ≤ 4). Wenn du dir unsicher bist, gib program: null und nur say.",
             "Antworte AUSSCHLIESSLICH mit dem JSON-Objekt, ohne Markdown-Fences, ohne Vorrede.",
         ].join("\n");
@@ -4309,7 +4332,14 @@ class AnazhRealm {
         }
         if (Array.isArray(reply.program) && reply.program.length > 0) {
             const result = this.dslRun(reply.program, { source: "llm:grok" });
-            if (result.ok) {
+            // V17.40 — die KI als Regel-Schreiberin: ein LLM-`rule`-Programm
+            // registriert eine stehende Regel (der `rule`-Op, ephemer per Default,
+            // whitelist-gesichert) in state.worldRules; ihre Fitness läuft über das
+            // Lebens-Fenster DORT, NICHT über den 5-s-Gesten-Finalizer (der die
+            // Registrierung messen würde) — wie bei der Nexus-Regel (V17.35).
+            if (result.ok && reply.program[0] === "rule") {
+                appendChatOutput("(Grok stellt ein Gesetz auf — sieh es in den Fähigkeiten unter Gesetze.)");
+            } else if (result.ok) {
                 appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
@@ -9889,7 +9919,14 @@ class AnazhRealm {
             return b;
         };
         for (const rule of rules) {
-            const src = rule.source === "human" ? "human" : rule.source === "nexus" ? "nexus" : "unknown";
+            const src =
+                rule.source === "human"
+                    ? "human"
+                    : rule.source === "nexus"
+                      ? "nexus"
+                      : rule.source && rule.source.startsWith("llm")
+                        ? "llm"
+                        : "unknown";
             const permanent = rule.ttlSec == null; // Mensch-Regel ODER adoptierte Nexus-Regel
             const row = document.createElement("div");
             row.className = `ability-row source-${src}` + (rule.disabled ? " rule-disabled" : "");
@@ -9900,7 +9937,9 @@ class AnazhRealm {
             name.textContent = rule.disabled ? "pausiert" : (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
             const source = document.createElement("span");
             source.className = "source";
-            source.textContent = (src === "human" ? "du" : src === "nexus" ? "Nexus" : src) + (rule.pinned ? " ★" : "");
+            source.textContent =
+                (src === "human" ? "du" : src === "nexus" ? "Nexus" : src === "llm" ? "Grok" : rule.source) +
+                (rule.pinned ? " ★" : "");
             const status = document.createElement("span");
             status.className = "rule-status" + (permanent ? " perma" : "");
             status.textContent = this._worldRuleStatusLabel(rule, now);
@@ -15207,7 +15246,14 @@ class AnazhRealm {
             }
             appendChatOutput(`${rules.length} Welt-Regel${rules.length !== 1 ? "n" : ""}:`);
             for (const r of rules) {
-                const who = r.source === "human" ? "du" : r.source === "nexus" ? "der Nexus" : r.source;
+                const who =
+                    r.source === "human"
+                        ? "du"
+                        : r.source === "nexus"
+                          ? "der Nexus"
+                          : r.source && r.source.startsWith("llm")
+                            ? "Grok"
+                            : r.source;
                 appendChatOutput(`• ${this.describeProgram(["rule", r.cond, r.effect])} (von ${who})`);
             }
             chatInput.value = "";
@@ -43579,7 +43625,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.39.0";
+AnazhRealm.VERSION = "17.40.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
