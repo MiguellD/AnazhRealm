@@ -1623,6 +1623,10 @@ class AnazhRealm {
             costMsSum: 0,
             errors: 0,
             fitness: 0,
+            // V17.39 — Schöpfer-Kontrolle: pinned (Favorit/adoptiert → permanent +
+            // eviction-geschützt), disabled (pausiert → feuert nicht).
+            pinned: false,
+            disabled: false,
         };
         rules.push(rule);
         return rule;
@@ -1635,7 +1639,9 @@ class AnazhRealm {
         let victim = -1;
         let oldest = Infinity;
         for (let i = 0; i < rules.length; i++) {
-            if (rules[i].source === "human") continue;
+            // Mensch-Gesetze + vom Schöpfer ANGEPINNTE (adoptierte) Regeln sind
+            // geschützt — nur ephemere Nexus-Experimente werden verdrängt.
+            if (rules[i].source === "human" || rules[i].pinned) continue;
             if (rules[i].born < oldest) {
                 oldest = rules[i].born;
                 victim = i;
@@ -1688,6 +1694,7 @@ class AnazhRealm {
                     continue;
                 }
             }
+            if (r.disabled) continue; // V17.39 — pausiertes Gesetz feuert nicht (ttl/Eviction gelten weiter)
             if (budget <= 0) continue; // Budget erschöpft → nächsten Frame
             if (currentTime - r.lastFired < r.everySec) continue; // everySec-Gate
             const ctx = this._worldRuleCtx(r);
@@ -9280,19 +9287,38 @@ class AnazhRealm {
             });
         }
         // V17.37 D-2 — Gesetze-Container: ✕ vergisst eine Mensch-Regel (per id).
-        // Nexus-Regeln verfallen selbst per ttl → sie tragen kein ✕.
+        // V17.39 — Gesetze-Steuerung (Event-Delegation): ✕ vergessen/verwerfen,
+        // ⏸/▶ pausieren/aktivieren, ★/📌 Favorit/behalten (eine ephemere Nexus-
+        // Regel wird damit adoptiert → permanent). Eigene/adoptierte Regeln immer
+        // löschbar; eine FREMDE (Nexus-)Regel verwerfen ist eine Schöpfer-Geste.
         const worldrulesContainer = this._statusRefs.worldrules;
         if (worldrulesContainer) {
             worldrulesContainer.addEventListener("click", (event) => {
                 const target = event.target;
                 if (!(target instanceof HTMLElement)) return;
-                const idStr = target.getAttribute("data-forget-rule");
-                if (idStr == null) return;
-                const id = Number(idStr);
                 const rules = this.state.worldRules || [];
-                const rule = rules.find((x) => x.id === id);
-                if (rule && rule.source === "human") {
-                    this.state.worldRules = rules.filter((x) => x.id !== id);
+                const findRule = (attr) => {
+                    const idStr = target.getAttribute(attr);
+                    return idStr == null ? null : rules.find((x) => x.id === Number(idStr)) || null;
+                };
+                const forget = findRule("data-forget-rule");
+                if (forget) {
+                    const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+                    if (forget.source === "human" || forget.pinned || mode === "schöpfer") {
+                        this.state.worldRules = rules.filter((x) => x.id !== forget.id);
+                    }
+                    return;
+                }
+                const toggle = findRule("data-toggle-rule");
+                if (toggle) {
+                    toggle.disabled = !toggle.disabled;
+                    return;
+                }
+                const pin = findRule("data-pin-rule");
+                if (pin) {
+                    pin.pinned = !pin.pinned;
+                    // Adoptieren: eine ephemere Regel wird beim Anpinnen permanent.
+                    if (pin.pinned && pin.ttlSec != null) pin.ttlSec = null;
                 }
             });
         }
@@ -9810,14 +9836,39 @@ class AnazhRealm {
     // → statt ▶ ein ✕ (vergiss, nur für Mensch-Regeln; Nexus-Regeln verfallen per
     // ttl) + ein „⚡ aktiv / ruht"-Indikator (hat sie schon gefeuert). describeProgram
     // macht jede Regel menschen-lesbar. Signature-Diff hält den Re-Render billig.
+    // V17.39 — der Persistenz-Status einer Regel, menschen-lesbar (der Schöpfer
+    // sieht, ob ein Gesetz BLEIBT oder verfällt): „pausiert" / „permanent" (Mensch
+    // oder adoptiert, ttlSec==null) / „verfällt in ~Ns" (ephemere Nexus-Regel,
+    // 10-s-granular). Eigene Methode, damit die Signatur + das Label sie teilen.
+    _worldRuleStatusLabel(rule, now) {
+        if (rule.disabled) return "pausiert";
+        if (rule.ttlSec == null) return "permanent";
+        const rem = Math.max(0, Math.ceil((rule.ttlSec - (now - rule.born)) / 10) * 10);
+        return `verfällt in ~${rem}s`;
+    }
+
     renderWorldRulesList() {
         const r = this._statusRefs;
         if (!r || !r.worldrules) return;
-        const rules = this.state.worldRules || [];
+        const now = performance.now() / 1000;
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        // Favoriten (angepinnt) zuerst, dann stabil nach id.
+        const rules = (this.state.worldRules || [])
+            .slice()
+            .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.id - b.id);
         const signature =
             rules.length +
             ":" +
-            rules.map((x) => `${x.id}:${x.source || "?"}:${(x.fires || 0) > 0 ? "f" : "_"}`).join("|");
+            mode +
+            ":" +
+            rules
+                .map(
+                    (x) =>
+                        `${x.id}:${x.source || "?"}:${x.pinned ? "p" : "_"}:${x.disabled ? "x" : "_"}:${
+                            (x.fires || 0) > 0 ? "f" : "_"
+                        }:${this._worldRuleStatusLabel(x, now)}`
+                )
+                .join("|");
         if (signature === r.worldrulesSignature) return;
         r.worldrulesSignature = signature;
         const container = r.worldrules;
@@ -9829,29 +9880,50 @@ class AnazhRealm {
             container.appendChild(empty);
             return;
         }
+        const mkBtn = (rule, label, attr, aria) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = label;
+            b.setAttribute(attr, String(rule.id));
+            b.setAttribute("aria-label", aria);
+            return b;
+        };
         for (const rule of rules) {
             const src = rule.source === "human" ? "human" : rule.source === "nexus" ? "nexus" : "unknown";
+            const permanent = rule.ttlSec == null; // Mensch-Regel ODER adoptierte Nexus-Regel
             const row = document.createElement("div");
-            row.className = `ability-row source-${src}`;
+            row.className = `ability-row source-${src}` + (rule.disabled ? " rule-disabled" : "");
             const head = document.createElement("div");
             head.className = "ability-head";
             const name = document.createElement("span");
             name.className = "name";
-            name.textContent = (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
+            name.textContent = rule.disabled ? "pausiert" : (rule.fires || 0) > 0 ? "⚡ aktiv" : "ruht";
             const source = document.createElement("span");
             source.className = "source";
-            source.textContent = src === "human" ? "du" : src === "nexus" ? "Nexus" : src;
+            source.textContent = (src === "human" ? "du" : src === "nexus" ? "Nexus" : src) + (rule.pinned ? " ★" : "");
+            const status = document.createElement("span");
+            status.className = "rule-status" + (permanent ? " perma" : "");
+            status.textContent = this._worldRuleStatusLabel(rule, now);
             head.appendChild(name);
             head.appendChild(source);
-            // Eine Regel wird nicht ausgeführt — sie steht. Mensch-Gesetz: ✕ zum
-            // Vergessen (Nexus-Regeln verfallen selbst, tragen kein ✕).
-            if (rule.source === "human") {
-                const forget = document.createElement("button");
-                forget.type = "button";
-                forget.textContent = "✕";
-                forget.setAttribute("data-forget-rule", String(rule.id));
-                forget.setAttribute("aria-label", "Gesetz vergessen");
-                head.appendChild(forget);
+            head.appendChild(status);
+            // Permanente Regeln (eigen/adoptiert): Favorit · Pause · Vergessen.
+            // Ephemere Nexus-Regel: „behalten" (adoptieren) + im Schöpfer-Modus
+            // „verwerfen" (die Welt gehorcht dem Schöpfer; sonst verfällt sie selbst).
+            if (permanent) {
+                head.appendChild(mkBtn(rule, rule.pinned ? "★" : "☆", "data-pin-rule", "Favorit"));
+                head.appendChild(
+                    mkBtn(
+                        rule,
+                        rule.disabled ? "▶" : "⏸",
+                        "data-toggle-rule",
+                        rule.disabled ? "Gesetz aktivieren" : "Gesetz pausieren"
+                    )
+                );
+                head.appendChild(mkBtn(rule, "✕", "data-forget-rule", "Gesetz vergessen"));
+            } else {
+                head.appendChild(mkBtn(rule, "📌", "data-pin-rule", "Gesetz behalten (wird permanent)"));
+                if (mode === "schöpfer") head.appendChild(mkBtn(rule, "✕", "data-forget-rule", "Gesetz verwerfen"));
             }
             row.appendChild(head);
             const desc = document.createElement("div");
@@ -22169,6 +22241,10 @@ class AnazhRealm {
                 everySec: r.everySec,
                 source: r.source,
                 ttlSec: r.ttlSec,
+                // V17.39 — die Schöpfer-Wahl reist mit: angepinnt (adoptiert/Favorit)
+                // + pausiert. Nur wenn gesetzt (saubere Snapshots).
+                ...(r.pinned ? { pinned: true } : {}),
+                ...(r.disabled ? { disabled: true } : {}),
             })),
             // Schicht 1 — Pattern-Memory + Pfad-Buckets persistieren. Beides
             // ist Welt-Gedächtnis und überlebt Reloads bewusst.
@@ -24499,6 +24575,11 @@ class AnazhRealm {
                 costMsSum: 0,
                 errors: 0,
                 fitness: 0,
+                // V17.39 — die Schöpfer-Wahl überlebt den Reload (Favorit/adoptiert
+                // + pausiert). Ein angepinntes Gesetz ist permanent (ttlSec oben
+                // wäre dann ohnehin null) + von der Eviction geschützt.
+                pinned: s.pinned === true,
+                disabled: s.disabled === true,
             });
         }
         this.state.worldRules = restored;
@@ -43498,7 +43579,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.38.0";
+AnazhRealm.VERSION = "17.39.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

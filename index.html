@@ -2091,6 +2091,25 @@
                 font-style: italic;
                 font-family: "IM Fell English", Georgia, serif;
             }
+            /* V17.39 — Gesetze-Persistenz-Badge + pausiert-Stil. Der Schöpfer sieht
+               auf einen Blick, ob ein Gesetz bleibt (permanent) oder verfällt. */
+            .drawer .ability-row .rule-status {
+                font-size: 10px;
+                padding: 0 5px;
+                border-radius: 6px;
+                margin-left: 4px;
+                color: var(--parch-ink-faded);
+                border: 1px solid var(--brass-2);
+                white-space: nowrap;
+            }
+            .drawer .ability-row .rule-status.perma {
+                color: #2e6b3a;
+                border-color: #4f8a5a;
+                background: rgba(120, 190, 130, 0.18);
+            }
+            .drawer .ability-row.rule-disabled {
+                opacity: 0.5;
+            }
             .drawer .tuning-row {
                 margin-bottom: 10px;
             }
@@ -5755,6 +5774,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=17.38.0" defer></script>
+        <script src="anazhRealm.js?v=17.39.0" defer></script>
     </body>
 </html>

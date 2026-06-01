@@ -2334,6 +2334,151 @@ async function checkBandV1738RulePersistence(ctx) {
     );
 }
 
+// V17.39 — die Gesetze-UX als Spieler durchdacht: SEHEN ob ein Gesetz bleibt
+// (permanent) oder verfaellt (~Ns), eigene Gesetze PAUSIEREN/loeschen, eine gute
+// Nexus-Regel BEHALTEN (📌 adoptieren → permanent + eviction-geschuetzt). Modus-
+// bewusst: eine FREMDE Nexus-Regel verwerfen ist eine Schoepfer-Geste. Gemessen:
+// Persistenz-Label, Pause (Tick skippt), Pin-Klick adoptiert, Eviction schuetzt
+// Pinned, Modus-Gating des Nexus-✕, Sortierung (Favoriten oben), Persistenz.
+async function checkBandV1739RulesUX(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const now = () => performance.now() / 1000;
+        const host = document.getElementById("status-worldrules");
+        const forceRender = () => {
+            r._statusRefs.worldrulesSignature = "";
+            r.renderWorldRulesList();
+        };
+
+        out.wired = typeof r._worldRuleStatusLabel === "function";
+
+        // Save state
+        const savedRules = r.state.worldRules.slice();
+        const savedWeather = r.state.weather;
+        const savedMode = r.state.worldMeta.gameMode;
+
+        // --- (A) Persistenz-Label: permanent / verfaellt / pausiert ---
+        const human = { ttlSec: null, born: now(), fires: 0 };
+        const nexus = { ttlSec: 60, born: now(), fires: 0 };
+        const paused = { ttlSec: null, born: now(), fires: 0, disabled: true };
+        out.labels =
+            r._worldRuleStatusLabel(human, now()) === "permanent" &&
+            /verf[äa]llt in ~\d+s/.test(r._worldRuleStatusLabel(nexus, now())) &&
+            r._worldRuleStatusLabel(paused, now()) === "pausiert";
+
+        // --- (B) Pause: ein pausiertes Gesetz feuert NICHT (Tick skippt) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 0.5 }], { source: "human" });
+        const ruleB = r.state.worldRules[0];
+        ruleB.disabled = true;
+        r.state.weather = "sunny";
+        ruleB.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        const pausedDidNotFire = r.state.weather === "sunny";
+        ruleB.disabled = false; // wieder aktiv → feuert
+        ruleB.lastFired = -Infinity;
+        r._tickWorldRules(now());
+        out.pauseWorks = pausedDidNotFire && r.state.weather === "rainy";
+
+        // --- (C) 📌-Klick adoptiert eine Nexus-Regel (pinned + ttlSec=null → permanent) ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const ruleC = r.state.worldRules[0];
+        forceRender();
+        const pinBtn = host.querySelector(`button[data-pin-rule="${ruleC.id}"]`);
+        if (pinBtn) pinBtn.click();
+        out.pinAdopts = !!pinBtn && ruleC.pinned === true && ruleC.ttlSec == null;
+        out.pinPermLabel = r._worldRuleStatusLabel(ruleC, now()) === "permanent";
+
+        // --- (D) Eviction schuetzt eine angepinnte Regel ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1.5], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const keep = r.state.worldRules[0];
+        keep.pinned = true;
+        const keepId = keep.id;
+        // das Registry mit ephemeren Nexus-Regeln ueber das Cap hinaus fluten
+        for (let i = 0; i < r.constructor.WORLD_RULES.cap + 5; i++) {
+            r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
+                source: "nexus",
+            });
+        }
+        out.pinnedSurvivesEviction =
+            r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
+            r.state.worldRules.some((x) => x.id === keepId);
+
+        // --- (E) Modus-Gating: eine fremde Nexus-Regel traegt ✕ nur im Schoepfer-Modus ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
+            source: "nexus",
+        });
+        const ruleE = r.state.worldRules[0];
+        r.state.worldMeta.gameMode = "frieden";
+        forceRender();
+        const noXInPeace = !host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
+        r.state.worldMeta.gameMode = "schöpfer";
+        forceRender();
+        const xInCreator = !!host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
+        out.modeGating = noXInPeace && xInCreator;
+        r.state.worldMeta.gameMode = savedMode;
+
+        // --- (F) Sortierung: angepinnte (Favoriten) zuerst ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3 }], { source: "human" }); // id kleiner
+        r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3 }], { source: "human" }); // id groesser
+        r.state.worldRules[1].pinned = true; // die spaetere anpinnen
+        const pinnedId = r.state.worldRules[1].id;
+        forceRender();
+        const firstRow = host.querySelector(".ability-row");
+        const firstStar =
+            firstRow && firstRow.querySelector(".source") && /★/.test(firstRow.querySelector(".source").textContent);
+        out.sortPinnedFirst = !!firstStar; // die angepinnte (★) Regel rendert zuerst
+        void pinnedId;
+
+        // --- (G) Persistenz: pinned/disabled ueberleben Snapshot → Restore ---
+        r.state.worldRules.length = 0;
+        r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
+        r.state.worldRules[0].pinned = true;
+        r.state.worldRules[0].disabled = true;
+        const snap = r.buildStateSnapshot();
+        const snapHasFlags = snap.worldRules[0].pinned === true && snap.worldRules[0].disabled === true;
+        r.state.worldRules.length = 0;
+        r._loadStateRestoreWorldRules(snap);
+        out.persistFlags =
+            snapHasFlags && r.state.worldRules[0].pinned === true && r.state.worldRules[0].disabled === true;
+
+        // restore
+        r.state.worldRules = savedRules;
+        r.state.weather = savedWeather;
+        r.state.worldMeta.gameMode = savedMode;
+        r._statusRefs.worldrulesSignature = "";
+        return out;
+    });
+
+    check("V17.39 Gesetze-UX: _worldRuleStatusLabel verdrahtet", res.wired);
+    check("V17.39 Gesetze-UX: Persistenz-Label — permanent / verfaellt in ~Ns / pausiert", res.labels);
+    check("V17.39 Gesetze-UX: ein PAUSIERTES Gesetz feuert nicht; reaktiviert feuert es wieder", res.pauseWorks);
+    check(
+        "V17.39 Gesetze-UX: der 📌-Klick ADOPTIERT eine Nexus-Regel (pinned + permanent)",
+        res.pinAdopts && res.pinPermLabel
+    );
+    check(
+        "V17.39 Gesetze-UX: die Eviction schuetzt eine angepinnte Regel (ueberlebt die Nexus-Flut)",
+        res.pinnedSurvivesEviction
+    );
+    check("V17.39 Gesetze-UX: Modus-Gating — eine fremde Nexus-Regel traegt ✕ nur im Schoepfer-Modus", res.modeGating);
+    check("V17.39 Gesetze-UX: Sortierung — angepinnte Favoriten rendern zuerst", res.sortPinnedFirst);
+    check(
+        "V17.39 Gesetze-UX: pinned/disabled ueberleben Snapshot → Restore (die Schoepfer-Wahl bleibt)",
+        res.persistFlags
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -34400,6 +34545,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1736HumanRules(ctx);
             await checkBandV1737RulesUI(ctx);
             await checkBandV1738RulePersistence(ctx);
+            await checkBandV1739RulesUX(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
