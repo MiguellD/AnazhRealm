@@ -8478,8 +8478,8 @@ class AnazhRealm {
     _lofiWorldField() {
         const neutral = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
         const pm = this.state.playerMesh;
-        if (!pm || !pm.position || typeof this.worldFieldAt !== "function") return neutral;
-        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!pm || !pm.position || typeof this.auraAt !== "function") return neutral;
+        const f = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living Lese-API)
         if (!f) return neutral;
         const c = (v) => Math.max(0, Math.min(1, v || 0));
         return {
@@ -38351,8 +38351,8 @@ class AnazhRealm {
         let lightIntensity = stop.intensity * lightMul;
         // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler)
         const pm = this.state.playerMesh;
-        if (pm && typeof this.worldFieldAt === "function") {
-            const field = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (pm && typeof this.auraAt === "function") {
+            const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (die living Lese-API)
             if (field) {
                 const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
                 const glut = Math.max(0, Math.min(1, field.glut || 0));
@@ -38568,8 +38568,8 @@ class AnazhRealm {
         if (hl) {
             hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
-            if (pm && typeof this.worldFieldAt === "function") {
-                const field = this.worldFieldAt(pm.position.x, pm.position.z);
+            if (pm && typeof this.auraAt === "function") {
+                const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living)
                 if (field) {
                     const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
                     const glut = Math.max(0, Math.min(1, field.glut || 0));
@@ -38948,7 +38948,7 @@ class AnazhRealm {
         }
         const px = x !== undefined ? x : pm.position.x;
         const pz = z !== undefined ? z : pm.position.z;
-        const field = this.worldFieldAt(px, pz);
+        const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
         if (!field) return this._pickCreatureSoulName();
         // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
         const souls = AnazhRealm.CREATURE_SOULS;
@@ -39105,12 +39105,15 @@ class AnazhRealm {
     _currentFaunaTarget() {
         const baseTarget = this.constructor.FAUNA_TARGET_POPULATION; // 8
         const pm = this.state.playerMesh;
-        if (!pm || typeof this.worldFieldAt !== "function") return baseTarget;
-        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!pm || typeof this.auraAt !== "function") return baseTarget;
+        const f = this.auraAt(pm.position.x, pm.position.z);
         if (!f) return baseTarget;
-        // lebendig 0..1 mappt auf 4..14 (baseTarget±50%)
+        // V17.25 (§5: alle Achsen, via auraAt) — die VOLLE Feld-Lese statt nur
+        // lebendig: lebendig HEBT (Leben trägt Leben, +0..10), glut DÄMPFT (eine
+        // glühende Ödnis trägt weniger, −0..5). Geklemmt ≥ 2 (nie ganz leer).
         const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
-        return Math.round(4 + lebendig * 10);
+        const glut = Math.max(0, Math.min(1, f.glut || 0));
+        return Math.max(2, Math.round(4 + lebendig * 10 - glut * 5));
     }
 
     // [ATMOSPHERE] Fauna-Max-Population — symmetrisches Pattern zu Target.
@@ -39118,11 +39121,13 @@ class AnazhRealm {
     _currentFaunaMax() {
         const baseMax = this.constructor.FAUNA_MAX_POPULATION; // 20
         const pm = this.state.playerMesh;
-        if (!pm || typeof this.worldFieldAt !== "function") return baseMax;
-        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!pm || typeof this.auraAt !== "function") return baseMax;
+        const f = this.auraAt(pm.position.x, pm.position.z);
         if (!f) return baseMax;
+        // V17.25 (§5: alle Achsen) — lebendig hebt (+0..16), glut dämpft (−0..8).
         const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
-        return Math.round(12 + lebendig * 16); // 12..28
+        const glut = Math.max(0, Math.min(1, f.glut || 0));
+        return Math.max(4, Math.round(12 + lebendig * 16 - glut * 8)); // 4..28
     }
 
     // [ATMOSPHERE] Tick — läuft alle FAUNA_TICK_INTERVAL_MS. V8.25-Heilung:
@@ -42286,7 +42291,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.24.0";
+AnazhRealm.VERSION = "17.25.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

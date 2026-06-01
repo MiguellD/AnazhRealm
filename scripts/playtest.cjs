@@ -922,6 +922,67 @@ async function checkBandV1723Harmony(ctx) {
     check("V17.23 Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)", res.spawnRings);
 }
 
+// V17.25 — Mehr Leser ans Feld (§5): die Logik-Konsumenten lesen jetzt die
+// living `auraAt`-API (statt direkt das eingefrorene worldFieldAt), und die
+// Fauna liest die VOLLEN Achsen (lebendig hebt, glut dämpft) statt nur lebendig.
+// Source-Probe (auraAt+glut) + behavioral (lebendige Region trägt mehr Fauna).
+async function checkBandV1725FieldReaders(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.faunaReadsAura =
+            /auraAt/.test(r._currentFaunaTarget.toString()) && /glut/.test(r._currentFaunaTarget.toString());
+        out.faunaMaxReadsAura =
+            /auraAt/.test(r._currentFaunaMax.toString()) && /glut/.test(r._currentFaunaMax.toString());
+        out.lightReadsAura = /auraAt/.test(r._dayNightComputeTint.toString());
+        out.lofiReadsAura = /auraAt/.test(r._lofiWorldField.toString());
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm) {
+            const ox = pm.x,
+                oz = pm.z;
+            let lebSpot = null,
+                lebBest = -2,
+                glutSpot = null,
+                glutBest = -2;
+            for (let gx = -2000; gx <= 2000; gx += 200) {
+                for (let gz = -2000; gz <= 2000; gz += 200) {
+                    const f = r.worldFieldAt(gx, gz);
+                    if (f.lebendig - f.glut > lebBest) {
+                        lebBest = f.lebendig - f.glut;
+                        lebSpot = { x: gx, z: gz };
+                    }
+                    if (f.glut - f.lebendig > glutBest) {
+                        glutBest = f.glut - f.lebendig;
+                        glutSpot = { x: gx, z: gz };
+                    }
+                }
+            }
+            pm.x = lebSpot.x;
+            pm.z = lebSpot.z;
+            const targetLeb = r._currentFaunaTarget();
+            pm.x = glutSpot.x;
+            pm.z = glutSpot.z;
+            const targetGlut = r._currentFaunaTarget();
+            pm.x = ox; // Restore
+            pm.z = oz;
+            out.faunaDiffers = targetLeb > targetGlut;
+            out.targetLeb = targetLeb;
+            out.targetGlut = targetGlut;
+        }
+        return out;
+    });
+    check("V17.25 mehr Leser: _currentFaunaTarget liest auraAt + glut (volle Achsen, §5)", res.faunaReadsAura);
+    check("V17.25 mehr Leser: _currentFaunaMax liest auraAt + glut", res.faunaMaxReadsAura);
+    check("V17.25 mehr Leser: _dayNightComputeTint (Licht/Welt-Tint) liest auraAt (living)", res.lightReadsAura);
+    check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
+    check(
+        "V17.25 mehr Leser: lebendige Region trägt MEHR Fauna als glühende (glut dämpft, alle Achsen)",
+        res.faunaDiffers,
+        `leb=${res.targetLeb} vs glut=${res.targetGlut}`
+    );
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -32907,6 +32968,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1721LivingFieldAura(ctx);
             await checkBandV1722NexusEyes(ctx);
             await checkBandV1723Harmony(ctx);
+            await checkBandV1725FieldReaders(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
