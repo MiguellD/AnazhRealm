@@ -36340,11 +36340,23 @@ class AnazhRealm {
         canvas.height = size;
         let renderer;
         try {
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-        } catch {
-            this.log("Workshop-Preview: WebGL-Renderer fehlgeschlagen — Preview deaktiviert", "ERROR");
+            // V17.19 (Heilung) — der Preview war ein THREE.WebGLRenderer und damit
+            // seit der V12-GPU-Umstellung BLIND: _buildFromBlueprint baut
+            // NodeMaterials, die seit r164 AUSSCHLIESSLICH auf WebGPURenderer
+            // rendern → das Crafting-Auge blieb leer. Heilung: derselbe
+            // WebGPURenderer wie die Haupt-Welt (eigenes Canvas, async init() +
+            // rendererReady-Gate, render() — das Loop-Pattern aus createScene).
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        } catch (err) {
+            this.log(
+                `Workshop-Preview: WebGPU-Renderer fehlgeschlagen (${err && err.message}) — Preview deaktiviert`,
+                "ERROR"
+            );
             return null;
         }
+        // Stencil global aus (wie die Haupt-Welt, V10.0-j.b) — verhindert den
+        // WebGPU-stencilLoadOp-CommandEncoder-Crash bei Pure-Depth-Pässen.
+        renderer.stencil = false;
         renderer.setSize(size, size, false);
         renderer.setPixelRatio(window.devicePixelRatio || 1);
         renderer.setClearColor(0x1a140a, 1);
@@ -36398,6 +36410,10 @@ class AnazhRealm {
             rafId: null,
             dirty: true,
             active: false,
+            // V17.19 (Heilung) — WebGPURenderer.init() ist async; bis ready
+            // überspringt _workshopRender den render()-Call (sonst leeres
+            // Frame). Die init().then()-Kette unten setzt das Flag + dirty.
+            rendererReady: false,
             listenersInstalled: false,
             // Welle 6.B Phase 2 — Manipulator-Gizmo. gizmo ist eine THREE.Group
             // mit drei Sub-Groups (translate/rotate/scale), pro Achse drei
@@ -36414,6 +36430,27 @@ class AnazhRealm {
             resizeObserver: null,
         };
         ws.preview = preview;
+        // V17.19 (Heilung) — WebGPU-Init asynchron starten (Pattern aus
+        // createScene, Z~42560). render() würde init() intern triggern, aber das
+        // explizite Gate hält _workshopRender bis ready ruhig + rendert das erste
+        // echte Frame, sobald die GPU steht.
+        try {
+            renderer
+                .init()
+                .then(() => {
+                    preview.rendererReady = true;
+                    preview.dirty = true;
+                    if (preview.active) this._workshopRender();
+                })
+                .catch((err) => {
+                    this.log(
+                        `Workshop-Preview: WebGPU init() scheiterte (${err && err.message}) — Preview bleibt leer.`,
+                        "ERROR"
+                    );
+                });
+        } catch (err) {
+            this.log(`Workshop-Preview: init()-Start scheiterte (${err && err.message}).`, "ERROR");
+        }
         this._workshopInstallPreviewListeners();
         this._workshopBuildGizmo();
         this._workshopInstallUIListeners();
@@ -36760,7 +36797,15 @@ class AnazhRealm {
         // Welle 6.B Phase 2 — Gizmo synchronisieren (Position + Distance-
         // Scale + Mode-Visibility) VOR dem Render.
         this._workshopSyncGizmo();
-        p.renderer.render(p.scene, p.camera);
+        // V17.19 (Heilung) — bis WebGPURenderer.init() fertig ist (rendererReady)
+        // nicht rendern (das Haupt-Loop-Gate, Z~42565). Danach render() wie der
+        // Loop-Fallback (Z~42588) — WebGPURenderer.render() ist auf der GPU
+        // async; ein Pipeline-Compile-Reject wird geloggt statt unhandled.
+        if (!p.rendererReady) return;
+        const renderResult = p.renderer.render(p.scene, p.camera);
+        if (renderResult && typeof renderResult.catch === "function") {
+            renderResult.catch((err) => this.log(`Workshop-Preview-Render: ${err && err.message}`, "INFO"));
+        }
     }
 
     // Listener-Installation: Maus-Down/-Move/-Up/-Wheel auf der Preview-Canvas.
@@ -42918,7 +42963,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.18.0";
+AnazhRealm.VERSION = "17.19.0";
 
 // V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
 // als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
