@@ -1308,6 +1308,7 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
+        if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
         const tintSrc = r._dayNightComputeTint.toString();
         out.tintReadsAuraEmotion = /aura\.emotion/.test(tintSrc); // de-passengered: liest die Feld-Achse
         const renderSrc = r._loopRender.toString();
@@ -1345,6 +1346,92 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         "V17.31 Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
         res.joyWarmsWorld,
         `cold.r=${res.coldR} warm.r=${res.warmR}`
+    );
+}
+
+// V17.32 — die RAEUMLICH-dynamische Emotion-Achse: das emotionale GEDAECHTNIS der
+// Welt. Der Moment des Fuehlens (`_feelAction`) praegt die Emotion an der Spieler-
+// Zelle ein; `auraAt` blendet den lokalen Abdruck ueber die globale Stimmung; der
+// V17.31-Welt-Tint liest das → faerbt den Ort. Die emotion-Achse wird damit eine
+// echte SCHREIBBARE Feld-Achse (heilt §3.3 fuer Emotion), KONSUMIERT raeumlich
+// (der Tint) — die V17.31-Passagier-Lehre angewandt: KONSUM, nicht nur Existenz.
+async function checkBandV1732SpatialEmotion(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const K = r.constructor;
+        out.hasConst =
+            !!K.EMOTION_FIELD &&
+            Array.isArray(K.EMOTION_AXES) &&
+            K.EMOTION_AXES.length === 6 &&
+            typeof K.EMOTION_FIELD.decayPerSec === "number";
+        out.auraBlends = /_emotionOverlayAt/.test(r.auraAt.toString());
+        out.feelDeposits = /_depositEmotion/.test(r._feelAction.toString());
+        if (r.state.emotionField) r.state.emotionField.clear();
+        const e = r.state.player.emotions;
+        const saved = Object.assign({}, e);
+        for (const k of Object.keys(e)) e[k] = 0;
+        const A = { x: 44444, z: -3333 },
+            B = { x: 99999, z: 7777 };
+        // (1) backward-compat: leeres Overlay → auraAt.emotion === globale Stimmung (selbes Objekt)
+        out.emptyIsGlobal = r.auraAt(A.x, A.z).emotion === e;
+        // (2) Deposit praegt lokal ein
+        r._depositEmotion(A.x, A.z, { sorrow: 0.6 });
+        const auraA = r.auraAt(A.x, A.z).emotion;
+        out.depositImprints = auraA.sorrow > 0;
+        // (3) RAEUMLICH: A traegt sorrow, B (frisch) nicht
+        const auraB = r.auraAt(B.x, B.z).emotion;
+        out.spatial = (auraA.sorrow || 0) > (auraB.sorrow || 0) + 0.05;
+        // (4) Decay senkt (das Gefuehl verblasst)
+        const key = r._lifeCellKey(A.x, A.z);
+        const stored = r.state.emotionField.get(key).axes.sorrow;
+        r.state.emotionField.get(key).t -= 120;
+        out.decays = r.auraAt(A.x, A.z).emotion.sorrow < stored;
+        // (5) DER ANTI-PASSAGIER-BEWEIS: ein raeumlicher sorrow-Abdruck FAERBT den
+        // Welt-Tint (am Spieler), obwohl die globale Stimmung NEUTRAL ist → sorrow
+        // grayt (reduziert die Saettigung). Beide Tints am selben Ort (gleiches
+        // Feld), nur der Emotions-Abdruck unterscheidet sich.
+        out.tintColors = true;
+        const THREE = window.THREE;
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (THREE && THREE.Color && pm) {
+            for (const k of Object.keys(e)) e[k] = 0;
+            r.state.emotionField.clear();
+            const mkStop = () => ({
+                sky: new THREE.Color(0.4, 0.5, 0.7),
+                light: new THREE.Color(1, 1, 1),
+                intensity: 1,
+            });
+            const sat = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+            const fresh = r._dayNightComputeTint(mkStop());
+            r._depositEmotion(pm.x, pm.z, { sorrow: 0.8 });
+            const imprinted = r._dayNightComputeTint(mkStop());
+            out.tintColors = sat(imprinted.skyColor) < sat(fresh.skyColor) - 1e-4;
+            out.freshSat = sat(fresh.skyColor);
+            out.imprintedSat = sat(imprinted.skyColor);
+        }
+        r.state.emotionField.clear();
+        for (const k of Object.keys(e)) e[k] = saved[k] || 0;
+        return out;
+    });
+    check("V17.32 raeumliche Emotion: EMOTION_FIELD + EMOTION_AXES verdrahtet", res.hasConst);
+    check("V17.32 raeumliche Emotion: auraAt blendet den lokalen Abdruck (_emotionOverlayAt)", res.auraBlends);
+    check(
+        "V17.32 raeumliche Emotion: _feelAction deponiert die Tat-Emotion am Ort (_depositEmotion)",
+        res.feelDeposits
+    );
+    check(
+        "V17.32 raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
+        res.emptyIsGlobal
+    );
+    check("V17.32 raeumliche Emotion: ein Deposit praegt die lokale Emotion ein", res.depositImprints);
+    check("V17.32 raeumliche Emotion: der Abdruck ist RAEUMLICH (Ort A traegt sorrow, Ort B nicht)", res.spatial);
+    check("V17.32 raeumliche Emotion: der Abdruck zerfaellt (das Gefuehl verblasst)", res.decays);
+    check(
+        "V17.32 KONSUM (kein Passagier): ein raeumlicher sorrow-Abdruck faerbt den Welt-Tint (grayt)",
+        res.tintColors,
+        `freshSat=${res.freshSat} imprintedSat=${res.imprintedSat}`
     );
 }
 
@@ -19812,6 +19899,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.player.emotions.sorrow = 0;
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
+        // V17.32 — der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
+        // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
+        // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
+        // aus früheren _feelAction-Bands rein, V9.56-i).
+        if (r.state.emotionField) r.state.emotionField.clear();
         r._applyDayNightToScene();
         // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
@@ -19825,22 +19917,30 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // r-Anteil auch (Lila = Rot + Blau)
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
-        // --- Vision 5: sorrow entsättigt Sky-Tint
-        r.state.player.emotions.awe = 0;
-        r.state.player.emotions.sorrow = 0;
-        r._applyDayNightToScene();
-        const skyAtSorrowZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        r.state.player.emotions.sorrow = 1.0;
-        r._applyDayNightToScene();
-        const skyAtSorrowHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        // Sättigung = max(rgb) - min(rgb)
-        const satZero =
-            Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
-            Math.min(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b);
-        const satHigh =
-            Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
-            Math.min(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b);
-        out.sorrowReducesSaturation = satHigh < satZero;
+        // --- Vision 5: sorrow entsättigt den Welt-Tint. V17.32 — GEMESSEN-robust:
+        // statt des live `nebulaColor` (hängt von der Spieler-Feld-Position UND
+        // dem V17.23-skyTint-Blend ab, der den Emotion-Effekt auf ~3 % verdünnt →
+        // grenzwertige Marge ~0.005, flaky) misst die Probe den ROHEN Tint via
+        // `_dayNightComputeTint(mkStop)` mit kontrolliert-gesättigtem Stop → sorrow
+        // grayt die volle ~40 % (große, deterministische Marge). Beide Tints am
+        // selben Ort/Feld, emotionField leer (oben) → nur sorrow unterscheidet.
+        const THREE_g3 = window.THREE;
+        if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
+            const mkStopG3 = () => ({
+                sky: new THREE_g3.Color(0.4, 0.5, 0.7),
+                light: new THREE_g3.Color(1, 1, 1),
+                intensity: 1,
+            });
+            const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+            r.state.player.emotions.awe = 0;
+            r.state.player.emotions.sorrow = 0;
+            const satG3Zero = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            r.state.player.emotions.sorrow = 1.0;
+            const satG3High = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            out.sorrowReducesSaturation = satG3High < satG3Zero;
+        } else {
+            out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
+        }
         // Reset
         r.state.player.emotions.sorrow = 0;
         r._applyDayNightToScene();
@@ -33340,6 +33440,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1729CreatureTrickle(ctx);
             await checkBandV1730EmotionFromBeing(ctx);
             await checkBandV1731EmotionDrivesWorld(ctx);
+            await checkBandV1732SpatialEmotion(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

@@ -7541,6 +7541,11 @@ class AnazhRealm {
         for (const axis of Object.keys(map)) {
             e[axis] = Math.min(1, (e[axis] || 0) + map[axis]);
         }
+        // V17.32 — der Moment des Fühlens MARKIERT den Ort: die Emotion der Tat
+        // wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis der Welt
+        // — ein Ort, an dem ich baute/litt/staunte, trägt diese Stimmung weiter).
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm) this._depositEmotion(pm.x, pm.z, map);
     }
 
     updatePlayerEmotions(currentTime) {
@@ -7556,10 +7561,11 @@ class AnazhRealm {
             }
         }
 
-        // V17.27 — das Leben-Overlay (die Schreib-Seite des Feldes) bounded
-        // halten: rate-limiteter Prune zerfallener Zellen (alle ~5 s). Lazy-
-        // Decay läuft beim Lesen; dies räumt nur die toten Zellen aus der Map.
+        // V17.27/V17.32 — die Schreib-Overlays (Leben + Emotion) bounded halten:
+        // rate-limiteter Prune zerfallener Zellen (alle ~5 s). Lazy-Decay läuft
+        // beim Lesen; dies räumt nur die toten Zellen aus den Maps.
         this._pruneLifeField();
+        this._pruneEmotionField();
 
         // === Das lebendige Feld — der Kreis schließt sich (Welt→Spieler) ===
         // Die lokale Aura unter dem Spieler nährt sanft seine Emotion: eine
@@ -32487,12 +32493,23 @@ class AnazhRealm {
         // (er liest auraAt.lebendig) + speist via FIELD_TO_EMOTION (V17.21) das
         // Welt-ERLEBEN in die Emotion — beides für umsonst, weil sie auraAt lesen.
         const overlay = this._lifeOverlayAt(x, z);
+        // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
+        // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
+        // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
+        const imp = this._emotionOverlayAt(x, z);
+        let emotion = e;
+        if (imp) {
+            emotion = {};
+            for (const axis of AnazhRealm.EMOTION_AXES) {
+                emotion[axis] = Math.min(1, (e[axis] || 0) + (imp[axis] || 0));
+            }
+        }
         return {
             lebendig: overlay > 0 ? Math.min(1, f.lebendig + overlay) : f.lebendig,
             dichte: f.dichte,
             glut: f.glut,
             magieleitung: f.magieleitung,
-            emotion: e,
+            emotion,
             t,
         };
     }
@@ -32577,6 +32594,72 @@ class AnazhRealm {
         if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
         creature.userData.lastLifeTrickle = now;
         this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+    }
+
+    // === V17.32 — die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
+    // Eine emotionale Tat (`_feelAction`) prägt ihre Emotion an der Spieler-Zelle
+    // ein. `auraAt` blendet den lokalen Abdruck über die globale Stimmung; der
+    // Welt-Tint (V17.31) liest das und färbt den Ort → ein echter Konsument, kein
+    // Passagier (die V17.31-Lehre angewandt). Lazy-Decay (kein per-Frame-Sweep).
+    _depositEmotion(x, z, emotionMap) {
+        if (!emotionMap) return;
+        if (!this.state.emotionField) this.state.emotionField = new Map();
+        const ef = this.state.emotionField;
+        const cfg = AnazhRealm.EMOTION_FIELD;
+        const now = performance.now() / 1000;
+        const key = this._lifeCellKey(x, z); // dieselbe 16-m-Zelle wie das Leben
+        let cell = ef.get(key);
+        if (cell) {
+            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t)); // erst zerfallen
+            for (const k of Object.keys(cell.axes)) cell.axes[k] *= f;
+            cell.t = now;
+        } else {
+            cell = { axes: {}, t: now };
+            ef.set(key, cell);
+        }
+        for (const axis of Object.keys(emotionMap)) {
+            cell.axes[axis] = Math.min(cfg.max, (cell.axes[axis] || 0) + emotionMap[axis] * cfg.imprintScale);
+        }
+    }
+
+    // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
+    // (dann blendet auraAt nichts → emotion == globale Stimmung, backward-compat).
+    _emotionOverlayAt(x, z) {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return null;
+        const cell = ef.get(this._lifeCellKey(x, z));
+        if (!cell) return null;
+        const dt = Math.max(0, performance.now() / 1000 - cell.t);
+        const f = dt === 0 ? 1 : Math.exp(-AnazhRealm.EMOTION_FIELD.decayPerSec * dt);
+        let out = null;
+        for (const axis of Object.keys(cell.axes)) {
+            const v = cell.axes[axis] * f;
+            if (v > 1e-4) {
+                if (!out) out = {};
+                out[axis] = v;
+            }
+        }
+        return out;
+    }
+
+    _pruneEmotionField() {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return;
+        const cfg = AnazhRealm.EMOTION_FIELD;
+        const now = performance.now() / 1000;
+        if (now - (this.state.emotionFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
+        this.state.emotionFieldLastPrune = now;
+        for (const [key, cell] of ef) {
+            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t));
+            let alive = false;
+            for (const k of Object.keys(cell.axes)) {
+                if (cell.axes[k] * f >= cfg.epsilon) {
+                    alive = true;
+                    break;
+                }
+            }
+            if (!alive) ef.delete(key);
+        }
     }
 
     // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
@@ -42618,7 +42701,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.31.0";
+AnazhRealm.VERSION = "17.32.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43546,6 +43629,27 @@ AnazhRealm.LIFE_FIELD = Object.freeze({
     // getendete Region erhält (nicht ein Einzel-Puls, der verblasst).
     trickle: 0.05, // pro Trickle-Deposit (klein — ein Garten wird gepflegt, nicht geflutet)
     trickleEverySec: 3, // jede tendende Kreatur träufelt höchstens alle 3 s
+});
+
+// V17.32 — die räumlich-dynamische Emotion: das emotionale GEDÄCHTNIS der Welt.
+// Wie das Leben-Overlay, aber pro 16-m-Zelle ein 6-Achsen-Emotions-Abdruck. Der
+// Moment des Fühlens (`_feelAction`) MARKIERT den Ort; `auraAt` blendet den
+// lokalen Abdruck ÜBER die globale Stimmung → die Welt erinnert sich, wo der
+// Spieler fühlte, und färbt diesen Ort (der V17.31-Welt-Tint liest `auraAt.
+// emotion` → wird damit räumlich FÜR UMSONST = der Konsument, kein Passagier).
+// Das ist die SCHREIB-Seite der emotion-Achse (heilt §3.3 für Emotion). Reaktive
+// Schicht (wie Leben/Wetter) → nicht persistiert, kein Worker-Mirror. Justierbar.
+// Die sechs Emotions-Achsen — die EINE Liste (Hylomorphismus-Stil), genutzt vom
+// räumlichen Emotions-Blend (auraAt) + den Reset-Pfaden.
+AnazhRealm.EMOTION_AXES = Object.freeze(["joy", "awe", "sorrow", "hope", "peace", "chaos"]);
+
+AnazhRealm.EMOTION_FIELD = Object.freeze({
+    decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben
+    imprintScale: 0.5, // wie viel der Tat-Emotion sich am Ort einprägt
+    max: 0.8, // Sättigung pro Achse/Zelle (ein Ort wird nicht unendlich traurig)
+    epsilon: 0.004, // darunter wird eine Zelle gepruned
+    pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+    // cell = LIFE_FIELD.cell (16 m) — dieselbe Zell-Quelle (`_lifeCellKey`)
 });
 
 // V17.28 — „der Ort, an dem ich stehe, ist besetzt" (Schöpfer-Befund: GROSSE
