@@ -1232,6 +1232,69 @@ async function checkBandV1729CreatureTrickle(ctx) {
     check("V17.29 Trickle: ambiente Fauna traeufelt NICHT (kein Feedback-Runaway, V17.27-Disziplin)", res.ambientInert);
 }
 
+// V17.30 — Pfeiler 2 wird WAHR: „Emotion treibt alles". Die Emotion leitet sich
+// jetzt aus dem echten SEIN-IN-DER-WELT ab — ueber ALLE sechs Achsen, aus den
+// TATEN (ACTION_TO_EMOTION, an jeder Handlungs-Stelle verdrahtet) + dem ZUSTAND
+// (niedrige HP) + der UMGEBUNG (Feld, V17.21). Nicht mehr nur Chat-Stichwoerter.
+async function checkBandV1730EmotionFromBeing(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const A2E = r.constructor.ACTION_TO_EMOTION;
+        out.hasTable = !!A2E && typeof A2E.build === "object";
+        // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
+        const axes = new Set();
+        for (const t of Object.keys(A2E || {})) for (const a of Object.keys(A2E[t])) axes.add(a);
+        out.allSixAxes = ["joy", "awe", "sorrow", "hope", "peace", "chaos"].every((a) => axes.has(a));
+        const e = r.state.player.emotions;
+        const reset = () => {
+            for (const k of Object.keys(e)) e[k] = 0;
+        };
+        reset();
+        r._feelAction("build");
+        out.buildJoyHope = e.joy > 0 && e.hope > 0;
+        reset();
+        r._feelAction("damage");
+        out.damageSorrowChaos = e.sorrow > 0 && e.chaos > 0;
+        reset();
+        r._feelAction("explore");
+        out.exploreAwe = e.awe > 0;
+        reset();
+        r._feelAction("create_life");
+        out.lifeJoyPeace = e.joy > 0 && e.peace > 0;
+        reset();
+        r._feelAction("bond");
+        out.bondPeace = e.peace > 0;
+        reset();
+        // Hooks an jeder realen Handlungs-Stelle (Source-Proben)
+        out.hookBuild = /_feelAction\("build"\)/.test(r.confirmBuild.toString());
+        out.hookDamage = /_feelAction\("damage"\)/.test(r.damagePlayer.toString());
+        out.hookHarvest = /_feelAction\("harvest"\)/.test(r.harvestArchitecture.toString());
+        out.hookBond = /_feelAction\("bond"\)/.test(r.assignCreatureTask.toString());
+        out.hookExplore = /_feelAction\("explore"\)/.test(r._setLastPlayerVoxelChunk.toString());
+        out.hookLife = /_feelAction\("create_life"\)/.test(r.dslEffects.spawn_creature.toString());
+        // ZUSTAND-Kanal: niedrige HP driftet sorrow/chaos (updatePlayerEmotions, pfad)
+        const upe = r.updatePlayerEmotions.toString();
+        out.hpChannel = /hpMax/.test(upe) && /sorrow/.test(upe) && /chaos/.test(upe);
+        return out;
+    });
+    check("V17.30 Pfeiler 2: ACTION_TO_EMOTION-Tabelle existiert (die Regel IST die Daten)", res.hasTable);
+    check("V17.30 Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht (ueber alle Achsen)", res.allSixAxes);
+    check("V17.30 Taten: bauen → joy + hope", res.buildJoyHope);
+    check("V17.30 Taten: Schaden/Gefahr → sorrow + chaos", res.damageSorrowChaos);
+    check("V17.30 Taten: erkunden → awe", res.exploreAwe);
+    check("V17.30 Taten: Leben spawnen (Spieler) → joy + peace", res.lifeJoyPeace);
+    check("V17.30 Taten: sich verbuenden → peace", res.bondPeace);
+    check("V17.30 Hook: confirmBuild fuehlt (build)", res.hookBuild);
+    check("V17.30 Hook: damagePlayer fuehlt (damage)", res.hookDamage);
+    check("V17.30 Hook: harvestArchitecture fuehlt (harvest)", res.hookHarvest);
+    check("V17.30 Hook: assignCreatureTask fuehlt (bond)", res.hookBond);
+    check("V17.30 Hook: _setLastPlayerVoxelChunk fuehlt (explore)", res.hookExplore);
+    check("V17.30 Hook: spawn_creature (human) fuehlt (create_life)", res.hookLife);
+    check("V17.30 Zustand: niedrige HP driftet sorrow/chaos (die Wund-Dread)", res.hpChannel);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -33222,6 +33285,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1727WritableField(ctx);
             await checkBandV1728SpawnClearance(ctx);
             await checkBandV1729CreatureTrickle(ctx);
+            await checkBandV1730EmotionFromBeing(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

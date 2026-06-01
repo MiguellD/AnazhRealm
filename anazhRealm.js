@@ -1609,6 +1609,11 @@ class AnazhRealm {
                     spawned++;
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
+                // V17.30 — DER SPIELER spawnt Leben (Chat-Geste, ctx.source ===
+                // "human") → joy + peace (nähren, der Taten-Kanal). Der NEXUS, der
+                // autonom Leben trägt, hebt NICHT die Spieler-Emotion (es ist seine
+                // Tat, nicht meine).
+                if (spawned > 0 && ctx.source === "human") this._feelAction("create_life");
             },
             // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
             // spawn_tree/spawn_island/spawn_ufo waren in V7.73 als Placeholder
@@ -7523,6 +7528,21 @@ class AnazhRealm {
         }
     }
 
+    // V17.30 — der TATEN-Kanal von Pfeiler 2: eine reale Spieler-Handlung
+    // (bauen, ernten, Leben spawnen, erkunden, sich verbünden, Schaden nehmen)
+    // leitet Emotion über ALLE Achsen ab — generisch aus AnazhRealm.ACTION_TO_
+    // EMOTION (die Tabelle IST die Regel, wie der Chat-Sentiment + der Feld-Read).
+    // EINE Quelle, viele Aufrufer (an jeder Handlungs-Stelle verdrahtet). So liest
+    // die Emotion endlich, was der Spieler TUT, nicht nur was er TIPPT.
+    _feelAction(type) {
+        const map = AnazhRealm.ACTION_TO_EMOTION[type];
+        const e = this.state.player && this.state.player.emotions;
+        if (!map || !e) return;
+        for (const axis of Object.keys(map)) {
+            e[axis] = Math.min(1, (e[axis] || 0) + map[axis]);
+        }
+    }
+
     updatePlayerEmotions(currentTime) {
         const p = this.state.player;
         const prev = p.emotionLastTick;
@@ -7565,6 +7585,27 @@ class AnazhRealm {
                     const cur = p.emotions[emo] || 0;
                     if (target > cur) {
                         p.emotions[emo] = Math.min(1, cur + (target - cur) * driftRate * delta);
+                    }
+                }
+            }
+        }
+
+        // === Der ZUSTAND-Kanal von Pfeiler 2 (V17.30) ===
+        // Eine Wunde trägt eine chronische Stimmung: ist die HP niedrig (nur im
+        // pfad-Modus existiert HP als Konsequenz), driftet sorrow + chaos sanft
+        // hoch — die akute Verletzung gibt `damagePlayer` (Taten-Kanal), dies ist
+        // die anhaltende Dread, solange die Wunde offen ist. Nur HEBEND, Richtung
+        // ZIEL < 0.7 (die Decay senkt, Heilung lässt sie verklingen).
+        const hpMax = (p.stats && p.stats.hpMax) || 0;
+        if (delta > 0 && hpMax > 0 && this.getGameMode && this.getGameMode() === "pfad") {
+            const ratio = Math.max(0, Math.min(1, (p.hp || 0) / hpMax));
+            if (ratio < 0.5) {
+                const hurt = (0.5 - ratio) / 0.5; // 0 (halb) .. 1 (tot)
+                const targets = { sorrow: 0.6 * hurt, chaos: 0.45 * hurt };
+                for (const emo of Object.keys(targets)) {
+                    const cur = p.emotions[emo] || 0;
+                    if (targets[emo] > cur) {
+                        p.emotions[emo] = Math.min(1, cur + (targets[emo] - cur) * 0.05 * delta);
                     }
                 }
             }
@@ -12144,6 +12185,12 @@ class AnazhRealm {
             this._playCreatureTaskPing(taskName);
             this._journalCreatureTask(creature, taskName, prevName);
         }
+        // V17.30 — eine Kreatur bindet sich (folgt dem Spieler) → peace + joy
+        // (Beziehung, Pfeiler 1). Nur die echte Spieler-Geste (nicht silent =
+        // Spawn-Default/Test-Reset).
+        if (!options.silent && taskName === "follow_player" && prevName !== "follow_player") {
+            this._feelAction("bond");
+        }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return true;
@@ -16707,6 +16754,18 @@ class AnazhRealm {
     // Streaming-Tick.
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
+        // V17.30 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
+        // awe + hope (Entdeckung, der Taten-Kanal von Pfeiler 2) — rate-limitiert
+        // (alle ~6 s ein Entdeckungs-Schlag, nicht jede 16-m-Grenze), damit awe
+        // nicht beim normalen Laufen sättigt.
+        const prev = this.state.lastPlayerVoxelChunk;
+        if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
+            const now = performance.now() / 1000;
+            if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
+                this.state.lastExploreFelt = now;
+                this._feelAction("explore");
+            }
+        }
         this.state.lastPlayerVoxelChunk = { cx: pcx, cz: pcz };
     }
 
@@ -25057,6 +25116,9 @@ class AnazhRealm {
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
+        // V17.30 — Schaden/Gefahr hebt sorrow + chaos (akut; die chronische
+        // Wund-Dread trägt der ZUSTAND-Kanal in updatePlayerEmotions).
+        this._feelAction("damage");
         this.log(
             `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
             "INFO"
@@ -33432,6 +33494,8 @@ class AnazhRealm {
                 .join(", ");
             this.log(`Gebaut: ${bm.blueprintName} (verbraucht ${consumedStr}).`, "INFO");
         }
+        // V17.30 — erschaffen hebt joy + hope (der Taten-Kanal von Pfeiler 2).
+        this._feelAction("build");
         return true;
     }
 
@@ -33621,6 +33685,9 @@ class AnazhRealm {
         const blueprintName = entry.type;
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
+        // V17.30 — der Spieler erntet (sammelt Fülle) → joy + hope. Nur der
+        // Spieler fühlt; eine erntende Kreatur (harvester="creature:…") nicht.
+        if (harvester === "player") this._feelAction("harvest");
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
@@ -42528,7 +42595,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.29.0";
+AnazhRealm.VERSION = "17.30.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -43402,6 +43469,27 @@ AnazhRealm.FIELD_TO_EMOTION = Object.freeze({
     glut: { chaos: 0.45, awe: 0.25 }, // Glut/Feuer: Unruhe + Ehrfurcht
     magieleitung: { awe: 0.45, hope: 0.2 }, // Magie: Staunen
     // dichte: neutral — Fels/Dichte trägt keine Stimmung
+});
+
+// V17.30 — Pfeiler 2 wird WAHR: „Emotion treibt alles". Bis hier bewegte sich
+// die Emotion fast nur über Chat-Stichwörter (joy stand meist auf 0) → die
+// Emotion→Welt-Kopplungen feuerten kaum. Jetzt LEITET die Emotion sich aus dem
+// echten Sein-in-der-Welt ab — über ALLE sechs Achsen, aus drei Kanälen:
+// (1) TATEN (diese Tabelle, an JEDER realen Handlungs-Stelle verdrahtet),
+// (2) UMGEBUNG (FIELD_TO_EMOTION, V17.21 — die Aura nährt peace/hope/awe),
+// (3) ZUSTAND (niedrige HP → sorrow/chaos, in updatePlayerEmotions).
+// Wie FIELD_TO_EMOTION: die TABELLE IST die Regel (Hylomorphismus), kein
+// Sonderfall-Code. Deltas browser-justierbar. Schreiben → addieren, geklemmt;
+// die Decay (0.005/s) senkt → anhaltendes Tun in EINE Richtung erreicht erst
+// die 0.7-Trigger-Schwelle → die Welt antwortet auf gelebte Stimmung.
+AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
+    build: { joy: 0.1, hope: 0.1 }, // erschaffen — der Kern-Positiv-Akt
+    create_life: { joy: 0.14, peace: 0.1 }, // Leben spawnen (Spieler) — nähren
+    harvest: { joy: 0.06, hope: 0.03 }, // sammeln/ernten — Fülle
+    explore: { awe: 0.12, hope: 0.05 }, // neue Region betreten — Entdeckung
+    bond: { peace: 0.12, joy: 0.06 }, // eine Kreatur folgt — Beziehung
+    resonance: { awe: 0.1 }, // resonante Architektur erlebt
+    damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
 });
 
 // V17.23 Sky-Harmonie — die maximale Blend-Stärke der DSL/Mood-Himmels-Tönung
