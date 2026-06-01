@@ -300,6 +300,17 @@ class AnazhRealm {
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
             // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
             weatherTransition: null,
+            // V17.23 Sky-Harmonie — die DSL/Mood-Himmelsfarbe ist eine TÖNUNG,
+            // die parallel zur Tag-Nacht-Farbe BLENDET (nicht überschreibt) +
+            // smooth fadet — in BEIDEN Achsen: skyTint = die AKTUELL gezeigte
+            // Tönung (lerpt Richtung skyTintTo → Farb-Cross-Fade, kein Sprung beim
+            // Farbwechsel, V17.24), skyTintTo = die Ziel-Farbe (skybox_color setzt
+            // sie); skyTintStrength = aktuelle Blend-Stärke (rampt), skyTintTarget
+            // = Ziel-Stärke (skybox_color hebt sie, decayt langsam).
+            skyTint: null,
+            skyTintTo: null,
+            skyTintStrength: 0,
+            skyTintTarget: 0,
             // Welle 6.G3 (V8.24) — Fauna-Lifecycle. Bei Unterpopulation
             // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
             // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
@@ -345,41 +356,6 @@ class AnazhRealm {
             voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
             voxelMeshPending: null, // Set<"cx,cz,lod">
             voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
-            // V9.95-a (Welle WebGPU-Compute-Foundation): die Phase-1-Foundation
-            // analog zu V9.89-Worker-Foundation. `_voxelGpuInit()` versucht
-            // `navigator.gpu` → adapter → device async lazy zu spawnen. Status-
-            // Maschine: `notTried` → `pending` (Init läuft) → `ready` (adapter+
-            // device verfügbar, trivial-shader hat compiliert + Determinismus-
-            // Run bestanden) ODER `unavailable` (kein navigator.gpu, kein
-            // Adapter, kein Device, oder Trivial-Shader fail). Phase 1 baut
-            // KEINEN Integration-Pfad — V9.95-b liefert WGSL-SimplexNoise +
-            // Density-Compute + Pipeline-Cutover. Hier nur die Foundation +
-            // Determinismus-Test (bit-identische Float32-Resultate zwei Runs
-            // hintereinander, plus Sanity gegen Math.fround-CPU-Referenz).
-            voxelGpuStatus: "notTried", // notTried | pending | ready | unavailable
-            voxelGpuAdapter: null, // GPUAdapter (nur ready-State)
-            voxelGpuDevice: null, // GPUDevice
-            voxelGpuAdapterInfo: null, // {vendor, architecture, device, description}
-            voxelGpuLimits: null, // {maxComputeInvocationsPerWorkgroup, maxStorageBufferBindingSize, maxBufferSize}
-            voxelGpuFoundationProof: null, // {trivialMismatches, determinismMismatches, n} nach erfolg. Init
-            voxelGpuLastError: null, // String, falls Init/Run fehlschlug
-            // V9.95-b (Density-Pipeline): GPU rechnet die Worldgen-Density.
-            // Eligibility-Gate filtert Chunks mit Hydrosphere-Carve/Lake-Mask
-            // ODER voxelEdits aus (die fallen auf den V9.91-Worker-Pfad).
-            voxelGpuDensityPipeline: null, // GPUComputePipeline (lazy)
-            voxelGpuPermBuffer: null, // GPUBuffer (512 u32 permutation, geseeded)
-            voxelGpuErosionBuffer: null, // GPUBuffer (erosion grid, dim*dim f32)
-            voxelGpuErosionSize: 0, // bytes
-            voxelGpuTarnsBuffer: null, // GPUBuffer (tarns packed f32)
-            voxelGpuTarnsSize: 0, // bytes
-            voxelGpuParamsBuffer: null, // GPUBuffer (uniform, scalar world-state)
-            voxelGpuWorldUploaded: false, // wurde Welt-State hochgeladen?
-            voxelGpuWorldStateGen: -1, // stateGen-Stempel der letzten Upload
-            voxelGpuDensityCache: null, // Map<"cx,cz,lod", Float32Array> — one-shot
-            voxelGpuDensityPending: null, // Set<"cx,cz,lod">
-            voxelGpuDensityGenAtRequest: null, // Map<key, stateGen> für Stale-Filter
-            voxelGpuDispatchCount: 0, // Diagnose: Anzahl GPU-Dispatches im Lauf
-            voxelGpuLastDispatchMs: 0, // Diagnose: letzte Dispatch-Dauer
             tmpVec1: null,
             tmpVec2: null,
             worldgenInFlight: false,
@@ -1572,27 +1548,38 @@ class AnazhRealm {
                 this.state.timeOfDay = c(value, 0, 1);
             },
             skybox_color: ([color]) => {
-                // V10.0-f-1 — Skybox ist jetzt MeshBasicNodeMaterial (TSL),
-                // Uniforms leben in `state.skyboxUniforms` als uniform-Knoten
-                // mit direkt mutierbarem `.value`. Der alte
-                // `material.uniforms.nebulaColor.value`-Pfad ist weg.
-                // Pre-V10.0-f-1-Lehre (Ring 3 V2): vorher hieß das Uniform
-                // fälschlich `tintColor` und war ein stiller No-Op — der
-                // jetzige Pfad schreibt die kanonische Welt-Wahrheit.
+                // V17.23 Sky-Harmonie — die Farbe SNAPPT nicht mehr nebulaColor
+                // (wo _dayNightApplySkybox sie eh jeden Frame überschrieb = zwei
+                // Kräfte, die sich gegenseitig überschreiben). Stattdessen setzt
+                // sie eine TÖNUNG, die der Tag-Nacht-Himmel parallel BLENDET + die
+                // smooth fadet (s. _dayNightApplySkybox). Die Stimmung scheint
+                // durch, ohne die Tageszeit zu killen — Synergie statt Snap.
                 if (typeof color !== "string") return;
-                const uNebula = this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor;
-                if (uNebula) {
-                    try {
-                        uNebula.value = new THREE.Color(color);
-                    } catch {
-                        // ungültige Farbe ignorieren
-                    }
+                try {
+                    const c = new THREE.Color(color);
+                    // V17.24 — die ZIEL-Farbe setzen; die gezeigte skyTint lerpt in
+                    // _dayNightApplySkybox sanft dorthin (Farb-Cross-Fade, kein
+                    // Sprung). Beim ersten Mal startet skyTint direkt am Ziel (dann
+                    // fadet nur die Stärke ein).
+                    this.state.skyTintTo = c;
+                    if (!this.state.skyTint) this.state.skyTint = c.clone();
+                    this.state.skyTintTarget = AnazhRealm.SKY_TINT_MAX;
+                } catch {
+                    // ungültige Farbe ignorieren
                 }
             },
             spawn_creature: ([positionNode, count, emotion], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const n = c(count, 1, 20);
                 const e = emotion === "sad" || emotion === "happy" ? emotion : "happy";
+                // === Spawn-Harmonie (V17.23): der Ort, an dem ICH STEHE, ist
+                // besetzt — Kreaturen erscheinen im RING um den Ziel-Punkt, nie
+                // gestapelt + nie AUF dem Spieler (sonst clippt/buggt es, Schöpfer-
+                // Befund). Liegt der Ziel-Punkt auf dem Spieler (at_player), wird
+                // der Ring nach außen geschoben. ctx.rng → deterministisch +
+                // broadcast-konsistent (wie die Position-Resolver).
+                const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
+                const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
                 let spawned = 0;
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
@@ -1600,10 +1587,33 @@ class AnazhRealm {
                         break;
                     }
                     ctx.budget.spawnsLeft--;
-                    this.spawnCreatureAt(pos.x, pos.y, pos.z, e);
+                    const ang = ctx.rng() * Math.PI * 2;
+                    const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
+                    const sx = pos.x + Math.cos(ang) * rad;
+                    const sz = pos.z + Math.sin(ang) * rad;
+                    const born = this.spawnCreatureAt(sx, pos.y, sz, e);
+                    // V17.29 — diese Kreatur ist INTENTIONAL getragen (Nexus/Chat/
+                    // DSL): sie TENDET das Feld (träufelt Leben, wo sie wohnt, s.
+                    // _tickCreatureLifeTrickle). Die ambiente Fauna bekommt das Flag
+                    // NICHT → sie bleibt die FOLGE des Feldes (kein Runaway).
+                    if (born && born.userData) born.userData.tendsLife = true;
+                    // V17.27 — eine Geburt TRÄGT Leben ins Feld (die Schreib-Seite):
+                    // sie hebt lebendig an der Wiege → schließt den at_field_need-
+                    // Loop (der Mangel sinkt, der Nexus zieht weiter) + die Region
+                    // ergrünt (Fauna-Ziel + Emotion-Drift lesen das gehobene
+                    // lebendig via auraAt). NUR dieser INTENTIONALE Spawn-Pfad
+                    // (Nexus/Chat/DSL) deponiert — die ambiente Fauna (sie ist die
+                    // FOLGE des Feldes) + Restore tun es bewusst NICHT (kein
+                    // positives Feedback-Runaway in üppigen Regionen).
+                    this._depositLife(sx, sz);
                     spawned++;
                 }
                 ctx.log.push({ event: "spawned_creature", count: spawned, emotion: e });
+                // V17.30 — DER SPIELER spawnt Leben (Chat-Geste, ctx.source ===
+                // "human") → joy + peace (nähren, der Taten-Kanal). Der NEXUS, der
+                // autonom Leben trägt, hebt NICHT die Spieler-Emotion (es ist seine
+                // Tat, nicht meine).
+                if (spawned > 0 && ctx.source === "human") this._feelAction("create_life");
             },
             // Welle 6.G Phase 1.5 — Hylomorphismus-Unification.
             // spawn_tree/spawn_island/spawn_ufo waren in V7.73 als Placeholder
@@ -1699,7 +1709,9 @@ class AnazhRealm {
             // Beim Broadcast embed der Sender das verwendete Seed, damit
             // der Empfänger DIESELBEN Häuser sieht, nicht eigene.
             spawn_village: ([positionNode, seed], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
+                // V17.28 — eine GROSSE Struktur nie AUF den Spieler (Fall-durch-
+                // den-Boden): footprint-bewusst aus seinem Bereich schieben.
+                const pos = this._structureSpawnPos("village", this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -1710,7 +1722,7 @@ class AnazhRealm {
                 ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_temple: ([positionNode, seed], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
+                const pos = this._structureSpawnPos("temple", this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -1721,7 +1733,7 @@ class AnazhRealm {
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
-                const pos = this.dslEvalPos(positionNode, ctx);
+                const pos = this._structureSpawnPos("waterfall", this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -2391,6 +2403,30 @@ class AnazhRealm {
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 return { x: p.x, y: p.y, z: p.z };
             },
+            // V17.26 — die Welt heilt sich: der Punkt des größten BEDARFS
+            // (niedrigste `lebendig`) in einem 8-Punkt-Ring um den Spieler. Der
+            // Nexus trägt Leben DORTHIN, wo es FEHLT (eine sterbende/karge
+            // Region), statt nur die lebendige zu verstärken — fraktales
+            // Wachstum aus Verständnis: die Welt liest ihren eigenen Mangel +
+            // füllt ihn. Liest auraAt (die living Lese-API). Default-Radius 50 m.
+            at_field_need: ([radius], ctx) => {
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                if (typeof this.auraAt !== "function") return { x: p.x, y: p.y, z: p.z };
+                const r = c(radius, 10, 120) || 50;
+                let best = null;
+                let bestLeb = Infinity;
+                for (let i = 0; i < 8; i++) {
+                    const ang = (i / 8) * Math.PI * 2;
+                    const sx = p.x + Math.cos(ang) * r;
+                    const sz = p.z + Math.sin(ang) * r;
+                    const leb = this.auraAt(sx, sz).lebendig;
+                    if (leb < bestLeb) {
+                        bestLeb = leb;
+                        best = { x: sx, z: sz };
+                    }
+                }
+                return best ? { x: best.x, y: p.y, z: best.z } : { x: p.x, y: p.y, z: p.z };
+            },
             // Welle 6.X.3 C1 (Audit 17.05.2026) — Spawn-Position vor dem
             // Spieler statt im Spieler. Vision §11: die Welt-Geste wirkt
             // selbst-entschieden („ich stelle hier was hin", nicht „ich werde
@@ -2671,22 +2707,56 @@ class AnazhRealm {
         // Bias ist sanft (max ±0.3 von der 0.5-Mitte) — Komposition bleibt
         // erkundend, der Nexus „spürt" den Menschen, ohne ihn zu spiegeln.
         const e = (this.state.player && this.state.player.emotions) || {};
-        const sunnyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
-        const happyBias = Math.max(0.05, Math.min(0.95, 0.5 + (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3));
+        // === Der Nexus bekommt Augen (docs/das-lebendige-feld.md §2/§3.1) ===
+        // Er war BLIND: würfelte Atome aus einer fixen Liste, nur emotion-gebiast
+        // — er spürte nicht „dieser Wald lebt / hier glüht es / hier resoniert
+        // Magie" (der Drift „am weitesten von fraktalem Wachstum weg"). Jetzt
+        // LIEST er das lokale Feld (auraAt am Spieler) und komponiert RESONANT:
+        // er nährt MEHR Leben, wo das Feld lebt (spawn_creature-Gewicht ∝
+        // lebendig), färbt resonant (s. dslComposeFieldColor) UND stimmt das
+        // Wetter mit (s.u.). Ohne playerMesh = neutrales Feld = backward-compatible.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.x, pm.z) : null;
+        const fLebendig = aura ? aura.lebendig : 0.5;
+        const fGlut = aura ? aura.glut : 0;
+        // === HARMONIE statt Überschreiben (Schöpfer-Lehre 01.06.2026) ===
+        // Emotion UND Feld formen die Wetter-Stimmung PARALLEL — aber der
+        // explizite Spieler-Wille FÜHRT. emoSignal = die Stärke des Willens
+        // (|joy−sorrow|, 0..1): wo der Spieler stark fühlt (→1), WEICHT das Feld
+        // zurück (×(1−emoSignal) → 0); wo er ruhig ist (→0), füllt die ambiente
+        // Region die Stimmung. So überschreibt NIE eine Kraft die andere:
+        // joy=1 → Feld-Anteil 0 → sunny dominiert (die Invariante hält per
+        // KONSTRUKTION, nicht per Wegnahme); idle → die Region scheint durch.
+        // Das ist Synergie statt Revert — zwei Kräfte verschmelzen, keine kämpft.
+        const emoTerm = (e.joy || 0) * 0.3 - (e.sorrow || 0) * 0.3;
+        const emoSignal = Math.min(1, Math.abs((e.joy || 0) - (e.sorrow || 0)));
+        const fieldMood = ((fLebendig - 0.5) * 0.4 - fGlut * 0.3) * (1 - emoSignal);
+        const sunnyBias = Math.max(0.05, Math.min(0.95, 0.5 + emoTerm + fieldMood));
+        const happyBias = sunnyBias;
         const choices = [
             { w: 15, build: () => ["weather", rng() < sunnyBias ? "sunny" : "rainy"] },
             {
-                w: 12,
+                // Der Nexus nährt Leben, wo das Feld lebt: das Gewicht wächst mit
+                // lebendig (~7 in karger, 12 bei neutral, ~17 in üppiger Region).
+                w: Math.round(12 * (0.6 + fLebendig * 0.8)),
                 build: () => [
                     "spawn_creature",
-                    this.dslComposePosition(rng),
+                    // V17.26 — die Welt heilt sich (Feld-RICHTUNG): ~50 % der
+                    // Nexus-Kreaturen gehen zum Punkt des größten BEDARFS
+                    // (at_field_need = niedrigste lebendig im Ring 30–80 m) →
+                    // Leben in sterbende/karge Regionen tragen, nicht nur die
+                    // lebendige verstärken. Die andere Hälfte erkundet frei
+                    // (dslComposePosition) — Balance aus Heilen + Erkunden.
+                    rng() < 0.5
+                        ? ["at_field_need", Number((30 + rng() * 50).toFixed(1))]
+                        : this.dslComposePosition(rng),
                     1 + Math.floor(rng() * 5),
                     rng() < happyBias ? "happy" : "sad",
                 ],
             },
             { w: 10, build: () => ["creatures_emotion", rng() < happyBias ? "happy" : "sad"] },
-            { w: 8, build: () => ["creatures_color", this.dslComposeColor(rng)] },
-            { w: 8, build: () => ["skybox_color", this.dslComposeColor(rng)] },
+            { w: 8, build: () => ["creatures_color", this.dslComposeFieldColor(rng, aura)] },
+            { w: 8, build: () => ["skybox_color", this.dslComposeFieldColor(rng, aura)] },
             { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
             { w: 7, build: () => ["player_speed", Number((4 + rng() * 8).toFixed(2))] },
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
@@ -2746,6 +2816,21 @@ class AnazhRealm {
     dslComposeColor(rng) {
         const palette = ["#ff7a59", "#7bd389", "#5ec0eb", "#d4a3ff", "#f7d358", "#e94c89", "#88e1e1", "#a89070"];
         return palette[Math.floor(rng() * palette.length)];
+    }
+
+    // Der Nexus bekommt Augen für die Farbe (docs/das-lebendige-feld.md §3.1):
+    // wenn eine Feld-Achse den Ort deutlich prägt (> 0.6), wählt er resonant —
+    // magie-leitend → magisches Lila, glühend → warmes Feuer, lebendig →
+    // frisches Grün; sonst die freie Palette (erkundend). Die rng-Schwelle macht
+    // es weich (nicht jeder Pick resoniert, nur wahrscheinlicher je stärker die
+    // Achse). aura kann null sein (kein playerMesh) → freie Palette wie bisher.
+    dslComposeFieldColor(rng, aura) {
+        if (aura) {
+            if (aura.magieleitung > 0.6 && rng() < aura.magieleitung) return "#d4a3ff";
+            if (aura.glut > 0.6 && rng() < aura.glut) return "#ff7a59";
+            if (aura.lebendig > 0.6 && rng() < aura.lebendig) return "#7bd389";
+        }
+        return this.dslComposeColor(rng);
     }
 
     dslComposeSayMessage(rng) {
@@ -7443,6 +7528,26 @@ class AnazhRealm {
         }
     }
 
+    // V17.30 — der TATEN-Kanal von Pfeiler 2: eine reale Spieler-Handlung
+    // (bauen, ernten, Leben spawnen, erkunden, sich verbünden, Schaden nehmen)
+    // leitet Emotion über ALLE Achsen ab — generisch aus AnazhRealm.ACTION_TO_
+    // EMOTION (die Tabelle IST die Regel, wie der Chat-Sentiment + der Feld-Read).
+    // EINE Quelle, viele Aufrufer (an jeder Handlungs-Stelle verdrahtet). So liest
+    // die Emotion endlich, was der Spieler TUT, nicht nur was er TIPPT.
+    _feelAction(type) {
+        const map = AnazhRealm.ACTION_TO_EMOTION[type];
+        const e = this.state.player && this.state.player.emotions;
+        if (!map || !e) return;
+        for (const axis of Object.keys(map)) {
+            e[axis] = Math.min(1, (e[axis] || 0) + map[axis]);
+        }
+        // V17.32 — der Moment des Fühlens MARKIERT den Ort: die Emotion der Tat
+        // wird an der Spieler-Zelle deponiert (das räumliche Gedächtnis der Welt
+        // — ein Ort, an dem ich baute/litt/staunte, trägt diese Stimmung weiter).
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm) this._depositEmotion(pm.x, pm.z, map);
+    }
+
     updatePlayerEmotions(currentTime) {
         const p = this.state.player;
         const prev = p.emotionLastTick;
@@ -7453,6 +7558,62 @@ class AnazhRealm {
             const dec = p.emotionDecayPerSec * delta;
             for (const k of Object.keys(p.emotions)) {
                 p.emotions[k] = Math.max(0, p.emotions[k] - dec);
+            }
+        }
+
+        // V17.27/V17.32 — die Schreib-Overlays (Leben + Emotion) bounded halten:
+        // rate-limiteter Prune zerfallener Zellen (alle ~5 s). Lazy-Decay läuft
+        // beim Lesen; dies räumt nur die toten Zellen aus den Maps.
+        this._pruneLifeField();
+        this._pruneEmotionField();
+
+        // === Das lebendige Feld — der Kreis schließt sich (Welt→Spieler) ===
+        // Die lokale Aura unter dem Spieler nährt sanft seine Emotion: eine
+        // lebendige Lichtung gibt Frieden + Hoffnung, eine Glut-Ödnis Unruhe +
+        // Ehrfurcht, eine magie-leitende Zone Staunen. EIN Feld-Read (auraAt),
+        // generisch über AnazhRealm.FIELD_TO_EMOTION — kein Sonderfall-Pflaster,
+        // kein neues _tickX (docs/das-lebendige-feld.md §3.2: „eine friedliche
+        // Lichtung gibt Frieden" war der fehlende Rückweg). Drift NUR Richtung
+        // ZIEL und nur HEBEND (die Decay oben senkt) → wo das Feld schwach ist,
+        // bleibt „idle → 0"; wo es stark ist, spürt der Spieler die Region,
+        // ohne dass sie je selbst die 0.7-Trigger-Schwelle erreicht.
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (pm && delta > 0) {
+            const aura = this.auraAt(pm.x, pm.z, currentTime);
+            const driftRate = 0.03; // pro Sekunde (sanft, Halbwertszeit ~23 s)
+            const map = AnazhRealm.FIELD_TO_EMOTION;
+            for (const fieldAxis of Object.keys(map)) {
+                const strength = aura[fieldAxis] || 0;
+                if (strength <= 0.05) continue;
+                const targets = map[fieldAxis];
+                for (const emo of Object.keys(targets)) {
+                    const target = targets[emo] * strength; // 0 .. < 0.7
+                    const cur = p.emotions[emo] || 0;
+                    if (target > cur) {
+                        p.emotions[emo] = Math.min(1, cur + (target - cur) * driftRate * delta);
+                    }
+                }
+            }
+        }
+
+        // === Der ZUSTAND-Kanal von Pfeiler 2 (V17.30) ===
+        // Eine Wunde trägt eine chronische Stimmung: ist die HP niedrig (nur im
+        // pfad-Modus existiert HP als Konsequenz), driftet sorrow + chaos sanft
+        // hoch — die akute Verletzung gibt `damagePlayer` (Taten-Kanal), dies ist
+        // die anhaltende Dread, solange die Wunde offen ist. Nur HEBEND, Richtung
+        // ZIEL < 0.7 (die Decay senkt, Heilung lässt sie verklingen).
+        const hpMax = (p.stats && p.stats.hpMax) || 0;
+        if (delta > 0 && hpMax > 0 && this.getGameMode && this.getGameMode() === "pfad") {
+            const ratio = Math.max(0, Math.min(1, (p.hp || 0) / hpMax));
+            if (ratio < 0.5) {
+                const hurt = (0.5 - ratio) / 0.5; // 0 (halb) .. 1 (tot)
+                const targets = { sorrow: 0.6 * hurt, chaos: 0.45 * hurt };
+                for (const emo of Object.keys(targets)) {
+                    const cur = p.emotions[emo] || 0;
+                    if (targets[emo] > cur) {
+                        p.emotions[emo] = Math.min(1, cur + (targets[emo] - cur) * 0.05 * delta);
+                    }
+                }
             }
         }
 
@@ -8419,8 +8580,8 @@ class AnazhRealm {
     _lofiWorldField() {
         const neutral = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
         const pm = this.state.playerMesh;
-        if (!pm || !pm.position || typeof this.worldFieldAt !== "function") return neutral;
-        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!pm || !pm.position || typeof this.auraAt !== "function") return neutral;
+        const f = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living Lese-API)
         if (!f) return neutral;
         const c = (v) => Math.max(0, Math.min(1, v || 0));
         return {
@@ -9975,7 +10136,6 @@ class AnazhRealm {
         // „Interferieren/Flackern, nicht sauber" (Schöpfer-Befund). EINE
         // Noise-Sprache im ganzen Projekt = die fehlende Harmonie.
         const mxNoise = TSL.mx_noise_float || null;
-        const mxFractal = TSL.mx_fractal_noise_float || null;
 
         // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
         // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
@@ -12031,6 +12191,12 @@ class AnazhRealm {
             this._playCreatureTaskPing(taskName);
             this._journalCreatureTask(creature, taskName, prevName);
         }
+        // V17.30 — eine Kreatur bindet sich (folgt dem Spieler) → peace + joy
+        // (Beziehung, Pfeiler 1). Nur die echte Spieler-Geste (nicht silent =
+        // Spawn-Default/Test-Reset).
+        if (!options.silent && taskName === "follow_player" && prevName !== "follow_player") {
+            this._feelAction("bond");
+        }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return true;
@@ -12795,11 +12961,15 @@ class AnazhRealm {
             }
             bucket.push(j);
         }
+        const lifeTrickleNow = performance.now() / 1000;
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
             const speed = emotion === "happy" ? 2 : 1;
             const jumpHeight = emotion === "happy" ? 1.2 : 0.8;
+            // V17.29 — tendende Kreatur (Nexus/Spieler-getragen) träufelt Leben
+            // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
+            this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
 
             // Prüfe, ob die Kreatur im Sichtfeld ist (nur für Rendering)
             const inFrustum = this.isInFrustum(creature);
@@ -13521,12 +13691,6 @@ class AnazhRealm {
         this.state.voxelWorkerStateGen++;
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
-        // V9.95-b — auch GPU-Density-Cache invalidieren. Edits werden vom
-        // Eligibility-Gate eh gefiltert (Chunks im Edit-Footprint nicht
-        // eligible), aber stale Density außerhalb des Edit-Footprints muss
-        // auch raus, weil voxelWorkerStateGen sich änderte (per-Request-
-        // Stale-Filter triggert state-gen-Verwurf).
-        if (this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache.clear();
         try {
             this.state.voxelWorker.postMessage({
                 type: "state-update",
@@ -13544,11 +13708,6 @@ class AnazhRealm {
     // Density-Requests die fertige Welt sehen. Bumpt state-gen → in-flight
     // Density-Requests vom Pre-Worldgen-Stand werden discarded.
     _voxelWorkerSyncWorldgenState() {
-        // V9.95-c: GPU-Init zuerst — UNABHÄNGIG vom Worker-Status. Vorher war
-        // der GPU-Init INSIDE der Worker-spawn-Check, wenn der Worker nicht
-        // existierte (rare aber möglich), wurde der GPU-Pfad NIE aktiviert.
-        // GPU + Worker sind orthogonale Beschleunigungspfade.
-        this._tryStartVoxelGpuInit();
         // V12.0-perf.b — Basis-Density-Cache bei Worldgen leeren (neue Welt =
         // neue Erosion/Tarn/Noise/Hydro → alte Basis ungültig). Worker-
         // unabhängig, daher VOR dem Worker-Early-Return.
@@ -13563,325 +13722,6 @@ class AnazhRealm {
         // weiterhin trustworthy.
         this._voxelWorkerSyncState({ op: "state-set" });
         this.state.voxelWorkerWorldgenSynced = true;
-    }
-
-    // V9.95-c — GPU-Init-Trigger zentralisiert + idempotent. Loggt am
-    // Anfang, damit der Schöpfer bei jedem Browser-Start sieht: „WebGPU-
-    // Init versucht" (selbst wenn dann unavailable). Sichtbarkeit ist
-    // Wahrheit. Fire-and-forget — der Streaming-Pump nutzt den GPU-Pfad
-    // erst nach `_voxelGpuInitPromise.then(ready)`.
-    _tryStartVoxelGpuInit() {
-        if (this.state.voxelGpuStatus === "ready") return; // schon initialisiert
-        if (this.state.voxelGpuStatus === "pending") return; // läuft schon
-        if (this.state.voxelGpuStatus === "unavailable") return; // schon gescheitert
-        if (typeof navigator === "undefined" || !navigator.gpu) {
-            // navigator.gpu existiert nicht — explizit loggen + status setzen,
-            // damit der Schöpfer sieht, was passiert.
-            this.state.voxelGpuStatus = "unavailable";
-            this.state.voxelGpuLastError = "navigator.gpu nicht im Browser verfügbar";
-            this.log(
-                "WebGPU nicht verfügbar — navigator.gpu nicht im Browser (V9.91-Worker-Pfad bleibt PRIMARY)",
-                "INFO"
-            );
-            return;
-        }
-        this.log(`WebGPU-Init startet (navigator.gpu vorhanden) ...`, "INFO");
-        this._voxelGpuInit().catch((e) => {
-            this.log(`WebGPU-Init-Promise-Fehler: ${e.message}`, "ERROR");
-        });
-    }
-
-    // =====================================================================
-    // V9.95-a (Welle WebGPU-Compute-Foundation, 26.05.2026): die Phase-1-
-    // Foundation analog zu V9.89-Worker-Foundation. Spawnt async einen
-    // WebGPU-Device, kompiliert + dispatch'd einen trivialen Compute-Shader
-    // (square × 256 Float32), beweist bit-identische Float32-Determinismus
-    // (zwei Runs identisch, plus Sanity gegen Math.fround-CPU-Referenz).
-    //
-    // V9.95-b (next session) baut WGSL-SimplexNoise + WGSL-Density-Pipeline
-    // (Mirror von `_terrainDensityAt`) + StorageBuffer-Welt-State-Upload +
-    // Cache-First-Lookup `_fetchOrRequestChunkDensityGpu` + Cutover in
-    // `_buildVoxelChunkData` mit GPU als Stufe-0 vor Worker.
-    //
-    // **Lehre V9.94.r** angewandt: WebGPU-Verfügbarkeit ist öffentliche
-    // Wahrheit (Chrome/Edge stable seit v113 Mai 2023, Safari 18+ seit
-    // Sept 2024) — keine Diagnose-Welle nötig. Wenn der Browser kein
-    // navigator.gpu hat, fallbackt der Code stille auf den V9.91-Worker-
-    // Pfad. Defensive 3-stufige Pipeline (GPU → Worker → sync) bleibt.
-    // =====================================================================
-    _voxelGpuInit() {
-        if (this.state.voxelGpuStatus === "ready") return Promise.resolve(true);
-        if (this.state.voxelGpuStatus === "unavailable") return Promise.resolve(false);
-        if (this.state.voxelGpuStatus === "pending" && this._voxelGpuInitPromise) {
-            return this._voxelGpuInitPromise;
-        }
-        this.state.voxelGpuStatus = "pending";
-        this.state.voxelGpuLastError = null;
-        // Defensive: kein navigator.gpu → unavailable, kein Fehler werfen.
-        if (typeof navigator === "undefined" || !navigator.gpu) {
-            this.state.voxelGpuStatus = "unavailable";
-            this.state.voxelGpuLastError = "navigator.gpu nicht vorhanden";
-            return Promise.resolve(false);
-        }
-        this._voxelGpuInitPromise = (async () => {
-            try {
-                const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
-                if (!adapter) {
-                    this.state.voxelGpuStatus = "unavailable";
-                    this.state.voxelGpuLastError = "requestAdapter returnt null";
-                    return false;
-                }
-                this.state.voxelGpuAdapter = adapter;
-                // Adapter-Info: in Chrome 131+ ist `adapter.info` eine direkte
-                // Property (synchron), die alte `requestAdapterInfo()`-Methode
-                // wurde deprecated/entfernt. Vor 131: nur die async-Methode.
-                // Wir prüfen beides — direkt-property zuerst (modern), dann
-                // fallback auf die alte Promise-Methode.
-                try {
-                    let info = null;
-                    if (adapter.info && typeof adapter.info === "object") {
-                        info = adapter.info;
-                    } else if (typeof adapter.requestAdapterInfo === "function") {
-                        info = await adapter.requestAdapterInfo();
-                    }
-                    if (info) {
-                        this.state.voxelGpuAdapterInfo = {
-                            vendor: info.vendor || "(unbekannt)",
-                            architecture: info.architecture || "(unbekannt)",
-                            device: info.device || "(unbekannt)",
-                            description: info.description || "(unbekannt)",
-                        };
-                    }
-                } catch (_e) {
-                    // adapterInfo ist optional — Browser-Versionen variieren.
-                }
-                const limits = adapter.limits || {};
-                this.state.voxelGpuLimits = {
-                    maxComputeInvocationsPerWorkgroup: limits.maxComputeInvocationsPerWorkgroup || 0,
-                    maxStorageBufferBindingSize: limits.maxStorageBufferBindingSize || 0,
-                    maxBufferSize: limits.maxBufferSize || 0,
-                };
-                const device = await adapter.requestDevice();
-                if (!device) {
-                    this.state.voxelGpuStatus = "unavailable";
-                    this.state.voxelGpuLastError = "requestDevice returnt null";
-                    return false;
-                }
-                this.state.voxelGpuDevice = device;
-                // Uncaptured-Error-Listener: WGSL-Compile-Failures + Runtime-
-                // Validation-Errors landen hier (nicht im await-throw). Wir
-                // markieren das letzte Fehler-Message für Diagnose.
-                device.addEventListener("uncapturederror", (ev) => {
-                    const msg = ev.error && ev.error.message ? ev.error.message : String(ev.error);
-                    this.state.voxelGpuLastError = "uncapturederror: " + msg;
-                    this.log(`WebGPU uncapturederror: ${msg}`, "ERROR");
-                });
-                // Foundation-Beweis: trivial WGSL + Determinismus + Float32-CPU-Match.
-                const proof = await this._voxelGpuRunFoundationProof(device);
-                if (!proof.ok) {
-                    this.state.voxelGpuStatus = "unavailable";
-                    this.state.voxelGpuLastError = "Foundation-Proof fehlgeschlagen: " + proof.reason;
-                    return false;
-                }
-                this.state.voxelGpuFoundationProof = proof;
-                this.state.voxelGpuStatus = "ready";
-                const a = this.state.voxelGpuAdapterInfo;
-                const tag = a ? `${a.vendor}/${a.architecture}/${a.device}` : "(adapterinfo nicht verfügbar)";
-                this.log(
-                    `WebGPU Foundation bereit: ${tag} — trivial-shader bit-identisch zur Float32-CPU-Referenz, Determinismus innerhalb GPU bewiesen.`,
-                    "INFO"
-                );
-                return true;
-            } catch (e) {
-                this.state.voxelGpuStatus = "unavailable";
-                this.state.voxelGpuLastError = "Init-Exception: " + e.message;
-                this.log(`WebGPU-Init-Fehler: ${e.message}`, "ERROR");
-                return false;
-            }
-        })();
-        // V9.95-c (Logging-Heilung nach Schöpfer-Browser-Audit V9.95-b): immer
-        // den End-Status loggen, nicht nur bei "ready". Sonst sieht der Schöpfer
-        // gar nichts, wenn navigator.gpu fehlt oder requestAdapter null returnt
-        // — Vision wird unsichtbar, Diagnose unmöglich. „Sichtbarkeit ist
-        // Wahrheit" (V9.94.r-Lehre auf Logging übertragen).
-        return this._voxelGpuInitPromise.then((ok) => {
-            if (!ok && this.state.voxelGpuStatus === "unavailable") {
-                this.log(
-                    `WebGPU nicht verfügbar — ${this.state.voxelGpuLastError || "(kein lastError)"} (V9.91-Worker-Pfad bleibt PRIMARY)`,
-                    "INFO"
-                );
-            }
-            return ok;
-        });
-    }
-
-    // V9.95-a Foundation-Beweis. Trivialer WGSL-Shader `square(x)` über 256
-    // Float32-Eingaben:
-    //   (a) WGSL compiliert ohne Fehler;
-    //   (b) Dispatch + Read-Back via mapAsync funktioniert;
-    //   (c) Resultat bit-identisch zur Math.fround(v*v)-CPU-Referenz
-    //       (V9.91-Float32-Cutover-Lehre: identische Float32-Mathematik
-    //       beidseitig — WGSL `f32 * f32` und JS `Math.fround(v * v)`
-    //       sind per IEEE-754-Spec identisch);
-    //   (d) Zweiter Run bit-identisch zum ersten (Determinismus innerhalb GPU).
-    // Returns {ok, reason?, n, trivialMismatches, determinismMismatches}.
-    async _voxelGpuRunFoundationProof(device) {
-        const N = 256;
-        const inputData = new Float32Array(N);
-        for (let i = 0; i < N; i++) inputData[i] = i * 0.137;
-        const cpuRef = new Float32Array(N);
-        for (let i = 0; i < N; i++) {
-            const v = inputData[i];
-            cpuRef[i] = Math.fround(v * v);
-        }
-        const shaderCode = AnazhRealm.WGSL_TRIVIAL_SQUARE;
-        let module;
-        try {
-            module = device.createShaderModule({ code: shaderCode });
-            const ci = await module.getCompilationInfo();
-            const fatals = ci.messages.filter((m) => m.type === "error");
-            if (fatals.length > 0) {
-                return { ok: false, reason: "WGSL-Compile-Error: " + fatals.map((m) => m.message).join("; ") };
-            }
-        } catch (e) {
-            return { ok: false, reason: "Shader-Modul-Erschaffung: " + e.message };
-        }
-        const inBuf = device.createBuffer({
-            size: inputData.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-        });
-        device.queue.writeBuffer(inBuf, 0, inputData);
-        const outBuf = device.createBuffer({
-            size: inputData.byteLength,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        });
-        const readBuf = device.createBuffer({
-            size: inputData.byteLength,
-            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-        });
-        const pipeline = device.createComputePipeline({
-            layout: "auto",
-            compute: { module, entryPoint: "main" },
-        });
-        const bindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: inBuf } },
-                { binding: 1, resource: { buffer: outBuf } },
-            ],
-        });
-        const dispatchAndRead = async () => {
-            const enc = device.createCommandEncoder();
-            const pass = enc.beginComputePass();
-            pass.setPipeline(pipeline);
-            pass.setBindGroup(0, bindGroup);
-            pass.dispatchWorkgroups(Math.ceil(N / 64));
-            pass.end();
-            enc.copyBufferToBuffer(outBuf, 0, readBuf, 0, inputData.byteLength);
-            device.queue.submit([enc.finish()]);
-            await readBuf.mapAsync(GPUMapMode.READ);
-            const copy = new Float32Array(readBuf.getMappedRange().slice(0));
-            readBuf.unmap();
-            return copy;
-        };
-        let run1, run2;
-        try {
-            run1 = await dispatchAndRead();
-            run2 = await dispatchAndRead();
-        } catch (e) {
-            try {
-                inBuf.destroy();
-                outBuf.destroy();
-                readBuf.destroy();
-            } catch (_) {
-                /* ignore */
-            }
-            return { ok: false, reason: "Dispatch: " + e.message };
-        }
-        let trivialMismatches = 0;
-        for (let i = 0; i < N; i++) {
-            if (run1[i] !== cpuRef[i]) trivialMismatches++;
-        }
-        let determinismMismatches = 0;
-        for (let i = 0; i < N; i++) {
-            if (run1[i] !== run2[i]) determinismMismatches++;
-        }
-        // Buffers freigeben — die Foundation behält sie nicht.
-        try {
-            inBuf.destroy();
-            outBuf.destroy();
-            readBuf.destroy();
-        } catch (_) {
-            /* ignore */
-        }
-        if (trivialMismatches > 0) {
-            return {
-                ok: false,
-                reason: `Float32-Mismatch GPU vs CPU: ${trivialMismatches}/${N} (V9.91-Lehre verletzt — Float32-strict scheitert)`,
-                n: N,
-                trivialMismatches,
-                determinismMismatches,
-            };
-        }
-        if (determinismMismatches > 0) {
-            return {
-                ok: false,
-                reason: `Determinismus-Bruch: ${determinismMismatches}/${N} Floats unterscheiden sich zwischen zwei identischen GPU-Runs`,
-                n: N,
-                trivialMismatches,
-                determinismMismatches,
-            };
-        }
-        return { ok: true, n: N, trivialMismatches, determinismMismatches };
-    }
-
-    // V9.95-a — räumt die WebGPU-Ressourcen beim Welt-Wechsel oder Dispose.
-    // WebGPU-Devices müssen explizit `destroy()` bekommen, sonst hält der
-    // Browser sie als „dirty" GPU-Slot und der nächste Worldgen kriegt
-    // potentiell einen zweiten Device-Slot (Quota-Limit). Idempotent.
-    _voxelGpuDispose() {
-        // V9.95-b — auch Density-Pipeline-Buffers freigeben
-        const bufs = [
-            this.state.voxelGpuPermBuffer,
-            this.state.voxelGpuErosionBuffer,
-            this.state.voxelGpuTarnsBuffer,
-            this.state.voxelGpuParamsBuffer,
-        ];
-        for (const b of bufs) {
-            if (b && typeof b.destroy === "function") {
-                try {
-                    b.destroy();
-                } catch (_e) {
-                    /* defensive */
-                }
-            }
-        }
-        this.state.voxelGpuPermBuffer = null;
-        this.state.voxelGpuErosionBuffer = null;
-        this.state.voxelGpuErosionSize = 0;
-        this.state.voxelGpuTarnsBuffer = null;
-        this.state.voxelGpuTarnsSize = 0;
-        this.state.voxelGpuParamsBuffer = null;
-        this.state.voxelGpuDensityPipeline = null;
-        this.state.voxelGpuWorldUploaded = false;
-        this.state.voxelGpuWorldStateGen = -1;
-        if (this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache.clear();
-        if (this.state.voxelGpuDensityPending) this.state.voxelGpuDensityPending.clear();
-        if (this.state.voxelGpuDensityGenAtRequest) this.state.voxelGpuDensityGenAtRequest.clear();
-        try {
-            if (this.state.voxelGpuDevice && typeof this.state.voxelGpuDevice.destroy === "function") {
-                this.state.voxelGpuDevice.destroy();
-            }
-        } catch (_e) {
-            // Defensive
-        }
-        this.state.voxelGpuDevice = null;
-        this.state.voxelGpuAdapter = null;
-        this.state.voxelGpuAdapterInfo = null;
-        this.state.voxelGpuLimits = null;
-        this.state.voxelGpuFoundationProof = null;
-        this.state.voxelGpuStatus = "notTried";
-        this._voxelGpuInitPromise = null;
     }
 
     // V12.0-a — WebGPURenderer-Konfiguration. Hot-Swap-WebGL-Fallback weg
@@ -13901,416 +13741,6 @@ class AnazhRealm {
         // automatisch aus directionalLight.shadow.camera. Der manuelle
         // _renderShadowMapPass (+ autoUpdate=false) ist gestrichen.
         renderer.shadowMap.autoUpdate = true;
-    }
-
-    // =====================================================================
-    // V9.95-b — Density-Pipeline (WGSL-Compute statt CPU-noise2D/3D-Calls).
-    // Welt-State (Permutation + Erosion + Tarns + Uniforms) wird beim
-    // Worldgen-Abschluss einmal hochgeladen. Pro Chunk: nur die per-Chunk-
-    // Uniforms (ox/oy/oz/step/nx/ny/nz) + output-Buffer-Allokation +
-    // Dispatch + mapAsync. Eligibility-Gate filtert Chunks mit Hydrosphere
-    // oder voxelEdits aus (die fallen auf den V9.91-Worker-Pfad).
-    // =====================================================================
-
-    // Lazy build der density-Compute-Pipeline. Idempotent.
-    _voxelGpuEnsureDensityPipeline() {
-        if (this.state.voxelGpuDensityPipeline) return this.state.voxelGpuDensityPipeline;
-        const device = this.state.voxelGpuDevice;
-        if (!device) return null;
-        try {
-            const module = device.createShaderModule({ code: AnazhRealm.WGSL_DENSITY_GRID });
-            const pipeline = device.createComputePipeline({
-                layout: "auto",
-                compute: { module, entryPoint: "main" },
-            });
-            this.state.voxelGpuDensityPipeline = pipeline;
-            return pipeline;
-        } catch (e) {
-            this.state.voxelGpuLastError = "Density-Pipeline-Erschaffung: " + e.message;
-            this.log(`WebGPU Density-Pipeline-Fehler: ${e.message}`, "ERROR");
-            return null;
-        }
-    }
-
-    // Welt-State auf GPU laden: Permutation + Erosion + Tarns. Aufgerufen
-    // beim Worldgen-Abschluss (nach _voxelWorkerSyncWorldgenState). Idempotent
-    // — re-uploaded nur wenn voxelWorkerStateGen sich gegenüber dem letzten
-    // Upload geändert hat. Permutation kommt aus dem SimplexNoise-Vendor mit
-    // demselben Seed wie der Worker (sodass die WGSL-noise2D/3D dieselbe
-    // Permutation sieht — algorithm-äquivalent zum Worker).
-    _voxelGpuUploadWorldState() {
-        if (this.state.voxelGpuStatus !== "ready") return false;
-        const device = this.state.voxelGpuDevice;
-        if (!device) return false;
-        const expectedGen = this.state.voxelWorkerStateGen;
-        if (this.state.voxelGpuWorldUploaded && this.state.voxelGpuWorldStateGen === expectedGen) {
-            return true; // schon up-to-date
-        }
-        try {
-            // 1) Permutation-Table — aus dem SimplexNoise-Vendor (~seed":voxel"
-            // matched den Worker exakt). Wir uploaden die 256-Byte perm-Array
-            // als 256 u32 (1024 Bytes) — die WGSL liest sie als array<u32>.
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            const noise = new SimplexNoise(seed + ":voxel");
-            const permU32 = new Uint32Array(256);
-            for (let i = 0; i < 256; i++) permU32[i] = noise.perm[i];
-            if (!this.state.voxelGpuPermBuffer) {
-                this.state.voxelGpuPermBuffer = device.createBuffer({
-                    size: 256 * 4,
-                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-                });
-            }
-            device.queue.writeBuffer(this.state.voxelGpuPermBuffer, 0, permU32);
-
-            // 2) Erosion-Delta — Float32 dim*dim Grid. Wenn nicht vorhanden:
-            // 1×1-Stub-Buffer (WGSL erosion_delta_at returnt 0 wenn erosionHas=0).
-            const e = this.state.erosion;
-            let erosionData;
-            let erosionDim = 0;
-            let erosionOriginX = 0;
-            let erosionOriginZ = 0;
-            let erosionCell = 1;
-            let erosionHas = 0;
-            if (e && e.delta && e.dim > 1) {
-                erosionData = e.delta instanceof Float32Array ? e.delta : new Float32Array(e.delta);
-                erosionDim = e.dim;
-                erosionOriginX = e.originX;
-                erosionOriginZ = e.originZ;
-                erosionCell = e.cell;
-                erosionHas = 1;
-            } else {
-                erosionData = new Float32Array([0]);
-            }
-            const erBytes = erosionData.byteLength;
-            if (!this.state.voxelGpuErosionBuffer || this.state.voxelGpuErosionSize < erBytes) {
-                if (this.state.voxelGpuErosionBuffer) {
-                    try {
-                        this.state.voxelGpuErosionBuffer.destroy();
-                    } catch (_e) {
-                        /* defensive */
-                    }
-                }
-                this.state.voxelGpuErosionBuffer = device.createBuffer({
-                    size: Math.max(erBytes, 16), // min 16 für valid binding
-                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-                });
-                this.state.voxelGpuErosionSize = erBytes;
-            }
-            device.queue.writeBuffer(this.state.voxelGpuErosionBuffer, 0, erosionData);
-
-            // 3) Tarns — packed Float32: [x, z, d, reach2, twoSig2] × N.
-            // Wenn keine: 5-Wert-Stub-Buffer (tarnsCount=0 → loop läuft nicht).
-            const tarns = Array.isArray(this.state.tarns) ? this.state.tarns : [];
-            const tarnsData = new Float32Array(Math.max(tarns.length, 1) * 5);
-            for (let i = 0; i < tarns.length; i++) {
-                const t = tarns[i];
-                tarnsData[i * 5 + 0] = t.x;
-                tarnsData[i * 5 + 1] = t.z;
-                tarnsData[i * 5 + 2] = t.d;
-                tarnsData[i * 5 + 3] = t.reach2;
-                tarnsData[i * 5 + 4] = t.twoSig2;
-            }
-            const tnBytes = tarnsData.byteLength;
-            if (!this.state.voxelGpuTarnsBuffer || this.state.voxelGpuTarnsSize < tnBytes) {
-                if (this.state.voxelGpuTarnsBuffer) {
-                    try {
-                        this.state.voxelGpuTarnsBuffer.destroy();
-                    } catch (_e) {
-                        /* defensive */
-                    }
-                }
-                this.state.voxelGpuTarnsBuffer = device.createBuffer({
-                    size: Math.max(tnBytes, 16),
-                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-                });
-                this.state.voxelGpuTarnsSize = tnBytes;
-            }
-            device.queue.writeBuffer(this.state.voxelGpuTarnsBuffer, 0, tarnsData);
-
-            // 4) Uniform-Buffer für Welt-State-Scalars (kein per-Chunk-Update
-            // hier — die per-Chunk-Werte ox/oy/oz/step/nx/ny/nz werden bei
-            // jeder Dispatch separat geschrieben). Schreiben wir die Welt-
-            // State-Felder in den uniform-Block direkt mit; per-Chunk-Felder
-            // bleiben in dem gleichen Buffer, wir overwriten bei jeder
-            // Dispatch (writeBuffer mit offset=0 ist nicht-blocking).
-            // Layout: 64 Bytes (16 floats), 16-aligned.
-            if (!this.state.voxelGpuParamsBuffer) {
-                this.state.voxelGpuParamsBuffer = device.createBuffer({
-                    size: 64,
-                    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-                });
-            }
-            // Stash Welt-State für `_voxelGpuComputeDensity` (die per-Chunk-
-            // Dispatch baut den vollen 64-Byte-Block JIT zusammen).
-            this._voxelGpuWorldStateScalars = {
-                baseHeight: this.state.terrainBaseHeight || 0,
-                waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
-                erosionOriginX,
-                erosionOriginZ,
-                erosionCell,
-                erosionDim,
-                erosionHas,
-                tarnsCount: tarns.length,
-            };
-            const wasFirstUpload = !this.state.voxelGpuWorldUploaded;
-            this.state.voxelGpuWorldUploaded = true;
-            this.state.voxelGpuWorldStateGen = expectedGen;
-            if (wasFirstUpload) {
-                this.log(
-                    `WebGPU-Density: Welt-State hochgeladen — Permutation (256 u32) + Erosion-Grid (${erosionDim}×${erosionDim} f32, has=${erosionHas}) + Tarns (${tarns.length}). Pipeline scharf für eligible Chunks.`,
-                    "INFO"
-                );
-            }
-            return true;
-        } catch (e) {
-            this.state.voxelGpuLastError = "World-State-Upload: " + e.message;
-            this.log(`WebGPU World-State-Upload-Fehler: ${e.message}`, "ERROR");
-            return false;
-        }
-    }
-
-    // Eligibility-Gate für GPU-Density. Returnt true wenn der Chunk auf GPU
-    // gerechnet werden kann (keine Hydrosphere-Carve im Footprint, keine
-    // Lake-Mask, keine voxelEdits). Sonst muss der Worker-Pfad rechnen
-    // (V9.91), der die Hydrosphere + Edits mitbedenkt.
-    _voxelGpuChunkEligible(cx, cz, lod) {
-        // voxelEdits: irgendein Edit mit xz-Overlap mit Chunk → ineligible
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (Array.isArray(edits) && edits.length > 0) {
-            const cfg = this._voxelChunkConfig(lod);
-            const span = cfg.span;
-            const cox = cx * span;
-            const coz = cz * span;
-            const padding = 4; // edit-Radius-Marge
-            for (let i = 0; i < edits.length; i++) {
-                const ed = edits[i];
-                if (!ed) continue;
-                const r = (ed.r || 0) + padding;
-                if (ed.x + r >= cox && ed.x - r < cox + span && ed.z + r >= coz && ed.z - r < coz + span) {
-                    return false;
-                }
-            }
-        }
-        // Hydrosphere: irgendein Lake-Mask oder River-Bucket im Footprint → ineligible
-        const h = this.state.hydrosphere;
-        if (h && h.ready) {
-            const cfg = this._voxelChunkConfig(lod);
-            const span = cfg.span;
-            const cox = cx * span;
-            const coz = cz * span;
-            const cell = h.cell;
-            const dim = h.dim;
-            if (h.lakeNear) {
-                const ci0 = Math.floor((cox - h.originX) / cell);
-                const cj0 = Math.floor((coz - h.originZ) / cell);
-                const ci1 = Math.floor((cox + span - h.originX) / cell);
-                const cj1 = Math.floor((coz + span - h.originZ) / cell);
-                for (let cj = cj0; cj <= cj1; cj++) {
-                    if (cj < 0 || cj >= dim) continue;
-                    for (let ci = ci0; ci <= ci1; ci++) {
-                        if (ci < 0 || ci >= dim) continue;
-                        if (h.lakeNear[ci + cj * dim]) return false;
-                    }
-                }
-            }
-            if (h.riverBuckets && h.bucketSize && h.bucketsDim) {
-                const bs = h.bucketSize;
-                const bd = h.bucketsDim;
-                const bi0 = Math.floor((cox - h.originX) / bs);
-                const bj0 = Math.floor((coz - h.originZ) / bs);
-                const bi1 = Math.floor((cox + span - h.originX) / bs);
-                const bj1 = Math.floor((coz + span - h.originZ) / bs);
-                for (let bj = bj0; bj <= bj1; bj++) {
-                    if (bj < 0 || bj >= bd) continue;
-                    for (let bi = bi0; bi <= bi1; bi++) {
-                        if (bi < 0 || bi >= bd) continue;
-                        const list = h.riverBuckets[bj * bd + bi];
-                        if (list && list.length > 0) return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    // Density-Grid via WebGPU berechnen. Indizierung identisch zu
-    // `_voxelSampleDensityGrid` (Nx=dimX+1, Ny=dimY+1, Nz=dimZ+1, vertex-
-    // basiert). Returns Promise<Float32Array>. Resolves nach mapAsync-Read.
-    // Diagnose: state.voxelGpuLastDispatchMs für Telemetry, dispatchCount für
-    // Sanity ("läuft der GPU-Pfad überhaupt?").
-    _voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, step) {
-        if (this.state.voxelGpuStatus !== "ready") {
-            return Promise.reject(new Error("voxel-gpu not ready"));
-        }
-        const device = this.state.voxelGpuDevice;
-        if (!device) return Promise.reject(new Error("voxel-gpu device gone"));
-        const pipeline = this._voxelGpuEnsureDensityPipeline();
-        if (!pipeline) return Promise.reject(new Error("density pipeline not built"));
-        if (!this._voxelGpuUploadWorldState()) {
-            return Promise.reject(new Error("world-state upload failed"));
-        }
-        const Nx = dimX + 1;
-        const Ny = dimY + 1;
-        const Nz = dimZ + 1;
-        const total = Nx * Ny * Nz;
-        const outBytes = total * 4;
-
-        // Params-Uniform schreiben (64 Bytes — siehe Params-struct in WGSL).
-        // float32 layout: ox(0) oy(4) oz(8) step(12), nx(16) ny(20) nz(24) _pad(28),
-        //                 baseHeight(32) waterLevel(36) _pad(40) _pad(44),
-        //                 erosionOriginX(48) erosionOriginZ(52) erosionCell(56) erosionDim(60)
-        // uint32-fields nutzen denselben Slot (float-bits reinterpret via DataView).
-        // Letzte 16 Bytes für erosionHas + tarnsCount + 2 pads.
-        const ab = new ArrayBuffer(80);
-        const dv = new DataView(ab);
-        const w = this._voxelGpuWorldStateScalars;
-        dv.setFloat32(0, ox, true);
-        dv.setFloat32(4, oy, true);
-        dv.setFloat32(8, oz, true);
-        dv.setFloat32(12, step, true);
-        dv.setUint32(16, Nx, true);
-        dv.setUint32(20, Ny, true);
-        dv.setUint32(24, Nz, true);
-        dv.setUint32(28, 0, true);
-        dv.setFloat32(32, w.baseHeight, true);
-        dv.setFloat32(36, w.waterLevel, true);
-        dv.setFloat32(40, 0, true);
-        dv.setFloat32(44, 0, true);
-        dv.setFloat32(48, w.erosionOriginX, true);
-        dv.setFloat32(52, w.erosionOriginZ, true);
-        dv.setFloat32(56, w.erosionCell, true);
-        dv.setFloat32(60, w.erosionDim, true);
-        dv.setUint32(64, w.erosionHas, true);
-        dv.setUint32(68, w.tarnsCount, true);
-        dv.setUint32(72, 0, true);
-        dv.setUint32(76, 0, true);
-        // WICHTIG: unser Params-Buffer ist 64 Bytes. Aber Params-struct hat
-        // 20 felder = 80 Bytes (5×16). Wir müssen den Buffer auf 80 Bytes
-        // hochziehen — defensive zuerst prüfen + neu erstellen falls < 80.
-        if (!this.state.voxelGpuParamsBuffer || this.state.voxelGpuParamsBuffer.size < 80) {
-            if (this.state.voxelGpuParamsBuffer) {
-                try {
-                    this.state.voxelGpuParamsBuffer.destroy();
-                } catch (_e) {
-                    /* defensive */
-                }
-            }
-            this.state.voxelGpuParamsBuffer = device.createBuffer({
-                size: 80,
-                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-            });
-        }
-        device.queue.writeBuffer(this.state.voxelGpuParamsBuffer, 0, ab);
-
-        // Per-Request Output- + Read-Buffer. Pro chunk ~360 KB für LOD-0,
-        // ~57 KB für LOD-1 — vernachlässigbar.
-        const outBuf = device.createBuffer({
-            size: outBytes,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-        });
-        const readBuf = device.createBuffer({
-            size: outBytes,
-            usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-        });
-
-        const bindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-                { binding: 0, resource: { buffer: this.state.voxelGpuParamsBuffer } },
-                { binding: 1, resource: { buffer: this.state.voxelGpuPermBuffer } },
-                { binding: 2, resource: { buffer: this.state.voxelGpuErosionBuffer } },
-                { binding: 3, resource: { buffer: this.state.voxelGpuTarnsBuffer } },
-                { binding: 4, resource: { buffer: outBuf } },
-            ],
-        });
-
-        const t0 = typeof performance !== "undefined" ? performance.now() : 0;
-        const encoder = device.createCommandEncoder();
-        const pass = encoder.beginComputePass();
-        pass.setPipeline(pipeline);
-        pass.setBindGroup(0, bindGroup);
-        pass.dispatchWorkgroups(Math.ceil(total / 64));
-        pass.end();
-        encoder.copyBufferToBuffer(outBuf, 0, readBuf, 0, outBytes);
-        device.queue.submit([encoder.finish()]);
-
-        return readBuf.mapAsync(GPUMapMode.READ).then(() => {
-            const copy = new Float32Array(readBuf.getMappedRange().slice(0));
-            readBuf.unmap();
-            try {
-                outBuf.destroy();
-                readBuf.destroy();
-            } catch (_e) {
-                /* defensive */
-            }
-            const t1 = typeof performance !== "undefined" ? performance.now() : 0;
-            this.state.voxelGpuLastDispatchMs = t1 - t0;
-            this.state.voxelGpuDispatchCount++;
-            // V9.95-d Telemetry: erster Dispatch ist die Vision-Bestätigung
-            // („GPU rechnet WIRKLICH Density"). Danach alle 50 Dispatches eine
-            // ms-Telemetry. Sonst stille Beschleunigung — der Schöpfer sieht
-            // den Win nicht.
-            const n = this.state.voxelGpuDispatchCount;
-            if (n === 1) {
-                this.log(
-                    `WebGPU-Density: erster Dispatch — ${this.state.voxelGpuLastDispatchMs.toFixed(2)} ms für ${copy.length} Float32-Samples. GPU rechnet jetzt die Welt-Density.`,
-                    "INFO"
-                );
-            } else if (n % 50 === 0) {
-                this.log(
-                    `WebGPU-Density: ${n} Dispatches kumuliert — letzter ${this.state.voxelGpuLastDispatchMs.toFixed(2)} ms.`,
-                    "INFO"
-                );
-            }
-            return copy;
-        });
-    }
-
-    // Cache-First-Lookup für den Streaming-Pfad. Drei Rückgabe-Varianten
-    // analog zu `_fetchOrRequestChunkDensity` (V9.90):
-    //   (a) Float32Array — Cache-Hit (one-shot konsumiert)
-    //   (b) null — GPU-Request läuft pending
-    //   (c) undefined — GPU nicht ready ODER chunk nicht eligible
-    _fetchOrRequestChunkDensityGpu(cx, cz, lod) {
-        if (this.state.voxelGpuStatus !== "ready") return undefined;
-        if (!this._voxelGpuChunkEligible(cx, cz, lod)) return undefined;
-        const cfg = this._voxelChunkConfig(lod);
-        const { dim, step, span, dimY, floorDrop } = cfg;
-        const base = this.state.terrainBaseHeight || 0;
-        const ox = cx * span;
-        const oz = cz * span;
-        const oy = base - floorDrop;
-        const cacheKey = `${cx},${cz},${lod}`;
-        if (this.state.voxelGpuDensityCache && this.state.voxelGpuDensityCache.has(cacheKey)) {
-            const cached = this.state.voxelGpuDensityCache.get(cacheKey);
-            this.state.voxelGpuDensityCache.delete(cacheKey);
-            return cached;
-        }
-        if (!this.state.voxelGpuDensityPending) this.state.voxelGpuDensityPending = new Set();
-        if (this.state.voxelGpuDensityPending.has(cacheKey)) return null;
-        if (!this.state.voxelGpuDensityGenAtRequest) this.state.voxelGpuDensityGenAtRequest = new Map();
-        this.state.voxelGpuDensityPending.add(cacheKey);
-        const expectedStateGen = this.state.voxelWorkerStateGen;
-        this.state.voxelGpuDensityGenAtRequest.set(cacheKey, expectedStateGen);
-        // Origin + Sample-Dimensions IDENTISCH zur Main-Thread-Geometry-Calls
-        // (V9.42-d-Pad: ox-step + dim+3 in X/Z, vertikal dimY).
-        this._voxelGpuComputeDensity(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step)
-            .then((density) => {
-                this.state.voxelGpuDensityPending.delete(cacheKey);
-                if (this.state.voxelWorkerStateGen !== expectedStateGen) {
-                    this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
-                    return;
-                }
-                this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
-                if (!this.state.voxelGpuDensityCache) this.state.voxelGpuDensityCache = new Map();
-                this.state.voxelGpuDensityCache.set(cacheKey, density);
-            })
-            .catch((err) => {
-                this.state.voxelGpuDensityPending.delete(cacheKey);
-                this.state.voxelGpuDensityGenAtRequest.delete(cacheKey);
-                this.log(`Voxel-GPU-Density-Fehler (${cacheKey}): ${err.message}`, "ERROR");
-            });
-        return null;
     }
 
     creatureJump(creature, jumpHeight) {
@@ -14910,23 +14340,6 @@ class AnazhRealm {
             content: `Autonomie: ${this.nexus.knightOfTime.autonomyLevel}, ${evolution.name}`,
             timestamp: currentTime,
         });
-    }
-
-    getNexusIdeas() {
-        return [
-            {
-                name: "gravityShift",
-                code: `self.state.gravity = -9.81; self.state.physicsWorld.setGravity(new Ammo.btVector3(0, -9.81, 0)); self.log("Nexus: Gravitation auf Erdebene gesetzt", "INFO");`,
-            },
-            {
-                name: "creatureDance",
-                code: `self.state.creatures.forEach((c, i) => { c.position.x += Math.sin(self.state.creatureAnimationTime + i); c.position.z += Math.cos(self.state.creatureAnimationTime + i); }); self.log("Nexus: Kreaturen tanzen!", "INFO");`,
-            },
-            {
-                name: "terrainFlatten",
-                code: `self.state.terrainSteepness *= 0.8; self.generateNewWorld(); self.log("Nexus: Terrain abgeflacht", "INFO");`,
-            },
-        ];
     }
 
     generateEvolution() {
@@ -17347,6 +16760,18 @@ class AnazhRealm {
     // Streaming-Tick.
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
+        // V17.30 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
+        // awe + hope (Entdeckung, der Taten-Kanal von Pfeiler 2) — rate-limitiert
+        // (alle ~6 s ein Entdeckungs-Schlag, nicht jede 16-m-Grenze), damit awe
+        // nicht beim normalen Laufen sättigt.
+        const prev = this.state.lastPlayerVoxelChunk;
+        if (prev && (prev.cx !== pcx || prev.cz !== pcz)) {
+            const now = performance.now() / 1000;
+            if (now - (this.state.lastExploreFelt ?? -Infinity) >= 6) {
+                this.state.lastExploreFelt = now;
+                this._feelAction("explore");
+            }
+        }
         this.state.lastPlayerVoxelChunk = { cx: pcx, cz: pcz };
     }
 
@@ -18445,17 +17870,16 @@ class AnazhRealm {
     }
 
     // V12.0-perf.a — DIE geteilte Build-Kaskade für Streaming UND Edit-Rebuild
-    // (V9.82-Pfad-Unifikation eine Stufe höher). Vier Stufen (V12.0-e):
+    // (V9.82-Pfad-Unifikation eine Stufe höher). Drei Stufen (V17.20 — die
+    // GPU-Density-Stufe entfernt, s. unten):
     //   Stufe 1: Worker-Mesh-Cache (V9.91) — fertiger Mesh vom Worker, Main
     //     macht nur BufferGeometry + Architektur-Stempel + BVH (~10-15 ms).
-    //   Stufe 2: GPU-Density-Cache (V9.95) — Float32-Density vom GPU, Main
-    //     macht Iso-Mesh (~30-40 ms). Wirkt für pristine Chunks (eligible).
-    //   Stufe 3: Worker-Density-Cache (V9.90) — Worker-CPU-Density, Fallback.
-    //   Stufe 4: Sync-CPU-Build (V9.42-d + V12.0-perf.b base-gecacht).
+    //   Stufe 2: Worker-Density-Cache (V9.90) — Worker-CPU-Density, Fallback.
+    //   Stufe 3: Sync-CPU-Build (V9.42-d + V12.0-perf.b base-gecacht).
     // Rückgabe: "pending" (async-Request läuft), null (Build-Fail/degeneriert),
     // oder das fresh-Objekt ({mesh, kind, waterCells, lod, hasBVH?}).
     // `forceSync` (Spieler-Chunk + Test-Naht) überspringt die async-Stufen →
-    // direkt Stufe 4 (immer BVH, kein Worker-Roundtrip → Instant-Feedback).
+    // direkt Stufe 3 (immer BVH, kein Worker-Roundtrip → Instant-Feedback).
     _acquireVoxelChunkBuild(cx, cz, lod, opts = {}) {
         if (opts.forceSync === true) {
             return this._buildVoxelChunkData(cx, cz, lod);
@@ -18473,23 +17897,16 @@ class AnazhRealm {
         if (workerMesh) {
             return this._buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, workerMesh, { buildBVH });
         }
-        // Stufe 2: GPU-Density — V14.6 DEAKTIVIERT (V9.82 parallele-Pfade-Lehre).
-        // Der WGSL-Density-Shader (`WGSL_DENSITY_GRID`) ist auf dem Stand vor
-        // V14.1 stehengeblieben: ihm fehlt die kontinentale Basis-Oktave `cont0`
-        // (V14.1), er nutzt die alten Oktaven-Amplituden (cont·34 / ridgeAmp
-        // 12+55, V14.3 geändert) und die alte Höhlen-Decke `surf-6` (V14.5:
-        // surf-16). Würde dieser Pfad einen Chunk bauen (nur möglich, solange
-        // der Worker noch nicht synchronisiert ist — Startup nahe Spawn), läge
-        // seine Surface bis zu ~157 m UNTER der Worker-Wahrheit → höhenversetzte
-        // Chunk-Nähte (der V14.4-Restbefund „chunknähte sehr selten unsauber").
-        // Einen DRITTEN Makro-Mirror (neben Main + Worker) für cont0/V14.3-.6 mit
-        // WGSL-tanh-Drift (§3.6) zu pflegen ist die Heilige-Lektion-Sünde; der
-        // Worker (Stufe 3) + Sync-CPU (Stufe 4) decken alles korrekt ab, und
-        // GPU-Compute war ohnehin kein Production-Hebel (V9.95-e: WebGL-Roundtrip
-        // langsamer als Worker). Die Foundation (`_voxelGpuInit` + WGSL) bleibt
-        // für eine spätere, bewusste V14-Neufassung erhalten.
+        // V17.20 — die alte GPU-Density-Stufe (WGSL_DENSITY_GRID + _voxelGpu*)
+        // ist ENTFERNT: sie war seit V14.6 deaktiviert (stale Pre-V14.1-Terrain
+        // → ein dritter Makro-Mirror neben Main+Worker, die Heilige-Lektion-
+        // Sünde) und GPU-Compute war ohnehin kein Production-Hebel (V9.95-e: der
+        // WebGL-mapAsync-Roundtrip war langsamer als der Worker). Der Worker
+        // (Stufe 2) + Sync-CPU (Stufe 3) sind die Wahrheit. Eine künftige
+        // WebGPU-Density-Welle nähme das Renderer-Device (zero-copy mit der
+        // Render-Pipeline), nicht ein eigenes _voxelGpuInit-Device.
         let preDensity = null;
-        // Stufe 3: Worker-Density (Fallback wenn Worker-Mesh ineligible/down).
+        // Stufe 2: Worker-Density (Fallback wenn Worker-Mesh ineligible/down).
         if (
             !preDensity &&
             this.state.voxelWorker &&
@@ -18500,7 +17917,7 @@ class AnazhRealm {
             if (workerDensity === null) return "pending";
             preDensity = workerDensity;
         }
-        // Stufe 4: Sync-CPU-Build (letzter Fallback, base-gecacht V12.0-perf.b).
+        // Stufe 3: Sync-CPU-Build (letzter Fallback, base-gecacht V12.0-perf.b).
         return this._buildVoxelChunkData(cx, cz, lod, preDensity);
     }
 
@@ -18684,7 +18101,7 @@ class AnazhRealm {
         // Seit V9.71 unbemerkter Streaming-Race; jetzt mit einer Pfad-
         // Quelle strukturell weg.
         // V12.0-perf.a — der Streaming-Pfad nutzt jetzt DIE geteilte Build-
-        // Kaskade `_acquireVoxelChunkBuild` (vier Stufen Worker-Mesh → GPU →
+        // Kaskade `_acquireVoxelChunkBuild` (drei Stufen Worker-Mesh →
         // Worker-Density → Sync, dort dokumentiert), die auch der Edit-Rebuild
         // erbt. Pending → null (nächster Frame). Fail → Retry-Counter (max 3,
         // KEIN re-dirty — der Streaming-Tick versucht via has(key)===false
@@ -21574,11 +20991,6 @@ class AnazhRealm {
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
-        // V9.95-c — GPU-Init zweiter Trigger-Punkt: idempotent (early-return
-        // wenn schon ready/pending/unavailable). Garantiert dass GPU bei
-        // jeder Session initialisiert wird, auch wenn das Worldgen-Hook
-        // verpasst wurde (Save-Restore-Pfad ohne fresh Worldgen).
-        if (this.state.voxelGpuStatus === "notTried") this._tryStartVoxelGpuInit();
         const { span, ringRadius } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         // V9.92 (Phase 4 — Lazy-BVH): aktuelle Spieler-Chunk-Position
@@ -25710,6 +25122,9 @@ class AnazhRealm {
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
+        // V17.30 — Schaden/Gefahr hebt sorrow + chaos (akut; die chronische
+        // Wund-Dread trägt der ZUSTAND-Kanal in updatePlayerEmotions).
+        this._feelAction("damage");
         this.log(
             `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
             "INFO"
@@ -32863,6 +32278,60 @@ class AnazhRealm {
     }
 
     // Eine Struktur zur Welt hinzufügen. Position kommt aus DSL (oder Save-
+    // V17.28 — der horizontale Footprint-Radius eines Bauplans (von seinem
+    // Zentrum bis zum äußersten soliden Part-Rand), VOR dem Spawn berechnet
+    // (entry.blockerAABBs entsteht erst NACH dem Spawn). Dient der Spawn-
+    // Clearance: wie weit eine Struktur vom Spieler weg muss, damit ihr
+    // Footprint ihn nicht verschluckt. Reine Daten aus bp.parts (size+position).
+    _blueprintFootprintRadius(type, scale = 1) {
+        const bp = this.state.blueprints && this.state.blueprints[type];
+        if (!bp || !Array.isArray(bp.parts)) return 0;
+        let r = 0;
+        for (const part of bp.parts) {
+            if (!part || !part.size || !part.position) continue;
+            const reach =
+                Math.hypot(part.position.x || 0, part.position.z || 0) +
+                Math.max(part.size.x || 0, part.size.z || 0) * 0.5;
+            if (reach > r) r = reach;
+        }
+        return r * (Number.isFinite(scale) && scale > 0 ? scale : 1);
+    }
+
+    // V17.28 — „der Ort, an dem ich stehe, ist besetzt": schiebt die Spawn-
+    // Position einer GROSSEN Struktur footprint-bewusst aus dem Spieler-Bereich
+    // (liegt sie näher als footprint+Margin, wandert sie nach außen entlang
+    // Spieler→Ziel, oder Blickrichtung wenn ~auf dem Spieler — der at_player_
+    // forward-Geist). Eine KLEINE Struktur (footprint < MIN) bleibt unangetastet
+    // (intentionale Platzierung). Y wird am neuen Ort neu bestimmt (gleiche
+    // Fußhöhe über Grund wie der Spieler → spawnArchitectures 0.5-Kalibrierung
+    // greift identisch). Die Kreatur-Ring-Logik (V17.23) ist das kleine Pendant.
+    _structureSpawnPos(type, pos, ctx, scale = 1) {
+        const pp = ctx && ctx.state && ctx.state.playerMesh ? ctx.state.playerMesh.position : null;
+        if (!pp || !pos) return pos;
+        const footprint = this._blueprintFootprintRadius(type, scale);
+        if (footprint < AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT) return pos; // klein → intentional
+        const clearance = footprint + AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        let dx = pos.x - pp.x;
+        let dz = pos.z - pp.z;
+        let d = Math.hypot(dx, dz);
+        if (d >= clearance) return pos; // schon weit genug — unberührt
+        if (d < 1e-3) {
+            // ~auf dem Spieler → vor ihn (Blickrichtung; yaw=0 → Blick nach −z/−x)
+            const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : ctx.rng ? ctx.rng() * Math.PI * 2 : 0;
+            dx = -Math.sin(yaw);
+            dz = -Math.cos(yaw);
+            d = 1;
+        }
+        const nx = pp.x + (dx / d) * clearance;
+        const nz = pp.z + (dz / d) * clearance;
+        // gleiche Fußhöhe über Grund wie der Spieler am neuen Ort bewahren
+        const surfPlayer = this.getTerrainHeightAt(pp.x, pp.z);
+        const surfNew = this.getTerrainHeightAt(nx, nz);
+        const feetOffset = Number.isFinite(surfPlayer) ? pp.y - surfPlayer : 0;
+        const ny = Number.isFinite(surfNew) ? surfNew + feetOffset : pos.y;
+        return { x: nx, y: ny, z: nz };
+    }
+
     // Restore); centerY wird aus pos.y abgeleitet, mit Boden-Heuristik
     // (pos.y - 0.5 ≈ Spielerfußhöhe falls at_player benutzt wurde).
     spawnArchitecture(type, position, opts = {}) {
@@ -33003,6 +32472,194 @@ class AnazhRealm {
             glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
             magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
         };
+    }
+
+    // === Das lebendige Feld — die LESE-Seite (docs/das-lebendige-feld.md §2) ===
+    // auraAt(x, z, t) ist die EINE Lese-Schnittstelle des Feldes: das
+    // worldgen-eingefrorene Substrat (worldFieldAt — lebendig/dichte/glut/
+    // magieleitung) ist der Kern, darüber die DYNAMISCHE Achse `emotion` (die
+    // gegenwärtige Stimmung, für Welt-Leser) + die Zeit `t`. EIN Feld, viele
+    // Leser (Hylomorphismus eine Ebene höher). Performance: identisch zu
+    // worldFieldAt + ein flacher Objekt-Aufbau; nicht pro-Frame-pro-Entity neu
+    // erfunden. Wer eine „lebendige Welt"-Wirkung baut, LIEST hier (kein _tickX).
+    // `emotion` ist die Live-Referenz (read-only Konvention — nicht mutieren).
+    auraAt(x, z, t = 0) {
+        const f = this.worldFieldAt(x, z);
+        const e = (this.state.player && this.state.player.emotions) || {};
+        // V17.27 — die SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem
+        // frozen Substrat (min(., 1), nie Überschreiben — V17.23-Harmonie).
+        // Leerer Overlay → lebendig == frozen (backward-compatible: alle frozen-
+        // Feld-Leser/-Tests unberührt). Macht den at_field_need-Loop geschlossen
+        // (er liest auraAt.lebendig) + speist via FIELD_TO_EMOTION (V17.21) das
+        // Welt-ERLEBEN in die Emotion — beides für umsonst, weil sie auraAt lesen.
+        const overlay = this._lifeOverlayAt(x, z);
+        // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
+        // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
+        // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
+        const imp = this._emotionOverlayAt(x, z);
+        let emotion = e;
+        if (imp) {
+            emotion = {};
+            for (const axis of AnazhRealm.EMOTION_AXES) {
+                emotion[axis] = Math.min(1, (e[axis] || 0) + (imp[axis] || 0));
+            }
+        }
+        return {
+            lebendig: overlay > 0 ? Math.min(1, f.lebendig + overlay) : f.lebendig,
+            dichte: f.dichte,
+            glut: f.glut,
+            magieleitung: f.magieleitung,
+            emotion,
+            t,
+        };
+    }
+
+    // === Das lebendige Feld — die SCHREIB-Seite (V17.27) ===
+    // Das Overlay ist eine sparse Map: Schlüssel "cx,cz" = die 16-m-Zelle,
+    // Wert { a, t } = Overlay-Menge + Zeitstempel (Sekunden). Der Decay läuft
+    // LAZY beim Lesen (a · e^(−λ·Δt)) — KEIN globaler per-Frame-Sweep (Effizienz:
+    // O(1)/Lese, O(1)/Deposit, ein billiger Prune ~alle 5 s). Nur intentionale
+    // Spawns (Nexus/Chat/DSL via spawn_creature) deponieren — die ambiente
+    // Fauna ist die FOLGE des Feldes (kein positives Feedback-Runaway), Restore
+    // auch nicht. Nicht persistiert (reaktive Schicht wie Wetter — V9.67).
+    _lifeCellKey(x, z) {
+        const cs = AnazhRealm.LIFE_FIELD.cell;
+        return Math.floor(x / cs) + "," + Math.floor(z / cs);
+    }
+
+    // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle.
+    _lifeOverlayAt(x, z) {
+        const lf = this.state.lifeField;
+        if (!lf || lf.size === 0) return 0;
+        const e = lf.get(this._lifeCellKey(x, z));
+        if (!e) return 0;
+        const dt = Math.max(0, performance.now() / 1000 - e.t);
+        return dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
+    }
+
+    // Leben deponieren: ein 3×3-Kernel um (x,z), jede Zelle decay-then-add,
+    // geklemmt auf LIFE_FIELD.max (Sättigung → der Nexus zieht weiter). Die EINE
+    // Schreib-API — wer Leben in die Welt trägt (Geburt heute; später Spieler-
+    // Pflege, Kreatur-Trickle) ruft sie. Harmonisch: sie HEBT nur, der Decay
+    // senkt → nie Überschreiben (V17.23/V17.21-Prinzip, jetzt im Feld selbst).
+    _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
+        if (!(amount > 0)) return;
+        if (!this.state.lifeField) this.state.lifeField = new Map();
+        const lf = this.state.lifeField;
+        const cfg = AnazhRealm.LIFE_FIELD;
+        const now = performance.now() / 1000;
+        const cx = Math.floor(x / cfg.cell);
+        const cz = Math.floor(z / cfg.cell);
+        const neighborAmount = amount * (cfg.pulseNeighbor / cfg.pulseCenter);
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const add = dx === 0 && dz === 0 ? amount : neighborAmount;
+                const key = cx + dx + "," + (cz + dz);
+                const e = lf.get(key);
+                let cur = 0;
+                if (e) {
+                    const dt = Math.max(0, now - e.t);
+                    cur = e.a * Math.exp(-cfg.decayPerSec * dt);
+                }
+                lf.set(key, { a: Math.min(cfg.max, cur + add), t: now });
+            }
+        }
+    }
+
+    // Billiger Prune (rate-limited via updatePlayerEmotions): Zellen unter
+    // epsilon raus → die Map bleibt bounded (nur aktiv getendete Regionen leben).
+    _pruneLifeField() {
+        const lf = this.state.lifeField;
+        if (!lf || lf.size === 0) return;
+        const cfg = AnazhRealm.LIFE_FIELD;
+        const now = performance.now() / 1000;
+        if (now - (this.state.lifeFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
+        this.state.lifeFieldLastPrune = now;
+        for (const [key, e] of lf) {
+            const dt = Math.max(0, now - e.t);
+            if (e.a * Math.exp(-cfg.decayPerSec * dt) < cfg.epsilon) lf.delete(key);
+        }
+    }
+
+    // V17.29 — der Kreatur-Trickle: eine tendende Kreatur (Nexus/Spieler-getragen,
+    // userData.tendsLife) träufelt sanft Leben in ihre Zelle — Leben sustainiert
+    // sich, wo es wohnt. Rate-limitiert per Kreatur (trickleEverySec); da
+    // Kreaturen WANDERN, wird daraus ein zarter, decayender Lebens-Pfad, der die
+    // getendete Region erhält, statt zu verblassen. NUR tendsLife — die ambiente
+    // Fauna (die FOLGE des Feldes) träufelt NICHT (kein positives Feedback-
+    // Runaway in üppigen Regionen, V17.27-Disziplin). Pro Frame aus updateCreatures.
+    _tickCreatureLifeTrickle(creature, now) {
+        if (!creature || !creature.userData || !creature.userData.tendsLife || !creature.position) return;
+        const last = creature.userData.lastLifeTrickle ?? -Infinity;
+        if (now - last < AnazhRealm.LIFE_FIELD.trickleEverySec) return;
+        creature.userData.lastLifeTrickle = now;
+        this._depositLife(creature.position.x, creature.position.z, AnazhRealm.LIFE_FIELD.trickle);
+    }
+
+    // === V17.32 — die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
+    // Eine emotionale Tat (`_feelAction`) prägt ihre Emotion an der Spieler-Zelle
+    // ein. `auraAt` blendet den lokalen Abdruck über die globale Stimmung; der
+    // Welt-Tint (V17.31) liest das und färbt den Ort → ein echter Konsument, kein
+    // Passagier (die V17.31-Lehre angewandt). Lazy-Decay (kein per-Frame-Sweep).
+    _depositEmotion(x, z, emotionMap) {
+        if (!emotionMap) return;
+        if (!this.state.emotionField) this.state.emotionField = new Map();
+        const ef = this.state.emotionField;
+        const cfg = AnazhRealm.EMOTION_FIELD;
+        const now = performance.now() / 1000;
+        const key = this._lifeCellKey(x, z); // dieselbe 16-m-Zelle wie das Leben
+        let cell = ef.get(key);
+        if (cell) {
+            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t)); // erst zerfallen
+            for (const k of Object.keys(cell.axes)) cell.axes[k] *= f;
+            cell.t = now;
+        } else {
+            cell = { axes: {}, t: now };
+            ef.set(key, cell);
+        }
+        for (const axis of Object.keys(emotionMap)) {
+            cell.axes[axis] = Math.min(cfg.max, (cell.axes[axis] || 0) + emotionMap[axis] * cfg.imprintScale);
+        }
+    }
+
+    // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
+    // (dann blendet auraAt nichts → emotion == globale Stimmung, backward-compat).
+    _emotionOverlayAt(x, z) {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return null;
+        const cell = ef.get(this._lifeCellKey(x, z));
+        if (!cell) return null;
+        const dt = Math.max(0, performance.now() / 1000 - cell.t);
+        const f = dt === 0 ? 1 : Math.exp(-AnazhRealm.EMOTION_FIELD.decayPerSec * dt);
+        let out = null;
+        for (const axis of Object.keys(cell.axes)) {
+            const v = cell.axes[axis] * f;
+            if (v > 1e-4) {
+                if (!out) out = {};
+                out[axis] = v;
+            }
+        }
+        return out;
+    }
+
+    _pruneEmotionField() {
+        const ef = this.state.emotionField;
+        if (!ef || ef.size === 0) return;
+        const cfg = AnazhRealm.EMOTION_FIELD;
+        const now = performance.now() / 1000;
+        if (now - (this.state.emotionFieldLastPrune ?? -Infinity) < cfg.pruneEverySec) return;
+        this.state.emotionFieldLastPrune = now;
+        for (const [key, cell] of ef) {
+            const f = Math.exp(-cfg.decayPerSec * Math.max(0, now - cell.t));
+            let alive = false;
+            for (const k of Object.keys(cell.axes)) {
+                if (cell.axes[k] * f >= cfg.epsilon) {
+                    alive = true;
+                    break;
+                }
+            }
+            if (!alive) ef.delete(key);
+        }
     }
 
     // V8.28 6.G4.b B — Welt-Affinität pro Terrain-Vertex als vec4-Attribut.
@@ -33920,6 +33577,8 @@ class AnazhRealm {
                 .join(", ");
             this.log(`Gebaut: ${bm.blueprintName} (verbraucht ${consumedStr}).`, "INFO");
         }
+        // V17.30 — erschaffen hebt joy + hope (der Taten-Kanal von Pfeiler 2).
+        this._feelAction("build");
         return true;
     }
 
@@ -34109,6 +33768,9 @@ class AnazhRealm {
         const blueprintName = entry.type;
         const removed = this.removeArchitecture(entry);
         if (!removed) return null;
+        // V17.30 — der Spieler erntet (sammelt Fülle) → joy + hope. Nur der
+        // Spieler fühlt; eine erntende Kreatur (harvester="creature:…") nicht.
+        if (harvester === "player") this._feelAction("harvest");
         if (typeof this.journalAppend === "function" && totalParts > 0) {
             const matSummary = Object.entries(materials)
                 .map(([m, n]) => `${n}× ${m}`)
@@ -36340,11 +36002,23 @@ class AnazhRealm {
         canvas.height = size;
         let renderer;
         try {
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
-        } catch {
-            this.log("Workshop-Preview: WebGL-Renderer fehlgeschlagen — Preview deaktiviert", "ERROR");
+            // V17.19 (Heilung) — der Preview war ein THREE.WebGLRenderer und damit
+            // seit der V12-GPU-Umstellung BLIND: _buildFromBlueprint baut
+            // NodeMaterials, die seit r164 AUSSCHLIESSLICH auf WebGPURenderer
+            // rendern → das Crafting-Auge blieb leer. Heilung: derselbe
+            // WebGPURenderer wie die Haupt-Welt (eigenes Canvas, async init() +
+            // rendererReady-Gate, render() — das Loop-Pattern aus createScene).
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        } catch (err) {
+            this.log(
+                `Workshop-Preview: WebGPU-Renderer fehlgeschlagen (${err && err.message}) — Preview deaktiviert`,
+                "ERROR"
+            );
             return null;
         }
+        // Stencil global aus (wie die Haupt-Welt, V10.0-j.b) — verhindert den
+        // WebGPU-stencilLoadOp-CommandEncoder-Crash bei Pure-Depth-Pässen.
+        renderer.stencil = false;
         renderer.setSize(size, size, false);
         renderer.setPixelRatio(window.devicePixelRatio || 1);
         renderer.setClearColor(0x1a140a, 1);
@@ -36398,6 +36072,10 @@ class AnazhRealm {
             rafId: null,
             dirty: true,
             active: false,
+            // V17.19 (Heilung) — WebGPURenderer.init() ist async; bis ready
+            // überspringt _workshopRender den render()-Call (sonst leeres
+            // Frame). Die init().then()-Kette unten setzt das Flag + dirty.
+            rendererReady: false,
             listenersInstalled: false,
             // Welle 6.B Phase 2 — Manipulator-Gizmo. gizmo ist eine THREE.Group
             // mit drei Sub-Groups (translate/rotate/scale), pro Achse drei
@@ -36414,6 +36092,27 @@ class AnazhRealm {
             resizeObserver: null,
         };
         ws.preview = preview;
+        // V17.19 (Heilung) — WebGPU-Init asynchron starten (Pattern aus
+        // createScene, Z~42560). render() würde init() intern triggern, aber das
+        // explizite Gate hält _workshopRender bis ready ruhig + rendert das erste
+        // echte Frame, sobald die GPU steht.
+        try {
+            renderer
+                .init()
+                .then(() => {
+                    preview.rendererReady = true;
+                    preview.dirty = true;
+                    if (preview.active) this._workshopRender();
+                })
+                .catch((err) => {
+                    this.log(
+                        `Workshop-Preview: WebGPU init() scheiterte (${err && err.message}) — Preview bleibt leer.`,
+                        "ERROR"
+                    );
+                });
+        } catch (err) {
+            this.log(`Workshop-Preview: init()-Start scheiterte (${err && err.message}).`, "ERROR");
+        }
         this._workshopInstallPreviewListeners();
         this._workshopBuildGizmo();
         this._workshopInstallUIListeners();
@@ -36760,7 +36459,15 @@ class AnazhRealm {
         // Welle 6.B Phase 2 — Gizmo synchronisieren (Position + Distance-
         // Scale + Mode-Visibility) VOR dem Render.
         this._workshopSyncGizmo();
-        p.renderer.render(p.scene, p.camera);
+        // V17.19 (Heilung) — bis WebGPURenderer.init() fertig ist (rendererReady)
+        // nicht rendern (das Haupt-Loop-Gate, Z~42565). Danach render() wie der
+        // Loop-Fallback (Z~42588) — WebGPURenderer.render() ist auf der GPU
+        // async; ein Pipeline-Compile-Reject wird geloggt statt unhandled.
+        if (!p.rendererReady) return;
+        const renderResult = p.renderer.render(p.scene, p.camera);
+        if (renderResult && typeof renderResult.catch === "function") {
+            renderResult.catch((err) => this.log(`Workshop-Preview-Render: ${err && err.message}`, "INFO"));
+        }
     }
 
     // Listener-Installation: Maus-Down/-Move/-Up/-Wheel auf der Preview-Canvas.
@@ -38996,9 +38703,10 @@ class AnazhRealm {
         let lightIntensity = stop.intensity * lightMul;
         // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler)
         const pm = this.state.playerMesh;
-        if (pm && typeof this.worldFieldAt === "function") {
-            const field = this.worldFieldAt(pm.position.x, pm.position.z);
-            if (field) {
+        const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.position.x, pm.position.z) : null;
+        if (aura) {
+            const field = aura; // §5 (V17.25): via auraAt (die living Lese-API)
+            {
                 const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
                 const glut = Math.max(0, Math.min(1, field.glut || 0));
                 const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
@@ -39021,8 +38729,12 @@ class AnazhRealm {
                 }
             }
         }
-        // Schicht 3 — Emotion-Tint
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        // Schicht 3 — Emotion-Tint (V17.31: liest die emotion-ACHSE des Feldes
+        // [`aura.emotion`], nicht mehr `player.emotions` direkt → die Achse ist
+        // jetzt ein echter Leser, kein Passagier. Wird emotion künftig RÄUMLICH
+        // (lokal deponiert wie lebendig), färbt der Welt-Tint automatisch mit.
+        // Fallback auf den Vektor, wenn kein playerMesh [Aura null].)
+        const emotions = (aura && aura.emotion) || (this.state.player && this.state.player.emotions) || {};
         const joy = Math.max(0, Math.min(1, emotions.joy || 0));
         const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
         const awe = Math.max(0, Math.min(1, emotions.awe || 0));
@@ -39089,6 +38801,19 @@ class AnazhRealm {
         if (!u) return;
         if (u.nebulaColor && u.nebulaColor.value && u.nebulaColor.value.setRGB) {
             u.nebulaColor.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+            // === Sky-Harmonie (V17.23): die DSL/Mood-Tönung überschreibt die
+            // Tag-Nacht-Farbe NICHT — sie BLENDET parallel + FADET. Diese Methode
+            // läuft ~10 Hz (Tag-Nacht-Throttle); die Schritte sind raten-
+            // approximativ (smooth genug, kein exakter Delta nötig).
+            const st = this.state;
+            if (st.skyTint) {
+                // V17.24 — Farb-Cross-Fade: die gezeigte Tönung lerpt sanft zur
+                // Ziel-Farbe (ein Farbwechsel springt nicht mehr, er fadet).
+                if (st.skyTintTo) st.skyTint.lerp(st.skyTintTo, 0.08);
+                st.skyTintStrength += (st.skyTintTarget - st.skyTintStrength) * 0.12; // smooth ramp (kein Snap)
+                st.skyTintTarget = Math.max(0, st.skyTintTarget - 0.001); // langsamer Decay (~60 s) → fadet aus
+                if (st.skyTintStrength > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength);
+            }
         }
         if (u.cloudCover) {
             // V17.2 — klar 0.32 (verstreute Cumulus statt kahler Himmel), Regen
@@ -39200,8 +38925,8 @@ class AnazhRealm {
         if (hl) {
             hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
-            if (pm && typeof this.worldFieldAt === "function") {
-                const field = this.worldFieldAt(pm.position.x, pm.position.z);
+            if (pm && typeof this.auraAt === "function") {
+                const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living)
                 if (field) {
                     const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
                     const glut = Math.max(0, Math.min(1, field.glut || 0));
@@ -39580,7 +39305,7 @@ class AnazhRealm {
         }
         const px = x !== undefined ? x : pm.position.x;
         const pz = z !== undefined ? z : pm.position.z;
-        const field = this.worldFieldAt(px, pz);
+        const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
         if (!field) return this._pickCreatureSoulName();
         // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
         const souls = AnazhRealm.CREATURE_SOULS;
@@ -39737,12 +39462,15 @@ class AnazhRealm {
     _currentFaunaTarget() {
         const baseTarget = this.constructor.FAUNA_TARGET_POPULATION; // 8
         const pm = this.state.playerMesh;
-        if (!pm || typeof this.worldFieldAt !== "function") return baseTarget;
-        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!pm || typeof this.auraAt !== "function") return baseTarget;
+        const f = this.auraAt(pm.position.x, pm.position.z);
         if (!f) return baseTarget;
-        // lebendig 0..1 mappt auf 4..14 (baseTarget±50%)
+        // V17.25 (§5: alle Achsen, via auraAt) — die VOLLE Feld-Lese statt nur
+        // lebendig: lebendig HEBT (Leben trägt Leben, +0..10), glut DÄMPFT (eine
+        // glühende Ödnis trägt weniger, −0..5). Geklemmt ≥ 2 (nie ganz leer).
         const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
-        return Math.round(4 + lebendig * 10);
+        const glut = Math.max(0, Math.min(1, f.glut || 0));
+        return Math.max(2, Math.round(4 + lebendig * 10 - glut * 5));
     }
 
     // [ATMOSPHERE] Fauna-Max-Population — symmetrisches Pattern zu Target.
@@ -39750,11 +39478,13 @@ class AnazhRealm {
     _currentFaunaMax() {
         const baseMax = this.constructor.FAUNA_MAX_POPULATION; // 20
         const pm = this.state.playerMesh;
-        if (!pm || typeof this.worldFieldAt !== "function") return baseMax;
-        const f = this.worldFieldAt(pm.position.x, pm.position.z);
+        if (!pm || typeof this.auraAt !== "function") return baseMax;
+        const f = this.auraAt(pm.position.x, pm.position.z);
         if (!f) return baseMax;
+        // V17.25 (§5: alle Achsen) — lebendig hebt (+0..16), glut dämpft (−0..8).
         const lebendig = Math.max(0, Math.min(1, f.lebendig || 0));
-        return Math.round(12 + lebendig * 16); // 12..28
+        const glut = Math.max(0, Math.min(1, f.glut || 0));
+        return Math.max(4, Math.round(12 + lebendig * 16 - glut * 8)); // 4..28
     }
 
     // [ATMOSPHERE] Tick — läuft alle FAUNA_TICK_INTERVAL_MS. V8.25-Heilung:
@@ -41744,6 +41474,10 @@ class AnazhRealm {
             // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
             this._loopPhysicsSync(delta, currentTime);
 
+            // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
+            // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
+            this._rescuePlayerFromVoid();
+
             // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
             this._loopPlayerMovement(currentTime);
 
@@ -41920,6 +41654,37 @@ class AnazhRealm {
                 }
             });
         }
+    }
+
+    // V17.28 — der Boden unter dem Boden. Fällt der Spieler unter den Voxel-
+    // Boden (AnazhRealm.PLAYER_VOID_Y, klar unter base−floorDrop ≈ −90 m), holt
+    // ihn das an die Terrain-Oberfläche an seinem (x,z) zurück — selbe Fußhöhe,
+    // Geschwindigkeit genullt, Body geweckt (Headless-Teleport-Falle V13.0:
+    // setWorldTransform reaktiviert nicht von allein → activate(true)). Generelle
+    // Robustheit (jede Fall-Ursache), nicht nur der Struktur-Spawn-Fall.
+    _rescuePlayerFromVoid() {
+        const pm = this.state.playerMesh;
+        if (!pm || pm.position.y > AnazhRealm.PLAYER_VOID_Y) return;
+        const surf = this.getTerrainHeightAt(pm.position.x, pm.position.z);
+        const safeY = (Number.isFinite(surf) ? surf : this.state.terrainBaseHeight || 0) + 2.0;
+        pm.position.set(pm.position.x, safeY, pm.position.z);
+        const body = this.state.playerBody;
+        if (body && this.state.tmpTransform) {
+            const t = this.state.tmpTransform;
+            t.setIdentity();
+            t.setOrigin(
+                this.setVec(
+                    this.state.tmpVec1,
+                    pm.position.x / this.state.scaleFactor,
+                    safeY / this.state.scaleFactor,
+                    pm.position.z / this.state.scaleFactor
+                )
+            );
+            body.setWorldTransform(t);
+            body.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
+            body.activate(true);
+        }
+        this.log(`Spieler fiel durch die Welt — zurück an die Oberfläche (y=${safeY.toFixed(1)})`, "WARNING");
     }
 
     _loopPhysicsSync(delta, currentTime) {
@@ -42555,6 +42320,24 @@ class AnazhRealm {
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
             this.state.hydroSurfaceUniforms.time.value = currentTime;
         }
+        // V17.31 — der tote V14-Emotions-Haken am Wasser wird endlich GEFÜTTERT:
+        // die Welt-Materie atmet mit der Stimmung (`uEmotion` hebt den Schaum,
+        // s. `_ensureHydroSurfaceMaterial`). Positive Gefühle beleben das Wasser,
+        // Trauer dämpft. Bis hier blieb der Uniform auf 0.0 (deklariert, im Shader
+        // benutzt, nie zugewiesen) — ein stummer Haken; jetzt ein echter Leser.
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
+            const em = this.state.player && this.state.player.emotions;
+            const vital = em
+                ? Math.max(
+                      0,
+                      Math.min(
+                          1,
+                          (em.joy || 0) * 0.6 + (em.peace || 0) * 0.5 + (em.hope || 0) * 0.3 - (em.sorrow || 0) * 0.5
+                      )
+                  )
+                : 0;
+            this.state.hydroSurfaceUniforms.emotion.value = vital;
+        }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
@@ -42918,337 +42701,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.18.0";
-
-// V9.95-a (Welle WebGPU-Compute-Foundation) — trivialer WGSL-Compute-Shader
-// als Foundation-Beweis. Inputs: 256 f32 in storage-buffer 0; Outputs:
-// `f32 * f32` (square) in storage-buffer 1. Workgroup-Size 64, dispatch
-// 4 Workgroups deckt N=256. Per IEEE-754-Spec ist `f32 * f32` deterministisch
-// + bit-identisch zu JS `Math.fround(v * v)` (single-precision multiplication
-// hat keine implementation-defined precision, anders als sin/cos/sqrt).
-// Wer das Pattern für V9.95-b's WGSL-Density-Shader erweitert: Storage-Buffer
-// als read/read_write deklarieren, Uniforms separat, gleicher Dispatch-Stil.
-AnazhRealm.WGSL_TRIVIAL_SQUARE = `
-    @group(0) @binding(0) var<storage, read> inBuf: array<f32>;
-    @group(0) @binding(1) var<storage, read_write> outBuf: array<f32>;
-
-    @compute @workgroup_size(64)
-    fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-        let i = gid.x;
-        if (i < arrayLength(&inBuf)) {
-            let v = inBuf[i];
-            outBuf[i] = v * v;
-        }
-    }
-`;
-
-// V9.95-b (Welle WebGPU-Density-Pipeline) — voller WGSL-Compute-Shader für
-// die Worldgen-Density. Mirror von `_terrainDensityAt` aus `voxel-worker.js`
-// (ohne Hydrosphere-Carve/Lake-Mask + ohne voxelEdits — die fallen durchs
-// JS-Eligibility-Gate auf den V9.91-Worker-Pfad zurück). Was läuft auf GPU:
-//   - SimplexNoise (Stefan-Gustavson-Port, public domain, 2D + 3D)
-//   - terrainMacroSurfaceY (domain-warp + tect + cont + ridges + sub-ocean)
-//   - 3D-Detail-Octaven (zwei 3D-Noise-Schichten)
-//   - Cave-Ridged-Hülle (klemmt sich zwischen base-28 und surf-6)
-//   - Erosion-Delta (bilinear sample aus dem upgeloadeten 64×64-Grid)
-//   - Tarn-Delta (Gauss-Sum über die Tarn-Liste)
-//
-// Bindings: alle in @group(0):
-//   @binding(0) uniform Params (scalar world-state)
-//   @binding(1) storage<read> permTable (512 u32, SimplexNoise-Permutation, geseeded)
-//   @binding(2) storage<read> erosionDelta (Float32, dim × dim, 0-padded wenn keine Erosion)
-//   @binding(3) storage<read> tarnsBuf (Float32 packed [x,z,d,reach2,twoSig2] × tarnsCount)
-//   @binding(4) storage<read_write> outDensity (Float32, Nx*Ny*Nz)
-//
-// Workgroup-Size 64 (typische GPU-Cache-Linie). Dispatch ceil(N/64).
-//
-// **Determinismus-Strategie** (V9.95-a-Lehre): `f32 * f32` ist per IEEE-754
-// bit-identisch zwischen WGSL + JS, ABER `sin/cos/sqrt/exp` haben
-// implementation-defined precision (WGSL §3.6, relativer Fehler ≤ 2^-22).
-// Konsequenz: GPU-Resultat ist GPU-intern bit-deterministisch (zwei Runs
-// identisch), aber GPU-vs-Worker NICHT bit-identisch — Toleranz |Δ| < 1e-3
-// für Density-Werte (Surface-Nets-Smoothing absorbiert das im Mesh).
-AnazhRealm.WGSL_DENSITY_GRID = `
-struct Params {
-    // Sample-Region des Chunks
-    ox: f32, oy: f32, oz: f32, step: f32,
-    nx: u32, ny: u32, nz: u32, _pad0: u32,
-    // World-State Scalars
-    baseHeight: f32, waterLevel: f32, _pad1: f32, _pad2: f32,
-    // Erosion-Grid (alle 0 wenn keine Erosion vorhanden)
-    erosionOriginX: f32, erosionOriginZ: f32, erosionCell: f32, erosionDim: f32,
-    erosionHas: u32, tarnsCount: u32, _pad3: u32, _pad4: u32,
-};
-
-@group(0) @binding(0) var<uniform> params: Params;
-@group(0) @binding(1) var<storage, read> permTable: array<u32>;
-@group(0) @binding(2) var<storage, read> erosionDelta: array<f32>;
-@group(0) @binding(3) var<storage, read> tarnsBuf: array<f32>;
-@group(0) @binding(4) var<storage, read_write> outDensity: array<f32>;
-
-// =========================================================================
-// SimplexNoise 2D + 3D — exakter Mirror der vendor/simplex-noise.js (Stefan-
-// Gustavson). Vendor nutzt grad3 (12 Einträge) für BEIDE 2D und 3D (in 2D
-// wird die z-Komponente ignoriert), plus permMod12 = perm % 12 für gi-Index.
-// Unsere Permutation kommt aus 'new SimplexNoise(seed+":voxel")' im Main +
-// wird hochgeladen — exakt dieselbe perm-Reihe wie der Worker.
-// grad3 ist hier hartcodiert (es ist fest, hängt nicht vom Seed ab).
-//
-// **Determinismus-Achtung** (V9.95-a-Lehre): die Welt-MAKRO-Struktur ist
-// algorithm-äquivalent zum Worker, ABER die transzendenten Sub-Operationen
-// (sqrt im exp via Wachstumsformel, abs, etc.) können in WGSL Float32-Drift
-// gegenüber JS Float64 zeigen (relativer Fehler ≤ 2^-22 pro WGSL §3.6).
-// Sanity: GPU-vs-Worker |Δ| typisch < 1e-3 für Density-Werte — Surface-Nets-
-// Smoothing absorbiert das. GPU-internal-Determinismus (zwei Runs identisch)
-// ist bit-exakt ('+ - * /' sind per IEEE-754 garantiert).
-// =========================================================================
-
-fn perm(i: u32) -> u32 {
-    return permTable[i & 255u];
-}
-
-fn permMod12(i: u32) -> u32 {
-    return perm(i) % 12u;
-}
-
-// grad3: 12 Vektoren als WGSL switch (hartcodiert, vendor-grad3-mirror).
-fn grad3(g: u32) -> vec3<f32> {
-    let h: u32 = g % 12u;
-    switch (h) {
-        case 0u: { return vec3<f32>(1.0, 1.0, 0.0); }
-        case 1u: { return vec3<f32>(-1.0, 1.0, 0.0); }
-        case 2u: { return vec3<f32>(1.0, -1.0, 0.0); }
-        case 3u: { return vec3<f32>(-1.0, -1.0, 0.0); }
-        case 4u: { return vec3<f32>(1.0, 0.0, 1.0); }
-        case 5u: { return vec3<f32>(-1.0, 0.0, 1.0); }
-        case 6u: { return vec3<f32>(1.0, 0.0, -1.0); }
-        case 7u: { return vec3<f32>(-1.0, 0.0, -1.0); }
-        case 8u: { return vec3<f32>(0.0, 1.0, 1.0); }
-        case 9u: { return vec3<f32>(0.0, -1.0, 1.0); }
-        case 10u: { return vec3<f32>(0.0, 1.0, -1.0); }
-        default: { return vec3<f32>(0.0, -1.0, -1.0); }
-    }
-}
-
-// 2D Simplex Noise — vendor-mirror, nutzt grad3 (z ignoriert).
-fn snoise2D(p: vec2<f32>) -> f32 {
-    let F2: f32 = 0.366025403784;  // 0.5 * (sqrt(3) - 1)
-    let G2: f32 = 0.211324865405;  // (3 - sqrt(3)) / 6
-
-    let s: f32 = (p.x + p.y) * F2;
-    let i0: i32 = i32(floor(p.x + s));
-    let j0: i32 = i32(floor(p.y + s));
-    let t: f32 = f32(i0 + j0) * G2;
-    let X0: f32 = f32(i0) - t;
-    let Y0: f32 = f32(j0) - t;
-    let x0: f32 = p.x - X0;
-    let y0: f32 = p.y - Y0;
-
-    var i1: i32; var j1: i32;
-    if (x0 > y0) { i1 = 1; j1 = 0; } else { i1 = 0; j1 = 1; }
-
-    let x1: f32 = x0 - f32(i1) + G2;
-    let y1: f32 = y0 - f32(j1) + G2;
-    let x2: f32 = x0 - 1.0 + 2.0 * G2;
-    let y2: f32 = y0 - 1.0 + 2.0 * G2;
-
-    let ii: u32 = u32(i0) & 255u;
-    let jj: u32 = u32(j0) & 255u;
-    let gi0: u32 = permMod12(ii + perm(jj));
-    let gi1: u32 = permMod12(ii + u32(i1) + perm(jj + u32(j1)));
-    let gi2: u32 = permMod12(ii + 1u + perm(jj + 1u));
-    let g0v: vec3<f32> = grad3(gi0);
-    let g1v: vec3<f32> = grad3(gi1);
-    let g2v: vec3<f32> = grad3(gi2);
-
-    var n0: f32 = 0.0; var n1: f32 = 0.0; var n2: f32 = 0.0;
-    let t0: f32 = 0.5 - x0*x0 - y0*y0;
-    if (t0 >= 0.0) { let t02 = t0*t0; n0 = t02*t02 * (g0v.x * x0 + g0v.y * y0); }
-    let t1: f32 = 0.5 - x1*x1 - y1*y1;
-    if (t1 >= 0.0) { let t12 = t1*t1; n1 = t12*t12 * (g1v.x * x1 + g1v.y * y1); }
-    let t2: f32 = 0.5 - x2*x2 - y2*y2;
-    if (t2 >= 0.0) { let t22 = t2*t2; n2 = t22*t22 * (g2v.x * x2 + g2v.y * y2); }
-    return 70.0 * (n0 + n1 + n2);
-}
-
-// 3D Simplex Noise — vendor-mirror, grad3 mit permMod12-index.
-fn snoise3D(p: vec3<f32>) -> f32 {
-    let F3: f32 = 1.0 / 3.0;
-    let G3: f32 = 1.0 / 6.0;
-
-    let s: f32 = (p.x + p.y + p.z) * F3;
-    let i: i32 = i32(floor(p.x + s));
-    let j: i32 = i32(floor(p.y + s));
-    let k: i32 = i32(floor(p.z + s));
-    let t: f32 = f32(i + j + k) * G3;
-    let X0: f32 = f32(i) - t;
-    let Y0: f32 = f32(j) - t;
-    let Z0: f32 = f32(k) - t;
-    let x0: f32 = p.x - X0;
-    let y0: f32 = p.y - Y0;
-    let z0: f32 = p.z - Z0;
-
-    var i1: i32 = 0; var j1: i32 = 0; var k1: i32 = 0;
-    var i2: i32 = 0; var j2: i32 = 0; var k2: i32 = 0;
-    if (x0 >= y0) {
-        if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
-        else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; }
-        else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; }
-    } else {
-        if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; }
-        else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; }
-        else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; }
-    }
-
-    let x1: f32 = x0 - f32(i1) + G3;
-    let y1: f32 = y0 - f32(j1) + G3;
-    let z1: f32 = z0 - f32(k1) + G3;
-    let x2: f32 = x0 - f32(i2) + 2.0 * G3;
-    let y2: f32 = y0 - f32(j2) + 2.0 * G3;
-    let z2: f32 = z0 - f32(k2) + 2.0 * G3;
-    let x3: f32 = x0 - 1.0 + 3.0 * G3;
-    let y3: f32 = y0 - 1.0 + 3.0 * G3;
-    let z3: f32 = z0 - 1.0 + 3.0 * G3;
-
-    let ii: u32 = u32(i) & 255u;
-    let jj: u32 = u32(j) & 255u;
-    let kk: u32 = u32(k) & 255u;
-    let gi0: u32 = permMod12(ii + perm(jj + perm(kk)));
-    let gi1: u32 = permMod12(ii + u32(i1) + perm(jj + u32(j1) + perm(kk + u32(k1))));
-    let gi2: u32 = permMod12(ii + u32(i2) + perm(jj + u32(j2) + perm(kk + u32(k2))));
-    let gi3: u32 = permMod12(ii + 1u + perm(jj + 1u + perm(kk + 1u)));
-    let g0v: vec3<f32> = grad3(gi0);
-    let g1v: vec3<f32> = grad3(gi1);
-    let g2v: vec3<f32> = grad3(gi2);
-    let g3v: vec3<f32> = grad3(gi3);
-
-    var n0: f32 = 0.0; var n1: f32 = 0.0; var n2: f32 = 0.0; var n3: f32 = 0.0;
-    let t0: f32 = 0.6 - x0*x0 - y0*y0 - z0*z0;
-    if (t0 >= 0.0) { let t02 = t0*t0; n0 = t02*t02 * (g0v.x*x0 + g0v.y*y0 + g0v.z*z0); }
-    let t1: f32 = 0.6 - x1*x1 - y1*y1 - z1*z1;
-    if (t1 >= 0.0) { let t12 = t1*t1; n1 = t12*t12 * (g1v.x*x1 + g1v.y*y1 + g1v.z*z1); }
-    let t2: f32 = 0.6 - x2*x2 - y2*y2 - z2*z2;
-    if (t2 >= 0.0) { let t22 = t2*t2; n2 = t22*t22 * (g2v.x*x2 + g2v.y*y2 + g2v.z*z2); }
-    let t3: f32 = 0.6 - x3*x3 - y3*y3 - z3*z3;
-    if (t3 >= 0.0) { let t32 = t3*t3; n3 = t32*t32 * (g3v.x*x3 + g3v.y*y3 + g3v.z*z3); }
-    return 32.0 * (n0 + n1 + n2 + n3);
-}
-
-// =========================================================================
-// Welt-State-Functions (mirror voxel-worker.js)
-// =========================================================================
-
-fn erosion_delta_at(x: f32, z: f32) -> f32 {
-    if (params.erosionHas == 0u) { return 0.0; }
-    let dim: f32 = params.erosionDim;
-    let fx: f32 = (x - params.erosionOriginX) / params.erosionCell;
-    let fz: f32 = (z - params.erosionOriginZ) / params.erosionCell;
-    if (fx < 0.0 || fz < 0.0 || fx >= dim - 1.0 || fz >= dim - 1.0) { return 0.0; }
-    let i0: i32 = i32(fx);
-    let j0: i32 = i32(fz);
-    let tx: f32 = fx - f32(i0);
-    let tz: f32 = fz - f32(j0);
-    let idim: u32 = u32(dim);
-    let a: u32 = u32(i0) + u32(j0) * idim;
-    let d00: f32 = erosionDelta[a];
-    let d10: f32 = erosionDelta[a + 1u];
-    let d01: f32 = erosionDelta[a + idim];
-    let d11: f32 = erosionDelta[a + idim + 1u];
-    return (d00 * (1.0 - tx) + d10 * tx) * (1.0 - tz)
-         + (d01 * (1.0 - tx) + d11 * tx) * tz;
-}
-
-fn tarn_delta_at(x: f32, z: f32) -> f32 {
-    var delta: f32 = 0.0;
-    let cnt: u32 = params.tarnsCount;
-    for (var i: u32 = 0u; i < cnt; i = i + 1u) {
-        let base: u32 = i * 5u;
-        let tx: f32 = tarnsBuf[base + 0u];
-        let tz: f32 = tarnsBuf[base + 1u];
-        let td: f32 = tarnsBuf[base + 2u];
-        let reach2: f32 = tarnsBuf[base + 3u];
-        let twoSig2: f32 = tarnsBuf[base + 4u];
-        let dx: f32 = x - tx;
-        let dz: f32 = z - tz;
-        let d2: f32 = dx * dx + dz * dz;
-        if (d2 > reach2) { continue; }
-        delta = delta - td * exp(-d2 / twoSig2);
-    }
-    return delta;
-}
-
-fn terrain_macro_surface_y(x: f32, z: f32) -> f32 {
-    let base: f32 = params.baseHeight;
-    let warpX: f32 = snoise2D(vec2<f32>(x * 0.00026 + 11.3, z * 0.00026 + 4.1)) * 70.0;
-    let warpZ: f32 = snoise2D(vec2<f32>(x * 0.00026 + 41.7, z * 0.00026 + 23.9)) * 70.0;
-    let wx: f32 = x + warpX;
-    let wz: f32 = z + warpZ;
-    let tect: f32 = snoise2D(vec2<f32>(wx * 0.00088, wz * 0.00088)) * 35.0;
-    let cont: f32 = snoise2D(vec2<f32>(wx * 0.0058, wz * 0.0058)) * 34.0;
-    let ero: f32 = snoise2D(vec2<f32>(x * 0.0014, z * 0.0014)) * 0.5 + 0.5;
-    var mtn: f32 = 1.0 - ero;
-    if (mtn < 0.0) { mtn = 0.0; }
-    mtn = mtn * mtn;
-    let ridgeAmp: f32 = 12.0 + 55.0 * mtn;
-    let rN: f32 = snoise2D(vec2<f32>(wx * 0.013, wz * 0.013));
-    let ranges: f32 = (1.0 - abs(rN)) * (1.0 - abs(rN)) * ridgeAmp;
-    let rN2: f32 = snoise2D(vec2<f32>(wx * 0.026 + 5.7, wz * 0.026 - 2.3));
-    let ranges2: f32 = (1.0 - abs(rN2)) * (1.0 - abs(rN2)) * ridgeAmp * 0.5;
-    let detail: f32 = snoise2D(vec2<f32>(x * 0.045, z * 0.045)) * 4.0;
-    let withoutTarn: f32 = base + tect + cont + ranges + ranges2 + detail + erosion_delta_at(x, z);
-    let waterRefSub: f32 = params.waterLevel;
-    let depthBelow: f32 = waterRefSub - withoutTarn;
-    var withoutTarnFinal: f32 = withoutTarn;
-    if (depthBelow > 1.5) {
-        let subMask: f32 = clamp((depthBelow - 3.0) / 6.0, 0.0, 1.0);
-        let slope: f32 = max(0.0, depthBelow - 4.0);
-        let slopeDrop: f32 = -slope * 0.6;
-        let subA: f32 = snoise2D(vec2<f32>(x * 0.019, z * 0.019 + 31.0)) * (3.0 + slope * 0.3);
-        let rBN: f32 = snoise2D(vec2<f32>(x * 0.026 + 17.0, z * 0.026 + 9.0));
-        let subRidge: f32 = ((1.0 - abs(rBN)) * (1.0 - abs(rBN)) - 0.3) * (3.0 + slope * 0.25);
-        let subC: f32 = snoise2D(vec2<f32>(x * 0.062 - 17.0, z * 0.062 + 8.0)) * 1.0;
-        withoutTarnFinal = withoutTarnFinal + slopeDrop + (subA + subRidge + subC) * subMask;
-    }
-    let td: f32 = tarn_delta_at(x, z);
-    if (td == 0.0) { return withoutTarnFinal; }
-    let waterRef: f32 = params.waterLevel;
-    return max(withoutTarnFinal + td, waterRef + 1.0);
-}
-
-fn terrain_density_at(x: f32, y: f32, z: f32) -> f32 {
-    let surf: f32 = terrain_macro_surface_y(x, z);
-    var d: f32 = surf - y;
-    d = d + snoise3D(vec3<f32>(x * 0.05, y * 0.05, z * 0.05)) * 7.0;
-    d = d + snoise3D(vec3<f32>(x * 0.018, y * 0.022, z * 0.018)) * 5.0;
-    // Cave-Hülle: klemmt sich zwischen base-28 (Floor) und surf-6 (Ceil)
-    let base: f32 = params.baseHeight;
-    let caveFloor: f32 = clamp((y - (base - 28.0)) / 8.0, 0.0, 1.0);
-    let caveCeil: f32 = clamp((surf - 6.0 - y) / 8.0, 0.0, 1.0);
-    let caveEnv: f32 = caveFloor * caveCeil;
-    if (caveEnv > 0.0) {
-        let ridge: f32 = 1.0 - abs(snoise3D(vec3<f32>(x * 0.03, y * 0.034, z * 0.03)));
-        let cave: f32 = max(0.0, (ridge - 0.7) / 0.3);
-        d = d - cave * caveEnv * 36.0;
-    }
-    return d;
-}
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let total: u32 = params.nx * params.ny * params.nz;
-    let idx: u32 = gid.x;
-    if (idx >= total) { return; }
-    let nx: u32 = params.nx;
-    let ny: u32 = params.ny;
-    let i: u32 = idx % nx;
-    let j: u32 = (idx / nx) % ny;
-    let k: u32 = idx / (nx * ny);
-    let x: f32 = params.ox + f32(i) * params.step;
-    let y: f32 = params.oy + f32(j) * params.step;
-    let z: f32 = params.oz + f32(k) * params.step;
-    outDensity[idx] = terrain_density_at(x, y, z);
-}
-`;
+AnazhRealm.VERSION = "17.32.0";
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -44111,6 +43564,106 @@ AnazhRealm.FOCUSING_IGNITE_THRESHOLD = 1.0; // Schwelle bei der ignite ausgelös
 AnazhRealm.BRENNBAR_TAG_MIN = 0.5; // Architektur gilt als brennbar ab diesem Tag-Wert
 // Welt-Effekt-Schwellen: zentralisiert, damit Tuning ohne Code-Suche geht.
 // Werte aus Konzept §6.3 (≥0.7 mild, ≥1.5 stark, ≥2.5 signatur).
+// === Das lebendige Feld — die Welt→Spieler-Rückkopplung (der Kreis) ===
+// Welche Feld-Achse welche Emotion-Achse nährt: ZIEL-Niveau bei voller Achse
+// (1.0). Generisch — die Tabelle IST die Regel (Hylomorphismus-Stil), kein
+// Sonderfall-Code. Die Ziele bleiben UNTER der Trigger-Schwelle (0.7) → die
+// Aura allein löst nie einen Welt-Effekt aus, sie STIMMT den Spieler; seine
+// eigenen Taten entscheiden. Browser-justierbar (docs/das-lebendige-feld.md §3.2).
+AnazhRealm.FIELD_TO_EMOTION = Object.freeze({
+    lebendig: { peace: 0.45, hope: 0.3 }, // lebendige Wildnis: Ruhe + Hoffnung
+    glut: { chaos: 0.45, awe: 0.25 }, // Glut/Feuer: Unruhe + Ehrfurcht
+    magieleitung: { awe: 0.45, hope: 0.2 }, // Magie: Staunen
+    // dichte: neutral — Fels/Dichte trägt keine Stimmung
+});
+
+// V17.30 — Pfeiler 2 wird WAHR: „Emotion treibt alles". Bis hier bewegte sich
+// die Emotion fast nur über Chat-Stichwörter (joy stand meist auf 0) → die
+// Emotion→Welt-Kopplungen feuerten kaum. Jetzt LEITET die Emotion sich aus dem
+// echten Sein-in-der-Welt ab — über ALLE sechs Achsen, aus drei Kanälen:
+// (1) TATEN (diese Tabelle, an JEDER realen Handlungs-Stelle verdrahtet),
+// (2) UMGEBUNG (FIELD_TO_EMOTION, V17.21 — die Aura nährt peace/hope/awe),
+// (3) ZUSTAND (niedrige HP → sorrow/chaos, in updatePlayerEmotions).
+// Wie FIELD_TO_EMOTION: die TABELLE IST die Regel (Hylomorphismus), kein
+// Sonderfall-Code. Deltas browser-justierbar. Schreiben → addieren, geklemmt;
+// die Decay (0.005/s) senkt → anhaltendes Tun in EINE Richtung erreicht erst
+// die 0.7-Trigger-Schwelle → die Welt antwortet auf gelebte Stimmung.
+AnazhRealm.ACTION_TO_EMOTION = Object.freeze({
+    build: { joy: 0.1, hope: 0.1 }, // erschaffen — der Kern-Positiv-Akt
+    create_life: { joy: 0.14, peace: 0.1 }, // Leben spawnen (Spieler) — nähren
+    harvest: { joy: 0.06, hope: 0.03 }, // sammeln/ernten — Fülle
+    explore: { awe: 0.12, hope: 0.05 }, // neue Region betreten — Entdeckung
+    bond: { peace: 0.12, joy: 0.06 }, // eine Kreatur folgt — Beziehung
+    resonance: { awe: 0.1 }, // resonante Architektur erlebt
+    damage: { sorrow: 0.12, chaos: 0.1 }, // Schaden/Gefahr — Angst
+});
+
+// V17.23 Sky-Harmonie — die maximale Blend-Stärke der DSL/Mood-Himmels-Tönung
+// gegen die Tag-Nacht-Farbe (0.6 = die Tönung bis 60 %, der Tag-Nacht-Himmel
+// bleibt zu 40 % sichtbar → die Tageszeit überlebt). Browser-justierbar.
+AnazhRealm.SKY_TINT_MAX = 0.6;
+
+// V17.27 — das lebendige Feld bekommt seine SCHREIB-Seite (die „schreiben"-
+// Hälfte des wahren Nordens: EIN Feld, das alle lesen UND schreiben). Über dem
+// FROZEN worldFieldAt.lebendig-Kern liegt ein sparse, langsam zerfallendes
+// Overlay: eine GEBURT (Kreatur) deponiert Leben → hebt lebendig lokal; es
+// zerfällt zurück zum Substrat (Homöostase — ein Garten will gepflegt werden).
+// auraAt blendet (min(frozen+overlay, 1)) — NIE überschreiben (V17.23-Harmonie),
+// leerer Overlay → lebendig == frozen (backward-compatible). Schließt den
+// at_field_need-Loop ECHT: Leben in den Mangel → lebendig steigt → der Mangel
+// sinkt → der Nexus zieht zum nächsten kargen Ort (kein rich-get-richer, kein
+// ewiges Abladen) + speist via FIELD_TO_EMOTION (V17.21) das Welt-ERLEBEN in
+// die Emotion. Region-Skala (16-m-Zelle), kein per-Vertex. Browser-justierbar.
+AnazhRealm.LIFE_FIELD = Object.freeze({
+    cell: 16, // m — das Hydrosphäre/Voxel-Raster (Region-Skala)
+    decayPerSec: 0.008, // Halbwertszeit ~87 s (getendete Region lingert, verwaiste verblasst)
+    pulseCenter: 0.25, // eine Geburt hebt die Zelle (sparse ~0.1 → ~0.35, nicht mehr Minimum)
+    pulseNeighbor: 0.1, // 3×3-Kernel-Rand (weiche räumliche Ausbreitung, kein Block)
+    max: 0.7, // Sättigung pro Zelle (frozen+overlay → ~1; Wiederhol-Pulse sättigen → Nexus zieht weiter)
+    epsilon: 0.004, // darunter wird eine Zelle gepruned (die Map bleibt bounded)
+    pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+    // V17.29 — der Kreatur-Trickle: Leben sustainiert sich, wo es wohnt. NUR
+    // Nexus/Spieler-getragene Kreaturen (tendsLife) träufeln — die ambiente
+    // Fauna ist die FOLGE des Feldes (kein Runaway, V17.27-Disziplin). Sanft +
+    // rate-limitiert; Kreaturen wandern → ein zarter Lebens-Pfad, der die
+    // getendete Region erhält (nicht ein Einzel-Puls, der verblasst).
+    trickle: 0.05, // pro Trickle-Deposit (klein — ein Garten wird gepflegt, nicht geflutet)
+    trickleEverySec: 3, // jede tendende Kreatur träufelt höchstens alle 3 s
+});
+
+// V17.32 — die räumlich-dynamische Emotion: das emotionale GEDÄCHTNIS der Welt.
+// Wie das Leben-Overlay, aber pro 16-m-Zelle ein 6-Achsen-Emotions-Abdruck. Der
+// Moment des Fühlens (`_feelAction`) MARKIERT den Ort; `auraAt` blendet den
+// lokalen Abdruck ÜBER die globale Stimmung → die Welt erinnert sich, wo der
+// Spieler fühlte, und färbt diesen Ort (der V17.31-Welt-Tint liest `auraAt.
+// emotion` → wird damit räumlich FÜR UMSONST = der Konsument, kein Passagier).
+// Das ist die SCHREIB-Seite der emotion-Achse (heilt §3.3 für Emotion). Reaktive
+// Schicht (wie Leben/Wetter) → nicht persistiert, kein Worker-Mirror. Justierbar.
+// Die sechs Emotions-Achsen — die EINE Liste (Hylomorphismus-Stil), genutzt vom
+// räumlichen Emotions-Blend (auraAt) + den Reset-Pfaden.
+AnazhRealm.EMOTION_AXES = Object.freeze(["joy", "awe", "sorrow", "hope", "peace", "chaos"]);
+
+AnazhRealm.EMOTION_FIELD = Object.freeze({
+    decayPerSec: 0.012, // Halbwertszeit ~58 s — Gefühle verblassen schneller als Leben
+    imprintScale: 0.5, // wie viel der Tat-Emotion sich am Ort einprägt
+    max: 0.8, // Sättigung pro Achse/Zelle (ein Ort wird nicht unendlich traurig)
+    epsilon: 0.004, // darunter wird eine Zelle gepruned
+    pruneEverySec: 5, // Prune-Rate (piggyback auf updatePlayerEmotions)
+    // cell = LIFE_FIELD.cell (16 m) — dieselbe Zell-Quelle (`_lifeCellKey`)
+});
+
+// V17.28 — „der Ort, an dem ich stehe, ist besetzt" (Schöpfer-Befund: GROSSE
+// Strukturen spawnen manchmal AUF dem Spieler → er fällt durch den Boden, weil
+// ihr Spawn seinen Voxel-Chunk remesht [Boden-Kollision kurz weg] + solide Parts
+// ihn überlappen). Eine große Struktur wird footprint-bewusst aus dem Spieler-
+// Bereich geschoben; eine kleine (intentionale Platzierung) bleibt unangetastet.
+AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
+AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
+// Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
+// fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
+// an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
+AnazhRealm.PLAYER_VOID_Y = -120;
+
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
     resonance_strong: 1.5,

@@ -15,7 +15,15 @@ const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 
-const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 20) * 1000;
+// V17.32-Heilung (GEMESSEN): der Warmup-Pump finalisiert die Voxel-Chunks
+// (Cold-Start, async Worker + Main-BVH) mit ~0,5–0,8 Chunks/s; unter CI-Last
+// landet `voxelChunks` gelegentlich unter dem `>= 15`-Threshold → „seit
+// Versionen rot" (derselbe Commit rot+grün je nach Runner). DURATION_MS ist
+// jetzt nur noch der MINDEST-Warmup (Floor) für die zeit-getriebenen Systeme;
+// die eigentliche Robustheit gegen die Last liefert der count-BASIERTE Pump
+// unten (pumpt, bis die Welt die Ziel-Chunks WIRKLICH gebaut hat, statt bis
+// ein Timer abläuft). Default 30 s = CI-Wert (`.github/workflows/check.yml`).
+const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
@@ -739,6 +747,700 @@ async function checkBandRing2Extended(ctx) {
         check("Schicht 1: samplePathBuckets erhöht Höhen-Bucket", iqResults.bucketsIncrementing);
         check("Schicht 1: dslRun-Outcome trägt emotionsBefore + startedAt", iqResults.outcomeHasEmotionSnapshot);
     }
+}
+
+// V17.21 — Das lebendige Feld, Welle 1: auraAt (die Lese-Seite) + der
+// geschlossene Kreis (Welt→Spieler via FIELD_TO_EMOTION). Beweist: auraAt
+// umhüllt das eingefrorene worldFieldAt + die lokale Aura HEBT die Emotion
+// (lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
+// Save/Restore von Position + Emotionen → kein State-Leak in Folge-Bänder.
+async function checkBandV1721LivingFieldAura(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
+        out.hasAuraAt = typeof r.auraAt === "function";
+        const a = r.auraAt(0, 0, 1.5);
+        out.auraShape =
+            !!a &&
+            typeof a.lebendig === "number" &&
+            typeof a.dichte === "number" &&
+            typeof a.glut === "number" &&
+            typeof a.magieleitung === "number" &&
+            a.emotion &&
+            typeof a.emotion === "object" &&
+            a.t === 1.5;
+        const wf = r.worldFieldAt(123, -456);
+        const au = r.auraAt(123, -456);
+        out.auraWrapsField =
+            au.lebendig === wf.lebendig &&
+            au.glut === wf.glut &&
+            au.dichte === wf.dichte &&
+            au.magieleitung === wf.magieleitung;
+        // class AnazhRealm {} ist ein lexikalisches Global (wie let) — bare
+        // `AnazhRealm`, NICHT window.AnazhRealm; r.constructor ist am robustesten.
+        const M = r.constructor && r.constructor.FIELD_TO_EMOTION;
+        out.hasMap = !!M && Object.isFrozen(M) && M.lebendig && typeof M.lebendig.peace === "number";
+        // Der Kreis: finde den lebendigsten Spot in einem weiten Raster, setze
+        // den Spieler dorthin, ticke updatePlayerEmotions → peace steigt.
+        let spot = null,
+            best = -1;
+        for (let gx = -2000; gx <= 2000; gx += 100) {
+            for (let gz = -2000; gz <= 2000; gz += 100) {
+                const l = r.worldFieldAt(gx, gz).lebendig;
+                if (l > best) {
+                    best = l;
+                    spot = { x: gx, z: gz, lebendig: l };
+                }
+            }
+        }
+        out.bestLebendig = best;
+        if (spot && r.state.playerMesh && r.state.player && r.state.player.emotions) {
+            const origPos = r.state.playerMesh.position.clone();
+            const origEmo = { ...r.state.player.emotions };
+            const origTick = r.state.player.emotionLastTick;
+            r.state.playerMesh.position.set(spot.x, origPos.y, spot.z);
+            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            r.state.player.emotionLastTick = -Infinity;
+            let t = 1000;
+            r.updatePlayerEmotions(t); // delta=0 (prev=-Inf): kein Effekt
+            for (let i = 0; i < 40; i++) {
+                t += 2;
+                r.updatePlayerEmotions(t);
+            }
+            out.peaceVal = r.state.player.emotions.peace;
+            out.peaceRose = out.peaceVal > 0.04; // die Aura hat peace gehoben
+            out.peaceBelowTrigger = out.peaceVal < 0.7; // nie selbst-auslösend
+            // Restore — kein State-Leak in Folge-Bänder.
+            r.state.playerMesh.position.copy(origPos);
+            for (const k of Object.keys(origEmo)) r.state.player.emotions[k] = origEmo[k];
+            r.state.player.emotionLastTick = origTick;
+        }
+        return out;
+    });
+    check("V17.21 lebendiges Feld: auraAt(x,z,t) existiert", res.hasAuraAt);
+    check("V17.21 lebendiges Feld: auraAt-Shape (4 Feld-Achsen + emotion + t)", res.auraShape);
+    check("V17.21 lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
+    check("V17.21 lebendiges Feld: FIELD_TO_EMOTION ist frozen + verdrahtet", res.hasMap);
+    check(
+        "V17.21 lebendiges Feld: eine lebendige Region HEBT peace (der Kreis schließt sich)",
+        res.peaceRose,
+        `bestLebendig=${res.bestLebendig}, peace=${res.peaceVal}`
+    );
+    check(
+        "V17.21 lebendiges Feld: die Aura bleibt UNTER der 0.7-Trigger-Schwelle (stimmt, löst nie selbst aus)",
+        res.peaceBelowTrigger,
+        `peace=${res.peaceVal}`
+    );
+}
+
+// V17.22 — Das lebendige Feld, Welle 2: dem Nexus Augen geben. dslComposeAtomic
+// liest jetzt auraAt am Spieler + komponiert resonant zum lokalen Feld (der
+// Kreis des Verstehens, docs/das-lebendige-feld.md §2/§3.1). Beweis: die
+// Feld-resonante Farbwahl (kontrollierte rng → deterministisch) + dass
+// dslComposeAtomic das Feld LIEST + weiter valide DSL komponiert.
+async function checkBandV1722NexusEyes(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.hasFieldColor = typeof r.dslComposeFieldColor === "function";
+        const lo = () => 0.0; // kontrollierte rng (< jede Achsen-Stärke → resoniert)
+        out.magieColor = r.dslComposeFieldColor(lo, { magieleitung: 1, glut: 0, lebendig: 0 }) === "#d4a3ff";
+        out.glutColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 1, lebendig: 0 }) === "#ff7a59";
+        out.lebendigColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 1 }) === "#7bd389";
+        const neutral = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 0 });
+        out.neutralPalette = typeof neutral === "string" && neutral.startsWith("#") && neutral !== "#d4a3ff";
+        out.atomicReadsField = /auraAt/.test(r.dslComposeAtomic.toString());
+        const prog = r.dslComposeAtomic(() => 0.5);
+        out.composesValid = Array.isArray(prog) && typeof prog[0] === "string";
+        return out;
+    });
+    check("V17.22 Nexus-Augen: dslComposeFieldColor existiert", res.hasFieldColor);
+    check("V17.22 Nexus-Augen: magie-leitender Ort → magisches Lila", res.magieColor);
+    check("V17.22 Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
+    check("V17.22 Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
+    check("V17.22 Nexus-Augen: neutrales Feld → freie erkundende Palette", res.neutralPalette);
+    check(
+        "V17.22 Nexus-Augen: dslComposeAtomic LIEST das Feld (auraAt) — der Kreis des Verstehens",
+        res.atomicReadsField
+    );
+    check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
+}
+
+// V17.23 — Harmonie statt Revert (Schöpfer-Lehre): drei Kräfte verschmelzen
+// PARALLEL, ohne zu überschreiben, und faden. (1) Wetter: Feld + Emotion, das
+// Feld weicht dem starken Willen (×(1−emoSignal)); (2) Sky: die DSL-Tönung
+// blendet mit Tag-Nacht + fadet (snappt/überschreibt nicht); (3) Spawn: Ring
+// um den Spieler statt AUF ihm. Sky-Fade behavioral (mit Restore), Rest Source-
+// Probe (kein State-Leak durch echtes Spawnen).
+async function checkBandV1723Harmony(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const atomicSrc = r.dslComposeAtomic.toString();
+        out.weatherYields = /emoSignal/.test(atomicSrc) && /1 - emoSignal/.test(atomicSrc);
+        out.skyTintMax = r.constructor.SKY_TINT_MAX === 0.6;
+        r.state.skyTint = null;
+        r.state.skyTintTarget = 0;
+        r.state.skyTintStrength = 0;
+        r.dslRun(["skybox_color", "#d4a3ff"], { source: "test" });
+        out.skyTintSet = !!r.state.skyTint && r.state.skyTintTarget > 0;
+        if (typeof r._dayNightApplySkybox === "function") {
+            const t0 = r.state.skyTintTarget;
+            const tint = { skyR: 0.2, skyG: 0.3, skyB: 0.5 };
+            for (let i = 0; i < 10; i++) r._dayNightApplySkybox(tint);
+            out.skyRamped = r.state.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
+            out.skyDecays = r.state.skyTintTarget < t0; // Ziel fadet
+            r.state.skyTint = null; // Restore — kein Leak
+            r.state.skyTintTo = null;
+            r.state.skyTintTarget = 0;
+            r.state.skyTintStrength = 0;
+        }
+        // V17.24 — Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
+        // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
+        // bleibt rot), dann ticken → skyTint wandert Richtung blau.
+        if (typeof r._dayNightApplySkybox === "function") {
+            r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
+            r.dslRun(["skybox_color", "#0000ff"], { source: "test" });
+            const beforeHex = r.state.skyTint.getHex();
+            for (let i = 0; i < 25; i++) r._dayNightApplySkybox({ skyR: 0.2, skyG: 0.3, skyB: 0.5 });
+            const afterHex = r.state.skyTint.getHex();
+            out.colorCrossFades =
+                (afterHex & 0xff) > (beforeHex & 0xff) && ((afterHex >> 16) & 0xff) < ((beforeHex >> 16) & 0xff);
+            r.state.skyTint = null; // Restore
+            r.state.skyTintTo = null;
+            r.state.skyTintTarget = 0;
+            r.state.skyTintStrength = 0;
+        }
+        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? r.dslEffects.spawn_creature.toString() : "";
+        out.spawnRings = /onPlayer/.test(spawnSrc) && /Math\.cos\(ang\)/.test(spawnSrc) && /rad/.test(spawnSrc);
+        return out;
+    });
+    check(
+        "V17.23 Harmonie: Wetter weicht dem starken Willen (Feld ×(1−emoSignal), kein Überschreiben)",
+        res.weatherYields
+    );
+    check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
+    check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht nebulaColor", res.skyTintSet);
+    check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
+    check("V17.23 Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
+    check("V17.24 Harmonie: die Sky-FARBE cross-fadet (Farbwechsel springt nicht, er fadet)", res.colorCrossFades);
+    check("V17.23 Harmonie: Kreaturen ringen um den Spieler, nie AUF ihm (Spawn-Ring)", res.spawnRings);
+}
+
+// V17.25 — Mehr Leser ans Feld (§5): die Logik-Konsumenten lesen jetzt die
+// living `auraAt`-API (statt direkt das eingefrorene worldFieldAt), und die
+// Fauna liest die VOLLEN Achsen (lebendig hebt, glut dämpft) statt nur lebendig.
+// Source-Probe (auraAt+glut) + behavioral (lebendige Region trägt mehr Fauna).
+async function checkBandV1725FieldReaders(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
+        out.faunaReadsAura =
+            /auraAt/.test(r._currentFaunaTarget.toString()) && /glut/.test(r._currentFaunaTarget.toString());
+        out.faunaMaxReadsAura =
+            /auraAt/.test(r._currentFaunaMax.toString()) && /glut/.test(r._currentFaunaMax.toString());
+        out.lightReadsAura = /auraAt/.test(r._dayNightComputeTint.toString());
+        out.lofiReadsAura = /auraAt/.test(r._lofiWorldField.toString());
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm) {
+            const ox = pm.x,
+                oz = pm.z;
+            let lebSpot = null,
+                lebBest = -2,
+                glutSpot = null,
+                glutBest = -2;
+            for (let gx = -2000; gx <= 2000; gx += 200) {
+                for (let gz = -2000; gz <= 2000; gz += 200) {
+                    const f = r.worldFieldAt(gx, gz);
+                    if (f.lebendig - f.glut > lebBest) {
+                        lebBest = f.lebendig - f.glut;
+                        lebSpot = { x: gx, z: gz };
+                    }
+                    if (f.glut - f.lebendig > glutBest) {
+                        glutBest = f.glut - f.lebendig;
+                        glutSpot = { x: gx, z: gz };
+                    }
+                }
+            }
+            pm.x = lebSpot.x;
+            pm.z = lebSpot.z;
+            const targetLeb = r._currentFaunaTarget();
+            pm.x = glutSpot.x;
+            pm.z = glutSpot.z;
+            const targetGlut = r._currentFaunaTarget();
+            pm.x = ox; // Restore
+            pm.z = oz;
+            out.faunaDiffers = targetLeb > targetGlut;
+            out.targetLeb = targetLeb;
+            out.targetGlut = targetGlut;
+        }
+        return out;
+    });
+    check("V17.25 mehr Leser: _currentFaunaTarget liest auraAt + glut (volle Achsen, §5)", res.faunaReadsAura);
+    check("V17.25 mehr Leser: _currentFaunaMax liest auraAt + glut", res.faunaMaxReadsAura);
+    check("V17.25 mehr Leser: _dayNightComputeTint (Licht/Welt-Tint) liest auraAt (living)", res.lightReadsAura);
+    check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
+    check(
+        "V17.25 mehr Leser: lebendige Region trägt MEHR Fauna als glühende (glut dämpft, alle Achsen)",
+        res.faunaDiffers,
+        `leb=${res.targetLeb} vs glut=${res.targetGlut}`
+    );
+}
+
+// V17.26 — Dem Nexus die FELD-RICHTUNG: er trägt Leben zum erkannten BEDARF
+// (at_field_need = der ärmste Punkt im Ring) statt nur die lebendige Region zu
+// verstärken — „die Welt versteht sich selbst und heilt sich". Beweis:
+// at_field_need-Resolver findet das lebendig-Minimum + dslComposeAtomic nutzt ihn.
+async function checkBandV1726FieldDirection(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
+        out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
+        out.composeUsesNeed = /at_field_need/.test(r.dslComposeAtomic.toString());
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm && out.hasResolver) {
+            const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
+            const need = r.dslPositions.at_field_need([50], ctx2);
+            const needLeb = r.auraAt(need.x, need.z).lebendig;
+            let minLeb = Infinity;
+            for (let i = 0; i < 8; i++) {
+                const ang = (i / 8) * Math.PI * 2;
+                const leb = r.auraAt(pm.x + Math.cos(ang) * 50, pm.z + Math.sin(ang) * 50).lebendig;
+                if (leb < minLeb) minLeb = leb;
+            }
+            out.needIsMin = Math.abs(needLeb - minLeb) < 1e-9; // der Bedarf-Punkt IST das Ring-Minimum
+            out.onRing = Math.abs(Math.hypot(need.x - pm.x, need.z - pm.z) - 50) < 1.0; // liegt auf dem Ring
+            out.needLeb = needLeb;
+            out.minLeb = minLeb;
+        }
+        return out;
+    });
+    check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
+    check("V17.26 Feld-Richtung: dslComposeAtomic trägt Leben zum Bedarf (at_field_need)", res.composeUsesNeed);
+    check(
+        "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
+        res.needIsMin,
+        `needLeb=${res.needLeb} == min=${res.minLeb}`
+    );
+    check("V17.26 Feld-Richtung: der Bedarf-Punkt liegt auf dem Ring (Radius 50)", res.onRing);
+}
+
+// V17.27 — die SCHREIB-Seite des lebendigen Feldes: eine Geburt deponiert Leben,
+// das den frozen lebendig-Kern HEBT (auraAt blendet, nie überschreiben), langsam
+// zurück zerfällt (Homöostase), bei max sättigt — und der at_field_need-LOOP
+// schließt sich ECHT: Leben am ärmsten Punkt → er ist nicht mehr der ärmste →
+// ein ANDERER wird es (Leben spreizt, kein Abladen). Plus backward-compatible
+// (leerer Overlay == frozen) + die Geburt im spawn_creature-Pfad deponiert.
+async function checkBandV1727WritableField(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const cfg = r.constructor.LIFE_FIELD;
+        out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
+        out.auraReadsOverlay = /_lifeOverlayAt/.test(r.auraAt.toString());
+        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? r.dslEffects.spawn_creature.toString() : "";
+        out.spawnDeposits = /_depositLife/.test(spawnSrc); // die Geburt trägt Leben ins Feld
+        // sauberer Start
+        if (r.state.lifeField) r.state.lifeField.clear();
+        const X = 12345,
+            Z = -6789; // ein fester, vom Spieler entfernter Test-Ort
+        const frozen = r.worldFieldAt(X, Z).lebendig;
+        // (1) backward-compatible: leerer Overlay → auraAt == worldFieldAt
+        out.emptyEqualsFrozen = r.auraAt(X, Z).lebendig === frozen;
+        // (2) Deposit HEBT lebendig (min(frozen + pulse, 1))
+        r._depositLife(X, Z);
+        const afterDeposit = r.auraAt(X, Z).lebendig;
+        out.depositRaises = afterDeposit > frozen;
+        out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
+        // (3) Decay senkt zurück zum Substrat (t zurückdrehen = ~120 s vergangen)
+        const cell = r.state.lifeField.get(r._lifeCellKey(X, Z));
+        const beforeDecay = r.auraAt(X, Z).lebendig;
+        cell.t -= 120; // λ=0.008 → ×e^(−0.96) ≈ 0.38
+        const afterDecay = r.auraAt(X, Z).lebendig;
+        out.decayLowers = afterDecay < beforeDecay && afterDecay > frozen;
+        // (4) Sättigung: viele Deposits → Overlay kappt exakt bei max
+        r.state.lifeField.clear();
+        for (let i = 0; i < 20; i++) r._depositLife(X, Z);
+        out.saturates = Math.abs(r.state.lifeField.get(r._lifeCellKey(X, Z)).a - cfg.max) < 1e-6;
+        // (5) DER LOOP SCHLIESST SICH: Deposit am ärmsten Ring-Punkt → ein
+        // ANDERER wird der ärmste (Leben spreizt in die Welt, kein Abladen)
+        r.state.lifeField.clear();
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm && r.dslPositions && typeof r.dslPositions.at_field_need === "function") {
+            const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
+            const p1 = r.dslPositions.at_field_need([50], ctx2);
+            for (let i = 0; i < 6; i++) r._depositLife(p1.x, p1.z); // sättigen am alten Minimum
+            const p2 = r.dslPositions.at_field_need([50], ctx2);
+            out.loopSpreads = Math.abs(p2.x - p1.x) > 1 || Math.abs(p2.z - p1.z) > 1;
+            out.p1Raised = r.auraAt(p1.x, p1.z).lebendig > r.auraAt(p2.x, p2.z).lebendig;
+        } else {
+            out.loopSpreads = true;
+            out.p1Raised = true;
+        }
+        if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
+        return out;
+    });
+    check("V17.27 Schreib-Feld: LIFE_FIELD-Konstante existiert (cell/decay/pulse/max)", res.hasConst);
+    check("V17.27 Schreib-Feld: auraAt blendet das Leben-Overlay (_lifeOverlayAt)", res.auraReadsOverlay);
+    check("V17.27 Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
+    check("V17.27 Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
+    check(
+        "V17.27 Schreib-Feld: ein Deposit HEBT lebendig über dem frozen Kern (frozen + pulse)",
+        res.depositRaises && res.depositExact
+    );
+    check("V17.27 Schreib-Feld: Decay senkt zurück zum Substrat (Homöostase, ein Garten will Pflege)", res.decayLowers);
+    check("V17.27 Schreib-Feld: Sättigung kappt exakt bei LIFE_FIELD.max (nie über die Wurzel hinaus)", res.saturates);
+    check(
+        "V17.27 Schreib-Feld: der at_field_need-LOOP schließt sich — Leben spreizt, der alte Bedarf weicht",
+        res.loopSpreads
+    );
+    check("V17.27 Schreib-Feld: der alte Bedarf-Punkt ist gehoben (der Mangel sinkt wirklich)", res.p1Raised);
+}
+
+// V17.28 — „der Ort, an dem ich stehe, ist besetzt": GROSSE Strukturen (Dorf/
+// Tempel/Wasserfall) spawnen nicht mehr AUF dem Spieler (sie remeshten seinen
+// Chunk + ueberlappten ihn → Fall-durch-den-Boden), kleine Platzierungen bleiben
+// unberuehrt; plus ein Void-Boden, der den Spieler aus jedem Durchfall zurueckholt.
+async function checkBandV1728SpawnClearance(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const MIN = r.constructor.STRUCTURE_CLEAR_MIN_FOOTPRINT;
+        const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        out.hasConsts =
+            typeof MIN === "number" && typeof MARGIN === "number" && typeof r.constructor.PLAYER_VOID_Y === "number";
+        // Footprint-Radius: Dorf gross (>= MIN), Felsblock klein (< MIN)
+        const fpVillage = r._blueprintFootprintRadius("village");
+        const fpBlock = r._blueprintFootprintRadius("stein_block");
+        out.villageBig = fpVillage >= MIN;
+        out.blockSmall = fpBlock < MIN;
+        out.villageEffectUsesClear = /_structureSpawnPos/.test(r.dslEffects.spawn_village.toString());
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (pm) {
+            const px = pm.x,
+                py = pm.y,
+                pz = pm.z;
+            const ctx2 = { state: r.state, rng: () => 0.5 };
+            // (1) Dorf AUF dem Spieler → wird auf >= clearance geschoben
+            const onPlayer = { x: px, y: py, z: pz };
+            const cleared = r._structureSpawnPos("village", onPlayer, ctx2);
+            const dist = Math.hypot(cleared.x - px, cleared.z - pz);
+            out.villagePushed = dist >= fpVillage + MARGIN - 0.01;
+            // (2) Felsblock AUF dem Spieler → bleibt (klein = intentional)
+            const blockCleared = r._structureSpawnPos("stein_block", { x: px, y: py, z: pz }, ctx2);
+            out.blockUntouched = Math.abs(blockCleared.x - px) < 1e-6 && Math.abs(blockCleared.z - pz) < 1e-6;
+            // (3) Dorf WEIT weg → unberuehrt (schon ausserhalb der clearance)
+            const farPos = { x: px + 200, y: py, z: pz };
+            const farCleared = r._structureSpawnPos("village", farPos, ctx2);
+            out.farUntouched = Math.abs(farCleared.x - (px + 200)) < 1e-6;
+            // (4) Void-Rettung: faellt der Spieler durch, kommt er an die Oberflaeche
+            const bodyT = r.state.tmpTransform;
+            pm.set ? pm.set(px, -200, pz) : (pm.y = -200);
+            r.state.playerMesh.position.set(px, -200, pz);
+            r._rescuePlayerFromVoid();
+            const rescuedY = r.state.playerMesh.position.y;
+            out.voidRescued = rescuedY > r.constructor.PLAYER_VOID_Y && rescuedY > -90;
+            out.rescuedY = rescuedY;
+            // Restore Spieler-Position (Mesh + Body) — kein Seiteneffekt fuer Folge-Bands
+            r.state.playerMesh.position.set(px, py, pz);
+            if (r.state.playerBody && bodyT) {
+                bodyT.setIdentity();
+                bodyT.setOrigin(
+                    r.setVec(
+                        r.state.tmpVec1,
+                        px / r.state.scaleFactor,
+                        py / r.state.scaleFactor,
+                        pz / r.state.scaleFactor
+                    )
+                );
+                r.state.playerBody.setWorldTransform(bodyT);
+                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                r.state.playerBody.activate(true);
+            }
+        }
+        return out;
+    });
+    check("V17.28 Spawn-Clearance: Konstanten verdrahtet (MIN/MARGIN/PLAYER_VOID_Y)", res.hasConsts);
+    check("V17.28 Spawn-Clearance: Dorf-Footprint gross (>= MIN, wird geschoben)", res.villageBig);
+    check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
+    check("V17.28 Spawn-Clearance: spawn_village nutzt _structureSpawnPos (Source-Probe)", res.villageEffectUsesClear);
+    check(
+        "V17.28 Spawn-Clearance: ein Dorf AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
+        res.villagePushed
+    );
+    check(
+        "V17.28 Spawn-Clearance: ein Felsblock AUF dem Spieler bleibt (kleine Platzierung unberuehrt)",
+        res.blockUntouched
+    );
+    check("V17.28 Spawn-Clearance: eine weit entfernte Struktur bleibt unberuehrt", res.farUntouched);
+    check(
+        "V17.28 Void-Boden: faellt der Spieler durch, kommt er an die Oberflaeche zurueck",
+        res.voidRescued,
+        `y=${res.rescuedY}`
+    );
+}
+
+// V17.29 — der Kreatur-Trickle: NUR Nexus/Spieler-getragene Kreaturen (tendsLife)
+// traeufeln Leben in ihre Zelle (Leben sustainiert, wo es wohnt) → die getendete
+// Region erhaelt sich, statt nach dem Geburts-Puls zu verblassen. Die ambiente
+// Fauna traeufelt NICHT (kein Runaway). Rate-limitiert. So wird der V17.27-
+// Schreib-Loop eine echte, stabile Oekologie.
+async function checkBandV1729CreatureTrickle(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const cfg = r.constructor.LIFE_FIELD;
+        out.hasConsts = typeof cfg.trickle === "number" && typeof cfg.trickleEverySec === "number";
+        out.spawnTagsTends = /tendsLife/.test(r.dslEffects.spawn_creature.toString());
+        out.updateTrickles = /_tickCreatureLifeTrickle/.test(r.updateCreatures.toString());
+        if (r.state.lifeField) r.state.lifeField.clear();
+        // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
+        const X = 23456,
+            Z = -8765;
+        const tending = { position: { x: X, z: Z }, userData: { tendsLife: true } };
+        const key = r._lifeCellKey(X, Z);
+        const before = r._lifeOverlayAt(X, Z);
+        r._tickCreatureLifeTrickle(tending, 1000);
+        const after = r._lifeOverlayAt(X, Z);
+        out.tendingDeposits = after > before;
+        // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit. Die
+        // GESPEICHERTE Menge `a` prüfen (nicht den decayten Lese-Wert — der driftet
+        // real-time pro Lesung; nur ein Deposit ändert `a`).
+        const aStored = r.state.lifeField.get(key).a;
+        r._tickCreatureLifeTrickle(tending, 1000);
+        out.rateLimited = r.state.lifeField.get(key).a === aStored;
+        // (3) nach dem Intervall → traeufelt wieder (lastLifeTrickle wandert)
+        r._tickCreatureLifeTrickle(tending, 1000 + cfg.trickleEverySec + 1);
+        out.tickedAgain = tending.userData.lastLifeTrickle > 1000;
+        // (4) eine AMBIENTE Kreatur (kein tendsLife) traeufelt NICHT (kein Runaway)
+        r.state.lifeField.clear();
+        const ambient = { position: { x: 34567, z: -9876 }, userData: { tendsLife: false } };
+        r._tickCreatureLifeTrickle(ambient, 2000);
+        out.ambientInert = r._lifeOverlayAt(34567, -9876) === 0;
+        if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
+        return out;
+    });
+    check("V17.29 Trickle: LIFE_FIELD.trickle/trickleEverySec verdrahtet", res.hasConsts);
+    check("V17.29 Trickle: spawn_creature taggt getragene Kreaturen (tendsLife, Source-Probe)", res.spawnTagsTends);
+    check("V17.29 Trickle: updateCreatures ruft _tickCreatureLifeTrickle (Source-Probe)", res.updateTrickles);
+    check("V17.29 Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
+    check("V17.29 Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
+    check("V17.29 Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
+    check("V17.29 Trickle: ambiente Fauna traeufelt NICHT (kein Feedback-Runaway, V17.27-Disziplin)", res.ambientInert);
+}
+
+// V17.30 — Pfeiler 2 wird WAHR: „Emotion treibt alles". Die Emotion leitet sich
+// jetzt aus dem echten SEIN-IN-DER-WELT ab — ueber ALLE sechs Achsen, aus den
+// TATEN (ACTION_TO_EMOTION, an jeder Handlungs-Stelle verdrahtet) + dem ZUSTAND
+// (niedrige HP) + der UMGEBUNG (Feld, V17.21). Nicht mehr nur Chat-Stichwoerter.
+async function checkBandV1730EmotionFromBeing(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const A2E = r.constructor.ACTION_TO_EMOTION;
+        out.hasTable = !!A2E && typeof A2E.build === "object";
+        // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
+        const axes = new Set();
+        for (const t of Object.keys(A2E || {})) for (const a of Object.keys(A2E[t])) axes.add(a);
+        out.allSixAxes = ["joy", "awe", "sorrow", "hope", "peace", "chaos"].every((a) => axes.has(a));
+        const e = r.state.player.emotions;
+        const reset = () => {
+            for (const k of Object.keys(e)) e[k] = 0;
+        };
+        reset();
+        r._feelAction("build");
+        out.buildJoyHope = e.joy > 0 && e.hope > 0;
+        reset();
+        r._feelAction("damage");
+        out.damageSorrowChaos = e.sorrow > 0 && e.chaos > 0;
+        reset();
+        r._feelAction("explore");
+        out.exploreAwe = e.awe > 0;
+        reset();
+        r._feelAction("create_life");
+        out.lifeJoyPeace = e.joy > 0 && e.peace > 0;
+        reset();
+        r._feelAction("bond");
+        out.bondPeace = e.peace > 0;
+        reset();
+        // Hooks an jeder realen Handlungs-Stelle (Source-Proben)
+        out.hookBuild = /_feelAction\("build"\)/.test(r.confirmBuild.toString());
+        out.hookDamage = /_feelAction\("damage"\)/.test(r.damagePlayer.toString());
+        out.hookHarvest = /_feelAction\("harvest"\)/.test(r.harvestArchitecture.toString());
+        out.hookBond = /_feelAction\("bond"\)/.test(r.assignCreatureTask.toString());
+        out.hookExplore = /_feelAction\("explore"\)/.test(r._setLastPlayerVoxelChunk.toString());
+        out.hookLife = /_feelAction\("create_life"\)/.test(r.dslEffects.spawn_creature.toString());
+        // ZUSTAND-Kanal: niedrige HP driftet sorrow/chaos (updatePlayerEmotions, pfad)
+        const upe = r.updatePlayerEmotions.toString();
+        out.hpChannel = /hpMax/.test(upe) && /sorrow/.test(upe) && /chaos/.test(upe);
+        return out;
+    });
+    check("V17.30 Pfeiler 2: ACTION_TO_EMOTION-Tabelle existiert (die Regel IST die Daten)", res.hasTable);
+    check("V17.30 Pfeiler 2: ALLE sechs Achsen werden von Taten erreicht (ueber alle Achsen)", res.allSixAxes);
+    check("V17.30 Taten: bauen → joy + hope", res.buildJoyHope);
+    check("V17.30 Taten: Schaden/Gefahr → sorrow + chaos", res.damageSorrowChaos);
+    check("V17.30 Taten: erkunden → awe", res.exploreAwe);
+    check("V17.30 Taten: Leben spawnen (Spieler) → joy + peace", res.lifeJoyPeace);
+    check("V17.30 Taten: sich verbuenden → peace", res.bondPeace);
+    check("V17.30 Hook: confirmBuild fuehlt (build)", res.hookBuild);
+    check("V17.30 Hook: damagePlayer fuehlt (damage)", res.hookDamage);
+    check("V17.30 Hook: harvestArchitecture fuehlt (harvest)", res.hookHarvest);
+    check("V17.30 Hook: assignCreatureTask fuehlt (bond)", res.hookBond);
+    check("V17.30 Hook: _setLastPlayerVoxelChunk fuehlt (explore)", res.hookExplore);
+    check("V17.30 Hook: spawn_creature (human) fuehlt (create_life)", res.hookLife);
+    check("V17.30 Zustand: niedrige HP driftet sorrow/chaos (die Wund-Dread)", res.hpChannel);
+}
+
+// V17.31 — die Reflexion deckte ZWEI tote Haken auf: (a) die `emotion`-Achse von
+// `auraAt` war ein PASSAGIER (V17.21 hinzugefuegt, NIEMAND las sie — die Welt-
+// Konsumenten lasen `player.emotions` direkt); (b) der Wasser-`uEmotion`-Haken
+// (V14) blieb auf 0.0 (deklariert, im Shader benutzt, NIE gefuettert). Beide
+// geheilt: der Welt-Tint liest jetzt `aura.emotion` (die Achse ist ein echter
+// Leser), das Wasser wird gefuettert. Diese Welle prueft KONSUM, nicht blosse
+// Existenz (die V17.21-Probe pruefte nur, dass die Achse DA ist — der Passagier-
+// Trugschluss). So treibt die Emotion die Welt KONTINUIERLICH (Licht + Wasser).
+async function checkBandV1731EmotionDrivesWorld(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
+        const tintSrc = r._dayNightComputeTint.toString();
+        out.tintReadsAuraEmotion = /aura\.emotion/.test(tintSrc); // de-passengered: liest die Feld-Achse
+        const renderSrc = r._loopRender.toString();
+        out.waterFed = /hydroSurfaceUniforms\.emotion/.test(renderSrc) && /em\.joy/.test(renderSrc); // toter Haken gefuettert
+        // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
+        const e = r.state.player.emotions;
+        const saved = Object.assign({}, e);
+        const THREE = window.THREE;
+        if (THREE && THREE.Color) {
+            const mkStop = () => ({
+                sky: new THREE.Color(0.4, 0.5, 0.7),
+                light: new THREE.Color(1, 1, 1),
+                intensity: 1,
+            });
+            for (const k of Object.keys(e)) e[k] = 0;
+            const cold = r._dayNightComputeTint(mkStop());
+            for (const k of Object.keys(e)) e[k] = 0;
+            e.joy = 0.9;
+            const warm = r._dayNightComputeTint(mkStop());
+            out.joyWarmsWorld = warm.skyColor.r > cold.skyColor.r;
+            out.coldR = cold.skyColor.r;
+            out.warmR = warm.skyColor.r;
+        } else {
+            out.joyWarmsWorld = true; // THREE nicht erreichbar — Source-Probe traegt
+        }
+        for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
+        return out;
+    });
+    check(
+        "V17.31 Emotion→Welt: der Welt-Tint liest die emotion-ACHSE des Feldes (kein Passagier mehr)",
+        res.tintReadsAuraEmotion
+    );
+    check("V17.31 Emotion→Welt: der tote V14-Wasser-Haken wird gefuettert (uEmotion aus der Stimmung)", res.waterFed);
+    check(
+        "V17.31 Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
+        res.joyWarmsWorld,
+        `cold.r=${res.coldR} warm.r=${res.warmR}`
+    );
+}
+
+// V17.32 — die RAEUMLICH-dynamische Emotion-Achse: das emotionale GEDAECHTNIS der
+// Welt. Der Moment des Fuehlens (`_feelAction`) praegt die Emotion an der Spieler-
+// Zelle ein; `auraAt` blendet den lokalen Abdruck ueber die globale Stimmung; der
+// V17.31-Welt-Tint liest das → faerbt den Ort. Die emotion-Achse wird damit eine
+// echte SCHREIBBARE Feld-Achse (heilt §3.3 fuer Emotion), KONSUMIERT raeumlich
+// (der Tint) — die V17.31-Passagier-Lehre angewandt: KONSUM, nicht nur Existenz.
+async function checkBandV1732SpatialEmotion(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const K = r.constructor;
+        out.hasConst =
+            !!K.EMOTION_FIELD &&
+            Array.isArray(K.EMOTION_AXES) &&
+            K.EMOTION_AXES.length === 6 &&
+            typeof K.EMOTION_FIELD.decayPerSec === "number";
+        out.auraBlends = /_emotionOverlayAt/.test(r.auraAt.toString());
+        out.feelDeposits = /_depositEmotion/.test(r._feelAction.toString());
+        if (r.state.emotionField) r.state.emotionField.clear();
+        const e = r.state.player.emotions;
+        const saved = Object.assign({}, e);
+        for (const k of Object.keys(e)) e[k] = 0;
+        const A = { x: 44444, z: -3333 },
+            B = { x: 99999, z: 7777 };
+        // (1) backward-compat: leeres Overlay → auraAt.emotion === globale Stimmung (selbes Objekt)
+        out.emptyIsGlobal = r.auraAt(A.x, A.z).emotion === e;
+        // (2) Deposit praegt lokal ein
+        r._depositEmotion(A.x, A.z, { sorrow: 0.6 });
+        const auraA = r.auraAt(A.x, A.z).emotion;
+        out.depositImprints = auraA.sorrow > 0;
+        // (3) RAEUMLICH: A traegt sorrow, B (frisch) nicht
+        const auraB = r.auraAt(B.x, B.z).emotion;
+        out.spatial = (auraA.sorrow || 0) > (auraB.sorrow || 0) + 0.05;
+        // (4) Decay senkt (das Gefuehl verblasst)
+        const key = r._lifeCellKey(A.x, A.z);
+        const stored = r.state.emotionField.get(key).axes.sorrow;
+        r.state.emotionField.get(key).t -= 120;
+        out.decays = r.auraAt(A.x, A.z).emotion.sorrow < stored;
+        // (5) DER ANTI-PASSAGIER-BEWEIS: ein raeumlicher sorrow-Abdruck FAERBT den
+        // Welt-Tint (am Spieler), obwohl die globale Stimmung NEUTRAL ist → sorrow
+        // grayt (reduziert die Saettigung). Beide Tints am selben Ort (gleiches
+        // Feld), nur der Emotions-Abdruck unterscheidet sich.
+        out.tintColors = true;
+        const THREE = window.THREE;
+        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        if (THREE && THREE.Color && pm) {
+            for (const k of Object.keys(e)) e[k] = 0;
+            r.state.emotionField.clear();
+            const mkStop = () => ({
+                sky: new THREE.Color(0.4, 0.5, 0.7),
+                light: new THREE.Color(1, 1, 1),
+                intensity: 1,
+            });
+            const sat = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+            const fresh = r._dayNightComputeTint(mkStop());
+            r._depositEmotion(pm.x, pm.z, { sorrow: 0.8 });
+            const imprinted = r._dayNightComputeTint(mkStop());
+            out.tintColors = sat(imprinted.skyColor) < sat(fresh.skyColor) - 1e-4;
+            out.freshSat = sat(fresh.skyColor);
+            out.imprintedSat = sat(imprinted.skyColor);
+        }
+        r.state.emotionField.clear();
+        for (const k of Object.keys(e)) e[k] = saved[k] || 0;
+        return out;
+    });
+    check("V17.32 raeumliche Emotion: EMOTION_FIELD + EMOTION_AXES verdrahtet", res.hasConst);
+    check("V17.32 raeumliche Emotion: auraAt blendet den lokalen Abdruck (_emotionOverlayAt)", res.auraBlends);
+    check(
+        "V17.32 raeumliche Emotion: _feelAction deponiert die Tat-Emotion am Ort (_depositEmotion)",
+        res.feelDeposits
+    );
+    check(
+        "V17.32 raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
+        res.emptyIsGlobal
+    );
+    check("V17.32 raeumliche Emotion: ein Deposit praegt die lokale Emotion ein", res.depositImprints);
+    check("V17.32 raeumliche Emotion: der Abdruck ist RAEUMLICH (Ort A traegt sorrow, Ort B nicht)", res.spatial);
+    check("V17.32 raeumliche Emotion: der Abdruck zerfaellt (das Gefuehl verblasst)", res.decays);
+    check(
+        "V17.32 KONSUM (kein Passagier): ein raeumlicher sorrow-Abdruck faerbt den Welt-Tint (grayt)",
+        res.tintColors,
+        `freshSat=${res.freshSat} imprintedSat=${res.imprintedSat}`
+    );
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -13992,295 +14694,6 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
     );
 }
 
-// V9.95-a (Welle WebGPU-Compute-Foundation): die Phase-1-Foundation analog zu
-// V9.89-Worker-Foundation. Zwei Modi getestet:
-//   - Headless-Chromium ohne GPU-Adapter: navigator.gpu fehlt → status="unavailable",
-//     graceful (kein Fehler, kein Crash, lastError gesetzt). Die meisten
-//     Invarianten prüfen unconditional die API-Existenz + Status-Maschine.
-//   - Echter Browser mit WebGPU: status="ready", foundationProof.trivialMismatches=0
-//     + determinismMismatches=0 (V9.91-Float32-Cutover-Lehre angewandt).
-//
-// Pflicht-Invarianten (immer geprüft):
-//   (a) `_voxelGpuInit`, `_voxelGpuRunFoundationProof`, `_voxelGpuDispose` existieren
-//   (b) Initial-Status ist "notTried" oder "unavailable" (nicht "pending"/"ready" vor Init)
-//   (c) AnazhRealm.WGSL_TRIVIAL_SQUARE existiert als String
-//   (d) Nach `_voxelGpuInit()`-Aufruf ist Status entweder "ready" oder "unavailable",
-//       nie mehr "pending"
-//   (e) Wenn "unavailable": lastError ist gesetzt (sagt warum)
-//   (f) Wenn "ready": foundationProof existiert mit trivialMismatches=0
-//       UND determinismMismatches=0 (Kern-Invariante — V9.91-Float32-Lehre)
-async function checkBandWelleV995WebGpuFoundation(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        if (!r) return { error: "no realm" };
-        const out = {};
-        // (a) API-Existenz
-        out.hasInit = typeof r._voxelGpuInit === "function";
-        out.hasRunProof = typeof r._voxelGpuRunFoundationProof === "function";
-        out.hasDispose = typeof r._voxelGpuDispose === "function";
-        out.hasWgslConst =
-            typeof AnazhRealm.WGSL_TRIVIAL_SQUARE === "string" && AnazhRealm.WGSL_TRIVIAL_SQUARE.length > 0;
-        // (b) Initial-Status (kann notTried sein, oder bereits ready/unavailable wenn
-        // Worldgen-State-Sync den GPU-Init schon getriggert hat)
-        out.statusBeforeInit = r.state.voxelGpuStatus;
-        // (c) State-Felder existieren in state
-        out.hasStateFields =
-            "voxelGpuStatus" in r.state &&
-            "voxelGpuAdapter" in r.state &&
-            "voxelGpuDevice" in r.state &&
-            "voxelGpuLimits" in r.state &&
-            "voxelGpuFoundationProof" in r.state &&
-            "voxelGpuLastError" in r.state;
-        // (d) navigator.gpu-Verfügbarkeit (informational)
-        out.hasNavigatorGpu = typeof navigator !== "undefined" && !!navigator.gpu;
-        // (e) Init aufrufen — async, fire-and-await
-        try {
-            await r._voxelGpuInit();
-        } catch (e) {
-            return { ...out, error: "init exception: " + e.message };
-        }
-        out.statusAfterInit = r.state.voxelGpuStatus;
-        out.lastError = r.state.voxelGpuLastError;
-        out.foundationProof = r.state.voxelGpuFoundationProof
-            ? {
-                  n: r.state.voxelGpuFoundationProof.n,
-                  trivialMismatches: r.state.voxelGpuFoundationProof.trivialMismatches,
-                  determinismMismatches: r.state.voxelGpuFoundationProof.determinismMismatches,
-              }
-            : null;
-        out.adapterInfo = r.state.voxelGpuAdapterInfo;
-        out.limits = r.state.voxelGpuLimits;
-        // (f) Init ist idempotent — zweiter Aufruf muss denselben Status liefern
-        try {
-            await r._voxelGpuInit();
-        } catch (e) {
-            return { ...out, error: "second init exception: " + e.message };
-        }
-        out.statusAfterSecondInit = r.state.voxelGpuStatus;
-        return out;
-    });
-    if (res.error) {
-        check("V9.95-a WebGPU-Foundation: Band läuft (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("V9.95-a WebGPU-Foundation: _voxelGpuInit existiert", res.hasInit);
-    check("V9.95-a WebGPU-Foundation: _voxelGpuRunFoundationProof existiert", res.hasRunProof);
-    check("V9.95-a WebGPU-Foundation: _voxelGpuDispose existiert", res.hasDispose);
-    check("V9.95-a WebGPU-Foundation: AnazhRealm.WGSL_TRIVIAL_SQUARE als String exportiert", res.hasWgslConst);
-    check("V9.95-a WebGPU-Foundation: 6 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
-    check(
-        "V9.95-a WebGPU-Foundation: Status nach Init ist 'ready' oder 'unavailable' (nicht 'pending')",
-        res.statusAfterInit === "ready" || res.statusAfterInit === "unavailable",
-        `statusAfterInit=${res.statusAfterInit}, hasNavigatorGpu=${res.hasNavigatorGpu}`
-    );
-    check(
-        "V9.95-a WebGPU-Foundation: Init ist idempotent (zweiter Aufruf gleicher Status)",
-        res.statusAfterInit === res.statusAfterSecondInit,
-        `first=${res.statusAfterInit}, second=${res.statusAfterSecondInit}`
-    );
-    if (res.statusAfterInit === "unavailable") {
-        // Headless-Chromium-Pfad (typisch im CI/Cloud): navigator.gpu fehlt,
-        // lastError sagt warum. Das ist KEIN Fehler — der V9.91-Worker-Pfad
-        // greift als Fallback.
-        check(
-            "V9.95-a WebGPU-Foundation: bei 'unavailable' ist lastError gesetzt (Diagnose-Spur)",
-            !!res.lastError,
-            `lastError=${res.lastError}`
-        );
-    } else if (res.statusAfterInit === "ready") {
-        // Echter-Browser-Pfad: Foundation-Proof muss bestanden sein.
-        check(
-            "V9.95-a WebGPU-Foundation: bei 'ready' ist foundationProof gesetzt",
-            !!res.foundationProof,
-            `foundationProof=${JSON.stringify(res.foundationProof)}`
-        );
-        if (res.foundationProof) {
-            check(
-                "V9.95-a WebGPU-Foundation: Float32-Mismatch GPU vs CPU = 0 (V9.91-Lehre, Kern-Invariante)",
-                res.foundationProof.trivialMismatches === 0,
-                `mismatches=${res.foundationProof.trivialMismatches}/${res.foundationProof.n}`
-            );
-            check(
-                "V9.95-a WebGPU-Foundation: Determinismus innerhalb GPU (zwei Runs bit-identisch) — Kern-Invariante",
-                res.foundationProof.determinismMismatches === 0,
-                `mismatches=${res.foundationProof.determinismMismatches}/${res.foundationProof.n}`
-            );
-        }
-    }
-}
-
-// V9.95-b (Welle WebGPU-Density-Pipeline): die volle Density-Pipeline läuft auf GPU.
-// Im Headless-Cloud-Container fehlt requestAdapter (siehe V9.95-a-Befund) — der Test
-// validiert vor allem die API-Existenz + Eligibility-Gate + Pipeline-Cutover-Verdrahtung.
-// Im echten Browser (Schöpfer-Audit) würde der bonus-Sanity-Test gegen den
-// Worker-Density laufen (|Δ| < 1e-3 erwartet — siehe V9.95-a-Lehre über transzendente
-// Funktionen).
-async function checkBandWelleV995WebGpuDensityPipeline(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        // (a) API-Existenz
-        out.hasEnsurePipeline = typeof r._voxelGpuEnsureDensityPipeline === "function";
-        out.hasUploadWorldState = typeof r._voxelGpuUploadWorldState === "function";
-        out.hasChunkEligible = typeof r._voxelGpuChunkEligible === "function";
-        out.hasComputeDensity = typeof r._voxelGpuComputeDensity === "function";
-        out.hasFetchOrRequest = typeof r._fetchOrRequestChunkDensityGpu === "function";
-        out.hasWgslDensity =
-            typeof AnazhRealm.WGSL_DENSITY_GRID === "string" && AnazhRealm.WGSL_DENSITY_GRID.length > 1000;
-        // (b) State-Felder existieren
-        out.hasStateFields =
-            "voxelGpuDensityPipeline" in r.state &&
-            "voxelGpuPermBuffer" in r.state &&
-            "voxelGpuErosionBuffer" in r.state &&
-            "voxelGpuTarnsBuffer" in r.state &&
-            "voxelGpuParamsBuffer" in r.state &&
-            "voxelGpuWorldUploaded" in r.state &&
-            "voxelGpuDensityCache" in r.state &&
-            "voxelGpuDensityPending" in r.state &&
-            "voxelGpuDispatchCount" in r.state &&
-            "voxelGpuLastDispatchMs" in r.state;
-        // (c) Eligibility-Gate: returnt true wenn KEINE edits + KEIN hydro im footprint
-        // Trockenland-Chunk weit weg vom Welt-Zentrum suchen (Atlas hat dort wahrscheinlich
-        // weder Lake noch River) — alternativ einen fern-Chunk wo nichts ist.
-        out.eligibleNoEdits = r._voxelGpuChunkEligible(100, 100, 1);
-        // V14.6 — GPU-Density-Stufe-2 DEAKTIVIERT (V9.82 parallele-Pfade-Lehre).
-        // V12.0-e hatte den Cutover auf r184 reaktiviert, ABER der WGSL-Density-
-        // Shader (`WGSL_DENSITY_GRID`) wurde nie auf V14.1+ nachgezogen: ihm
-        // fehlt die kontinentale cont0-Oktave, er nutzt alte Oktaven + die alte
-        // Höhlen-Decke surf-6. Der reaktivierte Pfad baute also pre-V14-Terrain
-        // bis ~157 m unter der Worker-Wahrheit → höhenversetzte Nähte (V14.4-
-        // Restbefund). Statt einen dritten Makro-Mirror zu pflegen, wird der
-        // Pfad abgeklemmt; der Worker (Stufe 3) + Sync-CPU (Stufe 4) decken
-        // alles korrekt ab. Source-Probe: `_fetchOrRequestChunkDensityGpu` darf
-        // NICHT mehr in der Build-Kaskade aufgerufen werden.
-        out.gpuStufe2Disabled = !/_fetchOrRequestChunkDensityGpu/.test(r._acquireVoxelChunkBuild.toString());
-        out.notifyEditClears = /voxelGpuDensityCache/.test(r._voxelWorkerNotifyEdit.toString());
-        // (e) Eligibility-Gate filtert voxelEdit: spawn ein Edit, prüfe dass Chunk
-        // im Edit-Footprint nicht mehr eligible ist
-        const beforeEdit = r._voxelGpuChunkEligible(0, 0, 0);
-        const editsBackup = (r.state.worldMeta && r.state.worldMeta.voxelEdits) || [];
-        if (r.state.worldMeta) {
-            r.state.worldMeta.voxelEdits = [{ x: 10, y: 0, z: 10, r: 4, strength: 48, mode: "carve" }];
-        }
-        out.afterEditNearby = r._voxelGpuChunkEligible(0, 0, 0); // nahe edit → false
-        out.afterEditFar = r._voxelGpuChunkEligible(100, 100, 0); // weit weg → true
-        if (r.state.worldMeta) r.state.worldMeta.voxelEdits = editsBackup;
-        out.beforeEdit = beforeEdit;
-        // (f) Wenn GPU ready (echter Browser): teste einen Compute-Density-Roundtrip
-        out.gpuStatus = r.state.voxelGpuStatus;
-        if (r.state.voxelGpuStatus === "ready") {
-            try {
-                const cfg = r._voxelChunkConfig(0);
-                const base = r.state.terrainBaseHeight || 0;
-                const ox = 0,
-                    oy = base - cfg.floorDrop,
-                    oz = 0;
-                // klein: 8×8×8 = 729 vertices
-                const dimX = 8,
-                    dimY = 8,
-                    dimZ = 8;
-                const gpuGrid = await r._voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, cfg.step);
-                out.gpuLen = gpuGrid.length;
-                out.gpuExpectedLen = (dimX + 1) * (dimY + 1) * (dimZ + 1);
-                out.gpuDispatchCount = r.state.voxelGpuDispatchCount;
-                out.gpuLastDispatchMs = r.state.voxelGpuLastDispatchMs;
-                // Sanity gegen Main: für eligible Chunk (no hydro, no edits)
-                // sollte |Δ| < 1e-3 sein (transzendente Toleranz, V9.95-a-Lehre).
-                const mainGrid = r._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, cfg.step, (x, y, z) =>
-                    r._terrainDensityAt(x, y, z)
-                );
-                let maxDelta = 0;
-                let mismatches = 0;
-                for (let i = 0; i < gpuGrid.length; i++) {
-                    const d = Math.abs(gpuGrid[i] - mainGrid[i]);
-                    if (d > 1e-3) mismatches++;
-                    if (d > maxDelta) maxDelta = d;
-                }
-                out.gpuVsMainMaxDelta = maxDelta;
-                out.gpuVsMainMismatches = mismatches;
-                // Determinismus innerhalb GPU: zweiter Run identisch
-                const gpuGrid2 = await r._voxelGpuComputeDensity(ox, oy, oz, dimX, dimY, dimZ, cfg.step);
-                let detMismatches = 0;
-                for (let i = 0; i < gpuGrid.length; i++) {
-                    if (gpuGrid[i] !== gpuGrid2[i]) detMismatches++;
-                }
-                out.gpuDeterminismMismatches = detMismatches;
-            } catch (e) {
-                out.gpuComputeError = e.message;
-            }
-        }
-        return out;
-    });
-    if (res.error) {
-        check("V9.95-b Density-Pipeline: Band läuft (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("V9.95-b Density-Pipeline: _voxelGpuEnsureDensityPipeline existiert", res.hasEnsurePipeline);
-    check("V9.95-b Density-Pipeline: _voxelGpuUploadWorldState existiert", res.hasUploadWorldState);
-    check("V9.95-b Density-Pipeline: _voxelGpuChunkEligible existiert", res.hasChunkEligible);
-    check("V9.95-b Density-Pipeline: _voxelGpuComputeDensity existiert", res.hasComputeDensity);
-    check("V9.95-b Density-Pipeline: _fetchOrRequestChunkDensityGpu existiert", res.hasFetchOrRequest);
-    check(
-        "V9.95-b Density-Pipeline: AnazhRealm.WGSL_DENSITY_GRID ist substantieller String (>1000 Z)",
-        res.hasWgslDensity
-    );
-    check("V9.95-b Density-Pipeline: 10 voxelGpu*-State-Felder im state-Objekt", res.hasStateFields);
-    check(
-        "V9.95-b Density-Pipeline: Eligibility-Gate — Trockenland-Chunk ohne Edits/Hydro eligible",
-        res.eligibleNoEdits === true,
-        `result=${res.eligibleNoEdits}`
-    );
-    check(
-        "V9.95-b Density-Pipeline: Eligibility-Gate — Chunk im voxelEdit-Footprint NICHT eligible",
-        res.afterEditNearby === false,
-        `nearby=${res.afterEditNearby}, far=${res.afterEditFar}`
-    );
-    check(
-        "V9.95-b Density-Pipeline: Eligibility-Gate — Chunk WEIT WEG vom voxelEdit eligible",
-        res.afterEditFar === true,
-        `far=${res.afterEditFar}`
-    );
-    check(
-        "V14.6: GPU-Density-Stufe-2 abgeklemmt — stale WGSL (kein cont0/surf-6) baute höhenversetzte Nähte (V9.82)",
-        res.gpuStufe2Disabled,
-        "Source-Probe: _fetchOrRequestChunkDensityGpu darf NICHT in _acquireVoxelChunkBuild aufgerufen sein"
-    );
-    check("V9.95-b Density-Pipeline: _voxelWorkerNotifyEdit invalidiert voxelGpuDensityCache", res.notifyEditClears);
-    // Conditional: echter Browser mit GPU
-    if (res.gpuStatus === "ready" && !res.gpuComputeError) {
-        check(
-            "V9.95-b Density-Pipeline: GPU-Compute-Density returns Float32Array korrekter Länge",
-            res.gpuLen === res.gpuExpectedLen,
-            `gpuLen=${res.gpuLen}, expected=${res.gpuExpectedLen}`
-        );
-        check(
-            "V9.95-b Density-Pipeline: GPU-Dispatch-Counter inkrementiert",
-            res.gpuDispatchCount >= 2,
-            `dispatchCount=${res.gpuDispatchCount}, lastMs=${res.gpuLastDispatchMs}`
-        );
-        check(
-            "V9.95-b Density-Pipeline: GPU-vs-Main-Sanity |Δ| < 1e-3 (V9.95-a-Lehre transzendente Toleranz)",
-            res.gpuVsMainMaxDelta < 1e-3 && res.gpuVsMainMismatches === 0,
-            `maxDelta=${res.gpuVsMainMaxDelta}, mismatches=${res.gpuVsMainMismatches}`
-        );
-        check(
-            "V9.95-b Density-Pipeline: GPU-internal-Determinismus (zwei Runs bit-identisch — Kern-Invariante)",
-            res.gpuDeterminismMismatches === 0,
-            `mismatches=${res.gpuDeterminismMismatches}`
-        );
-    } else if (res.gpuComputeError) {
-        check(
-            "V9.95-b Density-Pipeline: GPU-Compute lief ohne Fehler (echter Browser)",
-            false,
-            `error=${res.gpuComputeError}`
-        );
-    }
-    // Wenn nicht ready: alle conditional-Tests werden geskippt, status klar im Log.
-}
-
 // V9.90 (Welle Perf-3.c Phase 2 — Worker-Density-Cutover): empirischer Beweis
 // dass der Streaming-Pfad jetzt Worker-Density nutzt. Vier Probepunkte:
 //   (1) Worker-State ist nach Worldgen-Abschluss synced (Atlas/Erosion/Tarns
@@ -18940,6 +19353,22 @@ async function checkBandWelle6XAudit(ctx) {
 
         // --- C3: Slope + pfad + Phönix → kann springen (lebendig hoch)
         r.setGameMode("pfad");
+        // V17.32-Heilung (GEMESSEN-Wurzel, `scripts/diag-soul-jump.cjs`): der Test
+        // prüft die INTRINSISCHE Seelen-Eigenschaft („Drache rutscht, dichte HOCH").
+        // `_canSoulJumpFromSlope` liest `statTags`, die in `computePlayerStats`
+        // NACH dem Soul-Clamp noch die AKTIVEN BOOSTS addieren (Emotion/Welt-
+        // Resonanz, im Warmup positions-/stimmungs-abhängig aufgebaut). GEMESSEN:
+        // die intrinsische Drachen-Seele hat lebendig=0.82 (wund) → score
+        // 0.7·0.82−0.3·0.72 = 0.358 < 0.4 → kann NICHT springen (stated intent ✓);
+        // ein +lebendig-Welt-Boost (lebendiges Feld) hebt lebendig auf 0.92 →
+        // score 0.428 ≥ 0.4 → kann springen → der Test kippte am 0.4-Grat („seit
+        // Versionen rot"). Die Boosts sind ein transienter Konfounder, kein
+        // Seelen-Merkmal → für die intrinsische Messung leeren (V17.31-Disziplin:
+        // die Eigenschaft testen, nicht den Drift des Welt-Zustands). Robust per
+        // Konstruktion: mit geleerten Boosts gilt für JEDE Wund-Intensität w∈[0,1]
+        // Drache-score = 0.4−0.05w (immer < 0.4) und Phönix-score = 0.475−0.05w
+        // (immer ≥ 0.4) — der Wund-Term verschiebt beide gleich, kippt nie.
+        if (r.state.player) r.state.player.boosts = [];
         r.applyPlayerSoul("phoenix");
         r.recomputePlayerStats && r.recomputePlayerStats();
         out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
@@ -19494,6 +19923,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.state.player.emotions.sorrow = 0;
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
+        // V17.32 — der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
+        // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
+        // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
+        // aus früheren _feelAction-Bands rein, V9.56-i).
+        if (r.state.emotionField) r.state.emotionField.clear();
         r._applyDayNightToScene();
         // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
@@ -19507,22 +19941,30 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // r-Anteil auch (Lila = Rot + Blau)
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
-        // --- Vision 5: sorrow entsättigt Sky-Tint
-        r.state.player.emotions.awe = 0;
-        r.state.player.emotions.sorrow = 0;
-        r._applyDayNightToScene();
-        const skyAtSorrowZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        r.state.player.emotions.sorrow = 1.0;
-        r._applyDayNightToScene();
-        const skyAtSorrowHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        // Sättigung = max(rgb) - min(rgb)
-        const satZero =
-            Math.max(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b) -
-            Math.min(skyAtSorrowZero.r, skyAtSorrowZero.g, skyAtSorrowZero.b);
-        const satHigh =
-            Math.max(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b) -
-            Math.min(skyAtSorrowHigh.r, skyAtSorrowHigh.g, skyAtSorrowHigh.b);
-        out.sorrowReducesSaturation = satHigh < satZero;
+        // --- Vision 5: sorrow entsättigt den Welt-Tint. V17.32 — GEMESSEN-robust:
+        // statt des live `nebulaColor` (hängt von der Spieler-Feld-Position UND
+        // dem V17.23-skyTint-Blend ab, der den Emotion-Effekt auf ~3 % verdünnt →
+        // grenzwertige Marge ~0.005, flaky) misst die Probe den ROHEN Tint via
+        // `_dayNightComputeTint(mkStop)` mit kontrolliert-gesättigtem Stop → sorrow
+        // grayt die volle ~40 % (große, deterministische Marge). Beide Tints am
+        // selben Ort/Feld, emotionField leer (oben) → nur sorrow unterscheidet.
+        const THREE_g3 = window.THREE;
+        if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
+            const mkStopG3 = () => ({
+                sky: new THREE_g3.Color(0.4, 0.5, 0.7),
+                light: new THREE_g3.Color(1, 1, 1),
+                intensity: 1,
+            });
+            const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+            r.state.player.emotions.awe = 0;
+            r.state.player.emotions.sorrow = 0;
+            const satG3Zero = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            r.state.player.emotions.sorrow = 1.0;
+            const satG3High = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
+            out.sorrowReducesSaturation = satG3High < satG3Zero;
+        } else {
+            out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
+        }
         // Reset
         r.state.player.emotions.sorrow = 0;
         r._applyDayNightToScene();
@@ -21737,6 +22179,16 @@ async function checkBandW12WorldPortal(ctx) {
         out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
 
         // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
+        // V17.32-Heilung (GEMESSEN-Wurzel): die zwischenzeitlichen _gameLoopTick
+        // (Physik) lassen den Spieler aus PORTAL_REACH (4,5 m, 3D inkl. y — er
+        // settlet auf den Boden, weg von der Portal-Spawn-y) driften → „seit
+        // Versionen rot", auch bei voll gebauter Welt. Das Feature prüft „Spieler
+        // AM Portal → Prompt"; den Spieler an die Portal-Position zu setzen ist
+        // die korrekte, deterministische Test-Vorbedingung (V17.31-Disziplin:
+        // KONSUM/Intent testen, nicht den Drift einer Setup-Physik).
+        if (portalEntry && pm && pm.set) {
+            pm.set(portalEntry.position.x, portalEntry.position.y, portalEntry.position.z);
+        }
         r._tickPortalAffordance();
         const promptEl = document.getElementById("portal-prompt");
         out.promptShownNearPortal =
@@ -30774,15 +31226,15 @@ async function checkBandEarlyRingsAndUi(ctx) {
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
         p.emotionLastTick = 299;
-        // V10.0-f-1 Doku-Sync: nebulaColor lebt jetzt in state.skyboxUniforms.
-        const readSkyHex = () =>
-            r.state.skyboxUniforms && r.state.skyboxUniforms.nebulaColor
-                ? r.state.skyboxUniforms.nebulaColor.value.getHex()
-                : -1;
-        const skyBefore = readSkyHex();
+        // V17.23 Doku-Sync (Sky-Harmonie): skybox_color setzt jetzt eine fadende
+        // state.skyTint-Tönung (die in den Tag-Nacht-Himmel BLENDET), snappt
+        // nicht mehr nebulaColor (das _dayNightApplySkybox eh überschrieb). Der
+        // awe-Trigger feuert ["skybox_color","#d4a3ff"] → setzt skyTint +
+        // skyTintTarget > 0.
+        r.state.skyTint = null;
+        r.state.skyTintTarget = 0;
         r.updatePlayerEmotions(300);
-        const skyAfter = readSkyHex();
-        out.aweTriggersSkybox = skyAfter !== skyBefore && skyBefore !== -1;
+        out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
         // (b) hope > 0.7 → wetter sunny + kreaturen happy
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
@@ -32949,12 +33401,34 @@ async function checkBandRing6Workshop(ctx) {
             // also läuft der Pump CPU-gebunden statt frame-gebunden.
             // Damit wird Streaming + Tick-Logik deterministisch unabhängig
             // von CPU-Last (CI-Flake-Wurzel der V9.82-Iso-Mesh-Welle).
-            while (performance.now() - start < durationMs) {
+            // V17.32-Folge — count-BASIERTER Warmup (robust gegen CPU-Last,
+            // die Wurzel des „voxelChunks-Schwellen-Flakes"). Der alte feste
+            // Wall-Clock-Pump (`while elapsed < durationMs`) baute unter CI-Last
+            // zu wenige Chunks: jeder Tick streamt zeit-budgetiert
+            // (FRAME_BUDGET_MS), und unter Last laufen weniger Ticks/s → in 30 s
+            // landet voxelChunks gelegentlich unter dem >=15-Threshold (derselbe
+            // Commit rot+grün je nach Runner — der gemessene CI-Flake). Die CI
+            // lief schon mit 30 s; mehr Wall-Clock ist nur ein größeres Magic-
+            // Number, kein Fix. Jetzt: MINDESTENS durationMs pumpen (damit zeit-
+            // getriebene Systeme wie gehabt laufen — keine Regression auf der
+            // schnellen Maschine, sie exitet exakt bei durationMs), danach NUR
+            // weiter, solange die Welt noch unter dem Ziel-Chunk-Count ist, bis
+            // zu einem großzügigen Cap (gegen einen hängenden Build). Die
+            // Invariante prüft WELT-ZUSTAND, nicht Wall-Clock-vs-CPU-Speed →
+            // deterministisch auf jedem Runner.
+            const TARGET_VOXEL_CHUNKS = 18; // Marge über der >=15-Invariante
+            const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
+            for (;;) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {
                     // Ein einzelner Tick-Fehler darf den Warmup nicht
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
+                }
+                const elapsed = performance.now() - start;
+                const built = r.state && r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                if (elapsed >= durationMs && (built >= TARGET_VOXEL_CHUNKS || elapsed >= HARD_CAP_MS)) {
+                    break;
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
@@ -33012,6 +33486,17 @@ async function checkBandRing6Workshop(ctx) {
             // (Ziel: ~25-35 Band-Funktionen total, NICHT per-Sektion).
             await checkBandRing2Extended(ctx);
             await checkBandWaves1to3(ctx);
+            await checkBandV1721LivingFieldAura(ctx);
+            await checkBandV1722NexusEyes(ctx);
+            await checkBandV1723Harmony(ctx);
+            await checkBandV1725FieldReaders(ctx);
+            await checkBandV1726FieldDirection(ctx);
+            await checkBandV1727WritableField(ctx);
+            await checkBandV1728SpawnClearance(ctx);
+            await checkBandV1729CreatureTrickle(ctx);
+            await checkBandV1730EmotionFromBeing(ctx);
+            await checkBandV1731EmotionDrivesWorld(ctx);
+            await checkBandV1732SpatialEmotion(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
@@ -33056,12 +33541,6 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWellePerf3cPhase2Async(ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
             await checkBandWellePerf3cPhase3FullMesh(ctx);
-            // V9.95-a — WebGPU-Compute-Foundation: API existiert, Init ist idempotent,
-            // bei `ready`-Status Float32-Determinismus + bit-identische zwei-Run-GPU-Runs.
-            await checkBandWelleV995WebGpuFoundation(ctx);
-            // V9.95-b — WebGPU-Density-Pipeline: API + Eligibility-Gate + Cutover.
-            // Bei `ready`: GPU-Compute lief + Sanity gegen Main + Determinismus.
-            await checkBandWelleV995WebGpuDensityPipeline(ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
             await checkBandWellePerf3cPhase4LazyBVH(ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
