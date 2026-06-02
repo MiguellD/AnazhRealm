@@ -1338,6 +1338,9 @@ class AnazhRealm {
             "creature_task",
             "creature_task_nearest",
             "creature_task_all",
+            // V17.53 Kampf C — Schaden an einer Kreatur (per Index) ist Spieler-privat
+            // (im Multi-User hat „#3" pro Peer eine andere Bedeutung, wie creature_task).
+            "damage_creature",
             // Welle 6.H Phase 2F.2 — Kreatur-Equipped ist Spieler-private
             // Aktion in Multi-User (jeder Spieler stattet seine eigenen
             // Kreaturen aus, gleiche Disziplin wie creature_task).
@@ -2403,6 +2406,25 @@ class AnazhRealm {
                         event: ok ? "creature_task_assigned" : "creature_task_failed",
                         index: idx,
                         task: String(taskName),
+                    });
+                }
+            },
+            // V17.53 Kampf Phase C — Schaden an einer Kreatur (per Index, wie creature_task).
+            // Der Konsument von damageCreature (symmetrisch zum Spieler-`damage`-Op). Loot
+            // fällt dem Spieler zu, wenn der Befehl vom Menschen kam; ein Welt-/LLM-Tod gibt keins.
+            damage_creature: ([indexOrId, amount], ctx) => {
+                const idx = Number(indexOrId);
+                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
+                    if (ctx && ctx.log) ctx.log.push({ event: "damage_creature_index_oob", index: idx });
+                    return;
+                }
+                const src = ctx && ctx.source === "human" ? "player" : "world";
+                const res = this.damageCreature(this.state.creatures[idx], Number(amount) || 0, { source: src });
+                if (ctx && ctx.log) {
+                    ctx.log.push({
+                        event: res.killed ? "creature_killed" : res.ok ? "creature_damaged" : "creature_damage_failed",
+                        index: idx,
+                        dealt: res.dealt,
                     });
                 }
             },
@@ -11989,6 +12011,13 @@ class AnazhRealm {
         // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
         // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
         group.userData.bond = 0;
+        // V17.53 Kampf-Bogen Phase C — Kreatur-HP (init = hpMax aus DERSELBEN
+        // Stat-Pipeline wie der Spieler). Reaktiv, NICHT persistiert (wie Task/
+        // Bond — ein Reload heilt auf voll, akzeptabel; die Beziehung/das Leben
+        // werden gelebt, nicht gespeichert). damageCreature lazy-init't ebenfalls.
+        const _cStats = this.computeCreatureStats(group).stats;
+        group.userData.hpMax = _cStats.hpMax;
+        group.userData.hp = _cStats.hpMax;
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -12417,6 +12446,72 @@ class AnazhRealm {
         const computed = this.computeCreatureStats(creature);
         creature.userData.stats = computed.stats;
         creature.userData.statTags = computed.tags;
+    }
+
+    // V17.53 Kampf-Bogen Phase C — Schaden an einer Kreatur (symmetrisch zum
+    // Spieler: DIESELBE computeCreatureStats-Pipeline liefert hpMax + defense).
+    // `dealt = max(1, amount − defense)` (keine Unverwundbarkeit, wie der Spieler-
+    // damagePlayer-Floor); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Der
+    // Knockback-Impuls + der Kampf-AFFEKT (Zorn/Triumph/Schuld) werden in Phase D
+    // eingewebt, wo die Agency (WER schlägt, aus welcher Richtung) klar ist —
+    // hier (DSL-/Welt-Quelle) wären sie mehrdeutig (kampf-plan.md §4-D/F).
+    damageCreature(creature, amount, opts = {}) {
+        if (!creature || !creature.userData || creature.userData.kind !== "creature") {
+            return { ok: false, reason: "not_creature" };
+        }
+        const stats =
+            creature.userData.stats && Number.isFinite(creature.userData.stats.hpMax)
+                ? creature.userData.stats
+                : this.computeCreatureStats(creature).stats;
+        if (typeof creature.userData.hp !== "number") creature.userData.hp = stats.hpMax; // lazy-init (Restore/alt)
+        const defense = Math.max(0, stats.defense || 0);
+        const dealt = Math.max(1, (Number(amount) || 0) - defense);
+        creature.userData.hp -= dealt;
+        if (creature.userData.hp <= 0) {
+            this._creatureCombatDeath(creature, opts.source || "unknown");
+            return { ok: true, dealt, killed: true };
+        }
+        if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
+        return { ok: true, dealt, killed: false };
+    }
+
+    // V17.53 — die Loot-Materialien einer Kreatur, aus ihren Soul-bodyParts mit
+    // DERSELBEN Volumen-Formel wie harvestArchitecture (eine Sprache: Abbauen ≡
+    // Erlegen, beide ernten die Substanz). Kleine Kreaturen tragen wenig.
+    _creatureLootMaterials(creature) {
+        const soulName = creature && creature.userData && creature.userData.soul;
+        const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
+        const materials = {};
+        if (soul && Array.isArray(soul.bodyParts)) {
+            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            for (const part of soul.bodyParts) {
+                if (!part || typeof part.material !== "string") continue;
+                const sx = Math.abs((part.size && part.size.x) || 1);
+                const sy = Math.abs((part.size && part.size.y) || 1);
+                const sz = Math.abs((part.size && part.size.z) || 1);
+                materials[part.material] = (materials[part.material] || 0) + Math.max(1, Math.round(sx * sy * sz * k));
+            }
+        }
+        return materials;
+    }
+
+    // V17.53 — der Kampf-Tod: Loot (NUR wenn der Spieler der Töter war — kein Loot
+    // bei einem DSL-/Welt-Tod), eine Welt-Erinnerung, dann removeCreature. Der
+    // W5-Affekt (Triumph/Schuld ∝ lebendig×bond) wird in Phase D/F eingewebt.
+    _creatureCombatDeath(creature, source) {
+        const name = (creature.userData && creature.userData.name) || "Ein Wesen";
+        const loot = this._creatureLootMaterials(creature);
+        const lootParts = [];
+        if (source === "player") {
+            for (const [mat, n] of Object.entries(loot)) {
+                if (this.addMaterialToInventory(mat, n)) lootParts.push(`${n}× ${mat}`);
+            }
+        }
+        if (typeof this.journalAppend === "function") {
+            const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
+            this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
+        }
+        this.removeCreature(creature);
     }
 
     // === Welle 6.H Phase 2B.1 — Helper: context-dependentes Args-Mapping ===
@@ -15372,6 +15467,7 @@ class AnazhRealm {
             creature_equip_armor: (a) =>
                 a[1] ? `rüstet Kreatur #${a[0]} mit Rüstung „${a[1]}" aus` : `nimmt Kreatur #${a[0]} die Rüstung ab`,
             creature_unequip: (a) => `nimmt Kreatur #${a[0]} den Slot „${a[1]}" ab`,
+            damage_creature: (a) => `fügt Kreatur #${a[0]} ${a[1]} Schaden zu`,
             creature_apply_boost: (a) => `gibt Kreatur #${a[0]} den Trank „${a[1]}"`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
@@ -36342,8 +36438,10 @@ class AnazhRealm {
                 try {
                     const cs = this.computeCreatureStats(c).stats;
                     const fmt = (n) => (Number.isFinite(n) ? n.toFixed(1) : "—");
+                    // V17.53 Kampf C — die LEBENDE HP (cur/max) sichtbar machen (der hp-Konsument).
+                    const curHp = c.userData && Number.isFinite(c.userData.hp) ? c.userData.hp : cs.hpMax;
                     row.title =
-                        `HP ${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
+                        `HP ${fmt(curHp)}/${fmt(cs.hpMax)} · DMG ${fmt(cs.damage)} · SPD ${fmt(cs.speed)} · ` +
                         `JMP ${fmt(cs.jumpPower)} · STA ${fmt(cs.staminaMax)} · ` +
                         `PRC ${fmt(cs.precision)} · MR ${fmt(cs.magicResist)} · HR ${fmt(cs.heatResist)}`;
                 } catch {
@@ -44417,7 +44515,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.52.0";
+AnazhRealm.VERSION = "17.53.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

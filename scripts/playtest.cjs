@@ -3913,6 +3913,88 @@ async function checkBandV1752Weapon(ctx) {
     check("V17.52 Kampf B: die UI trennt Waffen in der Partition + die Waffen-Reihe existiert", res.partitionSeparates && res.weaponRowExists);
 }
 
+// V17.53 — Der Kampf-Bogen Phase C: Kreatur-HP + Schaden + Tod/Loot
+// (docs/kampf-plan.md §4-C). Symmetrisch zum Spieler: DIESELBE computeCreatureStats-
+// Pipeline liefert hpMax + defense; `dealt = max(1, amount − defense)` (Schadens-Floor
+// wie der Spieler); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien, NUR für den
+// Spieler-Töter; removeCreature). Der damage_creature-DSL-Op ist der Konsument (wie der
+// Spieler-`damage`-Op). Diese Welle prüft KONSUM (Schaden reduziert hp, der Floor, der
+// Kill entfernt + lootet, der DSL-Op), nicht blosse Existenz (V17.31). Knockback + der
+// Kampf-AFFEKT folgen Phase D (wo die Agency klar ist).
+async function checkBandV1753CreatureCombat(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const matUnits = (inv) => inv.reduce((s, slot) => s + (slot && slot.kind === "material" ? slot.count || 0 : 0), 0);
+
+        // (0) Methoden + DSL-Op existieren
+        out.methodsExist =
+            typeof r.damageCreature === "function" &&
+            typeof r._creatureLootMaterials === "function" &&
+            !!(r.dslEffects && r.dslEffects.damage_creature);
+
+        // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
+        const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
+        const stats1 = r.computeCreatureStats(c1).stats;
+        out.hpInit = c1.userData.hp === c1.userData.hpMax && Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 && c1.userData.hp > 0;
+
+        // (2) KONSUM — damageCreature reduziert hp um max(1, amount − defense)
+        const def1 = Math.max(0, stats1.defense || 0);
+        const hpBefore = c1.userData.hp;
+        const dmgR = r.damageCreature(c1, def1 + 10, { source: "world" });
+        out.damageReduces =
+            dmgR.ok && !dmgR.killed && Math.abs(dmgR.dealt - 10) < 1e-6 && Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
+        // (3) der Schadens-Floor — ein winziger Treffer macht mind. 1 (keine Unverwundbarkeit, kein 0-Schaden)
+        out.damageFloor = r.damageCreature(c1, 0.1, { source: "world" }).dealt === 1;
+
+        // (4) ein Nicht-Kreatur-Ziel (der Spieler-Mesh) wird abgelehnt
+        out.rejectsNonCreature = !r.damageCreature(r.state.playerMesh, 10, {}).ok;
+
+        // (5) der Loot — die Body-Materialien (nicht leer)
+        const loot = r._creatureLootMaterials(c1);
+        out.lootNonEmpty = !!loot && Object.keys(loot).length > 0;
+
+        // (6) KONSUM — ein Spieler-Kill entfernt die Kreatur + der Loot fällt ins Inventar
+        const invBefore = JSON.parse(JSON.stringify(p.inventory));
+        for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
+        const countBefore = r.state.creatures.length;
+        const killR = r.damageCreature(c1, 99999, { source: "player" });
+        out.killRemoves = killR.killed && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+        out.lootToInventory = matUnits(p.inventory) > 0;
+
+        // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
+        for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null;
+        const c2 = r.spawnCreatureAt(pm.x + 280, pm.y, pm.z + 280, "happy", "wesen");
+        r.damageCreature(c2, 99999, { source: "world" });
+        out.noLootForWorldKill = matUnits(p.inventory) === 0;
+
+        // (8) der DSL-Op damage_creature schädigt eine Kreatur per Index (der Konsument)
+        const c3 = r.spawnCreatureAt(pm.x + 300, pm.y, pm.z + 300, "happy", "wesen");
+        const idx3 = r.state.creatures.indexOf(c3);
+        const hp3Before = c3.userData.hp;
+        r.dslEffects.damage_creature([idx3, 5], { source: "test", log: [] });
+        out.dslOpDamages = c3.userData.hp < hp3Before;
+
+        // cleanup (c1/c2 fielen im Kampf; c3 entfernen; Inventar restaurieren)
+        if (r.state.creatures.indexOf(c3) !== -1) r.removeCreature(c3);
+        for (let i = 0; i < invBefore.length; i++) p.inventory[i] = invBefore[i];
+        return out;
+    });
+    check("V17.53 Kampf C: damageCreature + _creatureLootMaterials + der damage_creature-DSL-Op existieren", res.methodsExist);
+    check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
+    check("V17.53 Kampf C: KONSUM — damageCreature reduziert hp um max(1, amount − defense)", res.damageReduces);
+    check("V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)", res.damageFloor);
+    check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
+    check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
+    check("V17.53 Kampf C: KONSUM — ein Spieler-Kill (hp≤0) entfernt die Kreatur aus state.creatures", res.killRemoves);
+    check("V17.53 Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)", res.lootToInventory);
+    check("V17.53 Kampf C: ein Welt-/DSL-Tod gibt KEIN Loot (nur der Spieler erntet)", res.noLootForWorldKill);
+    check("V17.53 Kampf C: KONSUM — der damage_creature-DSL-Op schädigt eine Kreatur per Index", res.dslOpDamages);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -36025,6 +36107,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1750Klammer(ctx);
             await checkBandV1751CombatStats(ctx);
             await checkBandV1752Weapon(ctx);
+            await checkBandV1753CreatureCombat(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
