@@ -35749,45 +35749,104 @@ class AnazhRealm {
         return !!res.ok;
     }
 
-    // V17.55 W1 (kampf-plan §8.2) — die Grab-/Schneid-Kraft des GEHALTENEN Dings: das
-    // ausgerüstete Werkzeug bestimmt sie (seine härte/dichte über computeCompoundTags),
-    // die bloße Faust ist die schwache Baseline. Kein Parallelpfad — reuse der Tag-Pipeline.
-    _heldMinePower() {
-        const H = AnazhRealm.HARVEST;
-        const toolName = this.state.player && this.state.player.equipped && this.state.player.equipped.tool;
-        if (!toolName) return H.handMinePower;
-        const bp = this.state.blueprints && this.state.blueprints[toolName];
-        if (!bp) return H.handMinePower;
-        const t = this.computeCompoundTags(bp) || {};
-        return H.toolMineBase + (t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte;
+    // V17.56 W2 (kampf-plan §8.1) — das GEHALTENE Gerät: das ausgerüstete Werkzeug (Welt-Arbeit)
+    // ODER die Waffe (was in der Hand ist) → sein Bauplan. Behebt den W1-Bug: ein echtes Werkzeug
+    // ist eine Instanz (`state.tools[name].sourceBlueprint`), nicht direkt ein Bauplan; ein direkter
+    // Bauplan-Name (Test/Waffe) passt auch. So benutzt du DIESELBE Sache zum Schlagen UND Abbauen.
+    _heldImplementBlueprint() {
+        const eq = this.state.player && this.state.player.equipped;
+        if (!eq) return null;
+        const blu = this.state.blueprints || {};
+        if (eq.tool) {
+            const tool = this.state.tools && this.state.tools[eq.tool];
+            const bpName = tool && tool.sourceBlueprint ? tool.sourceBlueprint : eq.tool;
+            if (blu[bpName]) return blu[bpName];
+        }
+        if (eq.weapon && blu[eq.weapon]) return blu[eq.weapon];
+        return null;
     }
 
-    // V17.55 W1 — der Widerstand eines Bauwerks gegen das Abbauen, emergent aus seinen
-    // Compound-Tags (hart/dicht widersteht, weich/lebendig gibt nach) — DIESELBE Tag-
-    // Sprache wie Stats/Spawn/Resonanz/Gefühl.
+    // V17.56 W2 — der Anteil SPITZER/klingen-Parts (SPATIAL_POINTED_SHAPES) am Bauplan — das
+    // reine FORM-Maß. Daraus emergiert die Schärfe (× härte, für das Schneiden) UND die Stumpfheit
+    // (1 − das, für die Wucht). Reuse der bestehenden Form-Sprache (dieselben Shapes wie der TIP-Bonus).
+    _blueprintPointedFraction(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return 0;
+        const pointed = AnazhRealm.SPATIAL_POINTED_SHAPES;
+        let n = 0;
+        for (const part of bp.parts) if (part && pointed.has(part.shape)) n++;
+        return n / bp.parts.length;
+    }
+
+    // V17.56 W2 (kampf-plan §8.1) — das FÄHIGKEITS-PROFIL des gehaltenen Geräts, ein FORM-getriebener
+    // TRADE-OFF aus Form × Material: WUCHT (`minePower`, ∝ STUMPFHEIT × (dichte+härte) → bricht Fels;
+    // eine scharfe Klinge taugt NICHT zum Wuchten) vs SCHÄRFE (`cutPower`, ∝ SCHÄRFE = spitze Form ×
+    // härte → schneidet Weiches/Lebendiges; ein stumpfer Klotz schneidet nicht). DIESELBE harte Materie
+    // wird so zur Keule ODER zur Klinge — die FORM entscheidet, nicht ein Slider. Die Faust: beides schwach.
+    _implementProfile() {
+        const H = AnazhRealm.HARVEST;
+        const bp = this._heldImplementBlueprint();
+        if (!bp) return { minePower: H.handMinePower, cutPower: H.handCutPower };
+        const t = this.computeCompoundTags(bp) || {};
+        const pointedFrac = this._blueprintPointedFraction(bp);
+        const sharpness = pointedFrac * (t.härte || 0);
+        const bluntness = 1 - pointedFrac;
+        const minePower =
+            H.toolMineBase + bluntness * ((t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte);
+        const cutPower = H.toolCutBase + sharpness * H.cutFromSharp;
+        return { minePower, cutPower };
+    }
+
+    // V17.55 W1-Kompat — die reine Grab-Kraft (für Aufrufer, die nur die Wucht brauchen).
+    _heldMinePower() {
+        return this._implementProfile().minePower;
+    }
+
+    // V17.56 W2 — der Widerstand eines Bauwerks, ZWEI Kanäle: `mineResist` (∝ härte+dichte, gegen
+    // Wucht — Fels widersteht) + `cutResist` (∝ härte+dichte, gegen Schärfe — Hartes/Dichtes lässt
+    // sich nicht schneiden, Weiches/Lebendiges gibt nach). So entscheidet das MATERIAL, welche Kraft
+    // greift (Fels → nur Wucht; ein Baum → auch Schärfe).
     _architectureResistance(entry) {
         const H = AnazhRealm.HARVEST;
         const bp = entry && this.state.blueprints && this.state.blueprints[entry.type];
-        if (!bp) return H.resistBase;
+        if (!bp) return { mineResist: H.resistBase, cutResist: H.cutResistBase };
         const t = this.computeCompoundTags(bp) || {};
-        return H.resistBase + (t.härte || 0) * H.resistFromHärte + (t.dichte || 0) * H.resistFromDichte;
+        const mineResist = H.resistBase + (t.härte || 0) * H.resistFromHärte + (t.dichte || 0) * H.resistFromDichte;
+        const cutResist =
+            H.cutResistBase + (t.härte || 0) * H.cutResistFromHärte + (t.dichte || 0) * H.cutResistFromDichte;
+        return { mineResist, cutResist };
     }
 
-    // V17.55 W1 (kampf-plan §8.3) — die EINE Tauglichkeit + die vier Kanäle: minePower vs
-    // resistance → ein Verhältnis, das Tempo (Fortschritt/Hieb), Stamina (invers), Ertrag
-    // (∝ Tauglichkeit mit Floor) ZUGLEICH treibt. So kommunizieren die Systeme über EIN
-    // substanz-abgeleitetes Signal (das „eine Quelle, viele Leser"-Muster des Projekts).
-    _harvestFitness(resistance) {
+    // V17.56 W2 — die EINE Tauglichkeit + die vier Kanäle, jetzt FORM-bewusst: das Gerät nutzt
+    // seinen BESTEN anwendbaren Kanal (max aus Wucht- und Schneid-Tauglichkeit) — eine Klinge an
+    // einem Baum schneidet, an Fels mahlt sie; eine Keule an Fels wuchtet. Tempo (Fortschritt/Hieb),
+    // Stamina (invers), Ertrag (∝ Tauglichkeit, Floor) folgen DERSELBEN Zahl.
+    _harvestFitnessFromResist(res) {
         const H = AnazhRealm.HARVEST;
-        const minePower = this._heldMinePower();
-        const fit = minePower / Math.max(0.1, resistance);
+        const prof = this._implementProfile();
+        const mineFit = prof.minePower / Math.max(0.1, res.mineResist);
+        const cutFit = prof.cutPower / Math.max(0.1, res.cutResist);
+        const fit = Math.max(mineFit, cutFit);
         const progress = Math.min(H.maxStrikeProgress, Math.max(H.minStrikeProgress, fit * H.strikeScale));
         const stamina = Math.min(
             H.maxStrikeStamina,
-            Math.max(H.minStrikeStamina, (H.strikeStaminaBase * resistance) / Math.max(0.1, minePower))
+            Math.max(H.minStrikeStamina, H.strikeStaminaBase / Math.max(0.12, fit))
         );
         const yieldMult = Math.min(1, Math.max(0, (fit - H.yieldFloorRatio) / (1 - H.yieldFloorRatio)));
-        return { minePower, resistance, fit, progress, stamina, yieldMult };
+        return {
+            minePower: prof.minePower,
+            cutPower: prof.cutPower,
+            mineFit,
+            cutFit,
+            fit,
+            progress,
+            stamina,
+            yieldMult,
+            channel: cutFit > mineFit ? "cut" : "mine",
+        };
+    }
+
+    _harvestFitness(entry) {
+        return this._harvestFitnessFromResist(this._architectureResistance(entry));
     }
 
     // V17.55 W1 — ein Abbau-HIEB auf ein Bauwerk (kein Instant mehr). Der Fortschritt
@@ -35797,7 +35856,7 @@ class AnazhRealm {
     // zählt (Bauwerk steht ODER fiel), false bei Erschöpfung.
     _strikeArchitecture(entry) {
         if (!entry) return false;
-        const fit = this._harvestFitness(this._architectureResistance(entry));
+        const fit = this._harvestFitness(entry);
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode === "pfad") {
             const have = (this.state.player && this.state.player.stamina) || 0;
@@ -35882,7 +35941,10 @@ class AnazhRealm {
         // V17.55 W1 — auch der Boden leistet Widerstand: die Stamina pro Grabe-Hieb skaliert
         // invers zur Tauglichkeit (ein gutes Werkzeug gräbt billig, die bloße Faust teuer).
         if ((typeof this.getGameMode === "function" ? this.getGameMode() : "frieden") === "pfad") {
-            const digFit = this._harvestFitness(AnazhRealm.HARVEST.terrainResist);
+            const digFit = this._harvestFitnessFromResist({
+                mineResist: AnazhRealm.HARVEST.terrainResist,
+                cutResist: AnazhRealm.HARVEST.terrainCutResist,
+            });
             const have = (this.state.player && this.state.player.stamina) || 0;
             if (have < digFit.stamina) {
                 this.log(`Graben: zu erschöpft (${Math.round(have)} Ausdauer).`, "INFO");
@@ -44695,7 +44757,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.55.0";
+AnazhRealm.VERSION = "17.56.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -44852,22 +44914,31 @@ AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
 // harte Spitzhacke knackt Fels, die bloße Faust mahlt sich müde für nichts). Alle Werte
 // browser-justierbar (das Feel/die Balance ist der Schöpfer-Browser).
 AnazhRealm.HARVEST = Object.freeze({
-    handMinePower: 0.6, // die bloße Faust — schwach (pflückt Weiches, scheitert an Hartem)
-    toolMineBase: 0.7, // ein Werkzeug-in-Hand hebt die Grab-Kraft über die Faust
-    mineFromHärte: 2.4, // ein hartes Werkzeug schneidet/bricht (die Klinge/Spitze)
-    mineFromDichte: 1.0, // eine dichte Masse wuchtet/bricht (der schwere Kopf)
-    resistBase: 0.7, // jedes Material leistet etwas Widerstand
-    resistFromHärte: 2.2, // hartes Material widersteht
-    resistFromDichte: 1.3, // dichtes Material widersteht
+    // V17.56 W2 — das FORM-getriebene Doppel-Profil. WUCHT (mine) ∝ STUMPFHEIT × (härte+dichte);
+    // SCHÄRFE (cut) ∝ spitze Form × härte. So wird DIESELBE harte Materie zur Keule ODER zur Klinge.
+    handMinePower: 0.5, // die bloße Faust — schwach beim Wuchten
+    handCutPower: 0.4, // die bloße Faust — schwach beim Schneiden (pflückt nur ganz Weiches)
+    toolMineBase: 0.5,
+    toolCutBase: 0.4,
+    mineFromHärte: 1.6, // ein hartes stumpfes Gerät bricht Hartes
+    mineFromDichte: 2.2, // die MASSE wuchtet (eine schwere Keule) — der dominante Mine-Term
+    cutFromSharp: 3.4, // die SCHÄRFE (spitze Form × härte) schneidet
+    resistBase: 0.7, // Wucht-Widerstand: jedes Material leistet etwas
+    resistFromHärte: 2.2, // hartes Material widersteht der Wucht
+    resistFromDichte: 1.3, // dichtes Material widersteht der Wucht
+    cutResistBase: 0.5, // Schneid-Widerstand
+    cutResistFromHärte: 6.0, // HARTES ist UNschneidbar (Fels) — der dominante Cut-Resist-Term: eine Klinge gräbt Fels miserabel
+    cutResistFromDichte: 0.7, // dichtes etwas
     strikeScale: 0.55, // Fortschritt/Hieb = clamp(Tauglichkeit · strikeScale, min, max)
     minStrikeProgress: 0.06, // selbst die Faust an Granit macht WINZIGEN Fortschritt (nie 0 = Hänger)
     maxStrikeProgress: 1.0, // ein überlegenes Werkzeug ein-hiebt Weiches
-    strikeStaminaBase: 4, // Stamina/Hieb-Basis (pfad) × Widerstand/Tauglichkeit (INVERS zur Effizienz)
+    strikeStaminaBase: 4, // Stamina/Hieb-Basis (pfad) ÷ Tauglichkeit (INVERS zur Effizienz)
     minStrikeStamina: 2,
     maxStrikeStamina: 30, // ein falsches Werkzeug verbrennt Ausdauer für fast nichts
     yieldFloorRatio: 0.35, // Tauglichkeit darunter → KEIN Ertrag (das falsche Werkzeug gibt nichts)
     strikeIntervalSec: 0.2, // Halten → Auto-Hieb-Kadenz (5 Hiebe/s) → kontinuierliches Mahlen
-    terrainResist: 2.4, // der Boden-Widerstand (W1: konstant; später aus der lokalen Dichte)
+    terrainResist: 2.4, // der Boden-Wucht-Widerstand (W1: konstant; später aus der lokalen Dichte)
+    terrainCutResist: 9, // der Boden wird GEWUCHTET, nicht geschnitten (Schärfe greift nicht)
 });
 
 // W7 Phase 2 — Welt-Snapshot über das Mesh. Ein Joiner/Guest holt die

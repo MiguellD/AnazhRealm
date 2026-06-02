@@ -283,9 +283,15 @@ wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die 
   + Gefühl (`_feelAction`-Magnitude) zugleich; Halten-zum-Abbauen (`_tickHarvest` + `breakHeld`). Lebt in
   `pfad` (frieden/schöpfer mühelos). `checkBandV1755HarvestEffort` 11 grün. *Der Schlüssel — die Mühe macht
   „unterschiedliche Effizienz" erst fühlbar.* Offen (Schöpfer-Browser): das FEEL + ein Fortschritts-Balken.
-- **W2 — das volle Profil + alles-für-alles:** das Fähigkeits-Profil (angreifen/graben/schneiden/schützen)
-  aus Form × Material; LMB wählt die Handlung nach Ziel, das Profil bestimmt die Güte; die schnell/ausdauer-
-  Achse aus `dichte`; die Rollen-Kategorien + das manuelle Markieren werden zu einem Ablesen (kein Schloss).
+- **W2 — das form-bewusste Profil + alles-für-alles — ✅ GEBAUT (V17.56):** das Doppel-Profil
+  (`_implementProfile`: WUCHT ∝ Stumpfheit×(härte+dichte) vs SCHÄRFE ∝ spitze Form×härte) — DIESELBE
+  Materie wird zur Klinge ODER Keule, die FORM entscheidet; der Widerstand zwei-kanalig (`{mineResist,
+  cutResist}`, Fels unschneidbar), die Tauglichkeit nutzt `max(mine, cut)` → das Ziel-Material wählt den
+  Kanal; das gehaltene Gerät = Werkzeug ODER Waffe (`_heldImplementBlueprint`, der W1-sourceBlueprint-Bug
+  behoben). `checkBandV1756W2Profile` 10 grün. **Offen → W2-B (der Equip-MODELL-Umbau, eigene Welle):** der
+  UI-Slot-Merge (eine „in der Hand"-Zeile) + die Rollen-ABLESUNG (das manuelle „als Waffe" auflösen) +
+  Angriff-mit-jedem-Gerät — ~30 Touch-Points + die Werkzeug-Instanz-vs-Waffe-Bauplan-Divergenz (riskant);
+  W2 lieferte die FUNKTIONALE Vereinigung ohne den Slot-Schnitt. Offen (Browser): das Feel + ein cut/mine-Indikator.
 - **W3 — die natürliche, aura-reaktive Kreatur** (+ optional die „Körper-erinnert-sich"-Adaption, später
   die Mana-Hälfte + die alte Phase E „Bedrohung/Furcht").
 

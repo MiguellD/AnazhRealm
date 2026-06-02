@@ -4145,15 +4145,15 @@ async function checkBandV1755HarvestEffort(ctx) {
         const toolPower = r._heldMinePower();
         out.toolBeatsHand = toolPower > handPower && handPower > 0;
 
-        // (3) Widerstand: ein hartes Bauwerk widersteht mehr als die Basis
+        // (3) Widerstand: ein hartes Bauwerk widersteht mehr als die Basis (V17.56 W2: {mineResist, cutResist})
         const hardRes = r._architectureResistance({ type: "stein_block" });
-        out.hardResists = hardRes > H.resistBase;
+        out.hardResists = hardRes.mineResist > H.resistBase;
 
         // (4) die Tauglichkeit DIFFERENZIERT die vier Kanäle (gutes Werkzeug vs Faust auf HARTEM)
         p.equipped.tool = "stein_block";
-        const fitGood = r._harvestFitness(hardRes);
+        const fitGood = r._harvestFitnessFromResist(hardRes);
         p.equipped.tool = null;
-        const fitHand = r._harvestFitness(hardRes);
+        const fitHand = r._harvestFitnessFromResist(hardRes);
         out.fitnessDifferentiates =
             fitGood.progress > fitHand.progress && // TEMPO
             fitGood.yieldMult > fitHand.yieldMult && // ERTRAG
@@ -4234,6 +4234,131 @@ async function checkBandV1755HarvestEffort(ctx) {
     );
     check("V17.55 W1: der Hold-Tick ist gegated (ohne breakHeld passiert nichts)", res.tickGuarded);
     check("V17.55 W1: KONSUM — ein Hieb zieht Stamina (pfad, ∝ invers zur Effizienz)", res.staminaDrains);
+}
+
+// V17.56 W2 (kampf-plan §8.1) — das FORM-bewusste Fähigkeits-Profil + alles-für-alles: DIESELBE
+// harte Materie wird zur KLINGE (spitz → schneidet Weiches) ODER zur KEULE (stumpf → wuchtet Hartes),
+// das Material wählt den Kanal, das richtige Gerät gewinnt; man erntet auch mit der Waffe. KONSUM.
+async function checkBandV1755W2Profile(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const blu = r.state.blueprints;
+        const savedTool = p.equipped ? p.equipped.tool : null;
+        const savedWeapon = p.equipped ? p.equipped.weapon : null;
+        if (!p.equipped) p.equipped = {};
+        // Konstruierte Geräte aus DERSELBEN harten Materie (stein), nur die FORM unterscheidet:
+        // eine spitze KLINGE (octahedron) vs ein stumpfer KLOTZ (box).
+        blu.__w2_blade = { parts: [{ shape: "octahedron", material: "stein", size: { x: 0.3, y: 1.4, z: 0.3 } }] };
+        blu.__w2_maul = { parts: [{ shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 } }] };
+
+        out.methods = [
+            "_heldImplementBlueprint",
+            "_blueprintPointedFraction",
+            "_implementProfile",
+            "_harvestFitnessFromResist",
+        ].every((m) => typeof r[m] === "function");
+
+        // (2) die FORM treibt das Profil — gleiche Materie, andere Form → Klinge schneidet, Klotz wuchtet
+        p.equipped.weapon = null;
+        p.equipped.tool = "__w2_blade";
+        const bladeProf = r._implementProfile();
+        p.equipped.tool = "__w2_maul";
+        const maulProf = r._implementProfile();
+        out.formDrivesProfile = bladeProf.cutPower > maulProf.cutPower && maulProf.minePower > bladeProf.minePower;
+
+        // (3) die Faust ist beides schwach
+        p.equipped.tool = null;
+        const handProf = r._implementProfile();
+        out.handWeakBoth = handProf.minePower < maulProf.minePower && handProf.cutPower < bladeProf.cutPower;
+
+        // (4)+(5) das MATERIAL wählt den Kanal + das richtige Gerät gewinnt (synthetische Widerstände)
+        const soft = { mineResist: 2.0, cutResist: 0.6 };
+        const hard = { mineResist: 3.2, cutResist: 4.5 };
+        p.equipped.tool = "__w2_blade";
+        const bladeSoft = r._harvestFitnessFromResist(soft);
+        const bladeHard = r._harvestFitnessFromResist(hard);
+        p.equipped.tool = "__w2_maul";
+        const maulSoft = r._harvestFitnessFromResist(soft);
+        const maulHard = r._harvestFitnessFromResist(hard);
+        out.bladeCutsSoft = bladeSoft.channel === "cut" && bladeSoft.fit > bladeHard.fit;
+        out.maulMinesHard = maulHard.channel === "mine" && maulHard.fit > bladeHard.fit;
+        out.rightToolWins = bladeSoft.fit > maulSoft.fit && maulHard.fit > bladeHard.fit;
+
+        // (6) ALLES-FÜR-ALLES: eine ausgerüstete WAFFE (kein tool) ist das gehaltene Gerät → man erntet mit ihr
+        p.equipped.tool = null;
+        p.equipped.weapon = "__w2_blade";
+        out.weaponIsHeld = r._heldImplementBlueprint() === blu.__w2_blade;
+        out.weaponHarvests = r._implementProfile().cutPower > handProf.cutPower;
+
+        // (7) der W1-Bug behoben: ein echtes Werkzeug ist eine Instanz (sourceBlueprint), nicht direkt ein Bauplan
+        p.equipped.weapon = null;
+        const savedTools = r.state.tools;
+        r.state.tools = Object.assign({}, savedTools || {}, { __w2_realtool: { sourceBlueprint: "__w2_maul" } });
+        p.equipped.tool = "__w2_realtool";
+        out.toolInstanceResolves = r._heldImplementBlueprint() === blu.__w2_maul;
+        r.state.tools = savedTools;
+
+        // (8) END-TO-END am ECHTEN Bauwerk (stein_block = Fels): die Keule (Wucht) gewinnt KLAR über die
+        // Klinge (Fels ist unschneidbar) — robuster Fit-Vergleich (keine Rundungs-Marge) + der Kanal ist mine.
+        p.equipped.tool = "__w2_maul";
+        const maulRock = r._harvestFitness({ type: "stein_block" });
+        p.equipped.tool = "__w2_blade";
+        const bladeRock = r._harvestFitness({ type: "stein_block" });
+        out.maulBeatsBladeOnRock = maulRock.fit > bladeRock.fit && maulRock.channel === "mine";
+        // + die Keule bricht das ECHTE Bauwerk tatsächlich (der ganze Pfad läuft end-to-end)
+        const savedMode = r.getGameMode();
+        r.setGameMode("frieden");
+        p.stamina = 1e6;
+        p.equipped.tool = "__w2_maul";
+        const aRock = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
+        let rs = 0;
+        while (aRock && r.state.architectures.indexOf(aRock) !== -1 && rs < 300) {
+            r._strikeArchitecture(aRock);
+            rs++;
+        }
+        out.maulBreaksRock = rs >= 1 && (!aRock || r.state.architectures.indexOf(aRock) === -1);
+        if (aRock && r.state.architectures.indexOf(aRock) !== -1) r.removeArchitecture(aRock);
+
+        // cleanup
+        delete blu.__w2_blade;
+        delete blu.__w2_maul;
+        p.equipped.tool = savedTool;
+        p.equipped.weapon = savedWeapon;
+        p.stamina = 1e6;
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check(
+        "V17.56 W2: die Profil-Methoden existieren (_heldImplementBlueprint/_blueprintPointedFraction/_implementProfile/_harvestFitnessFromResist)",
+        res.methods
+    );
+    check(
+        "V17.56 W2: die FORM treibt das Profil — DIESELBE Materie wird zur Klinge (schneidet) ODER zur Keule (wuchtet)",
+        res.formDrivesProfile
+    );
+    check("V17.56 W2: die bloße Faust ist an beidem schwach (kein Gerät, kein Profil)", res.handWeakBoth);
+    check(
+        "V17.56 W2: KONSUM — die Klinge glänzt am Weichen (cut) + scheitert am Harten; das Material wählt den Kanal",
+        res.bladeCutsSoft
+    );
+    check("V17.56 W2: KONSUM — die Keule wuchtet das Harte (mine) + schlägt dort die Klinge", res.maulMinesHard);
+    check("V17.56 W2: jedes Gerät ist an SEINEM Material überlegen (das richtige Werkzeug zählt)", res.rightToolWins);
+    check(
+        "V17.56 W2: ALLES-FÜR-ALLES — eine ausgerüstete Waffe ist das gehaltene Gerät, man erntet mit ihr",
+        res.weaponIsHeld && res.weaponHarvests
+    );
+    check(
+        "V17.56 W2: der W1-Bug behoben — ein echtes Werkzeug (sourceBlueprint-Instanz) löst zu seinem Bauplan auf (nicht die Faust)",
+        res.toolInstanceResolves
+    );
+    check(
+        "V17.56 W2: KONSUM — am ECHTEN Fels gewinnt die Keule (Wucht) klar über die Klinge (Fels ist unschneidbar)",
+        res.maulBeatsBladeOnRock
+    );
+    check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -36358,6 +36483,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1753CreatureCombat(ctx);
             await checkBandV1754PlayerAttack(ctx);
             await checkBandV1755HarvestEffort(ctx);
+            await checkBandV1755W2Profile(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);
