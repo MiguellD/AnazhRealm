@@ -10,15 +10,16 @@
 
 ---
 
-## STATUS (Stand V17.54) — lies §8/§9 zuerst
+## STATUS (Stand V17.58) — lies §8/§9 (gebaut) + §10 (der aktive Plan)
 
-**Der Kern-Kampf-Loop A–D + der W5-Affekt sind GEBAUT** (V17.51 Kombat-Stats · V17.52 Waffen-Rolle/
-Equip · V17.53 Kreatur-HP/Schaden/Tod/Loot · V17.54 LMB-Angriff + Zorn/Schuld-Affekt). §1–§7 unten
-sind der ursprüngliche Plan dieses Loops (Geschichte + die noch offene Phase E „Bedrohung/Furcht").
-**Die lebende Wahrheit des AKTIVEN Bogens ist §8/§9** — die Vertiefung aus dem Schöpfer-Dialog
-(02.06.): vom Rollen-Schloss zum Fähigkeits-Profil, das Instant-Abbauen als Wurzelfehler, die
-Ausdauer/Effizienz-Synergie. Wer den Bogen weiterbaut, liest §8/§9 ZUERST (sie überschreibt die
-Rollen-Kategorie-Sicht von §3.2/§4-B).
+**Der Kern-Kampf-Loop A–D + der W5-Affekt sind GEBAUT** (V17.51–.54), **und der Interaktions-Bogen
+W1·W2·W2-B·W3 ist RUND** (V17.55 Abbau-Mühe · V17.56 Form-Profil Klinge/Keule · V17.57 ein „in der
+Hand"-Gerät · V17.58 die aura-reaktive Kreatur — §9). §1–§7 sind der ursprüngliche Loop-Plan
+(Geschichte + die offene Phase E „Bedrohung/Furcht"). §8/§9 sind die GEBAUTE Vertiefung (vom
+Rollen-Schloss zum Fähigkeits-Profil). **Der AKTIVE, noch ungebaute Faden ist §10** — der
+Schmiede-/Gerät-Bogen (Schöpfer-Dialog 02.06.): die Werkstatt erkennt das Gerät, Schmieden speist
+Material (der Spiegel von Bauen), das Gerät wird in der Hand sichtbar. Wer den Bogen weiterbaut, liest
+§8/§9 (was gilt) + §10 (was kommt) ZUERST; §10 überschreibt die getrennte Tool/Waffe-Sicht endgültig.
 
 ---
 
@@ -309,3 +310,149 @@ wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die 
 **Disziplin (heilig):** tag-emergent, kein neues Modul, kein Parallelpfad; modus-gated; der Affekt von
 Anfang an (`_feelAction` liest die Mühe gratis mit); die Wucht/das Feel/die Balance = Schöpfer-Browser.
 Headless beweisbar sind die Tauglichkeit-Berechnung, die vier Kanäle, die Substanz-Differenzierung.
+
+---
+
+## 10. Der Schmiede-/Gerät-Bogen — die Werkstatt schließt den Kreis (Schöpfer-Dialog 02.06., NACH W3)
+
+Der Interaktions-Bogen (§9) machte das Abbauen + die Kreatur emergent. Der Schöpfer-Audit danach legt
+den Finger auf die **Werkstatt** — die Quelle, aus der ein Gerät kommt. Dort sind **zwei Crafting-Systeme
+nie verschmolzen**; der Bogen schließt erst, wenn die Werkstatt das Gerät ERKENNT, das Schmieden Material
+SPEIST + die Substanz in die HAND bringt. **Diese Sicht vollendet §8/§9 und löst die letzte Tool/Waffe-
+Trennung auf.**
+
+**Schöpfer (02.06.):** „in der Werkstatt steht bei Rolle nur ‚Bauwerk' — ich mache einen Holzzylinder als
+Stiel + einen Steinquader als Kopf (Griff-Verhältnis, massiver schwerer Kopf, stumpf), das ist nah an
+einem Werkzeug/Brecher, dachte hier erscheinen mehrere Dinge, und je nach Form wird die Rolle erkannt …
+Schmieden als Verarbeitungsprozess fixiert die Rolle auf Tool/Waffe? … vordefinierte Werkzeuge mit
+Präzisionen beissen sich noch, sind nicht synergetisch … Drehbank/Schmiede-Hammer sind andere Baupläne,
+die die Rollfixierung freischalten, mit unterschiedlichen Präzisionen? besserer Schmiede-Hammer → bessere
+Werkzeuge, die selbst an der Grundgeometrie schon mehr/weniger Qualität bieten? … einige Dinge sind nie
+sauber zusammengeflossen … ein gehaltenes Gerät sollte VISUELL in der Hand sein, nicht der Platzier-
+Schatten … wann wird das Material gespeist (bei Waffen/Tools)? wie erreicht man Synergie?"
+
+**Die bestätigte Reconciliation (Schöpfer):** *„Die Schmiede erstellt ein Gerät — ein Gerät ist Waffe UND
+Werkzeug."* → die saubere Vereinigung: **kein Rollen-Schloss** (W2-B bleibt: du benutzt alles für alles),
+aber **Schmieden ist ein ECHTER Fertigungs-Akt**. Der Prozess fertigt (Material + Präzision + Sichtbarkeit),
+die Fähigkeit bleibt emergent (die Form sagt, was es gut kann).
+
+### 10.1 Das komplette System, wie es WIRKLICH läuft (GEMESSEN, Explore 02.06.)
+
+**Der Bauplan ist das EINE Substrat** — Struktur, Werkzeug, Waffe, Rüstung, Seele, Portal, Maschine,
+Nahrung, gehaltenes Gerät: alles ist ein Bauplan (`parts` = Form × Material × Position × `opChain`).
+
+**Die Rollen — wie sie ENTSTEHEN (`computeBlueprintRole`, in Priorität):** (1) **Crafting-Geschichte** —
+die dominante `opChain`-Werkzeug-**Domain** (forging → tool/armor als Tag-Split [`härte/magieleitung/
+stromleitung` → tool, `dichte/zähigkeit/wärmeleitung` → armor], alchemy → consumable, textile → armor,
+soulwork → soul, mechanism → machine, construction → architecture). **Generische Werkzeuge (Hand/Hammer/
+Feile, `domain=null`) zählen NICHT** → ein frisch geformter Hammer-Bauplan, nur mit der Hand geknappt,
+bleibt rollenlos. (2) **Form** → bilateral-symmetrischer Glieder-Körper → soul. (3) **Form+Material** →
+magie-leitender Ring → portal. (4) **Material** → lebendig+weich → consumable. (5) **Default** →
+architecture (**„Bauwerk"**). Manueller Override (`roleManual`) friert ein. **→ DARUM zeigt der Hammer
+„Bauwerk": er ging nie durch die (versteckte) Domain-Schmiede-Pipeline; und selbst dann wäre die Rolle
+„Werkzeug" (abstrakt), NICHT das form-emergente Können (Klinge/Brecher), das der Schöpfer erwartet.**
+
+**Die ZWEI „Tool"-Begriffe (die Wurzel des „beisst sich"):**
+- **Crafting-Werkzeug** (`state.tools[name]`): `opClass`/`opName`/`precisionCap`/`domain` — das, womit man
+  IN der Werkstatt Parts bearbeitet (`applyOpToPart`). Registriert via `setBlueprintToolMeta` +
+  `registerBlueprintAsTool` (manuelles `opName`-Tippen + opClass-Dropdown). 10 Built-ins (Hand …
+  Polierscheibe, Schmiede-Hammer [forging], Drehbank-Meißel [mechanism]).
+- **In-der-Hand-Gerät** (`equipped.held` → Bauplan, W2-B): das, womit man in der WELT abbaut/kämpft. Jeder
+  Bauplan, gratis, **keine Optik**.
+- Halbe Brücke (existiert schon!): `equipHeld` löst `state.tools[name].sourceBlueprint` auf → ein
+  registriertes Crafting-Werkzeug IST haltbar. Die Vereinigung ist halb gebaut, nur nicht zu Ende gedacht.
+
+**Die Präzisions-Kette (existiert, die §4.3-Rekursion ist REAL):** `applyOpToPart` → `opChain` (Geschichte)
+→ `computePartPrecision` (Min-Regel + Decay) → `computeBlueprintPrecisionCap` (Min der Parts). Ein besseres
+Crafting-Werkzeug (höherer `precisionCap`) hebt die erreichbare Werkstück-Präzision; `MACHINE_PRECISION_
+BONUS` (+0.05). **Die Drehbank/Esse/Webstuhl/etc. SIND Beispiel-Baupläne** (`role:"workshop-station"` +
+`workshopDomain`, Nähe-gated `WORKSHOP_PROXIMITY_M`); ihre Präzision kommt aus ihren Bauteilen — die
+Rekursion, die der Schöpfer meinte (besserer Hammer → bessere Drehbank → bessere Werkzeuge), ist gebaut.
+**ABER** die Präzision fließt nur in **Kampf**-Stats (`heldMul = 0.5 + 0.5·präzision` auf das Tag-Fold) +
+Rüstung — NICHT ins Abbauen (Riss C).
+
+**Die FÜNF Risse (nie verschmolzen — die ehrliche Wahrheit hinter „beisst sich"):**
+- **A — die Werkstatt zeigt nur die abstrakte Rolle read-only** („Bauwerk"); die Geräte-Fähigkeit
+  (`_implementAffordanceLabel` → Klinge/Brecher) wird berechnet, aber NUR im Equip-Drawer gezeigt, nicht
+  in der Werkstatt. → der „nur Bauwerk"-Befund.
+- **B — zwei Rollen-Philosophien koexistieren:** Welt-9a-Schmiede-Rolle (`registerBlueprintAsTool` =
+  fixiert in `state.tools`) vs. W2-B-Ablesung (`equipped.held`, kein Schloss). Werkzeuge → ein Pfad,
+  Waffen/Gehaltenes → ein anderer. → das „nie sauber zusammengeflossen".
+- **C — die Präzision erreicht das Abbauen NICHT:** `_implementProfile` (minePower/cutPower) liest reine
+  Form × Material; ein polierter Pickel bricht Fels genauso schnell wie ein roher. Der „Präzision
+  moduliert"-Faden (Konzept §6.3) endet vor der Ernte.
+- **D — ein Gerät schmieden/ausrüsten kostet NULL Material** (`equipHeld`/`registerBlueprintAsTool`
+  verbrauchen nichts), während Strukturen-Bauen Inventar zieht (`confirmBuild` → `tryConsumeBuildCost`,
+  pfad-Modus). → der „offene Faden: wann wird das Material gespeist?".
+- **E — keine In-der-Hand-Optik:** das gehaltene Gerät ist unsichtbar; der einzige Bauplan-Visual ist der
+  Platzier-Schatten (`tickBuildMode`-Phantom bei 40% Opacity, Hotbar/Bau-Modus — ein ANDERES System).
+
+### 10.2 Die Synergie: „Plan → Werk" (Bauen ↔ Schmieden als Spiegel)
+
+Ein Bauplan ist IMMER ein freier **Plan**. Ihn real zu machen kostet Material — in ZWEI spiegelbildlichen
+Akten:
+- **BAUEN** (Strukturen): Plan → in der Welt platzieren → Material verbraucht → ein Bauwerk steht. *(da)*
+- **SCHMIEDEN/FERTIGEN** (gehaltene Geräte): Plan → schmieden → Material verbraucht + Präzision eingefroren
+  → ein **Gerät in der Hand**. *(der fehlende Spiegel)*
+
+So beantwortet sich „wann wird das Material gespeist?": **beim Schmieden** — der exakte Spiegel von „beim
+Bauen". Der Bauplan ist der Plan; der Akt des Machens (bauen ODER schmieden) zieht das Material (Reuse
+`computeBuildCost` — dieselbe Volumen-Formel). DAS ist die Synergie, die der Schöpfer sucht: **ein Muster,
+zwei Anwendungen** (die Heilige Lektion — kein Parallel-System, eine Verdichtung).
+
+### 10.3 Das vereinte Gerät (die Reconciliation in Code-Sprache)
+
+Ein **Gerät** = das vereinte gehaltene Werkzeug = **Waffe + Werkzeug** (+ optional Crafting-Werkzeug). Was
+es GUT kann, emergiert aus der **Form** (Klinge schneidet / Brecher wuchtet, `_implementProfile`); die
+**Qualität** aus der Präzision (die Crafting-Kette); benutzbar für ALLES (kein Schloss, W2-B bleibt). Das
+geschmiedete Gerät lebt im Werkzeug-Register (`state.tools` mit `sourceBlueprint`) UND ist das gehaltene
+Welt-Gerät (`equipped.held`) UND rendert in der Hand. **EIN geschmiedeter Hammer = Werkstatt-Werkzeug +
+Welt-Brecher + Hand-Optik** — eine Substanz, alle Anwendungen, alle emergent aus Form × Material ×
+Präzision. Die Rolle „weapon" (seit W2-B vestigial, der „als Waffe"-Knopf ist schon weg) entfällt; „tool"
+wird begrifflich „**Gerät**".
+
+### 10.4 Der Teilschritt-Plan (F1–F5 — jede Logik-Welle ein `checkBand`)
+
+- **F1 — die Werkstatt ERKENNT das Gerät** (Riss A · niedrigstes Risiko · headless-beweisbar): die
+  Werkstatt-Rollen-Zeile (`_workshopAppendRoleRow`) zeigt für jeden Bauplan mit einem Geräte-Profil
+  prominent die Affordanz (`_implementAffordanceLabel` → „Klinge"/„Brecher"/„Gerät") + das Ernte-Profil
+  („schneidet Weiches · wuchtet Fels"), aus der Form abgelesen — UNABHÄNGIG von der abstrakten Rolle. Der
+  Holzstiel+Steinkopf liest dann live: „Brecher · wuchtet Fels gut · schneidet schlecht". Reuse
+  `_implementProfileForBlueprint`/`_implementAffordanceLabel`. Heilt sofort den „nur Bauwerk"-Befund.
+  *Headless: der Readout existiert + differenziert (Klinge vs Brecher aus derselben Materie).*
+- **F2 — Präzision moduliert das Abbauen** (Riss C · ~eine Zeile · headless-beweisbar): der
+  `heldMul`-Präzisionsfaktor (heute nur Kampf) erreicht auch `_implementProfile`/die `_harvestFitness` →
+  besseres Schmieden = besseres Abbauen. Schließt die §4.3-Rekursion END-TO-END: besseres Crafting-Werkzeug
+  → höhere Werkstück-Präzision → besseres Gerät → bricht Fels schneller + voller Ertrag → womit du noch
+  besseres schmiedest. *Headless: ein hochpräziser gehaltener Bauplan baut schneller ab als ein roher
+  gleicher Form/Materie.*
+- **F3 — Schmieden speist Material (der Spiegel von Bauen)** (Riss D · der Kern-Merge · headless-beweisbar):
+  ein „Fertigen/Schmieden"-Akt verbraucht die Teil-Materialien (Reuse `computeBuildCost`/
+  `tryConsumeBuildCost` — DIESELBE Volumen-Formel wie Bauen) + friert die Präzision ein (Snapshot) +
+  registriert das Gerät als haltbar/equip-fähig. Der Bauplan bleibt der freie Plan; das Schmieden ist die
+  Verkörperung. Modus-gated wie Bauen (pfad zahlt; frieden/schöpfer frei). VERSCHMILZT die zwei Systeme:
+  das geschmiedete Gerät ist im Register UND in der Hand. *Headless: schmieden zieht Inventar + produziert
+  ein registriertes, haltbares Gerät; im Plan-Zustand kein Material-Zug.*
+- **F4 — In der Hand SICHTBAR** (Riss E · Render · Schöpfer-Browser): das gehaltene Gerät rendert als
+  First-Person-/Avatar-Hand-Mesh (Reuse `_buildFromBlueprint`), getrennt vom Platzier-Schatten. Eigene
+  Welle — headless pixel-blind (V13-Lehre); die Optik/Pose/Skala/Schwingung beim Hieb = Schöpfer-Browser.
+- **F5 — die Crafting-Op emergiert aus der Form (+ optional „Gerät" als Rolle)** (Risse A+B tief · braucht
+  Mess-Disziplin): die Operation, die ein Gerät in der Werkstatt ausführt, emergiert aus seinem Profil
+  (scharf → subtractive/schneiden, stumpf-hart → plastic/schmieden) statt manuell getippt
+  (`setBlueprintToolMeta`-opName-Feld fällt). Optional: „Gerät" wird eine FORM-emergente Rolle (ein
+  greifbares Implement-Profil ohne andere dominante Domain → Rolle „Gerät"). **ABER `computeBlueprintRole`
+  speist die Spawn-Affinität** — jede Tag-/Rollen-Verschiebung ZUERST mit `scripts/diag-arch-tags.cjs`
+  messen (V17.17-Lehre: eine Affinitäts-Verschiebung kann das Baum-/Architektur-Spawning kippen). Die
+  tiefste, riskanteste Stufe — die volle Hylomorphismus-Schließung der Werkstatt.
+
+### 10.5 Reihenfolge + Scope + Disziplin (heilig)
+
+**Reihenfolge:** F1 → F2 → F3 sind die **Logik-Synergie** (headless beweisbar, je eine Welle, je ein
+`checkBand`). F4 ist die **Optik** (Schöpfer-Browser-Audit). F5 ist die **tiefe Kür** (mit Mess-Wächter).
+**F1 zuerst** — es heilt sofort den sichtbaren Befund („nur Bauwerk") + ist risikoarm; danach F2 (die
+Rekursion schließen), F3 (der Material-Merge). **Scope/Disziplin:** kein neues Modul, kein Parallelpfad —
+die zwei bestehenden Systeme (`state.tools` + `equipped.held`) VERSCHMELZEN über die halbe Brücke
+(`equipHeld`-`sourceBlueprint`), die schon existiert; Material-Verbrauch reuse `computeBuildCost`;
+modus-gated wie Bauen; der Affekt (`_feelAction("create"/"forge")`) liest die Tat gratis mit (W2-Brücke →
+Stolz ∝ Komplexität + Substanz). Die Wucht/das Feel/die Hand-Optik = Schöpfer-Browser. **Vor F5 (Rollen-/
+Tag-Verschiebung) IMMER `diag-arch-tags` (V17.17-Lehre).** KONSUM verifizieren, nicht Existenz (V17.31).
