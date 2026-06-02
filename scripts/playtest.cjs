@@ -22285,15 +22285,31 @@ async function checkBandWelle6HCreatures(ctx) {
         out.schoepferEmptyAfter = r.state.player.inventory.every((s) => !s);
         out.schoepferGrows = r.state.architectures.length > archBeforeSchoepfer;
 
-        // confirmBuild frieden ohne Material → baut frei
+        // S2 (kampf-plan §11.2) — confirmBuild frieden OHNE Material → ABGELEHNT (die kristallisierte
+        // Modus-Achse: Materie kostet in pfad UND frieden, frei nur in schöpfer; frieden ist friedlich,
+        // aber NICHT gratis — die V17.59-Diskrepanz geheilt).
         r.setGameMode("frieden");
         r.state.player.inventory = new Array(27).fill(null);
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
-        const builtFrieden = r.confirmBuild();
-        out.friedenBuildsFree = builtFrieden === true;
-        out.friedenEmptyAfter = r.state.player.inventory.every((s) => !s);
+        const archBeforeFriedenNoMat = r.state.architectures.length;
+        const builtFriedenNoMat = r.confirmBuild();
+        out.friedenRejectsWithoutMaterial = builtFriedenNoMat === false;
+        out.friedenNoArchOnReject = r.state.architectures.length === archBeforeFriedenNoMat;
+        // frieden MIT Material → baut + KONSUMIERT (wie pfad; nur die Mühe/Bedrohung fehlt in frieden)
+        r.state.player.inventory = new Array(27).fill(null);
+        r.addMaterialToInventory("stein", 200);
+        r._clearBuildMode && r._clearBuildMode();
+        r.setHotbarSlot(0, "stein_block");
+        r.selectHotbarSlot(0);
+        const archBeforeFriedenMat = r.state.architectures.length;
+        const stoneBeforeFrieden = r.state.player.inventory[0].count;
+        const builtFriedenMat = r.confirmBuild();
+        const stoneAfterFrieden = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+        out.friedenBuildsWithMaterial = builtFriedenMat === true && r.state.architectures.length > archBeforeFriedenMat;
+        out.friedenConsumesMaterial = stoneBeforeFrieden > stoneAfterFrieden;
+        out.hasMakeCostGate = typeof r._makeCostGate === "function";
 
         // HUD-Reflexion
         r.setGameMode("pfad");
@@ -22310,9 +22326,10 @@ async function checkBandWelle6HCreatures(ctx) {
         const hudSchoepfer = document.getElementById("build-mode-hud").innerHTML;
         out.hudShowsFreiInSchoepfer = /frei/i.test(hudSchoepfer);
 
+        // S2 — frieden-HUD zeigt jetzt die Material-Kosten (wie pfad), nicht „frei".
         r.setGameMode("frieden");
         const hudFrieden = document.getElementById("build-mode-hud").innerHTML;
-        out.hudShowsFreiInFrieden = /frei/i.test(hudFrieden);
+        out.hudShowsCostInFrieden = hudFrieden && /stein/.test(hudFrieden) && /\(30\)/.test(hudFrieden);
 
         // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
         // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
@@ -22360,14 +22377,21 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
         );
         check("Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
+        check("V17.60 S2: _makeCostGate (das generalisierte Mach-Tor) existiert", wave6hP2cResults.hasMakeCostGate);
         check(
-            "Welle 6.H P2C: frieden-Modus baut ohne Material (Erstbegegnung umarmt)",
-            wave6hP2cResults.friedenBuildsFree
+            "V17.60 S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
+            wave6hP2cResults.friedenRejectsWithoutMaterial && wave6hP2cResults.friedenNoArchOnReject
         );
-        check("Welle 6.H P2C: frieden-Modus: Inventar bleibt leer", wave6hP2cResults.friedenEmptyAfter);
+        check(
+            "V17.60 S2: KONSUM — frieden MIT Material baut + verbraucht das Material (wie pfad; nur Mühe/Bedrohung fehlt)",
+            wave6hP2cResults.friedenBuildsWithMaterial && wave6hP2cResults.friedenConsumesMaterial
+        );
         check("Welle 6.H P2C: pfad-HUD zeigt Material-Kosten + verfügbare Menge", wave6hP2cResults.hudShowsCostInPfad);
         check("Welle 6.H P2C: schöpfer-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInSchoepfer);
-        check("Welle 6.H P2C: frieden-HUD zeigt 'frei'", wave6hP2cResults.hudShowsFreiInFrieden);
+        check(
+            "V17.60 S2: frieden-HUD zeigt die Material-Kosten (nicht mehr 'frei')",
+            wave6hP2cResults.hudShowsCostInFrieden
+        );
     }
 }
 
@@ -36632,7 +36656,9 @@ async function checkBandRing6Workshop(ctx) {
         // Slot wechseln (Slot 1 = temple)
         r.selectHotbarSlot(1);
         out.switchFormChanges = r.state.buildMode.blueprintName === "temple";
-        // confirmBuild platziert echte Struktur
+        // confirmBuild platziert echte Struktur — S2 (kampf-plan §11.2): in schöpfer testen, weil
+        // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
+        r.setGameMode("schöpfer");
         const arBefore = r.state.architectures.length;
         r.confirmBuild();
         out.confirmBuildSpawns = r.state.architectures.length === arBefore + 1;
@@ -36649,6 +36675,7 @@ async function checkBandRing6Workshop(ctx) {
             }
         }
         r.state.architectures = [];
+        r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;
     });
 

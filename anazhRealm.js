@@ -13968,7 +13968,7 @@ class AnazhRealm {
             const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
             if (distp <= handover) {
                 // Material entnehmen — selber modus-gated Pfad wie Spieler-
-                // confirmBuild (pfad konsumiert, frieden+schöpfer kostenlos).
+                // confirmBuild (pfad+frieden konsumieren, nur schöpfer kostenlos — S2/§11.2).
                 const gate = this._buildMaterialGate(blueprint);
                 if (!gate.ok) {
                     const missingStr = Object.entries(gate.missing || {})
@@ -35235,10 +35235,22 @@ class AnazhRealm {
     // frieden + schöpfer bauen kostenlos (Vision §1.5 + §10.1). Liefert
     // dasselbe {ok, missing}-Shape wie checkBuildCost; im Free-Modus immer
     // ok=true ohne Konsum.
-    _buildMaterialGate(blueprintName) {
+    // S2 (kampf-plan §11.7) — das rollen-agnostische MACH-TOR: jeder Werk-Akt (bauen/schmieden/weben/
+    // brauen/Körper-formen) zieht das Material durch DIESELBE bewährte computeBuildCost-Maschinerie, mit
+    // der KRISTALLISIERTEN Modus-Achse (§11.2): Materie kostet in pfad UND frieden (du sammelst + machst),
+    // frei nur in schöpfer (gehorcht). Herkunfts-agnostisch — ein geteilter Bauplan kostet wie ein eigener
+    // (das „Plan frei / Werk kostet"-Modell, §11.1). Mühe/Bedrohung (Stamina/Abbau-Hieb) bleiben die
+    // pfad-Achse (frieden ist friedlich, aber NICHT gratis — die V17.59-Diskrepanz geheilt).
+    _makeCostGate(blueprintName) {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        if (mode !== "pfad") return { ok: true, cost: {}, missing: {}, free: true };
+        if (mode === "schöpfer") return { ok: true, cost: {}, missing: {}, free: true };
         return this.tryConsumeBuildCost(blueprintName);
+    }
+
+    // Bauen ist der erste Werk-Akt — auf das generalisierte Mach-Tor umgehängt (verhaltens-gleich
+    // bis auf die §11.2-Modus-Heilung: frieden zahlt jetzt auch Material).
+    _buildMaterialGate(blueprintName) {
+        return this._makeCostGate(blueprintName);
     }
 
     // ============================================================
@@ -36308,13 +36320,13 @@ class AnazhRealm {
             // initialisiert ist (Test-Edge-Cases).
             const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
             const fmt = (code) => this._formatBindingCode(code);
-            // Welle 6.H Phase 2C — Material-Kosten + Verfügbarkeit. Nur in
-            // pfad-Modus angezeigt (frieden + schöpfer bauen frei und sollen
-            // die HUD nicht mit Zahlen zumüllen). Fehlende Materialien sind
-            // rot getintet, ausreichende sind brass-warm.
+            // Welle 6.H Phase 2C + S2 (kampf-plan §11.2) — Material-Kosten + Verfügbarkeit. Angezeigt in
+            // pfad UND frieden (beide zahlen Materie — die kristallisierte Modus-Achse); nur schöpfer baut
+            // frei und soll die HUD nicht mit Zahlen zumüllen. Fehlende Materialien sind rot getintet,
+            // ausreichende sind brass-warm.
             const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
             let costLine = "";
-            if (mode === "pfad" && typeof this.checkBuildCost === "function") {
+            if ((mode === "pfad" || mode === "frieden") && typeof this.checkBuildCost === "function") {
                 const check = this.checkBuildCost(bm.blueprintName);
                 const parts = Object.entries(check.cost).map(([m, n]) => {
                     const have = check.have[m] || 0;
@@ -36325,8 +36337,8 @@ class AnazhRealm {
                 if (parts.length > 0) {
                     costLine = ` · ${parts.join(", ")}`;
                 }
-            } else if (mode === "schöpfer" || mode === "frieden") {
-                costLine = ` · <span style="color:#a8c8ff">${mode === "schöpfer" ? "Schöpfer" : "Frieden"}: frei</span>`;
+            } else if (mode === "schöpfer") {
+                costLine = ` · <span style="color:#a8c8ff">Schöpfer: frei</span>`;
             }
             hud.innerHTML =
                 `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
@@ -44813,7 +44825,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.59.0";
+AnazhRealm.VERSION = "17.60.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):

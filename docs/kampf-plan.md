@@ -616,10 +616,16 @@ Information fließt frei, Materie wird lokal bezahlt — der Co-Schöpfer-Kreis,
   wuchtet Fels", obwohl seine Rolle „Bauwerk" ist — der „nur Bauwerk"-Befund GEHEILT. `checkBandV1759Capability­
   Readout` 6 grün (inkl. der rollen-unabhängige Heal + die Struktur-Suppression + der DOM-Konsum). *Reuse, kein
   neuer Pfad; das Feel/die Optik der Chips = Schöpfer-Browser.*
-- **S2 — das Mach-Tor `_makeCostGate` + die Modus-Kristallisation** (§11.2): `_buildMaterialGate`
-  verallgemeinern; `confirmBuild` darauf umhängen; UND die Modus-Achse kristallisieren (Materie kostet in
-  pfad+frieden, frei nur in schöpfer — frieden zahlt jetzt). Fundament für S3–S6 + die Diskrepanz-Heilung.
-  *Niedrig-mittel · headless (ein echter Verhaltens-Wechsel für frieden, getestet).*
+- **S2 — das Mach-Tor `_makeCostGate` + die Modus-Kristallisation — ✅ GEBAUT (V17.60):** `_makeCostGate(name)`
+  (die Generalisierung von `_buildMaterialGate`, das jetzt darauf delegiert) routet jeden Werk-Akt durch
+  `tryConsumeBuildCost` mit der kristallisierten Modus-Achse: **Materie kostet in pfad UND frieden, frei nur in
+  schöpfer** (`mode === "schöpfer"` ist der einzige Free-Pass) — die V17.59-Diskrepanz „frieden = gratis wie
+  schöpfer" GEHEILT. Die Bau-HUD zeigt jetzt auch in frieden die Kosten (nur schöpfer „frei"). Der Kreatur-
+  Bau-Pfad erbt es (konsistent). Mühe/Bedrohung (Stamina/Abbau-Hieb) bleiben die pfad-Achse — frieden ist
+  friedlich, aber nicht gratis. `checkBandV17.60` (im 6.H-P2C-Band, 4 grün: `_makeCostGate` da, frieden lehnt
+  ohne Material ab, **KONSUM** frieden MIT Material baut + verbraucht, frieden-HUD zeigt Kosten); Test-Migration
+  (V9.56-i): die alten „frieden baut frei"-Proben → „frieden zahlt", + der Ring-6-V2-Spawn-Test auf schöpfer
+  (er prüft den Spawn, nicht die Kosten). *Fundament für S3–S6; headless bewiesen.*
 - **S3 — Gerät schmieden** (= §10-F2+F3): schmieden zieht Material + friert Präzision + registriert das
   gehaltene Gerät; Präzision moduliert auch das Abbauen (die §4.3-Rekursion schließt). *Headless.*
 - **S4 — Rüstung schmieden/weben**: dasselbe Muster — Rüstung machen kostet Material + friert Präzision;
