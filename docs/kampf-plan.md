@@ -296,8 +296,15 @@ wäre ihr Spiegelbild (heute zahlt Magie nichts) — die zweite Achse, wenn die 
   `equipTool`/`equipWeapon`/DSL/Chat/Restore = Aliase auf `equipHeld` (die API bleibt heil, nur die Leser
   wandern); die Crafting-Tools (`state.tools`) + der Kreatur-Equip (`{tool,armor}`) bleiben orthogonal.
   `checkBandV1757HeldSlot` 11 grün. Offen (Browser): das Feel der einen Hand-Zeile + der Affordanz-Readout.
-- **W3 — die natürliche, aura-reaktive Kreatur** (+ optional die „Körper-erinnert-sich"-Adaption, später
-  die Mana-Hälfte + die alte Phase E „Bedrohung/Furcht").
+- **W3 — die natürliche, aura-reaktive Kreatur — ✅ GEBAUT (V17.58):** EIN Signal `_creatureWariness`
+  (deine Aura-Menace [chaos-dominant, feedback-frei] × der Natur des Wesens [dicht/hart kühn, lebendig
+  scheu] × Bindung × Modus, per Nähe skaliert) ersetzt im wander-Fallback die statische happy/sad-Wahl →
+  neugierig näher / scheu fort / sonst wandern; ein getroffenes Wesen flieht (`damageCreature` → fearUntil
+  + sad). Reuse des Flock/Flee/Drift, kein Parallel-AI. `checkBandV1758CreatureNature` 11 grün. Offen
+  (Browser): das Feel. **Damit ist der Interaktions-Bogen (W1·W2·W2-B·W3) rund.**
+- **Phase E — die Bedrohung (offen, game-design-schwer):** aggressive/raubtier-Kreaturen, die den Spieler
+  JAGEN (`damagePlayer` aus echter Quelle, pfad-gated, sparsam) → der FURCHT-Konsument + der Triumph-δ
+  (Bedrohung beseitigt). + optional die „Körper-erinnert-sich"-Adaption + die Mana-Hälfte (magieleitung → Äther).
 
 **Disziplin (heilig):** tag-emergent, kein neues Modul, kein Parallelpfad; modus-gated; der Affekt von
 Anfang an (`_feelAction` liest die Mühe gratis mit); die Wucht/das Feel/die Balance = Schöpfer-Browser.

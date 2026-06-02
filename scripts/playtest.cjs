@@ -4362,6 +4362,113 @@ async function checkBandV1755W2Profile(ctx) {
     check("V17.56 W2: die Keule bricht das echte Bauwerk end-to-end (der ganze Abbau-Pfad läuft)", res.maulBreaksRock);
 }
 
+// V17.58 W3 (kampf-plan §9) — die NATÜRLICHE, aura-reaktive Kreatur: ein wildes Wesen LIEST den Spieler
+// (deine Aura-Menace × seine Natur × Bindung × Modus → die Wariness), wird neugierig (näher) oder scheu
+// (fort), und flieht wenn getroffen. KONSUM (nicht Existenz): die Wariness DIFFERENZIERT nach Aura/Natur/
+// Bindung/Modus + treibt den wander-Tick; ein Treffer setzt Furcht.
+async function checkBandV1758CreatureNature(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+        const e = p.emotions;
+        const savedEmo = {};
+        for (const k of Object.keys(e)) savedEmo[k] = e[k];
+        const savedMode = r.getGameMode();
+        const setEmo = (o) => {
+            for (const k of Object.keys(e)) e[k] = o[k] || 0;
+        };
+        const NAT = r.constructor.CREATURE_NATURE;
+        out.exists = typeof r._creatureWariness === "function" && !!NAT && typeof NAT.fleeThreshold === "number";
+
+        r.setGameMode("pfad");
+        const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
+        const timid = near("geist"); // laub → hoch lebendig → scheu
+        const bold = near("sprite"); // quarz → hart/mineral → kühn
+
+        // (2) sanfte Aura + KÜHNES Wesen → neugierig (näher); (3) chaotische Aura + SCHEUES → fliehen
+        setEmo({ peace: 0.9 });
+        out.calmIsCurious = r._creatureWariness(bold) <= NAT.curiousThreshold;
+        setEmo({ chaos: 0.9 });
+        const angryTimidW = r._creatureWariness(timid);
+        out.angryScaresTimid = angryTimidW >= NAT.fleeThreshold;
+        // die Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)
+        setEmo({ peace: 0.9 });
+        out.auraDrivesReaction = angryTimidW > r._creatureWariness(timid);
+
+        // (4) ein kühnes Wesen ist weniger scheu als ein zartes (bei gleicher chaotischer Aura)
+        setEmo({ chaos: 0.9 });
+        out.boldLessWaryThanTimid = r._creatureWariness(bold) < r._creatureWariness(timid);
+
+        // (5) Bindung senkt die Scheu (Vertrauen)
+        timid.userData.bond = 0;
+        const unbondW = r._creatureWariness(timid);
+        timid.userData.bond = 1;
+        const bondW = r._creatureWariness(timid);
+        timid.userData.bond = 0;
+        out.bondReducesWariness = bondW < unbondW;
+
+        // (6) frieden dämpft die Bedrohung vs pfad (gleiche chaotische Aura)
+        r.setGameMode("pfad");
+        const pfadW = r._creatureWariness(timid);
+        r.setGameMode("frieden");
+        const friedenW = r._creatureWariness(timid);
+        out.friedenDampsMenace = friedenW < pfadW;
+        r.setGameMode("pfad");
+
+        // (7) fern → neutral (Wariness 0, das Wesen wandert)
+        const far = near("geist");
+        far.position.set(pm.x + 999, pm.y, pm.z + 999);
+        out.farIsNeutral = r._creatureWariness(far) === 0;
+
+        // (8)+(9) KONSUM Kampf-Furcht: ein getroffenes (überlebendes) Wesen → fearUntil + sad + flieht
+        // selbst bei SANFTER Aura (die Furcht überschreibt die Ruhe)
+        setEmo({ peace: 0.9 });
+        timid.userData.hp = 9999;
+        const idx = r.state.creatures.indexOf(timid);
+        r.damageCreature(timid, 5, { source: "player" });
+        out.hitSetsFear =
+            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > performance.now() / 1000;
+        out.hitSetsSad = idx >= 0 && r.state.creatureEmotions[idx] === "sad";
+        out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
+        timid.userData.fearUntil = 0;
+
+        // (10) der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)
+        out.wanderReadsWariness = /_creatureWariness/.test(r.updateCreatures.toString());
+
+        // cleanup
+        for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
+        setEmo(savedEmo);
+        r.setGameMode(savedMode);
+        return out;
+    });
+    check("V17.58 W3: _creatureWariness + CREATURE_NATURE existieren", res.exists);
+    check(
+        "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
+        res.calmIsCurious
+    );
+    check(
+        "V17.58 W3: KONSUM — eine chaotische Aura verschreckt ein scheues Wesen (Wariness ≥ Flucht → fort)",
+        res.angryScaresTimid
+    );
+    check(
+        "V17.58 W3: deine Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)",
+        res.auraDrivesReaction
+    );
+    check("V17.58 W3: KONSUM — ein kühnes Wesen ist weniger scheu als ein zartes (die NATUR zählt)", res.boldLessWaryThanTimid);
+    check("V17.58 W3: KONSUM — die Bindung senkt die Scheu (Vertrauen)", res.bondReducesWariness);
+    check("V17.58 W3: KONSUM — frieden dämpft die Bedrohung (neugierige Welt) vs pfad", res.friedenDampsMenace);
+    check("V17.58 W3: ein fernes Wesen ist neutral (es wandert, ignoriert den Spieler)", res.farIsNeutral);
+    check("V17.58 W3: KONSUM — ein getroffenes Wesen FÜRCHTET sich (fearUntil + sad)", res.hitSetsFear && res.hitSetsSad);
+    check(
+        "V17.58 W3: KONSUM — ein getroffenes Wesen flieht selbst bei sanfter Aura (die Kampf-Furcht überschreibt)",
+        res.hitFlees
+    );
+    check("V17.58 W3: der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)", res.wanderReadsWariness);
+}
+
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandWaves1to3(ctx) {
@@ -36489,6 +36596,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1754PlayerAttack(ctx);
             await checkBandV1755HarvestEffort(ctx);
             await checkBandV1755W2Profile(ctx);
+            await checkBandV1758CreatureNature(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

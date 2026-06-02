@@ -12485,6 +12485,12 @@ class AnazhRealm {
             this._creatureCombatDeath(creature, opts.source || "unknown");
             return { ok: true, dealt, killed: true };
         }
+        // V17.58 W3 — Selbst-Verteidigung: ein ÜBERLEBENDES getroffenes Wesen FÜRCHTET sich → es flieht
+        // (kein passives Stehenbleiben mehr). Ein Furcht-Fenster (fearUntil) + die Emotion sad → der
+        // wander-Tick erzwingt die Flucht über _creatureWariness. Echtes Zurückschlagen bleibt Phase E.
+        creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec;
+        const fidx = this.state.creatures.indexOf(creature);
+        if (fidx >= 0 && Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[fidx] = "sad";
         if (typeof this._renderCreatureListUI === "function") this._renderCreatureListUI();
         return { ok: true, dealt, killed: false };
     }
@@ -13627,6 +13633,41 @@ class AnazhRealm {
         return best;
     }
 
+    // V17.58 W3 (kampf-plan §9) — die NATÜRLICHE Reaktion eines wilden Wesens auf den Spieler, als EIN
+    // emergentes Signal (kein Skript): die WARINESS. Sie liest deine Aura-MENACE (vor allem `chaos` =
+    // deine Aggression [V17.54], feedback-frei — NICHT von der Contagion getrieben; minus die sanften
+    // peace/joy) gegen die NATUR des Wesens (dicht/hart = kühn, lebendig = scheu) + die BINDUNG (Vertrauen)
+    // + den MODUS (frieden dämpft, schöpfer ruhig) + frische Kampf-Furcht. Negativ = neugierig (näher),
+    // positiv = scheu (fort). Reuse: player.emotions + computeCreatureCompoundTags + bond + getGameMode.
+    _creatureWariness(creature) {
+        const NAT = AnazhRealm.CREATURE_NATURE;
+        const now = performance.now() / 1000;
+        const ud = creature.userData || {};
+        const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
+        if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
+        const e = (this.state.player && this.state.player.emotions) || {};
+        const menace =
+            (e.chaos || 0) * NAT.menaceFromChaos +
+            (e.sorrow || 0) * NAT.menaceFromSorrow -
+            (e.peace || 0) * NAT.calmFromPeace -
+            (e.joy || 0) * NAT.calmFromJoy;
+        const t = this.computeCreatureCompoundTags(creature) || {};
+        const boldness =
+            (t.dichte || 0) * NAT.boldFromDichte +
+            (t.härte || 0) * NAT.boldFromHärte -
+            (t.lebendig || 0) * NAT.shyFromLebendig +
+            (ud.bond || 0) * NAT.boldFromBond;
+        const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
+        const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
+        const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
+        let wariness = (menace * modeMul - boldness) * (fearActive ? 1 : proximity);
+        if (fearActive) wariness = Math.max(wariness, NAT.combatFearWariness);
+        return wariness;
+    }
+
     // Direction-Berechnung für den aktiven Task. Liefert immer einen
     // THREE.Vector3 (nullt bei wait, Spieler-Vektor bei follow_player,
     // null bei wander → Caller fällt auf heutige Emotion-Logik zurück).
@@ -14333,21 +14374,31 @@ class AnazhRealm {
             let direction = this._tickCreatureTaskDirection(creature, task, emotion);
             if (direction === null) {
                 direction = scratchDir.set(0, 0, 0);
-                if (emotion === "happy") {
+                // V17.58 W3 — die wilde Kreatur LIEST den Spieler: die WARINESS (deine Aura-Menace × der
+                // Natur des Wesens × Bindung × Modus + frische Kampf-Furcht) ersetzt die statische happy/
+                // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
+                // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
+                const wariness = this._creatureWariness(creature);
+                const NAT = AnazhRealm.CREATURE_NATURE;
+                if (wariness >= NAT.fleeThreshold) {
+                    // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
+                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
+                    fromPlayer.y = 0;
+                    if (fromPlayer.length() < NAT.fleeRadius) {
+                        direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
+                    } else {
+                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                    }
+                } else if (wariness <= NAT.curiousThreshold) {
+                    // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
                     const toPlayer = scratchA.subVectors(playerPos, creature.position);
                     toPlayer.y = 0;
                     if (toPlayer.length() > 2) {
                         direction.copy(toPlayer.normalize().multiplyScalar(speed));
                     }
-                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare
-                    // Kreaturen (off-screen ist Flocking unsichtbar), distanceToSquared
-                    // statt distanceTo (kein sqrt), nach 6 Nachbarn abbrechen, UND
-                    // jetzt Spatial-Hash statt voller O(N²)-Schleife. Wir prüfen
-                    // nur die 9 Cells (3×3) um die eigene Kreatur, statt aller 120.
-                    // Bei verteilten happy-Kreaturen typisch 5–15 Kandidaten
-                    // statt 120 → 10–20× schneller. Bei dichtem Cluster fällt
-                    // der Win auf early-exit-Niveau (alle 6 Nachbarn in derselben
-                    // Cell), bleibt aber nie schlechter als der alte Pfad.
+                    // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
+                    // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
+                    // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
                     if (inFrustum) {
                         let neighbors = 0;
                         const gcx = Math.floor(creature.position.x / FLOCK_CELL);
@@ -14359,9 +14410,6 @@ class AnazhRealm {
                                 for (let bi = 0; bi < bucket.length; bi++) {
                                     const j = bucket[bi];
                                     if (i === j) continue;
-                                    // creatureEmotions[j] === "happy" ist beim
-                                    // Grid-Bau schon garantiert (Filter oben),
-                                    // also brauchen wir den Check hier nicht.
                                     const otherCreature = this.state.creatures[j];
                                     const dsq = creature.position.distanceToSquared(otherCreature.position);
                                     if (dsq > 1 && dsq < 25) {
@@ -14376,13 +14424,8 @@ class AnazhRealm {
                         }
                     }
                 } else {
-                    const fromPlayer = scratchA.subVectors(creature.position, playerPos);
-                    fromPlayer.y = 0;
-                    if (fromPlayer.length() < 10) {
-                        direction.copy(fromPlayer.normalize().multiplyScalar(speed));
-                    } else {
-                        direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
-                    }
+                    // NEUTRAL — weder gelockt noch verschreckt → gemächliches Wandern.
+                    direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
                 }
             }
 
@@ -44720,7 +44763,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.57.0";
+AnazhRealm.VERSION = "17.58.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -45902,6 +45945,29 @@ AnazhRealm.EMOTION_CONTAGION = Object.freeze({
 AnazhRealm.CONTAGION_TARGET = Object.freeze({
     happy: { joy: 0.5, peace: 0.4 }, // ein freudiges Wesen hebt + beruhigt
     sad: { sorrow: 0.5 }, // ein leidendes Wesen betrübt
+});
+// V17.58 W3 (kampf-plan §9) — die NATÜRLICHE, aura-reaktive Kreatur: die Gewichte der WARINESS
+// (_creatureWariness) — deine Aura-Menace × der Natur des Wesens × Bindung × Modus. Browser-justierbar
+// (das Feel: wie scheu/neugierig, wann es kippt). Die MENACE ist chaos-dominant (deine Aggression,
+// V17.54 — feedback-frei: die Contagion treibt chaos NICHT, also kein Furcht-Runaway).
+AnazhRealm.CREATURE_NATURE = Object.freeze({
+    noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler (es wandert nur)
+    menaceFromChaos: 1.3, // deine Aggression/Zorn verschreckt am stärksten (feedback-frei)
+    menaceFromSorrow: 0.5, // deine Trauer verunsichert etwas
+    calmFromPeace: 0.9, // deine Ruhe lädt ein
+    calmFromJoy: 0.5, // deine Freude lockt
+    boldFromDichte: 0.8, // ein dichtes/massives Wesen ist robust → kühner
+    boldFromHärte: 0.6, // ein hartes Wesen steht fester
+    shyFromLebendig: 1.1, // ein lebendiges/zartes Wesen ist scheuer (die wilde Natur)
+    boldFromBond: 0.9, // eine Bindung macht das Wesen mutig in deiner Nähe (Vertrauen)
+    friedenMenace: 0.3, // frieden dämpft die Bedrohung stark (eine neugierige Welt)
+    schoepferMenace: 0.1, // schöpfer: die Welt ist ruhig (du regierst)
+    curiousThreshold: -0.2, // Wariness darunter → neugierig (näher)
+    fleeThreshold: 0.3, // Wariness darüber → scheu (fort)
+    fleeRadius: 14, // m — innerhalb davon flieht ein verschrecktes Wesen aktiv weg
+    fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
+    combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert über der Flucht-Schwelle
+    fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhält
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur
