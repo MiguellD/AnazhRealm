@@ -8226,19 +8226,35 @@ class AnazhRealm {
                     }
                 }
             }
-            // V17.42 — DIE LEBENDIGE WERTUNG (Phase 1, reine Mess-Schicht): die gleitende
-            // Spieler-Baseline des ERLEBTEN Wohls (EMA, zeit-korrigiert). Phase 3 wird den
-            // Vorhersagefehler δ = wohlErlebt − baseline als Appraisal-Kanal konsumieren
-            // (Gewöhnung: das 100. Haus bewegt joy kaum); HIER wird sie nur GEMESSEN — KEIN
-            // Konsument → null Verhaltens-Änderung. Cold-Start: erste Beobachtung = Baseline.
-            // Plus: beobachte die Spieler-Zelle (füttert die Feld-Baseline-Map für Phase 2).
-            const wohlErlebt = this._fieldWohlErlebt(aura);
+            // V17.44 — DIE LEBENDIGE WERTUNG Phase 3: die Emotion als APPRAISAL
+            // (Vorhersagefehler des Erlebens). δ = SITUATION − Spieler-Baseline. Die
+            // Situation ist die WELT um den Spieler (lebendig) + sein Zustand (HP) — NICHT
+            // seine Stimmung (sonst Rückkopplung → Runaway, in der Selbstprüfung gemessen).
+            // ADDITIV zu V17.30 (Taten) + V17.21 (Feld-Drift, LEVEL): der δ-Kanal ist die
+            // ÄNDERUNGS-Responsivität — eine Region, die um dich AUFBLÜHT (Phase-2-Heilung!),
+            // gibt einen joy-Puls; eine, die verdorrt / eine Wunde, einen sorrow-Puls. Die
+            // Baseline lagt (playerTau) → die GEWÖHNUNG fällt umsonst heraus (anhaltend Gutes
+            // hebt die Baseline → δ → 0 → die Umstände berühren weniger; die Tretmühle).
+            const sit = this._playerSituationWohl(aura);
             if (typeof p.wohlBaseline !== "number") {
-                p.wohlBaseline = wohlErlebt;
+                p.wohlBaseline = sit; // Cold-Start: die erste Situation IST die Erwartung (kein δ)
             } else {
+                const dsig = sit - p.wohlBaseline; // [−1, 1] — besser/schlechter als erwartet
+                const dead = AnazhRealm.WERTUNG.appraisalDeadzone;
+                if (dsig > dead) {
+                    const g = AnazhRealm.WERTUNG.appraisalGain * (dsig - dead) * delta;
+                    p.emotions.joy = Math.min(1, (p.emotions.joy || 0) + g);
+                    p.emotions.hope = Math.min(1, (p.emotions.hope || 0) + g * 0.6);
+                } else if (dsig < -dead) {
+                    const g = AnazhRealm.WERTUNG.appraisalGain * (-dsig - dead) * delta;
+                    p.emotions.sorrow = Math.min(1, (p.emotions.sorrow || 0) + g);
+                    p.emotions.chaos = Math.min(1, (p.emotions.chaos || 0) + g * 0.5);
+                }
+                // Baseline NACH dem δ aktualisieren (sie lagt → δ hält an → Gewöhnung über τ).
                 const aPl = 1 - Math.exp(-delta / AnazhRealm.WERTUNG.playerTau);
-                p.wohlBaseline += aPl * (wohlErlebt - p.wohlBaseline);
+                p.wohlBaseline += aPl * (sit - p.wohlBaseline);
             }
+            // Die Feld-Baseline-Map an der Spieler-Zelle füttern (für die Regel-Fitness, Phase 2).
             this._observeFieldWohl(pm.x, pm.z, currentTime);
             this._pruneWohlBaseline(currentTime);
         }
@@ -33582,6 +33598,22 @@ class AnazhRealm {
         return pos - neg;
     }
 
+    // V17.44 Phase 3 — die SITUATION des Spielers = der Appraisal-INPUT: wie gut ist seine
+    // WELT + sein Zustand JETZT — `lebendig` am Ort (+ HP, wo es eine Konsequenz IST:
+    // pfad-Modus). BEWUSST OHNE die Stimmung des Spielers (`_fieldWohlErlebt`/`emotion`) —
+    // sonst wäre der δ-Kanal eine RÜCKKOPPLUNG (joy → Valenz → δ → joy → Runaway, gemessen).
+    // Das Gefühl ist die ANTWORT auf die Situation, nicht ihr eigener Input (OCC/RPE). ∈ [0,1].
+    _playerSituationWohl(aura) {
+        const leb = this._fieldWohlStruktur(aura); // lebendig ∈ [0,1] (die Welt um den Spieler)
+        const p = this.state.player;
+        const hpMax = (p.stats && p.stats.hpMax) || 0;
+        if (hpMax > 0 && this.getGameMode && this.getGameMode() === "pfad") {
+            const hp = Math.max(0, Math.min(1, (p.hp || 0) / hpMax));
+            return leb * 0.6 + hp * 0.4;
+        }
+        return leb;
+    }
+
     _wohlCellKey(x, z) {
         const cs = AnazhRealm.WERTUNG.cell;
         return Math.floor(x / cs) + "," + Math.floor(z / cs);
@@ -43843,7 +43875,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "17.43.0";
+AnazhRealm.VERSION = "17.44.0";
 
 // V17.33 Phase A (DSL-Weltregeln) — die Stellschrauben des stehenden Regel-Satzes.
 // EIN frozen Objekt (kein per-Frame-Getter — _tickWorldRules liest es jeden Frame):
@@ -43899,6 +43931,11 @@ AnazhRealm.WERTUNG = Object.freeze({
     // Reward (lokaler struktureller δ) integriert. Eine Regel braucht mehrere Feuern,
     // um sich als Heiler/Schädling zu beweisen (kein Snap-Urteil). value ∈ [−1, +1].
     ruleValueBeta: 0.3,
+    // V17.44 Phase 3 — der Appraisal-Kanal (Emotion = Vorhersagefehler des ERLEBENS,
+    // δ = Situation − Spieler-Baseline). gain = wie stark ein δ die Emotion bewegt (pro
+    // Sekunde, sanft, ADDITIV zu V17.30/V17.21); deadzone = Totzone gegen Zappeln.
+    appraisalGain: 0.4,
+    appraisalDeadzone: 0.05,
 });
 
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({

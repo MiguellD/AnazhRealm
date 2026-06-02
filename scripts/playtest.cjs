@@ -2758,34 +2758,10 @@ async function checkBandV1742Wohl(ctx) {
         r._pruneWohlBaseline(W.pruneAgeSec + 10);
         out.prunes = !r.state.wohlBaseline.has("9,9");
 
-        // --- (6) die Spieler-Baseline: Cold-Start (niedrig) → trackt nach oben, laggt ---
-        const savedEmo = { ...r.state.player.emotions };
-        const savedBase = r.state.player.wohlBaseline;
-        const savedTick = r.state.player.emotionLastTick;
-        const savedWeather = r.state.weather;
-        const savedEmoField = r.state.emotionField;
-        // den Emotion-Overlay clearen → aura.emotion == player.emotions (kein Warmup-
-        // Abdruck verfälscht den Cold-Start; V17.32-Overlay-Pollution isolieren, V9.56-i).
-        r.state.emotionField = new Map();
-        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
-        r.state.player.wohlBaseline = undefined;
-        r.state.player.emotionLastTick = 100;
-        r.updatePlayerEmotions(101); // delta=1, Cold-Start → baseline = wohlErlebt(≈0)
-        const blow = r.state.player.wohlBaseline;
-        r.state.player.emotions.joy = 1;
-        r.state.player.emotions.hope = 1;
-        r.state.player.emotions.peace = 1; // wohlErlebt ≈ 1.0
-        r.updatePlayerEmotions(111); // delta=10, α=1−exp(−10/30)≈0.28 → partieller Schritt
-        const brise = r.state.player.wohlBaseline;
-        out.playerColdStartLow = typeof blow === "number" && blow < 0.1;
-        out.playerTracksLags = brise > blow + 0.05 && brise < 0.9; // stieg Richtung 1.0, laggt darunter
+        // (Die SPIELER-Baseline + ihr Appraisal-Konsum sind Phase 3 → getestet in
+        // checkBandV1744Appraisal, mit der Situations-Semantik statt der Stimmung.)
 
         // restore
-        r.state.player.emotions = savedEmo;
-        r.state.player.wohlBaseline = savedBase;
-        r.state.player.emotionLastTick = savedTick;
-        r.state.weather = savedWeather;
-        r.state.emotionField = savedEmoField;
         r.state.lifeField = savedLife;
         r.state.wohlBaseline = savedWohl;
         return out;
@@ -2802,10 +2778,6 @@ async function checkBandV1742Wohl(ctx) {
         res.tracksAndLags
     );
     check("V17.42 Wertung: die Baseline-Map wird gepruned (lange nicht beobachtete Zelle → weg, bounded)", res.prunes);
-    check(
-        "V17.42 Wertung: die Spieler-Baseline — Cold-Start niedrig, trackt nach oben + laggt (Gewöhnungs-Substrat für Phase 3)",
-        res.playerColdStartLow && res.playerTracksLags
-    );
 }
 
 // V17.43 — DIE LEBENDIGE WERTUNG, Phase 2: die lokal-attribuierte Regel-Fitness. Eine
@@ -2934,6 +2906,147 @@ async function checkBandV1743RuleFitness(ctx) {
     );
     check("V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)", res.parentWeighted);
     check("V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)", res.valueNotInSnapshot);
+}
+
+// V17.44 — DIE LEBENDIGE WERTUNG, Phase 3: die Emotion als APPRAISAL (Vorhersagefehler
+// des Erlebens). δ = SITUATION − Spieler-Baseline, wobei die Situation die WELT um den
+// Spieler (lebendig) + sein Zustand (HP) ist — NICHT seine Stimmung (sonst Rückkopplung →
+// Runaway, in der Selbstprüfung gemessen + hier bewiesen). Gemessen wird KONSUM: die
+// Situation IGNORIERT die Stimmung (kein Feedback-Input), die Baseline trackt die Situation
+// (nicht die Stimmung), eine Situations-Verbesserung gibt einen joy-Puls (Überraschung), die
+// Gewöhnung fällt heraus (Baseline holt auf → δ→0), KEIN Runaway, und V17.30 bleibt heil
+// (anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle).
+async function checkBandV1744Appraisal(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        const p = r.state.player;
+        const pm = r.state.playerMesh.position;
+
+        // save
+        const savedEmo = { ...p.emotions };
+        const savedBase = p.wohlBaseline;
+        const savedTick = p.emotionLastTick;
+        const savedApply = { ...(p.emotionLastApply || {}) };
+        const savedLife = r.state.lifeField;
+        const savedWohl = r.state.wohlBaseline;
+        const savedEmoField = r.state.emotionField;
+        const savedWeather = r.state.weather;
+        const setEmo = (o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+
+        // --- (1) die Situation IGNORIERT die Stimmung (kein Feedback-Input) ---
+        r.state.lifeField = new Map();
+        r.state.emotionField = new Map();
+        setEmo({ joy: 1, hope: 1, peace: 1 });
+        const sitHighMood = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        setEmo({});
+        const sitLowMood = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        out.situationIgnoresMood = Math.abs(sitHighMood - sitLowMood) < 1e-9;
+
+        // --- (2) die Situation STEIGT mit dem Leben der Welt (deposit_life) ---
+        const sit0 = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        r._depositLife(pm.x, pm.z, 0.6);
+        const sit1 = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
+        out.situationRisesWithLife = sit1 > sit0 + 0.05 || sit0 > 0.9;
+
+        // --- (3) die Baseline trackt die SITUATION, nicht die Stimmung (der no-Feedback-Beweis) ---
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        setEmo({ joy: 1, hope: 1, peace: 1 }); // Stimmung HOCH …
+        p.wohlBaseline = undefined;
+        p.emotionLastTick = 1000;
+        r.updatePlayerEmotions(1001); // Cold-Start: baseline = SITUATION (lebendig@player), NICHT die ~1 Stimmung
+        const baseCold = p.wohlBaseline;
+        const sitAtCold = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 1001));
+        out.baselineTracksSituation = Math.abs(baseCold - sitAtCold) < 0.05;
+
+        // --- (4) Überraschung: die Situation springt (Leben deponiert) → joy-Puls ---
+        setEmo({});
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        p.wohlBaseline = undefined;
+        p.emotionLastTick = 2000;
+        r.updatePlayerEmotions(2001); // Cold-Start: baseline = sit (karg/frozen)
+        const sitPre = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 2001));
+        r._depositLife(pm.x, pm.z, 0.85); // Situation springt ÜBER die Baseline
+        const sitPost = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 2001));
+        const joyBefore = p.emotions.joy;
+        p.emotionLastTick = 2001;
+        r.updatePlayerEmotions(2002); // δ>0 → joy steigt
+        // nur prüfen, wenn der Sprung real war (sonst war kein Headroom — vacuously ok)
+        out.surpriseRaisesJoy = sitPost - sitPre > 0.1 ? p.emotions.joy > joyBefore + 0.001 : true;
+
+        // --- (5) Gewöhnung + KEIN Feedback-Runaway (feedback-frei bewiesen) ---
+        setEmo({});
+        r.state.lifeField = new Map();
+        r.state.wohlBaseline = new Map();
+        p.wohlBaseline = 0; // Erwartung: karg
+        p.emotionLastTick = 4000;
+        r._depositLife(pm.x, pm.z, 0.5);
+        for (let t = 4001; t <= 4200; t++) {
+            r._depositLife(pm.x, pm.z, 0.5); // die Situation konstant halten (Overlay sättigt)
+            r.updatePlayerEmotions(t);
+        }
+        const sitFinal = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 4200));
+        out.habituatesBaselineConverges = Math.abs(p.wohlBaseline - sitFinal) < 0.1; // Baseline holt die Situation ein
+        // bei Gewöhnung (Baseline = Situation, δ≈0) gibt EIN weiterer Tick keinen joy-Zuwachs:
+        const jPre = p.emotions.joy;
+        r._depositLife(pm.x, pm.z, 0.5);
+        r.updatePlayerEmotions(4201);
+        out.habituatedNoMoreJoy = p.emotions.joy - jPre < 0.01; // δ≈0 → kein joy-Zuwachs mehr
+        // KEIN Feedback: baseline = Situation (δ≈0), eine GESEEDETE Stimmung amplifiziert NICHT
+        // (eine Mood-Rückkopplung würde joy von 0.5 Richtung 1.0 aufschaukeln — der Runaway-Beweis).
+        p.wohlBaseline = sitFinal;
+        p.emotions.joy = 0.5;
+        for (let t = 4300; t <= 4360; t++) {
+            r._depositLife(pm.x, pm.z, 0.5);
+            r.updatePlayerEmotions(t);
+        }
+        out.noRunaway = p.emotions.joy <= 0.52; // hielt/zerfiel — KEIN Aufschaukeln aus der Stimmung
+
+        // --- (6) V17.30 bleibt heil: anhaltendes Tun erreicht WEITER 0.7 + triggert ---
+        setEmo({});
+        p.emotionLastApply = {};
+        for (let i = 0; i < 10; i++) r._feelAction("build"); // joy → ~1.0 (ACTION_TO_EMOTION, V17.30)
+        const joyHigh = p.emotions.joy;
+        p.emotionLastTick = 5000;
+        r.updatePlayerEmotions(5001); // der 0.7-Trigger für joy feuert
+        out.triggerPreserved = joyHigh >= 0.7 && (p.emotionLastApply.joy ?? -Infinity) > -Infinity;
+
+        // restore
+        setEmo(savedEmo);
+        p.wohlBaseline = savedBase;
+        p.emotionLastTick = savedTick;
+        p.emotionLastApply = savedApply;
+        r.state.lifeField = savedLife;
+        r.state.wohlBaseline = savedWohl;
+        r.state.emotionField = savedEmoField;
+        r.state.weather = savedWeather;
+        return out;
+    });
+
+    check(
+        "V17.44 Appraisal: _playerSituationWohl IGNORIERT die Stimmung (kein Feedback-Input — die Wurzel gegen Runaway)",
+        res.situationIgnoresMood
+    );
+    check("V17.44 Appraisal: die Situation STEIGT mit dem Leben der Welt (deposit_life → lebendig)", res.situationRisesWithLife);
+    check(
+        "V17.44 Appraisal: die Spieler-Baseline trackt die SITUATION, nicht die Stimmung (Cold-Start = lebendig@player, nicht die ~1 Stimmung)",
+        res.baselineTracksSituation
+    );
+    check("V17.44 Appraisal: eine Situations-Verbesserung (Region blüht auf) gibt einen joy-Puls (Überraschung, δ>0)", res.surpriseRaisesJoy);
+    check(
+        "V17.44 Appraisal: GEWÖHNUNG — konstante Situation → Baseline holt auf (δ→0) → kein weiterer joy-Zuwachs",
+        res.habituatesBaselineConverges && res.habituatedNoMoreJoy
+    );
+    check("V17.44 Appraisal: KEIN Runaway — eine konstante Situation pinnt joy nicht auf 1.0 (feedback-frei bewiesen)", res.noRunaway);
+    check(
+        "V17.44 Appraisal: V17.30 bleibt heil — anhaltendes Tun erreicht weiter die 0.7-Trigger-Schwelle + feuert (δ ist ADDITIV)",
+        res.triggerPreserved
+    );
 }
 
 // V9.52-b Sub-Welle b — Band-Funktion (Welle 1 D + Welle 2 B/C + Welle 3 E/F).
@@ -35007,6 +35120,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1741RuleThread(ctx);
             await checkBandV1742Wohl(ctx);
             await checkBandV1743RuleFitness(ctx);
+            await checkBandV1744Appraisal(ctx);
             await checkBandWave4(ctx);
             await checkBandWave5(ctx);
             await checkBandRing8(ctx);

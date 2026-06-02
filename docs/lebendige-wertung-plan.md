@@ -261,15 +261,26 @@ NEUTRALE atmosphärische Regel (Wetter-Flip) bleibt am Boden (valueScore 0.5, KE
 Kollabierung — der Vielfalt-Wächter); über ein Fenster ist der überlebende Regel-Satz
 **wert-angereichert** vs. einem Zufalls-Baseline. Das ist der erste echte Selektions-Gradient.
 
-**Phase 3 (V17.44) — Emotion als Appraisal (Psychologie statt Reflex).**
-Spieler-Baseline + der δ-Kanal in `updatePlayerEmotions` (ADDITIV — V17.30-Akkumulation +
-V17.21-Feld-Drift bleiben, δ kommt obendrauf, §4d). **KONSUM-Test (psychologische Signaturen,
-gemessen):** Gewöhnung (dieselbe Tat wiederholt → abnehmende joy-Hebung), Erleichterung
-(Erholung aus niedriger HP / aus einer trüben Region → joy-Puls aus dem Vorzeichen-Wechsel
-von δ), Überraschung (plötzliche Feld-Besserung → joy-Puls). **+ REGRESSIONS-WÄCHTER (Pflicht):
-anhaltendes positives Tun erreicht WEITER die 0.7-Trigger-Schwelle + feuert den Welt-Effekt**
-(V17.30 darf nicht un-getan werden — der δ-Kanal ist additiv, nicht ersetzend). Echte Affekt-
-Dynamik, nicht eine flache Tabelle.
+**Phase 3 (V17.44) — Emotion als Appraisal (Psychologie statt Reflex). ✅ GEBAUT.**
+**KORREKTUR aus der Spieler-Perspektive-Reflexion (02.06., VOR dem Bauen gefunden): der
+Appraisal misst die SITUATION (`_playerSituationWohl` = lebendig@player + HP), NICHT die
+Stimmung** — die Stimmung zu appraisen wäre eine RÜCKKOPPLUNG (joy → Valenz → δ → joy →
+pinnt bei 1.0; durchgerechnet + im Test bewiesen). Emotion ist die ANTWORT auf die Situation,
+nicht ihr Input (OCC/RPE). `δ = situation − player.wohlBaseline`, der δ-Kanal in
+`updatePlayerEmotions` ADDITIV (V17.30-Akkumulation + V17.21-Feld-Drift [LEVEL] bleiben, δ ist
+die ÄNDERUNGS-Responsivität obendrauf). Die Phase-1-Spieler-Baseline wurde entsprechend von
+Stimmung auf Situation umgestellt (Verdichtung + Fix). Config `WERTUNG.appraisalGain` 0.4 /
+`appraisalDeadzone` 0.05. GEMESSEN (`checkBandV1744Appraisal`, 7 grün): die Situation IGNORIERT
+die Stimmung (kein Feedback-Input), die Baseline trackt die Situation, eine Region die aufblüht
+→ joy-Puls (Überraschung), **Gewöhnung** (konstante Situation → Baseline holt auf → δ→0 → kein
+weiterer joy — die Tretmühle), **KEIN Runaway** (feedback-frei bewiesen: geseedete Stimmung bei
+δ≈0 schaukelt NICHT auf), **V17.30 heil** (anhaltendes Tun erreicht weiter 0.7 + triggert). node-
+check/format/lint grün, „Alle Invarianten OK". Gewöhnung psychologisch sauber: die UMSTÄNDE
+gewöhnen sich (Tretmühle), die TATEN bleiben belohnend (V17.30). Synergie: Phase 2 heilt das Feld
+→ Phase 3 fühlt der Spieler die Heilung als Freude → Phase 4 selektiert genau diese Regeln.
+EHRLICH: action-spezifische Gewöhnung (das 100. Haus) ist NICHT voll gelöst (der V17.30-Sofort-
+Nudge bleibt fix) — bewusst (Schöpfung darf belohnend bleiben); die SITUATIONS-Gewöhnung ist der
+echte Tretmühl-Effekt.
 
 **Phase 4 (V17.45, KÜR) — Der Kreis: die Welt lernt, was DICH glücklich macht.**
 Die Klammer: `rule.value` und `δ_spieler` sind DASSELBE Vorhersagefehler-Signal an
@@ -301,6 +312,17 @@ Schöpfer-Browser-Audit.
 > gehen wieder stumm (der Fleck, den V17.30 heilte). **Korrigiert (§4d):** der δ-Kanal ist
 > ADDITIV (Responsivität obendrauf), die V17.30-Akkumulation + V17.21-Feld-Drift bleiben;
 > Phase-3-Pflicht-Test: anhaltendes Tun erreicht WEITER 0.7.
+>
+> **C. Mood-Feedback-Runaway (die Spieler-Perspektive-Reflexion VOR Phase 3, 02.06.).** Der
+> ursprüngliche §4(a/d)-Plan appraiste `wohlErlebt = Valenz(Stimmung)`. Durchgerechnet ist
+> das eine RÜCKKOPPLUNG: joy → Valenz → δ → joy → pinnt bei 1.0 (mit spürbarem gain) ODER
+> tut nichts (mit winzigem) — beides kaputt. **Korrigiert (§4d/Phase 3 GEBAUT):** der
+> Appraisal misst die SITUATION (`_playerSituationWohl` = lebendig@player + HP), NICHT die
+> Stimmung → das Gefühl ist die Antwort, nicht ihr eigener Input (OCC/RPE-korrekt, feedback-
+> frei). Die Phase-1-Spieler-Baseline wurde von Stimmung auf Situation umgestellt. Im Test
+> bewiesen (`checkBandV1744Appraisal`: kein Runaway, feedback-frei). `_fieldWohlErlebt`
+> (Valenz) bleibt — es ist die FELT-Valenz für Phase 4 (was-freut-den-Spieler), nicht der
+> Appraisal-Input.
 
 1. **Reward-Hacking: „lass die Regel nicht ihre eigene Hausaufgabe benoten"** (der
    tiefste Punkt, der Cousin des V17.31-Passagier-Trugschlusses). Eine Regel, deren
